@@ -55,7 +55,6 @@ describe("syncUserActionProgression action rejection", () => {
     expect(firstValidationEvents[0]).toMatchObject({
       xp_awarded: 0.5,
       metadata: expect.objectContaining({
-        hasValidatedForm: true,
         organizerCount: 2,
       }),
     });

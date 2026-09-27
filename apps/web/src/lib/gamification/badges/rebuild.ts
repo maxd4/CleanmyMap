@@ -11,9 +11,9 @@ import { loadGamificationUserCounters } from "../counters";
 import {
   EXPLORER_TIERS,
   PARTICIPANT_TIERS,
-  buildActionBadges,
 } from "./families";
 import { loadCleanZoneSourcesForUser } from "./listing";
+import { awardActionMilestonesForUser, loadActionRowsForUser } from "../progression-data";
 
 type AwardProgressionEventInput = {
   userId: string;
@@ -200,49 +200,19 @@ async function awardExplorerEvents(
   return inserted;
 }
 
-async function awardActionBadges(
-  supabase: SupabaseClient,
-  userId: string,
-  completeActionsCount: number,
-): Promise<number> {
-  const firstTrace = buildActionBadges(0, completeActionsCount).find(
-    (badge) => badge.id === "first_trace_utile",
-  );
-  if (!firstTrace?.unlocked) {
-    return 0;
-  }
-
-  return Number(await awardProgressionEventIfMissing(supabase, {
-    userId,
-    sourceTable: "actions",
-    sourceId: "first_trace_utile",
-    eventType: "first_trace_utile",
-    statusPhase: "validated",
-    xp: 1,
-    metadata: { badge: "first_trace_utile", completeActionsCount },
-    auditLabel: "Première trace utile débloquée",
-    notifyPayload: {
-      type: "first_trace_utile_unlocked",
-      userId,
-      badgeId: "first_trace_utile",
-      xp: 1,
-      dedupeKey: "first_trace_utile_unlocked:first_trace_utile",
-    },
-  }));
-}
-
 /** Explicit repair only. Never call this from a GET or page loader. */
 export async function rebuildUserGamificationBadges(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<{ inserted: number }> {
   const counters = await loadGamificationUserCounters(supabase, userId);
+  const actions = await loadActionRowsForUser(supabase, userId).catch(() => []);
 
   const inserted = await Promise.all([
     awardCleanZoneEvents(supabase, userId),
     awardParticipantEvents(supabase, userId, counters.participationCount),
     awardExplorerEvents(supabase, userId, counters.visitedPlacesCount),
-    awardActionBadges(supabase, userId, counters.completeActionsCount),
+    awardActionMilestonesForUser(supabase, userId, actions),
   ]);
 
   return { inserted: inserted.reduce((total, count) => total + count, 0) };

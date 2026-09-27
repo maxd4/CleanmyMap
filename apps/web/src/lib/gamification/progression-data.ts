@@ -9,6 +9,7 @@ import type {
   UserLabelSummary,
   UserProgressionStats,
 } from "./progression-types";
+import type { ActionQualityGrade } from "@/lib/actions/quality/quality-rules";
 import {
   loadActionOrganizerIdsForAction,
 } from "@/lib/actions/participation/organizers";
@@ -31,11 +32,15 @@ import { writeProgressionEventWithPolicy } from "./progression-event-write-polic
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 import { syncSensitiveZoneProjection, type SensitiveZoneSyncOptions } from "./sensitive-zone-progression-store";
 import { writeActionProgressionEvents } from "./action-progression-events";
+import {
+  isCurrentActionValidated,
+} from "./action-milestones";
+import { awardActionMilestonesForUserWithDependencies } from "./action-milestone-awards";
 const SPONTANEOUS_ASSOCIATION_KEY = "action spontanee";
 const ACTION_FULL_COLUMNS =
-  "id, created_at, created_by_clerk_id, type, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source";
+  "id, created_at, created_by_clerk_id, type, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, action_phase, preparation_data, published_at";
 const ACTION_APPROVED_COLUMNS =
-  "id, created_at, created_by_clerk_id, type, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source";
+  "id, created_at, created_by_clerk_id, type, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, action_phase, preparation_data, published_at";
 const ACTION_LABEL_COLUMNS = "created_by_clerk_id, actor_name, notes, action_date";
 const USER_LABEL_SUMMARY_CACHE_REVALIDATE_SECONDS = 120;
 const USER_LABEL_SUMMARY_CACHE_TAG = "gamification-user-label-summary";
@@ -219,6 +224,16 @@ export async function loadValidatedActionIdsForUser(
   return validatedActionIds;
 }
 
+/** CURRENT validation is the approved post-action contract, not a Forms read. */
+export async function loadCurrentValidatedActionIdsForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  options?: LoadValidatedActionIdsOptions,
+): Promise<Set<string>> {
+  const actions = options?.actionRows ?? (await loadActionRowsForUser(supabase, userId));
+  return new Set(actions.filter(isCurrentActionValidated).map((action) => action.id));
+}
+
 export async function loadValidatedCompleteActionCountForUser(
   supabase: SupabaseClient,
   userId: string,
@@ -236,7 +251,7 @@ export async function loadValidatedCompleteActionCountForUser(
     );
   }
 
-  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId, {
+  const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, userId, {
     actionRows: ownedActions,
   });
 
@@ -285,7 +300,7 @@ export async function loadUserProgressionStats(
   ]);
 
   const actionRows = await actionRowsPromise;
-  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId, {
+  const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, userId, {
     actionRows,
   });
 
@@ -584,6 +599,24 @@ export function actionListItemFromRow(row: ActionRow) {
   return actionRowToListItem(row);
 }
 
+export async function awardActionMilestonesForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  actions: ActionRow[],
+  options: { validationQualityGrades?: ReadonlyMap<string, ActionQualityGrade> } = {},
+): Promise<number> {
+  return awardActionMilestonesForUserWithDependencies(
+    supabase,
+    userId,
+    actions,
+    {
+      loadValidatedActionIds: loadCurrentValidatedActionIdsForUser,
+      insertProgressionEvent,
+    },
+    options,
+  );
+}
+
 export async function syncUserActionProgression(
   supabase: SupabaseClient,
   userId: string,
@@ -600,9 +633,10 @@ export async function syncUserActionProgression(
   }
 
   const actions = await loadActionRowsForUser(supabase, userId);
-  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId, {
+  const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, userId, {
     actionRows: actions,
   });
+  const validationQualityGrades = new Map<string, ActionQualityGrade>();
   await syncSensitiveZoneProjection({
     supabase,
     userId,
@@ -643,6 +677,7 @@ export async function syncUserActionProgression(
     }
 
     const quality = evaluateActionQualityScore(action);
+    validationQualityGrades.set(action.id, quality.grade);
     const validatedAward = computeActionValidationAward(
       weight,
       quality.grade,
@@ -662,7 +697,6 @@ export async function syncUserActionProgression(
         qualityGrade: quality.grade,
         qualityScore: quality.score,
         associationName,
-        hasValidatedForm: true,
         organizerCount,
         organizerShare: validatedAward.xpAwarded,
       },
@@ -674,14 +708,14 @@ export async function syncUserActionProgression(
         supabase,
         userId,
         null,
-        "Action validée avec formulaire",
+        "Action validée",
         validatedAward.xpAwarded,
         "actions",
         action.id,
         {
           qualityGrade: quality.grade,
           qualityScore: quality.score,
-          sourceEvent: "action_validated_form",
+          sourceEvent: "action_validated_current",
           organizerCount,
           organizerShare: validatedAward.xpAwarded,
         },
@@ -698,6 +732,9 @@ export async function syncUserActionProgression(
     actions,
     validatedActionIds,
     writeEvent: (params) => insertProgressionEvent(supabase, params),
+  });
+  await awardActionMilestonesForUser(supabase, userId, actions, {
+    validationQualityGrades,
   });
   return validatedActionCount;
 }

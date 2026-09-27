@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   loadActionRowsForUser,
-  loadValidatedActionIdsForUser,
+  loadCurrentValidatedActionIdsForUser,
 } from "./progression-data";
 import {
   computeActionBalanceSummary,
@@ -33,7 +33,7 @@ export async function loadActionBalanceSummary(
 ): Promise<ActionBalanceSummary> {
   const [actionRows, validatedActionIds] = await Promise.all([
     options?.actionRows ?? loadActionRowsForUser(supabase, userId),
-    options?.validatedActionIds ?? loadValidatedActionIdsForUser(supabase, userId),
+    options?.validatedActionIds ?? loadCurrentValidatedActionIdsForUser(supabase, userId),
   ]);
 
   return computeActionBalanceSummary(actionRows, validatedActionIds);

@@ -9,6 +9,7 @@ import {
   gamificationEventRegistry,
 } from "./progression-utils";
 import { CURRENT_INFINITE_PROGRESSION_IDS } from "./progression-types";
+import { ACTION_MILESTONE_EVENT_TYPES } from "./action-milestones";
 
 const RUNTIME_PROGRESSION_WRITERS = [
   "action-progression-events.ts",
@@ -21,6 +22,7 @@ const RUNTIME_PROGRESSION_WRITERS = [
   "badges/rebuild.ts",
   "sensitive-zone-progression.ts",
   "sensitive-zone-progression-store.ts",
+  "action-milestones.ts",
 ] as const;
 
 function readRuntimeWriter(path: string): string {
@@ -46,21 +48,28 @@ describe("progression event registry", () => {
         runtimeEventTypes.add(eventType);
       }
     }
+    Object.values(ACTION_MILESTONE_EVENT_TYPES).forEach((eventType) => runtimeEventTypes.add(eventType));
 
     const families = eventFamilyMap();
     expect(families.action_declare_validation).toBe("organisation");
     expect([...runtimeEventTypes].sort()).toEqual([
       "action_declare_pending",
       "action_declare_validation",
+      "action_documented_route",
+      "action_documented_sorting",
+      "action_exemplary_data",
+      "action_formalities_prepared",
+      "action_loop_completed",
+      "action_mobilizer",
       "action_balance_cycle",
       "action_monthly_regularity",
+      "action_traceable_measurement",
       "clean_zone_task",
       "collective_attendance_confirmed",
       "collective_rsvp_yes_pending",
       "community_ops_update",
       "community_referral_invite",
       "explorer_tier_unlock",
-      "first_trace_utile",
       "new_place_discovered",
       "new_place_milestone",
       "participant_tier_unlock",
@@ -106,8 +115,15 @@ describe("progression event registry", () => {
     const registry = gamificationEventRegistry();
 
     expect(Object.keys(registry).sort()).toEqual([
+      "action_documented_route",
+      "action_documented_sorting",
       "action_declare_pending",
       "action_declare_validation",
+      "action_exemplary_data",
+      "action_formalities_prepared",
+      "action_loop_completed",
+      "action_mobilizer",
+      "action_traceable_measurement",
       "action_balance_cycle",
       "action_monthly_regularity",
       "clean_zone_task",
@@ -201,11 +217,18 @@ describe("progression event registry", () => {
     expect(CURRENT_INFINITE_PROGRESSION_IDS).toContain("versatility");
   });
 
-  it("exposes exactly the three CURRENT one-shot milestones without infinite progress", () => {
+  it("exposes the CURRENT one-shot milestones without infinite progress", () => {
     expect(currentMilestones()).toEqual(CURRENT_MILESTONES);
     expect(currentMilestones().map((milestone) => milestone.id)).toEqual([
       "premiere_trace_utile",
       "trace_fondatrice",
+      "boucle_bouclee",
+      "mobilisateur",
+      "donnee_exemplaire",
+      "parcours_documente",
+      "mesure_tracable",
+      "tri_documente",
+      "formalites_preparees",
       "parrainage_utile",
     ]);
     expect(currentMilestones().every((milestone) => milestone.oneShot)).toBe(true);
@@ -220,7 +243,7 @@ describe("progression event registry", () => {
       ]),
     );
     expect(
-      CURRENT_MILESTONES.filter((milestone) => milestone.factKey === "first_complete_action")
+      CURRENT_MILESTONES.filter((milestone) => milestone.factKey === "boucle_bouclee")
         .reduce((total, milestone) => total + milestone.xpAwarded, 0),
     ).toBe(1);
   });

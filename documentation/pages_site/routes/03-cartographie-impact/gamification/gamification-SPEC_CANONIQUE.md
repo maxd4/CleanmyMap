@@ -52,9 +52,8 @@ progression.
 
 Les autres catégories du registre sont séparées :
 
-- `milestone` : jalons uniques `Première trace utile`, `Trace fondatrice` et
-  `Parrainage utile`, acquis au plus une fois et affichés sans barre de
-  progression infinie ;
+- `milestone` : jalons uniques issus de faits d’action démontrés, acquis au
+  plus une fois et affichés sans barre de progression infinie ;
 - `non_progression` : métriques d'impact, usage utilitaire et familles de
   compatibilité conservées sans constituer une progression CURRENT.
 - `impact_badge` : badges d'impact personnels hors des sept axes
@@ -249,8 +248,8 @@ Règles:
 - exclusion des brouillons, suppressions, tests et formulaires incomplets;
 - exclusion des actions de type `zone_propre`;
 - dédoublonnage par paire `(action_id, group_id)`;
-- la complétude du formulaire peut rendre l'action éligible à `Organisation` et
-  au jalon `Première trace utile`;
+- les formulaires restent lisibles pour l'historique, mais leur complétude ne
+  constitue plus à elle seule un fait CURRENT de progression ou de milestone;
 - aucun badge Forms CURRENT, aucune barre Forms et aucun XP ne sont attribués
   pour remplir ou multiplier des formulaires;
 - les événements historiques `form_tier_unlock` et `form_bonus` restent
@@ -292,18 +291,82 @@ Règles:
 
 ### Premiers jalons
 
-#### Première trace utile
+Les jalons d’action utilisent des événements one-shot stables dans
+`progression_events`, avec la preuve de l’action qualifiante dans leurs
+métadonnées. Un rebuild ne recalcule pas un fait historique déjà enregistré à
+partir d’une fraîcheur courante plus faible.
+
+#### Boucle bouclée
 
 - one-shot;
 - `+1 XP`;
-- déclenchement: première action validée avec données complètes;
-- source de vérité: action `approved` + formulaire validé + complétude complète.
+- organisateur canonique;
+- préparation explicite démontrée (`preparationState` hors brouillon),
+  post-action finalisée et validation CURRENT (`approved` +
+  `post_action_complete`);
+- une action complète créée directement sans ce parcours démontré ne suffit
+  pas.
+
+#### Mobilisateur
+
+- one-shot;
+- `+1 XP`;
+- action organisée et réellement publiée aux inscriptions de groupe;
+- au moins une autre personne dans `action_participants` avec
+  `participation_status = confirmed`;
+- `groupJoinEnabled` seul, une demande ou une acceptation avant le terrain ne
+  suffisent pas.
+
+#### Donnée exemplaire
+
+- one-shot;
+- `+1 XP`;
+- première action validée avec un snapshot de grade qualité `A` au moment de
+  la validation;
+- la baisse ultérieure de `freshness` ne révoque pas le fait enregistré.
+
+#### Parcours documenté
+
+- badge one-shot, `0 XP`;
+- géométrie exploitable avec provenance canonique vérifiable : GPX validé,
+  route provider vérifiée ou équivalent CURRENT;
+- aucune préférence arbitraire pour un seul mode de preuve.
+
+#### Mesure traçable
+
+- badge one-shot, `0 XP`;
+- méthode et provenance de mesure conformes au contrat déchets CURRENT,
+  notamment `wasteMeasurementMethod`, les mesures de mégots et la ventilation
+  canonique;
+- `wasteKg` seul ne suffit pas.
+
+#### Tri documenté
+
+- badge one-shot, `0 XP`;
+- au moins deux flux numériques réels dans la ventilation canonique;
+- les catégories vides, fictives ou simplement affichées ne qualifient pas le
+  jalon.
+
+#### Formalités préparées
+
+- badge one-shot, `0 XP`;
+- toutes les formalités `required` de la qualification applicable sont
+  actives, valides pour la qualification et au statut final `sent` du
+  workflow;
+- ce badge décrit une préparation de dossier et ne constitue jamais une
+  certification juridique de conformité.
 
 #### Trace fondatrice
 
-- one-shot compagnon;
-- pas d XP supplémentaire;
-- sert de badge visuel de premier jalon.
+- badge compagnon, `0 XP`;
+- réutilise la preuve de `Boucle bouclée` lorsqu’elle existe;
+- il ne crée aucun XP supplémentaire pour le même fait.
+
+#### Première trace utile
+
+- identité historique conservée pour les événements déjà enregistrés;
+- aucun nouveau crédit ne doit être reconstruit depuis la seule complétude d'un
+  formulaire.
 
 ### Organisation
 
@@ -317,7 +380,7 @@ Règles:
 - le compte connecté n est pas compté comme organisateur principal sauf pour `Action spontanée`;
 - hors `Action spontanée`, les organisateurs doivent être renseignés explicitement;
 - pour `Action spontanée`, le formulaire cache les organisateurs et le compte connecté devient l organisateur de référence;
-- tant qu aucun formulaire validé n est rattaché à l action, aucun XP n est attribué;
+- tant que l action n est pas validée selon le contrat CURRENT, aucun XP n est attribué;
 - XP de base: `+1` par action créée valide;
 - si plusieurs organisateurs sont reconnus, l XP est divisée à parts égales;
 - la métrique canonique est le nombre d'actions organisées et validées, dédupliquées

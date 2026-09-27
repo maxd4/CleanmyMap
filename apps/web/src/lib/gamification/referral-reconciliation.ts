@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   insertProgressionEvent,
   loadActionRowsForUser,
-  loadValidatedActionIdsForUser,
+  loadCurrentValidatedActionIdsForUser,
 } from "./progression-data";
 import type { ProgressionEventType } from "./progression-types";
 
@@ -37,7 +37,7 @@ async function loadCurrentReferralContribution(
   fallbackOccurredOn?: string,
 ): Promise<CurrentReferralContribution | null> {
   const actions = await loadActionRowsForUser(supabase, inviteeUserId);
-  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, inviteeUserId, {
+  const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, inviteeUserId, {
     actionRows: actions,
   });
   const eligibleActions = actions
