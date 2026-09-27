@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MeResponse } from "./gamification-types";
 import { buildCollectionSummary } from "./collections-panel";
-import { PROGRESSION_RULES_V1 } from "@/lib/gamification/progression";
+import { PROGRESSION_RULES_V2 } from "@/lib/gamification/progression";
 
 function makeProgression(): MeResponse["progression"] {
   return {
@@ -27,10 +27,10 @@ function makeProgression(): MeResponse["progression"] {
         level: 5,
         met: true,
         eligible: true,
-        rulesVersion: "progression-rules-v1",
+        rulesVersion: "progression-rules-v2",
         xp: {
           current: 100,
-          required: PROGRESSION_RULES_V1.xpRequired(5),
+          required: PROGRESSION_RULES_V2.xpRequired(5),
           met: true,
         },
         potentialLevel: 5,
@@ -39,11 +39,11 @@ function makeProgression(): MeResponse["progression"] {
         satisfied: [],
         missing: [],
         thresholds: {
-          minVerifiedContributions: PROGRESSION_RULES_V1.minVerifiedContributions(5),
-          minDiversityTypes: PROGRESSION_RULES_V1.minDiversityTypes(5),
-          minCollectiveEvents: PROGRESSION_RULES_V1.minCollectiveEvents(5),
-          minQualityAverage: PROGRESSION_RULES_V1.minQualityAverage(5),
-          minValidationRatio: PROGRESSION_RULES_V1.minValidationRatio(5),
+          minVerifiedContributions: PROGRESSION_RULES_V2.minVerifiedContributions(5),
+          minDiversityTypes: PROGRESSION_RULES_V2.minDiversityTypes(5),
+          minCollectiveEvents: PROGRESSION_RULES_V2.minCollectiveEvents(5),
+          minQualityAverage: PROGRESSION_RULES_V2.minQualityAverage(5),
+          minValidationRatio: PROGRESSION_RULES_V2.minValidationRatio(5),
         },
         current: {
           verifiedContributions: 6,

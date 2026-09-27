@@ -6,7 +6,7 @@ import {
   minCollectiveEvents,
   minDiversityTypes,
   minVerifiedContributions,
-  PROGRESSION_RULES_V1,
+  PROGRESSION_RULES_V2,
   xpRequired,
   xpStep,
   syncUserActionProgression,
@@ -69,12 +69,12 @@ describe("gamification progression formulas", () => {
     [8, 12, 3, 2, 70, 0.6],
     [30, 45, 5, 7, 70, 0.6],
   ])(
-    "uses the v1 contribution rules for level %i",
+    "uses the v2 contribution rules for level %i",
     (level, verifiedContributions, diversityTypes, collectiveEvents, qualityAverage, validationRatio) => {
       const assessment = assessLevelRequirements(level, makeStats(), xpRequired(level));
 
-      expect(PROGRESSION_RULES_V1.version).toBe("progression-rules-v1");
-      expect(assessment.rulesVersion).toBe(PROGRESSION_RULES_V1.version);
+      expect(PROGRESSION_RULES_V2.version).toBe("progression-rules-v2");
+      expect(assessment.rulesVersion).toBe(PROGRESSION_RULES_V2.version);
       expect(assessment.thresholds).toEqual({
         minVerifiedContributions: verifiedContributions,
         minDiversityTypes: diversityTypes,

@@ -1,5 +1,5 @@
 import {
-  PROGRESSION_RULES_V1,
+  PROGRESSION_RULES_V2,
   type VerifiedContributionFamily,
 } from "./progression-rules";
 import type { ProgressionEventType } from "./progression-types";
@@ -82,7 +82,7 @@ export function buildVerifiedContributionSummary(params: {
 
   return {
     count: contributionKeys.size,
-    families: PROGRESSION_RULES_V1.verifiedContributionFamilies.filter((family) =>
+    families: PROGRESSION_RULES_V2.verifiedContributionFamilies.filter((family) =>
       families.has(family),
     ),
   };
