@@ -7,8 +7,12 @@ normalisés.
 ## Frontière
 
 - les fonctions pures de distance, géométrie et normalisation restent ici ;
+- les contrats et normalisations territoriales réutilisables restent ici,
+  notamment `greater-paris-location.ts` ;
 - les accès aux données ou aux fournisseurs externes passent par les loaders
   et services propriétaires ;
+- les composants React de sélection de territoire appartiennent à leur surface
+  produit, notamment `components/account/greater-paris-select.tsx` ;
 - la composition cartographique appartient à `components/actions/map/` ;
 - une polyline ou un résultat de routage ne constitue pas à lui seul une
   preuve de côté de rue, de corridor nettoyable ou d'additionalité.

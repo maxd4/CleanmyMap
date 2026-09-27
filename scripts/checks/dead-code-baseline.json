@@ -4588,7 +4588,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/geo/greater-paris-select.tsx",
+      "file": "apps/web/src/components/account/greater-paris-select.tsx",
       "name": "GreaterParisLocationSelector",
       "namespace": null,
       "kind": null,
@@ -4598,7 +4598,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/geo/greater-paris-select.tsx",
+      "file": "apps/web/src/components/account/greater-paris-select.tsx",
       "name": "TerritoryLocationSelector",
       "namespace": null,
       "kind": null,
@@ -8408,16 +8408,6 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/lib/geo/greater-paris-filter.tsx",
-      "name": "apps/web/src/lib/geo/greater-paris-filter.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "78f34e13439cd6c3cf81f028",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
       "file": "apps/web/src/lib/metrics.ts",
       "name": "apps/web/src/lib/metrics.ts",
       "namespace": null,
@@ -11618,7 +11608,7 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/geo/greater-paris-select.tsx",
+      "file": "apps/web/src/components/account/greater-paris-select.tsx",
       "name": "TerritoryLocationLevel",
       "namespace": null,
       "kind": null,

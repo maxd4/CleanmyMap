@@ -387,7 +387,7 @@
       "maxBytes": 16469
     },
     {
-      "path": "apps/web/src/lib/geo/greater-paris-select.tsx",
+      "path": "apps/web/src/components/account/greater-paris-select.tsx",
       "kind": "runtime",
       "status": "REVIEW",
       "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
