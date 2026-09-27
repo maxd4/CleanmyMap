@@ -13,7 +13,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { GreaterParisSelect, type TerritoryLocationSelection } from "@/lib/geo/greater-paris-select";
+import { GreaterParisSelect, type TerritoryLocationSelection } from "@/components/account/greater-paris-select";
 import { getProfileLabel, getProfileSubtitle, type AppProfile } from "@/lib/profiles";
 import { DISPLAY_MODE_DESCRIPTIONS, DISPLAY_MODES, type DisplayMode, type Locale } from "@/lib/ui/preferences";
 import { AccountSetupChoiceCard } from "@/components/account/account-setup-primitives";

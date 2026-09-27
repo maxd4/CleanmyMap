@@ -17,7 +17,7 @@ import {
 import { logFailure } from "@/lib/logging/failure-log";
 import {
   GreaterParisSelect,
-} from "@/lib/geo/greater-paris-select";
+} from "@/components/account/greater-paris-select";
 import { AccountSetupChoiceCard, AccountSetupSection } from "@/components/account/account-setup-primitives";
 import {
   clearLocationPreferenceMetadata,

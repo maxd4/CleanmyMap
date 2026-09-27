@@ -1851,7 +1851,7 @@
     },
     {
       "metric": "complexity",
-      "path": "src/lib/geo/greater-paris-select.tsx",
+      "path": "src/components/account/greater-paris-select.tsx",
       "line": 366,
       "category": "React/JSX",
       "ceiling": 65,
@@ -5262,7 +5262,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/lib/geo/greater-paris-select.tsx",
+      "path": "src/components/account/greater-paris-select.tsx",
       "line": 366,
       "category": "React/JSX",
       "ceiling": 358,
