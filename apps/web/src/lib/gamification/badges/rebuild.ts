@@ -148,8 +148,8 @@ async function awardParticipantEvents(
       sourceTable: "action_participants",
       sourceId: `participant:${tier.id}`,
       eventType: "participant_tier_unlock",
-      statusPhase: "pending",
-      xp: 1,
+      statusPhase: "validated",
+      xp: tier.xp,
       metadata: { tier: tier.id, threshold: tier.threshold },
       auditLabel: `Participant tier ${tier.id} unlocked`,
       notifyPayload: {

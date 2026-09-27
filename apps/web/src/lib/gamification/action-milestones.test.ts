@@ -125,6 +125,30 @@ describe("CURRENT action one-shot milestones", () => {
     expect([...assessmentMap(buildAction({ action_phase: "post_action_draft" })).values()].every((assessment) => !assessment.qualified)).toBe(true);
   });
 
+  it("does not qualify an action when no formality is required", () => {
+    const workflowWithoutRequiredFormality = {
+      ...formalitiesWorkflow,
+      trace: {
+        ...formalitiesWorkflow.trace,
+        formalities: formalitiesWorkflow.trace.formalities.map((formality) => ({
+          ...formality,
+          requirementStatus: "recommended" as const,
+        })),
+      },
+    };
+
+    expect(
+      assessmentMap(
+        buildAction({
+          preparation_data: {
+            preparationState: "action_en_cours",
+            formalitiesWorkflow: workflowWithoutRequiredFormality,
+          },
+        }),
+      ).get("formalites_preparees")?.qualified,
+    ).toBe(false);
+  });
+
   it("requires a confirmed person distinct from the organizer and keeps one-shot identity stable", () => {
     const noOtherParticipant = assessActionMilestones({
       action: buildAction(),

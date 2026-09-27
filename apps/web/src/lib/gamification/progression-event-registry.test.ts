@@ -290,6 +290,9 @@ describe("progression event registry", () => {
     expect(rebuild).not.toMatch(/eventType:\s*string/);
     expect(rebuild).not.toContain('eventType: "form_bonus"');
     expect(rebuild).not.toContain('eventType: "form_tier_unlock"');
+    expect(rebuild).toMatch(
+      /eventType: "participant_tier_unlock"[\s\S]*statusPhase: "validated"[\s\S]*xp: tier\.xp/,
+    );
   });
 
   it("keeps deprecated forms, sensitive-zone rewards, and impact quantities outside CURRENT badge surfaces", () => {

@@ -85,3 +85,69 @@ it("includes action balance XP in the validated profile total", async () => {
     { onConflict: "user_id" },
   );
 });
+
+it("counts validated participant tiers in validated XP", async () => {
+  loadUserProgressionStatsMock.mockResolvedValue({
+    totalActions: 0,
+    approvedActions: 0,
+    validatedActions: 0,
+    qualityAverage: 0,
+    validationRatio: 0,
+    diversityTypes: 1,
+    collectiveEvents: 3,
+    totalKg: 0,
+    wasteKnownActions: 0,
+    wasteCoverageRate: 0,
+    totalButts: 0,
+  });
+
+  const profileUpsert = vi.fn(async (row: Record<string, unknown>) => ({
+    data: row,
+    error: null,
+  }));
+  const progressionEventsChain = {
+    select: vi.fn(() => progressionEventsChain),
+    eq: vi.fn(() => progressionEventsChain),
+    limit: vi.fn(async () => ({
+      data: [
+        { status_phase: "pending", xp_awarded: 1 },
+        { status_phase: "validated", xp_awarded: 1 },
+      ],
+      error: null,
+    })),
+  };
+  const progressionProfilesChain = {
+    select: vi.fn(() => progressionProfilesChain),
+    eq: vi.fn(() => progressionProfilesChain),
+    maybeSingle: vi.fn(async () => ({
+      data: { current_level: 1 },
+      error: null,
+    })),
+  };
+  const supabase = {
+    from: vi.fn((table: string) => {
+      if (table === "progression_events") return progressionEventsChain;
+      if (table === "progression_profiles") {
+        return {
+          ...progressionProfilesChain,
+          upsert: profileUpsert,
+        };
+      }
+      if (table === "app_notifications") {
+        return { insert: vi.fn(async () => ({ error: null })) };
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    }),
+  } as unknown as SupabaseClient;
+
+  await refreshProgressionProfile(supabase, "user-1");
+
+  expect(profileUpsert).toHaveBeenCalledWith(
+    expect.objectContaining({
+      xp_total: 2,
+      xp_pending: 1,
+      xp_validated: 1,
+    }),
+    { onConflict: "user_id" },
+  );
+});
