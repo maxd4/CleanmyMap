@@ -1,21 +1,10 @@
 "use client";
 
-import { useMemo, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
-import { FeedbackSection } from "@/components/sections/rubriques/feedback-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import {
-  getChatChannelDefinition,
-  type ChatChannelType,
-} from "@/lib/chat/channels";
-import { getChatTopicPresentationGroup, getChatTopicPresentationGroups } from "@/lib/chat/topic-presentation";
-import { TopicNetworkGraph } from "./topic-network-graph";
-import { ChatComposer } from "./chat-composer";
-import { ChatHeader } from "./chat-header";
-import { ChatActionModeration } from "./chat-action-moderation";
-import { ChatSidebar } from "./chat-sidebar";
-import { DmInbox } from "./dm-inbox";
-import { ChatContextSidebar } from "./chat-context-sidebar";
+import type { ChatChannelType } from "@/lib/chat/channels";
+import { ChatShellLayout } from "./chat-shell.layout";
 import { useChatData } from "./hooks/use-chat-data";
 import { useChatActionDiscussions } from "./hooks/use-chat-action-discussions";
 import { useDmInbox } from "./hooks/use-dm-inbox";
@@ -40,20 +29,24 @@ import {
   type CommunityAnnouncementTemplateKey,
 } from "@/lib/chat/announcements";
 import type { SendChatMessageParams } from "./hooks/use-chat-data";
-import { ChatMessageFeed } from "./ui/chat-message-feed";
 import {
-  CHANNEL_VISUALS,
-  chatComposerModes,
-  getChannelPlaceholder,
-  getChannelTitle,
-  getEmptyStateCopy,
-  type ChatMetaItem,
-} from "./chat-shell.utils";
+  getChatShellMobilePresentation,
+  getChatShellPresentation,
+} from "./chat-shell.presentation";
 import { useChatSearch } from "./hooks/use-chat-search";
-import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import {
   type ChatShellNavigationState,
 } from "./chat-navigation";
+import {
+  applyChatStarterPrompt,
+  getChatShellFeatureFlags,
+  getFeedbackIdForSubmit,
+  respondToActionShareContactRequestAndOpenDm,
+  resolveActiveChannelType,
+  resolveSelectedRecipient,
+  sendChatMessageAndRefreshInbox,
+  shouldOpenPublicThreadOnMobile,
+} from "./chat-shell.behavior";
 
 export type ChatShellProps = {
   initialChannelType?: ChatChannelType;
@@ -94,6 +87,13 @@ function consumeFeedbackIdFromUrl(): void {
   );
 }
 
+function isInitialRecipient(
+  selectedRecipient: ChatUser | null,
+  initialRecipient: ChatUser | null | undefined,
+): boolean {
+  return selectedRecipient?.id === initialRecipient?.id;
+}
+
 export function ChatShell({
   initialChannelType = "community",
   initialArrondissement,
@@ -123,10 +123,13 @@ export function ChatShell({
   const pathname = usePathname();
   const [activeFeedbackId, setActiveFeedbackId] = useState(initialFeedbackId);
   const [isPublicThreadOpen, setIsPublicThreadOpen] = useState(
-    () =>
-      !messagerieMode ||
-      initialChannelType !== "community" ||
-      Boolean(initialTopicId || initialActionId || initialMessageId),
+    () => shouldOpenPublicThreadOnMobile({
+      messagerieMode,
+      initialChannelType,
+      initialTopicId,
+      initialActionId,
+      initialMessageId,
+    }),
   );
 
   const {
@@ -179,30 +182,29 @@ export function ChatShell({
     initialActionId,
   });
 
+  const selectedRecipientId = selectedRecipient?.id ?? null;
+
   const setActiveChannelType = useCallback(
     (nextValue: Parameters<typeof setActiveChannelTypeState>[0]) => {
-      setActiveChannelTypeState((currentValue) => {
-        const resolvedValue =
-          typeof nextValue === "function" ? nextValue(currentValue) : nextValue;
-        if (resolvedValue !== "dm") {
-          setActiveFeedbackId(null);
-        }
-        return resolvedValue;
-      });
+      setActiveChannelTypeState((currentValue) => resolveActiveChannelType({
+        nextValue,
+        currentValue,
+        clearFeedback: () => setActiveFeedbackId(null),
+      }));
     },
     [setActiveChannelTypeState],
   );
 
   const setSelectedRecipient = useCallback(
     (nextValue: Parameters<typeof setSelectedRecipientState>[0]) => {
-      const resolvedValue =
-        typeof nextValue === "function" ? nextValue(selectedRecipient) : nextValue;
-      if (resolvedValue?.id !== initialRecipient?.id) {
-        setActiveFeedbackId(null);
-      }
-      setSelectedRecipientState(nextValue);
+      setSelectedRecipientState((currentValue) => resolveSelectedRecipient({
+        nextValue,
+        currentValue,
+        initialRecipient,
+        clearFeedback: () => setActiveFeedbackId(null),
+      }));
     },
-    [initialRecipient?.id, selectedRecipient, setSelectedRecipientState],
+    [initialRecipient, setSelectedRecipientState],
   );
   const {
     currentRoleLabel,
@@ -222,6 +224,13 @@ export function ChatShell({
     selectedZone,
     initialArrondissement,
   });
+  const featureFlags = getChatShellFeatureFlags({
+    messagerieMode,
+    activeChannelType,
+    isBugReportChannel,
+    isLoaded,
+    isSignedIn,
+  });
   const {
     isSearchOpen,
     searchQuery,
@@ -238,7 +247,7 @@ export function ChatShell({
     initialMessageId,
     activeChannelType,
     activeTopicId,
-    selectedRecipientId: selectedRecipient?.id ?? null,
+    selectedRecipientId,
     setViewMode,
   });
 
@@ -260,7 +269,7 @@ export function ChatShell({
     activeChannelType,
     activeActionId: selectedActionId,
     activeTopicId,
-    selectedRecipientId: selectedRecipient?.id ?? null,
+    selectedRecipientId,
     effectiveZone,
     territoryFocus,
     showMentions,
@@ -268,20 +277,20 @@ export function ChatShell({
     recipientQuery,
     initialMessageId: targetMessageIdForScope,
     currentUserId: userId,
-    canAccessProtectedChat: isLoaded && isSignedIn,
+    canAccessProtectedChat: featureFlags.canAccessProtectedChat,
     supabase,
   });
 
-  const actionDiscussions = useChatActionDiscussions(messagerieMode && isLoaded);
+  const actionDiscussions = useChatActionDiscussions(featureFlags.actionDiscussionsEnabled);
 
   const chatSearch = useChatSearch({
     activeChannelType,
     activeTopicId,
-    selectedRecipientId: selectedRecipient?.id ?? null,
+    selectedRecipientId,
     effectiveZone,
     territoryFocus,
     query: searchQuery,
-    enabled: messagerieMode && !isBugReportChannel && isLoaded && isSignedIn,
+    enabled: featureFlags.chatSearchEnabled,
   });
 
   const {
@@ -291,7 +300,7 @@ export function ChatShell({
     refreshInbox,
     markConversationRead,
   } = useDmInbox({
-    enabled: messagerieMode && activeChannelType === "dm",
+    enabled: featureFlags.dmInboxEnabled,
     currentUserId: userId,
     supabase,
   });
@@ -301,7 +310,7 @@ export function ChatShell({
     isLoading: actionShareContactRequestsLoading,
     respond: respondToActionShareContactRequest,
   } = useActionShareContactRequests({
-    enabled: messagerieMode && activeChannelType === "dm" && isLoaded && isSignedIn,
+    enabled: featureFlags.contactRequestsEnabled,
     currentUserId: userId,
   });
 
@@ -309,27 +318,20 @@ export function ChatShell({
     counts: chatNotificationUnreadCounts,
     markRead: markChatNotificationsRead,
   } = useChatNotificationUnreads({
-    enabled: messagerieMode && isLoaded && isSignedIn,
+    enabled: featureFlags.notificationsEnabled,
     currentUserId: userId,
     supabase,
   });
 
   const sendChatMessageWithInboxRefresh = useCallback(
-    async (params: SendChatMessageParams) => {
-      const sentMessage = await sendChatMessage(params);
-      if (params.body.feedbackId === activeFeedbackId) {
-        setActiveFeedbackId(null);
-        consumeFeedbackIdFromUrl();
-      }
-      if (params.body.channelType === "dm") {
-        try {
-          await refreshInbox();
-        } catch {
-          // API accepted; inbox refresh is best-effort.
-        }
-      }
-      return sentMessage;
-    },
+    (params: SendChatMessageParams) => sendChatMessageAndRefreshInbox({
+      params,
+      sendChatMessage,
+      activeFeedbackId,
+      setActiveFeedbackId,
+      refreshInbox,
+      consumeFeedbackId: consumeFeedbackIdFromUrl,
+    }),
     [activeFeedbackId, refreshInbox, sendChatMessage],
   );
 
@@ -401,6 +403,15 @@ export function ChatShell({
     mutateMessages,
   });
 
+  const feedbackIdForSubmit =
+    getFeedbackIdForSubmit({
+      activeChannelType,
+      selectedRecipient,
+      initialRecipient,
+      activeFeedbackId,
+      isInitialRecipient,
+    });
+
   const { handleSend } = useChatSubmit({
     submitLockRef,
     userId,
@@ -425,104 +436,40 @@ export function ChatShell({
     setIsUploading,
     supabase,
     sendChatMessage: sendChatMessageWithInboxRefresh,
-    feedbackId:
-      activeChannelType === "dm" &&
-      selectedRecipient?.id === initialRecipient?.id
-        ? activeFeedbackId
-        : null,
+    feedbackId: feedbackIdForSubmit,
     setMessage,
     setFile,
     setShowMentions,
     setPollOptions,
   });
 
-  const territoryLabel = useMemo(
-    () =>
-      effectiveZone ||
-      (territoryFocus ? `${territoryFocus}e arrondissement` : null),
-    [effectiveZone, territoryFocus],
-  );
-  const recipientLabel = useMemo(
-    () => selectedRecipient?.display_name ?? selectedRecipient?.handle ?? null,
-    [selectedRecipient?.display_name, selectedRecipient?.handle],
-  );
-  const activeChannelDefinition = useMemo(
-    () => getChatChannelDefinition(activeChannelType),
-    [activeChannelType],
-  );
-  const activeAction = useMemo(
-    () => actionDiscussions.items.find((item) => item.id === selectedActionId) ?? null,
-    [actionDiscussions.items, selectedActionId],
-  );
-  const activeTopic = getChatTopicPresentationGroup(activeChannelType, activeTopicId);
-  const channelTopics = useMemo(
-    () => getChatTopicPresentationGroups(activeChannelType),
-    [activeChannelType],
-  );
-  const discussionGuidance = useMemo(
-    () =>
-      getEmptyStateCopy(
-        activeChannelType,
-        locale,
-        recipientLabel,
-        territoryLabel,
-        activeTopicId,
-      ),
-    [activeChannelType, activeTopicId, locale, recipientLabel, territoryLabel],
-  );
-  const metaItems: ChatMetaItem[] = useMemo(
-    () => [
-      {
-        label: locale === "fr" ? "Canal" : "Channel",
-        value: activeAction ? "Actions" : getChannelTitle(activeChannelType),
-      },
-      ...(activeAction
-        ? [
-            { label: locale === "fr" ? "Date" : "Date", value: activeAction.action_date },
-            { label: locale === "fr" ? "Lieu" : "Location", value: activeAction.location_label },
-            { label: locale === "fr" ? "Organisateur" : "Organizer", value: activeAction.association_name || activeAction.actor_name || "—" },
-            { label: locale === "fr" ? "Participants prévus" : "Planned participants", value: String(activeAction.contract?.metadata.preparationData?.volunteerParticipation?.participantsCount ?? activeAction.volunteers_count) },
-            { label: locale === "fr" ? "Durée estimée" : "Estimated duration", value: formatBusinessDurationMinutes(activeAction.duration_minutes) },
-          ]
-        : []),
-      ...(activeTopic
-        ? [
-            {
-              label: locale === "fr" ? "Salon" : "Topic",
-              value: activeTopic.label,
-            },
-          ]
-        : []),
-      {
-        label: locale === "fr" ? "Audience" : "Audience",
-        value: discussionGuidance.audienceLabel,
-      },
-      {
-        label: locale === "fr" ? "Visibilité" : "Visibility",
-        value: discussionGuidance.visibilityLabel,
-      },
-      {
-        label: locale === "fr" ? "Statut" : "Status",
-        value: isLive ? (locale === "fr" ? "Direct" : "Live") : "Polling",
-      },
-    ],
-    [
-      activeChannelType,
-      activeTopic,
-      discussionGuidance.audienceLabel,
-      discussionGuidance.visibilityLabel,
-      locale,
-      isLive,
-      activeAction,
-    ],
-  );
+  const presentation = getChatShellPresentation({
+    activeChannelType,
+    activeTopicId,
+    selectedActionId,
+    selectedRecipient,
+    effectiveZone,
+    territoryFocus,
+    locale,
+    actionItems: actionDiscussions.items,
+    isLive,
+  });
+  const {
+    activeChannelLabel,
+    activeChannelVisual,
+    channelTopics,
+    discussionGuidance,
+    metaItems,
+    composerPlaceholder,
+  } = presentation;
+  const ActiveChannelIcon = activeChannelVisual.icon;
 
   const { highlightedMessageId, handleLoadPreviousMessages } =
     useChatShellFeedEffects({
       activeChannelType,
       selectedActionId,
       activeTopicId,
-      selectedRecipientId: selectedRecipient?.id ?? null,
+       selectedRecipientId,
       effectiveZone,
       territoryFocus,
       viewMode,
@@ -558,32 +505,19 @@ export function ChatShell({
   });
 
   const handleRespondToActionShareContactRequest = useCallback(
-    async (
+    (
       request: ActionShareContactRequest,
       decision: "accept" | "reject" | "ignore",
-    ) => {
-      await respondToActionShareContactRequest(request.id, decision);
-      if (decision === "accept") {
-        await refreshInbox();
-        handleSelectRecipient(request.sender);
-      }
-    },
+    ) => respondToActionShareContactRequestAndOpenDm({
+      request,
+      decision,
+      respond: respondToActionShareContactRequest,
+      refreshInbox,
+      selectRecipient: handleSelectRecipient,
+    }),
     [handleSelectRecipient, refreshInbox, respondToActionShareContactRequest],
   );
 
-  const activeChannelVisual = useMemo(
-    () => CHANNEL_VISUALS[activeChannelType],
-    [activeChannelType],
-  );
-  const ActiveChannelIcon = activeChannelVisual.icon;
-  const activeChannelLabel = useMemo(
-    () => activeAction ? activeAction.contract?.metadata.preparationData?.actionTitle?.trim() || activeAction.location_label : getChannelTitle(activeChannelType),
-    [activeAction, activeChannelType],
-  );
-  const composerPlaceholder = useMemo(
-    () => activeAction ? "Écrivez un message de coordination pour cette action." : getChannelPlaceholder(activeChannelType),
-    [activeAction, activeChannelType],
-  );
   const {
     sidebarChannels,
     sidebarTopics,
@@ -673,22 +607,29 @@ export function ChatShell({
     messages,
   });
 
-  const isDmSurface = messagerieMode && activeChannelType === "dm";
-  const showDmThreadOnMobile = !isDmSurface || Boolean(selectedRecipient) || isDmThreadOpen;
-  const showPublicThreadOnMobile = !messagerieMode || isDmSurface || isPublicThreadOpen;
-  const showThreadOnMobile = isDmSurface
-    ? showDmThreadOnMobile
-    : showPublicThreadOnMobile;
+  const {
+    isDmSurface,
+    showDmThreadOnMobile,
+    showPublicThreadOnMobile,
+    showThreadOnMobile,
+  } = getChatShellMobilePresentation({
+    messagerieMode,
+    activeChannelType,
+    selectedRecipient,
+    isDmThreadOpen,
+    isPublicThreadOpen,
+  });
 
   const handleStarterPrompt = useCallback(
-    (prompt: string) => {
-      setMessage(prompt);
-      setShowMentions(false);
-      setSendError(null);
-      if (activeChannelType === "dm" && !selectedRecipient) {
-        setIsRecipientPickerOpen(true);
-      }
-    },
+    (prompt: string) => applyChatStarterPrompt({
+      prompt,
+      activeChannelType,
+      selectedRecipient,
+      setMessage,
+      setShowMentions,
+      setSendError,
+      setIsRecipientPickerOpen,
+    }),
     [
       setMessage,
       setShowMentions,
@@ -700,177 +641,129 @@ export function ChatShell({
   );
 
   return (
-    <div className={`flex flex-col ${fullHeight ? "h-full min-h-0" : "h-[750px]"} overflow-hidden relative ${isLight ? "bg-rose-50/30" : "rounded-[3rem] shadow-2xl backdrop-blur-3xl border border-white/10 bg-slate-900/40"}`}>
-      <div className={messagerieMode ? "flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row" : "flex min-h-0 flex-1 flex-row overflow-hidden"}>
-        {isDmSurface ? (
-          <DmInbox
-            conversations={conversations}
-            activePeerId={selectedRecipient?.id ?? null}
-            isLoading={isDmInboxLoading}
-            error={dmInboxError}
-            onSelectConversation={handleSelectDmConversation}
-            onStartConversation={handleStartDmConversation}
-            onRetry={refreshInbox}
-            notificationUnreadCount={chatNotificationUnreadCounts.dm}
-            contactRequests={actionShareContactRequests}
-            contactRequestsLoading={actionShareContactRequestsLoading}
-            contactRequestsError={actionShareContactRequestsError}
-            onRespondToContactRequest={handleRespondToActionShareContactRequest}
-            recipientQuery={recipientQuery}
-            isRecipientPickerOpen={isRecipientPickerOpen}
-            dmSuggestions={dmSuggestions}
-            onRecipientQueryChange={handleRecipientQueryChange}
-            onSelectRecipient={handleSelectRecipient}
-            tone={isLight ? "light" : "dark"}
-            className={!showDmThreadOnMobile ? "flex" : "hidden md:flex"}
-          />
-        ) : (
-          <ChatSidebar
-            channels={sidebarChannels}
-            currentChannelType={activeChannelType}
-            onSelectChannel={handleSelectChannelForPresentation}
-            onSelectTopic={handleSelectTopicForPresentation}
-            topicSectionTitle={sidebarTopicSectionTitle}
-            topicSectionDescription={sidebarTopicSectionDescription}
-            topics={sidebarTopics}
-            tone={isLight ? "light" : "dark"}
-            presentation={messagerieMode ? "messagerie" : "default"}
-            actionItems={actionDiscussions.items}
-            activeActionId={selectedActionId}
-            actionLoading={actionDiscussions.isLoading}
-            actionError={actionDiscussions.error}
-            onSelectAction={handleSelectAction}
-            currentZone={effectiveZone}
-            profileDefaultZone={profileDefaultZone}
-            onSelectZone={setSelectedZone}
-            className={!isDmSurface && !showPublicThreadOnMobile ? "flex" : "hidden md:flex"}
-          />
-        )}
-        <div className={`min-h-0 min-w-0 flex-1 flex-col relative ${messagerieMode && !showThreadOnMobile ? "hidden md:flex" : "flex"} ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>
-          <ChatHeader
-            activeChannelType={activeChannelType}
-            activeChannelLabel={activeChannelLabel}
-            activeChannelDescription={activeAction
-              ? `${activeAction.location_label} · ${activeAction.action_date} · ${activeAction.association_name || activeAction.actor_name || "Organisateur non renseigné"}`
-              : discussionGuidance.cardSummary || activeChannelDefinition.description}
-            activeChannelIcon={ActiveChannelIcon}
-            metaItems={metaItems}
-            viewMode={viewMode}
-            isBugReportChannel={isBugReportChannel}
-            selectedRecipient={selectedRecipient}
-            isEditingHandle={isEditingHandle}
-            newHandle={newHandle}
-            onViewModeChange={handleViewModeChange}
-            onToggleHandleEditor={handleToggleHandleEditor}
-            onHandleChange={handleHandleChange}
-            onConfirmHandle={handleUpdateHandle}
-            tone={isLight ? "light" : "dark"}
-            showControls={!isLight}
-            isLive={isLive}
-            onBackToDmInbox={isDmSurface && showDmThreadOnMobile ? handleBackToDmInbox : undefined}
-            onBackToContextList={messagerieMode && !isDmSurface && showPublicThreadOnMobile ? handleBackToPublicContextList : undefined}
-            showSearch={messagerieMode && !isBugReportChannel && activeChannelType !== "action"}
-            isSearchOpen={isSearchOpen}
-            searchQuery={searchQuery}
-            searchResults={chatSearch.results}
-            searchIsLoading={chatSearch.isLoading}
-            searchError={chatSearch.error}
-            searchHasMore={chatSearch.hasMore}
-            searchIsLoadingMore={chatSearch.isLoadingMore}
-            searchLoadMoreError={chatSearch.loadMoreError}
-            onToggleSearch={handleToggleSearch}
-            onSearchQueryChange={setSearchQuery}
-            onCloseSearch={handleCloseSearch}
-            onSelectSearchResult={handleSelectSearchResult}
-            onLoadMoreSearch={() => void chatSearch.loadMore()}
-          />
-
-          {activeChannelType === "action" && selectedActionId && messagerieMode ? (
-            <ChatActionModeration actionId={selectedActionId} tone={isLight ? "light" : "dark"} />
-          ) : null}
-
-          {isBugReportChannel ? (
-            <div className={`flex-1 overflow-y-auto p-6 custom-scrollbar ${isLight ? "bg-white/40" : ""}`}>
-              <FeedbackSection
-                pagePath={pathname}
-                source="feedback_discussion"
-              />
-            </div>
-          ) : viewMode === "graph" ? (
-            <div className="flex-1 overflow-hidden">
-              <TopicNetworkGraph />
-            </div>
-          ) : (
-            <>
-              <ChatMessageFeed
-                scrollRef={scrollRef}
-                hasMoreMessages={hasMoreMessages}
-                isLoadingPrevious={isLoadingPrevious}
-                loadPreviousError={loadPreviousError}
-                onLoadPreviousMessages={() => void handleLoadPreviousMessages()}
-                targetMessageId={targetMessageId}
-                targetStatus={targetStatus}
-                feedState={feedState}
-                onRetryMessages={() => void mutateMessages()}
-                messages={messages}
-                userId={userId}
-                tone={isLight ? "light" : "dark"}
-                onPollVote={handlePollVote}
-                pollVoteStates={pollVoteStates}
-                highlightedMessageId={highlightedMessageId}
-                emptyState={discussionGuidance}
-                activeChannelType={activeChannelType}
-                selectedRecipientId={selectedRecipient?.id}
-                onStarterPrompt={handleStarterPrompt}
-                isAuthenticated={Boolean(userId)}
-              />
-
-              <ChatComposer
-                activeChannelType={activeChannelType}
-                composerPlaceholder={composerPlaceholder}
-                tone={isLight ? "light" : "dark"}
-                composerMode={composerMode}
-                onComposerModeChange={handleComposerModeChange}
-                announcementTemplate={announcementTemplate}
-                onAnnouncementTemplateChange={handleAnnouncementTemplateChange}
-                relatedEvent={relatedEvent}
-                announcementEventRequested={announcementEventRequested}
-                announcementEventLoading={announcementEventLoading}
-                announcementEventError={announcementEventError}
-                pollOptions={pollOptions}
-                onPollOptionsChange={setPollOptions}
-                showModeTabs={activeChannelType !== "bug_report"}
-                composerModes={
-                  activeChannelType === "community"
-                    ? ["message", "announcement", "poll"]
-                    : activeChannelType === "admin_elu"
-                      ? ["message", "poll"]
-                      : chatComposerModes(activeChannelType)
-                }
-                userId={userId}
-                message={message}
-                onMessageChange={handleTextChange}
-                file={file}
-                onFileChange={setFile}
-                fileInputRef={fileInputRef}
-                isSending={isSending}
-                isUploading={isUploading}
-                sendError={sendError}
-                selectedRecipient={selectedRecipient}
-                showMentions={showMentions}
-                mentionSuggestions={mentionSuggestions}
-                onInsertMention={insertMention}
-                onInsertLink={handleInsertLink}
-                onSubmit={handleSend}
-                canSubmit={canSubmitMessage}
-              />
-            </>
-          )}
-        </div>
-        {!messagerieMode && activeChannelType !== "dm" && activeChannelType !== "bug_report" ? (
-          <ChatContextSidebar tone={isLight ? "light" : "dark"} />
-        ) : null}
-      </div>
-    </div>
+    <ChatShellLayout
+      fullHeight={fullHeight}
+      isLight={isLight}
+      messagerieMode={messagerieMode}
+      isDmSurface={isDmSurface}
+      showDmThreadOnMobile={showDmThreadOnMobile}
+      showPublicThreadOnMobile={showPublicThreadOnMobile}
+      showThreadOnMobile={showThreadOnMobile}
+      dmInboxProps={{
+        conversations,
+        activePeerId: selectedRecipientId,
+        isLoading: isDmInboxLoading,
+        error: dmInboxError,
+        onSelectConversation: handleSelectDmConversation,
+        onStartConversation: handleStartDmConversation,
+        onRetry: refreshInbox,
+        notificationUnreadCount: chatNotificationUnreadCounts.dm,
+        contactRequests: actionShareContactRequests,
+        contactRequestsLoading: actionShareContactRequestsLoading,
+        contactRequestsError: actionShareContactRequestsError,
+        onRespondToContactRequest: handleRespondToActionShareContactRequest,
+        recipientQuery,
+        isRecipientPickerOpen,
+        dmSuggestions,
+        onRecipientQueryChange: handleRecipientQueryChange,
+        onSelectRecipient: handleSelectRecipient,
+      }}
+      sidebarProps={{
+        channels: sidebarChannels,
+        currentChannelType: activeChannelType,
+        onSelectChannel: handleSelectChannelForPresentation,
+        onSelectTopic: handleSelectTopicForPresentation,
+        topicSectionTitle: sidebarTopicSectionTitle,
+        topicSectionDescription: sidebarTopicSectionDescription,
+        topics: sidebarTopics,
+        actionItems: actionDiscussions.items,
+        activeActionId: selectedActionId,
+        actionLoading: actionDiscussions.isLoading,
+        actionError: actionDiscussions.error,
+        onSelectAction: handleSelectAction,
+        currentZone: effectiveZone,
+        profileDefaultZone,
+        onSelectZone: setSelectedZone,
+      }}
+      threadProps={{
+        pagePath: pathname,
+        messagerieMode,
+        activeChannelType,
+        activeChannelLabel,
+        activeChannelDescription: presentation.activeChannelDescription,
+        activeChannelIcon: ActiveChannelIcon,
+        metaItems,
+        viewMode,
+        isBugReportChannel,
+        selectedRecipient,
+        isEditingHandle,
+        newHandle,
+        onViewModeChange: handleViewModeChange,
+        onToggleHandleEditor: handleToggleHandleEditor,
+        onHandleChange: handleHandleChange,
+        onConfirmHandle: handleUpdateHandle,
+        isLive,
+        onBackToDmInbox: handleBackToDmInbox,
+        onBackToContextList: handleBackToPublicContextList,
+        showSearch: featureFlags.searchVisible,
+        isSearchOpen,
+        searchQuery,
+        searchResults: chatSearch.results,
+        searchIsLoading: chatSearch.isLoading,
+        searchError: chatSearch.error,
+        searchHasMore: chatSearch.hasMore,
+        searchIsLoadingMore: chatSearch.isLoadingMore,
+        searchLoadMoreError: chatSearch.loadMoreError,
+        onToggleSearch: handleToggleSearch,
+        onSearchQueryChange: setSearchQuery,
+        onCloseSearch: handleCloseSearch,
+        onSelectSearchResult: handleSelectSearchResult,
+        onLoadMoreSearch: () => void chatSearch.loadMore(),
+        selectedActionId,
+        messages,
+        scrollRef,
+        hasMoreMessages,
+        isLoadingPrevious,
+        loadPreviousError,
+        onLoadPreviousMessages: () => void handleLoadPreviousMessages(),
+        targetMessageId,
+        targetStatus,
+        feedState,
+        onRetryMessages: () => void mutateMessages(),
+        userId,
+        onPollVote: handlePollVote,
+        pollVoteStates,
+        highlightedMessageId,
+        emptyState: discussionGuidance,
+        selectedRecipientId,
+        onStarterPrompt: handleStarterPrompt,
+        isAuthenticated: Boolean(userId),
+        composerPlaceholder,
+        composerMode,
+        onComposerModeChange: handleComposerModeChange,
+        announcementTemplate,
+        onAnnouncementTemplateChange: handleAnnouncementTemplateChange,
+        relatedEvent,
+        announcementEventRequested,
+        announcementEventLoading,
+        announcementEventError,
+        pollOptions,
+        onPollOptionsChange: setPollOptions,
+        userMessage: message,
+        onMessageChange: handleTextChange,
+        file,
+        onFileChange: setFile,
+        fileInputRef,
+        isSending,
+        isUploading,
+        sendError,
+        showMentions,
+        mentionSuggestions,
+        onInsertMention: insertMention,
+        onInsertLink: handleInsertLink,
+        onSubmit: handleSend,
+        canSubmit: canSubmitMessage,
+      }}
+    />
   );
 }

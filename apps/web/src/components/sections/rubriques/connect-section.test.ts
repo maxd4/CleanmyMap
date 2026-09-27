@@ -13,6 +13,10 @@ const chatShellSource = readFileSync(
   new URL("../../chat/chat-shell.tsx", import.meta.url),
   "utf8",
 );
+const chatShellLayoutSource = readFileSync(
+  new URL("../../chat/chat-shell.layout.tsx", import.meta.url),
+  "utf8",
+);
 const chatSidebarSource = readFileSync(
   new URL("../../chat/chat-sidebar.tsx", import.meta.url),
   "utf8",
@@ -141,8 +145,8 @@ describe("Messagerie navigation shell", () => {
   it("uses a mobile context-to-thread drill-down with keyboard-capable controls", () => {
     expect(chatShellSource).toContain("isPublicThreadOpen");
     expect(chatShellSource).toContain("showPublicThreadOnMobile");
-    expect(chatShellSource).toContain('onBackToContextList=');
-    expect(chatShellSource).toContain('"hidden md:flex"');
+    expect(chatShellLayoutSource).toContain('onBackToContextList=');
+    expect(chatShellLayoutSource).toContain('"hidden md:flex"');
     expect(channelButtonSource).toContain("<button");
     expect(channelButtonSource).toContain("focus-visible:ring-2");
     expect(chatActionSurfaceSource).toContain("focus-visible:ring-2");
