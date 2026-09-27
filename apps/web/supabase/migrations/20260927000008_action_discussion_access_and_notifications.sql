@@ -1,6 +1,39 @@
 -- Complete the action discussion contract for future and completed actions.
--- Access is granted by the action owner/organizers, administrators, or a
+-- Access is granted by the action owner/organizers, ACTIVE_ROLE administrators, or a
 -- confirmed participation in the store for the current action phase.
+
+-- Clerk GRANTED_ROLE remains in role_label. ACTIVE_ROLE is projected separately
+-- by the canonical Clerk -> Supabase sync because the Clerk JWT forwarded to
+-- RLS does not expose a configured active-role claim.
+alter table public.profiles
+  add column if not exists active_role_label text;
+
+do $$
+begin
+  alter table public.profiles
+    add constraint profiles_active_role_label_check
+    check (active_role_label is null or active_role_label in (
+      'benevole', 'coordinateur', 'scientifique', 'entreprise', 'elu', 'admin', 'max'
+    ));
+exception
+  when duplicate_object then null;
+end $$;
+
+create or replace function public.current_profile_active_role()
+returns text
+language sql
+stable
+security invoker
+set search_path = pg_catalog
+as $$
+  select active_role_label
+  from public.profiles
+  where id = coalesce(auth.jwt() ->> 'sub', '')
+  limit 1
+$$;
+
+revoke all on function public.current_profile_active_role() from public;
+grant execute on function public.current_profile_active_role() to authenticated, service_role;
 
 create or replace function private.can_view_action_conversation(
   p_conversation_id uuid
@@ -34,12 +67,7 @@ as $$
           and e.active
       )
       and (
-        exists (
-          select 1
-          from public.profiles p
-          where p.id = (select auth.jwt()) ->> 'sub'
-            and p.role_label in ('admin', 'max')
-        )
+        public.current_profile_active_role() in ('admin', 'max')
         or a.created_by_clerk_id = (select auth.jwt()) ->> 'sub'
         or exists (
           select 1

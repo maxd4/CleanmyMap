@@ -14,6 +14,7 @@ import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit
 import { getCommunityBugReportById } from "@/lib/community/bug-reports-store";
 import { isPublicActionReferenceAvailable, resolveActionTerritoryDestination } from "@/lib/chat/action-sharing";
 import { createActionShareRequest } from "@/lib/chat/action-share-requests";
+import { resolveActionDiscussionAccess } from "@/lib/chat/action-conversations";
 import {
   messageSelect,
   buildZoneContext,
@@ -227,9 +228,7 @@ export async function POST(request: Request) {
 
     if (parsed.data.channelType === "action" && parsed.data.actionId && typeof serviceSupabase.from === "function") {
       const actionId = parsed.data.actionId;
-      const { resolveActionDiscussionAccess } =
-        await import("@/lib/chat/action-conversations");
-      const access = await resolveActionDiscussionAccess(serviceSupabase, actionId, userId);
+      const access = await resolveActionDiscussionAccess(serviceSupabase, actionId, userId, identity.activeRole);
       if (access.state === "excluded") {
         return NextResponse.json({ error: "Vous êtes exclu de cette discussion." }, { status: 403 });
       }

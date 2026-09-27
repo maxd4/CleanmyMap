@@ -679,7 +679,10 @@ seuls parcours applicatifs sont :
 
 Chaque acceptation ou attribution directe met à jour Clerk, synchronise la
 projection `profiles.role_label` de Supabase et écrit un audit. La projection
-Supabase, `activeRole`, `activeProfile`, `CREATOR_INBOX_EMAIL` et
+`profiles.role_label` porte le `GRANTED_ROLE`; la projection serveur
+`profiles.active_role_label`, alimentée par le même sync Clerk, porte
+`ACTIVE_ROLE` pour les décisions RLS et ne peut pas être écrite par un client.
+`activeRole`, `activeProfile`, `CREATOR_INBOX_EMAIL` et
 `CLERK_ADMIN_USER_IDS` ne sont jamais une preuve autonome d'attribution.
 
 ## 8. Permissions sur les données

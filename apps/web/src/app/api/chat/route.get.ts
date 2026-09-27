@@ -210,11 +210,13 @@ async function resolveActionConversationId({
   requestedActionId,
   supabase,
   userId,
+  activeRole,
 }: {
   channelType: string;
   requestedActionId: string | null;
   supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>;
   userId: string;
+  activeRole: NonNullable<Awaited<ReturnType<typeof getCurrentUserIdentity>>>["activeRole"];
 }): Promise<{ id: string | null; error: Response | null }> {
   if (channelType !== "action" || !requestedActionId) {
     return { id: null, error: null };
@@ -223,7 +225,7 @@ async function resolveActionConversationId({
   const { resolveActionDiscussionAccess } =
     await import("@/lib/chat/action-conversations");
   if (typeof serviceSupabase.from === "function") {
-    const access = await resolveActionDiscussionAccess(serviceSupabase, requestedActionId, userId);
+    const access = await resolveActionDiscussionAccess(serviceSupabase, requestedActionId, userId, activeRole);
     if (access.state === "excluded") {
       return { id: null, error: NextResponse.json({ error: "Vous êtes exclu de cette discussion." }, { status: 403 }) };
     }
@@ -385,6 +387,7 @@ export async function GET(request: Request) {
       requestedActionId,
       supabase,
       userId,
+      activeRole: identity.activeRole,
     });
     if (actionConversation.error) return actionConversation.error;
 

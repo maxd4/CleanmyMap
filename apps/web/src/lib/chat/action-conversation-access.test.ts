@@ -39,7 +39,8 @@ const publicFutureAction = {
 
 function buildSupabaseMock(options: {
   exclusionActive?: boolean;
-  roleLabel?: string | null;
+  grantedRole?: string | null;
+  activeRole?: ActiveRole | null;
   isOrganizer?: boolean;
   registrationStatus?: "pending" | "confirmed" | "cancelled" | null;
   participationStatus?: "pending" | "confirmed" | "cancelled" | null;
@@ -47,7 +48,7 @@ function buildSupabaseMock(options: {
   const resultByTable: Record<string, unknown> = {
     action_conversations: { id: "conversation-1" },
     action_conversation_exclusions: options.exclusionActive ? { active: true } : null,
-    profiles: options.roleLabel ? { role_label: options.roleLabel } : null,
+    profiles: options.grantedRole ? { role_label: options.grantedRole } : null,
     action_organizers: options.isOrganizer ? { organizer_clerk_id: "user-1" } : null,
     action_registrations: options.registrationStatus ? { registration_status: options.registrationStatus } : null,
     action_participants: options.participationStatus ? { participation_status: options.participationStatus } : null,
@@ -118,26 +119,44 @@ describe("action discussion access contract", () => {
   });
 
   it.each([
-    ["future confirmed registration", publicFutureAction, { registrationStatus: "confirmed" }, true],
-    ["future pending registration", publicFutureAction, { registrationStatus: "pending" }, false],
-    ["future organizer", publicFutureAction, { isOrganizer: true }, true],
-    ["future admin", publicFutureAction, { roleLabel: "admin" }, true],
+    ["owner", { ...publicFutureAction, created_by_clerk_id: "user-1" }, { activeRole: "benevole" }, true],
+    ["future confirmed registration", publicFutureAction, { activeRole: "benevole", registrationStatus: "confirmed" }, true],
+    ["future pending registration", publicFutureAction, { activeRole: "benevole", registrationStatus: "pending" }, false],
+    ["future cancelled registration", publicFutureAction, { activeRole: "benevole", registrationStatus: "cancelled" }, false],
+    ["future organizer", publicFutureAction, { activeRole: "benevole", isOrganizer: true }, true],
+    ["granted admin + active benevole", publicFutureAction, { grantedRole: "admin", activeRole: "benevole" }, false],
+    ["granted max + active scientifique", publicFutureAction, { grantedRole: "max", activeRole: "scientifique" }, false],
+    ["granted elu + active admin", publicFutureAction, { grantedRole: "elu", activeRole: "admin" }, true],
+    ["active admin", publicFutureAction, { activeRole: "admin" }, true],
+    ["active max", publicFutureAction, { activeRole: "max" }, true],
     [
       "completed confirmed post-action participant",
       { ...publicFutureAction, action_phase: "post_action_complete" as const, status: "approved" as const },
-      { participationStatus: "confirmed" },
+      { activeRole: "benevole", participationStatus: "confirmed" },
       true,
     ],
     [
       "completed pending post-action claim",
       { ...publicFutureAction, action_phase: "post_action_complete" as const, status: "approved" as const },
-      { participationStatus: "pending" },
+      { activeRole: "benevole", participationStatus: "pending" },
+      false,
+    ],
+    [
+      "completed cancelled post-action claim",
+      { ...publicFutureAction, action_phase: "post_action_complete" as const, status: "approved" as const },
+      { activeRole: "benevole", participationStatus: "cancelled" },
       false,
     ],
   ])("resolves the current participation authority: %s", async (_label, action, options, expectedAllowed) => {
     loadActionByIdMock.mockResolvedValue(action);
-    const supabase = buildSupabaseMock(options as Parameters<typeof buildSupabaseMock>[0]);
-    const result = await resolveActionDiscussionAccess(supabase as never, "action-1", "user-1");
+    const membershipOptions = (options ?? {}) as NonNullable<Parameters<typeof buildSupabaseMock>[0]>;
+    const supabase = buildSupabaseMock(membershipOptions);
+    const result = await resolveActionDiscussionAccess(
+      supabase as never,
+      "action-1",
+      "user-1",
+      membershipOptions.activeRole,
+    );
 
     expect(result).toEqual(expectedAllowed
       ? { state: "allowed", conversationId: "conversation-1" }
@@ -159,11 +178,11 @@ describe("action discussion access contract", () => {
 
   it("refuses an active exclusion and restores access after reintroduction", async () => {
     loadActionByIdMock.mockResolvedValue(publicFutureAction);
-    expect(await resolveActionDiscussionAccess(buildSupabaseMock({ exclusionActive: true }) as never, "action-1", "user-1")).toEqual({
+    expect(await resolveActionDiscussionAccess(buildSupabaseMock({ exclusionActive: true }) as never, "action-1", "user-1", "benevole")).toEqual({
       state: "excluded",
       conversationId: "conversation-1",
     });
-    expect(await resolveActionDiscussionAccess(buildSupabaseMock({ registrationStatus: "confirmed" }) as never, "action-1", "user-1")).toEqual({
+    expect(await resolveActionDiscussionAccess(buildSupabaseMock({ activeRole: "benevole", registrationStatus: "confirmed" }) as never, "action-1", "user-1", "benevole")).toEqual({
       state: "allowed",
       conversationId: "conversation-1",
     });
@@ -171,7 +190,7 @@ describe("action discussion access contract", () => {
 
   it("refuses an explicitly excluded authenticated user even when discussion is available", async () => {
     loadActionByIdMock.mockResolvedValue(publicFutureAction);
-    expect(await resolveActionDiscussionAccess(buildSupabaseMock({ exclusionActive: true }) as never, "action-1", "authenticated-user")).toEqual({
+    expect(await resolveActionDiscussionAccess(buildSupabaseMock({ exclusionActive: true }) as never, "action-1", "authenticated-user", "benevole")).toEqual({
       state: "excluded",
       conversationId: "conversation-1",
     });

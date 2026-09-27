@@ -14,7 +14,10 @@ describe("current action discussion access and notification contract", () => {
     expect(migration).toContain("ar.registration_status = 'confirmed'");
     expect(migration).toContain("ap.participation_status = 'confirmed'");
     expect(migration).toContain("create or replace function public.get_action_notification_audience");
-    expect(migration).toContain("p.role_label in ('admin', 'max')");
+    expect(migration).toContain("current_profile_active_role() in ('admin', 'max')");
+    expect(migration).not.toContain("p.role_label in ('admin', 'max')");
+    expect(migration).toContain("active_role_label text");
+    expect(migration).toContain("profiles_active_role_label_check");
     expect(migration).toContain("private.can_view_action_conversation(p_conversation_id)");
     expect(migration).toContain("a.status = 'cancelled'");
   });
@@ -26,6 +29,18 @@ describe("current action discussion access and notification contract", () => {
     expect(migration).toContain("'commentId'");
     expect(migration).toContain("'actionPhase'");
     expect(migration).toContain("n.type in ('chat', 'action_discussion')");
+  });
+
+  it("keeps action notification audience relational instead of role-based", () => {
+    const audience = migration.slice(
+      migration.indexOf("create or replace function public.get_action_notification_audience("),
+      migration.indexOf("revoke all on function public.get_action_notification_audience(uuid)"),
+    );
+
+    expect(audience).toContain("action_organizers");
+    expect(audience).toContain("action_registrations");
+    expect(audience).toContain("action_participants");
+    expect(audience).not.toMatch(/role_label|active_role_label|admin|max/);
   });
 
   it("keeps notification fan-out idempotent and marks action notifications read", () => {

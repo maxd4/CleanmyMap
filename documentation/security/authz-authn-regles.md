@@ -609,7 +609,7 @@ distinct, sans modifier le flux de partage ni son first-contact.
 
 L'accès à une discussion d'action exige une action publiée et visible, une
 session authentifiée et l'un des liens suivants : créateur, organisateur,
-administrateur `admin`/`max`, inscription future `confirmed` dans
+`ACTIVE_ROLE=admin|max`, inscription future `confirmed` dans
 `action_registrations`, ou participation finale `confirmed` dans
 `action_participants` après `post_action_complete`. Une demande `pending`, un
 claim post-action en attente ou une participation annulée ne donne pas accès
@@ -635,8 +635,8 @@ peut jamais accorder un droit.
 
 Le fan-out des messages d'action suit le cycle de vie :
 
-- avant l'action : créateur, comptes organisateurs, admins et inscriptions
-  futures `confirmed` encore actives ;
+- avant l'action : créateur, comptes organisateurs et inscriptions futures
+  `confirmed` encore actives ;
 - après `post_action_complete` : créateur, comptes organisateurs et seules les
   participations finales `action_participants` `confirmed`.
 
