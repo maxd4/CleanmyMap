@@ -19,8 +19,8 @@ import { getInfiniteBadgeTotals } from "@/lib/gamification/infinite-badges-serve
 import { InfiniteBadgesPanel } from "@/components/gamification/infinite-badges/InfiniteBadgesPanel";
 import { computeMonthlyRegularitySummary } from "@/lib/gamification/monthly-regularity";
 import { createFallbackSensitiveZoneApaisementSummary } from "@/lib/gamification/sensitive-zone-badge";
-import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
-import { loadCachedReferralLineageView } from "@/lib/gamification/referral-lineage";
+import { fetchCachedReferralSummary } from "@/lib/gamification/referrals/referrals-cache";
+import { loadCachedReferralLineageView } from "@/lib/gamification/referrals/referral-lineage";
 import { ReferralProfileTabs } from "@/components/gamification/referral-profile-tabs";
 import { ProfileGamificationSummary } from "@/components/gamification/profile-gamification-summary";
 import { MilestonesPanel } from "@/components/gamification/milestones-panel";

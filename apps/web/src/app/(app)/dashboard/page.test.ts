@@ -129,7 +129,7 @@ vi.mock("@/lib/pilotage/overview", () => ({
   loadPilotageOverview: mocks.loadPilotageOverview,
 }));
 
-vi.mock("@/lib/gamification/referrals-cache", () => ({
+vi.mock("@/lib/gamification/referrals/referrals-cache", () => ({
   fetchCachedReferralSummary: mocks.fetchCachedReferralSummary,
 }));
 

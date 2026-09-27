@@ -1,4 +1,4 @@
-import { buildReferralInviteUrl } from "@/lib/gamification/referrals";
+import { buildReferralInviteUrl } from "@/lib/gamification/referrals/referrals";
 import { escapeCsvCell } from "@/lib/reports/csv";
 
 export type ReferralLineageProfileRow = {

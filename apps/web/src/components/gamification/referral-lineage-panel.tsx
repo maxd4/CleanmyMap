@@ -5,8 +5,8 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import type {
   ReferralLineageNode,
   ReferralLineageView,
-} from "@/lib/gamification/referral-lineage";
-import { formatReferralLevel } from "@/lib/gamification/referral-lineage";
+} from "@/lib/gamification/referrals/referral-lineage";
+import { formatReferralLevel } from "@/lib/gamification/referrals/referral-lineage";
 
 type ReferralLineagePanelProps = {
   title?: string;

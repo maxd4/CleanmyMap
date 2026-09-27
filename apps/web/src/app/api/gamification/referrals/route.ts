@@ -5,8 +5,8 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   ensureReferralInviteForUser,
-} from "@/lib/gamification/referrals";
-import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
+} from "@/lib/gamification/referrals/referrals";
+import { fetchCachedReferralSummary } from "@/lib/gamification/referrals/referrals-cache";
 
 export const runtime = "nodejs";
 

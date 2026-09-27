@@ -4498,7 +4498,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/gamification/referral-lineage.ts",
+      "file": "apps/web/src/lib/gamification/referrals/referral-lineage.ts",
       "name": "buildReferralAncestorChain",
       "namespace": null,
       "kind": null,
@@ -4508,7 +4508,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/gamification/referral-lineage.ts",
+      "file": "apps/web/src/lib/gamification/referrals/referral-lineage.ts",
       "name": "buildReferralLineageGraph",
       "namespace": null,
       "kind": null,
@@ -11568,7 +11568,7 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/gamification/referral-lineage.ts",
+      "file": "apps/web/src/lib/gamification/referrals/referral-lineage.ts",
       "name": "ReferralLineageGraph",
       "namespace": null,
       "kind": null,

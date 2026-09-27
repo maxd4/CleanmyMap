@@ -81,7 +81,7 @@ Fichiers concernés:
 - [`apps/web/src/lib/auth/sync.ts`](../../../apps/web/src/lib/auth/sync.ts)
 - [`apps/web/src/lib/admin/role-management.ts`](../../../apps/web/src/lib/admin/role-management.ts)
 - [`apps/web/src/lib/authz.ts`](../../../apps/web/src/lib/authz.ts)
-- [`apps/web/src/lib/gamification/referrals.ts`](../../../apps/web/src/lib/gamification/referrals.ts)
+- [`apps/web/src/lib/gamification/referrals/referrals.ts`](../../../apps/web/src/lib/gamification/referrals/referrals.ts)
 - [`apps/web/src/app/api/chat/users/route.ts`](../../../apps/web/src/app/api/chat/users/route.ts)
 - [`apps/web/src/app/api/users/profile/display-name-mode/route.ts`](../../../apps/web/src/app/api/users/profile/display-name-mode/route.ts)
 

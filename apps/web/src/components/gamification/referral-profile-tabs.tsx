@@ -5,8 +5,8 @@ import { GitBranch, Medal } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { ReferralInviteBadge } from "@/components/gamification/referral-invite-badge";
 import { ReferralLineagePanel } from "@/components/gamification/referral-lineage-panel";
-import type { ReferralSummary } from "@/lib/gamification/referrals";
-import type { ReferralLineageView } from "@/lib/gamification/referral-lineage";
+import type { ReferralSummary } from "@/lib/gamification/referrals/referrals";
+import type { ReferralLineageView } from "@/lib/gamification/referrals/referral-lineage";
 
 type ReferralProfileTabsProps = {
   summary: ReferralSummary;

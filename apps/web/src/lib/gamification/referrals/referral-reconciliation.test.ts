@@ -9,8 +9,8 @@ import {
 } from "./__tests__/referral-test-helpers";
 
 const { insertProgressionEvent: insertProgressionEventMock, loadActionRowsForUser: loadActionRowsForUserMock, loadCurrentValidatedActionIdsForUser: loadCurrentValidatedActionIdsForUserMock, refreshProgressionProfile: refreshProgressionProfileMock } = referralProgressionMocks;
-vi.mock("./progression-data", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionDataModule());
-vi.mock("./progression-tracking", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionTrackingModule());
+vi.mock("../progression-data", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionDataModule());
+vi.mock("../progression-tracking", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionTrackingModule());
 vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }));
 
 type Profile = {

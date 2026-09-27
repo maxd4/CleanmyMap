@@ -6,7 +6,7 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { claimReferralInviteForUser } from "@/lib/gamification/referrals";
+import { claimReferralInviteForUser } from "@/lib/gamification/referrals/referrals";
 
 export const metadata: Metadata = {
   title: "Configuration initiale",

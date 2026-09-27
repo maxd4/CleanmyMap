@@ -16,8 +16,8 @@ describe("ISR cache contract", () => {
       "src/app/api/gamification/analytics/points/route.ts",
       "src/app/api/users/profile/display-name-mode/route.ts",
       "src/lib/chat/user-search.ts",
-      "src/lib/gamification/referral-lineage.ts",
-      "src/lib/gamification/referrals-cache.ts",
+      "src/lib/gamification/referrals/referral-lineage.ts",
+      "src/lib/gamification/referrals/referrals-cache.ts",
     ];
 
     for (const relativePath of highCardinalityRoutes) {

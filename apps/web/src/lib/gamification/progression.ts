@@ -52,7 +52,7 @@ export {
   claimReferralInviteForUser,
   ensureReferralInviteForUser,
   loadReferralSummary,
-} from "./referrals";
+} from "./referrals/referrals";
 
 export {
   buildPostActionRetentionLoop,

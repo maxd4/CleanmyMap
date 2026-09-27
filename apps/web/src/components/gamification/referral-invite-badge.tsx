@@ -10,7 +10,7 @@ import {
 import { Copy, QrCode, Share2, Users } from "lucide-react";
 import { QRCodeDialog } from "@/components/ui/qrcode-dialog";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { ReferralSummary } from "@/lib/gamification/referrals";
+import type { ReferralSummary } from "@/lib/gamification/referrals/referrals";
 
 type ReferralInviteBadgeProps = {
   summary: ReferralSummary;

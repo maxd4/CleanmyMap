@@ -4,8 +4,8 @@ import {
   insertProgressionEvent,
   loadActionRowsForUser,
   loadCurrentValidatedActionIdsForUser,
-} from "./progression-data";
-import type { ProgressionEventType } from "./progression-types";
+} from "../progression-data";
+import type { ProgressionEventType } from "../progression-types";
 
 export type ReferralContributionProof = {
   sourceTable: "actions";
@@ -118,7 +118,7 @@ async function refreshInviterProgressionProfile(
   supabase: SupabaseClient,
   inviterUserId: string,
 ): Promise<void> {
-  const { refreshProgressionProfile } = await import("./progression-tracking");
+  const { refreshProgressionProfile } = await import("../progression-tracking");
   await refreshProgressionProfile(supabase, inviterUserId);
 }
 
