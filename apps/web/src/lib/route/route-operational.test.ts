@@ -122,6 +122,23 @@ describe("operational route contract", () => {
     expect(normalized).not.toHaveProperty("actualRoute");
   });
 
+  it("uses the server-managed active route for normalized reads", () => {
+    const storedRoute = createOperationalRouteFromRecommendation(recommendation);
+    const activeRoute = updateOperationalRouteZone(storedRoute, "midpoint", {
+      label: "Itinéraire actif",
+    });
+    const normalized = normalizeActionPreparationData({
+      operationalRoute: storedRoute,
+      routeVersioning: {
+        schemaVersion: "action-route-versioning-v1",
+        active: { operationalRoute: activeRoute },
+        history: [],
+      },
+    });
+
+    expect(normalized.operationalRoute).toEqual(activeRoute);
+  });
+
   it("edits zones and deletes loops while preserving plannerGroupCount", () => {
     const operationalRoute = createOperationalRouteFromRecommendation(recommendation);
     const edited = updateOperationalRouteZone(operationalRoute, "midpoint", {

@@ -36,6 +36,7 @@ import type { AdministrativeRequirements } from "./administrative-requirements";
 import type { ActionFormalitiesFacts } from "./formalities-qualification";
 import type { ActionFormalitiesWorkflowState } from "./formalities-workflow";
 import type { RouteGeometryMode, RouteGeometryProvider } from "@/lib/route/route-contract";
+import type { ActionRouteVersioning } from "@/lib/route/route-active-version";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
@@ -112,6 +113,8 @@ export type ActionPreparationData = {
   routeCalibrationContext?: RouteCalibrationContext;
   /** Mutable operational copy planned from the planner, kept separate from the snapshot. */
   operationalRoute?: OperationalRoute;
+  /** Server-managed active route version and applied-version history. */
+  routeVersioning?: ActionRouteVersioning;
   /** @deprecated Read compatibility only; normalize to operationalRoute. */
   actualRoute?: LegacyOperationalRoute;
   /** User target only; never treated as the measured provider distance. */

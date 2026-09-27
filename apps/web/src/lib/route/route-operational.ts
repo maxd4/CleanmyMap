@@ -279,9 +279,11 @@ export function normalizeOperationalRoute(value: unknown): OperationalRoute | nu
 export function normalizeActionPreparationData<T extends {
   operationalRoute?: OperationalRoute;
   actualRoute?: unknown;
+  routeVersioning?: { active?: { operationalRoute?: unknown } };
 }>(data: T): Omit<T, "actualRoute" | "operationalRoute"> & { operationalRoute?: OperationalRoute } {
   const { actualRoute, operationalRoute, ...rest } = data;
-  const normalized = operationalRoute ?? normalizeOperationalRoute(actualRoute);
+  const activeRoute = normalizeOperationalRoute(data.routeVersioning?.active?.operationalRoute);
+  const normalized = activeRoute ?? operationalRoute ?? normalizeOperationalRoute(actualRoute);
   return {
     ...rest,
     ...(normalized ? { operationalRoute: normalized } : {}),

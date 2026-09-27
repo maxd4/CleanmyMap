@@ -46,6 +46,7 @@ export type RouteOptions = {
   priorityVsTravel: number;
   travelBudgetMinutes: number;
   maxStops: number;
+  riskFocus?: "all" | "waste" | "cigaretteButts";
   volunteers: number;
   groupCount: number;
   pickupPreference: RoutePickupPreference;

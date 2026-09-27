@@ -187,6 +187,27 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
     });
   });
 
+  it("preserves the server-managed active route version during an ordinary PATCH", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const routeVersioning = {
+      schemaVersion: "action-route-versioning-v1",
+      active: { versionId: "route-v1-current" },
+      history: [],
+    };
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({ routeVersioning } as never),
+      parsedBody: ({ preparationData: { actionTitle: "Après" } } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject({
+      actionTitle: "Après",
+      routeVersioning,
+    });
+  });
+
   it("does not retain an in-progress pre-action while requirements are pending", async () => {
     resolveActionDepartmentForPersistenceMock.mockResolvedValue({
       departmentCode: null,
