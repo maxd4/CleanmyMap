@@ -362,7 +362,6 @@ function formatRows({
     ...indexEntries.map((entry) => entry.route),
     ...redirects.map((entry) => entry.source),
   ]);
-  const knownPatterns = new Set([...runtimeRoutes.keys(), ...handlerRoutes, ...registryEntries.map((entry) => entry.route), ...redirects.map((entry) => entry.source)]);
   const redirectByTarget = new Map();
   for (const redirect of redirects) {
     if (!redirectByTarget.has(redirect.target)) redirectByTarget.set(redirect.target, []);

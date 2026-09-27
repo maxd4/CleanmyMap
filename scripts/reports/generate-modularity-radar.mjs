@@ -201,10 +201,6 @@ export function parseHumanDecisions(humanBlock) {
   });
 }
 
-function formatBytes(bytes) {
-  return `${(bytes / 1024).toFixed(1)} KiB`;
-}
-
 function formatPolicy() {
   return Object.entries(FILE_KIND_POLICY).map(([kind, policy]) => {
     if (policy.review === null) return `| ${kind} | informatif | informatif | provenance générée + régénérabilité obligatoires |`;
