@@ -32,7 +32,7 @@ export type MonthlyRegularitySummary = {
   monthlyAwards: MonthlyRegularityMonthAward[];
 };
 
-const MONTHLY_REGULARITY_GEM_CONFIG = {
+export const MONTHLY_REGULARITY_GEM_CONFIG = {
   idPrefix: "monthly-regularity",
   iconVariant: "calendar-days",
   tooltip: (definition: GemGradeDefinition) =>

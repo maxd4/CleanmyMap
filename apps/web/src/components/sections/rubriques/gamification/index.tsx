@@ -19,6 +19,7 @@ import {
 } from "./gamification-panels";
 import type { MeResponse } from "./gamification-types";
 import { swrRecentViewOptions } from "@/lib/swr-config";
+import { GamificationCatalogPanel } from "./gamification-catalog-panel";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { method: "GET", cache: "no-store" });
@@ -91,6 +92,13 @@ export function GamificationSection() {
               />
               <CelebrationsPanel locale={locale} />
             </div>
+
+            <GamificationCatalogPanel
+              catalog={progression?.catalog}
+              loading={meLoading}
+              error={meError}
+              locale={locale}
+            />
 
             <QuizProgressionCard locale={locale} />
 

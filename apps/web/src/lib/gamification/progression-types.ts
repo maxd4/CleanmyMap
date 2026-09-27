@@ -13,7 +13,7 @@ export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
 export const CURRENT_GAMIFICATION_RULES_VERSION = "current-2026-09" as const;
 
-type GamificationCategory =
+export type GamificationCategory =
   | "XP_PROGRESSION"
   | "XP_MILESTONE"
   | "BADGE_ONLY"
@@ -24,7 +24,7 @@ export type GamificationVisibility =
   | "authorized_moderation"
   | "not_exposed";
 
-type GamificationXpPolicy =
+export type GamificationXpPolicy =
   | {
       kind: "progression_paliers";
       rule: "common_current_scale";
@@ -219,6 +219,7 @@ export type UserProgressionResponse = {
   };
   badges: string[];
   badgeCatalog: readonly GamificationBadgeDefinition[];
+  catalog: import("./gamification-catalog").GamificationCatalogItem[];
   engagementStatus: EngagementStatus;
   impact: PersonalImpactMetrics;
   impactMethodology: PersonalImpactMethodology;
@@ -251,6 +252,7 @@ export type GamificationMilestoneState = MilestoneDefinition & {
   unlocked: boolean;
   recordedXp: number;
   proofSourceId: string | null;
+  achievedAt: string | null;
 };
 
 export type GamificationEventRegistration =

@@ -120,6 +120,22 @@ Les anciennes chaînes produites par `deriveBadges()` sont indexées comme
 libellés LEGACY, tandis que le niveau et le statut d'engagement sont exposés
 par leurs contrats propres.
 
+### Inventaire utilisateur CURRENT
+
+`progression.catalog` dans `/api/gamification/me` est la représentation
+utilisateur exhaustive des entrées gamifiées applicables. Elle réutilise les
+définitions du registre CURRENT : aucune liste d'objectifs propre à l'UI ne doit
+être créée. Les progressions infinies et les jalons one-shot exposent leur
+catégorie canonique, leur politique XP, leur révision de règles et leur état.
+
+Une progression infinie reste toujours `in_progress` après sa première
+contribution ; `completed` ne décrit jamais l'ensemble d'une échelle infinie.
+À zéro, `Observateur` est un repère non acquis et la progression est
+`not_started`. Pour un jalon, `in_progress` n'est autorisé que si un progrès
+intermédiaire calculable existe dans le domaine ; un jalon binaire reste
+`not_started` jusqu'à sa preuve. Les entrées `NON_GAMIFIED` et les mécaniques
+`authorized_moderation` non applicables sont absentes de cet inventaire.
+
 ## Taxonomie CURRENT et registre des décisions
 
 `GAMIFICATION_REGISTRY` dans
