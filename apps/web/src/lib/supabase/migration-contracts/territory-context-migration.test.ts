@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migrationPath = new URL(
-  "../../../supabase/migrations/20260915000010_territory_context_access.sql",
+  "../../../../supabase/migrations/20260915000010_territory_context_access.sql",
   import.meta.url,
 );
 

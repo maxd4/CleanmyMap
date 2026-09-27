@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migrationPath = new URL(
-  "../../../supabase/migrations/20260826060000_harden_public_map_boundary.sql",
+  "../../../../supabase/migrations/20260826060000_harden_public_map_boundary.sql",
   import.meta.url,
 );
 

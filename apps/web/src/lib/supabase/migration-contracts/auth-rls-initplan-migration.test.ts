@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const readMigration = (name: string) =>
-  readFileSync(new URL(`../../../supabase/migrations/${name}`, import.meta.url), "utf8")
+  readFileSync(new URL(`../../../../supabase/migrations/${name}`, import.meta.url), "utf8")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();

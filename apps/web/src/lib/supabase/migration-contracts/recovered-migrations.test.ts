@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 function readMigration(filename: string): string {
-  return readFileSync(new URL(`../../../supabase/migrations/${filename}`, import.meta.url), "utf8");
+  return readFileSync(new URL(`../../../../supabase/migrations/${filename}`, import.meta.url), "utf8");
 }
 
 function stripSqlComments(sql: string): string {

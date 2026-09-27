@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migrationPath = new URL(
-  "../../../supabase/migrations/20260915000023_action_administrative_requirements_invoker.sql",
+  "../../../../supabase/migrations/20260915000023_action_administrative_requirements_invoker.sql",
   import.meta.url,
 );
 const migration = readFileSync(migrationPath, "utf8").toLowerCase();
