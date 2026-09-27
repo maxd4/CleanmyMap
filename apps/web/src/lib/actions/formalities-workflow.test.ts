@@ -140,6 +140,62 @@ describe("formalities workflow", () => {
     );
   });
 
+  it("invalidates only when the resolved territory changes, not for a same-territory label change", () => {
+    const facts = parisFacts();
+    const qualification = qualifyActionFormalities(facts);
+    const territoryFingerprint = "FR|FR-PARIS|75056|75|11";
+    const initial = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      actionDependencies: {
+        locationLabel: "Rue A, Paris",
+        actionDate: "2026-09-20",
+        territoryFingerprint,
+      },
+      now: "2026-09-17T10:00:00.000Z",
+    });
+    const sent = applyFormalitiesWorkflowTransition({
+      workflow: initial,
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
+      now: "2026-09-17T10:01:00.000Z",
+    });
+
+    const sameTerritory = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      actionDependencies: {
+        locationLabel: "Avenue B, Paris",
+        actionDate: "2026-09-20",
+        territoryFingerprint,
+      },
+      previous: sent,
+      now: "2026-09-17T10:02:00.000Z",
+    });
+    expect(sameTerritory.progress[0].validForQualification).toBe(true);
+
+    const lyonFacts = deriveActionFormalitiesFacts({
+      departmentCode: "69",
+      departmentName: "Rhône",
+    });
+    const changedTerritory = buildFormalitiesWorkflowState({
+      facts: lyonFacts,
+      qualification: qualifyActionFormalities(lyonFacts),
+      actionDependencies: {
+        locationLabel: "Rue de la République, Lyon",
+        actionDate: "2026-09-20",
+        territoryFingerprint: "FR|||69|84",
+      },
+      previous: sameTerritory,
+      now: "2026-09-17T10:03:00.000Z",
+    });
+    expect(changedTerritory.progress).toContainEqual(
+      expect.objectContaining({
+        formalityId: "paris-city-public-domain-aot",
+        validForQualification: false,
+      }),
+    );
+  });
+
   it("does not block for recommendation or unknown qualification", () => {
     const facts = parisFacts({ manager: { kind: "unknown", label: null }, hasInstallations: false, requiresPhysicalOccupation: false });
     const qualification = qualifyActionFormalities(facts);

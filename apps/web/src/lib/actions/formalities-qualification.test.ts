@@ -4,6 +4,7 @@ import {
   qualifyActionFormalities,
   type ActionFormalitiesFacts,
 } from "./formalities-qualification";
+import type { AdministrativeFormalityRule } from "./formalities-rules";
 
 const parisFacts: ActionFormalitiesFacts = {
   territory: { countryCode: "FR", code: "FR-75", label: "Paris" },
@@ -18,6 +19,50 @@ const parisFacts: ActionFormalitiesFacts = {
   localCustomaryUse: false,
   largeCrowdOrComplexInstallations: false,
 };
+
+function testRule(params: {
+  id: string;
+  scope: AdministrativeFormalityRule["scope"];
+  formalityId: string;
+  supersedesRuleIds?: string[];
+}): AdministrativeFormalityRule {
+  return {
+    id: params.id,
+    scope: params.scope,
+    rulesetVersion: `test-${params.id}`,
+    supersedesRuleIds: params.supersedesRuleIds,
+    contract: {
+      authority: { kind: "unknown", label: "À identifier" },
+      requirementStatus: "recommended",
+      procedureKind: "information_only",
+      officialSource: null,
+      verifiedAt: FORMALITIES_RULE_VERIFIED_ON,
+      deadline: null,
+      destination: null,
+      requiredInformation: [],
+    },
+    qualifies: () => ({
+      formalities: [
+        {
+          id: params.formalityId,
+          requirementStatus: "recommended",
+          procedureKind: "information_only",
+          competentAuthority: { kind: "unknown", label: "À identifier" },
+          recipient: null,
+          source: null,
+          supportingSources: [],
+          scope: "Test territorial",
+          justification: "Règle de test",
+          deadline: null,
+          officialChannel: null,
+          requestedInformation: [],
+          requestedDocuments: [],
+        },
+      ],
+      unresolvedQuestions: [],
+    }),
+  };
+}
 
 describe("action formalities qualification", () => {
   it("qualifies a municipal public-space installation as a Ville de Paris AOT", () => {
@@ -327,5 +372,84 @@ describe("action formalities qualification", () => {
       "Territoire non couvert par un jeu de règles officiel intégré.",
     );
     expect(result.unresolvedQuestions).toEqual(["règles officielles du territoire"]);
+  });
+
+  it("exposes Paris as a specialized rule scope without leaking it to Lyon", () => {
+    const paris = qualifyActionFormalities(parisFacts);
+    const lyon = qualifyActionFormalities({
+      ...parisFacts,
+      territory: {
+        countryCode: "FR",
+        code: "FR-69",
+        label: "Lyon",
+        department: { code: "69", label: "Rhône" },
+      },
+    });
+
+    expect(paris.formalities[0]).toMatchObject({
+      ruleId: "paris-public-space-formalities",
+      ruleScope: { kind: "special_territory", code: "FR-PARIS" },
+    });
+    expect(lyon.formalities[0]).not.toHaveProperty("ruleId", "paris-public-space-formalities");
+  });
+
+  it("uses the commune rule before a department rule only when the rule says it supersedes it", () => {
+    const departmentRule = testRule({
+      id: "department-69",
+      scope: { kind: "department", countryCode: "FR", departmentCode: "69" },
+      formalityId: "department-formality",
+    });
+    const communeRule = testRule({
+      id: "commune-69123",
+      scope: { kind: "commune", countryCode: "FR", codeInsee: "69123" },
+      formalityId: "commune-formality",
+      supersedesRuleIds: ["department-69"],
+    });
+    const result = qualifyActionFormalities(
+      {
+        ...parisFacts,
+        territory: {
+          countryCode: "FR",
+          code: "FR-69",
+          label: "Lyon",
+          commune: { codeInsee: "69123", label: "Lyon" },
+          department: { code: "69", label: "Rhône" },
+        },
+      },
+      [departmentRule, communeRule],
+    );
+
+    expect(result.formalities.map((item) => item.id)).toEqual(["commune-formality"]);
+    expect(result.formalities[0]?.ruleScope).toEqual(communeRule.scope);
+  });
+
+  it("keeps compatible department formalities together and does not invent a national fallback", () => {
+    const first = testRule({
+      id: "department-69-first",
+      scope: { kind: "department", countryCode: "FR", departmentCode: "69" },
+      formalityId: "department-first",
+    });
+    const second = testRule({
+      id: "department-69-second",
+      scope: { kind: "department", countryCode: "FR", departmentCode: "69" },
+      formalityId: "department-second",
+    });
+    const result = qualifyActionFormalities(
+      {
+        ...parisFacts,
+        territory: {
+          countryCode: "FR",
+          code: "FR-69",
+          label: "Rhône",
+          department: { code: "69", label: "Rhône" },
+        },
+      },
+      [first, second],
+    );
+
+    expect(result.formalities.map((item) => item.id)).toEqual([
+      "department-first",
+      "department-second",
+    ]);
   });
 });

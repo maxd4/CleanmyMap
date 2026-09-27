@@ -1,3 +1,9 @@
+import {
+  qualifyWithAdministrativeRules,
+  type AdministrativeFormalityRule,
+  type AdministrativeRuleContract,
+  type FormalityRuleScope,
+} from "./formalities-rules";
 /**
  * Explainable qualification of local administrative formalities.
  *
@@ -6,19 +12,21 @@
  * do not establish.
  */
 
-export const ACTION_FORMALITIES_SCHEMA_VERSION =
-  "action-formalities-qualification-v1" as const;
-export const PARIS_FORMALITIES_RULESET_VERSION =
-  "paris-public-space-formalities-2026-04-16" as const;
+export const ACTION_FORMALITIES_SCHEMA_VERSION = "action-formalities-qualification-v1" as const;
+export const PARIS_FORMALITIES_RULESET_VERSION = "paris-public-space-formalities-2026-04-16" as const;
 export const PARIS_TERRITORY_CODE = "FR-75" as const;
+export const PARIS_FORMALITIES_RULE_ID = "paris-public-space-formalities" as const;
+export const PARIS_FORMALITIES_RULE_SCOPE: FormalityRuleScope = {
+  kind: "special_territory",
+  countryCode: "FR",
+  code: "FR-PARIS",
+};
 export const FORMALITIES_RULE_VERIFIED_ON = "2026-09-17" as const;
-
 export type FormalityRequirementStatus =
   | "required"
   | "recommended"
   | "not_required"
   | "unknown";
-
 export type FormalityProcedureKind =
   | "city_aot"
   | "police_declaration"
@@ -37,6 +45,22 @@ export type FormalitiesTerritory = {
   countryCode: "FR";
   code: string;
   label: string;
+  commune?: {
+    codeInsee: string;
+    label: string;
+  } | null;
+  department?: {
+    code: string;
+    label: string;
+  } | null;
+  region?: {
+    code: string;
+    label: string;
+  } | null;
+  specialTerritory?: {
+    code: string;
+    label: string;
+  } | null;
 };
 
 export type FormalitiesOfficialSource = {
@@ -64,6 +88,8 @@ export type FormalitiesDeadline = {
 
 export type ActionFormality = {
   id: string;
+  ruleId?: string | null;
+  ruleScope?: FormalityRuleScope | null;
   requirementStatus: FormalityRequirementStatus;
   procedureKind: FormalityProcedureKind;
   competentAuthority: {
@@ -428,31 +454,44 @@ function qualifyParisFormalities(
   };
 }
 
-const TERRITORIAL_QUALIFIERS: Record<
-  string,
-  (facts: ActionFormalitiesFacts) => ActionFormalitiesQualification
-> = {
-  [PARIS_TERRITORY_CODE]: qualifyParisFormalities,
+const PARIS_RULE_CONTRACT: AdministrativeRuleContract = {
+  authority: {
+    kind: "unknown",
+    label: "Autorité déterminée par la formalité applicable",
+  },
+  requirementStatus: "unknown",
+  procedureKind: "unknown",
+  officialSource: null,
+  verifiedAt: FORMALITIES_RULE_VERIFIED_ON,
+  deadline: null,
+  destination: null,
+  requiredInformation: [],
 };
+
+export const ACTION_FORMALITIES_RULES: readonly AdministrativeFormalityRule[] = [
+  {
+    id: PARIS_FORMALITIES_RULE_ID,
+    scope: PARIS_FORMALITIES_RULE_SCOPE,
+    rulesetVersion: PARIS_FORMALITIES_RULESET_VERSION,
+    contract: PARIS_RULE_CONTRACT,
+    qualifies: qualifyParisFormalities,
+  },
+];
 
 export function qualifyActionFormalities(
   facts: ActionFormalitiesFacts,
+  rules: readonly AdministrativeFormalityRule[] = ACTION_FORMALITIES_RULES,
 ): ActionFormalitiesQualification {
-  const qualifier = TERRITORIAL_QUALIFIERS[facts.territory.code];
-  if (qualifier) return qualifier(facts);
-
-  return {
+  return qualifyWithAdministrativeRules({
+    facts,
+    rules,
     schemaVersion: ACTION_FORMALITIES_SCHEMA_VERSION,
-    rulesetVersion: null,
-    territory: facts.territory,
-    formalities: [
-      buildUnknownFormality(
-        "territory-formality-ruleset-unavailable",
-        null,
-        "Territoire non couvert par un jeu de règles officiel intégré.",
-        "Le moteur ne généralise pas la règle parisienne à un autre territoire sans source officielle et règleset dédié.",
-      ),
-    ],
-    unresolvedQuestions: ["règles officielles du territoire"],
-  };
+    fallbackFormality: buildUnknownFormality(
+      "territory-formality-ruleset-unavailable",
+      null,
+      "Territoire non couvert par un jeu de règles officiel intégré.",
+      "Le moteur ne généralise pas la règle parisienne à un autre territoire sans source officielle et règleset dédié.",
+    ),
+    fallbackQuestion: "règles officielles du territoire",
+  });
 }

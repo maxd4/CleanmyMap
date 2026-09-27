@@ -4,6 +4,7 @@ import { getCurrentUserIdentity, requireAuthenticatedAccess } from "@/lib/authz"
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveActionTerritory } from "@/lib/geo/action-territory-resolver";
 import { loadActionById } from "@/lib/actions/store";
 import { canManageAction } from "@/lib/actions/permissions";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
@@ -16,6 +17,9 @@ import {
   normalizeActionFormalitiesWorkflow,
   type FormalitiesWorkflowTransition,
 } from "@/lib/actions/formalities-workflow";
+import {
+  buildFormalitiesTerritoryFingerprint,
+} from "@/lib/actions/formalities-rules";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
 
 export const runtime = "nodejs";
@@ -66,23 +70,48 @@ async function loadAuthorizedAction(actionId: string, userId: string) {
   return { kind: "ok" as const, current, supabase };
 }
 
-function factsFromAction(current: {
+async function factsFromAction(current: {
   department_code?: string | null;
   department_name?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  derived_geometry_kind?: "point" | "polyline" | "polygon" | null;
+  derived_geometry_geojson?: string | null;
   preparation_data: {
     plannedObjective?: string | null;
     formalitiesContext?: unknown;
   } | null;
-}): ActionFormalitiesFacts {
+}): Promise<ActionFormalitiesFacts> {
+  const resolvedTerritory = await resolveActionTerritory({
+    latitude: current.latitude,
+    longitude: current.longitude,
+    geometry: {
+      kind: current.derived_geometry_kind,
+      geojson: current.derived_geometry_geojson,
+    },
+    departmentCode: current.department_code,
+    departmentName: current.department_name,
+  });
   const fallback = deriveActionFormalitiesFacts({
     departmentCode: current.department_code,
     departmentName: current.department_name,
+    resolvedTerritory,
     plannedObjective: current.preparation_data?.plannedObjective,
   });
   const parsed = actionFormalitiesFactsSchema.safeParse(
     current.preparation_data?.formalitiesContext,
   );
-  return parsed.success ? parsed.data : fallback;
+  if (!parsed.success) {
+    return fallback;
+  }
+
+  return {
+    ...parsed.data,
+    territory:
+      resolvedTerritory || fallback.territory.code !== "FR-unknown"
+        ? fallback.territory
+        : parsed.data.territory,
+  };
 }
 
 function responseFor(params: {
@@ -131,7 +160,7 @@ export async function GET(
       );
     }
 
-    const facts = factsFromAction(result.current);
+    const facts = await factsFromAction(result.current);
     const qualification = qualifyActionFormalities(facts);
     const workflow = buildFormalitiesWorkflowState({
       facts,
@@ -139,6 +168,7 @@ export async function GET(
       actionDependencies: {
         locationLabel: result.current.location_label,
         actionDate: result.current.action_date,
+        territoryFingerprint: buildFormalitiesTerritoryFingerprint(facts.territory),
       },
       previous: normalizeActionFormalitiesWorkflow(
         result.current.preparation_data?.formalitiesWorkflow,
@@ -197,7 +227,7 @@ export async function PATCH(
       );
     }
 
-    const currentFacts = factsFromAction(result.current);
+    const currentFacts = await factsFromAction(result.current);
     const facts = parsed.data.facts ?? currentFacts;
     const qualification = qualifyActionFormalities(facts);
     const previous = normalizeActionFormalitiesWorkflow(
@@ -209,6 +239,7 @@ export async function PATCH(
       actionDependencies: {
         locationLabel: result.current.location_label,
         actionDate: result.current.action_date,
+        territoryFingerprint: buildFormalitiesTerritoryFingerprint(facts.territory),
       },
       previous,
     });
