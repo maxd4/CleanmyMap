@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const MIGRATION =
-  "../../../supabase/migrations/20260827120000_close_performance_advisor_rls_initplan_and_duplicate_indexes.sql";
+  "../../../../supabase/migrations/20260827120000_close_performance_advisor_rls_initplan_and_duplicate_indexes.sql";
 
 const TARGET_POLICIES = [
   ["signalement_media", "signalement_media_owner_read"],

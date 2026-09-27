@@ -19,10 +19,21 @@ applicables.
 
 ## Tests
 
-Les fichiers `*.test.ts` caractérisent les contrats de migration, RLS,
-privilèges, optimisation et accès. Préserver le fail-closed : une erreur ou
-une permission inattendue doit rester visible, et un dry-run ne doit jamais
-être présenté comme une application distante.
+Les tests de contrats SQL/migration versionnés vivent dans
+[`migration-contracts/`](./migration-contracts/) : il s'agit des fichiers
+`*-migration.test.ts` et `recovered-migrations.test.ts`. Ils lisent uniquement
+les migrations suivies sous `apps/web/supabase/migrations/` et ne les modifient
+pas.
+
+Les clients et le runtime restent à la racine de cette arborescence
+(`client.ts`, `server.ts`, `clerk-rls.ts`, `mirror.ts`). Les tests de runtime,
+de permissions, de RLS ou d'advisors qui ne sont pas strictement des contrats
+de migration restent également à ce niveau.
+
+Préserver le fail-closed : une erreur ou une permission inattendue doit rester
+visible, et un dry-run ne doit jamais être présenté comme une application
+distante. Aucun test de ce périmètre ne doit appliquer une migration ni muter
+un état Supabase distant.
 
 Pour une modification ciblée, commencer par le test de contrat concerné,
 puis utiliser les validations web et Supabase définies par les

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migrationPath = new URL(
-  "../../../supabase/migrations/20260826081000_align_chat_admin_elu_max_rls.sql",
+  "../../../../supabase/migrations/20260826081000_align_chat_admin_elu_max_rls.sql",
   import.meta.url,
 );
 

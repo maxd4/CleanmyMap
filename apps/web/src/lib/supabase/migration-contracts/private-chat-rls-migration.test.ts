@@ -2,12 +2,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migrationPath = new URL(
-  "../../../supabase/migrations/20260926122042_relocate_action_chat_rls_helpers.sql",
+  "../../../../supabase/migrations/20260926122042_relocate_action_chat_rls_helpers.sql",
   import.meta.url,
 );
 const migration = readFileSync(migrationPath, "utf8");
 const supabaseConfig = readFileSync(
-  new URL("../../../supabase/config.toml", import.meta.url),
+  new URL("../../../../supabase/config.toml", import.meta.url),
   "utf8",
 );
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const migration = readFileSync(
   new URL(
-    "../../../supabase/migrations/20260825160000_action_pollution_prediction_evaluations.sql",
+    "../../../../supabase/migrations/20260825160000_action_pollution_prediction_evaluations.sql",
     import.meta.url,
   ),
   "utf8",
@@ -11,7 +11,7 @@ const migration = readFileSync(
 
 const privilegeHardeningMigration = readFileSync(
   new URL(
-    "../../../supabase/migrations/20260825180000_harden_action_pollution_prediction_evaluations_privileges.sql",
+    "../../../../supabase/migrations/20260825180000_harden_action_pollution_prediction_evaluations_privileges.sql",
     import.meta.url,
   ),
   "utf8",

@@ -3,14 +3,14 @@ import { describe, expect, it } from "vitest";
 
 const migration = readFileSync(
   new URL(
-    "../../../supabase/migrations/20260908000001_incremental_public_impact_state.sql",
+    "../../../../supabase/migrations/20260908000001_incremental_public_impact_state.sql",
     import.meta.url,
   ),
   "utf8",
 );
 const futureActionMigration = readFileSync(
   new URL(
-    "../../../supabase/migrations/20260908010000_future_action_public_visibility.sql",
+    "../../../../supabase/migrations/20260908010000_future_action_public_visibility.sql",
     import.meta.url,
   ),
   "utf8",
