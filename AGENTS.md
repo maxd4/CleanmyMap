@@ -329,6 +329,52 @@ fixtures et documents uniques. Rechercher le successeur, migrer explicitement
 la valeur utile, supprimer les doublons prouvés et préserver les artefacts
 historiques encore nécessaires.
 
+## Amélioration opportuniste des ratchets
+
+Lorsqu'un lot modifie déjà un fichier, une fonction, un symbole ou un test
+signalé par un ratchet de qualité canonique, rechercher une occasion raisonnable
+de réduire cette dette pendant le lot. Cela concerne notamment dead-code et
+Knip, duplication et clones, complexité, longueur de fonctions, top-heavy et
+fichiers `REVIEW_REQUIRED`, coverage, mutation testing directement lié au code
+touché, ainsi que les cycles ou autres métriques structurelles canoniques
+ajoutées ultérieurement. Les valeurs numériques et les seuils restent ceux de
+leurs contrôles et baselines canoniques ; ne pas les recopier ici.
+
+La correction est attendue seulement si elle reste locale au périmètre déjà
+touché, simple, sûre vis-à-vis des contrats métier, API, données, AuthN/AuthZ
+et UI, testable avec les validations proportionnées du lot, sans abstraction
+importante ni propagation transversale, et susceptible d'améliorer réellement
+la métrique. Sont notamment admissibles la suppression d'un symbole réellement
+inutilisé après vérification, la factorisation de blocs équivalents déjà
+touchés, l'extraction d'une frontière cohésive évidente, la simplification
+d'une branche devenue inutile, l'ajout d'un cas de test évident sur le
+comportement modifié ou la suppression d'un clone trivial via une abstraction
+canonique existante.
+
+Ne jamais élargir artificiellement un petit lot en refactor transversal,
+modifier un contrat durable pour une métrique, abaisser une baseline, relever
+un seuil, ajouter une exclusion, réduire le scope mesuré, déplacer
+artificiellement du code ou affaiblir un contrôle. Ne pas supprimer un finding
+Knip sans avoir vérifié qu'il est réellement mort conformément à la section
+`Suppression et dead-code`, créer une abstraction générique uniquement pour
+faire disparaître un clone, ni ajouter des tests sans valeur comportementale
+pour augmenter la coverage.
+
+Lorsqu'une dette pertinente est rencontrée dans le périmètre, le rapport du
+lot doit indiquer une décision :
+
+`RATCHET_OPPORTUNITY: FIX_NOW | ALREADY_IMPROVED | DEFER | NOT_APPLICABLE`
+
+`FIX_NOW` signifie que la réduction est locale, sûre et proportionnée ;
+`ALREADY_IMPROVED` que le changement principal l'a déjà réduite ; `DEFER` que
+la correction constitue un chantier distinct ou augmente sensiblement le
+risque/périmètre ; `NOT_APPLICABLE` qu'aucune dette pertinente n'a été
+rencontrée. `DEFER` conserve le chantier principal et explique brièvement la
+raison, sans élargissement automatique du lot. Lorsqu'un check applicable
+révèle une dette simple dans un fichier déjà modifié, appliquer cette règle
+avant clôture ; les fichiers hors périmètre restent hors lot. Ne pas lancer
+systématiquement des suites lourdes uniquement pour rechercher une opportunité.
+
 ## Principes de restructuration
 
 Avant de créer ou déplacer une responsabilité, vérifier l'emplacement, le
