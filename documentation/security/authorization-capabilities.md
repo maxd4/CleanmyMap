@@ -464,6 +464,11 @@ Contraintes :
 
 ### Scientifique
 
+> **`PLAN / TARGET` uniquement — non implémenté dans le runtime courant.**
+> Cette section décrit des capacités potentielles à arbitrer ; elle ne modifie
+> pas `EffectiveAccess` et ne constitue pas une autorisation accordée par le
+> parcours UX `scientifique`.
+
 Le scientifique est un rôle d'analyse, pas un rôle de modération.
 
 Capacités cibles :
@@ -486,6 +491,11 @@ Le rôle `scientifique` ne donne pas par défaut accès :
 - aux mutations de contributions d'autres utilisateurs.
 
 ### Entreprise
+
+> **`PLAN / TARGET` uniquement — non implémenté dans le runtime courant.**
+> Cette section décrit des capacités potentielles à arbitrer ; elle ne modifie
+> pas `EffectiveAccess` et le rôle seul ne constitue jamais une appartenance
+> organisationnelle.
 
 L'entreprise agit dans un périmètre organisationnel explicite.
 
