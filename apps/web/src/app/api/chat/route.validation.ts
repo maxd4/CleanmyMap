@@ -13,7 +13,7 @@ import {
 } from "@/lib/chat/chat-attachments";
 import type { ChatChannelType } from "@/lib/chat/channels";
 
-export const CHANNEL_TYPES = [
+const CHANNEL_TYPES = [
   "community",
   "dm",
   "admin_elu",
@@ -83,7 +83,7 @@ function validateMessageContent(data: SendMessageData, context: z.RefinementCtx)
   );
 }
 
-export const sendMessageSchema = z.object({
+const sendMessageSchema = z.object({
   channelType: z.enum(CHANNEL_TYPES),
   content: z.string().max(2000).default(""),
   messageKind: z.enum(CHAT_MESSAGE_KINDS).optional().default("message"),

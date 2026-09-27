@@ -23,7 +23,7 @@ import {
   type ChatPollOption,
 } from "@/lib/chat/polls";
 import { sortByCreatedAtAsc } from "@/lib/chat/postgrest";
-export { CHANNEL_TYPES, sendMessageSchemaForUser } from "./route.validation";
+export { sendMessageSchemaForUser } from "./route.validation";
 
 export type CurrentProfileRow = {
   id: string;
