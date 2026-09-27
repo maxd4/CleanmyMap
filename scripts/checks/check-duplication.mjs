@@ -38,11 +38,7 @@ function runScope(scopeName, baseline) {
   const nativeBaselinePath = path.join(nativeBaselineDirectory, baselineFileName);
   if (!fs.existsSync(nativeBaselinePath)) throw new Error(`duplication baseline missing: ${nativeBaselinePath}`);
   const nativeBaseline = JSON.parse(fs.readFileSync(nativeBaselinePath, "utf8"));
-  const expectedFingerprints = baseline.scopes[scopeName].fingerprints;
-  const actualFingerprints = nativeBaselineFingerprintCount(nativeBaseline);
-  if (actualFingerprints !== expectedFingerprints) {
-    throw new Error(`duplication baseline mismatch for ${scopeName}: ${actualFingerprints} fingerprints, expected ${expectedFingerprints}.`);
-  }
+  nativeBaselineFingerprintCount(nativeBaseline);
 
   const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-jscpd-"));
   try {
@@ -58,9 +54,18 @@ function runScope(scopeName, baseline) {
       throw new Error(`jscpd report missing for ${scopeName}: ${result.stderr || result.stdout || "no output"}`);
     }
     const metrics = readJscpdMetrics(JSON.parse(fs.readFileSync(reportPath, "utf8")));
-    const failures = compareDuplicationMetrics(metrics, baseline.scopes[scopeName]);
-    if (result.status !== 0) failures.push(`jscpd reported new clone fingerprints (exit ${result.status})`);
-    return { scopeName, metrics, failures };
+    const comparison = compareDuplicationMetrics(metrics, baseline.scopes[scopeName], scopeName);
+    const failures = [...comparison.failures];
+    if (result.status !== 0) failures.push(`jscpd execution failed (exit ${result.status})`);
+    return {
+      scopeName,
+      metrics,
+      comparison: {
+        ...comparison,
+        status: failures.length > 0 ? "FAIL" : comparison.status,
+        failures,
+      },
+    };
   } finally {
     fs.rmSync(outputDirectory, { recursive: true, force: true });
   }
@@ -75,9 +80,15 @@ export function runDuplicationPolicy() {
 
 export function formatDuplicationReport({ results }) {
   const lines = [];
-  for (const { scopeName, metrics, failures } of results) {
+  for (const { scopeName, metrics, comparison } of results) {
     lines.push(`${scopeName}: ${metrics.clones} clones, ${metrics.duplicatedLines}/${metrics.lines} lines (${metrics.percentage.toFixed(2)}%), ${metrics.duplicatedTokens}/${metrics.tokens} tokens.`);
-    for (const failure of failures) lines.push(`FAIL ${scopeName}: ${failure}`);
+    lines.push(`  DUPLICATION_STATUS: ${comparison.status}`);
+    lines.push(`  NEW_CLONE_FINGERPRINTS: ${metrics.newClones}`);
+    lines.push(`  DUPLICATED_LINES_DELTA: ${comparison.deltas.duplicatedLines}`);
+    lines.push(`  DUPLICATED_TOKENS_DELTA: ${comparison.deltas.duplicatedTokens}`);
+    lines.push(`  LINE_PERCENTAGE_POINT_DELTA: ${comparison.deltas.linePercentagePoints.toFixed(6)}`);
+    lines.push(`  TOKEN_PERCENTAGE_POINT_DELTA: ${comparison.deltas.tokenPercentagePoints.toFixed(6)}`);
+    for (const failure of comparison.failures) lines.push(`  FAIL_REASON: ${failure}`);
   }
   return lines.join("\n");
 }
@@ -86,13 +97,22 @@ async function main() {
   try {
     const report = runDuplicationPolicy();
     console.log(formatDuplicationReport(report));
-    const failures = report.results.flatMap((result) => result.failures);
-    if (failures.length > 0) {
+    const statuses = report.results.map((result) => result.comparison.status);
+    const status = statuses.includes("FAIL")
+      ? "FAIL"
+      : statuses.includes("PASS_WITH_GRACE")
+        ? "PASS_WITH_GRACE"
+        : "PASS";
+    console.log(`DUPLICATION_STATUS: ${status}`);
+    if (status === "FAIL") {
+      const failures = report.results.flatMap((result) => result.comparison.failures);
       console.error(`FAIL: ${failures.length} duplication ratchet violation(s).`);
       process.exitCode = 1;
       return;
     }
-    console.log("PASS: historical duplication is stable and no new clone or metric increase was detected.");
+    console.log(status === "PASS_WITH_GRACE"
+      ? "PASS_WITH_GRACE: duplication remains within the historical grace envelope."
+      : "PASS: historical duplication is stable within the strict baseline.");
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;

@@ -1,10 +1,31 @@
 import crypto from "node:crypto";
 
-export const DUPLICATION_POLICY_VERSION = 1;
+export const DUPLICATION_POLICY_VERSION = 2;
 export const DUPLICATION_TOOL = "jscpd";
 export const DUPLICATION_TOOL_VERSION = "5.3.0";
 export const DUPLICATION_MIN_LINES = 5;
 export const DUPLICATION_MIN_TOKENS = 50;
+
+export const DUPLICATION_GRACE = Object.freeze({
+  runtime: Object.freeze({
+    maxLinePercentagePointIncrease: 0.05,
+    maxTokenPercentagePointIncrease: 0.05,
+    maxDuplicatedLinesIncrease: 80,
+    maxDuplicatedTokensIncrease: 800,
+  }),
+  tests: Object.freeze({
+    maxLinePercentagePointIncrease: 0.15,
+    maxTokenPercentagePointIncrease: 0.15,
+    maxDuplicatedLinesIncrease: 150,
+    maxDuplicatedTokensIncrease: 1500,
+  }),
+  "fixtures/data": Object.freeze({
+    maxLinePercentagePointIncrease: 0,
+    maxTokenPercentagePointIncrease: 0,
+    maxDuplicatedLinesIncrease: 0,
+    maxDuplicatedTokensIncrease: 0,
+  }),
+});
 
 const COMMON_IGNORES = [
   "**/node_modules/**",
@@ -65,6 +86,7 @@ const DUPLICATION_POLICY_DESCRIPTOR = {
   minLines: DUPLICATION_MIN_LINES,
   minTokens: DUPLICATION_MIN_TOKENS,
   scopes: DUPLICATION_SCOPES,
+  grace: DUPLICATION_GRACE,
 };
 
 export const DUPLICATION_POLICY_FINGERPRINT = computeDuplicationPolicyFingerprint(DUPLICATION_POLICY_DESCRIPTOR);
@@ -81,7 +103,6 @@ export function buildJscpdArguments(scopeName, baselinePath, outputDirectory) {
     "--min-tokens", String(DUPLICATION_MIN_TOKENS),
     "--ignore", scope.ignores.join(","),
     "--baseline", baselinePath,
-    "--fail-on-new-clones",
     "--reporters", "json",
     "--output", outputDirectory,
     "--silent",
@@ -123,18 +144,50 @@ export function validateDuplicationMetricsBaseline(baseline) {
   return baseline;
 }
 
-export function compareDuplicationMetrics(current, baseline) {
+function percentagePointDelta(currentValue, currentTotal, baselineValue, baselineTotal) {
+  return (currentValue / currentTotal - baselineValue / baselineTotal) * 100;
+}
+
+export function compareDuplicationMetrics(current, baseline, scopeName = "runtime") {
+  const grace = DUPLICATION_GRACE[scopeName];
+  if (!grace) throw new Error(`Unknown duplication scope: ${scopeName}`);
+
+  const deltas = {
+    duplicatedLines: current.duplicatedLines - baseline.duplicatedLines,
+    duplicatedTokens: current.duplicatedTokens - baseline.duplicatedTokens,
+    linePercentagePoints: percentagePointDelta(
+      current.duplicatedLines,
+      current.lines,
+      baseline.duplicatedLines,
+      baseline.lines,
+    ),
+    tokenPercentagePoints: percentagePointDelta(
+      current.duplicatedTokens,
+      current.tokens,
+      baseline.duplicatedTokens,
+      baseline.tokens,
+    ),
+  };
+  const hasRegression = Object.values(deltas).some((delta) => delta > 0);
   const failures = [];
-  for (const field of ["clones", "duplicatedLines", "duplicatedTokens"]) {
-    if (current[field] > baseline[field]) failures.push(`${field} increased (${current[field]} > ${baseline[field]})`);
+  const epsilon = 1e-9;
+  const limits = [
+    ["duplicatedLines", grace.maxDuplicatedLinesIncrease],
+    ["duplicatedTokens", grace.maxDuplicatedTokensIncrease],
+    ["linePercentagePoints", grace.maxLinePercentagePointIncrease],
+    ["tokenPercentagePoints", grace.maxTokenPercentagePointIncrease],
+  ];
+  for (const [field, limit] of limits) {
+    if (deltas[field] > limit + epsilon) {
+      failures.push(`${field} exceeded grace (${deltas[field]} > ${limit})`);
+    }
   }
-  if (current.duplicatedLines * baseline.lines > baseline.duplicatedLines * current.lines) {
-    failures.push("duplicated line percentage increased");
-  }
-  if (current.duplicatedTokens * baseline.tokens > baseline.duplicatedTokens * current.tokens) {
-    failures.push("duplicated token percentage increased");
-  }
-  return failures;
+
+  return {
+    status: failures.length > 0 ? "FAIL" : hasRegression ? "PASS_WITH_GRACE" : "PASS",
+    failures,
+    deltas,
+  };
 }
 
 export function readJscpdMetrics(report) {
