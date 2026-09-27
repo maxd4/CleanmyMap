@@ -243,6 +243,35 @@ describe("syncClerkUserToSupabase", () => {
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["admin", "benevole", "benevole"],
+    ["max", "scientifique", "scientifique"],
+    ["elu", "admin", "admin"],
+    ["admin", "elu", "admin"],
+  ] as const)("projects GRANTED_ROLE=%s and ACTIVE_ROLE=%s separately", async (grantedRole, activeRole, expectedActiveRole) => {
+    const { supabase, upsert } = createSupabaseMock({ existingProfile: null });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+
+    await syncClerkUserToSupabase({
+      id: `user_${grantedRole}_${activeRole}`,
+      username: "role_projection",
+      emailAddresses: [],
+      imageUrl: "https://example.com/avatar.png",
+      publicMetadata: { role: grantedRole, activeRole },
+      privateMetadata: {},
+      firstName: "Role",
+      lastName: "Projection",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role_label: grantedRole,
+        active_role_label: expectedActiveRole,
+      }),
+      { onConflict: "id" },
+    );
+  });
+
   it("does not promote a normal user from primary or secondary contact emails", async () => {
     const { supabase, upsert } = createSupabaseMock({
       existingProfile: null,

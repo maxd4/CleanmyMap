@@ -53,7 +53,7 @@ export function resetChatRouteMocks() {
   vi.clearAllMocks();
 
   authMock.mockResolvedValue({ userId: "user-1" });
-  getCurrentUserIdentityMock.mockResolvedValue({ role: "member" });
+  getCurrentUserIdentityMock.mockResolvedValue({ role: "member", activeRole: "benevole" });
   verifyRateLimitMock.mockResolvedValue({
     allowed: true,
     limit: 20,

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { UserIdentity } from "@/lib/authz";
+import type { ActiveRole } from "@/lib/domain-language";
 import { loadActionById } from "@/lib/actions/store";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
@@ -47,7 +48,7 @@ export type ActionDiscussionCandidate = {
 };
 
 export type ActionDiscussionMembership = {
-  roleLabel?: string | null;
+  activeRole?: ActiveRole | null;
   isOwner: boolean;
   isOrganizer: boolean;
   registrationStatus?: "pending" | "confirmed" | "cancelled" | null;
@@ -60,8 +61,8 @@ export function canViewActionDiscussionForMembership(
   membership: ActionDiscussionMembership,
 ): boolean {
   if (
-    membership.roleLabel === "admin" ||
-    membership.roleLabel === "max" ||
+    membership.activeRole === "admin" ||
+    membership.activeRole === "max" ||
     membership.isOwner ||
     membership.isOrganizer
   ) {
@@ -108,10 +109,10 @@ async function loadActionDiscussionMembership(
   supabase: SupabaseClient,
   actionId: string,
   userId: string,
+  activeRole: ActiveRole | null | undefined,
   action: ActionDiscussionCandidate & { created_by_clerk_id: string },
 ): Promise<ActionDiscussionMembership | null> {
-  const [profileResult, organizerResult, registrationResult, participationResult] = await Promise.all([
-    supabase.from("profiles").select("role_label").eq("id", userId).maybeSingle(),
+  const [organizerResult, registrationResult, participationResult] = await Promise.all([
     supabase
       .from("action_organizers")
       .select("organizer_clerk_id")
@@ -133,7 +134,6 @@ async function loadActionDiscussionMembership(
   ]);
 
   if (
-    profileResult.error ||
     organizerResult.error ||
     registrationResult.error ||
     participationResult.error
@@ -142,7 +142,7 @@ async function loadActionDiscussionMembership(
   }
 
   return {
-    roleLabel: typeof profileResult.data?.role_label === "string" ? profileResult.data.role_label : null,
+    activeRole,
     isOwner: action.created_by_clerk_id === userId,
     isOrganizer: organizerResult.data?.organizer_clerk_id === userId,
     registrationStatus: normalizeParticipationStatus(registrationResult.data?.registration_status),
@@ -161,6 +161,7 @@ export async function resolveActionDiscussionAccess(
   supabase: SupabaseClient,
   actionId: string,
   userId: string,
+  activeRole?: ActiveRole | null,
 ): Promise<ActionDiscussionAccess> {
   const action = await loadActionById(supabase, actionId);
   if (!action || !isActionDiscussionAvailable(action)) {
@@ -187,7 +188,13 @@ export async function resolveActionDiscussionAccess(
     return { state: "excluded", conversationId: conversationResult.data.id };
   }
 
-  const membership = await loadActionDiscussionMembership(supabase, actionId, userId, action);
+  const membership = await loadActionDiscussionMembership(
+    supabase,
+    actionId,
+    userId,
+    activeRole,
+    action,
+  );
   if (!membership) {
     return { state: "unavailable", conversationId: null };
   }

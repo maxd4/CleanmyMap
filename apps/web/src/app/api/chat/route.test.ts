@@ -215,6 +215,7 @@ describe("POST /api/chat", () => {
       expect.objectContaining({ from: expect.any(Function) }),
       actionId,
       "user-1",
+      "benevole",
     );
     expect(loadActionByIdMock).toHaveBeenCalledWith(
       expect.objectContaining({ from: expect.any(Function) }),

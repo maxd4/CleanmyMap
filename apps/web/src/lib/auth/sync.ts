@@ -1,18 +1,13 @@
 import type { User } from "@clerk/nextjs/server";
-import { env } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { prepareProfileAvatarUrl } from "@/lib/supabase/profile-avatar-storage";
-import {
-  parseAdminUserIds,
-  parseMaxUserIds,
-  resolveClerkRole,
-} from "@/lib/auth/role-resolution";
 import {
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
   type AppProfile,
   type DisplayNameMode,
 } from "@/lib/profiles";
+import { resolveSyncRoleContext } from "./sync-role-context";
 import { getDisplayNameModeOverride } from "@/lib/account/display-name-mode-store";
 import {
   extractParisArrondissementFromLabel,
@@ -40,9 +35,6 @@ type ProfileRow = {
 
 type ProfileMetadata = Record<string, unknown> | null;
 type MetadataSource = Record<string, unknown> | null | undefined;
-type SyncRoleContext = {
-  role: ReturnType<typeof resolveClerkRole>;
-};
 type SyncedProfileRow = Record<string, unknown> & { id: string };
 
 function readMetadataValue(
@@ -138,18 +130,6 @@ function extractProfileMetadata(user: User): Record<string, unknown> {
   }
 
   return merged;
-}
-
-function resolveSyncRoleContext(
-  user: User,
-): SyncRoleContext {
-  return {
-    role: resolveClerkRole({
-      user,
-      adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
-      maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
-    }),
-  };
 }
 
 function resolveProfileArrondissement(
@@ -356,6 +336,7 @@ async function upsertSyncedProfile(
     displayNameMode: DisplayNameMode;
     handle: string;
     persistedProfile: string;
+    activeRole: AppProfile;
     avatarUrl: string | null;
     profileMetadata: Record<string, unknown>;
     parisArrondissement: number | null;
@@ -370,6 +351,7 @@ async function upsertSyncedProfile(
         display_name_mode: payload.displayNameMode,
         handle: payload.handle,
         role_label: payload.persistedProfile,
+        active_role_label: payload.activeRole,
         avatar_url: payload.avatarUrl,
         metadata: payload.profileMetadata,
         paris_arrondissement: payload.parisArrondissement,
@@ -502,7 +484,7 @@ export async function syncClerkUserToSupabase(
   if (!supabase) {
     return null;
   }
-  const { role: profile } = resolveSyncRoleContext(user);
+  const { role: profile, activeRole } = resolveSyncRoleContext(user);
   const persistedProfile = resolvePersistedProfileLabel(profile);
   const profileMetadata = extractProfileMetadata(user);
   const existingProfile = await loadExistingProfile(supabase, user.id);
@@ -527,6 +509,7 @@ export async function syncClerkUserToSupabase(
     displayNameMode,
     handle,
     persistedProfile,
+    activeRole,
     avatarUrl: avatarUrl ?? user.imageUrl,
     profileMetadata: metadata,
     parisArrondissement:
