@@ -618,7 +618,7 @@ les exclusions et réintégrations sont aussi enregistrées via
 `appendActionModerationAudit` dans l'audit canonique, avec l'acteur,
 l'utilisateur cible, l'action, la conversation et le motif lorsqu'il est
 fourni. La correction append-only courante est
-`20260927000007_action_discussion_access_and_notifications.sql`.
+`20260927000008_action_discussion_access_and_notifications.sql`.
 
 ### Audience des notifications de discussion
 
@@ -646,6 +646,28 @@ ne reçoit plus automatiquement les notifications post-action. Les exclusions
 Chat restent appliquées au fan-out, l'auteur n'est jamais notifié, et une
 opération rejouée ne produit pas de doublon logique. Les notifications portent
 le type `action_discussion`, séparé du type générique `chat`.
+
+### Canaux de livraison futurs
+
+Le domaine sépare explicitement :
+
+```txt
+notification métier → destinataire → canaux de livraison
+```
+
+`app_notifications` reste le canal in-app canonique et la source de l'état lu/
+non lu. Le contrat TypeScript courant prépare la préférence utilisateur
+`apps/web/src/lib/notifications/action-discussion-delivery.ts` expose la
+préférence `actionDiscussionPush` avec les valeurs `off`, `important_only` et
+`all`; son absence ou une valeur invalide signifie `off`. Le push mobile n'est donc jamais
+déduit d'un rôle, d'un CTA ou de l'existence d'une notification in-app.
+
+Aucun fournisseur mobile, token d'appareil ou table de devices n'est introduit
+avant le choix réel de l'application et de son infrastructure. Lors de cette
+intégration, les tokens seront séparés des profils métier, révocables,
+multi-appareils, supprimables lorsqu'ils sont invalides et incapables d'exposer
+des données privées excessives sur écran verrouillé. Le push consommera le même
+événement métier que l'in-app et ne créera jamais une seconde notification.
 
 ## Lecture propriétaire Trash Spotter
 

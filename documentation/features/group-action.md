@@ -96,6 +96,8 @@ distincte à arbitrer ultérieurement si nécessaire.
 - Source dérogation: les opérations admin sont journalisées séparément et ne modifient pas le parcours normal.
 - Discussion d'action: le créateur, les organisateurs, les rôles actifs `admin`/`max` et les participants confirmés peuvent lire et écrire avant l'action; après `post_action_complete`, seuls les participants finaux `action_participants` `confirmed` conservent l'accès, avec le créateur, les organisateurs et les admins. Une demande `pending`, notamment un claim post-action, ne donne aucun accès d'écriture. Une action annulée conserve une lecture autorisée mais bloque les nouveaux messages.
 - Audience des notifications de discussion: elle suit les mêmes sources de membres confirmés, exclut l'auteur et les exclusions actives, et produit une notification `action_discussion` idempotente dans `app_notifications` avec `actionId`, `commentId`/`messageId` et `actionPhase`. Une inscription future `pending` n'est pas notifiée.
+- Architecture de livraison future: la notification métier `action_discussion` est d'abord créée dans `app_notifications`, puis pourra être évaluée par canal. Le canal in-app reste actif par défaut; le futur push mobile sera séparé, explicitement opt-in et piloté par `actionDiscussionPush = off | important_only | all`, sans fournisseur push choisi dans l'état courant.
+- Importance des messages: le contrat futur distingue `normal` et `important`. Seule une marque explicite d'importance, réservée aux annonces organisateur réellement justifiées (lieu, horaire, itinéraire, annulation, sécurité/météo ou message épinglé), peut satisfaire `important_only`; un commentaire libre n'est jamais promu automatiquement.
 
 ## Validation
 
