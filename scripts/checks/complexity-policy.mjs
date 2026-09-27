@@ -128,7 +128,7 @@ export function createFunctionMetadataResolver(file, source) {
       startLine: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
       endLine: sourceFile.getLineAndCharacterOfPosition(node.end).line + 1,
     };
-  }
+  };
 }
 
 function createFunctionIdentityResolver(file, source) {
