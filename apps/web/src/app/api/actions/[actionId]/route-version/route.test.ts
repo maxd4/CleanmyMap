@@ -9,6 +9,8 @@ const identityMock = vi.hoisted(() => vi.fn());
 const loadActionMock = vi.hoisted(() => vi.fn());
 const organizersMock = vi.hoisted(() => vi.fn());
 const supabaseMock = vi.hoisted(() => vi.fn());
+const participantSummariesMock = vi.hoisted(() => vi.fn());
+const freshnessMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: authMock,
@@ -17,6 +19,12 @@ vi.mock("@/lib/authz", () => ({
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionMock }));
 vi.mock("@/lib/actions/participation/organizers", () => ({
   loadActionOrganizerIdsForAction: organizersMock,
+}));
+vi.mock("@/lib/actions/participation/participant-summaries", () => ({
+  loadActionParticipantSummaries: participantSummariesMock,
+}));
+vi.mock("@/lib/route/route-refresh-signals-loader", () => ({
+  loadRouteFreshnessSignal: freshnessMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: supabaseMock }));
 vi.mock("@/lib/http/auth-responses", () => ({
@@ -100,6 +108,8 @@ describe("POST /api/actions/:actionId/route-version", () => {
     authMock.mockResolvedValue({ ok: true, userId: "owner-1" });
     identityMock.mockResolvedValue({ userId: "owner-1", role: null, activeRole: null });
     organizersMock.mockResolvedValue([]);
+    participantSummariesMock.mockResolvedValue([]);
+    freshnessMock.mockResolvedValue({ status: "current", latestSourceAt: null });
   });
 
   it("refuses anonymous recalculation and past actions", async () => {
@@ -192,5 +202,34 @@ describe("POST /api/actions/:actionId/route-version", () => {
     }), { params: Promise.resolve({ actionId: "action-1" }) });
 
     expect(response.status).toBe(403);
+  });
+
+  it("returns lightweight freshness signals without invoking the planner", async () => {
+    const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
+    const current = actionWithSnapshot(currentSnapshot);
+    loadActionMock.mockResolvedValueOnce(current);
+    participantSummariesMock.mockResolvedValueOnce([{
+      actionId: "action-1",
+      activeCount: 5,
+      totalCount: 6,
+      myParticipationStatus: "confirmed",
+      myParticipationSource: "manual",
+      myJoinedAt: null,
+      myUpdatedAt: null,
+    }]);
+    supabaseMock.mockReturnValue({ from: vi.fn() });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost", { method: "GET" }), {
+      params: Promise.resolve({ actionId: "action-1" }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.signals).toMatchObject({
+      participants: { used: 3, confirmed: 5 },
+      recommended: true,
+      reasons: ["participants_changed"],
+    });
+    expect(freshnessMock).toHaveBeenCalledOnce();
   });
 });

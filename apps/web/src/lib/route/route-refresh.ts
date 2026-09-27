@@ -3,6 +3,7 @@ import { createOperationalRouteFromRecommendation } from "./route-operational";
 import type { RoutePlannerProof } from "./route-planner-proof-contract";
 import type { RoutePlannerSnapshot } from "./route-calibration-types";
 import type { RouteRecommendationResponse } from "./route-response-contract";
+import { MAX_ROUTE_GROUP_COUNT } from "./route-group-partition";
 import {
   buildActionRouteVersionCalculation,
   type ActionRouteVersionCalculation,
@@ -34,44 +35,89 @@ export type RouteRefreshComparison = {
   }>;
 };
 
+export type RouteRefreshSubmissionOverrides = {
+  volunteers?: number;
+  groupCount?: number;
+};
+
+export function compatibleRouteGroupCounts(volunteers: number): number[] {
+  const maximum = Math.min(MAX_ROUTE_GROUP_COUNT, Math.max(0, Math.trunc(volunteers)));
+  return Array.from({ length: Math.max(0, maximum - 1) }, (_, index) => index + 2);
+}
+
 function scheduledDateTime(date: string, time: string | null | undefined): string | undefined {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) && /^\d{2}:\d{2}$/.test(time ?? "")
     ? `${date}T${time}`
     : undefined;
 }
 
-export function buildRouteRefreshSubmission(
+function refreshOrigin(
   action: ActionEditorRecord,
-): RouteRecommendationSubmission | null {
-  const preparation = action.preparationData;
-  const snapshot = preparation?.routeCalibrationContext?.plannerSnapshot;
-  const parameters = preparation?.routeVersioning?.active.calculation.parameters ?? snapshot?.parameters;
-  if (!parameters) return null;
-
+  parameters: RoutePlannerSnapshot["parameters"],
+): { latitude: number; longitude: number; source: "map" } | null {
   const latitude = typeof action.latitude === "number" && Number.isFinite(action.latitude)
     ? action.latitude
     : parameters.origin.latitude;
   const longitude = typeof action.longitude === "number" && Number.isFinite(action.longitude)
     ? action.longitude
     : parameters.origin.longitude;
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  return Number.isFinite(latitude) && Number.isFinite(longitude)
+    ? { latitude, longitude, source: "map" }
+    : null;
+}
+
+function refreshOptions(
+  action: ActionEditorRecord,
+  parameters: RoutePlannerSnapshot["parameters"],
+  overrides: RouteRefreshSubmissionOverrides,
+) {
+  return {
+    priorityVsTravel: parameters.priorityVsTravel,
+    travelBudgetMinutes: parameters.travelBudgetMinutes,
+    maxStops: parameters.maxStops,
+    riskFocus: parameters.effectiveRiskFocus,
+    volunteers: overrides.volunteers ?? parameters.volunteers,
+    groupCount: overrides.groupCount ?? parameters.groupCount,
+    pickupPreference: parameters.pickupPreference,
+    scheduledStartAt: scheduledDateTime(action.actionDate, action.eventStartTime),
+    scheduledEndAt: scheduledDateTime(action.actionDate, action.eventEndTime),
+  };
+}
+
+export function buildRouteRefreshSubmission(
+  action: ActionEditorRecord,
+  overrides: RouteRefreshSubmissionOverrides = {},
+): RouteRecommendationSubmission | null {
+  const preparation = action.preparationData;
+  const snapshot = preparation?.routeCalibrationContext?.plannerSnapshot;
+  const parameters = preparation?.routeVersioning?.active.calculation.parameters ?? snapshot?.parameters;
+  if (!parameters) return null;
+  const origin = refreshOrigin(action, parameters);
+  if (!origin) return null;
 
   return createRouteRecommendationSubmission(
     1,
-    {
-      priorityVsTravel: parameters.priorityVsTravel,
-      travelBudgetMinutes: parameters.travelBudgetMinutes,
-      maxStops: parameters.maxStops,
-      riskFocus: parameters.effectiveRiskFocus,
-      volunteers: parameters.volunteers,
-      groupCount: parameters.groupCount,
-      pickupPreference: parameters.pickupPreference,
-      scheduledStartAt: scheduledDateTime(action.actionDate, action.eventStartTime),
-      scheduledEndAt: scheduledDateTime(action.actionDate, action.eventEndTime),
-    },
-    { latitude, longitude, source: "map" },
+    refreshOptions(action, parameters, overrides),
+    origin,
     parameters.planningMode,
   );
+}
+
+function versionedStopFromSnapshot(stop: RoutePlannerSnapshot["selectedStops"][number]) {
+  return {
+    id: stop.id,
+    label: stop.label,
+    score: stop.score,
+    priorityReason: stop.priorityReason,
+    ...(stop.evidence?.family
+      ? {
+          sourceFamily: stop.evidence.family,
+          ...(stop.evidence.family === "observed"
+            ? { sourceObservedAt: stop.evidence.observedAt }
+            : {}),
+        }
+      : {}),
+  };
 }
 
 function proposalExplanation(response: RouteRecommendationResponse): string | null {
@@ -93,12 +139,7 @@ export function buildRouteRefreshProposal(
       totalMinutes:
         response.totalMinutesEstimate ?? response.operationalBudget?.totalMinutes ?? null,
     },
-    stops: response.stops.map((stop) => ({
-      id: stop.id,
-      label: stop.label,
-      score: stop.score,
-      priorityReason: stop.priorityReason,
-    })),
+    stops: response.stops.map(versionedStopFromSnapshot),
     explanation: proposalExplanation(response),
   });
   return {

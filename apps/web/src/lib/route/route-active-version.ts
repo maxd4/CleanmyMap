@@ -1,3 +1,5 @@
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+
 export const ACTION_ROUTE_VERSIONING_SCHEMA_VERSION =
   "action-route-versioning-v1" as const;
 
@@ -12,6 +14,7 @@ export type ActionRouteVersionCalculation = {
   engineVersion: string;
   modelVersions: import("./route-calibration-types").RoutePlannerSnapshot["modelVersions"];
   provenance: import("./route-calibration-types").RoutePlannerSnapshot["provenance"];
+  weatherContext?: PlannerWeatherContext;
   metrics: {
     distanceKm: number | null;
     walkingMinutes: number | null;
@@ -23,6 +26,8 @@ export type ActionRouteVersionCalculation = {
     label: string;
     score: number;
     priorityReason: string;
+    sourceFamily?: "observed" | "predicted";
+    sourceObservedAt?: string | null;
   }>;
   explanation: string | null;
 };
@@ -65,6 +70,9 @@ export function buildActionRouteVersionCalculation(
     engineVersion: snapshot.engineVersion,
     modelVersions: structuredClone(snapshot.modelVersions),
     provenance: structuredClone(snapshot.provenance),
+    ...(snapshot.weatherContext
+      ? { weatherContext: structuredClone(snapshot.weatherContext) }
+      : {}),
     metrics: overrides.metrics ?? {
       distanceKm: snapshot.distance.totalKm,
       walkingMinutes: snapshot.distance.travelMinutes,
@@ -76,6 +84,14 @@ export function buildActionRouteVersionCalculation(
       label: stop.label,
       score: stop.score,
       priorityReason: stop.priorityReason,
+      ...(stop.evidence?.family
+        ? {
+            sourceFamily: stop.evidence.family,
+            ...(stop.evidence.family === "observed"
+              ? { sourceObservedAt: stop.evidence.observedAt }
+              : {}),
+          }
+        : {}),
     })),
     explanation: overrides.explanation ?? null,
   };
