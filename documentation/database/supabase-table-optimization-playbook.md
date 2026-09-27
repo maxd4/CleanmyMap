@@ -131,6 +131,58 @@ Choisir l'index pour le prédicat réellement exécuté.
 Un index inutile augmente aussi les coûts d'écriture et de maintenance ; ne pas
 indexer chaque colonne par réflexe.
 
+### Advisors Performance — état CURRENT du 27 septembre 2026
+
+L'audit Performance linked observé le `2026-09-27` rapporte :
+
+```text
+PERFORMANCE_ERROR: 0
+PERFORMANCE_WARN: 0
+UNUSED_INDEX_INFO: 81
+RECENT_FK_PROTECTION: 6
+EXPLICIT_PENDING_WORKLOAD: 3
+OTHER_NEEDS_WORKLOAD_EVIDENCE: 72
+IMMEDIATE_INDEX_REMOVAL: 0
+```
+
+Les anciens findings `unindexed_foreign_keys` sont **RESOLVED** par la
+migration `20260927000001_index_unindexed_foreign_keys.sql`. Les six index
+correctifs peuvent cependant apparaître temporairement comme
+`unused_index` :
+
+- `idx_action_share_contact_requests_action_id` ;
+- `idx_app_messages_feedback_reply_feedback_id` ;
+- `idx_badge_events_user_id` ;
+- `idx_chat_dm_read_states_peer_id` ;
+- `idx_missions_created_by` ;
+- `idx_missions_volunteer_id`.
+
+Trois index restent explicitement en attente d'une preuve de workload :
+`idx_messages_dm`, `idx_user_points` et
+`idx_progression_events_user_type`. Cette décision est portée par la
+migration `20260927000003_remove_redundant_unused_indexes.sql` et son test.
+Les quatre index redondants déjà prouvés ont été supprimés par cette migration.
+
+Un finding isolé `unused_index`, et a fortiori un compteur de scans nul dans
+un projet encore peu chargé, ne constitue pas une preuve de redondance et ne
+justifie jamais un `DROP INDEX`. Une suppression future exige soit une preuve
+statique de redondance, soit une observation de workload suffisamment
+représentative. Le tooling de présentation
+`apps/web/scripts/supabase-performance-advisors.mjs` conserve les findings
+dynamiques dans `OTHER_NEEDS_WORKLOAD_EVIDENCE`, expose un mode `--raw` et ne
+déclenche aucune mutation.
+
+La synthèse liée se lance explicitement depuis la racine du dépôt :
+
+```bash
+node apps/web/scripts/supabase-performance-advisors.mjs --linked
+node apps/web/scripts/supabase-performance-advisors.mjs --linked --raw
+```
+
+Le premier mode affiche les compteurs et les catégories ; `--raw` restitue le
+payload JSON original après validation. Aucun de ces modes n'utilise
+`query_logs`.
+
 ## 6. RPC, vues et agrégats
 
 Préférer une RPC ou une vue lorsque :
