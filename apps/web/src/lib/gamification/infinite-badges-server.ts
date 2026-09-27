@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getCurrentUserIdentity } from "@/lib/authz";
 import { loadActionBalanceSummary } from "./action-balance";
 import { computeMonthlyRegularitySummary } from "./monthly-regularity";
 import {
@@ -17,6 +18,11 @@ import {
 } from "./terrain-progressions";
 import { buildCurrentMilestones, type MilestoneEvent } from "./milestones";
 import { loadPersonalMohsImpactTotals } from "./mohs-impact-reconciliation";
+import {
+  buildModerationProgressionState,
+  canViewModerationProgression,
+  loadResolvedModerationCasesForUser,
+} from "./moderation-progression";
 
 function createFallbackActionBalanceSummary(): Awaited<ReturnType<typeof loadActionBalanceSummary>> {
   return {
@@ -68,8 +74,11 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
   sensitiveZoneApaisement: Awaited<
     ReturnType<typeof loadSensitiveZoneApaisementSummary>
   >;
+  moderationProgression: ReturnType<typeof buildModerationProgressionState> | null;
 }> {
   const supabase = getSupabaseServerClient(true);
+  const identity = await getCurrentUserIdentity().catch(() => null);
+  const canViewModeration = canViewModerationProgression(identity, userId);
 
   const actionRows = await loadActionRowsForUser(supabase, userId).catch(() => []);
   const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, userId, {
@@ -84,7 +93,7 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
     supabase,
     userId,
   ).catch(() => createFallbackSensitiveZoneApaisementSummary());
-  const [counters, cleanZoneSources, eventsResult] = await Promise.all([
+  const [counters, cleanZoneSources, eventsResult, moderationCases] = await Promise.all([
     loadGamificationUserCounters(supabase, userId),
     loadCleanZoneSourcesForUser(supabase, userId),
     supabase
@@ -92,6 +101,9 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
       .select("event_type, status_phase, source_table, source_id, xp_awarded, metadata")
       .eq("user_id", userId)
       .limit(12000),
+    canViewModeration
+      ? loadResolvedModerationCasesForUser(supabase, userId).catch(() => [])
+      : Promise.resolve([]),
   ]);
 
   if (eventsResult.error) {
@@ -129,5 +141,8 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
     actionBalance,
     monthlyRegularity,
     sensitiveZoneApaisement,
+    moderationProgression: canViewModeration
+      ? buildModerationProgressionState(moderationCases.length)
+      : null,
   };
 }

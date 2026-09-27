@@ -4,6 +4,7 @@ import {
   computePlacesRank,
   computeActionCreationProgress,
   computeActionCreationRank,
+  computeModerationBadgeProgress,
   BADGE_TIER_STYLES,
   nextThreshold,
   type BadgeFamily,
@@ -32,14 +33,17 @@ function resolveDisplay(rank: ReturnType<typeof resolveBadgeRank>, family: Badge
 }
 
 function calculateProgress(
-  actionProgression: ReturnType<typeof computeActionCreationProgress> | null,
+  specialProgression:
+    | ReturnType<typeof computeActionCreationProgress>
+    | ReturnType<typeof computeModerationBadgeProgress>
+    | null,
   level: number,
   next: number,
   step: number,
   total: number,
 ) {
   // The badge ring consumes a 0–1 fraction; progressPercent is an internal 0–100 value.
-  if (actionProgression) return actionProgression.progressPercent * 0.01;
+  if (specialProgression) return specialProgression.progressPercent * 0.01;
   const base = level * step;
   if (next <= base) return 0;
   return Math.max(0, Math.min(1, (Math.max(0, total) - base) / (next - base)));
@@ -47,21 +51,23 @@ function calculateProgress(
 
 export function buildInfiniteBadgeModel({ icon, title, total, step, family }: InfiniteBadgeModelInput) {
   const actionProgression = family === "actions" ? computeActionCreationProgress(total) : null;
+  const moderationProgression = family === "moderation" ? computeModerationBadgeProgress(total) : null;
+  const specialProgression = actionProgression ?? moderationProgression;
   const genericLevel = computeLevel(total, step);
-  const level = actionProgression?.currentGrade.threshold ?? genericLevel;
+  const level = specialProgression?.currentGrade.threshold ?? genericLevel;
   const rank = resolveBadgeRank(family, level, total);
   const display = resolveDisplay(rank, family, title, icon);
-  const next = actionProgression?.nextGrade?.threshold ?? nextThreshold(level, step);
-  const progress = calculateProgress(actionProgression, level, next, step, total);
+  const next = specialProgression?.nextGrade?.threshold ?? nextThreshold(level, step);
+  const progress = calculateProgress(specialProgression, level, next, step, total);
 
   return {
     level,
     rank,
     styles: BADGE_TIER_STYLES[rank.tier],
-    state: getGamificationBadgeState(total, actionProgression?.currentGrade.threshold ?? level * step),
+    state: getGamificationBadgeState(total, specialProgression?.currentGrade.threshold ?? level * step),
     displayTitle: display.title,
     displayIcon: display.icon,
-    displayRank: `${rank.grade}${rank.subGrade ? ` ${rank.subGrade}` : ""}`.trim(),
+    displayRank: specialProgression?.currentLabel ?? `${rank.grade}${rank.subGrade ? ` ${rank.subGrade}` : ""}`.trim(),
     next,
     progress,
   };

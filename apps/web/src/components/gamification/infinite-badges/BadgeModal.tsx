@@ -10,6 +10,7 @@ import {
   computeBadgeRank,
   computeActionCreationProgress,
   computeActionCreationRank,
+  computeModerationBadgeProgress,
   BADGE_TIER_STYLES,
   formatCompactNumber,
   nextThreshold,
@@ -42,7 +43,10 @@ export function BadgeModal({
 
   const actionProgression =
     family === "actions" ? computeActionCreationProgress(total) : null;
-  const level = actionProgression?.currentGrade.threshold ??
+  const moderationProgression =
+    family === "moderation" ? computeModerationBadgeProgress(total) : null;
+  const specialProgression = actionProgression ?? moderationProgression;
+  const level = specialProgression?.currentGrade.threshold ??
     Math.floor(Math.max(0, total) / step);
   const rank =
     family === "actions"
@@ -50,10 +54,11 @@ export function BadgeModal({
       : computeBadgeRank(level);
   const tier = rank.tier;
   const styles = BADGE_TIER_STYLES[tier];
+  const rankLabel = specialProgression?.currentLabel ?? `${rank.grade} ${rank.subGrade}`.trim();
 
   const next = useMemo(
-    () => actionProgression?.nextGrade?.threshold ?? nextThreshold(level, step),
-    [actionProgression, level, step],
+    () => specialProgression?.nextGrade?.threshold ?? nextThreshold(level, step),
+    [specialProgression, level, step],
   );
 
   return (
@@ -92,7 +97,7 @@ export function BadgeModal({
                     <span className="text-5xl font-black drop-shadow-lg">{level}</span>
                   </motion.div>
                   <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${styles.text} opacity-70`}>
-                    {rank.grade} {rank.subGrade} — Niveau {level}
+                    {rankLabel} — Niveau {level}
                   </p>
                   <h2 className={`text-3xl font-black tracking-tight ${styles.text} drop-shadow-md`}>
                     {title}

@@ -46,23 +46,37 @@ export function buildCurrentMilestones(input: {
   const documentedSortingEvent = recordedEvent(events, "action_documented_sorting");
   const formalitiesPreparedEvent = recordedEvent(events, "action_formalities_prepared");
   const referralEvent = recordedEvent(events, "community_referral_invite");
+  const firstModerationEvent = recordedEvent(events, "moderation_first_case");
+  const firstParticipationModerationEvent = recordedEvent(
+    events,
+    "moderation_first_participation",
+  );
+  const firstImpactCorrectionEvent = recordedEvent(
+    events,
+    "moderation_first_impact_correction",
+  );
+  const versatileModeratorEvent = recordedEvent(events, "moderation_multi_family");
+
+  const eventsByMilestone: Record<string, MilestoneEvent | null> = {
+    premiere_trace_utile: firstTraceEvent,
+    trace_fondatrice: loopEvent ?? firstTraceEvent,
+    boucle_bouclee: loopEvent,
+    mobilisateur: mobilizerEvent,
+    participation_retrouvee: participationRecoveredEvent,
+    donnee_exemplaire: exemplaryDataEvent,
+    parcours_documente: documentedRouteEvent,
+    mesure_tracable: traceableMeasurementEvent,
+    tri_documente: documentedSortingEvent,
+    formalites_preparees: formalitiesPreparedEvent,
+    parrainage_utile: referralEvent,
+    premiere_moderation: firstModerationEvent,
+    premiere_validation_participation: firstParticipationModerationEvent,
+    premiere_correction_impact_justifiee: firstImpactCorrectionEvent,
+    moderateur_polyvalent: versatileModeratorEvent,
+  };
 
   return CURRENT_MILESTONES.map((milestone) => {
-    const event = (() => {
-      switch (milestone.id) {
-        case "premiere_trace_utile": return firstTraceEvent;
-        case "trace_fondatrice": return loopEvent ?? firstTraceEvent;
-        case "boucle_bouclee": return loopEvent;
-        case "mobilisateur": return mobilizerEvent;
-        case "participation_retrouvee": return participationRecoveredEvent;
-        case "donnee_exemplaire": return exemplaryDataEvent;
-        case "parcours_documente": return documentedRouteEvent;
-        case "mesure_tracable": return traceableMeasurementEvent;
-        case "tri_documente": return documentedSortingEvent;
-        case "formalites_preparees": return formalitiesPreparedEvent;
-        case "parrainage_utile": return referralEvent;
-      }
-    })();
+    const event = eventsByMilestone[milestone.id] ?? null;
 
     return {
       ...milestone,
