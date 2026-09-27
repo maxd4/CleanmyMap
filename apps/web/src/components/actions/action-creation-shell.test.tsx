@@ -98,7 +98,7 @@ describe("ActionCreationShell", () => {
     );
   });
 
-  it("opens the Paris step with the existing action id", () => {
+  it("opens the Formalités locales step with the existing action id", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionCreationShell, {
         actorNameOptions: ["Test"],
@@ -130,7 +130,7 @@ describe("ActionCreationShell", () => {
     expect(markup).toContain("Pré-formulaire");
     expect(markup).toContain("Organiser une action");
     expect(markup).toContain("Itinéraire");
-    expect(markup).toContain("Paris");
+    expect(markup).toContain("Formalités locales");
     expect(markup).toContain("Préparation");
     expect(markup).toContain('data-workflow-step="itineraire"');
     expect(markup).toContain('data-testid="route-engine"');

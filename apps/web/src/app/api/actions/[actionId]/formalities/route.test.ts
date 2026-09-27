@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
+import {
+  buildFormalitiesWorkflowState,
+  deriveActionFormalitiesFacts,
+} from "@/lib/actions/formalities-workflow";
+import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
 
 const authMock = vi.hoisted(() => vi.fn());
 const identityMock = vi.hoisted(() => vi.fn());
 const loadActionMock = vi.hoisted(() => vi.fn());
 const loadOrganizersMock = vi.hoisted(() => vi.fn());
+const resolveActionTerritoryMock = vi.hoisted(() => vi.fn());
 const supabaseMock = vi.hoisted(() => vi.fn());
 const handleApiErrorMock = vi.hoisted(() => vi.fn());
 const validationErrorMock = vi.hoisted(() =>
@@ -22,6 +29,9 @@ vi.mock("@/lib/authz", () => ({
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionMock }));
 vi.mock("@/lib/actions/participation/organizers", () => ({
   loadCanonicalActionOrganizerIdsForAction: loadOrganizersMock,
+}));
+vi.mock("@/lib/geo/action-territory-resolver", () => ({
+  resolveActionTerritory: resolveActionTerritoryMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: supabaseMock }));
 vi.mock("@/lib/http/api-errors", () => ({
@@ -58,6 +68,7 @@ describe("/api/actions/:actionId/formalities", () => {
     });
     loadActionMock.mockResolvedValue(action());
     loadOrganizersMock.mockResolvedValue(["user-1"]);
+    resolveActionTerritoryMock.mockResolvedValue(null);
     update = vi.fn().mockReturnValue({
       eq: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
@@ -143,6 +154,243 @@ describe("/api/actions/:actionId/formalities", () => {
           }),
         }),
       }),
+    );
+  });
+
+  it("ignores a forged Paris territory while preserving other declarative facts", async () => {
+    loadActionMock.mockResolvedValueOnce({
+      ...action(),
+      department_code: "92",
+      department_name: "Hauts-de-Seine",
+    });
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-42/formalities", {
+        method: "PATCH",
+        body: JSON.stringify({
+          facts: {
+            territory: {
+              countryCode: "FR",
+              code: "FR-75",
+              label: "Paris (75)",
+              specialTerritory: { code: "FR-PARIS", label: "Paris" },
+            },
+            publicSpace: "public_domain",
+            manager: { kind: "paris_city", label: null },
+            isCleanwalk: true,
+            isPublicRoadwayActivity: false,
+            isItinerant: false,
+            isClaiming: false,
+            hasInstallations: true,
+            requiresPhysicalOccupation: true,
+            localCustomaryUse: false,
+            largeCrowdOrComplexInstallations: false,
+          },
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-42" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.facts.territory).toEqual(
+      expect.objectContaining({ code: "FR-92", label: "Hauts-de-Seine" }),
+    );
+    expect(body.facts.publicSpace).toBe("public_domain");
+    expect(body.qualification.formalities).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "paris-city-public-domain-aot" }),
+        expect.objectContaining({ id: "paris-police-public-roadway-declaration" }),
+      ]),
+    );
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preparation_data: expect.objectContaining({
+          formalitiesContext: expect.objectContaining({
+            territory: expect.objectContaining({ code: "FR-92" }),
+            publicSpace: "public_domain",
+          }),
+        }),
+      }),
+    );
+  });
+
+  it("keeps the territory resolved from the current action", async () => {
+    resolveActionTerritoryMock.mockResolvedValueOnce({
+      commune: { code: "92050", name: "Nanterre" },
+      department: { code: "92", name: "Hauts-de-Seine" },
+      region: { code: "11", name: "Île-de-France" },
+      specialTerritory: null,
+      source: "geo.api.gouv.fr",
+    });
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-42/formalities", {
+        method: "PATCH",
+        body: JSON.stringify({
+          facts: {
+            territory: { countryCode: "FR", code: "FR-75", label: "Paris (75)" },
+            publicSpace: "private_domain",
+            manager: { kind: "private", label: "Propriétaire" },
+            isCleanwalk: true,
+            isPublicRoadwayActivity: false,
+            isItinerant: false,
+            isClaiming: false,
+            hasInstallations: false,
+            requiresPhysicalOccupation: false,
+            localCustomaryUse: false,
+            largeCrowdOrComplexInstallations: false,
+          },
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-42" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.facts.territory).toEqual({
+      countryCode: "FR",
+      code: "FR-92",
+      label: "Nanterre",
+      commune: { codeInsee: "92050", label: "Nanterre" },
+      department: { code: "92", label: "Hauts-de-Seine" },
+      region: { code: "11", label: "Île-de-France" },
+      specialTerritory: null,
+    });
+  });
+
+  it("preserves the stored territory fallback when resolution is unavailable", async () => {
+    loadActionMock.mockResolvedValueOnce({
+      ...action(),
+      department_code: null,
+      department_name: null,
+      preparation_data: {
+        plannedObjective: "nettoyage",
+        formalitiesContext: {
+          territory: {
+            countryCode: "FR",
+            code: "FR-92",
+            label: "Hauts-de-Seine",
+            department: { code: "92", label: "Hauts-de-Seine" },
+            commune: null,
+            region: null,
+            specialTerritory: null,
+          },
+          publicSpace: "unknown",
+          manager: { kind: "unknown", label: null },
+          isCleanwalk: true,
+          isPublicRoadwayActivity: "unknown",
+          isItinerant: "unknown",
+          isClaiming: "unknown",
+          hasInstallations: "unknown",
+          requiresPhysicalOccupation: "unknown",
+          localCustomaryUse: "unknown",
+          largeCrowdOrComplexInstallations: "unknown",
+        },
+      },
+    });
+    resolveActionTerritoryMock.mockResolvedValueOnce(null);
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-42/formalities", {
+        method: "PATCH",
+        body: JSON.stringify({
+          facts: {
+            territory: { countryCode: "FR", code: "FR-75", label: "Paris (75)" },
+            publicSpace: "public_domain",
+            manager: { kind: "unknown", label: null },
+            isCleanwalk: true,
+            isPublicRoadwayActivity: false,
+            isItinerant: false,
+            isClaiming: false,
+            hasInstallations: false,
+            requiresPhysicalOccupation: false,
+            localCustomaryUse: false,
+            largeCrowdOrComplexInstallations: false,
+          },
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-42" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.facts.territory).toEqual(
+      expect.objectContaining({ code: "FR-92", label: "Hauts-de-Seine" }),
+    );
+  });
+
+  it("invalidates the workflow after a real action territory change", async () => {
+    const previousFacts = deriveActionFormalitiesFacts({
+      departmentCode: "92",
+      departmentName: "Hauts-de-Seine",
+      plannedObjective: "nettoyage",
+    });
+    const previousQualification = qualifyActionFormalities(previousFacts);
+    const previousWorkflow = buildFormalitiesWorkflowState({
+      facts: previousFacts,
+      qualification: previousQualification,
+      actionDependencies: {
+        territoryFingerprint: buildFormalitiesTerritoryFingerprint(previousFacts.territory),
+      },
+      now: "2026-09-26T00:00:00.000Z",
+    });
+    previousWorkflow.progress = previousWorkflow.progress.map((item) => ({
+      ...item,
+      userStatus: "sent",
+      validForQualification: true,
+    }));
+    loadActionMock.mockResolvedValueOnce({
+      ...action(),
+      department_code: "93",
+      department_name: "Seine-Saint-Denis",
+      preparation_data: {
+        plannedObjective: "nettoyage",
+        formalitiesWorkflow: previousWorkflow,
+      },
+    });
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-42/formalities", {
+        method: "PATCH",
+        body: JSON.stringify({
+          facts: {
+            territory: { countryCode: "FR", code: "FR-75", label: "Paris (75)" },
+            publicSpace: "unknown",
+            manager: { kind: "unknown", label: null },
+            isCleanwalk: true,
+            isPublicRoadwayActivity: "unknown",
+            isItinerant: "unknown",
+            isClaiming: "unknown",
+            hasInstallations: "unknown",
+            requiresPhysicalOccupation: "unknown",
+            localCustomaryUse: "unknown",
+            largeCrowdOrComplexInstallations: "unknown",
+          },
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-42" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.facts.territory.code).toBe("FR-93");
+    expect(body.workflow.trace.actionDependencyFingerprint).not.toBe(
+      previousWorkflow.trace.actionDependencyFingerprint,
+    );
+    expect(body.workflow.progress).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          formalityId: previousWorkflow.progress[0].formalityId,
+          userStatus: "sent",
+          validForQualification: false,
+          invalidatedAt: expect.any(String),
+        }),
+      ]),
     );
   });
 
