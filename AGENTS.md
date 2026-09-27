@@ -314,30 +314,6 @@ les artefacts historiques. Ils ne gouvernent aucun nouveau lot.
   dans l'installation utilisateur globale, jamais dans le checkout ;
 - ne pas modifier `documentation/pepite/` sans demande explicite.
 
-### Archives ZIP
-
-- par défaut, lorsqu'un seul fichier ou un petit nombre de fichiers suffit,
-  fournir les fichiers individuels plutôt qu'une archive ;
-- si l'utilisateur demande explicitement un fichier `.zip`, celui-ci peut être
-  créé et fourni quel que soit le type des fichiers qu'il contient ;
-- conserver exactement dans l'archive les noms et chemins attendus ; ne pas
-  modifier le contenu uniquement pour faciliter l'archivage ;
-- traiter le ZIP uniquement comme un format de transport : il ne constitue
-  jamais une nouvelle source de vérité ni une nouvelle structure du dépôt ;
-- indiquer clairement où télécharger l'archive fournie.
-
-### Documents Markdown apportés par l'utilisateur
-
-- tout nouveau fichier `.md` explicitement apporté ou téléchargé par
-  l'utilisateur dans le checkout est une source utilisateur intentionnelle ;
-  il ne doit jamais être traité comme un artefact disposable ni supprimé
-  parce qu'il est untracked ; s'il n'existe pas encore sur `origin/main`, il
-  doit être intégré au dépôt et commité localement sur `main` dans son
-  emplacement fourni ; sa signature et son push ne sont effectués que sur
-  demande explicite de l'utilisateur ; seul un secret, une donnée sensible, un fichier
-  manifestement généré ou un contenu tiers non destiné au dépôt peut bloquer
-  cette intégration, avec un STOP explicite.
-
 Ne jamais supprimer en masse un fichier untracked, généré ou non canonique
 sans établir sa provenance, son rôle, sa régénérabilité et son emplacement
 attendu. En cas de doute, le conserver et produire un verdict
@@ -475,36 +451,10 @@ Il est interdit de différer silencieusement cette dette.
   de sécurité existants ;
 - tout texte public est en français sauf surface explicitement localisée.
 
-### Proportionnalité des accès communautaires
-
-Les décisions d'accès doivent distinguer explicitement la communication,
-l'information et l'entraide de la participation métier, des mutations, des
-données sensibles, de l'organisation, de la modération et des privilèges
-administratifs. Le moindre privilège protège ces pouvoirs et ces données ; il
-n'impose pas un statut métier préalable pour une communication ou une
-consultation communautaire lorsque la sécurité réelle ne le requiert pas.
-
-Toute restriction supplémentaire doit être fondée sur un risque concret et
-documenter la ressource protégée, le scénario d'abus, l'impact attendu,
-l'insuffisance des protections existantes et celle d'une mesure moins
-restrictive. Pour une surface d'échange, examiner d'abord la modération, le
-signalement, le blocage/exclusion, le rate limiting, l'anti-spam, les limites
-de pièces jointes, la journalisation adaptée et les outils d'organisateur ou
-de modérateur.
-
-Le runtime observé est la source de vérité du comportement réellement
-implémenté ; la documentation et le contrat AuthZ canonique décrivent le
-comportement attendu. Un écart entre les deux est une anomalie à analyser et à
-corriger. Ne jamais déduire une permission du seul nom d'une route ou d'un
-ancien document. Le coût ou la performance ne constitue pas une raison
-d'AuthZ. Une page publique et une mutation authentifiée peuvent coexister sans
-devenir une seule « route protégée ». L'ouverture d'une surface communautaire
-ne doit ni élever un rôle, ni accorder une mutation, une participation métier,
-un accès privé, un contournement d'ownership, une modération ou un scope
-administratif. Les exigences AuthN, AuthZ, RLS, validation, protection des
-données, secrets, audit et anti-abus nécessaires restent inchangées. Le détail
-de cette doctrine est canonique dans `CHATGPT.md`, section
-« Proportionnalité, confiance et ouverture associative ».
+Les décisions d'accès communautaires suivent la doctrine canonique de
+`CHATGPT.md`, section « Proportionnalité, confiance et ouverture associative ».
+Les exigences AuthN, AuthZ, RLS, validation, protection des données, secrets,
+audit et anti-abus restent inchangées.
 
 Les règles propres à Next/web, API, Supabase, scripts, mobile, CI/GitHub,
 Python et documentation sont portées par les fichiers scoped correspondants.
@@ -513,20 +463,12 @@ doivent en plus appliquer leur gouvernance locale.
 
 ## Charge machine
 
-Ne pas lancer plusieurs commandes lourdes en parallèle. Préférer les contrôles
-read-only et ciblés ; exécuter séquentiellement les suites Vitest/Node,
-pytest, build, Turbopack et E2E. Ne pas laisser tourner de serveur, watcher,
-worker ou processus local après la validation. Ne pas explorer par défaut
-`node_modules/`, `.next/`, `.vercel/`, `.playwright-mcp/`,
-`.codex-remote-attachments/`, `artifacts/` ou `backups/`.
-Docker, WSL et les runtimes de conteneurs ne font plus partie de
-l'environnement de développement et de validation locale supporté sur le
-poste utilisateur. Ne jamais demander à Codex de les installer, démarrer,
-sonder ou arrêter localement. Cela n'interdit pas un runtime de conteneurs
-fourni par un runner CI hébergé et éphémère, explicitement dédié à la
-validation ou au replay concerné. Une opération locale qui en dépend est
-classée `UNSUPPORTED_CONTAINER_RUNTIME` ; poursuivre uniquement les
-validations indépendantes lorsque c'est possible.
+Les contraintes du poste local, des temporaires, des verrous Git, des
+diagnostics host, de la charge machine et du runtime conteneurisé sont
+canoniques dans
+[`documentation/development/host-environment.md`](documentation/development/host-environment.md).
+Les checks restent proportionnels au périmètre et les processus lancés par un
+lot doivent être arrêtés à sa clôture.
 
 ### Sobriété de contexte et de validation
 
@@ -616,54 +558,3 @@ Si plusieurs chantiers se mélangent ou si une décision importante risque d'êt
 perdue, ne pas reconstruire approximativement le contexte : fournir une
 passation courte avec l'état, le dernier commit, les fichiers, les décisions
 et la prochaine étape, puis attendre confirmation avant de continuer.
-
-## Interdiction stricte des copies persistantes hors projet
-
-- La racine de ce dépôt est l’unique emplacement canonique de travail.
-- Cette règle prévaut sur toute mention générale d’un répertoire temporaire
-  système pour du contenu issu du projet.
-- Il est interdit de créer, copier, cloner, snapshotter, exporter ou conserver
-  hors de cette racine un fichier ou dossier issu du projet à titre persistant,
-  notamment une copie complète, un backup, un staging durable, un clone Git ou
-  un worktree.
-- Il est également interdit de créer ou d'utiliser un clone Git isolé, même
-  éphémère ; la sandbox exceptionnelle de publication ne constitue pas une
-  autorisation de clone et doit utiliser un mécanisme qui ne duplique pas le
-  dépôt. Si aucun mécanisme conforme n'est disponible, l'opération est
-  `BLOCKED`.
-- Cette interdiction couvre `%TEMP%`, `%TMP%`, `%LOCALAPPDATA%`, le dossier
-  parent `business`, les dossiers frères et tout autre chemin externe.
-- Utiliser uniquement un emplacement canonique déjà prévu sous la racine
-  (`work/`, `artifacts/` ou `.artifacts/` selon le dépôt) pour les fichiers de
-  travail et preuves. Ne jamais diriger volontairement un outil vers `%TEMP%`
-  pour y déposer du contenu du projet.
-- Si un mécanisme de validation temporaire devient nécessaire, il doit rester
-  sous `.artifacts/validation/prepush-candidate/<sha>/` dans cette racine. Une
-  copie externe est `BLOCKED`.
-- Avant de clôturer, vérifier qu’aucune copie externe n’a été créée par le lot;
-  les éventuels artefacts internes générés hors du contrôle de l’agent ne
-  constituent pas une autorisation de reproduire ce comportement.
-
-## Sécurité des diagnostics host et des verrous Git
-
-Le fichier `.git/index.lock` ne doit jamais être supprimé par réflexe. Sa
-suppression n'est permise qu'après preuve documentée qu'il est stale : fichier
-de 0 octet, inchangé depuis au moins 30 secondes, aucun processus Git
-mutateur pertinent et aucun `MERGE`, `REBASE`, `CHERRY_PICK` ou `REVERT` actif.
-La suppression est alors unique et ciblée. Si le lock réapparaît, arrêter avec
-le verdict `HOST_ENVIRONMENT` ; ne pas entrer dans une boucle de suppressions.
-
-Ne jamais tuer globalement `git.exe` ou `fsmonitor`. Identifier le dépôt et le
-processus concernés, puis préserver les démons et processus Git étrangers.
-
-Les diagnostics host tels que ProcMon, ETW ou équivalents doivent être filtrés
-et bornés dans le temps. Annoncer leur périmètre et le volume attendu et
-obtenir une autorisation explicite avant toute capture susceptible de dépasser
-1 Go. Ne jamais charger ou parcourir intégralement en Python une capture d'au
-moins 500 Mo sans autorisation explicite. Préférer un export filtré, une
-fenêtre temporelle courte, une requête native ou un traitement borné ; arrêter
-plutôt que provoquer une consommation RAM ou disque non bornée.
-
-Un workaround local de Codex Desktop, notamment `config.toml` ou un mode
-Git Review, ne constitue pas un contrat du dépôt et ne doit pas être transposé
-dans sa gouvernance.

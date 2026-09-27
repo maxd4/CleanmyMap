@@ -104,6 +104,17 @@ Documenter uniquement une connaissance durable pertinente :
 Modifier la source spécialisée réellement concernée. Préférer un lien à une
 copie.
 
+## Documents explicitement fournis par l'utilisateur
+
+Un fichier `.md` explicitement fourni ou téléchargé par l'utilisateur est une
+source intentionnelle. Ne pas le supprimer parce qu'il est untracked : le
+conserver à l'emplacement fourni et l'intégrer au dépôt si aucun secret,
+donnée sensible, contenu généré ou contenu tiers non destiné au dépôt ne
+l'empêche. La décision de commit ou de push suit la gouvernance Git racine.
+
+Lorsqu'un ZIP est demandé, il reste un format de transport : conserver les
+noms et chemins attendus, sans en faire une nouvelle source de vérité.
+
 ## Règle spéciale — `impact_IA` : hypothèses et ordres de grandeur
 
 Pour tout chantier portant sur `documentation/plans/rapport_impact/impact_IA/`
