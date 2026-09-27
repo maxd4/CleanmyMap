@@ -144,8 +144,8 @@ Clôture complète d'un changement transversal ou sensible :
 npm run checks:full
 ```
 
-Le mode `COMPLET` est borné à 720 secondes et réutilise la même détection des
-domaines concernés que `RAPIDE` : il ne rend pas automatiquement tous les
+Le mode `COMPLET` n'a plus de budget global fixe et réutilise la même détection
+des domaines concernés que `RAPIDE` : il ne rend pas automatiquement tous les
 domaines pertinents. Il renforce les preuves à l'intérieur du scope détecté
 (gouvernance, sécurité, typecheck, lint, Vitest Web, quality, migrations, tests
 de scripts/Python ou build de production lorsque le domaine le justifie). Une
@@ -154,9 +154,11 @@ est indiquée `ALREADY_PROVEN` au lieu d'être relancée ; toute modification du
 candidat l'invalide.
 
 Chaque exécution produit un rapport avec `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
-`ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS`, `CHECKS_PASSED`, `CHECKS_FAILED`,
+`ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS` (`none` pour `COMPLET`),
+`CHECKS_PASSED`, `CHECKS_FAILED`,
 `CHECKS_NOT_RUN` et `VERDICT`. `TIME_BUDGET_EXCEEDED` et
-`NOT_RUN_TIME_BUDGET` sont des résultats explicites, jamais des succès.
+`NOT_RUN_TIME_BUDGET` restent des résultats explicites pour les modes qui ont
+un budget, jamais des succès.
 
 Les alias historiques suivants restent disponibles pour compatibilité :
 
@@ -385,12 +387,9 @@ d'audit. Une assertion n'est ajoutée que lorsqu'elle protège un comportement
 métier réel, jamais pour tuer artificiellement un mutant statique.
 
 La mutation reste hors `checks:fast`, hors de la CI push quotidienne et hors du
-FULL courant : sa mesure réelle n'est sélectionnée que lorsque le budget de
-720 secondes est démontré sur l'environnement concerné. Tant que le FULL
-incluant les contrôles existants ne laisse pas cette marge, elle reste une
-validation manuelle/pré-release explicite ; elle ne doit pas être rendue
-silencieusement non bloquante pour entrer dans un mode quotidien. Le budget
-FULL de référence est désormais de 720 secondes.
+FULL courant. Sa mesure réelle reste une validation manuelle/pré-release
+explicite ; elle ne doit pas être rendue silencieusement non bloquante pour
+entrer dans un mode quotidien.
 
 ## Duplication et cycles
 

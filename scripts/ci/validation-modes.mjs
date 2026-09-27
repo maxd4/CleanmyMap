@@ -13,7 +13,7 @@ import fs from "node:fs";
 
 export const VALIDATION_MODE_BUDGETS = Object.freeze({
   FAST: 180,
-  FULL: 720,
+  FULL: null,
 });
 
 const SECURITY_GROUP_FILES = new Set(getVitestFiles({ groups: ["security"] }));
@@ -542,6 +542,9 @@ export function getBudgetDecision({
   estimatedSeconds,
   budgetSeconds,
 } = {}) {
+  if (budgetSeconds === null) {
+    return Object.freeze({ decision: "execute", status: "READY", remainingSeconds: Infinity });
+  }
   const remainingSeconds = Number(budgetSeconds) - Number(elapsedSeconds);
   if (remainingSeconds <= 0 || Number(estimatedSeconds) > remainingSeconds) {
     return Object.freeze({ decision: "skip", status: "NOT_RUN_TIME_BUDGET", remainingSeconds });

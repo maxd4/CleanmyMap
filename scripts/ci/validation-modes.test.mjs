@@ -202,7 +202,7 @@ test("COMPLET stays blast-radius aware and strengthens the affected Web domain",
     "ALREADY_PROVEN",
     "ALREADY_PROVEN",
   ]);
-  assert.ok(plan.plannedSeconds <= VALIDATION_MODE_BUDGETS.FULL);
+  assert.equal(plan.budgetSeconds, null);
 });
 
 test("COMPLET script-only changes include the dead-code ratchet", () => {
@@ -235,12 +235,15 @@ test("COMPLET mobile-only does not add Web checks", () => {
   assert.ok(!ids(plan).some((id) => ["vitest-full", "typecheck", "lint", "build"].includes(id)));
 });
 
-test("both plans have unique checks and stay within their hard budgets", () => {
-  for (const mode of ["FAST", "FULL"]) {
-    const plan = createModeValidationPlan({ mode, changedFiles: ["package.json"] });
-    assert.equal(new Set(ids(plan)).size, ids(plan).length);
-    assert.ok(plan.plannedSeconds <= VALIDATION_MODE_BUDGETS[mode]);
-  }
+test("both plans have unique checks and FULL has no global budget", () => {
+  const fastPlan = createModeValidationPlan({ mode: "FAST", changedFiles: ["package.json"] });
+  assert.equal(new Set(ids(fastPlan)).size, ids(fastPlan).length);
+  assert.ok(fastPlan.plannedSeconds <= VALIDATION_MODE_BUDGETS.FAST);
+
+  const fullPlan = createModeValidationPlan({ mode: "FULL", changedFiles: ["package.json"] });
+  assert.equal(new Set(ids(fullPlan)).size, ids(fullPlan).length);
+  assert.equal(VALIDATION_MODE_BUDGETS.FULL, null);
+  assert.equal(fullPlan.budgetSeconds, null);
 });
 
 test("candidate scopes select the matching diff and secret boundaries", () => {
@@ -267,6 +270,10 @@ test("budget decision is deterministic and reports time-budget skips", () => {
   );
   assert.equal(
     getBudgetDecision({ elapsedSeconds: 10, estimatedSeconds: 2, budgetSeconds: 180 }).decision,
+    "execute",
+  );
+  assert.equal(
+    getBudgetDecision({ elapsedSeconds: 10_000, estimatedSeconds: 2, budgetSeconds: null }).decision,
     "execute",
   );
 });
