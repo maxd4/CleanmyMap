@@ -8,9 +8,9 @@ import type {
   AdministrativeRuleContract,
 } from "./formalities-rules";
 
-export const NATIONAL_FORMALITIES_RULESET_VERSION =
+const NATIONAL_FORMALITIES_RULESET_VERSION =
   "national-administrative-framework-fallback-2026-09-17" as const;
-export const NATIONAL_FORMALITIES_RULE_ID = "national-formalities-fallback" as const;
+const NATIONAL_FORMALITIES_RULE_ID = "national-formalities-fallback" as const;
 
 function buildNationalUnknownFormality(
   source: FormalitiesOfficialSource,

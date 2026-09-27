@@ -5,7 +5,6 @@ import {
   type FormalityRuleScope,
 } from "./formalities-rules";
 import { createNationalFormalitiesRule } from "./formalities-national-rule";
-export { NATIONAL_FORMALITIES_RULE_ID, NATIONAL_FORMALITIES_RULESET_VERSION } from "./formalities-national-rule";
 /**
  * Explainable qualification of local administrative formalities.
  *
@@ -17,8 +16,8 @@ export { NATIONAL_FORMALITIES_RULE_ID, NATIONAL_FORMALITIES_RULESET_VERSION } fr
 export const ACTION_FORMALITIES_SCHEMA_VERSION = "action-formalities-qualification-v1" as const;
 export const PARIS_FORMALITIES_RULESET_VERSION = "paris-public-space-formalities-2026-04-16" as const;
 export const PARIS_TERRITORY_CODE = "FR-75" as const;
-export const PARIS_FORMALITIES_RULE_ID = "paris-public-space-formalities" as const;
-export const PARIS_FORMALITIES_RULE_SCOPE: FormalityRuleScope = {
+const PARIS_FORMALITIES_RULE_ID = "paris-public-space-formalities" as const;
+const PARIS_FORMALITIES_RULE_SCOPE: FormalityRuleScope = {
   kind: "special_territory",
   countryCode: "FR",
   code: "FR-PARIS",
@@ -469,7 +468,7 @@ const PARIS_RULE_CONTRACT: AdministrativeRuleContract = {
   requiredInformation: [],
 };
 
-export const ACTION_FORMALITIES_RULES: readonly AdministrativeFormalityRule[] = [
+const ACTION_FORMALITIES_RULES: readonly AdministrativeFormalityRule[] = [
   {
     id: PARIS_FORMALITIES_RULE_ID,
     scope: PARIS_FORMALITIES_RULE_SCOPE,

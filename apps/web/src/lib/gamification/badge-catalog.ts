@@ -170,10 +170,6 @@ export const BADGE_DEFINITIONS = [
   ...LEGACY_BADGE_DEFINITIONS,
 ] as const satisfies readonly GamificationBadgeDefinition[];
 
-export function currentBadgeDefinitions(): readonly GamificationBadgeDefinition[] {
-  return CURRENT_BADGE_DEFINITIONS;
-}
-
 export function findBadgeDefinition(idOrAlias: string): GamificationBadgeDefinition | undefined {
   return BADGE_DEFINITIONS.find((definition) =>
     definition.id === idOrAlias || (definition.aliases as readonly string[]).includes(idOrAlias),

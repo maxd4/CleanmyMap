@@ -10,7 +10,7 @@ export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
 export const CURRENT_GAMIFICATION_RULES_VERSION = "current-2026-09" as const;
 
-export type GamificationCategory =
+type GamificationCategory =
   | "XP_PROGRESSION"
   | "XP_MILESTONE"
   | "BADGE_ONLY"
@@ -21,7 +21,7 @@ export type GamificationVisibility =
   | "authorized_moderation"
   | "not_exposed";
 
-export type GamificationXpPolicy =
+type GamificationXpPolicy =
   | {
       kind: "progression_paliers";
       rule: "common_current_scale";
@@ -47,7 +47,7 @@ export type GamificationBadgeScale =
   | "mohs"
   | "legacy";
 
-export type GamificationBadgeRule =
+type GamificationBadgeRule =
   | { kind: "infinite_thresholds"; description: string }
   | { kind: "one_shot"; description: string }
   | { kind: "legacy_compatibility"; description: string };
@@ -468,7 +468,7 @@ export type IndividualLeaderboardItem = {
   recognition?: ContributorRecognitionCard | null;
 };
 
-export type MonthlyMilestone = {
+type MonthlyMilestone = {
   id: string;
   month: number;
   year: number;
@@ -525,7 +525,7 @@ export type PersonalImpactMethodology = {
   };
 };
 
-export type PersonalDynamicRanking = {
+type PersonalDynamicRanking = {
   rank: number | null;
   total: number;
   percentile: number | null;

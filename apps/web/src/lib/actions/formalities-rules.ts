@@ -97,7 +97,7 @@ function scopeMatchesTerritory(
   }
 }
 
-export function selectApplicableAdministrativeRules(
+function selectApplicableAdministrativeRules(
   facts: ActionFormalitiesFacts,
   rules: readonly AdministrativeFormalityRule[],
 ): AdministrativeFormalityRule[] {
@@ -132,7 +132,7 @@ export function buildFormalitiesTerritoryFingerprint(
   ].join("|");
 }
 
-export function attachRuleMetadata(
+function attachRuleMetadata(
   formality: ActionFormality,
   rule: AdministrativeFormalityRule,
 ): ActionFormality {

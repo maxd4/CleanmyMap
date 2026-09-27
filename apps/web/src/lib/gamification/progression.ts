@@ -5,7 +5,6 @@ export type {
   CollectiveLeaderboardItem,
   IndividualLeaderboardItem,
   LevelRequirementAssessment,
-  PersonalDynamicRanking,
   PersonalImpactMetrics,
   PersonalTimelineItem,
   PostActionRetentionLoop,
@@ -31,19 +30,6 @@ export {
   xpStep,
   xpRequired,
 } from "./progression-formulas";
-
-export {
-  ENGAGEMENT_STATUS_DEFINITIONS,
-  resolveEngagementStatus,
-} from "./engagement-status";
-
-export {
-  BADGE_DEFINITIONS,
-  CURRENT_BADGE_DEFINITIONS,
-  findBadgeDefinition,
-  findBadgeDefinitionByFamily,
-  findBadgeDefinitionByLabel,
-} from "./badge-catalog";
 
 export {
   refreshProgressionProfile,

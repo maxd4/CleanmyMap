@@ -77,10 +77,6 @@ export const GAMIFICATION_REGISTRY = [
   ...NON_GAMIFIED_SIGNALS,
 ] as const satisfies readonly GamificationMechanicDefinition[];
 
-export function currentGamificationRegistry(): readonly GamificationMechanicDefinition[] {
-  return GAMIFICATION_REGISTRY;
-}
-
 const GAMIFICATION_EVENT_REGISTRY: Record<
   ProgressionEventType,
   GamificationEventRegistration

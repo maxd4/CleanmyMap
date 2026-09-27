@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildSupabaseMock, type ChatMessageRow } from "./route.test.helpers";
 
+vi.mock("server-only", () => ({}));
+
 const authMock = vi.hoisted(() => vi.fn());
 const identityMock = vi.hoisted(() => vi.fn());
 const rlsClientMock = vi.hoisted(() => vi.fn());

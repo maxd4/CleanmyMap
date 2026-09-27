@@ -13,7 +13,7 @@ export type ActionRouteVersionResponse = {
   history: ActionRouteVersioning["history"];
 };
 
-export type ActionRouteRefreshSignalsResponse = {
+type ActionRouteRefreshSignalsResponse = {
   status: "ok";
   actionId: string;
   signals: RouteRefreshSignals;

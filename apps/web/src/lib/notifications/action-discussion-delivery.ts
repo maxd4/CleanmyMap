@@ -1,20 +1,16 @@
 import type { ActionPhase } from "@/lib/actions/types";
 
-export const ACTION_DISCUSSION_PUSH_PREFERENCES = [
-  "off",
-  "important_only",
-  "all",
-] as const;
-
 export type ActionDiscussionPushPreference =
-  (typeof ACTION_DISCUSSION_PUSH_PREFERENCES)[number];
+  | "off"
+  | "important_only"
+  | "all";
 
 export const DEFAULT_ACTION_DISCUSSION_PUSH_PREFERENCE: ActionDiscussionPushPreference =
   "off";
 
-export const ACTION_DISCUSSION_MESSAGE_IMPORTANCES = ["normal", "important"] as const;
 export type ActionDiscussionMessageImportance =
-  (typeof ACTION_DISCUSSION_MESSAGE_IMPORTANCES)[number];
+  | "normal"
+  | "important";
 
 export type ActionDiscussionNotificationEvent = {
   domain: "action_discussion";
@@ -32,8 +28,8 @@ export type ActionDiscussionDeliveryDecision = {
   mobilePush: boolean;
 };
 
-export const ACTION_DISCUSSION_PUSH_METADATA_KEY = "actionDiscussionPush";
-export const NOTIFICATION_PREFERENCES_METADATA_KEY = "notificationPreferences";
+const ACTION_DISCUSSION_PUSH_METADATA_KEY = "actionDiscussionPush";
+const NOTIFICATION_PREFERENCES_METADATA_KEY = "notificationPreferences";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)

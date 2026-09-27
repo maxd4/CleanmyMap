@@ -1,6 +1,6 @@
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
-export const ACTION_ROUTE_VERSIONING_SCHEMA_VERSION =
+const ACTION_ROUTE_VERSIONING_SCHEMA_VERSION =
   "action-route-versioning-v1" as const;
 
 /**
@@ -97,7 +97,7 @@ export function buildActionRouteVersionCalculation(
   };
 }
 
-export function buildActionRouteVersionId(
+function buildActionRouteVersionId(
   snapshot: import("./route-calibration-types").RoutePlannerSnapshot,
   snapshotHash: string | null,
 ): string {
