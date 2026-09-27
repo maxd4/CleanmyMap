@@ -62,6 +62,10 @@ Fallback statique:
 - Clarification structurelle des pages coeur pour supprimer les doublons analytiques
 - Campagnes multi-actions et suivi associe
 - Standardisation des usages IA utiles et politique de partage de donnees
+- Arbitrage produit des rôles `scientifique` et `entreprise` : personnalisation,
+  surfaces dédiées, projections adaptées et éventuelles capacités serveur,
+  sans privilège implicite dans le runtime actuel (voir
+  [les décisions en attente](decisions-en-attente.md))
 
 ### Priorite consolidation et perennisation
 
