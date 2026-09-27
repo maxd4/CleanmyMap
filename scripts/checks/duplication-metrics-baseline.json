@@ -9,14 +9,14 @@
   "scopes": {
     "runtime": {
       "files": 1629,
-      "lines": 281763,
-      "tokens": 1462590,
+      "lines": 281759,
+      "tokens": 1462561,
       "clones": 414,
       "fingerprints": 414,
       "duplicatedLines": 5561,
       "duplicatedTokens": 32187,
-      "percentage": 1.9736445168457177,
-      "percentageTokens": 2.200685086045987
+      "percentage": 1.9736725357486364,
+      "percentageTokens": 2.2007287217422045
     },
     "tests": {
       "files": 930,
