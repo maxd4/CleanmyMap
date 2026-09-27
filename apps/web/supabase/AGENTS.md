@@ -55,6 +55,17 @@ distincte de la validation locale.
 
 ## Workflow distant lié et diagnostic d'accès
 
+### Contrat Codex d'accès et d'audit
+
+1. `CLI_AUTH` vaut `PASS` dès qu'une commande authentifiée prouve l'accès,
+   même si `SUPABASE_ACCESS_TOKEN` est absent de l'environnement. Rapporter
+   séparément `CLI_AUTH_SOURCE`.
+2. Un audit Advisors exhaustif utilise MCP security + performance, ou le CLI
+   avec `--level info --fail-on none --output-format json`. La sortie CLI par
+   défaut n'est jamais considérée comme un inventaire complet.
+3. Tout `supabase/` racine non suivi doit être investigué et ne doit jamais
+   être committé. L'unique arbre canonique reste `apps/web/supabase/`.
+
 Le workflow local supporté utilise `npx supabase` contre le projet distant
 explicitement lié. Depuis `apps/web`, les contrôles read-only de base sont :
 
