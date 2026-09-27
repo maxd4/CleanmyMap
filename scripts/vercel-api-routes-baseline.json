@@ -16,6 +16,7 @@
     "apps/web/src/app/api/actions/[actionId]/participation-claim/route.ts",
     "apps/web/src/app/api/actions/[actionId]/public/route.ts",
     "apps/web/src/app/api/actions/[actionId]/publish/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/route-version/route.ts",
     "apps/web/src/app/api/actions/[actionId]/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/import/route.ts",

@@ -258,6 +258,32 @@ export const actionsAuthorizationContract = {
       evidenceScope: "module",
     },
   },
+  "actions/[actionId]/route-version": {
+    GET: {
+      expected: "Authenticated owner/organizer or admin/max action-management read of the active route version and freshness signals",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + loadActionById + canonical organizer resolution + canManageAction; only the action's route-version state is returned",
+      evidence: [
+        "requireAuthenticatedAccess",
+        "loadActionById",
+        "loadActionOrganizerIdsForAction",
+        "canManageAction",
+      ],
+      evidenceScope: "module",
+    },
+    POST: {
+      expected: "Authenticated owner/organizer or admin/max action-management refresh of a published future action route version",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + loadActionById + canonical organizer resolution + canManageAction before route-version persistence",
+      evidence: [
+        "requireAuthenticatedAccess",
+        "loadActionById",
+        "loadActionOrganizerIdsForAction",
+        "canManageAction",
+      ],
+      evidenceScope: "module",
+    },
+  },
   "actions/[actionId]/publish": {
     POST: {
       expected: "Authenticated owner/organizer or explicit admin/max pre-action publication",

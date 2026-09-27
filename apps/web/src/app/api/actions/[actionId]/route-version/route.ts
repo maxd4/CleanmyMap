@@ -29,6 +29,7 @@ import {
 } from "@/lib/route/route-refresh-signals";
 
 export const runtime = "nodejs";
+// Justification Vercel: route version reads and writes depend on the authenticated user and fresh action state.
 export const dynamic = "force-dynamic";
 
 const routeVersionApplySchema = z

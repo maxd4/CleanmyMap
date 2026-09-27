@@ -14,7 +14,7 @@ export type ModerationAuditRow = {
   details: unknown;
 };
 
-export type ModerationCaseFamily = "action" | "participation" | "clean_place";
+type ModerationCaseFamily = "action" | "participation" | "clean_place";
 
 export type ResolvedModerationCase = {
   caseId: string;

@@ -9,7 +9,7 @@ import {
 } from "./action-department-resolver";
 import { logWarning } from "../logging/failure-log";
 
-export type ResolvedTerritoryPart = {
+type ResolvedTerritoryPart = {
   code: string;
   name: string;
 };
@@ -134,7 +134,7 @@ async function resolveNamedTerritoryPart(
   }
 }
 
-export async function resolveActionTerritoryFromCoordinates(
+async function resolveActionTerritoryFromCoordinates(
   coordinate: Coordinate,
   options: { fetchImpl?: FetchLike } = {},
 ): Promise<ResolvedActionTerritory | null> {

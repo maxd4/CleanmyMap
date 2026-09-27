@@ -19,7 +19,6 @@ export {
 } from "./moderation-progression.model";
 export type {
   ModerationAuditRow,
-  ModerationCaseFamily,
   ResolvedModerationCase,
 } from "./moderation-progression.model";
 

@@ -7,7 +7,7 @@ import { hasCigaretteButtsMeasurement } from "@/lib/waste/cigarette-butts";
 import type { ActionQualityGrade } from "@/lib/actions/quality/quality-rules";
 import type { ActionRow, ProgressionEventType } from "./progression-types";
 
-export const ACTION_MILESTONE_IDS = [
+const ACTION_MILESTONE_IDS = [
   "boucle_bouclee",
   "mobilisateur",
   "donnee_exemplaire",

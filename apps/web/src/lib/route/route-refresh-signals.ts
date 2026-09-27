@@ -4,7 +4,7 @@ import {
   type PlannerWeatherContext,
 } from "@/lib/weather/planner-weather";
 
-export type RouteRefreshReason =
+type RouteRefreshReason =
   | "participants_changed"
   | "newer_route_data"
   | "group_count_changed"

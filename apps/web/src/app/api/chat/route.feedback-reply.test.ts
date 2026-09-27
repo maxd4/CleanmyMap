@@ -4,6 +4,8 @@ import {
   type ChatMessageRow,
 } from "./route.test.helpers";
 
+vi.mock("server-only", () => ({}));
+
 const authMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const getSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn());
