@@ -1,4 +1,4 @@
-import type { SubmissionState } from"./model";
+import type { SubmissionState } from"../model";
 
 type ActionDeclarationFormActionsProps = {
  submissionState: SubmissionState;

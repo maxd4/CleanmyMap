@@ -312,7 +312,7 @@
     },
     {
       "metric": "complexity",
-      "path": "src/components/actions/action-declaration/form/action-declaration-export-picker.view.tsx",
+      "path": "src/components/actions/action-declaration/ui/action-declaration-export-picker.view.tsx",
       "line": 38,
       "category": "React/JSX",
       "ceiling": 28,
@@ -321,7 +321,7 @@
     },
     {
       "metric": "complexity",
-      "path": "src/components/actions/action-declaration/form/action-declaration-form-confirmation.tsx",
+      "path": "src/components/actions/action-declaration/ui/action-declaration-form-confirmation.tsx",
       "line": 32,
       "category": "React/JSX",
       "ceiling": 33,
@@ -330,7 +330,7 @@
     },
     {
       "metric": "complexity",
-      "path": "src/components/actions/action-declaration/form/action-declaration-form.feedback.tsx",
+      "path": "src/components/actions/action-declaration/ui/action-declaration-form.feedback.tsx",
       "line": 35,
       "category": "React/JSX",
       "ceiling": 22,
@@ -339,7 +339,7 @@
     },
     {
       "metric": "complexity",
-      "path": "src/components/actions/action-declaration/form/action-declaration-form.quality.ts",
+      "path": "src/components/actions/action-declaration/utils/action-declaration-form.quality.ts",
       "line": 22,
       "category": "React/JSX",
       "ceiling": 22,
@@ -348,7 +348,7 @@
     },
     {
       "metric": "complexity",
-      "path": "src/components/actions/action-declaration/form/action-declaration-form.tsx",
+      "path": "src/components/actions/action-declaration/action-declaration-form.tsx",
       "line": 83,
       "category": "React/JSX",
       "ceiling": 52,
@@ -357,7 +357,7 @@
     },
     {
       "metric": "complexity",
-      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
+      "path": "src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
       "line": 476,
       "category": "hooks",
       "ceiling": 19,
@@ -3102,7 +3102,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/components/actions/action-declaration/form/action-declaration-export-picker.controller.ts",
+      "path": "src/components/actions/action-declaration/ui/action-declaration-export-picker.controller.ts",
       "line": 99,
       "category": "React/JSX",
       "ceiling": 280,
@@ -3111,7 +3111,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/components/actions/action-declaration/form/action-declaration-export-picker.view.tsx",
+      "path": "src/components/actions/action-declaration/ui/action-declaration-export-picker.view.tsx",
       "line": 38,
       "category": "React/JSX",
       "ceiling": 420,
@@ -3120,7 +3120,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/components/actions/action-declaration/form/action-declaration-form-confirmation.tsx",
+      "path": "src/components/actions/action-declaration/ui/action-declaration-form-confirmation.tsx",
       "line": 32,
       "category": "React/JSX",
       "ceiling": 275,
@@ -3129,7 +3129,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/components/actions/action-declaration/form/action-declaration-form.feedback.tsx",
+      "path": "src/components/actions/action-declaration/ui/action-declaration-form.feedback.tsx",
       "line": 35,
       "category": "React/JSX",
       "ceiling": 315,
@@ -3138,7 +3138,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/components/actions/action-declaration/form/action-declaration-form.location-section.tsx",
+      "path": "src/components/actions/action-declaration/sections/action-declaration-form.location-section.tsx",
       "line": 40,
       "category": "React/JSX",
       "ceiling": 175,
@@ -3147,7 +3147,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/components/actions/action-declaration/form/action-declaration-form.tsx",
+      "path": "src/components/actions/action-declaration/action-declaration-form.tsx",
       "line": 83,
       "category": "React/JSX",
       "ceiling": 622,
@@ -3156,7 +3156,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
+      "path": "src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
       "line": 85,
       "category": "hooks",
       "ceiling": 651,

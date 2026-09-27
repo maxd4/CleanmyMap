@@ -7,7 +7,7 @@ import {
 import {
   applyPreparationDataToForm,
 } from "../payload";
-import type { FormState } from "./model";
+import type { FormState } from "../model";
 
 export type LoadedActionPhase =
   | "pre_action"

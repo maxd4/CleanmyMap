@@ -5,7 +5,7 @@ import { MapPin, Navigation, Crosshair, CheckCircle2, AlertCircle, Loader2, MapP
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
-import type { FormState } from "../form/model";
+import type { FormState } from "../model";
 import type {
   ActionDrawing,
   ActionGeometrySource,

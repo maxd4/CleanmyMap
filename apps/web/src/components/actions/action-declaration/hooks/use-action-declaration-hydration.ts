@@ -11,8 +11,8 @@ import type {
 import {
   buildActionDeclarationHydration,
   type LoadedActionPhase,
-} from "./action-declaration-hydration.model";
-import type { FormState } from "./model";
+} from "../utils/action-declaration-hydration.model";
+import type { FormState } from "../model";
 
 type SetFormState = Dispatch<SetStateAction<FormState>>;
 

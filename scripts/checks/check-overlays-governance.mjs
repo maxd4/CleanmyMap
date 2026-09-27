@@ -13,7 +13,7 @@ const MIGRATED_CONSUMERS = new Map([
     ["@/components/ui/cmm-dialog", "<CmmDialog", "initialFocusRef={confirmButtonRef}"],
   ],
   [
-    "apps/web/src/components/actions/action-declaration/form/action-declaration-form-confirmation.tsx",
+    "apps/web/src/components/actions/action-declaration/ui/action-declaration-form-confirmation.tsx",
     [
       "@/components/ui/cmm-dialog",
       "<CmmDialog",
@@ -23,7 +23,7 @@ const MIGRATED_CONSUMERS = new Map([
     ],
   ],
   [
-    "apps/web/src/components/actions/action-declaration/form/action-declaration-export-picker.view.tsx",
+    "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker.view.tsx",
     [
       "@/components/ui/cmm-dialog",
       "<CmmDialog",
@@ -32,7 +32,7 @@ const MIGRATED_CONSUMERS = new Map([
     ],
   ],
   [
-    "apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx",
+    "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
     [
       "@/components/ui/cmm-dialog",
       "<CmmDialog",

@@ -1,4 +1,4 @@
-import type { FormState } from "./model";
+import type { FormState } from "../model";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 

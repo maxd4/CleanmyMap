@@ -4,7 +4,7 @@ import { startTransition, useCallback, useEffect, useRef, useState, type Compone
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, ClipboardList, CloudSun, FileWarning, Navigation } from "lucide-react";
 import { ActionBeforeDeclarationForm } from "./action-declaration/before/form";
-import { ActionDeclarationForm } from "./action-declaration/form/action-declaration-form";
+import { ActionDeclarationForm } from "./action-declaration/form";
 import { ActionCreationLegalPanel } from "./action-creation-legal-panel";
 import { RouteSection } from "@/components/sections/rubriques/route";
 import { WeatherSection } from "@/components/sections/rubriques/weather-section";
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { buildActionCreationTabHref, buildActionWorkflowStepHref, type ActionCreationPanelId, type ActionCreationTab } from "@/lib/actions/action-creation-routes";
 import { ACTION_WORKFLOW_STEPS, ACTION_WORKFLOW_STEP_LABELS, ACTION_WORKFLOW_STATUS_LABELS, createActionWorkflowState, invalidateActionWorkflow, loadActionWorkflowState, markActionWorkflowStep, saveActionWorkflowState, setActionWorkflowStepStatus, type ActionWorkflowState, type ActionWorkflowStepId } from "@/lib/actions/action-workflow";
 import { updateAction } from "@/lib/actions/http";
-import type { FormState } from "./action-declaration/form/model";
+import type { FormState } from "./action-declaration/model";
 import { JoinActionTabs } from "@/components/sections/rubriques/rejoindre-une-action.tabs";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 

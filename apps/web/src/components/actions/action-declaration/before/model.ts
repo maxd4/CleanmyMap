@@ -1,4 +1,4 @@
-import type { FormState } from "../form/model";
+import type { FormState } from "../model";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import type { ActionPreparationData, ActionStatus } from "@/lib/actions/types";
 import { normalizeParticipantAccounts } from "../payload";

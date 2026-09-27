@@ -14,7 +14,7 @@ import {
  type FinalActionGeometry,
 } from "@/lib/actions/geometry/final-geometry";
 import type { DeclarationMode, FormState } from"./types";
-import { initialState } from "./form/model";
+import { initialState } from "./model";
 import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
 import { formatWasteGuidanceLines } from "@/lib/waste";
 import {

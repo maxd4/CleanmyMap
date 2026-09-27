@@ -19,9 +19,9 @@ test("accepts the canonical primitive and migrated consumers", () => {
     { path: CANONICAL_DIALOG_PATH, source: read(CANONICAL_DIALOG_PATH) },
     ...[
       "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section-dialog.tsx",
-      "apps/web/src/components/actions/action-declaration/form/action-declaration-form-confirmation.tsx",
-      "apps/web/src/components/actions/action-declaration/form/action-declaration-export-picker.view.tsx",
-      "apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx",
+      "apps/web/src/components/actions/action-declaration/ui/action-declaration-form-confirmation.tsx",
+      "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker.view.tsx",
+      "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
     ].map((path) => ({ path, source: read(path) })),
   ];
 
@@ -82,7 +82,7 @@ test("removing an exception from the allowlist exposes its raw modal", () => {
 });
 
 test("allows a former exception after its migration to CmmDialog", () => {
-  const legacyPath = "apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx";
+  const legacyPath = "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx";
   const reducedAllowlist = new Set(LEGACY_MODAL_ALLOWLIST);
   reducedAllowlist.delete(legacyPath);
 

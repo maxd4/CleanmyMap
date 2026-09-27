@@ -2,9 +2,9 @@
 
 import dynamic from "next/dynamic";
 import type { ActionDrawing } from "@/lib/actions/types";
-import type { FormState } from "./model";
-import { ActionDeclarationLocationAssist } from "./action-declaration-form.smart-assist";
-import type { GpsStatus } from "./action-declaration-form.smart-assist";
+import type { FormState } from "../model";
+import { ActionDeclarationLocationAssist } from "../ui/action-declaration-smart-assist";
+import type { GpsStatus } from "../hooks/use-action-declaration-smart-assist";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import { CmmField, CmmInput, CmmTextarea } from "@/components/ui/cmm-field";
 

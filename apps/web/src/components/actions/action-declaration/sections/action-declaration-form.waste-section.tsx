@@ -1,6 +1,6 @@
 import { PLACE_TYPE_FORM_OPTIONS, normalizePlaceTypeForUi } from"@/lib/actions/place-type-options";
-import type { FormState } from"./model";
-import { ActionDeclarationWasteAssist } from"./action-declaration-form.smart-assist";
+import type { FormState } from"../model";
+import { ActionDeclarationWasteAssist } from"../ui/action-declaration-smart-assist";
 import { CmmField, CmmInput, CmmSelect } from "@/components/ui/cmm-field";
 import { ACTION_WASTE_MASS_RESOLUTION_KG } from "@/lib/waste";
 

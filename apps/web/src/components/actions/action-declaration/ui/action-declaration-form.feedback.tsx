@@ -13,7 +13,7 @@ import type {
   PostActionRetentionLoop,
   SubmissionState,
   ValidationIssue,
-} from "./model";
+} from "../model";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import { buildPostActionSummary } from "@/lib/actions/post-action-summary";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";

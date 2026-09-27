@@ -1,4 +1,4 @@
-import type { FormState } from "@/components/actions/action-declaration/form/model";
+import type { ExportForm } from "./export-form-contract";
 
 function esc(v: string): string {
   return v
@@ -28,7 +28,7 @@ function section(title: string, rows: string): string {
     </div>`;
 }
 
-export function exportFormAsPdf(form: FormState, actorName: string): boolean {
+export function exportFormAsPdf(form: ExportForm, actorName: string): boolean {
   const win = window.open("", "_blank", "noopener,noreferrer");
   if (!win) return false;
 

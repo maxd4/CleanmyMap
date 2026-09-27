@@ -1,5 +1,5 @@
 import type { PlannerActionHandoff } from "@/lib/route/route-operational";
-import type { FormState } from "./model";
+import type { FormState } from "../model";
 
 export function applyPlannerActionHandoffToForm(
   form: FormState,

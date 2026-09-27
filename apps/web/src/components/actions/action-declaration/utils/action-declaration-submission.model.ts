@@ -8,7 +8,7 @@ import type {
 import {
   OTHER_VOLUNTEER_ASSOCIATION_VALUE,
 } from "../payload";
-import type { FormState, ValidationIssue } from "./model";
+import type { FormState, ValidationIssue } from "../model";
 
 export function normalizeActionDeclarationFormBeforeSubmit(
   form: FormState,
