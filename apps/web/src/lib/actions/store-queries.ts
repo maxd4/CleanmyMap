@@ -37,6 +37,7 @@ export type ActionResumeRow = Pick<
 
 type ActionListParams = {
   actionId?: string | null;
+  actionIds?: string[] | null;
   limit: number | null;
   status: ActionStatus | null;
   includeFuturePublicActions?: boolean;
@@ -59,6 +60,9 @@ function buildActionListQuery(
   }
   if (params.actionId) {
     nextQuery = nextQuery.eq("id", params.actionId);
+  }
+  if (params.actionIds && params.actionIds.length > 0) {
+    nextQuery = nextQuery.in("id", params.actionIds);
   }
 
   if (selectFields.includes("moderation_visibility")) {
@@ -98,6 +102,10 @@ export async function fetchActionRows(
   supabase: SupabaseClient,
   params: ActionListParams,
 ): Promise<ActionRow[]> {
+  if (params.actionIds?.length === 0) {
+    return [];
+  }
+
   try {
     const rows = await runActionQuery<ActionRow>(supabase, (query) =>
       buildActionListQuery(query, params, ACTION_SELECT_FIELDS_WITH_PHASE),

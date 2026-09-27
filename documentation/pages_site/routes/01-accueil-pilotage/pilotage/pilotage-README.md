@@ -9,11 +9,11 @@
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Accès proxy** : `clerk-context` ; le proxy prépare le contexte Clerk sans appeler `auth.protect()` pour cette route.
 - **Présentation anonyme** : `auth-disabled-gate` ; un visiteur voit l'écran de verrouillage et aucun overview métier n'est chargé.
-- **Accès métier** : compte connecté avec `activeRole` `coordinateur`, `admin` ou `max`, via `getCurrentUserEffectiveAccess().canAccessPilotage`. Le profil `admin` est redirigé vers `/admin`.
+- **Accès métier** : seul `activeRole=coordinateur` peut charger l'overview métier via `getCurrentUserEffectiveAccess().canAccessPilotage`. `admin` reste redirigé vers `/admin`, `max` est refusé sur cette surface et `elu` reste refusé tant que le pilotage territorial canonique n'est pas implémenté.
 - **Objectif utilisateur principal** : Donner aux profils habilités un accès rapide aux vues de synthèse, au pilotage et aux lectures décideurs/gouvernance via trois onglets.
 - **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
 - **Palette attendue** : amber / brun
-- **Scope** : overview réservé aux rôles `coordinateur`, `admin` et `max`, structuré en onglets décideurs, pilotage et gouvernance, avec chargement serveur contrôlé.
+- **Scope** : corpus serveur des actions dont le coordinateur est créateur ou organisateur/coorganisateur canonique. Overview, KPI, comparaisons, zones, priorités et opérations communautaires restent dans ce corpus ; aucune relation ne donne un fallback global. L'organisation et le territoire restent des cibles distinctes, l'élu étant `TARGET / NOT_IMPLEMENTED`.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : pilotage — canvas #f1d5b0, halo rgba(180, 83, 9, 0.24)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
@@ -45,8 +45,8 @@ peut afficher les agrégats communautaires issus des mêmes calculateurs que le
 reste du produit : staffing à venir, relances RSVP, boucles post-événement et,
 pour le profil qui satisfait le contrat de l'endpoint, export funnel.
 
-L'accès à ces agrégats suit `canAccessPilotage` (`coordinateur`, `admin` ou
-`max`, avec redirection de l'admin vers `/admin`). L'export funnel conserve en
+L'accès à ces agrégats suit `canAccessPilotage` (`coordinateur` scoped par ses
+actions organisées, avec redirection de l'admin vers `/admin`). L'export funnel conserve en
 plus le contrôle `requireAdminAccess` de son endpoint. Les capacités personnelles
 de l'organisateur ordinaire, notamment la présence et le post-mortem de sa
 propre mission, restent dans le détail Communauté et ne sont pas déplacées

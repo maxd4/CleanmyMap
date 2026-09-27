@@ -8,8 +8,8 @@ describe("effective capability inheritance", () => {
     ["scientifique", false, false, false],
     ["entreprise", false, false, false],
     ["elu", false, true, false],
-    ["admin", true, true, true],
-    ["max", true, true, true],
+    ["admin", true, true, false],
+    ["max", true, true, false],
   ] as const)(
     "resolves %s from the canonical capability matrix",
     (role, canAccessAdminPage, canModerate, canAccessPilotage) => {

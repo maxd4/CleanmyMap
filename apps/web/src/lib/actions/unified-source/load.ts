@@ -18,7 +18,6 @@ async function loadCanonicalSpots(
   if (spotStatuses && spotStatuses.length === 0) {
     return [];
   }
-
   let query = supabase
     .from("trash_spotter_spots")
     .select(
@@ -45,6 +44,9 @@ async function loadCanonicalSpots(
   if (params.actionId) {
     query = query.eq("id", params.actionId);
   }
+  if (params.actionIds && params.actionIds.length > 0) {
+    query = query.in("id", params.actionIds);
+  }
   if (spotStatuses) {
     query = query.in("status", spotStatuses);
   }
@@ -54,6 +56,19 @@ async function loadCanonicalSpots(
     throw result.error;
   }
   return (result.data ?? []) as TrashSpotterSpotRow[];
+}
+
+function canUseLocalActionFallback(
+  params: UnifiedActionContractsParams,
+  remoteRowsResult: PromiseSettledResult<Awaited<ReturnType<typeof fetchActions>>>,
+  wantsActions: boolean,
+): boolean {
+  return (
+    wantsActions &&
+    params.actionIds == null &&
+    remoteRowsResult.status === "rejected" &&
+    allowLocalActionStoreInCurrentRuntime()
+  );
 }
 
 export async function loadUnifiedActionSourceData(
@@ -73,6 +88,7 @@ export async function loadUnifiedActionSourceData(
     wantsActions
       ? fetchActions(supabase, {
           actionId: params.actionId,
+          actionIds: params.actionIds,
           limit: sourceLimit,
           status: params.status,
           includeFuturePublicActions: params.includeFuturePublicActions,
@@ -85,10 +101,7 @@ export async function loadUnifiedActionSourceData(
     wantsSpots ? loadCanonicalSpots(supabase, params) : Promise.resolve([]),
   ]);
 
-  const shouldUseLocalFallback =
-    wantsActions &&
-    remoteRowsResult.status === "rejected" &&
-    allowLocalActionStoreInCurrentRuntime();
+  const shouldUseLocalFallback = canUseLocalActionFallback(params, remoteRowsResult, wantsActions);
   const localContractsResult = shouldUseLocalFallback
     ? (await Promise.allSettled([
         loadLocalActionContracts({

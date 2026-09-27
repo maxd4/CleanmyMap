@@ -37,4 +37,44 @@ describe("unified source cache key", () => {
     expect(emptyKey).toBe(allKey);
     expect(emptyKey).toContain("types:all");
   });
+
+  it("keeps distinct authorized action corpora in distinct cache lanes", () => {
+    const organizerA = buildUnifiedActionContractsCacheKey({
+      limit: 1000,
+      status: "approved",
+      floorDate: null,
+      requireCoordinates: false,
+      types: ["action"],
+      actionIds: ["action-a"],
+    });
+    const organizerB = buildUnifiedActionContractsCacheKey({
+      limit: 1000,
+      status: "approved",
+      floorDate: null,
+      requireCoordinates: false,
+      types: ["action"],
+      actionIds: ["action-b"],
+    });
+    const emptyScope = buildUnifiedActionContractsCacheKey({
+      limit: 1000,
+      status: "approved",
+      floorDate: null,
+      requireCoordinates: false,
+      types: ["action"],
+      actionIds: [],
+    });
+    const global = buildUnifiedActionContractsCacheKey({
+      limit: 1000,
+      status: "approved",
+      floorDate: null,
+      requireCoordinates: false,
+      types: ["action"],
+      actionIds: null,
+    });
+
+    expect(organizerA).not.toBe(organizerB);
+    expect(organizerA).not.toBe(global);
+    expect(emptyScope).not.toBe(global);
+    expect(emptyScope).toContain("actionIds:empty");
+  });
 });

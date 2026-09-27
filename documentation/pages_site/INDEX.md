@@ -194,7 +194,7 @@ Il n'existe actuellement aucune page canonique `/learn`. Les pages
 | `/explorer` | [Sommaire](./routes/01-accueil-pilotage/explorer/explorer-README.md) | `public-visible` | yellow, exception nommée | `apps/web/src/app/(app)/explorer/page.tsx` |
 | `/parcours` | [Parcours](./routes/01-accueil-pilotage/parcours/parcours-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/page.tsx` |
 | `/parcours/[profile]` | [Parcours par profil](./routes/01-accueil-pilotage/parcours-profile/parcours-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/[profile]/page.tsx` |
-| `/pilotage` | [Pilotage](./routes/01-accueil-pilotage/pilotage/pilotage-README.md) | `auth-disabled-gate` ; `clerk-context` ; accès métier `coordinateur`/`admin`/`max` | pilotage | `apps/web/src/app/(app)/pilotage/page.tsx` |
+| `/pilotage` | [Pilotage](./routes/01-accueil-pilotage/pilotage/pilotage-README.md) | `auth-disabled-gate` ; `clerk-context` ; accès métier `coordinateur` scoped aux actions organisées | pilotage | `apps/web/src/app/(app)/pilotage/page.tsx` |
 | `/profil` | [Profil](./routes/01-accueil-pilotage/profil/profil-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/page.tsx` |
 | `/profil/[profile]` | [Profil détaillé](./routes/01-accueil-pilotage/profil-profile/profil-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/[profile]/page.tsx` |
 | `/profil/impact` | [Profil impact](./routes/01-accueil-pilotage/profil-impact/profil-impact-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/impact/page.tsx` |

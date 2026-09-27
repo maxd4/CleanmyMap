@@ -90,7 +90,7 @@ export function getEffectiveAccessForSessionRole(
 ): EffectiveAccess {
   const isAuthenticated = activeRole !== "anonymous";
   const isAdmin = activeRole === "admin" || activeRole === "max";
-  const canAccessPilotage = activeRole === "coordinateur" || isAdmin;
+  const canAccessPilotage = activeRole === "coordinateur";
   const canModerate = activeRole === "elu" || isAdmin;
 
   return {

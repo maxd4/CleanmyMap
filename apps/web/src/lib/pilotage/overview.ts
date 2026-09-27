@@ -16,6 +16,10 @@ import type {
 import { buildDateFloor } from "./overview.utils";
 import { buildZones } from "./overview.zones";
 import { buildOperationalPriorities } from "./prioritization";
+import {
+  buildPilotageScopeCacheKey,
+  loadOrganizedActionIds,
+} from "./scope";
 
 export type {
   DecisionSummary,
@@ -25,6 +29,8 @@ export type {
   PilotageDataAvailability,
   PilotageOverview,
 } from "./overview.types";
+
+export type { PilotageOverviewScope } from "./scope";
 
 type BuildPilotageOverviewParams = {
   contracts: ActionDataContract[];
@@ -103,21 +109,27 @@ const PILOTAGE_OVERVIEW_CACHE_REVALIDATE_SECONDS = 600;
 
 function buildPilotageOverviewCacheKey(
   params: LoadPilotageOverviewParams,
+  actionIds: readonly string[] | null,
 ): string {
-  const types =
-    params.types && params.types.length > 0
+  const types = params.scope
+    ? "action"
+    : params.types && params.types.length > 0
       ? [...params.types].sort().join(",")
       : "all";
   return [
     `period:${params.periodDays}`,
     `limit:${params.limit ?? 1500}`,
     `types:${types}`,
+    `scope:${buildPilotageScopeCacheKey(params.scope, actionIds)}`,
   ].join("|");
 }
 
 export async function loadPilotageOverview(
   params: LoadPilotageOverviewParams,
 ): Promise<PilotageOverview> {
+  const actionIds = params.scope
+    ? await loadOrganizedActionIds(params.scope.userId)
+    : null;
   const { fetchCachedUnifiedActionContracts } = await import(
     "../actions/unified-source/unified-source-cache"
   );
@@ -132,7 +144,8 @@ export async function loadPilotageOverview(
         status: "approved",
         floorDate,
         requireCoordinates: false,
-        types: (params.types ?? null) as ActionEntityType[] | null,
+        types: (params.scope ? ["action"] : params.types ?? null) as ActionEntityType[] | null,
+        actionIds,
       });
 
       return buildPilotageOverviewFromContracts({
@@ -145,7 +158,7 @@ export async function loadPilotageOverview(
         },
       });
     },
-    ["pilotage-overview", buildPilotageOverviewCacheKey(params)],
+    ["pilotage-overview", buildPilotageOverviewCacheKey(params, actionIds)],
     {
       revalidate: PILOTAGE_OVERVIEW_CACHE_REVALIDATE_SECONDS,
       tags: ["pilotage-overview"],

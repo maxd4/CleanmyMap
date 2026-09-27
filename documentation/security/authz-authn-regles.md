@@ -216,6 +216,23 @@ Chaque surface doit appartenir à une catégorie explicite.
 
 Une relation organisationnelle ou territoriale absente ou ambiguë ne doit jamais être remplacée par un droit global.
 
+### Contrat courant de `/pilotage`
+
+`/pilotage` est une surface métier scoped, distincte de la modération et des
+indicateurs publics de Reports. En `ACTIVE_ROLE=coordinateur`, son corpus est
+formé côté serveur par les actions dont l'utilisateur est le créateur couvert
+par le contrat ou possède une relation `organizer`/`coorganizer` canonique.
+Une absence de relation donne un corpus vide, sans élargissement global.
+
+La cible `ACTIVE_ROLE=elu` est un pilotage `territory` fondé sur une
+attribution territoriale canonique ; elle reste `TARGET / NOT_IMPLEMENTED` tant
+que le runtime et les tests de séparation territoire A/B ne sont pas complets.
+`ACTIVE_ROLE=admin` reste sur `/admin` pour la supervision/modération et
+`ACTIVE_ROLE=max` reste sur l'administration de plateforme : aucun des deux ne
+reçoit le parcours métier `/pilotage` implicitement. La règle spéciale
+`GRANTED_ROLE=elu → ACTIVE_ROLE=admin` reste inchangée et doit être choisie
+explicitement.
+
 ## Routes sensibles
 
 Fichiers pivots :

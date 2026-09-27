@@ -15,6 +15,9 @@ export const PAGE_COPY: Record<
   {
     title: string;
     description: string;
+    scopeNotice: string;
+    emptyScopeTitle: string;
+    emptyScopeDescription: string;
     summaryEyebrow: string;
     windowsEyebrow: string;
     methodsEyebrow: string;
@@ -33,7 +36,12 @@ export const PAGE_COPY: Record<
   fr: {
     title: "Pilotage transverse",
     description:
-      "Observation, décision, exécution. Une vue transverse pour coordonner, arbitrer et suivre les effets sans mélanger les permissions ni le niveau de criticité.",
+      "Observation, décision, exécution. Une vue des actions que vous organisez, sans vision globale implicite ni mélange des permissions.",
+    scopeNotice:
+      "Périmètre coordinateur : indicateurs et priorités calculés uniquement sur les actions dont vous êtes créateur ou organisateur canonique.",
+    emptyScopeTitle: "Aucune action organisée",
+    emptyScopeDescription:
+      "Aucune action ne vous est actuellement rattachée par une relation canonique. Aucun indicateur global n'est affiché.",
     summaryEyebrow: "Résumé décisionnel",
     windowsEyebrow: "Fenêtres d'analyse",
     methodsEyebrow: "Méthode et fiabilité",
@@ -44,7 +52,7 @@ export const PAGE_COPY: Record<
     executionLabel: "Exécution",
     lockedTitle: "Connexion requise",
     lockedDescription:
-      "Ouvrez une session autorisée pour accéder à l'espace Accueil & Pilotage. Cette vue sert aux profils de coordination, d'administration et d'arbitrage final.",
+      "Ouvrez une session autorisée pour accéder à l'espace Accueil & Pilotage. Le pilotage métier est scoped par relation canonique aux actions organisées.",
     restrictedTitle: "Accès réservé",
     restrictedDescription:
       "Votre compte est connecté, mais il ne dispose pas des droits de supervision transverse nécessaires pour cet espace.",
@@ -53,7 +61,12 @@ export const PAGE_COPY: Record<
   en: {
     title: "Transverse cockpit",
     description:
-      "Observation, decision, execution. A transverse view to coordinate, arbitrate and track outcomes without mixing permissions or criticality levels.",
+      "Observation, decision, execution. A view of the actions you organize, without an implicit global business view.",
+    scopeNotice:
+      "Coordinator scope: indicators and priorities use only actions where you are the canonical creator or organizer.",
+    emptyScopeTitle: "No organized action",
+    emptyScopeDescription:
+      "No action is currently attached to you through a canonical relationship. No global indicator is shown.",
     summaryEyebrow: "Decision summary",
     windowsEyebrow: "Analysis windows",
     methodsEyebrow: "Method and reliability",
@@ -64,7 +77,7 @@ export const PAGE_COPY: Record<
     executionLabel: "Execution",
     lockedTitle: "Login required",
     lockedDescription:
-      "Open an authorized session to access the Home & Operations area. This view is reserved for coordination, administration and final arbitration profiles.",
+      "Open an authorized session to access the Home & Operations area. Business pilotage is scoped by canonical relationships to organized actions.",
     restrictedTitle: "Access restricted",
     restrictedDescription:
       "Your account is connected, but it does not yet have the transverse supervision rights needed for this area.",

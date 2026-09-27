@@ -12,6 +12,8 @@ import type { ActionRow } from "@/types/database";
 export type UnifiedActionContractsParams = {
   /** Explicit public deep-link target. It is loaded without viewport filtering. */
   actionId?: string | null;
+  /** Canonical action corpus selected by a server-side business scope. */
+  actionIds?: string[] | null;
   /** null means the caller explicitly requests the complete source result. */
   limit: number | null;
   status: ActionStatus | null;
