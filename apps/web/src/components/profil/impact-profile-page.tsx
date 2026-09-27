@@ -23,6 +23,8 @@ import {
   isImpactShareAbortError,
   shareOrDownloadImpactCardPng,
 } from "@/components/profil/impact-card-export";
+import type { GamificationBadgeDefinition } from "@/lib/gamification/progression-types";
+import type { EngagementStatus } from "@/lib/gamification/engagement-status";
 
 type ImpactPageProgression = {
   currentLevel: number;
@@ -35,6 +37,8 @@ type ImpactPageProgression = {
     waterSavedLiters?: number;
   };
   badges?: string[];
+  badgeCatalog?: readonly GamificationBadgeDefinition[];
+  engagementStatus?: EngagementStatus;
 };
 
 type GamificationMeResponse = {

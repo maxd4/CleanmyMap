@@ -2,13 +2,7 @@ import type {
   LevelRequirementAssessment,
   UserProgressionStats,
 } from "./progression-types";
-
-const NON_GAME_BADGE_LEVELS = [
-  { minLevel: 3, label: "Contributeur regulier" },
-  { minLevel: 6, label: "Contributeur confirme" },
-  { minLevel: 10, label: "Pilier terrain" },
-  { minLevel: 14, label: "Referent impact" },
-] as const;
+import { findBadgeDefinition } from "./badge-catalog";
 
 export function xpStep(level: number): number {
   if (!Number.isFinite(level) || level < 1) return 1;
@@ -47,11 +41,16 @@ function addBadgeIfEligible(
 }
 
 function addLevelBadges(badges: string[], currentLevel: number): void {
-  for (const levelBadge of NON_GAME_BADGE_LEVELS) {
-    if (currentLevel >= levelBadge.minLevel) {
+  const definition = findBadgeDefinition("legacy-level-recognition");
+  for (const levelBadge of definition?.legacyThresholds ?? []) {
+    if (currentLevel >= levelBadge.minimum) {
       badges.push(levelBadge.label);
     }
   }
+}
+
+function legacyLabel(definitionId: string, index: number): string {
+  return findBadgeDefinition(definitionId)?.legacyLabels?.[index] ?? definitionId;
 }
 
 export function deriveBadges(params: {
@@ -72,14 +71,14 @@ export function deriveBadges(params: {
   // infinite badge axis. These fixed recognitions are retained as historical
   // compatibility labels; they never award XP and can be absent when quality
   // changes.
-  addBadgeIfEligible(badges, params.qualityAverage >= 90, "Sentinelle Exemplaire");
+  addBadgeIfEligible(badges, params.qualityAverage >= 90, legacyLabel("legacy-quality-recognition", 0));
   if (params.qualityAverage < 90) {
-    addBadgeIfEligible(badges, params.qualityAverage >= 75, "Données de Qualité");
+    addBadgeIfEligible(badges, params.qualityAverage >= 75, legacyLabel("legacy-quality-recognition", 1));
   }
 
   // Collectif
-  if (params.collectiveEvents >= 10) badges.push("Pilier de Communauté");
-  else if (params.collectiveEvents >= 3) badges.push("Esprit d'Équipe");
+  if (params.collectiveEvents >= 10) badges.push(legacyLabel("legacy-collective-recognition", 0));
+  else if (params.collectiveEvents >= 3) badges.push(legacyLabel("legacy-collective-recognition", 1));
 
   return badges;
 }

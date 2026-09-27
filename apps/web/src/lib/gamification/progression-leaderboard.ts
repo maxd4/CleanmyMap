@@ -31,51 +31,14 @@ import type {
   ActionRow,
   CollectiveLeaderboardItem,
   IndividualLeaderboardItem,
-  LevelRequirementAssessment,
-  PersonalDynamicRanking,
-  PersonalImpactMethodology,
-  PersonalImpactMetrics,
   PersonalTimelineItem,
   PostActionRetentionLoop,
-  MonthlyMilestone,
   ContributorRecognitionSummary,
-  ContributorRecognitionSnapshot,
+  UserProgressionResponse,
 } from "./progression-types";
+import { BADGE_DEFINITIONS } from "./badge-catalog";
 import { actionRowToDrawing, toFloat, toInt, toNullableFloat } from "./progression-utils";
-
-type UserProgressionResponse = {
-  userId: string;
-  xpTotal: number;
-  xpValidated: number;
-  xpPending: number;
-  currentLevel: number;
-  potentialLevel: number;
-  nextLevel: {
-    level: number;
-    xpRequired: number;
-    xpRemaining: number;
-    frozen: boolean;
-    requirements: LevelRequirementAssessment;
-  };
-  badges: string[];
-  impact: PersonalImpactMetrics;
-  impactMethodology: PersonalImpactMethodology;
-  dynamicRanking: PersonalDynamicRanking;
-  history: {
-    timeline: PersonalTimelineItem[];
-    mapPoints: PersonalTimelineItem[];
-  };
-  monthlyMilestone: MonthlyMilestone;
-  recognition: ContributorRecognitionSnapshot;
-  annualRecognition: ContributorRecognitionSnapshot;
-  yearToDateImpact: {
-    wasteKg: number;
-    validatedActions: number;
-    wasteKnownActions: number;
-    wasteCoverageRate: number;
-  };
-};
-
+import { resolveEngagementStatus } from "./engagement-status";
 type LeaderboardPeriod = "lifetime" | "yearToDate";
 
 function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
@@ -102,7 +65,6 @@ function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
     };
   });
 }
-
 function buildCollectiveLeaderboardItems(
   approvedActionRows: ActionRow[],
 ): CollectiveLeaderboardItem[] {
@@ -116,7 +78,6 @@ function buildCollectiveLeaderboardItems(
       members: Set<string>;
     }
   >();
-
   for (const row of approvedActionRows) {
     const associationName = parseAssociationNameFromActionNotes(row.notes);
     const quality = actionQualityScoreFromRow(row);
@@ -360,6 +321,7 @@ export async function getUserProgression(
       totalButts: stats.totalButts,
       wasteCoverageRate: stats.wasteCoverageRate,
     }),
+    badgeCatalog: BADGE_DEFINITIONS, engagementStatus: resolveEngagementStatus(toInt(profile.current_level, 1)),
     impact: computePersonalImpactMetrics(rows),
     impactMethodology: buildPersonalImpactMethodology(stats.qualityAverage),
     dynamicRanking: {

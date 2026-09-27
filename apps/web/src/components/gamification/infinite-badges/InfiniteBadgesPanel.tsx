@@ -9,6 +9,7 @@ import { ActionBalanceBadge } from "../action-balance-badge";
 import { MonthlyRegularityBadge } from "../monthly-regularity-badge";
 import { SensitiveZoneBadge } from "../sensitive-zone-badge";
 import type { GamificationProgressionState } from "@/lib/gamification/progression-types";
+import { findBadgeDefinitionByFamily } from "@/lib/gamification/badge-catalog";
 
 export function InfiniteBadgesPanel({
   totals,
@@ -65,23 +66,24 @@ export function InfiniteBadgesPanel({
   const items = useMemo(
     () => [
       {
-        key: "lieux",
+        key: "explorer",
         icon: "map-pin",
-        title: "Explorateur",
-        description: "Nouveaux lieux nettoyés",
+        family: "explorer" as const,
+        title: findBadgeDefinitionByFamily("explorer")?.label ?? "Exploration",
+        description: findBadgeDefinitionByFamily("explorer")?.rule.description ?? "Nouveaux lieux nettoyés",
         total: totals.newPlaces ?? 0,
         step: 5,
         unitLabel: "lieux",
       },
       {
-        key: "actions",
+        key: "organisation",
         icon: "users",
-        title: "Organisation",
-        description: "Actions réellement organisées et validées",
+        family: "organisation" as const,
+        title: findBadgeDefinitionByFamily("organisation")?.label ?? "Organisation",
+        description: findBadgeDefinitionByFamily("organisation")?.rule.description ?? "Actions réellement organisées et validées",
         total: totals.organisationCount ?? 0,
         step: 5,
         unitLabel: "actions",
-        family: "actions" as const,
       },
     ],
     [totals.organisationCount, totals.newPlaces],
@@ -113,7 +115,7 @@ export function InfiniteBadgesPanel({
               announceGamificationGain({
                 title: "Palier infini atteint",
                 message: `${payload.title} est maintenant au niveau ${payload.level}.`,
-                tone: item.key === "lieux" ? "explorer" : item.key === "actions" ? "actions" : "generic",
+                tone: item.key === "explorer" ? "explorer" : item.key === "organisation" ? "actions" : "generic",
                 icon: payload.icon,
                 source: `infinite-${item.key}`,
                 dedupeKey: `infinite-${item.key}:${payload.level}`,

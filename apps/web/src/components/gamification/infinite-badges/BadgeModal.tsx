@@ -11,11 +11,13 @@ import {
   computeActionCreationProgress,
   computeActionCreationRank,
   computeModerationBadgeProgress,
+  canonicalBadgeFamily,
   BADGE_TIER_STYLES,
   formatCompactNumber,
   nextThreshold,
   type BadgeFamily,
 } from "./utils";
+import { computeExplorerBadgeRank } from "@/lib/gamification/badges/families";
 
 type BadgeModalProps = {
   isOpen: boolean;
@@ -40,17 +42,20 @@ export function BadgeModal({
 }: BadgeModalProps) {
   const { locale } = useSitePreferences();
   const { t } = useTranslation("gamification");
+  const canonicalFamily = canonicalBadgeFamily(family);
 
   const actionProgression =
-    family === "actions" ? computeActionCreationProgress(total) : null;
+    canonicalFamily === "organisation" ? computeActionCreationProgress(total) : null;
   const moderationProgression =
-    family === "moderation" ? computeModerationBadgeProgress(total) : null;
+    canonicalFamily === "moderation" ? computeModerationBadgeProgress(total) : null;
   const specialProgression = actionProgression ?? moderationProgression;
   const level = specialProgression?.currentGrade.threshold ??
     Math.floor(Math.max(0, total) / step);
   const rank =
-    family === "actions"
+    canonicalFamily === "organisation"
       ? computeActionCreationRank(total)
+      : canonicalFamily === "explorer"
+        ? computeExplorerBadgeRank(total)
       : computeBadgeRank(level);
   const tier = rank.tier;
   const styles = BADGE_TIER_STYLES[tier];
@@ -140,7 +145,7 @@ export function BadgeModal({
                   onClick={onClose}
                   className={`w-full rounded-2xl py-4 text-sm font-black transition-all shadow-lg hover:-translate-y-0.5 ${styles.primaryButton}`}
                 >
-                  {family === "actions" ? "Continuer la progression" : "Continuer l'exploration"}
+                  {canonicalFamily === "organisation" ? "Continuer la progression" : "Continuer l'exploration"}
                 </button>
               </div>
     </ModalFrame>

@@ -4,13 +4,12 @@ import { memo } from "react";
 import { BadgeCheck, Crown, Eye, GraduationCap, ShieldCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ContributorRecognitionCard } from "@/lib/gamification/progression-types";
+import {
+  ENGAGEMENT_STATUS_DEFINITIONS,
+  type EngagementStatusId,
+} from "@/lib/gamification/engagement-status";
 
-type RoleStatusKey =
-  | "observateur"
-  | "contributeur"
-  | "referent"
-  | "mentor"
-  | "coordinateur";
+type RoleStatusKey = EngagementStatusId;
 
 type RoleStatusCard = {
   key: RoleStatusKey;
@@ -23,102 +22,41 @@ type RoleStatusCard = {
 
 type RolesStatusPanelProps = {
   currentContributor: ContributorRecognitionCard | null | undefined;
+  currentStatusId?: EngagementStatusId;
   locale: string;
 };
 
-function getCurrentRoleStatusKey(
-  currentContributor: ContributorRecognitionCard | null | undefined,
-): RoleStatusKey {
-  if (!currentContributor || currentContributor.verifiedContributions <= 0) {
-    return "observateur";
-  }
-
-  const isCoordinator =
-    currentContributor.contributionType === "coordination" &&
-    currentContributor.verifiedContributions >= 12 &&
-    currentContributor.activeMonths >= 6;
-
-  if (isCoordinator) {
-    return "coordinateur";
-  }
-
-  if (currentContributor.mentorEligible) {
-    return "mentor";
-  }
-
-  if (
-    currentContributor.verifiedContributions >= 3 &&
-    currentContributor.activeMonths >= 2
-  ) {
-    return "referent";
-  }
-
-  return "contributeur";
-}
-
 export function buildRoleStatusCards(
-  currentContributor: ContributorRecognitionCard | null | undefined,
+  _currentContributor: ContributorRecognitionCard | null | undefined,
+  currentStatusId: EngagementStatusId = "observateur",
 ): RoleStatusCard[] {
-  const currentKey = getCurrentRoleStatusKey(currentContributor);
-  const hasContribution = Boolean(
-    currentContributor && currentContributor.verifiedContributions > 0,
+  const currentIndex = Math.max(
+    0,
+    ENGAGEMENT_STATUS_DEFINITIONS.findIndex((status) => status.id === currentStatusId),
   );
-  const contributorGate = hasContribution;
-  const referentGate =
-    currentContributor !== null &&
-    currentContributor !== undefined &&
-    currentContributor.verifiedContributions >= 3 &&
-    currentContributor.activeMonths >= 2;
-  const mentorGate = Boolean(currentContributor?.mentorEligible);
-  const coordinatorGate =
-    currentContributor !== null &&
-    currentContributor !== undefined &&
-    currentContributor.contributionType === "coordination" &&
-    currentContributor.verifiedContributions >= 12 &&
-    currentContributor.activeMonths >= 6;
+  const labelsEn: Record<EngagementStatusId, string> = {
+    observateur: "Observer",
+    contributeur: "Contributor",
+    referent: "Referent",
+    mentor: "Mentor",
+    coordinateur: "Coordinator",
+  };
+  const descriptions: Record<EngagementStatusId, [string, string]> = {
+    observateur: ["Découvre le terrain et suit la progression.", "Learns the terrain and follows progress."],
+    contributeur: ["Une contribution validée est déjà reconnue.", "A validated contribution is already recognized."],
+    referent: ["La régularité et la fiabilité deviennent visibles.", "Regularity and reliability become visible."],
+    mentor: ["Transmet les bonnes pratiques au réseau.", "Shares good practices with the network."],
+    coordinateur: ["Organise des actions et fédère plusieurs acteurs.", "Organizes actions and brings several actors together."],
+  };
 
-  return [
-    {
-      key: "observateur",
-      labelFr: "Observateur",
-      labelEn: "Observer",
-      descriptionFr: "Découvre le terrain et suit la progression.",
-      descriptionEn: "Learns the terrain and follows progress.",
-      unlocked: true,
-    },
-    {
-      key: "contributeur",
-      labelFr: "Contributeur",
-      labelEn: "Contributor",
-      descriptionFr: "Une contribution validée est déjà reconnue.",
-      descriptionEn: "A validated contribution is already recognized.",
-      unlocked: contributorGate || currentKey === "contributeur" || currentKey === "referent" || currentKey === "mentor" || currentKey === "coordinateur",
-    },
-    {
-      key: "referent",
-      labelFr: "Référent",
-      labelEn: "Referent",
-      descriptionFr: "La régularité et la fiabilité deviennent visibles.",
-      descriptionEn: "Regularity and reliability become visible.",
-      unlocked: referentGate || currentKey === "referent" || currentKey === "mentor" || currentKey === "coordinateur",
-    },
-    {
-      key: "mentor",
-      labelFr: "Mentor",
-      labelEn: "Mentor",
-      descriptionFr: "Transmet les bonnes pratiques au réseau.",
-      descriptionEn: "Shares good practices with the network.",
-      unlocked: mentorGate || currentKey === "mentor" || currentKey === "coordinateur",
-    },
-    {
-      key: "coordinateur",
-      labelFr: "Coordinateur",
-      labelEn: "Coordinator",
-      descriptionFr: "Organise des actions et fédère plusieurs acteurs.",
-      descriptionEn: "Organizes actions and brings several actors together.",
-      unlocked: coordinatorGate || currentKey === "coordinateur",
-    },
-  ];
+  return ENGAGEMENT_STATUS_DEFINITIONS.map((status, index) => ({
+      key: status.id,
+      labelFr: status.label,
+      labelEn: labelsEn[status.id],
+      descriptionFr: descriptions[status.id][0],
+      descriptionEn: descriptions[status.id][1],
+      unlocked: index <= currentIndex,
+    }));
 }
 
 function getCurrentStatusCard(cards: RoleStatusCard[]): RoleStatusCard {
@@ -133,10 +71,11 @@ function getNextStatusCard(cards: RoleStatusCard[]): RoleStatusCard | null {
 
 export const RolesStatusPanel = memo(function RolesStatusPanel({
   currentContributor,
+  currentStatusId,
   locale,
 }: RolesStatusPanelProps) {
   const fr = locale === "fr";
-  const cards = buildRoleStatusCards(currentContributor);
+  const cards = buildRoleStatusCards(currentContributor, currentStatusId);
   const currentStatus = getCurrentStatusCard(cards);
   const nextStatus = getNextStatusCard(cards);
 

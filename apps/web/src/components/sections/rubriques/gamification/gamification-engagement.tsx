@@ -75,7 +75,10 @@ export function EngagementPanel({
     );
   }
 
-  const roleCards = buildRoleStatusCards(progression.recognition.currentContributor);
+  const roleCards = buildRoleStatusCards(
+    progression.recognition.currentContributor,
+    progression.engagementStatus.id,
+  );
   const currentRole = getCurrentRoleCard(roleCards);
   const nextRole = getNextRoleCard(roleCards);
   const currentDescription =

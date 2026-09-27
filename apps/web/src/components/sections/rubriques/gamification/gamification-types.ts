@@ -1,7 +1,9 @@
 import type {
   ContributorRecognitionSnapshot,
   ContributorRecognitionSummary,
+  GamificationBadgeDefinition,
 } from "@/lib/gamification/progression-types";
+import type { EngagementStatus } from "@/lib/gamification/engagement-status";
 
 export type PersonalHistoryItem = {
   id: string;
@@ -32,6 +34,8 @@ export type MeResponse = {
     currentLevel: number;
     potentialLevel: number;
     badges: string[];
+    badgeCatalog: readonly GamificationBadgeDefinition[];
+    engagementStatus: EngagementStatus;
     nextLevel: {
       level: number;
       xpRequired: number;

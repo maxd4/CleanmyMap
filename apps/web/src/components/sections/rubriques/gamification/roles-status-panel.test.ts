@@ -33,13 +33,10 @@ describe("buildRoleStatusCards", () => {
     expect(cards.find((card) => card.key === "contributeur")?.unlocked).toBe(false);
   });
 
-  it("progresses to referent and mentor from contribution data", () => {
+  it("uses the canonical referent status supplied by the progression surface", () => {
     const referentCards = buildRoleStatusCards(
-      makeContributor({
-        verifiedContributions: 4,
-        activeMonths: 2,
-        mentorEligible: false,
-      }),
+      makeContributor(),
+      "referent",
     );
 
     expect(referentCards.find((card) => card.key === "contributeur")?.unlocked).toBe(true);
@@ -47,25 +44,18 @@ describe("buildRoleStatusCards", () => {
     expect(referentCards.find((card) => card.key === "mentor")?.unlocked).toBe(false);
 
     const mentorCards = buildRoleStatusCards(
-      makeContributor({
-        verifiedContributions: 8,
-        activeMonths: 4,
-        mentorEligible: true,
-      }),
+      makeContributor(),
+      "mentor",
     );
 
     expect(mentorCards.find((card) => card.key === "mentor")?.unlocked).toBe(true);
     expect(mentorCards.find((card) => card.key === "coordinateur")?.unlocked).toBe(false);
   });
 
-  it("reaches coordinator only on coordination-heavy profiles", () => {
+  it("renders all statuses when the canonical status is coordinateur", () => {
     const cards = buildRoleStatusCards(
-      makeContributor({
-        contributionType: "coordination",
-        verifiedContributions: 14,
-        activeMonths: 6,
-        mentorEligible: true,
-      }),
+      makeContributor(),
+      "coordinateur",
     );
 
     expect(cards.find((card) => card.key === "coordinateur")?.unlocked).toBe(true);

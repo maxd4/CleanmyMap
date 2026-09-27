@@ -5,7 +5,25 @@ import {
   ORGANISATION_GEM_CONFIG,
 } from "@/lib/gamification/gem-progression";
 
-export type BadgeFamily = "dechets" | "megots" | "lieux" | "actions" | "moderation";
+export type CanonicalBadgeFamily =
+  | "explorer"
+  | "participant"
+  | "organisation"
+  | "clean-zones"
+  | "regularity"
+  | "versatility"
+  | "learning"
+  | "moderation";
+
+/** Compatibility aliases are accepted at the component boundary only. */
+export type BadgeFamily = CanonicalBadgeFamily | "lieux" | "actions" | "dechets" | "megots";
+
+export function canonicalBadgeFamily(family: BadgeFamily | undefined): CanonicalBadgeFamily | undefined {
+  if (family === "lieux") return "explorer";
+  if (family === "actions") return "organisation";
+  if (family === "dechets" || family === "megots") return undefined;
+  return family;
+}
 
 export function clampBadgeCounter(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -91,34 +109,6 @@ export function computeBadgeTier(level: number): BadgeTier {
 }
 
 // ─── Badge LIEUX (Explorateur) — max ~50 zones → 10 paliers × 5 ───
-export type PlacesBadgeRank = BadgeRank & { icon: string; title: string };
-
-const PLACES_RANKS: PlacesBadgeRank[] = [
-  // wood (0-9 lieux)
-  { grade: "Promeneur", subGrade: "local",      tier: "wood",    icon: "footprints", title: "Promeneur Local" },   // niv 0 : 0-4
-  { grade: "Promeneur", subGrade: "assidu",     tier: "wood",    icon: "footprints", title: "Promeneur Assidu" }, // niv 1 : 5-9
-  // bronze (10-19 lieux)
-  { grade: "Arpenteur", subGrade: "de quartier",tier: "bronze",  icon: "compass",    title: "Arpenteur de Quartier" }, // niv 2 : 10-14
-  { grade: "Arpenteur", subGrade: "de ville",   tier: "bronze",  icon: "compass",    title: "Arpenteur de Ville" },    // niv 3 : 15-19
-  // silver (20-29 lieux)
-  { grade: "Éclaireur", subGrade: "urbain",     tier: "silver",  icon: "binoculars", title: "Éclaireur Urbain" },   // niv 4 : 20-24
-  { grade: "Éclaireur", subGrade: "régional",   tier: "silver",  icon: "binoculars", title: "Éclaireur Régional" }, // niv 5 : 25-29
-  // gold (30-39 lieux)
-  { grade: "Cartographe", subGrade: "actif",    tier: "gold",    icon: "map",        title: "Cartographe Actif" },  // niv 6 : 30-34
-  { grade: "Cartographe", subGrade: "expert",   tier: "gold",    icon: "map",        title: "Cartographe Expert" }, // niv 7 : 35-39
-  // diamond (40-49 lieux)
-  { grade: "Pionnier",  subGrade: "de zone",    tier: "diamond", icon: "telescope",  title: "Pionnier de Zone" },   // niv 8 : 40-44
-  { grade: "Pionnier",  subGrade: "absolu",     tier: "diamond", icon: "telescope",  title: "Pionnier Absolu" },    // niv 9 : 45-49
-  // cosmic (50+ lieux)
-  { grade: "Maître", subGrade: "des Cartes",    tier: "cosmic",  icon: "star",       title: "Maître des Cartes" },  // niv 10+
-];
-
-export function computePlacesRank(level: number): PlacesBadgeRank {
-  if (level <= 0) return PLACES_RANKS[0];
-  if (level >= PLACES_RANKS.length) return PLACES_RANKS[PLACES_RANKS.length - 1];
-  return PLACES_RANKS[level];
-}
-
 export type ActionCreationBadgeRank = BadgeRank & { icon: string; title: string };
 
 export function computeActionCreationProgress(total: number) {

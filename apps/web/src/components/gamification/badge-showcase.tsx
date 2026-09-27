@@ -6,24 +6,7 @@ import {
 } from"./badge-icon";
 import { BadgeSurface } from"./badge-surface";
 import { Badge3D } from "./badge-3d";
-
-const BADGE_CONFIG: Record<string, { tone:"admin" |"role" |"profile" |"mode" |"gamification" |"neutral"; description: string }> = {
-"Contributeur regulier": { tone:"gamification", description:"Atteindre le niveau 3" },
-"Contributeur confirme": { tone:"gamification", description:"Atteindre le niveau 6" },
-"Pilier terrain": { tone:"gamification", description:"Atteindre le niveau 10" },
-"Referent impact": { tone:"gamification", description:"Atteindre le niveau 14" },
-// COMPATIBILITY/LEGACY labels retained for historical badge payloads only.
-"Expert Mégots (Or)": { tone:"gamification", description:"10 000+ mégots retirés" },
-"Chasseur de Mégots (Argent)": { tone:"gamification", description:"2 000+ mégots retirés" },
-"Ramasseur de Mégots (Bronze)": { tone:"gamification", description:"500+ mégots retirés" },
-"Héros du Nettoyage (Or)": { tone:"gamification", description:"500kg+ récoltés" },
-"Force de la Nature (Argent)": { tone:"gamification", description:"100kg+ récoltés" },
-"Bras Armé (Bronze)": { tone:"gamification", description:"10kg+ récoltés" },
-"Sentinelle Exemplaire": { tone:"gamification", description:"Qualité moyenne > 90%" },
-"Première trace utile": { tone:"gamification", description:"Première action validée avec données complètes" },
-"Trace fondatrice": { tone:"gamification", description:"Premier jalon d'une action totalement documentée" },
-"Esprit d'Équipe": { tone:"gamification", description:"Participé à 3+ actions collectives" },
-};
+import { findBadgeDefinitionByLabel } from "@/lib/gamification/badge-catalog";
 
 export function BadgeShowcase({ badges }: { badges: string[] }) {
  return (
@@ -37,9 +20,10 @@ export function BadgeShowcase({ badges }: { badges: string[] }) {
     </div>
   ) : (
  badges.map((badge, index) => {
- const config = BADGE_CONFIG[badge] || {
- tone:"neutral" as const,
- description:"Badge spécial",
+ const definition = findBadgeDefinitionByLabel(badge);
+ const config = {
+ tone: definition ? "gamification" as const : "neutral" as const,
+ description: definition?.rule.description ?? "Badge spécial",
  };
  
  return (
