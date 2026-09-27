@@ -109,10 +109,15 @@ describe("useChatSubmit retry wiring", () => {
   });
 
   it("consumes feedback context after success and drops it when the recipient changes", () => {
-    const source = readFileSync(
+    const shellSource = readFileSync(
       fileURLToPath(new URL("../chat-shell.tsx", import.meta.url)),
       "utf8",
     );
+    const behaviorSource = readFileSync(
+      fileURLToPath(new URL("../chat-shell.behavior.ts", import.meta.url)),
+      "utf8",
+    );
+    const source = `${shellSource}\n${behaviorSource}`;
 
     expect(source).toContain("const [activeFeedbackId, setActiveFeedbackId]");
     expect(source).toContain(
