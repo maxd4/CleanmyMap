@@ -228,7 +228,9 @@ export async function PATCH(
     }
 
     const currentFacts = await factsFromAction(result.current);
-    const facts = parsed.data.facts ?? currentFacts;
+    const facts = parsed.data.facts
+      ? { ...parsed.data.facts, territory: currentFacts.territory }
+      : currentFacts;
     const qualification = qualifyActionFormalities(facts);
     const previous = normalizeActionFormalitiesWorkflow(
       result.current.preparation_data?.formalitiesWorkflow,
