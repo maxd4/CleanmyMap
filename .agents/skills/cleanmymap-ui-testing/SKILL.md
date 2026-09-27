@@ -43,7 +43,7 @@ Before any browser validation, classify the surface:
 - `PROTECTED_CLERK_CLIENT`: the route or consumer uses `useUser`, `useAuth`,
   Clerk UI, `SignedIn`/`SignedOut`, or requires a real browser Clerk session.
   A server bypass is not sufficient: use the official Clerk Development
-  Playwright harness with strict `127.0.0.1:3000`,
+  Playwright harness with strict `localhost:3000`,
   `CMM_DISABLE_DEV_AUTH_BYPASS=1`, and the `storageState`/session from global
   setup. `/onboarding` is an explicit example.
 - `PROD_SMOKE`: use a real Clerk Production session according to the playbook;

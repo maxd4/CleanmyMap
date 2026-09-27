@@ -12,8 +12,6 @@ export type {
   ProgressionStatusPhase,
   UserProgressionStats,
 } from "./progression-types";
-export type { VerifiedContributionFamily } from "./progression-rules";
-
 export {
   computeMonthlyRegularityAwards,
   computeMonthlyRegularitySummary,
