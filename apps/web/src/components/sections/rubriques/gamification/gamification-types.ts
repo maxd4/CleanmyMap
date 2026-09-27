@@ -2,6 +2,7 @@ import type {
   ContributorRecognitionSnapshot,
   ContributorRecognitionSummary,
   GamificationBadgeDefinition,
+  LevelRequirementAssessment,
 } from "@/lib/gamification/progression-types";
 import type { EngagementStatus } from "@/lib/gamification/engagement-status";
 
@@ -41,9 +42,7 @@ export type MeResponse = {
       xpRequired: number;
       xpRemaining: number;
       frozen: boolean;
-      requirements: {
-        missing: string[];
-      };
+      requirements: LevelRequirementAssessment;
     };
     impact: {
       waterSavedLiters: number;

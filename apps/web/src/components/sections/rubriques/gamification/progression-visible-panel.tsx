@@ -2,6 +2,7 @@
 
 import { AnimatedCounter } from "@/components/gamification/animated-counter";
 import type { MeResponse } from "./gamification-types";
+import { formatProgressionRequirement } from "./progression-requirement-copy";
 import { ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
 
 type ProgressionVisiblePanelProps = {
@@ -208,10 +209,10 @@ export function ProgressionVisiblePanel({
         <div className="relative z-10 mt-4 flex flex-wrap gap-2">
           {missingRequirements.map((requirement) => (
             <span
-              key={requirement}
+              key={requirement.id}
               className="rounded-full border border-red-500/15 bg-red-500/8 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-red-200"
             >
-              {requirement}
+              {formatProgressionRequirement(requirement, locale)}
             </span>
           ))}
         </div>

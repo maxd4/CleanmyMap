@@ -292,7 +292,11 @@ export async function getUserProgression(
 
   const nextLevel = profile.current_level + 1;
   const nextRequiredXp = xpRequired(nextLevel);
-  const requirement = assessLevelRequirements(nextLevel, stats);
+  const requirement = assessLevelRequirements(
+    nextLevel,
+    stats,
+    toFloat(profile.xp_validated, 0),
+  );
   const timeline = buildTimelineItems(rows).slice(0, 30);
   const rankItem = individualItems.find((item) => item.userId === userId) ?? null;
   const recognitionIndex = buildContributorRecognitionIndex(rows, userId);

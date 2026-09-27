@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { SectionLabel } from "./gamification-shell";
 import { buildRoleStatusCards } from "./roles-status-panel";
 import type { MeResponse } from "./gamification-types";
+import { formatProgressionRequirement } from "./progression-requirement-copy";
 
 type RoleCard = ReturnType<typeof buildRoleStatusCards>[number];
 
@@ -100,7 +101,7 @@ export function EngagementPanel({
         ? "Aucune contribution validée pour le moment."
         : "No validated contribution yet.";
   const progressNote = progression.nextLevel.requirements.missing[0]
-    ? progression.nextLevel.requirements.missing[0]
+    ? formatProgressionRequirement(progression.nextLevel.requirements.missing[0], locale)
     : fr
       ? "Les règles exactes de progression seront bientôt disponibles."
       : "The exact progression rules will be available soon.";
