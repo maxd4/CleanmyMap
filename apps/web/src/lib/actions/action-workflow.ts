@@ -30,7 +30,7 @@ export const ACTION_WORKFLOW_STEP_LABELS: Record<
   { fr: string; en: string }
 > = {
   itineraire: { fr: "Itinéraire", en: "Route" },
-  paris: { fr: "Paris", en: "Paris" },
+  paris: { fr: "Formalités locales", en: "Local formalities" },
   preparation: { fr: "Préparation", en: "Preparation" },
   preformulaire: { fr: "Préformulaire", en: "Pre-form" },
 };

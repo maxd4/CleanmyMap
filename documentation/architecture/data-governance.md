@@ -301,6 +301,21 @@ change (par exemple Paris vers Lyon ou changement de département). Une simple
 modification de libellé qui conserve le même territoire ne déclenche pas une
 nouvelle résolution.
 
+Lorsqu'aucune règle communale, spécialisée ou départementale suffisamment
+vérifiée ne s'applique, le même moteur peut sélectionner le fallback national.
+Il fournit alors un cadre officiel de référence et ses liens, mais conserve
+`requirementStatus = unknown` tant que l'obligation locale exacte n'est pas
+démontrée. `unknown` signifie que CleanMyMap ne dispose pas de preuves
+suffisantes pour conclure à `required`, `recommended` ou `not_required` ; il ne
+signifie ni absence de formalité, ni erreur technique.
+
+La politique de publication reste stricte : `required` peut bloquer lorsque la
+démarche requise n'est pas déclarée envoyée ; `recommended`, `not_required` et
+`unknown` ne bloquent pas automatiquement. Le fallback national ne peut donc
+pas transformer une information générale en obligation locale certaine. Après
+un changement territorial, les règles précises et le fallback sont recalculés
+par le même moteur.
+
 ## Unités
 
 Utiliser des unités explicites dans les noms et contrats :

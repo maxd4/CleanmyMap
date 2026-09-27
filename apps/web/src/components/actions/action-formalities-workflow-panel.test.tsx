@@ -46,4 +46,27 @@ describe("ActionFormalitiesQualificationView", () => {
     expect(markup).toContain("Message préparé");
     expect(markup).toContain("https://www.paris.fr/pages/evenements-dans-l-espace-public-33659");
   });
+
+  it("presents an unknown national fallback without suggesting a local obligation", () => {
+    const facts = {
+      ...deriveActionFormalitiesFacts({ departmentCode: "69", departmentName: "Rhône" }),
+      publicSpace: "public_domain" as const,
+    };
+    const qualification = qualifyActionFormalities(facts);
+    const workflow = buildFormalitiesWorkflowState({ facts, qualification });
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionFormalitiesQualificationView, {
+        qualification,
+        workflow,
+        isSaving: false,
+        onTransition: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain("Formalités locales");
+    expect(markup).toContain("Cadre national disponible");
+    expect(markup).toContain("règle locale suffisamment vérifiée");
+    expect(markup).toContain("https://www.service-public.gouv.fr/particuliers/vosdroits/F21899");
+    expect(markup).toContain("À confirmer");
+  });
 });

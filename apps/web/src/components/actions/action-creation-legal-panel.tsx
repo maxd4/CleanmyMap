@@ -21,20 +21,21 @@ export function ActionCreationLegalPanel({
           <div className="space-y-2">
             <CmmPill tone="amber" size="sm">À compléter</CmmPill>
             <h2 className="text-xl font-black tracking-tight text-emerald-950">
-              Formalités & autorisations locales
+              Formalités locales
             </h2>
           </div>
         </div>
         <p className="max-w-3xl text-sm leading-6 text-emerald-950/75">
-          Le moteur de qualification distingue désormais les formalités
-          parisiennes selon le lieu, le gestionnaire et la forme de l&apos;action.
-          Il reste explicable et retourne « inconnu » lorsque les faits ou la
-          source officielle ne permettent pas de conclure.
+          Le moteur de qualification sélectionne une règle territoriale lorsque
+          les sources officielles le permettent et propose sinon un cadre
+          national à vérifier localement. Il retourne « inconnu » lorsque les
+          preuves ne permettent pas de conclure.
         </p>
         <p className="max-w-3xl text-xs leading-5 text-emerald-900/65">
-          Aucune procédure n&apos;est envoyée ou bloquée par ce panneau. Une simple
-          cleanwalk sans installation ne vaut pas automatiquement AOT ; la
-          Ville de Paris n&apos;est pas supposée compétente pour tous les lieux.
+          Aucune procédure n&apos;est envoyée par ce panneau. Une incertitude ne
+          bloque pas automatiquement la publication ; seule une formalité
+          démontrée comme requise peut la conditionner. Une simple cleanwalk
+          sans installation ne vaut pas automatiquement AOT.
         </p>
         <ActionFormalitiesWorkflowPanel actionId={actionId} onReadinessChange={onReadinessChange} />
         <div className="border-t border-amber-200/70 pt-4">

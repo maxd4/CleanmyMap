@@ -4,6 +4,8 @@ import {
   type AdministrativeRuleContract,
   type FormalityRuleScope,
 } from "./formalities-rules";
+import { createNationalFormalitiesRule } from "./formalities-national-rule";
+export { NATIONAL_FORMALITIES_RULE_ID, NATIONAL_FORMALITIES_RULESET_VERSION } from "./formalities-national-rule";
 /**
  * Explainable qualification of local administrative formalities.
  *
@@ -453,7 +455,6 @@ function qualifyParisFormalities(
     unresolvedQuestions: [...new Set(unresolvedQuestions)],
   };
 }
-
 const PARIS_RULE_CONTRACT: AdministrativeRuleContract = {
   authority: {
     kind: "unknown",
@@ -476,6 +477,7 @@ export const ACTION_FORMALITIES_RULES: readonly AdministrativeFormalityRule[] = 
     contract: PARIS_RULE_CONTRACT,
     qualifies: qualifyParisFormalities,
   },
+  createNationalFormalitiesRule({ source: SERVICE_PUBLIC_MANIFESTATION_SOURCE, verifiedOn: FORMALITIES_RULE_VERIFIED_ON }),
 ];
 
 export function qualifyActionFormalities(
