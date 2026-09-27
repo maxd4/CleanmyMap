@@ -360,18 +360,39 @@ describe("action formalities qualification", () => {
       territory: { countryCode: "FR", code: "FR-69", label: "Lyon" },
     });
 
-    expect(result.rulesetVersion).toBeNull();
+    expect(result.rulesetVersion).toBe("national-administrative-framework-fallback-2026-09-17");
     expect(result.formalities[0]).toMatchObject({
-      id: "territory-formality-ruleset-unavailable",
+      id: "national-formalities-fallback",
       requirementStatus: "unknown",
       procedureKind: "unknown",
-      source: null,
-      justification: expect.stringContaining("ne généralise pas"),
+      source: expect.objectContaining({ authorityLevel: "national" }),
+      ruleScope: { kind: "national" },
+      justification: expect.stringContaining("règle locale suffisamment vérifiée"),
     });
     expect(result.formalities[0].scope).toBe(
-      "Territoire non couvert par un jeu de règles officiel intégré.",
+      "Cadre national français — règle locale à vérifier",
     );
-    expect(result.unresolvedQuestions).toEqual(["règles officielles du territoire"]);
+    expect(result.unresolvedQuestions).toEqual(["règle locale applicable sur le territoire"]);
+  });
+
+  it("keeps the national fallback unknown and non-blocking when no local rule exists", () => {
+    const facts = {
+      ...parisFacts,
+      territory: {
+        countryCode: "FR" as const,
+        code: "FR-69",
+        label: "Lyon",
+        department: { code: "69", label: "Rhône" },
+      },
+    };
+    const result = qualifyActionFormalities(facts);
+
+    expect(result.formalities[0]).toMatchObject({
+      requirementStatus: "unknown",
+      competentAuthority: { kind: "unknown" },
+      source: { url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F21899" },
+    });
+    expect(result.formalities[0].justification).toContain("règle locale");
   });
 
   it("exposes Paris as a specialized rule scope without leaking it to Lyon", () => {
@@ -451,5 +472,47 @@ describe("action formalities qualification", () => {
       "department-first",
       "department-second",
     ]);
+  });
+
+  it("lets a more precise local rule replace the national fallback", () => {
+    const fallback = testRule({
+      id: "national-fallback-test",
+      scope: { kind: "national", countryCode: "FR" },
+      formalityId: "national-fallback-formality",
+    });
+    const local = testRule({
+      id: "commune-69123",
+      scope: { kind: "commune", countryCode: "FR", codeInsee: "69123" },
+      formalityId: "commune-formality",
+    });
+    const result = qualifyActionFormalities(
+      {
+        ...parisFacts,
+        territory: {
+          countryCode: "FR",
+          code: "FR-69",
+          label: "Lyon",
+          commune: { codeInsee: "69123", label: "Lyon" },
+          department: { code: "69", label: "Rhône" },
+        },
+      },
+      [{ ...fallback, isFallback: true }, local],
+    );
+
+    expect(result.formalities.map((item) => item.id)).toEqual(["commune-formality"]);
+  });
+
+  it("keeps an explicit unknown without a source when no rule is available", () => {
+    const result = qualifyActionFormalities(
+      { ...parisFacts, territory: { countryCode: "FR", code: "FR-69", label: "Lyon" } },
+      [],
+    );
+
+    expect(result.formalities[0]).toMatchObject({
+      requirementStatus: "unknown",
+      source: null,
+      competentAuthority: { kind: "unknown" },
+    });
+    expect(result.unresolvedQuestions).toEqual(["règles officielles du territoire"]);
   });
 });

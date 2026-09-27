@@ -70,10 +70,50 @@ function deadlineUnitLabel(unit: "days" | "months"): string {
   return unit === "months" ? "mois" : "jours";
 }
 
+function procedureLabel(procedureKind: ActionFormalitiesResponse["qualification"]["formalities"][number]["procedureKind"]): string {
+  switch (procedureKind) {
+    case "city_aot":
+      return "Autorisation d’occupation temporaire";
+    case "police_declaration":
+      return "Déclaration auprès de l’autorité compétente";
+    case "other_manager":
+      return "Accord du gestionnaire du lieu";
+    case "information_only":
+      return "Information et vérification";
+    case "none":
+      return "Aucune procédure identifiée";
+    default:
+      return "Procédure locale à vérifier";
+  }
+}
+
+function isNationalFallback(
+  formality: ActionFormalitiesResponse["qualification"]["formalities"][number],
+): boolean {
+  return formality.ruleScope?.kind === "national" && formality.requirementStatus === "unknown";
+}
+
 function preparedMessage(recipient: string | null): string {
   return recipient
     ? `À adresser à ${recipient}. Joignez les informations et pièces listées ci-dessus via le canal officiel.`
     : "Destinataire à identifier avant tout envoi. Aucun message n’est envoyé par ce parcours.";
+}
+
+function NationalFallbackNotice() {
+  return (
+    <div className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2 text-sm text-sky-950" role="status">
+      <p className="font-semibold">Cadre national disponible</p>
+      <p className="mt-1 leading-5">
+        Le cadre national applicable est disponible, mais CleanMyMap ne dispose pas encore d’une règle locale suffisamment vérifiée pour cette action.
+      </p>
+    </div>
+  );
+}
+
+function nationalFallbackNotice(
+  formality: ActionFormalitiesResponse["qualification"]["formalities"][number],
+) {
+  return isNationalFallback(formality) ? <NationalFallbackNotice /> : null;
 }
 
 function SelectField({
@@ -131,7 +171,7 @@ export function ActionFormalitiesQualificationView({
 
   return (
     <div className="space-y-3" aria-live="polite" data-testid="action-formalities-qualification">
-      <h3 className="text-lg font-black text-emerald-950">Formalités applicables</h3>
+      <h3 className="text-lg font-black text-emerald-950">Formalités locales</h3>
       {qualification.formalities.map((formality) => {
         const progress = progressById.get(formality.id);
         const status = progress?.userStatus ?? "not_started";
@@ -147,8 +187,9 @@ export function ActionFormalitiesQualificationView({
                 </CmmPill>
               </div>
               <h4 className="text-base font-bold text-emerald-950">{formality.competentAuthority.label}</h4>
+              {nationalFallbackNotice(formality)}
               <dl className="grid gap-2 text-sm text-emerald-900/75 sm:grid-cols-2">
-                <div><dt className="font-semibold">Procédure</dt><dd>{formality.procedureKind}</dd></div>
+                <div><dt className="font-semibold">Procédure</dt><dd>{procedureLabel(formality.procedureKind)}</dd></div>
                 <div><dt className="font-semibold">Destinataire</dt><dd>{formality.recipient ?? "À identifier"}</dd></div>
                 <div className="sm:col-span-2"><dt className="font-semibold">Pourquoi</dt><dd>{formality.justification}</dd></div>
                 {formality.deadline ? (

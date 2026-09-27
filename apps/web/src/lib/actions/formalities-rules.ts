@@ -58,6 +58,8 @@ export type AdministrativeFormalityRule = {
   ) => Pick<ActionFormalitiesQualification, "formalities" | "unresolvedQuestions">;
   /** Only explicitly listed compatible rules are replaced. */
   supersedesRuleIds?: readonly string[];
+  /** A fallback is shown only when no more precise territorial rule applies. */
+  isFallback?: boolean;
 };
 
 function scopeSpecificity(scope: FormalityRuleScope): number {
@@ -109,8 +111,13 @@ export function selectApplicableAdministrativeRules(
   const supersededRuleIds = new Set(
     compatible.flatMap((rule) => rule.supersedesRuleIds ?? []),
   );
+  const hasSpecificRule = compatible.some((rule) => scopeSpecificity(rule.scope) > 1);
 
-  return compatible.filter((rule) => !supersededRuleIds.has(rule.id));
+  return compatible.filter(
+    (rule) =>
+      !supersededRuleIds.has(rule.id) &&
+      !(hasSpecificRule && rule.isFallback === true),
+  );
 }
 
 export function buildFormalitiesTerritoryFingerprint(

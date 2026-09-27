@@ -205,6 +205,34 @@ describe("formalities workflow", () => {
     expect(isFormalitiesPublicationBlocked(qualification, workflow)).toBe(false);
   });
 
+  it("does not block publication for the national unknown fallback", () => {
+    const facts = deriveActionFormalitiesFacts({
+      departmentCode: "69",
+      departmentName: "Rhône",
+    });
+    const qualification = qualifyActionFormalities(facts);
+    const workflow = buildFormalitiesWorkflowState({ facts, qualification });
+
+    expect(qualification.formalities[0]?.requirementStatus).toBe("unknown");
+    expect(isFormalitiesPublicationBlocked(qualification, workflow)).toBe(false);
+  });
+
+  it("blocks only required formalities", () => {
+    const facts = parisFacts();
+    const qualification = qualifyActionFormalities(facts);
+    const workflow = buildFormalitiesWorkflowState({ facts, qualification });
+
+    for (const status of ["recommended", "not_required", "unknown"] as const) {
+      const nonBlockingQualification = {
+        ...qualification,
+        formalities: [
+          { ...qualification.formalities[0], requirementStatus: status },
+        ],
+      };
+      expect(isFormalitiesPublicationBlocked(nonBlockingQualification, workflow)).toBe(false);
+    }
+  });
+
   it("only creates an email draft for a source-proven official email channel and never marks it sent", () => {
     const formality = qualifyActionFormalities(parisFacts()).formalities[0];
     expect(
