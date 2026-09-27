@@ -1,4 +1,4 @@
-export const PROGRESSION_RULES_VERSION = "progression-rules-v1" as const;
+const PROGRESSION_RULES_VERSION = "progression-rules-v1" as const;
 
 export type ProgressionRulesVersion = typeof PROGRESSION_RULES_VERSION;
 

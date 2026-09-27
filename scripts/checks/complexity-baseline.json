@@ -63,8 +63,8 @@
       "path": "src/app/api/actions/[actionId]/group-join/route.review.ts",
       "line": 23,
       "category": "routes API",
-      "ceiling": 53,
-      "status": "LEGACY",
+      "ceiling": 18,
+      "status": "IMPROVED",
       "functionIdentity": "named:handleGroupJoinReview#1"
     },
     {
@@ -72,8 +72,8 @@
       "path": "src/app/api/actions/[actionId]/group-join/route.toggle.ts",
       "line": 25,
       "category": "routes API",
-      "ceiling": 26,
-      "status": "LEGACY",
+      "ceiling": 20,
+      "status": "IMPROVED",
       "functionIdentity": "named:handleGroupJoinToggle#1"
     },
     {
@@ -126,8 +126,8 @@
       "path": "src/app/api/chat/route.get.ts",
       "line": 38,
       "category": "routes API",
-      "ceiling": 71,
-      "status": "LEGACY",
+      "ceiling": 20,
+      "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
     {
@@ -153,8 +153,8 @@
       "path": "src/app/api/community/bug-reports/route.ts",
       "line": 74,
       "category": "routes API",
-      "ceiling": 27,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -180,8 +180,8 @@
       "path": "src/app/api/legal-content-reports/route.ts",
       "line": 88,
       "category": "routes API",
-      "ceiling": 23,
-      "status": "LEGACY",
+      "ceiling": 11,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -297,8 +297,8 @@
       "path": "src/components/actions/action-declaration/before/sections.tsx",
       "line": 197,
       "category": "React/JSX",
-      "ceiling": 29,
-      "status": "LEGACY",
+      "ceiling": 26,
+      "status": "IMPROVED",
       "functionIdentity": "named:PlannedActionSection#1"
     },
     {
@@ -358,29 +358,11 @@
     {
       "metric": "complexity",
       "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
-      "line": 202,
-      "category": "hooks",
-      "ceiling": 50,
-      "status": "LEGACY",
-      "functionIdentity": "callback:fetchActionById ( initialActionId ) . then:0:#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
       "line": 476,
       "category": "hooks",
-      "ceiling": 21,
-      "status": "LEGACY",
+      "ceiling": 19,
+      "status": "IMPROVED",
       "functionIdentity": "named:updateForm#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
-      "line": 617,
-      "category": "hooks",
-      "ceiling": 27,
-      "status": "LEGACY",
-      "functionIdentity": "named:handleConfirmSubmit#1"
     },
     {
       "metric": "complexity",
@@ -738,18 +720,9 @@
       "path": "src/components/chat/chat-shell.tsx",
       "line": 99,
       "category": "React/JSX",
-      "ceiling": 92,
-      "status": "LEGACY",
+      "ceiling": 19,
+      "status": "IMPROVED",
       "functionIdentity": "named:ChatShell#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "src/components/chat/chat-shell.tsx",
-      "line": 478,
-      "category": "React/JSX",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:useMemo:0:#8"
     },
     {
       "metric": "complexity",
@@ -792,8 +765,8 @@
       "path": "src/components/chat/hooks/use-chat-submit.ts",
       "line": 140,
       "category": "hooks",
-      "ceiling": 58,
-      "status": "LEGACY",
+      "ceiling": 11,
+      "status": "IMPROVED",
       "functionIdentity": "callback:useCallback:0:#2"
     },
     {
@@ -1314,8 +1287,8 @@
       "path": "src/components/sections/rubriques/rejoindre-une-action.past-actions.tsx",
       "line": 132,
       "category": "React/JSX",
-      "ceiling": 42,
-      "status": "LEGACY",
+      "ceiling": 3,
+      "status": "IMPROVED",
       "functionIdentity": "callback:items . map:0:#1"
     },
     {
@@ -1665,8 +1638,8 @@
       "path": "src/lib/actions/store-create-contract.ts",
       "line": 77,
       "category": "runtime/services/orchestration",
-      "ceiling": 35,
-      "status": "LEGACY",
+      "ceiling": 30,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildActionInsertPayload#1"
     },
     {
@@ -1683,8 +1656,8 @@
       "path": "src/lib/actions/store-create.ts",
       "line": 157,
       "category": "runtime/services/orchestration",
-      "ceiling": 23,
-      "status": "LEGACY",
+      "ceiling": 18,
+      "status": "IMPROVED",
       "functionIdentity": "named:createAction#1"
     },
     {
@@ -1710,8 +1683,8 @@
       "path": "src/lib/actions/unified-source/load.ts",
       "line": 59,
       "category": "métier/domain pur",
-      "ceiling": 29,
-      "status": "LEGACY",
+      "ceiling": 27,
+      "status": "IMPROVED",
       "functionIdentity": "named:loadUnifiedActionSourceData#1"
     },
     {
@@ -1836,8 +1809,8 @@
       "path": "src/lib/environmental-impact-estimator/project-signals-scope.ts",
       "line": 143,
       "category": "métier/domain pur",
-      "ceiling": 28,
-      "status": "LEGACY",
+      "ceiling": 12,
+      "status": "IMPROVED",
       "functionIdentity": "named:calculateAllTimeScopeInput#1"
     },
     {
@@ -3189,24 +3162,6 @@
       "ceiling": 651,
       "status": "LEGACY",
       "functionIdentity": "named:useActionDeclarationForm#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
-      "line": 194,
-      "category": "hooks",
-      "ceiling": 157,
-      "status": "LEGACY",
-      "functionIdentity": "callback:useEffect:0:#2"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
-      "line": 202,
-      "category": "hooks",
-      "ceiling": 136,
-      "status": "LEGACY",
-      "functionIdentity": "callback:fetchActionById ( initialActionId ) . then:0:#1"
     },
     {
       "metric": "functionLength",

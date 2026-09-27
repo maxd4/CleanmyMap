@@ -5,8 +5,6 @@ export type {
   CollectiveLeaderboardItem,
   IndividualLeaderboardItem,
   LevelRequirementAssessment,
-  LevelRequirementCondition,
-  LevelRequirementId,
   PersonalDynamicRanking,
   PersonalImpactMetrics,
   PersonalTimelineItem,
@@ -24,7 +22,6 @@ export {
 
 export {
   PROGRESSION_RULES_V1,
-  PROGRESSION_RULES_VERSION,
   assessLevelRequirements,
   computeCurrentLevel,
   computePotentialLevel,

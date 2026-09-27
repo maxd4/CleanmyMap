@@ -346,7 +346,7 @@ export type UserProgressionStats = {
   totalButts: number;
 };
 
-export type LevelRequirementId =
+type LevelRequirementId =
   | "minValidatedActions"
   | "minDiversityTypes"
   | "minCollectiveEvents"
