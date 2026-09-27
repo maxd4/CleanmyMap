@@ -1,31 +1,15 @@
 "use client";
-
 import { Fragment, useEffect, useRef, useState } from "react";
-import {
-  CircleMarker,
-  Marker,
-  Polygon,
-  Polyline,
-  Popup,
-  Tooltip,
-  useMap,
-} from "react-leaflet";
+import {CircleMarker,Marker,Polygon,Polyline,Popup,Tooltip,useMap} from "react-leaflet";
 import { divIcon } from "leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
 import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
-import {
-  mapItemCoordinates,
-  mapItemObservedAt,
-  mapItemPostActionPollutionScore,
-} from "@/lib/actions/data-contract";
+import {mapItemCoordinates,mapItemObservedAt,mapItemPostActionPollutionScore} from "@/lib/actions/data-contract";
 import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisit-priority";
 import { formatProjectionConfidenceLabel } from "@/lib/actions/pollution/projection-confidence";
-import {
-  findCorridorHistoryForAction,
-  groupActionsByCorridor,
-} from "@/lib/actions/pollution/corridor-history";
-import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
-import { ActionPopupContent } from "./action-popup-content";
+import {findCorridorHistoryForAction,groupActionsByCorridor} from "@/lib/actions/pollution/corridor-history";
+import { useActionPollutionScoreReferences } from "../scores/action-pollution-score-references-context";
+import { ActionPopupContent } from "../popup/action-popup-content";
 import { GeometryTooltipContent } from "./map-geometry-tooltip-content";
 import {
   formatGeometryModeLabel,
@@ -36,8 +20,8 @@ import {
   resolvePolylineEndpointMarkers,
   resolveGeometryRenderStyle,
 } from "./actions-map-geometry.utils";
-import { isActionMapItem } from "./action-popup-content.helpers";
-import { resolveMapPlaceStateForItem } from "./actions-map-display-state";
+import { isActionMapItem } from "../popup/action-popup-content.helpers";
+import { resolveMapPlaceStateForItem } from "../filters/actions-map-display-state";
 import {
   ACTION_TRACE_HIT_AREA_WEIGHT,
   fitActionGeometryBounds,
@@ -48,15 +32,13 @@ import {
   resolveShapePollutionCategory,
   type ActionPointLayerProps,
 } from "./map-layers.shared";
-import { resolveActionPollutionScore } from "./pollution-score-scope";
+import { resolveActionPollutionScore } from "../scores/pollution-score-scope";
 import { getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
-
 type ActionShapeLayerRef = {
   openPopup?: () => void;
   closePopup?: () => void;
   bringToFront?: () => void;
 };
-
 function createGeometryEndpointIcon(label: "D" | "A" | "D/A") {
   return divIcon({
     className: "cmm-action-geometry-endpoint-icon",
@@ -65,7 +47,6 @@ function createGeometryEndpointIcon(label: "D" | "A" | "D/A") {
     iconAnchor: [10, 10],
   });
 }
-
 function createGeometryDirectionIcon(bearing: number) {
   const normalizedBearing = ((bearing % 360) + 360) % 360;
   return divIcon({
@@ -75,7 +56,6 @@ function createGeometryDirectionIcon(bearing: number) {
     iconAnchor: [8, 8],
   });
 }
-
 function OperationalRouteLayers({ item }: { item: ActionMapItem }) {
   const operationalRoute = item.contract?.metadata.preparationData?.operationalRoute;
   const segments = getPublicOperationalRouteSegments(operationalRoute);
@@ -96,7 +76,6 @@ function OperationalRouteLayers({ item }: { item: ActionMapItem }) {
     </>
   );
 }
-
 export function ShapeLayers({
   items,
   visible = true,
@@ -128,35 +107,28 @@ export function ShapeLayers({
       .filter((item) => item.contract)
       .map((item) => item.contract as unknown as ActionDataContract),
   );
-
   useEffect(() => {
     if (!selectedActionId) {
       return;
     }
-
     const layer = layerRefs.current[selectedActionId];
     layer?.visible?.openPopup?.();
   }, [selectedActionId]);
-
   useEffect(() => {
     const bringShapeToFront = (actionId: string | null) => {
       if (!actionId) {
         return;
       }
-
       const layers = layerRefs.current[actionId];
       layers?.casing?.bringToFront?.();
       layers?.visible?.bringToFront?.();
     };
-
     bringShapeToFront(hoveredActionId);
     bringShapeToFront(selectedActionId);
   }, [hoveredActionId, selectedActionId]);
-
   if (!visible) {
     return null;
   }
-
   return (
     <>
       {items.map((item) => {
@@ -171,7 +143,6 @@ export function ShapeLayers({
             </Fragment>
           ) : null;
         }
-
         const currentPlaceState = resolveMapPlaceStateForItem(
           currentPlaceStateViews,
           item,
@@ -295,7 +266,6 @@ export function ShapeLayers({
             fitActionGeometryBounds(map, targetGeometry.positions);
           }
         };
-
         if (geometry.kind === "polygon") {
           const visibleWeight =
             (renderStyle.strokeWeight ?? 2) + (isSelected ? 2 : 0);
@@ -306,7 +276,6 @@ export function ShapeLayers({
             visibleWeight,
             dashArray: renderStyle.dashArray,
           });
-
           return (
             <Fragment key={`shape-${item.id}`}>
               <OperationalRouteLayers item={item} />
@@ -414,7 +383,6 @@ export function ShapeLayers({
             </Fragment>
           );
         }
-
         const visibleWeight =
           (renderStyle.strokeWeight ?? 4) + (isSelected ? 2 : 0);
         const casingStyle = resolveShapeCasingStyle({
@@ -424,7 +392,6 @@ export function ShapeLayers({
           visibleWeight,
           dashArray: renderStyle.dashArray,
         });
-
         return (
           <Fragment key={`shape-${item.id}`}>
             <OperationalRouteLayers item={item} />

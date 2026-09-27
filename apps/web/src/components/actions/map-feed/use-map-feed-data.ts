@@ -18,9 +18,9 @@ import {
   matchesZoneQuery,
   normalizeZoneQuery,
   type ActionsMapDateScope,
-} from "@/components/actions/map/actions-map-filters.utils";
+} from "@/components/actions/map/filters/actions-map-filters.utils";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
-import { useActionPollutionScoreReferences } from "@/components/actions/map/action-pollution-score-references-context";
+import { useActionPollutionScoreReferences } from "@/components/actions/map/scores/action-pollution-score-references-context";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 

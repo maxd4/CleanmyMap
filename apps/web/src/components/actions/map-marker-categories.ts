@@ -10,7 +10,7 @@ import type {
  CurrentPlaceState,
  CurrentPlaceStateMode,
 } from "@/lib/actions/pollution/current-place-state";
-import { resolveActionPollutionScore } from "./map/pollution-score-scope";
+import { resolveActionPollutionScore } from "./map/scores/pollution-score-scope";
 
 export type MarkerCategory =
  |"orange"

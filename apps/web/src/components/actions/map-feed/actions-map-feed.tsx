@@ -6,7 +6,7 @@ import {
   type ActionsMapCanvasComponent,
   type ActionsMapFeedProps,
 } from "./map-feed.types";
-import { ACTIONS_MAP_PUBLIC_FEED_DEFAULTS } from "@/components/actions/map/actions-map-filters.utils";
+import { ACTIONS_MAP_PUBLIC_FEED_DEFAULTS } from "@/components/actions/map/filters/actions-map-filters.utils";
 import { useMapFeedData, type MapFeedDataState } from "./use-map-feed-data";
 import { ImmersiveLayout } from "./_layouts/immersive-layout";
 import { DefaultLayout } from "./_layouts/default-layout";
@@ -19,11 +19,11 @@ import { HOMEPAGE_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.u
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import { useActionsMapViewport } from "./use-actions-map-viewport";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
-import { ActionPollutionScoreReferencesProvider } from "@/components/actions/map/action-pollution-score-references-context";
+import { ActionPollutionScoreReferencesProvider } from "@/components/actions/map/scores/action-pollution-score-references-context";
 import type {
   ActionsMapDateScope,
   ActionsMapFilters,
-} from "@/components/actions/map/actions-map-filters.utils";
+} from "@/components/actions/map/filters/actions-map-filters.utils";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 
 type ActionsMapFeedContentProps = {

@@ -13,7 +13,7 @@ import {
   formatGeometryModeLabel,
   formatGeometryPointCount,
   resolveActionMapGeometryViewModel,
-} from "./actions-map-geometry.utils";
+} from "../layers/actions-map-geometry.utils";
 
 export type SelectedActionCardModel = {
   id: string;

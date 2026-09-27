@@ -11,7 +11,7 @@ import {
   isDrawingValid,
 } from "../payload";
 import type { ActionDeclarationDraftGeometry } from "../draft-storage";
-import { summarizeActionDrawingValidation } from "../../map/actions-map-geometry.utils";
+import { summarizeActionDrawingValidation } from "../../map/layers/actions-map-geometry.utils";
 import { computeActionDataQuality } from "../utils/action-declaration-form.quality";
 import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";

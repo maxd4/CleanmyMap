@@ -39,7 +39,7 @@ import {
   formatGeometryPointCount,
   resolveGeometryConfidenceLabel,
   resolveActionMapGeometryViewModel,
-} from "./actions-map-geometry.utils";
+} from "../layers/actions-map-geometry.utils";
 
 type ActionPopupContentProps = {
   item: ActionMapItem;

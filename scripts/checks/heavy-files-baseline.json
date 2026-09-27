@@ -123,7 +123,7 @@
       "maxBytes": 23043
     },
     {
-      "path": "apps/web/src/components/actions/map/action-popup-content-header.tsx",
+      "path": "apps/web/src/components/actions/map/popup/action-popup-content-header.tsx",
       "kind": "runtime",
       "status": "REVIEW",
       "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
@@ -131,7 +131,7 @@
       "maxBytes": 33740
     },
     {
-      "path": "apps/web/src/components/actions/map/actions-map-geometry.utils.ts",
+      "path": "apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts",
       "kind": "runtime",
       "status": "REVIEW",
       "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
@@ -139,7 +139,7 @@
       "maxBytes": 16787
     },
     {
-      "path": "apps/web/src/components/actions/map/map-layers-shape-layers.tsx",
+      "path": "apps/web/src/components/actions/map/layers/map-layers-shape-layers.tsx",
       "kind": "runtime",
       "status": "REVIEW",
       "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",

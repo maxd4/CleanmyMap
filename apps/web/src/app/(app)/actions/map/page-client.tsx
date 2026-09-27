@@ -9,7 +9,7 @@ import { ActionsMapTable } from "@/components/actions/actions-map-table";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
-import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
+import { useActionsMapFilters } from "@/components/actions/map/filters/use-actions-map-filters";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import { PageHeader } from "@/components/ui/page-header";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -22,11 +22,11 @@ import { buildActionsMapSelectionHref, mergeSelectedActionIntoMapItems } from "@
 import { useActionsMapViewport } from "@/components/actions/map-feed/use-actions-map-viewport";
 import {
   ActionPollutionScoreReferencesProvider,
-} from "@/components/actions/map/action-pollution-score-references-context";
+} from "@/components/actions/map/scores/action-pollution-score-references-context";
 import {
   ACTIONS_MAP_PUBLIC_FEED_DEFAULTS,
   getActionsMapCurrentYearDays,
-} from "@/components/actions/map/actions-map-filters.utils";
+} from "@/components/actions/map/filters/actions-map-filters.utils";
 
 type ActionsMapPageClientProps = {
   impactMetrics: PublicImpactMetric[];

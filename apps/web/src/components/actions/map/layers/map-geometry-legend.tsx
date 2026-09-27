@@ -7,10 +7,10 @@ import {
   INFRASTRUCTURE_ALERT_THRESHOLD,
   TRASH_SPOTTER_NEUTRAL_COLOR,
   resolveDynamicColor,
-} from "../map-marker-categories";
+} from "../../map-marker-categories";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
-import { POLLUTION_SCORE_UNAVAILABLE_COLOR } from "./pollution-score-scope";
+import { POLLUTION_SCORE_UNAVAILABLE_COLOR } from "../scores/pollution-score-scope";
 
 type LegendItem = {
   label: string;

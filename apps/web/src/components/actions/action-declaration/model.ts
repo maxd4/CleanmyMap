@@ -8,7 +8,7 @@ import type {
  ActionWasteMeasurementMethod,
 } from"@/lib/actions/types";
 import { PLACE_TYPE_OPTIONS } from"@/lib/actions/place-type-options";
-import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
+import { normalizeActionDrawing } from"../map/layers/actions-map-geometry.utils";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { OperationalRoute } from "@/lib/route/route-operational";

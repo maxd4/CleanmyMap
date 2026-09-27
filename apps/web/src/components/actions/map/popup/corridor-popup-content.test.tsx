@@ -9,7 +9,7 @@ import {
 } from "@/lib/actions/pollution/corridor-history";
 import { CorridorPopupContent } from "./corridor-popup-content";
 
-vi.mock("./action-pollution-score-references-context", () => ({
+vi.mock("../scores/action-pollution-score-references-context", () => ({
   useActionPollutionScoreReferences: () => ({
     references: {
       global: {

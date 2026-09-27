@@ -8,7 +8,7 @@ import {
   INFRASTRUCTURE_ALERT_THRESHOLD,
   resolveInfrastructureEmoji,
 } from "@/components/actions/map-marker-categories";
-import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
+import { useActionPollutionScoreReferences } from "../scores/action-pollution-score-references-context";
 import {
   formatNumber,
   formatThresholdScore,

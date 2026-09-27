@@ -17,8 +17,8 @@ apps/web/src/app/(app)/actions/map/page.tsx
 apps/web/src/components/actions/map-feed/actions-map-feed.tsx
 apps/web/src/components/actions/map-feed/actions-map-initial-viewport.ts
 apps/web/src/components/actions/actions-map-table.tsx
-apps/web/src/components/actions/map/use-actions-map-filters.ts
-apps/web/src/components/actions/map/action-pollution-score-references-context.tsx
+apps/web/src/components/actions/map/filters/use-actions-map-filters.ts
+apps/web/src/components/actions/map/scores/action-pollution-score-references-context.tsx
 apps/web/src/lib/actions/pollution/revisit-priority.ts
 ```
 

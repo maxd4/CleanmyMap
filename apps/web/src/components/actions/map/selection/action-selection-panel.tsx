@@ -8,14 +8,14 @@ import type {
 } from "@/lib/actions/pollution/current-place-state";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import { mapItemCoordinates } from "@/lib/actions/data-contract";
-import { resolveMapPlaceStateForItem } from "./actions-map-display-state";
-import { resolveActionMapGeometryViewModel } from "./actions-map-geometry.utils";
-import { ActionPopupContent } from "./action-popup-content";
+import { resolveMapPlaceStateForItem } from "../filters/actions-map-display-state";
+import { resolveActionMapGeometryViewModel } from "../layers/actions-map-geometry.utils";
+import { ActionPopupContent } from "../popup/action-popup-content";
 import {
   fitActionGeometryBounds,
   resolvePointColor,
-} from "./map-layers.shared";
-import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
+} from "../layers/map-layers.shared";
+import { useActionPollutionScoreReferences } from "../scores/action-pollution-score-references-context";
 
 type ActionSelectionPanelProps = {
   item: ActionMapItem;

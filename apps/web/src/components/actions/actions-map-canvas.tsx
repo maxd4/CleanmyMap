@@ -1,56 +1,31 @@
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
-import {
-  LayerGroup,
-  MapContainer,
-  TileLayer,
-  useMap,
-  useMapEvents,
-} from "react-leaflet";
+import {LayerGroup,MapContainer,TileLayer,useMap,useMapEvents} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Map as LeafletMap } from "leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
-import type {
-  CurrentPlaceStateMode,
-  CurrentPlaceStateViews,
-} from "@/lib/actions/pollution/current-place-state";
+import type {CurrentPlaceStateMode,CurrentPlaceStateViews} from "@/lib/actions/pollution/current-place-state";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 import { isTrashSpotterSpotRecord } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { cn } from "@/lib/utils";
-import { MapControls } from "./map/map-controls";
-import { ActionSelectionPanel } from "./map/action-selection-panel";
-import { MapScoreScopeControl } from "./map/map-score-scope-control";
-import { MapGeometryLegend } from "./map/map-geometry-legend";
-import { useActionPollutionScoreReferences } from "./map/action-pollution-score-references-context";
-import { resolveMapPlaceStateViews } from "./map/actions-map-display-state";
-import { ACTIONS_MAP_DISPLAY_MODE_OPTIONS } from "./map/actions-map-display-mode";
-import { ActionsMapFilterControls } from "./map/actions-map-filter-controls";
-import type { ActionsMapDateScope, ActionsMapFilters } from "./map/actions-map-filters.utils";
+import { MapControls } from "./map/controls/map-controls";
+import { ActionSelectionPanel } from "./map/selection/action-selection-panel";
+import { MapScoreScopeControl } from "./map/controls/map-score-scope-control";
+import { MapGeometryLegend } from "./map/layers/map-geometry-legend";
+import { useActionPollutionScoreReferences } from "./map/scores/action-pollution-score-references-context";
+import { resolveMapPlaceStateViews } from "./map/filters/actions-map-display-state";
+import { ACTIONS_MAP_DISPLAY_MODE_OPTIONS } from "./map/filters/actions-map-display-mode";
+import { ActionsMapFilterControls } from "./map/filters/actions-map-filter-controls";
+import type {ActionsMapDateScope,ActionsMapFilters} from "./map/filters/actions-map-filters.utils";
 import { deriveMarkerCategories, type MarkerCategory } from "./map-marker-categories";
-import {
-  SignalementMarkers,
-  ShapeLayers,
-  InfrastructureMarkers,
-  TrashSpotterMarkers,
-  isTrashSpotterItem,
-} from "./map/map-layers";
-import {
-  createActionsMapViewport,
-  getActionsMapCenter,
-} from "./actions-map-canvas.utils";
-import type { MapViewportState } from "@/lib/geo/map-viewport";
+import {SignalementMarkers,ShapeLayers,InfrastructureMarkers,TrashSpotterMarkers,isTrashSpotterItem} from "./map/layers/map-layers";
+import {createActionsMapViewport,getActionsMapCenter} from "./actions-map-canvas.utils";
+import type {MapViewportState} from "@/lib/geo/map-viewport";
 import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
-import type { ActionsMapPresentation } from "./map-feed/map-feed.types";
-import {
-  DEFAULT_VISIBLE_MAP_LAYERS,
-  MAP_LAYER_LABELS,
-  toggleVisibleMapLayer,
-  type VisibleMapLayerKey,
-} from "./actions-map-canvas.layers";
-import type { ShapeBasemapMode } from "./map/map-layers.shared";
-
+import type {ActionsMapPresentation} from "./map-feed/map-feed.types";
+import {DEFAULT_VISIBLE_MAP_LAYERS,MAP_LAYER_LABELS,toggleVisibleMapLayer,type VisibleMapLayerKey} from "./actions-map-canvas.layers";
+import type {ShapeBasemapMode} from "./map/layers/map-layers.shared";
 type ActionsMapCanvasProps = {
   items: ActionMapItem[];
   selectedActionId?: string | null;
@@ -80,7 +55,6 @@ type ActionsMapCanvasProps = {
   onCategoryToggle?: (category: MarkerCategory) => void;
   onResetFilters?: () => void;
 };
-
 function MapViewportReporter({
   onViewportChange,
   onViewportInteraction,
@@ -102,14 +76,11 @@ function MapViewportReporter({
       onViewportChange?.(resolveViewportState(map));
     },
   });
-
   useEffect(() => {
     onViewportChange?.(resolveViewportState(map));
   }, [map, onViewportChange]);
-
   return null;
 }
-
 function resolveViewportState(map: LeafletMap): MapViewportState {
   const center = map.getCenter();
   const bounds = map.getBounds();
@@ -124,7 +95,6 @@ function resolveViewportState(map: LeafletMap): MapViewportState {
     },
   };
 }
-
 function MapViewportSync({
   viewportRequest,
   viewportRequestKey,
@@ -133,18 +103,14 @@ function MapViewportSync({
   viewportRequestKey: number;
 }) {
   const map = useMap();
-
   useEffect(() => {
     if (!viewportRequest) {
       return;
     }
-
     map.setView(viewportRequest.center, viewportRequest.zoom, { animate: false });
   }, [map, viewportRequest, viewportRequestKey]);
-
   return null;
 }
-
 export function ActionsMapCanvas({
   items,
   selectedActionId = null,
@@ -251,11 +217,9 @@ export function ActionsMapCanvas({
     () => items.find((item) => item.id === selectedActionId) ?? null,
     [items, selectedActionId],
   );
-
   function toggleLayer(key: VisibleMapLayerKey) {
     setVisibleLayers((current) => toggleVisibleMapLayer(current, key));
   }
-
   return (
     <div
       className={cn(
@@ -322,7 +286,6 @@ export function ActionsMapCanvas({
           <MapGeometryLegend scoreScope={scoreScope} displayMode={displayMode} />
         </div>
       ) : null}
-
       <MapContainer
         center={mapCenter}
         zoom={mapZoom}
@@ -362,7 +325,6 @@ export function ActionsMapCanvas({
           url={CARTO_BASEMAPS[isMinimalPreview ? "light" : basemapMode].url}
           crossOrigin="anonymous"
         />
-
         <LayerGroup>
           <SignalementMarkers
             items={mainItems}
@@ -403,7 +365,6 @@ export function ActionsMapCanvas({
             </>
           )}
         </LayerGroup>
-
         {!isMinimalPreview && selectedItem && onClearSelection ? (
           <ActionSelectionPanel
             item={selectedItem}
@@ -414,7 +375,6 @@ export function ActionsMapCanvas({
             onClose={onClearSelection}
           />
         ) : null}
-
         <style>{`
           .cmm-infrastructure-marker {
             background: transparent;
