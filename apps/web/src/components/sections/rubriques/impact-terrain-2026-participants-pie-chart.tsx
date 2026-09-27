@@ -41,7 +41,7 @@ export function ImpactTerrain2026ParticipantsPieChart({
   } satisfies CSSProperties;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+    <div className="rounded-2xl border border-rose-100 bg-white p-4">
       <div className="flex flex-wrap items-center gap-5">
         <div
           aria-label={
@@ -53,10 +53,10 @@ export function ImpactTerrain2026ParticipantsPieChart({
           role="img"
           style={chartStyle}
         >
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-slate-950 text-center">
-            <span className="text-xs font-black text-white">
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-rose-50 text-center">
+            <span className="text-xs font-black text-rose-950">
               {participantsTotal.toLocaleString("fr-FR")}
-              <span className="block text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              <span className="block cmm-text-caption font-semibold uppercase tracking-[0.12em] text-rose-700">
                 {isFrench ? "participants" : "participants"}
               </span>
             </span>
@@ -67,7 +67,7 @@ export function ImpactTerrain2026ParticipantsPieChart({
           {entries.length > 0 ? (
             entries.map((entry) => (
               <div key={entry.key} className="flex items-center justify-between gap-3 text-xs">
-                <span className="flex items-center gap-2 text-slate-300">
+                <span className="flex items-center gap-2 cmm-text-body">
                   <span
                     aria-hidden="true"
                     className="h-2.5 w-2.5 rounded-full"
@@ -75,11 +75,11 @@ export function ImpactTerrain2026ParticipantsPieChart({
                   />
                   {entry.category}
                 </span>
-                <span className="font-black text-white">{entry.count.toLocaleString("fr-FR")}</span>
+                <span className="font-black text-rose-800">{entry.count.toLocaleString("fr-FR")}</span>
               </div>
             ))
           ) : (
-            <p className="text-xs leading-relaxed text-slate-400">
+            <p className="text-xs leading-relaxed cmm-text-small">
               {isFrench
                 ? "Aucune action classée n’est disponible dans l’agrégat public chargé."
                 : "No classified action is available in the loaded public aggregate."}
@@ -88,7 +88,7 @@ export function ImpactTerrain2026ParticipantsPieChart({
         </div>
       </div>
 
-      <p className="mt-4 text-[11px] leading-relaxed text-slate-400">
+      <p className="mt-4 cmm-text-caption leading-relaxed cmm-text-small">
         {isFrench
           ? "Chaque action éligible apparaît une seule fois. Les actions spontanées sont classées selon le nombre de participants ; les structures sont classées selon leur type canonique."
           : "Each eligible action appears once. Spontaneous actions are classified by participant count; structured actions use their canonical organizer type."}

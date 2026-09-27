@@ -77,6 +77,8 @@ export function parseChangedDiffText(diff) {
         newEnd: newStart + Math.max(newCount, 1) - 1,
         added: 0,
         deleted: 0,
+        addedLines: [],
+        deletedLines: [],
       };
       if (!ranges.has(currentPath)) ranges.set(currentPath, []);
       ranges.get(currentPath).push({ start: currentHunk.newStart, end: currentHunk.newEnd });
@@ -85,11 +87,37 @@ export function parseChangedDiffText(diff) {
       continue;
     }
     if (!currentHunk) continue;
-    if (line.startsWith("+") && !line.startsWith("+++")) currentHunk.added += 1;
-    if (line.startsWith("-") && !line.startsWith("---")) currentHunk.deleted += 1;
+    if (line.startsWith("+") && !line.startsWith("+++")) {
+      currentHunk.added += 1;
+      currentHunk.addedLines.push(line.slice(1));
+    }
+    if (line.startsWith("-") && !line.startsWith("---")) {
+      currentHunk.deleted += 1;
+      currentHunk.deletedLines.push(line.slice(1));
+    }
+  }
+
+  for (const fileHunks of hunks.values()) {
+    for (const hunk of fileHunks) {
+      const added = hunk.addedLines.map(normalizePresentationLine);
+      const deleted = hunk.deletedLines.map(normalizePresentationLine);
+      hunk.styleOnly = added.length > 0
+        && added.length === deleted.length
+        && added.every(Boolean)
+        && deleted.every(Boolean)
+        && [...added].sort().join("\n") === [...deleted].sort().join("\n");
+      delete hunk.addedLines;
+      delete hunk.deletedLines;
+    }
   }
 
   return { ranges, hunks };
+}
+
+function normalizePresentationLine(line) {
+  const trimmed = line.trim();
+  if (!trimmed.includes("className=\"") || trimmed.includes("style=")) return null;
+  return trimmed.replace(/className=\"[^\"]*\"/g, "className=\"__STYLE__\"");
 }
 
 function parseChangedDiff({ from = baselineSourceCommit, to = null } = {}) {
@@ -106,7 +134,7 @@ function parseChangedDiff({ from = baselineSourceCommit, to = null } = {}) {
 function changedFunctionLines(changedHunks, path, functionStartLine, functionEndLine) {
   return (changedHunks?.get(path) ?? [])
     .filter((hunk) => hunk.newStart <= functionEndLine && hunk.newEnd >= functionStartLine)
-    .reduce((total, hunk) => total + hunk.added + hunk.deleted, 0);
+    .reduce((total, hunk) => total + (hunk.styleOnly ? 0 : hunk.added + hunk.deleted), 0);
 }
 
 function parseFunctionMessages(results, view = null) {

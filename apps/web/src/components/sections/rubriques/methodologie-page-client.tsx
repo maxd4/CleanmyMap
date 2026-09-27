@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { buildActionImpactMethodology } from "@/lib/actions/impact-calculators";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { getBlockClasses } from "@/lib/ui/block-accents";
 import { DISPLAY_MODE_DESCRIPTIONS } from "@/lib/ui/preferences";
 import type { AppProfile } from "@/lib/profiles";
 import { cn } from "@/lib/utils";
@@ -107,7 +106,7 @@ function MethodologyCard({
   const tone = colorClasses[color];
 
   return (
-    <div className="group relative overflow-hidden rounded-[3rem] border border-white/5 bg-white/5 p-10 space-y-8 transition-all duration-700 hover:border-white/10 hover:bg-white/[0.07]">
+    <div className="group relative overflow-hidden rounded-[2rem] border border-rose-100 bg-white p-8 space-y-8 shadow-[0_18px_44px_-32px_rgba(190,24,93,0.28)] transition-all duration-700 hover:border-rose-200 hover:shadow-[0_22px_48px_-30px_rgba(190,24,93,0.34)]">
       <div className={cn("relative z-10 flex items-center gap-5", tone.text)}>
         <div
           className={cn(
@@ -117,30 +116,30 @@ function MethodologyCard({
         >
           {icon}
         </div>
-        <h2 className="text-3xl font-black tracking-tight text-white">
+        <h2 className="text-3xl font-black tracking-tight text-slate-950">
           {title}
         </h2>
       </div>
 
       <div
         className={cn(
-          "relative z-10 rounded-[2rem] border-l-4 bg-black/20 p-8 font-mono text-sm shadow-inner",
+          "relative z-10 rounded-2xl border-l-4 bg-rose-50/70 p-6 font-mono text-sm shadow-inner",
           tone.border,
         )}
       >
-        <div className="mb-3 text-[9px] font-black uppercase tracking-[0.2em] text-white/20">
+        <div className="mb-3 cmm-text-caption font-black uppercase tracking-[0.2em] text-rose-700/70">
           Formule du proxy
         </div>
-        <div className="text-red-100/80 leading-relaxed">{formula}</div>
+        <div className="text-slate-800 leading-relaxed">{formula}</div>
       </div>
 
-      <p className="cmm-text-body cmm-text-inverse relative z-10 font-medium">
+      <p className="cmm-text-body relative z-10 font-medium">
         {description}
       </p>
 
       <div className="relative z-10 flex items-center gap-3 pt-6">
         <div className={cn("h-2 w-2 rounded-full", tone.dot)} />
-        <span className="text-[10px] font-black uppercase tracking-widest text-white/20">
+        <span className="cmm-text-caption font-black uppercase tracking-widest text-slate-500">
           Source : {source}
         </span>
       </div>
@@ -236,7 +235,6 @@ export function LegacyMethodologieContent({
   const methodology = buildActionImpactMethodology();
   const { sources, version } = methodology;
   const { t } = useTranslation("methodologie");
-  const classes = getBlockClasses("impact");
   const electricity =
     impactElectricity ?? buildElectricityEstimate({ monthlyElectricityKwh: null }, null);
   const water =
@@ -299,14 +297,14 @@ export function LegacyMethodologieContent({
           <section
             id="modes-affichage"
             aria-labelledby="modes-affichage-title"
-            className="scroll-mt-28 space-y-6 rounded-[2.5rem] border border-white/10 bg-slate-950/75 p-6 text-white shadow-[0_24px_60px_-42px_rgba(15,23,42,0.9)] sm:p-8 lg:p-10"
+            className="scroll-mt-28 space-y-6 rounded-[2rem] border border-rose-100 bg-rose-50/45 p-6 text-slate-950 shadow-[0_18px_46px_-34px_rgba(190,24,93,0.24)] sm:p-8 lg:p-10"
           >
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-300/25 bg-red-400/10 text-red-300">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700">
               <Info className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-200/65">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-rose-700">
                 {isFrench ? "Présentation" : "Presentation"}
               </p>
               <h2 id="modes-affichage-title" className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
@@ -315,7 +313,7 @@ export function LegacyMethodologieContent({
             </div>
           </div>
 
-          <p className="cmm-text-body cmm-text-inverse max-w-4xl font-medium">
+          <p className="cmm-text-body max-w-4xl font-medium">
             {isFrench
               ? "Les trois modes changent la présentation, pas le produit."
               : "The three modes change presentation, not the product."}
@@ -329,17 +327,17 @@ export function LegacyMethodologieContent({
             ] as const).map(([mode, title]) => (
               <article
                 key={mode}
-                className="rounded-2xl border border-white/12 bg-white/[0.04] p-5"
+                className="rounded-2xl border border-rose-100 bg-white p-5"
               >
-                <h3 className="text-base font-bold text-white">{title}</h3>
-                <p className="cmm-text-small cmm-text-inverse mt-2">
+                <h3 className="text-base font-bold text-slate-950">{title}</h3>
+                <p className="cmm-text-small cmm-text-secondary mt-2">
                   {DISPLAY_MODE_DESCRIPTIONS[mode][locale]}
                 </p>
               </article>
             ))}
           </div>
 
-          <p className="rounded-2xl border border-red-300/25 bg-red-400/10 px-4 py-3 text-sm font-semibold leading-relaxed text-white">
+          <p className="rounded-2xl border border-rose-200 bg-rose-100/70 px-4 py-3 text-sm font-semibold leading-relaxed text-rose-950">
             {isFrench
               ? "Le mode change la présentation, jamais les fonctionnalités, permissions ou données."
               : "The mode changes presentation, never features, permissions or data."}
@@ -350,9 +348,7 @@ export function LegacyMethodologieContent({
         {includeTransverseContent ? (
           <div
             className={cn(
-              "relative overflow-hidden rounded-[3rem] border p-10 transition-all duration-700 md:p-16",
-              classes.surface,
-              classes.shadow,
+              "relative overflow-hidden rounded-[2rem] border border-rose-100 bg-white p-8 shadow-[0_18px_44px_-32px_rgba(190,24,93,0.25)] transition-all duration-700 md:p-12",
             )}
           >
           <div className="pointer-events-none absolute right-0 top-0 p-12 opacity-5">
@@ -361,18 +357,18 @@ export function LegacyMethodologieContent({
 
           <div className="relative z-10 grid items-center gap-16 md:grid-cols-2">
             <div className="space-y-8">
-              <h2 className="flex items-center gap-4 text-3xl font-black tracking-tight text-white md:text-4xl">
-                <Brain className="text-red-400" />
+              <h2 className="flex items-center gap-4 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
+                <Brain className="text-rose-600" />
                 <span>Méthode de calcul</span>
               </h2>
-              <p className="cmm-text-body cmm-text-inverse max-w-md font-medium">
+              <p className="cmm-text-body max-w-md font-medium">
                 Les KPI terrain utilisent le calcul runtime versionné. Les valeurs déclarées et estimées sont distinguées avant l’application des proxys à la masse ou aux mégots retenus. Périmètre : {methodology.scope}
               </p>
               <div className="flex gap-4">
-                <div className="rounded-xl bg-white/5 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-400/60">
+                <div className="rounded-xl border border-rose-100 bg-rose-50 px-5 py-2.5 cmm-text-caption font-black uppercase tracking-widest text-rose-700">
                   Version {version}
                 </div>
-                <div className="rounded-xl bg-red-500 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-red-500/20">
+                <div className="rounded-xl bg-rose-600 px-5 py-2.5 cmm-text-caption font-black uppercase tracking-widest text-white shadow-xl shadow-rose-600/20">
                   Proxy versionné
                 </div>
               </div>
@@ -387,16 +383,16 @@ export function LegacyMethodologieContent({
               ].map((item, index) => (
                 <div
                   key={index}
-                  className="group flex flex-col gap-3 rounded-[2rem] border border-white/5 bg-white/5 p-6 shadow-sm transition-all hover:border-red-400/30"
+                  className="group flex flex-col gap-3 rounded-2xl border border-rose-100 bg-rose-50/55 p-5 shadow-sm transition-all hover:border-rose-200"
                 >
                   <div className="text-red-400 transition-transform group-hover:scale-110">
                     {item.icon}
                   </div>
                   <div className="space-y-1">
-                    <div className="text-[9px] font-black uppercase tracking-widest text-white/30">
+                    <div className="cmm-text-caption font-black uppercase tracking-widest text-slate-500">
                       {item.label}
                     </div>
-                    <div className="text-sm font-bold text-red-100">{item.val}</div>
+                    <div className="text-sm font-bold text-rose-800">{item.val}</div>
                   </div>
                 </div>
               ))}
@@ -414,16 +410,16 @@ export function LegacyMethodologieContent({
           ].map((step, index) => (
             <div
               key={index}
-              className="group flex flex-col items-center space-y-6 rounded-[2.5rem] border border-white/5 bg-white/5 p-10 text-center transition-all duration-500 hover:border-white/10"
+              className="group flex flex-col items-center space-y-6 rounded-[2rem] border border-rose-100 bg-white p-8 text-center shadow-[0_14px_34px_-28px_rgba(190,24,93,0.25)] transition-all duration-500 hover:border-rose-200"
             >
-              <div className="flex h-20 w-20 items-center justify-center rounded-[2rem] bg-white/5 shadow-inner transition-transform duration-700 group-hover:scale-110">
+              <div className="flex h-20 w-20 items-center justify-center rounded-[2rem] bg-rose-50 shadow-inner transition-transform duration-700 group-hover:scale-110">
                 {step.icon}
               </div>
               <div className="space-y-2">
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-950">
                   {step.title}
                 </h3>
-                <p className="cmm-text-small cmm-text-inverse font-medium">
+                <p className="cmm-text-small cmm-text-secondary font-medium">
                   {step.desc}
                 </p>
               </div>
@@ -433,15 +429,15 @@ export function LegacyMethodologieContent({
         ) : null}
 
         {includeTransverseContent ? (
-          <section className="space-y-8 pt-10 border-t border-white/10">
+          <section className="space-y-8 border-t border-rose-100 pt-10">
           <div className="space-y-4 text-center">
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-red-200/60">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.4em] text-rose-700">
               {isFrench ? "Quota" : "Quota"}
             </p>
-            <h2 className="text-4xl font-black tracking-tight text-white">
+            <h2 className="text-4xl font-black tracking-tight text-slate-950">
               {isFrench ? "Plans et quotas" : "Plans and quotas"}
             </h2>
-            <p className="cmm-text-body cmm-text-inverse mx-auto max-w-3xl font-medium">
+            <p className="cmm-text-body mx-auto max-w-3xl font-medium">
               {isFrench
                 ? "La partie quota s’appuie sur la fiche d’architecture du site et reste centrée sur le risque de dépassement des limites de plan."
                 : "The quota section relies on the site architecture sheet and stays focused on the risk of exceeding plan limits."}
@@ -547,16 +543,16 @@ export function LegacyMethodologieContent({
         {includeReportsContent ? (
           <>
             {/* Limites de la déclaration terrain */}
-            <div className="relative overflow-hidden rounded-[3rem] border border-white/5 bg-white/5 p-10 md:p-12 space-y-6">
+            <div className="relative overflow-hidden rounded-[2rem] border border-rose-100 bg-white p-8 shadow-[0_18px_44px_-32px_rgba(190,24,93,0.25)] md:p-10 space-y-6">
           <div className="flex items-center gap-4 text-red-400">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-400/5 shadow-inner">
               <Scaling size={20} />
             </div>
-            <h3 className="text-2xl font-black tracking-tight text-white">
+            <h3 className="text-2xl font-black tracking-tight text-slate-950">
               {isFrench ? "Limites de la déclaration terrain" : "Limits of field declarations"}
             </h3>
           </div>
-          <div className="cmm-text-body cmm-text-inverse grid gap-6 font-medium md:grid-cols-2">
+          <div className="cmm-text-body grid gap-6 font-medium md:grid-cols-2">
             <p>
               {isFrench
                 ? "Les déclarations terrain ne requièrent pas la pesée ni la caractérisation exhaustive de chaque déchet. Les valeurs disponibles dépendent donc des informations saisies dans le contrat de déclaration."
@@ -573,15 +569,15 @@ export function LegacyMethodologieContent({
         ) : null}
 
         {includeReportsContent ? (
-          <section className="space-y-8 pt-10 border-t border-white/10">
+          <section className="space-y-8 border-t border-rose-100 pt-10">
           <div className="space-y-4 text-center">
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-red-200/60">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.4em] text-rose-700">
               {isFrench ? "Rapport d'impact" : "Impact report"}
             </p>
-            <h2 className="text-4xl font-black tracking-tight text-white">
+            <h2 className="text-4xl font-black tracking-tight text-slate-950">
               {isFrench ? "Empreinte technique des services suivis" : "Technical footprint of tracked services"}
             </h2>
-            <p className="cmm-text-body cmm-text-inverse mx-auto max-w-3xl font-medium">
+            <p className="cmm-text-body mx-auto max-w-3xl font-medium">
               {isFrench
                 ? "Ce bloc mesure l'empreinte technique et infrastructurelle des services suivis. Il est séparé des KPI d'impact terrain calculés à partir des actions approuvées."
                 : "This block measures the technical and infrastructure footprint of tracked services. It is separate from terrain impact KPIs calculated from approved actions."}
@@ -597,42 +593,42 @@ export function LegacyMethodologieContent({
             />
 
             <div className="space-y-8">
-              <section className="rounded-[2.5rem] border border-red-400/20 bg-red-400/5 p-8">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-200/60">
+              <section className="rounded-2xl border border-rose-200 bg-rose-50/65 p-6">
+                <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-rose-700">
                   Méthode électrique
                 </p>
-                <h3 className="mt-3 text-2xl font-black tracking-tight text-white">
+                <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950">
                   CO₂e électrique : statut du calcul
                 </h3>
-                <p className="cmm-text-body cmm-text-inverse mt-3">
+                <p className="cmm-text-body mt-3">
                   Facteur configuré : {electricity.factorKgCo2ePerKwh} kgCO₂e/kWh
                   ({electricity.source === "input" ? "signal électrique branché" : "référence " + electricity.note}).
                 </p>
-                <p className="cmm-text-body cmm-text-inverse mt-3">
+                <p className="cmm-text-body mt-3">
                   {electricity.calculation === "measured_kwh_to_co2e"
                     ? "La valeur affichée provient d'un calcul kWh × facteur électrique; elle n'est pas ajoutée une seconde fois au proxy total."
                     : electricity.calculation === "proxy_equivalent"
                       ? "La valeur affichée est un équivalent électrique estimé à partir d’un proxy CO₂e. Elle ne représente pas une consommation mesurée."
                       : "À compléter : aucun kWh réel ni proxy électrique exploitable n'est disponible."}
                 </p>
-                <p className="cmm-text-small cmm-text-inverse mt-3">
+                <p className="cmm-text-small cmm-text-secondary mt-3">
                   Le facteur sera remplacé lorsqu’une localisation électrique réelle du fournisseur sera connue.
                 </p>
               </section>
-              <section className="rounded-[2.5rem] border border-red-400/20 bg-red-400/5 p-8">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-200/60">
+              <section className="rounded-2xl border border-rose-200 bg-rose-50/65 p-6">
+                <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-rose-700">
                   Méthode eau
                 </p>
-                <h3 className="mt-3 text-2xl font-black tracking-tight text-white">
+                <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950">
                   Eau estimée : composantes et limites
                 </h3>
-                <p className="cmm-text-body cmm-text-inverse mt-3">
+                <p className="cmm-text-body mt-3">
                   Eau directe consommée sur site : {water.directWaterConsumptionLiters === null ? "à compléter" : "signal fourni"}. Eau indirecte liée à l’électricité : {water.indirectElectricityWaterLiters === null ? "à compléter" : "kWh × facteur configuré"}. Le facteur actuel est {water.factorLitersPerKwh} L/kWh ({water.factorSourceLabel}) et reste un proxy remplaçable lorsqu’une localisation électrique réelle est connue.
                 </p>
-                <p className="cmm-text-body cmm-text-inverse mt-3">
+                <p className="cmm-text-body mt-3">
                   L’eau reste dans le cycle hydrologique global, mais l’eau évaporée est consommée localement car elle n’est plus immédiatement disponible dans le même bassin. Retrait et consommation ne sont pas interchangeables : l’eau retournée dépend du lieu, du moment, de la température et de la qualité. La pression dépend aussi du stress hydrique et des conflits locaux, pas seulement des litres.
                 </p>
-                <p className="cmm-text-small cmm-text-inverse mt-3">
+                <p className="cmm-text-small cmm-text-secondary mt-3">
                   {water.provenance.join(" ")}
                 </p>
               </section>
@@ -645,12 +641,12 @@ export function LegacyMethodologieContent({
                 sectionId="impact-services"
               />
 
-              <section className="space-y-8 rounded-[2.5rem] border border-white/5 bg-white/5 p-8">
+              <section className="space-y-8 rounded-2xl border border-rose-100 bg-white p-6">
                 <div className="space-y-4 text-center">
-                  <h3 className="text-3xl font-black tracking-tight text-white">
+                  <h3 className="text-3xl font-black tracking-tight text-slate-950">
                     {isFrench ? "Historique mensuel d'impact" : "Monthly impact history"}
                   </h3>
-                  <p className="cmm-text-body cmm-text-inverse mx-auto max-w-3xl font-medium">
+                  <p className="cmm-text-body mx-auto max-w-3xl font-medium">
                     {isFrench
                       ? "La courbe du bas suit l’historique persistant enregistré dans Supabase. Aucun impact IA n’est reconstruit par mois : l’usage exact ChatGPT hors Codex et les facteurs physiques non audités restent en NA."
                       : "The bottom curve follows the persistent history stored in Supabase. No AI impact is reconstructed per month: exact ChatGPT usage and unaudited physical factors stay NA."}
@@ -668,12 +664,12 @@ export function LegacyMethodologieContent({
           </section>
         ) : null}
 
-        <footer className="cmm-ribbon-surface flex flex-col items-center justify-between gap-10 pt-20 sm:flex-row">
+        <footer className="flex flex-col items-center justify-between gap-10 border-t border-rose-100 pt-10 sm:flex-row">
           <div className="space-y-3 text-center sm:text-left">
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-red-200/60">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.4em] text-rose-700">
               CleanMyMap Engine v{version}
             </p>
-            <p className="max-w-md text-xs font-bold leading-relaxed text-red-100/70">
+            <p className="max-w-md text-xs font-bold leading-relaxed text-rose-800">
               Les formules, sources et limites sont documentées dans les références associées à cette page.
             </p>
           </div>

@@ -51,7 +51,7 @@ export function ImpactTerrain2026ButtsPieChart({
   } satisfies CSSProperties;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+    <div className="rounded-2xl border border-rose-100 bg-white p-4">
       <div className="flex flex-wrap items-center gap-5">
         <div
           aria-label={
@@ -63,10 +63,10 @@ export function ImpactTerrain2026ButtsPieChart({
           role="img"
           style={chartStyle}
         >
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-slate-950 text-center">
-            <span className="text-xs font-black text-white">
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-rose-50 text-center">
+            <span className="text-xs font-black text-rose-950">
               {total > 0 ? total.toLocaleString("fr-FR") : "—"}
-              <span className="block text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              <span className="block cmm-text-caption font-semibold uppercase tracking-[0.12em] text-rose-700">
                 {isFrench ? "total" : "total"}
               </span>
             </span>
@@ -77,7 +77,7 @@ export function ImpactTerrain2026ButtsPieChart({
           {chartEntries.length > 0 ? (
             chartEntries.map((entry) => (
               <div key={entry.key} className="flex items-center justify-between gap-3 text-xs">
-                <span className="flex items-center gap-2 text-slate-300">
+                <span className="flex items-center gap-2 cmm-text-body">
                   <span
                     aria-hidden="true"
                     className="h-2.5 w-2.5 rounded-full"
@@ -85,13 +85,13 @@ export function ImpactTerrain2026ButtsPieChart({
                   />
                   {entry.label}
                 </span>
-                <span className="font-black text-white">
+                <span className="font-black text-rose-800">
                   {entry.count.toLocaleString("fr-FR")}
                 </span>
               </div>
             ))
           ) : (
-            <p className="text-xs leading-relaxed text-slate-400">
+            <p className="text-xs leading-relaxed cmm-text-small">
               {isFrench
                 ? "Aucune qualification d’état n’est disponible dans l’agrégat public chargé. Aucun état n’est attribué par défaut."
                 : "No condition qualification is available in the loaded public aggregate. No condition is assigned by default."}
@@ -100,7 +100,7 @@ export function ImpactTerrain2026ButtsPieChart({
         </div>
       </div>
 
-      <p className="mt-4 text-[11px] leading-relaxed text-slate-400">
+      <p className="mt-4 cmm-text-caption leading-relaxed cmm-text-small">
         {isFrench
           ? "La somme du graphique couvre uniquement les mégots qualifiés. Les mégots non qualifiés restent signalés séparément et ne sont pas attribués arbitrairement à un état."
           : "The chart total only covers qualified butts. Unqualified butts remain identified separately and are not arbitrarily assigned to a condition."}
