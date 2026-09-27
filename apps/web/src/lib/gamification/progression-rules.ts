@@ -2,12 +2,24 @@ const PROGRESSION_RULES_VERSION = "progression-rules-v1" as const;
 
 export type ProgressionRulesVersion = typeof PROGRESSION_RULES_VERSION;
 
+export const VERIFIED_CONTRIBUTION_FAMILIES = [
+  "participation",
+  "organisation",
+  "clean_zones",
+  "learning",
+  "moderation",
+] as const;
+
+export type VerifiedContributionFamily =
+  (typeof VERIFIED_CONTRIBUTION_FAMILIES)[number];
+
 export type ProgressionRulesV1 = Readonly<{
   version: ProgressionRulesVersion;
   maxLevel: number;
   xpStep: (level: number) => number;
   xpRequired: (level: number) => number;
-  minValidatedActions: (level: number) => number;
+  verifiedContributionFamilies: readonly VerifiedContributionFamily[];
+  minVerifiedContributions: (level: number) => number;
   minDiversityTypes: (level: number) => number;
   minCollectiveEvents: (level: number) => number;
   minQualityAverage: (level: number) => number | null;
@@ -18,6 +30,7 @@ export type ProgressionRulesV1 = Readonly<{
 export const PROGRESSION_RULES_V1: ProgressionRulesV1 = Object.freeze({
   version: PROGRESSION_RULES_VERSION,
   maxLevel: 500,
+  verifiedContributionFamilies: VERIFIED_CONTRIBUTION_FAMILIES,
   xpStep(level: number): number {
     if (!Number.isFinite(level) || level < 1) return 1;
     // Niveau n → nécessite n XP supplémentaires (système simple).
@@ -29,7 +42,7 @@ export const PROGRESSION_RULES_V1: ProgressionRulesV1 = Object.freeze({
     // Cumul requis pour atteindre le niveau `level`: sum(k) pour k=1..n.
     return (n * (n + 1)) / 2;
   },
-  minValidatedActions(level: number): number {
+  minVerifiedContributions(level: number): number {
     return Math.max(1, Math.floor(1.5 * level));
   },
   minDiversityTypes(level: number): number {

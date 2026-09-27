@@ -18,8 +18,8 @@ export function xpRequired(level: number): number {
   return PROGRESSION_RULES_V1.xpRequired(level);
 }
 
-export function minValidatedActions(level: number): number {
-  return PROGRESSION_RULES_V1.minValidatedActions(level);
+export function minVerifiedContributions(level: number): number {
+  return PROGRESSION_RULES_V1.minVerifiedContributions(level);
 }
 
 export function minDiversityTypes(level: number): number {
@@ -38,7 +38,7 @@ function buildRequirementConditions(
   conditions: LevelRequirementCondition[];
 } {
   const thresholds = {
-    minValidatedActions: PROGRESSION_RULES_V1.minValidatedActions(level),
+    minVerifiedContributions: PROGRESSION_RULES_V1.minVerifiedContributions(level),
     minDiversityTypes: PROGRESSION_RULES_V1.minDiversityTypes(level),
     minCollectiveEvents: PROGRESSION_RULES_V1.minCollectiveEvents(level),
     minQualityAverage: PROGRESSION_RULES_V1.minQualityAverage(level),
@@ -46,9 +46,9 @@ function buildRequirementConditions(
   };
   const conditions: LevelRequirementCondition[] = [
     {
-      id: "minValidatedActions",
-      current: stats.validatedActions,
-      required: thresholds.minValidatedActions,
+      id: "minVerifiedContributions",
+      current: stats.verifiedContributions,
+      required: thresholds.minVerifiedContributions,
       met: false,
     },
     {
@@ -65,7 +65,10 @@ function buildRequirementConditions(
     },
   ];
 
-  if (thresholds.minQualityAverage !== null) {
+  if (
+    thresholds.minQualityAverage !== null &&
+    stats.verifiedContributionFamilies.includes("organisation")
+  ) {
     conditions.push({
       id: "minQualityAverage",
       current: stats.qualityAverage,
@@ -73,7 +76,10 @@ function buildRequirementConditions(
       met: false,
     });
   }
-  if (thresholds.minValidationRatio !== null) {
+  if (
+    thresholds.minValidationRatio !== null &&
+    stats.verifiedContributionFamilies.includes("organisation")
+  ) {
     conditions.push({
       id: "minValidationRatio",
       current: stats.validationRatio,
@@ -211,6 +217,8 @@ export function assessLevelRequirements(
     missing: contributionAssessment.missing,
     thresholds: contributionAssessment.thresholds,
     current: {
+      verifiedContributions: stats.verifiedContributions,
+      verifiedContributionFamilies: [...stats.verifiedContributionFamilies],
       validatedActions: stats.validatedActions,
       diversityTypes: stats.diversityTypes,
       collectiveEvents: stats.collectiveEvents,

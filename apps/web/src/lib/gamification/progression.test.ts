@@ -5,7 +5,7 @@ import {
   computePotentialLevel,
   minCollectiveEvents,
   minDiversityTypes,
-  minValidatedActions,
+  minVerifiedContributions,
   PROGRESSION_RULES_V1,
   xpRequired,
   xpStep,
@@ -19,6 +19,8 @@ function makeStats(overrides: Partial<UserProgressionStats> = {}): UserProgressi
     totalActions: 7,
     approvedActions: 7,
     validatedActions: 7,
+    verifiedContributions: 7,
+    verifiedContributionFamilies: ["organisation", "participation"],
     qualityAverage: 80,
     validationRatio: 1,
     diversityTypes: 2,
@@ -48,8 +50,8 @@ describe("gamification progression formulas", () => {
   });
 
   it("keeps requirements increasing with level", () => {
-    expect(minValidatedActions(1)).toBe(1);
-    expect(minValidatedActions(6)).toBeGreaterThan(minValidatedActions(3));
+    expect(minVerifiedContributions(1)).toBe(1);
+    expect(minVerifiedContributions(6)).toBeGreaterThan(minVerifiedContributions(3));
 
     expect(minDiversityTypes(1)).toBe(1);
     expect(minDiversityTypes(4)).toBe(2);
@@ -68,13 +70,13 @@ describe("gamification progression formulas", () => {
     [30, 45, 5, 7, 70, 0.6],
   ])(
     "uses the v1 contribution rules for level %i",
-    (level, validatedActions, diversityTypes, collectiveEvents, qualityAverage, validationRatio) => {
+    (level, verifiedContributions, diversityTypes, collectiveEvents, qualityAverage, validationRatio) => {
       const assessment = assessLevelRequirements(level, makeStats(), xpRequired(level));
 
       expect(PROGRESSION_RULES_V1.version).toBe("progression-rules-v1");
       expect(assessment.rulesVersion).toBe(PROGRESSION_RULES_V1.version);
       expect(assessment.thresholds).toEqual({
-        minValidatedActions: validatedActions,
+        minVerifiedContributions: verifiedContributions,
         minDiversityTypes: diversityTypes,
         minCollectiveEvents: collectiveEvents,
         minQualityAverage: qualityAverage,
@@ -97,7 +99,7 @@ describe("gamification progression formulas", () => {
   });
 
   it.each([
-    ["minValidatedActions", { validatedActions: 6 }],
+    ["minVerifiedContributions", { verifiedContributions: 6 }],
     ["minDiversityTypes", { diversityTypes: 1 }],
     ["minCollectiveEvents", { collectiveEvents: 0 }],
     ["minQualityAverage", { qualityAverage: 69 }],
@@ -114,7 +116,7 @@ describe("gamification progression formulas", () => {
   });
 
   it("explains when XP is sufficient but contribution guards keep the user below the level", () => {
-    const stats = makeStats({ validatedActions: 6 });
+    const stats = makeStats({ verifiedContributions: 6 });
     const assessment = assessLevelRequirements(5, stats, xpRequired(5));
 
     expect(assessment.xp).toEqual({ current: 10, required: 10, met: true });
@@ -124,11 +126,97 @@ describe("gamification progression formulas", () => {
     expect(assessment.eligible).toBe(false);
     expect(assessment.missing).toEqual([
       expect.objectContaining({
-        id: "minValidatedActions",
+        id: "minVerifiedContributions",
         current: 6,
         required: 7,
       }),
     ]);
+  });
+
+  it.each([
+    "participation",
+    "organisation",
+    "clean_zones",
+    "learning",
+    "moderation",
+  ] as const)("allows a verified %s contributor to progress", (family) => {
+    const stats = makeStats({
+      verifiedContributions: 7,
+      verifiedContributionFamilies: [family],
+      diversityTypes: 2,
+      collectiveEvents: 1,
+      qualityAverage: family === "organisation" ? 80 : 0,
+      validationRatio: family === "organisation" ? 1 : 0,
+    });
+
+    const assessment = assessLevelRequirements(5, stats, xpRequired(5));
+
+    expect(assessment.eligible).toBe(true);
+    expect(assessment.missing).toEqual([]);
+  });
+
+  it("does not let unverified XP reach a high level", () => {
+    const assessment = assessLevelRequirements(
+      5,
+      makeStats({
+        verifiedContributions: 0,
+        verifiedContributionFamilies: [],
+        diversityTypes: 0,
+        collectiveEvents: 0,
+      }),
+      xpRequired(5),
+    );
+
+    expect(assessment.xp.met).toBe(true);
+    expect(assessment.eligible).toBe(false);
+    expect(assessment.currentLevel).toBe(1);
+    expect(assessment.missing).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "minVerifiedContributions" }),
+      ]),
+    );
+  });
+
+  it("keeps a single-family farmer behind the diversity guard", () => {
+    const assessment = assessLevelRequirements(
+      5,
+      makeStats({
+        verifiedContributions: 7,
+        verifiedContributionFamilies: ["organisation"],
+        diversityTypes: 1,
+      }),
+      xpRequired(5),
+    );
+
+    expect(assessment.eligible).toBe(false);
+    expect(assessment.missing).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "minDiversityTypes" }),
+      ]),
+    );
+  });
+
+  it("explains a polyvalent contributor through verified families", () => {
+    const families = [
+      "participation",
+      "organisation",
+      "clean_zones",
+      "learning",
+      "moderation",
+    ] as const;
+    const assessment = assessLevelRequirements(
+      5,
+      makeStats({
+        verifiedContributions: 7,
+        verifiedContributionFamilies: [...families],
+        diversityTypes: 5,
+      }),
+      xpRequired(5),
+    );
+
+    expect(assessment.current.verifiedContributions).toBe(7);
+    expect(assessment.current.verifiedContributionFamilies).toEqual(families);
+    expect(assessment.eligible).toBe(true);
   });
 
   it("exports syncUserActionProgression from the public barrel", () => {

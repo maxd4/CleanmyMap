@@ -38,17 +38,31 @@ interprétées comme trois noms pour la même progression :
 
 Le contrat versionné `ProgressionRulesV1` est exposé par
 `apps/web/src/lib/gamification/progression-rules.ts` sous la version stable
-`progression-rules-v1`. Il conserve le calcul XP triangulaire et les garde-fous
-de contribution déjà appliqués : actions validées, diversité des types,
-événements collectifs, puis qualité moyenne et ratio de validation à partir du
-niveau 5. `computePotentialLevel`, `computeCurrentLevel` et
-`assessLevelRequirements` consomment cette même source.
+`progression-rules-v1`. Il conserve le calcul XP triangulaire et remplace le
+garde-fou spécifique au créateur d'actions par des `verifiedContributions` :
+des faits métier canoniques, validés et dédupliqués. Les familles CURRENT
+vérifiables sont la participation confirmée, l'organisation validée, les Clean
+Zones validées, l'apprentissage vérifié et la modération effectivement
+résolue. Une même action organisée et participée ne compte qu'une seule fois
+comme contribution principale ; ses métriques spécialisées ne sont pas
+additionnées comme autant de contributions indépendantes.
 
-L’évaluation d’un niveau expose l’XP actuelle et requise, les niveaux potentiel
-et réel, ainsi que les conditions satisfaites et manquantes sous forme
-d’identifiants et de valeurs. Les libellés traduits restent dans les surfaces
-UI ; ils ne font pas partie du calcul métier. Cette version est le contrat
-CURRENT d audit et de projection ; aucune `ProgressionRulesV2` n est définie.
+La diversité reste une condition distincte et peut inclure les familles de
+progression CURRENT démontrées, notamment exploration, régularité et
+polyvalence, sans transformer leurs événements en contributions principales.
+Les critères de qualité moyenne et de ratio de validation restent applicables
+aux contributions d'organisation ; ils ne bloquent pas artificiellement un
+participant, un apprenant ou un modérateur qui n'organise pas d'action.
+`computePotentialLevel`, `computeCurrentLevel` et `assessLevelRequirements`
+consomment cette même source.
+
+L'évaluation d'un niveau expose l'XP actuelle et requise, les niveaux potentiel
+et réel, le nombre de contributions vérifiées, les familles vérifiées et les
+conditions satisfaites et manquantes sous forme d'identifiants et de valeurs.
+Les libellés traduits restent dans les surfaces UI ; ils ne font pas partie du
+calcul métier. Le niveau global mesure ainsi un engagement vérifié transversal,
+et non le seul nombre d'actions créées. Cette version est le contrat CURRENT
+d'audit et de projection ; aucune `ProgressionRulesV2` n'est définie.
 
 Le catalogue de badges porte une identité stable, une famille, le statut
 `CURRENT` ou `LEGACY`, l'échelle, la métrique, la source métier, la visibilité,

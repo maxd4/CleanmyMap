@@ -39,13 +39,15 @@ function makeProgression(): MeResponse["progression"] {
         satisfied: [],
         missing: [],
         thresholds: {
-          minValidatedActions: PROGRESSION_RULES_V1.minValidatedActions(5),
+          minVerifiedContributions: PROGRESSION_RULES_V1.minVerifiedContributions(5),
           minDiversityTypes: PROGRESSION_RULES_V1.minDiversityTypes(5),
           minCollectiveEvents: PROGRESSION_RULES_V1.minCollectiveEvents(5),
           minQualityAverage: PROGRESSION_RULES_V1.minQualityAverage(5),
           minValidationRatio: PROGRESSION_RULES_V1.minValidationRatio(5),
         },
         current: {
+          verifiedContributions: 6,
+          verifiedContributionFamilies: ["organisation"],
           validatedActions: 6,
           diversityTypes: 2,
           collectiveEvents: 1,
