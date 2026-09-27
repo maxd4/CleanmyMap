@@ -20,6 +20,7 @@ const FOCUSED_ACTIVE_DOCS = [
   "documentation/operations/data-import/pipeline-import.md",
   "documentation/development/api-standard.md",
   "documentation/pages_site/INDEX.md",
+  "apps/web/AGENTS.md",
   ".agents/skills/cleanmymap-repo/SKILL.md",
   ".codex/skills/cleanmymap-repo/SKILL.md",
 ];
@@ -71,6 +72,7 @@ export const OTHER_FAMILY = {};
     "documentation/operations/data-import/pipeline-import.md": dataContractContent,
     "documentation/development/api-standard.md": "API contracts by route.",
     "documentation/pages_site/INDEX.md": indexContent,
+    "apps/web/AGENTS.md": "Next.js 16.3.1; TypeScript 7; web governance.",
     ".agents/skills/cleanmymap-repo/SKILL.md": "Next.js 16; TypeScript 7.",
     ".codex/skills/cleanmymap-repo/SKILL.md": "Next.js 16; TypeScript 7.",
   };
@@ -169,6 +171,19 @@ describe("stack and documentation drift governance", () => {
     }
   });
 
+  it("rejects a stale patch version in apps/web/AGENTS.md", () => {
+    const fixture = createFixture();
+    writeFile(fixture, "apps/web/AGENTS.md", "Next.js 16.3.0; TypeScript 7; web governance.\n");
+    try {
+      assert.ok(findingsFor(fixture).some((finding) => (
+        finding.file === "apps/web/AGENTS.md"
+        && finding.message.includes("incompatible Next.js version 16.3.0")
+      )));
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
   it("rejects public.spots as a runtime write target", () => {
     const fixture = createFixture();
     writeFile(fixture, "documentation/operations/data-import/pipeline-import.md", `${dataContractContent}\nRuntime import target: public.spots.\n`);
@@ -203,6 +218,7 @@ describe("stack and documentation drift governance", () => {
 
   it("keeps the active scope explicit instead of scanning historical documents globally", () => {
     assert.ok(ACTIVE_DOCS.includes("documentation/architecture/adr/ADR-005-next-canary-policy.md"));
+    assert.ok(ACTIVE_DOCS.includes("apps/web/AGENTS.md"));
     assert.ok(!ACTIVE_DOCS.includes("documentation/operations/messaging-supabase-nextjs.md"));
   });
 });

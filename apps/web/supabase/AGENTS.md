@@ -58,8 +58,13 @@ distincte de la validation locale.
 ### Contrat Codex d'accès et d'audit
 
 1. `CLI_AUTH` vaut `PASS` dès qu'une commande authentifiée prouve l'accès,
-   même si `SUPABASE_ACCESS_TOKEN` est absent de l'environnement. Rapporter
-   séparément `CLI_AUTH_SOURCE`.
+   même si `SUPABASE_ACCESS_TOKEN` est absent de l'environnement. Une commande
+   `projects list` terminée avec le code 0 ne suffit pas : le projet cible doit
+   être explicitement visible dans sa sortie. Rapporter séparément :
+
+   ```text
+   CLI_AUTH_SOURCE = ENV_SECRET | NATIVE_CREDENTIAL_STORE | FALLBACK_FILE | UNKNOWN
+   ```
 2. Un audit Advisors exhaustif utilise MCP security + performance, ou le CLI
    avec `--level info --fail-on none --output-format json`. La sortie CLI par
    défaut n'est jamais considérée comme un inventaire complet.
@@ -80,12 +85,13 @@ par exemple `projects list`, réussit ; l'absence de
 rapporter `CLI_AUTH_SOURCE` séparément. Un échec CLI avec un MCP fonctionnel
 est `CLI_AUTH_BLOCKED`; l'inverse est `MCP_AUTH_BLOCKED`.
 
-Le CLI Supabase est le canal canonique des migrations suivies par Git : cible
-liée, historique local/distant, création de migration versionnée,
-`db push --dry-run`, puis application après autorisation explicite et
-revérification. Le plugin/MCP reste en lecture seule par défaut pour
-l'observation structurée ; ne pas utiliser `apply_migration`, `execute_sql`
-mutatif ou un autre outil MCP comme contournement de `CLI_AUTH_BLOCKED`.
+Le CLI Supabase est le canal canonique des migrations suivies par Git : les
+migrations versionnées vivent exclusivement sous
+`apps/web/supabase/migrations/`, puis sont contrôlées avec l'historique
+local/distant, la cible liée et `db push --dry-run` avant toute application
+explicitement autorisée. Le plugin/MCP reste en lecture seule par défaut pour
+l'observation structurée ; ne pas utiliser `apply_migration`, une commande DDL
+MCP, `execute_sql` mutatif ou un autre outil MCP comme substitut du CLI.
 
 Le workflow local supporté utilise `npx supabase` contre le projet distant
 explicitement lié. Depuis `apps/web`, les contrôles read-only de base sont :
@@ -159,7 +165,7 @@ QUERY_COUNT = 1
 
 Si le signal est absent, élargir progressivement de 5 min à 15 min puis 1 h,
 jamais directement à 24 h. Au-delà de 15 minutes, de plusieurs sources ou de
-deux requêtes de logs dans le même diagnostic, STOP et demander une
+plus de deux requêtes de logs dans le même diagnostic, STOP et demander une
 autorisation explicite à l'utilisateur. `LIMIT` ne constitue pas un budget de
 scan suffisant.
 

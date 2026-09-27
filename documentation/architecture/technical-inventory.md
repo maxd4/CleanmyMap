@@ -54,7 +54,15 @@ refonte. Les contrats détaillés restent documentés dans leur source canonique
   `apps/web/data/local-db` les snapshots locaux associés.
 - `apps/web/scripts` regroupe les scripts d'import, de synchronisation,
   d'export, de diagnostic et de bootstrap propres à l'application web.
-- `scripts/` contient les checks et outils de maintenance du monorepo.
+- `apps/web/scripts/README.md` précise la frontière opératoire de ces scripts.
+- `scripts/` contient les checks et outils de maintenance du monorepo ;
+  `scripts/checks/README.md` en est le point d'orientation pour les garde-fous
+  et leurs validations.
+- Les responsabilités de progression Gamification, d'accès Supabase, de
+  géométrie et de carte Actions sont orientées par leurs README spécialisés :
+  `apps/web/src/lib/gamification/README.md`,
+  `apps/web/src/lib/supabase/README.md`, `apps/web/src/lib/geo/README.md` et
+  `apps/web/src/components/actions/map/README.md`.
 - `artifacts/` contient les sorties historiques, d'audit et de validation,
   notamment sous `artifacts/backups/`, et ne constitue pas la source de vérité
   du produit.
