@@ -2,7 +2,8 @@
 
 import type { ReactNode } from "react";
 import { Lock, WifiOff } from "lucide-react";
-import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
 import {
   SystemStateAction,
   SystemStateDescription,
@@ -28,17 +29,82 @@ type ClerkRequiredGateProps = {
   children: ReactNode;
 };
 
+type AuthGateCardProps = Pick<
+  ClerkRequiredGateProps,
+  | "description"
+  | "signInHref"
+  | "signInLabel"
+  | "signUpHref"
+  | "signUpLabel"
+  | "stateHeadingLevel"
+  | "title"
+> & {
+  badge: string;
+};
+
+function AuthGateCard({
+  badge,
+  description,
+  signInHref,
+  signInLabel,
+  signUpHref,
+  signUpLabel,
+  stateHeadingLevel,
+  title,
+}: AuthGateCardProps) {
+  const Heading = stateHeadingLevel ?? "h1";
+
+  return (
+    <div data-auth-gate-card="true" className="w-full max-w-xl">
+      <CmmCard as="section" variant="elevated" size="sm" className="text-center">
+        <div className="flex flex-col items-center gap-3">
+          <SystemStateIcon variant="forbidden" className="h-12 w-12">
+            <Lock className="h-6 w-6" />
+          </SystemStateIcon>
+          <p className="cmm-text-caption cmm-text-secondary font-semibold uppercase tracking-[0.18em]">
+            {badge}
+          </p>
+          <Heading className="cmm-text-h3 cmm-text-primary text-balance">{title}</Heading>
+          <p className="cmm-text-small cmm-text-secondary max-w-prose text-pretty">
+            {description}
+          </p>
+          <CmmButtonGroup
+            className="w-full flex-col items-stretch sm:flex-row sm:items-center sm:justify-center"
+          >
+            <CmmButton
+              href={signInHref}
+              tone="critical"
+              variant="pill"
+              className="w-full font-bold sm:w-auto"
+            >
+              {signInLabel}
+            </CmmButton>
+            <CmmButton
+              href={signUpHref}
+              tone="primary"
+              variant="pill"
+              className="w-full font-bold sm:w-auto"
+            >
+              {signUpLabel}
+            </CmmButton>
+          </CmmButtonGroup>
+        </div>
+      </CmmCard>
+    </div>
+  );
+}
+
 export function ClerkRequiredGate({
   isAuthenticated,
   authUnavailable = false,
   title = "Connexion requise",
-  description = "Connectez-vous à votre compte CleanMyMap pour accéder à cette fonctionnalité. Si vous n'en avez pas encore, créez-en un en quelques secondes.",
+  description = "Connectez-vous ou inscrivez-vous pour accéder à cette fonctionnalité.",
   mode = "blur",
   signInHref = "/sign-in",
   signInLabel = "Se connecter",
   signUpHref = "/sign-up",
-  signUpLabel = "Créer un compte",
-  badge = "Connexion requise",
+  signUpLabel = "S'inscrire",
+  badge = "Accès au compte",
   stateHeadingLevel = "h1",
   lockedPreview,
   children,
@@ -76,54 +142,49 @@ export function ClerkRequiredGate({
 
   if (mode === "disabled") {
     return (
-      <section className="space-y-4 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-center">
-          <p className="cmm-text-caption font-bold uppercase tracking-[0.2em] text-emerald-700">
-            {badge}
-          </p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight cmm-text-primary">{title}</h2>
-          <p className="mt-2 cmm-text-small cmm-text-secondary">{description}</p>
-          <div className="mt-5 flex flex-wrap justify-center gap-3">
-            <CmmButton href={signInHref} tone="primary">
-              {signInLabel}
-            </CmmButton>
-            <CmmButton href={signUpHref} tone="secondary">
-              {signUpLabel}
-            </CmmButton>
-          </div>
-        </div>
+      <section
+        className="cmm-surface cmm-panel relative overflow-hidden"
+        data-auth-gate-mode="disabled"
+      >
         <div aria-hidden="true" className="pointer-events-none select-none opacity-60">
           {children}
+        </div>
+        <div className="relative flex justify-center p-3 sm:p-4">
+          <AuthGateCard
+            badge={badge}
+            description={description}
+            signInHref={signInHref}
+            signInLabel={signInLabel}
+            signUpHref={signUpHref}
+            signUpLabel={signUpLabel}
+            stateHeadingLevel={stateHeadingLevel}
+            title={title}
+          />
         </div>
       </section>
     );
   }
 
   return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+    <section
+      className="cmm-surface cmm-panel relative overflow-hidden"
+      data-auth-gate-mode="blur"
+    >
       <div aria-hidden="true" className="pointer-events-none select-none blur-sm opacity-55">
         {lockedPreview ?? children}
       </div>
 
       <div className="absolute inset-0 flex items-center justify-center bg-white/54 p-4 backdrop-blur-sm">
-        <SystemStateLayout variant="forbidden" className="relative z-10 w-full max-w-xl">
-          <SystemStateIcon variant="forbidden">
-            <Lock className="h-7 w-7" />
-          </SystemStateIcon>
-          <SystemStateMeta variant="forbidden" label={badge}>
-            L&apos;accès est réservé aux comptes autorisés.
-          </SystemStateMeta>
-          <SystemStateTitle variant="forbidden" headingLevel={stateHeadingLevel}>{title}</SystemStateTitle>
-          <SystemStateDescription variant="forbidden">{description}</SystemStateDescription>
-          <SystemStateAction>
-            <CmmButton href={signInHref} tone="primary">
-              {signInLabel}
-            </CmmButton>
-            <CmmButton href={signUpHref} tone="secondary">
-              {signUpLabel}
-            </CmmButton>
-          </SystemStateAction>
-        </SystemStateLayout>
+        <AuthGateCard
+          badge={badge}
+          description={description}
+          signInHref={signInHref}
+          signInLabel={signInLabel}
+          signUpHref={signUpHref}
+          signUpLabel={signUpLabel}
+          stateHeadingLevel={stateHeadingLevel}
+          title={title}
+        />
       </div>
     </section>
   );
