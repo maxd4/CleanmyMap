@@ -1,7 +1,7 @@
-import { formatObservedDate } from "./action-popup-content.helpers";
+import { formatObservedDate } from "../popup/action-popup-content.helpers";
 import { CmmBadge } from "@/components/ui/cmm-badge";
 import { formatScorePercent } from "@/lib/formatters/score";
-import type { ActionPollutionScoreAvailability } from "./pollution-score-scope";
+import type { ActionPollutionScoreAvailability } from "../scores/pollution-score-scope";
 
 type GeometryTooltipContentProps = {
   title: string;

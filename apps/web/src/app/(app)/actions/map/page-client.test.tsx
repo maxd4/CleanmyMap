@@ -39,11 +39,11 @@ vi.mock("@/components/actions/map-feed/use-map-action-by-id", () => ({
   }),
 }));
 
-vi.mock("@/components/actions/map/use-actions-map-filters", () => ({
+vi.mock("@/components/actions/map/filters/use-actions-map-filters", () => ({
   useActionsMapFilters: (...args: unknown[]) => mocks.useActionsMapFilters(...args),
 }));
 
-vi.mock("@/components/actions/map/action-pollution-score-references-context", () => ({
+vi.mock("@/components/actions/map/scores/action-pollution-score-references-context", () => ({
   ActionPollutionScoreReferencesProvider: ({ children }: { children?: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
 }));

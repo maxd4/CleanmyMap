@@ -3,6 +3,23 @@
 Cette arborescence porte la composition React de la carte Actions : filtres,
 marqueurs, couches, popups, export et états d'affichage.
 
+## Arborescence
+
+```text
+map/
+├── popup/      popups d'action, corridors et scores de popup
+├── filters/    filtres, modes et états d'affichage
+├── controls/   contrôles cartographiques et scope de score
+├── layers/     couches, clusters, géométrie et qualité cartographique
+├── export/     export CSV, GeoJSON et contrôles d'export
+├── selection/  panneau et carte de l'action sélectionnée
+└── scores/     références de score et scope de pollution
+```
+
+Les tests restent auprès du module qu'ils couvrent. La racine ne contient pas
+de barrel global : les consommateurs importent directement la famille
+propriétaire.
+
 ## Frontière avec le domaine
 
 ```text

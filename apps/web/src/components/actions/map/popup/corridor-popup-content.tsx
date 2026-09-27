@@ -11,7 +11,7 @@ import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-scor
 import type { CorridorHistory } from "@/lib/actions/pollution/corridor-history";
 import { summarizeCorridorHistory } from "@/lib/actions/pollution/corridor-history";
 import { mapItemObservedAt } from "@/lib/actions/data-contract";
-import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
+import { useActionPollutionScoreReferences } from "../scores/action-pollution-score-references-context";
 import {
   formatNumber,
   formatObservedDate,

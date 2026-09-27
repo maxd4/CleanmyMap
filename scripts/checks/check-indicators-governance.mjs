@@ -10,7 +10,7 @@ const files = {
   sourceBadge: "apps/web/src/components/ui/page-structure.tsx",
   gamification: "apps/web/src/components/gamification/badge-ui.tsx",
   admin: "apps/web/src/components/admin/admin-dashboard-ui.tsx",
-  map: "apps/web/src/components/actions/map/map-geometry-tooltip-content.tsx",
+  map: "apps/web/src/components/actions/map/layers/map-geometry-tooltip-content.tsx",
   documentation: "documentation/design-system/INDICATORS_BADGES.md",
 };
 

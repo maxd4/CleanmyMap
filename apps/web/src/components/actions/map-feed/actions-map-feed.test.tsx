@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { HOMEPAGE_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.utils";
 import { ActionsMapFeed } from "./actions-map-feed";
 
-vi.mock("@/components/actions/map/action-pollution-score-references-context", () => ({
+vi.mock("@/components/actions/map/scores/action-pollution-score-references-context", () => ({
   ActionPollutionScoreReferencesProvider: ({ children }: { children?: React.ReactNode }) =>
     React.createElement(
       "div",

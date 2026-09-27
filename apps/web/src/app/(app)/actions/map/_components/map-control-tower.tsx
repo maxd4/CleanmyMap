@@ -2,9 +2,9 @@ import type { RefObject } from "react";
 import { Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
-import { ActionsMapExportButton } from "@/components/actions/map/actions-map-export-button";
+import { ActionsMapExportButton } from "@/components/actions/map/export/actions-map-export-button";
 import type { ActionMapItem } from "@/lib/actions/types";
-import type { ActionsMapFilters } from "@/components/actions/map/actions-map-filters.utils";
+import type { ActionsMapFilters } from "@/components/actions/map/filters/actions-map-filters.utils";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 
 type MapControlTowerProps = {

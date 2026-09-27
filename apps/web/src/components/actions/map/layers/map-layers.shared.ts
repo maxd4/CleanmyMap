@@ -18,7 +18,7 @@ import {
 import {
   POLLUTION_SCORE_UNAVAILABLE_COLOR,
   resolveActionPollutionScore,
-} from "./pollution-score-scope";
+} from "../scores/pollution-score-scope";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 
 export type LeafletClusterLike = {

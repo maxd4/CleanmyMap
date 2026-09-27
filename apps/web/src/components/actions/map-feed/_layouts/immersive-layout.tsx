@@ -11,7 +11,7 @@ import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-plac
 import type {
   ActionsMapDateScope,
   ActionsMapFilters,
-} from "@/components/actions/map/actions-map-filters.utils";
+} from "@/components/actions/map/filters/actions-map-filters.utils";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 
 const ActionStoriesCarousel = dynamic(

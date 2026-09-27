@@ -568,9 +568,9 @@ Sources de vérité techniques principales :
 - `apps/web/src/lib/actions/pollution/repollution-prediction-evaluation-store.ts` — écriture serveur idempotente du ledger append-only ;
 - `apps/web/src/lib/actions/contracts/contract-model.ts` et `apps/web/src/lib/actions/contracts/contract-mappers.ts` — champs post-action et futur score Trash Spotter optionnels ;
 - `apps/web/src/components/actions/map-marker-categories.ts` ;
-- `apps/web/src/components/actions/map/actions-map-geometry.utils.ts` ;
-- `apps/web/src/components/actions/map/map-layers.tsx` ;
-- `apps/web/src/components/actions/map/map-geometry-legend.tsx` ;
+- `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` ;
+- `apps/web/src/components/actions/map/layers/map-layers.tsx` ;
+- `apps/web/src/components/actions/map/layers/map-geometry-legend.tsx` ;
 - `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx`.
 
 Voir également :

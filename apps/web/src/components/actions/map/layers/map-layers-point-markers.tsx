@@ -11,8 +11,8 @@ import {
   mapItemCoordinates,
   mapItemShouldRenderPoint,
 } from "@/lib/actions/data-contract";
-import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
-import { ActionPopupContent } from "./action-popup-content";
+import { useActionPollutionScoreReferences } from "../scores/action-pollution-score-references-context";
+import { ActionPopupContent } from "../popup/action-popup-content";
 import {
   formatClusterCount,
   resolveClusterAriaLabel,
@@ -24,7 +24,7 @@ import {
   resolveActionMapGeometryViewModel,
   resolveGeometryRenderStyle,
 } from "./actions-map-geometry.utils";
-import { resolveMapPlaceStateForItem } from "./actions-map-display-state";
+import { resolveMapPlaceStateForItem } from "../filters/actions-map-display-state";
 import {
   isTrashSpotterItem,
   resolvePointColor,

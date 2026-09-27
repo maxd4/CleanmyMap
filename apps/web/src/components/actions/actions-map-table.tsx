@@ -10,7 +10,7 @@ import {
 } from"@/lib/actions/data-contract";
 import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import { classifyPollutionColor } from"@/components/actions/map-marker-categories";
-import { useActionPollutionScoreReferences } from"./map/action-pollution-score-references-context";
+import { useActionPollutionScoreReferences } from"./map/scores/action-pollution-score-references-context";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 

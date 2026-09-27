@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { ActionsMapTable } from "./actions-map-table";
 
-vi.mock("@/components/actions/map/action-pollution-score-references-context", () => ({
+vi.mock("@/components/actions/map/scores/action-pollution-score-references-context", () => ({
   useActionPollutionScoreReferences: () => ({ references: null }),
 }));
 

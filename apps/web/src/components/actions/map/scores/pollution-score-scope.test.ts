@@ -5,7 +5,7 @@ import {
   POLLUTION_SCORE_UNAVAILABLE_COLOR,
   resolveActionPollutionScore,
 } from "./pollution-score-scope";
-import { resolvePointColor } from "./map-layers.shared";
+import { resolvePointColor } from "../layers/map-layers.shared";
 import {
   classifyPollutionColor,
   resolveDynamicColor,

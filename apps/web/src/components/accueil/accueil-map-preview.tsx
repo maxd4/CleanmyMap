@@ -4,7 +4,7 @@ import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
 import {
   ACTIONS_MAP_PUBLIC_FEED_DEFAULTS,
   getActionsMapCurrentYearDays,
-} from "@/components/actions/map/actions-map-filters.utils";
+} from "@/components/actions/map/filters/actions-map-filters.utils";
 
 export function HomeMapPreview() {
   const edgeMask =

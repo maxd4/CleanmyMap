@@ -1,11 +1,10 @@
 "use client";
-
 import { useEffect, useId, useRef, useState } from "react";
 import { MapPin, Navigation, Crosshair, CheckCircle2, AlertCircle, Loader2, MapPinOff, Pencil, X, Upload, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
-import type { FormState } from "../model";
+import type {FormState} from "../model";
 import type {
   ActionDrawing,
   ActionGeometrySource,
@@ -25,7 +24,7 @@ import {
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
-} from "../../map/actions-map-geometry.utils";
+} from "../../map/layers/actions-map-geometry.utils";
 
 type AddressSuggestionsResponse = {
   status: "ok";

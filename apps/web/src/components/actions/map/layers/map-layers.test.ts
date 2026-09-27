@@ -12,7 +12,7 @@ import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisi
 import {
   computePollutionScoresRelativeToReferences,
 } from "@/lib/actions/pollution/pollution-score";
-import { POLLUTION_SCORE_UNAVAILABLE_COLOR } from "./pollution-score-scope";
+import { POLLUTION_SCORE_UNAVAILABLE_COLOR } from "../scores/pollution-score-scope";
 
 vi.mock("react-leaflet", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) =>
@@ -95,7 +95,7 @@ vi.mock("leaflet", () => ({
   divIcon: vi.fn((options) => options),
 }));
 
-vi.mock("./action-pollution-score-references-context", () => ({
+vi.mock("../scores/action-pollution-score-references-context", () => ({
   useActionPollutionScoreReferences: () => ({
     references: {
       global: {
@@ -108,7 +108,7 @@ vi.mock("./action-pollution-score-references-context", () => ({
   }),
 }));
 
-vi.mock("./action-popup-content", () => ({
+vi.mock("../popup/action-popup-content", () => ({
   ActionPopupContent: ({
     onViewGeometry,
     corridorItems,

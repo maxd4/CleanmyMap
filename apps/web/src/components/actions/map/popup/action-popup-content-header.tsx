@@ -13,7 +13,7 @@ import type {
   CurrentPlaceStateMode,
 } from "@/lib/actions/pollution/current-place-state";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
-import type { ScopedActionPollutionScore } from "./pollution-score-scope";
+import type { ScopedActionPollutionScore } from "../scores/pollution-score-scope";
 
 type ActionPopupContentHeaderProps = {
   recordTypeLabel: string;
@@ -51,7 +51,6 @@ type ActionPopupContentHeaderProps = {
   hasQuantifiedPollutionScore?: boolean;
   compact?: boolean;
 };
-
 function ScoreRing({
   color,
   score,
@@ -107,7 +106,6 @@ function ScoreRing({
     </div>
   );
 }
-
 export function ActionPopupContentHeader({
   recordTypeLabel,
   locationLabel,
@@ -145,7 +143,6 @@ export function ActionPopupContentHeader({
   compact = false,
 }: ActionPopupContentHeaderProps) {
   const geometryTone = getGeometryTone(geometryReality, isAction);
-
   if (isAction) {
     const scopedCurrentPlaceState = scoreScope === "global" ? currentPlaceState : null;
     const hasDisplayState = scoreScope === "global" && Boolean(displayMode || currentPlaceState);
@@ -183,7 +180,6 @@ export function ActionPopupContentHeader({
             ? "…"
             : "Indisponible"
           : formatScorePercent(Math.round(displayedScore));
-
       return (
         <CompactActionHeader
           recordTypeLabel={recordTypeLabel}
@@ -234,7 +230,6 @@ export function ActionPopupContentHeader({
         />
       );
     }
-
     return (
       <div className="relative space-y-4 overflow-hidden p-5">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-sky-400/20 via-sky-500/10 to-transparent" />
@@ -264,7 +259,6 @@ export function ActionPopupContentHeader({
             </span>
           </div>
         </div>
-
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/85 p-3 dark:border-slate-800 dark:bg-slate-900/45">
           <div className="grid gap-2 sm:grid-cols-3">
             <div>
@@ -311,7 +305,6 @@ export function ActionPopupContentHeader({
             label={scoreScope === "department" ? "Département" : isDisplayedProjection ? "Projection" : "Observé"}
           />
         </div>
-
         <p className="cmm-text-caption font-semibold text-amber-700 dark:text-amber-300">
           {scoreLoading
             ? "Référence du score en cours de chargement"
@@ -334,7 +327,6 @@ export function ActionPopupContentHeader({
             )}
           </p>
         )}
-
         <div
           className="grid gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/85 p-3 dark:border-slate-800 dark:bg-slate-900/45 sm:grid-cols-2"
           data-testid="popup-score-references"

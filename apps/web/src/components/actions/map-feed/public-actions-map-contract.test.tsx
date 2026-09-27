@@ -2,12 +2,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
-import { resolvePointColor } from "@/components/actions/map/map-layers.shared";
-import { POLLUTION_SCORE_UNAVAILABLE_COLOR } from "@/components/actions/map/pollution-score-scope";
+import { resolvePointColor } from "@/components/actions/map/layers/map-layers.shared";
+import { POLLUTION_SCORE_UNAVAILABLE_COLOR } from "@/components/actions/map/scores/pollution-score-scope";
 import {
   ACTIONS_MAP_PUBLIC_FEED_DEFAULTS,
   getActionsMapCurrentYearDays,
-} from "@/components/actions/map/actions-map-filters.utils";
+} from "@/components/actions/map/filters/actions-map-filters.utils";
 
 const HOMEPAGE_SOURCE = readFileSync(
   new URL("../../accueil/accueil-map-preview.tsx", import.meta.url),

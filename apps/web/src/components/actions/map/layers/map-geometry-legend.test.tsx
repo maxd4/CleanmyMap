@@ -5,7 +5,7 @@ import {
   CLEAN_PLACE_COLOR,
   TRASH_SPOTTER_NEUTRAL_COLOR,
   resolveDynamicColor,
-} from "../map-marker-categories";
+} from "../../map-marker-categories";
 import { MapGeometryLegend } from "./map-geometry-legend";
 
 describe("MapGeometryLegend", () => {

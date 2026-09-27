@@ -24,7 +24,7 @@ import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
-} from "../../map/actions-map-geometry.utils";
+} from "../../map/layers/actions-map-geometry.utils";
 
 interface ActionStepReviewProps {
   payload: CreateActionPayload;

@@ -9,7 +9,7 @@ import { ActionPopupContentBody } from "./action-popup-content-body";
 import { ActionPopupContentHeader } from "./action-popup-content-header";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 import { resolveProjectionConfidence } from "@/lib/actions/pollution/projection-confidence";
-import type { ScopedActionPollutionScore } from "./pollution-score-scope";
+import type { ScopedActionPollutionScore } from "../scores/pollution-score-scope";
 
 function buildActionItem(
   preparationData: { actionTitle?: string } | null,

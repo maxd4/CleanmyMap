@@ -15,9 +15,9 @@ import type {
 import {
   resolveActionPollutionScore,
   type ScopedActionPollutionScore,
-} from "./pollution-score-scope";
+} from "../scores/pollution-score-scope";
 import { getScoreReading, type ScoreReading } from "./action-popup-content.helpers";
-import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
+import { useActionPollutionScoreReferences } from "../scores/action-pollution-score-references-context";
 
 type UseActionPopupScoresParams = {
   item: ActionMapItem;

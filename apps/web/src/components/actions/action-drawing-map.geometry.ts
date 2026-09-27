@@ -2,7 +2,7 @@ import type {
   ActionDrawing,
   ActionGeometrySource,
 } from "@/lib/actions/types";
-import { normalizeActionDrawing } from "./map/actions-map-geometry.utils";
+import { normalizeActionDrawing } from "./map/layers/actions-map-geometry.utils";
 
 export type ResolvedDrawnGeometry = {
   drawing: ActionDrawing;

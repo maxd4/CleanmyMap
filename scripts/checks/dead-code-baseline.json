@@ -1098,7 +1098,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/map/action-popup-content.utils.ts",
+      "file": "apps/web/src/components/actions/map/popup/action-popup-content.utils.ts",
       "name": "hasValidCoordinates",
       "namespace": null,
       "kind": null,
@@ -1108,7 +1108,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/map/actions-map-display-state.ts",
+      "file": "apps/web/src/components/actions/map/filters/actions-map-display-state.ts",
       "name": "resolveMapSourceContracts",
       "namespace": null,
       "kind": null,
@@ -1118,7 +1118,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/map/actions-map-export.utils.ts",
+      "file": "apps/web/src/components/actions/map/export/actions-map-export.utils.ts",
       "name": "buildActionsMapGeoJson",
       "namespace": null,
       "kind": null,
@@ -1128,7 +1128,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/map/actions-map-geometry.utils.ts",
+      "file": "apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts",
       "name": "normalizeDrawingCoordinates",
       "namespace": null,
       "kind": null,
@@ -1138,7 +1138,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/map/map-layers.shared.ts",
+      "file": "apps/web/src/components/actions/map/layers/map-layers.shared.ts",
       "name": "ACTION_TRACE_FIT_PADDING",
       "namespace": null,
       "kind": null,
@@ -1148,7 +1148,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/map/map-layers.tsx",
+      "file": "apps/web/src/components/actions/map/layers/map-layers.tsx",
       "name": "ACTION_TRACE_FIT_PADDING",
       "namespace": null,
       "kind": null,
@@ -1158,7 +1158,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/map/map-layers.tsx",
+      "file": "apps/web/src/components/actions/map/layers/map-layers.tsx",
       "name": "resolvePointPollutionScore",
       "namespace": null,
       "kind": null,
@@ -7678,8 +7678,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/map/actions-map-selected-card.tsx",
-      "name": "apps/web/src/components/actions/map/actions-map-selected-card.tsx",
+      "file": "apps/web/src/components/actions/map/selection/actions-map-selected-card.tsx",
+      "name": "apps/web/src/components/actions/map/selection/actions-map-selected-card.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -8648,7 +8648,7 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/components/actions/map/actions-map-geometry.utils.ts",
+      "file": "apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts",
       "name": "ActionDrawingValidationTone",
       "namespace": null,
       "kind": null,
@@ -8658,7 +8658,7 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/components/actions/map/actions-map-geometry.utils.ts",
+      "file": "apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts",
       "name": "ActionMapGeometryMetric",
       "namespace": null,
       "kind": null,

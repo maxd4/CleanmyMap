@@ -14,7 +14,7 @@ import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-plac
 import type {
   ActionsMapDateScope,
   ActionsMapFilters,
-} from "@/components/actions/map/actions-map-filters.utils";
+} from "@/components/actions/map/filters/actions-map-filters.utils";
 
 export type ActionsMapPresentation = "default" | "immersive" | "homepage-preview";
 

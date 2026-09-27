@@ -267,7 +267,7 @@ de découpage.
 | PATH | REF | LINES | BYTES | KIND | SIZE_SIGNAL | CORRELATIONS | DECISION |
 | --- | --- | ---: | ---: | --- | --- | --- | --- |
 | `apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 832 | 33141 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/actions/map/action-popup-content-header.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 792 | 33740 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/components/actions/map/popup/action-popup-content-header.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 792 | 33740 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
 | `apps/web/src/components/chat/chat-shell.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 770 | 21287 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
 | `apps/web/src/lib/geo/greater-paris-select.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 768 | 27711 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
 | `apps/web/src/lib/learning/quiz/quiz-personal-progress.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 753 | 25419 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
@@ -287,7 +287,7 @@ de découpage.
 | `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 640 | 25009 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
 | `apps/web/src/lib/route/route-predicted-targets.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 635 | 21960 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
 | `apps/web/src/lib/supabase/storage-usage.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 635 | 18204 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/actions/map/actions-map-geometry.utils.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 634 | 16787 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 634 | 16787 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
 | `apps/web/src/lib/actions/participation/group-participation-review.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 632 | 21427 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
 | `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 632 | 19017 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
 | `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 631 | 27107 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |

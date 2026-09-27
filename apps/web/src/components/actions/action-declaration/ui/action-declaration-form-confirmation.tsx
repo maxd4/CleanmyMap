@@ -5,7 +5,7 @@ import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
-} from "../../map/actions-map-geometry.utils";
+} from "../../map/layers/actions-map-geometry.utils";
 import { formatKg } from "../utils/harvest-utils";
 import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
 import {
