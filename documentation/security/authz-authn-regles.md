@@ -118,6 +118,19 @@ sont calculées depuis `activeRole`, qui doit toujours être autorisé par
 navigation, aux CTA, aux libellés et aux priorités de parcours, mais ne donne
 jamais de permission indépendante.
 
+### Règle durable des capabilities runtime
+
+Une capability runtime existe uniquement parce qu'un garde ou un service la
+consomme réellement. Une fonctionnalité, un CTA, un nom de format d'export ou
+une intention future ne suffit pas à ajouter une propriété à `EffectiveAccess`.
+Les contrôles propres à une opération restent dans leur handler ou service
+canonique : par exemple `requireAdminAccess` pour les imports et exports
+administratifs, `requireAuthenticatedAccess` et le quota serveur pour le
+livrable « dossier élus », et `canAccessPilotage` suivi du scope organisé pour
+`/pilotage`. Les capacités futures relèvent de
+`authorization-capabilities.md` dans ses sections `PLAN / TARGET`, pas du
+contrat runtime courant.
+
 ### Quatre notions canoniques
 
 Les contrats de sécurité et les parcours produit utilisent quatre notions

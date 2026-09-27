@@ -48,15 +48,8 @@ export type RubriqueKind = "app-route" | "section";
 export type CtaSlot = "primary" | "secondary" | "additional";
 
 export type EffectiveAccess = {
-  canAccessProtectedApp: boolean;
   canAccessAdminPage: boolean;
   canAccessPilotage: boolean;
-  canModerate: boolean;
-  canImportActions: boolean;
-  canExportActionsCsvJson: boolean;
-  canExportCommunityFunnelCsv: boolean;
-  canExportElusDossier: boolean;
-  canRunSandboxChecksWithoutAuth: boolean;
 };
 
 export const DOMAIN_GLOSSARY: Record<
@@ -90,23 +83,12 @@ export const DOMAIN_GLOSSARY: Record<
 export function getEffectiveAccessForSessionRole(
   activeRole: SessionRole,
 ): EffectiveAccess {
-  const isAuthenticated = activeRole !== "anonymous";
   const isAdmin = activeRole === "admin" || activeRole === "max";
   const canAccessPilotage = activeRole === "coordinateur";
-  const canModerate = activeRole === "elu" || isAdmin;
 
   return {
-    canAccessProtectedApp: isAuthenticated,
     canAccessAdminPage: isAdmin,
     canAccessPilotage,
-    canModerate,
-    canImportActions: isAdmin,
-    canExportActionsCsvJson: isAdmin,
-    canExportCommunityFunnelCsv: isAdmin,
-    // /api/reports/elus-dossier est accessible a tout utilisateur authentifie.
-    canExportElusDossier: isAuthenticated,
-    // API de runbook interne reservee aux admins.
-    canRunSandboxChecksWithoutAuth: false,
   };
 }
 

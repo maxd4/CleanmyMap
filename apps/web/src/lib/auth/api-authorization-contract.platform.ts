@@ -106,7 +106,7 @@ export const platformAuthorizationContract = {
   },
   "reports/elus-dossier": {
     GET: {
-      expected: "Any authenticated user, per EffectiveAccess.canExportElusDossier",
+      expected: "Any authenticated user may generate the bounded dossier export, subject to the server quota/cache contract",
       dimensions: ["authentication"],
       actual: "requireAuthenticatedAccess",
       evidence: ["requireAuthenticatedAccess"],
