@@ -1,7 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const compressImageFileMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@/lib/media/image-compression", () => ({
+  compressImageFile: compressImageFileMock,
+}));
+
 import {
   ChatAttachmentUploadError,
+  ChatAttachmentValidationError,
   sendChatMessageWithAttachmentLifecycle,
+  uploadChatAttachmentIfNeeded,
   type ChatAttachmentUpload,
 } from "./use-chat-submit.helpers";
 
@@ -14,6 +23,99 @@ const attachment = (objectPath: string): ChatAttachmentUpload => ({
 });
 
 describe("chat attachment upload/message lifecycle", () => {
+  beforeEach(() => {
+    compressImageFileMock.mockReset();
+  });
+
+  it("uploads a HEIC source only after compression produces an allowlisted MIME", async () => {
+    const source = new File(["heic"], "photo.heic", { type: "image/heic" });
+    const converted = new File(["jpeg"], "photo.jpg", { type: "image/jpeg" });
+    const upload = vi.fn().mockResolvedValue({ data: {}, error: null });
+    const createSignedUrl = vi.fn().mockResolvedValue({
+      data: { signedUrl: "https://storage.example.test/signed/photo.jpg" },
+      error: null,
+    });
+    const supabase = {
+      storage: {
+        from: vi.fn(() => ({ upload, createSignedUrl })),
+      },
+    };
+    const setIsUploading = vi.fn();
+    compressImageFileMock.mockResolvedValue(converted);
+
+    const result = await uploadChatAttachmentIfNeeded({
+      file: source,
+      supabase: supabase as never,
+      userId: "user-1",
+      activeChannelType: "dm",
+      setIsUploading,
+    });
+
+    expect(compressImageFileMock).toHaveBeenCalledWith(
+      source,
+      expect.objectContaining({ quality: 0.8 }),
+    );
+    expect(upload).toHaveBeenCalledWith(
+      expect.stringMatching(/^dm\/user-1-.+\.jpg$/),
+      converted,
+      expect.any(Object),
+    );
+    expect(result?.type).toBe("image/jpeg");
+    expect(setIsUploading).toHaveBeenLastCalledWith(false);
+  });
+
+  it("rejects an image source left unchanged by compression before Storage", async () => {
+    const source = new File(["heic"], "photo.heic", { type: "image/heic" });
+    const upload = vi.fn();
+    const supabase = {
+      storage: {
+        from: vi.fn(() => ({ upload })),
+      },
+    };
+    compressImageFileMock.mockResolvedValue(source);
+
+    await expect(
+      uploadChatAttachmentIfNeeded({
+        file: source,
+        supabase: supabase as never,
+        userId: "user-1",
+        activeChannelType: "dm",
+        setIsUploading: vi.fn(),
+      }),
+    ).rejects.toBeInstanceOf(ChatAttachmentValidationError);
+
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it("does not compress documents and keeps the existing document upload path", async () => {
+    const document = new File(["pdf"], "rapport.pdf", { type: "application/pdf" });
+    const upload = vi.fn().mockResolvedValue({ data: {}, error: null });
+    const createSignedUrl = vi.fn().mockResolvedValue({
+      data: { signedUrl: "https://storage.example.test/signed/rapport.pdf" },
+      error: null,
+    });
+    const supabase = {
+      storage: {
+        from: vi.fn(() => ({ upload, createSignedUrl })),
+      },
+    };
+
+    await uploadChatAttachmentIfNeeded({
+      file: document,
+      supabase: supabase as never,
+      userId: "user-1",
+      activeChannelType: "dm",
+      setIsUploading: vi.fn(),
+    });
+
+    expect(compressImageFileMock).not.toHaveBeenCalled();
+    expect(upload).toHaveBeenCalledWith(
+      expect.stringMatching(/^dm\/user-1-.+\.pdf$/),
+      document,
+      expect.any(Object),
+    );
+  });
+
   it("supprime l'objet si le POST échoue après l'upload", async () => {
     const uploaded = attachment("dm/user-1-first.jpg");
     const sendMessage = vi.fn().mockRejectedValue(new Error("POST failed"));

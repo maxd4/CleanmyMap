@@ -1,4 +1,4 @@
-const SUPPORTED_MIME_TYPES = new Set([
+const CHAT_ATTACHMENT_DOCUMENT_MIME_TYPES = [
   "application/pdf",
   "application/msword",
   "application/vnd.ms-excel",
@@ -13,7 +13,22 @@ const SUPPORTED_MIME_TYPES = new Set([
   "text/csv",
   "text/markdown",
   "text/plain",
-]);
+ ] as const;
+
+export const CHAT_ATTACHMENT_STORAGE_IMAGE_MIME_TYPES = [
+  "image/avif",
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+
+export const CHAT_ATTACHMENT_STORAGE_MIME_TYPES = [
+  ...CHAT_ATTACHMENT_DOCUMENT_MIME_TYPES,
+  ...CHAT_ATTACHMENT_STORAGE_IMAGE_MIME_TYPES,
+] as const;
+
+const CHAT_ATTACHMENT_STORAGE_MIME_TYPE_SET = new Set<string>(CHAT_ATTACHMENT_STORAGE_MIME_TYPES);
 
 const IMAGE_EXTENSIONS = new Map([
   ["avif", "image/avif"],
@@ -106,8 +121,8 @@ export function getChatAttachmentUnsupportedMessage(file: File): string {
 }
 
 export const CHAT_ATTACHMENT_ACCEPT = [
-  ...Array.from(IMAGE_EXTENSIONS.values()),
-  ...SUPPORTED_MIME_TYPES,
+  "image/*",
+  ...CHAT_ATTACHMENT_STORAGE_MIME_TYPES,
   ...Array.from(SUPPORTED_EXTENSIONS.keys()).map((extension) => `.${extension}`),
 ].join(",");
 
@@ -134,19 +149,7 @@ export function isSupportedChatAttachmentMimeType(mimeType: string): boolean {
     return false;
   }
 
-  if (normalized.startsWith("video/")) {
-    return false;
-  }
-
-  if (normalized === "image/svg+xml") {
-    return false;
-  }
-
-  if (normalized.startsWith("image/")) {
-    return true;
-  }
-
-  return SUPPORTED_MIME_TYPES.has(normalized);
+  return CHAT_ATTACHMENT_STORAGE_MIME_TYPE_SET.has(normalized);
 }
 
 export function isUnsupportedChatVideoMimeType(mimeType: string): boolean {
@@ -172,6 +175,10 @@ export function isSupportedChatAttachmentFile(file: File): boolean {
     return false;
   }
 
+  if (isChatImageFile(file)) {
+    return true;
+  }
+
   if (isSupportedChatAttachmentMimeType(file.type)) {
     return true;
   }
@@ -180,7 +187,15 @@ export function isSupportedChatAttachmentFile(file: File): boolean {
 }
 
 export function isChatImageFile(file: File): boolean {
-  return inferChatAttachmentType(file)?.startsWith("image/") ?? false;
+  if (isUnsupportedChatVideoFile(file)) {
+    return false;
+  }
+
+  const extension = getFileExtension(file.name);
+  return (
+    normalizeMimeType(file.type).startsWith("image/") &&
+    normalizeMimeType(file.type) !== "image/svg+xml"
+  ) || IMAGE_EXTENSIONS.has(extension);
 }
 
 export function getChatAttachmentSizeError(file: File): string | null {
@@ -191,6 +206,25 @@ export function getChatAttachmentSizeError(file: File): string | null {
 
 export function getChatAttachmentValidationError(file: File): string | null {
   if (!isSupportedChatAttachmentFile(file)) {
+    return getChatAttachmentUnsupportedMessage(file);
+  }
+
+  return getChatAttachmentSizeError(file);
+}
+
+export function getChatAttachmentStorageValidationError(file: File): string | null {
+  const candidateError = getChatAttachmentValidationError(file);
+  if (candidateError) {
+    return candidateError;
+  }
+
+  const normalizedMimeType = normalizeMimeType(file.type);
+  if (isChatImageFile(file) && !isSupportedChatAttachmentMimeType(normalizedMimeType)) {
+    return getChatAttachmentUnsupportedMessage(file);
+  }
+
+  const inferredMimeType = inferChatAttachmentType(file);
+  if (!inferredMimeType || !isSupportedChatAttachmentMimeType(inferredMimeType)) {
     return getChatAttachmentUnsupportedMessage(file);
   }
 

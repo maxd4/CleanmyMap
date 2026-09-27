@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   CHAT_ATTACHMENT_ACCEPT,
   CHAT_ATTACHMENT_MAX_SIZE_BYTES,
+  CHAT_ATTACHMENT_STORAGE_IMAGE_MIME_TYPES,
+  CHAT_ATTACHMENT_STORAGE_MIME_TYPES,
   CHAT_ATTACHMENT_TOO_LARGE_MESSAGE,
   CHAT_CAMERA_ACCEPT,
   getChatAttachmentSizeError,
+  getChatAttachmentStorageValidationError,
   getChatAttachmentValidationError,
   isChatImageFile,
   CHAT_VIDEO_UNSUPPORTED_MESSAGE,
@@ -57,6 +60,42 @@ describe("Chat image capture and video contract", () => {
     expect(isSupportedChatAttachmentFile({ name: "payload.svg", type: "image/svg+xml" } as File)).toBe(false);
     expect(isSupportedChatAttachmentFile({ name: "payload.svg", type: "image/png" } as File)).toBe(false);
     expect(isSupportedChatAttachmentFile({ name: "payload.jpg", type: "image/svg+xml" } as File)).toBe(false);
+  });
+
+  it.each(CHAT_ATTACHMENT_STORAGE_IMAGE_MIME_TYPES)(
+    "accepts the Storage image MIME %s",
+    (mimeType) => {
+      expect(isSupportedChatAttachmentMimeType(mimeType)).toBe(true);
+    },
+  );
+
+  it.each(["image/heic", "image/heif", "image/tiff", "image/bmp"])(
+    "keeps non-allowlisted image MIME %s as a compression candidate but not a final Storage MIME",
+    (mimeType) => {
+      const file = { name: "photo.heic", type: mimeType, size: 1 } as File;
+
+      expect(isChatImageFile(file)).toBe(true);
+      expect(isSupportedChatAttachmentFile(file)).toBe(true);
+      expect(isSupportedChatAttachmentMimeType(mimeType)).toBe(false);
+      expect(getChatAttachmentStorageValidationError(file)).toContain(
+        "Ce type de fichier n'est pas autorisé",
+      );
+    },
+  );
+
+  it("centralizes the final MIME set and keeps documents unchanged", () => {
+    expect(CHAT_ATTACHMENT_STORAGE_MIME_TYPES).toEqual(
+      expect.arrayContaining([
+        ...CHAT_ATTACHMENT_STORAGE_IMAGE_MIME_TYPES,
+        "application/pdf",
+        "text/plain",
+      ]),
+    );
+    expect(getChatAttachmentStorageValidationError({
+      name: "rapport.pdf",
+      type: "application/pdf",
+      size: 1,
+    } as File)).toBeNull();
   });
 
   it("centralizes the 8 MiB boundary and keeps image detection extension-aware", () => {
