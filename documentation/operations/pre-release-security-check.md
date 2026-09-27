@@ -95,14 +95,23 @@ Regle de lecture :
 
 ### 4. Verifications Supabase/Vercel
 
-- Projet Supabase de référence pour CleanMyMap : `supabase-vercel-codex`, à
-  administrer avec le compte Supabase `drm`. Vérifier le `project ref` dans
-  `apps/web/supabase/config.toml` et dans le Dashboard avant toute commande
-  liée ; ne pas utiliser un projet voisin ou un autre compte.
+- Projet Supabase de référence pour CleanMyMap : `supabase-vercel-codex`.
+  Vérifier le `project ref` dans `apps/web/supabase/config.toml` et dans le
+  Dashboard avant toute commande liée ; ne pas utiliser un projet voisin.
 - `npm run backend:doctor` doit passer avant toute publication.
 - `npm run backend:supabase:advisors` est la commande autonome et canonique pour les advisories sécurité : elle utilise uniquement le projet distant explicitement lié. `npm run backend:supabase:advisors:linked` est conservée comme alias de compatibilité.
-- Le mode `--linked` exige un token Supabase personnel avec accès au projet et la permission fine `advisors_read`; en cas de `403`, regénérer un token dans Supabase Dashboard -> Account -> Tokens, puis relancer `supabase login --token <token>` ou exporter `SUPABASE_ACCESS_TOKEN`.
-- Si le compte connecté n'est pas Owner/Admin du projet cible, ré-linker le projet avec le bon compte avant de relancer l'audit.
+- Une commande CLI authentifiée réussie établit `CLI_AUTH=PASS`, même si
+  `SUPABASE_ACCESS_TOKEN` n'est pas dans l'environnement ; rapporter
+  `CLI_AUTH_SOURCE` séparément. L'authentification CLI et celle du plugin/MCP
+  sont indépendantes.
+- Pour un inventaire Advisors exhaustif, utiliser MCP security + performance ou
+  le CLI avec `--level info --fail-on none --output-format json` pour chaque
+  catégorie. Le garde CLI existant reste limité à son contrat RLS/security.
+- Un scoped PAT doit seulement disposer de la permission minimale : `Advisors
+  Read` pour les advisors, `Logs Read` pour les logs et `Migrations Read-write`
+  pour appliquer une migration ; Owner/Admin n'est pas intrinsèquement requis.
+- `SUPABASE_ACCESS_TOKEN` reste un secret de tooling CLI, jamais
+  `NEXT_PUBLIC_*`, jamais runtime applicatif et jamais documenté avec sa valeur.
 - Le runtime Supabase local ou conteneurisé ne fait plus partie de l'environnement de développement et de validation locale supporté sur le poste utilisateur : ne pas demander à Codex d'installer, démarrer ou sonder Docker/WSL localement. `supabase start`, `supabase status` et `supabase db reset` sont exclus du workflow local canonique ; ils peuvent uniquement être utilisés dans une CI hébergée et éphémère explicitement dédiée au replay Supabase. Une preuve locale qui en dépend est classée `UNSUPPORTED_CONTAINER_RUNTIME`.
 - `npm run backend:vercel:env:sync` doit rester public par défaut et ne pousser les secrets qu'avec `--include-secrets`.
 - `npm run backend:supabase:push` doit être accompagné d'une revue des policies, fonctions SQL et advisors Supabase.

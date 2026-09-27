@@ -66,6 +66,27 @@ distincte de la validation locale.
 3. Tout `supabase/` racine non suivi doit être investigué et ne doit jamais
    être committé. L'unique arbre canonique reste `apps/web/supabase/`.
 
+L'authentification CLI et l'authentification plugin/MCP sont indépendantes :
+
+```text
+CLI             → session CLI sécurisée ou scoped PAT / SUPABASE_ACCESS_TOKEN
+Plugin/MCP      → authentification propre à l'intégration
+CLI credentials ≠ MCP credentials
+```
+
+`CLI_AUTH=PASS` est une preuve d'accès CLI lorsqu'une commande authentifiée,
+par exemple `projects list`, réussit ; l'absence de
+`SUPABASE_ACCESS_TOKEN` dans l'environnement ne l'annule pas. Toujours
+rapporter `CLI_AUTH_SOURCE` séparément. Un échec CLI avec un MCP fonctionnel
+est `CLI_AUTH_BLOCKED`; l'inverse est `MCP_AUTH_BLOCKED`.
+
+Le CLI Supabase est le canal canonique des migrations suivies par Git : cible
+liée, historique local/distant, création de migration versionnée,
+`db push --dry-run`, puis application après autorisation explicite et
+revérification. Le plugin/MCP reste en lecture seule par défaut pour
+l'observation structurée ; ne pas utiliser `apply_migration`, `execute_sql`
+mutatif ou un autre outil MCP comme contournement de `CLI_AUTH_BLOCKED`.
+
 Le workflow local supporté utilise `npx supabase` contre le projet distant
 explicitement lié. Depuis `apps/web`, les contrôles read-only de base sont :
 
@@ -73,8 +94,31 @@ explicitement lié. Depuis `apps/web`, les contrôles read-only de base sont :
 npx supabase projects list
 npx supabase branches list --project-ref <project-ref> --output json
 npx supabase migration list --linked
-npx supabase db advisors --linked
+npx supabase db push --dry-run
 ```
+
+`db push --dry-run` ne mute rien et ne prouve jamais qu'un vrai `db push` a
+été exécuté. Un vrai `npx supabase db push` reste une mutation distante et
+exige une autorisation explicite.
+
+Le plugin/MCP est le canal privilégié pour l'observation distante structurée :
+projet, branches, historique, schéma, logs et advisors. Pour un inventaire
+Advisors exhaustif, récupérer séparément `security` et `performance`, avec les
+niveaux `ERROR`, `WARN` et `INFO`, via MCP ou avec le fallback CLI explicite :
+
+```bash
+npx supabase db advisors --linked --type security --level info --fail-on none --output-format json
+npx supabase db advisors --linked --type performance --level info --fail-on none --output-format json
+```
+
+La sortie CLI par défaut n'est jamais considérée comme un inventaire complet.
+Lorsque disponibles, conserver au minimum `name`, `level`, `title`, `detail`,
+`metadata`, `remediation` et `observed_at`. Les nombres de findings restent un
+état runtime mutable et ne sont pas un contrat.
+
+Le script `apps/web/scripts/supabase-security-advisors.mjs` reste le garde
+contractuel de sécurité/RLS du dépôt ; il ne devient pas un inventaire général.
+Le garde CLI et l'inventaire MCP sont rapportés séparément.
 
 `npx supabase link --project-ref <project-ref>` enregistre la cible locale ;
 il ne prouve pas qu'une migration est appliquée sur le projet distant. La
@@ -84,22 +128,41 @@ preuve d'alignement de l'historique repose sur
 
 En cas de `403`, diagnostiquer l'accès dans cet ordre :
 
-1. vérifier la présence, la fraîcheur et le périmètre de
-   `SUPABASE_ACCESS_TOKEN` sans afficher sa valeur ;
+1. vérifier la commande authentifiée et rapporter sa source dans
+   `CLI_AUTH_SOURCE` ;
 2. vérifier l'identité utilisée par le CLI avec `npx supabase projects list` ;
-3. confirmer que le projet et son organisation sont visibles par cette
-   identité, puis relancer le contrôle concerné.
+3. confirmer que le projet et son organisation sont visibles, puis relancer le
+   contrôle concerné.
 
 Si le projet n'est pas visible, classer l'incident comme un mauvais compte,
-une mauvaise organisation, un rôle insuffisant ou un token sans le scope
-requis. Pour les advisors liés, le token doit également disposer de la
-permission `advisors_read`. Ne pas conclure à une anomalie Supabase avant ces
-vérifications.
+une mauvaise organisation, une permission insuffisante ou un scoped PAT sans
+la capacité requise. Les advisors demandent `Advisors Read`; la lecture des
+logs demande `Logs Read`; l'application de migrations demande
+`Migrations Read-write`. Un rôle Owner/Admin n'est pas intrinsèquement requis
+si le scoped PAT possède les permissions minimales nécessaires.
+
+Le scoped PAT ne doit jamais être stocké dans le dépôt ni documenté avec sa
+valeur. `SUPABASE_ACCESS_TOKEN` reste un secret de tooling CLI uniquement,
+jamais `NEXT_PUBLIC_*` et jamais une variable du runtime applicatif. Il peut
+provenir du stockage sécurisé de `supabase login` ou d'un secret store dédié.
 
 `npx supabase db push`, `npx supabase migration repair` et
 `npx supabase db reset` ne sont pas des remèdes à un problème d'authentification
 ou de scope. Ils sont soit mutatifs, soit réservés au replay CI explicitement
 autorisé, et ne doivent pas être utilisés pour contourner un `403`.
+
+Avant un vrai `db push`, lorsque CLI et MCP sont disponibles, comparer la
+cible projet, le dernier historique distant, les advisors BEFORE et le
+`db push --dry-run`. Un état incompatible est
+`SUPABASE_STATE_DIVERGENCE` et bloque la mutation. Pour un lot SQL autorisé,
+rapporter séparément les advisors `SECURITY_ADVISORS_BEFORE/AFTER` et
+`PERFORMANCE_ADVISORS_BEFORE/AFTER`, ainsi que `NEW_FINDINGS`,
+`RESOLVED_FINDINGS` et `UNCHANGED_FINDINGS`. Un nouvel `ERROR` ou `WARN` causé
+par le lot bloque la clôture sauf décision explicite.
+
+Un statut de branche `MIGRATIONS_FAILED` est un signal à confronter à
+`migration list`, l'état réel du projet, les logs et le dry-run courant ; il ne
+justifie pas à lui seul un `repair`, un reset ou un push.
 
 ## Runtime local non supporté
 
