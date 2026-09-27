@@ -501,8 +501,8 @@
     },
     {
       "metric": "complexity",
-      "path": "src/components/actions/map/popup/action-popup-content-header.tsx",
-      "line": 612,
+      "path": "src/components/actions/map/popup/action-popup-content-compact-header.tsx",
+      "line": 38,
       "category": "React/JSX",
       "ceiling": 27,
       "status": "LEGACY",
@@ -3354,8 +3354,8 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/components/actions/map/popup/action-popup-content-header.tsx",
-      "line": 612,
+      "path": "src/components/actions/map/popup/action-popup-content-compact-header.tsx",
+      "line": 38,
       "category": "React/JSX",
       "ceiling": 165,
       "status": "LEGACY",
