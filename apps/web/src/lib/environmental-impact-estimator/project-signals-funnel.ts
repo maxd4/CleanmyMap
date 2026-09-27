@@ -60,11 +60,7 @@ function getMetaString(row: FunnelRow, keys: string[]): string | null {
   return null;
 }
 
-export function getFunnelMetaString(row: FunnelRow, keys: string[]): string | null {
-  return getMetaString(row, keys);
-}
-
-export function getFunnelPagePath(row: FunnelRow): string | null {
+function getFunnelPagePath(row: FunnelRow): string | null {
   return getMetaString(row, ["pagePath", "pathname", "routePath"]);
 }
 
@@ -75,35 +71,6 @@ export function countProjectPageViews(rows: FunnelRow[]): number {
   }
 
   return rows.filter((row) => row.step === "view_new").length;
-}
-
-export function countProjectPageViewRoutes(rows: FunnelRow[]): number {
-  return normalizedDistinct(
-    rows
-      .filter((row) => row.step === "page_view" || row.step === "view_new" || row.step === "start_form")
-      .map((row) => getFunnelPagePath(row)),
-  ).length;
-}
-
-export function buildTopPageViewRoutes(rows: FunnelRow[]): FunnelRouteCount[] {
-  const counts = new Map<string, number>();
-
-  for (const row of rows) {
-    if (row.step !== "page_view" && row.step !== "view_new") {
-      continue;
-    }
-
-    const path = getFunnelPagePath(row);
-    if (!path) {
-      continue;
-    }
-
-    counts.set(path, (counts.get(path) ?? 0) + 1);
-  }
-
-  return buildTopPageViewRouteCounts(
-    Array.from(counts.entries()).map(([path, count]) => ({ path, count })),
-  );
 }
 
 export function buildTopPageViewRouteCounts(routeCounts: FunnelRouteCount[]): FunnelRouteCount[] {

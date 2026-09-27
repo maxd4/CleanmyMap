@@ -14,12 +14,7 @@ import {
 
 export type { FunnelRow, FunnelSignalAggregate, FunnelSignalSummary } from "./project-signals-funnel";
 export {
-  buildTopPageViewRoutes,
-  buildTopPageViewRouteCounts,
-  countProjectPageViewRoutes,
   countProjectPageViews,
-  getFunnelMetaString,
-  getFunnelPagePath,
 } from "./project-signals-funnel";
 
 export type BaseTimelineRow = {
