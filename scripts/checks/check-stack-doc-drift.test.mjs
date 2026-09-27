@@ -47,7 +47,7 @@ function createFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-stack-drift-"));
   writeFile(root, "apps/web/package.json", JSON.stringify({
     dependencies: { next: "16.3.1" },
-    devDependencies: { typescript: "^7" },
+    devDependencies: { "eslint-config-next": "16.3.1", typescript: "^7" },
   }));
   writeFile(root, "apps/web/src/lib/ui/page-families/families/registry.ts", `
 export const METHODOLOGIE_FAMILY = {
@@ -80,6 +80,18 @@ export const OTHER_FAMILY = {};
   return root;
 }
 
+function updateManifest(root, updates) {
+  const manifestPath = path.join(root, "apps", "web", "package.json");
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  if (updates.next !== undefined) {
+    manifest.dependencies.next = updates.next;
+  }
+  if (updates.eslintConfigNext !== undefined) {
+    manifest.devDependencies["eslint-config-next"] = updates.eslintConfigNext;
+  }
+  writeFile(root, "apps/web/package.json", JSON.stringify(manifest));
+}
+
 function options() {
   return { activeDocs: FOCUSED_ACTIVE_DOCS, canonicalPaths: CANONICAL_PATHS };
 }
@@ -102,6 +114,36 @@ describe("stack and documentation drift governance", () => {
     const fixture = createFixture();
     try {
       assert.deepEqual(findingsFor(fixture).filter((finding) => finding.file === "documentation/architecture/adr/ADR-005-next-canary-policy.md"), []);
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects mismatched Next.js and eslint-config-next versions", () => {
+    const fixture = createFixture();
+    updateManifest(fixture, { eslintConfigNext: "16.3.2" });
+    try {
+      assert.ok(findingsFor(fixture).some((finding) => finding.message.includes("exact same version")));
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects non-exact Next.js version ranges", () => {
+    const fixture = createFixture();
+    updateManifest(fixture, { next: "^16.3.1", eslintConfigNext: "^16.3.1" });
+    try {
+      assert.ok(findingsFor(fixture).some((finding) => finding.message.includes("exact pinned versions")));
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a Next.js canary as the current runtime", () => {
+    const fixture = createFixture();
+    updateManifest(fixture, { next: "16.3.1-canary.1", eslintConfigNext: "16.3.1-canary.1" });
+    try {
+      assert.ok(findingsFor(fixture).some((finding) => finding.message.includes("cannot be used as the current runtime")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }

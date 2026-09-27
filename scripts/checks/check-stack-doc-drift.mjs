@@ -74,6 +74,10 @@ function readMajor(specifier) {
   return match ? Number(match[0]) : null;
 }
 
+function isExactVersionSpecifier(specifier) {
+  return /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(specifier);
+}
+
 function finding(file, message, line = 0) {
   return { file, line, message };
 }
@@ -99,17 +103,46 @@ function validateManifest(view, findings) {
   }
 
   const nextSpecifier = manifest.dependencies?.next;
+  const eslintConfigNextSpecifier = manifest.devDependencies?.["eslint-config-next"];
   const typescriptSpecifier = manifest.devDependencies?.typescript;
   const nextMajor = readMajor(nextSpecifier);
   const typescriptMajor = readMajor(typescriptSpecifier);
-  if (nextMajor === null || typescriptMajor === null) {
-    findings.push(finding(packagePath, "manifest must declare readable Next.js and TypeScript versions"));
+  if (
+    typeof nextSpecifier !== "string"
+    || typeof eslintConfigNextSpecifier !== "string"
+    || typeof typescriptSpecifier !== "string"
+    || !nextSpecifier.trim()
+    || !eslintConfigNextSpecifier.trim()
+    || !typescriptSpecifier.trim()
+    || nextMajor === null
+    || typescriptMajor === null
+  ) {
+    findings.push(finding(packagePath, "manifest must declare readable Next.js, eslint-config-next and TypeScript versions"));
     return null;
+  }
+
+  const nextVersion = nextSpecifier.trim();
+  const eslintConfigNextVersion = eslintConfigNextSpecifier.trim();
+  if (!isExactVersionSpecifier(nextVersion) || !isExactVersionSpecifier(eslintConfigNextVersion)) {
+    findings.push(finding(packagePath, "Next.js and eslint-config-next must use exact pinned versions"));
+  }
+  if (nextVersion !== eslintConfigNextVersion) {
+    findings.push(finding(
+      packagePath,
+      `Next.js and eslint-config-next must use the exact same version (next: ${nextVersion}; eslint-config-next: ${eslintConfigNextVersion})`,
+    ));
+  }
+  if (/canary/i.test(nextVersion)) {
+    findings.push(finding(
+      packagePath,
+      "Next.js canary releases cannot be used as the current runtime; use a stable release",
+    ));
   }
 
   return {
     nextMajor,
-    nextVersion: String(nextSpecifier).replace(/^[~^<>= ]+/, ""),
+    nextVersion,
+    eslintConfigNextVersion,
     typescriptMajor,
   };
 }

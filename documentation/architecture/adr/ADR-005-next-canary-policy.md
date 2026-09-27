@@ -60,6 +60,14 @@ La politique acceptée pour CleanMyMap est :
 
 > utiliser une version stable de Next.js, sauf blocage démontré.
 
+## Politique de mise à jour
+
+- Correctif de sécurité : prioritaire.
+- Correctif standard : batché avec les mises à jour compatibles.
+- Mise à jour mineure : après revue.
+- Mise à jour majeure : migration dédiée.
+- Version canary : uniquement sur exception documentée dans cet ADR.
+
 Le runtime web actuel suit cette politique :
 
 ```txt
