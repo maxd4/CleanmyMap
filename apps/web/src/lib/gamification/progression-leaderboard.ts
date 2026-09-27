@@ -39,6 +39,7 @@ import type {
 import { BADGE_DEFINITIONS } from "./badge-catalog";
 import { actionRowToDrawing, toFloat, toInt, toNullableFloat } from "./progression-utils";
 import { resolveEngagementStatus } from "./engagement-status";
+import { loadGamificationCatalog } from "./gamification-catalog-loader";
 type LeaderboardPeriod = "lifetime" | "yearToDate";
 
 function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
@@ -254,7 +255,7 @@ export async function getUserProgression(
   userId: string,
 ): Promise<UserProgressionResponse> {
   const yearToDateStartDate = getYearToDateStartDate();
-  const [profileResult, stats, rows, annualRows, individualItems, annualImpact] = await Promise.all([
+  const [profileResult, stats, rows, annualRows, individualItems, annualImpact, catalog] = await Promise.all([
     supabase
       .from("progression_profiles")
       .select(
@@ -267,6 +268,7 @@ export async function getUserProgression(
     loadApprovedActionRows(supabase, 10000, yearToDateStartDate),
     buildIndividualLeaderboard(supabase),
     getUserAnnualImpact(supabase, userId),
+    loadGamificationCatalog(supabase, userId),
   ]);
 
   if (profileResult.error) {
@@ -325,7 +327,9 @@ export async function getUserProgression(
       totalButts: stats.totalButts,
       wasteCoverageRate: stats.wasteCoverageRate,
     }),
-    badgeCatalog: BADGE_DEFINITIONS, engagementStatus: resolveEngagementStatus(toInt(profile.current_level, 1)),
+    badgeCatalog: BADGE_DEFINITIONS,
+    catalog,
+    engagementStatus: resolveEngagementStatus(toInt(profile.current_level, 1)),
     impact: computePersonalImpactMetrics(rows),
     impactMethodology: buildPersonalImpactMethodology(stats.qualityAverage),
     dynamicRanking: {

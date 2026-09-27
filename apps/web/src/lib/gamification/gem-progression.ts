@@ -122,6 +122,26 @@ export function buildGemGradeCatalog(config: GemFamilyConfig): GemGrade[] {
   );
 }
 
+export function buildInfiniteGemGradeCatalog(
+  current: number,
+  config: GemFamilyConfig,
+): GemGrade[] {
+  const grades = buildGemGradeCatalog(config);
+  const safeCurrent = Math.max(0, Math.trunc(current));
+  const lastGrade = grades.at(-1)!;
+  let threshold = lastGrade.threshold + 5;
+  let index = 2;
+
+  while (threshold <= safeCurrent) {
+    grades.push(buildPilierGrade(config, index, threshold));
+    threshold += 5;
+    index += 1;
+  }
+
+  grades.push(buildPilierGrade(config, index, threshold));
+  return grades;
+}
+
 function buildPilierGrade(
   config: GemFamilyConfig,
   index: number,

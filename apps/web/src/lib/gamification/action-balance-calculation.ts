@@ -47,7 +47,7 @@ export type ActionBalanceSummary = {
   awards: ActionBalanceCycleAward[];
 };
 
-const ACTION_BALANCE_GEM_CONFIG = {
+export const ACTION_BALANCE_GEM_CONFIG = {
   idPrefix: "action-balance",
   iconVariant: "sliders-horizontal",
   tooltip: (definition: GemGradeDefinition) =>

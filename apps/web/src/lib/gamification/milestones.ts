@@ -10,6 +10,7 @@ export type MilestoneEvent = {
   status_phase: ProgressionStatusPhase;
   source_id: string;
   xp_awarded: number;
+  occurred_on?: string | null;
   metadata?: Record<string, unknown> | null;
 };
 
@@ -86,6 +87,7 @@ export function buildCurrentMilestones(input: {
           ? Math.max(0, Number(event.xp_awarded) || 0)
           : 0,
       proofSourceId: proofSourceId(event),
+      achievedAt: event?.occurred_on ?? null,
     };
   });
 }
