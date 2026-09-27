@@ -134,6 +134,24 @@ describe("route refresh proposal", () => {
     expect(calculation.parameters.groupCount).toBe(1);
   });
 
+  it("changes only volunteers and groupCount for an explicit refresh", () => {
+    const current = action();
+    const parameters = current.preparationData!.routeCalibrationContext!.plannerSnapshot!.parameters;
+    const submission = buildRouteRefreshSubmission(current, { volunteers: 4, groupCount: 3 });
+
+    expect(submission?.options).toMatchObject({
+      volunteers: 4,
+      groupCount: 3,
+      priorityVsTravel: parameters.priorityVsTravel,
+      travelBudgetMinutes: parameters.travelBudgetMinutes,
+      maxStops: parameters.maxStops,
+      riskFocus: parameters.effectiveRiskFocus,
+      pickupPreference: parameters.pickupPreference,
+    });
+    expect(submission?.planningMode).toEqual(parameters.planningMode);
+    expect(submission?.origin).toEqual({ latitude: 48.85, longitude: 2.35, source: "map" });
+  });
+
   it("centralizes freshness and weather recommendation reasons", () => {
     const current = action();
     const calculation = buildActionRouteVersionCalculation(
