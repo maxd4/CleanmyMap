@@ -9,6 +9,8 @@ import {
   type ActionEditorRecord,
 } from "@/lib/actions/http";
 import { normalizeAdministrativeRequirements } from "@/lib/actions/administrative-requirements";
+import { isActionStartInFuture } from "@/lib/actions/temporal";
+import { ActionRouteRefreshPanel } from "./action-declaration/before/action-route-refresh-panel";
 
 type AdministrativeRequirementsStatusProps = {
   actionId: string | null | undefined;
@@ -17,7 +19,20 @@ type AdministrativeRequirementsStatusProps = {
   initialCanValidate?: boolean;
 };
 
-export function AdministrativeRequirementsStatus({
+function PublishedActionRouteRefresh({ action }: { action: ActionEditorRecord }) {
+  const eligible =
+    Boolean(action.publishedAt) &&
+    action.actionPhase === "pre_action" &&
+    (action.status === "pending" || action.status === "approved") &&
+    Boolean(action.preparationData?.operationalRoute) &&
+    isActionStartInFuture({
+      action_date: action.actionDate,
+      event_start_time: action.eventStartTime,
+    });
+  return eligible ? <ActionRouteRefreshPanel action={action} /> : null;
+}
+
+function AdministrativeRequirementsState({
   actionId,
   initialAction = null,
   surface,
@@ -136,5 +151,16 @@ export function AdministrativeRequirementsStatus({
         </CmmButton>
       ) : null}
     </div>
+  );
+}
+
+export function AdministrativeRequirementsStatus(props: AdministrativeRequirementsStatusProps) {
+  return (
+    <>
+      <AdministrativeRequirementsState {...props} />
+      {props.surface === "summary" && props.initialAction ? (
+        <PublishedActionRouteRefresh action={props.initialAction} />
+      ) : null}
+    </>
   );
 }

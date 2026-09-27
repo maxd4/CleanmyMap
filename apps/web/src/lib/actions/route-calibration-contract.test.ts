@@ -124,6 +124,7 @@ describe("route calibration action handoff", () => {
     expect(readContract.metadata.preparationData).not.toHaveProperty("actualRoute");
   });
 
+
   it("allows the operational route to change without rewriting the planner snapshot", () => {
     const contract = toContractCreatePayload(payload);
     const parsed = createActionSchema.safeParse(contract);

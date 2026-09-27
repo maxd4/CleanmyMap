@@ -7,10 +7,32 @@ import { canManageAction } from "@/lib/actions/permissions";
 import { loadActionById } from "@/lib/actions/store";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { canPublishPreAction } from "@/lib/actions/publication";
+import { initializeActionRouteVersioning } from "@/lib/actions/route-version-persistence";
+import type { ActionRow } from "@/types/database";
 
 export const runtime = "nodejs";
 // Justification Vercel: la publication dépend de l’action et de l’utilisateur courant.
 export const dynamic = "force-dynamic";
+
+function buildPublicationUpdate(params: {
+  currentPreparationData: ActionRow["preparation_data"];
+  publishedAt: string;
+  userId: string;
+}) {
+  const preparationData = initializeActionRouteVersioning({
+    preparationData: params.currentPreparationData,
+    appliedAt: params.publishedAt,
+    appliedByUserId: params.userId,
+  });
+  const shouldPersistPreparationData =
+    !params.currentPreparationData?.routeVersioning && Boolean(preparationData.routeVersioning);
+  return {
+    published_at: params.publishedAt,
+    ...(shouldPersistPreparationData
+      ? { preparation_data: preparationData }
+      : {}),
+  };
+}
 
 export async function POST(
   _request: Request,
@@ -80,7 +102,11 @@ export async function POST(
     const publishedAt = new Date().toISOString();
     const result = await supabase
       .from("actions")
-      .update({ published_at: publishedAt })
+      .update(buildPublicationUpdate({
+        currentPreparationData: current.preparation_data,
+        publishedAt,
+        userId: access.userId,
+      }))
       .eq("id", actionId)
       .eq("created_by_clerk_id", current.created_by_clerk_id)
       .eq("action_phase", "pre_action")

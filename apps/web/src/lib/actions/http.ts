@@ -13,7 +13,7 @@ import type {
 import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 import type { ActionVolunteerParticipation } from "@/lib/actions/volunteer-participation";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
-import { AppError, type AppErrorKind, defaultMessageForKind } from "@/lib/errors/app-errors";
+import { AppError } from "@/lib/errors/app-errors";
 import { toContractCreatePayload } from "./contracts/contract-builders";
 import type {
   AdministrativeRequirementsRead,
@@ -27,6 +27,11 @@ import type {
   ActionFormalitiesFacts,
   ActionFormalitiesQualification,
 } from "./formalities-qualification";
+import {
+  createActionError,
+  parseErrorMessage,
+  parseJsonSafely,
+} from "./http-errors";
 
 export { buildMapActionsQueryString, fetchMapActions } from "./map/map-http";
 
@@ -83,53 +88,6 @@ function clampInteger(
   return Math.min(max, Math.max(min, Math.trunc(value)));
 }
 
-function parseErrorMessage(payload: unknown, fallback: string): string {
-  if (payload && typeof payload === "object" && "error" in payload) {
-    const value = (payload as { error?: unknown }).error;
-    if (typeof value === "string" && value.trim().length > 0) {
-      return value;
-    }
-  }
-  return fallback;
-}
-
-function kindFromStatus(status: number): AppErrorKind {
-  if (status === 400 || status === 422) {
-    return "validation";
-  }
-  if (status === 401 || status === 403) {
-    return "permission";
-  }
-  if (status === 429) {
-    return "network";
-  }
-  return "server";
-}
-
-function createActionError(
-  response: Response,
-  payload: unknown,
-  fallback: string,
-): AppError {
-  const kind = kindFromStatus(response.status);
-  const body = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : null;
-  return new AppError({
-    kind,
-    message: parseErrorMessage(body, fallback || defaultMessageForKind(kind)),
-    status: response.status,
-    code: typeof body?.["code"] === "string" ? String(body["code"]) : undefined,
-    referenceCode:
-      typeof body?.["referenceCode"] === "string"
-        ? String(body["referenceCode"])
-        : undefined,
-    retryable: kind === "network" || kind === "server",
-    details:
-      body?.["details"] && typeof body["details"] === "object"
-        ? (body["details"] as Record<string, unknown>)
-        : undefined,
-  });
-}
-
 function serializeTypes(
   raw: ActionTypeFilter | undefined,
   fallback: ActionTypeFilter,
@@ -146,14 +104,6 @@ function serializeTypes(
     return "all";
   }
   return deduped.join(",");
-}
-
-async function parseJsonSafely(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
 }
 
 type ActionCreationResponse = {

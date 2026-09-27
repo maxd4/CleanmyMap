@@ -293,6 +293,28 @@ normalisées à la lecture, avec priorité à `operationalRoute` si les deux cl�
 coexistent ; aucune migration destructive ni nouvelle table ou nouvel endpoint
 n’est introduit.
 
+### Version active et actualisation explicite
+
+Pour une `pre_action` publiée et future qui possède un parcours, le même JSONB
+porte aussi `routeVersioning` (`action-route-versioning-v1`). Sa version
+`active` reprend la géométrie opérationnelle et la projection auditable du
+snapshot : date et auteur d’application, paramètres effectivement utilisés,
+groupes et bénévoles, préférence de collecte, versions moteur/modèles,
+provenance et métriques disponibles. `history` ne contient que les versions
+effectivement appliquées. Le contexte complet initial reste dans
+`routeCalibrationContext` et n’est jamais remplacé par une actualisation.
+
+`Actualiser l’itinéraire` appelle exclusivement `POST /api/route/recommend`
+avec les paramètres de la version active. Le résultat est une proposition
+indépendante ; il n’écrit ni l’action ni sa géométrie avant la décision
+`Conserver l’itinéraire actuel` ou `Utiliser le nouvel itinéraire`. Cette
+dernière décision passe par la route d’application dédiée, conserve l’ancienne
+version, garde le même `actionId` et met à jour la géométrie publique active.
+Une proposition dont le snapshot est identique renvoie un état inchangé sans
+créer de version artificielle. Le contrôle serveur limite ce mécanisme aux
+actions futures publiées administrables ; les actions passées ne sont pas
+modifiées.
+
 Le flux de données est donc :
 
 ```text
