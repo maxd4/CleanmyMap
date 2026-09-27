@@ -607,14 +607,18 @@ l'éligibilité au partage une autorité d'accès à la discussion. La migration
 append-only dédiée à la discussion restaure ce contrat dans un prédicat SQL
 distinct, sans modifier le flux de partage ni son first-contact.
 
-`action_participants` n'est jamais une autorité d'accès à la discussion :
-`pending`, `confirmed`, `cancelled` et `refused` n'ont aucun effet sans
-exclusion explicite. La table `action_conversation_exclusions` porte seulement
-l'état courant ; les exclusions et réintégrations sont aussi enregistrées via
-`appendActionModerationAudit` dans l'audit canonique, avec l'acteur, l'utilisateur
-cible, l'action, la conversation et le motif lorsqu'il est fourni. La
-correction append-only courante est
-`20260915000011_action_discussion_access_contract.sql`.
+L'accès à une discussion d'action exige une action publiée et visible, une
+session authentifiée et l'un des liens suivants : créateur, organisateur,
+administrateur `admin`/`max`, inscription future `confirmed` dans
+`action_registrations`, ou participation finale `confirmed` dans
+`action_participants` après `post_action_complete`. Une demande `pending`, un
+claim post-action en attente ou une participation annulée ne donne pas accès
+d'écriture. La table `action_conversation_exclusions` porte l'état courant ;
+les exclusions et réintégrations sont aussi enregistrées via
+`appendActionModerationAudit` dans l'audit canonique, avec l'acteur,
+l'utilisateur cible, l'action, la conversation et le motif lorsqu'il est
+fourni. La correction append-only courante est
+`20260927000007_action_discussion_access_and_notifications.sql`.
 
 ### Audience des notifications de discussion
 
@@ -625,25 +629,23 @@ distincts :
 DISCUSSION_ACCESS != NOTIFICATION_AUDIENCE
 ```
 
-L'accès reste déterminé uniquement par la discussion publiée et visible, une
-session authentifiée et l'absence d'exclusion active. Il ne dépend ni de
-`action_registrations`, ni de `action_participants`, ni de
-`action_conversation_members` ; un non-participant authentifié peut donc
-continuer à lire et écrire lorsque le contrat d'accès l'autorise.
+L'accès et l'audience partagent les sources canoniques de membres autorisés ;
+`action_conversation_members` reste seulement une projection technique et ne
+peut jamais accorder un droit.
 
 Le fan-out des messages d'action suit le cycle de vie :
 
-- avant l'action : créateur, comptes organisateurs et inscriptions futures
-  `pending` ou `confirmed` encore actives ;
+- avant l'action : créateur, comptes organisateurs, admins et inscriptions
+  futures `confirmed` encore actives ;
 - après `post_action_complete` : créateur, comptes organisateurs et seules les
   participations finales `action_participants` `confirmed`.
 
 Une inscription future, même `confirmed`, ne devient jamais une participation
-finale. Un ancien inscrit sans participation finale confirmée conserve l'accès
-à la discussion selon le contrat ci-dessus, mais ne reçoit plus automatiquement
-les notifications post-action. Les exclusions Chat restent appliquées au
-fan-out. `action_conversation_members` est seulement une projection technique
-recalculable ; une ligne périmée ne suffit pas à recevoir une notification.
+finale. Un ancien inscrit sans participation finale confirmée perd l'accès et
+ne reçoit plus automatiquement les notifications post-action. Les exclusions
+Chat restent appliquées au fan-out, l'auteur n'est jamais notifié, et une
+opération rejouée ne produit pas de doublon logique. Les notifications portent
+le type `action_discussion`, séparé du type générique `chat`.
 
 ## Lecture propriétaire Trash Spotter
 

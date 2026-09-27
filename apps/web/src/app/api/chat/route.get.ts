@@ -227,6 +227,15 @@ async function resolveActionConversationId({
     if (access.state === "excluded") {
       return { id: null, error: NextResponse.json({ error: "Vous êtes exclu de cette discussion." }, { status: 403 }) };
     }
+    if (access.state === "forbidden") {
+      return {
+        id: null,
+        error: NextResponse.json(
+          { error: "Vous n'êtes pas autorisé à consulter cette discussion." },
+          { status: 403 },
+        ),
+      };
+    }
     if (access.state === "unavailable") {
       return { id: null, error: NextResponse.json({ error: "Discussion d'action introuvable." }, { status: 404 }) };
     }

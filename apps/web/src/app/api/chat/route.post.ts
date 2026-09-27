@@ -233,6 +233,7 @@ export async function POST(request: Request) {
       if (access.state === "excluded") {
         return NextResponse.json({ error: "Vous êtes exclu de cette discussion." }, { status: 403 });
       }
+      if (access.state === "forbidden") return NextResponse.json({ error: "Vous n'êtes pas autorisé à participer à cette discussion." }, { status: 403 });
       if (access.state === "unavailable") {
         return NextResponse.json({ error: "Discussion d'action introuvable." }, { status: 404 });
       }

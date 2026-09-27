@@ -6,7 +6,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type AppNotification = {
   id: string;
-  type: "validation" | "community" | "system" | "security" | "chat";
+  type: "validation" | "community" | "system" | "security" | "chat" | "action_discussion";
   title: string;
   content: string;
   read_at: string | null;

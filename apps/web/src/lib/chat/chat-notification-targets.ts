@@ -4,14 +4,17 @@ import {
 } from "@/lib/chat/channels";
 import { isChatMessageKind, type ChatMessageKind } from "@/lib/chat/announcements";
 import { parseChatTopicIdForChannel, type ChatTopicId } from "@/lib/chat/topics";
+import type { ActionPhase } from "@/lib/actions/types";
 
 export type ChatNotificationPayload = {
   href?: string;
   channelType?: ChatChannelType;
   messageId?: string;
+  commentId?: string;
   topicId?: ChatTopicId;
   messageKind?: ChatMessageKind;
   actionId?: string;
+  actionPhase?: ActionPhase;
   zoneName?: string | null;
   arrondissementId?: number | null;
   conversationPartnerId?: string;
@@ -54,6 +57,23 @@ function readNotificationAliases(raw: Record<string, unknown>): {
   };
 }
 
+function readActionPhase(value: unknown): ActionPhase | undefined {
+  const phase = readString(value);
+  return phase === "pre_action" || phase === "post_action_draft" || phase === "post_action_complete"
+    ? phase
+    : undefined;
+}
+
+function readChannelType(value: unknown): ChatChannelType | undefined {
+  const channelType = readString(value);
+  return isChatChannelType(channelType) ? channelType : undefined;
+}
+
+function readMessageKind(value: unknown): ChatMessageKind | undefined {
+  const messageKind = readString(value);
+  return isChatMessageKind(messageKind) ? messageKind : undefined;
+}
+
 export function normalizeChatNotificationPayload(
   payload: unknown,
 ): ChatNotificationPayload | null {
@@ -64,11 +84,7 @@ export function normalizeChatNotificationPayload(
   const raw = payload as Record<string, unknown>;
   const aliases = readNotificationAliases(raw);
 
-  const channelTypeValue = readString(raw["channelType"]);
-  const channelType = isChatChannelType(channelTypeValue)
-    ? channelTypeValue
-    : undefined;
-  const messageKindValue = readString(raw["messageKind"]);
+  const channelType = readChannelType(raw["channelType"]);
   const topicId = channelType
     ? parseChatTopicIdForChannel(channelType, readString(raw["topicId"]))
     : null;
@@ -76,10 +92,12 @@ export function normalizeChatNotificationPayload(
   return {
     href: readString(raw["href"]) ?? undefined,
     channelType,
-    messageId: readString(raw["messageId"]) ?? undefined,
+    messageId: readString(raw["messageId"]) ?? readString(raw["commentId"]) ?? undefined,
+    commentId: readString(raw["commentId"]) ?? undefined,
     topicId: topicId ?? undefined,
-    messageKind: isChatMessageKind(messageKindValue) ? messageKindValue : undefined,
+    messageKind: readMessageKind(raw["messageKind"]),
     actionId: readString(raw["actionId"]) ?? undefined,
+    actionPhase: readActionPhase(raw["actionPhase"]),
     zoneName: readString(raw["zoneName"]),
     arrondissementId: readNumber(raw["arrondissementId"]),
     conversationPartnerId: aliases.conversationPartnerId,

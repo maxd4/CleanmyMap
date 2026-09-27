@@ -85,4 +85,12 @@ describe("chat notification targets", () => {
     })).toBe("/sections/messagerie?channel=action&messageId=message-1&actionId=11111111-1111-4111-8111-111111111111");
     expect(buildChatNotificationHref({ channelType: "action" })).toBeNull();
   });
+
+  it("accepts the action discussion comment alias for deep links", () => {
+    expect(buildChatNotificationHref({
+      channelType: "action",
+      actionId: "11111111-1111-4111-8111-111111111111",
+      commentId: "comment-1",
+    })).toBe("/sections/messagerie?channel=action&messageId=comment-1&actionId=11111111-1111-4111-8111-111111111111");
+  });
 });

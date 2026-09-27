@@ -4,7 +4,7 @@ export const chatAuthorizationContract = {
   chat: {
     GET: {
       expected:
-        "Authenticated member; channel access is checked server-side, with DM/feedback reads scoped to the current identity and admin/elu channel restricted by role",
+        "Authenticated member; channel access is checked server-side, with action discussions restricted to the creator, organizers, admins/max or confirmed participants for the current action phase",
       dimensions: [
         "authentication",
         "business permission",
@@ -12,18 +12,19 @@ export const chatAuthorizationContract = {
         "admin/creator role",
       ],
       actual:
-        "auth() + getCurrentUserIdentity + canAccessChatChannel; DM and feedback queries bind sender/recipient filters to the current user and use Clerk-RLS",
+        "auth() + getCurrentUserIdentity + canAccessChatChannel + resolveActionDiscussionAccess; DM and feedback queries bind sender/recipient filters to the current user and action reads use the dedicated discussion predicate",
       evidence: [
         "auth()",
         "getCurrentUserIdentity",
         "canAccessChatChannel",
+        "resolveActionDiscussionAccess",
         "sender_id",
       ],
       evidenceScope: "module",
     },
     POST: {
       expected:
-        "Authenticated member; channel access is checked server-side, with current-user message ownership and role-gated admin/elu channel",
+        "Authenticated member; channel access is checked server-side, with current-user message ownership and action writes restricted to the creator, organizers, admins/max or confirmed participants; cancelled action discussions are read-only",
       dimensions: [
         "authentication",
         "business permission",
@@ -31,11 +32,12 @@ export const chatAuthorizationContract = {
         "admin/creator role",
       ],
       actual:
-        "auth() + getCurrentUserIdentity + canAccessChatChannel; inserted sender_id is the current user and sensitive reads/writes use Clerk-RLS",
+        "auth() + getCurrentUserIdentity + canAccessChatChannel + resolveActionDiscussionAccess; inserted sender_id is the current user and sensitive reads/writes use Clerk-RLS",
       evidence: [
         "auth()",
         "getCurrentUserIdentity",
         "canAccessChatChannel",
+        "resolveActionDiscussionAccess",
         "sender_id",
       ],
       evidenceScope: "module",

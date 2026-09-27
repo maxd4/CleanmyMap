@@ -16,6 +16,8 @@ function getNotificationIcon(type: AppNotification["type"]) {
       return <UserCheck className="text-blue-500" size={16} />;
     case "chat":
       return <MessageSquare className="text-violet-500" size={16} />;
+    case "action_discussion":
+      return <MessageSquare className="text-pink-500" size={16} />;
     default:
       return <Check className="cmm-text-muted" size={16} />;
   }
