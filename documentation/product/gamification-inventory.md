@@ -15,9 +15,10 @@ Les lignes d inventaire ci-dessous sont des pistes de surface et non une
 seconde liste de progressions CURRENT. Les seuls IDs CURRENT sont ceux de la
 spécification canonique.
 
-La taxonomie CURRENT à utiliser dans cet inventaire est celle de la
-[spécification canonique](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md)
-et contient exactement sept progressions infinies:
+La taxonomie CURRENT à utiliser dans cet inventaire est celle du registre
+`GAMIFICATION_REGISTRY` dans `apps/web/src/lib/gamification/progression-utils.ts`
+et de la [spécification canonique](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md);
+elle contient exactement huit progressions infinies:
 
 - `Participation`;
 - `Organisation`;
@@ -25,12 +26,35 @@ et contient exactement sept progressions infinies:
 - `Zones propres`;
 - `Régularité`;
 - `Polyvalence`;
-- `Apprentissage`.
+- `Apprentissage`;
+- `Modération` (réservée aux comptes autorisés par AuthZ).
 
-Les jalons one-shot CURRENT sont `Première trace utile`, `Trace fondatrice` et
-`Parrainage utile`. Les autres idées de cet inventaire restent des pistes de
-surface ou des rôles de compatibilité ; elles ne doivent pas être comptées
-comme une progression infinie supplémentaire.
+Les jalons one-shot CURRENT sont ceux du registre : `Première trace utile`,
+`Trace fondatrice`, `Boucle bouclée`, `Mobilisateur`, `Donnée exemplaire`,
+`Parcours documenté`, `Mesure traçable`, `Tri documenté`, `Formalités
+préparées`, `Participation retrouvée`, `Parrainage utile`, `Première
+modération`, `Première validation de participation`, `Première correction
+d’impact justifiée` et `Modérateur polyvalent`. Les autres idées de cet
+inventaire restent descriptives et ne sont pas des mécanismes CURRENT.
+
+## Décisions de non-gamification CURRENT
+
+Les signaux suivants sont explicitement `NON_GAMIFIED` dans le registre. Ils ne
+sont pas des propositions à traiter :
+
+- poids total de déchets, nombre de mégots, ou kg/mégots utilisés comme
+  conversion ou progression XP ;
+- répartition enfants/adultes/retraités et champs démographiques ;
+- difficulté, accessibilité et contenu libre de `safetyInstructions`,
+  `recommendedMaterials`, `logisticsNotes` ou `checklistBeforeDeparture` ;
+- simple activation de `groupJoinEnabled`, clic sur rejoindre, inscription ou
+  acceptation future, annulation et mise en file ;
+- génération d’un lien de parrainage et montant d’un don ;
+- rôle utilisateur, niveau de confiance, score qualité ou remplissage d’un
+  formulaire pour eux-mêmes.
+
+Ces informations peuvent rester utiles à la preuve, à la validation, à l'AuthZ
+ou aux rapports. Elles ne créent aucune récompense CURRENT par elles-mêmes.
 
 ## Inventaire par bloc
 
@@ -40,13 +64,13 @@ comme une progression infinie supplémentaire.
 | --- | --- | --- | --- | --- |
 | Accueil perso | objectif infini + régulier | C est le point d entree naturel vers la progression personnelle | Niveau courant, niveau potentiel, prochaine etape, retour d impact | Barre de progression vers le prochain palier, badge de reprise de session, rappel d objectif du jour |
 | Dashboard | objectif infini + régulier | C est la synthese de la vie du compte | Barre de progression, badges, objectif du jour ou du mois | Bloc "prochain palier", carte de badge evolutif, resume d impact, regularite mensuelle et zone sensible apaisée |
-| Profil & impact | objectif infini + régulier | L impact personnel doit rester lisible sans transformer les mesures en score | Progressions CURRENT, jalons et métriques d impact séparées | Les sept progressions CURRENT, les jalons one-shot et les indicateurs d impact conservés à part; pas de rang XP de confiance |
+| Profil & impact | objectif infini + régulier | L impact personnel doit rester lisible sans transformer les mesures en score | Progressions CURRENT, jalons et métriques d impact séparées | Les huit progressions CURRENT, les jalons one-shot et les indicateurs d impact conservés à part; pas de rang XP de confiance |
 | Connexion / inscription | one-shot | Le premier passage d activation est un jalon fort | Badge de premiere connexion utile, puis orientation vers la premiere action | Badge de demarrage, message de bienvenue, redirection vers l action suivante |
 | Onboarding localisation | one-shot | C est un jalon de mise en route, pas une habitude | Badge de configuration terminee, puis disparition du rappel | Badge de localisation validee, etat "pret a contribuer" |
 | Parcours | régulier | Le parcours utilisateur sert a maintenir le retour | Etape suivante, objectif de reprise, repere de session | Prochaine etape visible, compteur de progression de parcours, rappel de reprise |
 | Parcours par profil | régulier | Le contenu doit s adapter selon le profil et son rythme | Objectif de reprise personnalise, statuts de progression adaptes | Progression adaptee au profil, objectifs contextuels, hint d action suivante |
 | Portail Decider | autre | Surface de pilotage, pas un espace de gamification classique | Pas de score ludique; seulement des indicateurs de confiance et de lisibilite | Aucune gamification directe; seulement des marqueurs de confiance, de qualite et de suivi |
-| Administration | autre | La modération et la fiabilite ne doivent pas etre ludifiees | Badges internes eventuels seulement, pas de mecanique visible publique | Aucune gamification visible; au mieux des statuts internes d operation |
+| Administration | autre | La modération et la fiabilite ne doivent pas etre ludifiees publiquement | Progression Modération interne réservée à AuthZ | Aucune gamification publique; progression `moderation` uniquement pour les comptes autorisés |
 | God Mode | autre | Surface d exploitation critique | Pas de gamification visible | Aucune gamification |
 | Services admin | autre | Surface operatoire de maintenance | Pas de gamification visible | Aucune gamification |
 
@@ -71,7 +95,7 @@ comme une progression infinie supplémentaire.
 | Observatoire public | autre | La lecture publique doit rester informative, pas ludifiee | Pas de score; seulement des repères de lecture et de qualite | Aucune gamification directe; seulement des repères de fiabilite et de lecture |
 | Rapports d impact | one-shot + objectif infini | Le rapport partageable est un jalon, mais la maitrise peut progresser | Badge de livrable genere, puis palier de qualite de restitution | Badge de rapport genere, badge de qualite de restitution, progression de niveau d impact |
 | Profil impact | autre | L impact personnel doit rester descriptif et traçable | Métriques d impact, couverture et méthodologie | Kg, mégots et proxies affichés comme mesures ou estimations, jamais comme unités XP |
-| Progression & Badges | objectif infini | C est la colonne vertébrale du systeme | Niveaux, badges evolutifs, contrat commun des sept progressions | Participation, Organisation, Exploration, Zones propres, Régularité, Polyvalence et Apprentissage |
+| Progression & Badges | objectif infini | C est la colonne vertébrale du systeme | Niveaux, badges evolutifs, contrat commun des huit progressions | Participation, Organisation, Exploration, Zones propres, Régularité, Polyvalence, Apprentissage et Modération autorisée |
 | Historique des actions | régulier | Le retour sur l historique soutient la retention et la relecture | Jalons de regularite, recap de periode, reflexion post-action | Recap mensuel, streak de contributions utiles, badge de regularité mensuelle |
 
 ### Bloc Réseau & Discussions
@@ -137,11 +161,11 @@ comme une progression infinie supplémentaire.
 - un seul objectif visible a la fois suffit dans la plupart des ecrans;
 - un badge doit toujours avoir un sens lisible par un humain;
 - un `objectif infini` doit toujours changer visuellement et verbalement a chaque palier important;
-- seuls les sept axes CURRENT produisent les progressions comportementales
+- seuls les huit axes CURRENT produisent les progressions comportementales
   infinies;
-- Mohs Déchets et Mohs Mégots sont des badges d'impact personnels secondaires :
+- Mohs Déchets et Mohs Mégots restent des badges d'impact historiques secondaires :
   ils affichent une barre finie de dix grades et produisent `+0,25 XP` par
-  seuil, sans devenir un huitième ou neuvième axe et sans XP proportionnel aux
+  seuil historique, sans devenir un neuvième axe et sans XP proportionnel aux
   kg ou aux mégots. Forms, confiance et qualité restent hors progression;
 - un `one-shot` doit cesser de s afficher comme action a completer une fois acquis;
 - un `régulier` doit rester sobre, sans surcharge de notifications;

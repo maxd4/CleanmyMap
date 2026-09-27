@@ -24,6 +24,7 @@ Les objectifs écartés ne figurent pas ici. Si un objectif cesse d être pertin
 | `Régularité` | objectif infini | Suit les mois calendaires de participation utile sans pression compétitive. | À maintenir et à reproposer par défaut |
 | `Polyvalence` | objectif infini | Encourage la diversité des contextes de contribution validés. | À maintenir et à reproposer par défaut |
 | `Apprentissage` | objectif infini | Regroupe les événements de progression pédagogique et leurs paliers de maîtrise. | À maintenir et à reproposer par défaut |
+| `Modération` | objectif infini | Progression interne des dossiers uniques réellement résolus, réservée aux comptes autorisés par AuthZ. | À maintenir dans le registre CURRENT, jamais visible par simple label UI |
 
 ## Jalons one-shot
 
@@ -38,6 +39,33 @@ unique et ne doublonnent pas le premier palier d'une progression.
 
 ## Hors taxonomie CURRENT
 
+Le registre de décision est `GAMIFICATION_REGISTRY` dans
+`apps/web/src/lib/gamification/progression-utils.ts`. Toute donnée métier
+pertinente y possède une catégorie explicite : `XP_PROGRESSION`,
+`XP_MILESTONE`, `BADGE_ONLY` ou `NON_GAMIFIED`.
+
+### Décisions de non-gamification
+
+Les exclusions suivantes sont CURRENT et définitives pour la taxonomie active,
+pas des idées à traiter ultérieurement :
+
+- poids total de déchets ou nombre de mégots converti directement en XP ;
+- kg/mégots utilisés comme progression CURRENT ;
+- répartition enfants/adultes/retraités et champs démographiques comme source de récompense ;
+- difficulté ou accessibilité de l’action ;
+- contenu libre de `safetyInstructions`, `recommendedMaterials`,
+  `logisticsNotes` et `checklistBeforeDeparture` ;
+- activation de `groupJoinEnabled`, clic sur rejoindre, inscription future,
+  acceptation future, annulation ou mise en file ;
+- simple génération d’un lien de parrainage ;
+- montant d’un don ;
+- rôle utilisateur, niveau de confiance ou score qualité comme monnaie ou
+  progression XP ;
+- remplissage d’un formulaire pour lui-même.
+
+Ces faits peuvent rester utiles à la validation, à l’AuthZ ou aux rapports,
+mais ils ne génèrent aucun badge ou événement XP CURRENT par eux-mêmes.
+
 Forms sont une preuve et une condition de validation Organisation, jamais une
 progression utilisateur : aucune barre Forms ni attribution XP pour remplir un
 formulaire. Les événements historiques `form_tier_unlock` et `form_bonus` sont
@@ -49,11 +77,17 @@ complétude, de validation et de niveau global; une moyenne susceptible de
 baisser n'est pas une progression infinie. Les kg et les mégots restent des
 métriques d'impact affichables, sans conversion en XP par unité.
 
-Mohs est une progression d'impact personnelle secondaire pour les déchets et
-les mégots, distincte des sept progressions comportementales. Elle utilise des
+Mohs est une surface d'impact historique secondaire pour les déchets et
+les mégots, distincte des huit progressions comportementales. Les anciennes
+attributions restent lisibles pour compatibilité ; les signaux kg/mégots
+demeurent `NON_GAMIFIED` comme progression CURRENT et ne constituent pas une
+nouvelle économie XP.
+
+Les anciennes règles de seuils de Mohs sont conservées uniquement pour la
+lecture des données historiques déjà enregistrées. Elles utilisent des
 seuils fixes et `+0,25 XP` par grade via `progression_events`, sans XP
 proportionnel et sans écriture `points_ledger`. La zone sensible apaisée reste elle aussi
-hors des sept progressions infinies : sa qualification est historique et figée
+hors des huit progressions infinies : sa qualification est historique et figée
 au moment de la validation, mais ses paliers gemme `1, 3, 5, 8, 10, 15, 20,
 puis +5` attribuent chacun `+1 XP` via `sensitive_zone_milestone`. Ces
 événements restent spécialisés, idempotents et sans solde XP propre ; une

@@ -3,16 +3,46 @@ import { parseDrawingFromGeoJson } from "@/lib/actions/geometry/derived-geometry
 import { evaluateActionQuality, type ActionQualityGrade } from "@/lib/actions/quality/quality";
 import type { ActionDrawing, ActionListItem } from "@/lib/actions/types";
 import { CURRENT_MILESTONES } from "./current-milestones";
+import { CURRENT_GAMIFICATION_RULES_VERSION } from "./progression-types";
 import type {
   ActionRow,
   CurrentInfiniteProgressionId,
+  GamificationVisibility,
   GamificationEventRegistration,
+  GamificationMechanicDefinition,
   MilestoneDefinition,
   GamificationProgressionDefinition,
   ProgressionEventType,
 } from "./progression-types";
+
+type CurrentProgressionInput = Omit<
+  GamificationProgressionDefinition,
+  | "category"
+  | "progressionId"
+  | "xpPolicy"
+  | "badgeId"
+  | "milestoneId"
+  | "visibility"
+  | "rulesVersion"
+> & { visibility?: GamificationVisibility };
+
+function defineCurrentProgression(
+  input: CurrentProgressionInput,
+): GamificationProgressionDefinition {
+  return {
+    ...input,
+    category: "XP_PROGRESSION",
+    progressionId: input.id,
+    xpPolicy: { kind: "progression_paliers", rule: "common_current_scale" },
+    badgeId: input.badgeFamily,
+    milestoneId: null,
+    visibility: input.visibility ?? "current_user",
+    rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+  };
+}
+
 export const CURRENT_INFINITE_PROGRESSIONS = [
-  {
+  defineCurrentProgression({
     id: "participation",
     label: "Participation",
     description: "Participations finales confirmées à des actions.",
@@ -21,8 +51,8 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     badgeFamily: "participant",
     scale: "participant",
     infinite: true,
-  },
-  {
+  }),
+  defineCurrentProgression({
     id: "organisation",
     label: "Organisation",
     description: "Actions réellement organisées et validées.",
@@ -31,8 +61,8 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     badgeFamily: "organisation",
     scale: "gem",
     infinite: true,
-  },
-  {
+  }),
+  defineCurrentProgression({
     id: "exploration",
     label: "Exploration",
     description: "Découverte de lieux distincts et couverture cartographique.",
@@ -41,8 +71,8 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     badgeFamily: "explorer",
     scale: "exploration",
     infinite: true,
-  },
-  {
+  }),
+  defineCurrentProgression({
     id: "clean_zones",
     label: "Zones propres",
     description: "Lieux propres validés ou nettoyés, dédoublonnés par zone.",
@@ -51,8 +81,8 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     badgeFamily: "clean-zones",
     scale: "atmosphere",
     infinite: true,
-  },
-  {
+  }),
+  defineCurrentProgression({
     id: "regularity",
     label: "Régularité",
     description: "Participation utile sur des mois calendaires consécutifs.",
@@ -61,8 +91,8 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     badgeFamily: "regularity",
     scale: "gem",
     infinite: true,
-  },
-  {
+  }),
+  defineCurrentProgression({
     id: "versatility",
     label: "Polyvalence",
     description: "Diversité des contextes de contribution validés.",
@@ -71,8 +101,8 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     badgeFamily: "versatility",
     scale: "gem",
     infinite: true,
-  },
-  {
+  }),
+  defineCurrentProgression({
     id: "learning",
     label: "Apprentissage",
     description: "Réponses justes et progression des apprentissages utiles.",
@@ -81,10 +111,70 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     badgeFamily: "learning",
     scale: "learning",
     infinite: true,
-  },
-  { id: "moderation", label: "Modération", description: "Dossiers de modération uniques réellement résolus.", metric: "resolvedModerationCases", sourceDomain: "admin_operations_audit (moderation/success)", badgeFamily: "moderation", scale: "gem", infinite: true },
+  }),
+  defineCurrentProgression({ id: "moderation", label: "Modération", description: "Dossiers de modération uniques réellement résolus.", metric: "resolvedModerationCases", sourceDomain: "admin_operations_audit (moderation/success)", badgeFamily: "moderation", scale: "gem", infinite: true, visibility: "authorized_moderation" }),
 ] as const satisfies readonly GamificationProgressionDefinition[];
 export { CURRENT_MILESTONES } from "./current-milestones";
+
+const NON_GAMIFIED_SIGNAL_REASONS = {
+  antiFarming: "Exclu pour éviter le farming et distinguer preuve métier et activité gamifiée.",
+  dataIntegrity: "Exclu pour ne pas créer d’incitation à sur-déclarer ou à embellir une donnée.",
+  sensitiveData: "Exclu pour ne pas récompenser une donnée sensible ou démographique.",
+  freeText: "Exclu car un texte libre est facilement manipulable et ne constitue pas une preuve métier stable.",
+  trustAuthz: "Exclu : la confiance et l’AuthZ restent des garde-fous hors de l’économie XP.",
+  utility: "Exclu : usage utilitaire ou intention future, sans accomplissement métier final.",
+} as const;
+
+function defineNonGamifiedSignal(
+  input: Pick<GamificationMechanicDefinition, "id" | "sourceDomain" | "description">,
+): GamificationMechanicDefinition {
+  return {
+    ...input,
+    category: "NON_GAMIFIED",
+    progressionId: null,
+    xpPolicy: { kind: "none", reason: NON_GAMIFIED_SIGNAL_REASONS.antiFarming },
+    badgeId: null,
+    milestoneId: null,
+    visibility: "not_exposed",
+    rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+  };
+}
+
+export const NON_GAMIFIED_SIGNALS = [
+  defineNonGamifiedSignal({ id: "signal:waste-total-direct-xp", sourceDomain: "actions.waste_kg", description: `Poids total de déchets comme conversion directe en XP. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
+  defineNonGamifiedSignal({ id: "signal:cigarette-butts-direct-xp", sourceDomain: "actions.cigarette_butts", description: `Nombre de mégots comme conversion directe en XP. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
+  defineNonGamifiedSignal({ id: "signal:waste-and-butts-current-progression", sourceDomain: "actions.waste_kg + actions.cigarette_butts", description: `Kg ou mégots comme progression CURRENT. ${NON_GAMIFIED_SIGNAL_REASONS.antiFarming}` }),
+  defineNonGamifiedSignal({ id: "signal:demographic-breakdown", sourceDomain: "action participant demographic fields", description: `Répartition enfants/adultes/retraités. ${NON_GAMIFIED_SIGNAL_REASONS.sensitiveData}` }),
+  defineNonGamifiedSignal({ id: "signal:demographic-fields-reward", sourceDomain: "profil et données démographiques", description: `Champs démographiques comme source de récompense. ${NON_GAMIFIED_SIGNAL_REASONS.sensitiveData}` }),
+  defineNonGamifiedSignal({ id: "signal:action-difficulty", sourceDomain: "action qualification", description: `Difficulté déclarée de l’action. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
+  defineNonGamifiedSignal({ id: "signal:action-accessibility", sourceDomain: "action accessibility metadata", description: `Accessibilité d’une action. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
+  defineNonGamifiedSignal({ id: "signal:safety-instructions-text", sourceDomain: "actions.safetyInstructions", description: `Contenu libre de safetyInstructions. ${NON_GAMIFIED_SIGNAL_REASONS.freeText}` }),
+  defineNonGamifiedSignal({ id: "signal:recommended-materials-text", sourceDomain: "actions.recommendedMaterials", description: `Contenu libre de recommendedMaterials. ${NON_GAMIFIED_SIGNAL_REASONS.freeText}` }),
+  defineNonGamifiedSignal({ id: "signal:logistics-notes-text", sourceDomain: "actions.logisticsNotes", description: `Contenu libre de logisticsNotes. ${NON_GAMIFIED_SIGNAL_REASONS.freeText}` }),
+  defineNonGamifiedSignal({ id: "signal:departure-checklist-text", sourceDomain: "actions.checklistBeforeDeparture", description: `Contenu libre de checklistBeforeDeparture. ${NON_GAMIFIED_SIGNAL_REASONS.freeText}` }),
+  defineNonGamifiedSignal({ id: "signal:group-join-enabled", sourceDomain: "actions.groupJoinEnabled", description: `Simple activation de groupJoinEnabled. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:future-action-registration", sourceDomain: "action_registrations", description: `Simple inscription future à une action. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:future-registration-acceptance", sourceDomain: "action_registrations.status", description: `Simple acceptation d’une inscription future. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:join-click", sourceDomain: "join action UI", description: `Clic sur rejoindre. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:registration-cancellation-or-queue", sourceDomain: "action_registrations workflow", description: `Annulation d’inscription, ajout à une file ou acceptation préalable. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:referral-link-generation", sourceDomain: "referral link creation", description: `Simple génération d’un lien de parrainage. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
+  defineNonGamifiedSignal({ id: "signal:donation-amount", sourceDomain: "donation amount", description: `Montant d’un don. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
+  defineNonGamifiedSignal({ id: "signal:user-role", sourceDomain: "AuthZ role", description: `Rôle utilisateur. ${NON_GAMIFIED_SIGNAL_REASONS.trustAuthz}` }),
+  defineNonGamifiedSignal({ id: "signal:trust-level", sourceDomain: "derived trust level", description: `Niveau de confiance comme monnaie ou progression XP. ${NON_GAMIFIED_SIGNAL_REASONS.trustAuthz}` }),
+  defineNonGamifiedSignal({ id: "signal:quality-score", sourceDomain: "action quality score", description: `Score qualité comme progression infinie. La qualité reste un critère transversal et figé dans les preuves de validation.` }),
+  defineNonGamifiedSignal({ id: "signal:form-completion", sourceDomain: "Forms completion", description: `Remplissage de formulaire pour lui-même. Forms reste une preuve de workflow, pas une activité gamifiée.` }),
+] as const satisfies readonly GamificationMechanicDefinition[];
+
+export const GAMIFICATION_REGISTRY = [
+  ...CURRENT_INFINITE_PROGRESSIONS,
+  ...CURRENT_MILESTONES,
+  ...NON_GAMIFIED_SIGNALS,
+] as const satisfies readonly GamificationMechanicDefinition[];
+
+export function currentGamificationRegistry(): readonly GamificationMechanicDefinition[] {
+  return GAMIFICATION_REGISTRY;
+}
+
 const GAMIFICATION_EVENT_REGISTRY: Record<
   ProgressionEventType,
   GamificationEventRegistration
