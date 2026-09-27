@@ -8,7 +8,6 @@ import { PROGRESSION_RULES_V1 } from "./progression-rules";
 
 export {
   PROGRESSION_RULES_V1,
-  PROGRESSION_RULES_VERSION,
 } from "./progression-rules";
 
 export function xpStep(level: number): number {

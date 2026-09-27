@@ -30,8 +30,6 @@ export type {
   PilotageOverview,
 } from "./overview.types";
 
-export type { PilotageOverviewScope } from "./scope";
-
 type BuildPilotageOverviewParams = {
   contracts: ActionDataContract[];
   periodDays: number;
