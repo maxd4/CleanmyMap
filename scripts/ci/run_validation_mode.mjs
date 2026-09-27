@@ -13,7 +13,6 @@ import {
   classifyValidationFailure,
   createModeValidationPlan,
   getBudgetDecision,
-  VALIDATION_MODE_BUDGETS,
 } from "./validation-modes.mjs";
 import {
   resolveValidationCommand,
@@ -73,7 +72,9 @@ function commandFor(check) {
 
 export function runCheck(check, remainingSeconds, cwd = process.cwd()) {
   const command = commandFor(check);
-  const timeoutMs = Math.max(1000, Math.floor(remainingSeconds * 1000));
+  const timeoutMs = Number.isFinite(remainingSeconds)
+    ? Math.max(1000, Math.floor(remainingSeconds * 1000))
+    : undefined;
   console.log(`\n==> ${check.label}`);
   return runCommandWithTimeout({ command, cwd, timeoutMs });
 }
@@ -92,7 +93,7 @@ function printReport({
   console.log(`\nVALIDATION_MODE: ${plan.mode}`);
   console.log(`CANDIDATE_SCOPE: ${plan.candidateScope}`);
   console.log(`ELAPSED_SECONDS: ${elapsedSeconds.toFixed(1)}`);
-  console.log(`TIME_BUDGET_SECONDS: ${plan.budgetSeconds}`);
+  console.log(`TIME_BUDGET_SECONDS: ${plan.budgetSeconds ?? "none"}`);
   console.log("CHECKS_PASSED:");
   for (const value of passed) console.log(`- ${value}`);
   console.log("CHECKS_REUSED:");
@@ -162,7 +163,7 @@ export async function runValidationMode(
       const decision = getBudgetDecision({
         elapsedSeconds,
         estimatedSeconds: check.estimatedSeconds,
-        budgetSeconds: VALIDATION_MODE_BUDGETS[plan.mode],
+        budgetSeconds: plan.budgetSeconds,
       });
       if (decision.decision === "skip") {
         notRun.push({ id: check.id, reason: "NOT_RUN_TIME_BUDGET" });

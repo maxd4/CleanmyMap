@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { runValidationMode } from "./run_validation_mode.mjs";
+import { runCheck, runValidationMode } from "./run_validation_mode.mjs";
 import {
   VALIDATION_EVIDENCE_RELATIVE_ROOT,
 } from "./validation-evidence.mjs";
@@ -60,6 +60,17 @@ test("keeps executables other than npm and npx unchanged", () => {
     resolveValidationCommand(original, "win32", "C:\\Program Files\\nodejs\\node.exe"),
     original,
   );
+});
+
+test("FULL checks do not install a timeout when the global budget is unlimited", async () => {
+  const result = await runCheck(
+    {
+      label: "unlimited test check",
+      command: { executable: process.execPath, args: ["-e", "setTimeout(() => {}, 50)"] },
+    },
+    Infinity,
+  );
+  assert.equal(result.status, "PASS");
 });
 
 test("keeps arguments containing spaces as separate arguments", () => {

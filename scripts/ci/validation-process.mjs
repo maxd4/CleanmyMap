@@ -98,10 +98,12 @@ export function runCommandWithTimeout({ command, cwd = process.cwd(), timeoutMs,
       }
     });
 
-    timeoutHandle = setTimeout(() => {
-      if (settled) return;
-      timedOut = true;
-      terminateProcessTree(child.pid);
-    }, Math.max(1, timeoutMs));
+    if (Number.isFinite(timeoutMs)) {
+      timeoutHandle = setTimeout(() => {
+        if (settled) return;
+        timedOut = true;
+        terminateProcessTree(child.pid);
+      }, Math.max(1, timeoutMs));
+    }
   });
 }
