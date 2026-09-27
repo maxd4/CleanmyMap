@@ -80,6 +80,27 @@ describe("CURRENT milestones", () => {
       });
   });
 
+  it("keeps moderation one-shots badge-only except for the polyvalent milestone", () => {
+    const milestones = buildCurrentMilestones({
+      completeActionsCount: 0,
+      events: [
+        { event_type: "moderation_first_case", status_phase: "validated", source_id: "first-case", xp_awarded: 0 },
+        { event_type: "moderation_first_participation", status_phase: "validated", source_id: "first-participation", xp_awarded: 0 },
+        { event_type: "moderation_first_impact_correction", status_phase: "validated", source_id: "first-impact", xp_awarded: 0 },
+        { event_type: "moderation_multi_family", status_phase: "validated", source_id: "multi-family", xp_awarded: 1 },
+      ],
+    });
+
+    expect(milestones.find((milestone) => milestone.id === "premiere_moderation"))
+      .toMatchObject({ unlocked: true, xpAwarded: 0, recordedXp: 0 });
+    expect(milestones.find((milestone) => milestone.id === "premiere_validation_participation"))
+      .toMatchObject({ unlocked: true, xpAwarded: 0, recordedXp: 0 });
+    expect(milestones.find((milestone) => milestone.id === "premiere_correction_impact_justifiee"))
+      .toMatchObject({ unlocked: true, xpAwarded: 0, recordedXp: 0 });
+    expect(milestones.find((milestone) => milestone.id === "moderateur_polyvalent"))
+      .toMatchObject({ unlocked: true, xpAwarded: 1, recordedXp: 1 });
+  });
+
   it("does not turn infinite or historical milestone events into CURRENT milestones", () => {
     const milestones = buildCurrentMilestones({
       completeActionsCount: 0,

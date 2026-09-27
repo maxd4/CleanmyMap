@@ -8,6 +8,7 @@ import type { ActionBalanceSummary } from "@/lib/gamification/action-balance";
 import { ActionBalanceBadge } from "../action-balance-badge";
 import { MonthlyRegularityBadge } from "../monthly-regularity-badge";
 import { SensitiveZoneBadge } from "../sensitive-zone-badge";
+import type { GamificationProgressionState } from "@/lib/gamification/progression-types";
 
 export function InfiniteBadgesPanel({
   totals,
@@ -56,6 +57,7 @@ export function InfiniteBadgesPanel({
       }>;
     };
     sensitiveZoneApaisement?: Parameters<typeof SensitiveZoneBadge>[0]["summary"];
+    moderationProgression?: GamificationProgressionState | null;
   };
 }) {
   const { t } = useTranslation("gamification");
@@ -120,6 +122,28 @@ export function InfiniteBadgesPanel({
           />
         ))}
       </div>
+
+      {totals.moderationProgression ? (
+        <InfiniteBadge
+          icon="shield-check"
+          title="Modération"
+          description="Dossiers uniques réellement résolus"
+          total={totals.moderationProgression.currentValue}
+          step={1}
+          unitLabel="dossiers"
+          family="moderation"
+          onMilestoneReached={(payload) => {
+            announceGamificationGain({
+              title: "Palier infini atteint",
+              message: `${payload.title} est maintenant au niveau ${payload.level}.`,
+              tone: "generic",
+              icon: payload.icon,
+              source: "infinite-moderation",
+              dedupeKey: `infinite-moderation:${payload.level}`,
+            });
+          }}
+        />
+      ) : null}
 
       {totals.actionBalance ? (
         <div className="pt-1">

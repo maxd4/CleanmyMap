@@ -106,6 +106,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
     monthlyRegularity: computeMonthlyRegularitySummary([]),
     sensitiveZoneApaisement: createFallbackSensitiveZoneApaisementSummary(),
     milestones: buildCurrentMilestones({ completeActionsCount: 0, events: [] }),
+    moderationProgression: null,
   }));
   const referralSummary = await fetchCachedReferralSummary(userId).catch(
     () => ({

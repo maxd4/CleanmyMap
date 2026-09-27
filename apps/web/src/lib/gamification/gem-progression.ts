@@ -46,8 +46,25 @@ export const ORGANISATION_GEM_CONFIG: GemFamilyConfig = {
     definition.threshold < 5 ? "stone" : "precious",
 };
 
+export const MODERATION_GEM_CONFIG: GemFamilyConfig = {
+  idPrefix: "moderation",
+  iconVariant: "shield-check",
+  tooltip: (definition) =>
+    definition.key.startsWith("pilier-")
+      ? "Progression infinie des dossiers de modération résolus"
+      : definition.threshold === 0
+        ? "Aucun dossier de modération résolu"
+        : `${definition.threshold} dossiers de modération résolus`,
+  visualVariant: (definition) =>
+    definition.threshold < 5 ? "stone" : "precious",
+};
+
 export function computeOrganisationProgress(current: number): GemProgressionState {
   return computeGemProgression(current, ORGANISATION_GEM_CONFIG);
+}
+
+export function computeModerationProgress(current: number): GemProgressionState {
+  return computeGemProgression(current, MODERATION_GEM_CONFIG);
 }
 
 function toRomanNumeral(value: number): string {

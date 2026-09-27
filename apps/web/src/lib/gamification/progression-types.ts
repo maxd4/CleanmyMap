@@ -39,7 +39,13 @@ export type ProgressionEventType =
   | "participant_tier_unlock"
   | "explorer_tier_unlock"
   | "sensitive_zone_action"
-  | "sensitive_zone_milestone";
+  | "sensitive_zone_milestone"
+  | "moderation_case_resolved"
+  | "moderation_tier_unlock"
+  | "moderation_first_case"
+  | "moderation_first_participation"
+  | "moderation_first_impact_correction"
+  | "moderation_multi_family";
 
 export const CURRENT_INFINITE_PROGRESSION_IDS = [
   "participation",
@@ -49,6 +55,7 @@ export const CURRENT_INFINITE_PROGRESSION_IDS = [
   "regularity",
   "versatility",
   "learning",
+  "moderation",
 ] as const;
 
 export type CurrentInfiniteProgressionId =
@@ -65,7 +72,11 @@ type CurrentMilestoneId =
   | "tri_documente"
   | "formalites_preparees"
   | "participation_retrouvee"
-  | "parrainage_utile";
+  | "parrainage_utile"
+  | "premiere_moderation"
+  | "premiere_validation_participation"
+  | "premiere_correction_impact_justifiee"
+  | "moderateur_polyvalent";
 
 type ImpactBadgeId = "mohs_waste" | "mohs_butts";
 

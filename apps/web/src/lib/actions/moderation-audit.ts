@@ -1,4 +1,6 @@
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { reconcileModerationProgressionForUser } from "@/lib/gamification/moderation-progression";
 
 export type ActionModerationAuditOutcome = "success" | "error";
 
@@ -95,4 +97,10 @@ export async function appendActionModerationAudit(
     targetId: params.targetActionId,
     details: buildActionModerationAuditDetails(params),
   });
+  if (params.outcome === "success") {
+    await reconcileModerationProgressionForUser(
+      getSupabaseServerClient(true),
+      params.actorUserId,
+    ).catch(() => null);
+  }
 }

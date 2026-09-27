@@ -1,10 +1,11 @@
 import { BADGE_MAX_COUNTER } from "@/config/gamification.config";
 import {
   computeGemProgression,
+  MODERATION_GEM_CONFIG,
   ORGANISATION_GEM_CONFIG,
 } from "@/lib/gamification/gem-progression";
 
-export type BadgeFamily = "dechets" | "megots" | "lieux" | "actions";
+export type BadgeFamily = "dechets" | "megots" | "lieux" | "actions" | "moderation";
 
 export function clampBadgeCounter(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -122,6 +123,10 @@ export type ActionCreationBadgeRank = BadgeRank & { icon: string; title: string 
 
 export function computeActionCreationProgress(total: number) {
   return computeGemProgression(total, ORGANISATION_GEM_CONFIG);
+}
+
+export function computeModerationBadgeProgress(total: number) {
+  return computeGemProgression(total, MODERATION_GEM_CONFIG);
 }
 
 function actionCreationTier(threshold: number): BadgeTier {

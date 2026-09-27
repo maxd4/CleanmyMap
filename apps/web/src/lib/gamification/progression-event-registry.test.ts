@@ -24,6 +24,7 @@ const RUNTIME_PROGRESSION_WRITERS = [
   "sensitive-zone-progression-store.ts",
   "action-milestones.ts",
   "participation-milestones.ts",
+  "moderation-progression.ts",
 ] as const;
 
 function readRuntimeWriter(path: string): string {
@@ -82,6 +83,12 @@ describe("progression event registry", () => {
       "sensitive_zone_milestone",
       "spot_create_pending",
       "spot_validation_bonus",
+      "moderation_case_resolved",
+      "moderation_first_case",
+      "moderation_first_impact_correction",
+      "moderation_first_participation",
+      "moderation_multi_family",
+      "moderation_tier_unlock",
     ].sort());
 
     for (const eventType of runtimeEventTypes) {
@@ -89,7 +96,7 @@ describe("progression event registry", () => {
     }
   });
 
-  it("exposes exactly the seven CURRENT infinite progressions", () => {
+  it("exposes exactly the eight CURRENT infinite progressions", () => {
     expect(CURRENT_INFINITE_PROGRESSION_IDS).toEqual([
       "participation",
       "organisation",
@@ -98,8 +105,9 @@ describe("progression event registry", () => {
       "regularity",
       "versatility",
       "learning",
+      "moderation",
     ]);
-    expect(currentInfiniteProgressions()).toHaveLength(7);
+    expect(currentInfiniteProgressions()).toHaveLength(8);
     expect(currentInfiniteProgressions().map((progression) => progression.id)).toEqual(
       [...CURRENT_INFINITE_PROGRESSION_IDS],
     );
@@ -140,6 +148,12 @@ describe("progression event registry", () => {
       "first_trace_utile",
       "infinite_butts_milestone",
       "infinite_waste_milestone",
+      "moderation_case_resolved",
+      "moderation_first_case",
+      "moderation_first_impact_correction",
+      "moderation_first_participation",
+      "moderation_multi_family",
+      "moderation_tier_unlock",
       "new_place_discovered",
       "new_place_milestone",
       "participant_tier_unlock",
@@ -213,8 +227,9 @@ describe("progression event registry", () => {
         "exploration",
         "clean_zones",
         "regularity",
-        "versatility",
-        "learning",
+      "versatility",
+      "learning",
+      "moderation",
       ]),
     );
     expect(CURRENT_INFINITE_PROGRESSION_IDS).toContain("versatility");
@@ -234,6 +249,10 @@ describe("progression event registry", () => {
       "formalites_preparees",
       "participation_retrouvee",
       "parrainage_utile",
+      "premiere_moderation",
+      "premiere_validation_participation",
+      "premiere_correction_impact_justifiee",
+      "moderateur_polyvalent",
     ]);
     expect(currentMilestones().every((milestone) => milestone.oneShot)).toBe(true);
     expect(currentMilestones().every((milestone) => !("infinite" in milestone))).toBe(true);

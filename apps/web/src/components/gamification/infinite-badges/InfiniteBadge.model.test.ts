@@ -39,4 +39,19 @@ describe("InfiniteBadge view model", () => {
     expect(model.displayIcon).toBe("star");
     expect(model.displayRank).toBe("Maître des Cartes");
   });
+
+  it("uses the common gem scale for moderation", () => {
+    const model = buildInfiniteBadgeModel({
+      icon: "shield-check",
+      title: "Modération",
+      total: 3,
+      step: 1,
+      family: "moderation",
+    });
+
+    expect(model.level).toBe(3);
+    expect(model.displayRank).toBe("Topaze");
+    expect(model.next).toBe(5);
+    expect(model.progress).toBe(0);
+  });
 });

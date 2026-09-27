@@ -27,11 +27,11 @@ Les autres documents de gamification restent utiles, mais ils sont désormais se
 
 Les registres typés de `apps/web/src/lib/gamification/progression-utils.ts` sont
 la source canonique de classification des événements. `ProgressionDefinition`
-décrit les sept progressions infinies, `MilestoneDefinition` les
+décrit les huit progressions infinies, `MilestoneDefinition` les
 jalons one-shot CURRENT et `impact_badge` les progressions d'impact secondaires.
 Ces catégories ont des IDs et des faits sources distincts.
 
-Les sept progressions infinies sont :
+Les huit progressions infinies sont :
 
 | ID stable | Libellé | Métrique métier | Domaine source | Famille / échelle |
 | --- | --- | --- | --- | --- |
@@ -42,6 +42,7 @@ Les sept progressions infinies sont :
 | `regularity` | Régularité | `active_months_total` | actions par mois | `regularity` / `gem` |
 | `versatility` | Polyvalence | `validated_context_cycles` | actions et contextes de contribution | `versatility` / `gem` |
 | `learning` | Apprentissage | `validated_learning_events` | quiz et contenus d'apprentissage | `learning` / `learning` |
+| `moderation` | Modération | `resolvedModerationCases` | `admin_operations_audit` (`moderation` / `success`) | `moderation` / `gem` |
 
 Chaque progression suit le contrat commun `GamificationProgressionState` :
 `id`, `label`, `description`, `metric`, `sourceDomain`, `badgeFamily`,
@@ -56,16 +57,16 @@ Les autres catégories du registre sont séparées :
   plus une fois et affichés sans barre de progression infinie ;
 - `non_progression` : métriques d'impact, usage utilitaire et familles de
   compatibilité conservées sans constituer une progression CURRENT.
-- `impact_badge` : badges d'impact personnels hors des sept axes
+- `impact_badge` : badges d'impact personnels hors des huit axes
   comportementaux, alimentés par `action_participants` confirmés et contribuant
   au total XP global sans créer de balance ou de `diversityTypes` propre.
 
 Mohs Déchets et Mohs Mégots sont les deux `impact_badge` CURRENT réactivés.
-Ils ne sont donc ni une huitième ou neuvième progression comportementale, ni
+Ils ne constituent pas une progression comportementale supplémentaire, ni
 une échelle gemme. Leurs événements restent dans `progression_events`, jamais
 dans `points_ledger`.
 
-Le total XP global est la somme des `progression_events` actifs des sept
+Le total XP global est la somme des `progression_events` actifs des huit
 progressions, des jalons one-shot et des `impact_badge` explicitement autorisés.
 Aucun event type ne crée un second ledger ou une balance par famille.
 
@@ -239,6 +240,43 @@ Règles:
 - seuls les participants finaux `confirmed` comptent; une inscription future,
   une présence communautaire ou un signalement en attente ne créditent pas
   cette progression.
+
+### Modération
+
+But : mesurer les dossiers uniques réellement résolus par un compte autorisé
+à effectuer les opérations de modération concernées.
+
+Règles :
+
+- la visibilité est accordée uniquement lorsque le contrat AuthZ courant
+  `canViewActionModerationAudit` autorise le rôle actif (`admin` ou `max`) et
+  que le compte consulte son propre profil; un libellé d'interface ne donne
+  aucun droit;
+- la source canonique est `admin_operations_audit`, filtrée sur
+  `operation_type = moderation`, `outcome = success` et l'acteur concerné;
+  aucun log texte n'est interprété;
+- l'identité stable d'un dossier est `action:<target_id>`,
+  `participation:<action_id>:<participant_id>` ou
+  `clean_place:<source_table>:<target_id>`;
+- sont éligibles une décision finale `pending -> approved/rejected` sur une
+  action, une décision finale sur une participation ou un `post_action_claim`,
+  une validation Clean Place `new -> validated/cleaned`, et une correction
+  d'impact réussie avec un motif valide;
+- sont exclus les lectures, exports, dry-runs, erreurs, toggles de visibilité,
+  corrections automatiques, allers-retours de statut, répétitions d'un même
+  dossier, opérations sans décision et opérations sur ses propres données
+  lorsqu'elles ne constituent pas une modération réelle;
+- le dossier résolu (`moderation_case_resolved`) vaut `0 XP`; seuls les
+  événements de palier `moderation_tier_unlock` attribuent `+1 XP` selon
+  l'échelle gemme commune, sans balance XP indépendante;
+- les one-shots `Première modération`, `Première validation de participation`
+  et `Première correction d’impact justifiée` sont `BADGE_ONLY` (`0 XP`);
+  `Modérateur polyvalent` est attribué lorsque les trois familles action,
+  participation et clean place sont représentées et vaut `+1 XP` une fois;
+- la projection est reconstruite depuis l'audit métier : une évolution de
+  règle peut donc recalculer la progression et ses récompenses. Le choix
+  « première anomalie corrigée » est explicitement **NON-CHOISI**, car aucun
+  fait stable ne distingue encore une anomalie d'une simple édition.
 
 ### Forms (compatibilité hors taxonomie CURRENT)
 
@@ -470,7 +508,7 @@ But:
 
 Règles:
 
-- elle ne constitue pas une huitième progression infinie CURRENT et ne crée pas
+- elle ne constitue pas une progression infinie CURRENT supplémentaire et ne crée pas
   de solde XP indépendant;
 - au moment où une action devient validée, le moteur évalue sa zone avec
   `buildZones` et enregistre dans `progression_events` une preuve stable par
@@ -513,7 +551,7 @@ Règles:
 
 ### Mohs — progression d'impact secondaire
 
-Mohs est une progression d'impact personnelle secondaire, distincte des sept
+Mohs est une progression d'impact personnelle secondaire, distincte des huit
 axes comportementaux CURRENT. Elle conserve les noms minéraux et son échelle
 propre, mais ne devient pas une échelle gemme.
 

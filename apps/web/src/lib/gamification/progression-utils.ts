@@ -2,6 +2,7 @@ import { parseDrawingFromNotes } from "@/lib/actions/geometry/drawing";
 import { parseDrawingFromGeoJson } from "@/lib/actions/geometry/derived-geometry";
 import { evaluateActionQuality, type ActionQualityGrade } from "@/lib/actions/quality/quality";
 import type { ActionDrawing, ActionListItem } from "@/lib/actions/types";
+import { CURRENT_MILESTONES } from "./current-milestones";
 import type {
   ActionRow,
   CurrentInfiniteProgressionId,
@@ -10,7 +11,6 @@ import type {
   GamificationProgressionDefinition,
   ProgressionEventType,
 } from "./progression-types";
-
 export const CURRENT_INFINITE_PROGRESSIONS = [
   {
     id: "participation",
@@ -82,111 +82,9 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     scale: "learning",
     infinite: true,
   },
+  { id: "moderation", label: "Modération", description: "Dossiers de modération uniques réellement résolus.", metric: "resolvedModerationCases", sourceDomain: "admin_operations_audit (moderation/success)", badgeFamily: "moderation", scale: "gem", infinite: true },
 ] as const satisfies readonly GamificationProgressionDefinition[];
-
-export const CURRENT_MILESTONES = [
-  {
-    id: "premiere_trace_utile",
-    legacyId: "first_trace_utile",
-    label: "Première trace utile",
-    description: "Jalon historique conservé pour les preuves déjà enregistrées.",
-    sourceDomain: "compatibilité historique des événements de validation",
-    factKey: "legacy_first_trace",
-    xpAwarded: 1,
-    oneShot: true,
-  },
-  {
-    id: "trace_fondatrice",
-    label: "Trace fondatrice",
-    description: "Badge compagnon d’une première boucle de terrain démontrée.",
-    sourceDomain: "parcours de préparation et post-action validé",
-    factKey: "boucle_bouclee",
-    xpAwarded: 0,
-    oneShot: true,
-  },
-  {
-    id: "boucle_bouclee",
-    label: "Boucle bouclée",
-    description: "Première action préparée, réalisée après le parcours de préparation puis validée.",
-    sourceDomain: "actions + préparation démontrée + post-action validée",
-    factKey: "boucle_bouclee",
-    xpAwarded: 1,
-    oneShot: true,
-  },
-  {
-    id: "mobilisateur",
-    label: "Mobilisateur",
-    description: "Première action ouverte aux inscriptions de groupe avec un autre participant confirmé.",
-    sourceDomain: "actions + publication de groupe + action_participants.confirmed",
-    factKey: "mobilisateur",
-    xpAwarded: 1,
-    oneShot: true,
-  },
-  {
-    id: "donnee_exemplaire",
-    label: "Donnée exemplaire",
-    description: "Première action validée avec un grade qualité A au moment de la validation.",
-    sourceDomain: "snapshot qualité de validation des actions",
-    factKey: "donnee_exemplaire",
-    xpAwarded: 1,
-    oneShot: true,
-  },
-  {
-    id: "parcours_documente",
-    label: "Parcours documenté",
-    description: "Première action validée avec une géométrie exploitable et une provenance vérifiable.",
-    sourceDomain: "géométrie d’action et provenance canonique",
-    factKey: "parcours_documente",
-    xpAwarded: 0,
-    oneShot: true,
-  },
-  {
-    id: "mesure_tracable",
-    label: "Mesure traçable",
-    description: "Première action validée avec une mesure environnementale et une provenance conformes.",
-    sourceDomain: "mesures déchets et mégots selon le contrat CURRENT",
-    factKey: "mesure_tracable",
-    xpAwarded: 0,
-    oneShot: true,
-  },
-  {
-    id: "tri_documente",
-    label: "Tri documenté",
-    description: "Première action validée avec une ventilation canonique multi-flux réelle.",
-    sourceDomain: "ventilation canonique des déchets",
-    factKey: "tri_documente",
-    xpAwarded: 0,
-    oneShot: true,
-  },
-  {
-    id: "formalites_preparees",
-    label: "Formalités préparées",
-    description: "Première action dont les formalités requises sont préparées et finalisées dans le workflow.",
-    sourceDomain: "qualification applicable + workflow des formalités",
-    factKey: "formalites_preparees",
-    xpAwarded: 0,
-    oneShot: true,
-  },
-  {
-    id: "participation_retrouvee",
-    label: "Participation retrouvée",
-    description: "Première réclamation post-action finalement confirmée selon le workflow CURRENT.",
-    sourceDomain: "action_participants.confirmed + participation_source=post_action_claim",
-    factKey: "participation_retrouvee",
-    xpAwarded: 0,
-    oneShot: true,
-  },
-  {
-    id: "parrainage_utile",
-    label: "Parrainage utile",
-    description: "Première contribution utile confirmée d’un invité issu d’une filiation valide.",
-    sourceDomain: "filiation + referral_contributions validées",
-    factKey: "first_invitee_contribution",
-    xpAwarded: 2,
-    oneShot: true,
-  },
-] as const satisfies readonly MilestoneDefinition[];
-
+export { CURRENT_MILESTONES } from "./current-milestones";
 const GAMIFICATION_EVENT_REGISTRY: Record<
   ProgressionEventType,
   GamificationEventRegistration
@@ -269,7 +167,7 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   },
   route_recommend_use: {
     classification: "non_progression",
-    reason: "Usage utilitaire d'itinéraire, à traiter hors des sept progressions.",
+    reason: "Usage utilitaire d'itinéraire, à traiter hors des huit progressions.",
   },
   infinite_waste_milestone: {
     classification: "impact_badge",
@@ -301,11 +199,11 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   },
   form_tier_unlock: {
     classification: "non_progression",
-    reason: "Événement Forms historique COMPATIBILITY, hors des sept progressions CURRENT.",
+    reason: "Événement Forms historique COMPATIBILITY, hors des huit progressions CURRENT.",
   },
   form_bonus: {
     classification: "non_progression",
-    reason: "Bonus Forms historique COMPATIBILITY, hors des sept progressions CURRENT.",
+    reason: "Bonus Forms historique COMPATIBILITY, hors des huit progressions CURRENT.",
   },
   participant_tier_unlock: {
     classification: "progression",
@@ -324,22 +222,42 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
     classification: "non_progression",
     reason: "Jalon historique de zone sensible, hors des trois jalons CURRENT.",
   },
+  moderation_case_resolved: {
+    classification: "non_progression",
+    reason: "Un dossier résolu alimente la métrique Modération; seul un palier peut attribuer de l’XP.",
+  },
+  moderation_tier_unlock: {
+    classification: "progression",
+    progressionId: "moderation",
+  },
+  moderation_first_case: {
+    classification: "milestone",
+    milestoneId: "premiere_moderation",
+  },
+  moderation_first_participation: {
+    classification: "milestone",
+    milestoneId: "premiere_validation_participation",
+  },
+  moderation_first_impact_correction: {
+    classification: "milestone",
+    milestoneId: "premiere_correction_impact_justifiee",
+  },
+  moderation_multi_family: {
+    classification: "milestone",
+    milestoneId: "moderateur_polyvalent",
+  },
 };
-
 export function currentInfiniteProgressions(): readonly GamificationProgressionDefinition[] {
   return CURRENT_INFINITE_PROGRESSIONS;
 }
-
 export function currentMilestones(): readonly MilestoneDefinition[] {
   return CURRENT_MILESTONES;
 }
-
 export function gamificationEventRegistry(): Readonly<
   Record<ProgressionEventType, GamificationEventRegistration>
 > {
   return GAMIFICATION_EVENT_REGISTRY;
 }
-
 const EVENT_FAMILY_MAP: Readonly<
   Record<ProgressionEventType, CurrentInfiniteProgressionId | null>
 > = Object.fromEntries(
@@ -350,20 +268,17 @@ const EVENT_FAMILY_MAP: Readonly<
       : null,
   ]),
 ) as Record<ProgressionEventType, CurrentInfiniteProgressionId | null>;
-
 export function eventFamilyMap(): Readonly<
   Record<ProgressionEventType, CurrentInfiniteProgressionId | null>
 > {
   return EVENT_FAMILY_MAP;
 }
-
 export function toIsoDate(raw: string | null | undefined): string {
   if (!raw) {
     return new Date().toISOString().slice(0, 10);
   }
   return raw.slice(0, 10);
 }
-
 export function clampWeight(weight: number): number {
   return Math.min(5, Math.max(1, Math.round(weight)));
 }
@@ -372,12 +287,10 @@ export function toInt(value: unknown, fallback = 0): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback;
 }
-
 export function toFloat(value: unknown, fallback = 0): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
-
 export function toNullableFloat(value: unknown): number | null {
   if (value === null || value === undefined || value === "") {
     return null;
