@@ -39,6 +39,7 @@ export function buildCurrentMilestones(input: {
   const firstTraceEvent = recordedEvent(events, "first_trace_utile");
   const loopEvent = recordedEvent(events, "action_loop_completed");
   const mobilizerEvent = recordedEvent(events, "action_mobilizer");
+  const participationRecoveredEvent = recordedEvent(events, "action_participation_recovered");
   const exemplaryDataEvent = recordedEvent(events, "action_exemplary_data");
   const documentedRouteEvent = recordedEvent(events, "action_documented_route");
   const traceableMeasurementEvent = recordedEvent(events, "action_traceable_measurement");
@@ -53,6 +54,7 @@ export function buildCurrentMilestones(input: {
         case "trace_fondatrice": return loopEvent ?? firstTraceEvent;
         case "boucle_bouclee": return loopEvent;
         case "mobilisateur": return mobilizerEvent;
+        case "participation_retrouvee": return participationRecoveredEvent;
         case "donnee_exemplaire": return exemplaryDataEvent;
         case "parcours_documente": return documentedRouteEvent;
         case "mesure_tracable": return traceableMeasurementEvent;

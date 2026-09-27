@@ -12,6 +12,7 @@ export type ProgressionEventType =
   | "first_trace_utile"
   | "action_loop_completed"
   | "action_mobilizer"
+  | "action_participation_recovered"
   | "action_exemplary_data"
   | "action_documented_route"
   | "action_traceable_measurement"
@@ -63,6 +64,7 @@ type CurrentMilestoneId =
   | "mesure_tracable"
   | "tri_documente"
   | "formalites_preparees"
+  | "participation_retrouvee"
   | "parrainage_utile";
 
 type ImpactBadgeId = "mohs_waste" | "mohs_butts";

@@ -18,6 +18,19 @@ describe("gamification counters", () => {
     expect(migration).not.toContain("total_points");
   });
 
+  it("derives Participation only from confirmed action participants", () => {
+    const migration = readFileSync(
+      new URL("../../../supabase/migrations/20260924000001_xp_only_gamification_rpc_contracts.sql", import.meta.url),
+      "utf8",
+    );
+    const participationBlock = migration.match(
+      /participation_count integer[\s\S]*?from public\.action_participants[\s\S]*?as participation_count/,
+    )?.[0];
+
+    expect(participationBlock).toContain("participation_status = 'confirmed'");
+    expect(participationBlock).not.toContain("action_registrations");
+  });
+
   it("loads funnel counts from Supabase RPC", async () => {
     const supabase = {
       rpc: vi.fn(async (name: string) => {

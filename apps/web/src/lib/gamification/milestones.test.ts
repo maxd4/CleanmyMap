@@ -59,6 +59,27 @@ describe("CURRENT milestones", () => {
     });
   });
 
+  it("exposes Participation retrouvée as a badge-only proof", () => {
+    const milestones = buildCurrentMilestones({
+      completeActionsCount: 0,
+      events: [{
+        event_type: "action_participation_recovered",
+        status_phase: "validated",
+        source_id: "participation-retrieved",
+        xp_awarded: 0,
+        metadata: { actionId: "action-recovered" },
+      }],
+    });
+
+    expect(milestones.find((milestone) => milestone.id === "participation_retrouvee"))
+      .toMatchObject({
+        unlocked: true,
+        xpAwarded: 0,
+        recordedXp: 0,
+        proofSourceId: "action-recovered",
+      });
+  });
+
   it("does not turn infinite or historical milestone events into CURRENT milestones", () => {
     const milestones = buildCurrentMilestones({
       completeActionsCount: 0,

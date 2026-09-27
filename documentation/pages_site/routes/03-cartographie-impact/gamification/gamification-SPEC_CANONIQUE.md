@@ -27,7 +27,7 @@ Les autres documents de gamification restent utiles, mais ils sont désormais se
 
 Les registres typés de `apps/web/src/lib/gamification/progression-utils.ts` sont
 la source canonique de classification des événements. `ProgressionDefinition`
-décrit les sept progressions infinies, `MilestoneDefinition` les trois
+décrit les sept progressions infinies, `MilestoneDefinition` les
 jalons one-shot CURRENT et `impact_badge` les progressions d'impact secondaires.
 Ces catégories ont des IDs et des faits sources distincts.
 
@@ -35,7 +35,7 @@ Les sept progressions infinies sont :
 
 | ID stable | Libellé | Métrique métier | Domaine source | Famille / échelle |
 | --- | --- | --- | --- | --- |
-| `participation` | Participation | `participation_count` | actions, participations et signalements utiles | `participant` / `participant` |
+| `participation` | Participation | `participation_count` | `action_participants.confirmed` | `participant` / `participant` |
 | `organisation` | Organisation | `organised_operations_count` | organisateurs d'actions et opérations collectives | `organisation` / `gem` |
 | `exploration` | Exploration | `unique_places_visited` | `user_visited_places` | `explorer` / `exploration` |
 | `clean_zones` | Zones propres | `eligible_clean_zones` | `trash_spotter_spots` / `clean_zones` | `clean-zones` / `atmosphere` |
@@ -228,7 +228,11 @@ Règles:
 
 - source de données: `action_participants` où `participation_status = confirmed`;
 - `action_registrations` est exclusivement la source des inscriptions futures et ne contribue jamais aux badges, à la progression, aux statistiques personnelles ou à la gamification;
-- une demande de claim post-action `pending` ou `cancelled` est exclue; un claim `confirmed` contribue comme toute autre participation finale confirmée;
+- sont explicitement `NON_GAMIFIED`: affichage d’une action, clic sur rejoindre,
+  inscription `pending` ou `confirmed`, annulation, ajout à une file et
+  acceptation préalable;
+- une demande de claim post-action `pending` ou `cancelled` est exclue; un claim
+  `confirmed` contribue comme toute autre participation finale confirmée;
 - base `Observateur` à `0`;
 - paliers actuels: `0, 1, 3, 5, 10, 15, 20, 25, 30`;
 - XP de palier: `+1` à partir du premier palier utile, jamais sur le niveau `0`.
@@ -306,6 +310,17 @@ partir d’une fraîcheur courante plus faible.
   `post_action_complete`);
 - une action complète créée directement sans ce parcours démontré ne suffit
   pas.
+
+#### Participation retrouvée
+
+- badge one-shot, `0 XP`;
+- première ligne `action_participants` finalement confirmée avec
+  `participation_source = post_action_claim`, après le workflow de permissions
+  CURRENT;
+- le claim `pending` ou rejeté/cancelled ne qualifie pas ce badge;
+- la ligne confirmée compte déjà une fois dans la progression infinie
+  `Participation`; ce badge ne crée donc aucun XP additionnel et reste
+  idempotent lors d’un replay.
 
 #### Mobilisateur
 
@@ -486,8 +501,8 @@ But:
 
 Règles:
 
-- la création et le partage du lien donnent `0 XP`;
-- l inscription via le lien donne `0 XP`;
+- la création et le partage du lien sont `NON_GAMIFIED` et donnent `0 XP`;
+- l inscription via le lien est `NON_GAMIFIED` et donne `0 XP`;
 - la première contribution utile confirmée de l invité donne `+2 XP` à l invitant;
 - cette attribution est one-shot par filiation persistée et reste idempotente;
 - le lien d invitation et la chaîne de parrainage doivent persister;
