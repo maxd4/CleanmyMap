@@ -3,7 +3,7 @@ import { revalidateTag } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
-import { auditXpAttribution } from "./notifications";
+import { auditXpAttribution } from "../notifications";
 import { reconcileReferralAward } from "./referral-reconciliation";
 
 export type ReferralSummary = {

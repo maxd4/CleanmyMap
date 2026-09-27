@@ -5244,7 +5244,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/lib/gamification/referrals.ts",
+      "path": "src/lib/gamification/referrals/referrals.ts",
       "line": 211,
       "category": "métier/domain pur",
       "ceiling": 85,
@@ -5253,7 +5253,7 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/lib/gamification/referrals.ts",
+      "path": "src/lib/gamification/referrals/referrals.ts",
       "line": 309,
       "category": "métier/domain pur",
       "ceiling": 63,

@@ -18,7 +18,7 @@ const RUNTIME_PROGRESSION_WRITERS = [
   "progression-tracking.ts",
   "quiz-progress.ts",
   "quiz-balance-progress.ts",
-  "referrals.ts",
+  "referrals/referrals.ts",
   "badges/rebuild.ts",
   "sensitive-zone-progression.ts",
   "sensitive-zone-progression-store.ts",

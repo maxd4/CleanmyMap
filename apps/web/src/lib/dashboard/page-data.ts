@@ -1,6 +1,6 @@
 import { getCurrentUserActiveRole } from "@/lib/authz";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
-import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
+import { fetchCachedReferralSummary } from "@/lib/gamification/referrals/referrals-cache";
 import { loadUserLevelRankingSummary } from "@/lib/gamification/progression-data";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { getServerDisplayMode } from "@/lib/server-preferences";

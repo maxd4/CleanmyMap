@@ -21,7 +21,7 @@ import { reconcileMohsImpactProgression } from "./mohs-impact-reconciliation";
 import {
   awardReferralForUsefulContribution,
   removeReferralAwardForRejectedContribution,
-} from "./referrals";
+} from "./referrals/referrals";
 
 export { syncUserActionProgression } from "./progression-data";
 

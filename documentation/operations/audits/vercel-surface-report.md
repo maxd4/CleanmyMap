@@ -352,9 +352,9 @@ Supabase concentre les lectures serveur, les exports et les clients RLS. Le risq
 - `apps/web/src/lib/gamification/progression-tracking.ts` — Supabase client
 - `apps/web/src/lib/gamification/quiz-balance-progress.ts` — Supabase client
 - `apps/web/src/lib/gamification/quiz-progress.ts` — Supabase client
-- `apps/web/src/lib/gamification/referral-lineage.ts` — Server client, Supabase client
-- `apps/web/src/lib/gamification/referrals-cache.ts` — Server client
-- `apps/web/src/lib/gamification/referrals.ts` — Supabase client
+- `apps/web/src/lib/gamification/referrals/referral-lineage.ts` — Server client, Supabase client
+- `apps/web/src/lib/gamification/referrals/referrals-cache.ts` — Server client
+- `apps/web/src/lib/gamification/referrals/referrals.ts` — Supabase client
 - `apps/web/src/lib/gamification/sensitive-zone-badge.ts` — Supabase client
 - `apps/web/src/lib/governance/governance-monthly-report-store.ts` — Server client
 - `apps/web/src/lib/governance/governance-monthly-report.ts` — Server client

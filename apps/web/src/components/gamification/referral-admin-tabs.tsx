@@ -7,7 +7,7 @@ import {
   buildReferralLineageLeaderboard,
   buildReferralLineageView,
   type ReferralLineageProfileRow,
-} from "@/lib/gamification/referral-lineage";
+} from "@/lib/gamification/referrals/referral-lineage";
 import { ReferralLineagePanel } from "@/components/gamification/referral-lineage-panel";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 
