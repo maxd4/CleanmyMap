@@ -1,0 +1,42 @@
+# Domaine Gamification
+
+Ce dossier porte les contrats et calculs de progression de l'application web :
+XP, niveaux, statuts, badges, jalons et événements de contribution.
+
+## Contrat courant
+
+Le contrat publié courant est `progression-rules-v2`, représenté par
+`ProgressionRulesV2` et `PROGRESSION_RULES_V2` dans
+`progression-rules.ts`. Cette version décrit la sémantique actuelle des
+contributions vérifiées ; elle conserve les formules et seuils existants.
+
+La progression reste déterministe et dérivée de faits métier vérifiés. Les
+consommateurs importent les types et règles depuis leur module propriétaire ;
+un barrel ne doit pas recréer une seconde identité du contrat.
+
+## Frontières
+
+- les formules et règles pures restent indépendantes du rendu ;
+- la persistance, les écritures d'événements et les lectures Supabase passent
+  par leurs capacités dédiées ;
+- l'UI consomme les contrats de progression mais ne recalcule pas les règles ;
+- les futures récompenses communautaires ne sont pas un runtime Gamification.
+
+Une récompense future pourra partager un fait métier vérifié, mais ne doit pas
+modifier les invariants de progression : XP non achetable et non dépensable,
+niveau et badge sans avantage probabiliste, et aucune contribution financière
+ne donnant de ticket. Un badge de mérite reste déterministe.
+
+La spécification fonctionnelle canonique reste
+[`gamification-SPEC_CANONIQUE.md`](../../../../../documentation/pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md).
+
+## Validation
+
+Les tests de progression restent auprès des modules concernés. Pour une
+modification locale :
+
+```text
+npm run test -w apps/web -- src/lib/gamification
+npm run typecheck -w apps/web
+npm run lint -w apps/web
+```

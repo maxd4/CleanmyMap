@@ -28,6 +28,7 @@ export const ACTIVE_DOCS = Object.freeze([
   "documentation/design-system/README.md",
   "documentation/security/README.md",
   "documentation/development/TESTING.md",
+  "apps/web/AGENTS.md",
   "apps/web/README.md",
   "apps/mobile/README.md",
   "apps/mobile/architecture_gps_companion.md",
