@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MeResponse } from "./gamification-types";
 import { buildCollectionSummary } from "./collections-panel";
+import { PROGRESSION_RULES_V1 } from "@/lib/gamification/progression";
 
 function makeProgression(): MeResponse["progression"] {
   return {
@@ -27,18 +28,22 @@ function makeProgression(): MeResponse["progression"] {
         met: true,
         eligible: true,
         rulesVersion: "progression-rules-v1",
-        xp: { current: 100, required: 10, met: true },
+        xp: {
+          current: 100,
+          required: PROGRESSION_RULES_V1.xpRequired(5),
+          met: true,
+        },
         potentialLevel: 5,
         currentLevel: 4,
         conditions: [],
         satisfied: [],
         missing: [],
         thresholds: {
-          minValidatedActions: 7,
-          minDiversityTypes: 2,
-          minCollectiveEvents: 1,
-          minQualityAverage: 70,
-          minValidationRatio: 0.6,
+          minValidatedActions: PROGRESSION_RULES_V1.minValidatedActions(5),
+          minDiversityTypes: PROGRESSION_RULES_V1.minDiversityTypes(5),
+          minCollectiveEvents: PROGRESSION_RULES_V1.minCollectiveEvents(5),
+          minQualityAverage: PROGRESSION_RULES_V1.minQualityAverage(5),
+          minValidationRatio: PROGRESSION_RULES_V1.minValidationRatio(5),
         },
         current: {
           validatedActions: 6,
