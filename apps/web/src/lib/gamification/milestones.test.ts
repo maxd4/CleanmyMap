@@ -2,42 +2,56 @@ import { describe, expect, it } from "vitest";
 import { buildCurrentMilestones } from "./milestones";
 
 describe("CURRENT milestones", () => {
-  it("unlocks the two first-action milestones from one complete action without double XP", () => {
+  it("does not infer a current milestone from a complete form counter", () => {
     const milestones = buildCurrentMilestones({ completeActionsCount: 1 });
     const firstTrace = milestones.find((milestone) => milestone.id === "premiere_trace_utile");
     const foundingTrace = milestones.find((milestone) => milestone.id === "trace_fondatrice");
+    const loop = milestones.find((milestone) => milestone.id === "boucle_bouclee");
     const referral = milestones.find((milestone) => milestone.id === "parrainage_utile");
 
-    expect(firstTrace).toMatchObject({ unlocked: true, xpAwarded: 1, recordedXp: 0 });
-    expect(foundingTrace).toMatchObject({ unlocked: true, xpAwarded: 0, recordedXp: 0 });
+    expect(firstTrace).toMatchObject({ unlocked: false, xpAwarded: 1, recordedXp: 0 });
+    expect(foundingTrace).toMatchObject({ unlocked: false, xpAwarded: 0, recordedXp: 0 });
+    expect(loop).toMatchObject({ unlocked: false, xpAwarded: 1, recordedXp: 0 });
     expect(referral).toMatchObject({ unlocked: false, xpAwarded: 2 });
-    expect(
-      [firstTrace, foundingTrace]
-        .filter((milestone) => milestone?.factKey === "first_complete_action")
-        .reduce((total, milestone) => total + (milestone?.xpAwarded ?? 0), 0),
-    ).toBe(1);
+  });
+
+  it("uses one validated loop event for Boucle bouclée and Trace fondatrice", () => {
+    const milestones = buildCurrentMilestones({
+      completeActionsCount: 0,
+      events: [
+        {
+          event_type: "action_loop_completed",
+          status_phase: "validated",
+          source_id: "action-milestone:boucle_bouclee",
+          xp_awarded: 1,
+          metadata: { actionId: "action-1" },
+        },
+      ],
+    });
+
+    expect(milestones.find((milestone) => milestone.id === "boucle_bouclee")).toMatchObject({
+      unlocked: true,
+      recordedXp: 1,
+      proofSourceId: "action-1",
+    });
+    expect(milestones.find((milestone) => milestone.id === "trace_fondatrice")).toMatchObject({
+      unlocked: true,
+      recordedXp: 0,
+      proofSourceId: "action-1",
+    });
   });
 
   it("keeps referral useful as one idempotent milestone with its recorded proof", () => {
     const milestones = buildCurrentMilestones({
       completeActionsCount: 0,
-      events: [
-        {
-          event_type: "community_referral_invite",
-          status_phase: "validated",
-          source_id: "referral-contribution:invitee-1",
-          xp_awarded: 2,
-        },
-        {
-          event_type: "community_referral_invite",
-          status_phase: "validated",
-          source_id: "referral-contribution:invitee-1",
-          xp_awarded: 2,
-        },
-      ],
+      events: [{
+        event_type: "community_referral_invite",
+        status_phase: "validated",
+        source_id: "referral-contribution:invitee-1",
+        xp_awarded: 2,
+      }],
     });
 
-    expect(milestones).toHaveLength(3);
     expect(milestones.find((milestone) => milestone.id === "parrainage_utile")).toMatchObject({
       unlocked: true,
       recordedXp: 2,

@@ -27,7 +27,7 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     label: "Organisation",
     description: "Actions réellement organisées et validées.",
     metric: "validated_organized_actions_count",
-    sourceDomain: "actions + action_organizers + formulaires validés",
+    sourceDomain: "actions + action_organizers + validation post-action CURRENT",
     badgeFamily: "organisation",
     scale: "gem",
     infinite: true,
@@ -89,18 +89,81 @@ export const CURRENT_MILESTONES = [
     id: "premiere_trace_utile",
     legacyId: "first_trace_utile",
     label: "Première trace utile",
-    description: "Première action réellement validée avec des données complètes.",
-    sourceDomain: "actions approuvées + formulaire validé",
-    factKey: "first_complete_action",
+    description: "Jalon historique conservé pour les preuves déjà enregistrées.",
+    sourceDomain: "compatibilité historique des événements de validation",
+    factKey: "legacy_first_trace",
     xpAwarded: 1,
     oneShot: true,
   },
   {
     id: "trace_fondatrice",
     label: "Trace fondatrice",
-    description: "Badge compagnon du premier dossier complètement documenté.",
-    sourceDomain: "actions approuvées + formulaire validé",
-    factKey: "first_complete_action",
+    description: "Badge compagnon d’une première boucle de terrain démontrée.",
+    sourceDomain: "parcours de préparation et post-action validé",
+    factKey: "boucle_bouclee",
+    xpAwarded: 0,
+    oneShot: true,
+  },
+  {
+    id: "boucle_bouclee",
+    label: "Boucle bouclée",
+    description: "Première action préparée, réalisée après le parcours de préparation puis validée.",
+    sourceDomain: "actions + préparation démontrée + post-action validée",
+    factKey: "boucle_bouclee",
+    xpAwarded: 1,
+    oneShot: true,
+  },
+  {
+    id: "mobilisateur",
+    label: "Mobilisateur",
+    description: "Première action ouverte aux inscriptions de groupe avec un autre participant confirmé.",
+    sourceDomain: "actions + publication de groupe + action_participants.confirmed",
+    factKey: "mobilisateur",
+    xpAwarded: 1,
+    oneShot: true,
+  },
+  {
+    id: "donnee_exemplaire",
+    label: "Donnée exemplaire",
+    description: "Première action validée avec un grade qualité A au moment de la validation.",
+    sourceDomain: "snapshot qualité de validation des actions",
+    factKey: "donnee_exemplaire",
+    xpAwarded: 1,
+    oneShot: true,
+  },
+  {
+    id: "parcours_documente",
+    label: "Parcours documenté",
+    description: "Première action validée avec une géométrie exploitable et une provenance vérifiable.",
+    sourceDomain: "géométrie d’action et provenance canonique",
+    factKey: "parcours_documente",
+    xpAwarded: 0,
+    oneShot: true,
+  },
+  {
+    id: "mesure_tracable",
+    label: "Mesure traçable",
+    description: "Première action validée avec une mesure environnementale et une provenance conformes.",
+    sourceDomain: "mesures déchets et mégots selon le contrat CURRENT",
+    factKey: "mesure_tracable",
+    xpAwarded: 0,
+    oneShot: true,
+  },
+  {
+    id: "tri_documente",
+    label: "Tri documenté",
+    description: "Première action validée avec une ventilation canonique multi-flux réelle.",
+    sourceDomain: "ventilation canonique des déchets",
+    factKey: "tri_documente",
+    xpAwarded: 0,
+    oneShot: true,
+  },
+  {
+    id: "formalites_preparees",
+    label: "Formalités préparées",
+    description: "Première action dont les formalités requises sont préparées et finalisées dans le workflow.",
+    sourceDomain: "qualification applicable + workflow des formalités",
+    factKey: "formalites_preparees",
     xpAwarded: 0,
     oneShot: true,
   },
@@ -130,6 +193,34 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   first_trace_utile: {
     classification: "milestone",
     milestoneId: "premiere_trace_utile",
+  },
+  action_loop_completed: {
+    classification: "milestone",
+    milestoneId: "boucle_bouclee",
+  },
+  action_mobilizer: {
+    classification: "milestone",
+    milestoneId: "mobilisateur",
+  },
+  action_exemplary_data: {
+    classification: "milestone",
+    milestoneId: "donnee_exemplaire",
+  },
+  action_documented_route: {
+    classification: "milestone",
+    milestoneId: "parcours_documente",
+  },
+  action_traceable_measurement: {
+    classification: "milestone",
+    milestoneId: "mesure_tracable",
+  },
+  action_documented_sorting: {
+    classification: "milestone",
+    milestoneId: "tri_documente",
+  },
+  action_formalities_prepared: {
+    classification: "milestone",
+    milestoneId: "formalites_preparees",
   },
   action_monthly_regularity: {
     classification: "progression",
@@ -346,7 +437,8 @@ export function computeActionValidationAward(
   xpBase: number;
   xpAwarded: number;
 } {
-  // XP is awarded only once a real action has been validated through an issued form.
+  // XP is awarded only once a real action has been validated by the CURRENT
+  // post-action contract. The dedicated one-shot facts are written separately.
   // The base reward is 1 XP, then split equally across all organizers.
   void weight;
   void qualityGrade;

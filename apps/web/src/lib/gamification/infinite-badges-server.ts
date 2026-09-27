@@ -3,7 +3,7 @@ import { loadActionBalanceSummary } from "./action-balance";
 import { computeMonthlyRegularitySummary } from "./monthly-regularity";
 import {
   loadActionRowsForUser,
-  loadValidatedActionIdsForUser,
+  loadCurrentValidatedActionIdsForUser,
 } from "./progression-data";
 import {
   createFallbackSensitiveZoneApaisementSummary,
@@ -72,7 +72,7 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
   const supabase = getSupabaseServerClient(true);
 
   const actionRows = await loadActionRowsForUser(supabase, userId).catch(() => []);
-  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId, {
+  const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, userId, {
     actionRows,
   }).catch(() => new Set<string>());
   const actionBalance = await loadActionBalanceSummary(supabase, userId, {
@@ -89,7 +89,7 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
     loadCleanZoneSourcesForUser(supabase, userId),
     supabase
       .from("progression_events")
-      .select("event_type, status_phase, source_table, source_id, xp_awarded")
+      .select("event_type, status_phase, source_table, source_id, xp_awarded, metadata")
       .eq("user_id", userId)
       .limit(12000),
   ]);

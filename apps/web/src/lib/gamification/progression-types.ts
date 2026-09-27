@@ -10,6 +10,13 @@ export type ProgressionEventType =
   | "action_declare_pending"
   | "action_declare_validation"
   | "first_trace_utile"
+  | "action_loop_completed"
+  | "action_mobilizer"
+  | "action_exemplary_data"
+  | "action_documented_route"
+  | "action_traceable_measurement"
+  | "action_documented_sorting"
+  | "action_formalities_prepared"
   | "action_monthly_regularity"
   | "action_balance_cycle"
   | "collective_rsvp_yes_pending"
@@ -49,6 +56,13 @@ export type CurrentInfiniteProgressionId =
 type CurrentMilestoneId =
   | "premiere_trace_utile"
   | "trace_fondatrice"
+  | "boucle_bouclee"
+  | "mobilisateur"
+  | "donnee_exemplaire"
+  | "parcours_documente"
+  | "mesure_tracable"
+  | "tri_documente"
+  | "formalites_preparees"
   | "parrainage_utile";
 
 type ImpactBadgeId = "mohs_waste" | "mohs_butts";
@@ -140,6 +154,9 @@ export type ActionRow = {
   duration_minutes: number;
   status: "pending" | "approved" | "rejected";
   notes: string | null;
+  action_phase?: import("@/lib/actions/types").ActionPhase | null;
+  preparation_data?: import("@/lib/actions/types").ActionPreparationData | null;
+  published_at?: string | null;
   derived_geometry_kind?: ActionGeometryKind | null;
   derived_geometry_geojson?: string | null;
   geometry_confidence?: number | null;

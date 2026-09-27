@@ -14,7 +14,7 @@ const { createProfileMaybeSingleSelect, createProfileLookupSelect, createProgres
 const auditXpAttributionMock = vi.hoisted(() => vi.fn());
 const broadcastGamificationAnnouncementMock = vi.hoisted(() => vi.fn());
 
-const { insertProgressionEvent: insertProgressionEventMock, loadActionRowsForUser: loadActionRowsForUserMock, loadValidatedActionIdsForUser: loadValidatedActionIdsForUserMock, refreshProgressionProfile: refreshProgressionProfileMock } = referralProgressionMocks;
+const { insertProgressionEvent: insertProgressionEventMock, loadActionRowsForUser: loadActionRowsForUserMock, loadCurrentValidatedActionIdsForUser: loadCurrentValidatedActionIdsForUserMock, refreshProgressionProfile: refreshProgressionProfileMock } = referralProgressionMocks;
 vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }));
 vi.mock("./progression-data", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionDataModule());
 vi.mock("./progression-tracking", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionTrackingModule());
@@ -351,7 +351,7 @@ it("awards the inviter only on the invitee's first useful contribution", async (
     created_at: "2026-09-25",
   };
   loadActionRowsForUserMock.mockResolvedValue([firstAction]);
-  loadValidatedActionIdsForUserMock.mockResolvedValue(new Set(["action-1"]));
+  loadCurrentValidatedActionIdsForUserMock.mockResolvedValue(new Set(["action-1"]));
   insertProgressionEventMock.mockImplementation(
     async (_supabase: SupabaseClient, params: Record<string, unknown>) => {
     events.push(params);
@@ -376,7 +376,7 @@ it("awards the inviter only on the invitee's first useful contribution", async (
     firstAction,
     { id: "action-2", status: "approved", action_date: "2026-09-26", created_at: "2026-09-26" },
   ]);
-  loadValidatedActionIdsForUserMock.mockResolvedValue(new Set(["action-1", "action-2"]));
+  loadCurrentValidatedActionIdsForUserMock.mockResolvedValue(new Set(["action-1", "action-2"]));
   const secondContribution = await awardReferralForUsefulContribution(supabaseMock, {
     inviteeUserId: "invitee-1",
     contributionSourceTable: "actions",

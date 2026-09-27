@@ -3,7 +3,7 @@ import { vi } from "vitest";
 export const referralProgressionMocks = {
   insertProgressionEvent: vi.fn(),
   loadActionRowsForUser: vi.fn(),
-  loadValidatedActionIdsForUser: vi.fn(),
+  loadCurrentValidatedActionIdsForUser: vi.fn(),
   refreshProgressionProfile: vi.fn(),
 };
 
@@ -11,7 +11,7 @@ export function resetReferralProgressionMocks() {
   vi.clearAllMocks();
   referralProgressionMocks.insertProgressionEvent.mockResolvedValue(true);
   referralProgressionMocks.loadActionRowsForUser.mockResolvedValue([]);
-  referralProgressionMocks.loadValidatedActionIdsForUser.mockResolvedValue(new Set<string>());
+  referralProgressionMocks.loadCurrentValidatedActionIdsForUser.mockResolvedValue(new Set<string>());
   referralProgressionMocks.refreshProgressionProfile.mockResolvedValue(undefined);
 }
 
@@ -19,7 +19,7 @@ export function createReferralProgressionDataModule() {
   return {
     insertProgressionEvent: referralProgressionMocks.insertProgressionEvent,
     loadActionRowsForUser: referralProgressionMocks.loadActionRowsForUser,
-    loadValidatedActionIdsForUser: referralProgressionMocks.loadValidatedActionIdsForUser,
+    loadCurrentValidatedActionIdsForUser: referralProgressionMocks.loadCurrentValidatedActionIdsForUser,
   };
 }
 

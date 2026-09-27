@@ -8,7 +8,7 @@ import {
   referralProgressionMocks,
 } from "./__tests__/referral-test-helpers";
 
-const { insertProgressionEvent: insertProgressionEventMock, loadActionRowsForUser: loadActionRowsForUserMock, loadValidatedActionIdsForUser: loadValidatedActionIdsForUserMock, refreshProgressionProfile: refreshProgressionProfileMock } = referralProgressionMocks;
+const { insertProgressionEvent: insertProgressionEventMock, loadActionRowsForUser: loadActionRowsForUserMock, loadCurrentValidatedActionIdsForUser: loadCurrentValidatedActionIdsForUserMock, refreshProgressionProfile: refreshProgressionProfileMock } = referralProgressionMocks;
 vi.mock("./progression-data", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionDataModule());
 vi.mock("./progression-tracking", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionTrackingModule());
 vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }));
@@ -78,7 +78,7 @@ it("reconstruit la preuve sur une autre contribution CURRENT validée après rej
     { id: "action-1", status: "rejected", action_date: "2026-09-25", created_at: "2026-09-25" },
     { id: "action-2", status: "approved", action_date: "2026-09-26", created_at: "2026-09-26" },
   ]);
-  loadValidatedActionIdsForUserMock.mockResolvedValue(new Set(["action-2"]));
+  loadCurrentValidatedActionIdsForUserMock.mockResolvedValue(new Set(["action-2"]));
   insertProgressionEventMock.mockImplementation(
     async (_client: SupabaseClient, params: Record<string, unknown>) => {
       events.push(params);
