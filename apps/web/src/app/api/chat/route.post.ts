@@ -16,11 +16,12 @@ import { isPublicActionReferenceAvailable, resolveActionTerritoryDestination } f
 import { createActionShareRequest } from "@/lib/chat/action-share-requests";
 import {
   messageSelect,
-  sendMessageSchema,
   buildZoneContext,
   hasValidTerritoryContext,
   normalizeChatMessageRow,
   validateMessageKind,
+  buildChatAttachmentPersistence,
+  sendMessageSchemaForUser,
   validateTopicForChannel,
   type ChatMessageRow,
 } from "./route.shared";
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const parsed = sendMessageSchema.safeParse(payload);
+  const parsed = sendMessageSchemaForUser(userId).safeParse(payload);
   if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
 
   const topicValidation = validateTopicForChannel(
@@ -515,12 +516,8 @@ export async function POST(request: Request) {
           arrondissement_id: targetArrondissementId,
           zone_name: targetZoneName,
           content: parsed.data.content,
-          attachment_url: parsed.data.attachmentUrl,
-          attachment_type: parsed.data.attachmentType,
+          ...buildChatAttachmentPersistence(parsed.data),
           action_id: parsed.data.actionId && isExternalActionShare ? parsed.data.actionId : null,
-          attachment_expires_at: parsed.data.attachmentUrl
-            ? new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString()
-            : null,
         })
         .select(messageSelect)
         .single();

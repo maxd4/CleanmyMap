@@ -52,6 +52,7 @@ export type SendChatMessageParams = {
     arrondissementId?: number;
     zoneName?: string;
     attachmentUrl?: string;
+    attachmentPath?: string;
     attachmentType?: string;
     attachmentSize?: number;
     actionId?: string;
@@ -554,7 +555,14 @@ export function useChatData({
           const payload = (await response.json().catch(() => null)) as
             | { message?: ChatMessage }
             | null;
-          const serverMessage = payload?.message ?? optimisticMessage;
+          const serverMessage = payload?.message
+            ? {
+                ...optimisticMessage,
+                ...payload.message,
+                attachment_url:
+                  payload.message.attachment_url ?? optimisticMessage.attachment_url,
+              }
+            : optimisticMessage;
           sentMessage = serverMessage;
           const baseMessages = currentData?.messages ?? [];
 

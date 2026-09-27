@@ -47,6 +47,7 @@ describe("POST /api/chat — pièces jointes DM", () => {
       content: "Bonjour en privé",
       attachment: {} as {
         attachmentUrl?: string;
+        attachmentPath?: string;
         attachmentType?: string;
         attachmentSize?: number;
       },
@@ -115,6 +116,67 @@ describe("POST /api/chat — pièces jointes DM", () => {
     expect(response.status).toBe(422);
     expect((await response.json()).details.content).toContain(
       "Un message standard doit contenir du texte ou une pièce jointe valide.",
+    );
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
+
+  it("persists a durable path and returns a fresh signed URL for a new attachment", async () => {
+    const objectPath = "dm/user-1-report.pdf";
+    const insertedMessage: ChatMessageRow = {
+      id: "dm-path-42",
+      created_at: "2026-05-01T11:30:00.000Z",
+      content: "",
+      channel_type: "dm",
+      sender_id: "user-1",
+      recipient_id: "user-2",
+      arrondissement_id: null,
+      zone_name: null,
+      attachment_url: null,
+      attachment_path: objectPath,
+      attachment_type: "application/pdf",
+      attachment_expires_at: null,
+      poll_options: [],
+    };
+    const supabaseMock = configureDmSupabase(insertedMessage);
+
+    const response = await postChatPayload({
+      channelType: "dm",
+      recipientId: "user-2",
+      content: "",
+      attachmentPath: objectPath,
+      attachmentType: "application/pdf",
+      attachmentSize: 4096,
+    });
+
+    expect(response.status).toBe(201);
+    expect(supabaseMock.appMessagesTable.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attachment_url: null,
+        attachment_path: objectPath,
+        attachment_expires_at: null,
+      }),
+    );
+    expect(supabaseMock.createSignedUrls).not.toHaveBeenCalled();
+    expect((await response.json()).message).toEqual(
+      expect.objectContaining({
+        attachment_url: null,
+      }),
+    );
+  });
+
+  it("rejects a durable path owned by another sender before writing", async () => {
+    const response = await postChatPayload({
+      channelType: "dm",
+      recipientId: "user-2",
+      content: "",
+      attachmentPath: "dm/user-2-private.pdf",
+      attachmentType: "application/pdf",
+      attachmentSize: 4096,
+    });
+
+    expect(response.status).toBe(422);
+    expect((await response.json()).details.attachmentPath).toEqual(
+      expect.arrayContaining([expect.stringContaining("n'appartient pas à votre upload Chat")]),
     );
     expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
   });

@@ -7,6 +7,7 @@ import { normalizeChatPollOptionLabels, type ChatPollOption } from "@/lib/chat/p
 import { type ChatRelatedEvent } from "@/lib/chat/announcements";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
+import { resolveChatAttachmentUrls } from "@/lib/chat/chat-attachment-reading";
 import {
   type ChatMessageRow,
   type ChatQueryResult,
@@ -72,7 +73,10 @@ export async function enrichPollVoteSummaries(
   userId: string,
   rows: ChatMessageRow[],
 ): Promise<ChatMessageRow[]> {
-  const normalizedRows = rows.map(normalizeChatMessageRow);
+  const normalizedRows = await resolveChatAttachmentUrls(
+    serviceSupabase,
+    rows.map(normalizeChatMessageRow),
+  );
   const pollIds = normalizedRows
     .filter((row) => row.message_kind === "poll")
     .map((row) => row.id);
