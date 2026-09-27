@@ -268,4 +268,74 @@ describe("GET /api/chat", () => {
     expect(supabaseMock.messagesQuery.in).toHaveBeenCalledWith("sender_id", ["user-1", "user-2"]);
     expect(supabaseMock.messagesQuery.in).toHaveBeenCalledWith("recipient_id", ["user-1", "user-2"]);
   }, 15000);
+
+  it("signs durable attachment paths once for the authorized page", async () => {
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: null,
+        role_label: "member",
+        metadata: null,
+      },
+      messages: [
+        {
+          id: "with-path-1",
+          created_at: "2026-05-01T09:00:00.000Z",
+          content: "Document",
+          channel_type: "community",
+          sender_id: "user-2",
+          recipient_id: null,
+          arrondissement_id: null,
+          zone_name: null,
+          attachment_path: "community/user-2-document.pdf",
+          attachment_url: null,
+          attachment_type: "application/pdf",
+        },
+        {
+          id: "with-path-2",
+          created_at: "2026-05-01T10:00:00.000Z",
+          content: "Image",
+          channel_type: "community",
+          sender_id: "user-2",
+          recipient_id: null,
+          arrondissement_id: null,
+          zone_name: null,
+          attachment_path: "community/user-2-image.png",
+          attachment_url: null,
+          attachment_type: "image/png",
+        },
+      ],
+      insertedMessage: {
+        id: "inserted",
+        created_at: "2026-05-01T11:00:00.000Z",
+        content: "",
+        channel_type: "community",
+        sender_id: "user-1",
+        recipient_id: null,
+        arrondissement_id: null,
+        zone_name: null,
+      },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/chat?channelType=community"),
+    );
+    const body = (await response.json()) as { messages: ChatMessageRow[] };
+
+    expect(response.status).toBe(200);
+    expect(supabaseMock.createSignedUrls).toHaveBeenCalledTimes(1);
+    expect(supabaseMock.createSignedUrls).toHaveBeenCalledWith(
+      ["community/user-2-document.pdf", "community/user-2-image.png"],
+      60 * 60,
+    );
+    expect(body.messages[0]).toMatchObject({
+      attachment_url: expect.stringContaining("signed/community%2Fuser-2-document.pdf"),
+    });
+    expect(body.messages[0]).not.toHaveProperty("attachment_path");
+  }, 15000);
 });

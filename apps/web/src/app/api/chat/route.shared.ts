@@ -23,7 +23,7 @@ import {
   type ChatPollOption,
 } from "@/lib/chat/polls";
 import { sortByCreatedAtAsc } from "@/lib/chat/postgrest";
-export { CHANNEL_TYPES, sendMessageSchema } from "./route.validation";
+export { CHANNEL_TYPES, sendMessageSchemaForUser } from "./route.validation";
 
 export type CurrentProfileRow = {
   id: string;
@@ -187,6 +187,23 @@ export function validateMessageKind(
   }
 
   return {};
+}
+
+export function buildChatAttachmentPersistence(params: {
+  attachmentPath?: string;
+  attachmentUrl?: string;
+  attachmentType?: string;
+}) {
+  return {
+    attachment_url: params.attachmentPath ? null : params.attachmentUrl,
+    attachment_path: params.attachmentPath ?? null,
+    attachment_type: params.attachmentType,
+    attachment_expires_at: params.attachmentPath
+      ? null
+      : params.attachmentUrl
+        ? new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString()
+        : null,
+  };
 }
 
 export type ChatQueryResult<T> = PromiseLike<{

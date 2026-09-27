@@ -23,7 +23,9 @@ export type ChatMessageRow = {
   related_event_id?: string | null;
   conversation_id?: string | null;
   attachment_url?: string | null;
+  attachment_path?: string | null;
   attachment_type?: string | null;
+  attachment_expires_at?: string | null;
   action_id?: string | null;
   related_event?: {
     id: string;
@@ -198,8 +200,20 @@ export function buildSupabaseMock(options: {
     });
   });
 
+  const createSignedUrls = vi.fn(async (paths: string[]) => ({
+    data: paths.map((path) => ({
+      path,
+      signedUrl: `https://storage.example.test/signed/${encodeURIComponent(path)}`,
+    })),
+    error: null,
+  }));
+  const serviceStorageBucket = { createSignedUrls };
+
   const serviceSupabase = {
     rpc: serviceRpc,
+    storage: {
+      from: vi.fn(() => serviceStorageBucket),
+    },
   };
 
   const supabase = {
@@ -243,5 +257,6 @@ export function buildSupabaseMock(options: {
     insertResult,
     serviceSupabase,
     serviceRpc,
+    createSignedUrls,
   };
 }

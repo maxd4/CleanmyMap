@@ -33,6 +33,14 @@ const sizeMigration = readFileSync(
   "utf8",
 ).replace(/\s+/g, " ").trim().toLowerCase();
 
+const pathMigration = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20260927000007_chat_attachment_paths.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).replace(/\s+/g, " ").trim().toLowerCase();
+
 const submitHook = readFileSync(
   new URL("../../components/chat/hooks/use-chat-submit.ts", import.meta.url),
   "utf8",
@@ -41,6 +49,10 @@ const submitHook = readFileSync(
     new URL("../../components/chat/hooks/use-chat-submit.helpers.ts", import.meta.url),
     "utf8",
   ),
+);
+const attachmentContract = readFileSync(
+  new URL("./chat-attachments.ts", import.meta.url),
+  "utf8",
 );
 
 describe("chat attachment privacy contract", () => {
@@ -60,8 +72,8 @@ describe("chat attachment privacy contract", () => {
     expect(migration).not.toMatch(/create\s+policy\s+"chat attachments public read"/i);
   });
 
-  it("uses expiring signed URLs instead of public object URLs", () => {
-    expect(submitHook).toContain("createSignedUrl(filePath, 120 * 24 * 60 * 60)");
+  it("uses short-lived signed URLs instead of public object URLs", () => {
+    expect(submitHook).toContain("createSignedUrl(filePath, CHAT_ATTACHMENT_SIGNED_URL_TTL_SECONDS)");
     expect(submitHook).not.toContain("getPublicUrl(filePath)");
   });
 
@@ -82,7 +94,14 @@ describe("chat attachment privacy contract", () => {
     expect(sizeMigration).toContain("update storage.buckets");
     expect(sizeMigration).toContain("set file_size_limit = 8 * 1024 * 1024");
     expect(sizeMigration).toContain("where id = 'chat-attachments'");
-    expect(submitHook).toContain('CHAT_ATTACHMENTS_BUCKET = "chat-attachments"');
+    expect(attachmentContract).toContain('CHAT_ATTACHMENTS_BUCKET = "chat-attachments"');
     expect(submitHook).not.toContain("/api/chat/upload");
+  });
+
+  it("stores durable paths for new rows and keeps poll attachments forbidden", () => {
+    expect(pathMigration).toContain("add column if not exists attachment_path text");
+    expect(pathMigration).toContain("attachment_path is null or btrim(attachment_path) <> ''");
+    expect(pathMigration).toContain("attachment_url is null and attachment_path is null");
+    expect(pathMigration).toContain("legacy attachment_url rows stay readable");
   });
 });

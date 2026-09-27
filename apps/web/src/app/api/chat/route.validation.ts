@@ -9,6 +9,7 @@ import {
   isSafeChatAttachmentUrl,
   isSupportedChatAttachmentMimeType,
   isUnsupportedChatVideoMimeType,
+  isChatAttachmentPathOwnedByUser,
 } from "@/lib/chat/chat-attachments";
 import type { ChatChannelType } from "@/lib/chat/channels";
 
@@ -25,6 +26,7 @@ type SendMessageData = {
   messageKind: ChatMessageKind;
   content: string;
   attachmentUrl?: string;
+  attachmentPath?: string;
   attachmentType?: string;
   attachmentSize?: number;
 };
@@ -40,17 +42,17 @@ function addIssue(
 function validateAttachmentContract(data: SendMessageData, context: z.RefinementCtx): void {
   if (data.messageKind !== "message") return;
 
-  const hasUrl = Boolean(data.attachmentUrl);
+  const hasAttachment = Boolean(data.attachmentUrl || data.attachmentPath);
   const hasType = Boolean(data.attachmentType);
   const hasSize = data.attachmentSize !== undefined;
 
-  if (hasUrl && !hasType) {
+  if (hasAttachment && !hasType) {
     addIssue(context, ["attachmentType"], "Le type de la pièce jointe est requis quand un fichier est envoyé.");
   }
-  if (!hasUrl && hasType) {
-    addIssue(context, ["attachmentUrl"], "L'URL de la pièce jointe est requise quand un type de fichier est envoyé.");
+  if (!hasAttachment && hasType) {
+    addIssue(context, ["attachmentUrl"], "La référence de la pièce jointe est requise quand un type de fichier est envoyé.");
   }
-  if (hasUrl && hasType && !hasSize) {
+  if (hasAttachment && hasType && !hasSize) {
     addIssue(context, ["attachmentSize"], "La taille de la pièce jointe est requise.");
   }
   if (hasSize && data.attachmentSize! > CHAT_ATTACHMENT_MAX_SIZE_BYTES) {
@@ -69,7 +71,7 @@ function validateAttachmentContract(data: SendMessageData, context: z.Refinement
 
 function validateMessageContent(data: SendMessageData, context: z.RefinementCtx): void {
   const hasContent = data.content.trim().length > 0;
-  if (data.messageKind === "message" && (hasContent || data.attachmentUrl)) return;
+  if (data.messageKind === "message" && (hasContent || data.attachmentUrl || data.attachmentPath)) return;
   if (data.messageKind !== "message" && hasContent) return;
 
   addIssue(
@@ -97,6 +99,7 @@ export const sendMessageSchema = z.object({
   attachmentUrl: z.string().trim().url().refine(isSafeChatAttachmentUrl, {
     message: "L'URL de la pièce jointe doit utiliser http(s).",
   }).optional(),
+  attachmentPath: z.string().trim().min(1).max(512).optional(),
   attachmentType: z.string().trim().refine((value) => !isUnsupportedChatVideoMimeType(value), {
     message: CHAT_VIDEO_UNSUPPORTED_MESSAGE,
   }).optional(),
@@ -104,4 +107,32 @@ export const sendMessageSchema = z.object({
 }).superRefine((data, context) => {
   validateAttachmentContract(data, context);
   validateMessageContent(data, context);
+  if (data.messageKind === "poll" && data.attachmentPath) {
+    addIssue(context, ["attachmentPath"], "Un sondage ne peut pas contenir de pièce jointe ou d'événement.");
+  }
+  if (
+    data.actionId &&
+    data.channelType !== "action" &&
+    (data.attachmentPath || data.attachmentUrl || data.attachmentType)
+  ) {
+    addIssue(context, ["attachmentPath"], "Le partage d'action ne peut pas contenir de pièce jointe.");
+  }
+  if (data.feedbackId && data.attachmentPath) {
+    addIssue(context, ["attachmentPath"], "Une réponse feedback ne peut pas contenir de pièce jointe.");
+  }
 });
+
+export function sendMessageSchemaForUser(userId: string) {
+  return sendMessageSchema.superRefine((data, context) => {
+    if (
+      data.attachmentPath &&
+      !isChatAttachmentPathOwnedByUser({
+        path: data.attachmentPath,
+        channelType: data.channelType,
+        userId,
+      })
+    ) {
+      addIssue(context, ["attachmentPath"], "Le chemin de la pièce jointe n'appartient pas à votre upload Chat.");
+    }
+  });
+}

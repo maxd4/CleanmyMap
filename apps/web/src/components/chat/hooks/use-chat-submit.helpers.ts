@@ -4,6 +4,8 @@ import { isAppError, toAppError } from "@/lib/errors/app-errors";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { compressImageFile } from "@/lib/media/image-compression";
 import {
+  CHAT_ATTACHMENT_SIGNED_URL_TTL_SECONDS,
+  CHAT_ATTACHMENTS_BUCKET,
   getChatAttachmentValidationError,
   inferChatAttachmentExtension,
   inferChatAttachmentType,
@@ -12,8 +14,6 @@ import {
 import type { ChatUser } from "../chat-types";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
-
-export const CHAT_ATTACHMENTS_BUCKET = "chat-attachments" as const;
 
 export class ChatAttachmentValidationError extends Error {}
 
@@ -94,7 +94,7 @@ async function uploadPreparedChatAttachment(params: {
 
     const { data: signedUrl, error: signedUrlError } = await params.supabase.storage
       .from(CHAT_ATTACHMENTS_BUCKET)
-      .createSignedUrl(filePath, 120 * 24 * 60 * 60);
+      .createSignedUrl(filePath, CHAT_ATTACHMENT_SIGNED_URL_TTL_SECONDS);
     if (signedUrlError || !signedUrl?.signedUrl) {
       throw signedUrlError ?? new Error("La signature de la pièce jointe a échoué.");
     }

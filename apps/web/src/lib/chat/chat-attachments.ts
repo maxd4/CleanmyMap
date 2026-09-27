@@ -77,6 +77,22 @@ const SUPPORTED_EXTENSIONS = new Map([
 const SAFE_ATTACHMENT_PROTOCOLS = new Set(["http:", "https:"]);
 
 export const CHAT_ATTACHMENT_MAX_SIZE_BYTES = 8 * 1024 * 1024;
+export const CHAT_ATTACHMENT_SIGNED_URL_TTL_SECONDS = 60 * 60;
+export const CHAT_ATTACHMENTS_BUCKET = "chat-attachments" as const;
+
+export function isChatAttachmentPathOwnedByUser(params: {
+  path: string;
+  channelType: string;
+  userId: string;
+}): boolean {
+  const expectedPrefix = `${params.channelType}/${params.userId}-`;
+  return (
+    params.path.startsWith(expectedPrefix) &&
+    !params.path.includes("..") &&
+    !params.path.includes("\\") &&
+    params.path.indexOf("/", expectedPrefix.length) === -1
+  );
+}
 export const CHAT_CAMERA_ACCEPT = "image/*";
 export const CHAT_VIDEO_UNSUPPORTED_MESSAGE =
   "Les vidéos ne sont pas prises en charge. Partagez plutôt une photo ou un lien vers la vidéo.";

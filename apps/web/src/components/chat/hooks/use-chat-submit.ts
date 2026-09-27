@@ -119,6 +119,7 @@ async function sendPreparedChatMessage(params: {
   senderHandle: string;
   user: ReturnType<typeof useUser>["user"];
   attachmentUrl?: string;
+  attachmentPath?: string;
   attachmentType?: string;
   attachmentSize?: number;
   feedbackId?: string | null;
@@ -167,6 +168,7 @@ async function sendPreparedChatMessage(params: {
           ? params.effectiveZone
           : undefined,
       attachmentUrl: params.attachmentUrl,
+      attachmentPath: params.attachmentPath,
       attachmentType: params.attachmentType,
       attachmentSize: params.attachmentSize,
       feedbackId: params.activeChannelType === "dm" ? params.feedbackId ?? undefined : undefined,
@@ -264,6 +266,7 @@ export function useChatSubmit({
               senderHandle,
               user,
               attachmentUrl: uploadedAttachment?.url,
+              attachmentPath: uploadedAttachment?.objectPath,
               attachmentType: uploadedAttachment?.type,
               attachmentSize: uploadedAttachment?.size,
               feedbackId,
