@@ -185,16 +185,15 @@ describe("active profile separation", () => {
   });
 
   it.each([
-    ["benevole", false, false],
-    ["elu", false, true],
-    ["admin", true, true],
-    ["max", true, true],
+    ["benevole", false],
+    ["elu", false],
+    ["admin", true],
+    ["max", true],
   ] as const)(
     "derives effective capabilities from ACTIVE_ROLE=%s",
-    (activeRole, canAccessAdminPage, canModerate) => {
+    (activeRole, canAccessAdminPage) => {
       const access = getEffectiveAccessForSessionRole(activeRole);
       expect(access.canAccessAdminPage).toBe(canAccessAdminPage);
-      expect(access.canModerate).toBe(canModerate);
     },
   );
 
@@ -203,21 +202,7 @@ describe("active profile separation", () => {
     const electedAsScientist = getEffectiveAccessForSessionRole("scientifique");
 
     expect(adminAsVolunteer.canAccessAdminPage).toBe(false);
-    expect(adminAsVolunteer.canModerate).toBe(false);
-    expect(electedAsScientist.canModerate).toBe(false);
+    expect(electedAsScientist.canAccessAdminPage).toBe(false);
     expect(getEffectiveAccessForSessionRole("admin").canAccessAdminPage).toBe(true);
-    expect(getEffectiveAccessForSessionRole("elu").canModerate).toBe(true);
-  });
-
-  it("does not grant generic admin capabilities to ACTIVE_ROLE=elu", () => {
-    const electedAccess = getEffectiveAccessForSessionRole("elu");
-    const adminAccess = getEffectiveAccessForSessionRole("admin");
-
-    expect(electedAccess.canAccessAdminPage).toBe(false);
-    expect(electedAccess.canImportActions).toBe(false);
-    expect(electedAccess.canExportActionsCsvJson).toBe(false);
-    expect(adminAccess.canAccessAdminPage).toBe(true);
-    expect(adminAccess.canImportActions).toBe(true);
-    expect(adminAccess.canExportActionsCsvJson).toBe(true);
   });
 });

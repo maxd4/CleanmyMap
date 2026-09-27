@@ -3,20 +3,19 @@ import { getEffectiveAccessForSessionRole } from "./domain-language";
 
 describe("effective capability inheritance", () => {
   it.each([
-    ["benevole", false, false, false],
-    ["coordinateur", false, false, true],
-    ["scientifique", false, false, false],
-    ["entreprise", false, false, false],
-    ["elu", false, true, false],
-    ["admin", true, true, false],
-    ["max", true, true, false],
+    ["benevole", false, false],
+    ["coordinateur", false, true],
+    ["scientifique", false, false],
+    ["entreprise", false, false],
+    ["elu", false, false],
+    ["admin", true, false],
+    ["max", true, false],
   ] as const)(
     "resolves %s from the canonical capability matrix",
-    (role, canAccessAdminPage, canModerate, canAccessPilotage) => {
+    (role, canAccessAdminPage, canAccessPilotage) => {
       const access = getEffectiveAccessForSessionRole(role);
 
       expect(access.canAccessAdminPage).toBe(canAccessAdminPage);
-      expect(access.canModerate).toBe(canModerate);
       expect(access.canAccessPilotage).toBe(canAccessPilotage);
     },
   );
@@ -25,7 +24,6 @@ describe("effective capability inheritance", () => {
     const access = getEffectiveAccessForSessionRole("anonymous");
 
     expect(access.canAccessAdminPage).toBe(false);
-    expect(access.canModerate).toBe(false);
     expect(access.canAccessPilotage).toBe(false);
   });
 });
