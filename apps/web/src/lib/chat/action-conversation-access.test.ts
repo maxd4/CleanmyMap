@@ -3,10 +3,12 @@ import type { ActiveRole } from "@/lib/domain-language";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  canViewActionDiscussionForMembership,
   canModerateActionConversationForIdentity,
   isActionDiscussionAvailable,
   resolveActionDiscussionAccess,
 } from "./action-conversations";
+import type { ActionDiscussionMembership } from "./action-conversations";
 import { isPublicActionReferenceAvailable } from "./action-sharing";
 
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
@@ -26,6 +28,7 @@ const correctiveMigration = readFileSync(
 );
 
 const publicFutureAction = {
+  created_by_clerk_id: "creator",
   action_date: "2099-01-01",
   event_start_time: "10:00",
   action_phase: "pre_action" as const,
@@ -34,29 +37,31 @@ const publicFutureAction = {
   published_at: "2098-12-01T10:00:00.000Z",
 };
 
-function buildSupabaseMock(exclusionActive = false) {
-  const conversationQuery = {
-    select: vi.fn(() => conversationQuery),
-    eq: vi.fn(() => conversationQuery),
-    maybeSingle: vi.fn().mockResolvedValue({
-      data: { id: "conversation-1" },
-      error: null,
-    }),
+function buildSupabaseMock(options: {
+  exclusionActive?: boolean;
+  roleLabel?: string | null;
+  isOrganizer?: boolean;
+  registrationStatus?: "pending" | "confirmed" | "cancelled" | null;
+  participationStatus?: "pending" | "confirmed" | "cancelled" | null;
+} = {}) {
+  const resultByTable: Record<string, unknown> = {
+    action_conversations: { id: "conversation-1" },
+    action_conversation_exclusions: options.exclusionActive ? { active: true } : null,
+    profiles: options.roleLabel ? { role_label: options.roleLabel } : null,
+    action_organizers: options.isOrganizer ? { organizer_clerk_id: "user-1" } : null,
+    action_registrations: options.registrationStatus ? { registration_status: options.registrationStatus } : null,
+    action_participants: options.participationStatus ? { participation_status: options.participationStatus } : null,
   };
-  const exclusionQuery = {
-    select: vi.fn(() => exclusionQuery),
-    eq: vi.fn(() => exclusionQuery),
-    maybeSingle: vi.fn().mockResolvedValue({
-      data: exclusionActive ? { active: true } : null,
-      error: null,
-    }),
+  const createQuery = (table: string) => {
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      maybeSingle: vi.fn().mockResolvedValue({ data: resultByTable[table] ?? null, error: null }),
+    };
+    return query;
   };
   return {
-    from: vi.fn((table: string) => {
-      if (table === "action_conversations") return conversationQuery;
-      if (table === "action_conversation_exclusions") return exclusionQuery;
-      throw new Error(`Unexpected table: ${table}`);
-    }),
+    from: vi.fn((table: string) => createQuery(table)),
   };
 }
 
@@ -112,28 +117,53 @@ describe("action discussion access contract", () => {
     expect(correctiveMigration).not.toContain("action_participants");
   });
 
-  it("authorizes every participation state equally when there is no exclusion", async () => {
-    for (const participationStatus of ["pending", "confirmed", "cancelled", "refused"]) {
-      loadActionByIdMock.mockResolvedValue(publicFutureAction);
-      const supabase = buildSupabaseMock(false);
-      const result = await resolveActionDiscussionAccess(
-        supabase as never,
-        "action-1",
-        `user-${participationStatus}`,
-      );
+  it.each([
+    ["future confirmed registration", publicFutureAction, { registrationStatus: "confirmed" }, true],
+    ["future pending registration", publicFutureAction, { registrationStatus: "pending" }, false],
+    ["future organizer", publicFutureAction, { isOrganizer: true }, true],
+    ["future admin", publicFutureAction, { roleLabel: "admin" }, true],
+    [
+      "completed confirmed post-action participant",
+      { ...publicFutureAction, action_phase: "post_action_complete" as const, status: "approved" as const },
+      { participationStatus: "confirmed" },
+      true,
+    ],
+    [
+      "completed pending post-action claim",
+      { ...publicFutureAction, action_phase: "post_action_complete" as const, status: "approved" as const },
+      { participationStatus: "pending" },
+      false,
+    ],
+  ])("resolves the current participation authority: %s", async (_label, action, options, expectedAllowed) => {
+    loadActionByIdMock.mockResolvedValue(action);
+    const supabase = buildSupabaseMock(options as Parameters<typeof buildSupabaseMock>[0]);
+    const result = await resolveActionDiscussionAccess(supabase as never, "action-1", "user-1");
 
-      expect(result).toEqual({ state: "allowed", conversationId: "conversation-1" });
-      expect(supabase.from).not.toHaveBeenCalledWith("action_participants");
-    }
+    expect(result).toEqual(expectedAllowed
+      ? { state: "allowed", conversationId: "conversation-1" }
+      : { state: "forbidden", conversationId: "conversation-1" });
+  });
+
+  it.each([
+    ["future confirmed", { action_phase: "pre_action" as const }, { registrationStatus: "confirmed" }, true],
+    ["future pending", { action_phase: "pre_action" as const }, { registrationStatus: "pending" }, false],
+    ["completed confirmed", { action_phase: "post_action_complete" as const }, { participationStatus: "confirmed" }, true],
+    ["completed pending", { action_phase: "post_action_complete" as const }, { participationStatus: "pending" }, false],
+  ])("keeps the pure membership contract explicit: %s", (_label, action, membership, expected) => {
+    expect(canViewActionDiscussionForMembership(action, {
+      isOwner: false,
+      isOrganizer: false,
+      ...membership,
+    } as ActionDiscussionMembership)).toBe(expected);
   });
 
   it("refuses an active exclusion and restores access after reintroduction", async () => {
     loadActionByIdMock.mockResolvedValue(publicFutureAction);
-    expect(await resolveActionDiscussionAccess(buildSupabaseMock(true) as never, "action-1", "user-1")).toEqual({
+    expect(await resolveActionDiscussionAccess(buildSupabaseMock({ exclusionActive: true }) as never, "action-1", "user-1")).toEqual({
       state: "excluded",
       conversationId: "conversation-1",
     });
-    expect(await resolveActionDiscussionAccess(buildSupabaseMock(false) as never, "action-1", "user-1")).toEqual({
+    expect(await resolveActionDiscussionAccess(buildSupabaseMock({ registrationStatus: "confirmed" }) as never, "action-1", "user-1")).toEqual({
       state: "allowed",
       conversationId: "conversation-1",
     });
@@ -141,7 +171,7 @@ describe("action discussion access contract", () => {
 
   it("refuses an explicitly excluded authenticated user even when discussion is available", async () => {
     loadActionByIdMock.mockResolvedValue(publicFutureAction);
-    expect(await resolveActionDiscussionAccess(buildSupabaseMock(true) as never, "action-1", "authenticated-user")).toEqual({
+    expect(await resolveActionDiscussionAccess(buildSupabaseMock({ exclusionActive: true }) as never, "action-1", "authenticated-user")).toEqual({
       state: "excluded",
       conversationId: "conversation-1",
     });

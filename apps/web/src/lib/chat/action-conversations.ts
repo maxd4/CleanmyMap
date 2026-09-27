@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { UserIdentity } from "@/lib/authz";
 import { loadActionById } from "@/lib/actions/store";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
 import { isPublishedFuturePreAction } from "@/lib/actions/temporal";
 import type { ActionRow } from "@/types/database";
 
@@ -33,6 +34,7 @@ export async function ensureActionConversationMember(
 export type ActionDiscussionAccess =
   | { state: "unavailable"; conversationId: null }
   | { state: "excluded"; conversationId: string }
+  | { state: "forbidden"; conversationId: string }
   | { state: "allowed"; conversationId: string };
 
 export type ActionDiscussionCandidate = {
@@ -43,6 +45,35 @@ export type ActionDiscussionCandidate = {
   moderation_visibility?: ActionRow["moderation_visibility"];
   published_at?: ActionRow["published_at"];
 };
+
+export type ActionDiscussionMembership = {
+  roleLabel?: string | null;
+  isOwner: boolean;
+  isOrganizer: boolean;
+  registrationStatus?: "pending" | "confirmed" | "cancelled" | null;
+  participationStatus?: "pending" | "confirmed" | "cancelled" | null;
+};
+
+/** Runtime discussion access is based on the action's current participation store. */
+export function canViewActionDiscussionForMembership(
+  action: Pick<ActionDiscussionCandidate, "action_phase">,
+  membership: ActionDiscussionMembership,
+): boolean {
+  if (
+    membership.roleLabel === "admin" ||
+    membership.roleLabel === "max" ||
+    membership.isOwner ||
+    membership.isOrganizer
+  ) {
+    return true;
+  }
+
+  if (usesRegistrationStore(action.action_phase)) {
+    return membership.registrationStatus === "confirmed";
+  }
+
+  return membership.participationStatus === "confirmed";
+}
 
 /** Discussion lifecycle eligibility; this is not public-share eligibility. */
 export function isActionDiscussionAvailable(
@@ -73,6 +104,58 @@ export function isActionDiscussionAvailable(
   );
 }
 
+async function loadActionDiscussionMembership(
+  supabase: SupabaseClient,
+  actionId: string,
+  userId: string,
+  action: ActionDiscussionCandidate & { created_by_clerk_id: string },
+): Promise<ActionDiscussionMembership | null> {
+  const [profileResult, organizerResult, registrationResult, participationResult] = await Promise.all([
+    supabase.from("profiles").select("role_label").eq("id", userId).maybeSingle(),
+    supabase
+      .from("action_organizers")
+      .select("organizer_clerk_id")
+      .eq("action_id", actionId)
+      .eq("organizer_clerk_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("action_registrations")
+      .select("registration_status")
+      .eq("action_id", actionId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("action_participants")
+      .select("participation_status")
+      .eq("action_id", actionId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
+
+  if (
+    profileResult.error ||
+    organizerResult.error ||
+    registrationResult.error ||
+    participationResult.error
+  ) {
+    return null;
+  }
+
+  return {
+    roleLabel: typeof profileResult.data?.role_label === "string" ? profileResult.data.role_label : null,
+    isOwner: action.created_by_clerk_id === userId,
+    isOrganizer: organizerResult.data?.organizer_clerk_id === userId,
+    registrationStatus: normalizeParticipationStatus(registrationResult.data?.registration_status),
+    participationStatus: normalizeParticipationStatus(participationResult.data?.participation_status),
+  };
+}
+
+function normalizeParticipationStatus(
+  value: unknown,
+): ActionDiscussionMembership["registrationStatus"] {
+  return value === "pending" || value === "confirmed" || value === "cancelled" ? value : null;
+}
+
 /** Resolves the independent discussion contract without changing participation state. */
 export async function resolveActionDiscussionAccess(
   supabase: SupabaseClient,
@@ -80,7 +163,7 @@ export async function resolveActionDiscussionAccess(
   userId: string,
 ): Promise<ActionDiscussionAccess> {
   const action = await loadActionById(supabase, actionId);
-  if (!isActionDiscussionAvailable(action)) {
+  if (!action || !isActionDiscussionAvailable(action)) {
     return { state: "unavailable", conversationId: null };
   }
 
@@ -104,7 +187,14 @@ export async function resolveActionDiscussionAccess(
     return { state: "excluded", conversationId: conversationResult.data.id };
   }
 
-  return { state: "allowed", conversationId: conversationResult.data.id };
+  const membership = await loadActionDiscussionMembership(supabase, actionId, userId, action);
+  if (!membership) {
+    return { state: "unavailable", conversationId: null };
+  }
+
+  return canViewActionDiscussionForMembership(action, membership)
+    ? { state: "allowed", conversationId: conversationResult.data.id }
+    : { state: "forbidden", conversationId: conversationResult.data.id };
 }
 
 /** Dedicated discussion capability. `elu` is deliberately not an override. */

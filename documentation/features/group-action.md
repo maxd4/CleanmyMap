@@ -94,7 +94,8 @@ distincte à arbitrer ultérieurement si nécessaire.
 - Source stats et quotes-parts: uniquement les participants finaux confirmés; le dénominateur exclut les inscriptions, les demandes `pending` et les lignes `cancelled`.
 - Source fermeture: metadata de `actions.notes` via `groupJoinEnabled`.
 - Source dérogation: les opérations admin sont journalisées séparément et ne modifient pas le parcours normal.
-- Audience des notifications de discussion: avant l'action, créateur, organisateurs et inscriptions futures `pending` ou `confirmed`; après `post_action_complete`, créateur, organisateurs et seules les participations finales `confirmed`. Cette audience ne gouverne pas l'accès à la discussion : une inscription future n'est pas une participation réelle, et un ancien inscrit sans participation finale confirmée n'est plus notifié automatiquement après l'action.
+- Discussion d'action: le créateur, les organisateurs, les rôles actifs `admin`/`max` et les participants confirmés peuvent lire et écrire avant l'action; après `post_action_complete`, seuls les participants finaux `action_participants` `confirmed` conservent l'accès, avec le créateur, les organisateurs et les admins. Une demande `pending`, notamment un claim post-action, ne donne aucun accès d'écriture. Une action annulée conserve une lecture autorisée mais bloque les nouveaux messages.
+- Audience des notifications de discussion: elle suit les mêmes sources de membres confirmés, exclut l'auteur et les exclusions actives, et produit une notification `action_discussion` idempotente dans `app_notifications` avec `actionId`, `commentId`/`messageId` et `actionPhase`. Une inscription future `pending` n'est pas notifiée.
 
 ## Validation
 

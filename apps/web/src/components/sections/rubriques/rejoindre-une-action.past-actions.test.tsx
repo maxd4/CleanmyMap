@@ -115,5 +115,7 @@ describe("PastActionsPanel", () => {
     expect(markup).toContain("3 kg");
     expect(markup).toContain("4 mégots");
     expect(markup).not.toContain("Durée individuelle");
+    expect(markup).toContain("Discussion de l’action");
+    expect(markup).toContain("/sections/messagerie?channel=action&amp;actionId=past-action");
   });
 });

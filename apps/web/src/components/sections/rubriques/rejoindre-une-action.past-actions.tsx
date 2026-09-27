@@ -34,6 +34,125 @@ function claimStatusLabel(state: ClaimState, fr: boolean): string {
   return fr ? "Demande refusée" : "Request refused";
 }
 
+function PastActionCardSummary({
+  item,
+  fr,
+  onShareAction,
+}: {
+  item: ActionListItem;
+  fr: boolean;
+  onShareAction?: (actionId: string) => void;
+}) {
+  const participants = finalParticipants(item);
+  const hasRoute = Boolean(item.geometry_kind || item.contract?.geometry.coordinates.length);
+  return (
+    <>
+      <div>
+        <h3 className="text-lg font-black tracking-tight text-slate-950">{actionTitle(item)}</h3>
+        <p className="mt-1 flex items-center gap-2 text-sm text-slate-600"><MapPin size={14} className="text-slate-400" />{item.location_label}</p>
+      </div>
+      <div className="grid gap-2 text-sm text-slate-600">
+        <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>
+        {participants !== null ? <p className="flex items-center gap-2"><Users2 size={14} className="text-slate-400" />{formatCount(participants)} {fr ? "participants déclarés" : "reported participants"}</p> : null}
+        {item.waste_kg !== null ? <p>{formatCount(item.waste_kg)} kg {fr ? "collectés" : "collected"}</p> : null}
+        {item.cigarette_butts !== null ? <p>{formatCount(item.cigarette_butts)} {fr ? "mégots collectés" : "cigarette butts collected"}</p> : null}
+        <p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{hasRoute ? (fr ? "Parcours final/opérationnel disponible" : "Final/operational route available") : (fr ? "Localisation seule" : "Location only")}</p>
+        <p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "finales" : "final"}</p>
+      </div>
+      <p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p>
+      {onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>{fr ? "Partager le résultat" : "Share the result"}</CmmButton> : null}
+    </>
+  );
+}
+
+function PastActionCardAttribution({ item, claimState, fr }: { item: ActionListItem; claimState: ClaimState | null; fr: boolean }) {
+  const personalAttribution = derivePersonalAttribution({
+    participationStatus: claimState?.participationStatus ?? null,
+    confirmedParticipantCount: claimState?.participantsCount,
+    finalWasteKg: item.waste_kg,
+    finalCigaretteButts: item.cigarette_butts,
+  });
+  if (!personalAttribution) return null;
+  return (
+    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-950">
+      <p className="font-bold">{fr ? "Votre part des résultats" : "Your share of the results"}</p>
+      <p className="mt-1">{fr ? "Quote-part attribuée à votre profil, dérivée des participants confirmés." : "Share attributed to your profile, derived from confirmed participants."}</p>
+      <div className="mt-2 grid gap-1 font-semibold">
+        {personalAttribution.wasteKg !== null ? <span>{personalAttribution.wasteKg.toLocaleString(fr ? "fr-FR" : "en-US", { maximumFractionDigits: 2 })} kg</span> : null}
+        {personalAttribution.cigaretteButts !== null ? <span>{personalAttribution.cigaretteButts.toLocaleString(fr ? "fr-FR" : "en-US", { maximumFractionDigits: 2 })} {fr ? "mégots" : "cigarette butts"}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function PastActionCardActions({
+  item,
+  fr,
+  authenticated,
+  claimState,
+  claiming,
+  claimError,
+  onRequestClaim,
+}: {
+  item: ActionListItem;
+  fr: boolean;
+  authenticated: boolean;
+  claimState: ClaimState | null;
+  claiming: boolean;
+  claimError?: string;
+  onRequestClaim: (actionId: string) => void;
+}) {
+  return (
+    <div className="space-y-2 border-t border-slate-100 pt-3">
+      {claimState ? <p className="text-sm font-bold text-emerald-800" role="status">{claimStatusLabel(claimState, fr)}</p> : authenticated ? <CmmButton type="button" tone="primary" variant="pill" className="w-full justify-center text-xs" loading={claiming} onClick={() => onRequestClaim(item.id)}>{fr ? "J’ai participé à cette action" : "I participated in this action"}</CmmButton> : <CmmButton href={buildSignInRedirectHref("/sections/rejoindre-une-action?tab=past")} tone="primary" variant="pill" className="w-full justify-center text-xs">{fr ? "J’ai participé à cette action" : "I participated in this action"}</CmmButton>}
+      {authenticated && claimState?.participationStatus === "confirmed" ? <CmmButton href={`/sections/messagerie?channel=action&actionId=${encodeURIComponent(item.id)}`} tone="secondary" variant="pill" className="w-full justify-center text-xs">{fr ? "Discussion de l’action" : "Action discussion"}</CmmButton> : null}
+      {claimError ? <p className="text-xs font-semibold text-rose-700" role="alert">{claimError}</p> : null}
+    </div>
+  );
+}
+
+function PastActionCard({
+  item,
+  fr,
+  focused,
+  authenticated,
+  claimState,
+  claiming,
+  claimError,
+  onRequestClaim,
+  onShareAction,
+}: {
+  item: ActionListItem;
+  fr: boolean;
+  focused: boolean;
+  authenticated: boolean;
+  claimState: ClaimState | null;
+  claiming: boolean;
+  claimError?: string;
+  onRequestClaim: (actionId: string) => void;
+  onShareAction?: (actionId: string) => void;
+}) {
+  return (
+    <article
+      id={`join-action-${item.id}`}
+      tabIndex={focused ? -1 : undefined}
+      aria-describedby={focused ? `join-action-${item.id}-target` : undefined}
+      className={`rounded-2xl border bg-white p-4 shadow-sm ${focused ? "border-emerald-500 bg-emerald-50/30 ring-2 ring-emerald-300/80 ring-offset-2" : "border-emerald-100"}`}
+    >
+      {focused ? (
+        <p id={`join-action-${item.id}-target`} className="mb-3 inline-flex rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900">
+          {fr ? "Action ciblée par le lien" : "Action targeted by this link"}
+        </p>
+      ) : null}
+      <div className="space-y-3">
+        <PastActionCardSummary item={item} fr={fr} onShareAction={onShareAction} />
+        <PastActionCardAttribution item={item} claimState={claimState} fr={fr} />
+        <PastActionCardActions item={item} fr={fr} authenticated={authenticated} claimState={claimState} claiming={claiming} claimError={claimError} onRequestClaim={onRequestClaim} />
+      </div>
+    </article>
+  );
+}
+
 export function PastActionsPanel({
   items,
   loading,
@@ -131,86 +250,8 @@ export function PastActionsPanel({
 
       <div className="grid gap-3 md:grid-cols-2">
         {items.map((item) => {
-          const participants = finalParticipants(item);
-          const hasRoute = Boolean(item.geometry_kind || item.contract?.geometry.coordinates.length);
           const claimState = claimOverrides[item.id] ?? historyByActionId.get(item.id) ?? null;
-          const personalAttribution = derivePersonalAttribution({
-            participationStatus: claimState?.participationStatus ?? null,
-            confirmedParticipantCount: claimState?.participantsCount,
-            finalWasteKg: item.waste_kg,
-            finalCigaretteButts: item.cigarette_butts,
-          });
-          return (
-            <article
-              key={item.id}
-              id={`join-action-${item.id}`}
-              tabIndex={focusedActionId === item.id ? -1 : undefined}
-              aria-describedby={focusedActionId === item.id ? `join-action-${item.id}-target` : undefined}
-              className={`rounded-2xl border bg-white p-4 shadow-sm ${focusedActionId === item.id ? "border-emerald-500 bg-emerald-50/30 ring-2 ring-emerald-300/80 ring-offset-2" : "border-emerald-100"}`}
-            >
-              {focusedActionId === item.id ? (
-                <p id={`join-action-${item.id}-target`} className="mb-3 inline-flex rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900">
-                  {fr ? "Action ciblée par le lien" : "Action targeted by this link"}
-                </p>
-              ) : null}
-              <div className="space-y-3">
-                <div>
-                  <h3 className="text-lg font-black tracking-tight text-slate-950">{actionTitle(item)}</h3>
-                  <p className="mt-1 flex items-center gap-2 text-sm text-slate-600"><MapPin size={14} className="text-slate-400" />{item.location_label}</p>
-                </div>
-                <div className="grid gap-2 text-sm text-slate-600">
-                  <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>
-                  {participants !== null ? <p className="flex items-center gap-2"><Users2 size={14} className="text-slate-400" />{formatCount(participants)} {fr ? "participants déclarés" : "reported participants"}</p> : null}
-                  {item.waste_kg !== null ? <p>{formatCount(item.waste_kg)} kg {fr ? "collectés" : "collected"}</p> : null}
-                  {item.cigarette_butts !== null ? <p>{formatCount(item.cigarette_butts)} {fr ? "mégots collectés" : "cigarette butts collected"}</p> : null}
-                  <p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{hasRoute ? (fr ? "Parcours final/opérationnel disponible" : "Final/operational route available") : (fr ? "Localisation seule" : "Location only")}</p>
-                  <p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "finales" : "final"}</p>
-                </div>
-                <p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p>
-                {onShareAction ? (
-                  <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>
-                    {fr ? "Partager le résultat" : "Share the result"}
-                  </CmmButton>
-                ) : null}
-                {personalAttribution ? (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-950">
-                    <p className="font-bold">{fr ? "Votre part des résultats" : "Your share of the results"}</p>
-                    <p className="mt-1">{fr ? "Quote-part attribuée à votre profil, dérivée des participants confirmés." : "Share attributed to your profile, derived from confirmed participants."}</p>
-                    <div className="mt-2 grid gap-1 font-semibold">
-                      {personalAttribution.wasteKg !== null ? <span>{personalAttribution.wasteKg.toLocaleString(fr ? "fr-FR" : "en-US", { maximumFractionDigits: 2 })} kg</span> : null}
-                      {personalAttribution.cigaretteButts !== null ? <span>{personalAttribution.cigaretteButts.toLocaleString(fr ? "fr-FR" : "en-US", { maximumFractionDigits: 2 })} {fr ? "mégots" : "cigarette butts"}</span> : null}
-                    </div>
-                  </div>
-                ) : null}
-                <div className="space-y-2 border-t border-slate-100 pt-3">
-                  {claimState ? (
-                    <p className="text-sm font-bold text-emerald-800" role="status">{claimStatusLabel(claimState, fr)}</p>
-                  ) : authenticated ? (
-                    <CmmButton
-                      type="button"
-                      tone="primary"
-                      variant="pill"
-                      className="w-full justify-center text-xs"
-                      loading={claimingActionId === item.id}
-                      onClick={() => void requestClaim(item.id)}
-                    >
-                      {fr ? "J’ai participé à cette action" : "I participated in this action"}
-                    </CmmButton>
-                  ) : (
-                    <CmmButton
-                      href={buildSignInRedirectHref("/sections/rejoindre-une-action?tab=past")}
-                      tone="primary"
-                      variant="pill"
-                      className="w-full justify-center text-xs"
-                    >
-                      {fr ? "J’ai participé à cette action" : "I participated in this action"}
-                    </CmmButton>
-                  )}
-                  {claimErrors[item.id] ? <p className="text-xs font-semibold text-rose-700" role="alert">{claimErrors[item.id]}</p> : null}
-                </div>
-              </div>
-            </article>
-          );
+          return <PastActionCard key={item.id} item={item} fr={fr} focused={focusedActionId === item.id} authenticated={authenticated} claimState={claimState} claiming={claimingActionId === item.id} claimError={claimErrors[item.id]} onRequestClaim={(actionId) => void requestClaim(actionId)} onShareAction={onShareAction} />;
         })}
       </div>
     </section>
