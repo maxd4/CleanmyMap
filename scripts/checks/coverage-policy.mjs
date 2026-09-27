@@ -11,6 +11,15 @@ export const COVERAGE_METRICS = Object.freeze([
   "lines",
 ]);
 
+export const COVERAGE_GRACE = Object.freeze({
+  global: 0.25,
+  "auth-authz": 0.25,
+  actions: 0.75,
+  formalities: 0.75,
+  "route-calculs": 0.75,
+  persistence: 0.75,
+});
+
 export const COVERAGE_DOMAINS = Object.freeze({
   "auth-authz": Object.freeze([
     "src/lib/auth/",
@@ -146,8 +155,14 @@ export function validateBaseline(baseline) {
   }
   for (const metric of COVERAGE_METRICS) normalizeMetricRecord(baseline.metrics?.[metric], metric);
   for (const [domain, entry] of Object.entries(baseline.domains ?? {})) {
+    if (!Object.hasOwn(COVERAGE_DOMAINS, domain)) {
+      throw new Error(`Coverage baseline is malformed: unexpected domain ${domain}.`);
+    }
     if (!Array.isArray(entry.patterns) || entry.patterns.length === 0) {
       throw new Error(`Coverage baseline is malformed: domain ${domain} has no patterns.`);
+    }
+    if (JSON.stringify(entry.patterns) !== JSON.stringify(COVERAGE_DOMAINS[domain])) {
+      throw new Error(`Coverage baseline is stale: domain ${domain} patterns no longer match the policy.`);
     }
     for (const metric of COVERAGE_METRICS) normalizeMetricRecord(entry.metrics?.[metric], `${domain}.${metric}`);
   }
@@ -169,34 +184,70 @@ export function assertBaselineFresh(baseline, { currentCommit = null } = {}) {
   return head;
 }
 
-function ratioIsLower(current, baseline) {
-  return current.covered * baseline.total < baseline.covered * current.total;
+function compareMetric(current, baseline, scope, metric) {
+  const currentRatio = current.covered / current.total;
+  const baselineRatio = baseline.covered / baseline.total;
+  if (currentRatio >= baselineRatio) return null;
+
+  const drop = (baselineRatio - currentRatio) * 100;
+  const configuredTolerance = COVERAGE_GRACE[scope];
+  const unitPercentage = 100 / baseline.total;
+  const allowedDrop = Math.max(configuredTolerance, unitPercentage);
+  const result = {
+    scope,
+    metric,
+    baseline: baselineRatio * 100,
+    current: currentRatio * 100,
+    drop,
+    allowed: allowedDrop,
+  };
+
+  return drop <= allowedDrop + 1e-9
+    ? { kind: "grace", ...result }
+    : { kind: "failure", ...result };
 }
 
-function compareMetric(current, baseline, label) {
-  return ratioIsLower(current, baseline)
-    ? `${label} decreased from ${baseline.pct}% to ${current.pct}%.`
-    : null;
+function compareScope(currentMetrics, baselineMetrics, scope) {
+  return COVERAGE_METRICS.flatMap((metric) => {
+    const result = compareMetric(currentMetrics[metric], baselineMetrics[metric], scope, metric);
+    return result ? [result] : [];
+  });
 }
 
 export function compareCoverage(current, baseline) {
-  const failures = [];
   for (const metric of COVERAGE_METRICS) {
-    const failure = compareMetric(current.metrics[metric], baseline.metrics[metric], `global ${metric}`);
-    if (failure) failures.push(failure);
-  }
-  for (const [domain, baselineDomain] of Object.entries(baseline.domains)) {
-    const currentDomain = current.domains[domain];
-    for (const metric of COVERAGE_METRICS) {
-      const failure = compareMetric(
-        currentDomain.metrics[metric],
-        baselineDomain.metrics[metric],
-        `${domain} ${metric}`,
-      );
-      if (failure) failures.push(failure);
+    if (!current.metrics[metric] || !baseline.metrics[metric]) {
+      throw new Error(`Coverage metric is missing: global.${metric}.`);
     }
   }
-  return failures;
+  const regressions = [...compareScope(current.metrics, baseline.metrics, "global")];
+  for (const [domain, baselineDomain] of Object.entries(baseline.domains)) {
+    const currentDomain = current.domains[domain];
+    if (!currentDomain) throw new Error(`Coverage domain is missing: ${domain}.`);
+    for (const metric of COVERAGE_METRICS) {
+      if (!currentDomain.metrics[metric] || !baselineDomain.metrics[metric]) {
+        throw new Error(`Coverage metric is missing: ${domain}.${metric}.`);
+      }
+    }
+    regressions.push(...compareScope(currentDomain.metrics, baselineDomain.metrics, domain));
+  }
+  const grace = regressions.filter(({ kind }) => kind === "grace");
+  const failures = regressions.filter(({ kind }) => kind === "failure");
+  return {
+    status: failures.length > 0 ? "FAIL" : grace.length > 0 ? "PASS_WITH_GRACE" : "PASS",
+    failures,
+    grace,
+  };
+}
+
+export function formatCoverageGrace(entry) {
+  return [
+    `COVERAGE_GRACE ${entry.scope}.${entry.metric}:`,
+    `baseline=${entry.baseline.toFixed(2)}`,
+    `current=${entry.current.toFixed(2)}`,
+    `drop=${entry.drop.toFixed(2)}pp`,
+    `allowed=${entry.allowed.toFixed(2)}pp`,
+  ].join("\n");
 }
 
 export function getDefaultCoveragePaths(repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")) {

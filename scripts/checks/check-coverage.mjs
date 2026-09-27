@@ -5,6 +5,7 @@ import {
   aggregateCoverage,
   assertBaselineFresh,
   compareCoverage,
+  formatCoverageGrace,
   getDefaultCoveragePaths,
   loadCoverageBaseline,
   loadCoverageSummary,
@@ -16,11 +17,18 @@ try {
   const baseline = loadCoverageBaseline(paths.baseline);
   assertBaselineFresh(baseline);
   const current = aggregateCoverage(loadCoverageSummary(paths.summary));
-  const failures = compareCoverage(current, baseline);
+  const comparison = compareCoverage(current, baseline);
 
-  if (failures.length > 0) {
+  console.log(`COVERAGE_STATUS: ${comparison.status}`);
+  for (const grace of comparison.grace) console.log(formatCoverageGrace(grace));
+
+  if (comparison.status === "FAIL") {
     console.error("Coverage ratchet failed:");
-    for (const failure of failures) console.error(`- ${failure}`);
+    for (const failure of comparison.failures) {
+      console.error(
+        `- ${failure.scope}.${failure.metric} decreased from ${failure.baseline.toFixed(2)}% to ${failure.current.toFixed(2)}% (drop ${failure.drop.toFixed(2)}pp > allowed ${failure.allowed.toFixed(2)}pp).`,
+      );
+    }
     process.exitCode = 1;
   } else {
     console.log(

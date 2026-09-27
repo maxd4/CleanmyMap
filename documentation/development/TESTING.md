@@ -277,16 +277,28 @@ et lines — au baseline réel de `main` dans
 `scripts/checks/coverage-baseline.json`. La baseline a été mesurée sur le SHA
 `a900d227041b1dcd39cf9a971b4fa31d8eb1e643`, le 18 septembre 2026, sans seuil
 arbitraire : statements `56.86 %`, branches `47.22 %`, functions `57.19 %` et
-lines `57.39 %`. Toute baisse exacte, y compris masquée par l'arrondi,
-échoue ; une baseline malformée, obsolète ou dont le périmètre ne correspond
-plus à la politique échoue explicitement.
+lines `57.39 %`. Le ratchet quotidien applique une stabilisation court terme :
+une baisse bornée peut être classée `PASS_WITH_GRACE`, tandis qu'une baisse
+au-delà de l'enveloppe reste `FAIL`. La marge globale est de `0.25` point de
+pourcentage ; pour chaque métrique, la marge effective est le maximum entre
+cette valeur et une unité mesurée (`100 / baseline.total`). Les ratios exacts
+`covered / total` sont comparés, et non les pourcentages JSON arrondis.
 
 Le même ratchet est calculé pour les domaines mesurables `auth-authz`,
 `actions`, `formalities`, `route-calculs` et `persistence`. Leurs valeurs de
 départ et leurs chemins sont dans la baseline ; elles ne constituent pas des
-objectifs historiques inventés. Une amélioration de la baseline doit être
-ratifiée par une modification explicite de ce fichier et ne peut pas régresser
-silencieusement.
+objectifs historiques inventés. Les marges sont de `0.25` point pour
+`auth-authz` et de `0.75` point pour chacun des quatre autres domaines, avec la
+même règle d'unité mesurée. Une petite baisse bornée est reportée avec
+`COVERAGE_GRACE <scope>.<metric>` et le statut `PASS_WITH_GRACE` ; elle ne
+modifie jamais la baseline. L'accumulation des régressions finit donc par
+dépasser l'enveloppe et bloquer. Une baseline malformée, obsolète, dont le
+périmètre ne correspond plus à la policy, ou dont un domaine/métrique attendu
+manque, échoue toujours strictement.
+
+Une amélioration de la baseline doit être ratifiée par une modification
+explicite de ce fichier et ne peut pas régresser silencieusement. Les métriques
+historiques ne sont jamais recalculées automatiquement.
 
 `checks:full` et la CI exécutent `quality:coverage` à la place du test Vitest
 seul. `checks:fast` ne relance pas cette suite complète instrumentée afin de

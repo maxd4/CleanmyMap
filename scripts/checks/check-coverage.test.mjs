@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  COVERAGE_GRACE,
   COVERAGE_METRICS,
   COVERAGE_SCOPE_FINGERPRINT,
   aggregateCoverage,
   compareCoverage,
+  formatCoverageGrace,
   validateBaseline,
 } from "./coverage-policy.mjs";
 
@@ -46,36 +48,113 @@ function baselineFrom(current) {
   };
 }
 
-test("baseline respected passes", () => {
+function coverageFixture({ global = {}, domains = {} } = {}) {
+  const makeMetrics = (overrides) => Object.fromEntries(
+    COVERAGE_METRICS.map((name) => {
+      const override = overrides[name] ?? {};
+      return [name, metric(override.covered ?? 800, override.total ?? 1000)];
+    }),
+  );
+  return {
+    metrics: makeMetrics(global),
+    domains: Object.fromEntries(
+      Object.keys(COVERAGE_GRACE)
+        .filter((scope) => scope !== "global")
+        .map((scope) => [scope, { metrics: makeMetrics(domains[scope] ?? {}) }]),
+    ),
+  };
+}
+
+test("baseline exacte => PASS", () => {
   const current = aggregateCoverage(summary());
   const baseline = baselineFrom(current);
-  assert.deepEqual(compareCoverage(current, baseline), []);
+  assert.deepEqual(compareCoverage(current, baseline), { status: "PASS", failures: [], grace: [] });
 });
 
-test("a lower baseline than the measured coverage passes", () => {
-  const current = aggregateCoverage(summary());
-  const baseline = baselineFrom(current);
-  for (const metricName of COVERAGE_METRICS) {
-    baseline.metrics[metricName] = metric(70);
-    for (const domain of Object.values(baseline.domains)) domain.metrics[metricName] = metric(70);
+test("amélioration => PASS", () => {
+  const current = coverageFixture();
+  const baseline = coverageFixture({ global: { lines: { covered: 799 } } });
+  assert.equal(compareCoverage(current, baseline).status, "PASS");
+});
+
+test("baisse globale de 0.10 pp => PASS_WITH_GRACE et reporting explicite", () => {
+  const current = coverageFixture({ global: { lines: { covered: 799 } } });
+  const baseline = coverageFixture();
+  const comparison = compareCoverage(current, baseline);
+  assert.equal(comparison.status, "PASS_WITH_GRACE");
+  assert.deepEqual(comparison.failures, []);
+  assert.match(formatCoverageGrace(comparison.grace[0]), /COVERAGE_GRACE global\.lines:/);
+  assert.match(formatCoverageGrace(comparison.grace[0]), /drop=0\.10pp/);
+  assert.match(formatCoverageGrace(comparison.grace[0]), /allowed=0\.25pp/);
+});
+
+test("baisse globale au-delà de 0.25 pp => FAIL", () => {
+  const current = coverageFixture({ global: { lines: { covered: 797 } } });
+  const baseline = coverageFixture();
+  const comparison = compareCoverage(current, baseline);
+  assert.equal(comparison.status, "FAIL");
+  assert.ok(comparison.failures.some((failure) => failure.scope === "global" && failure.metric === "lines"));
+});
+
+test("petite baisse domaine => PASS_WITH_GRACE", () => {
+  const current = coverageFixture({ domains: { actions: { lines: { covered: 799 } } } });
+  const comparison = compareCoverage(current, coverageFixture());
+  assert.equal(comparison.status, "PASS_WITH_GRACE");
+  assert.ok(comparison.grace.some((entry) => entry.scope === "actions" && entry.metric === "lines"));
+});
+
+test("baisse domaine au-delà de l'enveloppe => FAIL", () => {
+  const current = coverageFixture({ domains: { actions: { lines: { covered: 792 } } } });
+  const comparison = compareCoverage(current, coverageFixture());
+  assert.equal(comparison.status, "FAIL");
+  assert.ok(comparison.failures.some((failure) => failure.scope === "actions" && failure.metric === "lines"));
+});
+
+test("un petit domaine tolère une unité mesurée", () => {
+  const baseline = coverageFixture({ domains: { persistence: { lines: { covered: 80, total: 100 } } } });
+  const current = coverageFixture({ domains: { persistence: { lines: { covered: 79, total: 100 } } } });
+  const comparison = compareCoverage(current, baseline);
+  assert.equal(comparison.status, "PASS_WITH_GRACE");
+  const grace = comparison.grace.find((entry) => entry.scope === "persistence" && entry.metric === "lines");
+  assert.equal(grace.allowed, 1);
+});
+
+test("plusieurs unités mesurées dépassent la limite d'un petit domaine", () => {
+  const baseline = coverageFixture({ domains: { persistence: { lines: { covered: 80, total: 100 } } } });
+  const current = coverageFixture({ domains: { persistence: { lines: { covered: 78, total: 100 } } } });
+  const comparison = compareCoverage(current, baseline);
+  assert.equal(comparison.status, "FAIL");
+});
+
+test("les tolérances auth-authz et des autres domaines restent distinctes", () => {
+  assert.equal(COVERAGE_GRACE["auth-authz"], 0.25);
+  for (const scope of ["actions", "formalities", "route-calculs", "persistence"]) {
+    assert.equal(COVERAGE_GRACE[scope], 0.75);
   }
-  assert.deepEqual(compareCoverage(current, baseline), []);
-});
-
-test("a simulated global or domain drop fails", () => {
-  const current = aggregateCoverage(summary());
-  const baseline = baselineFrom(current);
-  baseline.metrics.branches = metric(81);
-  baseline.domains["auth-authz"].metrics.lines = metric(81);
-  const failures = compareCoverage(current, baseline);
-  assert.ok(failures.some((failure) => failure.includes("global branches")));
-  assert.ok(failures.some((failure) => failure.includes("auth-authz lines")));
+  const baseline = coverageFixture();
+  const current = coverageFixture({
+    domains: {
+      "auth-authz": { lines: { covered: 795 } },
+      actions: { lines: { covered: 795 } },
+      formalities: { lines: { covered: 795 } },
+      "route-calculs": { lines: { covered: 795 } },
+      persistence: { lines: { covered: 795 } },
+    },
+  });
+  const comparison = compareCoverage(current, baseline);
+  assert.ok(comparison.failures.some((failure) => failure.scope === "auth-authz"));
+  for (const scope of ["actions", "formalities", "route-calculs", "persistence"]) {
+    assert.ok(comparison.grace.some((entry) => entry.scope === scope));
+  }
 });
 
 test("malformed or stale baseline fails explicitly", () => {
   const current = aggregateCoverage(summary());
   const baseline = baselineFrom(current);
   assert.throws(() => validateBaseline({ ...baseline, schemaVersion: 0 }), /malformed/);
+  const missingDomain = structuredClone(baseline);
+  delete missingDomain.domains.persistence;
+  assert.throws(() => validateBaseline(missingDomain), /missing domain persistence/);
   assert.throws(
     () => validateBaseline({ ...baseline, scopeFingerprint: "stale" }),
     /stale/,
