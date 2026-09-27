@@ -23,7 +23,11 @@ describe("CleanMyMap SEO brand identity", () => {
 
   it("publishes the exact WebSite name and only the requested alternate names", () => {
     const markup = renderToStaticMarkup(<WebSiteJsonLd />);
-    const json = markup.match(/<script[^>]*>(.*)<\/script>/)?.[1];
+    const contentStart = markup.indexOf(">") + 1;
+    const contentEnd = markup.lastIndexOf("</script>");
+    const json = contentStart > 0 && contentEnd > contentStart
+      ? markup.slice(contentStart, contentEnd)
+      : undefined;
 
     expect(json).toBeDefined();
     expect(JSON.parse(json!)).toMatchObject({
