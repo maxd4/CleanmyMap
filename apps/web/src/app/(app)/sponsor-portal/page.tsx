@@ -147,12 +147,12 @@ export default async function SponsorPortalPage() {
             <div className="w-10 h-10 rounded-full bg-amber-400/10 flex items-center justify-center">
               <Activity size={18} className="text-amber-400" />
             </div>
-            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/40">Périmètre de pilotage</h3>
+            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/40">Périmètre d&apos;analyse</h3>
           </div>
           
           <div className="space-y-6">
             <p className="text-3xl font-bold text-white tracking-tight leading-tight">
-              Analyse consolidée sur l&apos;ensemble de votre réseau territorial.
+              Analyse consolidée des données de mobilisation disponibles sur la période sélectionnée.
             </p>
             <p className="cmm-text-body cmm-text-inverse font-medium">
               Ce portail agrège les données de mobilisation pour offrir une lecture macroscopique de l&apos;impact environnemental et social.
@@ -180,10 +180,10 @@ export default async function SponsorPortalPage() {
             variant="sponsor"
             className="relative z-10"
             insight={{
-              eyebrow: "Périmètre de pilotage",
+              eyebrow: "Périmètre d'analyse",
               title: "Points chauds",
               detail:
-                "Lecture consolidée du réseau territorial, avec recommandations et priorités directement actionnables.",
+                "Lecture consolidée des actions et zones observées, avec recommandations et priorités directement actionnables.",
               actionLabel: "Voir les rapports",
               actionHref: "/reports",
             }}

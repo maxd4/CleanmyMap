@@ -148,6 +148,8 @@ describe("/sponsor-portal access boundary", () => {
 
     expect(markup).toContain('data-testid="metrics"');
     expect(markup).toContain("123,1–180 €");
+    expect(markup).toContain("données de mobilisation disponibles");
+    expect(markup).not.toContain("votre réseau territorial");
     expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 730, limit: 5000 });
     expect(events).toEqual(["auth", "profile", "overview"]);
   });

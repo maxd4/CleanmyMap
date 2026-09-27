@@ -136,8 +136,8 @@ export const PROFILE_CTA_CONFIG: Record<Parcours, ProfileCtaConfig> = {
         en: "Open the partner portal",
       },
       description: {
-        fr: "Suivre les engagements, partenariats et impacts",
-        en: "Track commitments, partnerships and impact",
+        fr: "Découvrir les engagements, partenariats et impacts publics",
+        en: "Discover public commitments, partnerships and impact",
       },
     },
     secondaryCTA: {
@@ -171,12 +171,12 @@ export const PROFILE_CTA_CONFIG: Record<Parcours, ProfileCtaConfig> = {
     primaryCTA: {
       href: SPONSOR_PORTAL_ROUTE,
       label: {
-        fr: "Voir la synthèse territoriale",
-        en: "View territorial summary",
+        fr: "Voir la synthèse d'impact",
+        en: "View impact summary",
       },
       description: {
-        fr: "Lire la lecture budgétaire et territoriale",
-        en: "Read the budget and territorial overview",
+        fr: "Lire les indicateurs publics et consolidés",
+        en: "Read public and consolidated indicators",
       },
     },
     secondaryCTA: {

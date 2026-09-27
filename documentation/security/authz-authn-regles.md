@@ -118,6 +118,37 @@ sont calculées depuis `activeRole`, qui doit toujours être autorisé par
 navigation, aux CTA, aux libellés et aux priorités de parcours, mais ne donne
 jamais de permission indépendante.
 
+### Quatre notions canoniques
+
+Les contrats de sécurité et les parcours produit utilisent quatre notions
+distinctes :
+
+```txt
+GRANTED_ROLE
+= rôle obtenu par le compte
+
+ACTIVE_ROLE
+= persona métier actif utilisé pour les capacités effectives
+
+organisation / structure
+= entité externe à laquelle l'utilisateur peut éventuellement être relié
+
+parcours UX
+= navigation, CTA, libellés et priorités d'interface
+```
+
+`coordinateur` décrit une personne ou une fonction qui organise des actions,
+pas une association. `entreprise` décrit le parcours d'un représentant, pas
+une appartenance organisationnelle prouvée. `elu` décrit le décideur public,
+pas une collectivité ni un propriétaire de territoire. `scientifique` décrit
+actuellement principalement un parcours d'analyse. Une association, une
+entreprise, une collectivité ou un territoire ne devient un scope autorisable
+qu'au travers de sa relation canonique persistée et vérifiée côté serveur.
+
+Un parcours UX ne donne jamais de droit serveur supplémentaire : un CTA, un
+libellé ou une route proposée par la navigation ne remplace ni la capacité,
+ni le scope, ni l'ownership ou la relation requise par le handler.
+
 Le rôle actif est résolu après le rôle attribué :
 
 ```txt
@@ -257,10 +288,10 @@ La cible est :
 
 ```txt
 benevole     → self / owned
-coordinateur → organized / organization
-scientifique → sanitized analytics
-entreprise   → organization
-elu          → territory
+coordinateur → organized ; organization seulement avec relation canonique
+scientifique → public / sanitized analytics selon la projection autorisée
+entreprise   → organization seulement avec relation canonique
+elu          → territory seulement avec attribution canonique
 admin        → global moderation
 max          → platform administration
 ```

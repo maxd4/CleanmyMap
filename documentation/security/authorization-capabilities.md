@@ -187,6 +187,33 @@ Override    = dérogation privilégiée hors parcours normal
 
 Un `Parcours` ne constitue jamais une permission serveur.
 
+### Quatre notions canoniques
+
+Le contrat cible conserve quatre notions distinctes :
+
+```txt
+GRANTED_ROLE
+= rôle obtenu par le compte
+
+ACTIVE_ROLE
+= persona métier actif utilisé pour les capacités effectives
+
+organisation / structure
+= entité externe éventuellement reliée à l'utilisateur par une relation persistée
+
+parcours UX
+= navigation, CTA, libellés et priorités d'interface
+```
+
+Ainsi, `coordinateur` représente une personne ou une fonction qui organise
+des actions ; il n'est pas techniquement équivalent à une association.
+`entreprise` est le parcours d'un représentant et son rôle seul ne prouve
+aucune appartenance organisationnelle. `elu` représente le décideur public et
+ne vaut ni collectivité ni attribution territoriale. `scientifique` reste un
+parcours d'analyse orienté vers des projections publiques ou sanitizées. Les
+scopes `organization` et `territory` exigent chacun leur relation canonique.
+La navigation et ses CTA ne constituent jamais l'autorité AuthZ.
+
 ### Identité canonique du rôle IMU
 
 La règle de nommage est : **IMU = super-admin = rôle interne `max`**.
@@ -220,10 +247,10 @@ Les rôles doivent représenter des responsabilités différentes :
 
 ```txt
 Bénévole      → agit sur lui-même et ses contributions
-Coordinateur  → organise les ressources dont il a la charge
+Coordinateur  → personne/fonction qui organise des actions
 Scientifique  → analyse des données adaptées à son besoin
-Entreprise    → gère son organisation et ses partenariats
-Élu           → supervise un territoire attribué
+Entreprise    → représentant ; organisation seulement avec relation canonique
+Élu           → décideur public ; territoire seulement avec attribution canonique
 Admin         → modère la plateforme
 Max           → administre et arbitre la plateforme
 ```
@@ -246,7 +273,7 @@ Les capacités doivent être évaluées avec un périmètre explicite.
 | `platform` | administration structurante de la plateforme | gérer des rôles privilégiés |
 | `service` | identité technique serveur | cron, migration, RPC privilégiée |
 
-Une capacité à scope `organization` ou `territory` exige une relation canonique persistée et vérifiable côté serveur.
+Une capacité à scope `organization` ou `territory` exige une relation canonique persistée et vérifiable côté serveur. Le simple rôle `entreprise` ou `elu` ne suffit pas.
 
 En l'absence de relation canonique exploitable, appliquer le **fail-closed** : ne pas élargir la permission au global pour compenser.
 

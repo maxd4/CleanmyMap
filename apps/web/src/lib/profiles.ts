@@ -80,7 +80,7 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   },
   coordinateur: {
     id: "coordinateur",
-    label: { fr: "Association", en: "Association" },
+    label: { fr: "Coordinateur", en: "Coordinator" },
     subtitle: {
       fr: "Organisation des actions collectives",
       en: "Collective action coordination",

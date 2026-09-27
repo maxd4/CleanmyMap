@@ -1,4 +1,4 @@
-# Portail décideur
+# Portail partenaires et décideurs
 
 ## Fiche canonique
 
@@ -8,12 +8,12 @@
 - **Type fonctionnel** : page de bloc
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : protégé
-- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Contexte nécessaire** : Compte connecté ; les parcours entreprise et élu proposent principalement cette page par décision UX, sans que ce parcours crée une permission supplémentaire.
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; l'accès reste soumis à l'AuthN/AuthZ propre au portail.
-- **Objectif utilisateur principal** : Lire la valeur territoriale consolidée de la mobilisation citoyenne, les priorités de zones et les repères méthodologiques.
+- **Objectif utilisateur principal** : Lire une synthèse consolidée de la mobilisation citoyenne, les zones observées et les repères méthodologiques autorisés.
 - **Action principale attendue** : Consulter les KPI ROI, ouvrir les rapports et lire la méthodologie associée.
 - **Palette attendue** : amber / brun
-- **Scope** : portail protégé de lecture sponsor sur 730 jours, avec KPI d'impact, zones prioritaires, rapports, méthodologie et complétion de compte non bloquante.
+- **Scope** : portail protégé de lecture sur 730 jours, avec KPI d'impact, zones observées, rapports, méthodologie et complétion de compte non bloquante ; aucun scope organisationnel ou territorial personnel n'est déduit du rôle ou du CTA.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : pilotage — canvas #f1d5b0, halo rgba(180, 83, 9, 0.24)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
@@ -53,7 +53,7 @@
 - La page est dynamique et protégée : elle ne doit pas être pré-rendue avec des données sponsor ou de pilotage privilégiées.
 - `getSafeAuthSession()` est résolu avant toute lecture de pilotage ; un utilisateur non authentifié reçoit immédiatement l'état de connexion requis.
 - `AccountCompletionGate` affiche au besoin un rappel non bloquant ; il ne remplace pas la page et n'est pas une preuve d'AuthZ.
-- L'overview sponsor est chargé après le contrôle de session et des permissions propres à la surface.
+- L'overview sponsor est chargé après le contrôle de session ; le parcours UX ne remplace pas les permissions propres aux données éventuellement ajoutées plus tard.
 - Les données sponsor ne sont chargées qu'après validation de l'accès serveur ; leur indisponibilité produit un état partiel contrôlé.
 
 

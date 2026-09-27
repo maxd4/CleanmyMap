@@ -30,7 +30,7 @@ const navigationPaths: NavigationPath[] = [
     ],
   },
   {
-    audience: "Association / Entreprise",
+    audience: "Coordinateur / Entreprise",
     title: "Préparer, Mobiliser, Impacter",
     icon: UsersRound,
     tone: "violet",
