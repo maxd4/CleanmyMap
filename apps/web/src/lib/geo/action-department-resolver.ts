@@ -18,6 +18,8 @@ export type ActionDepartmentResolutionInput = {
   latitude?: number | null;
   longitude?: number | null;
   geometry?: ActionDepartmentGeometry | null;
+  departmentCode?: string | null;
+  departmentName?: string | null;
 };
 
 type DepartmentPersistenceInput = ActionDepartmentResolutionInput & {
@@ -37,7 +39,7 @@ export type ResolvedDepartment = {
   departmentName: string;
 };
 
-type FetchLike = typeof fetch;
+export type FetchLike = typeof fetch;
 
 type CachedResolution = {
   expiresAt: number;
@@ -198,7 +200,7 @@ function writeCachedResolution(key: string, value: ResolvedDepartment | null): v
   });
 }
 
-async function fetchJsonWithTimeout(
+export async function fetchJsonWithTimeout(
   fetchImpl: FetchLike,
   url: string,
 ): Promise<unknown> {
@@ -220,7 +222,7 @@ async function fetchJsonWithTimeout(
   }
 }
 
-function readStringField(value: unknown): string | null {
+export function readStringField(value: unknown): string | null {
   if (typeof value !== "string") {
     return null;
   }

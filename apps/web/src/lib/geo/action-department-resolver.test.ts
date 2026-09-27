@@ -6,6 +6,7 @@ import {
   resolveActionDepartmentForPersistence,
   resolveTrustedActionDepartmentForPersistence,
 } from "./action-department-resolver";
+import { resolveActionTerritory } from "./action-territory-resolver";
 
 function jsonResponse(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), {
@@ -89,6 +90,59 @@ describe("action department resolver", () => {
     expect(calls[0]).toContain("/communes?");
     expect(calls[0]).toContain("codeDepartement");
     expect(calls[1]).toContain(`/departements/${encodeURIComponent(code)}`);
+  });
+
+  it("resolves commune INSEE, department, region and Paris special territory from the canonical geo source", async () => {
+    const calls: string[] = [];
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      calls.push(url);
+      if (calls.length === 1) {
+        return jsonResponse([
+          {
+            code: "75056",
+            nom: "Paris",
+            codeDepartement: "75",
+            codeRegion: "11",
+          },
+        ]);
+      }
+      if (calls.length === 2) {
+        return jsonResponse({ code: "75", nom: "Paris" });
+      }
+      return jsonResponse({ code: "11", nom: "Île-de-France" });
+    });
+
+    await expect(
+      resolveActionTerritory(
+        { latitude: 48.8566, longitude: 2.3522 },
+        { fetchImpl: fetchImpl as typeof fetch },
+      ),
+    ).resolves.toEqual({
+      commune: { code: "75056", name: "Paris" },
+      department: { code: "75", name: "Paris" },
+      region: { code: "11", name: "Île-de-France" },
+      specialTerritory: { code: "FR-PARIS", name: "Paris" },
+      source: "geo.api.gouv.fr",
+    });
+    expect(calls[0]).toContain("/communes?");
+    expect(calls[1]).toContain("/departements/75?");
+    expect(calls[2]).toContain("/regions/11?");
+  });
+
+  it("keeps an explicit canonical department when no coordinate is available", async () => {
+    await expect(
+      resolveActionTerritory({
+        departmentCode: "69",
+        departmentName: "Rhône",
+      }),
+    ).resolves.toEqual({
+      commune: null,
+      department: { code: "69", name: "Rhône" },
+      region: null,
+      specialTerritory: null,
+      source: "persisted_department",
+    });
   });
 
   it("returns null for network failures and never rejects the write path", async () => {

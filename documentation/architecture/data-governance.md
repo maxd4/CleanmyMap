@@ -273,6 +273,34 @@ d'outre-mer. Cette attribution géographique sert au contrat de données et aux
 comparaisons départementales ; elle ne constitue pas, à elle seule, une preuve
 d'AuthZ territoriale.
 
+### Résolution territoriale des formalités administratives
+
+Le moteur administratif consomme cette géographie canonique pour résoudre le
+territoire compétent d'une action avant de sélectionner une règle. Une
+résolution peut préciser la commune et son code INSEE, le département, la
+région et, lorsqu'il est explicitement dérivé par une règle, un territoire
+spécialisé. Elle ne crée pas une seconde source de géographie ni une
+autorisation territoriale.
+
+Les règles partagent le contrat de formalités existant et déclarent un scope
+`national`, `department`, `commune` ou `special_territory`, avec son identifiant
+explicite. Elles sont évaluées par précision décroissante (commune ou
+territoire spécialisé, département, national). Une règle plus précise ne
+supprime une règle générale que si la relation de remplacement est déclarée ;
+des formalités compatibles peuvent donc coexister. Paris est la première règle
+spécialisée (`FR-PARIS`) de ce moteur générique, pas un workflow parallèle.
+
+L'autorité est portée par chaque règle et peut rester `unknown` lorsque la
+source ne permet pas de l'identifier. Aucune mairie, préfecture ou autre
+autorité n'est déduite du seul territoire. Toute règle canonique conserve une
+source officielle, sa provenance, son périmètre territorial et sa date de
+vérification.
+
+La résolution administrative est invalidée lorsque le fingerprint territorial
+change (par exemple Paris vers Lyon ou changement de département). Une simple
+modification de libellé qui conserve le même territoire ne déclenche pas une
+nouvelle résolution.
+
 ## Unités
 
 Utiliser des unités explicites dans les noms et contrats :

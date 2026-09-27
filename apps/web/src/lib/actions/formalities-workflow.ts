@@ -1,10 +1,20 @@
-import { z } from "zod";
 import type {
   ActionFormalitiesFacts,
   ActionFormalitiesQualification,
   FormalityProcedureKind,
   FormalityRequirementStatus,
 } from "./formalities-qualification";
+import {
+  snapshotFormalitiesFacts,
+  type FormalitiesFactsSnapshot,
+} from "./formalities-facts";
+
+export {
+  actionFormalitiesFactsSchema,
+  deriveActionFormalitiesFacts,
+  snapshotFormalitiesFacts,
+} from "./formalities-facts";
+export type { FormalitiesFactsSnapshot } from "./formalities-facts";
 
 export const ACTION_FORMALITIES_WORKFLOW_SCHEMA_VERSION =
   "action-formalities-workflow-v1" as const;
@@ -15,59 +25,6 @@ export const FORMALITIES_USER_STATUSES = [
   "sent",
 ] as const;
 export type FormalitiesUserStatus = (typeof FORMALITIES_USER_STATUSES)[number];
-
-export const actionFormalitiesFactsSchema = z
-  .object({
-    territory: z
-      .object({
-        countryCode: z.literal("FR"),
-        code: z.string().trim().min(1).max(40),
-        label: z.string().trim().min(1).max(120),
-      })
-      .strict(),
-    publicSpace: z.enum(["public_domain", "private_domain", "unknown"]),
-    manager: z
-      .object({
-        kind: z.enum([
-          "paris_city",
-          "state",
-          "sncf",
-          "haropa",
-          "other_public",
-          "private",
-          "unknown",
-        ]),
-        label: z.string().trim().max(200).nullable(),
-      })
-      .strict(),
-    isCleanwalk: z.boolean(),
-    isPublicRoadwayActivity: z.union([z.boolean(), z.literal("unknown")]),
-    isItinerant: z.union([z.boolean(), z.literal("unknown")]),
-    isClaiming: z.union([z.boolean(), z.literal("unknown")]),
-    hasInstallations: z.union([z.boolean(), z.literal("unknown")]),
-    requiresPhysicalOccupation: z.union([z.boolean(), z.literal("unknown")]),
-    localCustomaryUse: z.union([z.boolean(), z.literal("unknown")]),
-    largeCrowdOrComplexInstallations: z.union([
-      z.boolean(),
-      z.literal("unknown"),
-    ]),
-  })
-  .strict();
-
-export type FormalitiesFactsSnapshot = Pick<
-  ActionFormalitiesFacts,
-  | "territory"
-  | "publicSpace"
-  | "manager"
-  | "isCleanwalk"
-  | "isPublicRoadwayActivity"
-  | "isItinerant"
-  | "isClaiming"
-  | "hasInstallations"
-  | "requiresPhysicalOccupation"
-  | "localCustomaryUse"
-  | "largeCrowdOrComplexInstallations"
->;
 
 export type FormalitySendProof = {
   kind: "user_declared" | "official_confirmation";
@@ -125,49 +82,6 @@ function isMeaningful(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export function snapshotFormalitiesFacts(
-  facts: ActionFormalitiesFacts,
-): FormalitiesFactsSnapshot {
-  return structuredClone(facts);
-}
-
-export function deriveActionFormalitiesFacts(params: {
-  departmentCode?: string | null;
-  departmentName?: string | null;
-  placeType?: string | null;
-  plannedObjective?: string | null;
-}): ActionFormalitiesFacts {
-  const departmentCode = params.departmentCode?.trim() ?? "";
-  const isParis = departmentCode === "75";
-  const territoryCode = departmentCode
-    ? `FR-${departmentCode}`
-    : "FR-unknown";
-  const objective = params.plannedObjective?.trim().toLowerCase() ?? "";
-
-  return {
-    territory: {
-      countryCode: "FR",
-      code: isParis ? "FR-75" : territoryCode,
-      label: isParis
-        ? "Paris (75)"
-        : params.departmentName?.trim() || "Territoire à préciser",
-    },
-    publicSpace: "unknown",
-    manager: { kind: "unknown", label: null },
-    isCleanwalk:
-      objective === "nettoyage" ||
-      objective === "collecte_mégots" ||
-      objective === "action_mixte",
-    isPublicRoadwayActivity: "unknown",
-    isItinerant: "unknown",
-    isClaiming: "unknown",
-    hasInstallations: "unknown",
-    requiresPhysicalOccupation: "unknown",
-    localCustomaryUse: "unknown",
-    largeCrowdOrComplexInstallations: "unknown",
-  };
-}
-
 function dependencyKeysForFormality(formalityId: string): Array<keyof FormalitiesFactsSnapshot> {
   switch (formalityId) {
     case "paris-city-public-domain-aot":
@@ -219,8 +133,10 @@ function dependencyChanged(
 function actionDependencyFingerprint(params: {
   locationLabel?: string | null;
   actionDate?: string | null;
+  territoryFingerprint?: string | null;
 }): string {
-  const source = `${params.locationLabel?.trim() ?? ""}\u001f${params.actionDate?.trim() ?? ""}`;
+  const locationDependency = params.territoryFingerprint?.trim() || params.locationLabel?.trim() || "";
+  const source = `${locationDependency}\u001f${params.actionDate?.trim() ?? ""}`;
   let hash = 2166136261;
   for (let index = 0; index < source.length; index += 1) {
     hash ^= source.charCodeAt(index);
@@ -244,7 +160,11 @@ function contentVersionForQualification(
 function buildTrace(
   qualification: ActionFormalitiesQualification,
   facts: ActionFormalitiesFacts,
-  actionDependencies: { locationLabel?: string | null; actionDate?: string | null },
+  actionDependencies: {
+    locationLabel?: string | null;
+    actionDate?: string | null;
+    territoryFingerprint?: string | null;
+  },
   now: string,
 ): ActionFormalitiesTrace {
   const sources = qualification.formalities.flatMap((formality) => [
@@ -302,6 +222,7 @@ export function buildFormalitiesWorkflowState(params: {
   actionDependencies?: {
     locationLabel?: string | null;
     actionDate?: string | null;
+    territoryFingerprint?: string | null;
   };
   now?: string;
 }): ActionFormalitiesWorkflowState {
