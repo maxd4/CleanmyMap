@@ -408,12 +408,22 @@ npm run quality:duplication
 ```
 
 réutilise les fingerprints natifs jscpd et compare aussi les blocs, les lignes
-et les tokens dupliqués à la baseline métrique. Les fichiers natifs jscpd
-servent à suivre les clones et la baseline métrique sert à ratifier la
-politique, les métriques et leur ratchet : ces deux rôles restent distincts.
-Un nouveau clone significatif ou une hausse de métrique échoue ; une
-duplication historique reste tolérée jusqu'à une mutualisation fondée sur une
-abstraction métier réelle.
+et les tokens dupliqués à la baseline métrique. Un fingerprint de clone reste
+un diagnostic (`NEW_CLONE_FINGERPRINTS`) et ne doit pas être confondu avec le
+`DUPLICATION_POLICY_FINGERPRINT`, qui reste un invariant strict de la politique.
+
+La stabilisation court terme de la CI quotidienne distingue trois résultats :
+`PASS`, `PASS_WITH_GRACE` et `FAIL`. `PASS_WITH_GRACE` accepte uniquement une
+hausse calculée contre la même baseline historique et dans l'enveloppe
+versionnée : runtime `+0,05` point de pourcentage et `+80` lignes / `+800`
+tokens ; tests `+0,15` point et `+150` lignes / `+1 500` tokens. Les
+fixtures/data restent strictes : leur baseline zéro ne bénéficie d'aucune
+grâce. Cette grâce est non cumulative et ne modifie ni ne renouvelle la
+baseline ; dépasser une seule limite redevient bloquant (`FAIL`).
+
+La sortie expose par scope le statut, les nouveaux fingerprints et les deltas
+réels de lignes, tokens et pourcentages. Les baselines natives jscpd restent
+des références historiques séparées et ne sont pas régénérées automatiquement.
 
 Le contrôle de cycles réutilise l'analyseur GitNexus existant. La CI installe
 explicitement la version épinglée `1.6.12` puis initialise son index en mode
