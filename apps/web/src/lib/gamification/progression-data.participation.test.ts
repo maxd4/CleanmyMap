@@ -81,6 +81,21 @@ describe("loadUserProgressionStats", () => {
     expect(stats.collectiveEvents).toBe(3);
   });
 
+  it("keeps a confirmed post-action claim in Participation without adding badge XP", async () => {
+    const supabase = createProgressionStatsSupabase([
+      {
+        event_type: "action_participation_recovered",
+        status_phase: "validated",
+        xp_awarded: 0,
+      },
+    ], 1);
+
+    const stats = await loadUserProgressionStats(supabase, "user-1");
+
+    expect(stats.collectiveEvents).toBe(1);
+    expect(stats.diversityTypes).toBe(0);
+  });
+
   it(
     "counts only CURRENT progression families with XP and ignores historical non-progression and technical rows",
     async () => {

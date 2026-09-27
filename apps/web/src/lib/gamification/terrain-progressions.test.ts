@@ -93,6 +93,13 @@ describe("terrain progressions", () => {
           source_id: "first_trace_utile",
           xp_awarded: 1,
         },
+        {
+          event_type: "action_participation_recovered",
+          status_phase: "validated",
+          source_table: "action_participants",
+          source_id: "participation-retrieved:user-1",
+          xp_awarded: 0,
+        },
       ],
     });
 
@@ -100,6 +107,8 @@ describe("terrain progressions", () => {
     expect(progressions.organisation.xpContribution).toBe(1);
     expect(progressions.exploration.xpContribution).toBe(1);
     expect(progressions.clean_zones.xpContribution).toBe(1);
+    expect(progressions.participation.currentValue).toBe(1);
+    expect(progressions.participation.xpContribution).toBe(1);
   });
 
   it("does not count a replayed logical event twice", () => {

@@ -81,6 +81,9 @@ function createSupabase() {
       if (table === "action_participants") return participantChain;
       if (table === "action_organizers") return createOrganizerChain();
       if (table === "progression_events") return progressionEventsChain;
+      if (table === "action_registrations") {
+        throw new Error("Mobilisateur must not read future registrations");
+      }
       throw new Error(`Unexpected table: ${table}`);
     }),
   };

@@ -23,6 +23,7 @@ const RUNTIME_PROGRESSION_WRITERS = [
   "sensitive-zone-progression.ts",
   "sensitive-zone-progression-store.ts",
   "action-milestones.ts",
+  "participation-milestones.ts",
 ] as const;
 
 function readRuntimeWriter(path: string): string {
@@ -61,6 +62,7 @@ describe("progression event registry", () => {
       "action_formalities_prepared",
       "action_loop_completed",
       "action_mobilizer",
+      "action_participation_recovered",
       "action_balance_cycle",
       "action_monthly_regularity",
       "action_traceable_measurement",
@@ -123,6 +125,7 @@ describe("progression event registry", () => {
       "action_formalities_prepared",
       "action_loop_completed",
       "action_mobilizer",
+      "action_participation_recovered",
       "action_traceable_measurement",
       "action_balance_cycle",
       "action_monthly_regularity",
@@ -229,6 +232,7 @@ describe("progression event registry", () => {
       "mesure_tracable",
       "tri_documente",
       "formalites_preparees",
+      "participation_retrouvee",
       "parrainage_utile",
     ]);
     expect(currentMilestones().every((milestone) => milestone.oneShot)).toBe(true);

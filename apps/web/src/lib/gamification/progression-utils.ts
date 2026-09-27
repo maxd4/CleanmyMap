@@ -168,6 +168,15 @@ export const CURRENT_MILESTONES = [
     oneShot: true,
   },
   {
+    id: "participation_retrouvee",
+    label: "Participation retrouvée",
+    description: "Première réclamation post-action finalement confirmée selon le workflow CURRENT.",
+    sourceDomain: "action_participants.confirmed + participation_source=post_action_claim",
+    factKey: "participation_retrouvee",
+    xpAwarded: 0,
+    oneShot: true,
+  },
+  {
     id: "parrainage_utile",
     label: "Parrainage utile",
     description: "Première contribution utile confirmée d’un invité issu d’une filiation valide.",
@@ -201,6 +210,10 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   action_mobilizer: {
     classification: "milestone",
     milestoneId: "mobilisateur",
+  },
+  action_participation_recovered: {
+    classification: "milestone",
+    milestoneId: "participation_retrouvee",
   },
   action_exemplary_data: {
     classification: "milestone",

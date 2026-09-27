@@ -14,6 +14,7 @@ import {
 } from "./families";
 import { loadCleanZoneSourcesForUser } from "./listing";
 import { awardActionMilestonesForUser, loadActionRowsForUser } from "../progression-data";
+import { awardRecoveredParticipationMilestone } from "../participation-milestones";
 
 type AwardProgressionEventInput = {
   userId: string;
@@ -213,6 +214,7 @@ export async function rebuildUserGamificationBadges(
     awardParticipantEvents(supabase, userId, counters.participationCount),
     awardExplorerEvents(supabase, userId, counters.visitedPlacesCount),
     awardActionMilestonesForUser(supabase, userId, actions),
+    awardRecoveredParticipationMilestone(supabase, userId).then(Number),
   ]);
 
   return { inserted: inserted.reduce((total, count) => total + count, 0) };
