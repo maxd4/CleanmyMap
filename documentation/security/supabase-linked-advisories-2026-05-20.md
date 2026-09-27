@@ -55,26 +55,35 @@ pas été modifiés par ce dernier lot.
 
 ### Advisors sécurité linked actuels
 
-- La preuve distante du 27 septembre 2026 rapporte :
+- La preuve distante observée le `2026-09-27T18:09:25.651Z` rapporte :
 
   ```text
   SECURITY_ERROR: 0
   SECURITY_WARN: 0
   SECURITY_INFO: 8
+  ACTION_REQUIRED: 0
+  INTENTIONAL_CURRENT: 8
   ```
 
 - Les huit INFO `rls_enabled_no_policy` acceptés sont exactement :
   `public.action_conversation_exclusions`,
   `public.action_share_contact_requests`,
-  `public.legal_content_reports`,
+  `public.badge_events`,
   `public.legal_content_report_decisions`,
-  `public.user_points`, `public.points_ledger`,
-  `public.user_badge_totals` et `public.badge_events`.
+  `public.legal_content_reports`,
+  `public.points_ledger`,
+  `public.user_badge_totals` et `public.user_points`.
 - Pour ces huit tables, le contrat server-only est explicite : RLS activée,
   aucune policy, aucun privilège de table pour `anon` ou `authenticated`, et
   privilèges réservés à `service_role`. Ce lot ne crée aucune policy permissive
   et ne déplace aucune de ces tables pour faire disparaître les INFO. Ces huit
   INFO sont `INTENTIONAL_CURRENT / server-only`.
+
+Les trois anciens WARN `SECURITY DEFINER` sur
+`can_insert_action_message_reference(uuid)`, `can_post_action_conversation(uuid)` et
+`can_view_action_conversation(uuid)` sont désormais **RESOLVED** après
+l'application des migrations de hardening et de relocation des helpers. Ils ne
+font plus partie de l'état distant CURRENT ci-dessus.
 
 La sortie opérationnelle normale du garde est :
 
@@ -89,9 +98,9 @@ normale ; elles ne sont ni supprimées du payload Supabase ni ignorées par les
 tests. Les findings Security non-RLS restent explicitement visibles lorsqu'ils
 existent. Cette synthèse RLS ne constitue pas un inventaire Security complet.
 
-### Historique — état de la preuve du 26 septembre 2026
+### Historique — ancien état de la preuve du 26 septembre 2026
 
-- Les trois WARN concernent `SECURITY DEFINER` sur
+- L'ancien état distant comportait trois WARN `SECURITY DEFINER` sur
   `can_insert_action_message_reference(uuid)`,
   `can_post_action_conversation(uuid)` et
   `can_view_action_conversation(uuid)`.
@@ -116,9 +125,8 @@ existent. Cette synthèse RLS ne constitue pas un inventaire Security complet.
   restaure la distinction lecture/écriture des discussions annulées et retire
   les fonctions `public.*` devenues inutiles. Le schéma `private` n'est pas
   ajouté à `[api].schemas` et l'accès est borné à l'évaluation authentifiée des
-  policies. Cette correction reste locale : les trois WARN distants ne peuvent
-  être déclarés résolus qu'après application de la migration et nouveau replay
-  des Advisors linked.
+  policies. Cette correction est désormais confirmée par la preuve distante du
+  27 septembre 2026, qui ne rapporte plus ces trois WARN.
 
 - Les quatre INFO `rls_enabled_no_policy` sont intentionnels :
   `public.action_conversation_exclusions`,
@@ -143,13 +151,13 @@ si un neuvième `rls_enabled_no_policy` apparaît, si la sévérité ou le paylo
 change, ou si le contrat de migration d'une de ces tables cesse de conserver
 RLS sans policy et sans privilège client.
 
-Le replay linked demandé après le hardening a été tenté le 26 septembre 2026,
-mais l'API Advisors a répondu `403 LegacyDbConfigLoginRoleStatusError` pour
-l'identité CLI courante (`advisors_read` manquant). Il n'y a donc pas de nouveau
-payload distant permettant de déclarer **ERROR=0, WARN=0** après application :
-la cible versionnée reste **0 ERROR, 0 WARN et exactement ces 8 INFO**, à
-confirmer dès que la migration est appliquée au projet linked et que le replay
-réussit. Aucune migration distante n'a été appliquée dans ce lot.
+Le replay linked du 26 septembre 2026 avait répondu
+`403 LegacyDbConfigLoginRoleStatusError` pour l'identité CLI courante
+(`advisors_read` manquant). Cet état est conservé uniquement comme historique ;
+la preuve distante du 27 septembre 2026, documentée dans la section CURRENT,
+confirme désormais **0 ERROR, 0 WARN et exactement ces 8 INFO** après
+application des migrations. Aucune migration distante n'a été appliquée par
+cette mise à jour documentaire.
 
 La vérification directe du catalogue par `npx supabase db query --linked` est
 restée indisponible pour l'identité CLI réauthentifiée (`403` sur le rôle de
