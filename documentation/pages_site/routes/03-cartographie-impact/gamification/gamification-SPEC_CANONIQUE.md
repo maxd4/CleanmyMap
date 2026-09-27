@@ -81,7 +81,7 @@ Le total XP global est la somme des événements actifs des huit progressions et
 des jalons `XP_MILESTONE` autorisés par le registre. Aucun event type ne crée
 un second ledger ou une balance par famille.
 
-## Décisions de non-gamification
+## Données disponibles mais volontairement non gamifiées
 
 Les entrées `NON_GAMIFIED` du registre sont des décisions produit CURRENT. Elles
 ne sont pas des propositions ouvertes et ne doivent pas être transformées en
@@ -90,25 +90,32 @@ et la séparation entre activité métier, confiance et économie XP.
 
 | Signal métier | Décision CURRENT | Raison |
 | --- | --- | --- |
-| Poids total de déchets comme conversion directe en XP | `NON_GAMIFIED` | éviter les sur-déclarations et ne pas valoriser artificiellement les lieux plus sales |
-| Nombre de mégots comme conversion directe en XP | `NON_GAMIFIED` | éviter les sur-déclarations et les récompenses proportionnelles à une mesure fragile |
+| `wasteKg` comme conversion directe en XP | `NON_GAMIFIED` | saleté initiale non contrôlée, biais territorial, sur-déclaration et confusion entre impact et mérite individuel direct |
+| `cigaretteButts` / mégots comme conversion directe en XP | `NON_GAMIFIED` | même justification : mesure déclarative, biais et incitation à sur-déclarer |
 | Kg/mégots comme progression CURRENT | `NON_GAMIFIED` | les métriques d'impact restent descriptives et traçables |
-| Répartition enfants/adultes/retraités et champs démographiques | `NON_GAMIFIED` | ne pas récompenser des données sensibles ou démographiques |
-| Difficulté et accessibilité | `NON_GAMIFIED` | une qualification déclarative ne constitue pas une preuve de contribution stable |
+| `childrenCount`, `adultCount`, `retiredCount` et répartition démographique | `NON_GAMIFIED` | mesure d'impact social uniquement ; aucune récompense ou badge direct depuis ces catégories |
+| `estimatedDifficulty` et `accessibility` | `NON_GAMIFIED` | une action facile ou accessible n'a pas moins de valeur civique ; ces données peuvent seulement informer ou recommander |
 | `safetyInstructions`, `recommendedMaterials`, `logisticsNotes`, `checklistBeforeDeparture` | `NON_GAMIFIED` | le texte libre est manipulable et sert la préparation, pas une récompense |
 | Activation `groupJoinEnabled` | `NON_GAMIFIED` | l'ouverture aux inscriptions ne vaut pas mobilisation accomplie |
 | Clic sur rejoindre, inscription future, acceptation future, annulation ou file | `NON_GAMIFIED` | l'intention future ne vaut pas présence terrain confirmée |
 | Génération d'un lien de parrainage | `NON_GAMIFIED` | seul la contribution utile confirmée de l'invité est un jalon rémunéré |
-| Montant d'un don | `NON_GAMIFIED` | ne pas convertir une valeur financière en monnaie XP |
+| Montant d'un don | `NON_GAMIFIED` | aucune XP, aucun badge de mérite et aucune influence sur un futur tirage |
 | Rôle utilisateur | `NON_GAMIFIED` | l'AuthZ est un garde-fou, pas une récompense |
-| Niveau de confiance | `NON_GAMIFIED` | la confiance reste hors de l'économie XP |
-| Score qualité comme progression infinie | `NON_GAMIFIED` | la qualité est un critère transversal, susceptible d'être réévalué |
+| Niveau de confiance | `NON_GAMIFIED` | pas d'XP ni de badge farmable ; la confiance reste une propriété dérivée de fiabilité, sécurité et AuthZ |
+| Score qualité comme progression infinie | `NON_GAMIFIED` | la qualité peut conditionner un niveau ou déclencher `Donnée exemplaire`, mais ne constitue pas une monnaie |
 | Remplissage de formulaire pour lui-même | `NON_GAMIFIED` | Forms reste une preuve de workflow, jamais une activité gamifiée |
+| Upload de `photos` | `NON_GAMIFIED` | une photo peut servir de preuve métier à une autre règle sans devenir une mécanique autonome |
+| `visionEstimate` | `NON_GAMIFIED` | estimation auxiliaire produite par l'IA, pas un accomplissement récompensé |
+| `placeType` | `NON_GAMIFIED` | peut alimenter Exploration ou la diversité descriptive, sans coefficient de mérite |
+| Difficulté, durée ou distance comme multiplicateur XP | `NON_GAMIFIED` | une action facile ou accessible n'a pas moins de valeur civique |
+| Texte libre des formalités | `NON_GAMIFIED` | seul le milestone déterministe `Formalités préparées` peut reconnaître le workflow |
 
 Cette section ne signifie pas que les faits correspondants sont inutiles : ils
 peuvent rester nécessaires à une validation, à l'AuthZ, à un rapport ou à une
 explication. Ils ne créent simplement aucun événement XP ou badge CURRENT par
-eux-mêmes.
+eux-mêmes. Un futur contrat structuré pourrait rouvrir une décision, mais
+`CURRENT = NON_GAMIFIED` tant qu'un changement explicite du registre n'a pas
+été validé.
 
 ## Périmètre
 

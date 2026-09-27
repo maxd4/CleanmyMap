@@ -26,6 +26,11 @@ const REQUIRED_NON_GAMIFIED_SIGNAL_IDS = [
   "signal:quality-score",
   "signal:form-completion",
   "signal:waste-and-butts-current-progression",
+  "signal:photos-upload",
+  "signal:vision-estimate",
+  "signal:place-type",
+  "signal:difficulty-duration-distance",
+  "signal:formalities-free-text",
 ] as const;
 
 describe("CURRENT gamification registry", () => {
@@ -88,6 +93,9 @@ describe("CURRENT gamification registry", () => {
 
     expect(NON_GAMIFIED_SIGNALS.every((entry) =>
       entry.category === "NON_GAMIFIED" && entry.xpPolicy.kind === "none",
+    )).toBe(true);
+    expect(NON_GAMIFIED_SIGNALS.every((entry) =>
+      !/\bTODO\b|plus tard|à traiter/i.test(entry.description),
     )).toBe(true);
   });
 });

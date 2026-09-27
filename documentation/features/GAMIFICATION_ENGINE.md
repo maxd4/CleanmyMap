@@ -67,6 +67,11 @@ Le code et les tests priment si une divergence apparaît.
   `sensitive_zone_*` restent des compatibilités de journal lorsqu'ils existent
   déjà ; ils ne constituent pas une nouvelle catégorie CURRENT ni une promesse
   implicite d'évolution.
+- La section canonique `Données disponibles mais volontairement non gamifiées`
+  de la spécification détaille les exclusions de poids, mégots, démographie,
+  textes libres, inscriptions, preuves auxiliaires, difficulté, qualité,
+  confiance et dons. Une réouverture exige une modification explicite du
+  registre et de sa `rulesVersion`.
 - Chaque progression expose le contrat typé commun
   `GamificationProgressionState` : valeur courante, badge courant, prochain
   badge, pourcentage et contribution au total XP. Cette contribution n'est pas

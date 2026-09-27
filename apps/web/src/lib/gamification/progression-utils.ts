@@ -158,11 +158,16 @@ export const NON_GAMIFIED_SIGNALS = [
   defineNonGamifiedSignal({ id: "signal:join-click", sourceDomain: "join action UI", description: `Clic sur rejoindre. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
   defineNonGamifiedSignal({ id: "signal:registration-cancellation-or-queue", sourceDomain: "action_registrations workflow", description: `Annulation d’inscription, ajout à une file ou acceptation préalable. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
   defineNonGamifiedSignal({ id: "signal:referral-link-generation", sourceDomain: "referral link creation", description: `Simple génération d’un lien de parrainage. ${NON_GAMIFIED_SIGNAL_REASONS.utility}` }),
-  defineNonGamifiedSignal({ id: "signal:donation-amount", sourceDomain: "donation amount", description: `Montant d’un don. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
+  defineNonGamifiedSignal({ id: "signal:donation-amount", sourceDomain: "donation amount", description: `Montant d’un don : aucune XP, aucun badge de mérite et aucune influence sur un futur tirage. ${NON_GAMIFIED_SIGNAL_REASONS.dataIntegrity}` }),
   defineNonGamifiedSignal({ id: "signal:user-role", sourceDomain: "AuthZ role", description: `Rôle utilisateur. ${NON_GAMIFIED_SIGNAL_REASONS.trustAuthz}` }),
   defineNonGamifiedSignal({ id: "signal:trust-level", sourceDomain: "derived trust level", description: `Niveau de confiance comme monnaie ou progression XP. ${NON_GAMIFIED_SIGNAL_REASONS.trustAuthz}` }),
-  defineNonGamifiedSignal({ id: "signal:quality-score", sourceDomain: "action quality score", description: `Score qualité comme progression infinie. La qualité reste un critère transversal et figé dans les preuves de validation.` }),
+  defineNonGamifiedSignal({ id: "signal:quality-score", sourceDomain: "action quality score", description: `Score qualité comme progression infinie. La qualité peut conditionner un niveau ou déclencher Donnée exemplaire, mais ne constitue pas une monnaie.` }),
   defineNonGamifiedSignal({ id: "signal:form-completion", sourceDomain: "Forms completion", description: `Remplissage de formulaire pour lui-même. Forms reste une preuve de workflow, pas une activité gamifiée.` }),
+  defineNonGamifiedSignal({ id: "signal:photos-upload", sourceDomain: "action photos upload", description: `Upload d’une photo en soi. Une photo peut fournir une preuve à une autre règle sans créer une mécanique autonome.` }),
+  defineNonGamifiedSignal({ id: "signal:vision-estimate", sourceDomain: "visionEstimate", description: `Estimation produite par l’IA. C’est une donnée auxiliaire, pas un accomplissement récompensé.` }),
+  defineNonGamifiedSignal({ id: "signal:place-type", sourceDomain: "action placeType", description: `Type de lieu. Il peut alimenter Exploration ou la diversité descriptive, sans coefficient de mérite.` }),
+  defineNonGamifiedSignal({ id: "signal:difficulty-duration-distance", sourceDomain: "estimatedDifficulty + duration + distance", description: `Difficulté, durée ou distance comme multiplicateur XP direct. Une action facile ou accessible n’a pas moins de valeur civique.` }),
+  defineNonGamifiedSignal({ id: "signal:formalities-free-text", sourceDomain: "formalities free-text fields", description: `Remplissage des champs libres de formalités. Seul le milestone déterministe Formalités préparées peut reconnaître le workflow.` }),
 ] as const satisfies readonly GamificationMechanicDefinition[];
 
 export const GAMIFICATION_REGISTRY = [
