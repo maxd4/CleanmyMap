@@ -35,7 +35,6 @@ import {
   pollOpts,
   resolveBugReportRecipientId,
 } from "./route.data";
-
 export async function POST(request: Request) {
   const writeRateLimit = await verifyRateLimit(request, { limit: 20, window: 60 });
   const writeRateLimitResponse = createServerRateLimitResponse(
@@ -46,13 +45,10 @@ export async function POST(request: Request) {
   if (writeRateLimitResponse) {
     return writeRateLimitResponse;
   }
-
   const { userId } = await auth();
   if (!userId) return unauthorizedJsonResponse();
-
-  const identity = await getCurrentUserIdentity();
+  const identity = await getCurrentUserIdentity({syncActiveRole:true});
   if (!identity) return unauthorizedJsonResponse();
-
   let payload: unknown;
   try {
     payload = await request.json();
