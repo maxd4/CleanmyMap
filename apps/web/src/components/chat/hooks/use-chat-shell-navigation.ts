@@ -41,6 +41,56 @@ type UseChatShellNavigationParams = {
   setActiveFeedbackId: Dispatch<SetStateAction<string | null>>;
 };
 
+export function buildChatShellNavigationState({
+  activeChannelType,
+  activeTopicId,
+  selectedActionId,
+  selectedRecipient,
+  selectedZone,
+  territoryFocus,
+  targetMessageIdForScope,
+  activeFeedbackId,
+  initialRecipientId,
+  initialContactRequestId,
+  announcementTemplate,
+  initialAnnouncementTemplate,
+  initialEventId,
+}: {
+  activeChannelType: ChatChannelType;
+  activeTopicId: ChatTopicId | null;
+  selectedActionId: string | null;
+  selectedRecipient: ChatUser | null;
+  selectedZone: string;
+  territoryFocus: number | null;
+  targetMessageIdForScope: string | null;
+  activeFeedbackId: string | null;
+  initialRecipientId: string | null;
+  initialContactRequestId: string | null;
+  announcementTemplate: CommunityAnnouncementTemplateKey | null;
+  initialAnnouncementTemplate: CommunityAnnouncementTemplateKey | null;
+  initialEventId: string | null;
+}): ChatShellNavigationState {
+  return {
+    activeChannelType,
+    activeTopicId,
+    selectedActionId,
+    selectedRecipient,
+    selectedZone,
+    territoryFocus,
+    messageId: targetMessageIdForScope,
+    feedbackId: activeFeedbackId,
+    contactRequestId:
+      selectedRecipient?.id === initialRecipientId
+        ? initialContactRequestId
+        : null,
+    announcementTemplate,
+    eventId:
+      announcementTemplate && announcementTemplate === initialAnnouncementTemplate
+        ? initialEventId
+        : null,
+  };
+}
+
 export function useChatShellNavigation({
   navigationState,
   onNavigationChange,
@@ -124,25 +174,21 @@ export function useChatShellNavigation({
       restoringNavigationRef.current = false;
       return;
     }
-    navigationChangeRef.current?.({
+    navigationChangeRef.current?.(buildChatShellNavigationState({
       activeChannelType,
       activeTopicId,
       selectedActionId,
       selectedRecipient,
       selectedZone,
       territoryFocus,
-      messageId: targetMessageIdForScope,
-      feedbackId: activeFeedbackId,
-      contactRequestId:
-        selectedRecipient?.id === initialRecipient?.id
-          ? initialContactRequestId
-          : null,
+      targetMessageIdForScope,
+      activeFeedbackId,
+      initialRecipientId: initialRecipient?.id ?? null,
+      initialContactRequestId,
       announcementTemplate,
-      eventId:
-        announcementTemplate && announcementTemplate === initialAnnouncementTemplate
-          ? initialEventId
-          : null,
-    });
+      initialAnnouncementTemplate,
+      initialEventId,
+    }));
   }, [
     activeChannelType,
     activeFeedbackId,
