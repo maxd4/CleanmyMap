@@ -315,6 +315,18 @@ créer de version artificielle. Le contrôle serveur limite ce mécanisme aux
 actions futures publiées administrables ; les actions passées ne sont pas
 modifiées.
 
+Le panneau peut consulter `GET /api/actions/[actionId]/route-version` pour
+produire une recommandation légère avant tout recalcul. Cette lecture compare
+les participations `confirmed` aux bénévoles utilisés par la version active,
+les horodatages des sources observées et le snapshot de prédiction réellement
+retenu ; elle peut aussi signaler un budget incompatible avec le contexte
+météo déjà capturé. Elle ne relance pas le planner et ne modifie jamais la
+route. Un écart de participants ou une donnée plus récente devient seulement
+une raison centralisée de recommandation. Le choix `Garder le groupe entier` /
+`Diviser le groupe` fournit ensuite le `groupCount` au recalcul explicite,
+sans partition côté interface. La version active reste inchangée jusqu’à
+`Utiliser le nouvel itinéraire`.
+
 Le flux de données est donc :
 
 ```text

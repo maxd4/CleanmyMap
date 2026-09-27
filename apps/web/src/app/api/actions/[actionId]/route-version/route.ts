@@ -21,6 +21,12 @@ import { isRoutePlannerProofShape } from "@/lib/route/route-planner-proof-contra
 import { isRoutePlannerSnapshot } from "@/lib/route/route-planner-snapshot-validation";
 import { isOperationalRoute, type OperationalRoute } from "@/lib/route/route-operational";
 import type { RoutePlannerSnapshot } from "@/lib/route/route-calibration-types";
+import { loadActionParticipantSummaries } from "@/lib/actions/participation/participant-summaries";
+import { loadRouteFreshnessSignal } from "@/lib/route/route-refresh-signals-loader";
+import {
+  assessRouteWeatherRefreshSignal,
+  buildRouteRefreshSignals,
+} from "@/lib/route/route-refresh-signals";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -284,5 +290,68 @@ export async function POST(
     });
   } catch (error) {
     return handleApiError(error, "POST /api/actions/:actionId/route-version");
+  }
+}
+
+export async function GET(
+  _request: Request,
+  ctx: { params: Promise<{ actionId: string }> },
+) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) return unauthorizedJsonResponse();
+
+  const { actionId } = await ctx.params;
+  const trimmedActionId = actionId.trim();
+  if (!trimmedActionId) {
+    return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
+  }
+
+  try {
+    const supabase = getSupabaseServerClient(true);
+    const authorized = await loadAuthorizedFutureAction({
+      supabase,
+      actionId: trimmedActionId,
+      userId: access.userId,
+    });
+    if (authorized.kind === "response") return authorized.response;
+
+    const { current } = authorized;
+    const preparationData = current.preparation_data ?? {};
+    const currentVersioningValue = preparationData.routeVersioning;
+    if (currentVersioningValue && !isActionRouteVersioning(currentVersioningValue)) {
+      return conflict("La version active de l'itinéraire est incohérente.");
+    }
+    const versioning =
+      (currentVersioningValue as ActionRouteVersioning | undefined) ?? initialVersioning(current);
+    if (!versioning) {
+      return conflict("Cette action ne possède pas d'itinéraire actif exploitable.");
+    }
+
+    const [summary] = await loadActionParticipantSummaries(supabase, {
+      actionIds: [trimmedActionId],
+      userId: access.userId,
+    });
+    const freshness = await loadRouteFreshnessSignal(supabase, versioning.active);
+    const weather = assessRouteWeatherRefreshSignal({
+      activeWeather:
+        versioning.active.calculation.weatherContext ??
+        preparationData.routeCalibrationContext?.plannerSnapshot?.weatherContext,
+      operationalMinutes: versioning.active.calculation.metrics.totalMinutes,
+    });
+    const signals = buildRouteRefreshSignals({
+      activeAppliedAt: versioning.active.appliedAt,
+      calculation: versioning.active.calculation,
+      confirmedParticipants: summary?.activeCount ?? null,
+      freshness,
+      weather,
+    });
+
+    return NextResponse.json({
+      status: "ok",
+      actionId: trimmedActionId,
+      signals,
+    });
+  } catch (error) {
+    return handleApiError(error, "GET /api/actions/:actionId/route-version");
   }
 }

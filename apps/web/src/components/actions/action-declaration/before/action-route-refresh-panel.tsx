@@ -1,17 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { fetchActionById, type ActionEditorRecord } from "@/lib/actions/http";
-import { applyActionRouteVersion } from "@/lib/actions/route-version-http";
+import {
+  applyActionRouteVersion,
+  fetchActionRouteRefreshSignals,
+} from "@/lib/actions/route-version-http";
 import { fetchRouteRecommendation } from "@/components/sections/rubriques/route/route-request";
 import {
   buildRouteRefreshProposal,
   buildRouteRefreshSubmission,
+  compatibleRouteGroupCounts,
   compareRouteRefresh,
   type RouteRefreshProposal,
 } from "@/lib/route/route-refresh";
+import {
+  addRouteRefreshGroupReason,
+  type RouteRefreshSignals,
+} from "@/lib/route/route-refresh-signals";
 
 function formatMetric(value: number | null, suffix: string): string {
   return typeof value === "number" && Number.isFinite(value)
@@ -33,18 +41,149 @@ function metricRows(proposal: RouteRefreshProposal, action: ActionEditorRecord) 
   };
 }
 
+function formatRouteAge(value: string): string {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return "date inconnue";
+  const minutes = Math.max(0, Math.round((Date.now() - timestamp) / 60_000));
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  return `il y a ${Math.floor(hours / 24)} j`;
+}
+
+function reasonLabel(reason: RouteRefreshSignals["reasons"][number], signals: RouteRefreshSignals): string {
+  switch (reason) {
+    case "participants_changed":
+      return `${signals.participants.confirmed ?? "?"} participant(s) confirmé(s) au lieu de ${signals.participants.used}`;
+    case "newer_route_data":
+      return "des données route plus récentes sont disponibles";
+    case "group_count_changed":
+      return "le nombre de groupes a été modifié volontairement";
+    case "weather_budget_mismatch":
+      return "les conditions prévues rendent le budget opérationnel incohérent";
+  }
+}
+
+function RouteRefreshSignalSummary({
+  signals,
+  displaySignals,
+}: {
+  signals: RouteRefreshSignals;
+  displaySignals: RouteRefreshSignals;
+}) {
+  return (
+    <div className="rounded-2xl border border-emerald-200/70 bg-white/75 p-4 text-sm text-emerald-950">
+      <dl className="grid gap-2 sm:grid-cols-2">
+        <div><dt className="font-semibold">Mis à jour</dt><dd>{formatRouteAge(signals.activeAppliedAt)}</dd></div>
+        <div><dt className="font-semibold">Participants utilisés</dt><dd>{signals.participants.used}</dd></div>
+        <div><dt className="font-semibold">Participants confirmés</dt><dd>{signals.participants.confirmed ?? "Non disponible"}</dd></div>
+        <div><dt className="font-semibold">Groupes</dt><dd>{signals.groupCount}</dd></div>
+      </dl>
+      {displaySignals.recommended ? (
+        <div className="mt-4 border-t border-emerald-200/70 pt-3">
+          <p className="font-black">Actualisation recommandée</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {displaySignals.reasons.map((reason) => <li key={reason}>{reasonLabel(reason, displaySignals)}</li>)}
+          </ul>
+        </div>
+      ) : null}
+      {signals.weather.message ? <p className="mt-3 text-sm font-semibold text-rose-700">{signals.weather.message}</p> : null}
+      {signals.freshness.status === "newer" ? <p className="mt-2 text-sm font-semibold text-rose-700">Des données plus récentes sont disponibles.</p> : null}
+    </div>
+  );
+}
+
+function RouteRefreshGroupChoice({
+  actionId,
+  selectedGroupCount,
+  setSelectedGroupCount,
+  signals,
+}: {
+  actionId: string;
+  selectedGroupCount: number;
+  setSelectedGroupCount: (value: number) => void;
+  signals: RouteRefreshSignals;
+}) {
+  const splitVolunteerCount = signals.participants.confirmed ?? signals.participants.used;
+  const groupChoices = compatibleRouteGroupCounts(splitVolunteerCount);
+  return (
+    <fieldset className="rounded-2xl border border-emerald-200/70 bg-white/75 p-4 text-sm text-emerald-950">
+      <legend className="px-1 font-black">Organisation du groupe pour le prochain calcul</legend>
+      <div className="mt-2 flex flex-wrap gap-4">
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name={`route-group-mode-${actionId}`}
+            checked={selectedGroupCount === 1}
+            onChange={() => setSelectedGroupCount(1)}
+          />
+          Garder le groupe entier
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name={`route-group-mode-${actionId}`}
+            checked={selectedGroupCount > 1}
+            disabled={groupChoices.length === 0}
+            onChange={() => setSelectedGroupCount(groupChoices[0] ?? 1)}
+          />
+          Diviser le groupe
+        </label>
+      </div>
+      {selectedGroupCount > 1 ? (
+        <label className="mt-3 flex max-w-xs items-center gap-2">
+          <span className="font-semibold">Nombre de groupes</span>
+          <select
+            className="rounded-lg border border-emerald-300 bg-white px-2 py-1"
+            value={selectedGroupCount}
+            onChange={(event) => setSelectedGroupCount(Number(event.target.value))}
+          >
+            {groupChoices.map((count) => <option key={count} value={count}>{count}</option>)}
+          </select>
+        </label>
+      ) : null}
+    </fieldset>
+  );
+}
+
 export function ActionRouteRefreshPanel({
   action,
 }: {
   action: ActionEditorRecord;
 }) {
   const [activeAction, setActiveAction] = useState(action);
+  const [signals, setSignals] = useState<RouteRefreshSignals | null>(null);
+  const [signalsState, setSignalsState] = useState<"loading" | "ready" | "error">("loading");
+  const [selectedGroupCount, setSelectedGroupCount] = useState<number>(1);
   const [proposal, setProposal] = useState<RouteRefreshProposal | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "applying" | "error" | "kept" | "applied">("idle");
   const [message, setMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetchActionRouteRefreshSignals(action.id)
+      .then((nextSignals) => {
+        if (cancelled) return;
+        setSignals(nextSignals);
+        setSelectedGroupCount(nextSignals.groupCount);
+        setSignalsState("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setSignalsState("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [action.id]);
+
   async function refresh() {
-    const submission = buildRouteRefreshSubmission(activeAction);
+    const activeParameters = activeAction.preparationData?.routeVersioning?.active.calculation.parameters;
+    const confirmedParticipants = signals?.participants.confirmed ?? null;
+    const submission = buildRouteRefreshSubmission(activeAction, {
+      volunteers: confirmedParticipants ?? activeParameters?.volunteers,
+      groupCount: selectedGroupCount,
+    });
     if (!submission) {
       setState("error");
       setMessage("Les paramètres canoniques de l'itinéraire ne sont pas disponibles.");
@@ -79,6 +218,15 @@ export function ActionRouteRefreshPanel({
       const refreshedAction = await fetchActionById(activeAction.id);
       setActiveAction(refreshedAction);
       setProposal(null);
+      setSignals(null);
+      setSignalsState("loading");
+      void fetchActionRouteRefreshSignals(activeAction.id)
+        .then((nextSignals) => {
+          setSignals(nextSignals);
+          setSelectedGroupCount(nextSignals.groupCount);
+          setSignalsState("ready");
+        })
+        .catch(() => setSignalsState("error"));
       setState(result.status === "unchanged" ? "kept" : "applied");
       setMessage(
         result.status === "unchanged"
@@ -92,6 +240,9 @@ export function ActionRouteRefreshPanel({
   }
 
   const details = proposal ? metricRows(proposal, activeAction) : null;
+  const displaySignals = signals && selectedGroupCount !== signals.groupCount
+    ? addRouteRefreshGroupReason(signals, selectedGroupCount)
+    : signals;
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
       <div className="space-y-4" data-testid="action-route-refresh-panel">
@@ -101,6 +252,17 @@ export function ActionRouteRefreshPanel({
             Recalculez une proposition avec les données route actuelles. Rien ne change avant votre décision.
           </p>
         </div>
+        {signalsState === "ready" && signals && displaySignals ? (
+          <RouteRefreshSignalSummary signals={signals} displaySignals={displaySignals} />
+        ) : null}
+        {displaySignals?.recommended ? (
+          <RouteRefreshGroupChoice
+            actionId={action.id}
+            selectedGroupCount={selectedGroupCount}
+            setSelectedGroupCount={setSelectedGroupCount}
+            signals={displaySignals}
+          />
+        ) : null}
         <CmmButton
           tone="secondary"
           variant="pill"
