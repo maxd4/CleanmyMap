@@ -129,6 +129,9 @@ jobs:
       - name: Verify Node runtime contract
         run: node scripts/checks/check-node-version-contract.mjs
 
+      - name: Install Node dependencies
+        run: npm ci
+
       # Security and repository governance must run even for documentation-only changes.
       - name: Secret audit
         run: npm run security:secrets
@@ -151,11 +154,11 @@ jobs:
       - name: GitHub Actions security policy
         run: npm run check:github-actions
 
-  web-validation:
+  web-static:
     needs: scope
-    if: needs.scope.outputs.docs_only != 'true'
+    if: needs.scope.outputs.web_code_relevant == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     permissions:
       contents: read
 
@@ -183,73 +186,203 @@ jobs:
         run: npm ci
 
       - name: Install architectural Semgrep
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
-        id: install-semgrep
         run: python -m pip install --disable-pip-version-check --no-input semgrep==1.177.0
 
       - name: Architectural Semgrep
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success' && steps.install-semgrep.outcome == 'success'
         run: npm run check:semgrep
 
       - name: Lockfile policy
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run check:lockfile-policy
 
       - name: TypeScript typecheck
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run typecheck
 
       - name: UTF-8 check for French-sensitive files
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run check:utf8-fr
 
+      - name: Web lint
+        run: npm run lint
+
+  web-quality:
+    needs: scope
+    if: needs.scope.outputs.web_code_relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Verify Node runtime contract
+        run: node scripts/checks/check-node-version-contract.mjs
+
+      - name: Install Node dependencies
+        run: npm ci
+
       - name: Heavy files policy
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run quality:top-heavy
 
       - name: Dead-code ratchet
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run quality:dead-code
 
       - name: Complexity and function-length policy
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         env:
           COMPLEXITY_CHANGED_FROM: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
         run: npm run quality:complexity
 
       - name: Duplication ratchet
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run quality:duplication
 
       - name: Set up GitNexus cycle audit
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
-        id: install-gitnexus
         run: |
           npm install --global gitnexus@1.6.12
           gitnexus analyze --index-only
 
       - name: GitNexus cycle ratchet
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success' && steps.install-gitnexus.outcome == 'success'
         run: npm run quality:cycles
 
-      - name: Web lint
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
-        run: npm run lint
+  web-tests:
+    needs: scope
+    if: needs.scope.outputs.web_code_relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Verify Node runtime contract
+        run: node scripts/checks/check-node-version-contract.mjs
+
+      - name: Install Node dependencies
+        run: npm ci
 
       - name: Web test policy
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: node scripts/checks/validation-policy.mjs --assert-full-suite
 
+      - name: Web Vitest tests
+        run: npm run test
+
+  web-coverage:
+    needs: scope
+    if: needs.scope.outputs.web_code_relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Verify Node runtime contract
+        run: node scripts/checks/check-node-version-contract.mjs
+
+      - name: Install Node dependencies
+        run: npm ci
+
       - name: Web Vitest tests and coverage ratchet
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run quality:coverage
 
+  web-vercel-audit:
+    needs: scope
+    if: needs.scope.outputs.build_relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Verify Node runtime contract
+        run: node scripts/checks/check-node-version-contract.mjs
+
+      - name: Install Node dependencies
+        run: npm ci
+
       - name: Vercel audit
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success' && needs.scope.outputs.build_relevant == 'true'
         run: npm run audit:vercel:ci
 
+  web-build:
+    needs: scope
+    if: needs.scope.outputs.build_relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Verify Node runtime contract
+        run: node scripts/checks/check-node-version-contract.mjs
+
+      - name: Install Node dependencies
+        run: npm ci
+
       - name: Web production build
-        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success' && needs.scope.outputs.build_relevant == 'true'
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

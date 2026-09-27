@@ -73,7 +73,12 @@ GitHub et les revues, sans bloquer le push direct par une règle de branche.
 Checks conservés pour la revue manuelle GitHub :
 
 - `scope`
-- `web-checks`
+- `web-governance`
+- `web-static`
+- `web-quality`
+- `web-tests`
+- `web-coverage`
+- `web-vercel-audit` et `web-build` lorsque `build_relevant == 'true'`
 - `mobile-validation` lorsque le scope mobile est concerné
 - `CodeQL`
 - `Vercel`
@@ -109,14 +114,25 @@ reproductibles localement, tandis que le runner GitHub, les conditions calculée
 | Workflow / job | Commandes locales correspondantes | Prérequis et limites | Reproductible localement |
 | --- | --- | --- | --- |
 | `ci.yml` / `scope` | Détecte `docs_only`, `web_code_relevant` et `mobile_code_relevant` à partir d'une paire `base/head` | Node.js non requis; permissions `contents: read`. Le job est indépendant des validations applicatives. | Oui pour le calcul; non pour l'orchestration exacte GitHub. |
-| `ci.yml` / `web-checks` | `npm run security:secrets`; `npm run check:root-files`; `npm run check:doc-governance`; `npm run check:stack-doc-drift`; `npm run check:github-actions`; puis, pour un lot non documentaire, `npm ci`, `npm run check:lockfile-policy`, `npm run typecheck`, `npm run check:utf8-fr`, `npm run quality:top-heavy`, `npm run lint`, la politique de tests, Vitest, l'audit Vercel et le build | Node.js 24.x lu depuis `apps/web/.nvmrc`, npm et un historique Git permettant de comparer deux SHA. Le build attend `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` et `CONTACT_EMAIL`; ne jamais mettre ces valeurs dans la documentation ou le dépôt. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
-| `ci.yml` / `mobile-validation` | `npm ci`; `node --test apps/mobile/security/*.test.mjs`; `npm run typecheck -w apps/mobile` | Node.js 24.x lu depuis `apps/web/.nvmrc`, `package-lock.json`. Le job est déclenché par le scope mobile et ne dépend pas de `web-checks`. | Oui. |
+| `ci.yml` / `web-governance` | `npm run security:secrets`; `npm run check:root-files`; `npm run check:doc-governance`; `npm run check:stack-doc-drift`; `npm run check:github-actions` | Node.js 24.x lu depuis `apps/web/.nvmrc` et `package-lock.json`. Le job couvre aussi les changements documentaires. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
+| `ci.yml` / `web-static` | `npm run check:semgrep`; `npm run check:lockfile-policy`; `npm run typecheck`; `npm run check:utf8-fr`; `npm run lint` | Job indépendant après `scope`, avec son propre checkout, Node et `npm ci`. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
+| `ci.yml` / `web-quality` | `npm run quality:top-heavy`; `npm run quality:dead-code`; `npm run quality:complexity`; `npm run quality:duplication`; installation/analyse GitNexus puis `npm run quality:cycles` | Job indépendant après `scope`; les ratchets structurels restent bloquants. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
+| `ci.yml` / `web-tests` | `node scripts/checks/validation-policy.mjs --assert-full-suite`; `npm run test` | Job indépendant après `scope`; il ne contient pas le ratchet de couverture. | Oui. |
+| `ci.yml` / `web-coverage` | `npm run quality:coverage` | Job indépendant après `scope`; Vitest peut être exécuté une seconde fois pour conserver deux preuves distinctes. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
+| `ci.yml` / `web-vercel-audit` | `npm run audit:vercel:ci` lorsque `build_relevant == 'true'` | Job indépendant après `scope`; il est `SKIPPED_SCOPE` sinon. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
+| `ci.yml` / `web-build` | `npm run build` lorsque `build_relevant == 'true'` | Job indépendant après `scope`; les variables publiques de build sont injectées uniquement dans ce job. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
+| `ci.yml` / `mobile-validation` | `npm ci`; `node --test apps/mobile/security/*.test.mjs`; `npm run typecheck -w apps/mobile` | Node.js 24.x lu depuis `apps/web/.nvmrc`, `package-lock.json`. Le job est déclenché par le scope mobile et ne dépend d'aucun gate Web. | Oui. |
 | `codeql.yml` / `analyze` | Aucun script npm équivalent direct : `actions/checkout`, `github/codeql-action/init`, `autobuild` et `analyze` | Runner GitHub, bundle CodeQL et permission `security-events: write` pour publier les résultats. | Non à l'identique; ce contrôle reste GitHub-dépendant. |
+
+Les modes locaux `FAST`/`FULL` restent orchestrés séquentiellement. La CI
+distante utilise au contraire ces gates Web en parallèle après `scope`, afin
+qu'un échec de qualité ne supprime pas les preuves statiques, de tests,
+couverture, audit Vercel ou build qui restent techniquement exécutables.
 
 ### Séquence locale recommandée
 
-Pour un changement applicatif, cette séquence couvre les contrôles de
-`web-checks` et, si nécessaire, de `mobile-validation` :
+Pour un changement applicatif, cette séquence couvre les contrôles des gates
+Web et, si nécessaire, de `mobile-validation` :
 
 ```bash
 npm ci

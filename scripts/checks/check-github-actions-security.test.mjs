@@ -67,16 +67,26 @@ assert.match(ciWorkflow, /jobs:\n  scope:/);
 assert.match(ciWorkflow, /web_code_relevant:/);
 assert.match(ciWorkflow, /mobile_code_relevant:/);
 assert.match(ciWorkflow, /web-governance:\n    needs: scope/);
-assert.match(ciWorkflow, /web-validation:\n    needs: scope/);
+for (const job of [
+  "web-static",
+  "web-quality",
+  "web-tests",
+  "web-coverage",
+  "web-vercel-audit",
+  "web-build",
+]) {
+  assert.match(ciWorkflow, new RegExp(`${job}:\\n    needs: scope`));
+}
+assert.doesNotMatch(ciWorkflow, /web-validation:/);
 assert.match(ciWorkflow, /Install Node dependencies/);
 assert.match(ciWorkflow, /TypeScript typecheck/);
 assert.match(ciWorkflow, /Web lint/);
 assert.match(ciWorkflow, /Web Vitest tests/);
 assert.match(ciWorkflow, /Web production build/);
 assert.match(ciWorkflow, /mobile-validation:\n    needs: scope/);
-assert.equal((ciWorkflow.match(/persist-credentials: false/g) ?? []).length, 4);
-assert.equal((ciWorkflow.match(/node-version-file: \$\{\{ env\.NODE_VERSION_FILE \}\}/g) ?? []).length, 3);
-assert.equal((ciWorkflow.match(/check-node-version-contract\.mjs/g) ?? []).length, 3);
+assert.equal((ciWorkflow.match(/persist-credentials: false/g) ?? []).length, 9);
+assert.equal((ciWorkflow.match(/node-version-file: \$\{\{ env\.NODE_VERSION_FILE \}\}/g) ?? []).length, 8);
+assert.equal((ciWorkflow.match(/check-node-version-contract\.mjs/g) ?? []).length, 8);
 assert.doesNotMatch(ciWorkflow, /check:agent-skills/);
 assert.match(ciWorkflow, /check:doc-governance/);
 assert.match(ciWorkflow, /Mobile security tests/);

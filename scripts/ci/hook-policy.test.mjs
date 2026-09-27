@@ -30,61 +30,57 @@ test("pre-commit uses the changed-surface guard and fast global controls", async
   assert.doesNotMatch(guard, /pre_push_guard\.ps1|npm run build|vercel build|-IncludeBuild/);
 });
 
-test("CI reports independent gates after setup and dependency installation", async () => {
+function extractJob(workflow, jobId) {
+  const marker = `  ${jobId}:\n`;
+  const start = workflow.indexOf(marker);
+  assert.notEqual(start, -1, `missing job ${jobId}`);
+  const bodyStart = start + marker.length;
+  const remainder = workflow.slice(bodyStart);
+  const nextJob = remainder.search(/\n  [a-z0-9-]+:\n/);
+  return nextJob === -1 ? remainder : remainder.slice(0, nextJob);
+}
+
+test("CI exposes independent Web gates with direct scope dependencies", async () => {
   const workflow = await readRepoFile(".github/workflows/ci.yml");
-  const webValidation = workflow.slice(workflow.indexOf("  web-validation:"), workflow.indexOf("  mobile-validation:"));
-  for (const gate of [
-    "npm run quality:top-heavy",
-    "npm run quality:dead-code",
-    "npm run quality:complexity",
-    "npm run quality:duplication",
-  ]) {
-    const step = webValidation.slice(webValidation.indexOf(gate) - 600, webValidation.indexOf(gate));
-    assert.match(step, /if: always\(\)/, gate);
-    assert.match(step, /steps\.setup-node\.outcome == 'success'/, gate);
-    assert.match(step, /steps\.install-node-dependencies\.outcome == 'success'/, gate);
+  const jobs = {
+    "web-static": "web_code_relevant",
+    "web-quality": "web_code_relevant",
+    "web-tests": "web_code_relevant",
+    "web-coverage": "web_code_relevant",
+    "web-vercel-audit": "build_relevant",
+    "web-build": "build_relevant",
+  };
+  for (const [jobId, scopeOutput] of Object.entries(jobs)) {
+    const job = extractJob(workflow, jobId);
+    assert.match(job, /^    needs: scope$/m, jobId);
+    assert.match(job, new RegExp(`if: needs\\.scope\\.outputs\\.${scopeOutput} == 'true'`), jobId);
+    assert.match(job, /node-version-file: \$\{\{ env\.NODE_VERSION_FILE \}\}/, jobId);
+    assert.match(job, /check-node-version-contract\.mjs/, jobId);
+    assert.match(job, /run: npm ci/, jobId);
+    assert.doesNotMatch(job, /if: always\(\)/, jobId);
   }
-  for (const gate of [
-    "npm run check:lockfile-policy",
-    "npm run typecheck",
-    "npm run check:utf8-fr",
-  ]) {
-    const step = webValidation.slice(webValidation.indexOf(gate) - 600, webValidation.indexOf(gate));
-    assert.match(step, /if: always\(\)/, gate);
-    assert.match(step, /steps\.setup-node\.outcome == 'success'/, gate);
-    assert.match(step, /steps\.install-node-dependencies\.outcome == 'success'/, gate);
+  const staticJob = extractJob(workflow, "web-static");
+  for (const command of ["npm run check:semgrep", "npm run check:lockfile-policy", "npm run typecheck", "npm run check:utf8-fr", "npm run lint"]) {
+    assert.match(staticJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
-  const semgrepInstall = webValidation.slice(
-    webValidation.indexOf("python -m pip install") - 600,
-    webValidation.indexOf("python -m pip install"),
-  );
-  assert.match(semgrepInstall, /if: always\(\)/);
-  assert.match(semgrepInstall, /id: install-semgrep/);
-  const semgrepCheck = webValidation.slice(
-    webValidation.indexOf("npm run check:semgrep") - 700,
-    webValidation.indexOf("npm run check:semgrep"),
-  );
-  assert.match(semgrepCheck, /if: always\(\)/);
-  assert.match(semgrepCheck, /steps\.install-semgrep\.outcome == 'success'/);
-  for (const gate of [
-    "npm run lint",
-    "node scripts/checks/validation-policy.mjs --assert-full-suite",
-    "npm run quality:coverage",
-  ]) {
-    const step = webValidation.slice(webValidation.indexOf(gate) - 600, webValidation.indexOf(gate));
-    assert.match(step, /if: always\(\)/, gate);
-    assert.match(step, /steps\.setup-node\.outcome == 'success'/, gate);
-    assert.match(step, /steps\.install-node-dependencies\.outcome == 'success'/, gate);
+  const qualityJob = extractJob(workflow, "web-quality");
+  for (const command of ["npm run quality:top-heavy", "npm run quality:dead-code", "npm run quality:complexity", "npm run quality:duplication", "npm run quality:cycles"]) {
+    assert.match(qualityJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
-  for (const gate of ["npm run audit:vercel:ci", "npm run build"]) {
-    const step = webValidation.slice(webValidation.indexOf(gate) - 700, webValidation.indexOf(gate));
-    assert.match(step, /if: always\(\)/, gate);
-    assert.match(step, /needs\.scope\.outputs\.build_relevant == 'true'/, gate);
-  }
+  assert.match(qualityJob, /gitnexus analyze --index-only/);
+  const testsJob = extractJob(workflow, "web-tests");
+  assert.match(testsJob, /validation-policy\.mjs --assert-full-suite/);
+  assert.match(testsJob, /npm run test/);
+  assert.doesNotMatch(testsJob, /quality:coverage/);
+  const coverageJob = extractJob(workflow, "web-coverage");
+  assert.match(coverageJob, /npm run quality:coverage/);
+  assert.doesNotMatch(coverageJob, /npm run test\s/);
+  assert.match(extractJob(workflow, "web-vercel-audit"), /npm run audit:vercel:ci/);
+  assert.match(extractJob(workflow, "web-build"), /npm run build/);
   assert.match(workflow, /build_relevant: \$\{\{ steps\.detect-scope\.outputs\.build_relevant \}\}/);
   assert.match(workflow, /validation-policy\.mjs --scope changed --json/);
-  assert.doesNotMatch(webValidation, /continue-on-error:/);
-  assert.match(webValidation, /steps\.install-gitnexus\.outcome == 'success'[\s\S]*?npm run quality:cycles/);
+  assert.doesNotMatch(workflow, /continue-on-error:/);
+  assert.doesNotMatch(workflow, /web-validation:/);
 });
 
 test("pre-push derives gates from the Git protocol candidate and keeps manual fallback separate", async () => {
