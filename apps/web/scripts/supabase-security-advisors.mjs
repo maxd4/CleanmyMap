@@ -196,9 +196,9 @@ function formatError(title, result) {
 function formatLinked403Help(result) {
   const details = `${result.stdout || ""}\n${result.stderr || ""}`.trim();
   const accessTokenHelp = [
-    "Supabase linked security advisors require a personal access token with project access and the `advisors_read` permission.",
-    "Generate a fresh token from Supabase Dashboard -> Account -> Tokens, then run `supabase login --token <token>` or export `SUPABASE_ACCESS_TOKEN` before retrying.",
-    "If the project was linked from another Supabase account, re-link it with the account that has Owner/Admin access to the target project ref.",
+    "Supabase linked security advisors require an authenticated CLI session with project access and the minimum `Advisors Read` permission.",
+    "Authenticate with the secure Supabase CLI login or a scoped PAT through `SUPABASE_ACCESS_TOKEN`; never expose the credential.",
+    "If the project is not visible, verify the project ref, account, organization, and scoped permissions; Owner/Admin is not intrinsically required.",
     "A local containerized runtime is not supported by the CURRENT workflow; use the explicitly linked project instead.",
   ].join(" ");
 

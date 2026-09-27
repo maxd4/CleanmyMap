@@ -50,7 +50,16 @@ Activation:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- les audits liés `backend:supabase:advisors` passent par le CLI Supabase et peuvent exiger `SUPABASE_ACCESS_TOKEN` avec un token personnel récent; pour l'endpoint security advisors, la permission fine `advisors_read` est requise sur le projet lié.
+- les audits liés `backend:supabase:advisors` passent par le CLI Supabase et
+  restent le garde contractuel RLS/security du dépôt ; ils peuvent utiliser une
+  session CLI sécurisée ou un scoped PAT disposant de `Advisors Read`.
+- Le plugin/MCP Supabase est un canal indépendant d'observation structurée,
+  privilégié pour l'inventaire Advisors complet security + performance. Une
+  authentification MCP fonctionnelle ne prouve pas l'accès CLI, et inversement.
+- Une commande CLI authentifiée réussie établit `CLI_AUTH=PASS`, même sans
+  `SUPABASE_ACCESS_TOKEN` dans l'environnement ; rapporter sa source dans
+  `CLI_AUTH_SOURCE`. Le token reste un secret de tooling CLI, jamais runtime
+  applicatif ou `NEXT_PUBLIC_*`.
 
 Code clé:
 

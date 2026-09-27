@@ -67,8 +67,26 @@ utiliser les contrôles read-only suivants :
 npx supabase projects list
 npx supabase branches list --project-ref <project-ref> --output json
 npx supabase migration list --linked
-npx supabase db advisors --linked
+npx supabase db push --dry-run
 ```
+
+Une commande CLI authentifiée réussie suffit pour `CLI_AUTH=PASS`, même si
+`SUPABASE_ACCESS_TOKEN` n'est pas présent dans l'environnement ; rapporter la
+source séparément dans `CLI_AUTH_SOURCE`. L'authentification CLI et celle du
+plugin/MCP sont indépendantes.
+
+Le plugin/MCP est privilégié pour l'inventaire Advisors structuré. Récupérer
+séparément `security` et `performance`, avec `ERROR`, `WARN` et `INFO`. Le
+fallback CLI exhaustif utilise les options explicites suivantes :
+
+```bash
+npx supabase db advisors --linked --type security --level info --fail-on none --output-format json
+npx supabase db advisors --linked --type performance --level info --fail-on none --output-format json
+```
+
+La sortie CLI par défaut ne constitue pas un inventaire complet. Le garde
+`backend:supabase:advisors` reste le contrôle contractuel RLS/security du
+dépôt ; il ne remplace pas l'inventaire MCP security + performance.
 
 Le garde applicatif des advisors s'exécute avec
 `npm run backend:supabase:advisors:linked` depuis `apps/web` ;
@@ -76,12 +94,17 @@ Le garde applicatif des advisors s'exécute avec
 nul avec des constats RLS `INFO` est un résultat de contrôle de sécurité, pas
 un `403` d'authentification ; distinguer les deux diagnostics.
 
-Pour diagnostiquer un `403`, vérifier dans cet ordre `SUPABASE_ACCESS_TOKEN`
-(présence, fraîcheur et scopes, sans afficher sa valeur), l'identité CLI via
-`npx supabase projects list`, puis la visibilité du projet et de son
-organisation. Si le projet n'est pas visible, conclure à un mauvais compte,
-une mauvaise organisation, un rôle insuffisant ou un token sans scope requis.
-Les advisors liés requièrent en outre `advisors_read`.
+Pour diagnostiquer un `403`, vérifier la commande authentifiée, son
+`CLI_AUTH_SOURCE`, l'identité CLI via `npx supabase projects list`, puis la
+visibilité du projet et de son organisation. Si le projet n'est pas visible,
+conclure à un mauvais compte, une mauvaise organisation ou une permission
+insuffisante. Un scoped PAT doit seulement disposer de la capacité requise :
+`Advisors Read` pour les advisors, `Logs Read` pour les logs et
+`Migrations Read-write` pour appliquer des migrations ; Owner/Admin n'est pas
+intrinsèquement requis.
+
+`SUPABASE_ACCESS_TOKEN` reste un secret de tooling CLI uniquement : jamais
+`NEXT_PUBLIC_*`, jamais runtime applicatif et jamais documenté avec sa valeur.
 
 `npx supabase link --project-ref <project-ref>` configure la cible locale mais
 ne prouve pas qu'une migration est appliquée. Seule la comparaison

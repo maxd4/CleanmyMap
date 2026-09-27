@@ -107,7 +107,7 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `SUPABASE_STORAGE_QUOTA_BYTES` | Supabase | SECRET | O | O | O | O | Vercel / template local | quotas stockage |
 | `SUPABASE_STORAGE_QUOTA_GB` | Supabase | SECRET | O | O | O | O | Vercel / template local | quotas stockage |
 | `SUPABASE_DB_URL` | Supabase CLI | SECRET | L | L | L | — | CLI local/CI | audits et tooling |
-| `SUPABASE_ACCESS_TOKEN` | Supabase CLI | SECRET | L | L | L | — | CLI local/CI | branches et tooling |
+| `SUPABASE_ACCESS_TOKEN` | Supabase CLI | SECRET | L | L | L | — | secure CLI login / secret store | branches, migrations et tooling |
 | `POSTGRES_URL_NON_POOLING` | Supabase CLI | SECRET | L | L | L | — | Supabase/CI | audits DB |
 | `CLERK_SECRET_KEY` | Clerk | SECRET | R test | R test | R selon preview | R live | Clerk Dashboard / Vercel | AuthN serveur |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk | PUBLIC | R test | R test | R selon preview | R live | Clerk Dashboard / Vercel | Clerk frontend |
@@ -227,7 +227,16 @@ au contrat.
 utilisées par le client selon les protections Supabase prévues. Les accès
 serveur utilisent `SUPABASE_SERVICE_ROLE_KEY`, qui reste strictement serveur/CI
 et n’entre jamais dans un bundle public. Les variables DB/CLI sont réservées
-aux audits et opérations explicitement demandées.
+aux audits et opérations explicitement demandées. `SUPABASE_ACCESS_TOKEN` est
+un secret CLI uniquement, jamais une variable `NEXT_PUBLIC_*` ou une variable
+du runtime applicatif ; sa valeur ne doit jamais être documentée.
+
+Le CLI et le plugin/MCP Supabase ont des authentifications indépendantes. Une
+commande CLI authentifiée réussie établit `CLI_AUTH=PASS`, même sans variable
+`SUPABASE_ACCESS_TOKEN` dans l'environnement ; rapporter `CLI_AUTH_SOURCE`
+séparément. Les scoped PAT demandent les permissions minimales de l'opération,
+par exemple `Advisors Read`, `Logs Read` ou `Migrations Read-write`, sans
+exigence intrinsèque de rôle Owner/Admin.
 
 ### Resend et Stripe
 
