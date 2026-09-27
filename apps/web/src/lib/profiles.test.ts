@@ -84,7 +84,7 @@ describe("profile aliases", () => {
   });
 
   it("uses the canonical French labels for role and profile selectors", () => {
-    expect(getProfileLabel("coordinateur", "fr")).toBe("Association");
+    expect(getProfileLabel("coordinateur", "fr")).toBe("Coordinateur");
     expect(getProfileLabel("elu", "fr")).toBe("Élu·e");
     expect(getProfileLabel("admin", "fr")).toBe("Administrateur");
   });

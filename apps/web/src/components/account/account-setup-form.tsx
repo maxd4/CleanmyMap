@@ -90,7 +90,7 @@ export function AccountSetupForm(props: AccountSetupFormProps) {
         <div className="max-w-xl space-y-2">
           <h2 className="text-lg font-bold text-white">Actions de validation</h2>
           <p className="text-sm text-slate-200/85">Vous pourrez modifier ces préférences à tout moment dans les paramètres de votre compte.</p>
-          <Link href="/compte/evolution" prefetch={false} className="inline-flex min-h-11 items-center text-sm font-bold text-slate-200 underline decoration-slate-300/70 underline-offset-4 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200">Vous représentez une collectivité&nbsp;?</Link>
+          <Link href="/compte/evolution" prefetch={false} className="inline-flex min-h-11 items-center text-sm font-bold text-slate-200 underline decoration-slate-300/70 underline-offset-4 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200">Vous exercez un mandat public&nbsp;?</Link>
         </div>
         <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:items-center">
           <CmmButton type="button" tone="secondary" size="lg" disabled={controller.isSaving} onClick={() => void controller.handleDefer()}>{controller.getDeferralLabel()}</CmmButton>

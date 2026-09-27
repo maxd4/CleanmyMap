@@ -58,13 +58,20 @@ La cible fonctionnelle est :
 
 ```txt
 Bénévole      → self / owned
-Coordinateur  → organized / organization
-Scientifique  → sanitized analytics
-Entreprise    → organization
-Élu           → territory
+Coordinateur  → organized ; organization seulement avec relation canonique
+Scientifique  → public / sanitized analytics
+Entreprise    → organization seulement avec relation canonique
+Élu           → territory seulement avec attribution canonique
 Admin         → global moderation
 IMU (`max`)   → platform administration
 ```
+
+Ces lignes décrivent des capacités et scopes potentiels, pas une équivalence
+entre persona et structure : `coordinateur` est une personne/fonction,
+`association` est une structure ; `entreprise` est un parcours de représentant
+et `elu` un décideur public. Une relation organisationnelle ou territoriale
+reste obligatoire avant toute permission correspondante. Le parcours UX et
+ses CTA ne sont jamais une autorité AuthZ.
 
 Les scopes `organization` et `territory` exigent une relation canonique persistée et vérifiable côté serveur.
 

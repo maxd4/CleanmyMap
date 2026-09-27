@@ -144,7 +144,7 @@ export function AccountEvolutionPanel({
       <FamilyRubriqueCard withTopBar={true} topBarContent="Faire évoluer mon compte" className="p-6 sm:p-8">
         <div className="space-y-3">
           <p className="text-sm leading-relaxed text-amber-50/78">
-            Les rôles ouverts sont Bénévole, Association, Scientifique et Entreprise. Les rôles obtenus sont Élu·e et Administrateur, après examen par IMU. IMU reste hors de ce parcours.
+            Les personas ouverts sont Bénévole, Coordinateur, Scientifique et Entreprise. Les rôles obtenus sont Élu·e et Administrateur, après examen par IMU. IMU reste hors de ce parcours.
           </p>
           <p className="text-sm leading-relaxed text-amber-50/60">
             Une demande ne modifie jamais votre niveau obtenu. Seule l’acceptation par IMU déclenche la synchronisation du compte.

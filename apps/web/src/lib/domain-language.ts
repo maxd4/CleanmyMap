@@ -21,7 +21,8 @@ export type GrantedRole =
   | "admin"
   | "max";
 
-// Rôle actuellement utilisé pour calculer les capabilities effectives.
+// Persona métier actif utilisé pour calculer les capabilities effectives.
+// Il ne prouve ni une structure, ni une relation organisationnelle ou territoriale.
 export type ActiveRole = GrantedRole;
 
 // Alias public historique : `role` signifie désormais GRANTED_ROLE.
@@ -30,7 +31,8 @@ export type Role = GrantedRole;
 // Role de session (inclut l'etat non connecte).
 export type SessionRole = Role | "anonymous";
 
-// Parcours produit: lens de navigation appliquee a un role.
+// Parcours produit: projection UX du persona actif pour la navigation, les
+// CTA et les libellés. Il ne constitue pas une autorisation serveur.
 export type Parcours = ActiveRole;
 
 // Espace stable de navigation transverse.
@@ -68,9 +70,9 @@ export const DOMAIN_GLOSSARY: Record<
   | "effective_access",
   string
 > = {
-  role: "Attribution metier d'un utilisateur (benevole, coordinateur, scientifique, entreprise, elu, admin, max / IMU).",
+  role: "Attribution métier obtenue par le compte (benevole, coordinateur, scientifique, entreprise, elu, admin, max / IMU).",
   parcours:
-    "Projection UX du role dans la navigation, sans dupliquer les pages.",
+    "Projection UX du persona actif dans la navigation, les CTA et les libellés, sans autorité serveur.",
   espace:
     "Bloc stable de navigation transverse (Accueil & Pilotage, Agir, Cartographie & Impact, Réseau & Discussions, Apprendre).",
   rubrique: "Entree de navigation rattachee a un espace et a une route.",

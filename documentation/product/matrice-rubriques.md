@@ -77,6 +77,19 @@ principal et ne se confond pas avec `/reports`, qui reste collectif.
 - `apps/web/src/lib/navigation.ts`
 - `documentation/pages_site/INDEX.md`
 
+## Parcours, structures et autorisation
+
+Cette matrice décrit une navigation UX, pas une matrice de permissions. Les
+CTA sont personnalisés par parcours, mais ne donnent aucun droit serveur
+supplémentaire. Les notions `GRANTED_ROLE`, `ACTIVE_ROLE`, organisation et
+parcours UX sont définies dans la source sécurité canonique
+[`documentation/security/authz-authn-regles.md`](../security/authz-authn-regles.md).
+
+Le portail Sponsor peut être proposé principalement aux parcours entreprise et
+élu sans que cela prouve une appartenance organisationnelle ou une attribution
+territoriale. Les scopes correspondants restent déterminés par leurs contrats
+serveur dédiés.
+
 ## Routes canoniques et alias
 
 Le bloc Agir expose exactement trois entrées utilisateur :
