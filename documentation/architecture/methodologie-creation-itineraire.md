@@ -325,7 +325,12 @@ route. Un écart de participants ou une donnée plus récente devient seulement
 une raison centralisée de recommandation. Le choix `Garder le groupe entier` /
 `Diviser le groupe` fournit ensuite le `groupCount` au recalcul explicite,
 sans partition côté interface. La version active reste inchangée jusqu’à
-`Utiliser le nouvel itinéraire`.
+`Utiliser le nouvel itinéraire`. Un changement du nombre de participants
+confirmés ou du découpage en groupes peut donc produire une nouvelle version,
+mais les autres paramètres canoniques du planner restent stables pendant ce
+refresh. L'application utilise une concurrence optimiste sur `actions.updated_at`
+et refuse par `409` une proposition construite depuis un état devenu obsolète,
+afin de ne pas écraser une modification concurrente de `preparation_data`.
 
 Le flux de données est donc :
 

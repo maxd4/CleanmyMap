@@ -21,6 +21,7 @@ import { isRoutePlannerProofShape } from "@/lib/route/route-planner-proof-contra
 import { isRoutePlannerSnapshot } from "@/lib/route/route-planner-snapshot-validation";
 import { isOperationalRoute, type OperationalRoute } from "@/lib/route/route-operational";
 import type { RoutePlannerSnapshot } from "@/lib/route/route-calibration-types";
+import { validateRouteGroupInput } from "@/lib/route/route-group-partition";
 import { loadActionParticipantSummaries } from "@/lib/actions/participation/participant-summaries";
 import { loadRouteFreshnessSignal } from "@/lib/route/route-refresh-signals-loader";
 import {
@@ -47,9 +48,29 @@ function conflict(message: string) {
 function routeParametersMatchActiveVersion(
   current: ActionRouteVersioning["active"]["calculation"]["parameters"],
   next: RoutePlannerSnapshot["parameters"],
+  confirmedParticipants: number | null,
 ): boolean {
-  return JSON.stringify({ ...current, origin: { ...current.origin, source: undefined } }) ===
-    JSON.stringify({ ...next, origin: { ...next.origin, source: undefined } });
+  if (confirmedParticipants !== null && next.volunteers !== confirmedParticipants) {
+    return false;
+  }
+  try {
+    validateRouteGroupInput(next.volunteers, next.groupCount);
+  } catch {
+    return false;
+  }
+  return JSON.stringify({
+    ...current,
+    volunteers: undefined,
+    groupCount: undefined,
+    origin: { ...current.origin, source: undefined },
+  }) === JSON.stringify({
+    ...next,
+    volunteers: undefined,
+    groupCount: undefined,
+    origin: { ...next.origin, source: undefined },
+  }) && (confirmedParticipants !== null || (
+    current.volunteers === next.volunteers && current.groupCount === next.groupCount
+  ));
 }
 
 function operationalRouteMatchesSnapshot(
@@ -138,6 +159,7 @@ async function loadAuthorizedFutureAction(params: {
 function validateRouteVersionProposal(params: {
   current: NonNullable<Awaited<ReturnType<typeof loadActionById>>>;
   proposal: z.infer<typeof routeVersionApplySchema>;
+  confirmedParticipants: number | null;
 }): Response | { currentVersioning: ActionRouteVersioning; snapshotHash: string } {
   const preparationData = params.current.preparation_data ?? {};
   const currentVersioningValue = preparationData.routeVersioning;
@@ -154,6 +176,7 @@ function validateRouteVersionProposal(params: {
     !routeParametersMatchActiveVersion(
       currentVersioning.active.calculation.parameters,
       params.proposal.plannerSnapshot.parameters,
+      params.confirmedParticipants,
     ) ||
     !operationalRouteMatchesSnapshot(params.proposal.operationalRoute, params.proposal.plannerSnapshot)
   ) {
@@ -233,7 +256,15 @@ export async function POST(
     });
     if (authorized.kind === "response") return authorized.response;
     const { current } = authorized;
-    const validated = validateRouteVersionProposal({ current, proposal: parsed.data });
+    const [participantSummary] = await loadActionParticipantSummaries(supabase, {
+      actionIds: [trimmedActionId],
+      userId: access.userId,
+    });
+    const validated = validateRouteVersionProposal({
+      current,
+      proposal: parsed.data,
+      confirmedParticipants: participantSummary?.activeCount ?? null,
+    });
     if (validated instanceof Response) return validated;
     if (validated.currentVersioning.active.calculation.snapshotHash === validated.snapshotHash) {
       return NextResponse.json({
@@ -243,6 +274,7 @@ export async function POST(
         history: validated.currentVersioning.history,
       });
     }
+    if (!current.updated_at) return conflict("L'action a changé avant l'application de l'itinéraire.");
 
     const appliedAt = new Date().toISOString();
     const nextVersioning = buildNextRouteVersioning({
@@ -278,6 +310,7 @@ export async function POST(
       })
       .eq("id", trimmedActionId)
       .eq("published_at", current.published_at)
+      .eq("updated_at", current.updated_at)
       .select("id")
       .maybeSingle();
     if (updated.error) throw updated.error;
