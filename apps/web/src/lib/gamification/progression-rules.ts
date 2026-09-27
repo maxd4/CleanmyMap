@@ -2,7 +2,7 @@ const PROGRESSION_RULES_VERSION = "progression-rules-v1" as const;
 
 export type ProgressionRulesVersion = typeof PROGRESSION_RULES_VERSION;
 
-export const VERIFIED_CONTRIBUTION_FAMILIES = [
+const VERIFIED_CONTRIBUTION_FAMILIES = [
   "participation",
   "organisation",
   "clean_zones",

@@ -14,7 +14,7 @@ describe("browser validation contract", () => {
   it("keeps the official Clerk Playwright lane strict and bypass-free", () => {
     const config = read("playwright.config.ts");
 
-    assert.match(config, /PLAYWRIGHT_BASE_URL\?\.trim\(\) \|\| "http:\/\/127\.0\.0\.1:3000"/);
+    assert.match(config, /PLAYWRIGHT_BASE_URL\?\.trim\(\) \|\| "http:\/\/localhost:3000"/);
     assert.match(config, /PLAYWRIGHT_BASE_URL must be a local http origin/);
     assert.match(config, /DEV_STRICT_PORT: process\.env\.DEV_STRICT_PORT \?\? "1"/);
     assert.match(config, /CMM_DISABLE_DEV_AUTH_BYPASS: "1"/);
@@ -44,7 +44,7 @@ describe("browser validation contract", () => {
       }
       assert.match(content, /PROTECTED_CLERK_CLIENT/);
       assert.match(content, /CMM_DISABLE_DEV_AUTH_BYPASS=.?1/);
-      assert.match(content, /127\.0\.0\.1:3000/);
+      assert.match(content, /localhost:3000/);
       assert.match(content, /(?:bypass\s+serveur[\s\S]{0,20}(?:insuffisant|suffit pas)|server\s+bypass[\s\S]{0,30}not sufficient)/i);
       assert.doesNotMatch(content, /aucune vraie connexion Clerk n'est nécessaire/i);
     }
