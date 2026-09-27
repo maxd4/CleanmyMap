@@ -58,10 +58,10 @@ export const platformAuthorizationContract = {
   },
   "pilotage/overview": {
     GET: {
-      expected: "Authenticated coordinateur/admin-like pilotage access",
+      expected: "Authenticated coordinateur pilotage access scoped to canonical organized actions",
       dimensions: ["authentication", "business permission"],
-      actual: "auth() + getCurrentUserEffectiveAccess().canAccessPilotage",
-      evidence: ["auth()", "getCurrentUserEffectiveAccess", "canAccessPilotage", "forbiddenJsonResponse"],
+      actual: "auth() + getCurrentUserEffectiveAccess().canAccessPilotage + server-resolved organized action scope",
+      evidence: ["auth()", "getCurrentUserEffectiveAccess", "canAccessPilotage", "loadPilotageOverview", "forbiddenJsonResponse"],
     },
   },
   "reports/actions.csv": {

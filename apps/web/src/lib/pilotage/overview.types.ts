@@ -2,6 +2,7 @@ import type { ActionDataContract, ActionEntityType } from "../actions/data-contr
 import type { UnifiedSourceHealth } from "../actions/unified-source/types";
 import type { PilotageComparisonResult } from "./metrics";
 import type { OperationalPriority, ZoneComparisonRow } from "./prioritization";
+import type { PilotageOverviewScope } from "./scope";
 
 export type MethodDefinition = {
   id: string;
@@ -58,4 +59,5 @@ export type LoadPilotageOverviewParams = {
   periodDays: number;
   limit?: number;
   types?: ActionEntityType[] | null;
+  scope?: PilotageOverviewScope | null;
 };

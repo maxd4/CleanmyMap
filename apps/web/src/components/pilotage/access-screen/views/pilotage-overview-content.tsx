@@ -22,6 +22,9 @@ import { PilotageCommunityOperationsPanel } from "@/components/pilotage/communit
 import type { NavigationGridItem } from "@/components/ui/navigation-grid";
 
 type PilotageOverviewCopy = {
+  scopeNotice: string;
+  emptyScopeTitle: string;
+  emptyScopeDescription: string;
   summaryEyebrow: string;
   windowsEyebrow: string;
   methodsEyebrow: string;
@@ -39,6 +42,34 @@ type PilotageOverviewContentProps = {
   communityOperations: PilotageCommunityOperations | null;
   canExportCommunityFunnel: boolean;
 };
+
+function PilotageScopeNotice({
+  copy,
+  isEmpty,
+}: {
+  copy: PilotageOverviewCopy;
+  isEmpty: boolean;
+}) {
+  return (
+    <>
+      <div
+        role="status"
+        className="rounded-2xl border border-orange-200/30 bg-orange-100/10 p-4 text-sm leading-6 text-orange-100"
+      >
+        {copy.scopeNotice}
+      </div>
+      {isEmpty ? (
+        <div
+          role="status"
+          className="rounded-2xl border border-amber-200/30 bg-amber-100/10 p-5 text-orange-100"
+        >
+          <h2 className="text-lg font-black text-white">{copy.emptyScopeTitle}</h2>
+          <p className="mt-2 text-sm leading-6">{copy.emptyScopeDescription}</p>
+        </div>
+      ) : null}
+    </>
+  );
+}
 
 export function PilotageOverviewContent({
   locale,
@@ -69,6 +100,7 @@ export function PilotageOverviewContent({
             {dataAvailabilityNotices.join(" ")}
           </div>
         ) : null}
+        <PilotageScopeNotice copy={copy} isEmpty={overview.contracts.length === 0} />
         <PilotageOverviewSurfaceTabs locale={locale} overview={overview} />
 
         {communityOperations ? (

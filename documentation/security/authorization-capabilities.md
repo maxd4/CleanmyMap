@@ -250,6 +250,29 @@ Une capacité à scope `organization` ou `territory` exige une relation canoniqu
 
 En l'absence de relation canonique exploitable, appliquer le **fail-closed** : ne pas élargir la permission au global pour compenser.
 
+### Surface métier `/pilotage`
+
+Le rôle et le scope sont deux dimensions distinctes. Le contrat de la surface
+`/pilotage` est :
+
+| ACTIVE_ROLE | Scope métier | État |
+|---|---|---|
+| `coordinateur` | actions organisées par relation canonique `creator`, `organizer` ou `coorganizer` | courant |
+| `elu` | territoire attribué canoniquement | `TARGET / NOT_IMPLEMENTED` |
+| `admin` | supervision et modération globale via `/admin` | pas de pilotage métier |
+| `max` | administration de plateforme ; rôle métier à activer explicitement pour piloter | pas de pilotage implicite |
+
+Pour un coordinateur, l'overview, les KPI, comparaisons, zones et priorités
+sont calculés uniquement sur ce corpus autorisé. Une relation absente produit
+un état vide. Les paramètres fournis par le client ne peuvent ni choisir un
+autre utilisateur, ni élargir le scope. Les indicateurs publics restent dans
+les surfaces publiques ou Reports prévues à cet effet.
+
+Le scope `organization` pour un couple `coordinateur`/`entreprise` et une
+adhésion organisationnelle canonique est une cible future distincte du scope
+`organized`. Tant que cette relation n'est pas disponible dans le runtime, son
+absence ne donne aucun droit d'organisation générale.
+
 ## 5. Relations de ressource
 
 Les principales relations utilisables pour l'AuthZ sont :

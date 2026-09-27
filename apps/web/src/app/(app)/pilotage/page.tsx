@@ -13,10 +13,11 @@ import {
   type PilotageLocale,
 } from "@/components/pilotage/pilotage-access-screen";
 
-async function loadOverview() {
+async function loadOverview(userId: string) {
   return loadPilotageOverview({
     periodDays: 30,
     limit: 1800,
+    scope: { kind: "organized", userId },
   });
 }
 
@@ -48,7 +49,7 @@ export default async function PilotageAccessPage() {
     return <PilotageRestrictedPage locale={locale} profile={profile} />;
   }
 
-  const overview = await loadOverview().catch(() => null);
+  const overview = await loadOverview(userId).catch(() => null);
   const communityOperations = overview
     ? await loadPilotageCommunityOperations(overview.contracts).catch(() => null)
     : null;

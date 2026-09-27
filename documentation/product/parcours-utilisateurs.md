@@ -28,12 +28,26 @@ Fallback statique:
 - Utilise les rapports, la cartographie et les partenaires pour structurer la mobilisation.
 
 ## Elu / coordinateur
-- Consulte les besoins, les rapports et les indicateurs -> arbitre -> pilote.
-- Utilise les resultats pour prioriser, arbitrer et soutenir les actions utiles.
+- Le coordinateur ouvre `/pilotage` uniquement sur les actions dont il est le créateur ou l'organisateur/coorganisateur canonique ; l'absence de relation produit un état vide, jamais une vue globale.
+- L'élu est la cible future d'un pilotage territorial fondé sur une attribution canonique (`TARGET / NOT_IMPLEMENTED` tant que le runtime ne la fournit pas) ; il ne reçoit pas de fallback global.
+- Les indicateurs publics et transverses restent consultables dans Reports lorsque leur contrat de lecture le permet.
 
 ## Admin
 - Modere, qualifie les donnees et maintient la gouvernance.
 - Assume la supervision, la qualite des donnees et la coherence des livrables.
+- `/admin` est sa surface de supervision ; `admin` ne reçoit pas le parcours métier `/pilotage` par son seul rôle actif.
+
+## Rôle, capacité et périmètre
+
+Le rôle actif ne suffit pas à définir le périmètre métier. Une capacité de
+pilotage doit aussi être bornée par une relation canonique côté serveur :
+
+```txt
+coordinateur → actions organisées (creator / organizer / coorganizer)
+elu          → territoire attribué (TARGET / NOT_IMPLEMENTED)
+admin        → modération et supervision globale, pas pilotage métier
+max          → administration de plateforme ; basculer explicitement vers un rôle métier
+```
 
 ## Publics concernes
 

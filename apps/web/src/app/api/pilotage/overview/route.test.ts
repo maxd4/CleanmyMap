@@ -53,7 +53,7 @@ describe("GET /api/pilotage/overview authorization", () => {
     expect(loadPilotageOverviewMock).not.toHaveBeenCalled();
   });
 
-  it.each(["coordinateur", "admin", "max"])("allows %s through the pilotage capability", async () => {
+  it("scopes coordinateur data to the authenticated user's organized actions", async () => {
     getCurrentUserEffectiveAccessMock.mockResolvedValueOnce({
       canAccessPilotage: true,
     });
@@ -66,6 +66,21 @@ describe("GET /api/pilotage/overview authorization", () => {
       periodDays: 30,
       limit: 1500,
       types: null,
+      scope: { kind: "organized", userId: "user-1" },
     });
+  });
+
+  it("does not let a query parameter choose another user's scope", async () => {
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/pilotage/overview?userId=user-2&scope=global"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(loadPilotageOverviewMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: { kind: "organized", userId: "user-1" },
+      }),
+    );
   });
 });

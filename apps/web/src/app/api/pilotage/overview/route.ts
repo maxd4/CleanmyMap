@@ -43,6 +43,7 @@ export async function GET(request: Request) {
  periodDays,
  limit,
  types,
+ scope: { kind: "organized", userId },
  });
 
  return NextResponse.json({
