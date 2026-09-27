@@ -1,7 +1,29 @@
-import { CURRENT_MILESTONES } from "../progression-utils";
+import { findBadgeDefinition } from "../badge-catalog";
+import type {
+  GamificationBadgeScale,
+  GamificationBadgeStatus,
+} from "../progression-types";
+import {
+  buildGemGradeCatalog,
+  computeOrganisationProgress,
+  ORGANISATION_GEM_CONFIG,
+} from "../gem-progression";
+type ExplorerBadgeTier = "wood" | "bronze" | "silver" | "gold" | "diamond" | "cosmic";
+
+type ExplorerBadgeRank = {
+  grade: string;
+  subGrade: string;
+  tier: ExplorerBadgeTier;
+  icon: string;
+  title: string;
+};
 
 export type GamificationBadgeEntry = {
   id: string;
+  definitionId: string;
+  family: string;
+  status: GamificationBadgeStatus;
+  scale: GamificationBadgeScale;
   name: string;
   description: string;
   icon: string;
@@ -45,7 +67,7 @@ type QuizProgressionTierDefinition = {
 
 /**
  * Legacy nested learning milestone display kept for API compatibility.
- * It is not one of the seven top-level CURRENT infinite progressions.
+ * It is not one of the eight top-level CURRENT infinite progressions.
  */
 export type LearningMilestoneFamily = {
   id: string;
@@ -62,6 +84,22 @@ type LegacyBadgeDefinition = {
   icon: string;
   special?: "first_trace_utile" | "trace_fondatrice" | "actions_validated";
 };
+
+function badgeMetadata(idOrAlias: string): Pick<
+  GamificationBadgeEntry,
+  "definitionId" | "family" | "status" | "scale"
+> {
+  const definition = findBadgeDefinition(idOrAlias);
+  if (!definition) {
+    throw new Error(`Unknown canonical badge definition: ${idOrAlias}`);
+  }
+  return {
+    definitionId: definition.id,
+    family: definition.family,
+    status: definition.status,
+    scale: definition.scale,
+  };
+}
 
 export const EXPLORER_TIERS: readonly ExplorerTier[] = [
   { min: 0, max: 0, id: "explorer-observateur", title: "Observateur", icon: "👀", texture: "/images/textures/parchment.svg" },
@@ -162,16 +200,16 @@ export function buildQuizBalanceProgression(): LearningMilestoneFamily {
 
 const ACTION_BADGES: readonly LegacyBadgeDefinition[] = [
   {
-    id: CURRENT_MILESTONES.find((milestone) => milestone.id === "premiere_trace_utile")!.legacyId!,
-    name: CURRENT_MILESTONES.find((milestone) => milestone.id === "premiere_trace_utile")!.label,
-    description: CURRENT_MILESTONES.find((milestone) => milestone.id === "premiere_trace_utile")!.description,
+    id: findBadgeDefinition("premiere_trace_utile")!.id,
+    name: findBadgeDefinition("premiere_trace_utile")!.label,
+    description: findBadgeDefinition("premiere_trace_utile")!.rule.description,
     special: "first_trace_utile",
     icon: "badge-check",
   },
   {
-    id: CURRENT_MILESTONES.find((milestone) => milestone.id === "trace_fondatrice")!.id,
-    name: CURRENT_MILESTONES.find((milestone) => milestone.id === "trace_fondatrice")!.label,
-    description: CURRENT_MILESTONES.find((milestone) => milestone.id === "trace_fondatrice")!.description,
+    id: findBadgeDefinition("trace_fondatrice")!.id,
+    name: findBadgeDefinition("trace_fondatrice")!.label,
+    description: findBadgeDefinition("trace_fondatrice")!.rule.description,
     special: "trace_fondatrice",
     icon: "sparkles",
   },
@@ -181,9 +219,11 @@ const ACTION_BADGES: readonly LegacyBadgeDefinition[] = [
 function buildTierBadge(
   tier: BadgeTierDefinition,
   current: number,
+  family: string,
 ): GamificationBadgeEntry {
   return {
     id: tier.id,
+    ...badgeMetadata(family),
     name: tier.label,
     description: tier.tooltip,
     icon: tier.iconVariant,
@@ -220,6 +260,7 @@ export function buildExplorerFamily(currentPlaces: number): {
 
     return {
       id: tier.id,
+      ...badgeMetadata("explorer"),
       name: tier.title,
       description: `Visiter des lieux pour révéler la carte — niveau ${tier.title}`,
       icon: tier.icon,
@@ -240,12 +281,36 @@ export function buildExplorerFamily(currentPlaces: number): {
 
 export function buildCleanZonesBadges(cleanZonesCount: number): GamificationBadgeEntry[] {
   const current = Math.max(0, Math.trunc(cleanZonesCount));
-  return CLEAN_ZONES_TIERS.map((tier) => buildTierBadge(tier, current));
+  return CLEAN_ZONES_TIERS.map((tier) => buildTierBadge(tier, current, "clean-zones"));
 }
 
 export function buildParticipantBadges(participationCount: number): GamificationBadgeEntry[] {
   const current = Math.max(0, Math.trunc(participationCount));
-  return PARTICIPANT_TIERS.map((tier) => buildTierBadge(tier, current));
+  return PARTICIPANT_TIERS.map((tier) => buildTierBadge(tier, current, "participant"));
+}
+
+export function buildOrganisationBadges(organisedActionsCount: number): GamificationBadgeEntry[] {
+  const current = Math.max(0, Math.trunc(organisedActionsCount));
+  const progression = computeOrganisationProgress(current);
+  const grades = buildGemGradeCatalog(ORGANISATION_GEM_CONFIG);
+  const visibleGrades = [progression.currentGrade, progression.nextGrade]
+    .filter((grade): grade is NonNullable<typeof grade> => Boolean(grade))
+    .reduce(
+      (all, grade) => all.some((candidate) => candidate.id === grade.id) ? all : [...all, grade],
+      grades,
+    );
+
+  return visibleGrades.map((grade) => ({
+    id: grade.id,
+    ...badgeMetadata("organisation"),
+    name: grade.label,
+    description: grade.tooltip ?? `Palier Organisation à ${grade.threshold} actions validées`,
+    icon: grade.iconVariant ?? "users",
+    visualVariant: grade.visualVariant ?? "stone",
+    tooltip: grade.tooltip ?? `Palier Organisation à ${grade.threshold} actions validées`,
+    unlocked: current >= grade.threshold,
+    progress: { current, target: grade.threshold },
+  }));
 }
 
 export function buildActionBadges(
@@ -269,6 +334,7 @@ export function buildActionBadges(
 
     return {
       id: badge.id,
+      ...badgeMetadata(badge.id),
       name: badge.name,
       description: badge.description,
       icon: badge.icon,
@@ -289,4 +355,42 @@ export function getHighestExplorerTier(currentPlaces: number) {
   }
 
   return highestTierReached;
+}
+
+function explorerBadgeTier(minimum: number): ExplorerBadgeTier {
+  if (minimum >= 35) return "cosmic";
+  if (minimum >= 20) return "diamond";
+  if (minimum >= 8) return "gold";
+  if (minimum >= 3) return "bronze";
+  return "wood";
+}
+
+/** The profile card uses the same explorer tiers as the badge-list surface. */
+export function computeExplorerBadgeRank(currentPlaces: number): ExplorerBadgeRank {
+  const tier = getHighestExplorerTier(currentPlaces);
+  return {
+    grade: tier.title,
+    subGrade: "",
+    tier: explorerBadgeTier(tier.min),
+    icon: tier.icon,
+    title: tier.title,
+  };
+}
+
+export function computeExplorerProgression(currentPlaces: number) {
+  const current = Math.max(0, Math.trunc(currentPlaces));
+  const currentTier = getHighestExplorerTier(current);
+  const nextTier = EXPLORER_TIERS.find((tier) => tier.min > currentTier.min) ?? null;
+  const progressStart = currentTier.min;
+  const progressEnd = nextTier?.min ?? progressStart + 5;
+  const progressSpan = Math.max(1, progressEnd - progressStart);
+
+  return {
+    current,
+    currentTier,
+    nextTier,
+    progressPercent: Math.round(
+      (Math.max(0, Math.min(current - progressStart, progressSpan)) / progressSpan) * 100,
+    ),
+  };
 }

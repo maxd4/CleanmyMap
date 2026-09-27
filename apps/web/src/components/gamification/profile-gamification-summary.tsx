@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { resolveEngagementStatus } from "@/lib/gamification/engagement-status";
 
 export type ProfileGamificationSummaryProps = {
   currentLevel: number | null;
@@ -14,6 +15,8 @@ export function ProfileGamificationSummary({
   regularityLabel,
   actionBalanceLabel,
 }: ProfileGamificationSummaryProps) {
+  const engagementStatus = resolveEngagementStatus(currentLevel ?? 1);
+
   return (
     <section
       aria-labelledby="profile-gamification-summary-title"
@@ -33,9 +36,9 @@ export function ProfileGamificationSummary({
           </h2>
         </div>
 
-        <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
-            <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-100/65">
+            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
               Niveau actuel
             </dt>
             <dd className="mt-1 text-xl font-black text-white">
@@ -43,13 +46,13 @@ export function ProfileGamificationSummary({
             </dd>
           </div>
           <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
-            <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-100/65">
+            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
               Organisation
             </dt>
             <dd className="mt-1 text-xl font-black text-white">{organisationCount}</dd>
           </div>
           <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
-            <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-100/65">
+            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
               Régularité
             </dt>
             <dd className="mt-1 truncate text-base font-black text-amber-100" title={regularityLabel}>
@@ -57,11 +60,19 @@ export function ProfileGamificationSummary({
             </dd>
           </div>
           <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
-            <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-100/65">
+            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
               Polyvalence
             </dt>
             <dd className="mt-1 truncate text-base font-black text-amber-100" title={actionBalanceLabel}>
               {actionBalanceLabel}
+            </dd>
+          </div>
+          <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
+            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
+              Statut d&apos;engagement
+            </dt>
+            <dd className="mt-1 truncate text-base font-black text-amber-100">
+              {engagementStatus.label}
             </dd>
           </div>
         </dl>

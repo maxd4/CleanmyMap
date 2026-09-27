@@ -106,6 +106,12 @@ describe("gamification badges listing", () => {
     const payload = await loadGamificationBadgesList(supabase, "user-1");
 
     expect(payload).not.toHaveProperty("totalPoints");
+    expect(payload.badgeCatalog.some((definition) => definition.id === "explorer")).toBe(true);
+    expect(payload.badgeCatalog.find((definition) => definition.id === "explorer"))
+      .toMatchObject({ family: "explorer", scale: "exploration", status: "CURRENT" });
+    expect(payload.badges.some((badge) => badge.family === "organisation")).toBe(true);
+    expect(payload.badges.find((badge) => badge.id === "organisation-observateur"))
+      .toMatchObject({ definitionId: "organisation", scale: "gem", status: "CURRENT" });
     expect(payload.badges.some((badge) => badge.id.startsWith("forms-"))).toBe(false);
     expect(payload.totalBadges).toBeGreaterThanOrEqual(0);
     expect(payload.quizProgressions).toHaveLength(1);

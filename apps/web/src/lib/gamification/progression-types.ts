@@ -3,6 +3,7 @@ import type {
   ActionGeometryKind,
   ActionGeometrySource,
 } from "@/lib/actions/types";
+import type { EngagementStatus } from "./engagement-status";
 
 export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
@@ -32,6 +33,23 @@ export type GamificationXpPolicy =
       kind: "none";
       reason: string;
     };
+
+export type GamificationBadgeStatus = "CURRENT" | "LEGACY";
+
+export type GamificationBadgeScale =
+  | "participant"
+  | "gem"
+  | "exploration"
+  | "atmosphere"
+  | "learning"
+  | "one_shot"
+  | "mohs"
+  | "legacy";
+
+export type GamificationBadgeRule =
+  | { kind: "infinite_thresholds"; description: string }
+  | { kind: "one_shot"; description: string }
+  | { kind: "legacy_compatibility"; description: string };
 
 export type ProgressionEventType =
   | "action_declare_pending"
@@ -107,13 +125,6 @@ type CurrentMilestoneId =
 
 type ImpactBadgeId = "mohs_waste" | "mohs_butts";
 
-type GamificationBadgeScale =
-  | "participant"
-  | "gem"
-  | "exploration"
-  | "atmosphere"
-  | "learning";
-
 interface ProgressionDefinition {
   id: CurrentInfiniteProgressionId;
   category: "XP_PROGRESSION";
@@ -131,6 +142,23 @@ interface ProgressionDefinition {
   scale: GamificationBadgeScale;
   infinite: true;
 }
+
+export type GamificationBadgeDefinition = {
+  id: string;
+  family: string;
+  status: GamificationBadgeStatus;
+  label: string;
+  scale: GamificationBadgeScale;
+  metric: string;
+  sourceDomain: string;
+  visibility: GamificationVisibility;
+  progressionId: CurrentInfiniteProgressionId | null;
+  rule: GamificationBadgeRule;
+  xpPolicy: GamificationXpPolicy;
+  aliases: readonly string[];
+  legacyLabels?: readonly string[];
+  legacyThresholds?: readonly { label: string; minimum: number }[];
+};
 
 export interface MilestoneDefinition {
   id: CurrentMilestoneId;
@@ -169,6 +197,41 @@ export type GamificationProgressionDefinition = ProgressionDefinition;
 export type GamificationBadgeReference = {
   id: string;
   label: string;
+};
+
+export type UserProgressionResponse = {
+  userId: string;
+  xpTotal: number;
+  xpValidated: number;
+  xpPending: number;
+  currentLevel: number;
+  potentialLevel: number;
+  nextLevel: {
+    level: number;
+    xpRequired: number;
+    xpRemaining: number;
+    frozen: boolean;
+    requirements: LevelRequirementAssessment;
+  };
+  badges: string[];
+  badgeCatalog: readonly GamificationBadgeDefinition[];
+  engagementStatus: EngagementStatus;
+  impact: PersonalImpactMetrics;
+  impactMethodology: PersonalImpactMethodology;
+  dynamicRanking: PersonalDynamicRanking;
+  history: {
+    timeline: PersonalTimelineItem[];
+    mapPoints: PersonalTimelineItem[];
+  };
+  monthlyMilestone: MonthlyMilestone;
+  recognition: ContributorRecognitionSnapshot;
+  annualRecognition: ContributorRecognitionSnapshot;
+  yearToDateImpact: {
+    wasteKg: number;
+    validatedActions: number;
+    wasteKnownActions: number;
+    wasteCoverageRate: number;
+  };
 };
 
 export type GamificationProgressionState = ProgressionDefinition & {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildInfiniteBadgeModel } from "./InfiniteBadge.model";
+import { buildExplorerFamily } from "@/lib/gamification/badges/families";
 
 describe("InfiniteBadge view model", () => {
   it("preserves generic levels, ranks, state, thresholds and progress", () => {
@@ -36,8 +37,26 @@ describe("InfiniteBadge view model", () => {
     const model = buildInfiniteBadgeModel({ icon: "star", title: "Lieux", total: 50, step: 5, family: "lieux" });
 
     expect(model.displayTitle).toBe("Maître des Cartes");
-    expect(model.displayIcon).toBe("star");
+    expect(model.displayIcon).toBe("🔭");
     expect(model.displayRank).toBe("Maître des Cartes");
+  });
+
+  it("uses the same explorer grade as the badge-list family builder", () => {
+    const model = buildInfiniteBadgeModel({
+      icon: "star",
+      title: "Exploration",
+      total: 15,
+      step: 5,
+      family: "explorer",
+    });
+
+    expect(model.displayTitle).toBe("Cartographe");
+    expect(model.displayRank).toBe("Cartographe");
+    expect(model.currentBadgeId).toBe("explorer-cartographe");
+    expect(model.nextBadgeId).toBe("explorer-coordinateur");
+    expect(model.currentBadgeId).toBe(
+      buildExplorerFamily(15).badges.find((badge) => badge.name === "Cartographe")?.id,
+    );
   });
 
   it("uses the common gem scale for moderation", () => {

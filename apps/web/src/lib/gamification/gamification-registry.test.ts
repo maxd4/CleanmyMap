@@ -5,6 +5,10 @@ import {
   GAMIFICATION_REGISTRY,
   NON_GAMIFIED_SIGNALS,
 } from "./progression-utils";
+import {
+  CURRENT_BADGE_DEFINITIONS,
+  BADGE_DEFINITIONS,
+} from "./badge-catalog";
 
 const REQUIRED_NON_GAMIFIED_SIGNAL_IDS = [
   "signal:waste-total-direct-xp",
@@ -34,6 +38,34 @@ const REQUIRED_NON_GAMIFIED_SIGNAL_IDS = [
 ] as const;
 
 describe("CURRENT gamification registry", () => {
+  it("uses one canonical identity per current badge family and scale", () => {
+    const ids = CURRENT_BADGE_DEFINITIONS.map((definition) => definition.id);
+    const families = CURRENT_BADGE_DEFINITIONS.map((definition) => definition.family);
+    const allIds = BADGE_DEFINITIONS.map((definition) => definition.id);
+
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(new Set(families).size).toBe(families.length);
+    expect(new Set(allIds).size).toBe(allIds.length);
+    expect(CURRENT_BADGE_DEFINITIONS.every((definition) =>
+      definition.status === "CURRENT" &&
+      definition.metric &&
+      definition.sourceDomain &&
+      definition.rule &&
+      definition.xpPolicy,
+    )).toBe(true);
+    expect(CURRENT_INFINITE_PROGRESSIONS.every((progression) =>
+      CURRENT_BADGE_DEFINITIONS.some((definition) =>
+        definition.id === progression.badgeId &&
+        definition.family === progression.badgeFamily &&
+        definition.scale === progression.scale,
+      ),
+    )).toBe(true);
+    expect(BADGE_DEFINITIONS.find((definition) => definition.id === "mohs"))
+      .toMatchObject({ status: "LEGACY", scale: "mohs", family: "mohs" });
+    expect(BADGE_DEFINITIONS.find((definition) => definition.id === "forms"))
+      .toMatchObject({ status: "LEGACY", visibility: "not_exposed" });
+  });
+
   it("uses one explicit category and contract for every current mechanic", () => {
     const ids = GAMIFICATION_REGISTRY.map((entry) => entry.id);
 

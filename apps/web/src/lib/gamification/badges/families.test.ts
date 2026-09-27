@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildExplorerFamily,
   buildActionBadges,
+  buildOrganisationBadges,
   buildQuizBalanceProgression,
   buildQuizTypeProgression,
   buildParticipantBadges,
@@ -13,9 +14,26 @@ describe("gamification badge families", () => {
 
     expect(badges[0]).toMatchObject({
       id: "participant-0",
+      family: "participant",
+      definitionId: "participant",
+      scale: "participant",
       name: "Observateur",
       unlocked: true,
       progress: { current: 0, target: 0 },
+    });
+  });
+
+  it("uses the canonical organisation family and gem grade scale", () => {
+    const badges = buildOrganisationBadges(3);
+    const current = badges.find((badge) => badge.id === "organisation-topaze");
+
+    expect(current).toMatchObject({
+      definitionId: "organisation",
+      family: "organisation",
+      status: "CURRENT",
+      scale: "gem",
+      name: "Topaze",
+      unlocked: true,
     });
   });
 
@@ -38,6 +56,8 @@ describe("gamification badge families", () => {
 
     expect(family.badges[0]).toMatchObject({
       id: "explorer-observateur",
+      family: "explorer",
+      definitionId: "explorer",
       name: "Observateur",
     });
     expect(family.badges.find((badge) => badge.id === "explorer-cartographe")).toMatchObject({
@@ -50,9 +70,11 @@ describe("gamification badge families", () => {
   it("keeps first trace and legacy badges aligned with the complete action count", () => {
     const badges = buildActionBadges(0, 1);
 
-    expect(badges.find((badge) => badge.id === "first_trace_utile")).toMatchObject({
+    expect(badges.find((badge) => badge.id === "premiere_trace_utile")).toMatchObject({
       unlocked: true,
       progress: { current: 1, target: 1 },
+      definitionId: "premiere_trace_utile",
+      family: "milestone:premiere_trace_utile",
     });
     expect(badges.find((badge) => badge.id === "trace_fondatrice")).toMatchObject({
       unlocked: true,

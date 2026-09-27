@@ -15,6 +15,8 @@ describe("ProfileGamificationSummary", () => {
 
     expect(markup).toContain("Résumé de progression");
     expect(markup).toContain("Niveau actuel");
+    expect(markup).toContain("Statut d&#x27;engagement");
+    expect(markup).toContain(">Référent<");
     expect(markup).toContain(">7<");
     expect(markup).toContain("Organisation");
     expect(markup).toContain(">12<");
@@ -37,6 +39,7 @@ describe("ProfileGamificationSummary", () => {
     );
 
     expect(markup).toContain(">—<");
+    expect(markup).toContain(">Observateur<");
     expect(markup).not.toContain(">1<");
   });
 });

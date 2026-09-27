@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { computeActionCreationRank, computePlacesRank } from "./utils";
+import { computeActionCreationRank } from "./utils";
+import { computeExplorerBadgeRank } from "@/lib/gamification/badges/families";
 
 describe("infinite badges ranks", () => {
   it("keeps the explorer family as the base reference", () => {
-    expect(computePlacesRank(0).title).toBe("Promeneur Local");
-    expect(computePlacesRank(10).title).toBe("Maître des Cartes");
+    expect(computeExplorerBadgeRank(0).title).toBe("Observateur");
+    expect(computeExplorerBadgeRank(50).title).toBe("Maître des Cartes");
   });
 
   it("uses the canonical gem scale for actions created", () => {

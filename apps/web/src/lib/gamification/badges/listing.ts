@@ -8,6 +8,7 @@ import { loadGamificationUserCounters } from "../counters";
 import {
   buildCleanZonesBadges,
   buildExplorerFamily,
+  buildOrganisationBadges,
   buildActionBadges,
   buildParticipantBadges,
   type GamificationBadgeEntry,
@@ -17,11 +18,13 @@ import {
   loadQuizLearningProgression,
   type LearningProgressionSummary,
 } from "../quiz-learning-progression";
+import { BADGE_DEFINITIONS } from "../badge-catalog";
 
 const CLEAN_ZONE_SOURCE_LIMIT = 1000;
 
 export type GamificationBadgesListPayload = {
   badges: GamificationBadgeEntry[];
+  badgeCatalog: typeof BADGE_DEFINITIONS;
   /** Canonical user-facing quiz progression: one learning axis. */
   learningProgression: LearningProgressionSummary;
   /** Compatibility field retained for clients that still read the old plural key. */
@@ -131,6 +134,8 @@ export async function loadGamificationBadgesList(
   const participantBadges = buildParticipantBadges(participationCount);
   appendBadges(badges, participantBadges);
 
+  appendBadges(badges, buildOrganisationBadges(completeActionsCount));
+
   const legacyBadges = buildActionBadges(actionsCount, completeActionsCount);
   appendBadges(badges, legacyBadges);
 
@@ -138,6 +143,7 @@ export async function loadGamificationBadgesList(
 
   return {
     badges,
+    badgeCatalog: BADGE_DEFINITIONS,
     learningProgression,
     quizProgressions: [learningProgression],
     unlockedCount,

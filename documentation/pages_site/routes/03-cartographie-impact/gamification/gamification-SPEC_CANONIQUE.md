@@ -23,12 +23,78 @@ Les autres documents de gamification restent utiles, mais ils sont désormais se
   CURRENT ne doit les utiliser pour attribuer, afficher ou dépenser la
   progression.
 
+## Niveau, statut d'engagement et badge
+
+Ces trois notions sont volontairement distinctes et ne doivent pas être
+interprétées comme trois noms pour la même progression :
+
+| Notion | Contrat CURRENT | Source canonique | Ce qu'elle ne signifie pas |
+| --- | --- | --- | --- |
+| **Niveau** | progression générale numérique dérivée de l'XP et des prérequis de contribution | `progression_profiles.current_level` et `progression-formulas.ts` | ni une famille de badge, ni un rôle AuthZ |
+| **Statut d'engagement** | reconnaissance qualitative ordonnée `Observateur → Contributeur → Référent → Mentor → Coordinateur` | `engagement-status.ts` | ni un badge spécialisé, ni une permission |
+| **Badge** | progression spécialisée ou jalon dans une famille métier | `BADGE_DEFINITIONS` / `CURRENT_BADGE_DEFINITIONS` dans `badge-catalog.ts` | ni le niveau global, ni le statut qualitatif |
+
+Le catalogue de badges porte une identité stable, une famille, le statut
+`CURRENT` ou `LEGACY`, l'échelle, la métrique, la source métier, la visibilité,
+la règle de progression ou de jalon et la politique XP. Les surfaces peuvent
+conserver leurs façades de rendu, mais elles doivent résoudre ces métadonnées
+depuis ce catalogue. Une famille CURRENT ne doit donc pas changer d'identité
+ou de grade selon qu'elle est lue par `/api/gamification/me`,
+`/api/gamification/badges/list` ou le profil.
+
+Les libellés historiques `Contributeur regulier`, `Contributeur confirme`,
+`Pilier terrain` et `Referent impact` sont classés `LEGACY` : ils restent
+lisibles dans les anciens payloads, mais ne sont plus une seconde définition
+du statut d'engagement. `Mohs`, les badges Forms, les badges de zone sensible
+et les reconnaissances d'action/qualité/collectif historiques sont également
+secondaires ou `LEGACY` dans le catalogue ; ils ne créent aucune nouvelle
+famille CURRENT.
+
+### Inventaire des identités de badge
+
+Le catalogue CURRENT est consommé par les builders de `badges/families.ts`,
+les états terrain de `terrain-progressions.ts`, les cartes du profil
+(`InfiniteBadgesPanel`) et les payloads `/api/gamification/me` et
+`/api/gamification/badges/list`. Les grades sont ensuite calculés par leur
+module métier, jamais redéfinis par une page.
+
+| Famille canonique | Échelle | Métrique | Surfaces principales |
+| --- | --- | --- | --- |
+| `explorer` | exploration | `unique_places_visited` | badge list, profil, progression Exploration |
+| `participant` | participant | `participation_count` | badge list, progression Participation |
+| `organisation` | gem | `validated_organized_actions_count` | profil, progression Organisation |
+| `clean-zones` | atmosphere | `eligible_clean_zones` | badge list, progression Zones propres |
+| `regularity` | gem | `consecutive_active_months` | profil, progression Régularité |
+| `versatility` | gem | `validated_context_cycles` | profil, progression Polyvalence / Équilibre des contextes |
+| `learning` | learning | `validated_learning_events` | quiz, badge list, progression Apprentissage |
+| `moderation` | gem | `resolvedModerationCases` | profil autorisé, progression Modération |
+
+Les jalons CURRENT ont chacun leur identité `milestone:<id>` dans le même
+catalogue : `premiere_trace_utile`, `trace_fondatrice`, `boucle_bouclee`,
+`mobilisateur`, `donnee_exemplaire`, `parcours_documente`,
+`mesure_tracable`, `tri_documente`, `formalites_preparees`,
+`participation_retrouvee`, `parrainage_utile`, `premiere_moderation`,
+`premiere_validation_participation`, `premiere_correction_impact_justifiee`
+et `moderateur_polyvalent`.
+
+Les identités `forms`, `mohs`, `sensitive-zone`, ainsi que les groupes
+`legacy-level-recognition`, `legacy-quality-recognition`,
+`legacy-collective-recognition` et `legacy-action-badges`, restent
+`LEGACY`/compatibilité. Les paliers quiz historiques par type et équilibrés
+sont des alias de `learning`; ils ne forment pas deux familles concurrentes.
+Les anciennes chaînes produites par `deriveBadges()` sont indexées comme
+libellés LEGACY, tandis que le niveau et le statut d'engagement sont exposés
+par leurs contrats propres.
+
 ## Taxonomie CURRENT et registre des décisions
 
 `GAMIFICATION_REGISTRY` dans
 `apps/web/src/lib/gamification/progression-utils.ts` est le registre canonique
-unique des mécaniques et signaux métier. Il n'existe pas de matrice produit
-parallèle à compléter plus tard. Chaque entrée porte obligatoirement :
+unique des mécaniques et signaux métier ; `BADGE_DEFINITIONS` dans
+`apps/web/src/lib/gamification/badge-catalog.ts` est le catalogue canonique
+des identités de badges. Ces deux registres ont des responsabilités distinctes
+et remplacent les anciennes matrices de surface ; il n'existe pas de matrice
+produit parallèle à compléter plus tard. Chaque entrée de mécanique porte :
 
 - un `id` stable ;
 - une `category` exactement égale à `XP_PROGRESSION`, `XP_MILESTONE`,

@@ -1,6 +1,7 @@
 "use client";
 
 import type { LearningProgressionSummary } from "../quiz-learning-progression";
+import type { GamificationBadgeDefinition } from "../progression-types";
 
 export type GamificationBadgeListItem = {
   id?: string;
@@ -19,6 +20,7 @@ export type GamificationBadgeListResponse = {
   summary?: {
     currentPlaces?: number;
   };
+  badgeCatalog?: readonly GamificationBadgeDefinition[];
   learningProgression?: LearningProgressionSummary;
   badges?: GamificationBadgeListItem[];
   quizProgressions?: Array<LearningProgressionSummary | {
