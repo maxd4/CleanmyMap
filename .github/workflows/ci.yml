@@ -183,18 +183,24 @@ jobs:
         run: npm ci
 
       - name: Install architectural Semgrep
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
+        id: install-semgrep
         run: python -m pip install --disable-pip-version-check --no-input semgrep==1.177.0
 
       - name: Architectural Semgrep
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success' && steps.install-semgrep.outcome == 'success'
         run: npm run check:semgrep
 
       - name: Lockfile policy
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run check:lockfile-policy
 
       - name: TypeScript typecheck
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run typecheck
 
       - name: UTF-8 check for French-sensitive files
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run check:utf8-fr
 
       - name: Heavy files policy

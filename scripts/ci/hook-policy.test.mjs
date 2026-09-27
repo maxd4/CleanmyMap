@@ -45,6 +45,28 @@ test("CI reports independent gates after setup and dependency installation", asy
     assert.match(step, /steps\.install-node-dependencies\.outcome == 'success'/, gate);
   }
   for (const gate of [
+    "npm run check:lockfile-policy",
+    "npm run typecheck",
+    "npm run check:utf8-fr",
+  ]) {
+    const step = webValidation.slice(webValidation.indexOf(gate) - 600, webValidation.indexOf(gate));
+    assert.match(step, /if: always\(\)/, gate);
+    assert.match(step, /steps\.setup-node\.outcome == 'success'/, gate);
+    assert.match(step, /steps\.install-node-dependencies\.outcome == 'success'/, gate);
+  }
+  const semgrepInstall = webValidation.slice(
+    webValidation.indexOf("python -m pip install") - 600,
+    webValidation.indexOf("python -m pip install"),
+  );
+  assert.match(semgrepInstall, /if: always\(\)/);
+  assert.match(semgrepInstall, /id: install-semgrep/);
+  const semgrepCheck = webValidation.slice(
+    webValidation.indexOf("npm run check:semgrep") - 700,
+    webValidation.indexOf("npm run check:semgrep"),
+  );
+  assert.match(semgrepCheck, /if: always\(\)/);
+  assert.match(semgrepCheck, /steps\.install-semgrep\.outcome == 'success'/);
+  for (const gate of [
     "npm run lint",
     "node scripts/checks/validation-policy.mjs --assert-full-suite",
     "npm run quality:coverage",
