@@ -10,7 +10,7 @@ export function formatProgressionRequirement(
 ): string {
   const fr = locale === "fr";
   const labels = {
-    minValidatedActions: fr ? "Actions validées" : "Validated actions",
+    minVerifiedContributions: fr ? "Contributions vérifiées" : "Verified contributions",
     minDiversityTypes: fr ? "Diversité des contributions" : "Contribution diversity",
     minCollectiveEvents: fr ? "Implication collective" : "Collective involvement",
     minQualityAverage: fr ? "Qualité moyenne" : "Average quality",

@@ -4,7 +4,10 @@ import type {
   ActionGeometrySource,
 } from "@/lib/actions/types";
 import type { EngagementStatus } from "./engagement-status";
-import type { ProgressionRulesVersion } from "./progression-rules";
+import type {
+  ProgressionRulesVersion,
+  VerifiedContributionFamily,
+} from "./progression-rules";
 
 export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
@@ -336,6 +339,8 @@ export type UserProgressionStats = {
   totalActions: number;
   approvedActions: number;
   validatedActions: number;
+  verifiedContributions: number;
+  verifiedContributionFamilies: VerifiedContributionFamily[];
   qualityAverage: number;
   validationRatio: number;
   diversityTypes: number;
@@ -347,7 +352,7 @@ export type UserProgressionStats = {
 };
 
 type LevelRequirementId =
-  | "minValidatedActions"
+  | "minVerifiedContributions"
   | "minDiversityTypes"
   | "minCollectiveEvents"
   | "minQualityAverage"
@@ -376,13 +381,15 @@ export type LevelRequirementAssessment = {
   satisfied: LevelRequirementCondition[];
   missing: LevelRequirementCondition[];
   thresholds: {
-    minValidatedActions: number;
+    minVerifiedContributions: number;
     minDiversityTypes: number;
     minCollectiveEvents: number;
     minQualityAverage: number | null;
     minValidationRatio: number | null;
   };
   current: {
+    verifiedContributions: number;
+    verifiedContributionFamilies: VerifiedContributionFamily[];
     validatedActions: number;
     diversityTypes: number;
     collectiveEvents: number;

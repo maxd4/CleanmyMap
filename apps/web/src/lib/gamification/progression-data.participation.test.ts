@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { loadUserProgressionStats } from "./progression-data";
+import { buildVerifiedContributionSummary } from "./progression-contributions";
 
 type QueryResult<T> = {
   data: T[];
@@ -43,11 +44,17 @@ function createQueryChain<T>(result: T[]): QueryChain<T> {
 function createProgressionStatsSupabase(
   progressionEvents: unknown[],
   participationCount: number,
+  confirmedParticipantActionIds: string[] = [],
 ): SupabaseClient {
   return {
     from: vi.fn((table: string) => {
       if (table === "progression_events") {
         return createQueryChain(progressionEvents);
+      }
+      if (table === "action_participants") {
+        return createQueryChain(
+          confirmedParticipantActionIds.map((action_id) => ({ action_id })),
+        );
       }
       if (["actions", "action_organizers", "forms"].includes(table)) {
         return createQueryChain([]);
@@ -118,4 +125,56 @@ describe("loadUserProgressionStats", () => {
       expect(stats.diversityTypes).toBe(1);
     },
   );
+
+  it("deduplicates an action shared by organization and confirmed participation", () => {
+    const summary = buildVerifiedContributionSummary({
+      validatedOrganizationActionIds: ["action-1", "action-2"],
+      confirmedParticipantActionIds: ["action-1", "action-3"],
+      events: [
+        {
+          event_type: "clean_zone_task",
+          status_phase: "validated",
+          source_table: "clean_zones",
+          source_id: "zone-1",
+          xp_awarded: 1,
+        },
+        {
+          event_type: "clean_zone_task",
+          status_phase: "validated",
+          source_table: "clean_zones",
+          source_id: "zone-1",
+          xp_awarded: 1,
+        },
+        {
+          event_type: "route_recommend_use",
+          status_phase: "validated",
+          source_table: "route_recommendations",
+          source_id: "route-1",
+          xp_awarded: 1,
+        },
+      ],
+    });
+
+    expect(summary.count).toBe(4);
+    expect(summary.families).toEqual(["participation", "organisation", "clean_zones"]);
+  });
+
+  it("counts confirmed participation as a verified contribution without using XP events", async () => {
+    const supabase = createProgressionStatsSupabase(
+      [{
+        event_type: "route_recommend_use",
+        status_phase: "validated",
+        source_table: "route_recommendations",
+        source_id: "route-1",
+        xp_awarded: 0,
+      }],
+      1,
+      ["action-1", "action-2"],
+    );
+
+    const stats = await loadUserProgressionStats(supabase, "user-1");
+
+    expect(stats.verifiedContributions).toBe(2);
+    expect(stats.verifiedContributionFamilies).toEqual(["participation"]);
+  });
 });

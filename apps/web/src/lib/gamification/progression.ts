@@ -12,6 +12,7 @@ export type {
   ProgressionStatusPhase,
   UserProgressionStats,
 } from "./progression-types";
+export type { VerifiedContributionFamily } from "./progression-rules";
 
 export {
   computeMonthlyRegularityAwards,
@@ -26,7 +27,7 @@ export {
   computePotentialLevel,
   minCollectiveEvents,
   minDiversityTypes,
-  minValidatedActions,
+  minVerifiedContributions,
   xpStep,
   xpRequired,
 } from "./progression-formulas";

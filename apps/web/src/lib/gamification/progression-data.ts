@@ -9,6 +9,10 @@ import type {
   UserLabelSummary,
   UserProgressionStats,
 } from "./progression-types";
+import {
+  buildVerifiedContributionSummary,
+  type VerifiedContributionEvent,
+} from "./progression-contributions";
 import type { ActionQualityGrade } from "@/lib/actions/quality/quality-rules";
 import {
   loadActionOrganizerIdsForAction,
@@ -290,13 +294,19 @@ export async function loadUserProgressionStats(
   userId: string,
 ): Promise<UserProgressionStats> {
   const actionRowsPromise = loadActionRowsForUser(supabase, userId);
-  const [eventsResult, counters] = await Promise.all([
+  const [eventsResult, counters, participantResult] = await Promise.all([
     supabase
       .from("progression_events")
-      .select("event_type, status_phase, xp_awarded")
+      .select("event_type, status_phase, source_table, source_id, xp_awarded")
       .eq("user_id", userId)
       .limit(12000),
     loadGamificationUserCounters(supabase, userId),
+    supabase
+      .from("action_participants")
+      .select("action_id")
+      .eq("user_id", userId)
+      .eq("participation_status", "confirmed")
+      .limit(6000),
   ]);
 
   const actionRows = await actionRowsPromise;
@@ -310,7 +320,22 @@ export async function loadUserProgressionStats(
 
   const events =
     (eventsResult.data ??
-      []) as Array<{ event_type: keyof ReturnType<typeof eventFamilyMap>; status_phase: string; xp_awarded: number }>;
+      []) as VerifiedContributionEvent[];
+
+  if (participantResult.error) {
+    throw new Error(participantResult.error.message);
+  }
+
+  const confirmedParticipantActionIds = new Set(
+    (participantResult.data ?? [])
+      .map((row) => (row as { action_id?: string | null }).action_id)
+      .filter((actionId): actionId is string => Boolean(actionId)),
+  );
+  const verifiedContributionSummary = buildVerifiedContributionSummary({
+    validatedOrganizationActionIds: validatedActionIds,
+    confirmedParticipantActionIds,
+    events,
+  });
 
   const diversitySet = new Set<string>();
   let collectiveEvents = 0;
@@ -329,6 +354,10 @@ export async function loadUserProgressionStats(
     ) {
       collectiveEvents += 1;
     }
+  }
+
+  for (const family of verifiedContributionSummary.families) {
+    diversitySet.add(family);
   }
 
   collectiveEvents += counters.participationCount;
@@ -361,6 +390,8 @@ export async function loadUserProgressionStats(
     totalActions,
     approvedActions,
     validatedActions,
+    verifiedContributions: verifiedContributionSummary.count,
+    verifiedContributionFamilies: verifiedContributionSummary.families,
     qualityAverage:
       validatedActions > 0 ? Math.round((qualitySum / validatedActions) * 10) / 10 : 0,
     validationRatio: totalActions > 0 ? validatedActions / totalActions : 0,
