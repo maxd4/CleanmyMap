@@ -120,6 +120,64 @@ Le script `apps/web/scripts/supabase-security-advisors.mjs` reste le garde
 contractuel de sécurité/RLS du dépôt ; il ne devient pas un inventaire général.
 Le garde CLI et l'inventaire MCP sont rapportés séparément.
 
+### Supabase Log Query
+
+Les requêtes de logs Supabase sont une ressource facturée et soumise à quota.
+Par défaut :
+
+```text
+SUPABASE_LOG_QUERY_MODE = FORBIDDEN_UNLESS_NEEDED
+```
+
+Les opérations suivantes ne justifient jamais à elles seules une lecture des
+logs :
+
+- inventaire des migrations ;
+- dry-run de migration ;
+- Advisors security/performance ;
+- inspection du schéma ;
+- tests locaux ;
+- diagnostic GitHub Actions lorsqu'un log GitHub suffit.
+
+Préférer respectivement la CLI Supabase, le plugin Supabase structuré et les
+logs GitHub Actions. L'outil MCP `query_logs`, le Logs Explorer Supabase et
+toute Management API de logs sont des opérations coûteuses en quota.
+
+Ne jamais sonder ou poller les logs en boucle, lancer plusieurs recherches
+exploratoires larges, commencer par une fenêtre de 24 h, interroger toutes les
+sources sans justification ou répéter une requête identique sans avoir analysé
+son résultat. La première requête autorisée, uniquement lorsque les logs sont
+réellement nécessaires, respecte :
+
+```text
+TIME_WINDOW <= 5 minutes
+SOURCE = une seule source pertinente
+FIELDS = champs strictement nécessaires
+FILTER = erreur/request id/status/endpoint connu si disponible
+QUERY_COUNT = 1
+```
+
+Si le signal est absent, élargir progressivement de 5 min à 15 min puis 1 h,
+jamais directement à 24 h. Au-delà de 15 minutes, de plusieurs sources ou de
+deux requêtes de logs dans le même diagnostic, STOP et demander une
+autorisation explicite à l'utilisateur. `LIMIT` ne constitue pas un budget de
+scan suffisant.
+
+Après avoir trouvé un timestamp, un request id, un SQLSTATE ou une autre ancre,
+réutiliser cette ancre et interroger uniquement la source adjacente nécessaire.
+Ne pas rescanner toute la période. Les logs Supabase ne sont jamais un
+mécanisme de monitoring continu.
+
+Toute utilisation de logs Supabase rapporte :
+
+```text
+SUPABASE_LOG_QUERY_USED: yes/no
+SOURCE:
+TIME_RANGE:
+QUERY_COUNT:
+REASON:
+```
+
 `npx supabase link --project-ref <project-ref>` enregistre la cible locale ;
 il ne prouve pas qu'une migration est appliquée sur le projet distant. La
 preuve d'alignement de l'historique repose sur
