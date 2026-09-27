@@ -101,17 +101,17 @@ const VALIDATION_FORMS = [
   },
 ] as const;
 
-type QueryResult<T> = {
+type ActionValidationQueryResult<T> = {
   data: T[];
   error: null;
 };
 
-type QueryChain<T> = {
-  select: (columns: string) => QueryChain<T>;
-  eq: (field: string, value: string) => QueryChain<T>;
-  in: (field: string, values: string[]) => QueryChain<T>;
-  order: (field: string, options?: { ascending?: boolean }) => QueryChain<T>;
-  limit: (value: number) => Promise<QueryResult<T>>;
+type ActionValidationQueryChain<T> = {
+  select: (columns: string) => ActionValidationQueryChain<T>;
+  eq: (field: string, value: string) => ActionValidationQueryChain<T>;
+  in: (field: string, values: string[]) => ActionValidationQueryChain<T>;
+  order: (field: string, options?: { ascending?: boolean }) => ActionValidationQueryChain<T>;
+  limit: (value: number) => Promise<ActionValidationQueryResult<T>>;
 };
 
 type FormsQuery = {
@@ -123,7 +123,7 @@ type FormsQuery = {
   order: (
     field: string,
     options?: { ascending?: boolean },
-  ) => Promise<QueryResult<{
+  ) => Promise<ActionValidationQueryResult<{
     action_id?: string;
     status?: string;
     validated_by_admin?: boolean;
@@ -136,17 +136,17 @@ type FormsQuery = {
 type EmptyChain = {
   select: (columns: string) => EmptyChain;
   eq: (field: string, value: string) => EmptyChain;
-  limit: (value: number) => Promise<QueryResult<never>>;
+  limit: (value: number) => Promise<ActionValidationQueryResult<never>>;
 };
 
-function createActionsQuery(data: unknown[]): QueryChain<unknown> {
+function createActionsQuery(data: unknown[]): ActionValidationQueryChain<unknown> {
   const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
     in: vi.fn(() => chain),
     order: vi.fn(() => chain),
     limit: vi.fn(async () => ({ data, error: null })),
-  } as QueryChain<unknown>;
+  } as ActionValidationQueryChain<unknown>;
   return chain;
 }
 

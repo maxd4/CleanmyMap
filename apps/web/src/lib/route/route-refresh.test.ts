@@ -4,16 +4,19 @@ import { createRoutePlannerSnapshotInput } from "./route-calibration-test-fixtur
 import { createOperationalRouteFromRecommendation } from "./route-operational";
 import { buildActionRouteVersionCalculation } from "./route-active-version";
 import {
+  buildRouteRefreshProposal,
   buildRouteRefreshSubmission,
   compatibleRouteGroupCounts,
   compareRouteRefresh,
   type RouteRefreshProposal,
 } from "./route-refresh";
 import {
+  addRouteRefreshGroupReason,
   assessRouteWeatherRefreshSignal,
   buildRouteRefreshSignals,
 } from "./route-refresh-signals";
 import type { ActionEditorRecord } from "@/lib/actions/http";
+import type { RouteRecommendationResponse } from "./route-response-contract";
 
 function action(): ActionEditorRecord {
   const snapshot = buildRoutePlannerSnapshot(createRoutePlannerSnapshotInput());
@@ -67,6 +70,85 @@ function action(): ActionEditorRecord {
 }
 
 describe("route refresh proposal", () => {
+  function recommendationResponse(
+    snapshot: ReturnType<typeof buildRoutePlannerSnapshot>,
+    options: { tradeoffs?: string[]; warnings?: string[] } = {},
+  ): RouteRecommendationResponse {
+    const plannerProof = {
+      proofVersion: "route-planner-proof-v1" as const,
+      snapshotHash: "a".repeat(64),
+      issuedAt: "2026-09-27T09:00:00.000Z",
+      expiresAt: "2026-09-27T10:00:00.000Z",
+      token: "proof-token",
+    };
+    return {
+      plannerSnapshot: snapshot,
+      plannerProof,
+      generatedAt: snapshot.generatedAt,
+      groupCount: snapshot.parameters.groupCount,
+      routeGeometry: snapshot.geometry,
+      stops: snapshot.selectedStops,
+      groupRoutes: [],
+      travelDistanceKm: snapshot.distance.totalKm,
+      travelMinutes: snapshot.distance.travelMinutes,
+      actionMinutesEstimate: null,
+      totalMinutesEstimate: null,
+      tradeoffs: options.tradeoffs ?? [],
+      trace: {
+        warnings: options.warnings ?? [],
+        approximations: [],
+      },
+    } as unknown as RouteRecommendationResponse;
+  }
+
+  it("builds a proposal from a verified planner response and explains its tradeoffs", () => {
+    const current = action();
+    const proposalSnapshot = structuredClone(
+      current.preparationData!.routeCalibrationContext!.plannerSnapshot!,
+    );
+    proposalSnapshot.generatedAt = "2026-09-27T09:00:00.000Z";
+    proposalSnapshot.selectedStops = [{
+      id: "observed-stop",
+      label: "Point observé",
+      latitude: 48.85,
+      longitude: 2.35,
+      segmentKm: 1,
+      estimatedMinutes: 5,
+      priorityReason: "priorité confirmée",
+      score: 2,
+      evidence: {
+        family: "observed",
+        source: "trash_spotter_spots",
+        proof: "validated",
+        observedAt: "2026-09-26T08:00:00.000Z",
+      },
+    }];
+
+    const proposal = buildRouteRefreshProposal(
+      recommendationResponse(proposalSnapshot, { tradeoffs: ["Donnée plus récente"] }),
+    );
+
+    expect(proposal).not.toBeNull();
+    expect(proposal?.calculation).toMatchObject({
+      explanation: "Donnée plus récente",
+      stops: [{ id: "observed-stop", sourceFamily: "observed" }],
+    });
+    expect(proposal?.operationalRoute.plannerGroupCount).toBe(
+      proposalSnapshot.parameters.groupCount,
+    );
+  });
+
+  it("falls back to trace warnings and rejects responses without the trust boundary", () => {
+    const current = action();
+    const snapshot = current.preparationData!.routeCalibrationContext!.plannerSnapshot!;
+    expect(buildRouteRefreshProposal({} as RouteRecommendationResponse)).toBeNull();
+
+    const proposal = buildRouteRefreshProposal(
+      recommendationResponse(snapshot, { warnings: ["Approximation appliquée"] }),
+    );
+    expect(proposal?.calculation.explanation).toBe("Approximation appliquée");
+  });
+
   it("reuses the active calculation parameters without adding planner signals", () => {
     const current = action();
     const submission = buildRouteRefreshSubmission(current);
@@ -82,6 +164,38 @@ describe("route refresh proposal", () => {
     expect(submission?.options).not.toHaveProperty("weather");
     expect(submission?.options).not.toHaveProperty("affluence");
     expect(submission?.options).not.toHaveProperty("additionality");
+  });
+
+  it("preserves scheduled options and falls back to planner origin when action coordinates are absent", () => {
+    const current = action();
+    current.latitude = null;
+    current.longitude = null;
+    current.eventStartTime = "10:00";
+    current.eventEndTime = "12:00";
+
+    expect(buildRouteRefreshSubmission(current, { volunteers: 4, groupCount: 2 })?.options).toMatchObject({
+      volunteers: 4,
+      groupCount: 2,
+      scheduledStartAt: "9999-12-31T10:00",
+      scheduledEndAt: "9999-12-31T12:00",
+    });
+  });
+
+  it("aggregates operational budget metrics when route groups provide them", () => {
+    const current = action();
+    const snapshot = structuredClone(current.preparationData!.routeCalibrationContext!.plannerSnapshot!);
+    snapshot.groups = snapshot.groups.map((group) => ({
+      ...group,
+      operationalBudget: {
+        actionMinutes: 10,
+        totalMinutes: 20,
+      } as NonNullable<typeof group.operationalBudget>,
+    }));
+
+    expect(buildActionRouteVersionCalculation(snapshot).metrics).toMatchObject({
+      collectionMinutes: 10,
+      totalMinutes: 20,
+    });
   });
 
   it.each([
@@ -189,6 +303,26 @@ describe("route refresh proposal", () => {
     });
     expect(signals.reasons).toEqual(["newer_route_data", "weather_budget_mismatch"]);
     expect(signals.weather.status).toBe("degraded");
+  });
+
+  it("adds and removes the group-count refresh reason without duplicating it", () => {
+    const current = action();
+    const calculation = buildActionRouteVersionCalculation(
+      current.preparationData!.routeCalibrationContext!.plannerSnapshot!,
+    );
+    const base = buildRouteRefreshSignals({
+      activeAppliedAt: "2026-09-01T09:00:00.000Z",
+      calculation,
+      confirmedParticipants: 5,
+      freshness: { status: "current", latestSourceAt: null },
+    });
+
+    const changed = addRouteRefreshGroupReason(base, 2);
+    expect(changed).toMatchObject({
+      recommended: true,
+      reasons: ["participants_changed", "group_count_changed"],
+    });
+    expect(addRouteRefreshGroupReason(changed, 1).reasons).toEqual(["participants_changed"]);
   });
 
   it("compares kept, added, removed stops and priority explanations", () => {
