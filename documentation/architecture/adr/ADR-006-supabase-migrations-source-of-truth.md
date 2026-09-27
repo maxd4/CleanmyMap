@@ -147,6 +147,23 @@ n'autorise ni `supabase migration repair`, ni `db push`, ni écriture sur le
 projet distant ; toute publication ultérieure reste soumise à une revue et à
 une validation distinctes.
 
+## Exception syntaxique bornée — `20260926122042`
+
+Une exception strictement spécifique est acceptée pour la migration
+`20260926122042_relocate_action_chat_rls_helpers.sql`, déjà publiée dans Git
+mais jamais appliquée au projet Supabase canonique `trktzkgujgpgsgkoyndn`.
+Sa syntaxe invalide dans la policy `chat_poll_votes_update_own` empêche sa
+première application et tout replay ultérieur avant que les migrations
+suivantes puissent être atteintes.
+
+La correction autorisée est purement syntaxique : fermer le bloc `using` avant
+`with check`. Elle ne modifie aucune condition, policy, permission ou autre
+sémantique RLS, ne réécrit pas l'historique distant et n'autorise ni
+`supabase migration repair`, ni `db push`, ni aucune mutation distante.
+Cette exception ne généralise pas le droit de modifier les migrations
+publiées ; toute autre correction d'une migration historique reste soumise au
+principe append-only et aux conditions du présent ADR.
+
 ## Opérations temporaires de benchmark
 
 Une activation ou désactivation temporaire d'extension réalisée pour un

@@ -297,6 +297,7 @@ using (
       and m.message_kind = 'poll'
       and m.channel_type in ('community', 'admin_elu', 'territory', 'action', 'dm')
   )
+)
 with check (
   user_id = coalesce(((select auth.jwt()) ->> 'sub'), '')
   and exists (
