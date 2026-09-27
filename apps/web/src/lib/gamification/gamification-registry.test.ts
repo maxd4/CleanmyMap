@@ -1,0 +1,93 @@
+import { describe, expect, it } from "vitest";
+import {
+  CURRENT_INFINITE_PROGRESSIONS,
+  CURRENT_MILESTONES,
+  GAMIFICATION_REGISTRY,
+  NON_GAMIFIED_SIGNALS,
+} from "./progression-utils";
+
+const REQUIRED_NON_GAMIFIED_SIGNAL_IDS = [
+  "signal:waste-total-direct-xp",
+  "signal:cigarette-butts-direct-xp",
+  "signal:demographic-breakdown",
+  "signal:action-difficulty",
+  "signal:action-accessibility",
+  "signal:safety-instructions-text",
+  "signal:recommended-materials-text",
+  "signal:logistics-notes-text",
+  "signal:departure-checklist-text",
+  "signal:group-join-enabled",
+  "signal:future-action-registration",
+  "signal:future-registration-acceptance",
+  "signal:referral-link-generation",
+  "signal:donation-amount",
+  "signal:user-role",
+  "signal:trust-level",
+  "signal:quality-score",
+  "signal:form-completion",
+  "signal:waste-and-butts-current-progression",
+] as const;
+
+describe("CURRENT gamification registry", () => {
+  it("uses one explicit category and contract for every current mechanic", () => {
+    const ids = GAMIFICATION_REGISTRY.map((entry) => entry.id);
+
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(GAMIFICATION_REGISTRY.every((entry) => entry.rulesVersion)).toBe(true);
+    expect(GAMIFICATION_REGISTRY.every((entry) => entry.sourceDomain)).toBe(true);
+    expect(GAMIFICATION_REGISTRY.every((entry) => entry.description)).toBe(true);
+
+    expect(CURRENT_INFINITE_PROGRESSIONS).toHaveLength(8);
+    expect(CURRENT_INFINITE_PROGRESSIONS.every((entry) =>
+      entry.category === "XP_PROGRESSION" &&
+      entry.progressionId === entry.id &&
+      entry.xpPolicy.kind === "progression_paliers",
+    )).toBe(true);
+    expect(CURRENT_INFINITE_PROGRESSIONS.find((entry) => entry.id === "moderation"))
+      .toMatchObject({ visibility: "authorized_moderation" });
+
+    expect(CURRENT_MILESTONES).toHaveLength(15);
+    expect(CURRENT_MILESTONES.every((entry) =>
+      (entry.xpAwarded > 0 && entry.category === "XP_MILESTONE") ||
+      (entry.xpAwarded === 0 && entry.category === "BADGE_ONLY"),
+    )).toBe(true);
+    expect(CURRENT_MILESTONES.find((entry) => entry.id === "parrainage_utile"))
+      .toMatchObject({ category: "XP_MILESTONE", xpPolicy: { kind: "fixed_one_shot", amount: 2 } });
+    expect(CURRENT_MILESTONES.find((entry) => entry.id === "participation_retrouvee"))
+      .toMatchObject({ category: "BADGE_ONLY", xpPolicy: { kind: "none" } });
+    expect(CURRENT_MILESTONES.filter((entry) => entry.id.startsWith("premiere_") || entry.id === "moderateur_polyvalent")
+      .filter((entry) => entry.sourceDomain.includes("admin_operations_audit"))
+      .every((entry) => entry.visibility === "authorized_moderation"))
+      .toBe(true);
+
+    expect(CURRENT_MILESTONES.filter((entry) => entry.category === "XP_MILESTONE").map((entry) => entry.id).sort())
+      .toEqual([
+        "boucle_bouclee",
+        "donnee_exemplaire",
+        "moderateur_polyvalent",
+        "mobilisateur",
+        "parrainage_utile",
+        "premiere_trace_utile",
+      ].sort());
+  });
+
+  it("makes every requested exclusion a final NON_GAMIFIED decision", () => {
+    const registryById = new Map(GAMIFICATION_REGISTRY.map((entry) => [entry.id, entry]));
+
+    for (const id of REQUIRED_NON_GAMIFIED_SIGNAL_IDS) {
+      expect(registryById.get(id)).toMatchObject({
+        id,
+        category: "NON_GAMIFIED",
+        progressionId: null,
+        badgeId: null,
+        milestoneId: null,
+        visibility: "not_exposed",
+        xpPolicy: { kind: "none" },
+      });
+    }
+
+    expect(NON_GAMIFIED_SIGNALS.every((entry) =>
+      entry.category === "NON_GAMIFIED" && entry.xpPolicy.kind === "none",
+    )).toBe(true);
+  });
+});

@@ -37,7 +37,7 @@ Le code et les tests priment si une divergence apparaît.
   CURRENT ne les appelle ; leur retrait relève d'une décision de compatibilité
   séparée et le script reste un outil de réparation historique.
 - les sources métier restent propriétaires de leurs données ; le journal XP ne remplace jamais la source métier.
-- la métrique `Zone sensible apaisée` reste hors des sept progressions infinies :
+- la métrique `Zone sensible apaisée` reste hors des huit progressions infinies :
   sa qualification est figée à la validation dans `progression_events`, puis
   ses seuils gemme canoniques `1, 3, 5, 8, 10, 15, 20, puis +5` sont projetés
   par des événements idempotents `sensitive_zone_milestone` à `+1 XP` ; l'état
@@ -49,12 +49,24 @@ Le code et les tests priment si une divergence apparaît.
 - le rebuild/backfill est idempotent et ne doit jamais être appelé par une
   lecture publique ou un rendu de page.
 - les écritures d'audit et notifications sont des effets secondaires et ne doivent pas devenir la preuve métier.
-- Le registre CURRENT de `apps/web/src/lib/gamification/progression-utils.ts`
-  classe tous les `event_type` dans quatre catégories : une des sept
-  progressions infinies (`participation`, `organisation`, `exploration`,
-  `clean_zones`, `regularity`, `versatility`, `learning`), `milestone` pour les
-  jalons one-shot, `impact_badge` pour Mohs Déchets/Mégots, ou
-  `non_progression` pour les métriques et compatibilités hors taxonomie.
+- Le registre CURRENT `GAMIFICATION_REGISTRY` de
+  `apps/web/src/lib/gamification/progression-utils.ts` est l'unique catalogue
+  de décision des mécaniques métier. Chaque entrée porte un `id`, une
+  `category` parmi `XP_PROGRESSION`, `XP_MILESTONE`, `BADGE_ONLY` et
+  `NON_GAMIFIED`, un `progressionId` éventuel, une `xpPolicy`, une source
+  métier, un badge/jalon éventuel, une `visibility` et une `rulesVersion`.
+  Une donnée disponible mais non récompensée est donc une décision
+  `NON_GAMIFIED` explicite, jamais un backlog implicite.
+- Les huit progressions infinies sont `participation`, `organisation`,
+  `exploration`, `clean_zones`, `regularity`, `versatility`, `learning` et
+  `moderation` (cette dernière étant limitée aux comptes autorisés par AuthZ).
+- Les jalons CURRENT avec XP sont `Première trace utile`, `Parrainage utile`,
+  `Boucle bouclée`, `Mobilisateur`, `Donnée exemplaire` et `Modérateur
+  polyvalent`. Les autres jalons CURRENT sont `BADGE_ONLY`.
+- Les événements historiques `impact_badge`, `form_*` et
+  `sensitive_zone_*` restent des compatibilités de journal lorsqu'ils existent
+  déjà ; ils ne constituent pas une nouvelle catégorie CURRENT ni une promesse
+  implicite d'évolution.
 - Chaque progression expose le contrat typé commun
   `GamificationProgressionState` : valeur courante, badge courant, prochain
   badge, pourcentage et contribution au total XP. Cette contribution n'est pas
@@ -64,8 +76,8 @@ Le code et les tests priment si une divergence apparaît.
   `clean_zones`; elles partagent ce contrat sans partager leur compteur ni
   leur famille de badges.
 - L'XP globale est calculée à partir de la somme des événements actifs des
-  sept progressions, des événements one-shot et des récompenses spécialisées
-  explicitement autorisées, comme `sensitive_zone_milestone`. Aucun
+  huit progressions, des événements one-shot et des récompenses historiques
+  explicitement conservées en compatibilité, comme `sensitive_zone_milestone`. Aucun
   `progression_id` SQL supplémentaire n'est requis : la classification est
   dérivée de manière déterministe du registre des `event_type`.
 - les lectures Clean Zones courantes utilisent `trash_spotter_spots`.
@@ -73,10 +85,11 @@ Le code et les tests priment si une divergence apparaît.
 - les formulaires restent une preuve de validation et une source de complétude;
   les événements Forms historiques (`form_tier_unlock`, `form_bonus`) sont
   `COMPATIBILITY` et ne sont plus écrits par le rebuild CURRENT;
-- les métriques de qualité et de confiance restent des faits dérivés. Les kg
-  et mégots peuvent alimenter les deux `impact_badge` Mohs via les attributions
-  personnelles confirmées, avec des seuils fixes et `+0,25 XP` par grade ; ils
-  ne doivent jamais être convertis en XP proportionnel à la quantité;
+- les métriques de qualité et de confiance restent des faits dérivés. Les
+  seuils `impact_badge` Mohs déjà enregistrés restent lisibles pour
+  compatibilité via les attributions personnelles confirmées ; les kg et
+  mégots ne constituent pas une progression CURRENT et ne doivent jamais être
+  convertis en XP proportionnel à la quantité;
 - les règles détaillées de seuils, familles, scopes et attribution restent dans la spec canonique, pas dans ce document.
 
 ## Audit XP administratif

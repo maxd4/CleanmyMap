@@ -23,13 +23,26 @@ Les autres documents de gamification restent utiles, mais ils sont désormais se
   CURRENT ne doit les utiliser pour attribuer, afficher ou dépenser la
   progression.
 
-## Taxonomie CURRENT
+## Taxonomie CURRENT et registre des décisions
 
-Les registres typés de `apps/web/src/lib/gamification/progression-utils.ts` sont
-la source canonique de classification des événements. `ProgressionDefinition`
-décrit les huit progressions infinies, `MilestoneDefinition` les
-jalons one-shot CURRENT et `impact_badge` les progressions d'impact secondaires.
-Ces catégories ont des IDs et des faits sources distincts.
+`GAMIFICATION_REGISTRY` dans
+`apps/web/src/lib/gamification/progression-utils.ts` est le registre canonique
+unique des mécaniques et signaux métier. Il n'existe pas de matrice produit
+parallèle à compléter plus tard. Chaque entrée porte obligatoirement :
+
+- un `id` stable ;
+- une `category` exactement égale à `XP_PROGRESSION`, `XP_MILESTONE`,
+  `BADGE_ONLY` ou `NON_GAMIFIED` ;
+- un `progressionId` éventuel ;
+- une `xpPolicy` explicite ;
+- la source métier ;
+- le badge ou jalon associé, le cas échéant ;
+- la visibilité ;
+- la `rulesVersion` applicable.
+
+Une donnée disponible mais volontairement exclue est donc enregistrée comme
+`NON_GAMIFIED`, avec sa raison CURRENT. Elle ne constitue ni une proposition,
+ni un TODO, ni un signal « à traiter plus tard ».
 
 Les huit progressions infinies sont :
 
@@ -51,24 +64,51 @@ Chaque progression suit le contrat commun `GamificationProgressionState` :
 calculée au total global ; il n'existe aucun solde XP indépendant par
 progression.
 
-Les autres catégories du registre sont séparées :
+Les catégories ont le sens suivant :
 
-- `milestone` : jalons uniques issus de faits d’action démontrés, acquis au
-  plus une fois et affichés sans barre de progression infinie ;
-- `non_progression` : métriques d'impact, usage utilitaire et familles de
-  compatibilité conservées sans constituer une progression CURRENT.
-- `impact_badge` : badges d'impact personnels hors des huit axes
-  comportementaux, alimentés par `action_participants` confirmés et contribuant
-  au total XP global sans créer de balance ou de `diversityTypes` propre.
+- `XP_PROGRESSION` : progression infinie, badge évolutif et XP uniquement selon
+  les paliers de sa politique ;
+- `XP_MILESTONE` : jalon one-shot avec montant XP fixe, attribué une seule fois ;
+- `BADGE_ONLY` : jalon ou badge one-shot sans XP ;
+- `NON_GAMIFIED` : signal métier explicitement exclu de toute récompense.
 
-Mohs Déchets et Mohs Mégots sont les deux `impact_badge` CURRENT réactivés.
-Ils ne constituent pas une progression comportementale supplémentaire, ni
-une échelle gemme. Leurs événements restent dans `progression_events`, jamais
-dans `points_ledger`.
+Les anciens `classification = impact_badge`, `form_*` et
+`sensitive_zone_*` restent des identités de journal pour la compatibilité des
+données déjà écrites. Ils ne sont pas une cinquième catégorie CURRENT et ne
+créent aucune décision implicite pour de nouveaux signaux.
 
-Le total XP global est la somme des `progression_events` actifs des huit
-progressions, des jalons one-shot et des `impact_badge` explicitement autorisés.
-Aucun event type ne crée un second ledger ou une balance par famille.
+Le total XP global est la somme des événements actifs des huit progressions et
+des jalons `XP_MILESTONE` autorisés par le registre. Aucun event type ne crée
+un second ledger ou une balance par famille.
+
+## Décisions de non-gamification
+
+Les entrées `NON_GAMIFIED` du registre sont des décisions produit CURRENT. Elles
+ne sont pas des propositions ouvertes et ne doivent pas être transformées en
+backlog implicite. Elles protègent la qualité des preuves, l'absence de farming
+et la séparation entre activité métier, confiance et économie XP.
+
+| Signal métier | Décision CURRENT | Raison |
+| --- | --- | --- |
+| Poids total de déchets comme conversion directe en XP | `NON_GAMIFIED` | éviter les sur-déclarations et ne pas valoriser artificiellement les lieux plus sales |
+| Nombre de mégots comme conversion directe en XP | `NON_GAMIFIED` | éviter les sur-déclarations et les récompenses proportionnelles à une mesure fragile |
+| Kg/mégots comme progression CURRENT | `NON_GAMIFIED` | les métriques d'impact restent descriptives et traçables |
+| Répartition enfants/adultes/retraités et champs démographiques | `NON_GAMIFIED` | ne pas récompenser des données sensibles ou démographiques |
+| Difficulté et accessibilité | `NON_GAMIFIED` | une qualification déclarative ne constitue pas une preuve de contribution stable |
+| `safetyInstructions`, `recommendedMaterials`, `logisticsNotes`, `checklistBeforeDeparture` | `NON_GAMIFIED` | le texte libre est manipulable et sert la préparation, pas une récompense |
+| Activation `groupJoinEnabled` | `NON_GAMIFIED` | l'ouverture aux inscriptions ne vaut pas mobilisation accomplie |
+| Clic sur rejoindre, inscription future, acceptation future, annulation ou file | `NON_GAMIFIED` | l'intention future ne vaut pas présence terrain confirmée |
+| Génération d'un lien de parrainage | `NON_GAMIFIED` | seul la contribution utile confirmée de l'invité est un jalon rémunéré |
+| Montant d'un don | `NON_GAMIFIED` | ne pas convertir une valeur financière en monnaie XP |
+| Rôle utilisateur | `NON_GAMIFIED` | l'AuthZ est un garde-fou, pas une récompense |
+| Niveau de confiance | `NON_GAMIFIED` | la confiance reste hors de l'économie XP |
+| Score qualité comme progression infinie | `NON_GAMIFIED` | la qualité est un critère transversal, susceptible d'être réévalué |
+| Remplissage de formulaire pour lui-même | `NON_GAMIFIED` | Forms reste une preuve de workflow, jamais une activité gamifiée |
+
+Cette section ne signifie pas que les faits correspondants sont inutiles : ils
+peuvent rester nécessaires à une validation, à l'AuthZ, à un rapport ou à une
+explication. Ils ne créent simplement aucun événement XP ou badge CURRENT par
+eux-mêmes.
 
 ## Périmètre
 
@@ -549,11 +589,14 @@ Règles:
 
 ## Badges hérités
 
-### Mohs — progression d'impact secondaire
+### Mohs — badge d'impact historique secondaire
 
-Mohs est une progression d'impact personnelle secondaire, distincte des huit
-axes comportementaux CURRENT. Elle conserve les noms minéraux et son échelle
-propre, mais ne devient pas une échelle gemme.
+Mohs est une surface d'impact personnelle historique, distincte des huit axes
+comportementaux CURRENT. Elle conserve les noms minéraux et son échelle propre,
+mais ne devient pas une échelle gemme ni une nouvelle progression CURRENT.
+Les seuils déjà enregistrés restent lisibles pour compatibilité ; les signaux
+kg/mégots sont `NON_GAMIFIED` lorsqu'ils sont considérés comme une progression
+ou une conversion directe en XP.
 
 Les faits sont recalculés depuis les attributions personnelles du contrat
 participant : une ligne `action_participants` confirmée vaut une unité, les
@@ -573,9 +616,10 @@ jamais le dénominateur.
   `+0,25 XP`, jamais une quantité proportionnelle aux kg ou aux mégots.
 - Les pas sont `20 kg` pour les déchets et `2 000 mégots` jusqu'à Diamant :
   chaque famille est plafonnée à `2,25 XP`.
-- Les événements réutilisent `infinite_waste_milestone` et
+- Les événements historiques réutilisent `infinite_waste_milestone` et
   `infinite_butts_milestone`, avec `classification = impact_badge` et une
-  identité stable `mohs:<famille>:grade:<grade>`.
+  identité stable `mohs:<famille>:grade:<grade>`. Cette classification est une
+  compatibilité de journal, pas une cinquième catégorie du registre CURRENT.
 - La réconciliation retire les seuils devenus inéligibles après correction et
   recalcule `progression_profiles`. Elle n'écrit jamais `points_ledger` et ne
   supprime pas les compteurs historiques legacy.

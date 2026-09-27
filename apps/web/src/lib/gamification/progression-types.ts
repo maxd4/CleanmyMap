@@ -6,6 +6,33 @@ import type {
 
 export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
+export const CURRENT_GAMIFICATION_RULES_VERSION = "current-2026-09" as const;
+
+export type GamificationCategory =
+  | "XP_PROGRESSION"
+  | "XP_MILESTONE"
+  | "BADGE_ONLY"
+  | "NON_GAMIFIED";
+
+export type GamificationVisibility =
+  | "current_user"
+  | "authorized_moderation"
+  | "not_exposed";
+
+export type GamificationXpPolicy =
+  | {
+      kind: "progression_paliers";
+      rule: "common_current_scale";
+    }
+  | {
+      kind: "fixed_one_shot";
+      amount: number;
+    }
+  | {
+      kind: "none";
+      reason: string;
+    };
+
 export type ProgressionEventType =
   | "action_declare_pending"
   | "action_declare_validation"
@@ -89,10 +116,17 @@ type GamificationBadgeScale =
 
 interface ProgressionDefinition {
   id: CurrentInfiniteProgressionId;
+  category: "XP_PROGRESSION";
+  progressionId: CurrentInfiniteProgressionId;
   label: string;
   description: string;
   metric: string;
   sourceDomain: string;
+  xpPolicy: GamificationXpPolicy;
+  badgeId: string | null;
+  milestoneId: null;
+  visibility: GamificationVisibility;
+  rulesVersion: string;
   badgeFamily: string;
   scale: GamificationBadgeScale;
   infinite: true;
@@ -100,14 +134,34 @@ interface ProgressionDefinition {
 
 export interface MilestoneDefinition {
   id: CurrentMilestoneId;
+  category: "XP_MILESTONE" | "BADGE_ONLY";
+  progressionId: null;
   legacyId?: string;
   label: string;
   description: string;
   sourceDomain: string;
   factKey: string;
   xpAwarded: number;
+  xpPolicy: GamificationXpPolicy;
+  badgeId: string | null;
+  milestoneId: CurrentMilestoneId;
+  visibility: GamificationVisibility;
+  rulesVersion: string;
   oneShot: true;
 }
+
+export type GamificationMechanicDefinition = {
+  id: string;
+  category: GamificationCategory;
+  progressionId: CurrentInfiniteProgressionId | null;
+  xpPolicy: GamificationXpPolicy;
+  sourceDomain: string;
+  badgeId: string | null;
+  milestoneId: string | null;
+  visibility: GamificationVisibility;
+  rulesVersion: string;
+  description: string;
+};
 
 /** Compatibility name retained for existing progression consumers. */
 export type GamificationProgressionDefinition = ProgressionDefinition;
