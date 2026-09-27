@@ -13,7 +13,7 @@ nommé `supabase-vercel-codex`. Le `project ref` doit être confirmé dans
 `apps/web/supabase/config.toml` et dans le Dashboard avant de lancer un audit
 lié. Cette information ne remplace pas une authentification CLI valide.
 
-## État courant — ré-audit linked-only du 26 septembre 2026
+## État courant — ré-audit linked-only du 27 septembre 2026
 
 Cette section est la référence courante. Les sections datées plus bas sont
 conservées comme historique et ne doivent pas être interprétées comme l'état
@@ -55,7 +55,14 @@ pas été modifiés par ce dernier lot.
 
 ### Advisors sécurité linked actuels
 
-- **Sécurité : 3 WARN, 0 ERROR, 8 INFO acceptés et documentés**.
+- La preuve distante du 27 septembre 2026 rapporte :
+
+  ```text
+  SECURITY_ERROR: 0
+  SECURITY_WARN: 0
+  SECURITY_INFO: 8
+  ```
+
 - Les huit INFO `rls_enabled_no_policy` acceptés sont exactement :
   `public.action_conversation_exclusions`,
   `public.action_share_contact_requests`,
@@ -66,7 +73,24 @@ pas été modifiés par ce dernier lot.
 - Pour ces huit tables, le contrat server-only est explicite : RLS activée,
   aucune policy, aucun privilège de table pour `anon` ou `authenticated`, et
   privilèges réservés à `service_role`. Ce lot ne crée aucune policy permissive
-  et ne déplace aucune de ces tables pour faire disparaître les INFO.
+  et ne déplace aucune de ces tables pour faire disparaître les INFO. Ces huit
+  INFO sont `INTENTIONAL_CURRENT / server-only`.
+
+La sortie opérationnelle normale du garde est :
+
+```text
+RLS_CONTRACT_STATUS: PASS
+RLS_CONTRACT_ACTIONABLE: 0
+RLS_ACCEPTED_INFO: 8
+```
+
+« Accepté » signifie que ces huit INFO sont masquées de la sortie détaillée
+normale ; elles ne sont ni supprimées du payload Supabase ni ignorées par les
+tests. Les findings Security non-RLS restent explicitement visibles lorsqu'ils
+existent. Cette synthèse RLS ne constitue pas un inventaire Security complet.
+
+### Historique — état de la preuve du 26 septembre 2026
+
 - Les trois WARN concernent `SECURITY DEFINER` sur
   `can_insert_action_message_reference(uuid)`,
   `can_post_action_conversation(uuid)` et

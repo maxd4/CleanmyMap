@@ -4,8 +4,12 @@ import { describe, expect, it } from "vitest";
 import {
   ALLOWED_SERVER_ONLY_RLS_INFO_TABLES,
   findRlsContractFindings,
+  formatSecurityAdvisorSummary,
+  parseSecurityAdvisorArgs,
   parseSecurityAdvisorOutput,
+  renderSecurityAdvisorOutput,
   SECURITY_ADVISOR_COMMAND_OPTIONS,
+  summarizeSecurityAdvisorOutput,
 } from "../../../scripts/supabase-security-advisors.mjs";
 
 const expectedServerOnlyRlsInfoTables = [
@@ -18,6 +22,15 @@ const expectedServerOnlyRlsInfoTables = [
   "user_badge_totals",
   "badge_events",
 ];
+
+function createAllowedFindings() {
+  return expectedServerOnlyRlsInfoTables.map((table) => ({
+    name: "rls_enabled_no_policy",
+    level: "INFO",
+    detail: `Table \`public.${table}\` has RLS enabled, but no policies exist`,
+    metadata: { name: table, type: "table" },
+  }));
+}
 
 const serverOnlyContractSources = [
   {
@@ -130,60 +143,7 @@ describe("Supabase security advisor guard", () => {
       "json",
     ]);
 
-    const allowedFindings = [
-      {
-        name: "rls_enabled_no_policy",
-        level: "INFO",
-        detail:
-          "Table `public.action_conversation_exclusions` has RLS enabled, but no policies exist",
-        metadata: { name: "action_conversation_exclusions", type: "table" },
-      },
-      {
-        name: "rls_enabled_no_policy",
-        level: "INFO",
-        detail:
-          "Table `public.action_share_contact_requests` has RLS enabled, but no policies exist",
-        metadata: { name: "action_share_contact_requests", type: "table" },
-      },
-      {
-        name: "rls_enabled_no_policy",
-        level: "INFO",
-        detail: "Table `public.legal_content_reports` has RLS enabled, but no policies exist",
-        metadata: { name: "legal_content_reports", type: "table" },
-      },
-      {
-        name: "rls_enabled_no_policy",
-        level: "INFO",
-        detail:
-          "Table `public.legal_content_report_decisions` has RLS enabled, but no policies exist",
-        metadata: { name: "legal_content_report_decisions", type: "table" },
-      },
-      {
-        name: "rls_enabled_no_policy",
-        level: "INFO",
-        detail: "Table `public.user_points` has RLS enabled, but no policies exist",
-        metadata: { name: "user_points", type: "table" },
-      },
-      {
-        name: "rls_enabled_no_policy",
-        level: "INFO",
-        detail: "Table `public.points_ledger` has RLS enabled, but no policies exist",
-        metadata: { name: "points_ledger", type: "table" },
-      },
-      {
-        name: "rls_enabled_no_policy",
-        level: "INFO",
-        detail:
-          "Table `public.user_badge_totals` has RLS enabled, but no policies exist",
-        metadata: { name: "user_badge_totals", type: "table" },
-      },
-      {
-        name: "rls_enabled_no_policy",
-        level: "INFO",
-        detail: "Table `public.badge_events` has RLS enabled, but no policies exist",
-        metadata: { name: "badge_events", type: "table" },
-      },
-    ];
+    const allowedFindings = createAllowedFindings();
 
     expect(
       findRlsContractFindings(JSON.stringify(allowedFindings)),
@@ -218,6 +178,75 @@ describe("Supabase security advisor guard", () => {
         metadata: { name: "other_table", type: "table" },
       },
     ]);
+
+    const summary = summarizeSecurityAdvisorOutput(JSON.stringify(allowedFindings));
+    expect(summary.rlsContractActionable).toBe(0);
+    expect(summary.acceptedInfoCount).toBe(8);
+    const normalOutput = formatSecurityAdvisorSummary(summary);
+    expect(normalOutput).toContain("RLS_CONTRACT_STATUS: PASS");
+    expect(normalOutput).toContain("RLS_CONTRACT_ACTIONABLE: 0");
+    expect(normalOutput).toContain("RLS_ACCEPTED_INFO: 8");
+    expect(normalOutput).not.toContain("rls_enabled_no_policy");
+    expect(normalOutput).not.toContain("action_conversation_exclusions");
+  });
+
+  it("fails closed when the normal output contract receives unexpected RLS findings", () => {
+    const allowedFindings = createAllowedFindings();
+    const ninthFinding = {
+      name: "rls_enabled_no_policy",
+      level: "INFO",
+      detail: "Table `public.other_table` has RLS enabled, but no policies exist",
+      metadata: { name: "other_table", type: "table" },
+    };
+
+    expect(() =>
+      renderSecurityAdvisorOutput(JSON.stringify([...allowedFindings, ninthFinding])),
+    ).toThrow("other_table");
+
+    const severityChanged = allowedFindings.map((finding) => ({ ...finding }));
+    severityChanged[2].level = "WARN";
+    expect(() => renderSecurityAdvisorOutput(JSON.stringify(severityChanged))).toThrow("[WARN]");
+
+    const typeChanged = allowedFindings.map((finding) => ({ ...finding }));
+    typeChanged[2].metadata = { name: "legal_content_reports", type: "view" };
+    expect(() => renderSecurityAdvisorOutput(JSON.stringify(typeChanged))).toThrow(
+      "legal_content_reports",
+    );
+
+    const detailChanged = allowedFindings.map((finding) => ({ ...finding }));
+    detailChanged[2].detail = "Table `private.legal_content_reports` has RLS enabled, but no policies exist";
+    expect(() => renderSecurityAdvisorOutput(JSON.stringify(detailChanged))).toThrow("private.legal_content_reports");
+  });
+
+  it("keeps the validated Supabase payload available in raw mode", () => {
+    const payload = JSON.stringify(createAllowedFindings());
+    const rawOutput = renderSecurityAdvisorOutput(payload, { raw: true });
+
+    expect(parseSecurityAdvisorArgs(["--linked", "--raw"])).toEqual({
+      mode: "linked",
+      raw: true,
+    });
+    expect(rawOutput).toBe(payload);
+  });
+
+  it("keeps non-RLS security findings visible in normal output", () => {
+    const payload = JSON.stringify([
+      ...createAllowedFindings(),
+      {
+        name: "extension_in_public",
+        level: "WARN",
+        title: "Extension installed in public schema",
+      },
+    ]);
+    const summary = summarizeSecurityAdvisorOutput(payload);
+    const normalOutput = formatSecurityAdvisorSummary(summary);
+
+    expect(normalOutput).toContain("RLS_CONTRACT_STATUS: PASS");
+    expect(normalOutput).toContain("RLS_CONTRACT_ACTIONABLE: 0");
+    expect(normalOutput).toContain("RLS_ACCEPTED_INFO: 8");
+    expect(normalOutput).toContain("OTHER_SECURITY_FINDINGS: 1");
+    expect(normalOutput).toContain("extension_in_public [WARN] — Extension installed in public schema");
+    expect(normalOutput).not.toContain("extension_in_public [INFO]");
   });
 
   it("keeps every accepted INFO table server-only without adding a permissive policy", () => {
@@ -292,6 +321,9 @@ describe("Supabase security advisor guard", () => {
 
   it("fails closed when the CLI response is not JSON", () => {
     expect(() => parseSecurityAdvisorOutput("unexpected text")).toThrow(
+      "did not return JSON",
+    );
+    expect(() => renderSecurityAdvisorOutput("unexpected text")).toThrow(
       "did not return JSON",
     );
   });

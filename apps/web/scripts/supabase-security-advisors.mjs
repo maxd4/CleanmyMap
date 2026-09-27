@@ -132,25 +132,106 @@ export function findRlsContractFindings(output) {
   return parseSecurityAdvisorOutput(output).filter(isRlsContractFinding);
 }
 
-function formatRlsFinding(finding) {
-  const name = findingName(finding) || "unknown";
-  const title = typeof finding?.title === "string" ? ` — ${finding.title}` : "";
-  const level = typeof finding?.level === "string" ? ` [${finding.level}]` : "";
-  return `${name}${level}${title}`;
+function findAcceptedInfoContractIssues(findings) {
+  const acceptedFindings = findings.filter(isAllowedServerOnlyRlsInfo);
+  const countsByTable = new Map();
+  for (const finding of acceptedFindings) {
+    const tableName = finding.metadata.name;
+    countsByTable.set(tableName, (countsByTable.get(tableName) ?? 0) + 1);
+  }
+
+  const missingTables = ALLOWED_SERVER_ONLY_RLS_INFO_TABLES.filter(
+    (tableName) => !countsByTable.has(tableName),
+  );
+  const duplicateTables = ALLOWED_SERVER_ONLY_RLS_INFO_TABLES.filter(
+    (tableName) => (countsByTable.get(tableName) ?? 0) > 1,
+  );
+
+  return { acceptedFindings, missingTables, duplicateTables };
 }
 
-function assertRlsContractClear(output) {
-  const findings = findRlsContractFindings(output);
-  if (findings.length > 0) {
-    throw new Error(
-      `Supabase RLS contract advisors found:\n${findings.map(formatRlsFinding).join("\n")}`,
+function summarizeFindings(findings) {
+  const { acceptedFindings, missingTables, duplicateTables } = findAcceptedInfoContractIssues(findings);
+  const rlsContractFindings = findings.filter(isRlsContractFinding);
+  const otherSecurityFindings = findings.filter(
+    (finding) => !isAllowedServerOnlyRlsInfo(finding) && !isRlsContractFinding(finding),
+  );
+  const rlsContractActionable =
+    rlsContractFindings.length + missingTables.length + duplicateTables.length;
+
+  return {
+    acceptedInfoCount: acceptedFindings.length,
+    duplicateTables,
+    missingTables,
+    otherSecurityFindings,
+    rlsContractActionable,
+    rlsContractFindings,
+  };
+}
+
+export function summarizeSecurityAdvisorOutput(output) {
+  return summarizeFindings(parseSecurityAdvisorOutput(output));
+}
+
+function formatSecurityFinding(finding) {
+  const name = findingName(finding) || "unknown";
+  const title = typeof finding?.title === "string" ? finding.title : "";
+  const detail = typeof finding?.detail === "string" ? finding.detail : "";
+  const level = typeof finding?.level === "string" ? ` [${finding.level}]` : "";
+  const description = title || detail;
+  return `${name}${level}${description ? ` — ${description}` : ""}`;
+}
+
+export function formatSecurityAdvisorSummary(summary) {
+  const lines = [
+    `RLS_CONTRACT_STATUS: ${summary.rlsContractActionable === 0 ? "PASS" : "FAIL"}`,
+    `RLS_CONTRACT_ACTIONABLE: ${summary.rlsContractActionable}`,
+    `RLS_ACCEPTED_INFO: ${summary.acceptedInfoCount}`,
+  ];
+
+  if (summary.otherSecurityFindings.length > 0) {
+    lines.push(
+      `OTHER_SECURITY_FINDINGS: ${summary.otherSecurityFindings.length}`,
+      "OTHER_SECURITY_FINDINGS_DETAIL:",
+      ...summary.otherSecurityFindings.map(formatSecurityFinding),
     );
+  }
+
+  if (summary.rlsContractActionable > 0) {
+    lines.push("RLS_CONTRACT_FINDINGS:");
+    lines.push(...summary.rlsContractFindings.map(formatSecurityFinding));
+    lines.push(
+      ...summary.missingTables.map(
+        (tableName) => `missing accepted INFO [${tableName}] — allowlisted finding not returned`,
+      ),
+      ...summary.duplicateTables.map(
+        (tableName) => `duplicate accepted INFO [${tableName}] — allowlisted finding returned more than once`,
+      ),
+    );
+  }
+
+  return lines.join("\n");
+}
+
+function assertRlsContractClear(summary) {
+  if (summary.rlsContractActionable > 0) {
+    throw new Error(formatSecurityAdvisorSummary(summary));
   }
 }
 
-function parseArgs(argv) {
+export function renderSecurityAdvisorOutput(output, options = {}) {
+  const summary = summarizeSecurityAdvisorOutput(output);
+  assertRlsContractClear(summary);
+  if (options.raw === true) {
+    return String(output);
+  }
+  return `${formatSecurityAdvisorSummary(summary)}\n`;
+}
+
+export function parseSecurityAdvisorArgs(argv) {
   const out = {
     mode: "linked",
+    raw: false,
   };
 
   for (const arg of argv) {
@@ -160,6 +241,10 @@ function parseArgs(argv) {
     }
     if (arg === "--linked") {
       out.mode = "linked";
+      continue;
+    }
+    if (arg === "--raw") {
+      out.raw = true;
       continue;
     }
   }
@@ -209,7 +294,7 @@ function formatLinked403Help(result) {
   return `${details}\n\n${accessTokenHelp}`;
 }
 
-function runLinkedAdvisors(cwd) {
+function runLinkedAdvisors(cwd, options) {
   const advisors = runSupabase(
     ["db", "advisors", "--linked", ...SECURITY_ADVISOR_COMMAND_OPTIONS],
     cwd,
@@ -227,13 +312,12 @@ function runLinkedAdvisors(cwd) {
     throw new Error(formatError("Supabase linked security advisors failed", advisors));
   }
 
-  assertRlsContractClear(advisors.stdout || "");
-  process.stdout.write(advisors.stdout || "");
+  process.stdout.write(renderSecurityAdvisorOutput(advisors.stdout || "", options));
 }
 
 function main() {
   const cwd = process.cwd();
-  const args = parseArgs(process.argv.slice(2));
+  const args = parseSecurityAdvisorArgs(process.argv.slice(2));
 
   try {
     if (args.mode === "unsupported-local") {
@@ -242,7 +326,7 @@ function main() {
       );
     }
 
-    runLinkedAdvisors(cwd);
+    runLinkedAdvisors(cwd, args);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
