@@ -146,9 +146,14 @@ function hasPreparedFormalities(action: ActionRow): boolean {
   }
 
   const progressById = new Map(workflow.progress.map((item) => [item.formalityId, item]));
-  return workflow.trace.formalities
-    .filter((formality) => formality.requirementStatus === "required")
-    .every((formality) => {
+  const requiredFormalities = workflow.trace.formalities.filter(
+    (formality) => formality.requirementStatus === "required",
+  );
+  if (requiredFormalities.length === 0) {
+    return false;
+  }
+
+  return requiredFormalities.every((formality) => {
       const progress = progressById.get(formality.id);
       return Boolean(
         progress &&
@@ -156,7 +161,7 @@ function hasPreparedFormalities(action: ActionRow): boolean {
           progress.validForQualification &&
           progress.userStatus === "sent",
       );
-  });
+    });
 }
 
 function qualifiesCurrentAction(

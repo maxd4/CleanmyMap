@@ -90,4 +90,23 @@ describe("progression event logical identity", () => {
       /create unique index[^;]+\(\s*user_id\s*,\s*event_type\s*,\s*occurred_on/i,
     );
   });
+
+  it("repairs historical pending participant tiers without creating a second logical event", () => {
+    const migration = readFileSync(
+      new URL(
+        "../../../supabase/migrations/20260927141451_repair_participant_tier_unlock_validation.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ).replace(/\s+/g, " ");
+
+    expect(migration).toMatch(
+      /delete from public\.progression_events pending[\s\S]*status_phase = 'pending'[\s\S]*status_phase = 'validated'/i,
+    );
+    expect(migration).toMatch(
+      /update public\.progression_events[\s\S]*set status_phase = 'validated'[\s\S]*event_type = 'participant_tier_unlock'/i,
+    );
+    expect(migration).toContain("uq_progression_events_logical_identity");
+    expect(migration).not.toContain("action_registrations");
+  });
 });
