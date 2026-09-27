@@ -455,6 +455,26 @@ describe("POST /api/chat", () => {
     expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
   });
 
+  it.each(["image/heic", "image/heif", "image/tiff"])(
+    "rejects a non-Storage image MIME %s before any message write",
+    async (attachmentType) => {
+      const response = await postAttachment({
+        channelType: "community",
+        content: "Image à convertir",
+        attachmentUrl: "https://cdn.example.test/photo.jpg",
+        attachmentType,
+      });
+
+      expect(response.status).toBe(422);
+      expect((await response.json()).details.attachmentType).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("Ce format de pièce jointe n'est pas autorisé"),
+        ]),
+      );
+      expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([
     { attachmentUrl: "https://cdn.example.test/poll.pdf", attachmentType: "application/pdf" },
     { relatedEventId: "11111111-1111-4111-8111-111111111111" },

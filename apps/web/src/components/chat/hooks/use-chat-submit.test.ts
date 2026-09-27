@@ -97,7 +97,7 @@ describe("useChatSubmit retry wiring", () => {
       "utf8",
     );
     const validationPosition = source.indexOf(
-      "getChatAttachmentValidationError(preparedFile)",
+      "getChatAttachmentStorageValidationError(preparedFile)",
     );
     const uploadStatePosition = source.indexOf("setIsUploading(true)");
 

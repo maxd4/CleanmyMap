@@ -6,7 +6,7 @@ import { compressImageFile } from "@/lib/media/image-compression";
 import {
   CHAT_ATTACHMENT_SIGNED_URL_TTL_SECONDS,
   CHAT_ATTACHMENTS_BUCKET,
-  getChatAttachmentValidationError,
+  getChatAttachmentStorageValidationError,
   inferChatAttachmentExtension,
   inferChatAttachmentType,
   isChatImageFile,
@@ -43,7 +43,7 @@ async function prepareChatAttachment(file: File): Promise<{
         quality: 0.8,
       })
     : file;
-  const validationError = getChatAttachmentValidationError(preparedFile);
+  const validationError = getChatAttachmentStorageValidationError(preparedFile);
   if (validationError) {
     throw new ChatAttachmentValidationError(validationError);
   }
