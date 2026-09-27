@@ -3,15 +3,15 @@
 <!-- RADAR:GENERATED:BEGIN -->
 ## A. En-tête snapshot
 
-`RADAR_REF=d5fe3a804e459cb837e28abfffcf87f138b59031`<br>
-`RADAR_GENERATED_AT=2026-09-27T20:41:12.038Z`<br>
+`RADAR_REF=d58e25e7612cc88504614730c0ab090eaba45b66`<br>
+`RADAR_GENERATED_AT=2026-09-27T23:06:20.865Z`<br>
 `RADAR_STATUS=CURRENT_AT_GENERATION`
 
 Commandes réellement utilisées :
 
 `node scripts/reports/generate-modularity-radar.mjs --ref=HEAD`
 
-Le snapshot lit l'arbre Git exact de d5fe3a804e459cb837e28abfffcf87f138b59031. Le statut
+Le snapshot lit l'arbre Git exact de d58e25e7612cc88504614730c0ab090eaba45b66. Le statut
 CURRENT_AT_GENERATION décrit l'instant de génération ; un document commité
 peut donc rester un snapshot reproductible de cette ref sans prétendre suivre
 automatiquement un HEAD ultérieur.
@@ -20,8 +20,8 @@ automatiquement un HEAD ultérieur.
 
 | Mesure factuelle | Valeur |
 | --- | ---: |
-| Fichiers mesurés | 2629 |
-| REVIEW architectural (runtime + data/config) | 62 |
+| Fichiers mesurés | 2645 |
+| REVIEW architectural (runtime + data/config) | 59 |
 | HARD contrôlé | 0 |
 | Tests volumineux | 0 |
 | Generated informatifs | 0 |
@@ -59,7 +59,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/components/sections/rubriques/partners-network-section.tsx` | PROACTIVE_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | aucun blocker technique identifié ; prochain lot fonctionnel de la rubrique |
 | `apps/web/src/components/chat/chat-shell.tsx` | PROACTIVE_SPLIT | PRESENT — REVIEW | AFTER_ACTIVE_CHANGES | signaux complémentaires non mesurés | changements fonctionnels actifs de Messagerie ; prochain changement du shell ou stabilisation du chantier Messagerie |
 | `apps/web/src/components/sections/rubriques/elus-section.tsx` | PROACTIVE_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | clarifier le contrat overview partagé ; prochain changement de pilotage ou du CTA d'accès |
-| `apps/web/src/lib/geo/greater-paris-select.tsx` | PROACTIVE_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | préserver les façades et identités exportées ; évolution du contrat géographique ou du provider d'adresses |
+| `apps/web/src/components/account/greater-paris-select.tsx` | PROACTIVE_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | préserver les façades et identités exportées ; évolution du contrat géographique ou du provider d'adresses |
 | `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` | PROACTIVE_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | aucun blocker, mais conserver les états de soumission ; prochain changement du parcours feedback |
 | `apps/web/src/app/learn/ressources/learn-ressources-client.data.ts` | COHESIVE_SINGLE_FILE | NONE | NONE | signaux complémentaires non mesurés | aucun ; ajout d'une famille de données indépendante ou changement du contrat de catalogue |
 | `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | préserver les deux exports publics ; ajout d'une nouvelle famille de méthodologie ou rupture du contrat legacy |
@@ -75,7 +75,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/components/sections/rubriques/partners-network-section.tsx` | PROACTIVE_SPLIT | LATER | aucun blocker technique identifié | prochain lot fonctionnel de la rubrique |
 | `apps/web/src/components/chat/chat-shell.tsx` | PROACTIVE_SPLIT | AFTER_ACTIVE_CHANGES | changements fonctionnels actifs de Messagerie | prochain changement du shell ou stabilisation du chantier Messagerie |
 | `apps/web/src/components/sections/rubriques/elus-section.tsx` | PROACTIVE_SPLIT | LATER | clarifier le contrat overview partagé | prochain changement de pilotage ou du CTA d'accès |
-| `apps/web/src/lib/geo/greater-paris-select.tsx` | PROACTIVE_SPLIT | LATER | préserver les façades et identités exportées | évolution du contrat géographique ou du provider d'adresses |
+| `apps/web/src/components/account/greater-paris-select.tsx` | PROACTIVE_SPLIT | LATER | préserver les façades et identités exportées | évolution du contrat géographique ou du provider d'adresses |
 | `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` | PROACTIVE_SPLIT | LATER | aucun blocker, mais conserver les états de soumission | prochain changement du parcours feedback |
 | `apps/web/src/app/learn/ressources/learn-ressources-client.data.ts` | COHESIVE_SINGLE_FILE | NONE | aucun | ajout d'une famille de données indépendante ou changement du contrat de catalogue |
 | `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | COHESIVE_SINGLE_FILE | NONE | préserver les deux exports publics | ajout d'une nouvelle famille de méthodologie ou rupture du contrat legacy |
@@ -136,19 +136,19 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | DEPENDENCY_OR_BLOCKER | clarifier le contrat overview partagé |
 | NEXT_TRIGGER | prochain changement de pilotage ou du CTA d'accès |
 
-#### `apps/web/src/lib/geo/greater-paris-select.tsx`
+#### `apps/web/src/components/account/greater-paris-select.tsx`
 
 | Champ | Valeur |
 | --- | --- |
-| RESPONSIBILITIES | normalisation territoriale, suggestions, sélection, rendu du contrôle |
+| RESPONSIBILITIES | suggestions, état de sélection et rendu du contrôle Account |
 | PUBLIC_CONTRACTS | `TerritoryLocationSelection`, `GreaterParisSelect` et façades exportées |
 | SIDE_EFFECTS | consultation du provider d'adresses pour les suggestions |
-| MAIN_CONSUMERS | formulaires de localisation et parcours d'action |
-| TEST_BOUNDARY | parsing/normalisation pure séparée de l'interaction |
+| MAIN_CONSUMERS | formulaires de localisation Account |
+| TEST_BOUNDARY | composant Account et module pur `lib/geo/greater-paris-location.ts` |
 | COUPLING | types géographiques, recherche d'adresse et UX de sélection |
-| NATURAL_EXTRACTION_BOUNDARY | adaptateurs de suggestion et composant de contrôle |
+| NATURAL_EXTRACTION_BOUNDARY | normalisations territoriales dans `lib/geo/greater-paris-location.ts` ; interaction dans ce composant |
 | ARCHITECTURE_DECISION | PROACTIVE_SPLIT |
-| RATIONALE | la façade publique peut rester stable pendant l'extraction des transformations pures et du hook de suggestions |
+| RATIONALE | les transformations territoriales pures sont désormais séparées ; la façade publique reste stable pendant le déplacement vers Account |
 | PRIORITY | LATER |
 | DEPENDENCY_OR_BLOCKER | préserver les façades et identités exportées |
 | NEXT_TRIGGER | évolution du contrat géographique ou du provider d'adresses |
@@ -266,31 +266,31 @@ de découpage.
 
 | PATH | REF | LINES | BYTES | KIND | SIZE_SIGNAL | CORRELATIONS | DECISION |
 | --- | --- | ---: | ---: | --- | --- | --- | --- |
-| `apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 832 | 33141 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/actions/map/popup/action-popup-content-header.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 792 | 33740 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/chat/chat-shell.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 770 | 21287 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/lib/geo/greater-paris-select.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 768 | 27711 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/lib/learning/quiz/quiz-personal-progress.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 753 | 25419 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/actions/action-declaration/action-declaration-form.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 731 | 32223 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/lib/supabase/storage-business-contribution.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 718 | 24975 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 695 | 34077 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | ALREADY_MODULARIZED |
-| `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 681 | 29429 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 679 | 25408 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/app/docs/[...segments]/route.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 677 | 18727 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/reports/web-document/sections.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 674 | 26318 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 670 | 21389 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/lib/validation/action.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 669 | 25101 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/lib/pdf-export/simple-pdf.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 661 | 18944 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/lib/geo/greater-paris.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 660 | 16393 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 647 | 27997 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/lib/actions/pollution/current-place-state.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 647 | 20180 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 640 | 25009 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/lib/route/route-predicted-targets.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 635 | 21960 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/lib/supabase/storage-usage.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 635 | 18204 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 634 | 16787 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/lib/actions/participation/group-participation-review.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 632 | 21427 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 632 | 19017 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` | `d5fe3a804e459cb837e28abfffcf87f138b59031` | 631 | 27107 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 831 | 33145 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/components/chat/chat-shell.tsx` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 770 | 21287 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/lib/learning/quiz/quiz-personal-progress.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 753 | 25419 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/components/actions/action-declaration/action-declaration-form.tsx` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 731 | 32223 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/lib/supabase/storage-business-contribution.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 718 | 24975 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 695 | 34077 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | ALREADY_MODULARIZED |
+| `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 681 | 29429 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 679 | 25408 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/app/docs/[...segments]/route.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 677 | 18727 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/components/reports/web-document/sections.tsx` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 674 | 26318 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 670 | 21389 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/lib/validation/action.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 669 | 25101 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/lib/pdf-export/simple-pdf.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 661 | 18944 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/lib/geo/greater-paris.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 660 | 16393 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 647 | 27997 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/lib/actions/pollution/current-place-state.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 647 | 20180 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/components/account/greater-paris-select.tsx` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 641 | 23678 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 640 | 25009 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/lib/route/route-predicted-targets.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 635 | 21960 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/lib/supabase/storage-usage.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 635 | 18204 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 634 | 16787 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/lib/actions/participation/group-participation-review.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 632 | 21427 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 632 | 19017 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
+| `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 631 | 27107 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/components/sections/rubriques/route/route-section.tsx` | `d58e25e7612cc88504614730c0ab090eaba45b66` | 615 | 32382 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
 
 ### Tests volumineux — top 25
 
