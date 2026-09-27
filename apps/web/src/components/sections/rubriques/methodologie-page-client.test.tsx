@@ -309,6 +309,16 @@ describe("ActionMapMethodologySection", () => {
     expect(methodology).not.toContain("Pollution projetée");
   });
 
+  it("keeps rendered disclosure content free of legacy dark surfaces", () => {
+    const markup = renderMethodologyPage();
+
+    for (const routeId of ["map", "new", "reports", "methodologie"]) {
+      const segment = methodologyDisclosureSegment(markup, routeId);
+
+      expect(segment).not.toMatch(/bg-slate-9|bg-black|cmm-text-inverse|cmm-ribbon-surface/);
+    }
+  });
+
   it("publishes the first two KPI results with qualified butt distribution", async () => {
     const { ImpactTerrain2026MethodologySection } = await import(
       "./impact-terrain-2026-methodology-section"

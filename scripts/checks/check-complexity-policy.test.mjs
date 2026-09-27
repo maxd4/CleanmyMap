@@ -158,6 +158,25 @@ test("G: an important deletion in the body is counted and detected", () => {
   assert.equal(result.failures.length, 1);
 });
 
+test("presentation-only JSX class changes do not trigger the substantial-change ratchet", () => {
+  const parsed = parseChangedDiffText([
+    "diff --git a/apps/web/src/fixture.ts b/apps/web/src/fixture.ts",
+    "--- a/apps/web/src/fixture.ts",
+    "+++ b/apps/web/src/fixture.ts",
+    "@@ -3,2 +3,2 @@",
+    '-  <div className="bg-slate-950 text-white">',
+    '+  <div className="bg-white text-slate-950">',
+  ].join("\n"));
+  assert.equal(parsed.hunks.get("src/fixture.ts")[0].styleOnly, true);
+  const result = evaluateMetrics({
+    metrics: [measuredMetric(23)],
+    baseline: { entries: [{ metric: "complexity", path: "src/fixture.ts", functionIdentity: "named:fixture#1", ceiling: 23 }] },
+    changedRanges: parsed.ranges,
+    changedHunks: parsed.hunks,
+  });
+  assert.equal(result.failures.length, 0);
+});
+
 test("H: a new React function above target still fails", () => {
   const result = evaluateMetrics({
     metrics: [measuredMetric(21, "named:newFunction#1")],
