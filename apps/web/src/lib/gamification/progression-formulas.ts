@@ -1,33 +1,135 @@
 import type {
   LevelRequirementAssessment,
+  LevelRequirementCondition,
   UserProgressionStats,
 } from "./progression-types";
 import { findBadgeDefinition } from "./badge-catalog";
+import { PROGRESSION_RULES_V1 } from "./progression-rules";
+
+export {
+  PROGRESSION_RULES_V1,
+  PROGRESSION_RULES_VERSION,
+} from "./progression-rules";
 
 export function xpStep(level: number): number {
-  if (!Number.isFinite(level) || level < 1) return 1;
-  // Niveau n → nécessite n XP supplémentaires (système simple).
-  return Math.floor(level);
+  return PROGRESSION_RULES_V1.xpStep(level);
 }
 
 export function xpRequired(level: number): number {
-  if (!Number.isFinite(level) || level <= 1) return 0;
-  const n = Math.floor(level) - 1;
-  // Cumul requis pour atteindre le niveau `level`:
-  // sum_{k=1..n} k = n(n+1)/2
-  return (n * (n + 1)) / 2;
+  return PROGRESSION_RULES_V1.xpRequired(level);
 }
 
 export function minValidatedActions(level: number): number {
-  return Math.max(1, Math.floor(1.5 * level));
+  return PROGRESSION_RULES_V1.minValidatedActions(level);
 }
 
 export function minDiversityTypes(level: number): number {
-  return Math.min(5, 1 + Math.floor((level - 1) / 3));
+  return PROGRESSION_RULES_V1.minDiversityTypes(level);
 }
 
 export function minCollectiveEvents(level: number): number {
-  return Math.floor(level / 4);
+  return PROGRESSION_RULES_V1.minCollectiveEvents(level);
+}
+
+function buildRequirementConditions(
+  level: number,
+  stats: UserProgressionStats,
+): {
+  thresholds: LevelRequirementAssessment["thresholds"];
+  conditions: LevelRequirementCondition[];
+} {
+  const thresholds = {
+    minValidatedActions: PROGRESSION_RULES_V1.minValidatedActions(level),
+    minDiversityTypes: PROGRESSION_RULES_V1.minDiversityTypes(level),
+    minCollectiveEvents: PROGRESSION_RULES_V1.minCollectiveEvents(level),
+    minQualityAverage: PROGRESSION_RULES_V1.minQualityAverage(level),
+    minValidationRatio: PROGRESSION_RULES_V1.minValidationRatio(level),
+  };
+  const conditions: LevelRequirementCondition[] = [
+    {
+      id: "minValidatedActions",
+      current: stats.validatedActions,
+      required: thresholds.minValidatedActions,
+      met: false,
+    },
+    {
+      id: "minDiversityTypes",
+      current: stats.diversityTypes,
+      required: thresholds.minDiversityTypes,
+      met: false,
+    },
+    {
+      id: "minCollectiveEvents",
+      current: stats.collectiveEvents,
+      required: thresholds.minCollectiveEvents,
+      met: false,
+    },
+  ];
+
+  if (thresholds.minQualityAverage !== null) {
+    conditions.push({
+      id: "minQualityAverage",
+      current: stats.qualityAverage,
+      required: thresholds.minQualityAverage,
+      met: false,
+    });
+  }
+  if (thresholds.minValidationRatio !== null) {
+    conditions.push({
+      id: "minValidationRatio",
+      current: stats.validationRatio,
+      required: thresholds.minValidationRatio,
+      met: false,
+    });
+  }
+
+  return { thresholds, conditions };
+}
+
+function assessContributionRequirements(
+  level: number,
+  stats: UserProgressionStats,
+): {
+  thresholds: LevelRequirementAssessment["thresholds"];
+  conditions: LevelRequirementCondition[];
+  satisfied: LevelRequirementCondition[];
+  missing: LevelRequirementCondition[];
+  met: boolean;
+} {
+  const { thresholds, conditions } = buildRequirementConditions(level, stats);
+  const evaluatedConditions = conditions.map((condition) => ({
+    ...condition,
+    // Keep the current `< threshold` rule as the source of truth.
+    met: !(condition.current < condition.required),
+  }));
+  const satisfied = evaluatedConditions.filter((condition) => condition.met);
+  const missing = evaluatedConditions.filter((condition) => !condition.met);
+
+  return {
+    thresholds,
+    conditions: evaluatedConditions,
+    satisfied,
+    missing,
+    met: missing.length === 0,
+  };
+}
+
+function computeCurrentLevelFromPotential(
+  xpTotal: number,
+  stats: UserProgressionStats,
+  potentialLevel: number,
+): number {
+  let current = 1;
+  for (let candidate = 2; candidate <= potentialLevel; candidate += 1) {
+    if (xpTotal < PROGRESSION_RULES_V1.xpRequired(candidate)) {
+      break;
+    }
+    if (!assessContributionRequirements(candidate, stats).met) {
+      break;
+    }
+    current = candidate;
+  }
+  return current;
 }
 
 function addBadgeIfEligible(
@@ -86,55 +188,29 @@ export function deriveBadges(params: {
 export function assessLevelRequirements(
   level: number,
   stats: UserProgressionStats,
+  xpTotal: number,
 ): LevelRequirementAssessment {
-  const thresholds = {
-    minValidatedActions: minValidatedActions(level),
-    minDiversityTypes: minDiversityTypes(level),
-    minCollectiveEvents: minCollectiveEvents(level),
-    minQualityAverage: level >= 5 ? 70 : null,
-    minValidationRatio: level >= 5 ? 0.6 : null,
-  };
-
-  const missing: string[] = [];
-  if (stats.validatedActions < thresholds.minValidatedActions) {
-    missing.push(
-      `Actions validees: ${stats.validatedActions}/${thresholds.minValidatedActions}`,
-    );
-  }
-  if (stats.diversityTypes < thresholds.minDiversityTypes) {
-    missing.push(
-      `Diversite des contributions: ${stats.diversityTypes}/${thresholds.minDiversityTypes}`,
-    );
-  }
-  if (stats.collectiveEvents < thresholds.minCollectiveEvents) {
-    missing.push(
-      `Implication collective: ${stats.collectiveEvents}/${thresholds.minCollectiveEvents}`,
-    );
-  }
-  if (
-    thresholds.minQualityAverage !== null &&
-    stats.qualityAverage < thresholds.minQualityAverage
-  ) {
-    missing.push(
-      `Qualite moyenne: ${Math.round(stats.qualityAverage)}/${thresholds.minQualityAverage}`,
-    );
-  }
-  if (
-    thresholds.minValidationRatio !== null &&
-    stats.validationRatio < thresholds.minValidationRatio
-  ) {
-    missing.push(
-      `Ratio de validation: ${Math.round(stats.validationRatio * 100)}%/${Math.round(
-        thresholds.minValidationRatio * 100,
-      )}%`,
-    );
-  }
+  const contributionAssessment = assessContributionRequirements(level, stats);
+  const potentialLevel = computePotentialLevel(xpTotal);
+  const currentLevel = computeCurrentLevelFromPotential(xpTotal, stats, potentialLevel);
+  const requiredXp = PROGRESSION_RULES_V1.xpRequired(level);
 
   return {
+    rulesVersion: PROGRESSION_RULES_V1.version,
     level,
-    met: missing.length === 0,
-    missing,
-    thresholds,
+    eligible: xpTotal >= requiredXp && contributionAssessment.met,
+    met: contributionAssessment.met,
+    xp: {
+      current: xpTotal,
+      required: requiredXp,
+      met: xpTotal >= requiredXp,
+    },
+    potentialLevel,
+    currentLevel,
+    conditions: contributionAssessment.conditions,
+    satisfied: contributionAssessment.satisfied,
+    missing: contributionAssessment.missing,
+    thresholds: contributionAssessment.thresholds,
     current: {
       validatedActions: stats.validatedActions,
       diversityTypes: stats.diversityTypes,
@@ -147,7 +223,10 @@ export function assessLevelRequirements(
 
 export function computePotentialLevel(xpTotal: number): number {
   let level = 1;
-  while (xpTotal >= xpRequired(level + 1) && level < 500) {
+  while (
+    xpTotal >= PROGRESSION_RULES_V1.xpRequired(level + 1) &&
+    level < PROGRESSION_RULES_V1.maxLevel
+  ) {
     level += 1;
   }
   return level;
@@ -158,16 +237,5 @@ export function computeCurrentLevel(
   stats: UserProgressionStats,
 ): number {
   const potentialLevel = computePotentialLevel(xpTotal);
-  let current = 1;
-  for (let candidate = 2; candidate <= potentialLevel; candidate += 1) {
-    if (xpTotal < xpRequired(candidate)) {
-      break;
-    }
-    const assessment = assessLevelRequirements(candidate, stats);
-    if (!assessment.met) {
-      break;
-    }
-    current = candidate;
-  }
-  return current;
+  return computeCurrentLevelFromPotential(xpTotal, stats, potentialLevel);
 }

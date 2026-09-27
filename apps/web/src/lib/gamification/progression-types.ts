@@ -4,6 +4,7 @@ import type {
   ActionGeometrySource,
 } from "@/lib/actions/types";
 import type { EngagementStatus } from "./engagement-status";
+import type { ProgressionRulesVersion } from "./progression-rules";
 
 export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
@@ -345,10 +346,35 @@ export type UserProgressionStats = {
   totalButts: number;
 };
 
+export type LevelRequirementId =
+  | "minValidatedActions"
+  | "minDiversityTypes"
+  | "minCollectiveEvents"
+  | "minQualityAverage"
+  | "minValidationRatio";
+
+export type LevelRequirementCondition = {
+  id: LevelRequirementId;
+  current: number;
+  required: number;
+  met: boolean;
+};
+
 export type LevelRequirementAssessment = {
   level: number;
   met: boolean;
-  missing: string[];
+  eligible: boolean;
+  rulesVersion: ProgressionRulesVersion;
+  xp: {
+    current: number;
+    required: number;
+    met: boolean;
+  };
+  potentialLevel: number;
+  currentLevel: number;
+  conditions: LevelRequirementCondition[];
+  satisfied: LevelRequirementCondition[];
+  missing: LevelRequirementCondition[];
   thresholds: {
     minValidatedActions: number;
     minDiversityTypes: number;

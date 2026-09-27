@@ -6,6 +6,7 @@ import { GamificationImpactMethodologyCard } from "@/components/sections/rubriqu
 import { ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { MohsBadge } from "@/components/gamification/mohs-badge";
 import type { MeResponse } from "./gamification-types";
+import { formatProgressionRequirement } from "./progression-requirement-copy";
 
 type ProgressionType = MeResponse["progression"];
 
@@ -270,9 +271,11 @@ export function PersonalProgress({
               {progression.nextLevel.requirements.missing.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {progression.nextLevel.requirements.missing.map((missing) => (
-                    <div key={missing} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5">
+                    <div key={missing.id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5">
                       <div className="w-1 h-1 rounded-full bg-red-500" />
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{missing}</span>
+                      <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                        {formatProgressionRequirement(missing, locale)}
+                      </span>
                     </div>
                   ))}
                 </div>

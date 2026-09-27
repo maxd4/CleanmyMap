@@ -30,9 +30,25 @@ interprétées comme trois noms pour la même progression :
 
 | Notion | Contrat CURRENT | Source canonique | Ce qu'elle ne signifie pas |
 | --- | --- | --- | --- |
-| **Niveau** | progression générale numérique dérivée de l'XP et des prérequis de contribution | `progression_profiles.current_level` et `progression-formulas.ts` | ni une famille de badge, ni un rôle AuthZ |
+| **Niveau** | progression générale numérique dérivée de l'XP et des prérequis de contribution | `progression_profiles.current_level`, `progression-rules.ts` et `progression-formulas.ts` | ni une famille de badge, ni un rôle AuthZ |
 | **Statut d'engagement** | reconnaissance qualitative ordonnée `Observateur → Contributeur → Référent → Mentor → Coordinateur` | `engagement-status.ts` | ni un badge spécialisé, ni une permission |
 | **Badge** | progression spécialisée ou jalon dans une famille métier | `BADGE_DEFINITIONS` / `CURRENT_BADGE_DEFINITIONS` dans `badge-catalog.ts` | ni le niveau global, ni le statut qualitatif |
+
+### Contrat CURRENT des règles de niveau
+
+Le contrat versionné `ProgressionRulesV1` est exposé par
+`apps/web/src/lib/gamification/progression-rules.ts` sous la version stable
+`progression-rules-v1`. Il conserve le calcul XP triangulaire et les garde-fous
+de contribution déjà appliqués : actions validées, diversité des types,
+événements collectifs, puis qualité moyenne et ratio de validation à partir du
+niveau 5. `computePotentialLevel`, `computeCurrentLevel` et
+`assessLevelRequirements` consomment cette même source.
+
+L’évaluation d’un niveau expose l’XP actuelle et requise, les niveaux potentiel
+et réel, ainsi que les conditions satisfaites et manquantes sous forme
+d’identifiants et de valeurs. Les libellés traduits restent dans les surfaces
+UI ; ils ne font pas partie du calcul métier. Cette version est le contrat
+CURRENT d audit et de projection ; aucune `ProgressionRulesV2` n est définie.
 
 Le catalogue de badges porte une identité stable, une famille, le statut
 `CURRENT` ou `LEGACY`, l'échelle, la métrique, la source métier, la visibilité,
