@@ -7,7 +7,7 @@ import { OrganizerCombobox } from "@/components/actions/organizer-combobox";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
-import type { FormState } from "../form/model";
+import type { FormState } from "../model";
 import { ActionParticipantPicker } from "../../action-participant-picker";
 import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
 import {

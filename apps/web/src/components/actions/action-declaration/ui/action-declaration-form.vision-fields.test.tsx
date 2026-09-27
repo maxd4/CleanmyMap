@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { ActionDeclarationVisionFields } from "./action-declaration-form.vision-fields";
-import { initialState } from "./model";
+import { initialState } from "../model";
 
 describe("ActionDeclarationVisionFields", () => {
   it("keeps the IA fields inside the canonical emerald disclosure", () => {

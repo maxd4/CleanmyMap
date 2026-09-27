@@ -12,20 +12,20 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDialog } from "@/components/ui/cmm-dialog";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
-import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
+import { ActionFormDisclosureSummary } from "./action-form-disclosure-summary";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
-import { ActionDeclarationFormConfirmation } from "./action-declaration-form-confirmation";
-import { ActionDeclarationExportPicker } from "./action-declaration-export-picker";
-import { ActionDeclarationFormFeedback } from "./action-declaration-form.feedback";
-import { createInitialFormState, OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "../payload";
-import { ActionStepHarvest } from "../steps/ActionStepHarvest";
-import { ActionStepIdentity } from "../steps/ActionStepIdentity";
-import { ActionStepLocation } from "../steps/ActionStepLocation";
+import { ActionDeclarationFormConfirmation } from "./ui/action-declaration-form-confirmation";
+import { ActionDeclarationExportPicker } from "./ui/action-declaration-export-picker";
+import { ActionDeclarationFormFeedback } from "./ui/action-declaration-form.feedback";
+import { createInitialFormState, OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "./payload";
+import { ActionStepHarvest } from "./steps/ActionStepHarvest";
+import { ActionStepIdentity } from "./steps/ActionStepIdentity";
+import { ActionStepLocation } from "./steps/ActionStepLocation";
 import {
   formatDraftDate,
-} from "./action-declaration-form.summary";
-import { useActionDeclarationForm } from "./use-action-declaration-form";
+} from "./ui/action-declaration-form.summary";
+import { useActionDeclarationForm } from "./hooks/use-action-declaration-form";
 
 const ACTION_VALIDATION_FIELD_IDS: Record<string, string> = {
   organizerType: "action-organizer-type",

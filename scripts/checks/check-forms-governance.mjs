@@ -10,14 +10,14 @@ const primitivePath = path.join(
 // These are the files migrated by Forms & Controls. Checkbox/radio/file inputs
 // remain native by design; all other input/select/textarea controls use Cmm*.
 const migratedFiles = [
-  "apps/web/src/components/actions/action-declaration/form/action-declaration-form.identity-fields.tsx",
-  "apps/web/src/components/actions/action-declaration/form/action-declaration-form.identity-section.tsx",
-  "apps/web/src/components/actions/action-declaration/form/action-declaration-form.location-section.tsx",
-  "apps/web/src/components/actions/action-declaration/form/action-declaration-form.main-fields.tsx",
-  "apps/web/src/components/actions/action-declaration/form/action-declaration-form.sections.tsx",
-  "apps/web/src/components/actions/action-declaration/form/action-declaration-form.summary-section.tsx",
-  "apps/web/src/components/actions/action-declaration/form/action-declaration-form.vision-fields.tsx",
-  "apps/web/src/components/actions/action-declaration/form/action-declaration-form.waste-section.tsx",
+  "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.identity-fields.tsx",
+  "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.identity-section.tsx",
+  "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.location-section.tsx",
+  "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.main-fields.tsx",
+  "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.sections.tsx",
+  "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.summary-section.tsx",
+  "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.vision-fields.tsx",
+  "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.waste-section.tsx",
   "apps/web/src/components/reports/admin-workflow/step-confirm.tsx",
 ].map((file) => path.join(repositoryRoot, file));
 

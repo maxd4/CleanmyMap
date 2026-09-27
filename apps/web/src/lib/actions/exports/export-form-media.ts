@@ -1,4 +1,4 @@
-import type { FormState } from "@/components/actions/action-declaration/form/model";
+import type { ExportForm } from "./export-form-contract";
 
 export type ActionDeclarationExportPresetId =
   | "png"
@@ -146,7 +146,7 @@ function getNumberLabel(value: string, unit: string): string {
   return `${trimmed} ${unit}`;
 }
 
-function formatActionHeadline(form: FormState): string {
+function formatActionHeadline(form: ExportForm): string {
   return form.recordType === "clean_place"
     ? "Bilan bénévole de lieu nettoyé"
     : "Déclaration bénévole";
@@ -156,7 +156,7 @@ function getExportPreset(presetId: ActionDeclarationExportPresetId): ActionDecla
   return ACTION_DECLARATION_EXPORT_PRESETS.find((item) => item.id === presetId);
 }
 
-function buildExportNarrative(form: FormState, actorName: string): string[] {
+function buildExportNarrative(form: ExportForm, actorName: string): string[] {
   const items = [
     actorName.trim(),
     form.associationName.trim(),
@@ -227,7 +227,7 @@ export function getActionDeclarationExportBundle(
 }
 
 export function buildActionDeclarationExportFilename(
-  form: FormState,
+  form: ExportForm,
   presetId: "pdf" | ActionDeclarationExportPresetId,
 ): string {
   const actionDate = form.actionDate.trim() || new Date().toISOString().slice(0, 10);
@@ -237,7 +237,7 @@ export function buildActionDeclarationExportFilename(
 }
 
 export function buildActionDeclarationExportPreviewDataUrl(
-  form: FormState,
+  form: ExportForm,
   actorName: string,
   presetId: ActionDeclarationExportPresetId,
 ): string {
@@ -256,7 +256,7 @@ export function buildActionDeclarationExportPreviewDataUrl(
 }
 
 export function buildActionDeclarationShareText(params: {
-  form: FormState;
+  form: ExportForm;
   actorName: string;
   exportLabel?: string;
 }): string {
@@ -278,7 +278,7 @@ export function buildActionDeclarationShareText(params: {
 }
 
 export function buildActionDeclarationSocialSvg(params: {
-  form: FormState;
+  form: ExportForm;
   actorName: string;
   preset: ActionDeclarationExportPreset;
 }): string {
@@ -428,7 +428,7 @@ export function buildActionDeclarationSocialSvg(params: {
 }
 
 export async function downloadActionDeclarationExportImage(params: {
-  form: FormState;
+  form: ExportForm;
   actorName: string;
   presetId: ActionDeclarationExportPresetId;
 }): Promise<boolean> {
@@ -447,7 +447,7 @@ export async function downloadActionDeclarationExportImage(params: {
 }
 
 export async function createActionDeclarationExportPngBlob(params: {
-  form: FormState;
+  form: ExportForm;
   actorName: string;
   preset: ActionDeclarationExportPreset;
 }): Promise<Blob> {
@@ -510,6 +510,6 @@ function downloadBlob(blob: Blob, filename: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function buildActionDeclarationExportLabel(form: FormState): string {
+export function buildActionDeclarationExportLabel(form: ExportForm): string {
   return formatActionHeadline(form);
 }

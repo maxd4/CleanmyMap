@@ -13,10 +13,10 @@ import {
   type ActionDeclarationDraftGeometry,
 } from "../draft-storage";
 import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
-import { applyPlannerActionHandoffToForm } from "./action-declaration-draft.model";
+import { applyPlannerActionHandoffToForm } from "../utils/action-declaration-draft.model";
 import type {
   FormState,
-} from "./model";
+} from "../model";
 import type { ActionDrawing, ActionGeometrySource } from "@/lib/actions/types";
 
 type UseActionDeclarationDraftParams = {

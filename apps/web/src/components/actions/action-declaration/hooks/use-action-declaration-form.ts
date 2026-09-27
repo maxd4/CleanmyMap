@@ -12,15 +12,15 @@ import {
 } from "../payload";
 import type { ActionDeclarationDraftGeometry } from "../draft-storage";
 import { summarizeActionDrawingValidation } from "../../map/actions-map-geometry.utils";
-import { computeActionDataQuality } from "./action-declaration-form.quality";
+import { computeActionDataQuality } from "../utils/action-declaration-form.quality";
 import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
-import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
+import { useActionDeclarationSmartAssist } from "./use-action-declaration-smart-assist";
 import { applyOrganizerFormUpdates } from "../organizer-form-state";
 import { resolveFinalActionGeometry } from "@/lib/actions/geometry/final-geometry";
 import type {
   FormState,
-} from "./model";
+} from "../model";
 import type { ActionDeclarationUserMetadata } from "./use-action-declaration-submission";
 import { useActionDeclarationHydration } from "./use-action-declaration-hydration";
 import { useActionDeclarationDraft } from "./use-action-declaration-draft";

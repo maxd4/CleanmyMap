@@ -8,7 +8,7 @@ const files = {
   primitive: "apps/web/src/components/ui/cmm-disclosure.tsx",
   legal: "apps/web/src/app/conditions-generales-utilisation/legal-accordion.tsx",
   map: "apps/web/src/app/(app)/actions/map/_components/map-legend.tsx",
-  vision: "apps/web/src/components/actions/action-declaration/form/action-declaration-form.vision-fields.tsx",
+  vision: "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.vision-fields.tsx",
   quiz: "apps/web/src/components/admin/quiz-bank-admin-view.question-card.tsx",
   documentation: "documentation/design-system/DISCLOSURE_ACCORDIONS.md",
 };

@@ -1,4 +1,4 @@
-import type { FormState } from "@/components/actions/action-declaration/form/model";
+import type { ExportForm } from "./export-form-contract";
 import type { ActionDeclarationExportBundleId, ActionDeclarationExportPresetId } from "@/lib/actions/exports/export-form-media";
 
 export type ActionDeclarationExportHistoryTargetId = "pdf" | ActionDeclarationExportPresetId;
@@ -11,7 +11,7 @@ export type ActionDeclarationExportHistoryEntry = {
   sourceLabel: string;
   targetId: ActionDeclarationExportHistoryTargetId;
   actorName: string;
-  form: FormState;
+  form: ExportForm;
   bundleId?: ActionDeclarationExportBundleId;
 };
 
@@ -89,7 +89,7 @@ export function createActionDeclarationExportHistoryEntry(params: {
   sourceLabel: string;
   targetId: ActionDeclarationExportHistoryTargetId;
   actorName: string;
-  form: FormState;
+  form: ExportForm;
   bundleId?: ActionDeclarationExportBundleId;
 }): ActionDeclarationExportHistoryEntry {
   return {

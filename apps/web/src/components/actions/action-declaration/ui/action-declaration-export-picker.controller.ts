@@ -22,7 +22,7 @@ import {
   writeActionDeclarationExportHistory,
   type ActionDeclarationExportHistoryEntry,
 } from "@/lib/actions/exports/export-form-history";
-import type { FormState } from "./model";
+import type { FormState } from "../model";
 import {
   getDefaultBundleId,
   getDefaultTargetId,

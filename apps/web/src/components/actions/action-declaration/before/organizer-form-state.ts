@@ -1,4 +1,4 @@
-import type { FormState } from "../form/model";
+import type { FormState } from "../model";
 
 export function applyOrganizerFormUpdates(
   nextForm: FormState,

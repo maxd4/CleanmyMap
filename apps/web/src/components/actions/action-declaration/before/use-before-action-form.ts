@@ -14,7 +14,7 @@ import {
 } from "../payload";
 import { saveDraft, loadDraftSnapshot } from "../draft-storage";
 import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
-import type { FormState } from "../form/model";
+import type { FormState } from "../model";
 import type {
   ActionPhotoAsset,
   ActionVisionEstimate,

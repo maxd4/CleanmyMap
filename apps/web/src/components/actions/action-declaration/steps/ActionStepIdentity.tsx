@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { OrganizerCombobox } from "@/components/actions/organizer-combobox";
 import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
-import type { FormState } from "../form/model";
+import type { FormState } from "../model";
 import { ActionParticipantPicker } from "../../action-participant-picker";
 import {
   formatBusinessDurationMinutes,

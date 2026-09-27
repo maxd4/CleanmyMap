@@ -10,20 +10,24 @@ compose les étapes React et conserve les comportements d'interface associés
 ```text
 action-declaration/
 ├── before/      parcours pré-action, avant le formulaire complet
-├── form/       orchestration du formulaire, champs, revue et aides
-├── steps/      étapes React du parcours de déclaration
-├── hooks/      hooks d'interface partagés par le parcours
-├── sections/   sections de collecte et de résultats terrain
-├── ui/         briques visuelles réutilisables du formulaire
-├── payload.ts  construction du payload de déclaration
+├── hooks/       lifecycle et orchestration d'état du formulaire
+├── sections/   sections visibles de collecte et de résultats terrain
+├── ui/          présentation, dialogs, picker et champs du formulaire
+├── utils/       modèles et helpers purs du parcours
+├── steps/       étapes React du parcours de déclaration
+├── action-declaration-form.tsx  orchestration principale du formulaire
+├── form.ts      façade publique du formulaire
+├── model.ts     contrat UI FormState et dérivations partagées
+├── payload.ts   construction du payload de déclaration
 ├── draft-storage.ts
-└── types.ts    contrats UI partagés par payload, brouillon et étapes
+└── types.ts     contrats UI partagés par payload, brouillon et étapes
 ```
 
-Les tests restent à côté du module vérifié. Le dossier `form/` peut contenir
-les helpers de validation et de présentation strictement liés au formulaire ;
-une règle métier réutilisable par d'autres surfaces doit être réévaluée pour
-un placement dans `apps/web/src/lib/actions/`.
+Les tests restent à côté du module vérifié. Les helpers de validation et de
+présentation strictement liés au formulaire sont absorbés par les propriétaires
+`hooks/`, `sections/`, `ui/`, `utils/` et la racine du parcours. Une règle métier
+réutilisable par d'autres surfaces
+doit être réévaluée pour un placement dans `apps/web/src/lib/actions/`.
 Le dossier `before/` regroupe le modèle déterministe, le hook d'orchestration
 et les sections contrôlées du parcours pré-action. Il ne contient ni champ de
 récolte finale ni copie des contrats métier canoniques.
@@ -33,15 +37,14 @@ récolte finale ni copie des contrats métier canoniques.
 ```text
 components/actions/action-declaration
         ↓
-components/actions/action-declaration/{before,steps,sections,ui}
+components/actions/action-declaration/{before,hooks,steps,sections,ui,utils}
         ↓
 lib/actions/{contracts,geometry,quality,signalement,...}
 ```
 
 Les entrées externes importent le formulaire depuis
-`@/components/actions/action-declaration/form` ou son fichier d'implémentation
-dans ce dossier. L'ancien répertoire dédié au formulaire n'existe plus et ne
-doit pas être recréé.
+`@/components/actions/action-declaration/form`. Cette façade fichier stabilise
+l'import public sans réintroduire un répertoire `form/`.
 
 ## Règles de placement
 
@@ -49,7 +52,8 @@ doit pas être recréé.
   parcours.
 - Ajouter une section de collecte ou de résultats dans `sections/`.
 - Ajouter une brique de présentation sans orchestration dans `ui/`.
-- Garder le parcours pré-action dans `before/` : `form.tsx` compose le hook,
+- Garder le parcours pré-action dans `before/` :
+  `action-declaration-form.tsx` compose le hook,
   les sections et les briques UI ; aucune section ne doit gérer le réseau ou
   la persistance.
 - Garder `payload.ts`, `draft-storage.ts` et `types.ts` à la racine lorsqu'ils

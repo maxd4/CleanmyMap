@@ -1,4 +1,4 @@
-import type { FormState } from "@/components/actions/action-declaration/form/model";
+import type { ExportForm } from "./export-form-contract";
 import {
   downloadActionDeclarationExportImage,
   getActionDeclarationExportBundle,
@@ -33,7 +33,7 @@ export function getActionDeclarationExportBundleImageTargets(
 }
 
 export async function downloadActionDeclarationExportBundle(params: {
-  form: FormState;
+  form: ExportForm;
   actorName: string;
   bundleId: ActionDeclarationExportBundleId;
 }): Promise<ActionDeclarationExportPresetId[]> {

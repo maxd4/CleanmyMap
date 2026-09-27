@@ -1,4 +1,4 @@
-import { toRequiredNumber } from"./model";
+import { toRequiredNumber } from"../model";
 
 type EstimateWasteInput = {
  volunteersCount: string;

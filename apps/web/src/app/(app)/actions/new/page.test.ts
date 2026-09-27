@@ -185,7 +185,7 @@ describe("action creation entry point", () => {
   it("does not block the authenticated complete form by viewport", () => {
     const formSource = readFileSync(
       new URL(
-        "../../../../components/actions/action-declaration/form/action-declaration-form.tsx",
+        "../../../../components/actions/action-declaration/action-declaration-form.tsx",
         import.meta.url,
       ),
       "utf8",
@@ -200,7 +200,7 @@ describe("action creation entry point", () => {
   it("keeps the action entry focused on terrain results", () => {
     const formSource = readFileSync(
       new URL(
-        "../../../../components/actions/action-declaration/form/action-declaration-form.tsx",
+        "../../../../components/actions/action-declaration/action-declaration-form.tsx",
         import.meta.url,
       ),
       "utf8",

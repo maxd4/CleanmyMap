@@ -67,7 +67,7 @@
       "maxBytes": 32895
     },
     {
-      "path": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx",
+      "path": "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
       "kind": "runtime",
       "status": "REVIEW",
       "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
@@ -75,7 +75,7 @@
       "maxBytes": 32321
     },
     {
-      "path": "apps/web/src/components/actions/action-declaration/form/use-action-declaration-form.ts",
+      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
       "kind": "runtime",
       "status": "REVIEW",
       "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",

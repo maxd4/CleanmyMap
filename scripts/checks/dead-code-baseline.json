@@ -888,7 +888,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.smart-assist.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-smart-assist.tsx",
       "name": "ActionDeclarationLocationAssist",
       "namespace": null,
       "kind": null,
@@ -898,7 +898,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.smart-assist.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-smart-assist.tsx",
       "name": "ActionDeclarationWasteAssist",
       "namespace": null,
       "kind": null,
@@ -908,7 +908,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.summary.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.summary.tsx",
       "name": "formatActionDate",
       "namespace": null,
       "kind": null,
@@ -918,7 +918,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.summary.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.summary.tsx",
       "name": "formatWasteSummary",
       "namespace": null,
       "kind": null,
@@ -928,7 +928,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.summary.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.summary.tsx",
       "name": "FormProgressSummary",
       "namespace": null,
       "kind": null,
@@ -938,7 +938,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.summary.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.summary.tsx",
       "name": "SummaryRow",
       "namespace": null,
       "kind": null,
@@ -948,7 +948,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.vision-suggestion.ts",
+      "file": "apps/web/src/components/actions/action-declaration/utils/action-declaration-form.vision-suggestion.ts",
       "name": "VISION_WASTE_CONFIDENCE_THRESHOLD",
       "namespace": null,
       "kind": null,
@@ -958,7 +958,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/action-declaration/form/model.ts",
+      "file": "apps/web/src/components/actions/action-declaration/model.ts",
       "name": "getDrawingCentroid",
       "namespace": null,
       "kind": null,
@@ -968,7 +968,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/action-declaration/form/model.ts",
+      "file": "apps/web/src/components/actions/action-declaration/model.ts",
       "name": "isDrawingValid",
       "namespace": null,
       "kind": null,
@@ -978,7 +978,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/components/actions/action-declaration/form/model.ts",
+      "file": "apps/web/src/components/actions/action-declaration/model.ts",
       "name": "toOptionalNumber",
       "namespace": null,
       "kind": null,
@@ -7528,8 +7528,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.actions.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.actions.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.actions.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.actions.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7538,8 +7538,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.header.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.header.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.header.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.header.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7548,8 +7548,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.identity-fields.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.identity-fields.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.identity-fields.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.identity-fields.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7558,8 +7558,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.identity-section.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.identity-section.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.identity-section.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.identity-section.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7568,8 +7568,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.location-section.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.location-section.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.location-section.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.location-section.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7578,8 +7578,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.main-fields.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.main-fields.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.main-fields.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.main-fields.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7588,8 +7588,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.photo-section.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.photo-section.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.photo-section.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.photo-section.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7598,8 +7598,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.progress-indicator.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.progress-indicator.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.progress-indicator.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.progress-indicator.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7608,8 +7608,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.quality-review-section.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.quality-review-section.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.quality-review-section.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.quality-review-section.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7618,8 +7618,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.sections.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.sections.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.sections.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.sections.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7628,8 +7628,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.summary-section.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.summary-section.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.summary-section.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.summary-section.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7638,8 +7638,18 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.vision-engine.ts",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.vision-engine.ts",
+      "file": "apps/web/src/components/actions/action-declaration/ui/action-declaration-smart-assist.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/ui/action-declaration-smart-assist.tsx",
+      "namespace": null,
+      "kind": null,
+      "specifier": null,
+      "id": "105769e5aae99f0985f30084",
+      "classification": "historical-debt"
+    },
+    {
+      "type": "files",
+      "file": "apps/web/src/components/actions/action-declaration/utils/action-declaration-form.vision-engine.ts",
+      "name": "apps/web/src/components/actions/action-declaration/utils/action-declaration-form.vision-engine.ts",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -7648,8 +7658,8 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.waste-section.tsx",
-      "name": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.waste-section.tsx",
+      "file": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.waste-section.tsx",
+      "name": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.waste-section.tsx",
       "namespace": null,
       "kind": null,
       "specifier": null,
@@ -8588,7 +8598,7 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.vision-suggestion.ts",
+      "file": "apps/web/src/components/actions/action-declaration/utils/action-declaration-form.vision-suggestion.ts",
       "name": "WasteSuggestionSource",
       "namespace": null,
       "kind": null,
@@ -8598,7 +8608,7 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/components/actions/action-declaration/form/model.ts",
+      "file": "apps/web/src/components/actions/action-declaration/model.ts",
       "name": "DeclarationMode",
       "namespace": null,
       "kind": null,

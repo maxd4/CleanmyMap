@@ -1,4 +1,4 @@
-import type { FormState } from"./model";
+import type { FormState } from"../model";
 import { CmmField, CmmTextarea } from "@/components/ui/cmm-field";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import { normalizeVolunteerParticipationFromForm } from "@/lib/actions/volunteer-participation";

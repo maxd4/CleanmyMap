@@ -1,4 +1,4 @@
-import type { FormState } from "./model";
+import type { FormState } from "../model";
 import { CmmDialog } from "@/components/ui/cmm-dialog";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";

@@ -4,7 +4,7 @@ import type {
   ActionGeometrySource,
 } from "@/lib/actions/types";
 import type { ActionDeclarationDraftGeometry } from "../draft-storage";
-import type { FormState } from "./model";
+import type { FormState } from "../model";
 
 type UpdateForm = (
   updates: Partial<FormState>,

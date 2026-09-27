@@ -3,9 +3,9 @@ import type {
   ActionPhotoAsset,
   ActionVisionEstimate,
 } from "@/lib/actions/types";
-import type { FormState } from "./model";
+import type { FormState } from "../model";
 import { ActionDeclarationPhotoSection } from "./action-declaration-form.photo-section";
-import { ActionDeclarationVisionFields } from "./action-declaration-form.vision-fields";
+import { ActionDeclarationVisionFields } from "../ui/action-declaration-form.vision-fields";
 import { CmmField, CmmInput, CmmSelect } from "@/components/ui/cmm-field";
 
 type UpdateField = <K extends keyof FormState>(

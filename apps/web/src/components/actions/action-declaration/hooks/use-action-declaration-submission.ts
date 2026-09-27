@@ -18,14 +18,14 @@ import { prepareCreateActionPayload } from "../payload";
 import {
   getActionDeclarationSubmissionIssues,
   normalizeActionDeclarationFormBeforeSubmit,
-} from "./action-declaration-submission.model";
+} from "../utils/action-declaration-submission.model";
 import type {
   FormState,
   PostActionRetentionLoop,
   SubmissionState,
   ValidationIssue,
-} from "./model";
-import type { LoadedActionPhase } from "./action-declaration-hydration.model";
+} from "../model";
+import type { LoadedActionPhase } from "../utils/action-declaration-hydration.model";
 
 export type ActionDeclarationUserMetadata = {
   userId: string;

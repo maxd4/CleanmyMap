@@ -13,7 +13,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmDialog } from "@/components/ui/cmm-dialog";
 import { buildActionDeclarationExportLabel } from "@/lib/actions/exports/export-form-media";
 import { cn } from "@/lib/utils";
-import type { FormState } from "./model";
+import type { FormState } from "../model";
 import {
   getSelectedTargetLabel,
   getTargetTone,

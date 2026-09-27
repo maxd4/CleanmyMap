@@ -15,7 +15,7 @@ vi.mock("./action-declaration/before/form", () => ({
     return <div data-testid="pre-formulaire-engine" />;
   },
 }));
-vi.mock("./action-declaration/form/action-declaration-form", () => ({
+vi.mock("./action-declaration/action-declaration-form", () => ({
   ActionDeclarationForm: (props: Record<string, unknown>) => {
     completeFormPropsMock(props);
     return <div data-testid="formulaire-engine" />;

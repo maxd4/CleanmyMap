@@ -6,7 +6,7 @@ import {
 import { clamp } from "../utils/harvest-utils";
 import { useCallback, useMemo } from "react";
 
-import type { FormState } from "../form/model";
+import type { FormState } from "../model";
 import type { UpdateFormField } from "../types";
 
 type UseHarvestLogicParams = {
