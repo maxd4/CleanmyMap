@@ -53,7 +53,7 @@ function help() {
   console.log("--dry-run est sans mutation, sans audit et sans checkpoint.");
 }
 
-function publicPlan(plan) {
+function publicPlan(plan, receipt) {
   return {
     userId: plan.userId,
     rulesVersionBefore: plan.rulesVersionBefore,
@@ -71,6 +71,7 @@ function publicPlan(plan) {
     milestonesAdded: plan.milestonesAdded,
     milestonesRemoved: plan.milestonesRemoved,
     legacyEventCountPreserved: plan.legacyEventCountPreserved,
+    receipt: receipt ?? null,
   };
 }
 
@@ -108,6 +109,7 @@ async function main() {
   const { GAMIFICATION_RULES_V1 } = await import("../src/lib/gamification/gamification-rules.ts");
   const { loadGamificationReconciliationSnapshot } = await import("../src/lib/gamification/gamification-reconciliation-plan.ts");
   const { reconcileUserGamification } = await import("../src/lib/gamification/gamification-reconciliation.ts");
+  const { buildGamificationReconciliationReceipt } = await import("../src/lib/gamification/gamification-reconciliation-receipt.ts");
   const { parseGamificationReconcileArgs, runGamificationReconcile } = await import("../src/lib/gamification/gamification-reconcile-runner.ts");
   const args = parseGamificationReconcileArgs(argv);
   const actorUserId = optionValue(argv, "--actor") || "system:gamification-reconcile";
@@ -132,8 +134,9 @@ async function main() {
     applyUser: async (userId) => {
       const reconciled = await reconcileUserGamification(supabase, userId, {
         rules: GAMIFICATION_RULES_V1,
+        reasonCategory: "rules_update",
       });
-      return { plan: reconciled.plan, inserted: reconciled.inserted, updated: reconciled.updated, removed: reconciled.removed };
+      return { plan: reconciled.plan, receipt: reconciled.receipt, inserted: reconciled.inserted, updated: reconciled.updated, removed: reconciled.removed };
     },
     listUsers: async ({ afterUserId, limit }) => {
       let query = supabase.from("profiles").select("id").order("id", { ascending: true }).limit(limit);
@@ -181,7 +184,16 @@ async function main() {
     rulesVersion: GAMIFICATION_RULES_V1.version,
     runId: result.runId,
     checkpoint: args.mode === "apply" && args.target === "all" ? checkpointFile : null,
-    ...(args.target === "user" ? { plan: publicPlan(result.userPlan) } : { aggregate: result.aggregate }),
+    ...(args.target === "user"
+      ? {
+          plan: publicPlan(
+            result.userPlan,
+            result.userReceipt ?? (args.mode === "dry-run"
+              ? buildGamificationReconciliationReceipt(result.userPlan, { reasonCategory: "rules_update" })
+              : null),
+          ),
+        }
+      : { aggregate: result.aggregate }),
   };
   console.log(JSON.stringify(output, null, 2));
 }

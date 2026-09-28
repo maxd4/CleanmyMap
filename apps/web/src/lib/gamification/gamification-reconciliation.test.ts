@@ -43,9 +43,18 @@ const facts: GamificationFacts = {
 
 function createSupabase() {
   const rows: Array<Record<string, unknown>> = [];
+  const notifications: Array<Record<string, unknown>> = [];
   let nextId = 1;
   const supabase = {
     from(table: string) {
+      if (table === "app_notifications") {
+        return {
+          insert(row: Record<string, unknown>) {
+            notifications.push(row);
+            return Promise.resolve({ error: null });
+          },
+        };
+      }
       if (table !== "progression_events") throw new Error(`Unexpected table ${table}`);
       return {
         select() {
@@ -80,7 +89,7 @@ function createSupabase() {
       };
     },
   } as unknown as SupabaseClient;
-  return { supabase, rows };
+  return { supabase, rows, notifications };
 }
 
 describe("reconcileUserGamification", () => {

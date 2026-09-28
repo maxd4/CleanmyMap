@@ -136,6 +136,30 @@ intermédiaire calculable existe dans le domaine ; un jalon binaire reste
 `not_started` jusqu'à sa preuve. Les entrées `NON_GAMIFIED` et les mécaniques
 `authorized_moderation` non applicables sont absentes de cet inventaire.
 
+### Reçu canonique de réconciliation
+
+Une réconciliation CURRENT qui modifie l'état utilisateur produit un
+`GamificationReconciliationReceipt`, contrat structuré défini par
+`apps/web/src/lib/gamification/gamification-reconciliation-receipt.ts`. Le
+reçu est calculé depuis le même plan déterministe que les mutations du ledger
+et expose :
+
+- `xp` et `level` avant/après, leur delta et la direction du niveau ;
+- les progressions ajoutées, retirées ou modifiées ;
+- les badges déverrouillés, retirés ou changés de grade ;
+- les jalons déverrouillés ou retirés ;
+- les compteurs d'événements ajoutés, modifiés et retirés ;
+- `previousRulesVersion`, `currentRulesVersion`, `reasonCategory` et
+  `hasUserVisibleChanges`.
+
+Les éléments sont identifiés par les IDs canoniques des registres. Le reçu est
+persisté dans `app_notifications` sous un payload versionné et appartient
+exclusivement à son utilisateur ; les RLS interdisent la lecture d'un autre
+compte et l'écriture client. `seen_at` et `acknowledged_at` sont nullable. Un
+rebuild idempotent sans conséquence visible ne crée aucun reçu. Le front-end
+consomme ce contrat et ne déduit jamais un delta depuis le seul total XP ni
+depuis des logs texte.
+
 ## Taxonomie CURRENT et registre des décisions
 
 `GAMIFICATION_REGISTRY` dans
