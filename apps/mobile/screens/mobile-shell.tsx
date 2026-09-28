@@ -9,10 +9,11 @@ import {
   type MobileDestinationId,
 } from './mobile-shell-contract'
 
-type MobileSurface = MobileDestinationId | 'gps-future'
+type MobileSurface = MobileDestinationId
 
 type MobileShellProps = {
   onSignOut: () => void
+  onStartActivity: () => void | Promise<void>
 }
 
 const webBaseUrl = (process.env.EXPO_PUBLIC_WEB_URL ?? 'https://cleanmymap.fr').replace(/\/$/, '')
@@ -25,20 +26,19 @@ async function openWebPath(path: string) {
   }
 }
 
-export function MobileShell({ onSignOut }: MobileShellProps) {
+export function MobileShell({ onSignOut, onStartActivity }: MobileShellProps) {
   const [surface, setSurface] = useState<MobileSurface>('home')
-  const destination = surface === 'gps-future' ? 'act' : surface
+  const destination = surface
 
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
       <ScrollView contentContainerStyle={styles.content}>
-        {surface === 'home' ? <HomeScreen onStart={() => setSurface('gps-future')} onMap={() => setSurface('map')} /> : null}
+        {surface === 'home' ? <HomeScreen onStart={onStartActivity} onMap={() => setSurface('map')} /> : null}
         {surface === 'map' ? <MapScreen /> : null}
-        {surface === 'act' ? <ActScreen onStart={() => setSurface('gps-future')} /> : null}
+        {surface === 'act' ? <ActScreen onStart={onStartActivity} /> : null}
         {surface === 'messages' ? <MessagesScreen /> : null}
         {surface === 'profile' ? <ProfileScreen onSignOut={onSignOut} /> : null}
-        {surface === 'gps-future' ? <FutureGpsScreen onBack={() => setSurface('act')} /> : null}
       </ScrollView>
 
       <View style={styles.tabBar}>
@@ -160,26 +160,6 @@ function ProfileScreen({ onSignOut }: { onSignOut: () => void }) {
   )
 }
 
-function FutureGpsScreen({ onBack }: { onBack: () => void }) {
-  return (
-    <ScreenFrame eyebrow="FUTUR LOT" title="Mode activité GPS">
-      <TouchableOpacity style={styles.backButton} onPress={onBack}>
-        <Ionicons name="arrow-back" size={18} color="#a7f3d0" />
-        <Text style={styles.backLabel}>Retour à Agir</Text>
-      </TouchableOpacity>
-      <Text style={styles.bodyText}>
-        Cette surface prépare le futur suivi live bénévole. La carte, le tracé temps réel et le parcours complet seront
-        développés dans un lot dédié.
-      </Text>
-      <InfoCard
-        icon="construct-outline"
-        title="Pas encore disponible"
-        description="Aucune nouvelle implémentation GPS live n'est ajoutée dans cette baseline."
-      />
-    </ScreenFrame>
-  )
-}
-
 function ScreenFrame({
   eyebrow,
   title,
@@ -293,8 +273,6 @@ const styles = StyleSheet.create({
   infoCopy: { flex: 1, marginLeft: 12 },
   infoTitle: { color: '#e2e8f0', fontSize: 14, fontWeight: '800', marginBottom: 5 },
   infoDescription: { color: '#94a3b8', fontSize: 12, lineHeight: 18 },
-  backButton: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 24 },
-  backLabel: { color: '#a7f3d0', fontSize: 13, fontWeight: '800' },
   signOutButton: { alignItems: 'center', paddingVertical: 18, marginTop: 12 },
   signOutLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   tabBar: {

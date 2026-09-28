@@ -26,10 +26,14 @@ Le shell mobile expose uniquement cinq destinations : `Accueil`, `Carte`,
 `Démarrer une action`, `Rejoindre une action`, `Organiser une action` et
 `Signaler un déchet`.
 
-`Démarrer une action` ouvre seulement la surface locale identifiée comme futur
-mode activité GPS. Le GPS live, la carte et le tracé temps réel ne sont pas
-développés dans cette baseline. Les autres parcours légers ouvrent, lorsque
-nécessaire, les surfaces web existantes (`/actions/map`, `/actions/new`,
+`Démarrer une action` vérifie les permissions GPS, crée une mission `pending`
+owner-scoped avec le `sub` Clerk via Supabase, puis réutilise `startTracking`
+pour passer la mission à `tracking` et afficher l'écran mission active. Le
+grant INSERT et la policy RLS limitent l'écriture mobile à `volunteer_id` et
+`label` ; le client ne contrôle donc ni l'identité effective ni les métriques
+dérivées. La carte live et le tracé temps réel restent hors de ce lot. Les
+autres parcours légers ouvrent, lorsque nécessaire, les surfaces web existantes
+(`/actions/map`, `/actions/new`,
 `/sections/rejoindre-une-action`, `/signalement`, `/sections/messagerie`,
 `/profil`, `/reglages`) ; le mobile ne crée pas de deuxième messagerie ni de
 deuxième modèle métier.

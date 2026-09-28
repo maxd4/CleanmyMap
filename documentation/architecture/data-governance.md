@@ -685,19 +685,23 @@ propriétaire porté par `missions.volunteer_id` et aux profils `admin`/`max`,
 après AuthN puis décision d'AuthZ côté serveur. Les profils `elu` et les autres
 profils ordinaires ne sont pas autorisés par analogie avec les actions.
 
-Pour l'application mobile, la migration
-`apps/web/supabase/migrations/20260826070000_clerk_missions_gps_rls.sql`
-réalise le contrat Clerk Third-Party Auth : `missions` est lisible et
+Pour l'application mobile, les migrations
+`apps/web/supabase/migrations/20260826070000_clerk_missions_gps_rls.sql` et
+`apps/web/supabase/migrations/20260928000003_mobile_mission_insert_owner_rls.sql`
+réalisent le contrat Clerk Third-Party Auth : `missions` est lisible et
 modifiable par `authenticated` uniquement lorsque `volunteer_id` correspond au
-claim Clerk `sub` non vide. Les points `gps_points` sont lisibles et insérables
-uniquement lorsque la mission référencée appartient au même `sub`. Aucun accès
-ne découle de la seule connaissance d'un `mission_id`, et un token sans `sub`
-est refusé.
+claim Clerk `sub` non vide. La création mobile est limitée à une mission
+`pending` appartenant au même `sub`, avec le seul insert `(volunteer_id,
+label)`. Les points `gps_points` sont lisibles et insérables uniquement lorsque
+la mission référencée appartient au même `sub`. Aucun accès ne découle de la
+seule connaissance d'un `mission_id`, et un token sans `sub` est refusé.
 
-Le grant UPDATE mobile est limité à `status`, `started_at` et `ended_at`.
-`volunteer_id`, `created_by`, `distance_m` et `duration_s` restent hors de la
-surface d'écriture `authenticated`. Le `service_role` conserve ses privilèges
-serveur sans devenir une identité mobile.
+Le grant INSERT mobile est limité à `volunteer_id` et `label`, tandis que le
+grant UPDATE mobile est limité à `status`, `started_at` et `ended_at`.
+`created_by`, `distance_m` et `duration_s` restent hors de la surface d'écriture
+`authenticated` ; `volunteer_id` est fixé par l'insertion owner-scoped et n'est
+pas modifiable ensuite. Le `service_role` conserve ses privilèges serveur sans
+devenir une identité mobile.
 
 La migration corrective
 `apps/web/supabase/migrations/20260827100000_clerk_mission_completion_metrics_trigger.sql`

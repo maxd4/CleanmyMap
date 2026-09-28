@@ -98,9 +98,12 @@ Le contrat effectif est le suivant :
 
 - `missions` est lisible et modifiable par le client `authenticated` seulement
   lorsque `volunteer_id` correspond au claim Clerk `sub` non vide ;
+- la création mobile est limitée par policy et grant à `(volunteer_id, label)`.
+  `volunteer_id` doit correspondre au `sub` Clerk et le statut reste `pending`
+  par défaut ;
 - l'UPDATE mobile est limité par grant aux colonnes `status`, `started_at` et
-  `ended_at` ; `volunteer_id`, `created_by`, `distance_m` et `duration_s` ne
-  sont pas modifiables par le client mobile ;
+  `ended_at` ; `created_by`, `distance_m` et `duration_s` ne sont pas
+  modifiables par le client mobile ;
 - `gps_points` est lisible et insérable seulement si la mission référencée
   appartient au même `sub` Clerk ; connaître un `mission_id` ne suffit pas ;
 - l'absence de `sub` refuse l'accès et aucun grant client `anon` n'est conservé ;
@@ -241,6 +244,13 @@ Le LOT 2A a réalisé la bascule RLS additive :
 3. borner les grants UPDATE mobiles ;
 4. vérifier propriétaire, tiers, `sub` absent et service role ;
 5. conserver le buffer offline lorsque le token n'est pas disponible.
+
+Le lot mobile de création de mission ajoute uniquement la policy et le grant
+INSERT owner-scoped de
+`20260928000003_mobile_mission_insert_owner_rls.sql`. Le mobile vérifie les
+permissions GPS, crée cette mission propriétaire, puis réutilise le tracker
+existant ; aucun lien `mission_actions`, formulaire natif ou moteur GPS live
+n'est introduit.
 
 Le LOT 2B a ajouté la migration additive de finalisation propriétaire et le
 contrôle d'erreur RPC dans le tracking service. SEC-01 remplace ce chemin par

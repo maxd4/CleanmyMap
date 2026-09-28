@@ -50,6 +50,7 @@ vi.mock('../lib/storage', () => ({
 
 import {
   CLERK_SESSION_REQUIRED_ERROR,
+  createMission,
   getMission,
   restoreActiveTracking,
   saveLocationPoint,
@@ -72,6 +73,7 @@ const activeMission = {
 
 function missionClient(options: { data?: unknown; error?: Error | null } = {}) {
   const updatePayloads: unknown[] = []
+  const insertPayloads: unknown[] = []
   const missionResult = {
     data: options.data === undefined ? activeMission : options.data,
     error: options.error ?? null,
@@ -79,6 +81,7 @@ function missionClient(options: { data?: unknown; error?: Error | null } = {}) {
 
   return {
     updatePayloads,
+    insertPayloads,
     from: vi.fn((table: string) => {
       if (table !== 'missions') throw new Error(`Unexpected table: ${table}`)
 
@@ -91,6 +94,15 @@ function missionClient(options: { data?: unknown; error?: Error | null } = {}) {
               select: vi.fn(() => ({
                 single: vi.fn(async () => missionResult),
               })),
+            })),
+          }
+        }),
+        insert: vi.fn((payload: unknown) => {
+          state.sequence.push('insert')
+          insertPayloads.push(payload)
+          return {
+            select: vi.fn(() => ({
+              single: vi.fn(async () => missionResult),
             })),
           }
         }),
@@ -119,6 +131,31 @@ describe('mobile tracking service', () => {
     state.storedMissionId = 'mission-1'
 
     await expect(restoreActiveTracking()).resolves.toBe('mission-1')
+  })
+
+  it('creates an owner-scoped mission without client-owned metrics', async () => {
+    const pendingMission = { ...activeMission, status: 'pending' as const, started_at: null }
+    const client = missionClient({ data: pendingMission })
+    state.client = client
+
+    const result = await createMission(' user_123 ')
+
+    expect(result).toEqual({ ok: true, data: pendingMission })
+    expect(client.insertPayloads).toEqual([
+      { volunteer_id: 'user_123', label: 'Action bénévole mobile' },
+    ])
+    expect(client.insertPayloads[0]).not.toHaveProperty('distance_m')
+    expect(client.insertPayloads[0]).not.toHaveProperty('duration_s')
+    expect(client.insertPayloads[0]).not.toHaveProperty('created_by')
+  })
+
+  it('surfaces a mission creation error without inventing a mission', async () => {
+    state.client = missionClient({ error: new Error('RLS denied') })
+
+    await expect(createMission('user_123')).resolves.toEqual({
+      ok: false,
+      error: 'Impossible de créer la mission : RLS denied',
+    })
   })
 
   it('refuses to start tracking when foreground GPS permission is denied', async () => {
