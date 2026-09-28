@@ -205,7 +205,7 @@ jobs:
 
   web-quality:
     needs: scope
-    if: needs.scope.outputs.web_code_relevant == 'true'
+    if: needs.scope.outputs.web_code_relevant == 'true' || needs.scope.outputs.mobile_code_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -418,8 +418,28 @@ jobs:
       - name: Install mobile dependencies
         run: npm ci
 
+      # Mobile-only changes own the shared security gates. A mixed web/mobile
+      # commit uses the existing web jobs once instead of running duplicates.
+      - name: Secret audit (mobile-only)
+        if: needs.scope.outputs.web_code_relevant != 'true'
+        run: npm run security:secrets
+
+      - name: Install architectural Semgrep (mobile-only)
+        if: needs.scope.outputs.web_code_relevant != 'true'
+        run: python -m pip install --disable-pip-version-check --no-input semgrep==1.177.0
+
+      - name: Architectural Semgrep (mobile-only)
+        if: needs.scope.outputs.web_code_relevant != 'true'
+        run: npm run check:semgrep
+
       - name: Mobile security tests
-        run: node --test apps/mobile/security/*.test.mjs
+        run: npm run mobile:security
 
       - name: Mobile typecheck
         run: npm run mobile:typecheck
+
+      - name: Mobile Vitest tests
+        run: npm run mobile:test
+
+      - name: Mobile lint
+        run: npm run mobile:lint

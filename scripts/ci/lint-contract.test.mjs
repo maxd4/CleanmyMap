@@ -61,6 +61,11 @@ test("FAST ciblé et FULL utilisent le contrat lint canonique", () => {
   const packageJson = JSON.parse(readFileSync(join(repositoryRoot, "apps/web/package.json"), "utf8"));
   assert.equal(packageJson.scripts.lint, "eslint src --max-warnings=0");
 
+  const mobilePackageJson = JSON.parse(readFileSync(join(repositoryRoot, "apps/mobile/package.json"), "utf8"));
+  assert.equal(mobilePackageJson.scripts.lint, "eslint --config eslint.config.mjs . --max-warnings=0");
+  assert.equal(JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")).scripts["mobile:lint"], "npm run lint -w apps/mobile");
+  assert.match(readFileSync(join(repositoryRoot, "apps/mobile/eslint.config.mjs"), "utf8"), /react-native|reactHooks|typescript-eslint|tseslint/);
+
   const fast = createModeValidationPlan({
     mode: "FAST",
     changedFiles: ["apps/web/src/lib/chat/polls.ts"],
@@ -77,5 +82,14 @@ test("FAST ciblé et FULL utilisent le contrat lint canonique", () => {
   assert.deepEqual(full.checks.find((check) => check.id === "lint").command, {
     executable: "npm",
     args: ["run", "lint"],
+  });
+
+  const mobile = createModeValidationPlan({
+    mode: "FAST",
+    changedFiles: ["apps/mobile/App.tsx"],
+  });
+  assert.deepEqual(mobile.checks.find((check) => check.id === "mobile-lint").command, {
+    executable: "npm",
+    args: ["run", "mobile:lint"],
   });
 });

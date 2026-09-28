@@ -17,7 +17,6 @@ import {
 import type {
   Mission,
   MissionLocation,
-  MissionLocationInsert,
   MissionAction,
   MissionActionInsert,
   ServiceResult,
@@ -66,6 +65,30 @@ export async function requestTrackingPermissions(): Promise<ServiceResult> {
   return requestPermissions();
 }
 
+async function executeMissionQuery(
+  operation: () => Promise<{ data: Mission | null; error: Error | null }>,
+  errorPrefix: string,
+): Promise<ServiceResult<Mission>> {
+  let data: Mission | null = null;
+  let error: Error | null = null;
+  try {
+    const result = await operation();
+    data = result.data;
+    error = result.error;
+  } catch (requestError) {
+    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
+  }
+
+  if (error || !data) {
+    return {
+      ok: false,
+      error: `${errorPrefix} : ${error?.message ?? 'Réponse mission invalide.'}`,
+    };
+  }
+
+  return { ok: true, data };
+}
+
 export async function startTracking(missionId: string): Promise<ServiceResult<Mission>> {
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
@@ -80,10 +103,8 @@ export async function startTracking(missionId: string): Promise<ServiceResult<Mi
   const permResult = await requestPermissions();
   if (!permResult.ok) return permResult;
 
-  let data: Mission | null = null;
-  let error: Error | null = null;
-  try {
-    const result = await client
+  const missionResult = await executeMissionQuery(
+    async () => client
       .from('missions')
       .update({
         status: 'tracking',
@@ -91,19 +112,10 @@ export async function startTracking(missionId: string): Promise<ServiceResult<Mi
       })
       .eq('id', missionId)
       .select()
-      .single<Mission>();
-    data = result.data;
-    error = result.error;
-  } catch (requestError) {
-    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
-  }
-
-  if (error || !data) {
-    return {
-      ok: false,
-      error: `Impossible de démarrer la mission : ${error?.message ?? 'Réponse mission invalide.'}`,
-    };
-  }
+      .single<Mission>(),
+    'Impossible de démarrer la mission',
+  );
+  if (!missionResult.ok) return missionResult;
 
   await setStoredMissionId(missionId);
 
@@ -120,7 +132,7 @@ export async function startTracking(missionId: string): Promise<ServiceResult<Mi
     },
   });
 
-  return { ok: true, data };
+  return missionResult;
 }
 
 export async function createMission(volunteerId: string, label = 'Action bénévole mobile'): Promise<ServiceResult<Mission>> {
@@ -140,28 +152,14 @@ export async function createMission(volunteerId: string, label = 'Action bénév
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
-  let data: Mission | null = null;
-  let error: Error | null = null;
-  try {
-    const result = await client
+  return executeMissionQuery(
+    async () => client
       .from('missions')
       .insert({ volunteer_id: normalizedVolunteerId, label: normalizedLabel })
       .select()
-      .single<Mission>();
-    data = result.data;
-    error = result.error;
-  } catch (requestError) {
-    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
-  }
-
-  if (error || !data) {
-    return {
-      ok: false,
-      error: `Impossible de créer la mission : ${error?.message ?? 'Réponse mission invalide.'}`,
-    };
-  }
-
-  return { ok: true, data };
+      .single<Mission>(),
+    'Impossible de créer la mission',
+  );
 }
 
 export async function stopTracking(missionId: string): Promise<ServiceResult<Mission>> {
@@ -177,10 +175,8 @@ export async function stopTracking(missionId: string): Promise<ServiceResult<Mis
 
   await flushBuffer();
 
-  let data: Mission | null = null;
-  let error: Error | null = null;
-  try {
-    const result = await client
+  const missionResult = await executeMissionQuery(
+    async () => client
       .from('missions')
       .update({
         status: 'completed',
@@ -188,23 +184,14 @@ export async function stopTracking(missionId: string): Promise<ServiceResult<Mis
       })
       .eq('id', missionId)
       .select()
-      .single<Mission>();
-    data = result.data;
-    error = result.error;
-  } catch (requestError) {
-    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
-  }
-
-  if (error || !data) {
-    return {
-      ok: false,
-      error: `Erreur lors de la finalisation : ${error?.message ?? 'Réponse mission invalide.'}`,
-    };
-  }
+      .single<Mission>(),
+    'Erreur lors de la finalisation',
+  );
+  if (!missionResult.ok) return missionResult;
 
   await clearStoredMissionId();
 
-  return { ok: true, data };
+  return missionResult;
 }
 
 export async function saveLocationPoint(
@@ -212,7 +199,7 @@ export async function saveLocationPoint(
   location: { latitude: number; longitude: number; accuracy?: number | null; altitude?: number | null },
   recordedAt?: Date,
 ): Promise<ServiceResult> {
-  const point: MissionLocationInsert = {
+  const point: MissionLocation = {
     mission_id: missionId,
     latitude: location.latitude,
     longitude: location.longitude,
@@ -264,7 +251,7 @@ export async function saveMissionAction(
         latitude: pos.coords.latitude,
         longitude: pos.coords.longitude,
       };
-    } catch (e) {
+    } catch {
       return { ok: false, error: 'Impossible de récupérer la position GPS pour cette action.' };
     }
   }
@@ -309,28 +296,14 @@ export async function getMission(missionId: string): Promise<ServiceResult<Missi
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
-  let data: Mission | null = null;
-  let error: Error | null = null;
-  try {
-    const result = await client
+  return executeMissionQuery(
+    async () => client
       .from('missions')
       .select('*')
       .eq('id', missionId)
-      .single<Mission>();
-    data = result.data;
-    error = result.error;
-  } catch (requestError) {
-    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
-  }
-
-  if (error || !data) {
-    return {
-      ok: false,
-      error: `Mission introuvable : ${error?.message ?? 'Réponse mission invalide.'}`,
-    };
-  }
-
-  return { ok: true, data };
+      .single<Mission>(),
+    'Mission introuvable',
+  );
 }
 
 export async function restoreActiveTracking(): Promise<string | null> {

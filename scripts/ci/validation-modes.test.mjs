@@ -235,6 +235,43 @@ test("COMPLET mobile-only does not add Web checks", () => {
   assert.ok(!ids(plan).some((id) => ["vitest-full", "typecheck", "lint", "build"].includes(id)));
 });
 
+test("RAPIDE mobile-only selects the complete mobile baseline and shared guards", () => {
+  const plan = createModeValidationPlan({
+    mode: "FAST",
+    changedFiles: ["apps/mobile/App.tsx"],
+  });
+
+  for (const id of ["mobile-typecheck", "mobile-test", "mobile-security", "mobile-lint", "semgrep-architecture", "security-secrets"]) {
+    assert.ok(ids(plan).includes(id), `missing ${id}`);
+  }
+  assert.ok(!ids(plan).some((id) => ["typecheck", "lint", "vitest-full", "build"].includes(id)));
+  assert.equal(new Set(ids(plan)).size, ids(plan).length);
+});
+
+test("COMPLET mobile-only adds shared Knip, jscpd, and GitNexus gates without Web build", () => {
+  const plan = createModeValidationPlan({
+    mode: "FULL",
+    changedFiles: ["apps/mobile/App.tsx"],
+  });
+
+  for (const id of ["mobile-typecheck", "mobile-test", "mobile-security", "mobile-lint", "quality-dead-code", "quality-duplication", "quality-cycles"]) {
+    assert.ok(ids(plan).includes(id), `missing ${id}`);
+  }
+  assert.ok(!ids(plan).some((id) => ["typecheck", "lint", "vitest-full", "build", "vercel-ci-audit"].includes(id)));
+  assert.equal(new Set(ids(plan)).size, ids(plan).length);
+});
+
+test("mixed Web/mobile changes keep shared guards deduplicated", () => {
+  const plan = createModeValidationPlan({
+    mode: "FAST",
+    changedFiles: ["apps/web/src/lib/example.ts", "apps/mobile/App.tsx"],
+  });
+
+  assert.equal(ids(plan).filter((id) => id === "semgrep-architecture").length, 1);
+  assert.equal(ids(plan).filter((id) => id === "security-secrets").length, 1);
+  assert.equal(ids(plan).filter((id) => id === "mobile-test").length, 1);
+});
+
 test("both plans have unique checks and FULL has no global budget", () => {
   const fastPlan = createModeValidationPlan({ mode: "FAST", changedFiles: ["package.json"] });
   assert.equal(new Set(ids(fastPlan)).size, ids(fastPlan).length);

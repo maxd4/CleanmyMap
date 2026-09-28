@@ -44,11 +44,11 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   const workflow = await readRepoFile(".github/workflows/ci.yml");
   const jobs = {
     "web-static": "web_code_relevant",
-    "web-quality": "web_code_relevant",
     "web-tests": "web_code_relevant",
     "web-coverage": "web_code_relevant",
     "web-vercel-audit": "build_relevant",
     "web-build": "build_relevant",
+    "mobile-validation": "mobile_code_relevant",
   };
   for (const [jobId, scopeOutput] of Object.entries(jobs)) {
     const job = extractJob(workflow, jobId);
@@ -59,11 +59,12 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
     assert.match(job, /run: npm ci/, jobId);
     assert.doesNotMatch(job, /if: always\(\)/, jobId);
   }
+  const qualityJob = extractJob(workflow, "web-quality");
+  assert.match(qualityJob, /if: needs\.scope\.outputs\.web_code_relevant == 'true' \|\| needs\.scope\.outputs\.mobile_code_relevant == 'true'/);
   const staticJob = extractJob(workflow, "web-static");
   for (const command of ["npm run check:semgrep", "npm run check:lockfile-policy", "npm run typecheck", "npm run check:utf8-fr", "npm run lint"]) {
     assert.match(staticJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
-  const qualityJob = extractJob(workflow, "web-quality");
   for (const command of ["npm run quality:top-heavy", "npm run quality:dead-code", "npm run quality:complexity", "npm run quality:duplication", "npm run quality:cycles"]) {
     assert.match(qualityJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
@@ -77,6 +78,13 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.doesNotMatch(coverageJob, /npm run test\s/);
   assert.match(extractJob(workflow, "web-vercel-audit"), /npm run audit:vercel:ci/);
   assert.match(extractJob(workflow, "web-build"), /npm run build/);
+  const mobileJob = extractJob(workflow, "mobile-validation");
+  for (const command of ["npm run mobile:security", "npm run mobile:typecheck", "npm run mobile:test", "npm run mobile:lint"]) {
+    assert.match(mobileJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
+  }
+  assert.match(mobileJob, /npm run security:secrets/);
+  assert.match(mobileJob, /npm run check:semgrep/);
+  assert.match(mobileJob, /web_code_relevant != 'true'/);
   assert.match(workflow, /build_relevant: \$\{\{ steps\.detect-scope\.outputs\.build_relevant \}\}/);
   assert.match(workflow, /validation-policy\.mjs --scope changed --json/);
   assert.doesNotMatch(workflow, /continue-on-error:/);
