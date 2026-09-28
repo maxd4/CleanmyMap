@@ -26,12 +26,22 @@ sources métier → GamificationRulesV1 → computeExpectedGamificationState
 ```
 
 `computeExpectedGamificationState` est pur : il ne lit jamais le ledger et ne
-modifie aucune donnée. Chaque événement attendu porte une identité logique
-stable et une provenance (`rulesVersion`, `mechanicId`, source, `awardKind` et
-palier lorsque nécessaire). Le reconciler ne possède que les événements
+modifie aucune donnée. Le contrat porte `rulesVersion` pour l'identification
+humaine et `rulesRevision` pour les comparaisons monotones ; chaque mécanique
+CURRENT porte aussi `introducedInRulesRevision`. Chaque événement attendu porte
+une identité logique stable et une provenance (`rulesVersion`, `rulesRevision`,
+`mechanicId`, `introducedInRulesRevision`, source, `awardKind` et palier lorsque
+nécessaire). Le reconciler ne possède que les événements
 CURRENT explicitement identifiés ; les événements LEGACY et les sources métier
 restent préservés. Une évolution de règle met à jour ou retire la projection
 CURRENT, elle n'ajoute jamais une compensation additive.
+
+Le profil conserve `currentAppliedRulesRevision` et
+`lastAcknowledgedRulesRevision`. La nouveauté est orthogonale à l'état : une
+mécanique introduite par la dernière révision applicable peut être
+`not_started`, `in_progress` ou `completed`. L'action utilisateur
+`POST /api/gamification/me/acknowledge-rules-migration` acquitte l'affichage
+sans supprimer la mécanique, ses faits ni l'historique des reçus.
 
 Les tests de reconstruction couvrent notamment `XP → XP`, `XP → BADGE_ONLY`
 et `BADGE_ONLY → NON_GAMIFIED`, avec baisse possible de l'XP et du niveau.
@@ -44,7 +54,10 @@ même plan déterministe que les écritures `progression_events`, puis le
 persiste dans `app_notifications` uniquement lorsqu'une conséquence visible
 existe. Le payload contient les versions de règles, les valeurs XP et niveaux
 avant/après, les identifiants canoniques des progressions, badges et jalons,
-ainsi que les compteurs d'événements ajoutés, modifiés et retirés.
+ainsi que les compteurs d'événements ajoutés, modifiés et retirés et
+`catalogChanges` (`newProgressionIds`, `newMilestoneIds`,
+`retiredMechanicIds`). Une nouvelle mécanique applicable reste un changement
+visible même si elle ne produit encore ni XP ni badge.
 
 Un plan sans changement visible ne crée aucune notification. La persistance
 reste propriétaire de l'utilisateur et protégée par RLS ; `app_notifications`

@@ -69,6 +69,7 @@
     "apps/web/src/app/api/gamification/badges/[userId]/route.ts",
     "apps/web/src/app/api/gamification/badges/list/route.ts",
     "apps/web/src/app/api/gamification/leaderboard/route.ts",
+    "apps/web/src/app/api/gamification/me/acknowledge-rules-migration/route.ts",
     "apps/web/src/app/api/gamification/me/route.ts",
     "apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.ts",
     "apps/web/src/app/api/gamification/quiz/progress/route.ts",

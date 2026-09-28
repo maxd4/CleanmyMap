@@ -22,6 +22,7 @@ function rules(input: {
 }): GamificationRulesV1 {
   return {
     version: input.version,
+    rulesRevision: input.version === "v1" ? 1 : input.version === "v2" ? 2 : input.version === "v3" ? 3 : 4,
     mechanics: [{
       mechanicId: "mechanic-a",
       category: input.category,
@@ -38,6 +39,7 @@ function rules(input: {
         : { kind: "fixed", amount: input.amount },
       eligibility: { kind: "canonical_fact", factKey: "action" },
       thresholds: [],
+      introducedInRulesRevision: 1,
     }],
   };
 }
@@ -60,6 +62,8 @@ describe("computeExpectedGamificationState", () => {
     expect(v2.events[0]?.logicalId).toBe(v1.events[0]?.logicalId);
     expect(v2.events[0]?.xpAwarded).toBe(2);
     expect(v2.events[0]?.metadata.rulesVersion).toBe("v2");
+    expect(v2.events[0]?.metadata.rulesRevision).toBe(2);
+    expect(v2.events[0]?.metadata.introducedInRulesRevision).toBe(1);
   });
 
   it("keeps the badge proof while removing XP for BADGE_ONLY", () => {
@@ -77,6 +81,7 @@ describe("computeExpectedGamificationState", () => {
   it("removes both event and badge when a mechanic is no longer gamified", () => {
     const state = computeExpectedGamificationState("user-1", facts, {
       version: "v4",
+      rulesRevision: 4,
       mechanics: [{
         mechanicId: "mechanic-a",
         category: "NON_GAMIFIED",
@@ -89,6 +94,7 @@ describe("computeExpectedGamificationState", () => {
         awardPolicy: { kind: "none" },
         eligibility: { kind: "never", reason: "business fact only" },
         thresholds: [],
+        introducedInRulesRevision: 1,
       }],
     });
 

@@ -9,7 +9,10 @@ import {
   syncUserActionProgression,
 } from "./progression-data";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
-import type { ProgressionStatusPhase } from "./progression-types";
+import {
+  CURRENT_GAMIFICATION_RULES_REVISION,
+  type ProgressionStatusPhase,
+} from "./progression-types";
 import {
   toFloat,
   toIsoDate,
@@ -121,6 +124,7 @@ export async function refreshProgressionProfile(
       xp_validated: xpValidated,
       current_level: currentLevel,
       potential_level: potentialLevel,
+      current_applied_rules_revision: CURRENT_GAMIFICATION_RULES_REVISION,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" },

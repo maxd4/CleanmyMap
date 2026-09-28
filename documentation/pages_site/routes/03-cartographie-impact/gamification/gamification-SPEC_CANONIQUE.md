@@ -136,6 +136,22 @@ intermédiaire calculable existe dans le domaine ; un jalon binaire reste
 `not_started` jusqu'à sa preuve. Les entrées `NON_GAMIFIED` et les mécaniques
 `authorized_moderation` non applicables sont absentes de cet inventaire.
 
+Chaque mécanique CURRENT porte également `introducedInRulesRevision`. La
+révision est un entier monotone distinct de `rulesVersion` ; aucune comparaison
+lexicale de version n'est autorisée. `progression_profiles` conserve
+`current_applied_rules_revision` et `last_acknowledged_rules_revision`.
+`isNewSinceLastRulesMigration` vaut vrai uniquement pour une mécanique
+applicable introduite dans la dernière révision appliquée et non encore
+acquittée. Cette nouveauté est indépendante de l'état : elle peut être
+`not_started`, `in_progress` ou `completed`.
+
+Une réconciliation qui applique une nouvelle révision complète son reçu avec
+`catalogChanges.newProgressionIds`, `catalogChanges.newMilestoneIds` et
+`catalogChanges.retiredMechanicIds`. Le bouton « J'ai vu les nouveautés »
+appelle `POST /api/gamification/me/acknowledge-rules-migration`. Cet
+acquittement masque seulement le marquage NEW courant ; il conserve les
+mécaniques, les faits et les reçus historiques.
+
 ### Reçu canonique de réconciliation
 
 Une réconciliation CURRENT qui modifie l'état utilisateur produit un
@@ -178,7 +194,8 @@ produit parallèle à compléter plus tard. Chaque entrée de mécanique porte :
 - la source métier ;
 - le badge ou jalon associé, le cas échéant ;
 - la visibilité ;
-- la `rulesVersion` applicable.
+- la `rulesVersion` applicable ;
+- `introducedInRulesRevision`, une révision numérique monotone.
 
 Une donnée disponible mais volontairement exclue est donc enregistrée comme
 `NON_GAMIFIED`, avec sa raison CURRENT. Elle ne constitue ni une proposition,

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { CURRENT_GAMIFICATION_RULES_VERSION } from "./progression-types";
+import { CURRENT_GAMIFICATION_RULES_REVISION } from "./progression-types";
 import { CURRENT_INFINITE_PROGRESSIONS, CURRENT_MILESTONES } from "./progression-utils";
 import {
   buildGamificationCatalog,
+  isMechanicNewSinceLastRulesMigration,
   milestoneFactsFromStates,
 } from "./gamification-catalog";
 import { buildCurrentMilestones } from "./milestones";
@@ -109,7 +110,50 @@ describe("buildGamificationCatalog", () => {
 
     expect(milestone.category).toBe("XP_MILESTONE");
     expect(milestone.grantsXp).toBe(true);
-    expect(milestone.introducedInRulesRevision).toBe(CURRENT_GAMIFICATION_RULES_VERSION);
-    expect(milestone.isNewSinceLastRulesMigration).toBe(true);
+    expect(milestone.introducedInRulesRevision).toBe(1);
+    expect(milestone.isNewSinceLastRulesMigration).toBe(false);
+  });
+
+  it("keeps NEW orthogonal to an already started or completed mechanic", () => {
+    const catalog = buildGamificationCatalog({
+      progressions: {
+        moderation: {
+          currentValue: 18,
+          started: true,
+          tiers,
+        },
+      },
+      milestones: {
+        boucle_bouclee: { achieved: true, achievedAt: "2026-09-28" },
+      },
+      applicableProgressionIds: ["moderation"],
+      applicableMilestoneIds: ["boucle_bouclee"],
+      currentAppliedRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+      lastAcknowledgedRulesRevision: 11,
+    });
+
+    expect(catalog.find((item) => item.id === "moderation")).toMatchObject({
+      state: "in_progress",
+      isNewSinceLastRulesMigration: true,
+    });
+    expect(catalog.find((item) => item.id === "boucle_bouclee")).toMatchObject({
+      state: "completed",
+      isNewSinceLastRulesMigration: true,
+    });
+  });
+
+  it("does not keep old mechanics NEW after acknowledgement or a later revision", () => {
+    expect(isMechanicNewSinceLastRulesMigration(1, {
+      currentAppliedRulesRevision: 12,
+      lastAcknowledgedRulesRevision: 0,
+    })).toBe(false);
+    expect(isMechanicNewSinceLastRulesMigration(12, {
+      currentAppliedRulesRevision: 12,
+      lastAcknowledgedRulesRevision: 12,
+    })).toBe(false);
+    expect(isMechanicNewSinceLastRulesMigration(13, {
+      currentAppliedRulesRevision: 13,
+      lastAcknowledgedRulesRevision: 12,
+    })).toBe(true);
   });
 });

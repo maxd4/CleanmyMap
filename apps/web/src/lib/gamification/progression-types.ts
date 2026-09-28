@@ -11,7 +11,8 @@ import type {
 
 export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
-export const CURRENT_GAMIFICATION_RULES_VERSION = "current-2026-09" as const;
+export const CURRENT_GAMIFICATION_RULES_VERSION = "gamification-2026.09-v2" as const;
+export const CURRENT_GAMIFICATION_RULES_REVISION = 12 as const;
 
 export type GamificationCategory =
   | "XP_PROGRESSION"
@@ -143,6 +144,7 @@ interface ProgressionDefinition {
   milestoneId: null;
   visibility: GamificationVisibility;
   rulesVersion: string;
+  introducedInRulesRevision: number;
   badgeFamily: string;
   scale: GamificationBadgeScale;
   infinite: true;
@@ -180,6 +182,7 @@ export interface MilestoneDefinition {
   milestoneId: CurrentMilestoneId;
   visibility: GamificationVisibility;
   rulesVersion: string;
+  introducedInRulesRevision: number;
   oneShot: true;
 }
 
@@ -193,6 +196,7 @@ export type GamificationMechanicDefinition = {
   milestoneId: string | null;
   visibility: GamificationVisibility;
   rulesVersion: string;
+  introducedInRulesRevision: number;
   description: string;
 };
 

@@ -12,6 +12,10 @@ export type {
   ProgressionStatusPhase,
   UserProgressionStats,
 } from "./progression-types";
+export {
+  CURRENT_GAMIFICATION_RULES_REVISION,
+  CURRENT_GAMIFICATION_RULES_VERSION,
+} from "./progression-types";
 export type {
   GamificationSummary,
   GamificationSummaryMilestone,

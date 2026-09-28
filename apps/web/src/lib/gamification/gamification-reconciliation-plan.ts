@@ -30,6 +30,8 @@ export type GamificationReconciliationProfile = {
   xp_validated: number | null;
   current_level: number | null;
   potential_level: number | null;
+  current_applied_rules_revision?: number | null;
+  last_acknowledged_rules_revision?: number | null;
 };
 
 export type GamificationEventChange = {
@@ -47,6 +49,8 @@ export type GamificationReconciliationPlan = {
   userId: string;
   rulesVersionBefore: string | null | "mixed";
   rulesVersionAfter: string;
+  rulesRevisionBefore: number | null;
+  rulesRevisionAfter: number;
   xpBefore: number;
   xpExpected: number;
   xpDelta: number;
@@ -230,6 +234,23 @@ function difference(left: readonly string[], right: readonly string[]): string[]
   return left.filter((value) => !rightSet.has(value)).sort();
 }
 
+function levelsForPlan(
+  params: {
+    profile?: GamificationReconciliationProfile | null;
+    stats?: UserProgressionStats | null;
+  },
+  validatedBefore: number,
+  validatedExpected: number,
+): { levelBefore: number; levelAfter: number } {
+  const levelBefore = params.profile?.current_level ?? (
+    params.stats ? computeCurrentLevel(validatedBefore, params.stats) : 1
+  );
+  const levelAfter = params.stats
+    ? computeCurrentLevel(validatedExpected, params.stats)
+    : params.profile?.current_level ?? 1;
+  return { levelBefore, levelAfter };
+}
+
 /** Builds a deterministic, read-only diff. It never touches Supabase. */
 export function buildGamificationReconciliationPlan(params: {
   userId: string;
@@ -276,12 +297,11 @@ export function buildGamificationReconciliationPlan(params: {
   const validatedExpected = sumEvents(legacy, true) + params.expected.events
     .filter((event) => event.statusPhase === "validated")
     .reduce((sum, event) => sum + event.xpAwarded, 0);
-  const levelBefore = params.profile?.current_level ?? (
-    params.stats ? computeCurrentLevel(validatedBefore, params.stats) : 1
+  const { levelBefore, levelAfter } = levelsForPlan(
+    params,
+    validatedBefore,
+    validatedExpected,
   );
-  const levelAfter = params.stats
-    ? computeCurrentLevel(validatedExpected, params.stats)
-    : params.profile?.current_level ?? 1;
   const beforeBadges = persistedBadgeIds(currentPersisted, params.rules);
   const afterBadges = [...params.expected.expectedBadges].sort();
   const beforeMilestones = persistedMilestoneIds(currentPersisted, params.rules);
@@ -291,6 +311,8 @@ export function buildGamificationReconciliationPlan(params: {
     userId: params.userId,
     rulesVersionBefore: versionsBefore(currentPersisted),
     rulesVersionAfter: params.rules.version,
+    rulesRevisionBefore: params.profile?.current_applied_rules_revision ?? null,
+    rulesRevisionAfter: params.rules.rulesRevision,
     xpBefore,
     xpExpected,
     xpDelta: xpExpected - xpBefore,
@@ -329,7 +351,7 @@ async function loadProfile(
 ): Promise<GamificationReconciliationProfile | null> {
   const result = await supabase
     .from("progression_profiles")
-    .select("xp_total, xp_validated, current_level, potential_level")
+    .select("xp_total, xp_validated, current_level, potential_level, current_applied_rules_revision, last_acknowledged_rules_revision")
     .eq("user_id", userId)
     .maybeSingle();
   if (result.error) throw new Error(result.error.message);

@@ -38,6 +38,7 @@ function defineNonGamifiedSignal(
     milestoneId: null,
     visibility: "not_exposed",
     rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+    introducedInRulesRevision: 1,
   };
 }
 

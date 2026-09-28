@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getCurrentUserIdentity } from "@/lib/authz";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { assessActionMilestones } from "./action-milestones";
 import { EXPLORER_TIERS, PARTICIPANT_TIERS } from "./badges/families";
@@ -15,13 +16,17 @@ import {
   loadActionRowsForUser,
   loadCurrentValidatedActionIdsForUser,
 } from "./progression-data";
-import { loadResolvedModerationCasesForUser } from "./moderation-progression";
+import {
+  canViewModerationProgression,
+  loadResolvedModerationCasesForUser,
+} from "./moderation-progression";
 import { collectEligibleCleanZoneSources } from "./clean-zones";
 import type { ActionRow } from "./progression-types";
 import type {
   GamificationFacts,
   GamificationSourceFact,
 } from "./gamification-reconstruction";
+import { GAMIFICATION_REGISTRY } from "./progression-utils";
 
 function dateOf(row: Pick<ActionRow, "action_date" | "created_at">): string {
   return (row.action_date || row.created_at || new Date(0).toISOString()).slice(0, 10);
@@ -467,6 +472,14 @@ async function loadCurrentGamificationFacts(
   facts.push(...quizState.facts);
   await appendParticipationReferralFacts(supabase, userId, facts, (participantResult.data ?? []) as unknown[]);
   await appendModerationFacts(supabase, userId, facts);
+  const identity = await getCurrentUserIdentity({ userId }).catch(() => null);
+  const moderationApplicable = canViewModerationProgression(identity, userId);
+  const applicableMechanicIds = [...new Set(
+    GAMIFICATION_REGISTRY
+      .filter((mechanic) => mechanic.category !== "NON_GAMIFIED")
+      .filter((mechanic) => mechanic.visibility !== "authorized_moderation" || moderationApplicable)
+      .map((mechanic) => mechanic.id),
+  )].sort();
 
   return {
     userId,
@@ -480,6 +493,7 @@ async function loadCurrentGamificationFacts(
       versatility: actionState.balance.balancedCycles,
       learning: quizState.totalCorrectAnswers,
     },
+    applicableMechanicIds,
   };
 }
 export { loadCurrentGamificationFacts };

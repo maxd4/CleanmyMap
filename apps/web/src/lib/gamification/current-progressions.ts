@@ -1,4 +1,7 @@
-import { CURRENT_GAMIFICATION_RULES_VERSION } from "./progression-types";
+import {
+  CURRENT_GAMIFICATION_RULES_REVISION,
+  CURRENT_GAMIFICATION_RULES_VERSION,
+} from "./progression-types";
 import type {
   GamificationProgressionDefinition,
   GamificationVisibility,
@@ -13,7 +16,8 @@ type CurrentProgressionInput = Omit<
   | "milestoneId"
   | "visibility"
   | "rulesVersion"
-> & { visibility?: GamificationVisibility };
+  | "introducedInRulesRevision"
+> & { visibility?: GamificationVisibility; introducedInRulesRevision?: number };
 
 function defineCurrentProgression(
   input: CurrentProgressionInput,
@@ -27,6 +31,8 @@ function defineCurrentProgression(
     milestoneId: null,
     visibility: input.visibility ?? "current_user",
     rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+    introducedInRulesRevision:
+      input.introducedInRulesRevision ?? 1,
   };
 }
 
@@ -119,5 +125,6 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     scale: "gem",
     infinite: true,
     visibility: "authorized_moderation",
+    introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
   }),
 ] as const satisfies readonly GamificationProgressionDefinition[];

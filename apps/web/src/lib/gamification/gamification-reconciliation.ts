@@ -37,7 +37,7 @@ async function loadReconciliationProfile(
 ): Promise<GamificationReconciliationProfile | null> {
   const result = await supabase
     .from("progression_profiles")
-    .select("current_level")
+    .select("current_level, current_applied_rules_revision, last_acknowledged_rules_revision")
     .eq("user_id", userId)
     .maybeSingle();
   if (result.error) throw new Error(result.error.message);
@@ -152,6 +152,7 @@ export async function reconcileUserGamification(
     : plan;
   const receipt = buildGamificationReconciliationReceipt(receiptPlan, {
     reasonCategory: options.reasonCategory,
+    rules,
   });
   if (options.persistReceipt !== false && receipt.hasUserVisibleChanges) {
     await persistGamificationReconciliationReceipt(supabase, receipt);

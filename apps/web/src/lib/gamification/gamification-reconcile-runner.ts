@@ -80,7 +80,8 @@ export function emptyGamificationReconcileAggregate(): GamificationReconcileAggr
 }
 
 function hasChanges(plan: GamificationReconciliationPlan): boolean {
-  return plan.xpDelta !== 0 ||
+  return plan.rulesRevisionBefore !== plan.rulesRevisionAfter ||
+    plan.xpDelta !== 0 ||
     plan.eventsToAdd.length > 0 ||
     plan.eventsToUpdate.length > 0 ||
     plan.eventsToRemove.length > 0 ||
