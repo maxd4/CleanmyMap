@@ -2,7 +2,6 @@ import {
   getWasteCategory,
   isWasteCategorySlug,
   WASTE_CATEGORY_DEFINITIONS,
-  WASTE_CATEGORY_SLUGS,
 } from "./catalog";
 import type { WasteCategoryDefinition, WasteCategorySlug, WasteFamily, WastePickupPolicy } from "./types";
 
@@ -175,5 +174,3 @@ export function formatWasteGuidanceLines(
     toReport: guidance.toReport.map((item) => `- ${item}`).join("\n"),
   };
 }
-
-export { WASTE_CATEGORY_DEFINITIONS, WASTE_CATEGORY_SLUGS };

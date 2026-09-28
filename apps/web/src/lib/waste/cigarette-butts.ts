@@ -1,8 +1,6 @@
 import type { ActionMegotsCondition } from "@/lib/actions/types";
 import {
-  BUTTS_PER_KG_REFERENCE,
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
-  CONDITION_WEIGHT_FACTORS,
   computeButtsCount,
   estimateButtsWeightKg,
 } from "@/lib/impact/impact-terrain-2026";
@@ -208,7 +206,5 @@ export function hasCigaretteButtsMeasurement(
 }
 
 export {
-  BUTTS_PER_KG_REFERENCE,
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
-  CONDITION_WEIGHT_FACTORS,
 };
