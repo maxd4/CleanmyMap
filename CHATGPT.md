@@ -647,6 +647,39 @@ Ne pas conserver un doublon si son contenu est entièrement repris par une sourc
 
 Ne pas supprimer une compatibilité encore consommée uniquement pour « nettoyer ».
 
+Avant de rédiger tout prompt Codex dont l’objectif inclut du dead-code,
+ChatGPT doit lui-même :
+
+1. relire `main` ;
+2. obtenir les findings CURRENT du périmètre ;
+3. lire les implémentations, consommateurs/callers, tests et documentation
+   pertinents ;
+4. rechercher l’intention produit, métier ou scientifique et un éventuel
+   successeur ;
+5. classifier chaque finding avec l’un des statuts suivants :
+
+```text
+DELETE_PROVEN
+INTERNALIZE
+MIGRATE
+RESTORE_FUNCTIONALITY
+KEEP_JUSTIFIED
+```
+
+6. décider si la capacité doit être supprimée, internalisée, migrée,
+   restaurée ou conservée.
+
+ChatGPT ne doit pas déléguer cet arbitrage à Codex via un prompt vague. Si le
+nombre de findings empêche un audit sérieux, réduire le périmètre avant de
+produire le prompt Codex.
+
+Un prompt dead-code doit transmettre à Codex une décision déjà instruite.
+Codex vérifie le checkout réel, intègre la décision, adapte les tests et
+signale toute preuve locale contradictoire.
+
+Cette section gouverne l’analyse et la préparation ; les règles d’exécution,
+de qualification et de mutation du checkout sont définies dans `AGENTS.md`.
+
 ## 17. MAIN-ONLY / SINGLE-WRITER
 
 `CleanmyMap-main` est l'unique checkout mutable, toujours sur `main`, et la
