@@ -1,8 +1,14 @@
-import type { EnvironmentalImpactPostDefinition } from "./types";
+import type { EnvironmentalImpactPostDefinition } from "./types-scope";
 import type {
   EnvironmentalImpactInfrastructureMetricDefinition,
   EnvironmentalImpactInfrastructureServiceDefinition,
-} from "./types";
+  EnvironmentalImpactSecondOrderFactorDefinition,
+} from "./types-infrastructure";
+import type {
+  EnvironmentalImpactLifecycleAxisDefinition,
+  EnvironmentalImpactLifecycleComponentDefinition,
+} from "./types-lifecycle";
+import type { EnvironmentalImpactProjectAnchor } from "./types-project";
 
 export const ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION =
   "environmental-impact-estimator-2026.05-v1";
@@ -146,7 +152,7 @@ export const ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS = [
     rationale:
       "Part de fin de vie et de renouvellement matériel ramenée à un équivalent lisible.",
   },
-] as const satisfies readonly import("./types").EnvironmentalImpactLifecycleAxisDefinition[];
+] as const satisfies readonly EnvironmentalImpactLifecycleAxisDefinition[];
 
 export const ENVIRONMENTAL_IMPACT_LIFECYCLE_COMPONENT_DEFINITIONS = [
   {
@@ -229,7 +235,7 @@ export const ENVIRONMENTAL_IMPACT_LIFECYCLE_COMPONENT_DEFINITIONS = [
     rationale:
       "Fait apparaître le volet fin de vie et e-waste dans la lecture du projet.",
   },
-] as const satisfies readonly import("./types").EnvironmentalImpactLifecycleComponentDefinition[];
+] as const satisfies readonly EnvironmentalImpactLifecycleComponentDefinition[];
 
 export const ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS = [
   {
@@ -265,7 +271,7 @@ export const ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS = [
     comparisonNote:
       "Usage observé + facteur physique absent = OBSERVED/DERIVED + NA; aucune conversion arbitraire n'est appliquée.",
   },
-] as const satisfies readonly import("./types").EnvironmentalImpactProjectAnchor[];
+] as const satisfies readonly EnvironmentalImpactProjectAnchor[];
 
 export const ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS = [
   {
@@ -308,7 +314,7 @@ export const ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS = [
     referenceWeight: 0.10,
     rationale: "Allocation de lecture carbone; elle ne représente pas des litres d'eau et ne remplace pas le contrat eau séparé.",
   },
-] as const satisfies readonly import("./types").EnvironmentalImpactSecondOrderFactorDefinition[];
+] as const satisfies readonly EnvironmentalImpactSecondOrderFactorDefinition[];
 
 export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_METRIC_DEFINITIONS = [
   {

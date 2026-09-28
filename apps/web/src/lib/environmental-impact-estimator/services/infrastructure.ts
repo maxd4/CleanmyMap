@@ -50,7 +50,7 @@ const METRIC_DEFINITION_BY_KEY = new Map(
   ]),
 );
 
-export function buildInfrastructureMetricEstimate(
+function buildInfrastructureMetricEstimate(
   definition: EnvironmentalImpactInfrastructureMetricDefinition,
   quantityPerMonth: number,
   source: "input" | "derived" | "reference",
@@ -114,7 +114,7 @@ export function buildInfrastructureMissingDataNotes(
     });
 }
 
-export function getServiceMonthlyTotal(
+function getServiceMonthlyTotal(
   _service: EnvironmentalImpactInfrastructureServiceDefinition,
   metricEstimates: EnvironmentalImpactInfrastructureMetricEstimate[],
 ): number | null {
@@ -124,7 +124,7 @@ export function getServiceMonthlyTotal(
   return values.length > 0 ? round6(values.reduce((acc, value) => acc + value, 0)) : null;
 }
 
-export function buildInfrastructureServiceEstimate(
+function buildInfrastructureServiceEstimate(
   definition: EnvironmentalImpactInfrastructureServiceDefinition,
   usageProfile: EnvironmentalImpactUsageProfileEstimate,
   metricsInput: EnvironmentalImpactInfrastructureMetricsInput | null | undefined,
@@ -212,7 +212,7 @@ export function buildInfrastructureServiceEstimate(
   };
 }
 
-export function buildInfrastructureSecondOrderEstimate(
+function buildInfrastructureSecondOrderEstimate(
   infrastructureMode: EnvironmentalImpactInfrastructureEstimate["mode"],
   usageProfile: EnvironmentalImpactUsageProfileEstimate,
   services: EnvironmentalImpactInfrastructureServiceEstimate[],
@@ -334,7 +334,7 @@ export function buildInfrastructureSecondOrderEstimate(
   };
 }
 
-export function buildInfrastructureCurve(
+function buildInfrastructureCurve(
   launchedAt: Date,
   referencePeriodMonths: number,
   usageProfile: EnvironmentalImpactUsageProfileEstimate,

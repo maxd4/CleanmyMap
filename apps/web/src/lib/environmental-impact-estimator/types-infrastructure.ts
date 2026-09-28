@@ -135,7 +135,7 @@ export type EnvironmentalImpactInfrastructureServiceEstimate = {
   metricEstimates: EnvironmentalImpactInfrastructureMetricEstimate[];
 };
 
-export type EnvironmentalImpactSecondOrderFactorKey =
+type EnvironmentalImpactSecondOrderFactorKey =
   | "grossCo2"
   | "electricity"
   | "otherGhgs"
@@ -151,7 +151,7 @@ export type EnvironmentalImpactSecondOrderFactorDefinition = {
   rationale: string;
 };
 
-export type EnvironmentalImpactSecondOrderFactorEstimate =
+type EnvironmentalImpactSecondOrderFactorEstimate =
   EnvironmentalImpactSecondOrderFactorDefinition & {
     quantity: number | null;
     estimatedKgCo2eProxy: number | null;
@@ -159,7 +159,7 @@ export type EnvironmentalImpactSecondOrderFactorEstimate =
     source: "input" | "derived" | "reference" | "mixed";
   };
 
-export type EnvironmentalImpactElectricityCalculation =
+type EnvironmentalImpactElectricityCalculation =
   | "measured_kwh_to_co2e"
   | "proxy_equivalent"
   | "missing";
@@ -173,7 +173,7 @@ export type EnvironmentalImpactElectricityEstimate = {
   note: string;
 };
 
-export type EnvironmentalImpactWaterAvailability = "available" | "partial" | "missing";
+type EnvironmentalImpactWaterAvailability = "available" | "partial" | "missing";
 
 export type EnvironmentalImpactWaterEstimate = {
   directWaterConsumptionLiters: number | null;

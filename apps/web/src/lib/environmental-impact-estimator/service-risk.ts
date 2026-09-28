@@ -4,11 +4,7 @@ import type {
   EnvironmentalImpactInfrastructureServiceKey,
 } from "./types";
 export { buildServiceThresholdAlerts } from "./service-risk-alerts";
-export type {
-  ServiceThresholdAlert,
-  ServiceThresholdAlertSeverity,
-  ServiceThresholdAlertSignal,
-} from "./service-risk-alerts";
+export type { ServiceThresholdAlert } from "./service-risk-alerts";
 
 export type ServiceRiskBand = "faible" | "surveiller" | "alerte" | "critique";
 
@@ -33,7 +29,7 @@ export type ServiceQuotaSummary = {
   metrics: ServiceQuotaMetricSummary[];
 };
 
-export type ServiceRiskDriverBreakdown = {
+type ServiceRiskDriverBreakdown = {
   quotaConsumedPercent: number;
   growthPercent: number;
   confidencePressurePercent: number;
@@ -324,7 +320,7 @@ function getGrowthPercent(
   );
 }
 
-export function computeServiceRiskScore(params: {
+function computeServiceRiskScore(params: {
   service: ServiceRiskSource;
   previousKgCo2eProxy?: number | null;
 }): ServiceRiskRow {

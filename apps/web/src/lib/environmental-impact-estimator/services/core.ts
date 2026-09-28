@@ -21,7 +21,7 @@ import { buildInfrastructureEstimate, buildInfrastructureMissingDataNotes } from
 import { buildLifecycleEstimate } from "./lifecycle";
 import { buildScopeCurveEstimate, buildScopeEstimate, buildScopeMissingDataNotes } from "./scope";
 
-export function buildEnvironmentalImpactEstimatorMethodology(
+function buildEnvironmentalImpactEstimatorMethodology(
   generatedAt: string,
   usageProfile?: Pick<
     EnvironmentalImpactUsageProfileEstimate,

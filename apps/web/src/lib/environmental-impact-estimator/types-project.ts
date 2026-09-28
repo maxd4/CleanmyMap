@@ -116,7 +116,7 @@ export type EnvironmentalImpactProjectSignal = {
   basis: "all_time" | "recent" | "derived";
 };
 
-export type EnvironmentalImpactProjectTrafficSignalBreakdown = {
+type EnvironmentalImpactProjectTrafficSignalBreakdown = {
   pageViewEvents: number;
   legacyPageViewEvents: number;
   distinctRoutes: number;
@@ -126,19 +126,19 @@ export type EnvironmentalImpactProjectTrafficSignalBreakdown = {
   }>;
 };
 
-export type EnvironmentalImpactProjectCommunitySignalBreakdown = {
+type EnvironmentalImpactProjectCommunitySignalBreakdown = {
   events: number;
   rsvps: number;
   notifications: number;
   unreadNotifications: number;
 };
 
-export type EnvironmentalImpactProjectCommunicationSignalBreakdown = {
+type EnvironmentalImpactProjectCommunicationSignalBreakdown = {
   emailsSent: number;
   pdfExports: number;
 };
 
-export type EnvironmentalImpactProjectSignalBreakdown = {
+type EnvironmentalImpactProjectSignalBreakdown = {
   traffic: EnvironmentalImpactProjectTrafficSignalBreakdown;
   community: EnvironmentalImpactProjectCommunitySignalBreakdown;
   communication: EnvironmentalImpactProjectCommunicationSignalBreakdown;

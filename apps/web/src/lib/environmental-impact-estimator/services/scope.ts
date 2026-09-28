@@ -23,7 +23,7 @@ import {
   sumDefined,
 } from "./utils";
 
-export function buildPostEstimate(
+function buildPostEstimate(
   definition: EnvironmentalImpactPostDefinition,
   scopeInput: EnvironmentalImpactScopeInput | null | undefined,
 ): EnvironmentalImpactPostEstimate {
@@ -41,7 +41,7 @@ export function buildPostEstimate(
   };
 }
 
-export function buildScopeStatus(availablePostCount: number, totalPostCount: number) {
+function buildScopeStatus(availablePostCount: number, totalPostCount: number) {
   if (availablePostCount === 0) {
     return "unbound" as const;
   }

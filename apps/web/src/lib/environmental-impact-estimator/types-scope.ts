@@ -1,6 +1,6 @@
 export type EnvironmentalImpactScopeKey = "site" | "user";
 
-export type EnvironmentalImpactPostKey =
+type EnvironmentalImpactPostKey =
   | "pageViews"
   | "storedImages"
   | "apiRequests"
@@ -9,7 +9,7 @@ export type EnvironmentalImpactPostKey =
   | "storageGbMonths"
   | "aiCalls";
 
-export type EnvironmentalImpactScopeStatus =
+type EnvironmentalImpactScopeStatus =
   | "unbound"
   | "partial"
   | "ready";
@@ -51,9 +51,9 @@ export type EnvironmentalImpactPostEstimate = EnvironmentalImpactPostDefinition 
   state: "available" | "missing";
 };
 
-export type EnvironmentalImpactGraphGranularity = "day" | "week" | "month";
+type EnvironmentalImpactGraphGranularity = "day" | "week" | "month";
 
-export type EnvironmentalImpactCurveDriverKey =
+type EnvironmentalImpactCurveDriverKey =
   | "pageView"
   | "community"
   | "notifications"
@@ -62,7 +62,7 @@ export type EnvironmentalImpactCurveDriverKey =
   | "ia"
   | "codex";
 
-export type EnvironmentalImpactCurveDriverBreakdown = Record<
+type EnvironmentalImpactCurveDriverBreakdown = Record<
   EnvironmentalImpactCurveDriverKey,
   number
 >;
