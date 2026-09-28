@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ExpectedGamificationState } from "./gamification-reconstruction";
 import type { GamificationReconciliationPlan } from "./gamification-reconciliation-plan";
+import type { GamificationRulesV1 } from "./gamification-rules";
 import {
   buildGamificationReconciliationReceipt,
   persistGamificationReconciliationReceipt,
@@ -62,6 +63,8 @@ function plan(overrides: Partial<GamificationReconciliationPlan> = {}): Gamifica
     userId: "user-1",
     rulesVersionBefore: "v1",
     rulesVersionAfter: "v2",
+    rulesRevisionBefore: 1,
+    rulesRevisionAfter: 2,
     xpBefore: 1,
     xpExpected: 2,
     xpDelta: 1,
@@ -87,10 +90,12 @@ function plan(overrides: Partial<GamificationReconciliationPlan> = {}): Gamifica
     expected: {
       userId: "user-1",
       rulesVersion: "v2",
+      rulesRevision: 2,
       events: [expectedEvent],
       expectedMilestones: [],
       expectedBadges: ["badge-sapphire"],
       progressionCounters: {},
+      applicableMechanicIds: ["mechanic-a"],
     } satisfies ExpectedGamificationState,
     currentPersisted: [currentEvent],
     ...overrides,
@@ -119,6 +124,53 @@ describe("GamificationReconciliationReceipt", () => {
     expect(receipt.badges.unlocked).toEqual([{ id: "badge-sapphire", progressionId: "participation" }]);
     expect(receipt.badges.removed).toEqual([{ id: "badge-observer", progressionId: "participation" }]);
     expect(receipt.milestones.unlocked).toEqual([{ id: "milestone-a" }]);
+  });
+
+  it("reports an applicable new catalog mechanic even without XP or a badge", () => {
+    const currentRules: GamificationRulesV1 = {
+      version: "v2",
+      rulesRevision: 2,
+      mechanics: [{
+        mechanicId: "mechanic-a",
+        category: "XP_PROGRESSION",
+        eventType: "action_declare_validation",
+        progressionId: "participation",
+        milestoneId: null,
+        badgeId: null,
+        sourceDomain: "actions",
+        xpPolicy: { kind: "progression_paliers", rule: "common_current_scale" },
+        awardPolicy: { kind: "none" },
+        eligibility: { kind: "canonical_fact", factKey: "actions" },
+        thresholds: [],
+        introducedInRulesRevision: 2,
+      }],
+    };
+    const base = plan({
+      rulesRevisionBefore: 1,
+      expected: {
+        ...plan().expected,
+        events: [],
+        expectedMilestones: [],
+        expectedBadges: [],
+        applicableMechanicIds: ["mechanic-a"],
+      },
+      eventsToUpdate: [],
+      eventsToRemove: [],
+      xpExpected: 1,
+      xpDelta: 0,
+      badgesAdded: [],
+      badgesRemoved: [],
+      milestonesAdded: [],
+      milestonesRemoved: [],
+    });
+    const receipt = buildGamificationReconciliationReceipt(base, { rules: currentRules });
+
+    expect(receipt.catalogChanges).toEqual({
+      newProgressionIds: ["participation"],
+      newMilestoneIds: [],
+      retiredMechanicIds: [],
+    });
+    expect(receipt.hasUserVisibleChanges).toBe(true);
   });
 
   it("marks XP removal and level down without inventing a positive delta", () => {

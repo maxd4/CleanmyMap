@@ -9,7 +9,9 @@ import type {
   GamificationXpPolicy,
   MilestoneDefinition,
 } from "./progression-types";
-import { CURRENT_GAMIFICATION_RULES_VERSION } from "./progression-types";
+import {
+  CURRENT_GAMIFICATION_RULES_REVISION,
+} from "./progression-types";
 
 export type GamificationCatalogState = "not_started" | "in_progress" | "completed";
 
@@ -47,7 +49,7 @@ export type GamificationCatalogItem = {
   xpAmountOrPolicy: GamificationXpPolicy;
   applicability: "applicable";
   state: GamificationCatalogState;
-  introducedInRulesRevision: string;
+  introducedInRulesRevision: number;
   isNewSinceLastRulesMigration: boolean;
   progression?: {
     currentValue: number;
@@ -74,7 +76,18 @@ export type GamificationCatalogInput = {
   milestones: Partial<Record<MilestoneDefinition["id"], GamificationCatalogMilestoneFact>>;
   applicableProgressionIds?: readonly CurrentInfiniteProgressionId[];
   applicableMilestoneIds?: readonly MilestoneDefinition["id"][];
+  currentAppliedRulesRevision?: number | null;
+  lastAcknowledgedRulesRevision?: number | null;
 };
+
+export function isMechanicNewSinceLastRulesMigration(
+  introducedInRulesRevision: number,
+  input: Pick<GamificationCatalogInput, "currentAppliedRulesRevision" | "lastAcknowledgedRulesRevision">,
+): boolean {
+  const currentApplied = input.currentAppliedRulesRevision ?? CURRENT_GAMIFICATION_RULES_REVISION;
+  const lastAcknowledged = input.lastAcknowledgedRulesRevision ?? 0;
+  return introducedInRulesRevision === currentApplied && currentApplied > lastAcknowledged;
+}
 
 function normalizeTiers(
   tiers: readonly CatalogTierInput[],
@@ -116,6 +129,7 @@ function normalizeTiers(
 function buildProgressionItem(
   definition: (typeof CURRENT_INFINITE_PROGRESSIONS)[number],
   fact: GamificationCatalogProgressionFact,
+  migrationState: Pick<GamificationCatalogInput, "currentAppliedRulesRevision" | "lastAcknowledgedRulesRevision">,
 ): GamificationCatalogItem {
   const currentValue = Math.max(0, Math.trunc(Number(fact.currentValue) || 0));
   const tiers = normalizeTiers(fact.tiers, currentValue, fact.continuationTitle);
@@ -159,9 +173,11 @@ function buildProgressionItem(
     xpAmountOrPolicy: definition.xpPolicy,
     applicability: "applicable",
     state: fact.started ? "in_progress" : "not_started",
-    introducedInRulesRevision: definition.rulesVersion,
-    isNewSinceLastRulesMigration:
-      definition.rulesVersion === CURRENT_GAMIFICATION_RULES_VERSION,
+    introducedInRulesRevision: definition.introducedInRulesRevision,
+    isNewSinceLastRulesMigration: isMechanicNewSinceLastRulesMigration(
+      definition.introducedInRulesRevision,
+      migrationState,
+    ),
     progression: {
       currentValue,
       currentTier,
@@ -177,6 +193,7 @@ function buildProgressionItem(
 function buildMilestoneItem(
   definition: (typeof CURRENT_MILESTONES)[number],
   fact: GamificationCatalogMilestoneFact,
+  migrationState: Pick<GamificationCatalogInput, "currentAppliedRulesRevision" | "lastAcknowledgedRulesRevision">,
 ): GamificationCatalogItem {
   const hasProgress =
     fact.progressCurrent !== undefined && fact.progressTarget !== undefined;
@@ -196,9 +213,11 @@ function buildMilestoneItem(
     xpAmountOrPolicy: definition.xpPolicy,
     applicability: "applicable",
     state,
-    introducedInRulesRevision: definition.rulesVersion,
-    isNewSinceLastRulesMigration:
-      definition.rulesVersion === CURRENT_GAMIFICATION_RULES_VERSION,
+    introducedInRulesRevision: definition.introducedInRulesRevision,
+    isNewSinceLastRulesMigration: isMechanicNewSinceLastRulesMigration(
+      definition.introducedInRulesRevision,
+      migrationState,
+    ),
     milestone: {
       achieved: fact.achieved,
       achievedAt: fact.achievedAt,
@@ -236,7 +255,7 @@ export function buildGamificationCatalog(
     if (!fact) {
       throw new Error(`Fait manquant pour la progression CURRENT ${definition.id}.`);
     }
-    catalog.push(buildProgressionItem(definition, fact));
+    catalog.push(buildProgressionItem(definition, fact, input));
   }
 
   for (const definition of CURRENT_MILESTONES) {
@@ -245,7 +264,7 @@ export function buildGamificationCatalog(
     if (!fact) {
       throw new Error(`Fait manquant pour le jalon CURRENT ${definition.id}.`);
     }
-    catalog.push(buildMilestoneItem(definition, fact));
+    catalog.push(buildMilestoneItem(definition, fact, input));
   }
 
   return catalog;

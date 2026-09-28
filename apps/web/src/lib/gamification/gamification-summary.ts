@@ -11,6 +11,7 @@ import type {
   GamificationXpPolicy,
   LevelRequirementAssessment,
 } from "./progression-types";
+import { CURRENT_GAMIFICATION_RULES_REVISION } from "./progression-types";
 import type { GamificationCatalogItem, GamificationCatalogState } from "./gamification-catalog";
 import type { GamificationLedgerEvent } from "./gamification-summary-loader";
 export type { GamificationLedgerEvent } from "./gamification-summary-loader";
@@ -35,7 +36,7 @@ export type GamificationSummaryProgression = {
   nextBadge: GamificationBadgeReference | null;
   progressPercent: number;
   state: GamificationCatalogState;
-  introducedInRulesRevision: string;
+  introducedInRulesRevision: number;
   isNewSinceLastRulesMigration: boolean;
 };
 
@@ -53,7 +54,7 @@ export type GamificationSummaryMilestone = {
   progressCurrent?: number;
   progressTarget?: number;
   progressPercent?: number;
-  introducedInRulesRevision: string;
+  introducedInRulesRevision: number;
   isNewSinceLastRulesMigration: boolean;
 };
 
@@ -70,6 +71,12 @@ export type GamificationSummary = {
     compatibilityXp: number;
     total: number;
     isBalanced: boolean;
+  };
+  rulesMigration: {
+    currentAppliedRulesRevision: number;
+    lastAcknowledgedRulesRevision: number;
+    latestRulesRevision: number;
+    hasUnacknowledgedChanges: boolean;
   };
 };
 
@@ -160,6 +167,10 @@ export function buildGamificationSummary(input: {
   currentLevel: number;
   potentialLevel: number;
   nextLevel: GamificationSummaryNextLevel;
+  rulesMigration?: {
+    currentAppliedRulesRevision: number;
+    lastAcknowledgedRulesRevision: number;
+  };
 }): GamificationSummary {
   const contributions = buildXpContributions(input.events);
   const progressions = input.catalog
@@ -207,6 +218,9 @@ export function buildGamificationSummary(input: {
   const progressionXp = [...contributions.progressions.values()].reduce((sum, value) => sum + value, 0);
   const milestoneXp = [...contributions.milestones.values()].reduce((sum, value) => sum + value, 0);
   const compatibilityXp = contributions.total - progressionXp - milestoneXp;
+  const currentAppliedRulesRevision = input.rulesMigration?.currentAppliedRulesRevision ?? CURRENT_GAMIFICATION_RULES_REVISION;
+  const lastAcknowledgedRulesRevision = input.rulesMigration?.lastAcknowledgedRulesRevision ?? 0;
+  const hasUnacknowledgedChanges = input.catalog.some((item) => item.isNewSinceLastRulesMigration);
 
   return {
     xpTotal: contributions.total,
@@ -221,6 +235,12 @@ export function buildGamificationSummary(input: {
       compatibilityXp,
       total: progressionXp + milestoneXp + compatibilityXp,
       isBalanced: Math.abs(progressionXp + milestoneXp + compatibilityXp - contributions.total) < 0.000001,
+    },
+    rulesMigration: {
+      currentAppliedRulesRevision,
+      lastAcknowledgedRulesRevision,
+      latestRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+      hasUnacknowledgedChanges,
     },
   };
 }

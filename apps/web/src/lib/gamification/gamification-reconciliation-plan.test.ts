@@ -11,6 +11,7 @@ import {
 function rules(version: string, category: "XP_MILESTONE" | "BADGE_ONLY" | "NON_GAMIFIED", amount = 1): GamificationRulesV1 {
   return {
     version,
+    rulesRevision: version === "v1" ? 1 : version === "v2" ? 2 : version === "v3" ? 3 : 4,
     mechanics: [{
       mechanicId: "mechanic-a",
       category,
@@ -29,6 +30,7 @@ function rules(version: string, category: "XP_MILESTONE" | "BADGE_ONLY" | "NON_G
         ? { kind: "never", reason: "test" }
         : { kind: "canonical_fact", factKey: "action" },
       thresholds: [],
+      introducedInRulesRevision: 1,
     }],
   };
 }

@@ -68,7 +68,8 @@ Le code et les tests priment si une divergence apparaît.
   de décision des mécaniques métier. Chaque entrée porte un `id`, une
   `category` parmi `XP_PROGRESSION`, `XP_MILESTONE`, `BADGE_ONLY` et
   `NON_GAMIFIED`, un `progressionId` éventuel, une `xpPolicy`, une source
-  métier, un badge/jalon éventuel, une `visibility` et une `rulesVersion`.
+  métier, un badge/jalon éventuel, une `visibility`, une `rulesVersion` et une
+  `introducedInRulesRevision`.
   Une donnée disponible mais non récompensée est donc une décision
   `NON_GAMIFIED` explicite, jamais un backlog implicite.
 - Les huit progressions infinies sont `participation`, `organisation`,
@@ -108,6 +109,12 @@ Le code et les tests priment si une divergence apparaît.
   est fournie par sa source canonique. Les jalons binaires ne reçoivent pas de
   pourcentage artificiel. Les mécaniques `authorized_moderation` sont absentes
   de l'inventaire d'un utilisateur non habilité.
+- `rulesRevision` est numérique et monotone ; les chaînes `rulesVersion` ne
+  sont jamais comparées lexicalement. Le profil conserve la révision appliquée
+  et la dernière révision acquittée. Une mécanique est `new` uniquement si
+  elle a été introduite dans la dernière révision appliquée applicable au
+  compte, indépendamment de son état (`not_started`, `in_progress` ou
+  `completed`).
 - Les quatre progressions terrain principales sont matérialisées par les
   métriques canoniques `participation`, `organisation`, `exploration` et
   `clean_zones`; elles partagent ce contrat sans partager leur compteur ni
@@ -211,6 +218,15 @@ notification. Le front-end lit le reçu via le payload structuré et ne
 reconstruit pas un delta à partir de deux états incomplets ou du seul total
 XP. Les écritures sont serveur uniquement et le payload ne contient aucune
 donnée administrative sensible.
+
+Le reçu expose aussi `catalogChanges` avec les IDs canoniques des nouvelles
+progressions, des nouveaux jalons et des mécaniques retirées. Une nouveauté
+applicable sans XP ni badge est donc visible et peut être acquittée par
+`POST /api/gamification/me/acknowledge-rules-migration`. L'acquittement met à
+jour la révision utilisateur et les notifications concernées ; il ne supprime
+ni mécanique, ni preuve métier, ni reçu historique. Une révision ultérieure
+remplace la nouveauté de la vue principale, tandis que les reçus antérieurs
+restent consultables.
 
 ## Évolution
 

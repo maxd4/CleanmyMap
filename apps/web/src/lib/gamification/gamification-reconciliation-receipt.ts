@@ -5,6 +5,7 @@ import type {
   PersistedGamificationEvent,
 } from "./gamification-reconciliation-plan";
 import { asGamificationMetadata } from "./gamification-reconciliation-plan";
+import type { GamificationRulesV1 } from "./gamification-rules";
 
 export type GamificationReconciliationReasonCategory =
   | "rules_update"
@@ -43,6 +44,8 @@ export type GamificationReconciliationReceipt = {
   occurredAt: string;
   previousRulesVersion: string | null | "mixed";
   currentRulesVersion: string;
+  previousRulesRevision: number | null;
+  currentRulesRevision: number;
   xp: {
     before: number;
     after: number;
@@ -75,6 +78,11 @@ export type GamificationReconciliationReceipt = {
     addedCount: number;
     updatedCount: number;
     removedCount: number;
+  };
+  catalogChanges: {
+    newProgressionIds: string[];
+    newMilestoneIds: string[];
+    retiredMechanicIds: string[];
   };
   reasonCategory: GamificationReconciliationReasonCategory;
   hasUserVisibleChanges: boolean;
@@ -160,8 +168,53 @@ function receiptId(plan: GamificationReconciliationPlan): string {
     plan.rulesVersionAfter,
     plan.xpBefore,
     plan.xpExpected,
+    plan.rulesRevisionBefore ?? "none",
+    plan.rulesRevisionAfter,
     changes,
   ].join("|");
+}
+
+function catalogChanges(
+  plan: GamificationReconciliationPlan,
+  rules: GamificationRulesV1 | undefined,
+): GamificationReconciliationReceipt["catalogChanges"] {
+  if (!rules || plan.rulesRevisionBefore === plan.rulesRevisionAfter) {
+    return { newProgressionIds: [], newMilestoneIds: [], retiredMechanicIds: [] };
+  }
+
+  const applicable = new Set(
+    plan.expected.applicableMechanicIds.length > 0
+      ? plan.expected.applicableMechanicIds
+      : plan.expected.events.map((event) => event.mechanicId),
+  );
+  const introducedNow = rules.mechanics.filter(
+    (rule) => rule.introducedInRulesRevision === rules.rulesRevision && applicable.has(rule.mechanicId),
+  );
+  const newProgressionIds = sortedUnique(
+    introducedNow
+      .filter((rule) => rule.category === "XP_PROGRESSION" && rule.progressionId)
+      .map((rule) => rule.progressionId!),
+  );
+  const newMilestoneIds = sortedUnique(
+    introducedNow
+      .filter((rule) => (rule.category === "XP_MILESTONE" || rule.category === "BADGE_ONLY") && rule.milestoneId)
+      .map((rule) => rule.milestoneId!),
+  );
+  const currentMechanicIds = new Set(rules.mechanics.map((rule) => rule.mechanicId));
+  const currentNonGamifiedIds = new Set(
+    rules.mechanics
+      .filter((rule) => rule.category === "NON_GAMIFIED")
+      .map((rule) => rule.mechanicId),
+  );
+  const retiredMechanicIds = sortedUnique(
+    plan.eventsToRemove
+      .map((change) => metadataForChange(change).mechanicId)
+      .filter((value): value is string =>
+        typeof value === "string" && (!currentMechanicIds.has(value) || currentNonGamifiedIds.has(value)),
+      ),
+  );
+
+  return { newProgressionIds, newMilestoneIds, retiredMechanicIds };
 }
 
 function badgeRef(id: string, events: readonly GamificationEventChange[]): GamificationBadgeReceiptChange {
@@ -217,7 +270,10 @@ function isVisible(receipt: Omit<GamificationReconciliationReceipt, "hasUserVisi
     receipt.badges.upgraded.length > 0 ||
     receipt.badges.downgraded.length > 0 ||
     receipt.milestones.unlocked.length > 0 ||
-    receipt.milestones.removed.length > 0;
+    receipt.milestones.removed.length > 0 ||
+    receipt.catalogChanges.newProgressionIds.length > 0 ||
+    receipt.catalogChanges.newMilestoneIds.length > 0 ||
+    receipt.catalogChanges.retiredMechanicIds.length > 0;
 }
 
 /** Builds the user-facing consequence of exactly one deterministic plan. */
@@ -227,6 +283,7 @@ export function buildGamificationReconciliationReceipt(
     occurredAt?: string;
     reasonCategory?: GamificationReconciliationReasonCategory;
     reconciliationId?: string;
+    rules?: GamificationRulesV1;
   } = {},
 ): GamificationReconciliationReceipt {
   const beforeEvents = currentEvents(plan);
@@ -251,6 +308,8 @@ export function buildGamificationReconciliationReceipt(
     occurredAt: options.occurredAt ?? new Date().toISOString(),
     previousRulesVersion: plan.rulesVersionBefore,
     currentRulesVersion: plan.rulesVersionAfter,
+    previousRulesRevision: plan.rulesRevisionBefore,
+    currentRulesRevision: plan.rulesRevisionAfter,
     xp: {
       before: plan.xpBefore,
       after: plan.xpExpected,
@@ -288,6 +347,7 @@ export function buildGamificationReconciliationReceipt(
       updatedCount: plan.eventsToUpdate.length,
       removedCount: plan.eventsToRemove.length,
     },
+    catalogChanges: catalogChanges(plan, options.rules),
     reasonCategory: options.reasonCategory ?? "account_rebuild",
   };
   return { ...receiptWithoutVisibility, hasUserVisibleChanges: isVisible(receiptWithoutVisibility) };
@@ -308,7 +368,7 @@ export async function persistGamificationReconciliationReceipt(
     acknowledged_at: null,
     payload: {
       kind: "gamification_reconciliation_receipt",
-      schemaVersion: 1,
+      schemaVersion: 2,
       reconciliationId: receipt.reconciliationId,
       receipt,
     },

@@ -20,6 +20,12 @@ function makeProgression(): MeResponse["progression"] {
       nextLevel: {} as never,
       progressions: [],
       milestones: [],
+      rulesMigration: {
+        currentAppliedRulesRevision: 12,
+        lastAcknowledgedRulesRevision: 12,
+        latestRulesRevision: 12,
+        hasUnacknowledgedChanges: false,
+      },
       xpReconciliation: {
         progressionXp: 0,
         milestoneXp: 0,

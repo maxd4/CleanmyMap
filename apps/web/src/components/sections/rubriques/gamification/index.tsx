@@ -20,6 +20,7 @@ import {
 import type { MeResponse } from "./gamification-types";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { GamificationCatalogPanel } from "./gamification-catalog-panel";
+import { GamificationRulesMigrationNotice } from "./gamification-rules-migration-notice";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { method: "GET", cache: "no-store" });
@@ -44,6 +45,7 @@ export function GamificationSection() {
     data: meData,
     isLoading: meLoading,
     error: meError,
+    mutate: mutateMe,
   } = useSWR(
     "gamification-me",
     () => fetchJson<MeResponse>("/api/gamification/me"),
@@ -98,6 +100,14 @@ export function GamificationSection() {
               loading={meLoading}
               error={meError}
               locale={locale}
+            />
+
+            <GamificationRulesMigrationNotice
+              summary={progression?.summary}
+              locale={locale}
+              onAcknowledged={async () => {
+                await mutateMe();
+              }}
             />
 
             <QuizProgressionCard locale={locale} />

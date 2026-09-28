@@ -13,6 +13,7 @@ import {
 } from "./progression-utils";
 import {
   CURRENT_GAMIFICATION_RULES_VERSION,
+  CURRENT_GAMIFICATION_RULES_REVISION,
   type GamificationCategory,
   type GamificationEventRegistration,
   type GamificationXpPolicy,
@@ -40,10 +41,12 @@ export type GamificationRule = {
   awardPolicy: GamificationAwardPolicy;
   eligibility: GamificationEligibility;
   thresholds: readonly number[];
+  introducedInRulesRevision: number;
 };
 
 export type GamificationRulesV1 = {
   version: string;
+  rulesRevision: number;
   mechanics: readonly GamificationRule[];
 };
 
@@ -94,6 +97,7 @@ function currentRuleForEvent(
         : { kind: "fact", field: "xpAwarded" },
       eligibility: { kind: "canonical_fact", factKey: definition.metric },
       thresholds: thresholdsForProgression(definition.id),
+      introducedInRulesRevision: definition.introducedInRulesRevision,
     };
   }
 
@@ -116,6 +120,7 @@ function currentRuleForEvent(
       : { kind: "none" },
     eligibility: { kind: "canonical_fact", factKey: definition.factKey },
     thresholds: [],
+    introducedInRulesRevision: definition.introducedInRulesRevision,
   };
 }
 
@@ -138,10 +143,12 @@ function buildCurrentRules(): GamificationRulesV1 {
       awardPolicy: { kind: "none" },
       eligibility: { kind: "never", reason: mechanic.description },
       thresholds: [],
+      introducedInRulesRevision: mechanic.introducedInRulesRevision,
     }));
 
   return {
     version: CURRENT_GAMIFICATION_RULES_VERSION,
+    rulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
     mechanics: [...eventRules, ...nonGamifiedRules],
   };
 }

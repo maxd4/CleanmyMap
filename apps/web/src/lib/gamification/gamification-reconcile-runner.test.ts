@@ -9,8 +9,10 @@ import {
 function plan(userId: string, xpDelta = 0): GamificationReconciliationPlan {
   return {
     userId,
-    rulesVersionBefore: "v1",
+    rulesVersionBefore: "v2",
     rulesVersionAfter: "v2",
+    rulesRevisionBefore: 2,
+    rulesRevisionAfter: 2,
     xpBefore: Math.max(0, 1 - xpDelta),
     xpExpected: Math.max(0, 1),
     xpDelta,

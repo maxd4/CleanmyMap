@@ -19,6 +19,8 @@ export type GamificationFacts = {
   userId: string;
   sourceFacts: readonly GamificationSourceFact[];
   progressionCounters?: Readonly<Record<string, number>>;
+  /** Applicable CURRENT mechanics, including mechanics with no source fact yet. */
+  applicableMechanicIds?: readonly string[];
 };
 
 export type ExpectedGamificationEvent = {
@@ -43,10 +45,12 @@ export type ExpectedGamificationEvent = {
 export type ExpectedGamificationState = {
   userId: string;
   rulesVersion: string;
+  rulesRevision: number;
   events: ExpectedGamificationEvent[];
   expectedMilestones: ExpectedGamificationEvent[];
   expectedBadges: string[];
   progressionCounters: Record<string, number>;
+  applicableMechanicIds: string[];
 };
 
 function safeAmount(value: unknown): number {
@@ -87,7 +91,9 @@ function buildMetadata(
     ...(fact.metadata ?? {}),
     gamificationEngine: "CURRENT_RECONCILABLE",
     rulesVersion: rules.version,
+    rulesRevision: rules.rulesRevision,
     mechanicId: rule.mechanicId,
+    introducedInRulesRevision: rule.introducedInRulesRevision,
     progressionId: rule.progressionId,
     milestoneId: rule.milestoneId,
     badgeId: rule.badgeId,
@@ -117,6 +123,11 @@ export function computeExpectedGamificationState(
   const progressionCounters: Record<string, number> = {
     ...(facts.progressionCounters ?? {}),
   };
+  const applicableMechanicIds = [...new Set(
+    facts.applicableMechanicIds ?? rules.mechanics
+      .filter((rule) => rule.category !== "NON_GAMIFIED")
+      .map((rule) => rule.mechanicId),
+  )].sort();
 
   for (const rule of rules.mechanics) {
     if (rule.category === "NON_GAMIFIED") continue;
@@ -155,11 +166,13 @@ export function computeExpectedGamificationState(
   return {
     userId,
     rulesVersion: rules.version,
+    rulesRevision: rules.rulesRevision,
     events,
     expectedMilestones: events.filter((event) =>
       event.category === "XP_MILESTONE" || event.category === "BADGE_ONLY",
     ),
     expectedBadges: [...expectedBadges].sort(),
     progressionCounters,
+    applicableMechanicIds,
   };
 }

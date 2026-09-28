@@ -40,9 +40,13 @@ import type {
 import { BADGE_DEFINITIONS } from "./badge-catalog";
 import { actionRowToDrawing, toFloat, toInt, toNullableFloat } from "./progression-utils";
 import { resolveEngagementStatus } from "./engagement-status";
-import { loadGamificationCatalog } from "./gamification-catalog-loader";
+import {
+  loadGamificationCatalog,
+  loadGamificationRulesMigrationState,
+} from "./gamification-catalog-loader";
 import { loadGamificationLedgerEvents } from "./gamification-summary-loader";
 import { buildGamificationSummary } from "./gamification-summary";
+import { CURRENT_GAMIFICATION_RULES_REVISION } from "./progression-types";
 type LeaderboardPeriod = "lifetime" | "yearToDate";
 
 function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
@@ -259,14 +263,19 @@ export async function getUserProgression(
 ): Promise<UserProgressionResponse> {
   const yearToDateStartDate = getYearToDateStartDate();
   const progressionEventsPromise = loadGamificationLedgerEvents(supabase, userId);
-  const [stats, rows, annualRows, individualItems, annualImpact, catalog, progressionEvents] = await Promise.all([
+  const rulesMigrationStatePromise = loadGamificationRulesMigrationState(supabase, userId);
+  const [stats, rows, annualRows, individualItems, annualImpact, catalog, progressionEvents, rulesMigrationState] = await Promise.all([
     loadUserProgressionStats(supabase, userId, { events: progressionEventsPromise }),
     loadActionRowsForUser(supabase, userId),
     loadApprovedActionRows(supabase, 10000, yearToDateStartDate),
     buildIndividualLeaderboard(supabase),
     getUserAnnualImpact(supabase, userId),
-    loadGamificationCatalog(supabase, userId, { progressionEvents: progressionEventsPromise }),
+    loadGamificationCatalog(supabase, userId, {
+      progressionEvents: progressionEventsPromise,
+      rulesMigrationState: rulesMigrationStatePromise,
+    }),
     progressionEventsPromise,
+    rulesMigrationStatePromise,
   ]);
 
   const xpTotal = progressionEvents.reduce((total, event) => total + event.xp_awarded, 0);
@@ -325,6 +334,11 @@ export async function getUserProgression(
         xpRemaining: Math.max(0, nextRequiredXp - xpValidated),
         frozen: potentialLevel > currentLevel,
         requirements: requirement,
+      },
+      rulesMigration: {
+        currentAppliedRulesRevision:
+          rulesMigrationState.currentAppliedRulesRevision ?? CURRENT_GAMIFICATION_RULES_REVISION,
+        lastAcknowledgedRulesRevision: rulesMigrationState.lastAcknowledgedRulesRevision ?? 0,
       },
     }),
     engagementStatus: resolveEngagementStatus(currentLevel),

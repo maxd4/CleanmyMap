@@ -41,12 +41,18 @@ import type {
   ProgressionEventType,
   ProgressionStatusPhase,
 } from "./progression-types";
+import { CURRENT_GAMIFICATION_RULES_REVISION } from "./progression-types";
 import {
   loadGamificationLedgerEvents,
   type GamificationLedgerEvent,
 } from "./gamification-summary-loader";
 
 type CatalogProgressionEvent = MilestoneEvent & { source_table: string };
+
+export type GamificationRulesMigrationState = {
+  currentAppliedRulesRevision: number | null;
+  lastAcknowledgedRulesRevision: number | null;
+};
 
 const BASE_CURRENT_PROGRESSION_IDS = [
   "participation",
@@ -127,12 +133,39 @@ function actionRowsAsBalanceRows(rows: readonly ActionRow[]): ActionBalanceRow[]
   }));
 }
 
+export async function loadGamificationRulesMigrationState(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<GamificationRulesMigrationState> {
+  const result = await supabase
+    .from("progression_profiles")
+    .select("current_applied_rules_revision, last_acknowledged_rules_revision")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (result.error) throw new Error(result.error.message);
+  const row = result.data as {
+    current_applied_rules_revision?: number | null;
+    last_acknowledged_rules_revision?: number | null;
+  } | null;
+  const current = Number(row?.current_applied_rules_revision);
+  const acknowledged = Number(row?.last_acknowledged_rules_revision);
+  return {
+    currentAppliedRulesRevision: Number.isFinite(current) && current > 0
+      ? Math.trunc(current)
+      : CURRENT_GAMIFICATION_RULES_REVISION,
+    lastAcknowledgedRulesRevision: Number.isFinite(acknowledged) && acknowledged >= 0
+      ? Math.trunc(acknowledged)
+      : 0,
+  };
+}
+
 export async function loadGamificationCatalog(
   supabase: SupabaseClient,
   userId: string,
   options?: {
     actionRows?: ActionRow[];
     progressionEvents?: Promise<readonly GamificationLedgerEvent[]>;
+    rulesMigrationState?: GamificationRulesMigrationState | Promise<GamificationRulesMigrationState>;
   },
 ): Promise<GamificationCatalogItem[]> {
   const actionRowsPromise = options?.actionRows
@@ -140,7 +173,10 @@ export async function loadGamificationCatalog(
     : loadActionRowsForUser(supabase, userId);
   const progressionEventsPromise =
     options?.progressionEvents ?? loadGamificationLedgerEvents(supabase, userId);
-  const [counters, cleanZoneSources, learning, regularity, balance, referral, eventsResult, identity] =
+  const rulesMigrationStatePromise = options?.rulesMigrationState
+    ? Promise.resolve(options.rulesMigrationState)
+    : loadGamificationRulesMigrationState(supabase, userId);
+  const [counters, cleanZoneSources, learning, regularity, balance, referral, eventsResult, identity, rulesMigrationState] =
     await Promise.all([
       loadGamificationUserCounters(supabase, userId),
       loadCleanZoneSourcesForUser(supabase, userId),
@@ -154,6 +190,7 @@ export async function loadGamificationCatalog(
       loadReferralSummary(supabase, userId),
       progressionEventsPromise,
       getCurrentUserIdentity({ userId }).catch(() => null),
+      rulesMigrationStatePromise,
     ]);
 
   const events = asMilestoneEvents(eventsResult).map((event) => ({
@@ -237,5 +274,7 @@ export async function loadGamificationCatalog(
     milestones: milestoneFactsFromStates(milestones, referral),
     applicableProgressionIds,
     applicableMilestoneIds,
+    currentAppliedRulesRevision: rulesMigrationState.currentAppliedRulesRevision,
+    lastAcknowledgedRulesRevision: rulesMigrationState.lastAcknowledgedRulesRevision,
   });
 }
