@@ -232,6 +232,13 @@ test("COMPLET mobile-only does not add Web checks", () => {
   });
   assert.ok(ids(plan).includes("mobile-typecheck"));
   assert.ok(ids(plan).includes("semgrep-architecture"));
+  assert.ok(ids(plan).includes("quality-top-heavy-mobile"));
+  assert.ok(ids(plan).includes("quality-complexity-mobile"));
+  assert.ok(ids(plan).includes("quality-coverage-mobile"));
+  assert.deepEqual(plan.checks.find((check) => check.id === "quality-complexity-mobile").command, {
+    executable: "npm",
+    args: ["run", "quality:complexity", "--roots=apps/mobile"],
+  });
   assert.ok(!ids(plan).some((id) => ["vitest-full", "typecheck", "lint", "build"].includes(id)));
 });
 
@@ -254,7 +261,7 @@ test("COMPLET mobile-only adds shared Knip, jscpd, and GitNexus gates without We
     changedFiles: ["apps/mobile/App.tsx"],
   });
 
-  for (const id of ["mobile-typecheck", "mobile-test", "mobile-security", "mobile-lint", "quality-dead-code", "quality-duplication", "quality-cycles"]) {
+  for (const id of ["mobile-typecheck", "mobile-test", "mobile-security", "mobile-lint", "quality-top-heavy-mobile", "quality-complexity-mobile", "quality-coverage-mobile", "quality-dead-code", "quality-duplication", "quality-cycles"]) {
     assert.ok(ids(plan).includes(id), `missing ${id}`);
   }
   assert.ok(!ids(plan).some((id) => ["typecheck", "lint", "vitest-full", "build", "vercel-ci-audit"].includes(id)));

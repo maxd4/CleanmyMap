@@ -81,4 +81,16 @@ Validation mobile ciblée :
 ```bash
 npm run mobile:typecheck
 npm run mobile:test
+npm run mobile:security
+npm run mobile:lint
 ```
+
+La couverture ratchetée du mobile est mesurée uniquement en FULL et en
+pré-release de code avec :
+
+```bash
+npm run quality:mobile-coverage
+```
+
+La complexité/longueur et les fichiers top-heavy réutilisent les moteurs
+communs du dépôt ; ils ne doivent pas être clonés dans `apps/mobile`.

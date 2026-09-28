@@ -304,6 +304,20 @@ historiques ne sont jamais recalculées automatiquement.
 seul. `checks:fast` ne relance pas cette suite complète instrumentée afin de
 respecter son budget et d'éviter une seconde exécution inutile des tests.
 
+Le même moteur V8 mesure séparément le mobile :
+
+```bash
+npm run quality:mobile-coverage
+```
+
+Le périmètre mobile est `apps/mobile` hors tests, déclarations et vendor. Sa
+baseline indépendante est `scripts/checks/coverage-mobile-baseline.json`,
+mesurée sur le SHA `f0f39bdbdd8e0d30077768a9bc2b271ae22432a8` : statements
+`31.65 %` (`145/458`), branches `22.17 %` (`55/248`), functions `34.09 %`
+(`30/88`) et lines `32.34 %` (`142/439`). Aucun pourcentage mobile n'est
+agrégé avec le web et le mobile ne possède pas de domaines web artificiels.
+Une baisse mobile est donc comparée indépendamment sur les quatre métriques.
+
 ## Complexité, longueur et ratchet legacy
 
 La politique déterministe est centralisée dans
@@ -326,18 +340,20 @@ une baseline absente, malformée ou obsolète échoue.
 
 L'identité fonctionnelle ratchetée suit exactement la version `v2` de
 `FUNCTION_IDENTITY_SCHEME` (`scripts/checks/complexity-policy.mjs`) : chemin
-relatif à `apps/web/src`, rôle sémantique (`named`, `constructor`, variable ou
-propriété, callback avec callee/index/titre), puis occurrence déterministe du
-même rôle dans le fichier. Les fragments syntaxiques sont représentés par des
-tokens AST canoniques, sans trivia ni fin de ligne, tandis que les littéraux
-restent discriminants. Le numéro de ligne reste une information de diagnostic
-uniquement ; déplacer une fonction sans modifier son contenu ne change donc
-pas son identité ni son plafond.
+canonique sous `apps/web/` ou `apps/mobile/`, rôle sémantique (`named`,
+`constructor`, variable ou propriété, callback avec callee/index/titre), puis
+occurrence déterministe du même rôle dans le fichier. Les fragments syntaxiques
+sont représentés par des tokens AST canoniques, sans trivia ni fin de ligne,
+tandis que les littéraux restent discriminants. Le numéro de ligne reste une
+information de diagnostic uniquement ; déplacer une fonction sans modifier son
+contenu ne change donc pas son identité ni son plafond.
 
-`checks:fast` exécute la variante `--changed-only` pour les changements Web ;
-`checks:full` et la CI exécutent la mesure exhaustive. Ce contrôle ne remplace
-pas `quality:top-heavy`, qui reste la source canonique du ratchet de taille des
-fichiers et de ses seuils `REVIEW_REQUIRED`/`HARD`.
+`checks:fast` exécute la variante `--changed-only` pour les changements Web et
+reste borné pour le mobile. `checks:full` et la CI exécutent la mesure
+exhaustive des deux roots. `quality:top-heavy` réutilise lui aussi les roots
+`apps/web/src` et `apps/mobile` avec la même politique KIND ; il reste la
+source canonique du ratchet de taille des fichiers et de ses seuils
+`REVIEW_REQUIRED`/`HARD`.
 
 ## Dead code et ratchet Knip
 
@@ -618,6 +634,7 @@ npm run mobile:typecheck
 npm run mobile:test
 npm run mobile:security
 npm run mobile:lint
+npm run quality:mobile-coverage
 ```
 
 Pour un changement de code mobile, le mode RAPIDE sélectionne ces quatre

@@ -4,8 +4,8 @@ import { ESLint } from "eslint";
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
+import tseslint from "typescript-eslint";
 import {
   baselineKey,
   classifyComplexityCategory,
@@ -18,12 +18,15 @@ import {
 import { createGitRepositoryView } from "./repository-view.mjs";
 
 const repositoryRoot = process.cwd();
-const webRoot = path.join(repositoryRoot, "apps", "web");
 const baselinePath = path.join(repositoryRoot, "scripts", "checks", "complexity-baseline.json");
 const args = new Set(process.argv.slice(2));
 const changedOnly = args.has("--changed-only");
 const stagedOnly = args.has("--staged");
 const changedFromArgument = process.argv.slice(2).find((argument) => argument.startsWith("--changed-from="))?.slice("--changed-from=".length);
+const sourceRoots = (process.argv.slice(2).find((argument) => argument.startsWith("--roots="))?.slice("--roots=".length) ?? "apps/web/src,apps/mobile")
+  .split(",")
+  .map((root) => root.replaceAll("\\", "/").trim())
+  .filter(Boolean);
 
 function normalizeRepositoryPath(file) {
   return file.replaceAll("\\", "/");
@@ -48,10 +51,6 @@ function assertBaselineFresh(baseline) {
   }
 }
 
-function sourcePath(absolute) {
-  return normalizeRepositoryPath(path.relative(webRoot, absolute));
-}
-
 export function parseChangedDiffText(diff) {
   const ranges = new Map();
   const hunks = new Map();
@@ -60,7 +59,7 @@ export function parseChangedDiffText(diff) {
   for (const line of diff.split(/\r?\n/)) {
     const fileMatch = line.match(/^\+\+\+ b\/(.+)$/);
     if (fileMatch) {
-      currentPath = normalizeRepositoryPath(fileMatch[1]).replace(/^apps\/web\//, "");
+      currentPath = normalizeRepositoryPath(fileMatch[1]);
       currentHunk = null;
       continue;
     }
@@ -123,7 +122,7 @@ function normalizePresentationLine(line) {
 function parseChangedDiff({ from = baselineSourceCommit, to = null } = {}) {
   const diffArguments = ["diff", "--unified=0", from];
   if (to) diffArguments.push(to);
-  diffArguments.push("--", "apps/web/src");
+  diffArguments.push("--", ...sourceRoots);
   const diff = execFileSync("git", diffArguments, {
     cwd: repositoryRoot,
     encoding: "utf8",
@@ -140,16 +139,15 @@ function changedFunctionLines(changedHunks, path, functionStartLine, functionEnd
 function parseFunctionMessages(results, view = null) {
   const metrics = [];
   for (const result of results) {
-    const file = sourcePath(result.filePath);
-    const source = view
-      ? view.readText(`apps/web/${file}`)
-      : fs.readFileSync(result.filePath, "utf8");
+    const file = normalizeRepositoryPath(path.relative(repositoryRoot, result.filePath));
+    const source = view ? view.readText(file) : fs.readFileSync(result.filePath, "utf8");
     const resolveFunctionMetadata = createFunctionMetadataResolver(file, source);
     for (const message of result.messages) {
       const complexity = message.ruleId === "complexity" && message.message.match(/complexity of (\d+)/i);
       const functionLength = message.ruleId === "max-lines-per-function" && message.message.match(/too many lines \((\d+)\)/i);
       if (!complexity && !functionLength) continue;
       const metric = complexity ? "complexity" : "functionLength";
+      const match = complexity || functionLength;
       const functionMetadata = resolveFunctionMetadata(message.line, message.message);
       if (!functionMetadata) continue;
       metrics.push({
@@ -160,7 +158,7 @@ function parseFunctionMessages(results, view = null) {
         endLine: message.endLine ?? message.line,
         functionStartLine: functionMetadata.startLine,
         functionEndLine: functionMetadata.endLine,
-        value: Number((complexity ?? functionLength)[1]),
+        value: Number(match[1]),
         category: classifyComplexityCategory(file),
         key: baselineKey(metric, file, functionMetadata.functionIdentity),
       });
@@ -173,7 +171,7 @@ function baselineEntriesByKey(baseline) {
   return new Map(baseline.entries.map((entry) => [baselineKey(entry.metric, entry.path, entry.functionIdentity), entry]));
 }
 
-export function evaluateMetrics({ metrics, baseline, changedRanges, changedHunks = new Map() }) {
+export function evaluateMetrics({ metrics, baseline, changedRanges, changedHunks = new Map(), sourceRoots = null }) {
   const baselineByKey = baselineEntriesByKey(baseline);
   const currentByKey = new Map();
   const failures = [];
@@ -209,6 +207,7 @@ export function evaluateMetrics({ metrics, baseline, changedRanges, changedHunks
 
   const stale = [];
   for (const entry of (stagedOnly ? [] : baseline.entries)) {
+    if (sourceRoots && !sourceRoots.some((root) => entry.path === root || entry.path.startsWith(`${root}/`))) continue;
     const current = currentByKey.get(baselineKey(entry.metric, entry.path, entry.functionIdentity));
     if (current === undefined) stale.push(entry);
   }
@@ -253,30 +252,24 @@ async function main() {
   const changedRanges = changedDiff.ranges;
   const changedHunks = changedDiff.hunks;
   if (!stagedOnly) {
-    const untracked = git(["ls-files", "--others", "--exclude-standard", "--", "apps/web/src"])
+    const untracked = git(["ls-files", "--others", "--exclude-standard", "--", ...sourceRoots])
       .split(/\r?\n/).filter(Boolean)
       .map(normalizeRepositoryPath)
-      .filter((file) => /\.(ts|tsx)$/.test(file))
-      .map((file) => file.replace(/^apps\/web\//, ""));
+      .filter((file) => /\.(ts|tsx)$/.test(file));
     for (const file of untracked) changedRanges.set(file, [{ start: 1, end: Number.MAX_SAFE_INTEGER }]);
   }
   if (changedOnly && changedRanges.size === 0) {
-    console.log("PASS: no changed apps/web/src files for targeted complexity policy.");
+    console.log(`PASS: no changed files under ${sourceRoots.join(", ")} for targeted complexity policy.`);
     return;
   }
 
-  const webRequire = createRequire(path.join(webRoot, "package.json"));
-  const typescriptConfigPath = webRequire.resolve("eslint-config-next/typescript");
-  const typescriptConfig = (await import(pathToFileURL(typescriptConfigPath).href)).default;
-  const typescriptParser = typescriptConfig.find((config) => config.languageOptions?.parser)?.languageOptions.parser;
-  if (!typescriptParser) throw new Error("eslint-config-next/typescript did not provide its TypeScript parser.");
   const eslint = new ESLint({
-    cwd: webRoot,
+    cwd: repositoryRoot,
     overrideConfigFile: true,
     overrideConfig: [
       {
         files: ["**/*.ts", "**/*.tsx"],
-        languageOptions: { parser: typescriptParser },
+        languageOptions: { parser: tseslint.parser },
         rules: {
           complexity: ["error", 0],
           "max-lines-per-function": ["error", { max: 0, skipBlankLines: true, skipComments: true }],
@@ -285,15 +278,17 @@ async function main() {
     ],
   });
   const sourceFiles = view
-    ? view.listFiles("apps/web/src").filter((file) => /\.(ts|tsx)$/.test(file) && (!(changedOnly || stagedOnly) || changedRanges.has(file.replace(/^apps\/web\//, ""))))
-    : null;
-  const lintResults = view
-    ? await Promise.all(sourceFiles.map((file) => eslint.lintText(view.readText(file), { filePath: path.join(repositoryRoot, file) })))
-    : await eslint.lintFiles(changedOnly
-      ? [...changedRanges.keys()].filter((file) => /\.(ts|tsx)$/.test(file)).map((file) => `src/${file.replace(/^src\//, "")}`)
-      : ["src/**/*.{ts,tsx}"]);
+    ? sourceRoots.flatMap((root) => view.listFiles(root)).filter((file) => /\.(ts|tsx)$/.test(file) && (!(changedOnly || stagedOnly) || changedRanges.has(file)))
+    : (changedOnly
+      ? [...changedRanges.keys()].filter((file) => /\.(ts|tsx)$/.test(file) && fs.existsSync(path.join(repositoryRoot, file)))
+      : git(["ls-files", "--", ...sourceRoots]).split(/\r?\n/).filter((file) => /\.(ts|tsx)$/.test(file)));
+  const lintResults = await Promise.all(sourceFiles.map((file) => {
+    const filePath = path.join(repositoryRoot, file);
+    const source = view ? view.readText(file) : fs.readFileSync(filePath, "utf8");
+    return eslint.lintText(source, { filePath });
+  }));
   const metrics = parseFunctionMessages(lintResults.flat(), view);
-  const result = evaluateMetrics({ metrics, baseline, changedRanges, changedHunks });
+  const result = evaluateMetrics({ metrics, baseline, changedRanges, changedHunks, sourceRoots });
 
   console.log(`Complexity policy: ${metrics.length} function metrics measured.`);
   if (result.reviews.length > 0) console.log(`REVIEW_REQUIRED: ${result.reviews.length} review signals.`);

@@ -91,6 +91,7 @@ assert.doesNotMatch(ciWorkflow, /check:agent-skills/);
 assert.match(ciWorkflow, /check:doc-governance/);
 assert.match(ciWorkflow, /Mobile security tests/);
 assert.match(ciWorkflow, /Mobile Vitest tests/);
+assert.match(ciWorkflow, /Mobile Vitest coverage ratchet/);
 assert.match(ciWorkflow, /Mobile lint/);
 assert.match(ciWorkflow, /Secret audit \(mobile-only\)/);
 assert.match(ciWorkflow, /Architectural Semgrep \(mobile-only\)/);

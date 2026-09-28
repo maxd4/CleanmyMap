@@ -32,7 +32,7 @@ const enforce = hasFlag("--enforce");
 const baselinePath = normalizeRepositoryPath(
   readArg("--baseline", "scripts/checks/heavy-files-baseline.json"),
 );
-const scanRoots = (readArg("--roots", "apps/web/src") ?? "apps/web/src")
+const scanRoots = (readArg("--roots", "apps/web/src,apps/mobile") ?? "apps/web/src,apps/mobile")
   .split(",")
   .map((value) => normalizeRepositoryPath(value.trim()))
   .filter(Boolean);

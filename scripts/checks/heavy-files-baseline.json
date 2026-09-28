@@ -3,6 +3,14 @@
   "allowed": [],
   "review": [
     {
+      "path": "apps/mobile/App.tsx",
+      "kind": "runtime",
+      "status": "REVIEW",
+      "reviewedRef": "f0f39bdbdd8e0d30077768a9bc2b271ae22432a8",
+      "maxLines": 618,
+      "maxBytes": 16156
+    },
+    {
       "path": "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
       "kind": "runtime",
       "status": "REVIEW",

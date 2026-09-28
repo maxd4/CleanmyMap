@@ -5,6 +5,7 @@ import {
   COVERAGE_GRACE,
   COVERAGE_METRICS,
   COVERAGE_SCOPE_FINGERPRINT,
+  MOBILE_COVERAGE_SCOPE_FINGERPRINT,
   aggregateCoverage,
   compareCoverage,
   formatCoverageGrace,
@@ -159,4 +160,28 @@ test("malformed or stale baseline fails explicitly", () => {
     () => validateBaseline({ ...baseline, scopeFingerprint: "stale" }),
     /stale/,
   );
+});
+
+test("la couverture mobile reste un scope indépendant sans domaines web", () => {
+  const mobileSummary = {
+    total: Object.fromEntries(COVERAGE_METRICS.map((name) => [name, metric(30, 100)])),
+    "C:\\repo\\apps\\mobile\\lib\\tracking-service.ts": {
+      statements: metric(30, 100),
+      branches: metric(30, 100),
+      functions: metric(30, 100),
+      lines: metric(30, 100),
+    },
+  };
+  const current = aggregateCoverage(mobileSummary, { scope: "mobile" });
+  assert.deepEqual(current.domains, {});
+  const baseline = {
+    schemaVersion: 1,
+    sourceCommit: "a".repeat(40),
+    scopeFingerprint: MOBILE_COVERAGE_SCOPE_FINGERPRINT,
+    metrics: structuredClone(current.metrics),
+    domains: {},
+  };
+  assert.doesNotThrow(() => validateBaseline(baseline, { scope: "mobile" }));
+  assert.deepEqual(compareCoverage(current, baseline), { status: "PASS", failures: [], grace: [] });
+  assert.throws(() => validateBaseline({ ...baseline, scopeFingerprint: COVERAGE_SCOPE_FINGERPRINT }, { scope: "mobile" }), /stale/);
 });

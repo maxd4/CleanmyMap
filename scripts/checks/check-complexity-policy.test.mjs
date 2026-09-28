@@ -63,22 +63,22 @@ function measuredMetric(value, functionIdentity = "named:fixture#1") {
   return {
     metric: "complexity",
     category: "React/JSX",
-    path: "src/fixture.ts",
+    path: "apps/web/src/fixture.ts",
     functionIdentity,
     functionStartLine: 1,
     functionEndLine: 20,
     value,
-    key: baselineKey("complexity", "src/fixture.ts", functionIdentity),
+    key: baselineKey("complexity", "apps/web/src/fixture.ts", functionIdentity),
   };
 }
 
 function changedBodyRange(line = 3) {
-  return new Map([["src/fixture.ts", [{ start: line, end: line }]]]);
+  return new Map([["apps/web/src/fixture.ts", [{ start: line, end: line }]]]);
 }
 
 function changedBodyHunks({ newStart = 3, newCount = 1, added = 1, deleted = 0 } = {}) {
   return new Map([[
-    "src/fixture.ts",
+    "apps/web/src/fixture.ts",
     [{ newStart, newEnd: newStart + Math.max(newCount, 1) - 1, added, deleted }],
   ]]);
 }
@@ -86,7 +86,7 @@ function changedBodyHunks({ newStart = 3, newCount = 1, added = 1, deleted = 0 }
 function legacyFixture(value, { changedRanges = new Map(), changedHunks = new Map() } = {}) {
   return evaluateMetrics({
     metrics: [measuredMetric(value)],
-    baseline: { entries: [{ metric: "complexity", path: "src/fixture.ts", functionIdentity: "named:fixture#1", ceiling: 23 }] },
+    baseline: { entries: [{ metric: "complexity", path: "apps/web/src/fixture.ts", functionIdentity: "named:fixture#1", ceiling: 23 }] },
     changedRanges,
     changedHunks,
   });
@@ -116,7 +116,7 @@ test("C: a light correction that raises legacy 23 to 24 fails the historical cei
 
 test("D: a substantial rewrite that remains at legacy 23 fails the React target 20", () => {
   const result = legacyFixture(23, {
-    changedRanges: new Map([["src/fixture.ts", [{ start: 8, end: 11 }]]]),
+    changedRanges: new Map([["apps/web/src/fixture.ts", [{ start: 8, end: 11 }]]]),
     changedHunks: changedBodyHunks({ newStart: 8, newCount: 4, added: 6, deleted: 4 }),
   });
   assert.equal(result.failures.length, 1);
@@ -125,7 +125,7 @@ test("D: a substantial rewrite that remains at legacy 23 fails the React target 
 
 test("E: a substantial rewrite that descends to target 20 passes", () => {
   const result = legacyFixture(20, {
-    changedRanges: new Map([["src/fixture.ts", [{ start: 8, end: 11 }]]]),
+    changedRanges: new Map([["apps/web/src/fixture.ts", [{ start: 8, end: 11 }]]]),
     changedHunks: changedBodyHunks({ newStart: 8, newCount: 4, added: 6, deleted: 4 }),
   });
   assert.equal(result.failures.length, 0);
@@ -133,7 +133,7 @@ test("E: a substantial rewrite that descends to target 20 passes", () => {
 
 test("F: a substantial middle-body modification is detected", () => {
   const result = legacyFixture(23, {
-    changedRanges: new Map([["src/fixture.ts", [{ start: 8, end: 11 }]]]),
+    changedRanges: new Map([["apps/web/src/fixture.ts", [{ start: 8, end: 11 }]]]),
     changedHunks: changedBodyHunks({ newStart: 8, newCount: 4, added: 4 }),
   });
   assert.equal(isSubstantiallyChanged({ changedLines: 4, functionStartLine: 1, functionEndLine: 20 }), true);
@@ -152,8 +152,8 @@ test("G: an important deletion in the body is counted and detected", () => {
     "-  const removedD = 4;",
     "-  const removedE = 5;",
   ].join("\n"));
-  assert.equal(parsed.hunks.get("src/fixture.ts")[0].added, 0);
-  assert.equal(parsed.hunks.get("src/fixture.ts")[0].deleted, 5);
+  assert.equal(parsed.hunks.get("apps/web/src/fixture.ts")[0].added, 0);
+  assert.equal(parsed.hunks.get("apps/web/src/fixture.ts")[0].deleted, 5);
   const result = legacyFixture(23, { changedRanges: parsed.ranges, changedHunks: parsed.hunks });
   assert.equal(result.failures.length, 1);
 });
@@ -167,10 +167,10 @@ test("presentation-only JSX class changes do not trigger the substantial-change 
     '-  <div className="bg-slate-950 text-white">',
     '+  <div className="bg-white text-slate-950">',
   ].join("\n"));
-  assert.equal(parsed.hunks.get("src/fixture.ts")[0].styleOnly, true);
+  assert.equal(parsed.hunks.get("apps/web/src/fixture.ts")[0].styleOnly, true);
   const result = evaluateMetrics({
     metrics: [measuredMetric(23)],
-    baseline: { entries: [{ metric: "complexity", path: "src/fixture.ts", functionIdentity: "named:fixture#1", ceiling: 23 }] },
+    baseline: { entries: [{ metric: "complexity", path: "apps/web/src/fixture.ts", functionIdentity: "named:fixture#1", ceiling: 23 }] },
     changedRanges: parsed.ranges,
     changedHunks: parsed.hunks,
   });
@@ -190,7 +190,7 @@ test("body-only changed line intersects the full AST function range", () => {
   const source = "function fixture() {\n  const first = 1;\n  return first;\n}";
   const metadata = createFunctionMetadataResolver("fixture.ts", source)(1, "Function 'fixture'");
   assert.deepEqual(metadata, { functionIdentity: "named:fixture#1", startLine: 1, endLine: 4 });
-  assert.equal(intersectsChangedFunction(new Map([["src/fixture.ts", [{ start: 3, end: 3 }]]]), "src/fixture.ts", metadata.startLine, metadata.endLine), true);
+  assert.equal(intersectsChangedFunction(new Map([["apps/web/src/fixture.ts", [{ start: 3, end: 3 }]]]), "apps/web/src/fixture.ts", metadata.startLine, metadata.endLine), true);
 });
 
 test("test filename forms are classified as tests by both quality owners", () => {
@@ -214,9 +214,18 @@ test("complexity baseline metrics never own file length", () => {
   const baseline = JSON.parse(fs.readFileSync("scripts/checks/complexity-baseline.json", "utf8"));
   assert.ok(baseline.entries.length > 0);
   const metricCounts = baseline.entries.reduce((counts, entry) => ({ ...counts, [entry.metric]: (counts[entry.metric] ?? 0) + 1 }), {});
-  assert.deepEqual(metricCounts, { complexity: 270, functionLength: 379 });
+  assert.deepEqual(metricCounts, { complexity: 350, functionLength: 460 });
   assert.ok(baseline.entries.every((entry) => ["complexity", "functionLength"].includes(entry.metric)));
   assert.ok(baseline.entries.every((entry) => typeof entry.functionIdentity === "string"));
+  assert.ok(baseline.entries.some((entry) => entry.path.startsWith("apps/mobile/")));
+  assert.ok(baseline.entries.every((entry) => entry.path.startsWith("apps/web/") || entry.path.startsWith("apps/mobile/")));
+});
+
+test("mobile files use the shared complexity categories and canonical paths", () => {
+  assert.equal(classifyComplexityCategory("apps/mobile/App.tsx"), "React/JSX");
+  assert.equal(classifyComplexityCategory("apps/mobile/lib/tracking-service.ts"), "runtime/services/orchestration");
+  assert.equal(classifyComplexityCategory("apps/mobile/tasks/gps-task.ts"), "runtime/services/orchestration");
+  assert.equal(classifyComplexityCategory("apps/mobile/tests/tracking-service.test.ts"), "tests");
 });
 
 test("no legacy ESLint exception ceilings remain", () => {
@@ -285,7 +294,7 @@ test("BASELINE_CURRENT_MAIN_TEST: baseline declares the current identity scheme 
   const baseline = JSON.parse(fs.readFileSync("scripts/checks/complexity-baseline.json", "utf8"));
   assert.equal(FUNCTION_IDENTITY_SCHEME_VERSION, 2);
   assert.equal(baseline.functionIdentitySchemeVersion, FUNCTION_IDENTITY_SCHEME_VERSION);
-  assert.equal(baseline.entries.length, 649);
+  assert.equal(baseline.entries.length, 810);
   assert.equal(baseline.entries.some((entry) => entry.path === "src/lib/gamification/badges/listing.ts" && entry.functionIdentity === "named:awardProgressionEventIfMissing#1"), false);
   assert.doesNotThrow(() => validateBaselineShape(baseline));
 });

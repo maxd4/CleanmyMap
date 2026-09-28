@@ -119,6 +119,8 @@
     "mobile:lint": "npm run lint -w apps/mobile",
     "mobile:security": "npm run security -w apps/mobile",
     "mobile:test": "npm run test -w apps/mobile",
+    "mobile:coverage": "npm run test:coverage -w apps/mobile",
+    "quality:mobile-coverage": "npm run mobile:coverage && node scripts/checks/check-coverage.mjs --scope=mobile",
     "precommit:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_commit_guard.ps1",
     "prepush:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_push_guard.ps1",
     "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/ci/install_git_hooks.ps1",
@@ -168,7 +170,8 @@
     "knip": "6.37.0",
     "playwright": "^1.59.1",
     "sharp": "^0.35.3",
-    "supabase": "^2.116.0"
+    "supabase": "^2.116.0",
+    "typescript-eslint": "^8.46.0"
   },
   "optionalDependencies": {
     "@rolldown/binding-linux-x64-gnu": "1.2.6",

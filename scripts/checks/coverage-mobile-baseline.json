@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "f0f39bdbdd8e0d30077768a9bc2b271ae22432a8",
+  "measuredAt": "2026-09-28",
+  "tool": {
+    "vitest": "4.1.11",
+    "provider": "@vitest/coverage-v8@4.1.11"
+  },
+  "scope": {
+    "root": "apps/mobile",
+    "include": [
+      "**/*.{js,jsx,ts,tsx}"
+    ],
+    "exclude": [
+      "tests/**/*.test.{js,jsx,ts,tsx}",
+      "**/*.test.{js,jsx,ts,tsx}",
+      "**/__tests__/**",
+      "**/*.d.ts",
+      "vendor/**"
+    ]
+  },
+  "scopeFingerprint": "e50eeed2bae7b1dc71b65b93e00a5a710c451d2427cc65938c640fbd1dd9c3bd",
+  "metrics": {
+    "statements": {
+      "total": 458,
+      "covered": 145,
+      "pct": 31.65
+    },
+    "branches": {
+      "total": 248,
+      "covered": 55,
+      "pct": 22.17
+    },
+    "functions": {
+      "total": 88,
+      "covered": 30,
+      "pct": 34.09
+    },
+    "lines": {
+      "total": 439,
+      "covered": 142,
+      "pct": 32.34
+    }
+  },
+  "domains": {}
+}
