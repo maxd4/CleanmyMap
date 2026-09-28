@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { requireAdminAccess } from '@/lib/authz';
+import { adminAccessErrorJsonResponse } from '@/lib/http/auth-responses';
 import { handleApiError } from '@/lib/http/api-errors';
 
 export const runtime = 'nodejs';
@@ -18,6 +20,11 @@ function clampInteger(
 
 // Query params: userId, from, to, limit, offset
 export async function GET(req: Request) {
+  const access = await requireAdminAccess();
+  if (!access.ok) {
+    return adminAccessErrorJsonResponse(access);
+  }
+
   try {
     const supabase = getSupabaseServerClient(true);
     const url = new URL(req.url);
