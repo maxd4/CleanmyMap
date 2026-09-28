@@ -5,6 +5,7 @@ import {
   loadActionRowsForUser,
   loadCurrentValidatedActionIdsForUser,
 } from "../progression-data";
+import { CURRENT_GAMIFICATION_RULES_VERSION } from "../progression-types";
 import type { ProgressionEventType } from "../progression-types";
 
 export type ReferralContributionProof = {
@@ -187,8 +188,18 @@ export async function reconcileReferralAward(
     xpBase: config.xp,
     xpAwarded: config.xp,
     occurredOn: currentContribution.proof.occurredOn,
-    metadata: {
-      inviteeUserId,
+      metadata: {
+        gamificationEngine: "CURRENT_RECONCILABLE",
+        rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+        mechanicId: "parrainage_utile",
+        progressionId: null,
+        milestoneId: "parrainage_utile",
+        sourceTable: config.sourceTable,
+        sourceId,
+        awardKind: "XP_MILESTONE",
+        threshold: null,
+        logicalId: `${inviterUserId}:parrainage_utile:${config.sourceTable}:${sourceId}::validated`,
+        inviteeUserId,
       contributionSourceTable: currentContribution.proof.sourceTable,
       contributionSourceId: currentContribution.proof.sourceId,
       referralAwardedXp: config.xp,

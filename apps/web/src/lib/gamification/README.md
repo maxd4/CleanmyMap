@@ -14,6 +14,28 @@ La progression reste déterministe et dérivée de faits métier vérifiés. Les
 consommateurs importent les types et règles depuis leur module propriétaire ;
 un barrel ne doit pas recréer une seconde identité du contrat.
 
+## Reconstruction CURRENT
+
+Le moteur CURRENT est reconstructible depuis les faits métier canoniques. Le
+contrat versionné est `GAMIFICATION_RULES_V1` dans
+[`gamification-rules.ts`](./gamification-rules.ts). La chaîne de calcul est :
+
+```text
+sources métier → GamificationRulesV1 → computeExpectedGamificationState
+→ reconcileUserGamification → progression_events → profil/niveaux/badges
+```
+
+`computeExpectedGamificationState` est pur : il ne lit jamais le ledger et ne
+modifie aucune donnée. Chaque événement attendu porte une identité logique
+stable et une provenance (`rulesVersion`, `mechanicId`, source, `awardKind` et
+palier lorsque nécessaire). Le reconciler ne possède que les événements
+CURRENT explicitement identifiés ; les événements LEGACY et les sources métier
+restent préservés. Une évolution de règle met à jour ou retire la projection
+CURRENT, elle n'ajoute jamais une compensation additive.
+
+Les tests de reconstruction couvrent notamment `XP → XP`, `XP → BADGE_ONLY`
+et `BADGE_ONLY → NON_GAMIFIED`, avec baisse possible de l'XP et du niveau.
+
 ## Frontières
 
 - les formules et règles pures restent indépendantes du rendu ;

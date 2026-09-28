@@ -41,11 +41,14 @@ async function syncOrganizersProgression(
 export async function refreshProgressionProfile(
   supabase: SupabaseClient,
   userId: string,
+  options: { reconcileLegacyImpact?: boolean } = {},
 ): Promise<void> {
   // Reconcile impact badge threshold facts before projecting the profile. The
   // reconciler only writes progression_events; the legacy point ledger remains
   // intentionally untouched by CURRENT gamification.
-  await reconcileMohsImpactProgression(supabase, userId).catch(() => null);
+  if (options.reconcileLegacyImpact !== false) {
+    await reconcileMohsImpactProgression(supabase, userId).catch(() => null);
+  }
   const [eventsResult, stats] = await Promise.all([
     supabase
       .from("progression_events")
