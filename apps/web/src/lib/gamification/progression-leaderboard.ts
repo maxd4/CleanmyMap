@@ -23,11 +23,13 @@ import {
   fetchActionById,
   loadApprovedActionRows,
   loadActionRowsForUser,
-  loadUserImpactStats,
-  loadUserLabelSummary,
   loadUserProgressionStats,
   parseAssociationNameFromActionNotes,
 } from "./progression-data";
+import {
+  loadUserImpactStats,
+  loadUserLabelSummary,
+} from "./progression-ranking-data";
 import type {
   ActionRow,
   CollectiveLeaderboardItem,

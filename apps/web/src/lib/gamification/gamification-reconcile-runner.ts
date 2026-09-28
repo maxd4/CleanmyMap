@@ -1,8 +1,8 @@
 import type { GamificationReconciliationPlan } from "./gamification-reconciliation-plan";
 import type { GamificationReconciliationReceipt } from "./gamification-reconciliation-receipt";
 
-export type GamificationReconcileMode = "dry-run" | "apply";
-export type GamificationReconcileTarget = "user" | "all";
+type GamificationReconcileMode = "dry-run" | "apply";
+type GamificationReconcileTarget = "user" | "all";
 
 export type GamificationReconcileArgs = {
   mode: GamificationReconcileMode;
@@ -28,7 +28,7 @@ export type GamificationReconcileAggregate = {
   errors: Array<{ userId: string; message: string }>;
 };
 
-export type GamificationReconcileCheckpoint = {
+type GamificationReconcileCheckpoint = {
   version: 1;
   runId: string;
   mode: "apply-all";
@@ -40,7 +40,7 @@ export type GamificationReconcileCheckpoint = {
   updatedAt: string;
 };
 
-export type GamificationReconcileUserResult = {
+type GamificationReconcileUserResult = {
   plan: GamificationReconciliationPlan;
   inserted?: number;
   updated?: number;
@@ -91,7 +91,7 @@ function hasChanges(plan: GamificationReconciliationPlan): boolean {
     plan.milestonesRemoved.length > 0;
 }
 
-export function addPlanToAggregate(
+function addPlanToAggregate(
   aggregate: GamificationReconcileAggregate,
   plan: GamificationReconciliationPlan,
 ): void {

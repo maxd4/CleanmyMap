@@ -8,8 +8,8 @@ const controlTowerSource = readFileSync(
   new URL("./_components/map-control-tower.tsx", import.meta.url),
   "utf8",
 );
-const canvasSource = readFileSync(
-  new URL("../../../../components/actions/actions-map-canvas.tsx", import.meta.url),
+const canvasViewSource = readFileSync(
+  new URL("../../../../components/actions/actions-map-canvas-view.tsx", import.meta.url),
   "utf8",
 );
 
@@ -86,11 +86,11 @@ describe("actions map public semantics", () => {
   });
 
   it("keeps the public map controls consolidated on the canvas", () => {
-    expect(canvasSource).toContain("Filtrer");
-    expect(canvasSource).toContain("Affichage");
-    expect(canvasSource).toContain("Légende");
-    expect(canvasSource).toContain('position="right"');
-    expect(canvasSource).not.toContain("LayersControl");
+    expect(canvasViewSource).toContain("Filtrer");
+    expect(canvasViewSource).toContain("Affichage");
+    expect(canvasViewSource).toContain("Légende");
+    expect(canvasViewSource).toContain('position="right"');
+    expect(canvasViewSource).not.toContain("LayersControl");
     expect(source).toContain("filters={filters}");
     expect(source).toContain("onDateScopeChange={handleDateScopeChange}");
   });

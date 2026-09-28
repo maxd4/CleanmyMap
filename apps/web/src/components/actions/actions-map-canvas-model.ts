@@ -25,7 +25,6 @@ export function resolveActionsMapCanvasViewport({
       recenterViewport ?? initialViewport ?? createActionsMapViewport(center, compact ? 11 : 12),
   };
 }
-
 export function resolveActionsMapCanvasTheme(isEmerald: boolean) {
   return {
     mapShellClasses: isEmerald
@@ -64,8 +63,3 @@ export function resolveActionsMapItemGroups(items: ActionMapItem[], selectedActi
     selectedItem: items.find((item) => item.id === selectedActionId) ?? null,
   };
 }
-
-export type ActionsMapCanvasTheme = ReturnType<typeof resolveActionsMapCanvasTheme>;
-export type ActionsMapCanvasViewport = ReturnType<typeof resolveActionsMapCanvasViewport>;
-export type ActionsMapCanvasItems = ReturnType<typeof resolveActionsMapItemGroups>;
-export type ActionsMapCanvasMode = { displayMode: CurrentPlaceStateMode; scoreScope: PollutionScoreScope };

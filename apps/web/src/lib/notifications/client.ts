@@ -3,7 +3,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildRequiredClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { GamificationReconciliationReceipt } from "@/lib/gamification/gamification-reconciliation-receipt";
 
 export type AppNotification = {
   id: string;
@@ -31,16 +30,6 @@ export type NotificationsPage = {
   notifications: AppNotification[];
   nextCursor: NotificationPageCursor | null;
 };
-
-export function getGamificationReconciliationReceipt(
-  notification: AppNotification,
-): GamificationReconciliationReceipt | null {
-  if (notification.type !== "gamification_reconciliation") return null;
-  const receipt = notification.payload?.receipt;
-  return receipt && typeof receipt === "object"
-    ? receipt as GamificationReconciliationReceipt
-    : null;
-}
 
 async function getNotificationsClient(
   getToken: () => Promise<string | null>,
