@@ -1,606 +1,407 @@
 # AGENTS.md — CleanMyMap
 
-## Portée et héritage
+## Portée
 
-Ce fichier contient uniquement la gouvernance universelle du dépôt. Toute
-règle propre à un sous-arbre doit vivre dans le `AGENTS.md` le plus proche :
+Ce fichier contient uniquement les invariants universels d’exécution du dépôt.
+Toute règle propre à un sous-arbre vit dans le `AGENTS.md` scoped le plus proche.
 
-```txt
-root
-├── apps/web
-│   ├── src/app/api
-│   ├── supabase
-│   └── scripts
-├── apps/mobile
-├── scripts
-├── .github
-├── maintenance/python
-├── documentation
-└── e2e
-```
-
-L'héritage se lit du root vers l'application puis vers la frontière
-spécialisée. Les fichiers scoped ajoutent des règles locales ; ils ne
-remplacent pas les invariants de ce fichier et ne doivent pas recopier sa
-gouvernance. Ne pas réintroduire dans le root une règle exclusivement web,
-API, Supabase, scripts, mobile, CI/GitHub, Python ou documentation.
-
-Les fichiers scoped canoniques sont :
+Héritage canonique :
 
 ```txt
-apps/web/AGENTS.md
-apps/web/src/app/api/AGENTS.md
-apps/web/supabase/AGENTS.md
-apps/web/scripts/AGENTS.md
-apps/mobile/AGENTS.md
-scripts/AGENTS.md
-.github/AGENTS.md
-maintenance/python/AGENTS.md
-documentation/AGENTS.md
-e2e/AGENTS.md
+AGENTS.md
+├── apps/web/AGENTS.md
+│   ├── apps/web/src/app/api/AGENTS.md
+│   ├── apps/web/supabase/AGENTS.md
+│   └── apps/web/scripts/AGENTS.md
+├── apps/mobile/AGENTS.md
+├── scripts/AGENTS.md
+├── .github/AGENTS.md
+├── maintenance/python/AGENTS.md
+├── documentation/AGENTS.md
+└── e2e/AGENTS.md
 ```
+
+Les règles scoped ajoutent des contraintes locales ; elles ne recopient pas la
+gouvernance racine et ne peuvent pas affaiblir un invariant universel.
 
 Ordre de priorité :
 
-1. consigne explicite de l'utilisateur ;
-2. sécurité, données et authentification ;
-3. état réel du dépôt GitHub `maxd4/CleanmyMap` ;
-4. architecture et contrats existants ;
-5. design system ;
-6. tests et validation ;
-7. simplicité ;
-8. performance et quotas lorsque le sujet est concerné.
+1. demande explicite de l’utilisateur ;
+2. sécurité, données, authentification et intégrité ;
+3. entrée utilisateur explicitement fournie pour le lot courant ;
+4. état réel du checkout et contrats actuellement consommés ;
+5. `AGENTS.md` racine puis `AGENTS.md` scoped applicables ;
+6. documentation canonique spécialisée ;
+7. simplicité, maintenabilité, performance et quotas selon le sujet.
 
 Ne jamais préférer une refonte large à une correction ciblée suffisante.
 
-## Canari de session
+## Canari
 
-Commencer uniquement la réponse finale par `Maxence —`. Les mises à jour
-intermédiaires ne doivent pas commencer par ce canari.
+Commencer uniquement la réponse finale par `Maxence —`.
+Les mises à jour intermédiaires n’utilisent pas ce canari.
 
-## Source de vérité et Git
+## Source de vérité
 
-- utiliser GitHub comme source de vérité et confronter toute copie locale à
-  `maxd4/CleanmyMap`, branche `main` ;
-- lire le fichier actuel et ses dépendances directes avant de le modifier ; ne
-  pas privilégier une ancienne conversation ou un ancien plan au dépôt réel ;
-- `CleanmyMap-main` est l'unique checkout mutable, reste sur la branche `main`
-  et sert aussi de source pour localhost. Le modèle canonique est
-  `MAIN-ONLY / SINGLE-WRITER` : un seul chantier peut écrire à la fois ; les
-  analyses peuvent être parallèles mais aucune écriture parallèle n'est
-  autorisée ;
-- avant chaque chantier, faire `git fetch origin main`, vérifier que le
-  checkout est `main` et partir de l'état Git courant. Aucun nouveau worktree,
-  clone ou branche `codex/*`/`publish/*` ne fait partie du workflow normal ;
-- ne jamais bloquer une exécution s'il manque un push GitHub : l'état local
-  réel du dépôt est prioritaire, quels que soient les prérequis demandés par le
-  prompt ; l'absence de publication d'un lot précédent ne constitue jamais une
-  `STOP CONDITION` à elle seule ;
-- le lifecycle canonique est : `origin/main → main → working tree/index →
-  validation de l'allowlist → commit local isolé`. Chaque lot d'écriture est
-  clôturé par ce commit local après validation de son allowlist. La signature
-  du commit et la publication vers `origin/main` ne sont effectuées que sur
-  demande explicite de l'utilisateur. Plusieurs commits locaux successifs
-  peuvent s'accumuler sur ce même `main`, avec un seul writer. Par défaut,
-  créer un commit non signé, y compris si la configuration Git locale active
-  la signature automatique ; n'utiliser `--gpg-sign` qu'après demande explicite
-  de l'utilisateur ;
-- un moratoire ou gel d'un service externe ne bloque pas la clôture locale d'un
-  lot. Aucun push n'est déclenché implicitement par le lifecycle ; si un push
-  est explicitement demandé et peut déclencher ce service, vérifier son
-  déclenchement automatique avant de poursuivre ;
-- les commits locaux validés en attente restent sur `main` jusqu'à une demande
-  explicite de publication. Avant tout push demandé, auditer l'intégralité de
-  `origin/main..HEAD`, réconcilier `main` avec `origin/main` si nécessaire,
-  puis revalider le candidat exact destiné au push ;
-- à chaque fin d'exécution ayant produit des modifications, clôturer
-  immédiatement le lot : vérifier son allowlist, valider `STAGED`, committer
-  uniquement ses fichiers et conserver le commit local sur `main`. La
-  signature et le push sont exclus de cette clôture sauf demande explicite ;
-- les modifications locales non stagées hors périmètre ne bloquent ni le commit
-  ni le push d'un lot ; Codex délimite le lot, stage uniquement son allowlist
-  explicite (jamais `git add -A`) et vérifie
-  `git diff --cached --name-only` avant le commit ;
-- un commit doit contenir exclusivement les fichiers du lot courant ; les
-  changements parallèles hors périmètre ne sont jamais ajoutés au lot et sont
-  préservés, y compris s'ils étaient déjà stagés avant l'intervention ;
-- lorsqu'un lot a déjà produit des modifications et qu'un changement étranger
-  apparaît ensuite dans le working tree, l'agent ne doit pas abandonner
-  silencieusement son propre diff. Si son allowlist reste attribuable sans
-  ambiguïté, qu'aucun fichier de son lot n'a été modifié concurremment et que
-  la validation `STAGED` peut isoler exactement son candidat, il termine son
-  lot : stage ciblé, validation, commit local isolé, puis STOP avant toute
-  nouvelle modification. Le commit n'est signé que si l'utilisateur l'a
-  explicitement demandé. Il ne doit laisser ses propres changements non commités que
-  si l'attribution des fichiers est ambiguë, qu'un fichier est partagé avec le
-  writer concurrent ou que le candidat ne peut plus être validé
-  indépendamment. Dans ce cas, il rapporte `DIRTY_HANDOFF_REQUIRED` et aucun
-  nouveau chantier d'écriture ne doit commencer avant résolution.
+Le dépôt `maxd4/CleanmyMap` sur `main` est la référence versionnée.
+Ne jamais déduire l'identité du dépôt du nom du dossier local.
+Utiliser la racine Git (`git rev-parse --show-toplevel`) et le remote configuré
+comme références techniques.
 
-  ```text
-  FOREIGN_DIRTY != automatic STOP before commit
+Pour un chemin explicitement ciblé par un fichier fourni par l’utilisateur,
+la candidate fournie par l’utilisateur est toutefois l’entrée autoritative du
+lot jusqu’à son intégration. `HEAD` et `origin/main` restent des bases de
+comparaison ; ils ne doivent jamais servir à écraser cette candidate.
 
-  STOP before commit only if:
-  - overlap on same files/contracts;
-  - ownership ambiguous;
-  - staged candidate cannot be isolated;
-  - validation of own candidate is impossible.
-  ```
-- un fichier hors allowlist modifié exclusivement par une commande de
-  validation exécutée par le lot n'est pas un chantier étranger. Si le fichier
-  était clean avant la commande, que sa provenance est démontrée et que son
-  diff est un artefact généré reproductible sans contenu métier, il est classé
-  `GENERATED_VALIDATION_SIDE_EFFECT`. Il doit être restauré à son état `HEAD`
-  après la validation s'il n'appartient pas au candidat. Une modification
-  préexistante, ambiguë ou contenant un changement métier ne doit jamais être
-  restaurée automatiquement.
-- le dossier du projet est l'unique source canonique ; ne pas créer ni
-  conserver de copie persistante du dépôt, copie manuelle de fichiers, branche
-  temporaire, clone Git isolé ou worktree mutable ;
-- Git pousse des commits, pas des fichiers ; avant tout push explicitement
-  demandé, faire `git fetch origin main`, auditer l'intégralité de
-  `git log --oneline origin/main..HEAD` et le périmètre de chaque commit local
-  non publié, dans l'ordre, afin de vérifier la provenance, l'allowlist et
-  l'absence de commit étranger ou ambigu dans l'ascendance destinée au push ;
-- si un commit local étranger, ambigu ou non validé serait embarqué par le push,
-  ne pas le publier silencieusement, conserver les commits locaux et signaler
-  précisément le blocage ; les changements dirty hors périmètre restent
-  préservés et ne sont pas ajoutés au candidat ;
-- si `origin/main` avance avant un push explicitement demandé, faire d'abord
-  `git fetch origin main` ; une évolution distante indépendante du lot autorise
-  une resynchronisation sûre sans écraser les changements parallèles, suivie de
-  l'audit intégral de `origin/main..HEAD` et de la revalidation du candidat
-  exact ; si cette resynchronisation du `main` n'est pas sûre, arrêter avec un
-  STOP explicite ; un conflit réel sur les fichiers ou contrats du lot impose
-  le même arrêt ;
-- distinguer les trois portées de validation : `WORKTREE` pour l'itération
-  manuelle (dirty et untracked inclus), `STAGED` pour le candidat de
-  pré-commit (`git diff --cached`) et `PUSH_CANDIDATE` pour le vrai pré-push,
-  construit exclusivement depuis les refs et le stdin du protocole Git, sans
-  dépendre du dirty state, de `HEAD` global ou d'un commit local non envoyé ;
-- `PUSH_CANDIDATE` désigne l'arbre Git exact de chaque SHA local effectivement
-  poussé. Tout check statique exécuté par le pre-push doit lire cet arbre via
-  `--ref=<local-sha>` ; il ne doit lire ni le staged, ni l'unstaged, ni les
-  untracked, ni un commit local étranger. Les refs identiques sont dédupliquées
-  et une suppression de ref ne possède aucun arbre candidat à valider ;
-- les validations dynamiques du pre-push réel utilisent la portée
-  `DYNAMIC_CANDIDATE` : `test:scripts`, lint, typecheck, Vitest et build sont
-  exécutés dans un arbre éphémère matérialisé exclusivement depuis le SHA
-  candidat sous `.artifacts/validation/prepush-candidate/<sha>/`, jamais dans
-    le WORKTREE. Les dépendances locales peuvent être reliées ou matérialisées
-    temporairement sous cette racine sans modifier le dépôt ;
-  l'index normal et les refs Git restent inchangés ;
-- les candidates de validation utilisent exclusivement la racine
-  `.artifacts/validation/prepush-candidate/<sha>/`. Le lifecycle doit créer un
-  marqueur généré, nettoyer dans `finally`, supprimer ses liens avant sa
-  racine et vérifier son absence ; aucun `publication-candidate` n'est
-  nécessaire au modèle MAIN-ONLY ;
-- toute exécution ayant créé une candidate documente obligatoirement
-  `CANDIDATE_CREATED: yes/no`, `CANDIDATE_PATH: <path|none>` et
-  `CANDIDATE_CLEANUP: PASS|FAIL`. Un cleanup en échec interdit le verdict
-  `VERDICT_REVIEW: terminé` ;
-- `node scripts/checks/check-candidate-lifecycle.mjs` est un contrôle
-  read-only : il signale les candidates marquées encore présentes, les entrées
-  inconnues et les chemins ad hoc, sans supprimer aveuglément un artefact
-  étranger ou un chantier parallèle ;
-- un outil ou une dépendance dynamique absente relève de `HOST_ENVIRONMENT` et
-  bloque avec un diagnostic explicite ; il ne doit pas être reclassé comme
-  chantier parallèle. Le fallback manuel utilise `HEAD` comme candidat
-  dynamique matérialisé, pas le WORKTREE dirty ;
-- le hook `.githooks/pre-commit` est automatique et bloquant sur `STAGED` ; le
-  hook `.githooks/pre-push` doit exécuter le garde sur le `PUSH_CANDIDATE` exact
-  transmis par Git ; si une ressource temporaire est indisponible, attendre
-  puis réessayer avec un backoff borné (30 s, 60 s, 120 s ; maximum environ
-  5 minutes) ; ne pas abandonner au premier échec transitoire ; si le blocage
-  est structurel (outil absent, authentification/permission manquante ou
-  contrat impossible à satisfaire), arrêter avec le diagnostic exact ; ne
-  jamais contourner le garde ni pousser un candidat non validé. Les
-  validations larges relèvent de la CI ou d'une préparation explicite de
-  release ;
-- l'invocation manuelle du guard sans protocole peut utiliser le fallback
-  `origin/main...HEAD`, qui doit être affiché comme `manual-fallback`, mais ses
-  checks statiques doivent utiliser `--ref=HEAD` plutôt que le worktree ;
-- `npm run checks:changed` est un contrôle de développement `WORKTREE`, pas une
-  preuve de publication. Si son échec est démontré comme étranger, tandis que
-  `STAGED` et `PUSH_CANDIDATE` sont verts, le signaler comme
-  `SKIPPED_PARALLEL_CHANTIER` sans masquer une erreur du candidat ;
-- les suites lourdes ne doivent pas être répétées entre phases sans raison
-  liée au candidat réellement validé ;
-- le flux normal est : stage ciblé → validation `STAGED` → commit local isolé
-  sur `main` → clôture du lot. La signature du commit est optionnelle et
-  soumise à une demande explicite. Sur demande explicite de push seulement :
-  audit intégral de `origin/main..HEAD` → validation du
-  `PUSH_CANDIDATE`/`DYNAMIC_CANDIDATE` exact → push normal. Vérifier
-  l'allowlist, les ajouts et suppressions, puis ne jamais force-push ni
-  réécrire l'historique ;
-- avant tout push demandé, vérifier le diff exact du périmètre logique, les
-  validations pertinentes, `git diff --cached --name-only`, l'intégralité de
-  l'ascendance `origin/main..HEAD` et le SHA candidat exact ; une candidate
-  réussie ne remplace pas l'audit de `main` local et de tous les commits qui
-  seraient publiés ;
-- après tout push réussi, refaire `git fetch origin main`, puis vérifier
-  `git rev-list --left-right --count HEAD...origin/main` ; un verdict
-  `terminé` exige le résultat `0 0` et doit signaler
-  `CHECKOUT_DIVERGENCE` dans tout autre cas ; ne jamais résoudre cette
-  divergence automatiquement par merge, rebase, reset destructif, stash ou
-  clean lorsqu'il existe des changements parallèles. Pour la seule validation
-  d'une candidate avant le push, ne pas exiger l'égalité littérale
-  `HEAD == origin/main` ; la convergence est une preuve de publication après
-  push, pas un prérequis qui bloque le démarrage ou l'enchaînement d'un lot
-  local ;
-- si le push échoue, conserver le commit local et signaler explicitement le
-  blocage ; ne jamais contourner les protections par un force push ;
-- lorsqu'une vérification effective du site web est demandée, comparer le
-  déploiement actif avec le `main` actuel ; si le déploiement est obsolète,
-  redéployer Vercel depuis ce `main` avant de vérifier le site et ne pas tirer
-  de conclusion à partir d'une version plus ancienne.
+Avant une modification :
 
-Un agent externe peut lire et préparer une analyse ou des fichiers, mais ne
-doit pas écrire sans autorisation. L'intégrateur local vérifie la cohérence du
-checkout, applique les changements autorisés, valide et committe le lot
-localement ; il ne signe ou ne pousse que sur demande explicite de
-l'utilisateur.
+- relire l’état courant pertinent ;
+- lire le `AGENTS.md` scoped le plus proche ;
+- inspecter les contrats, dépendances et tests directement concernés ;
+- vérifier les changements locaux préexistants sur les chemins ciblés ;
+- ne jamais faire prévaloir une ancienne conversation, un plan, un audit ou une
+  ancienne version Git sur une entrée utilisateur explicitement fournie pour le
+  lot courant.
 
-`CHATGPT.md` gouverne la réflexion et la préparation côté ChatGPT ; ce fichier
-gouverne l'exécution locale Codex. ChatGPT peut analyser plusieurs sujets en
-parallèle, mais ne doit jamais déclencher deux Codex d'écriture simultanément.
-Codex écrit uniquement dans ce checkout `main`, exécute les checks puis
-committe localement chaque lot selon la règle ci-dessus ; signature et push
-restent conditionnels à une demande explicite de l'utilisateur.
+Toujours distinguer :
 
-## Chantiers parallèles
+```text
+code présent
+≠ test présent
+≠ test exécuté avec succès
+≠ état distant observé
+≠ preuve de production
+≠ documentation
+```
 
-- les analyses read-only peuvent être parallèles ; un seul writer travaille
-  dans `CleanmyMap-main` à la fois ;
-- les changements dirty, staged et untracked existants sont préservés, ne sont
-  ni nettoyés ni déplacés automatiquement et doivent être explicitement
-  attribués au lot avant staging ;
-- une erreur étrangère est signalée sans être corrigée dans ce lot. Aucun
-  second run mutable, claim, lock ou worktree ne doit être créé.
+Une preuve ne justifie que ce qu’elle mesure.
 
-## Modèle canonique de développement
+## Modèle d’exécution
 
-`MAIN-ONLY / SINGLE-WRITER` est le seul workflow CURRENT. Chaque lot fait un
-fetch de `origin/main`, vérifie la branche `main`, stage son allowlist, passe la
-validation `STAGED` et crée un commit local isolé. La signature et le push ne
-sont effectués que sur demande explicite de l'utilisateur. Plusieurs commits
-locaux successifs peuvent s'accumuler sur `main`. Avant tout push demandé,
-l'intégralité de `origin/main..HEAD` est auditée, puis le SHA exact est validé
-avec `PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE`.
+Le workflow courant est `MAIN-ONLY / SINGLE-WRITER`.
 
-Sur demande explicite du mode de développement rapide, appliquer en complément
-le protocole borné de
-[`documentation/development/rapid-development-mode.md`](documentation/development/rapid-development-mode.md) :
-une seule passe initiale, validation ciblée, un commit local par exécution et
-arrêt sans push. Ce raccourci ne s'applique pas aux lots sensibles ou
-transversaux.
+- la branche de travail normale est `main` ;
+- un seul agent peut modifier le checkout à la fois ;
+- les analyses read-only peuvent être parallèles ;
+- aucun nouveau worktree, clone ou branche de chantier n’est créé pour le
+  workflow normal ;
+- avant un lot mutable, actualiser la connaissance de `origin/main` et vérifier
+  l’état local ;
+- un lot terminé produit un commit local isolé sur `main` après validation de
+  son candidat ;
+- le commit est non signé par défaut ;
+- le push n’est effectué que sur demande explicite de l’utilisateur.
 
-Les anciens worktrees, branches et métadonnées du coordinateur peuvent rester
-présents comme preuves historiques pendant la migration, mais ne sont ni créés,
-ni revendiqués, ni nettoyés automatiquement par le workflow courant.
+L’absence de push d’un lot précédent ne bloque pas un nouveau lot local cohérent.
 
-### LEGACY / COMPATIBILITY
+Avant un push explicitement demandé :
 
-Les noms `workspace:*`, `codex/*`, `publish/*`, `CleanMyMap-worktrees`, les
-claims, locks et états du coordinateur désignent uniquement l'ancien modèle et
-les artefacts historiques. Ils ne gouvernent aucun nouveau lot.
+- auditer l’ascendance locale non publiée ;
+- vérifier qu’aucun commit étranger ou non validé ne serait embarqué ;
+- appliquer les validations de publication définies par la gouvernance
+  spécialisée ;
+- après publication, vérifier la convergence locale/distante.
 
-## Hygiène du dépôt et architecture interne
+La mécanique détaillée des scopes Git, hooks, candidats de pré-push et
+validations dynamiques appartient à `scripts/AGENTS.md` et
+`documentation/development/TESTING.md`.
 
-- conserver par défaut sous la racine du projet tous les fichiers et dossiers
-  du projet, notamment le code, les tests, la documentation, les scripts, les
-  données et les artefacts, selon les emplacements canoniques de son
-  architecture ;
-- le dossier du projet est la source canonique unique ; ne pas créer ni
-  conserver par commodité de dossier parallèle, copie persistante, clone ou
-  copie de fichier hors racine sous `business` ou sur la machine. Aucun
-  worktree mutable ou dossier `CleanmyMap-*` parallèle ne doit être créé ;
-- respecter et étendre l'arborescence canonique existante ; ne pas créer de
-  structure ambiguë ou dupliquée lorsqu'un contenu possède déjà un emplacement
-  canonique ; la racine du projet reste la source canonique des fichiers
-  versionnables ;
-- ne pas créer de fichier racine sans justification explicite ; placer les
-  temporaires, captures, logs, exports et artefacts dans leur emplacement
-  canonique (`artifacts/`, `documentation/`, `backups/` ou sous-dossier dédié) ;
-- supprimer les artefacts temporaires dès qu'ils ne sont plus nécessaires ; une
-  exception hors projet n'est admise que pour une contrainte technique réelle
-  et justifiée ; si elle est persistante, mentionner obligatoirement son chemin
-  exact et sa justification dans le compte rendu final ;
-- les images et captures placées sous `documentation/pages_site/routes/` sont
-  des assets locaux uniquement : elles doivent rester ignorées par Git et ne
-  doivent jamais être ajoutées à l'index ou commitées ;
-- les skills CleanMyMap versionnés utilisent `.agents/skills/` comme source
-  canonique et `.codex/skills/` comme miroir gouverné ; les skills tiers vont
-  dans l'installation utilisateur globale, jamais dans le checkout ;
-- ne pas modifier `documentation/pepite/` sans demande explicite.
+## Isolation du lot
 
-Ne jamais supprimer en masse un fichier untracked, généré ou non canonique
-sans établir sa provenance, son rôle, sa régénérabilité et son emplacement
-attendu. En cas de doute, le conserver et produire un verdict
-`KEEP / MOVE / REINSTALL_ELSEWHERE / DELETE`. Une absence d'import ou de suivi
-Git ne suffit pas à justifier une suppression.
+Un lot ne contient que les changements attribuables à sa responsabilité.
 
-## Suppression et dead-code
+- préserver les changements dirty, staged et untracked hors périmètre ;
+- stage uniquement les fichiers du candidat courant ;
+- ne jamais utiliser `git add -A` par commodité ;
+- ne jamais utiliser reset destructif, clean, stash ou force-push pour masquer
+  un conflit ou un changement étranger ;
+- une erreur étrangère est signalée, pas réparée opportunistement ;
+- si un fichier ou un contrat est modifié concurremment, ou si l’attribution du
+  candidat devient ambiguë, arrêter avant de mélanger les travaux.
 
-L'absence de consommateur ou d'import runtime ne prouve pas qu'un module est
-supprimable. Vérifier les connaissances métier, pédagogiques, de sécurité ou
-réglementaires, configurations, migrations, compatibilités historiques,
-fixtures et documents uniques. Rechercher le successeur, migrer explicitement
-la valeur utile, supprimer les doublons prouvés et préserver les artefacts
-historiques encore nécessaires.
+Un fichier supplémentaire directement nécessaire à la même responsabilité
+n’est pas un nouveau chantier : adapter callers, consommateurs, tests, types ou
+documentation directement affectés lorsque le checkout réel le démontre.
+
+## Protection des entrées utilisateur et des changements préexistants
+
+Cette section prévaut sur toute instruction générale de restauration,
+normalisation, synchronisation ou convergence avec `HEAD`.
+
+### Fichier fourni pour créer ou remplacer un chemin du dépôt
+
+Lorsqu’un utilisateur fournit explicitement un fichier destiné à créer,
+remplacer ou mettre à jour un chemin du dépôt :
+
+- considérer ce fichier comme la candidate autoritative de ce chemin pour le
+  lot courant ;
+- préserver son contenu source intact ;
+- ne jamais le reconstruire depuis `HEAD`, `origin/main`, un ancien commit, une
+  ancienne conversation, un snapshot ou une copie supposée équivalente ;
+- ne jamais utiliser `git checkout`, `git restore`, reset, clean ou une
+  régénération depuis Git pour annuler son contenu ;
+- si le nom du fichier fourni diffère du chemin cible, conserver explicitement
+  la correspondance source → cible demandée par l’utilisateur ;
+- si le remplacement demandé est exact, vérifier après écriture que le contenu
+  cible correspond à la candidate fournie avant staging ;
+- si l’utilisateur demande une adaptation plutôt qu’un remplacement exact,
+  limiter les écarts aux transformations demandées et préserver le reste du
+  contenu fourni ;
+- lorsque l’objectif du lot est précisément d’intégrer ce fichier, inclure le
+  chemin cible dans le commit isolé du lot après validation au lieu de laisser
+  cette intégration comme changement local non committé.
+
+Un fichier utilisateur untracked n’est jamais un déchet, un artefact disposable
+ou une preuve qu’il faut restaurer la version Git précédente.
+
+### Chemin déjà modifié avant le lot
+
+Avant d’écrire un chemin ciblé, vérifier son état local par rapport à `HEAD`.
+
+Si ce chemin contient déjà des changements non attribuables avec certitude au
+lot courant :
+
+- ne pas les écraser ;
+- ne pas restaurer la version Git ;
+- ne pas tenter une fusion automatique qui pourrait perdre du contenu ;
+- arrêter la mutation de ce chemin et signaler le conflit d’attribution.
+
+`HEAD` est la baseline versionnée ; il n’est pas plus autoritatif qu’un
+changement utilisateur local explicitement fourni ou déjà présent.
+
+### Vérification avant commit
+
+Avant de committer un fichier provenant d’une entrée utilisateur :
+
+- vérifier le diff exact du chemin cible ;
+- vérifier qu’aucune partie non demandée du contenu utilisateur n’a disparu ;
+- vérifier qu’aucun autre fichier utilisateur n’a été supprimé, restauré ou
+  réécrit pour « nettoyer » le lot ;
+- si le remplacement devait être exact, vérifier l’identité de contenu entre
+  la candidate fournie et le chemin cible.
+
+En cas de doute sur une perte de contenu utilisateur, STOP avant commit.
+
+## Règles de modification
+
+Privilégier le plus petit changement cohérent qui résout le problème réel.
+
+Ordre de préférence :
+
+```text
+contrat canonique existant
+→ extension d’une primitive existante
+→ primitive nouvelle justifiée
+→ compatibilité bornée
+→ exception locale seulement si indispensable
+```
+
+Éviter :
+
+- logique dupliquée ;
+- seconde source de vérité ;
+- abstraction anticipée sans besoin démontré ;
+- service, table ou dépendance nouvelle sans valeur durable ;
+- refactor voisin sans lien avec la cause traitée ;
+- changement métier uniquement destiné à faire passer un test ou un garde-fou.
+
+Pour une erreur locale évidente, corriger directement avec la preuve adaptée.
+Rechercher une cause systémique lorsque le défaut révèle un contrat insuffisant,
+se répète ou peut raisonnablement apparaître ailleurs.
+
+## Modularité et suppressions
+
+La taille seule ne justifie jamais une extraction.
+
+Une modularisation doit améliorer une frontière réelle : responsabilité,
+cohésion, testabilité, dépendances, contrat public ou réutilisation utile.
+Les seuils, statuts et politiques quantitatives sont définis dans
+`documentation/development/conventions-modularisation.md` et les contrôles
+sous `scripts/`.
+
+Avant de supprimer ou remplacer un élément, vérifier qu’il ne porte pas encore :
+
+- une connaissance métier ou de sécurité unique ;
+- une configuration ou migration ;
+- une compatibilité ou un consommateur externe ;
+- une fixture, une provenance ou un historique nécessaire ;
+- une entrée utilisateur ou un changement local à préserver.
+
+L’absence d’import runtime ne suffit pas à prouver qu’un élément est supprimable.
 
 ## Amélioration opportuniste des ratchets
 
-Lorsqu'un lot modifie déjà un fichier, une fonction, un symbole ou un test
-signalé par un ratchet de qualité canonique, rechercher une occasion raisonnable
-de réduire cette dette pendant le lot. Cela concerne notamment dead-code et
-Knip, duplication et clones, complexité, longueur de fonctions, top-heavy et
-fichiers `REVIEW_REQUIRED`, coverage, mutation testing directement lié au code
-touché, ainsi que les cycles ou autres métriques structurelles canoniques
-ajoutées ultérieurement. Les valeurs numériques et les seuils restent ceux de
-leurs contrôles et baselines canoniques ; ne pas les recopier ici.
+Lorsqu’un lot touche déjà un fichier ou symbole couvert par un ratchet de
+qualité, une dette directement concernée peut être réduite dans le même lot si
+la correction reste locale, sûre, cohésive et facile à valider.
 
-La correction est attendue seulement si elle reste locale au périmètre déjà
-touché, simple, sûre vis-à-vis des contrats métier, API, données, AuthN/AuthZ
-et UI, testable avec les validations proportionnées du lot, sans abstraction
-importante ni propagation transversale, et susceptible d'améliorer réellement
-la métrique. Sont notamment admissibles la suppression d'un symbole réellement
-inutilisé après vérification, la factorisation de blocs équivalents déjà
-touchés, l'extraction d'une frontière cohésive évidente, la simplification
-d'une branche devenue inutile, l'ajout d'un cas de test évident sur le
-comportement modifié ou la suppression d'un clone trivial via une abstraction
-canonique existante.
+Ne jamais, pour améliorer une métrique :
 
-Ne jamais élargir artificiellement un petit lot en refactor transversal,
-modifier un contrat durable pour une métrique, abaisser une baseline, relever
-un seuil, ajouter une exclusion, réduire le scope mesuré, déplacer
-artificiellement du code ou affaiblir un contrôle. Ne pas supprimer un finding
-Knip sans avoir vérifié qu'il est réellement mort conformément à la section
-`Suppression et dead-code`, créer une abstraction générique uniquement pour
-faire disparaître un clone, ni ajouter des tests sans valeur comportementale
-pour augmenter la coverage.
+- élargir artificiellement le lot en refactor transversal ;
+- modifier un contrat métier, API, données, AuthN/AuthZ ou UI sans nécessité ;
+- relever une baseline ou un seuil ;
+- ajouter une exclusion ;
+- réduire le scope mesuré ;
+- déplacer artificiellement du code ;
+- créer une abstraction générique sans valeur architecturale ;
+- ajouter des tests sans valeur comportementale.
 
-Lorsqu'une dette pertinente est rencontrée dans le périmètre, le rapport du
-lot doit indiquer une décision :
+Une dette hors périmètre reste hors lot. Si elle doit être différée pour une
+raison non évidente, le signaler brièvement.
 
-`RATCHET_OPPORTUNITY: FIX_NOW | ALREADY_IMPROVED | DEFER | NOT_APPLICABLE`
+Aucun champ de rapport systématique tel que `RATCHET_OPPORTUNITY` n’est requis.
+Les seuils et politiques restent canoniques dans leurs contrôles spécialisés.
 
-`FIX_NOW` signifie que la réduction est locale, sûre et proportionnée ;
-`ALREADY_IMPROVED` que le changement principal l'a déjà réduite ; `DEFER` que
-la correction constitue un chantier distinct ou augmente sensiblement le
-risque/périmètre ; `NOT_APPLICABLE` qu'aucune dette pertinente n'a été
-rencontrée. `DEFER` conserve le chantier principal et explique brièvement la
-raison, sans élargissement automatique du lot. Lorsqu'un check applicable
-révèle une dette simple dans un fichier déjà modifié, appliquer cette règle
-avant clôture ; les fichiers hors périmètre restent hors lot. Ne pas lancer
-systématiquement des suites lourdes uniquement pour rechercher une opportunité.
+## Sécurité
 
-## Principes de restructuration
+Invariants non négociables :
 
-Avant de créer ou déplacer une responsabilité, vérifier l'emplacement, le
-nommage, les dépendances, les cycles, les contrats publics et les frontières
-Server/Client. Toute restructuration importante suit :
-
-1. structure physique cohérente et legacy réellement prouvé ;
-2. architecture logique, dépendances, responsabilités et testabilité ;
-3. garde-fous de gouvernance, dépendances et documentation canonique.
-
-La taille seule n'impose pas une extraction. La politique des fichiers
-volumineux est déterminée par `classifyFileKind()` : runtime REVIEW `>500`
-lignes ou `>40 KiB`, HARD `>1000` lignes ou `>50 KiB` ; test REVIEW `>1000`
-lignes ou `>50 KiB`, HARD `>1500` lignes ou `>80 KiB` ; data/config REVIEW
-`>800` lignes ou `>50 KiB`, HARD `>1500` lignes ou `>80 KiB`. Un fichier
-generated n'est exclu du radar architectural que si sa provenance et sa
-régénérabilité sont prouvées ; un code source manuel reste contrôlé. Aucun de
-ces seuils ne déclenche un split automatique. La décision dépend de la
-cohésion, des responsabilités, du couplage, de la testabilité et des contrats.
-
-### Modularité préventive
-
-#### Conception avant dette
-
-Avant une implémentation substantielle, identifier les responsabilités que le
-changement introduit. Codex ne doit pas :
-
-- implémenter sciemment plusieurs responsabilités durables dans un seul
-  fichier avec l'intention de « refactorer plus tard » ;
-- considérer qu'un fichier doit d'abord devenir lourd avant de pouvoir être
-  modularisé ;
-- laisser un TODO ou un backlog de modularisation pour une dette structurelle
-  créée par le lot courant lorsque les frontières sont déjà identifiables.
-
-Considérer notamment les familles suivantes :
-
-1. contrats, parsing et validation ;
-2. logique métier, calculs, normalisation et dérivations ;
-3. accès données, persistence, réseau et providers ;
-4. orchestration, état, lifecycle et effets ;
-5. présentation, rendu, sérialisation et export.
-
-Si un nouveau module doit porter au moins trois de ces familles de
-responsabilités, définir des frontières cohésives dès le premier lot, avant ou
-pendant l'implémentation.
-
-#### Déclencheurs précoces de revue
-
-Les déclencheurs suivants imposent une revue de l'architecture avant de
-poursuivre :
-
-- Le seuil `REVIEW` propre au KIND est dépassé : `REVIEW_REQUIRED`, état
-  d'audit sans décision automatique ;
-- Le seuil `HARD` propre au KIND est dépassé : nouveau dépassement bloquant
-  sauf exception explicitement ratifiée par la baseline ;
-- lot ajoutant environ 250 lignes ou davantage dans un même fichier ;
-- fichier existant au-dessus d'environ 600 lignes auquel le lot ajoute une
-  nouvelle responsabilité indépendante ;
-- plusieurs sous-flux pouvant être testés ou modifiés indépendamment ;
-- présence simultanée de logique pure et d'effets, de provider ou d'UI
-  importants dans le même module.
-
-Ces valeurs sont des déclencheurs de revue d'architecture, jamais des tailles
-cibles ni une obligation de créer de petits fichiers artificiels. Les statuts
-architecturaux autorisés sont `REVIEW_REQUIRED`, `PROACTIVE_SPLIT`,
-`COHESIVE_SINGLE_FILE`, `ALREADY_MODULARIZED` et `DEFERRED_SPLIT`. Lorsqu'un
-déclencheur est rencontré, choisir avant de poursuivre :
-
-`PROACTIVE_SPLIT`
-
-ou
-
-`COHESIVE_SINGLE_FILE`
-
-`COHESIVE_SINGLE_FILE` exige une justification fondée sur la cohésion, le
-couplage, la testabilité et le nombre réel de raisons de changement.
-`DEFERRED_SPLIT` exige en plus une raison et un déclencheur explicite de
-reprise. `REVIEW_REQUIRED` est un état d'audit, pas une décision. « Le fichier
-fonctionne » ou « il reste sous le seuil heavy-files » ne sont pas des
-justifications suffisantes.
-
-#### Qualité d'un découpage
-
-- chaque module extrait possède une responsabilité dominante identifiable ;
-- préserver un point d'entrée ou une façade lorsque cela protège l'API
-  publique, sans utiliser une façade pour masquer de la logique dupliquée ;
-- diriger les dépendances vers les responsabilités spécialisées et éviter les
-  cycles ;
-- placer les tests de logique autour des frontières pures ou métier nouvellement
-  créées ;
-- ne pas créer mécaniquement `model`, `controller`, `service`, `utils`,
-  `shared` ou des sous-composants lorsque la responsabilité correspondante
-  n'existe pas ;
-- préférer une architecture petite mais extensible à un gros fichier contenant
-  toutes les futures variantes.
-
-#### Rapport des lots substantiels
-
-Le rapport d'un lot substantiel doit indiquer :
-
-`ARCHITECTURE_DECISION: PROACTIVE_SPLIT | COHESIVE_SINGLE_FILE | ALREADY_MODULARIZED | DEFERRED_SPLIT`
-
-Lorsqu'un déclencheur précoce a été rencontré, fournir une justification
-courte. Si une dette structurelle est volontairement différée pour une raison
-de sécurité, de compatibilité ou de manque de caractérisation, la signaler
-explicitement :
-
-`STRUCTURAL_DEBT_DEFERRED: <raison précise>`
-
-Il est interdit de différer silencieusement cette dette.
-
-## Sécurité et validation globales
-
-- ne jamais exposer un secret ou `service_role` côté client ;
+- ne jamais exposer un secret, token, cookie, session ou credential ;
+- `service_role` reste côté serveur/outillage autorisé ;
 - ne jamais désactiver RLS ou contourner AuthN/AuthZ pour débloquer un flux ;
-- ne pas utiliser de SQL brut dans le code applicatif ;
-- valider les entrées non fiables et vérifier les permissions côté serveur ;
-- ne pas exposer de stack trace, secret, erreur interne ou détail sensible ;
-- préserver les contrats publics, les données, les erreurs et les invariants
-  de sécurité existants ;
-- tout texte public est en français sauf surface explicitement localisée.
+- valider les entrées non fiables et les permissions côté serveur ;
+- préserver ownership, scope et séparation des privilèges ;
+- ne pas exposer de stack trace ou détail interne sensible au client ;
+- toute mutation distante ou destructive doit être explicitement autorisée.
 
-Les décisions d'accès communautaires suivent la doctrine canonique de
-`CHATGPT.md`, section « Proportionnalité, confiance et ouverture associative ».
-Les exigences AuthN, AuthZ, RLS, validation, protection des données, secrets,
-audit et anti-abus restent inchangées.
+Les décisions d’ouverture ou de restriction des surfaces communautaires suivent
+la doctrine canonique de `CHATGPT.md`, section
+« Proportionnalité, confiance et ouverture associative ». Elles ne peuvent pas
+affaiblir les exigences AuthN, AuthZ, RLS, validation, protection des données,
+secrets, audit et anti-abus.
 
-Les règles propres à Next/web, API, Supabase, scripts, mobile, CI/GitHub,
-Python et documentation sont portées par les fichiers scoped correspondants.
-Les changements SQL, routes API, workflows, maintenance Python et documents
-doivent en plus appliquer leur gouvernance locale.
+Les règles spécialisées de sécurité et d’accès vivent dans
+`documentation/security/`, `apps/web/AGENTS.md`,
+`apps/web/src/app/api/AGENTS.md` et `apps/web/supabase/AGENTS.md`.
 
-## Charge machine
+## Code Review Rules
 
-Les contraintes du poste local, des temporaires, des verrous Git, des
-diagnostics host, de la charge machine et du runtime conteneurisé sont
-canoniques dans
-[`documentation/development/host-environment.md`](documentation/development/host-environment.md).
-Les checks restent proportionnels au périmètre et les processus lancés par un
-lot doivent être arrêtés à sa clôture.
+### Préservation des changements utilisateur
 
-### Sobriété de contexte et de validation
+- Signaler comme bloquant toute modification qui restaure, remplace ou supprime
+  un contenu utilisateur préexistant sans instruction explicite.
+- Un fichier fourni par l'utilisateur pour créer ou mettre à jour un chemin du
+  dépôt est autoritatif pour ce lot : ne pas accepter une restauration depuis
+  `HEAD`, `origin/main` ou un ancien commit.
+- Signaler toute perte de contenu dirty ou untracked qui existait avant le lot.
 
-Autour du noyau obligatoire — relire `main`, les `AGENTS.md` scoped, le code
-concerné et les tests — appliquer les règles suivantes :
+### Sécurité et données
 
-- ne pas recopier les blocs déjà présents dans `AGENTS.md` ou la documentation
-  canonique ;
-- conserver des prompts courts, bornés et centrés sur le lot ;
-- ne pas demander une réanalyse globale lorsque l'architecture est déjà
-  établie ;
-- inspecter uniquement les callers et consommateurs pertinents pour un lot
-  local ;
-- arrêter le chantier dès que sa `STOP CONDITION` est satisfaite ;
-- ne pas répéter une validation identique sur le même SHA sans changement de
-  contexte ou justification liée au candidat ;
-- réserver les gros audits globaux aux changements réellement transversaux.
+- Signaler tout affaiblissement d'AuthN, AuthZ, RLS, ownership ou scope.
+- Signaler toute utilisation de `service_role` côté client ou toute exposition
+  de secret, session ou détail interne sensible.
+- Une migration Supabase déjà appliquée ne doit jamais être réécrite pour
+  corriger le runtime : utiliser une migration forward-only.
 
-Cette sobriété ne réduit jamais le noyau de vérification : `main` + règles
-scoped + code concerné + tests restent obligatoires avant modification.
+### Sources de vérité
+
+- Signaler l'introduction d'une seconde source de vérité lorsque le dépôt
+  possède déjà un contrat canonique pour la même donnée ou règle.
+- Signaler un changement de comportement métier introduit uniquement pour
+  satisfaire un test, une baseline ou un ratchet.
+
+### Portée
+
+- Signaler les refactors voisins sans lien direct avec la responsabilité du lot.
+- Ne pas signaler comme problème une dette hors périmètre qui reste inchangée.
+
+## Documentation et artefacts
+
+Une règle durable possède une source canonique unique.
+
+- préférer un lien à une copie ;
+- distinguer `CURRENT`, `PLAN`, `AUDIT`, `HISTORY`, `SNAPSHOT`, `ADR` et
+  `GENERATED` ;
+- mettre à jour la documentation `CURRENT` directement rendue fausse par un
+  changement durable ;
+- ne pas créer un document si une source canonique existante peut absorber la
+  connaissance ;
+- un artefact généré, une capture ou un rapport ne devient pas une source de
+  vérité.
+
+La structure, les zones protégées et la politique documentaire détaillée sont
+gouvernées par `documentation/AGENTS.md`.
+
+Une pièce jointe ou un document fourni par l’utilisateur doit toujours être
+préservé. Sa seule présence dans le checkout n’impose pas son commit si elle est
+hors périmètre. Lorsqu’il est explicitement fourni pour mettre à jour un fichier
+du dépôt, appliquer la section « Protection des entrées utilisateur ».
+
+La racine du dépôt reste l’unique emplacement canonique du projet. Ne pas créer
+de clone, worktree ou copie persistante du projet hors de cette racine.
+Les détails de diagnostic host et de fichiers temporaires sont documentés dans
+`documentation/development/host-environment.md`.
 
 ## Validation
 
-Ne jamais annoncer une commande non exécutée comme réussie. Choisir les checks
-proportionnels au risque :
+Ne jamais annoncer une validation non exécutée comme réussie.
 
-```bash
-npm run checks:fast
-npm run checks:full
-```
-
-Le workflow Codex possède exactement deux modes canoniques :
-`npm run checks:fast` (`RAPIDE`, budget dur 180 secondes) et
-`npm run checks:full` (`COMPLET`, sans budget global). Les commandes
-spécialisées sont des briques sélectionnées selon le blast radius ;
-`WORKTREE`, `STAGED`, `PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE` sont des scopes,
-pas des modes. Les contrôles déjà couverts ne sont pas relancés sans raison et
-les contrôles non exécutés sont signalés explicitement.
-
-La validation complète doit couvrir les garde-fous de gouvernance, tests,
-typecheck, lint et build web. Les tests E2E restent explicites. Pour un audit
-GitNexus, utiliser exclusivement :
-
-```bash
-npm run audit:gitnexus
-npm run audit:gitnexus:cycles
-```
-
-Ces commandes utilisent `analyze --index-only` puis `status`; ne pas appeler
-directement le mode standard qui peut injecter des fichiers de gouvernance.
-En cas d'échec : lire l'erreur complète, identifier la cause, corriger le lot
-minimal, relancer le check ciblé puis élargir si nécessaire.
-
-## Navigateur et réponse
-
-Ne pas lancer de navigation, capture, audit visuel ou Playwright sans demande
-explicite ou obligation locale. Les validations E2E non visuelles restent
-autorisées lorsqu'elles sont explicitement requises.
-
-La réponse finale doit être en français, commencer par `Maxence —`, distinguer
-faits vérifiés, inférences et incertitudes, lister les fichiers modifiés et
-hors périmètre, les validations exactes, les erreurs rencontrées, l'état du
-push, les artefacts et les changements parallèles préservés. Ne pas présenter
-comme testé ou terminé ce qui ne l'est pas.
-
-Terminer par :
+La validation est proportionnelle au risque :
 
 ```text
-VERDICT_REVIEW: <terminé|partiel|bloqué|échec>
-COMMIT: <SHA ou aucun>
-PRIMARY_EVIDENCE: <preuves et artefacts principaux>
-REMAINING_UNCERTAINTIES: <incertitudes restantes ou aucune>
-NEXT_RECOMMENDED_ACTION: <action suivante ou aucune>
+preuve ciblée
+→ contrat partagé si concerné
+→ sécurité / régression si concernée
+→ validations plus larges si le blast radius le justifie
 ```
 
-## Interdictions synthétiques
+Commencer par la preuve la plus ciblée utile. Ne pas relancer une suite lourde
+identique sur le même candidat sans raison.
 
-Il est interdit de créer un dépôt parallèle, d'utiliser `service_role` côté
-client, de désactiver RLS, d'exposer des secrets, de contourner une protection
-pour obtenir du vert, d'inventer des sources ou chiffres, de laisser des
-placeholders ou routes cassées, ou de considérer une ancienne conversation
-comme source supérieure au dépôt actuel.
+Les modes, commandes, budgets, scopes Git, E2E et politiques de qualité sont
+canoniques dans :
 
-## Contexte de conversation
+```txt
+documentation/development/TESTING.md
+scripts/AGENTS.md
+e2e/AGENTS.md
+```
 
-Si plusieurs chantiers se mélangent ou si une décision importante risque d'être
-perdue, ne pas reconstruire approximativement le contexte : fournir une
-passation courte avec l'état, le dernier commit, les fichiers, les décisions
-et la prochaine étape, puis attendre confirmation avant de continuer.
+Ne pas lancer plusieurs validations lourdes concurrentes sur le poste.
+Ne pas laisser tourner serveur, watcher, worker ou processus local après le lot.
+
+## Routage des règles spécialisées
+
+| Sujet                                 | Source principale                                         |
+| ------------------------------------- | --------------------------------------------------------- |
+| Web / Next / UI / navigateur          | `apps/web/AGENTS.md`                                      |
+| Routes API                            | `apps/web/src/app/api/AGENTS.md`                          |
+| Supabase / migrations                 | `apps/web/supabase/AGENTS.md`                             |
+| Scripts web opératoires               | `apps/web/scripts/AGENTS.md`                              |
+| Contrôles, hooks, scopes Git, qualité | `scripts/AGENTS.md`                                       |
+| GitHub Actions / Dependabot / CodeQL  | `.github/AGENTS.md`                                       |
+| Mobile                                | `apps/mobile/AGENTS.md`                                   |
+| Python maintenance                    | `maintenance/python/AGENTS.md`                            |
+| Documentation                         | `documentation/AGENTS.md`                                 |
+| E2E / Playwright                      | `e2e/AGENTS.md`                                           |
+| AuthN / AuthZ / RLS                   | `documentation/security/`                                 |
+| Tests et validation                   | `documentation/development/TESTING.md`                    |
+| Modularisation                        | `documentation/development/conventions-modularisation.md` |
+| Environnement host                    | `documentation/development/host-environment.md`           |
+
+Consulter uniquement les sources spécialisées réellement concernées par le lot.
+
+## Réponse finale
+
+La réponse finale est en français et commence par `Maxence —`.
+
+Elle reste concise et factuelle. Ne pas imposer de formulaire encyclopédique.
+Mentionner seulement ce qui sert à la suite :
+
+- résultat du lot ;
+- commit créé, s’il existe ;
+- blocage, déviation ou incertitude restante ;
+- validation importante lorsqu’elle n’est pas évidente ou qu’elle a échoué.
+
+Ne pas recopier systématiquement la liste complète des fichiers, toutes les
+commandes exécutées, les invariants inchangés ou des champs `PASS/NOT_RUN`
+lorsqu’ils sont déjà visibles dans l’exécution.
+
+## Principe directeur
+
+Le but n’est pas de produire davantage de code, de documentation, de prompts
+ou de rapports.
+
+Le but est d’obtenir un produit plus utile et un dépôt plus simple, sûr,
+maintenable, cohérent et vérifiable, sans inventer de preuve, écraser une entrée
+utilisateur ni créer de seconde source de vérité.

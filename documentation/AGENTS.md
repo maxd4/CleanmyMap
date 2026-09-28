@@ -27,19 +27,19 @@ uniquement pour homogénéiser l'arborescence.
 
 Les dossiers suivants portent les responsabilités documentaires principales :
 
-| Dossier | Responsabilité |
-|---|---|
-| `architecture/` | architecture globale, frontières, ADR, décisions structurelles |
-| `database/` | données, Supabase, requêtes, index, migrations |
-| `design-system/` | règles UI transversales et design system |
-| `development/` | méthodes de développement, tests, qualité, modularisation |
-| `features/` | moteurs et fonctionnalités transverses |
-| `legal/` | juridique, conformité et contenus légaux |
-| `operations/` | exploitation, déploiement, plateformes, runbooks, audits opérationnels |
-| `pages_site/` | registre fonctionnel route-first et espace documentaire des pages |
-| `product/` | vision, parcours, roadmap et décisions produit |
-| `security/` | AuthN, AuthZ, RLS et sécurité applicative |
-| `seo/` | stratégie et maintenance SEO |
+| Dossier          | Responsabilité                                                         |
+| ---------------- | ---------------------------------------------------------------------- |
+| `architecture/`  | architecture globale, frontières, ADR, décisions structurelles         |
+| `database/`      | données, Supabase, requêtes, index, migrations                         |
+| `design-system/` | règles UI transversales et design system                               |
+| `development/`   | méthodes de développement, tests, qualité, modularisation              |
+| `features/`      | moteurs et fonctionnalités transverses                                 |
+| `legal/`         | juridique, conformité et contenus légaux                               |
+| `operations/`    | exploitation, déploiement, plateformes, runbooks, audits opérationnels |
+| `pages_site/`    | registre fonctionnel route-first et espace documentaire des pages      |
+| `product/`       | vision, parcours, roadmap et décisions produit                         |
+| `security/`      | AuthN, AuthZ, RLS et sécurité applicative                              |
+| `seo/`           | stratégie et maintenance SEO                                           |
 
 Ne pas créer un nouveau dossier racine si un de ces domaines peut porter le
 contenu sans ambiguïté.
@@ -106,14 +106,11 @@ copie.
 
 ## Documents explicitement fournis par l'utilisateur
 
-Un fichier `.md` explicitement fourni ou téléchargé par l'utilisateur est une
-source intentionnelle. Ne pas le supprimer parce qu'il est untracked : le
-conserver à l'emplacement fourni et l'intégrer au dépôt si aucun secret,
-donnée sensible, contenu généré ou contenu tiers non destiné au dépôt ne
-l'empêche. La décision de commit ou de push suit la gouvernance Git racine.
-
-Lorsqu'un ZIP est demandé, il reste un format de transport : conserver les
-noms et chemins attendus, sans en faire une nouvelle source de vérité.
+Un document explicitement fourni ou téléchargé par l'utilisateur est une entrée intentionnelle.
+Ne pas le supprimer, le restaurer depuis Git, le remplacer par une ancienne version ou le traiter comme un artefact disposable uniquement parce qu'il est untracked ou différent de `HEAD`.
+Sa seule présence dans le checkout n'impose pas son intégration ni son commit.
+S'il appartient explicitement au lot demandé, l'intégrer dans le domaine documentaire canonique approprié en appliquant la règle racine « Protection des entrées utilisateur et des changements préexistants ».
+Si l'utilisateur fournit un document pour remplacer ou mettre à jour un fichier existant, le document fourni constitue la candidate autoritative de ce chemin pour le lot courant.
 
 ## Règle spéciale — `impact_IA` : hypothèses et ordres de grandeur
 
