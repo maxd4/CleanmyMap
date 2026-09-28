@@ -35,7 +35,8 @@
     "backend:vercel:env:sync": "node scripts/vercel-sync-env.mjs --file=.env.local --environments=development",
     "backend:supabase:push": "npx supabase db push --workdir . --yes",
     "backend:bootstrap": "node scripts/backend-bootstrap.mjs",
-    "gamification:backfill:actions": "node scripts/backfill-action-gamification.mjs"
+    "gamification:backfill:actions": "node scripts/backfill-action-gamification.mjs",
+    "gamification:reconcile": "node --experimental-strip-types --experimental-loader ../../scripts/gamification/ts-loader.mjs scripts/gamification-reconcile.mjs"
   },
   "dependencies": {
     "@clerk/localizations": "^4.15.4",

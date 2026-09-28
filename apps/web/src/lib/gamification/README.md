@@ -36,6 +36,24 @@ CURRENT, elle n'ajoute jamais une compensation additive.
 Les tests de reconstruction couvrent notamment `XP → XP`, `XP → BADGE_ONLY`
 et `BADGE_ONLY → NON_GAMIFIED`, avec baisse possible de l'XP et du niveau.
 
+## Outil de réconciliation administrative
+
+Le plan de diff en lecture est porté par
+`gamification-reconciliation-plan.ts` et le traitement par lots par
+`gamification-reconcile-runner.ts`. L'interface serveur est le script
+`apps/web/scripts/gamification-reconcile.mjs` :
+
+```text
+--user <id> --dry-run | --apply
+--all --dry-run | --apply [--batch-size N] [--resume <checkpoint.json>]
+```
+
+Le dry-run ne fait aucune écriture. L'apply réutilise le reconciler CURRENT,
+journalise l'opération technique et conserve un checkpoint local ignoré par
+Git pour permettre la reprise. Le runner et le plan sont testés sans accès
+réseau ; aucune exécution globale de production ne fait partie de la suite
+locale.
+
 ## Frontières
 
 - les formules et règles pures restent indépendantes du rendu ;

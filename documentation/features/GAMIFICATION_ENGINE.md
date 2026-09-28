@@ -136,6 +136,53 @@ Elle appelle `checkAdminAccess()` avant toute lecture privilégiée et consulte
 Les règles générales AuthN/AuthZ ne sont pas redéfinies ici :
 consulter `documentation/security/authz-authn-regles.md`.
 
+## Réconciliation administrative des règles
+
+Le changement rétroactif des règles se fait uniquement avec le script serveur
+administratif canonique, jamais depuis une page ou une API publique :
+
+```text
+npm run gamification:reconcile -w apps/web -- --user <id> --dry-run
+npm run gamification:reconcile -w apps/web -- --user <id> --apply
+npm run gamification:reconcile -w apps/web -- --all --dry-run
+npm run gamification:reconcile -w apps/web -- --all --apply --batch-size 50
+```
+
+`--dry-run` est sans écriture : il ne modifie ni Supabase, ni l'audit, ni le
+checkpoint. Pour un utilisateur, il expose la version des règles avant/après,
+l'XP avant/attendue/delta, les événements à ajouter/modifier/retirer, les
+badges et jalons ajoutés/retirés, ainsi que le niveau avant/après. `--all`
+retourne les mêmes éléments sous forme d'agrégats.
+
+`--apply` est obligatoire pour muter. Chaque utilisateur est traité
+idempotemment par le moteur CURRENT, une opération technique est inscrite dans
+`admin_operations_audit`, puis le checkpoint est écrit sous
+`apps/web/artifacts/validation/gamification-reconcile/` (chemin ignoré par
+Git). Une interruption ou une erreur laisse le dernier utilisateur réussi ;
+reprendre avec le même fichier :
+
+```text
+npm run gamification:reconcile -w apps/web -- --all --apply --resume <checkpoint.json>
+```
+
+Le checkpoint est refusé si sa `rulesVersion` ne correspond plus aux règles
+chargées. Une reprise retente l'utilisateur interrompu et ne réécrit pas les
+utilisateurs déjà clôturés. Aucun rebuild global de production n'est exécuté
+par les validations locales.
+
+Procédure canonique lors d'une évolution :
+
+1. modifier la version et les règles CURRENT ;
+2. ajouter ou adapter les tests de reconstruction/réconciliation ;
+3. exécuter le `--dry-run` ciblé ou global ;
+4. examiner les deltas XP, événements, badges, jalons et niveaux ;
+5. lancer un `--apply` contrôlé par lots ;
+6. vérifier le checkpoint final, l'audit et la réconciliation d'un échantillon.
+
+Le script utilise la clé Supabase de service uniquement côté serveur/CLI. Les
+faits métier, les lignes LEGACY et les tables de sources ne sont jamais
+modifiés pour obtenir le résultat gamification.
+
 ## Évolution
 
 Toute modification du moteur doit vérifier ensemble :
