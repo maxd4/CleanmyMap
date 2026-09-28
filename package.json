@@ -114,6 +114,7 @@
     "test:e2e": "playwright test --project=\"local public\" --project=\"local authenticated\"",
     "test:e2e:list": "playwright test --list --project=\"local public\" --project=\"local authenticated\"",
     "test:e2e:persistent:ci": "node e2e/run-github-actions-persistent.mjs",
+    "gamification:reconcile": "npm run gamification:reconcile -w apps/web",
     "mobile:typecheck": "npm run typecheck -w apps/mobile",
     "precommit:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_commit_guard.ps1",
     "prepush:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_push_guard.ps1",

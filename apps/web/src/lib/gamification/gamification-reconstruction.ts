@@ -90,6 +90,7 @@ function buildMetadata(
     mechanicId: rule.mechanicId,
     progressionId: rule.progressionId,
     milestoneId: rule.milestoneId,
+    badgeId: rule.badgeId,
     sourceTable: fact.sourceTable,
     sourceId: fact.sourceId,
     awardKind: rule.category === "BADGE_ONLY" ? "BADGE_ONLY" : rule.category,
