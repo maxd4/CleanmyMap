@@ -38,6 +38,16 @@ npm run typecheck -w apps/web                 # vérifie le typage TypeScript
 npm run build -w apps/web                     # lance le build de production local
 ```
 
+## Application mobile
+
+Depuis n'importe quel dossier, les lanceurs `.bat` à la racine peuvent être
+utilisés par double-clic :
+
+- `LANCER_APP_MOBILE_WEB.bat` : démarre Expo Web ;
+- `LANCER_APP_MOBILE_ANDROID.bat` : démarre Expo Android ;
+- `INSTALLER_APP_MOBILE_ANDROID.bat` : lance le premier build natif Android ;
+- `TESTER_APP_MOBILE.bat` : exécute le typecheck et les tests mobiles.
+
 ## Nettoyage local
 
 ```powershell
