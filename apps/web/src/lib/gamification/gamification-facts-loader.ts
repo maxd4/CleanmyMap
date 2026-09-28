@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { assessActionMilestones } from "./action-milestones";
-import { EXPLORER_TIERS, PARTICIPANT_TIERS } from "./badges/families";
 import { loadGamificationUserCounters } from "./counters";
 import { computeActionBalanceSummary } from "./action-balance-calculation";
 import { computeMonthlyRegularityAwards } from "./monthly-regularity";
@@ -21,6 +20,12 @@ import {
   loadResolvedModerationCasesForUser,
 } from "./moderation-progression";
 import { collectEligibleCleanZoneSources } from "./clean-zones";
+import { appendCounterFacts } from "./gamification-counter-facts";
+import {
+  DETERMINISTIC_FALLBACK_OCCURRED_ON,
+  latestOccurredOn,
+  occurredOnFrom,
+} from "./gamification-fact-timestamps";
 import type { ActionRow } from "./progression-types";
 import type {
   GamificationFacts,
@@ -29,7 +34,7 @@ import type {
 import { GAMIFICATION_REGISTRY } from "./progression-utils";
 
 function dateOf(row: Pick<ActionRow, "action_date" | "created_at">): string {
-  return (row.action_date || row.created_at || new Date(0).toISOString()).slice(0, 10);
+  return occurredOnFrom(row.action_date || row.created_at);
 }
 
 function sourceFact(input: Omit<GamificationSourceFact, "statusPhase">): GamificationSourceFact {
@@ -42,70 +47,6 @@ type QuizProgressFactRow = {
   correct_count?: number;
   updated_at?: string;
 };
-
-function appendCounterFacts(
-  facts: GamificationSourceFact[],
-  userId: string,
-  counters: { participationCount: number; visitedPlacesCount: number },
-  visitedRows: unknown[],
-): void {
-  for (const tier of PARTICIPANT_TIERS) {
-    if (tier.threshold > 0 && counters.participationCount >= tier.threshold) {
-      facts.push(sourceFact({
-        mechanicId: "participation",
-        eventType: "participant_tier_unlock",
-        sourceTable: "action_participants",
-        sourceId: `participant:${tier.id}`,
-        occurredOn: new Date().toISOString().slice(0, 10),
-        xpAwarded: tier.xp,
-        threshold: tier.threshold,
-        badgeId: tier.id,
-        metadata: { tier: tier.id },
-      }));
-    }
-  }
-  for (const tier of EXPLORER_TIERS) {
-    if (tier.min > 0 && counters.visitedPlacesCount >= tier.min) {
-      facts.push(sourceFact({
-        mechanicId: "exploration",
-        eventType: "explorer_tier_unlock",
-        sourceTable: "user_visited_places",
-        sourceId: `tier:${tier.id}`,
-        occurredOn: new Date().toISOString().slice(0, 10),
-        xpAwarded: 1,
-        threshold: tier.min,
-        badgeId: tier.id,
-        metadata: { tier: tier.id },
-      }));
-    }
-  }
-
-  for (const row of visitedRows as Array<{ place_label?: string; created_at?: string }>) {
-    const placeLabel = row.place_label?.trim().toLowerCase();
-    if (!placeLabel) continue;
-    facts.push(sourceFact({
-      mechanicId: "exploration",
-      eventType: "new_place_discovered",
-      sourceTable: "user_visited_places",
-      sourceId: `${userId}:${placeLabel}`,
-      occurredOn: (row.created_at ?? new Date().toISOString()).slice(0, 10),
-      xpAwarded: 1,
-      metadata: { locationLabel: placeLabel },
-    }));
-  }
-  for (const milestone of [5, 10, 15, 20, 25, 30, 35, 40, 45, 50].filter((value) => counters.visitedPlacesCount >= value)) {
-    facts.push(sourceFact({
-      mechanicId: "exploration",
-      eventType: "new_place_milestone",
-      sourceTable: "user_visited_places",
-      sourceId: `${userId}:milestone:${milestone}`,
-      occurredOn: new Date().toISOString().slice(0, 10),
-      xpAwarded: 1,
-      threshold: milestone,
-      metadata: { milestone },
-    }));
-  }
-}
 
 async function loadCanonicalOrganizerIds(
   supabase: SupabaseClient,
@@ -287,14 +228,22 @@ async function loadCleanZoneFacts(
     .not("notes", "is", null)
     .limit(1000);
   if (!cleanPlaceResult.error) {
-    const sources = collectEligibleCleanZoneSources({ cleanPlaces: (cleanPlaceResult.data ?? []) as never[], progressionEvents: [] });
+    const cleanPlaces = (cleanPlaceResult.data ?? []) as Array<{
+      id: string;
+      validated_at?: string | null;
+      cleaned_at?: string | null;
+    }>;
+    const cleanPlacesById = new Map(cleanPlaces.map((row) => [row.id, row]));
+    const sources = collectEligibleCleanZoneSources({ cleanPlaces: cleanPlaces as never[], progressionEvents: [] });
     for (const source of sources) {
       facts.push(sourceFact({
         mechanicId: "clean_zones",
         eventType: "clean_zone_task",
         sourceTable: source.progressionSourceTable,
         sourceId: source.progressionSourceId,
-        occurredOn: new Date().toISOString().slice(0, 10),
+        occurredOn: occurredOnFrom(
+          cleanPlacesById.get(source.sourceId)?.validated_at ?? cleanPlacesById.get(source.sourceId)?.cleaned_at,
+        ),
         xpAwarded: 1,
         metadata: { canonicalPlaceKey: source.canonicalPlaceKey, provenance: source.provenance },
       }));
@@ -318,7 +267,7 @@ function buildQuizFacts(
           eventType: "quiz_question_type_milestone",
           sourceTable: "quiz_type_progress",
           sourceId: `quiz:${row.question_type}:${milestone.threshold}`,
-          occurredOn: (row.updated_at ?? new Date().toISOString()).slice(0, 10),
+          occurredOn: occurredOnFrom(row.updated_at),
           xpAwarded: milestone.xp,
           threshold: milestone.threshold,
           badgeId: milestone.badgeId,
@@ -336,7 +285,9 @@ function buildQuizFacts(
         eventType: "quiz_question_type_balance_milestone",
         sourceTable: "quiz_type_balance_progress",
         sourceId: `quiz:balanced:${milestone.threshold}`,
-        occurredOn: new Date().toISOString().slice(0, 10),
+        // The balance proof is the latest stable progress update among the
+        // question types; with no such proof the documented epoch fallback is used.
+        occurredOn: latestOccurredOn(quizRows, (row) => row.updated_at),
         xpAwarded: milestone.xp,
         threshold: milestone.threshold,
         badgeId: milestone.badgeId,
@@ -374,7 +325,7 @@ async function appendParticipationReferralFacts(
       eventType: "action_participation_recovered",
       sourceTable: "action_participants",
       sourceId: `participation-retrieved:${userId}`,
-      occurredOn: (row.joined_at ?? row.updated_at ?? new Date().toISOString()).slice(0, 10),
+      occurredOn: occurredOnFrom(row.joined_at ?? row.updated_at),
       xpAwarded: 0,
       metadata: { actionId: row.action_id, participationSource: "post_action_claim" },
     }));
@@ -399,7 +350,9 @@ async function appendParticipationReferralFacts(
         eventType: "community_referral_invite",
         sourceTable: "referral_contributions",
         sourceId: `referral-contribution:${child.id}`,
-        occurredOn: dateOf(usefulContribution) || (child.referred_at ?? new Date().toISOString()).slice(0, 10),
+        occurredOn: occurredOnFrom(
+          usefulContribution.action_date ?? usefulContribution.created_at ?? child.referred_at,
+        ),
         xpAwarded: 2,
         metadata: {
           inviteeUserId: child.id,
@@ -442,7 +395,7 @@ async function appendModerationFacts(
     const impact = cases.find((item) => item.operation === "correct_impact");
     if (impact) facts.push(sourceFact({ mechanicId: "premiere_correction_impact_justifiee", eventType: "moderation_first_impact_correction", sourceTable: "admin_operations_audit", sourceId: `${userId}:moderation-first-impact-correction`, occurredOn: impact.occurredOn, xpAwarded: 0, metadata: { caseId: impact.caseId } }));
     const families = new Set(cases.map((item) => item.family));
-    if (families.size === 3) facts.push(sourceFact({ mechanicId: "moderateur_polyvalent", eventType: "moderation_multi_family", sourceTable: "admin_operations_audit", sourceId: `${userId}:moderation-multi-family`, occurredOn: first?.occurredOn ?? new Date().toISOString().slice(0, 10), xpAwarded: 1, metadata: { families: [...families] } }));
+    if (families.size === 3) facts.push(sourceFact({ mechanicId: "moderateur_polyvalent", eventType: "moderation_multi_family", sourceTable: "admin_operations_audit", sourceId: `${userId}:moderation-multi-family`, occurredOn: first?.occurredOn ?? DETERMINISTIC_FALLBACK_OCCURRED_ON, xpAwarded: 1, metadata: { families: [...families] } }));
   } catch {
     // Non-applicable moderation is not a not-started user progression.
   }
@@ -466,7 +419,7 @@ async function loadCurrentGamificationFacts(
   const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, userId, { actionRows: actions });
   const actionState = await buildActionFacts(supabase, userId, actions, validatedActionIds);
   const facts = [...actionState.facts];
-  appendCounterFacts(facts, userId, counters, (visitedResult.data ?? []) as unknown[]);
+  appendCounterFacts(facts, userId, counters, (visitedResult.data ?? []) as unknown[], (participantResult.data ?? []) as unknown[]);
   facts.push(...await loadCleanZoneFacts(supabase, userId));
   const quizState = buildQuizFacts(quizResult.data);
   facts.push(...quizState.facts);

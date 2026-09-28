@@ -6,6 +6,7 @@ export type GamificationSourceFact = {
   eventType?: string | null;
   sourceTable: string;
   sourceId: string;
+  /** Canonical evidence date, or the facts loader's documented deterministic fallback. */
   occurredOn: string;
   statusPhase?: ProgressionStatusPhase;
   threshold?: number | null;
