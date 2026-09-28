@@ -29,7 +29,7 @@ export type QuizBalanceAward = {
 export type SyncQuizQuestionTypeBalanceProgressParams = {
   userId: string;
   questionType: string;
-  questionId?: string;
+  questionId: string;
 };
 
 export type QuizBalanceSyncResult = {
@@ -127,7 +127,7 @@ export async function syncQuizQuestionTypeBalanceProgress(
         threshold: award.threshold,
         badgeId: award.badgeId,
         balancedQuestionTypes: questionTypes,
-        questionId: params.questionId ?? null,
+        questionId: params.questionId,
       },
     });
 

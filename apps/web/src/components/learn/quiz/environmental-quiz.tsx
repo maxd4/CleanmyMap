@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { Zap } from "lucide-react";
 import { useAuth, useUser } from "@clerk/nextjs";
@@ -199,11 +198,12 @@ export function EnvironmentalQuiz({
     sessionQuestions: sessionQuestions.length > 0 ? sessionQuestions : initialQuestions,
     getErrorType: (item) => item.errorType ?? buildQuizErrorGrid(item).errorType,
     onResetSessionQuestions: () => setSessionQuestions([]),
-    onCorrectAnswer: (answeredQuestion) => {
+    onCorrectAnswer: (q, answer) => {
       if (!isDemoMode && selectedAccessType !== "ecole") {
         void recordQuizQuestionCorrectAnswer(
-          answeredQuestion.pedagogicalType ?? answeredQuestion.format ?? answeredQuestion.type,
-          answeredQuestion.id,
+          q.pedagogicalType ?? q.format ?? q.type,
+          q.id,
+          answer,
           user?.id ?? null,
         ).catch(() => undefined);
       }

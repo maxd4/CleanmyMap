@@ -2,6 +2,11 @@
 
 import { useRef, useState } from "react";
 import type { SRSQuality } from "@/lib/gamification/quiz-srs";
+import {
+  isQuizAnswerCorrect,
+  normalizeQuizAnswer,
+  type QuizUserAnswer,
+} from "@/lib/learning/quiz/quiz-answer-evaluation";
 import type { QuizErrorTypeId } from "@/lib/learning/quiz/quiz-error-grid";
 import type { QuizQuestion } from "@/lib/learning/quiz/quiz-question-contract";
 
@@ -16,7 +21,7 @@ export type UseQuizSessionControllerOptions = {
   sessionQuestions: readonly QuizQuestion[];
   getErrorType: (question: QuizQuestion) => QuizErrorTypeId;
   onResetSessionQuestions: () => void;
-  onCorrectAnswer?: (question: QuizQuestion) => void;
+  onCorrectAnswer?: (question: QuizQuestion, answer: QuizUserAnswer) => void;
   onIncorrectAnswer?: (context: IncorrectAnswerContext) => void;
   onSRSUpdate: (quality: SRSQuality, question: QuizQuestion) => void | Promise<void>;
 };
@@ -57,11 +62,8 @@ export function useQuizSessionController({
   const checkAnswer = () => {
     if (!question) return;
 
-    const isCorrect = isMultipleSelectQuestion
-      ? Array.isArray(question.answer) &&
-        selectedOptions.length === question.answer.length &&
-        question.answer.every((item) => selectedOptions.includes(item))
-      : selectedOption === question.answer;
+    const submittedAnswer: QuizUserAnswer = isMultipleSelectQuestion ? selectedOptions : selectedOption;
+    const isCorrect = isQuizAnswerCorrect(question, submittedAnswer);
     setLastCheckResult(isCorrect);
     setShowAnswer(true);
     setSessionResults((prev) =>
@@ -71,7 +73,7 @@ export function useQuizSessionController({
     if (isCorrect) {
       setScore((prev) => prev + 1);
       setCorrectStreak((prev) => prev + 1);
-      onCorrectAnswer?.(question);
+      onCorrectAnswer?.(question, normalizeQuizAnswer(submittedAnswer));
       return;
     }
 
