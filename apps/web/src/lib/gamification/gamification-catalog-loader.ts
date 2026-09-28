@@ -41,10 +41,12 @@ import type {
   ProgressionEventType,
   ProgressionStatusPhase,
 } from "./progression-types";
+import {
+  loadGamificationLedgerEvents,
+  type GamificationLedgerEvent,
+} from "./gamification-summary-loader";
 
-type CatalogProgressionEvent = MilestoneEvent & {
-  source_table: string;
-};
+type CatalogProgressionEvent = MilestoneEvent & { source_table: string };
 
 const BASE_CURRENT_PROGRESSION_IDS = [
   "participation",
@@ -128,11 +130,16 @@ function actionRowsAsBalanceRows(rows: readonly ActionRow[]): ActionBalanceRow[]
 export async function loadGamificationCatalog(
   supabase: SupabaseClient,
   userId: string,
-  options?: { actionRows?: ActionRow[] },
+  options?: {
+    actionRows?: ActionRow[];
+    progressionEvents?: Promise<readonly GamificationLedgerEvent[]>;
+  },
 ): Promise<GamificationCatalogItem[]> {
   const actionRowsPromise = options?.actionRows
     ? Promise.resolve(options.actionRows)
     : loadActionRowsForUser(supabase, userId);
+  const progressionEventsPromise =
+    options?.progressionEvents ?? loadGamificationLedgerEvents(supabase, userId);
   const [counters, cleanZoneSources, learning, regularity, balance, referral, eventsResult, identity] =
     await Promise.all([
       loadGamificationUserCounters(supabase, userId),
@@ -145,21 +152,11 @@ export async function loadGamificationCatalog(
         }),
       ),
       loadReferralSummary(supabase, userId),
-      supabase
-        .from("progression_events")
-        .select(
-          "event_type, status_phase, source_table, source_id, xp_awarded, occurred_on, metadata",
-        )
-        .eq("user_id", userId)
-        .limit(12000),
+      progressionEventsPromise,
       getCurrentUserIdentity({ userId }).catch(() => null),
     ]);
 
-  if (eventsResult.error) {
-    throw new Error(eventsResult.error.message);
-  }
-
-  const events = asMilestoneEvents(eventsResult.data).map((event) => ({
+  const events = asMilestoneEvents(eventsResult).map((event) => ({
     event_type: event.event_type as ProgressionEventType,
     status_phase: event.status_phase as ProgressionStatusPhase,
     source_id: event.source_id,

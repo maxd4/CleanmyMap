@@ -13,7 +13,21 @@ function makeProgression(): MeResponse["progression"] {
     potentialLevel: 5,
     badges: ["Première trace utile", "Trace fondatrice", "Contributeur utile"],
     badgeCatalog: [],
-    catalog: [],
+    summary: {
+      xpTotal: 120,
+      currentLevel: 4,
+      potentialLevel: 5,
+      nextLevel: {} as never,
+      progressions: [],
+      milestones: [],
+      xpReconciliation: {
+        progressionXp: 0,
+        milestoneXp: 0,
+        compatibilityXp: 120,
+        total: 120,
+        isBalanced: true,
+      },
+    },
     engagementStatus: {
       id: "contributeur",
       label: "Contributeur",

@@ -60,6 +60,12 @@ locale.
 - la persistance, les écritures d'événements et les lectures Supabase passent
   par leurs capacités dédiées ;
 - l'UI consomme les contrats de progression mais ne recalcule pas les règles ;
+- `GamificationSummary`, construit par `getUserProgression`, est la lecture
+  utilisateur canonique des progressions et jalons. Il dérive `xpTotal` et
+  les contributions depuis `progression_events`, expose les niveaux et le
+  prochain palier déjà calculés, et porte explicitement l'XP de compatibilité
+  qui ne relève d'aucune mécanique CURRENT. Les surfaces Gamification et
+  profil ne reconstruisent pas ces valeurs localement.
 - les futures récompenses communautaires ne sont pas un runtime Gamification.
 
 ## Sous-domaine referrals

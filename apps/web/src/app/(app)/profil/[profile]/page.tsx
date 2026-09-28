@@ -25,6 +25,8 @@ import { ReferralProfileTabs } from "@/components/gamification/referral-profile-
 import { ProfileGamificationSummary } from "@/components/gamification/profile-gamification-summary";
 import { MilestonesPanel } from "@/components/gamification/milestones-panel";
 import { buildCurrentMilestones } from "@/lib/gamification/milestones";
+import { getUserProgression } from "@/lib/gamification/progression";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type ProfilPageProps = {
   params: Promise<{ profile: string }>;
@@ -68,6 +70,10 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
   const profileLabel = getProfileLabel(normalized, "fr");
   const profileSubtitle = getProfileSubtitle(normalized, "fr");
   const switchableProfiles = getSwitchableProfiles(grantedRole);
+  const gamification = await getUserProgression(
+    getSupabaseServerClient(true),
+    userId,
+  ).catch(() => null);
   const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
     wasteKg: 0,
     butts: 0,
@@ -157,10 +163,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           className="p-12"
         >
           <ProfileGamificationSummary
-            currentLevel={identity?.currentLevel ?? null}
-            organisationCount={infiniteTotals.organisationCount}
-            regularityLabel={infiniteTotals.monthlyRegularity.currentLabel}
-            actionBalanceLabel={infiniteTotals.actionBalance.currentLabel}
+            summary={gamification?.summary}
           />
           <InfiniteBadgesPanel totals={infiniteTotals} />
           <MilestonesPanel milestones={infiniteTotals.milestones} />

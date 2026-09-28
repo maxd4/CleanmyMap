@@ -6,14 +6,7 @@ const pageSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 describe("detailed profile gamification contract", () => {
   it("composes the compact summary from the page's existing data", () => {
     expect(pageSource).toContain("ProfileGamificationSummary");
-    expect(pageSource).toContain("currentLevel={identity?.currentLevel ?? null}");
-    expect(pageSource).toContain("organisationCount={infiniteTotals.organisationCount}");
-    expect(pageSource).toContain(
-      "regularityLabel={infiniteTotals.monthlyRegularity.currentLabel}",
-    );
-    expect(pageSource).toContain(
-      "actionBalanceLabel={infiniteTotals.actionBalance.currentLabel}",
-    );
+    expect(pageSource).toContain("summary={gamification?.summary}");
     expect(pageSource).not.toContain('href="/gamification"');
     expect(pageSource).toContain("<InfiniteBadgesPanel totals={infiniteTotals} />");
 
@@ -25,8 +18,7 @@ describe("detailed profile gamification contract", () => {
 
   it("does not add another gamification/progression data source", () => {
     expect((pageSource.match(/getInfiniteBadgeTotals\(userId\)/g) ?? [])).toHaveLength(1);
-    expect(pageSource).not.toContain("getUserProgression");
-    expect(pageSource).not.toContain("/api/gamification/me");
+    expect(pageSource).toContain("getUserProgression");
     expect(pageSource).not.toContain("identity.badges");
   });
 

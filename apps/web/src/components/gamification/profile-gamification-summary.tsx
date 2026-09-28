@@ -1,22 +1,14 @@
 import { ArrowRight } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { resolveEngagementStatus } from "@/lib/gamification/engagement-status";
+import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
 
 export type ProfileGamificationSummaryProps = {
-  currentLevel: number | null;
-  organisationCount: number;
-  regularityLabel: string;
-  actionBalanceLabel: string;
+  summary: GamificationSummary | null | undefined;
 };
 
 export function ProfileGamificationSummary({
-  currentLevel,
-  organisationCount,
-  regularityLabel,
-  actionBalanceLabel,
+  summary,
 }: ProfileGamificationSummaryProps) {
-  const engagementStatus = resolveEngagementStatus(currentLevel ?? 1);
-
   return (
     <section
       aria-labelledby="profile-gamification-summary-title"
@@ -36,43 +28,35 @@ export function ProfileGamificationSummary({
           </h2>
         </div>
 
-        <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
             <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
               Niveau actuel
             </dt>
             <dd className="mt-1 text-xl font-black text-white">
-              {currentLevel === null ? "—" : currentLevel}
+              {summary?.currentLevel ?? "—"}
             </dd>
           </div>
           <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
             <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
-              Organisation
+              XP totale
             </dt>
-            <dd className="mt-1 text-xl font-black text-white">{organisationCount}</dd>
+            <dd className="mt-1 text-xl font-black text-white">{summary?.xpTotal ?? "—"}</dd>
           </div>
           <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
             <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
-              Régularité
-            </dt>
-            <dd className="mt-1 truncate text-base font-black text-amber-100" title={regularityLabel}>
-              {regularityLabel}
-            </dd>
-          </div>
-          <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
-            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
-              Polyvalence
-            </dt>
-            <dd className="mt-1 truncate text-base font-black text-amber-100" title={actionBalanceLabel}>
-              {actionBalanceLabel}
-            </dd>
-          </div>
-          <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
-            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
-              Statut d&apos;engagement
+              Niveau potentiel
             </dt>
             <dd className="mt-1 truncate text-base font-black text-amber-100">
-              {engagementStatus.label}
+              {summary?.potentialLevel ?? "—"}
+            </dd>
+          </div>
+          <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
+            <dt className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/65">
+              Progressions actives
+            </dt>
+            <dd className="mt-1 truncate text-base font-black text-amber-100">
+              {summary?.progressions.filter((progression) => progression.state === "in_progress").length ?? "—"}
             </dd>
           </div>
         </dl>

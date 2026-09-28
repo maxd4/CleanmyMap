@@ -4,7 +4,7 @@ import type {
   GamificationBadgeDefinition,
   LevelRequirementAssessment,
 } from "@/lib/gamification/progression-types";
-import type { GamificationCatalogItem } from "@/lib/gamification/gamification-catalog";
+import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
 import type { EngagementStatus } from "@/lib/gamification/engagement-status";
 
 export type PersonalHistoryItem = {
@@ -37,7 +37,7 @@ export type MeResponse = {
     potentialLevel: number;
     badges: string[];
     badgeCatalog: readonly GamificationBadgeDefinition[];
-    catalog: GamificationCatalogItem[];
+    summary: GamificationSummary;
     engagementStatus: EngagementStatus;
     nextLevel: {
       level: number;

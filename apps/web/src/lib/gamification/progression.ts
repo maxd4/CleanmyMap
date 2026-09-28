@@ -12,6 +12,12 @@ export type {
   ProgressionStatusPhase,
   UserProgressionStats,
 } from "./progression-types";
+export type {
+  GamificationSummary,
+  GamificationSummaryMilestone,
+  GamificationSummaryNextLevel,
+  GamificationSummaryProgression,
+} from "./gamification-summary";
 
 export {
   GamificationRulesV1,

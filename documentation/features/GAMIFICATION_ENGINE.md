@@ -90,11 +90,16 @@ Le code et les tests priment si une divergence apparaît.
   `GamificationProgressionState` : valeur courante, badge courant, prochain
   badge, pourcentage et contribution au total XP. Cette contribution n'est pas
   un solde séparé.
-- `/api/gamification/me` expose aussi `progression.catalog`, représentation
-  exhaustive des mécaniques CURRENT applicables. Elle est construite depuis le
-  registre CURRENT et distingue les huit progressions infinies des jalons
-  one-shot `XP_MILESTONE` ou `BADGE_ONLY` ; les entrées `NON_GAMIFIED` en sont
-  exclues.
+- `/api/gamification/me` expose `progression.summary`, la lecture
+  utilisateur canonique consommée par les surfaces Gamification et profil.
+  Elle est construite depuis le registre CURRENT et distingue les huit
+  progressions infinies des jalons one-shot `XP_MILESTONE` ou `BADGE_ONLY` ;
+  les entrées `NON_GAMIFIED` en sont exclues. `summary.xpTotal` est la somme
+  du ledger `progression_events`, et chaque progression/jalon porte sa
+  contribution dérivée des mêmes événements. La réconciliation distingue
+  explicitement l'XP de compatibilité historique non rattachée à une mécanique
+  CURRENT ; aucun composant ne recalcule un niveau, un badge ou un prochain
+  palier.
 - Une progression infinie est `not_started` tant qu'aucune contribution
   éligible n'est démontrée, puis `in_progress` pour toujours. Son palier
   courant est le dernier palier atteint et son prochain palier est la cible en

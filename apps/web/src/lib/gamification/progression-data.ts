@@ -36,6 +36,7 @@ import { writeProgressionEventWithPolicy } from "./progression-event-write-polic
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 import { syncSensitiveZoneProjection, type SensitiveZoneSyncOptions } from "./sensitive-zone-progression-store";
 import { writeActionProgressionEvents } from "./action-progression-events";
+import type { GamificationLedgerEvent } from "./gamification-summary-loader";
 import {
   isCurrentActionValidated,
 } from "./action-milestones";
@@ -297,14 +298,24 @@ export async function loadApprovedActionRows(
 export async function loadUserProgressionStats(
   supabase: SupabaseClient,
   userId: string,
+  options: {
+    events?: readonly GamificationLedgerEvent[] | Promise<readonly GamificationLedgerEvent[]>;
+  } = {},
 ): Promise<UserProgressionStats> {
   const actionRowsPromise = loadActionRowsForUser(supabase, userId);
-  const [eventsResult, counters, participantResult] = await Promise.all([
-    supabase
-      .from("progression_events")
-      .select("event_type, status_phase, source_table, source_id, xp_awarded")
-      .eq("user_id", userId)
-      .limit(12000),
+  const eventsPromise = options.events
+    ? Promise.resolve(options.events)
+    : supabase
+        .from("progression_events")
+        .select("event_type, status_phase, source_table, source_id, xp_awarded")
+        .eq("user_id", userId)
+        .limit(12000)
+        .then((result) => {
+          if (result.error) throw new Error(result.error.message);
+          return (result.data ?? []) as readonly VerifiedContributionEvent[];
+        });
+  const [events, counters, participantResult] = await Promise.all([
+    eventsPromise,
     loadGamificationUserCounters(supabase, userId),
     supabase
       .from("action_participants")
@@ -318,14 +329,6 @@ export async function loadUserProgressionStats(
   const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, userId, {
     actionRows,
   });
-
-  if (eventsResult.error) {
-    throw new Error(eventsResult.error.message);
-  }
-
-  const events =
-    (eventsResult.data ??
-      []) as VerifiedContributionEvent[];
 
   if (participantResult.error) {
     throw new Error(participantResult.error.message);

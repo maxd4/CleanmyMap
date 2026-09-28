@@ -30,7 +30,7 @@ interprétées comme trois noms pour la même progression :
 
 | Notion | Contrat CURRENT | Source canonique | Ce qu'elle ne signifie pas |
 | --- | --- | --- | --- |
-| **Niveau** | progression générale numérique dérivée de l'XP et des prérequis de contribution | `progression_profiles.current_level`, `progression-rules.ts` et `progression-formulas.ts` | ni une famille de badge, ni un rôle AuthZ |
+| **Niveau** | progression générale numérique dérivée du ledger XP et des prérequis de contribution | `progression_events`, `progression-rules.ts`, `progression-formulas.ts` et `progression.summary` | ni une famille de badge, ni un rôle AuthZ |
 | **Statut d'engagement** | reconnaissance qualitative ordonnée `Observateur → Contributeur → Référent → Mentor → Coordinateur` | `engagement-status.ts` | ni un badge spécialisé, ni une permission |
 | **Badge** | progression spécialisée ou jalon dans une famille métier | `BADGE_DEFINITIONS` / `CURRENT_BADGE_DEFINITIONS` dans `badge-catalog.ts` | ni le niveau global, ni le statut qualitatif |
 
@@ -88,8 +88,8 @@ famille CURRENT.
 
 Le catalogue CURRENT est consommé par les builders de `badges/families.ts`,
 les états terrain de `terrain-progressions.ts`, les cartes du profil
-(`InfiniteBadgesPanel`) et les payloads `/api/gamification/me` et
-`/api/gamification/badges/list`. Les grades sont ensuite calculés par leur
+(`InfiniteBadgesPanel`) et les builders de la lecture `progression.summary` de
+`/api/gamification/me`. Les grades sont ensuite calculés par leur
 module métier, jamais redéfinis par une page.
 
 | Famille canonique | Échelle | Métrique | Surfaces principales |
@@ -122,7 +122,7 @@ par leurs contrats propres.
 
 ### Inventaire utilisateur CURRENT
 
-`progression.catalog` dans `/api/gamification/me` est la représentation
+`progression.summary` dans `/api/gamification/me` est la représentation
 utilisateur exhaustive des entrées gamifiées applicables. Elle réutilise les
 définitions du registre CURRENT : aucune liste d'objectifs propre à l'UI ne doit
 être créée. Les progressions infinies et les jalons one-shot exposent leur
