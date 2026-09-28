@@ -19,7 +19,7 @@ const RUNTIME_PROGRESSION_WRITERS = [
   "quiz-progress.ts",
   "quiz-balance-progress.ts",
   "referrals/referrals.ts",
-  "badges/rebuild.ts",
+  "gamification-facts-loader.ts",
   "sensitive-zone-progression.ts",
   "sensitive-zone-progression-store.ts",
   "action-milestones.ts",
@@ -73,6 +73,7 @@ describe("progression event registry", () => {
       "community_ops_update",
       "community_referral_invite",
       "explorer_tier_unlock",
+      "first_trace_utile",
       "new_place_discovered",
       "new_place_milestone",
       "participant_tier_unlock",
@@ -285,14 +286,10 @@ describe("progression event registry", () => {
       .toEqual(quizEntries.map(([eventType]) => [eventType, "learning"]));
   });
 
-  it("does not leave the explicit badge rebuild with an untyped eventType escape hatch", () => {
+  it("uses the reconstruction engine as the only badge rebuild implementation", () => {
     const rebuild = readRuntimeWriter("badges/rebuild.ts");
-    expect(rebuild).not.toMatch(/eventType:\s*string/);
-    expect(rebuild).not.toContain('eventType: "form_bonus"');
-    expect(rebuild).not.toContain('eventType: "form_tier_unlock"');
-    expect(rebuild).toMatch(
-      /eventType: "participant_tier_unlock"[\s\S]*statusPhase: "validated"[\s\S]*xp: tier\.xp/,
-    );
+    expect(rebuild).toContain("reconcileUserGamification");
+    expect(rebuild).not.toContain("awardProgressionEventIfMissing");
   });
 
   it("keeps deprecated forms, sensitive-zone rewards, and impact quantities outside CURRENT badge surfaces", () => {

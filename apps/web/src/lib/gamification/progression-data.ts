@@ -51,6 +51,11 @@ const USER_LABEL_SUMMARY_CACHE_TAG = "gamification-user-label-summary";
 const USER_LABEL_SUMMARY_LIMIT = 10000;
 const USER_LEVEL_RANKING_CACHE_REVALIDATE_SECONDS = 120;
 const USER_LEVEL_RANKING_CACHE_TAG = "gamification-user-level-ranking";
+const CURRENT_ACTION_SYNC_EVENT_TYPES = [
+  "action_declare_validation",
+  "action_monthly_regularity",
+  "action_balance_cycle",
+] as const;
 
 type UserLabelSummaryCacheEntry = [string, UserLabelSummary];
 
@@ -653,14 +658,19 @@ export async function syncUserActionProgression(
   userId: string,
   options: SensitiveZoneSyncOptions = {},
 ): Promise<number> {
-  const deleted = await supabase
-    .from("progression_events")
-    .delete()
-    .eq("user_id", userId)
-    .eq("source_table", "actions");
-
-  if (deleted.error) {
-    throw new Error(deleted.error.message);
+  // Only the CURRENT action-derived families owned by this synchronizer may
+  // be replaced. Legacy and non-gamified action evidence remains untouched;
+  // the full rules reconciliation is responsible for the final projection.
+  for (const eventType of CURRENT_ACTION_SYNC_EVENT_TYPES) {
+    const deleted = await supabase
+      .from("progression_events")
+      .delete()
+      .eq("user_id", userId)
+      .eq("source_table", "actions")
+      .eq("event_type", eventType);
+    if (deleted.error) {
+      throw new Error(deleted.error.message);
+    }
   }
 
   const actions = await loadActionRowsForUser(supabase, userId);

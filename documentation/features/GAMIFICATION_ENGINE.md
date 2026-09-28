@@ -28,6 +28,20 @@ Le code et les tests priment si une divergence apparaît.
   progression non dépensable : aucune fonctionnalité CURRENT ne doit lire ou
   écrire un sol de points pour attribuer, afficher ou consommer la progression.
 - `progression_events` journalise les événements de progression avec une identité logique stable `(user_id, event_type, source_table, source_id, status_phase)` et une écriture idempotente. `occurred_on` décrit la date métier ; il ne déduplique pas à lui seul des sources distinctes.
+- Le contrat versionné `GAMIFICATION_RULES_V1` est la projection des règles
+  CURRENT. `computeExpectedGamificationState` calcule sans mutation les
+  événements, jalons, badges et compteurs attendus à partir des faits métier ;
+  `reconcileUserGamification` compare ensuite cet état au ledger et INSERT,
+  UPDATE ou retire uniquement les événements CURRENT qu'il possède.
+- Les événements produits par la reconstruction portent dans `metadata` leur
+  `rulesVersion`, `mechanicId`, `progressionId` ou `milestoneId`, source,
+  `awardKind`, palier éventuel et `logicalId`. L'identité logique ne dépend pas
+  de la version de règles afin qu'un changement de montant fasse un UPDATE et
+  non un cumul XP.
+- Une évolution `XP_MILESTONE → BADGE_ONLY` conserve la preuve attendue en
+  ramenant l'XP dérivée à zéro ; `BADGE_ONLY → NON_GAMIFIED` retire la
+  projection CURRENT. Les lignes LEGACY et les faits métier ne sont jamais
+  effacés indistinctement.
 - `points_ledger` et `user_points` sont conservées uniquement comme surfaces
   COMPATIBILITY/LEGACY pour les données et routes historiques. Elles ne sont
   plus une source de vérité ni une dépendance des flux CURRENT.

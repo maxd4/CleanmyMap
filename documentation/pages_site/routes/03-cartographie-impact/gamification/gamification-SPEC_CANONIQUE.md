@@ -756,6 +756,16 @@ brute de l'équivalent sec utilisé par Mohs.
 - une récompense XP doit être unique par source logique;
 - chaque attribution doit avoir un `source_table` et un `source_id` stables;
 - `progression_events` est le journal d audit, pas la source de vérité métier;
+- la reconstruction CURRENT suit `sources métier → GamificationRulesV1 →
+  computeExpectedGamificationState → reconcileUserGamification`; le ledger
+  peut donc être recalculé conceptuellement sans perdre les faits métier;
+- l'identité logique d'un événement CURRENT reste stable entre versions de
+  règles et sa métadonnée porte `rulesVersion`, la mécanique, la source,
+  `awardKind` et le palier éventuel; un changement de montant remplace l'XP
+  attendue, il n'ajoute pas une compensation;
+- les événements LEGACY hors responsabilité explicite du moteur CURRENT sont
+  conservés; une règle `BADGE_ONLY` conserve seulement la preuve de badge et
+  une règle `NON_GAMIFIED` retire sa projection CURRENT.
 - les insertions doivent être idempotentes;
 - si un palier a déjà été validé, il ne doit pas être réattribué;
 - les notifications temps réel sont un effet secondaire, jamais la preuve métier.
