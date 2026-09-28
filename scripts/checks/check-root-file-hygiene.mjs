@@ -24,6 +24,9 @@ export const versionableRootFiles = new Set([
   "AUTHORS.md",
   "CHATGPT.md",
   "COMMANDES_UTILISATEUR.md",
+  "INSTALLER_APP_MOBILE_ANDROID.bat",
+  "LANCER_APP_MOBILE_ANDROID.bat",
+  "LANCER_APP_MOBILE_WEB.bat",
   "LICENSE",
   "package-lock.json",
   "package.json",
@@ -31,6 +34,7 @@ export const versionableRootFiles = new Set([
   "PRE_PUSH_GUARD.md",
   "README.md",
   "SECURITY.md",
+  "TESTER_APP_MOBILE.bat",
   "UBIQUITOUS_LANGUAGE.md",
 ]);
 

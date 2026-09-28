@@ -17,6 +17,7 @@ import {
   localOnlyTrackedPrefixes,
   trackedCanonicalRootDirectories,
   trackedTransitionalRootDirectories,
+  versionableRootFiles,
 } from "./check-root-file-hygiene.mjs";
 import { createFilesystemRepositoryView } from "./repository-view.mjs";
 
@@ -54,6 +55,26 @@ test("machine-local launcher wrappers are allowed in the worktree but not as tra
     ]),
     [...machineLocalRootFiles],
   );
+});
+
+test("versioned mobile launcher wrappers are allowed at the repository root", () => {
+  const wrappers = [
+    "LANCER_APP_MOBILE_WEB.bat",
+    "LANCER_APP_MOBILE_ANDROID.bat",
+    "INSTALLER_APP_MOBILE_ANDROID.bat",
+    "TESTER_APP_MOBILE.bat",
+  ];
+  const gitView = {
+    mode: "git",
+    listFiles: () => wrappers,
+    rootFiles: () => wrappers,
+    rootDirectories: () => [],
+  };
+
+  assert.ok(wrappers.every((file) => versionableRootFiles.has(file)));
+  const result = validateRootFileHygiene(gitView);
+  assert.deepEqual(result.forbidden, []);
+  assert.deepEqual(result.forbiddenTrackedRootFiles, []);
 });
 
 test("root directory contract accepts local-only directories when untracked", () => {
