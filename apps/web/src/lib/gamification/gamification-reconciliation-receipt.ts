@@ -14,26 +14,26 @@ export type GamificationReconciliationReasonCategory =
   | "migration"
   | "other";
 
-export type GamificationReceiptId = { id: string };
+type GamificationReceiptId = { id: string };
 
-export type GamificationProgressionReceiptState = {
+type GamificationProgressionReceiptState = {
   badgeIds: string[];
   thresholds: number[];
   eventCount: number;
 };
 
-export type GamificationProgressionReceiptChange = {
+type GamificationProgressionReceiptChange = {
   id: string;
   before: GamificationProgressionReceiptState;
   after: GamificationProgressionReceiptState;
 };
 
-export type GamificationBadgeReceiptChange = {
+type GamificationBadgeReceiptChange = {
   id: string;
   progressionId?: string;
 };
 
-export type GamificationBadgeUpgrade = {
+type GamificationBadgeUpgrade = {
   from: GamificationBadgeReceiptChange;
   to: GamificationBadgeReceiptChange;
 };

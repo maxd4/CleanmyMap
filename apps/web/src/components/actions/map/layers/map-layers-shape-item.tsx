@@ -24,7 +24,7 @@ export type ActionShapeLayerRef = {
   bringToFront?: () => void;
 };
 
-export type ShapeLayerRefs = MutableRefObject<
+type ShapeLayerRefs = MutableRefObject<
   Record<string, { visible?: ActionShapeLayerRef; casing?: ActionShapeLayerRef }>
 >;
 

@@ -20,12 +20,12 @@ import {
   type ProgressionEventType,
 } from "./progression-types";
 
-export type GamificationAwardPolicy =
+type GamificationAwardPolicy =
   | { kind: "fixed"; amount: number }
   | { kind: "fact"; field: "xpAwarded" }
   | { kind: "none" };
 
-export type GamificationEligibility =
+type GamificationEligibility =
   | { kind: "canonical_fact"; factKey: string }
   | { kind: "never"; reason: string };
 
@@ -157,4 +157,3 @@ function buildCurrentRules(): GamificationRulesV1 {
 export const GAMIFICATION_RULES_V1 = buildCurrentRules();
 
 /** Explicit versioned name for callers that need to pin a ruleset in tests. */
-export const GamificationRulesV1 = GAMIFICATION_RULES_V1;

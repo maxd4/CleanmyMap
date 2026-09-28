@@ -20,6 +20,7 @@ const RUNTIME_PROGRESSION_WRITERS = [
   "quiz-balance-progress.ts",
   "referrals/referrals.ts",
   "gamification-facts-loader.ts",
+  "gamification-counter-facts.ts",
   "sensitive-zone-progression.ts",
   "sensitive-zone-progression-store.ts",
   "action-milestones.ts",

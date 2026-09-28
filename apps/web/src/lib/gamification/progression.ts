@@ -13,50 +13,6 @@ export type {
   UserProgressionStats,
 } from "./progression-types";
 export {
-  CURRENT_GAMIFICATION_RULES_REVISION,
-  CURRENT_GAMIFICATION_RULES_VERSION,
-} from "./progression-types";
-export type {
-  GamificationSummary,
-  GamificationSummaryMilestone,
-  GamificationSummaryNextLevel,
-  GamificationSummaryProgression,
-} from "./gamification-summary";
-
-export {
-  GamificationRulesV1,
-  GAMIFICATION_RULES_V1,
-} from "./gamification-rules";
-export type {
-  GamificationAwardPolicy,
-  GamificationEligibility,
-  GamificationRule,
-  GamificationRulesV1 as GamificationRulesV1Contract,
-} from "./gamification-rules";
-export { computeExpectedGamificationState } from "./gamification-reconstruction";
-export type {
-  ExpectedGamificationEvent,
-  ExpectedGamificationState,
-  GamificationFacts,
-  GamificationSourceFact,
-} from "./gamification-reconstruction";
-export {
-  reconcileUserGamification,
-} from "./gamification-reconciliation";
-export { loadCurrentGamificationFacts } from "./gamification-facts-loader";
-export type { GamificationReconciliationResult } from "./gamification-reconciliation";
-export {
-  buildGamificationReconciliationReceipt,
-} from "./gamification-reconciliation-receipt";
-export type {
-  GamificationBadgeReceiptChange,
-  GamificationBadgeUpgrade,
-  GamificationProgressionReceiptChange,
-  GamificationProgressionReceiptState,
-  GamificationReconciliationReasonCategory,
-  GamificationReconciliationReceipt,
-} from "./gamification-reconciliation-receipt";
-export {
   computeMonthlyRegularityAwards,
   computeMonthlyRegularitySummary,
   MONTHLY_REGULARITY_GEM_GRADES,

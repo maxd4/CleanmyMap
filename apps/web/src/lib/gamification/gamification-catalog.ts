@@ -15,7 +15,7 @@ import {
 
 export type GamificationCatalogState = "not_started" | "in_progress" | "completed";
 
-export type GamificationCatalogTier = {
+type GamificationCatalogTier = {
   id: string;
   title: string;
   threshold: number;
@@ -31,7 +31,7 @@ export type GamificationCatalogProgressionFact = {
   continuationTitle?: (threshold: number) => string;
 };
 
-export type GamificationCatalogMilestoneFact = {
+type GamificationCatalogMilestoneFact = {
   achieved: boolean;
   achievedAt: string | null;
   progressCurrent?: number;

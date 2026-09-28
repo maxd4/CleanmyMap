@@ -4,7 +4,7 @@ import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import {
   loadUserLabelSummary,
   loadUserLevelRankingSummary,
-} from "./progression-data";
+} from "./progression-ranking-data";
 
 const cacheState = vi.hoisted(() => ({
   values: new Map<string, unknown>(),

@@ -78,7 +78,7 @@ export type GamificationReconciliationSnapshot = {
   plan: GamificationReconciliationPlan;
 };
 
-export const CURRENT_SOURCE_TABLES = new Set([
+const CURRENT_SOURCE_TABLES = new Set([
   "actions",
   "action_milestones",
   "action_participants",
@@ -97,7 +97,7 @@ export function asGamificationMetadata(value: unknown): Record<string, unknown> 
     : {};
 }
 
-export function eventIdentity(
+function eventIdentity(
   userId: string,
   event: Pick<PersistedGamificationEvent, "event_type" | "source_table" | "source_id" | "status_phase" | "metadata">,
 ): string {
@@ -112,7 +112,7 @@ export function eventIdentity(
   return [userId, mechanicId, event.source_table, event.source_id, threshold, event.status_phase].join(":");
 }
 
-export function isCurrentOwnedEvent(
+function isCurrentOwnedEvent(
   event: PersistedGamificationEvent,
   rules: GamificationRulesV1,
 ): boolean {
@@ -122,7 +122,7 @@ export function isCurrentOwnedEvent(
   return Boolean(rule && rule.category !== "NON_GAMIFIED" && CURRENT_SOURCE_TABLES.has(event.source_table));
 }
 
-export function eventsDiffer(left: PersistedGamificationEvent, right: ExpectedGamificationEvent): boolean {
+function eventsDiffer(left: PersistedGamificationEvent, right: ExpectedGamificationEvent): boolean {
   return left.event_type !== right.eventType ||
     left.source_table !== right.sourceTable ||
     left.source_id !== right.sourceId ||

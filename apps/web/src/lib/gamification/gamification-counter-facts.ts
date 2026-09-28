@@ -1,9 +1,5 @@
 import { EXPLORER_TIERS, PARTICIPANT_TIERS } from "./badges/families";
-import {
-  DETERMINISTIC_FALLBACK_OCCURRED_ON,
-  occurredOnAtThreshold,
-  occurredOnFrom,
-} from "./gamification-fact-timestamps";
+import { occurredOnAtThreshold, occurredOnFrom } from "./gamification-fact-timestamps";
 import type { GamificationSourceFact } from "./gamification-reconstruction";
 
 function sourceFact(input: Omit<GamificationSourceFact, "statusPhase">): GamificationSourceFact {
@@ -76,5 +72,3 @@ export function appendCounterFacts(
     }));
   }
 }
-
-export { DETERMINISTIC_FALLBACK_OCCURRED_ON };
