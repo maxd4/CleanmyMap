@@ -3,13 +3,6 @@ import { isFeatureEnabled } from "@/lib/feature-flags";
 import { normalizeQuizAnswer, type QuizUserAnswer } from "@/lib/learning/quiz/quiz-answer-evaluation";
 import { incrementQuizProgressLocal } from "./quiz-progress-storage";
 
-const TotalsSchema = z.object({
-  wasteKg: z.number(),
-  butts: z.number(),
-});
-
-export type BadgeTotals = z.infer<typeof TotalsSchema>;
-
 const QuizProgressAwardSchema = z.object({
   step: z.union([z.literal(10), z.literal(50), z.literal(100)]),
   milestone: z.number().int().positive(),
@@ -27,21 +20,7 @@ const QuizProgressResponseSchema = z.object({
   totalXpAwarded: z.number(),
 });
 
-export type QuizProgressAward = z.infer<typeof QuizProgressAwardSchema>;
 export type QuizProgressResponse = z.infer<typeof QuizProgressResponseSchema>;
-
-export async function fetchBadgeTotals(userId: string): Promise<BadgeTotals> {
-  const res = await fetch(`/api/gamification/badges/${encodeURIComponent(userId)}`, {
-    method: "GET",
-    headers: { "content-type": "application/json" },
-  });
-  if (!res.ok) throw new Error(`fetchBadgeTotals failed (${res.status})`);
-  const json = (await res.json()) as unknown;
-
-  const parsed = z.object({ totals: TotalsSchema }).safeParse(json);
-  if (!parsed.success) throw new Error("fetchBadgeTotals: invalid response shape");
-  return parsed.data.totals;
-}
 
 export async function recordQuizQuestionCorrectAnswer(
   questionType: string,

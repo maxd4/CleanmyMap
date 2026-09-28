@@ -142,7 +142,7 @@ export const PARTICIPANT_TIERS: readonly BadgeTierDefinition[] = [
   { threshold: 30, id: "participant-30", label: "Gardien", iconVariant: "guardian", visualVariant: "cosmic", tooltip: "Ambassadeur de terrain", xp: 1 },
 ] as const;
 
-export const QUIZ_TYPE_PROGRESS_TIERS: readonly QuizProgressionTierDefinition[] = [
+const QUIZ_TYPE_PROGRESS_TIERS: readonly QuizProgressionTierDefinition[] = [
   {
     id: "quiz-type-50",
     label: "50 réponses justes",
@@ -157,7 +157,7 @@ export const QUIZ_TYPE_PROGRESS_TIERS: readonly QuizProgressionTierDefinition[] 
   },
 ] as const;
 
-export const QUIZ_BALANCE_PROGRESS_TIERS: readonly QuizProgressionTierDefinition[] = [
+const QUIZ_BALANCE_PROGRESS_TIERS: readonly QuizProgressionTierDefinition[] = [
   {
     id: "quiz-balance-10",
     label: "10 réponses justes",
@@ -344,7 +344,7 @@ export function buildActionBadges(
   });
 }
 
-export function getHighestExplorerTier(currentPlaces: number) {
+function getHighestExplorerTier(currentPlaces: number) {
   const current = Math.max(0, Math.trunc(currentPlaces));
   let highestTierReached: ExplorerTier = EXPLORER_TIERS[0]!;
 

@@ -21,8 +21,6 @@ export type {
 } from "./action-balance-calculation";
 export { computeGemProgression } from "./gem-progression";
 
-export const computeActionBalanceCounts = computeActionBalanceSummary;
-
 export async function loadActionBalanceSummary(
   supabase: SupabaseClient,
   userId: string,

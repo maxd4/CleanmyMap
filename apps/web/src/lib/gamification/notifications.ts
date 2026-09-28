@@ -1,9 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export function notifyTierReached(userId: string, tierId: string, title: string) {
-  console.info(`[gamification] user=${userId} reached tier=${tierId} (${title})`);
-}
-
 export async function auditXpAttribution(
   supabase: SupabaseClient,
   userId: string,

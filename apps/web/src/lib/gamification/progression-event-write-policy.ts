@@ -5,7 +5,7 @@ export type ProgressionEventWriteClassification =
   | "retryable"
   | "blocking";
 
-export type ProgressionEventWriteMode = "strict" | "best_effort";
+type ProgressionEventWriteMode = "strict" | "best_effort";
 
 export type ProgressionEventWriteResult =
   | {
