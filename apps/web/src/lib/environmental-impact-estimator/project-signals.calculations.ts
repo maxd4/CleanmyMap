@@ -1,6 +1,5 @@
 import { PROJECT_SIGNAL_ROW_LIMIT } from "./project-signals.constants";
 import type {
-  EnvironmentalImpactInfrastructureInput,
   EnvironmentalImpactProjectSignal,
   EnvironmentalImpactScopeInput,
 } from "./types";
@@ -207,13 +206,13 @@ export function isWithinWindow(
   return ms !== null && ms >= fromMs && ms <= untilMs;
 }
 
-export function countDistinct(values: Array<string | null | undefined>): number {
+function countDistinct(values: Array<string | null | undefined>): number {
   return new Set(
     values.map((value) => value?.trim()).filter((value): value is string => Boolean(value)),
   ).size;
 }
 
-export function countProjectUnreadNotifications(rows: AppNotificationRow[]): number {
+function countProjectUnreadNotifications(rows: AppNotificationRow[]): number {
   return rows.filter((row) => row.read_at === null).length;
 }
 
@@ -566,104 +565,3 @@ export function buildProjectSignalBreakdown(rows: ProjectSignalRows) {
     },
   };
 }
-
-export function buildInfrastructureUsageInput(params: {
-  recentRows: ProjectSignalRows;
-  previousRows: ProjectSignalRows;
-}): EnvironmentalImpactInfrastructureInput["usage"] {
-  const recentCommunitySignals =
-    params.recentRows.communityEvents.length +
-    params.recentRows.eventRsvps.length +
-    params.recentRows.appNotifications.length;
-  const previousCommunitySignals =
-    params.previousRows.communityEvents.length +
-    params.previousRows.eventRsvps.length +
-    params.previousRows.appNotifications.length;
-  const current = buildScopeInputFromRows(params.recentRows, {
-    userId: null,
-    fromMs: Number.NEGATIVE_INFINITY,
-    untilMs: Number.POSITIVE_INFINITY,
-  }) as EnvironmentalImpactScopeInput & {
-    monthlyPageViews: number;
-    monthlyActiveUsers: number;
-    monthlySessions: number;
-    monthlyEmailsSent: number;
-    monthlyPdfExports: number;
-    monthlyMapViews: number;
-    monthlyAiCalls: number;
-    monthlyStorageGbMonths: number;
-    monthlyApiRequests: number;
-    monthlyAuthEvents: number;
-  };
-  const previous = buildScopeInputFromRows(params.previousRows, {
-    userId: null,
-    fromMs: Number.NEGATIVE_INFINITY,
-    untilMs: Number.POSITIVE_INFINITY,
-  }) as EnvironmentalImpactScopeInput & { monthlyPageViews: number; monthlyApiRequests: number; };
-
-  const growthRateMonthly = clamp(
-    ((current.monthlyPageViews - previous.monthlyPageViews) /
-      Math.max(1, Math.max(previous.monthlyPageViews, current.monthlyPageViews))) || 0,
-    -0.35,
-    0.35,
-  );
-  const seasonalityAmplitude = clamp(
-    Math.abs(current.monthlyPageViews - previous.monthlyPageViews) /
-      Math.max(1, current.monthlyPageViews + previous.monthlyPageViews),
-    0.04,
-    0.25,
-  );
-
-  return {
-    monthlyPageViews: Math.max(1, current.monthlyPageViews),
-    monthlyActiveUsers: Math.max(1, current.monthlyActiveUsers),
-    monthlySessions: Math.max(1, current.monthlySessions),
-    monthlyEmailsSent: Math.max(0, current.monthlyEmailsSent),
-    monthlyPdfExports: Math.max(0, current.monthlyPdfExports),
-    monthlyMapViews: Math.max(0, current.monthlyMapViews),
-    monthlyAiCalls: Math.max(0, current.monthlyAiCalls),
-    monthlyCodexSessions: 0,
-    monthlyCodexConversationTurns: 0,
-    monthlyCodexToolActions: 0,
-    monthlyCodexShellCommands: 0,
-    monthlyCodexFilesTouched: 0,
-    monthlyCodexTestsRun: 0,
-    monthlyCodexChangedLines: 0,
-    monthlyCodexActiveMinutes: 0,
-    monthlyStorageGbMonths: Math.max(0.1, current.monthlyStorageGbMonths),
-    monthlyApiRequests: Math.max(1, current.monthlyApiRequests),
-    monthlyAuthEvents: Math.max(1, current.monthlyAuthEvents + recentCommunitySignals * 0.05),
-    monthlyRealtimeEvents: Math.max(1, current.monthlyActiveUsers * 8 + recentCommunitySignals * 1.5),
-    monthlyEgressGb: round6(
-      Math.max(
-        0.1,
-        current.monthlyPageViews * 0.00008 +
-          current.monthlyMapViews * 0.0012 +
-          current.monthlyStorageGbMonths * 0.12 +
-          recentCommunitySignals * 0.00002,
-      ),
-    ),
-    monthlyBandwidthGb: round6(
-      Math.max(
-        0.1,
-        current.monthlyPageViews * 0.00011 +
-          current.monthlyMapViews * 0.001 +
-          current.monthlyPdfExports * 0.002 +
-          recentCommunitySignals * 0.00001,
-      ),
-    ),
-    monthlyErrorEvents:
-      current.monthlyApiRequests > 0
-        ? Math.max(0, Math.round((current.monthlyApiRequests + recentCommunitySignals) * 0.0025))
-        : null,
-    growthRateMonthly,
-    seasonalityAmplitude: clamp(
-      seasonalityAmplitude +
-        Math.min(0.08, Math.abs(recentCommunitySignals - previousCommunitySignals) / Math.max(1, recentCommunitySignals + previousCommunitySignals + 1)),
-      0.04,
-      0.3,
-    ),
-    horizonMonths: 12,
-  };
-}
-

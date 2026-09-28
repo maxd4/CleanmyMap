@@ -12,7 +12,6 @@ import type {
   EnvironmentalImpactCodexUsageSource,
   EnvironmentalImpactCodexUsageWeeklyInput,
   EnvironmentalImpactCodexUsageWeeklySnapshotRecord,
-  EnvironmentalImpactInfrastructureInput,
 } from "./types";
 
 type CodexUsageStore = {
@@ -454,34 +453,5 @@ export function buildCodexMonthlyUsageEstimate(
     uncertaintyPercent: round6(100 - confidencePercent),
     notes,
     weeklySnapshots: recentSnapshots,
-  };
-}
-
-export function buildCodexInfrastructureUsageInput(
-  snapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[],
-): EnvironmentalImpactInfrastructureInput["usage"] {
-  const aggregate = buildCodexMonthlyUsageEstimate(snapshots);
-  if (aggregate.weekCount === 0) {
-    return {
-      monthlyCodexSessions: null,
-      monthlyCodexConversationTurns: null,
-      monthlyCodexToolActions: null,
-      monthlyCodexShellCommands: null,
-      monthlyCodexFilesTouched: null,
-      monthlyCodexTestsRun: null,
-      monthlyCodexChangedLines: null,
-      monthlyCodexActiveMinutes: null,
-    };
-  }
-
-  return {
-    monthlyCodexSessions: aggregate.monthlyEquivalent.sessionCount,
-    monthlyCodexConversationTurns: aggregate.monthlyEquivalent.conversationCount,
-    monthlyCodexToolActions: aggregate.monthlyEquivalent.toolCallCount,
-    monthlyCodexShellCommands: aggregate.monthlyEquivalent.shellCommandCount,
-    monthlyCodexFilesTouched: aggregate.monthlyEquivalent.fileTouchCount,
-    monthlyCodexTestsRun: aggregate.monthlyEquivalent.testRunCount,
-    monthlyCodexChangedLines: aggregate.monthlyEquivalent.changedLineCount,
-    monthlyCodexActiveMinutes: aggregate.monthlyEquivalent.activeMinutes,
   };
 }

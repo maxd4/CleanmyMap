@@ -34,7 +34,7 @@ export type EnvironmentalImpactLifecycleComponentDefinition = {
   rationale: string;
 };
 
-export type EnvironmentalImpactLifecycleAxisEstimate =
+type EnvironmentalImpactLifecycleAxisEstimate =
   EnvironmentalImpactLifecycleAxisDefinition & {
     quantity: number | null;
     estimatedKgCo2eProxy: number | null;
@@ -42,7 +42,7 @@ export type EnvironmentalImpactLifecycleAxisEstimate =
     source: "input" | "derived" | "reference" | "mixed";
   };
 
-export type EnvironmentalImpactLifecycleComponentEstimate =
+type EnvironmentalImpactLifecycleComponentEstimate =
   EnvironmentalImpactLifecycleComponentDefinition & {
     quantity: number | null;
     estimatedKgCo2eProxy: number | null;

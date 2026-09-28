@@ -3,7 +3,6 @@ import { dirname, join } from "node:path";
 import {
   allowLocalFileStoreFallback,
   canUseSupabaseServerPersistence,
-  getRecentTimeWindow,
   prependBoundedRecord,
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -79,18 +78,6 @@ type ServiceEmailStore = {
   records: ServiceEmailEvent[];
 };
 
-type ServiceEmailEventRow = {
-  created_at?: string | null;
-  provider?: string | null;
-  actor_user_id?: string | null;
-  recipient_count?: number | string | null;
-  subject?: string | null;
-  status?: ServiceEmailEventStatus | string | null;
-  message_id?: string | null;
-  meta?: Record<string, unknown> | null;
-  at?: string | null;
-};
-
 const FILE_PATH = join(process.cwd(), "data", "local-db", "service_email_events.json");
 
 function emptyStore(): ServiceEmailStore {
@@ -113,32 +100,6 @@ async function readStore(): Promise<ServiceEmailStore> {
 async function writeStore(store: ServiceEmailStore): Promise<void> {
   await mkdir(dirname(FILE_PATH), { recursive: true });
   await writeFile(FILE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
-}
-
-function normalizeServiceEmailProvider(value: unknown): "resend" | "mock" {
-  return value === "mock" ? "mock" : "resend";
-}
-
-function normalizeServiceEmailStatus(value: unknown): ServiceEmailEventStatus {
-  return value === "sent" ||
-    value === "mocked" ||
-    value === "missing_config" ||
-    value === "error"
-    ? value
-    : "error";
-}
-
-function normalizeServiceEmailEventRow(row: ServiceEmailEventRow): ServiceEmailEvent {
-  return {
-    at: row.created_at ?? row.at ?? new Date().toISOString(),
-    provider: normalizeServiceEmailProvider(row.provider),
-    actorUserId: row.actor_user_id ?? null,
-    recipientCount: Number(row.recipient_count ?? 0),
-    subject: row.subject ?? "",
-    status: normalizeServiceEmailStatus(row.status),
-    messageId: row.message_id ?? null,
-    meta: row.meta ?? undefined,
-  };
 }
 
 export async function appendServiceEmailEvent(event: ServiceEmailEvent): Promise<void> {
@@ -171,46 +132,6 @@ export async function appendServiceEmailEvent(event: ServiceEmailEvent): Promise
   const store = await readStore();
   const records = prependBoundedRecord(event, store.records, 12000);
   await writeStore({ updatedAt: new Date().toISOString(), records });
-}
-
-export async function listServiceEmailEvents(
-  periodDays: number,
-): Promise<ServiceEmailEvent[]> {
-  const { nowMs, floor, floorIso } = getRecentTimeWindow(periodDays);
-
-  if (canUseSupabaseServerPersistence()) {
-    try {
-      const supabase = getSupabaseServerClient(true);
-      const result = await supabase
-        .from("service_email_events")
-        .select("created_at, provider, actor_user_id, recipient_count, subject, status, message_id, meta")
-        .gte("created_at", floorIso)
-        .order("created_at", { ascending: false })
-        .limit(12000);
-
-      if (!result.error) {
-        return (result.data ?? [])
-          .filter((entry) => {
-            const ms = new Date(entry.created_at ?? "").getTime();
-            return Number.isFinite(ms) && ms >= floor && ms <= nowMs;
-          })
-          .map((entry) => normalizeServiceEmailEventRow(entry as ServiceEmailEventRow));
-      }
-      if (!allowLocalFileStoreFallback()) {
-        return [];
-      }
-    } catch {
-      if (!allowLocalFileStoreFallback()) {
-        return [];
-      }
-    }
-  }
-
-  const store = await readStore();
-  return store.records.filter((entry) => {
-    const ms = new Date(entry.at).getTime();
-    return Number.isFinite(ms) && ms >= floor && ms <= nowMs;
-  });
 }
 
 export async function countServiceEmailEventsForActorSince(params: {
