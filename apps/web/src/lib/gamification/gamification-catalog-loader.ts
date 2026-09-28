@@ -41,7 +41,6 @@ import type {
   ProgressionEventType,
   ProgressionStatusPhase,
 } from "./progression-types";
-import { CURRENT_GAMIFICATION_RULES_REVISION } from "./progression-types";
 import {
   loadGamificationLedgerEvents,
   type GamificationLedgerEvent,
@@ -149,12 +148,13 @@ export async function loadGamificationRulesMigrationState(
   } | null;
   const current = Number(row?.current_applied_rules_revision);
   const acknowledged = Number(row?.last_acknowledged_rules_revision);
+  const currentAppliedRulesRevision = Number.isFinite(current) && current >= 0
+    ? Math.trunc(current)
+    : 0;
   return {
-    currentAppliedRulesRevision: Number.isFinite(current) && current > 0
-      ? Math.trunc(current)
-      : CURRENT_GAMIFICATION_RULES_REVISION,
+    currentAppliedRulesRevision,
     lastAcknowledgedRulesRevision: Number.isFinite(acknowledged) && acknowledged >= 0
-      ? Math.trunc(acknowledged)
+      ? Math.min(Math.trunc(acknowledged), currentAppliedRulesRevision)
       : 0,
   };
 }

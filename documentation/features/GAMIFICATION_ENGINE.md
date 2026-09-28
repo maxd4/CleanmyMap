@@ -223,10 +223,12 @@ Le reçu expose aussi `catalogChanges` avec les IDs canoniques des nouvelles
 progressions, des nouveaux jalons et des mécaniques retirées. Une nouveauté
 applicable sans XP ni badge est donc visible et peut être acquittée par
 `POST /api/gamification/me/acknowledge-rules-migration`. L'acquittement met à
-jour la révision utilisateur et les notifications concernées ; il ne supprime
-ni mécanique, ni preuve métier, ni reçu historique. Une révision ultérieure
-remplace la nouveauté de la vue principale, tandis que les reçus antérieurs
-restent consultables.
+jour uniquement `last_acknowledged_rules_revision`, bornée à
+`current_applied_rules_revision`, ainsi que les notifications concernées ; la
+révision appliquée reste la propriété du flux de projection/réconciliation. Il
+ne supprime ni mécanique, ni preuve métier, ni reçu historique. Une révision
+ultérieure remplace la nouveauté de la vue principale, tandis que les reçus
+antérieurs restent consultables.
 
 ## Évolution
 
