@@ -24,6 +24,7 @@ function rules(version: string, category: "XP_MILESTONE" | "BADGE_ONLY" | "NON_G
       eligibility: category === "NON_GAMIFIED"
         ? { kind: "never", reason: "test" }
         : { kind: "canonical_fact", factKey: "action" },
+      thresholds: [],
     }],
   };
 }
