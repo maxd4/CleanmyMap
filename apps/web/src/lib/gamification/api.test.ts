@@ -17,7 +17,7 @@ describe("recordQuizQuestionCorrectAnswer", () => {
     vi.stubGlobal("fetch", fetchSpy);
 
     await expect(
-      recordQuizQuestionCorrectAnswer("quiz-type", "question-1", "user-1"),
+      recordQuizQuestionCorrectAnswer("quiz-type", "question-1", "Faux", "user-1"),
     ).resolves.toBeNull();
 
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -45,7 +45,7 @@ describe("recordQuizQuestionCorrectAnswer", () => {
     vi.stubGlobal("fetch", fetchSpy);
 
     await expect(
-      recordQuizQuestionCorrectAnswer("quiz-type", "question-1", "user-1"),
+      recordQuizQuestionCorrectAnswer("quiz-type", "question-1", "Faux", "user-1"),
     ).resolves.toEqual({
       questionType: "quiz-type",
       questionTypeLabel: "Quiz",
@@ -56,5 +56,11 @@ describe("recordQuizQuestionCorrectAnswer", () => {
     });
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "/api/gamification/quiz/progress",
+      expect.objectContaining({
+        body: JSON.stringify({ questionId: "question-1", answer: "Faux" }),
+      }),
+    );
   });
 });

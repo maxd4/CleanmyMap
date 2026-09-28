@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { normalizeQuizAnswer, type QuizUserAnswer } from "@/lib/learning/quiz/quiz-answer-evaluation";
 import { incrementQuizProgressLocal } from "./quiz-progress-storage";
 
 const TotalsSchema = z.object({
@@ -44,7 +45,8 @@ export async function fetchBadgeTotals(userId: string): Promise<BadgeTotals> {
 
 export async function recordQuizQuestionCorrectAnswer(
   questionType: string,
-  questionId?: string,
+  questionId: string,
+  answer: QuizUserAnswer,
   userId?: string | null,
 ): Promise<QuizProgressResponse | null> {
   incrementQuizProgressLocal(questionType);
@@ -57,9 +59,8 @@ export async function recordQuizQuestionCorrectAnswer(
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      questionType,
       questionId,
-      correct: true,
+      answer: normalizeQuizAnswer(answer),
     }),
   });
 

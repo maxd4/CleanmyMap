@@ -28,7 +28,7 @@ export type QuizProgressAward = {
 export type SyncQuizQuestionTypeProgressParams = {
   userId: string;
   questionType: string;
-  questionId?: string;
+  questionId: string;
 };
 
 export type QuizProgressSyncResult = {
@@ -126,7 +126,7 @@ export async function syncQuizQuestionTypeProgress(
         step: award.step,
         threshold: award.threshold,
         badgeId: award.badgeId,
-        questionId: params.questionId ?? null,
+        questionId: params.questionId,
       },
     });
 
