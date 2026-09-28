@@ -260,6 +260,59 @@ Chaque surface doit appartenir à une catégorie explicite.
 
 Une relation organisationnelle ou territoriale absente ou ambiguë ne doit jamais être remplacée par un droit global.
 
+## Qualification des accès Supabase privilégiés par HTTP
+
+`service_role` est une identité technique de persistence. Son usage par une
+route ne suffit pas à conclure que la route est administrative, ni à choisir
+un garde `requireAdminAccess()`. Le contrat d'accès HTTP doit être établi à
+partir du handler, des services appelés, des tests, des consommateurs et de
+la documentation canonique.
+
+Pour chaque route qui utilise `getSupabaseServerClient(true)`,
+`getSupabaseAdminClient()` ou une RPC réservée à `service_role`, qualifier
+successivement :
+
+1. **Contrat d'accès HTTP** : public intentionnel, authentifié,
+   owner/scoped, admin/modérateur ou service/webhook ;
+2. **Projection exposée** : données individuelles, inter-utilisateurs,
+   sensibles, agrégats anonymes/bornés ou projection publique explicitement
+   construite ;
+3. **Capacité privilégiée** : lecture interne, mutation métier,
+   écriture de cache/snapshot, modification de données utilisateur ou
+   opération administrative ;
+4. **Inputs contrôlés par le client** : sélection de ressource ou
+   d'utilisateur, identifiants, classifications, métriques, agrégats et
+   tout paramètre pouvant élargir le scope ou influencer une écriture ;
+5. **Garde approprié** : AuthN/AuthZ, ownership/scope, validation serveur,
+   signature, idempotence, rate limiting, BotID ou autre contrôle exigé par
+   le contrat.
+
+Un snapshot ou cache écrit côté serveur reste un effet technique tant qu'il
+ne modifie pas le métier et ne doit pas être qualifié comme opération admin
+par défaut. Une surface publique peut donc utiliser `service_role` si sa
+projection est explicitement bornée, ses inputs ne peuvent pas élargir le
+scope et ses protections anti-abus sont proportionnées. BotID et rate
+limiting renforcent une surface publique ; ils ne constituent pas une AuthZ.
+
+Les qualifications autorisées sont :
+
+| Qualification | Usage |
+|---|---|
+| `MISSING_AUTHZ` | capacité qui devrait être restreinte accessible sans garde serveur suffisant |
+| `PUBLIC_SAFE` | façade publique volontaire, projection bornée, sans élargissement de scope |
+| `INPUT_INTEGRITY` | surface légitime, mais inputs client influençant une donnée privilégiée sans preuve suffisante |
+| `ABUSE_RESILIENCE` | risque de spam, replay, coût ou consommation sans garde anti-abus proportionné |
+| `DATA_EXPOSURE` | projection plus large ou plus sensible que le contrat public/privé autorisé |
+| `NO_FINDING` | contrat, projection, capacité, inputs et contrôles cohérents |
+
+`requireAdminAccess()` ne doit être recommandé que lorsque la capacité HTTP
+est réellement admin/modérateur ou lorsque le contrat serveur le requiert,
+jamais comme conséquence mécanique de `service_role`. Réciproquement, un
+handler admin doit exécuter son garde avant toute création ou utilisation du
+client privilégié. Les tests doivent couvrir les chemins anonyme, refusé,
+scopé et autorisé selon le contrat, et démontrer qu'aucun accès privilégié
+n'est exécuté après un refus.
+
 ### Contrat courant de `/pilotage`
 
 `/pilotage` est une surface métier scoped, distincte de la modération et des

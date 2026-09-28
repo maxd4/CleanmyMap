@@ -19,6 +19,41 @@ Le contrat API détaillé est documenté dans
 `documentation/development/api-standard.md`. Toute évolution doit vérifier
 les consommateurs, les tests et les intégrations de la route concernée.
 
+### Accès Supabase privilégié
+
+`getSupabaseServerClient(true)`, `getSupabaseAdminClient()` et une RPC dont
+l'exécution est réservée à `service_role` sont des mécanismes techniques
+serveur. Ils ne définissent ni la catégorie d'accès HTTP ni une surface
+admin-only. La qualification canonique est définie dans
+`documentation/security/authz-authn-regles.md`.
+
+Avant de créer ou d'utiliser un client privilégié depuis un handler, vérifier
+dans cet ordre :
+
+1. le contrat HTTP réel : public, authentifié, owner/scoped,
+   admin/modérateur, service ou webhook ;
+2. la projection réellement exposée : individuelle, inter-utilisateurs,
+   sensible, agrégée ou explicitement publique ;
+3. la capacité rendue possible : lecture interne, mutation métier,
+   snapshot/cache, modification utilisateur ou opération administrative ;
+4. les paramètres contrôlés par le client et leur validation serveur ;
+5. le garde adapté : AuthN/AuthZ, ownership/scope, signature, idempotence,
+   rate limiting, BotID ou autre contrôle requis par le contrat.
+
+Ne jamais ajouter `requireAdminAccess()` uniquement parce qu'un accès
+`service_role` est utilisé. Une façade publique peut employer ce moyen pour
+produire une projection bornée ou écrire un cache/snapshot serveur ; cette
+écriture technique ne devient pas une mutation administrative par défaut.
+À l'inverse, toute capacité HTTP réellement réservée doit être autorisée côté
+serveur avant la création ou l'utilisation du client privilégié.
+
+Les tests de frontière doivent prouver à la fois le contrat d'accès, la
+projection et l'absence d'accès privilégié sur les chemins refusés. Qualifier
+les écarts avec les statuts `MISSING_AUTHZ`, `PUBLIC_SAFE`,
+`INPUT_INTEGRITY`, `ABUSE_RESILIENCE`, `DATA_EXPOSURE` ou `NO_FINDING` ; ne
+pas transformer automatiquement un usage technique privilégié en finding
+d'AuthZ.
+
 ## Contrôles selon le contrat
 
 - appliquer le rate limiting pour les surfaces qui le requièrent ;
