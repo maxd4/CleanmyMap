@@ -259,14 +259,19 @@ export function classifyFileKind(file) {
 
 export function classifyComplexityCategory(file) {
   const normalized = file.replaceAll("\\", "/");
-  const base = normalized.slice(normalized.lastIndexOf("/") + 1);
+  const sourceRelative = normalized.startsWith("apps/web/")
+    ? normalized.slice("apps/web/".length)
+    : normalized.startsWith("apps/mobile/")
+      ? normalized.slice("apps/mobile/".length)
+      : normalized;
+  const base = sourceRelative.slice(sourceRelative.lastIndexOf("/") + 1);
   const kind = classifyFileKind(normalized);
   if (kind === "test") return "tests";
   if (kind === "data/config") return "data/config";
-  if (normalized.startsWith("src/app/api/") || (normalized.startsWith("src/app/") && /\/route\.(ts|tsx)$/.test(normalized))) return "routes API";
-  if (normalized.startsWith("src/hooks/") || /(^|[-_])use[-A-Z]/.test(base) || /^use[A-Z]/.test(base)) return "hooks";
-  if (normalized.endsWith(".tsx") || normalized.startsWith("src/components/") || normalized.startsWith("src/app/")) return "React/JSX";
-  if (normalized === "src/proxy.ts" || /\/(auth|authz|supabase|storage|services|server|api|rate-limit|persistence|repository|repositories|orchestrat|provider|gateway|sync)(\/|[-_.])/i.test(normalized) || /(^|[-_.])(store|service|client|server|http|repository|persistence|orchestrat|provider|gateway|sync)([-_.]|$)/i.test(base)) return "runtime/services/orchestration";
-  if (normalized.startsWith("src/lib/")) return "métier/domain pur";
+  if (sourceRelative.startsWith("src/app/api/") || (sourceRelative.startsWith("src/app/") && /\/route\.(ts|tsx)$/.test(sourceRelative))) return "routes API";
+  if (sourceRelative.startsWith("src/hooks/") || sourceRelative.startsWith("hooks/") || /(^|[-_])use[-A-Z]/.test(base) || /^use[A-Z]/.test(base)) return "hooks";
+  if (sourceRelative.endsWith(".tsx") || sourceRelative.startsWith("src/components/") || sourceRelative.startsWith("src/app/") || sourceRelative.startsWith("screens/") || sourceRelative === "App.tsx") return "React/JSX";
+  if (sourceRelative === "src/proxy.ts" || /\/(auth|authz|supabase|storage|services|server|api|rate-limit|persistence|repository|repositories|orchestrat|provider|gateway|sync|tasks)(\/|[-_.])/i.test(sourceRelative) || /(^|[-_.])(store|service|client|server|http|repository|persistence|orchestrat|provider|gateway|sync|task)([-_.]|$)/i.test(base)) return "runtime/services/orchestration";
+  if (sourceRelative.startsWith("src/lib/") || sourceRelative.startsWith("lib/")) return "métier/domain pur";
   return "runtime/services/orchestration";
 }

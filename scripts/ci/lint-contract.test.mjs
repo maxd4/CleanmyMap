@@ -63,7 +63,9 @@ test("FAST ciblé et FULL utilisent le contrat lint canonique", () => {
 
   const mobilePackageJson = JSON.parse(readFileSync(join(repositoryRoot, "apps/mobile/package.json"), "utf8"));
   assert.equal(mobilePackageJson.scripts.lint, "eslint --config eslint.config.mjs . --max-warnings=0");
+  assert.equal(mobilePackageJson.scripts["test:coverage"], "vitest run --config vitest.config.ts --coverage");
   assert.equal(JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")).scripts["mobile:lint"], "npm run lint -w apps/mobile");
+  assert.equal(JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")).scripts["quality:mobile-coverage"], "npm run mobile:coverage && node scripts/checks/check-coverage.mjs --scope=mobile");
   assert.match(readFileSync(join(repositoryRoot, "apps/mobile/eslint.config.mjs"), "utf8"), /react-native|reactHooks|typescript-eslint|tseslint/);
 
   const fast = createModeValidationPlan({

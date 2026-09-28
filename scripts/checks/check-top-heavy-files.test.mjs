@@ -233,29 +233,47 @@ test("une exception redevenue sous HARD est stale et échoue", () => {
   });
 });
 
-test("un chemin absent ou hors root invalide la baseline", () => {
-  for (const entryPath of ["apps/web/src/missing.ts", "README.md"]) {
-    withFixture({
-      extraFiles: { "README.md": "readme\n" },
-      baseline: {
-        version: 3,
-        allowed: [{
-          path: entryPath,
-          kind: "runtime",
-          decision: "COHESIVE_SINGLE_FILE",
-          reason: "Entrée volontairement invalide pour le test de schéma.",
-          reviewedRef: "fixture-review-ref",
-          maxLines: 1000,
-          maxBytes: 50000,
-        }],
-        review: [],
-      },
-    }, (root) => {
-      const result = runChecker(root, ["--enforce"]);
-      assert.equal(result.status, 1, result.output);
-      assert.match(result.output, /BASELINE_INVALID/);
-    });
-  }
+test("un chemin absent invalide la baseline, mais un chemin hors root est ignoré", () => {
+  withFixture({
+    baseline: {
+      version: 3,
+      allowed: [{
+        path: "apps/web/src/missing.ts",
+        kind: "runtime",
+        decision: "COHESIVE_SINGLE_FILE",
+        reason: "Entrée volontairement invalide pour le test de schéma.",
+        reviewedRef: "fixture-review-ref",
+        maxLines: 1000,
+        maxBytes: 50000,
+      }],
+      review: [],
+    },
+  }, (root) => {
+    const result = runChecker(root, ["--enforce"]);
+    assert.equal(result.status, 1, result.output);
+    assert.match(result.output, /BASELINE_INVALID/);
+  });
+
+  withFixture({
+    extraFiles: { "README.md": "readme\n" },
+    baseline: {
+      version: 3,
+      allowed: [{
+        path: "README.md",
+        kind: "runtime",
+        decision: "COHESIVE_SINGLE_FILE",
+        reason: "Entrée hors du root mobile, ignorée pour ce scope.",
+        reviewedRef: "fixture-review-ref",
+        maxLines: 1000,
+        maxBytes: 50000,
+      }],
+      review: [],
+    },
+  }, (root) => {
+    const result = runChecker(root, ["--enforce"]);
+    assert.equal(result.status, 0, result.output);
+    assert.match(result.output, /PASS/);
+  });
 });
 
 test("une baseline v1 exige une migration explicite", () => {

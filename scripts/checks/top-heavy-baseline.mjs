@@ -60,11 +60,9 @@ export function loadHeavyFilesBaseline(view, baselinePath, scanRoots) {
 
     const rawPath = requireNonEmptyString(rawEntry.path, "path", index);
     const file = normalizeRepositoryPath(rawPath);
+    if (!scanRoots.some((root) => isCoveredByScanRoot(file, root))) return;
     if (file !== rawPath || !view.isFile(file)) {
       throw new Error(`entrée ${index}: path absent ou non canonique (${rawPath}).`);
-    }
-    if (!scanRoots.some((root) => isCoveredByScanRoot(file, root))) {
-      throw new Error(`entrée ${index}: path hors des roots scannés (${file}).`);
     }
     if (!ALLOWED_BASELINE_DECISIONS.has(rawEntry.decision)) {
       throw new Error(`entrée ${index}: decision non autorisée (${String(rawEntry.decision)}).`);
@@ -98,11 +96,9 @@ export function loadHeavyFilesBaseline(view, baselinePath, scanRoots) {
 
     const rawPath = requireNonEmptyString(rawEntry.path, "path", index);
     const file = normalizeRepositoryPath(rawPath);
+    if (!scanRoots.some((root) => isCoveredByScanRoot(file, root))) return;
     if (file !== rawPath || !view.isFile(file)) {
       throw new Error(`entrée review ${index}: path absent ou non canonique (${rawPath}).`);
-    }
-    if (!scanRoots.some((root) => isCoveredByScanRoot(file, root))) {
-      throw new Error(`entrée review ${index}: path hors des roots scannés (${file}).`);
     }
     if (!REVIEW_BASELINE_STATUSES.has(rawEntry.status)) {
       throw new Error(`entrée review ${index}: status non autorisé (${String(rawEntry.status)}).`);

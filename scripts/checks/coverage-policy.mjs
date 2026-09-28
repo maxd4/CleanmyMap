@@ -75,10 +75,45 @@ export const COVERAGE_SCOPE = Object.freeze({
   ],
 });
 
+const MOBILE_COVERAGE_SCOPE = Object.freeze({
+  include: ["**/*.{js,jsx,ts,tsx}"],
+  exclude: [
+    "tests/**/*.test.{js,jsx,ts,tsx}",
+    "**/*.test.{js,jsx,ts,tsx}",
+    "**/__tests__/**",
+    "**/*.d.ts",
+    "vendor/**",
+  ],
+});
+
 export const COVERAGE_POLICY_VERSION = 1;
 export const COVERAGE_SCOPE_FINGERPRINT = createHash("sha256")
   .update(JSON.stringify({ version: COVERAGE_POLICY_VERSION, scope: COVERAGE_SCOPE, domains: COVERAGE_DOMAINS }))
   .digest("hex");
+export const MOBILE_COVERAGE_SCOPE_FINGERPRINT = createHash("sha256")
+  .update(JSON.stringify({ version: COVERAGE_POLICY_VERSION, scope: MOBILE_COVERAGE_SCOPE, domains: {} }))
+  .digest("hex");
+
+const COVERAGE_SCOPES = Object.freeze({
+  web: Object.freeze({
+    root: "apps/web",
+    scope: COVERAGE_SCOPE,
+    domains: COVERAGE_DOMAINS,
+    fingerprint: COVERAGE_SCOPE_FINGERPRINT,
+  }),
+  mobile: Object.freeze({
+    root: "apps/mobile",
+    scope: MOBILE_COVERAGE_SCOPE,
+    domains: Object.freeze({}),
+    fingerprint: MOBILE_COVERAGE_SCOPE_FINGERPRINT,
+  }),
+});
+
+function getCoverageScope(scope = "web") {
+  const config = COVERAGE_SCOPES[scope];
+  if (!config) throw new Error(`Unknown coverage scope: ${scope}.`);
+  return config;
+}
 
 function metricValue(metric, key, label) {
   const value = metric?.[key];
@@ -88,12 +123,13 @@ function metricValue(metric, key, label) {
   return value;
 }
 
-export function normalizeCoveragePath(file) {
+export function normalizeCoveragePath(file, scope = "web") {
   const normalized = String(file).replaceAll("\\", "/");
-  const marker = "/apps/web/";
+  const marker = `/${getCoverageScope(scope).root}/`;
   const markerIndex = normalized.indexOf(marker);
   if (markerIndex >= 0) return normalized.slice(markerIndex + marker.length);
-  if (normalized.startsWith("apps/web/")) return normalized.slice("apps/web/".length);
+  const rootPrefix = `${getCoverageScope(scope).root}/`;
+  if (normalized.startsWith(rootPrefix)) return normalized.slice(rootPrefix.length);
   return normalized;
 }
 
@@ -117,22 +153,23 @@ function aggregateRows(rows) {
   );
 }
 
-export function aggregateCoverage(summary) {
+export function aggregateCoverage(summary, { scope = "web" } = {}) {
   if (!summary || typeof summary !== "object") throw new Error("Coverage summary must be an object.");
+  const scopeConfig = getCoverageScope(scope);
   const files = Object.entries(summary).filter(([file]) => file !== "total");
   const total = Object.fromEntries(
     COVERAGE_METRICS.map((metric) => [metric, normalizeMetricRecord(summary.total?.[metric], metric)]),
   );
   const domains = Object.fromEntries(
-    Object.entries(COVERAGE_DOMAINS).map(([domain, prefixes]) => {
+    Object.entries(scopeConfig.domains).map(([domain, prefixes]) => {
       const rows = files
-        .filter(([file]) => prefixes.some((prefix) => normalizeCoveragePath(file).startsWith(prefix)))
+        .filter(([file]) => prefixes.some((prefix) => normalizeCoveragePath(file, scope).startsWith(prefix)))
         .map(([, row]) => row);
       if (rows.length === 0) throw new Error(`Coverage domain has no matching files: ${domain}.`);
       return [domain, { files: rows.length, metrics: aggregateRows(rows), patterns: prefixes }];
     }),
   );
-  return { metrics: total, files: files.length, domains };
+  return { metrics: total, files: files.length, domains, scope };
 }
 
 export function loadCoverageSummary(file) {
@@ -143,37 +180,38 @@ export function loadCoverageBaseline(file) {
   return JSON.parse(readFileSync(file, "utf8"));
 }
 
-export function validateBaseline(baseline) {
+export function validateBaseline(baseline, { scope = "web" } = {}) {
+  const scopeConfig = getCoverageScope(scope);
   if (!baseline || baseline.schemaVersion !== 1) {
     throw new Error("Coverage baseline is malformed: unsupported schemaVersion.");
   }
   if (!baseline.sourceCommit || !/^[0-9a-f]{40}$/i.test(baseline.sourceCommit)) {
     throw new Error("Coverage baseline is malformed: sourceCommit must be a full Git SHA.");
   }
-  if (baseline.scopeFingerprint !== COVERAGE_SCOPE_FINGERPRINT) {
+  if (baseline.scopeFingerprint !== scopeConfig.fingerprint) {
     throw new Error("Coverage baseline is stale: its scope fingerprint no longer matches the policy.");
   }
   for (const metric of COVERAGE_METRICS) normalizeMetricRecord(baseline.metrics?.[metric], metric);
   for (const [domain, entry] of Object.entries(baseline.domains ?? {})) {
-    if (!Object.hasOwn(COVERAGE_DOMAINS, domain)) {
+    if (!Object.hasOwn(scopeConfig.domains, domain)) {
       throw new Error(`Coverage baseline is malformed: unexpected domain ${domain}.`);
     }
     if (!Array.isArray(entry.patterns) || entry.patterns.length === 0) {
       throw new Error(`Coverage baseline is malformed: domain ${domain} has no patterns.`);
     }
-    if (JSON.stringify(entry.patterns) !== JSON.stringify(COVERAGE_DOMAINS[domain])) {
+    if (JSON.stringify(entry.patterns) !== JSON.stringify(scopeConfig.domains[domain])) {
       throw new Error(`Coverage baseline is stale: domain ${domain} patterns no longer match the policy.`);
     }
     for (const metric of COVERAGE_METRICS) normalizeMetricRecord(entry.metrics?.[metric], `${domain}.${metric}`);
   }
-  for (const domain of Object.keys(COVERAGE_DOMAINS)) {
+  for (const domain of Object.keys(scopeConfig.domains)) {
     if (!baseline.domains?.[domain]) throw new Error(`Coverage baseline is malformed: missing domain ${domain}.`);
   }
   return baseline;
 }
 
-export function assertBaselineFresh(baseline, { currentCommit = null } = {}) {
-  validateBaseline(baseline);
+export function assertBaselineFresh(baseline, { currentCommit = null, scope = "web" } = {}) {
+  validateBaseline(baseline, { scope });
   const head = currentCommit ?? execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   try {
     execFileSync("git", ["cat-file", "-e", `${baseline.sourceCommit}^{commit}`], { stdio: "ignore" });
@@ -221,7 +259,7 @@ export function compareCoverage(current, baseline) {
     }
   }
   const regressions = [...compareScope(current.metrics, baseline.metrics, "global")];
-  for (const [domain, baselineDomain] of Object.entries(baseline.domains)) {
+  for (const [domain, baselineDomain] of Object.entries(baseline.domains ?? {})) {
     const currentDomain = current.domains[domain];
     if (!currentDomain) throw new Error(`Coverage domain is missing: ${domain}.`);
     for (const metric of COVERAGE_METRICS) {
@@ -250,9 +288,10 @@ export function formatCoverageGrace(entry) {
   ].join("\n");
 }
 
-export function getDefaultCoveragePaths(repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")) {
+export function getDefaultCoveragePaths(repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../.."), scope = "web") {
+  const scopeConfig = getCoverageScope(scope);
   return {
-    summary: path.join(repositoryRoot, "apps", "web", "coverage", "coverage-summary.json"),
-    baseline: path.join(repositoryRoot, "scripts", "checks", "coverage-baseline.json"),
+    summary: path.join(repositoryRoot, scopeConfig.root, "coverage", "coverage-summary.json"),
+    baseline: path.join(repositoryRoot, "scripts", "checks", scope === "mobile" ? "coverage-mobile-baseline.json" : "coverage-baseline.json"),
   };
 }

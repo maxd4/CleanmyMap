@@ -68,6 +68,8 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   for (const command of ["npm run quality:top-heavy", "npm run quality:dead-code", "npm run quality:complexity", "npm run quality:duplication", "npm run quality:cycles"]) {
     assert.match(qualityJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
+  assert.match(qualityJob, /quality:top-heavy/);
+  assert.match(qualityJob, /quality:complexity/);
   assert.match(qualityJob, /gitnexus analyze --index-only/);
   const testsJob = extractJob(workflow, "web-tests");
   assert.match(testsJob, /validation-policy\.mjs --assert-full-suite/);
@@ -79,7 +81,7 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.match(extractJob(workflow, "web-vercel-audit"), /npm run audit:vercel:ci/);
   assert.match(extractJob(workflow, "web-build"), /npm run build/);
   const mobileJob = extractJob(workflow, "mobile-validation");
-  for (const command of ["npm run mobile:security", "npm run mobile:typecheck", "npm run mobile:test", "npm run mobile:lint"]) {
+  for (const command of ["npm run mobile:security", "npm run mobile:typecheck", "npm run mobile:test", "npm run quality:mobile-coverage", "npm run mobile:lint"]) {
     assert.match(mobileJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
   assert.match(mobileJob, /npm run security:secrets/);

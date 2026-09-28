@@ -11,14 +11,16 @@ import {
   loadCoverageSummary,
 } from "./coverage-policy.mjs";
 
-const paths = getDefaultCoveragePaths();
+const scope = process.argv.find((argument) => argument.startsWith("--scope="))?.slice("--scope=".length) ?? "web";
+const paths = getDefaultCoveragePaths(undefined, scope);
 
 try {
   const baseline = loadCoverageBaseline(paths.baseline);
-  assertBaselineFresh(baseline);
-  const current = aggregateCoverage(loadCoverageSummary(paths.summary));
+  assertBaselineFresh(baseline, { scope });
+  const current = aggregateCoverage(loadCoverageSummary(paths.summary), { scope });
   const comparison = compareCoverage(current, baseline);
 
+  console.log(`COVERAGE_SCOPE: ${scope}`);
   console.log(`COVERAGE_STATUS: ${comparison.status}`);
   for (const grace of comparison.grace) console.log(formatCoverageGrace(grace));
 

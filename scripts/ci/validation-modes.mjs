@@ -331,6 +331,31 @@ export function createModeValidationPlan({
       critical: true,
       command: npmCommand("mobile:lint"),
     });
+    if (full) {
+      if (!webSourceRelevant) {
+        addCheck(checks, {
+          id: "quality-top-heavy-mobile",
+          label: "Qualité des fichiers lourds mobile",
+          estimatedSeconds: 5,
+          critical: true,
+          command: npmCommand("quality:top-heavy", ["--roots=apps/mobile"]),
+        });
+        addCheck(checks, {
+          id: "quality-complexity-mobile",
+          label: "Ratchet complexité/longueur mobile",
+          estimatedSeconds: 45,
+          critical: true,
+          command: npmCommand("quality:complexity", ["--roots=apps/mobile"]),
+        });
+      }
+      addCheck(checks, {
+        id: "quality-coverage-mobile",
+        label: "Couverture mobile + ratchet",
+        estimatedSeconds: 30,
+        critical: true,
+        command: npmCommand("quality:mobile-coverage"),
+      });
+    }
   }
   if (supabaseRelevant) {
     addCheck(checks, {
