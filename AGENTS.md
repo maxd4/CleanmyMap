@@ -98,7 +98,7 @@ Une preuve ne justifie que ce qu’elle mesure.
 Le workflow courant est `MAIN-ONLY / SINGLE-WRITER`.
 
 - la branche de travail normale est `main` ;
-- un seul agent peut modifier le checkout à la fois ;
+- un seul agent peut modifier le checkout à la fois ; un seul chantier peut écrire à la fois ;
 - les analyses read-only peuvent être parallèles ;
 - aucun nouveau worktree, clone ou branche de chantier n’est créé pour le
   workflow normal ;
@@ -114,6 +114,8 @@ L’absence de push d’un lot précédent ne bloque pas un nouveau lot local co
 Avant un push explicitement demandé :
 
 - auditer l’ascendance locale non publiée ;
+- vérifier `git diff --cached --name-only` avant le commit et
+  `git log --oneline origin/main..HEAD` avant la publication ;
 - vérifier qu’aucun commit étranger ou non validé ne serait embarqué ;
 - appliquer les validations de publication définies par la gouvernance
   spécialisée ;
@@ -123,16 +125,24 @@ La mécanique détaillée des scopes Git, hooks, candidats de pré-push et
 validations dynamiques appartient à `scripts/AGENTS.md` et
 `documentation/development/TESTING.md`.
 
-Les validations du lot distinguent les candidats `STAGED`, `PUSH_CANDIDATE` et
-`DYNAMIC_CANDIDATE`. Les hooks `pre-commit` et `pre-push` appliquent ces
-contrôles sur le candidat exact ; les `fichiers scoped` restent la source des
-règles spécialisées de chaque sous-arbre.
+Les validations du lot distinguent le scope `WORKTREE` des candidats `STAGED`,
+`PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE`. Les hooks `pre-commit` et `pre-push`
+appliquent ces contrôles sur le candidat exact ; les `fichiers scoped` restent
+la source des règles spécialisées de chaque sous-arbre.
+
+### LEGACY / COMPATIBILITY
+
+Les anciens noms, coordinateurs et métadonnées de migration ne décrivent que
+l’historique ; ils ne gouvernent aucun nouveau lot et ne doivent pas être
+consommés par les guards `CURRENT`.
 
 ## Isolation du lot
 
 Un lot ne contient que les changements attribuables à sa responsabilité.
 
 - préserver les changements dirty, staged et untracked hors périmètre ;
+- les modifications locales non stagées hors périmètre ne bloquent ni le commit
+  ni le push ;
 - stage uniquement les fichiers du candidat courant ;
 - ne jamais utiliser `git add -A` par commodité ;
 - ne jamais utiliser reset destructif, clean, stash ou force-push pour masquer
@@ -231,6 +241,18 @@ Pour une erreur locale évidente, corriger directement avec la preuve adaptée.
 Rechercher une cause systémique lorsque le défaut révèle un contrat insuffisant,
 se répète ou peut raisonnablement apparaître ailleurs.
 
+## Exports, types et façades
+
+Les symboles sont privés par défaut. Un `export` n'est justifié que par un
+consommateur cross-file actuel ou par un contrat public/une compatibilité
+explicitement identifiée et vérifiable ; un type ne doit jamais être exporté
+uniquement « pour plus tard ».
+
+Les imports doivent viser l'owner canonique du symbole. Ne pas créer ou
+conserver un `index.ts`, un barrel, une façade ou un re-export intermédiaire
+par commodité : après un déplacement ou un refactor, fermer l'ancien alias ou
+re-export dès qu'aucun contrat ne le nécessite.
+
 ## Modularité et suppressions
 
 La taille seule ne justifie jamais une extraction.
@@ -288,9 +310,11 @@ périmètre, puis de réduire Knip uniquement par des décisions sûres.
 
 ## Amélioration opportuniste des ratchets
 
-Lorsqu’un lot touche déjà un fichier ou symbole couvert par un ratchet de
-qualité, une dette directement concernée peut être réduite dans le même lot si
-la correction reste locale, sûre, cohésive et facile à valider.
+Lorsqu’un lot touche déjà un fichier contenant un export inutile ou un clone
+historique, cette dette directement concernée peut être réduite dans le même
+lot si la correction reste locale, sûre, cohésive et facile à valider. Cette
+règle ne transforme pas un finding en suppression sans qualification et ne
+justifie pas un refactor transverse.
 
 Ne jamais, pour améliorer une métrique :
 
@@ -300,7 +324,7 @@ Ne jamais, pour améliorer une métrique :
 - ajouter une exclusion ;
 - réduire le scope mesuré ;
 - déplacer artificiellement du code ;
-- créer une abstraction générique sans valeur architecturale ;
+- créer une abstraction générique uniquement pour satisfaire jscpd ;
 - ajouter des tests sans valeur comportementale.
 
 Une dette hors périmètre reste hors lot. Si elle doit être différée pour une
