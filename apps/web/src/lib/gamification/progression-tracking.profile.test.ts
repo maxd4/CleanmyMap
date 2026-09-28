@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { expect, it, vi } from "vitest";
+import { CURRENT_GAMIFICATION_RULES_REVISION } from "./progression-types";
 
 const loadUserProgressionStatsMock = vi.hoisted(() => vi.fn());
 
@@ -83,6 +84,7 @@ it("includes action balance XP in the validated profile total", async () => {
       xp_total: 3,
       xp_pending: 0,
       xp_validated: 3,
+      current_applied_rules_revision: CURRENT_GAMIFICATION_RULES_REVISION,
     }),
     { onConflict: "user_id" },
   );

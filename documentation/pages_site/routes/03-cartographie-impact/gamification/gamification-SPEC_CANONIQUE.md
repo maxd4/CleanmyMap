@@ -140,6 +140,9 @@ Chaque mécanique CURRENT porte également `introducedInRulesRevision`. La
 révision est un entier monotone distinct de `rulesVersion` ; aucune comparaison
 lexicale de version n'est autorisée. `progression_profiles` conserve
 `current_applied_rules_revision` et `last_acknowledged_rules_revision`.
+La première est avancée uniquement par le flux de projection/réconciliation ;
+l'acquittement UI ne modifie que la seconde et ne peut pas dépasser la
+révision réellement appliquée.
 `isNewSinceLastRulesMigration` vaut vrai uniquement pour une mécanique
 applicable introduite dans la dernière révision appliquée et non encore
 acquittée. Cette nouveauté est indépendante de l'état : elle peut être

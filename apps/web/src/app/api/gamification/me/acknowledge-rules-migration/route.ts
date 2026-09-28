@@ -14,12 +14,28 @@ export async function POST() {
   try {
     const supabase = getSupabaseServerClient(true);
     const now = new Date().toISOString();
+    const currentProfile = await supabase
+      .from("progression_profiles")
+      .select("current_applied_rules_revision")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (currentProfile.error) throw new Error(currentProfile.error.message);
+
+    const appliedRevisionValue = Number(
+      (currentProfile.data as { current_applied_rules_revision?: number | null } | null)
+        ?.current_applied_rules_revision,
+    );
+    const currentAppliedRulesRevision = Number.isFinite(appliedRevisionValue) && appliedRevisionValue >= 0
+      ? Math.trunc(appliedRevisionValue)
+      : 0;
+    const acknowledgedRulesRevision = Math.min(
+      currentAppliedRulesRevision,
+      CURRENT_GAMIFICATION_RULES_REVISION,
+    );
     const profile = await supabase.from("progression_profiles").upsert(
       {
         user_id: userId,
-        current_applied_rules_revision: CURRENT_GAMIFICATION_RULES_REVISION,
-        last_acknowledged_rules_revision: CURRENT_GAMIFICATION_RULES_REVISION,
-        updated_at: now,
+        last_acknowledged_rules_revision: acknowledgedRulesRevision,
       },
       { onConflict: "user_id" },
     );
@@ -35,7 +51,7 @@ export async function POST() {
 
     return NextResponse.json({
       status: "ok",
-      rulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+      rulesRevision: acknowledgedRulesRevision,
     });
   } catch (error) {
     return handleApiError(error, "POST /api/gamification/me/acknowledge-rules-migration");
