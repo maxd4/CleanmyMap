@@ -48,6 +48,23 @@ Ne jamais déduire l'identité du dépôt du nom du dossier local.
 Utiliser la racine Git (`git rev-parse --show-toplevel`) et le remote configuré
 comme références techniques.
 
+## QMD — découverte bornée et source locale prioritaire
+
+QMD est un outil d'aide à la découverte, pas une source de vérité. La collection
+CleanMyMap ne doit être analysée ou rafraîchie qu'au plus une fois toutes les
+24 heures par défaut. Avant une recherche QMD importante, vérifier l'âge connu
+de la collection ; si elle a moins de 24 heures, réutiliser l'index existant
+sans lancer `qmd update`. Après 24 heures, `qmd update -c CleanMyMap` peut être
+exécuté si QMD apporte une valeur réelle à la découverte.
+
+Le code et les documents exacts du checkout local qui évolue souvent restent
+toujours prioritaires sur les résultats QMD. Ne jamais substituer un extrait,
+un score ou une embedding QMD à la lecture du fichier réel, de ses callers, de
+ses consommateurs, des tests ou des contrats. L'index peut être périmé sans
+que cela autorise une décision fondée sur QMD seul. N'exécuter `qmd embed`
+qu'après un rafraîchissement autorisé et seulement lorsqu'une recherche
+sémantique est réellement nécessaire.
+
 Pour un chemin explicitement ciblé par un fichier fourni par l’utilisateur,
 la candidate fournie par l’utilisateur est toutefois l’entrée autoritative du
 lot jusqu’à son intégration. `HEAD` et `origin/main` restent des bases de
