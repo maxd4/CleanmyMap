@@ -65,9 +65,10 @@ flowchart LR
 
 CleanMyMap est un seul produit et un seul monorepo avec deux applications
 déployables distinctes sous `apps/`. Le web et le mobile partagent Clerk,
-Supabase et les contrats métier nécessaires. L'identité Clerk et la
-finalisation des métriques par trigger invoker sont désormais finalisées puis
-gelées ; elles ne constituent plus des lots de conception.
+Supabase et les contrats métier nécessaires. Le mobile est
+`CURRENT / ACTIVE DEVELOPMENT` depuis M0, mais reste `NOT_PRODUCTION_READY`.
+L'identité Clerk et la finalisation des métriques par trigger invoker sont
+finalisées et invariantes ; elles ne constituent plus des lots de conception.
 
 Les limites encore ouvertes sont :
 

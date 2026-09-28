@@ -731,8 +731,8 @@ Restent explicitement hors production :
 - RLS et contrat de synchronisation de `mission_actions` ;
 - renouvellement fiable du token Clerk lors d'un réveil background headless ;
 - usage opérationnel réel de l'application web et de l'application mobile ;
-- l'application mobile est gelée à long terme jusqu'à une décision explicite de
-  dégel.
+- l'application mobile est `CURRENT / ACTIVE DEVELOPMENT`, mais reste
+  `NOT_PRODUCTION_READY` tant que ces limites ne sont pas validées.
 
 Voir :
 

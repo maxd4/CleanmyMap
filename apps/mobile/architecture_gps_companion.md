@@ -1,5 +1,9 @@
 # Architecture Technique — Application Compagnon GPS
 
+> Statut courant : `CURRENT / ACTIVE DEVELOPMENT`, `NOT_PRODUCTION_READY`.
+> Le lot M0 protège la baseline existante par des tests sans ajouter de
+> fonctionnalité produit ni refaire l'UI.
+
 ## 1. Vue d'ensemble
 
 ```mermaid
@@ -68,9 +72,10 @@ la durée, puis renseigne `NEW.distance_m` et `NEW.duration_s`. Il est
 `SECURITY INVOKER` et n'ajoute aucun droit d'écriture client sur ces colonnes.
 
 L'identité Clerk, les RLS missions/GPS et la finalisation des métriques sont
-finalisées puis gelées. Les seuls sujets encore ouverts sont le background
-headless, `mission_actions`, la validation opérationnelle et l'évolution future
-après dégel explicite.
+finalisées et restent invariantes pendant le développement actif. Les sujets
+encore ouverts et non prêts pour la production sont le background headless,
+`mission_actions`, la validation opérationnelle et l'évolution future du
+produit mobile.
 
 ### Proposition historique — non cible actuelle
 
@@ -195,9 +200,9 @@ sequenceDiagram
 
 Cette section conserve la recommandation technique initiale pour référence. Elle
 ne constitue pas une nouvelle cible : l'identité Clerk, les RLS missions/GPS et
-la finalisation des métriques sont déjà finalisées puis gelées. Les seuls sujets
-ouverts restent le background headless, `mission_actions`, la validation
-opérationnelle et l'évolution future après dégel explicite.
+la finalisation des métriques sont déjà finalisées et invariantes. Les seuls
+sujets ouverts restent le background headless, `mission_actions`, la validation
+opérationnelle et l'évolution future du produit mobile.
 
 > [!TIP]
 > **Expo (React Native) avec `expo-location` + `expo-task-manager`**

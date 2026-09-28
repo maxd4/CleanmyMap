@@ -97,10 +97,11 @@ l'historique et les identifiants techniques. Elle partage Clerk, Supabase et
 les contrats métier nécessaires avec `apps/web`, sans être une copie ni un
 sous-projet indépendant.
 
-L'identité Clerk et la finalisation des métriques par trigger invoker sont
-finalisées puis gelées. Les
-limites encore ouvertes sont le background headless, `mission_actions`, la
-validation opérationnelle et la future évolution produit mobile.
+Le mobile est `CURRENT / ACTIVE DEVELOPMENT` depuis le lot M0, tout en restant
+`NOT_PRODUCTION_READY`. L'identité Clerk et la finalisation des métriques par
+trigger invoker sont finalisées et invariantes. Les limites encore ouvertes
+sont le background headless, `mission_actions`, la validation opérationnelle et
+la future évolution produit mobile.
 
 Ne pas considérer comme valide un flux où :
 

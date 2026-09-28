@@ -610,12 +610,13 @@ Ne jamais fabriquer manuellement un fichier interne `.next`.
 Minimum obligatoire :
 
 ```bash
-npm run typecheck -w apps/mobile
+npm run mobile:typecheck
+npm run mobile:test
 ```
 
-Les contrats Clerk, RLS et la finalisation des métriques par trigger invoker
-sont finalisés puis gelés. Avant toute reprise fonctionnelle ou validation de production mobile,
-ajouter des tests ciblés couvrant :
+Le mobile est `CURRENT / ACTIVE DEVELOPMENT` depuis le lot M0, mais reste
+`NOT_PRODUCTION_READY`. Les contrats Clerk, RLS et la finalisation des métriques
+par trigger invoker sont finalisés et invariants. La baseline de tests couvre :
 
 - restauration d'une mission active ;
 - buffer offline ;
@@ -623,8 +624,12 @@ ajouter des tests ciblés couvrant :
 - finalisation d'une mission ;
 - erreurs Supabase ;
 - propriété d'une mission ;
-- cohérence d'identité ;
-- calcul de distance.
+- cohérence identité Clerk → Supabase ;
+- absence d'écriture client directe de `distance_m` et `duration_s`.
+
+Cette lane est une validation de code et de contrats. Elle ne constitue pas un
+test sur téléphone réel, une validation du background headless ou une preuve de
+préparation à la production.
 
 ## QA UI
 

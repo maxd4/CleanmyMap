@@ -92,11 +92,12 @@ CleanMyMap/
 ```
 
 L'application mobile est issue de l'ancien `companion-app` ; cette mention est
-historique et ne désigne pas un projet séparé. Elle est actuellement gelée
-fonctionnellement. L'identité Clerk, les RLS missions/GPS et la finalisation des
-métriques par trigger `SECURITY INVOKER` sont finalisées puis gelées. Les seuls
-sujets encore ouverts sont le background headless, `mission_actions`, la
-validation opérationnelle et l'évolution future après dégel explicite.
+historique et ne désigne pas un projet séparé. Elle est `CURRENT / ACTIVE
+DEVELOPMENT` depuis le lot M0, tout en restant `NOT_PRODUCTION_READY`.
+L'identité Clerk, les RLS missions/GPS et la finalisation des métriques par
+trigger `SECURITY INVOKER` sont finalisées et invariantes. Les sujets encore
+ouverts sont le background headless, `mission_actions`, la validation
+opérationnelle et l'évolution future du produit mobile.
 
 ## Application web
 
@@ -212,9 +213,11 @@ Statut architectural courant :
   propriétaires ;
 - le trigger courant `SECURITY INVOKER` finalise `distance_m` et `duration_s`.
 
-L'identité Clerk, les RLS et la finalisation des métriques sont finalisées puis
-gelées. Les seuls sujets ouverts sont le background headless, `mission_actions`,
-la validation opérationnelle et l'évolution future après dégel explicite.
+Le statut courant du mobile est `CURRENT / ACTIVE DEVELOPMENT`,
+`NOT_PRODUCTION_READY`. L'identité Clerk, les RLS et la finalisation des
+métriques sont finalisées et invariantes. Les sujets ouverts sont le background
+headless, `mission_actions`, la validation opérationnelle et l'évolution future
+du produit mobile.
 
 Voir ADR-004 et ADR-006.
 
