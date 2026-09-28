@@ -40,6 +40,11 @@ function isWebSourceFile(file) {
   return normalizePath(file).startsWith("apps/web/src/");
 }
 
+function isMobileRelevantFile(file) {
+  const normalized = normalizePath(file);
+  return normalized.startsWith("apps/mobile/") && !isDocumentationFile(normalized);
+}
+
 function isMotionRelevantFile(file) {
   const normalized = normalizePath(file);
   return (
@@ -172,7 +177,7 @@ export function createModeValidationPlan({
   const semgrepRelevant = files.some(isSemgrepRelevantFile);
   const regressionRelevant = files.some(isRegressionRelevantFile);
   const githubRelevant = files.some((file) => normalizePath(file).startsWith(".github/"));
-  const mobileRelevant = files.some((file) => normalizePath(file).startsWith("apps/mobile/"));
+  const mobileRelevant = files.some(isMobileRelevantFile);
   const lockfileRelevant = files.some(isLockfileRelevantFile);
   const deadCodeRelevant =
     webRuntimeRelevant ||
@@ -305,6 +310,27 @@ export function createModeValidationPlan({
       critical: true,
       command: npmCommand("mobile:typecheck"),
     });
+    addCheck(checks, {
+      id: "mobile-test",
+      label: "Vitest mobile",
+      estimatedSeconds: 20,
+      critical: true,
+      command: npmCommand("mobile:test"),
+    });
+    addCheck(checks, {
+      id: "mobile-security",
+      label: "Tests de sécurité mobile",
+      estimatedSeconds: 15,
+      critical: true,
+      command: npmCommand("mobile:security"),
+    });
+    addCheck(checks, {
+      id: "mobile-lint",
+      label: "ESLint mobile",
+      estimatedSeconds: 20,
+      critical: true,
+      command: npmCommand("mobile:lint"),
+    });
   }
   if (supabaseRelevant) {
     addCheck(checks, {
@@ -352,22 +378,6 @@ export function createModeValidationPlan({
       });
     }
     if (full) {
-      if (webSourceRelevant || scriptsRelevant) {
-        addCheck(checks, {
-          id: "quality-duplication",
-          label: "Ratchet duplication jscpd",
-          estimatedSeconds: 5,
-          critical: true,
-          command: npmCommand("quality:duplication"),
-        });
-        addCheck(checks, {
-          id: "quality-cycles",
-          label: "Ratchet cycles GitNexus",
-          estimatedSeconds: 35,
-          critical: true,
-          command: npmCommand("quality:cycles"),
-        });
-      }
       addCheck(checks, {
         id: "vercel-ci-audit",
         label: "Audit Vercel CI",
@@ -473,6 +483,23 @@ export function createModeValidationPlan({
       );
       addTargetedVitest(checks, targetedFiles);
     }
+  }
+
+  if (full && (webRuntimeRelevant || mobileRelevant || scriptsRelevant)) {
+    addCheck(checks, {
+      id: "quality-duplication",
+      label: "Ratchet duplication jscpd",
+      estimatedSeconds: 5,
+      critical: true,
+      command: npmCommand("quality:duplication"),
+    });
+    addCheck(checks, {
+      id: "quality-cycles",
+      label: "Ratchet cycles GitNexus",
+      estimatedSeconds: 35,
+      critical: true,
+      command: npmCommand("quality:cycles"),
+    });
   }
 
   if (full && deadCodeRelevant) {

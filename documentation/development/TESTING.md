@@ -616,7 +616,15 @@ Minimum obligatoire :
 ```bash
 npm run mobile:typecheck
 npm run mobile:test
+npm run mobile:security
+npm run mobile:lint
 ```
+
+Pour un changement de code mobile, le mode RAPIDE sélectionne ces quatre
+contrôles mobiles ainsi que les garde-fous communs de secrets et de Semgrep.
+Le mode COMPLET ajoute les contrôles partagés Knip, jscpd et cycles GitNexus.
+Un changement mobile seul ne déclenche pas les validations web de build,
+Vercel ou Playwright.
 
 Le mobile est `CURRENT / ACTIVE DEVELOPMENT` depuis le lot M0, mais reste
 `NOT_PRODUCTION_READY`. Les contrats Clerk, RLS et la finalisation des métriques
