@@ -103,6 +103,12 @@ trigger invoker sont finalisées et invariantes. Les limites encore ouvertes
 sont le background headless, `mission_actions`, la validation opérationnelle et
 la future évolution produit mobile.
 
+La V1 mobile est destinée aux bénévoles terrain et reste volontairement réduite
+par rapport à la surface web complète. Les développements approfondis sont
+réservés au GPS live avec carte et tracé temps réel et aux contacts d'urgence ;
+les autres capacités réutilisent les contrats, données et services communs sans
+gamification parallèle ni second modèle métier mobile.
+
 Ne pas considérer comme valide un flux où :
 
 - une identité Supabase anonyme devient implicitement un profil Clerk ;

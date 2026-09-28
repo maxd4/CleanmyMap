@@ -219,6 +219,12 @@ métriques sont finalisées et invariantes. Les sujets ouverts sont le backgroun
 headless, `mission_actions`, la validation opérationnelle et l'évolution future
 du produit mobile.
 
+La V1 est destinée aux bénévoles terrain et reste volontairement réduite ; le
+web demeure la surface complète et indépendante. Les développements mobiles
+approfondis sont réservés au GPS live avec carte et tracé temps réel et aux
+contacts d'urgence. Les autres capacités réutilisent le backend, les données et
+les projections communes, sans gamification parallèle ni second modèle métier.
+
 Voir ADR-004 et ADR-006.
 
 ## Supabase : source des migrations

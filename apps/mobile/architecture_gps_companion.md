@@ -4,6 +4,18 @@
 > Le lot M0 protège la baseline existante par des tests sans ajouter de
 > fonctionnalité produit ni refaire l'UI.
 
+## Périmètre V1 et frontières
+
+La V1 est une application bénévole terrain volontairement réduite. Le site web
+reste la surface complète et indépendante ; le mobile réutilise le backend,
+les données, l'identité et les projections métier existantes, sans gamification
+parallèle ni second modèle métier.
+
+Les deux axes réservés à un développement mobile approfondi sont le mode
+activité GPS live avec carte et tracé temps réel, puis les contacts d'urgence.
+Cette fiche décrit les contrats GPS existants ; elle ne constitue pas une
+autorisation d'ajouter une nouvelle UI ou une nouvelle table dans le lot M0.
+
 ## 1. Vue d'ensemble
 
 ```mermaid
