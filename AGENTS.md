@@ -106,6 +106,11 @@ La mécanique détaillée des scopes Git, hooks, candidats de pré-push et
 validations dynamiques appartient à `scripts/AGENTS.md` et
 `documentation/development/TESTING.md`.
 
+Les validations du lot distinguent les candidats `STAGED`, `PUSH_CANDIDATE` et
+`DYNAMIC_CANDIDATE`. Les hooks `pre-commit` et `pre-push` appliquent ces
+contrôles sur le candidat exact ; les `fichiers scoped` restent la source des
+règles spécialisées de chaque sous-arbre.
+
 ## Isolation du lot
 
 Un lot ne contient que les changements attribuables à sa responsabilité.
