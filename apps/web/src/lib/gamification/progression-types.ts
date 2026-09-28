@@ -110,7 +110,7 @@ export const CURRENT_INFINITE_PROGRESSION_IDS = [
 export type CurrentInfiniteProgressionId =
   (typeof CURRENT_INFINITE_PROGRESSION_IDS)[number];
 
-type CurrentMilestoneId =
+export type CurrentMilestoneId =
   | "premiere_trace_utile"
   | "trace_fondatrice"
   | "boucle_bouclee"
@@ -136,6 +136,7 @@ interface ProgressionDefinition {
   label: string;
   description: string;
   metric: string;
+  metricLabel: string;
   sourceDomain: string;
   xpPolicy: GamificationXpPolicy;
   badgeId: string | null;
@@ -219,7 +220,7 @@ export type UserProgressionResponse = {
   };
   badges: string[];
   badgeCatalog: readonly GamificationBadgeDefinition[];
-  catalog: import("./gamification-catalog").GamificationCatalogItem[];
+  summary: import("./gamification-summary").GamificationSummary;
   engagementStatus: EngagementStatus;
   impact: PersonalImpactMetrics;
   impactMethodology: PersonalImpactMethodology;

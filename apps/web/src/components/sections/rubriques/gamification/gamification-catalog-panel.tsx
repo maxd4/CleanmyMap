@@ -1,35 +1,38 @@
 import { Flag, Sparkles, Target, TrendingUp } from "lucide-react";
 import { SectionLabel } from "./gamification-shell";
-import type { GamificationCatalogItem } from "@/lib/gamification/gamification-catalog";
+import type {
+  GamificationSummary,
+  GamificationSummaryMilestone,
+  GamificationSummaryProgression,
+} from "@/lib/gamification/gamification-summary";
 
-function stateLabel(state: GamificationCatalogItem["state"], fr: boolean): string {
+function stateLabel(state: GamificationSummaryProgression["state"] | GamificationSummaryMilestone["state"], fr: boolean): string {
   if (state === "completed") return fr ? "Acquis" : "Completed";
   if (state === "in_progress") return fr ? "En cours" : "In progress";
   return fr ? "À commencer" : "Not started";
 }
 
-function categoryLabel(item: GamificationCatalogItem, fr: boolean): string {
-  if (item.category === "BADGE_ONLY") return fr ? "Badge" : "Badge only";
-  if (item.category === "XP_MILESTONE") return fr ? "Jalon XP" : "XP milestone";
+function categoryLabel(category: GamificationSummaryMilestone["category"] | "XP_PROGRESSION", fr: boolean): string {
+  if (category === "BADGE_ONLY") return fr ? "Badge" : "Badge only";
+  if (category === "XP_MILESTONE") return fr ? "Jalon XP" : "XP milestone";
   return fr ? "Progression XP" : "XP progression";
 }
 
-function statusClass(state: GamificationCatalogItem["state"]): string {
+function statusClass(state: GamificationSummaryProgression["state"] | GamificationSummaryMilestone["state"]): string {
   if (state === "completed") return "border-[#b7d9c4] bg-[#effaf2] text-[#287348]";
   if (state === "in_progress") return "border-[#f1c18c] bg-[#fff7ed] text-[#9a5a16]";
   return "border-[#e4d7d2] bg-white text-[#806b65]";
 }
 
-function ProgressionItem({ item, fr }: { item: GamificationCatalogItem; fr: boolean }) {
-  const progression = item.progression!;
+function ProgressionItem({ item, fr }: { item: GamificationSummaryProgression; fr: boolean }) {
   return (
     <article className="rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4 shadow-[0_8px_24px_rgba(126,31,20,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-black text-[#2c1a17]">{item.title}</h3>
+            <h3 className="text-sm font-black text-[#2c1a17]">{item.label}</h3>
               <span className="rounded-full border border-[#f1c1b7] bg-[#fff5f2] px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] text-[#b4362e]">
-              {categoryLabel(item, fr)}
+              {categoryLabel("XP_PROGRESSION", fr)}
             </span>
             {item.isNewSinceLastRulesMigration ? (
               <span className="rounded-full bg-[#2c1a17] px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] text-white">
@@ -49,22 +52,20 @@ function ProgressionItem({ item, fr }: { item: GamificationCatalogItem; fr: bool
           <p className="text-xs font-black uppercase tracking-[0.16em] text-[#a48d86]">
             {fr ? "Valeur" : "Value"}
           </p>
-          <p className="mt-1 text-xl font-black text-[#c51f1f]">{progression.currentValue}</p>
+            <p className="mt-1 text-xl font-black text-[#c51f1f]">{item.currentValue}</p>
         </div>
         <div>
           <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[#765f59]">
-            <span>{progression.currentTier.title}{progression.currentTierAchieved ? " ✓" : ""}</span>
-            <span>{progression.nextTier.title} · {progression.nextThreshold}</span>
+            <span>{item.currentBadge?.label ?? (fr ? "Observateur" : "Observer")}{item.currentBadge ? " ✓" : ""}</span>
+            <span>{item.nextBadge?.label ?? (fr ? "Palier suivant" : "Next tier")}</span>
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f5e7e2]" aria-label={`${progression.progressPercent}%`}>
-            <div className="h-full rounded-full bg-[#cf3b34]" style={{ width: `${progression.progressPercent}%` }} />
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f5e7e2]" aria-label={`${item.progressPercent}%`}>
+            <div className="h-full rounded-full bg-[#cf3b34]" style={{ width: `${item.progressPercent}%` }} />
           </div>
-          {progression.previousTiers.length > 0 ? (
-            <p className="mt-2 text-xs text-[#a48d86]">
-              {fr ? "Paliers acquis : " : "Achieved tiers: "}
-              {progression.previousTiers.map((tier) => tier.title).join(", ")}
-            </p>
-          ) : null}
+          <p className="mt-2 text-xs text-[#a48d86]">
+            {fr ? "Contribution XP : " : "XP contribution: "}{item.xpContribution}
+            {item.metricLabel ? ` · ${item.metricLabel}` : ""}
+          </p>
         </div>
         <p className="text-right text-xs font-semibold text-[#a48d86]">
           {item.grantsXp ? (fr ? "XP selon paliers" : "XP by tier") : (fr ? "Sans XP" : "No XP")}
@@ -74,16 +75,15 @@ function ProgressionItem({ item, fr }: { item: GamificationCatalogItem; fr: bool
   );
 }
 
-function MilestoneItem({ item, fr }: { item: GamificationCatalogItem; fr: boolean }) {
-  const milestone = item.milestone!;
+function MilestoneItem({ item, fr }: { item: GamificationSummaryMilestone; fr: boolean }) {
   return (
     <article className="rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4 shadow-[0_8px_24px_rgba(126,31,20,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-black text-[#2c1a17]">{item.title}</h3>
+            <h3 className="text-sm font-black text-[#2c1a17]">{item.label}</h3>
             <span className="rounded-full border border-[#ead8d2] bg-[#fffaf8] px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] text-[#806b65]">
-              {categoryLabel(item, fr)}
+              {categoryLabel(item.category, fr)}
             </span>
             {item.isNewSinceLastRulesMigration ? (
               <span className="rounded-full bg-[#2c1a17] px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] text-white">
@@ -97,35 +97,36 @@ function MilestoneItem({ item, fr }: { item: GamificationCatalogItem; fr: boolea
           {stateLabel(item.state, fr)}
         </span>
       </div>
-      {milestone.progressCurrent !== undefined && milestone.progressTarget !== undefined ? (
+      {item.progressCurrent !== undefined && item.progressTarget !== undefined ? (
         <div className="mt-4">
           <div className="flex justify-between text-xs font-semibold text-[#765f59]">
             <span>{fr ? "Invitations enregistrées" : "Registered invites"}</span>
-            <span>{milestone.progressCurrent}/{milestone.progressTarget}</span>
+            <span>{item.progressCurrent}/{item.progressTarget}</span>
           </div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f5e7e2]">
-            <div className="h-full rounded-full bg-[#cf3b34]" style={{ width: `${milestone.progressPercent ?? 0}%` }} />
+            <div className="h-full rounded-full bg-[#cf3b34]" style={{ width: `${item.progressPercent ?? 0}%` }} />
           </div>
         </div>
       ) : null}
       <p className="mt-4 text-xs font-semibold text-[#a48d86]">
-        {milestone.achievedAt
-          ? `${fr ? "Obtenu le" : "Achieved on"} ${milestone.achievedAt.slice(0, 10)}`
+        {item.achievedAt
+          ? `${fr ? "Obtenu le" : "Achieved on"} ${item.achievedAt.slice(0, 10)}`
           : item.grantsXp
             ? (fr ? "Récompense XP one-shot" : "One-shot XP reward")
             : (fr ? "Reconnaissance one-shot" : "One-shot recognition")}
+        {` · XP : ${item.xpContribution}`}
       </p>
     </article>
   );
 }
 
 export function GamificationCatalogPanel({
-  catalog,
+  summary,
   loading,
   error,
   locale,
 }: {
-  catalog: GamificationCatalogItem[] | undefined;
+  summary: GamificationSummary | undefined;
   loading: boolean;
   error: unknown;
   locale: string;
@@ -146,7 +147,7 @@ export function GamificationCatalogPanel({
     );
   }
 
-  if (error || !catalog) {
+  if (error || !summary) {
     return (
       <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
         <SectionLabel icon={Target} title={fr ? "Objectifs de progression" : "Progression goals"} subtitle={fr ? "Le catalogue personnel est temporairement indisponible." : "The personal catalog is temporarily unavailable."} />
@@ -154,8 +155,8 @@ export function GamificationCatalogPanel({
     );
   }
 
-  const progressions = catalog.filter((item) => item.kind === "progression");
-  const milestones = catalog.filter((item) => item.kind === "milestone");
+  const progressions = summary.progressions;
+  const milestones = summary.milestones;
   return (
     <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
       <div className="flex items-start justify-between gap-4">
@@ -165,7 +166,7 @@ export function GamificationCatalogPanel({
           subtitle={fr ? "Toutes les mécaniques CURRENT applicables, y compris celles qui restent à commencer." : "Every applicable CURRENT mechanic, including goals not started yet."}
         />
         <span className="hidden shrink-0 items-center gap-1 rounded-full border border-[#f1c1b7] bg-[#fff5f2] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#b4362e] sm:inline-flex">
-          <TrendingUp size={13} /> {catalog.length}
+          <TrendingUp size={13} /> {progressions.length + milestones.length}
         </span>
       </div>
 

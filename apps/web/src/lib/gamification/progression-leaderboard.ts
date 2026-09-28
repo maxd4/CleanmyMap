@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   assessLevelRequirements,
+  computeCurrentLevel,
   computePotentialLevel,
   deriveBadges,
   xpRequired,
@@ -40,6 +41,8 @@ import { BADGE_DEFINITIONS } from "./badge-catalog";
 import { actionRowToDrawing, toFloat, toInt, toNullableFloat } from "./progression-utils";
 import { resolveEngagementStatus } from "./engagement-status";
 import { loadGamificationCatalog } from "./gamification-catalog-loader";
+import { loadGamificationLedgerEvents } from "./gamification-summary-loader";
+import { buildGamificationSummary } from "./gamification-summary";
 type LeaderboardPeriod = "lifetime" | "yearToDate";
 
 function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
@@ -255,49 +258,32 @@ export async function getUserProgression(
   userId: string,
 ): Promise<UserProgressionResponse> {
   const yearToDateStartDate = getYearToDateStartDate();
-  const [profileResult, stats, rows, annualRows, individualItems, annualImpact, catalog] = await Promise.all([
-    supabase
-      .from("progression_profiles")
-      .select(
-        "user_id, xp_total, xp_validated, xp_pending, current_level, potential_level",
-      )
-      .eq("user_id", userId)
-      .maybeSingle(),
-    loadUserProgressionStats(supabase, userId),
+  const progressionEventsPromise = loadGamificationLedgerEvents(supabase, userId);
+  const [stats, rows, annualRows, individualItems, annualImpact, catalog, progressionEvents] = await Promise.all([
+    loadUserProgressionStats(supabase, userId, { events: progressionEventsPromise }),
     loadActionRowsForUser(supabase, userId),
     loadApprovedActionRows(supabase, 10000, yearToDateStartDate),
     buildIndividualLeaderboard(supabase),
     getUserAnnualImpact(supabase, userId),
-    loadGamificationCatalog(supabase, userId),
+    loadGamificationCatalog(supabase, userId, { progressionEvents: progressionEventsPromise }),
+    progressionEventsPromise,
   ]);
 
-  if (profileResult.error) {
-    throw new Error(profileResult.error.message);
-  }
-
-  const profile =
-    (profileResult.data as {
-      user_id: string;
-      xp_total: number;
-      xp_validated: number;
-      xp_pending: number;
-      current_level: number;
-      potential_level: number;
-    } | null) ?? {
-      user_id: userId,
-      xp_total: 0,
-      xp_validated: 0,
-      xp_pending: 0,
-      current_level: 1,
-      potential_level: 1,
-    };
-
-  const nextLevel = profile.current_level + 1;
+  const xpTotal = progressionEvents.reduce((total, event) => total + event.xp_awarded, 0);
+  const xpValidated = progressionEvents
+    .filter((event) => event.status_phase === "validated")
+    .reduce((total, event) => total + event.xp_awarded, 0);
+  const xpPending = progressionEvents
+    .filter((event) => event.status_phase === "pending")
+    .reduce((total, event) => total + event.xp_awarded, 0);
+  const currentLevel = computeCurrentLevel(xpValidated, stats);
+  const potentialLevel = computePotentialLevel(xpValidated);
+  const nextLevel = currentLevel + 1;
   const nextRequiredXp = xpRequired(nextLevel);
   const requirement = assessLevelRequirements(
     nextLevel,
     stats,
-    toFloat(profile.xp_validated, 0),
+    xpValidated,
   );
   const timeline = buildTimelineItems(rows).slice(0, 30);
   const rankItem = individualItems.find((item) => item.userId === userId) ?? null;
@@ -305,21 +291,21 @@ export async function getUserProgression(
   const annualRecognitionIndex = buildContributorRecognitionIndex(annualRows, userId);
 
   return {
-    userId: profile.user_id,
-    xpTotal: toFloat(profile.xp_total, 0),
-    xpValidated: toFloat(profile.xp_validated, 0),
-    xpPending: toFloat(profile.xp_pending, 0),
-    currentLevel: toInt(profile.current_level, 1),
-    potentialLevel: toInt(profile.potential_level, 1),
+    userId,
+    xpTotal,
+    xpValidated,
+    xpPending,
+    currentLevel,
+    potentialLevel,
     nextLevel: {
       level: nextLevel,
       xpRequired: nextRequiredXp,
-      xpRemaining: Math.max(0, nextRequiredXp - toFloat(profile.xp_validated, 0)),
-      frozen: toInt(profile.potential_level, 1) > toInt(profile.current_level, 1),
+      xpRemaining: Math.max(0, nextRequiredXp - xpValidated),
+      frozen: potentialLevel > currentLevel,
       requirements: requirement,
     },
     badges: deriveBadges({
-      currentLevel: toInt(profile.current_level, 1),
+      currentLevel,
       qualityAverage: stats.qualityAverage,
       validationRatio: stats.validationRatio,
       collectiveEvents: stats.collectiveEvents,
@@ -328,8 +314,20 @@ export async function getUserProgression(
       wasteCoverageRate: stats.wasteCoverageRate,
     }),
     badgeCatalog: BADGE_DEFINITIONS,
-    catalog,
-    engagementStatus: resolveEngagementStatus(toInt(profile.current_level, 1)),
+    summary: buildGamificationSummary({
+      catalog,
+      events: progressionEvents,
+      currentLevel,
+      potentialLevel,
+      nextLevel: {
+        level: nextLevel,
+        xpRequired: nextRequiredXp,
+        xpRemaining: Math.max(0, nextRequiredXp - xpValidated),
+        frozen: potentialLevel > currentLevel,
+        requirements: requirement,
+      },
+    }),
+    engagementStatus: resolveEngagementStatus(currentLevel),
     impact: computePersonalImpactMetrics(rows),
     impactMethodology: buildPersonalImpactMethodology(stats.qualityAverage),
     dynamicRanking: {

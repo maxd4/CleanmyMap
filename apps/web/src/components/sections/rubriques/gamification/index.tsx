@@ -94,7 +94,7 @@ export function GamificationSection() {
             </div>
 
             <GamificationCatalogPanel
-              catalog={progression?.catalog}
+              summary={progression?.summary}
               loading={meLoading}
               error={meError}
               locale={locale}
