@@ -1,7 +1,6 @@
 import { expect, it } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import {
-  computeActionBalanceCounts,
   computeActionBalanceSummary,
   getActionBalanceContext,
 } from "./action-balance";
@@ -179,7 +178,7 @@ it("ignores rejected or unvalidated actions", () => {
   ];
 
   const validated = new Set(["s-1", "a-1", "e-1"]);
-  const summary = computeActionBalanceCounts(rows, validated);
+  const summary = computeActionBalanceSummary(rows, validated);
 
   expect(summary.balancedCycles).toBe(1);
   expect(summary.totalXpAwarded).toBe(1);

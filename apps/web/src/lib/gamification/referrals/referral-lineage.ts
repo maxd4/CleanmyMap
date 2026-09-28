@@ -66,7 +66,7 @@ export type ReferralLineageLeaderboardEntry = {
   directInviteesCount: number;
 };
 
-export type ReferralLineageGraph = {
+type ReferralLineageGraph = {
   profilesById: Map<string, ReferralLineageProfileRow>;
   childrenByParentId: Map<string, ReferralLineageProfileRow[]>;
   directInviteeCounts: Map<string, number>;
@@ -84,7 +84,7 @@ function buildDisplayName(profile: ReferralLineageProfileRow): string {
   return normalizeDisplayName(profile.display_name, profile.id);
 }
 
-export function buildReferralLineageGraph(
+function buildReferralLineageGraph(
   profiles: ReferralLineageProfileRow[],
 ): ReferralLineageGraph {
   const profilesById = new Map(
@@ -127,7 +127,7 @@ export function buildReferralLineageGraph(
   };
 }
 
-export function buildReferralAncestorChain(
+function buildReferralAncestorChain(
   focusProfileId: string,
   graph: ReferralLineageGraph,
 ): ReferralLineageView["ancestorChain"] {

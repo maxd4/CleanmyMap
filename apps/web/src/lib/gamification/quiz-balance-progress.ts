@@ -6,11 +6,9 @@ import { broadcastGamificationAnnouncement } from "./announcements";
 import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz/quiz-taxonomy";
 import { QUIZ_BALANCE_MILESTONES } from "./quiz-milestones";
 
-export { QUIZ_BALANCE_MILESTONES } from "./quiz-milestones";
+type QuizBalanceMilestoneThreshold = (typeof QUIZ_BALANCE_MILESTONES)[number]["threshold"];
 
-export type QuizBalanceMilestoneThreshold = (typeof QUIZ_BALANCE_MILESTONES)[number]["threshold"];
-
-export type QuizBalanceProgressRow = {
+type QuizBalanceProgressRow = {
   user_id: string;
   question_type: string;
   correct_count: number;

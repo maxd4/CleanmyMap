@@ -1,5 +1,3 @@
-export type BadgeFamily = 'explorer' | 'participant';
-
 export type GemGrade = {
   id: string;
   label: string;
@@ -8,11 +6,4 @@ export type GemGrade = {
   visualVariant?: string;
   tooltip?: string;
   xp?: number;
-};
-
-export type FormsProgress = {
-  eligibleFormCount: number;
-  currentGrade?: GemGrade;
-  nextGrade?: GemGrade | null;
-  xpReward?: number;
 };

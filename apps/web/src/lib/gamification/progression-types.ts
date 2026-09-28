@@ -304,15 +304,6 @@ export type ActionRow = {
   geometry_source?: ActionGeometrySource | null;
 };
 
-export type ActionOrganizerRow = {
-  action_id: string;
-  organizer_clerk_id: string;
-  organizer_label: string;
-  organizer_handle: string | null;
-  is_primary: boolean;
-  created_at: string;
-};
-
 export type SpotRow = {
   id: string;
   created_at: string;
@@ -334,12 +325,6 @@ export type EventRsvpRow = {
   participant_clerk_id: string;
   status: "yes" | "maybe" | "no";
   updated_at: string;
-};
-
-export type ProgressionEventRow = {
-  event_type: ProgressionEventType;
-  status_phase: ProgressionStatusPhase;
-  xp_awarded: number;
 };
 
 export type UserProgressionStats = {
@@ -456,13 +441,6 @@ export type ContributorRecognitionSnapshot = {
   currentContributor: ContributorRecognitionCard | null;
 };
 
-export type YearToDateImpactSummary = {
-  wasteKg: number;
-  validatedActions: number;
-  wasteKnownActions: number;
-  wasteCoverageRate: number;
-};
-
 export type IndividualLeaderboardItem = {
   rank: number;
   userId: string;
@@ -515,7 +493,7 @@ export type PersonalImpactMetrics = {
   cigaretteButts: number;
 };
 
-export type PersonalImpactMethodologyFormula = {
+type PersonalImpactMethodologyFormula = {
   id: "water_saved" | "co2_avoided" | "surface_cleaned" | "pollution_score_mean";
   label: string;
   formula: string;

@@ -1,6 +1,6 @@
-export type CleanZoneSourceTable = "trash_spotter_spots";
+type CleanZoneSourceTable = "trash_spotter_spots";
 
-export const CLEAN_ZONE_PROGRESSION_SOURCE_TABLE = "clean_zones" as const;
+const CLEAN_ZONE_PROGRESSION_SOURCE_TABLE = "clean_zones" as const;
 
 type CleanZoneBaseRow = {
   id: string;
@@ -20,7 +20,7 @@ export type CleanZoneProgressionEvent = {
   sourceId: string;
 };
 
-export type CleanZoneProvenance = {
+type CleanZoneProvenance = {
   sourceTable: CleanZoneSourceTable;
   sourceId: string;
 };

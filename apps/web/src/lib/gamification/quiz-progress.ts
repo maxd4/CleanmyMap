@@ -5,11 +5,9 @@ import { refreshProgressionProfile } from "./progression-tracking";
 import { broadcastGamificationAnnouncement } from "./announcements";
 import { QUIZ_PROGRESS_MILESTONES } from "./quiz-milestones";
 
-export { QUIZ_PROGRESS_MILESTONES } from "./quiz-milestones";
+type QuizProgressMilestoneThreshold = (typeof QUIZ_PROGRESS_MILESTONES)[number]["threshold"];
 
-export type QuizProgressMilestoneThreshold = (typeof QUIZ_PROGRESS_MILESTONES)[number]["threshold"];
-
-export type QuizTypeProgressRow = {
+type QuizTypeProgressRow = {
   user_id: string;
   question_type: string;
   correct_count: number;

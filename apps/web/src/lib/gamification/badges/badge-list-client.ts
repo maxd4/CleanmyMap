@@ -3,7 +3,7 @@
 import type { LearningProgressionSummary } from "../quiz-learning-progression";
 import type { GamificationBadgeDefinition } from "../progression-types";
 
-export type GamificationBadgeListItem = {
+type GamificationBadgeListItem = {
   id?: string;
   name?: string;
   progress?: {
