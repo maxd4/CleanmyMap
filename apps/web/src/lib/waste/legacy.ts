@@ -26,11 +26,11 @@ export const LEGACY_RECYCLING_CATEGORY_ORDER = [
   "mixte",
 ] as const satisfies readonly LegacyWasteCategory[];
 
-export function canonicalWasteSlugFromLegacy(value: LegacyWasteCategory): WasteCategorySlug {
+function canonicalWasteSlugFromLegacy(value: LegacyWasteCategory): WasteCategorySlug {
   return LEGACY_WASTE_CATEGORY_TO_SLUG[value];
 }
 
-export type CanonicalWasteQuantity = {
+type CanonicalWasteQuantity = {
   slug: WasteCategorySlug;
   kg: number;
 };
