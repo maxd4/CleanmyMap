@@ -15,9 +15,12 @@ import { ClerkProvider, useAuth, useClerk } from '@clerk/expo'
 import { useHostedAuth } from '@clerk/expo/hosted-auth'
 import { tokenCache } from '@clerk/expo/token-cache'
 import {
+  createMission,
   getMission,
+  requestTrackingPermissions,
   restoreActiveTracking,
   saveMissionAction,
+  startTracking,
   stopTracking,
 } from './lib/tracking-service'
 import { getBufferCount } from './lib/storage'
@@ -40,7 +43,7 @@ function formatDuration(startedAt: string): string {
 }
 
 function CompanionApp() {
-  const { isLoaded, isSignedIn } = useAuth()
+  const { isLoaded, isSignedIn, userId } = useAuth()
   const { signOut } = useClerk()
   const [phase, setPhase] = useState<TrackingPhase>('idle')
   const [mission, setMission] = useState<Mission | null>(null)
@@ -95,6 +98,47 @@ function CompanionApp() {
 
   function stopDurationTimer() {
     if (timerRef.current) clearInterval(timerRef.current)
+  }
+
+  async function handleStartMobileMission() {
+    setErrorMsg(null)
+
+    if (!userId) {
+      const error = 'Connexion Clerk requise pour démarrer une mission.'
+      setErrorMsg(error)
+      Alert.alert('Connexion requise', error)
+      return
+    }
+
+    setPhase('requesting')
+
+    const permissionResult = await requestTrackingPermissions()
+    if (!permissionResult.ok) {
+      setErrorMsg(permissionResult.error)
+      setPhase('idle')
+      Alert.alert('Permission GPS requise', permissionResult.error)
+      return
+    }
+
+    const missionResult = await createMission(userId)
+    if (!missionResult.ok) {
+      setErrorMsg(missionResult.error)
+      setPhase('idle')
+      Alert.alert('Mission impossible', missionResult.error)
+      return
+    }
+
+    const trackingResult = await startTracking(missionResult.data.id)
+    if (!trackingResult.ok) {
+      setErrorMsg(trackingResult.error)
+      setPhase('idle')
+      Alert.alert('Suivi GPS impossible', trackingResult.error)
+      return
+    }
+
+    setMission(trackingResult.data)
+    setPhase('tracking')
+    startDurationTimer(trackingResult.data.started_at ?? new Date().toISOString())
   }
 
   async function handleStop() {
@@ -274,7 +318,7 @@ function CompanionApp() {
     )
   }
 
-  return <MobileShell onSignOut={() => void signOut()} />
+  return <MobileShell onSignOut={() => void signOut()} onStartActivity={handleStartMobileMission} />
 }
 
 function SignedOutScreen() {

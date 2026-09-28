@@ -62,6 +62,10 @@ async function requestPermissions(): Promise<ServiceResult> {
   return { ok: true, data: undefined };
 }
 
+export async function requestTrackingPermissions(): Promise<ServiceResult> {
+  return requestPermissions();
+}
+
 export async function startTracking(missionId: string): Promise<ServiceResult<Mission>> {
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
@@ -115,6 +119,47 @@ export async function startTracking(missionId: string): Promise<ServiceResult<Mi
       notificationColor: '#10b981',
     },
   });
+
+  return { ok: true, data };
+}
+
+export async function createMission(volunteerId: string, label = 'Action bénévole mobile'): Promise<ServiceResult<Mission>> {
+  const normalizedVolunteerId = volunteerId.trim();
+  const normalizedLabel = label.trim();
+
+  if (!normalizedVolunteerId) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+
+  if (!normalizedLabel) {
+    return { ok: false, error: 'Libellé de mission requis.' };
+  }
+
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+
+  let data: Mission | null = null;
+  let error: Error | null = null;
+  try {
+    const result = await client
+      .from('missions')
+      .insert({ volunteer_id: normalizedVolunteerId, label: normalizedLabel })
+      .select()
+      .single<Mission>();
+    data = result.data;
+    error = result.error;
+  } catch (requestError) {
+    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
+  }
+
+  if (error || !data) {
+    return {
+      ok: false,
+      error: `Impossible de créer la mission : ${error?.message ?? 'Réponse mission invalide.'}`,
+    };
+  }
 
   return { ok: true, data };
 }

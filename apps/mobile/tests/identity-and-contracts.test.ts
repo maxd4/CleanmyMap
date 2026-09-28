@@ -23,6 +23,9 @@ const rlsMigration = fileURLToPath(
 const metricsMigration = fileURLToPath(
   new URL('../../web/supabase/migrations/20260827100000_clerk_mission_completion_metrics_trigger.sql', import.meta.url),
 )
+const missionInsertMigration = fileURLToPath(
+  new URL('../../web/supabase/migrations/20260928000003_mobile_mission_insert_owner_rls.sql', import.meta.url),
+)
 
 describe('mobile identity and server contracts', () => {
   beforeEach(() => {
@@ -67,5 +70,17 @@ describe('mobile identity and server contracts', () => {
     expect(metricsSql).toMatch(/security invoker/i)
     expect(metricsSql).toMatch(/new\.distance_m\s*:=/i)
     expect(metricsSql).toMatch(/new\.duration_s\s*:=/i)
+  })
+
+  it('allows only owner-scoped mission creation with a minimal client insert surface', () => {
+    const sql = readFileSync(missionInsertMigration, 'utf8')
+
+    expect(sql).toMatch(
+      /create policy "volunteer_insert_missions"[\s\S]+?for insert[\s\S]+?volunteer_id\s*=\s*coalesce\(\(select auth\.jwt\(\)\)\s*->>\s*'sub'/i,
+    )
+    expect(sql).toMatch(
+      /grant insert\s*\(volunteer_id,\s*label\)\s*on table public\.missions\s*to authenticated/i,
+    )
+    expect(sql).not.toMatch(/grant insert\s*\([^)]*(distance_m|duration_s|created_by)/i)
   })
 })
