@@ -75,7 +75,14 @@ Les limites encore ouvertes sont :
 - le traitement background headless ;
 - la gestion complète de `mission_actions` ;
 - la validation opérationnelle ;
+- le mode activité GPS live avec carte et tracé temps réel ;
+- les contacts d'urgence ;
 - la future évolution produit de l'application mobile.
+
+La V1 mobile est destinée aux bénévoles terrain et reste volontairement réduite
+par rapport à la surface web complète, qui évolue indépendamment. Les autres
+capacités réutilisent le backend, les données et les projections communs ; le
+mobile ne porte aucune gamification parallèle.
 
 Les invariants de sécurité restent :
 

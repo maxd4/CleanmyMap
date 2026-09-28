@@ -28,6 +28,22 @@ documentation/architecture/adr/ADR-004-companion-identity.md
 documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md
 ```
 
+## Périmètre V1
+
+La V1 mobile s'adresse aux bénévoles terrain et reste volontairement réduite
+pour être stabilisée et publiée rapidement. Le site web reste la surface
+complète du produit et continue d'évoluer indépendamment ; l'application mobile
+ne cherche pas à reproduire toutes ses pages ou capacités.
+
+Les deux axes qui pourront recevoir un développement mobile approfondi sont :
+
+- le mode activité GPS live avec carte et tracé temps réel ;
+- les contacts d'urgence.
+
+Les autres capacités réutilisent au maximum les contrats, données et services
+existants du backend commun. La V1 ne crée ni package `shared` générique, ni
+second modèle métier, ni gamification parallèle côté mobile.
+
 ## Stack
 
 ```txt
@@ -70,6 +86,11 @@ flowchart LR
 
 Le site et l'application mobile partagent le même produit, le même projet
 Supabase, Clerk et les contrats métier nécessaires.
+
+Les effets métier restent produits par le backend commun : les missions mobiles
+réutilisent les projections web existantes pour la gamification, l'impact, les
+statistiques et les autres dérivés. Le mobile ne calcule ni ne persiste une
+projection parallèle.
 
 ## Identité Clerk
 

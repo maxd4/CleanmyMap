@@ -6,6 +6,19 @@ déployable distincte du web, officiellement rouverte par le lot M0, mais
 `NOT_PRODUCTION_READY`. Le lot M0 installe une baseline testable ; il n'ajoute
 aucune fonctionnalité produit et ne refait pas l'UI.
 
+## Périmètre V1
+
+La V1 mobile est destinée aux bénévoles terrain et reste volontairement petite.
+Le site web demeure la surface complète du produit et évolue indépendamment.
+Le frontend mobile ne cherche pas à reproduire le site ; les développements
+mobiles approfondis sont réservés au mode activité GPS live avec carte et tracé
+temps réel, ainsi qu'aux contacts d'urgence.
+
+Les autres capacités mobiles doivent réutiliser les contrats, données et
+services communs existants. Aucun package partagé générique, second modèle
+métier mobile ou système de gamification parallèle ne doit être créé pour la
+V1.
+
 Le workspace `apps/mobile`, son `package.json`, cet `AGENTS.md` et ses contrats
 essentiels restent présents tant qu'une décision d'architecture explicite ne
 les retire pas simultanément avec les contrats, la documentation et les

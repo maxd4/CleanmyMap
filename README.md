@@ -107,7 +107,7 @@ Les versions exactes sont définies dans les manifestes du dépôt. Les principa
 | --- | --- |
 | `apps/web/` | Application web Next.js, routes API et composants |
 | `apps/web/supabase/` | Configuration et migrations Supabase du workspace web |
-| `apps/mobile/` | Application mobile de suivi GPS, `CURRENT / ACTIVE DEVELOPMENT`, non prête pour la production |
+| `apps/mobile/` | V1 mobile bénévole terrain, `CURRENT / ACTIVE DEVELOPMENT`, non prête pour la production |
 | `documentation/` | Architecture, produit, sécurité, design system, opérations et pages |
 | `scripts/` | Garde-fous, audits et maintenance Node |
 | `maintenance/python/` | Outils Python de maintenance hors runtime principal |
@@ -219,7 +219,7 @@ Une clé `service_role` ne doit jamais être exposée dans un client web ou mobi
 
 CleanMyMap est un seul produit et un seul monorepo avec deux applications déployables distinctes : `apps/web` pour le web et `apps/mobile` pour le mobile. L'application mobile est issue de l'ancien `companion-app`, qui reste un repère historique et technique, mais elle ne constitue ni une copie du web ni un projet indépendant. Les deux applications partagent notamment Clerk, Supabase et les contrats métier nécessaires.
 
-Les contrats d'identité Clerk et de finalisation de distance sont finalisés et invariants. Le mobile est `CURRENT / ACTIVE DEVELOPMENT` depuis le lot M0, tout en restant `NOT_PRODUCTION_READY` ; les limites ouvertes sont le renouvellement en background headless, `mission_actions`, la validation opérationnelle et la future évolution produit.
+Les contrats d'identité Clerk et de finalisation de distance sont finalisés et invariants. Le mobile est `CURRENT / ACTIVE DEVELOPMENT` depuis le lot M0, tout en restant `NOT_PRODUCTION_READY`. Sa V1 est destinée aux bénévoles terrain et reste volontairement réduite ; les développements approfondis sont réservés au GPS live avec carte/tracé temps réel et aux contacts d'urgence. Le backend, les projections et les effets métier restent communs avec le web, sans gamification parallèle mobile.
 
 Les identifiants techniques historiques restent inchangés : `cleanmymap-companion` et `fr.cleanmymap.companion`.
 
