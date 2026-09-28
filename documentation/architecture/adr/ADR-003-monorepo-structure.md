@@ -7,8 +7,8 @@
 CleanMyMap est un seul produit et un seul monorepo. Il contient deux
 applications déployables distinctes : `apps/web`, l'application web Next.js,
 et `apps/mobile`, l'application mobile Expo / React Native issue de l'ancien
-`companion-app`. L'application mobile est actuellement gelée
-fonctionnellement et sert de base à la future application mobile complète.
+`companion-app`. L'application mobile est `CURRENT / ACTIVE DEVELOPMENT` depuis
+le lot M0, tout en restant `NOT_PRODUCTION_READY`.
 
 Les deux applications partagent notamment Clerk, Supabase et les contrats
 métier nécessaires. Aucune des deux n'est une copie ou un sous-projet
@@ -47,9 +47,9 @@ apps/
 ADR-006 ; sa relocalisation éventuelle relève d'un autre chantier.
 
 L'identité Clerk et le contrat de finalisation des métriques par trigger
-`SECURITY INVOKER` sont finalisés puis gelés. Les limites encore ouvertes sont le traitement
-background headless, `mission_actions`, la validation opérationnelle et la
-future évolution produit de l'application mobile.
+`SECURITY INVOKER` sont finalisés et invariants. Les limites encore ouvertes
+sont le traitement background headless, `mission_actions`, la validation
+opérationnelle et la future évolution produit de l'application mobile.
 
 ## Conséquences
 

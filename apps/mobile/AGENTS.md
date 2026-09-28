@@ -1,11 +1,10 @@
 # Gouvernance locale — `apps/mobile`
 
 Héritage : gouvernance racine → ce périmètre mobile. `apps/mobile` est
-`CURRENT / FROZEN`, pas `LEGACY` : c'est une application déployable distincte
-du web, actuellement gelée sur les contrats stabilisés. « Gelé » signifie
-qu'aucun développement fonctionnel ne reprend sans décision explicite ; cela
-ne rend pas le workspace supprimable et ce fichier ne rouvre pas son
-architecture.
+`CURRENT / ACTIVE DEVELOPMENT`, pas `LEGACY` : c'est une application
+déployable distincte du web, officiellement rouverte par le lot M0, mais
+`NOT_PRODUCTION_READY`. Le lot M0 installe une baseline testable ; il n'ajoute
+aucune fonctionnalité produit et ne refait pas l'UI.
 
 Le workspace `apps/mobile`, son `package.json`, cet `AGENTS.md` et ses contrats
 essentiels restent présents tant qu'une décision d'architecture explicite ne
@@ -23,20 +22,22 @@ consommateurs concernés.
   d'identité ;
 - ne jamais embarquer `service_role` dans l'application mobile.
 
-## Contrats finalisés et gelés
+## Contrats finalisés et invariants
 
 L'identité Clerk, les RLS et la finalisation de `distance_m` et `duration_s`
-par le trigger serveur courant sont finalisées puis gelées. Le client mobile
-ne doit pas reprendre le calcul ou l'écriture directe de ces métriques.
+par le trigger serveur courant sont finalisées et restent invariantes pendant le
+développement actif. Le client mobile ne doit pas reprendre le calcul ou
+l'écriture directe de ces métriques.
 
-## Capacités encore ouvertes
+## Capacités encore ouvertes et limites de production
 
-Seuls les sujets suivants peuvent être rouverts après validation explicite :
+Les sujets suivants restent hors production et nécessitent une validation
+explicite avant toute évolution :
 
 - background headless ;
 - `mission_actions` ;
 - validation opérationnelle ;
-- évolution future après dégel explicite.
+- évolution future du produit mobile, après validation de chaque lot.
 
 Une évolution sur ces sujets doit d'abord recevoir une décision explicite et
 réaligner les contrats, tests et documentation concernés. Ne pas transformer
@@ -47,4 +48,5 @@ Validation mobile ciblée :
 
 ```bash
 npm run mobile:typecheck
+npm run mobile:test
 ```

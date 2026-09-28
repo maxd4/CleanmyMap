@@ -116,6 +116,7 @@
     "test:e2e:persistent:ci": "node e2e/run-github-actions-persistent.mjs",
     "gamification:reconcile": "npm run gamification:reconcile -w apps/web",
     "mobile:typecheck": "npm run typecheck -w apps/mobile",
+    "mobile:test": "npm run test -w apps/mobile",
     "precommit:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_commit_guard.ps1",
     "prepush:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_push_guard.ps1",
     "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/ci/install_git_hooks.ps1",

@@ -9,12 +9,15 @@ monorepo que `apps/web` ; elle n'est ni une copie ni un projet indépendant.
 
 ## Statut
 
-**GELÉE — expérimentation long terme, non prête pour la production.**
+**CURRENT / ACTIVE DEVELOPMENT — NOT_PRODUCTION_READY.**
 
 Les lots 1, 2A et 2B de l'ADR-004 ont raccordé l'identité Clerk, les RLS
 `missions`/`gps_points` et la finalisation propriétaire de distance. L'application
-mobile est désormais gelée fonctionnellement. Aucune nouvelle capacité mobile
-ni publication store ne doit être engagée dans l'état actuel.
+mobile est officiellement rouverte par le lot M0 pour reprendre son
+développement. M0 installe une baseline de tests sans ajouter de fonctionnalité
+produit ni refaire l'UI. L'application reste non prête pour la production : le
+background headless, l'usage opérationnel réel et plusieurs capacités restent
+à valider.
 
 Références :
 
@@ -94,7 +97,7 @@ restent non validés.
 
 Voir `ADR-004`.
 
-## Finalisation de mission : contrat finalisé puis gelé
+## Finalisation de mission : contrat serveur invariant
 
 Le mobile effectue le flush des points GPS, puis une seule mise à jour de la
 mission vers `completed` avec `ended_at`. Un trigger `BEFORE UPDATE` serveur
@@ -172,7 +175,7 @@ Le LOT 2B ne prétend pas résoudre le renouvellement d'un token Clerk lorsque l
 TaskManager est réveillé sans contexte JavaScript Clerk complet. Sans token
 valide, les données restent dans le buffer local et aucune authentification
 alternative n'est tentée. Cette limite, ainsi que `mission_actions`, demeure
-hors production et motive le gel long terme.
+hors production et motive le statut `NOT_PRODUCTION_READY`.
 
 ## Structure
 
@@ -207,20 +210,21 @@ apps/web/supabase/
 Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 `ADR-006` pour la décision de source de vérité.
 
-## Contrôles avant production
+## Baseline M0 et contrôles avant production
 
 ```txt
 ☑ Identité mobile alignée avec Clerk côté SDK et token provider (LOT 1)
 ☑ Intégration Clerk Third-Party Auth configurée et RLS missions validées (LOTS 2A/2B)
-☑ Ownership des missions testé
-☑ RLS missions testée
-☑ RLS gps_points testée
+☑ Ownership des missions protégé par contrat
+☑ RLS missions protégée par contrat
+☑ RLS gps_points protégée par contrat
 □ RLS mission_actions testée
 ☑ Finalisation distance côté serveur ou RPC sûre (LOT 2B)
 ☑ Erreur de calcul de distance traitée
 ☑ Buffer offline conservé sans token Clerk
-□ Restauration mission active testée
-□ Refus de permissions testé
+☑ Restauration mission active testée
+☑ Refus de permissions testé
+☑ Cohérence identité Clerk → Supabase testée
 ☑ Cache de token Clerk dans SecureStore configuré (LOT 1)
 □ Renouvellement du token Clerk en background headless
 □ Usage opérationnel web et validation production
@@ -230,13 +234,17 @@ Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 
 ```bash
 npm run mobile:typecheck
+npm run mobile:test
 ```
 
-Le prochain niveau recommandé est d'ajouter des tests unitaires pour :
+La baseline M0 couvre désormais par tests unitaires et contractuels :
 
+- restauration d'une mission active ;
 - stockage offline ;
-- synchronisation ;
-- finalisation ;
-- permissions ;
-- identité ;
-- erreurs Supabase.
+- replay du buffer GPS ;
+- refus des permissions GPS ;
+- finalisation d'une mission ;
+- erreurs Supabase ;
+- propriété de mission via RLS ;
+- cohérence identité Clerk → Supabase ;
+- absence d'écriture client directe des métriques dérivées.

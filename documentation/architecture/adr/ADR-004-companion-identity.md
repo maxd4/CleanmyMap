@@ -1,6 +1,6 @@
 # ADR-004 — Identité de l'application mobile (historique companion)
 
-**Statut : finalisé pour les LOTS 1, 2A et 2B — application mobile gelée**
+**Statut : contrats finalisés pour les LOTS 1, 2A et 2B — M0 rouvre le développement mobile**
 **Date : 26 août 2026**
 
 ## Contexte
@@ -84,8 +84,8 @@ Les invariants suivants sont désormais portés par le code :
 
 Cette implémentation ne constitue pas une validation opérationnelle de
 production. Le contrat Clerk, les RLS et la finalisation de distance sont
-réalisés puis gelés ; le comportement background headless, `mission_actions` et
-l'usage opérationnel réel restent ouverts.
+réalisés et restent invariants ; le comportement background headless,
+`mission_actions` et l'usage opérationnel réel restent ouverts.
 
 ## Contrat RLS Clerk — LOT 2A réalisé
 
@@ -152,13 +152,15 @@ Le renouvellement fiable d'un token Clerk en réveil `TaskManager` headless n'es
 pas résolu : sans token valide, le buffer local reste la seule issue et aucune
 identité anonyme n'est utilisée.
 
-## Gel de l'application mobile
+## Reprise M0 de l'application mobile
 
-L'ADR-004 est fermée pour la roadmap mobile actuelle. L'application mobile est
-gelée à long terme jusqu'à une décision explicite de dégel et à une validation
-opérationnelle réelle. Aucune nouvelle UI, capacité GPS, photo, action ou
-publication store ne doit être engagée dans ce périmètre. `mission_actions` et
-les autres capacités expérimentales restent hors production.
+Le lot M0 rouvre officiellement `apps/mobile` en `CURRENT / ACTIVE DEVELOPMENT`.
+Cette reprise porte d'abord sur la baseline de tests et la cohérence de la
+gouvernance ; elle n'ajoute aucune nouvelle fonctionnalité produit et ne refait
+pas l'UI. L'application reste `NOT_PRODUCTION_READY` tant que le background
+headless, `mission_actions`, l'usage opérationnel réel et la validation de
+production ne sont pas établis. Toute évolution ultérieure doit préserver les
+contrats Clerk, RLS et métriques serveur ci-dessus.
 
 Les identifiants techniques historiques `cleanmymap-companion` et
 `fr.cleanmymap.companion` restent inchangés ; leur renommage est hors périmètre.
@@ -218,17 +220,17 @@ Inconvénients :
 
 ## Clôture et suite hors application mobile
 
-Le LOT 2B a traité l'appel client à `compute_mission_distance` et a gelé
-l'application mobile ; ce passage est historique et a été corrigé par SEC-01.
-La reprise dépend d'une décision explicite de dégel et d'une validation
-opérationnelle réelle.
+Le LOT 2B a traité l'appel client à `compute_mission_distance` et le gel
+historique de l'application mobile ; ce passage a été corrigé par SEC-01 puis
+remplacé par la décision de reprise M0. La validation opérationnelle réelle
+reste à établir.
 
 Le contrat ne doit pas supposer qu'un token Clerk peut toujours être renouvelé
 hors d'un contexte Clerk entièrement initialisé : en son absence, le buffer
 offline reste l'état attendu.
 
-La roadmap revient désormais aux fonctionnalités web. Aucun nouveau lot mobile
-n'est recommandé avant une décision explicite de dégel.
+La roadmap mobile peut désormais reprendre par lots bornés, sans élargir les
+contrats sécurisés ni qualifier l'application de prête pour la production.
 
 ## Migration et validation
 
@@ -266,5 +268,6 @@ service_role absente du bundle
 
 La décision d'identité, de RLS et de finalisation est formalisée, mais
 l'application mobile ne doit pas être qualifiée de prête pour la production.
-Elle reste gelée ; le background headless, `mission_actions`, la validation
-opérationnelle et la future évolution produit restent ouverts.
+Elle est `CURRENT / ACTIVE DEVELOPMENT` depuis M0 ; le background headless,
+`mission_actions`, la validation opérationnelle et la future évolution produit
+restent ouverts.
