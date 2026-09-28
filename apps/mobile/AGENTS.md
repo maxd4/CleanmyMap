@@ -3,8 +3,8 @@
 Héritage : gouvernance racine → ce périmètre mobile. `apps/mobile` est
 `CURRENT / ACTIVE DEVELOPMENT`, pas `LEGACY` : c'est une application
 déployable distincte du web, officiellement rouverte par le lot M0, mais
-`NOT_PRODUCTION_READY`. Le lot M0 installe une baseline testable ; il n'ajoute
-aucune fonctionnalité produit et ne refait pas l'UI.
+`NOT_PRODUCTION_READY`. La baseline mobile reste minimale et n'ajoute pas de
+fonctionnalité métier profonde ni de parité avec le web.
 
 ## Périmètre V1
 
@@ -18,6 +18,21 @@ Les autres capacités mobiles doivent réutiliser les contrats, données et
 services communs existants. Aucun package partagé générique, second modèle
 métier mobile ou système de gamification parallèle ne doit être créé pour la
 V1.
+
+## Shell V1
+
+Le shell mobile expose uniquement cinq destinations : `Accueil`, `Carte`,
+`Agir`, `Messages` et `Profil`. `Agir` présente les quatre entrées terrain
+`Démarrer une action`, `Rejoindre une action`, `Organiser une action` et
+`Signaler un déchet`.
+
+`Démarrer une action` ouvre seulement la surface locale identifiée comme futur
+mode activité GPS. Le GPS live, la carte et le tracé temps réel ne sont pas
+développés dans cette baseline. Les autres parcours légers ouvrent, lorsque
+nécessaire, les surfaces web existantes (`/actions/map`, `/actions/new`,
+`/sections/rejoindre-une-action`, `/signalement`, `/sections/messagerie`,
+`/profil`, `/reglages`) ; le mobile ne crée pas de deuxième messagerie ni de
+deuxième modèle métier.
 
 Le workspace `apps/mobile`, son `package.json`, cet `AGENTS.md` et ses contrats
 essentiels restent présents tant qu'une décision d'architecture explicite ne
