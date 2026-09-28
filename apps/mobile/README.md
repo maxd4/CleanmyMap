@@ -14,10 +14,10 @@ monorepo que `apps/web` ; elle n'est ni une copie ni un projet indépendant.
 Les lots 1, 2A et 2B de l'ADR-004 ont raccordé l'identité Clerk, les RLS
 `missions`/`gps_points` et la finalisation propriétaire de distance. L'application
 mobile est officiellement rouverte par le lot M0 pour reprendre son
-développement. M0 installe une baseline de tests sans ajouter de fonctionnalité
-produit ni refaire l'UI. L'application reste non prête pour la production : le
-background headless, l'usage opérationnel réel et plusieurs capacités restent
-à valider.
+développement. La baseline conserve un frontend volontairement réduit et
+réutilise les surfaces web existantes lorsque cela suffit. L'application reste
+non prête pour la production : le background headless, l'usage opérationnel réel
+et plusieurs capacités restent à valider.
 
 Références :
 
@@ -43,6 +43,25 @@ Les deux axes qui pourront recevoir un développement mobile approfondi sont :
 Les autres capacités réutilisent au maximum les contrats, données et services
 existants du backend commun. La V1 ne crée ni package `shared` générique, ni
 second modèle métier, ni gamification parallèle côté mobile.
+
+## Shell mobile V1
+
+Le shell expose cinq destinations simples : `Accueil`, `Carte`, `Agir`,
+`Messages` et `Profil`.
+
+`Agir` présente quatre choix :
+
+- `Démarrer une action` ouvre une surface locale marquée `FUTUR LOT` pour le
+  futur mode activité GPS ; la carte live, le tracé et le nouveau moteur
+  d'activité ne sont pas implémentés dans cette baseline ;
+- `Rejoindre une action` ouvre `/sections/rejoindre-une-action` sur le web ;
+- `Organiser une action` ouvre `/actions/new` sur le web ;
+- `Signaler un déchet` ouvre `/signalement` sur le web.
+
+La destination `Carte` ouvre `/actions/map` pour la consultation existante et
+`Messages` ouvre `/sections/messagerie`. Le mobile n'implémente pas de deuxième
+messagerie. `Profil` donne accès aux surfaces web `/profil` et `/reglages` et
+réserve seulement un emplacement non fonctionnel pour `Contact d'urgence`.
 
 ## Stack
 
@@ -153,6 +172,8 @@ Variables publiques attendues :
 EXPO_PUBLIC_SUPABASE_URL
 EXPO_PUBLIC_SUPABASE_ANON_KEY
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
+# Optionnelle : base du site utilisée par les ponts web du shell mobile
+EXPO_PUBLIC_WEB_URL
 ```
 
 Ne jamais ajouter :
@@ -205,6 +226,9 @@ apps/mobile/
 ├── App.tsx
 ├── index.ts
 ├── app.json
+├── screens/
+│   ├── mobile-shell.tsx
+│   └── mobile-shell-contract.ts
 ├── lib/
 │   ├── supabase.ts
 │   ├── storage.ts
@@ -269,3 +293,6 @@ La baseline M0 couvre désormais par tests unitaires et contractuels :
 - propriété de mission via RLS ;
 - cohérence identité Clerk → Supabase ;
 - absence d'écriture client directe des métriques dérivées.
+
+Le contrat du shell protège aussi les cinq destinations V1 et les ponts vers les
+surfaces web existantes.

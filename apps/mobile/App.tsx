@@ -5,27 +5,24 @@ import {
   Dimensions,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import * as Linking from 'expo-linking'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
 import { ClerkProvider, useAuth, useClerk } from '@clerk/expo'
 import { useHostedAuth } from '@clerk/expo/hosted-auth'
 import { tokenCache } from '@clerk/expo/token-cache'
 import {
-  getBackgroundTrackingWarning,
   getMission,
   restoreActiveTracking,
   saveMissionAction,
-  startTracking,
   stopTracking,
 } from './lib/tracking-service'
 import { getBufferCount } from './lib/storage'
 import { uploadMissionPhoto } from './lib/storage-upload'
+import { MobileShell } from './screens/mobile-shell'
 import type { Mission, MissionActionType, TrackingPhase } from './types/mission'
 
 const { width } = Dimensions.get('window')
@@ -47,12 +44,10 @@ function CompanionApp() {
   const { signOut } = useClerk()
   const [phase, setPhase] = useState<TrackingPhase>('idle')
   const [mission, setMission] = useState<Mission | null>(null)
-  const [missionIdInput, setMissionIdInput] = useState('')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [duration, setDuration] = useState('')
   const [bufferCount, setBufferCount] = useState(0)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const trackingWarning = getBackgroundTrackingWarning()
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bufferTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -83,28 +78,12 @@ function CompanionApp() {
   }, [isLoaded, isSignedIn])
 
   useEffect(() => {
-    const handleDeepLink = (event: { url: string }) => {
-      const { queryParams } = Linking.parse(event.url)
-      if (queryParams?.id) {
-        setMissionIdInput(queryParams.id as string)
-      }
-    }
-
-    const subscription = Linking.addEventListener('url', handleDeepLink)
-
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleDeepLink({ url })
-      }
-    })
-
     bufferTimerRef.current = setInterval(async () => {
       const count = await getBufferCount()
       setBufferCount(count)
     }, 5000)
 
     return () => {
-      subscription.remove()
       if (bufferTimerRef.current) clearInterval(bufferTimerRef.current)
     }
   }, [])
@@ -116,40 +95,6 @@ function CompanionApp() {
 
   function stopDurationTimer() {
     if (timerRef.current) clearInterval(timerRef.current)
-  }
-
-  async function handleStart() {
-    setErrorMsg(null)
-    const id = missionIdInput.trim()
-
-    if (!id) {
-      setErrorMsg('ID manquant')
-      return
-    }
-
-    if (!isSignedIn) {
-      setErrorMsg('Connexion Clerk requise')
-      return
-    }
-
-    if (trackingWarning) {
-      setErrorMsg(trackingWarning)
-      Alert.alert('Build requis', trackingWarning)
-      return
-    }
-
-    setPhase('requesting')
-    const result = await startTracking(id)
-
-    if (!result.ok) {
-      setErrorMsg(result.error)
-      setPhase('idle')
-      return
-    }
-
-    setMission(result.data)
-    setPhase('tracking')
-    startDurationTimer(result.data.started_at ?? new Date().toISOString())
   }
 
   async function handleStop() {
@@ -269,6 +214,12 @@ function CompanionApp() {
           </View>
         </View>
 
+        {errorMsg ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{errorMsg}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.hudStatsRow}>
           <View style={styles.hudStatBox}>
             <Text style={styles.hudStatLabel}>DURÉE</Text>
@@ -323,48 +274,7 @@ function CompanionApp() {
     )
   }
 
-  return (
-    <View style={styles.darkContainer}>
-      <StatusBar style="light" />
-      <Text style={styles.hudTitle}>CLEANMYMAP</Text>
-      <Text style={styles.hudSubtitle}>PRET POUR MISSION</Text>
-      {trackingWarning ? (
-        <View style={styles.warningBanner}>
-          <Text style={styles.warningTitle}>EXPO GO INCOMPATIBLE</Text>
-          <Text style={styles.warningText}>{trackingWarning}</Text>
-        </View>
-      ) : null}
-
-      {errorMsg ? (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{errorMsg}</Text>
-        </View>
-      ) : null}
-
-      <View style={styles.hudInputWrapper}>
-        <Text style={styles.hudLabel}>IDENTIFIANT MISSION</Text>
-        <TextInput
-          style={styles.hudInput}
-          value={missionIdInput}
-          onChangeText={setMissionIdInput}
-          placeholder="XXXX-XXXX-XXXX"
-          placeholderTextColor="#475569"
-        />
-      </View>
-
-      <TouchableOpacity
-        style={[styles.hudBtnPrimary, trackingWarning && styles.hudBtnPrimaryDisabled]}
-        onPress={handleStart}
-        disabled={Boolean(trackingWarning)}
-      >
-        <Text style={styles.hudBtnText}>DÉMARRER</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.hudBtnSecondary} onPress={() => signOut()}>
-        <Text style={styles.hudBtnSecondaryText}>SE DÉCONNECTER</Text>
-      </TouchableOpacity>
-    </View>
-  )
+  return <MobileShell onSignOut={() => void signOut()} />
 }
 
 function SignedOutScreen() {
