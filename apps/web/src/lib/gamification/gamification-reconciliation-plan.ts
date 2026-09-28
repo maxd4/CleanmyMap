@@ -40,6 +40,7 @@ export type GamificationEventChange = {
   eventType: string;
   xpAwarded: number;
   rulesVersion?: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type GamificationReconciliationPlan = {
@@ -150,6 +151,7 @@ function changeFromExpected(event: ExpectedGamificationEvent): GamificationEvent
     rulesVersion: typeof event.metadata.rulesVersion === "string"
       ? event.metadata.rulesVersion
       : undefined,
+    metadata: event.metadata,
   };
 }
 
@@ -166,6 +168,7 @@ function changeFromPersisted(
     eventType: event.event_type,
     xpAwarded: finiteNumber(event.xp_awarded),
     rulesVersion: typeof metadata.rulesVersion === "string" ? metadata.rulesVersion : undefined,
+    metadata,
   };
 }
 

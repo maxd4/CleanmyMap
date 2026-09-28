@@ -3,19 +3,22 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildRequiredClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import type { GamificationReconciliationReceipt } from "@/lib/gamification/gamification-reconciliation-receipt";
 
 export type AppNotification = {
   id: string;
-  type: "validation" | "community" | "system" | "security" | "chat" | "action_discussion";
+  type: "validation" | "community" | "system" | "security" | "chat" | "action_discussion" | "gamification_reconciliation";
   title: string;
   content: string;
   read_at: string | null;
+  seen_at?: string | null;
+  acknowledged_at?: string | null;
   created_at: string;
   payload: Record<string, unknown> | null;
 };
 
 const notificationColumns =
-  "id, type, title, content, read_at, created_at, payload" as const;
+  "id, type, title, content, read_at, seen_at, acknowledged_at, created_at, payload" as const;
 
 export const NOTIFICATIONS_PAGE_SIZE = 20;
 
@@ -28,6 +31,16 @@ export type NotificationsPage = {
   notifications: AppNotification[];
   nextCursor: NotificationPageCursor | null;
 };
+
+export function getGamificationReconciliationReceipt(
+  notification: AppNotification,
+): GamificationReconciliationReceipt | null {
+  if (notification.type !== "gamification_reconciliation") return null;
+  const receipt = notification.payload?.receipt;
+  return receipt && typeof receipt === "object"
+    ? receipt as GamificationReconciliationReceipt
+    : null;
+}
 
 async function getNotificationsClient(
   getToken: () => Promise<string | null>,
@@ -97,7 +110,7 @@ export async function markNotificationAsReadForCurrentUser(
   const supabase = await getNotificationsClient(getToken);
   const { error } = await supabase
     .from("app_notifications")
-    .update({ read_at: new Date().toISOString() })
+    .update({ read_at: new Date().toISOString(), seen_at: new Date().toISOString() })
     .eq("id", notificationId)
     .eq("user_id", userId);
 

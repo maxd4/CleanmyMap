@@ -36,6 +36,22 @@ CURRENT, elle n'ajoute jamais une compensation additive.
 Les tests de reconstruction couvrent notamment `XP → XP`, `XP → BADGE_ONLY`
 et `BADGE_ONLY → NON_GAMIFIED`, avec baisse possible de l'XP et du niveau.
 
+## Reçu utilisateur de réconciliation
+
+`gamification-reconciliation-receipt.ts` porte le contrat structuré
+`GamificationReconciliationReceipt`. Le reconciler le construit depuis le
+même plan déterministe que les écritures `progression_events`, puis le
+persiste dans `app_notifications` uniquement lorsqu'une conséquence visible
+existe. Le payload contient les versions de règles, les valeurs XP et niveaux
+avant/après, les identifiants canoniques des progressions, badges et jalons,
+ainsi que les compteurs d'événements ajoutés, modifiés et retirés.
+
+Un plan sans changement visible ne crée aucune notification. La persistance
+reste propriétaire de l'utilisateur et protégée par RLS ; `app_notifications`
+est une boîte de réception utilisateur, jamais un remplacement de
+`admin_operations_audit`. Le client peut extraire le reçu avec
+`getGamificationReconciliationReceipt` sans recalculer le delta.
+
 ## Outil de réconciliation administrative
 
 Le plan de diff en lecture est porté par

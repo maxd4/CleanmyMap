@@ -1,4 +1,5 @@
 import type { GamificationReconciliationPlan } from "./gamification-reconciliation-plan";
+import type { GamificationReconciliationReceipt } from "./gamification-reconciliation-receipt";
 
 export type GamificationReconcileMode = "dry-run" | "apply";
 export type GamificationReconcileTarget = "user" | "all";
@@ -44,6 +45,7 @@ export type GamificationReconcileUserResult = {
   inserted?: number;
   updated?: number;
   removed?: number;
+  receipt?: GamificationReconciliationReceipt | null;
 };
 
 export type GamificationReconcileDependencies = {
@@ -223,17 +225,17 @@ async function runSingleUser(
   dependencies: GamificationReconcileDependencies,
   runId: string,
   aggregate: GamificationReconcileAggregate,
-): Promise<GamificationReconciliationPlan> {
+): Promise<GamificationReconcileUserResult> {
   const userId = args.userId!;
   if (args.mode === "dry-run") {
     const plan = await dependencies.previewUser(userId);
     addPlanToAggregate(aggregate, plan);
-    return plan;
+    return { plan };
   }
   const result = await dependencies.applyUser(userId);
   addPlanToAggregate(aggregate, result.plan);
   await dependencies.auditApply({ runId, userId, plan: result.plan });
-  return result.plan;
+  return result;
 }
 
 async function runAllUsers(
@@ -266,14 +268,14 @@ export async function runGamificationReconcile(
     lastUserId?: string | null;
     aggregate?: GamificationReconcileAggregate;
   },
-): Promise<{ aggregate: GamificationReconcileAggregate; runId: string; userPlan?: GamificationReconciliationPlan }> {
+): Promise<{ aggregate: GamificationReconcileAggregate; runId: string; userPlan?: GamificationReconciliationPlan; userReceipt?: GamificationReconciliationReceipt | null }> {
   const now = dependencies.now ?? (() => new Date().toISOString());
   const runId = initial?.runId ?? args.runId ?? `gamification-reconcile-${Date.now()}`;
   const aggregate = cloneAggregate(initial?.aggregate ?? emptyGamificationReconcileAggregate());
 
   if (args.target === "user") {
-    const userPlan = await runSingleUser(args, dependencies, runId, aggregate);
-    return { aggregate, runId, userPlan };
+    const result = await runSingleUser(args, dependencies, runId, aggregate);
+    return { aggregate, runId, userPlan: result.plan, userReceipt: result.receipt };
   }
 
   await runAllUsers(args, dependencies, runId, aggregate, now, initial?.lastUserId ?? null);

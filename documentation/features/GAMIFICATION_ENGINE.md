@@ -188,6 +188,30 @@ Le script utilise la clé Supabase de service uniquement côté serveur/CLI. Les
 faits métier, les lignes LEGACY et les tables de sources ne sont jamais
 modifiés pour obtenir le résultat gamification.
 
+## Reçu utilisateur de réconciliation
+
+Toute réconciliation qui modifie réellement l'état CURRENT d'un utilisateur
+produit un `GamificationReconciliationReceipt` structuré depuis le même plan
+que les mutations du ledger. Il contient notamment `xp.before/after/delta`,
+`level.before/after/direction`, les progressions ajoutées/retirées/modifiées,
+les badges et jalons concernés, les compteurs d'événements, les versions de
+règles et une `reasonCategory`. Les entrées utilisent les identifiants
+canoniques du registre, jamais des libellés traduits comme identifiants.
+
+Le reçu est conservé dans la boîte de réception existante
+`public.app_notifications` avec `type = 'gamification_reconciliation'` et un
+payload JSON versionné. Cette table fournit le propriétaire utilisateur,
+l'historique et la lecture protégée par RLS ; la migration ajoute
+`seen_at`/`acknowledged_at` et une clé d'idempotence par réconciliation. Elle
+ne remplace pas `progression_events` et `admin_operations_audit` n'est jamais
+utilisé comme boîte de réception.
+
+Un rebuild dont `hasUserVisibleChanges` vaut `false` ne crée aucune
+notification. Le front-end lit le reçu via le payload structuré et ne
+reconstruit pas un delta à partir de deux états incomplets ou du seul total
+XP. Les écritures sont serveur uniquement et le payload ne contient aucune
+donnée administrative sensible.
+
 ## Évolution
 
 Toute modification du moteur doit vérifier ensemble :

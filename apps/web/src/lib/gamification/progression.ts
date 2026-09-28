@@ -42,6 +42,17 @@ export {
 export { loadCurrentGamificationFacts } from "./gamification-facts-loader";
 export type { GamificationReconciliationResult } from "./gamification-reconciliation";
 export {
+  buildGamificationReconciliationReceipt,
+} from "./gamification-reconciliation-receipt";
+export type {
+  GamificationBadgeReceiptChange,
+  GamificationBadgeUpgrade,
+  GamificationProgressionReceiptChange,
+  GamificationProgressionReceiptState,
+  GamificationReconciliationReasonCategory,
+  GamificationReconciliationReceipt,
+} from "./gamification-reconciliation-receipt";
+export {
   computeMonthlyRegularityAwards,
   computeMonthlyRegularitySummary,
   MONTHLY_REGULARITY_GEM_GRADES,

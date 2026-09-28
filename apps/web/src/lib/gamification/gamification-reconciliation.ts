@@ -10,8 +10,15 @@ import type { ProgressionEventType } from "./progression-types";
 import {
   buildGamificationReconciliationPlan,
   loadPersistedGamificationEvents,
+  type GamificationReconciliationProfile,
   type GamificationReconciliationPlan,
 } from "./gamification-reconciliation-plan";
+import {
+  buildGamificationReconciliationReceipt,
+  persistGamificationReconciliationReceipt,
+  type GamificationReconciliationReasonCategory,
+  type GamificationReconciliationReceipt,
+} from "./gamification-reconciliation-receipt";
 
 export type GamificationReconciliationResult = {
   inserted: number;
@@ -21,28 +28,31 @@ export type GamificationReconciliationResult = {
   expectedEvents: number;
   expectedBadges: string[];
   plan: GamificationReconciliationPlan;
+  receipt: GamificationReconciliationReceipt | null;
 };
 
-/** Rebuilds CURRENT derived events from canonical facts; LEGACY rows are untouched. */
-export async function reconcileUserGamification(
+async function loadReconciliationProfile(
   supabase: SupabaseClient,
   userId: string,
-  options: {
-    facts?: GamificationFacts;
-    rules?: GamificationRulesV1;
-    refreshProfile?: boolean;
-  } = {},
-): Promise<GamificationReconciliationResult> {
-  const rules = options.rules ?? GAMIFICATION_RULES_V1;
-  const facts = options.facts ?? await loadCurrentGamificationFacts(supabase, userId);
-  const expected = computeExpectedGamificationState(userId, facts, rules);
-  const persisted = await loadPersistedGamificationEvents(supabase, userId);
-  const plan = buildGamificationReconciliationPlan({ userId, rules, expected, persisted });
+): Promise<GamificationReconciliationProfile | null> {
+  const result = await supabase
+    .from("progression_profiles")
+    .select("current_level")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (result.error) throw new Error(result.error.message);
+  return result.data as GamificationReconciliationProfile | null;
+}
 
+async function insertExpectedEvents(
+  supabase: SupabaseClient,
+  userId: string,
+  expected: ReturnType<typeof computeExpectedGamificationState>["events"],
+  plan: GamificationReconciliationPlan,
+): Promise<number> {
   let inserted = 0;
-  for (const event of expected.events.filter((candidate) =>
-    plan.eventsToAdd.some((change) => change.logicalId === candidate.logicalId),
-  )) {
+  const idsToAdd = new Set(plan.eventsToAdd.map((change) => change.logicalId));
+  for (const event of expected.filter((candidate) => idsToAdd.has(candidate.logicalId))) {
     const didInsert = await insertProgressionEvent(supabase, {
       userId,
       eventType: event.eventType as ProgressionEventType,
@@ -57,10 +67,17 @@ export async function reconcileUserGamification(
     });
     inserted += Number(didInsert);
   }
+  return inserted;
+}
 
+async function updateExpectedEvents(
+  supabase: SupabaseClient,
+  expected: ReturnType<typeof computeExpectedGamificationState>["events"],
+  changes: GamificationReconciliationPlan["eventsToUpdate"],
+): Promise<number> {
   let updated = 0;
-  for (const change of plan.eventsToUpdate) {
-    const event = expected.events.find((candidate) => candidate.logicalId === change.logicalId);
+  for (const change of changes) {
+    const event = expected.find((candidate) => candidate.logicalId === change.logicalId);
     if (!event) continue;
     const result = await supabase.from("progression_events").update({
       event_type: event.eventType,
@@ -76,15 +93,68 @@ export async function reconcileUserGamification(
     if (result.error) throw new Error(result.error.message);
     updated += 1;
   }
+  return updated;
+}
 
-  for (const change of plan.eventsToRemove) {
+async function removeCurrentEvents(
+  supabase: SupabaseClient,
+  changes: GamificationReconciliationPlan["eventsToRemove"],
+): Promise<void> {
+  for (const change of changes) {
     const result = await supabase.from("progression_events").delete().eq("id", change.id);
     if (result.error) throw new Error(result.error.message);
   }
+}
+
+/** Rebuilds CURRENT derived events from canonical facts; LEGACY rows are untouched. */
+export async function reconcileUserGamification(
+  supabase: SupabaseClient,
+  userId: string,
+  options: {
+    facts?: GamificationFacts;
+    rules?: GamificationRulesV1;
+    refreshProfile?: boolean;
+    persistReceipt?: boolean;
+    reasonCategory?: GamificationReconciliationReasonCategory;
+  } = {},
+): Promise<GamificationReconciliationResult> {
+  const rules = options.rules ?? GAMIFICATION_RULES_V1;
+  const facts = options.facts ?? await loadCurrentGamificationFacts(supabase, userId);
+  const expected = computeExpectedGamificationState(userId, facts, rules);
+  const [persisted, profileBefore] = await Promise.all([
+    loadPersistedGamificationEvents(supabase, userId),
+    options.refreshProfile === false
+      ? Promise.resolve(null)
+      : loadReconciliationProfile(supabase, userId),
+  ]);
+  const plan = buildGamificationReconciliationPlan({
+    userId,
+    rules,
+    expected,
+    persisted,
+    profile: profileBefore,
+  });
+
+  const inserted = await insertExpectedEvents(supabase, userId, expected.events, plan);
+  const updated = await updateExpectedEvents(supabase, expected.events, plan.eventsToUpdate);
+  await removeCurrentEvents(supabase, plan.eventsToRemove);
 
   if (options.refreshProfile !== false) {
     const { refreshProgressionProfile } = await import("./progression-tracking");
     await refreshProgressionProfile(supabase, userId, { reconcileLegacyImpact: false });
+  }
+
+  const profileAfter = options.refreshProfile === false
+    ? profileBefore
+    : await loadReconciliationProfile(supabase, userId);
+  const receiptPlan = profileAfter && profileAfter.current_level !== plan.levelAfter
+    ? { ...plan, levelAfter: profileAfter.current_level }
+    : plan;
+  const receipt = buildGamificationReconciliationReceipt(receiptPlan, {
+    reasonCategory: options.reasonCategory,
+  });
+  if (options.persistReceipt !== false && receipt.hasUserVisibleChanges) {
+    await persistGamificationReconciliationReceipt(supabase, receipt);
   }
 
   return {
@@ -94,6 +164,7 @@ export async function reconcileUserGamification(
     preservedLegacy: plan.legacyEventCountPreserved,
     expectedEvents: expected.events.length,
     expectedBadges: expected.expectedBadges,
-    plan,
+    plan: receiptPlan,
+    receipt: receipt.hasUserVisibleChanges ? receipt : null,
   };
 }
