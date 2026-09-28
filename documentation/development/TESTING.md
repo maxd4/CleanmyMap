@@ -420,18 +420,22 @@ npm run quality:duplication
 ```
 
 réutilise les fingerprints natifs jscpd et compare aussi les blocs, les lignes
-et les tokens dupliqués à la baseline métrique. Un fingerprint de clone reste
-un diagnostic (`NEW_CLONE_FINGERPRINTS`) et ne doit pas être confondu avec le
-`DUPLICATION_POLICY_FINGERPRINT`, qui reste un invariant strict de la politique.
+et les tokens dupliqués à la baseline métrique. Tout nouveau fingerprint de
+clone (`NEW_CLONE_FINGERPRINTS > 0`) est bloquant pour le runtime et les tests ;
+les fixtures/data restent strictes. Les clones déjà présents dans les
+baselines natives restent historiques et peuvent être réduits progressivement
+sans renouveler la baseline. Le fingerprint de politique
+(`DUPLICATION_POLICY_FINGERPRINT`) reste un invariant distinct et strict.
 
 La stabilisation court terme de la CI quotidienne distingue trois résultats :
 `PASS`, `PASS_WITH_GRACE` et `FAIL`. `PASS_WITH_GRACE` accepte uniquement une
-hausse calculée contre la même baseline historique et dans l'enveloppe
-versionnée : runtime `+0,05` point de pourcentage et `+80` lignes / `+800`
-tokens ; tests `+0,15` point et `+150` lignes / `+1 500` tokens. Les
-fixtures/data restent strictes : leur baseline zéro ne bénéficie d'aucune
-grâce. Cette grâce est non cumulative et ne modifie ni ne renouvelle la
-baseline ; dépasser une seule limite redevient bloquant (`FAIL`).
+hausse des métriques absolues calculée contre la même baseline historique et
+dans l'enveloppe versionnée : runtime `+0,05` point de pourcentage et `+80`
+lignes / `+800` tokens ; tests `+0,15` point et `+150` lignes / `+1 500`
+tokens. Cette grâce ne s'applique jamais aux nouveaux fingerprints ni aux
+fixtures/data ; elle est non cumulative et ne modifie ni ne renouvelle la
+baseline. Dépasser une seule limite redevient bloquant (`FAIL`). Aucune hausse
+de baseline, de seuil ou d'exclusion ne peut servir à faire passer un lot.
 
 La sortie expose par scope le statut, les nouveaux fingerprints et les deltas
 réels de lignes, tokens et pourcentages. Les baselines natives jscpd restent

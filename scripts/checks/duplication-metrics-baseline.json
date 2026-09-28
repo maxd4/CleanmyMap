@@ -5,7 +5,7 @@
   "toolVersion": "5.3.0",
   "minLines": 5,
   "minTokens": 50,
-  "policyFingerprint": "7b253747cf24bf7ae0c126cc0297e47c2f97b550374378ed898e5e7a329f763c",
+  "policyFingerprint": "93c9f907e5320ec229f6df6e7aad86b37b0f4ef5273530b2875a49c3b8945783",
   "scopes": {
     "runtime": {
       "files": 1629,

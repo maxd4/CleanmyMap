@@ -7,6 +7,7 @@ import {
   DUPLICATION_GRACE,
   DUPLICATION_MIN_LINES,
   DUPLICATION_MIN_TOKENS,
+  DUPLICATION_NEW_CLONE_FINGERPRINTS_BLOCKING,
   DUPLICATION_POLICY_FINGERPRINT,
   DUPLICATION_POLICY_VERSION,
   DUPLICATION_SCOPES,
@@ -55,6 +56,7 @@ test("semantic policy changes produce a different fingerprint", () => {
     toolVersion: DUPLICATION_TOOL_VERSION,
     minLines: DUPLICATION_MIN_LINES,
     minTokens: DUPLICATION_MIN_TOKENS,
+    newCloneFingerprintsBlocking: DUPLICATION_NEW_CLONE_FINGERPRINTS_BLOCKING,
     scopes: DUPLICATION_SCOPES,
     grace: DUPLICATION_GRACE,
   };
@@ -88,13 +90,22 @@ test("new blocks and percentage increases fail the duplication ratchet", () => {
   assert.ok(comparison.failures.some((failure) => failure.includes("duplicatedTokens")));
 });
 
-test("a new clone fingerprint with stable metrics is informational", () => {
+test("a new clone fingerprint fails the runtime and tests ratchets", () => {
   const comparison = compareDuplicationMetrics(
     { clones: 3, lines: 1000, tokens: 10000, duplicatedLines: 20, duplicatedTokens: 200, newClones: 1 },
     BASELINE.scopes.tests,
     "tests",
   );
-  assert.equal(comparison.status, "PASS");
+  assert.equal(comparison.status, "FAIL");
+  assert.ok(comparison.failures.some((failure) => failure.includes("new clone fingerprints")));
+  assert.equal(
+    compareDuplicationMetrics(
+      { clones: 3, lines: 1000, tokens: 10000, duplicatedLines: 20, duplicatedTokens: 200, newClones: 1 },
+      BASELINE.scopes.runtime,
+      "runtime",
+    ).status,
+    "FAIL",
+  );
 });
 
 test("a small runtime increase stays PASS_WITH_GRACE", () => {
@@ -145,11 +156,12 @@ test("a tests increase beyond grace fails", () => {
 
 test("fixtures/data remains strict against its zero baseline", () => {
   const comparison = compareDuplicationMetrics(
-    { ...BASELINE.scopes["fixtures/data"], duplicatedLines: 1, duplicatedTokens: 1 },
+    { ...BASELINE.scopes["fixtures/data"], duplicatedLines: 1, duplicatedTokens: 1, newClones: 1 },
     BASELINE.scopes["fixtures/data"],
     "fixtures/data",
   );
   assert.equal(comparison.status, "FAIL");
+  assert.ok(comparison.failures.some((failure) => failure.includes("new clone fingerprints")));
 });
 
 test("duplication reporting exposes status, fingerprints, and deltas by scope", () => {

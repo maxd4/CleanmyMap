@@ -5,6 +5,7 @@ export const DUPLICATION_TOOL = "jscpd";
 export const DUPLICATION_TOOL_VERSION = "5.3.0";
 export const DUPLICATION_MIN_LINES = 5;
 export const DUPLICATION_MIN_TOKENS = 50;
+export const DUPLICATION_NEW_CLONE_FINGERPRINTS_BLOCKING = true;
 
 export const DUPLICATION_GRACE = Object.freeze({
   runtime: Object.freeze({
@@ -85,6 +86,7 @@ const DUPLICATION_POLICY_DESCRIPTOR = {
   toolVersion: DUPLICATION_TOOL_VERSION,
   minLines: DUPLICATION_MIN_LINES,
   minTokens: DUPLICATION_MIN_TOKENS,
+  newCloneFingerprintsBlocking: DUPLICATION_NEW_CLONE_FINGERPRINTS_BLOCKING,
   scopes: DUPLICATION_SCOPES,
   grace: DUPLICATION_GRACE,
 };
@@ -170,6 +172,9 @@ export function compareDuplicationMetrics(current, baseline, scopeName = "runtim
   };
   const hasRegression = Object.values(deltas).some((delta) => delta > 0);
   const failures = [];
+  if (DUPLICATION_NEW_CLONE_FINGERPRINTS_BLOCKING && (current.newClones ?? 0) > 0) {
+    failures.push(`new clone fingerprints detected (${current.newClones})`);
+  }
   const epsilon = 1e-9;
   const limits = [
     ["duplicatedLines", grace.maxDuplicatedLinesIncrease],
