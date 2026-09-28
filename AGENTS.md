@@ -229,6 +229,41 @@ Avant de supprimer ou remplacer un élément, vérifier qu’il ne porte pas enc
 
 L’absence d’import runtime ne suffit pas à prouver qu’un élément est supprimable.
 
+### Qualification obligatoire du dead-code
+
+Avant toute mutation motivée par Knip ou le dead-code, chaque finding du
+périmètre doit être qualifié avec exactement l’un des statuts suivants :
+
+```text
+DELETE_PROVEN
+INTERNALIZE
+MIGRATE
+RESTORE_FUNCTIONALITY
+KEEP_JUSTIFIED
+```
+
+- `DELETE_PROVEN` : élément réellement inutile après vérification des
+  consommateurs statiques et dynamiques, tests, scripts, documentation,
+  contrats et connaissances uniques ;
+- `INTERNALIZE` : implémentation utile, mais export public inutile ;
+- `MIGRATE` : valeur utile à transférer vers la source canonique ou le
+  successeur avant suppression ;
+- `RESTORE_FUNCTIONALITY` : capacité produit, métier ou scientifique
+  pertinente mais mal branchée, incomplète ou devenue inaccessible ; elle ne
+  doit pas être supprimée pour satisfaire Knip ;
+- `KEEP_JUSTIFIED` : conservation nécessaire avec une justification
+  vérifiable.
+
+Interdictions :
+
+- transformer un finding Knip directement en suppression sans qualification ;
+- supprimer une fonctionnalité pertinente uniquement parce qu’elle n’a plus de
+  caller ;
+- viser artificiellement « zéro finding » au prix d’une perte fonctionnelle.
+
+La cible d’un lot dead-code est d’avoir zéro finding non qualifié dans son
+périmètre, puis de réduire Knip uniquement par des décisions sûres.
+
 ## Amélioration opportuniste des ratchets
 
 Lorsqu’un lot touche déjà un fichier ou symbole couvert par un ratchet de
