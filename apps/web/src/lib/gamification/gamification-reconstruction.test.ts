@@ -37,6 +37,7 @@ function rules(input: {
         ? { kind: "none" }
         : { kind: "fixed", amount: input.amount },
       eligibility: { kind: "canonical_fact", factKey: "action" },
+      thresholds: [],
     }],
   };
 }
@@ -87,6 +88,7 @@ describe("computeExpectedGamificationState", () => {
         xpPolicy: { kind: "none", reason: "business fact only" },
         awardPolicy: { kind: "none" },
         eligibility: { kind: "never", reason: "business fact only" },
+        thresholds: [],
       }],
     });
 
