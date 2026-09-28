@@ -441,8 +441,8 @@
       "path": "src/components/actions/actions-map-canvas.tsx",
       "line": 148,
       "category": "React/JSX",
-      "ceiling": 58,
-      "status": "LEGACY",
+      "ceiling": 16,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionsMapCanvas#1"
     },
     {
@@ -495,8 +495,8 @@
       "path": "src/components/actions/map/popup/action-popup-content-header.tsx",
       "line": 111,
       "category": "React/JSX",
-      "ceiling": 113,
-      "status": "LEGACY",
+      "ceiling": 13,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionPopupContentHeader#1"
     },
     {
@@ -504,8 +504,8 @@
       "path": "src/components/actions/map/popup/action-popup-content-compact-header.tsx",
       "line": 38,
       "category": "React/JSX",
-      "ceiling": 27,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "named:CompactActionHeader#1"
     },
     {
@@ -567,8 +567,8 @@
       "path": "src/components/actions/map/layers/map-layers-shape-layers.tsx",
       "line": 162,
       "category": "React/JSX",
-      "ceiling": 87,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "callback:items . map:0:#1"
     },
     {
@@ -5124,15 +5124,6 @@
       "ceiling": 111,
       "status": "LEGACY",
       "functionIdentity": "named:buildProjectSignalsHighlights#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/lib/environmental-impact-estimator/project-signals.calculations.ts",
-      "line": 603,
-      "category": "métier/domain pur",
-      "ceiling": 97,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildInfrastructureUsageInput#1"
     },
     {
       "metric": "functionLength",
