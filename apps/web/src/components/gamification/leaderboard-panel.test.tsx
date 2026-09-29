@@ -47,7 +47,10 @@ describe("LeaderboardPanel", () => {
 
     const html = renderToStaticMarkup(<LeaderboardPanel />);
     expect(html).toContain("Alice");
-    expect(html).toContain("9 badges (7 grades + 2 one-shot)");
+    expect(html).toContain("9 badges");
+    expect(html).toContain("(7 grades + 2 one-shot)");
+    expect(html).not.toContain("9 badges (7 grades + 2 one-shot)");
+    expect(html).toContain('data-disclosure-tone="rose"');
     expect(html).toContain("Utilisateur");
     expect(html).not.toContain("userId");
     expect(html).not.toContain("clerk");

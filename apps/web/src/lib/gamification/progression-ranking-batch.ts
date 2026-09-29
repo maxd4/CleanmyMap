@@ -17,9 +17,11 @@ import { CURRENT_MILESTONES } from "./current-milestones";
 import { buildQuizLearningProgressionSummary, type QuizLearningProgressRow } from "./quiz-learning-progression";
 import { computeMonthlyRegularitySummary } from "./monthly-regularity";
 import { gamificationEventRegistry } from "./progression-utils";
+import { isSpontaneousActionNotes } from "./progression-data";
 import type { ActionRow, ProgressionEventType, ProgressionStatusPhase } from "./progression-types";
 
-const BATCH_ROW_LIMIT = 50_000;
+const BATCH_PAGE_SIZE = 1_000;
+const BATCH_ID_CHUNK_SIZE = 500;
 
 type LeaderboardProfileRow = {
   user_id: string;
@@ -47,7 +49,7 @@ type LeaderboardEventRow = {
 };
 
 type OrganizerRow = { action_id?: string | null; organizer_clerk_id?: string | null };
-type ParticipantRow = { user_id?: string | null; action_id?: string | null };
+type ParticipantRow = { user_id?: string | null; action_id?: string | null; participation_status?: string | null };
 type VisitedPlaceRow = { user_id?: string | null; place_label?: string | null };
 type FormRow = {
   action_id?: string | null;
@@ -65,15 +67,46 @@ export type LeaderboardBatchData = {
   badgeCounts: Map<string, CurrentLeaderboardBadgeCounts>;
 };
 
+type QueryResult = { data: unknown; error: { message: string } | null };
+type QueryPage = PromiseLike<QueryResult>;
+
+type QueryChain = {
+  eq(column: string, value: string): QueryChain;
+  order(column: string, options?: { ascending?: boolean }): QueryChain;
+  range(from: number, to: number): Promise<QueryResult>;
+};
+
 type QueryClient = {
   from(table: string): {
     select(columns: string): {
-      in(column: string, values: string[]): {
-        limit(value: number): Promise<{ data: unknown; error: { message: string } | null }>;
-      };
+      in(column: string, values: string[]): QueryChain;
     };
   };
 };
+
+type RowFilter = readonly [column: string, value: string];
+
+function chunkValues(values: readonly string[], size: number): string[][] {
+  const chunks: string[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push([...values.slice(index, index + size)]);
+  }
+  return chunks;
+}
+
+async function loadPagedRows<T>(
+  loadPage: (from: number, to: number) => QueryPage,
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += BATCH_PAGE_SIZE) {
+    const result = await loadPage(from, from + BATCH_PAGE_SIZE - 1);
+    if (result.error) throw new Error(result.error.message);
+    const page = Array.isArray(result.data) ? result.data as T[] : [];
+    rows.push(...page);
+    if (page.length < BATCH_PAGE_SIZE) break;
+  }
+  return rows;
+}
 
 async function loadRows<T>(
   supabase: SupabaseClient,
@@ -81,25 +114,38 @@ async function loadRows<T>(
   columns: string,
   userColumn: string,
   userIds: readonly string[],
+  orderColumn = userColumn,
+  filters: readonly RowFilter[] = [],
 ): Promise<T[]> {
   if (userIds.length === 0) return [];
-  const result = await (supabase as unknown as QueryClient)
-    .from(table)
-    .select(columns)
-    .in(userColumn, [...userIds])
-    .limit(BATCH_ROW_LIMIT);
-  if (result.error) throw new Error(result.error.message);
-  return Array.isArray(result.data) ? result.data as T[] : [];
+
+  const rows: T[] = [];
+  for (const values of chunkValues(userIds, BATCH_ID_CHUNK_SIZE)) {
+    const chunkRows = await loadPagedRows<T>((from, to) => {
+      let query = (supabase as unknown as QueryClient)
+        .from(table)
+        .select(columns)
+        .in(userColumn, values);
+      for (const [column, value] of filters) {
+        query = query.eq(column, value);
+      }
+      return query.order(orderColumn, { ascending: true }).order("id", { ascending: true }).range(from, to);
+    });
+    rows.push(...chunkRows);
+  }
+  return rows;
 }
 
 async function loadProfiles(supabase: SupabaseClient): Promise<LeaderboardProfileRow[]> {
-  const result = await supabase
-    .from("profiles")
-    .select("id, display_name, display_name_mode, handle, leaderboard_public_opt_in")
-    .eq("leaderboard_public_opt_in", true)
-    .limit(1000);
-  if (result.error) throw new Error(result.error.message);
-  return ((result.data ?? []) as Array<LeaderboardProfileRow & { id?: string }>).flatMap((row) => {
+  const rows = await loadPagedRows<LeaderboardProfileRow & { id?: string }>((from, to) =>
+    supabase
+      .from("profiles")
+      .select("id, display_name, display_name_mode, handle, leaderboard_public_opt_in")
+      .eq("leaderboard_public_opt_in", true)
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
+  return rows.flatMap((row) => {
     const userId = row.user_id || row.id;
     return userId ? [{ ...row, user_id: userId }] : [];
   });
@@ -125,13 +171,14 @@ async function loadActionBatch(
 ): Promise<{ rowsByUser: Map<string, ActionRow[]>; forms: FormRow[] }> {
   if (userIds.length === 0) return { rowsByUser: new Map(), forms: [] };
 
-  const ownedResult = await supabase
-    .from("actions")
-    .select(ACTION_APPROVED_COLUMNS)
-    .in("created_by_clerk_id", [...userIds])
-    .limit(BATCH_ROW_LIMIT);
-  if (ownedResult.error) throw new Error(ownedResult.error.message);
-  const ownedRows = (ownedResult.data ?? []) as ActionRow[];
+  const ownedRows = (await loadRows<ActionRow>(
+    supabase,
+    "actions",
+    ACTION_APPROVED_COLUMNS,
+    "created_by_clerk_id",
+    userIds,
+    "id",
+  )).filter((row) => isSpontaneousActionNotes(row.notes));
 
   const organizerRows = await loadRows<OrganizerRow>(
     supabase,
@@ -144,13 +191,14 @@ async function loadActionBatch(
   const missingActionIds = organizedActionIds.filter((id) => !ownedRows.some((row) => row.id === id));
   let organizedRows: ActionRow[] = [];
   if (missingActionIds.length > 0) {
-    const result = await supabase
-      .from("actions")
-      .select(ACTION_APPROVED_COLUMNS)
-      .in("id", missingActionIds)
-      .limit(BATCH_ROW_LIMIT);
-    if (result.error) throw new Error(result.error.message);
-    organizedRows = (result.data ?? []) as ActionRow[];
+    organizedRows = await loadRows<ActionRow>(
+      supabase,
+      "actions",
+      ACTION_APPROVED_COLUMNS,
+      "id",
+      missingActionIds,
+      "id",
+    );
   }
 
   const rowsById = new Map([...ownedRows, ...organizedRows].map((row) => [row.id, row]));
@@ -173,7 +221,7 @@ async function loadActionBatch(
   const actionIds = [...rowsById.keys()];
   const forms = actionIds.length === 0
     ? []
-    : await loadRows<FormRow>(supabase, "forms", "action_id, status, validated_by_admin, is_duplicate, is_deleted, is_test", "action_id", actionIds);
+    : await loadRows<FormRow>(supabase, "forms", "action_id, status, validated_by_admin, is_duplicate, is_deleted, is_test", "action_id", actionIds, "action_id");
   return { rowsByUser: userRows, forms };
 }
 
@@ -247,7 +295,12 @@ function buildBadgeCounts(
       completeActionsCount: completeActions.length,
       visitedPlacesCount: visitedByUser.get(userId)?.length ?? 0,
       eligibleFormsCount: forms.filter((row) => row.action_id && userActionIds.has(row.action_id) && formsByAction.has(row.action_id)).length,
-      participationCount: new Set((participantsByUser.get(userId) ?? []).map((row) => row.action_id).filter(Boolean)).size,
+      participationCount: new Set(
+        (participantsByUser.get(userId) ?? [])
+          .filter((row) => row.participation_status === "confirmed")
+          .map((row) => row.action_id)
+          .filter(Boolean),
+      ).size,
     };
     const events = asMilestoneEvents(eventsByUser.get(userId) ?? []);
     const milestones = buildCurrentMilestones({ completeActionsCount: counters.completeActionsCount, events });
@@ -273,11 +326,11 @@ export async function loadLeaderboardBatchData(supabase: SupabaseClient): Promis
   const [progressions, actionBatch, events, participants, visited, quiz, cleanPlaces] = await Promise.all([
     loadProgressions(supabase, userIds),
     loadActionBatch(supabase, userIds),
-    loadRows<LeaderboardEventRow>(supabase, "progression_events", "user_id, event_type, source_table, source_id, status_phase, xp_awarded, occurred_on, metadata", "user_id", userIds),
-    loadRows<ParticipantRow>(supabase, "action_participants", "user_id, action_id", "user_id", userIds),
-    loadRows<VisitedPlaceRow>(supabase, "user_visited_places", "user_id, place_label", "user_id", userIds),
-    loadRows<QuizLearningProgressRow & { user_id?: string | null }>(supabase, "quiz_type_progress", "user_id, question_type, correct_count", "user_id", userIds),
-    loadRows<CleanPlaceRow>(supabase, "trash_spotter_spots", "user_id, id, status, latitude, longitude, notes, validated_at, cleaned_at, spot_type", "user_id", userIds),
+    loadRows<LeaderboardEventRow>(supabase, "progression_events", "user_id, event_type, source_table, source_id, status_phase, xp_awarded, occurred_on, metadata", "user_id", userIds, "id"),
+    loadRows<ParticipantRow>(supabase, "action_participants", "user_id, action_id, participation_status", "user_id", userIds, "action_id", [["participation_status", "confirmed"]]),
+    loadRows<VisitedPlaceRow>(supabase, "user_visited_places", "user_id, place_label", "user_id", userIds, "id"),
+    loadRows<QuizLearningProgressRow & { user_id?: string | null }>(supabase, "quiz_type_progress", "user_id, question_type, correct_count", "user_id", userIds, "id"),
+    loadRows<CleanPlaceRow>(supabase, "trash_spotter_spots", "user_id, id, status, latitude, longitude, notes, validated_at, cleaned_at, spot_type", "user_id", userIds, "id"),
   ]);
 
   const eventsByUser = groupByUser(events);

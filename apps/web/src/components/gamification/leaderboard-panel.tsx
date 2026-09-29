@@ -3,6 +3,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
 import type {
   LeaderboardMetric,
@@ -106,15 +107,18 @@ function LeaderboardTable({
 
 function Methodology({ scope }: { scope: PublicLeaderboardScope }) {
   return (
-    <details className="rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 text-sm text-slate-700">
-      <summary className="cursor-pointer font-bold text-[#7f1d1d]">Comment fonctionne le classement ?</summary>
+    <CmmDisclosure
+      className="rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 text-sm text-slate-700"
+      tone="rose"
+      summary={<span className="font-bold text-[#7f1d1d]">Comment fonctionne le classement ?</span>}
+    >
       <div className="mt-3 space-y-2 leading-6">
         <p>{scope === "user" ? "Le niveau utilisateur correspond au niveau courant validé." : "Le niveau collectif correspond au niveau calculé à partir de l’XP validée attribuable à la structure."}</p>
         <p>Seule l’XP validée est prise en compte : l’XP en attente est exclue.</p>
         <p>Les badges additionnent les grades et les one-shot. Observateur vaut 0 ; les éléments LEGACY, privilégiés ou de modération sont exclus.</p>
         <p>Exemple : 4 grades Participant + 3 grades Exploration + 2 one-shot = 9 badges.</p>
       </div>
-    </details>
+    </CmmDisclosure>
   );
 }
 
