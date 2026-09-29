@@ -54,14 +54,41 @@ function assertBaselineFresh(baseline) {
 export function parseChangedDiffText(diff) {
   const ranges = new Map();
   const hunks = new Map();
+  const changedPaths = new Set();
+  const deletedPaths = new Set();
   let currentPath = null;
+  let previousPath = null;
   let currentHunk = null;
   for (const line of diff.split(/\r?\n/)) {
-    const fileMatch = line.match(/^\+\+\+ b\/(.+)$/);
-    if (fileMatch) {
-      currentPath = normalizeRepositoryPath(fileMatch[1]);
+    const diffHeader = line.match(/^diff --git a\/(.+) b\/(.+)$/);
+    if (diffHeader) {
+      previousPath = normalizeRepositoryPath(diffHeader[1]);
+      currentPath = normalizeRepositoryPath(diffHeader[2]);
+      changedPaths.add(currentPath);
       currentHunk = null;
       continue;
+    }
+    if (!currentHunk) {
+      const oldFile = line.match(/^--- (.+)$/);
+      if (oldFile) {
+        previousPath = oldFile[1] === "/dev/null"
+          ? null
+          : normalizeRepositoryPath(oldFile[1].replace(/^a\//, ""));
+        currentHunk = null;
+        continue;
+      }
+      const newFile = line.match(/^\+\+\+ (.+)$/);
+      if (newFile) {
+        if (newFile[1] === "/dev/null") {
+          currentPath = previousPath ?? currentPath;
+          if (currentPath) deletedPaths.add(currentPath);
+        } else {
+          currentPath = normalizeRepositoryPath(newFile[1].replace(/^b\//, ""));
+        }
+        if (currentPath) changedPaths.add(currentPath);
+        currentHunk = null;
+        continue;
+      }
     }
     const hunk = line.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
     if (hunk && currentPath) {
@@ -110,7 +137,22 @@ export function parseChangedDiffText(diff) {
     }
   }
 
-  return { ranges, hunks };
+  return { ranges, hunks, changedPaths, deletedPaths };
+}
+
+export function resolveChangedFrom({
+  stagedOnly,
+  changedOnly,
+  changedFromArgument,
+  environmentChangedFrom,
+  headParent,
+  baselineSourceCommit,
+}) {
+  if (stagedOnly) return "HEAD";
+  if (changedFromArgument) return changedFromArgument;
+  if (environmentChangedFrom) return environmentChangedFrom;
+  if (changedOnly) return "HEAD";
+  return headParent ?? baselineSourceCommit;
 }
 
 function normalizePresentationLine(line) {
@@ -171,7 +213,7 @@ function baselineEntriesByKey(baseline) {
   return new Map(baseline.entries.map((entry) => [baselineKey(entry.metric, entry.path, entry.functionIdentity), entry]));
 }
 
-export function evaluateMetrics({ metrics, baseline, changedRanges, changedHunks = new Map(), sourceRoots = null }) {
+export function evaluateMetrics({ metrics, baseline, changedRanges, changedHunks = new Map(), sourceRoots = null, stalePaths = null }) {
   const baselineByKey = baselineEntriesByKey(baseline);
   const currentByKey = new Map();
   const failures = [];
@@ -208,6 +250,7 @@ export function evaluateMetrics({ metrics, baseline, changedRanges, changedHunks
   const stale = [];
   for (const entry of (stagedOnly ? [] : baseline.entries)) {
     if (sourceRoots && !sourceRoots.some((root) => entry.path === root || entry.path.startsWith(`${root}/`))) continue;
+    if (stalePaths && !stalePaths.has(entry.path)) continue;
     const current = currentByKey.get(baselineKey(entry.metric, entry.path, entry.functionIdentity));
     if (current === undefined) stale.push(entry);
   }
@@ -240,23 +283,32 @@ async function main() {
     return;
   }
 
-  const changedFrom = stagedOnly
-    ? "HEAD"
-    : changedFromArgument ?? process.env.COMPLEXITY_CHANGED_FROM ?? (() => {
-      try { return git(["rev-parse", "--verify", "HEAD^"]); }
-      catch { return baselineSourceCommit; }
-    })();
+  let headParent;
+  try { headParent = git(["rev-parse", "--verify", "HEAD^"]); }
+  catch { headParent = null; }
+  const changedFrom = resolveChangedFrom({
+    stagedOnly,
+    changedOnly,
+    changedFromArgument,
+    environmentChangedFrom: process.env.COMPLEXITY_CHANGED_FROM,
+    headParent,
+    baselineSourceCommit,
+  });
   const changedDiff = stagedOnly
     ? parseChangedDiff({ from: "HEAD", to: stagedTree })
     : parseChangedDiff({ from: changedFrom });
   const changedRanges = changedDiff.ranges;
   const changedHunks = changedDiff.hunks;
+  const changedPaths = changedDiff.changedPaths;
   if (!stagedOnly) {
     const untracked = git(["ls-files", "--others", "--exclude-standard", "--", ...sourceRoots])
       .split(/\r?\n/).filter(Boolean)
       .map(normalizeRepositoryPath)
       .filter((file) => /\.(ts|tsx)$/.test(file));
-    for (const file of untracked) changedRanges.set(file, [{ start: 1, end: Number.MAX_SAFE_INTEGER }]);
+    for (const file of untracked) {
+      changedRanges.set(file, [{ start: 1, end: Number.MAX_SAFE_INTEGER }]);
+      changedPaths.add(file);
+    }
   }
   if (changedOnly && changedRanges.size === 0) {
     console.log(`PASS: no changed files under ${sourceRoots.join(", ")} for targeted complexity policy.`);
@@ -288,7 +340,14 @@ async function main() {
     return eslint.lintText(source, { filePath });
   }));
   const metrics = parseFunctionMessages(lintResults.flat(), view);
-  const result = evaluateMetrics({ metrics, baseline, changedRanges, changedHunks, sourceRoots });
+  const result = evaluateMetrics({
+    metrics,
+    baseline,
+    changedRanges,
+    changedHunks,
+    sourceRoots,
+    stalePaths: changedOnly ? changedPaths : null,
+  });
 
   console.log(`Complexity policy: ${metrics.length} function metrics measured.`);
   if (result.reviews.length > 0) console.log(`REVIEW_REQUIRED: ${result.reviews.length} review signals.`);
