@@ -6,6 +6,7 @@
 - **Fichier source** : `apps/web/src/app/learn/bonnes-pratiques/page.tsx`
 - **Sous-composants clés** :
   - `apps/web/src/components/learn/learn-practice-theme-tabs.tsx`
+  - `apps/web/src/components/learn/learn-national-context-section.tsx`
   - `apps/web/src/components/learn/learn-numerique-theme-panel.tsx`
   - `apps/web/src/lib/learning/practice/numerique.ts`
   - `apps/web/src/components/learn/learn-tri-context-section.tsx`
@@ -26,7 +27,9 @@
   - 3 règles essentielles maximum
   - guides essentiels avant les contenus éditoriaux
   - bloc `Campagne à la une` dans le troisième thème
-  - bloc `Baromètre national 2025` avec comparaisons, idées reçues et méthodologie repliée
+  - bloc `Contexte national` dans le thème `reduire`, avec quatre repères projetés depuis les owners Gestes Propres et les limites d'interprétation visibles
+  - séparation explicite entre contexte national déclaratif et données CleanMyMap ; aucun calcul d'impact de plateforme n'est dérivé de ces enquêtes
+  - méthodologies et indicateurs détaillés conservés dans un accordéon replié, sans duplication des sources canoniques
   - bloc `Action collective` avec trois CTA vers les actions disponibles
   - accordéon unique pour les détails complémentaires
   - pour la sobriété numérique : faits, estimations/équivalences et recommandations sont séparés ; les sources et la méthode sont secondaires et repliées
@@ -35,6 +38,8 @@
 - **Sources secondaires** : ADEME, Gestes Propres, ministère
 - **Baromètre IFOP × Gestes Propres** : données déclaratives, 2 001 répondants, septembre 2025 ; la copie source est conservée dans `documentation/pages_site/routes/05-apprendre/learn-bonnes-pratiques/` et la copie statique servie par l'application dans `apps/web/public/learn/bonnes-pratiques/gestespropres-Barometre_2025.pdf`.
 - **Étude IFOP sur les dépôts** : enquête menée en 2024, volet quantitatif auprès de 2 003 personnes et volet qualitatif dans quatre villes ; la copie source est conservée dans le même dossier et la copie statique servie par l'application dans `apps/web/public/learn/bonnes-pratiques/gestesprorpe-ifop-depots.pdf`.
+- **Owners de données** : les repères courts et les indicateurs détaillés restent alimentés par `apps/web/src/lib/learning/gestes-propres/gestes-propres-barometer.ts` et `apps/web/src/lib/learning/gestes-propres/ifop-depots-study.ts`; la page ne restaure pas l'ancien composant national ni ses constantes non sourcées.
+- **Limites affichées** : ces enquêtes décrivent des déclarations, perceptions et leviers ; elles ne mesurent ni un taux réel de dépôts, ni un changement de comportement, ni un impact physique des déchets.
 - **Validation éditoriale** : les contenus Gestes Propres et IFOP suivent le contrat `documentation/architecture/content-validation.md` avant publication. Les faits, estimations et recommandations sont conservés dans des collections séparées.
 - **Sobriété numérique** : les procédures Gmail s’appuient sur l’aide Google. Le chemin principal est `Plus > Gérer les abonnements`; le raccourci `/#sub` est seulement proposé comme possibilité, car la fonctionnalité est déployée progressivement, avec le fallback `ouvrir un e-mail > Se désabonner`.
 - **Facteurs d’impact** : `3,74 gCO₂e` par spam non lu, `0,24 gCO₂e` pour `1 Go` stocké pendant un an et `170 gCO₂e/km` pour une voiture thermique moyenne essence sont repris des pages Impact CO₂ citant la Base Empreinte ADEME. Les équivalences sont dérivées par calcul : `1 000 futurs spams évités ≈ 22 km` et `100 Go stockés pendant un an ≈ 0,14 km`.

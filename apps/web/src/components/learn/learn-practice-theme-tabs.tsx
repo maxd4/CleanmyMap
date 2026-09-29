@@ -7,9 +7,8 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { cn } from "@/lib/utils";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
-import { LearnGestesPropresBarometer } from "@/components/learn/learn-gestes-propres-barometer";
 import { LearnGestesPropresInsightsSection } from "@/components/learn/learn-gestes-propres-insights-section";
-import { LearnIfopDepotsSection } from "@/components/learn/learn-ifop-depots-section";
+import { LearnNationalContextSection } from "@/components/learn/learn-national-context-section";
 import { LearnNumeriqueThemePanel } from "@/components/learn/learn-numerique-theme-panel";
 import {
   LEARN_PRACTICE_THEME_ORDER,
@@ -221,9 +220,7 @@ export function LearnPracticeThemeTabs({
               <LearnGestesPropresInsightsSection locale={locale} theme={theme} scope="theme" />
             ) : null}
 
-            {theme === "reduire" ? <LearnGestesPropresBarometer locale={locale} /> : null}
-
-            {theme === "reduire" ? <LearnIfopDepotsSection locale={locale} /> : null}
+            {theme === "reduire" ? <LearnNationalContextSection locale={locale} /> : null}
 
             {theme === "tri" ? (
               <LearnGestesPropresInsightsSection locale={locale} theme={theme} scope="theme" />
