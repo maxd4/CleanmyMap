@@ -15,7 +15,7 @@ import { AppError } from "@/lib/errors/app-errors";
 import { redirectToCommunitySignIn } from "./mutation-auth";
 import type { CommunityTab, OpsDraft } from "./types";
 
-export function cleanupNeedLabel(event: CommunityEventItem): string | null {
+function cleanupNeedLabel(event: CommunityEventItem): string | null {
   if (!event.cleanupSupportLevel) {
     return null;
   }

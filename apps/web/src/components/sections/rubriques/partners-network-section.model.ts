@@ -15,7 +15,7 @@ export function localize(locale: Locale, value: { fr: string; en: string }): str
   return value[locale];
 }
 
-export function normalizeText(value: string): string {
+function normalizeText(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
@@ -149,7 +149,7 @@ export function matchesQuery(entry: AnnuaireEntry, query: string): boolean {
     .every((token) => haystack.includes(token));
 }
 
-export function matchesKind(entry: AnnuaireEntry, filter: PartnerKindFilter): boolean {
+function matchesKind(entry: AnnuaireEntry, filter: PartnerKindFilter): boolean {
   if (filter === "all") {
     return true;
   }
@@ -200,7 +200,7 @@ export function getTerritoryBucket(entry: AnnuaireEntry): Exclude<TerritoryFilte
   return "ville";
 }
 
-export function matchesTerritory(entry: AnnuaireEntry, filter: TerritoryFilter): boolean {
+function matchesTerritory(entry: AnnuaireEntry, filter: TerritoryFilter): boolean {
   if (filter === "all") {
     return true;
   }

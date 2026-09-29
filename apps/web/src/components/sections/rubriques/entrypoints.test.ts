@@ -10,7 +10,6 @@ const rubriquesRoot = join(packageRoot, "src/components/sections/rubriques");
 const rendererPath = join(rubriquesRoot, "section-renderer.tsx");
 const recyclingSectionPath = join(rubriquesRoot, "recycling-section.tsx");
 const routePagePath = join(packageRoot, "src/app/(app)/sections/route/page.tsx");
-const terrainSectionsPath = join(rubriquesRoot, "terrain-sections.tsx");
 const routeEntrypointPath = join(rubriquesRoot, "route/index.tsx");
 const legacyRoutePaths = [
   join(rubriquesRoot, "route-section.tsx"),
@@ -53,7 +52,6 @@ describe("rubrique entrypoints", () => {
     expect(renderer).not.toContain('from "./compost-section"');
     expect(renderer).not.toContain('from "./feedback-section"');
     expect(renderer).not.toContain('from "./route-section"');
-    expect(renderer).not.toContain('from "./engagement-sections"');
   });
 
   it("uses the explicit assistant entrypoint from recycling", () => {
@@ -63,16 +61,13 @@ describe("rubrique entrypoints", () => {
 
   it("keeps the route engine behind the canonical facade and redirects its old page", () => {
     const routePage = readFileSync(routePagePath, "utf8");
-    const terrainSections = readFileSync(terrainSectionsPath, "utf8");
     const routeEntrypoint = readFileSync(routeEntrypointPath, "utf8");
 
     expect(routePage).toContain('from "next/navigation"');
     expect(routePage).toContain("buildActionCreationPanelHref");
     expect(routePage).toContain('"itineraire"');
     expect(routePage).not.toContain('from "@/components/sections/rubriques/route"');
-    expect(terrainSections).toContain('export { RouteSection } from "./route";');
     expect(routeEntrypoint).toContain('export { RouteSection } from "./route-section";');
-    expect(routeEntrypoint).toContain('export { RouteSection as default } from "./route-section";');
 
     for (const legacyRoutePath of legacyRoutePaths) {
       expect(existsSync(legacyRoutePath)).toBe(false);

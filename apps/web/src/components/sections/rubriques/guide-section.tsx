@@ -6,7 +6,6 @@ import { CheckCircle2, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
-import { SectionShell } from "@/components/sections/rubriques/shared";
 import { guideChecklistStorage } from "@/lib/storage/ui-state-storage";
 import { cn } from "@/lib/utils";
 
@@ -289,23 +288,4 @@ export function GuideOperationalPanel() {
   );
 }
 
-export function GuideSection() {
-  const { locale } = useSitePreferences();
-  const fr = locale === "fr";
-
-  return (
-    <SectionShell
-      id="guide"
-      title={fr ? "Préparation terrain" : "Field preparation"}
-      subtitle={
-        fr
-          ? "Avant / pendant / après"
-          : "Before / during / after"
-      }
-      icon={ShieldCheck}
-      gradient="from-emerald-500/20 via-blue-500/10 to-transparent"
-    >
-      <GuideOperationalPanel />
-    </SectionShell>
-  );
-}
+// The legacy GuideSection wrapper is removed; the current renderer uses GuideOperationalPanel.

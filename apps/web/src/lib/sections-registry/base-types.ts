@@ -17,7 +17,7 @@ export type RubriqueAvailability = "available" | "hidden";
 export type RubriqueKind = DomainRubriqueKind;
 export type RubriqueImplementation = "finalized" | "pending";
 export type RubriqueSpaceId = Espace;
-export type RubriqueAnonymousPresentation = "visible" | "blur" | "disabled";
+type RubriqueAnonymousPresentation = "visible" | "blur" | "disabled";
 
 type RubriqueDefinitionBase = {
   id: string;

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { PageHeader } from "@/components/ui/page-header";
-import { LucideIcon, Sparkles, Target } from "lucide-react";
+import { LucideIcon, Sparkles } from "lucide-react";
 import { DASHBOARD_ROUTE, EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 
@@ -21,7 +21,7 @@ export const RUBRIQUE_ITEM_VARIANTS = {
   visible: { opacity: 1, y: 0 },
 };
 
-export function t(locale: "fr" | "en", value: L10n): string {
+function t(locale: "fr" | "en", value: L10n): string {
   if (typeof value === "string") return value;
   return value[locale];
 }
@@ -136,30 +136,6 @@ export function SectionShell({
         </div>
       )}
     </section>
-  );
-}
-
-export function NotFoundSection() {
-  const { locale } = useSitePreferences();
-  return (
-    <div className="flex flex-col items-center justify-center py-32 px-6 text-center">
-      <div className="w-24 h-24 rounded-[2.5rem] bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 mb-8 shadow-2xl shadow-rose-500/10">
-        <Target size={48} />
-      </div>
-      <PageHeader
-        align="center"
-        tone="red"
-        title={locale === "fr" ? "Rubrique introuvable" : "Section not found"}
-        subtitle={
-          locale === "fr"
-            ? "Désolé, cette rubrique n'existe pas ou a été déplacée par nos équipes."
-            : "Sorry, this section does not exist or has been moved by our teams."
-        }
-      />
-      <CmmButton href={EXPLORER_ROUTE} tone="primary" className="mt-12 h-16 px-10 rounded-2xl font-black shadow-xl shadow-rose-500/20">
-        {locale === "fr" ? "Explorer le plan" : "Explore map"}
-      </CmmButton>
-    </div>
   );
 }
 

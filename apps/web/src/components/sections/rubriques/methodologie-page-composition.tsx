@@ -17,8 +17,6 @@ import {
 } from "./methodologie-page-navigation";
 import { RouteMethodologySection } from "./route-methodology-section";
 
-export { ActionMapMethodologySection } from "./methodologie-page-client";
-
 export function MethodologiePageClient(props: MethodologiePageClientProps) {
   const { locale } = useSitePreferences();
   const { t } = useTranslation("methodologie");

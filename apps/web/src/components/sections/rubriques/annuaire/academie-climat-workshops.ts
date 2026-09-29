@@ -1,4 +1,4 @@
-export type AcademieClimatWorkshopCategoryId =
+type AcademieClimatWorkshopCategoryId =
  |"social"
  |"humanitaire"
  |"environnemental";
@@ -15,7 +15,7 @@ export type AcademieClimatWorkshop = {
  sourceUpdatedAt: string;
 };
 
-export type AcademieClimatWorkshopCategory = {
+type AcademieClimatWorkshopCategory = {
  id: AcademieClimatWorkshopCategoryId;
  label: { fr: string; en: string };
  tone:"rose" |"amber" |"emerald";

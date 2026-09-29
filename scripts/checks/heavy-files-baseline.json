@@ -275,14 +275,6 @@
       "maxBytes": 32382
     },
     {
-      "path": "apps/web/src/components/sections/rubriques/weather-components.tsx",
-      "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 564,
-      "maxBytes": 22620
-    },
-    {
       "path": "apps/web/src/components/sections/rubriques/weather-section.conditions.tsx",
       "kind": "runtime",
       "status": "REVIEW",

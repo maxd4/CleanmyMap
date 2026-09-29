@@ -5,7 +5,7 @@ export type LocationFilter = "all" | "ile-de-france" | "autres";
 
 export type PeriodFilter = "all" | "seven-days" | "thirty-days" | "ninety-days";
 
-export type JoinableActionJoinFilter = "all" | "available" | "joined";
+type JoinableActionJoinFilter = "all" | "available" | "joined";
 
 export type JoinableActionSort = "soonest" | "latest" | "participants-desc" | "participants-asc" | "location-asc";
 

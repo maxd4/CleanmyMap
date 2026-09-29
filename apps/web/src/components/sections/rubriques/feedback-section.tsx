@@ -38,5 +38,3 @@ export function FeedbackSection({
     </SectionShell>
   );
 }
-
-export default FeedbackSection;

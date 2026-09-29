@@ -34,7 +34,6 @@ async function fetchJson<T>(url: string): Promise<T> {
   }
   return body as T;
 }
-
 export function GamificationSection() {
   const { locale, theme, displayMode, setDisplayMode, toggleTheme } = useSitePreferences();
   const fr = locale === "fr";
@@ -132,5 +131,3 @@ export function GamificationSection() {
     </SectionShell>
   );
 }
-
-export default GamificationSection;
