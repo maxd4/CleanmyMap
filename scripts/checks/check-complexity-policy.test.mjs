@@ -18,7 +18,7 @@ import {
   FUNCTION_IDENTITY_SCHEME_VERSION,
   validateBaselineShape,
 } from "./complexity-policy.mjs";
-import { evaluateMetrics, parseChangedDiffText } from "./check-complexity-policy.mjs";
+import { evaluateMetrics, parseChangedDiffText, resolveChangedFrom } from "./check-complexity-policy.mjs";
 import { classifyFileKind as classifyTopHeavyFileKind } from "./top-heavy-measurement.mjs";
 
 test("complexity target blocks new code at 15 for domain and 20 for runtime", () => {
@@ -158,6 +158,111 @@ test("G: an important deletion in the body is counted and detected", () => {
   assert.equal(result.failures.length, 1);
 });
 
+function diffForFiles(...files) {
+  return files.join("\n");
+}
+
+test("changed diff tracks an existing modified file", () => {
+  const parsed = parseChangedDiffText(diffForFiles(
+    "diff --git a/apps/web/src/existing.ts b/apps/web/src/existing.ts",
+    "--- a/apps/web/src/existing.ts",
+    "+++ b/apps/web/src/existing.ts",
+    "@@ -2 +2 @@",
+    "-old",
+    "+new",
+  ));
+  assert.deepEqual([...parsed.changedPaths], ["apps/web/src/existing.ts"]);
+  assert.equal(parsed.deletedPaths.size, 0);
+  assert.equal(parsed.hunks.get("apps/web/src/existing.ts").length, 1);
+});
+
+test("deleted files retain their candidate path without current content", () => {
+  const parsed = parseChangedDiffText(diffForFiles(
+    "diff --git a/apps/web/src/deleted.ts b/apps/web/src/deleted.ts",
+    "deleted file mode 100644",
+    "--- a/apps/web/src/deleted.ts",
+    "+++ /dev/null",
+    "@@ -1,2 +0,0 @@",
+    "-one",
+    "-two",
+  ));
+  assert.deepEqual([...parsed.changedPaths], ["apps/web/src/deleted.ts"]);
+  assert.deepEqual([...parsed.deletedPaths], ["apps/web/src/deleted.ts"]);
+  assert.equal(parsed.hunks.get("apps/web/src/deleted.ts")[0].deleted, 2);
+});
+
+test("file state resets across deleted and existing diff entries", () => {
+  const parsed = parseChangedDiffText(diffForFiles(
+    "diff --git a/apps/web/src/first.ts b/apps/web/src/first.ts",
+    "--- a/apps/web/src/first.ts",
+    "+++ b/apps/web/src/first.ts",
+    "@@ -1 +1 @@",
+    "-first",
+    "+updated",
+    "diff --git a/apps/web/src/deleted.ts b/apps/web/src/deleted.ts",
+    "deleted file mode 100644",
+    "--- a/apps/web/src/deleted.ts",
+    "+++ /dev/null",
+    "@@ -1 +0,0 @@",
+    "-deleted",
+    "diff --git a/apps/web/src/last.ts b/apps/web/src/last.ts",
+    "--- a/apps/web/src/last.ts",
+    "+++ b/apps/web/src/last.ts",
+    "@@ -1 +1 @@",
+    "-last",
+    "+changed",
+  ));
+  assert.equal(parsed.hunks.get("apps/web/src/first.ts").length, 1);
+  assert.equal(parsed.hunks.get("apps/web/src/deleted.ts").length, 1);
+  assert.equal(parsed.hunks.get("apps/web/src/last.ts").length, 1);
+  assert.equal(parsed.hunks.has("apps/web/src/first.ts"), true);
+  assert.equal(parsed.hunks.get("apps/web/src/first.ts")[0].deleted, 1);
+  assert.equal(parsed.hunks.get("apps/web/src/deleted.ts")[0].deleted, 1);
+  assert.equal(parsed.hunks.get("apps/web/src/last.ts")[0].deleted, 1);
+});
+
+test("changed-only stale evaluation is limited to candidate paths", () => {
+  const baseline = {
+    entries: [
+      { metric: "complexity", path: "apps/web/src/candidate.ts", functionIdentity: "named:candidate#1", ceiling: 23 },
+      { metric: "complexity", path: "apps/web/src/foreign.ts", functionIdentity: "named:foreign#1", ceiling: 23 },
+    ],
+  };
+  const result = evaluateMetrics({
+    metrics: [],
+    baseline,
+    changedRanges: new Map(),
+    stalePaths: new Set(["apps/web/src/candidate.ts"]),
+  });
+  assert.deepEqual(result.stale.map((entry) => entry.path), ["apps/web/src/candidate.ts"]);
+});
+
+test("deleted candidate functions are stale until their baseline entries are removed", () => {
+  const baselineEntry = { metric: "complexity", path: "apps/web/src/deleted.ts", functionIdentity: "named:deleted#1", ceiling: 23 };
+  const stale = evaluateMetrics({
+    metrics: [],
+    baseline: { entries: [baselineEntry] },
+    changedRanges: new Map(),
+    stalePaths: new Set(["apps/web/src/deleted.ts"]),
+  });
+  assert.equal(stale.stale.length, 1);
+  const clean = evaluateMetrics({
+    metrics: [],
+    baseline: { entries: [] },
+    changedRanges: new Map(),
+    stalePaths: new Set(["apps/web/src/deleted.ts"]),
+  });
+  assert.equal(clean.stale.length, 0);
+});
+
+test("changed-only uses HEAD while explicit and CI bases keep priority", () => {
+  assert.equal(resolveChangedFrom({ changedOnly: true, stagedOnly: false, headParent: "PARENT", baselineSourceCommit: "BASE" }), "HEAD");
+  assert.equal(resolveChangedFrom({ changedOnly: true, stagedOnly: false, changedFromArgument: "ARG", environmentChangedFrom: "ENV", headParent: "PARENT", baselineSourceCommit: "BASE" }), "ARG");
+  assert.equal(resolveChangedFrom({ changedOnly: true, stagedOnly: false, environmentChangedFrom: "ENV", headParent: "PARENT", baselineSourceCommit: "BASE" }), "ENV");
+  assert.equal(resolveChangedFrom({ changedOnly: false, stagedOnly: false, headParent: "PARENT", baselineSourceCommit: "BASE" }), "PARENT");
+  assert.equal(resolveChangedFrom({ changedOnly: false, stagedOnly: true, changedFromArgument: "ARG", headParent: "PARENT", baselineSourceCommit: "BASE" }), "HEAD");
+});
+
 test("presentation-only JSX class changes do not trigger the substantial-change ratchet", () => {
   const parsed = parseChangedDiffText([
     "diff --git a/apps/web/src/fixture.ts b/apps/web/src/fixture.ts",
@@ -214,7 +319,7 @@ test("complexity baseline metrics never own file length", () => {
   const baseline = JSON.parse(fs.readFileSync("scripts/checks/complexity-baseline.json", "utf8"));
   assert.ok(baseline.entries.length > 0);
   const metricCounts = baseline.entries.reduce((counts, entry) => ({ ...counts, [entry.metric]: (counts[entry.metric] ?? 0) + 1 }), {});
-  assert.deepEqual(metricCounts, { complexity: 349, functionLength: 460 });
+  assert.deepEqual(metricCounts, { complexity: 344, functionLength: 454 });
   assert.ok(baseline.entries.every((entry) => ["complexity", "functionLength"].includes(entry.metric)));
   assert.ok(baseline.entries.every((entry) => typeof entry.functionIdentity === "string"));
   assert.ok(baseline.entries.some((entry) => entry.path.startsWith("apps/mobile/")));
@@ -294,7 +399,7 @@ test("BASELINE_CURRENT_MAIN_TEST: baseline declares the current identity scheme 
   const baseline = JSON.parse(fs.readFileSync("scripts/checks/complexity-baseline.json", "utf8"));
   assert.equal(FUNCTION_IDENTITY_SCHEME_VERSION, 2);
   assert.equal(baseline.functionIdentitySchemeVersion, FUNCTION_IDENTITY_SCHEME_VERSION);
-  assert.equal(baseline.entries.length, 809);
+  assert.equal(baseline.entries.length, 798);
   assert.equal(baseline.entries.some((entry) => entry.path === "src/lib/gamification/badges/listing.ts" && entry.functionIdentity === "named:awardProgressionEventIfMissing#1"), false);
   assert.doesNotThrow(() => validateBaselineShape(baseline));
 });
