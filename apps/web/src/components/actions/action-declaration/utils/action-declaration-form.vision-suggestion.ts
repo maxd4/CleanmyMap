@@ -2,7 +2,7 @@ import type { ActionVisionEstimate } from"@/lib/actions/types";
 
 const VISION_WASTE_CONFIDENCE_THRESHOLD = 0.55;
 
-export type WasteSuggestionSource ="vision" |"heuristic";
+type WasteSuggestionSource ="vision" |"heuristic";
 
 export type WasteSuggestion = {
  estimatedWasteKg: number;

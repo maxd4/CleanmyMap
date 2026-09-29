@@ -352,7 +352,3 @@ export function loadDraftSnapshot(
     return cacheDraftSnapshot(cacheKey, null);
   }
 }
-
-export function loadDraft(fallback: FormState): FormState {
-  return loadDraftSnapshot(fallback)?.form ?? fallback;
-}

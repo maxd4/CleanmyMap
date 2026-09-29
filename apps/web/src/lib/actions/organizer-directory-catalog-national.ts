@@ -1,6 +1,6 @@
 import type { OrganizerDirectoryEntry } from "./organizer-directory-contract";
 
-export const ORGANIZER_DIRECTORY_VERIFIED_AT = "2026-09-06" as const;
+const ORGANIZER_DIRECTORY_VERIFIED_AT = "2026-09-06" as const;
 
 export const ORGANIZER_DIRECTORY_NATIONAL = [
   // ---------------------------------------------------------------------------

@@ -1,10 +1,7 @@
-import {
-  ORGANIZER_DIRECTORY_NATIONAL,
-  ORGANIZER_DIRECTORY_VERIFIED_AT,
-} from "./organizer-directory-catalog-national";
+import { ORGANIZER_DIRECTORY_NATIONAL } from "./organizer-directory-catalog-national";
 import type { OrganizerDirectoryEntry } from "./organizer-directory-contract";
 
-export { ORGANIZER_DIRECTORY_VERIFIED_AT } from "./organizer-directory-catalog-national";
+const ORGANIZER_DIRECTORY_VERIFIED_AT = "2026-09-06" as const;
 
 /**
  * Répertoire local de structures ayant une activité de dépollution documentée.
