@@ -10,13 +10,13 @@ import type { RoutePredictedEvidence } from "./route-predicted-targets";
  */
 export const CLEANUP_WORKLOAD_MODEL_VERSION = "route-cleanup-workload-v1" as const;
 
-export type CleanupWorkloadStatus =
+type CleanupWorkloadStatus =
   | "relative_estimate"
   | "presence_only"
   | "unavailable"
   | "excluded";
 
-export type CleanupWorkloadExclusionReason =
+type CleanupWorkloadExclusionReason =
   | "missing_categories"
   | "specialized_waste"
   | "no_pickup_waste"
@@ -56,7 +56,7 @@ export type CleanupWorkload = {
   exclusionReason: CleanupWorkloadExclusionReason | null;
 };
 
-export type CleanupWorkloadObservedInput = {
+type CleanupWorkloadObservedInput = {
   family: "observed";
   id: string;
   source: "trash_spotter_spots";
@@ -65,7 +65,7 @@ export type CleanupWorkloadObservedInput = {
   safety: Pick<TrashSpotterSafety, "volunteerEligibility" | "specializationReason">;
 };
 
-export type CleanupWorkloadPredictedInput = {
+type CleanupWorkloadPredictedInput = {
   family: "predicted";
   id: string;
   evidence: Pick<RoutePredictedEvidence, "source"> &

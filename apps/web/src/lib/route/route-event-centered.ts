@@ -5,9 +5,9 @@ import {
   type RouteEventTemporalStatus,
 } from "./route-planning-mode";
 
-export const ROUTE_EVENT_CENTERED_RADIUS_KM = 2;
-export const ROUTE_EVENT_CENTERED_ANCHOR_WEIGHT = 0.55;
-export const ROUTE_EVENT_CENTERED_IMPACT_LIMIT = 24;
+const ROUTE_EVENT_CENTERED_RADIUS_KM = 2;
+const ROUTE_EVENT_CENTERED_ANCHOR_WEIGHT = 0.55;
+const ROUTE_EVENT_CENTERED_IMPACT_LIMIT = 24;
 
 export type RouteEventCenteredAnchor = {
   id: string;
