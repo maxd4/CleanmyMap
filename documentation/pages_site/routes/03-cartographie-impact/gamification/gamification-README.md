@@ -18,6 +18,15 @@ puis un retour d'impact personnel. Les indicateurs d'eau, de CO₂e et de surfac
 sont affichés comme des proxys, à partir des valeurs fournies par
 `GET /api/gamification/me`, avec un lien vers la méthodologie documentée.
 
+Les collections CURRENT sont dérivées de `progression.summary` et distinguent
+les éléments acquis, en progression et à découvrir, sans recopier de catalogue
+dans l UI. La reconnaissance personnelle affiche d abord les cartes lifetime
+et année en cours issues de `progression.recognition` et
+`progression.annualRecognition`. La lecture communautaire reste secondaire :
+le classement détaillé ne charge qu une combinaison supportée de scope
+(`individual` ou `collective`) et de période (`lifetime` ou `yearToDate`) via
+`/api/gamification/leaderboard`.
+
 La route canonique reste publique et affiche un soft-gate aux visiteurs anonymes. Le lien « Se connecter » ouvre `/sign-in?redirect_url=%2Fsections%2Fgamification`; après une authentification Clerk reconnue, le retour s'effectue sur `/sections/gamification` et le contenu authentifié est rendu.
 
 **Contrat SEO** : `ACCESS=PRIVATE`, `SEARCH=NOINDEX`,

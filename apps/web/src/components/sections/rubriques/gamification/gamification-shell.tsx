@@ -1,4 +1,4 @@
-import { Sparkles, type LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 
 export function SectionLabel({
@@ -26,7 +26,28 @@ export function SectionLabel({
     </div>
   );
 }
-
+export function GamificationPanelLoading({
+  ariaLabel,
+  headingWidth,
+  cardHeight,
+}: {
+  ariaLabel: string;
+  headingWidth: string;
+  cardHeight: string;
+}) {
+  return (
+    <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
+      <div className="animate-pulse space-y-4" aria-label={ariaLabel}>
+        <div className="h-4 w-52 rounded-full bg-[#f5e7e2]" />
+        <div className={`h-7 ${headingWidth} rounded-full bg-[#f5e7e2]`} />
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className={`${cardHeight} rounded-[1.35rem] bg-[#fff8f6]`} />
+          <div className={`${cardHeight} rounded-[1.35rem] bg-[#fff8f6]`} />
+        </div>
+      </div>
+    </section>
+  );
+}
 function HeroArtwork() {
   return (
     <div className="relative mx-auto h-[20rem] w-full max-w-[36rem] overflow-hidden rounded-[2.5rem] border border-[#f0d9d2] bg-[linear-gradient(180deg,#fffaf8_0%,#fff0eb_100%)] shadow-[0_24px_70px_rgba(160,43,31,0.12)] lg:h-[24rem]">
@@ -58,7 +79,14 @@ function HeroArtwork() {
           </filter>
         </defs>
 
-        <circle cx="595" cy="95" r="78" fill="#ff6c63" opacity="0.16" filter="url(#gamification-glow)" />
+        <circle
+          cx="595"
+          cy="95"
+          r="78"
+          fill="#ff6c63"
+          opacity="0.16"
+          filter="url(#gamification-glow)"
+        />
         <circle cx="595" cy="95" r="44" fill="#ff6c63" opacity="0.95" />
 
         <path
@@ -85,8 +113,22 @@ function HeroArtwork() {
           strokeWidth="2"
           opacity="0.45"
         />
-        <circle cx="531" cy="178" r="11" fill="#fffdfb" stroke="#bb362f" strokeWidth="3" />
-        <text x="531" y="182" textAnchor="middle" fontSize="13" fontWeight="700" fill="#bb362f">
+        <circle
+          cx="531"
+          cy="178"
+          r="11"
+          fill="#fffdfb"
+          stroke="#bb362f"
+          strokeWidth="3"
+        />
+        <text
+          x="531"
+          y="182"
+          textAnchor="middle"
+          fontSize="13"
+          fontWeight="700"
+          fill="#bb362f"
+        >
           R
         </text>
 
@@ -119,7 +161,14 @@ function HeroArtwork() {
           [518, 222],
           [570, 188],
         ].map(([x, y]) => (
-          <circle key={`${x}-${y}`} cx={x} cy={y} r="5.5" fill="#bb241e" opacity="0.9" />
+          <circle
+            key={`${x}-${y}`}
+            cx={x}
+            cy={y}
+            r="5.5"
+            fill="#bb241e"
+            opacity="0.9"
+          />
         ))}
 
         {[
@@ -129,7 +178,14 @@ function HeroArtwork() {
           [636, 164],
           [688, 120],
         ].map(([x, y]) => (
-          <circle key={`${x}-${y}`} cx={x} cy={y} r="4" fill="#f4bdb4" opacity="0.9" />
+          <circle
+            key={`${x}-${y}`}
+            cx={x}
+            cy={y}
+            r="4"
+            fill="#f4bdb4"
+            opacity="0.9"
+          />
         ))}
 
         <path
@@ -151,7 +207,9 @@ export function HeroBlock({ fr }: { fr: boolean }) {
       <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-6">
           <PageHeader
-            title={fr ? "Écosystème & Gamification" : "Ecosystem & Gamification"}
+            title={
+              fr ? "Écosystème & Gamification" : "Ecosystem & Gamification"
+            }
             subtitle={
               fr
                 ? "Engagement communautaire et impact validé"
@@ -166,40 +224,13 @@ export function HeroBlock({ fr }: { fr: boolean }) {
         </div>
 
         <div className="relative">
-          <div className="absolute inset-x-8 top-10 h-24 rounded-full bg-[#ff6d62]/10 blur-3xl" aria-hidden="true" />
+          <div
+            className="absolute inset-x-8 top-10 h-24 rounded-full bg-[#ff6d62]/10 blur-3xl"
+            aria-hidden="true"
+          />
           <HeroArtwork />
         </div>
       </div>
     </section>
-  );
-}
-
-export function EmptyStateCard({
-  title,
-  description,
-  icon: Icon,
-  ctaLabel,
-}: {
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  ctaLabel: string;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-[1.75rem] border border-[#f1dfd8] bg-[#fff8f6] px-6 py-12 text-center">
-      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#fff0ee] text-[#f19a92] shadow-inner">
-        <Icon size={40} strokeWidth={1.9} />
-      </div>
-      <p className="mt-8 max-w-xs text-[22px] font-black leading-[1.15] tracking-[-0.03em] text-[#291714]">
-        {title}
-      </p>
-      <p className="mt-3 max-w-md text-[14px] leading-7 text-[#6f5a56]">
-        {description}
-      </p>
-      <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#efb0a9] bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#ba302b]">
-        <Sparkles size={12} />
-        {ctaLabel}
-      </p>
-    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { Flag, Sparkles, Target, TrendingUp } from "lucide-react";
-import { SectionLabel } from "./gamification-shell";
+import { GamificationPanelLoading, SectionLabel } from "./gamification-shell";
 import type {
   GamificationSummary,
   GamificationSummaryMilestone,
@@ -153,18 +153,7 @@ export function GamificationCatalogPanel({
 }) {
   const fr = locale === "fr";
   if (loading) {
-    return (
-      <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
-        <div className="animate-pulse space-y-4">
-          <div className="h-4 w-52 rounded-full bg-[#f5e7e2]" />
-          <div className="h-7 w-80 rounded-full bg-[#f5e7e2]" />
-          <div className="grid gap-3 lg:grid-cols-2">
-            <div className="h-32 rounded-[1.35rem] bg-[#fff8f6]" />
-            <div className="h-32 rounded-[1.35rem] bg-[#fff8f6]" />
-          </div>
-        </div>
-      </section>
-    );
+    return <GamificationPanelLoading ariaLabel={fr ? "Chargement du catalogue" : "Loading catalog"} headingWidth="w-80" cardHeight="h-32" />;
   }
 
   if (error || !summary) {
