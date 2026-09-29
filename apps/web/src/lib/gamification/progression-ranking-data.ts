@@ -1,23 +1,9 @@
 import { unstable_cache } from "next/cache";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { runActionQuery } from "@/lib/actions/query";
-import {
-  ACTION_APPROVED_COLUMNS,
-  aggregateUserImpactStats,
-  isSpontaneousActionNotes,
-} from "./progression-data";
-import type { ActionRow, UserLabelSummary } from "./progression-types";
+import { buildIndividualLeaderboardCandidates } from "./progression-ranking";
 
-const ACTION_LABEL_COLUMNS = "created_by_clerk_id, actor_name, notes, action_date";
-const USER_LABEL_SUMMARY_CACHE_REVALIDATE_SECONDS = 120;
-const USER_LABEL_SUMMARY_CACHE_TAG = "gamification-user-label-summary";
-const USER_LABEL_SUMMARY_LIMIT = 10000;
 const USER_LEVEL_RANKING_CACHE_REVALIDATE_SECONDS = 120;
 const USER_LEVEL_RANKING_CACHE_TAG = "gamification-user-level-ranking";
-
-type UserLabelSummaryCacheEntry = [string, UserLabelSummary];
 
 type UserLevelRankingItem = {
   rank: number;
@@ -25,6 +11,7 @@ type UserLevelRankingItem = {
   actorName: string;
   currentLevel: number;
   xpValidated: number;
+  badgeTotal: number;
 };
 
 export type UserLevelRankingSummary = {
@@ -32,89 +19,21 @@ export type UserLevelRankingSummary = {
   currentUserRow: UserLevelRankingItem | null;
 };
 
-export async function loadUserLabelSummary(
-  supabase: SupabaseClient,
-): Promise<Map<string, UserLabelSummary>> {
-  const cached = unstable_cache(
-    async (): Promise<UserLabelSummaryCacheEntry[]> => {
-      const rows = await runActionQuery<{
-        created_by_clerk_id: string;
-        actor_name: string | null;
-        notes: string | null;
-        action_date: string;
-      }>(supabase, (query) =>
-        query
-          .select(ACTION_LABEL_COLUMNS)
-          .order("action_date", { ascending: false })
-          .limit(USER_LABEL_SUMMARY_LIMIT),
-      );
-
-      const entries: UserLabelSummaryCacheEntry[] = [];
-      const seenUserIds = new Set<string>();
-
-      for (const row of rows) {
-        if (!isSpontaneousActionNotes(row.notes) || seenUserIds.has(row.created_by_clerk_id)) {
-          continue;
-        }
-        seenUserIds.add(row.created_by_clerk_id);
-        const metadata = extractActionMetadataFromNotes(row.notes);
-        entries.push([
-          row.created_by_clerk_id,
-          {
-            actorName:
-              (row.actor_name ?? "").trim() || row.created_by_clerk_id || "Contributeur",
-            associationName: metadata.associationName?.trim() || "Sans association",
-          },
-        ]);
-      }
-
-      return entries;
-    },
-    ["gamification-user-label-summary", `limit:${USER_LABEL_SUMMARY_LIMIT}`],
-    {
-      revalidate: USER_LABEL_SUMMARY_CACHE_REVALIDATE_SECONDS,
-      tags: [USER_LABEL_SUMMARY_CACHE_TAG],
-    },
-  );
-
-  return new Map(await cached());
-}
-
 export async function loadUserLevelRankingSummary(
   userId: string,
 ): Promise<UserLevelRankingSummary> {
   const cached = unstable_cache(
     async () => {
       const supabase = getSupabaseServerClient(true);
-      const [profilesResult, labelsByUser] = await Promise.all([
-        supabase
-          .from("progression_profiles")
-          .select("user_id, current_level, xp_validated")
-          .order("current_level", { ascending: false })
-          .order("xp_validated", { ascending: false })
-          .limit(120),
-        loadUserLabelSummary(supabase).catch(
-          () => new Map<string, { actorName: string }>(),
-        ),
-      ]);
+      const rows = await buildIndividualLeaderboardCandidates(supabase, "level");
 
-      if (profilesResult.error) return [];
-
-      const rows =
-        (profilesResult.data as Array<{
-          user_id: string;
-          current_level: number | null;
-          xp_validated: number | null;
-        }> | null) ?? [];
-
-      return rows.map((row, index): UserLevelRankingItem => ({
-        rank: index + 1,
-        userId: row.user_id,
-        actorName:
-          labelsByUser.get(row.user_id)?.actorName?.trim() ||
-          `Utilisateur ${index + 1}`,
-        currentLevel: Math.max(1, Number(row.current_level ?? 1)),
-        xpValidated: Math.max(0, Number(row.xp_validated ?? 0)),
+      return rows.map((row): UserLevelRankingItem => ({
+        rank: row.rank,
+        userId: row.userId,
+        actorName: row.publicLabel,
+        currentLevel: row.level,
+        xpValidated: row.xpValidated,
+        badgeTotal: row.badgeTotal,
       }));
     },
     ["gamification-user-level-ranking"],
@@ -129,24 +48,4 @@ export async function loadUserLevelRankingSummary(
     topRows: rankedRows.slice(0, 8),
     currentUserRow: rankedRows.find((row) => row.userId === userId) ?? null,
   };
-}
-
-export async function loadUserImpactStats(
-  supabase: SupabaseClient,
-): Promise<
-  Map<
-    string,
-    {
-      qualityAverage: number;
-      validatedActions: number;
-      wasteKg: number;
-      wasteCoverageRate: number;
-      totalButts: number;
-    }
-  >
-> {
-  const rows = await runActionQuery<ActionRow>(supabase, (query) =>
-    query.select(ACTION_APPROVED_COLUMNS).eq("status", "approved").limit(10000),
-  );
-  return aggregateUserImpactStats(rows);
 }

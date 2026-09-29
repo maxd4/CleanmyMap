@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { buildPersonalizationSnapshot } from "./personalization-panel";
 import { SectionLabel } from "./gamification-shell";
 import type { DisplayMode } from "@/lib/ui/preferences";
+import { LeaderboardOptInSetting } from "./leaderboard-opt-in-setting";
 
 export function ProfileSettingsCard({
   locale,
@@ -36,6 +37,14 @@ export function ProfileSettingsCard({
       label: fr ? "Mode d'affichage" : "Display mode",
       value: personalization.displayModeLabel,
       hint: personalization.displayModeHint,
+    },
+    {
+      icon: Globe,
+      label: fr ? "Classement utilisateur" : "User leaderboard",
+      value: fr ? "Préférence de visibilité" : "Visibility preference",
+      hint: fr
+        ? "Seul un label public autorisé, le niveau, l’XP validée et les badges peuvent apparaître."
+        : "Only an authorized public label, level, validated XP and badges can appear.",
     },
   ];
 
@@ -108,6 +117,8 @@ export function ProfileSettingsCard({
           {fr ? "Basculer en mode sombre" : "Switch to dark mode"}
         </button>
       </div>
+
+      <LeaderboardOptInSetting fr={fr} />
 
       <div className="mt-4 rounded-[1.45rem] border border-[#f0d9d2] bg-[#fff8f6] px-4 py-3 text-[12px] leading-6 text-[#8a716b]">
         {fr

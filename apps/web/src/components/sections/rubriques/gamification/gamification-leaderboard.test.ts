@@ -12,17 +12,17 @@ describe("gamification leaderboard contract", () => {
   it("loads no variant before explicit detail interaction and one active variant after", () => {
     expect(buildLeaderboardKey(false, "individual", "lifetime")).toBeNull();
     expect(buildLeaderboardKey(true, "individual", "lifetime")).toBe(
-      "/api/gamification/leaderboard?scope=individual&period=lifetime",
+      "/api/gamification/leaderboard?scope=individual&period=lifetime&metric=level",
     );
     expect(buildLeaderboardKey(true, "collective", "yearToDate")).toBe(
-      "/api/gamification/leaderboard?scope=collective&period=yearToDate",
+      "/api/gamification/leaderboard?scope=collective&period=yearToDate&metric=level",
     );
   });
 
   it("filters loaded rows instead of leaving search decorative", () => {
     const items = [
-      { rank: 1, actorName: "Alice", associationName: "Les Rives", currentLevel: 3 } as never,
-      { rank: 2, actorName: "Bruno", associationName: "Ville propre", currentLevel: 2 } as never,
+      { rank: 1, publicLabel: "Alice Rives", level: 3, xpValidated: 4, badgeTotal: 1, gradeCount: 1, oneShotCount: 0 },
+      { rank: 2, publicLabel: "Bruno", level: 2, xpValidated: 2, badgeTotal: 0, gradeCount: 0, oneShotCount: 0 },
     ];
 
     expect(filterLeaderboardItems(items, "individual", "rives")).toHaveLength(1);
@@ -39,20 +39,13 @@ describe("gamification leaderboard contract", () => {
         {
           userId: "clerk-user-1",
           rank: 1,
-          actorName: "Alice",
-          associationName: "Les Rives",
-          score: 80,
+          publicLabel: "Alice",
+          level: 3,
           xpValidated: 4,
-          xpTotal: 4,
-          currentLevel: 3,
-          potentialLevel: 3,
-          qualityAverage: 90,
-          validatedActions: 2,
-          wasteKg: 3,
-          wasteCoverageRate: 100,
-          totalButts: 2,
-          badges: [],
-        } as IndividualLeaderboardItem,
+          badgeTotal: 2,
+          gradeCount: 1,
+          oneShotCount: 1,
+        } as unknown as IndividualLeaderboardItem & { userId: string },
       ],
       recognition: {
         topContributors: [],
@@ -61,11 +54,12 @@ describe("gamification leaderboard contract", () => {
     });
 
     expect(response.items[0]).not.toHaveProperty("userId");
-    expect((response.items[0] as PublicIndividualLeaderboardItem | undefined)?.actorName).toBe("Alice");
+    expect((response.items[0] as PublicIndividualLeaderboardItem | undefined)?.publicLabel).toBe("Alice");
+    expect(response.items[0]).not.toHaveProperty("xpPending");
   });
 
   it("keeps only the supported scope and period dimensions in the URL", () => {
-    expect(buildLeaderboardUrl("individual", "yearToDate")).toContain("scope=individual&period=yearToDate");
-    expect(buildLeaderboardUrl("collective", "lifetime")).toContain("scope=collective&period=lifetime");
+    expect(buildLeaderboardUrl("individual", "yearToDate", "badges")).toContain("scope=individual&period=yearToDate&metric=badges");
+    expect(buildLeaderboardUrl("collective", "lifetime")).toContain("scope=collective&period=lifetime&metric=level");
   });
 });
