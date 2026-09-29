@@ -37,7 +37,7 @@ import {
 import { loadGamificationLedgerEvents } from "./gamification-summary-loader";
 import { buildGamificationSummary } from "./gamification-summary";
 import { CURRENT_GAMIFICATION_RULES_REVISION } from "./progression-types";
-import { buildIndividualLeaderboard } from "./progression-ranking";
+import { buildIndividualLeaderboardForUser } from "./progression-ranking";
 
 type ProgressionEvents = Awaited<ReturnType<typeof loadGamificationLedgerEvents>>;
 type ProgressionStats = Awaited<ReturnType<typeof loadUserProgressionStats>>;
@@ -48,7 +48,7 @@ type UserProgressionInputs = {
   stats: ProgressionStats;
   rows: ActionRow[];
   annualRows: ActionRow[];
-  individualItems: Awaited<ReturnType<typeof buildIndividualLeaderboard>>;
+  individualRanking: Awaited<ReturnType<typeof buildIndividualLeaderboardForUser>>;
   annualImpact: Awaited<ReturnType<typeof getUserAnnualImpact>>;
   catalog: ProgressionCatalog;
   progressionEvents: ProgressionEvents;
@@ -96,11 +96,11 @@ async function loadUserProgressionInputs(
   const yearToDateStartDate = getYearToDateStartDate();
   const progressionEventsPromise = loadGamificationLedgerEvents(supabase, userId);
   const rulesMigrationStatePromise = loadGamificationRulesMigrationState(supabase, userId);
-  const [stats, rows, annualRows, individualItems, annualImpact, catalog, progressionEvents, rulesMigrationState] = await Promise.all([
+  const [stats, rows, annualRows, individualRanking, annualImpact, catalog, progressionEvents, rulesMigrationState] = await Promise.all([
     loadUserProgressionStats(supabase, userId, { events: progressionEventsPromise }),
     loadActionRowsForUser(supabase, userId),
     loadApprovedActionRows(supabase, 10000, yearToDateStartDate),
-    buildIndividualLeaderboard(supabase),
+    buildIndividualLeaderboardForUser(supabase, userId, "level"),
     getUserAnnualImpact(supabase, userId),
     loadGamificationCatalog(supabase, userId, {
       progressionEvents: progressionEventsPromise,
@@ -114,7 +114,7 @@ async function loadUserProgressionInputs(
     stats,
     rows,
     annualRows,
-    individualItems,
+    individualRanking,
     annualImpact,
     catalog,
     progressionEvents,
@@ -180,18 +180,16 @@ function buildProgressionSummary(
 }
 
 function buildDynamicRanking(
-  items: UserProgressionInputs["individualItems"],
-  userId: string,
+  ranking: UserProgressionInputs["individualRanking"],
 ): UserProgressionResponse["dynamicRanking"] {
-  const rankItem = items.find((item) => item.userId === userId) ?? null;
+  const rankItem = ranking.item;
   return {
     rank: rankItem?.rank ?? null,
-    total: items.length,
+    total: ranking.total,
     percentile:
-      rankItem && items.length > 0
-        ? Math.round((1 - (rankItem.rank - 1) / items.length) * 100)
+      rankItem && ranking.total > 0
+        ? Math.round((1 - (rankItem.rank - 1) / ranking.total) * 100)
         : null,
-    score: rankItem?.score ?? null,
   };
 }
 
@@ -235,7 +233,7 @@ function buildUserProgressionResponse(
     engagementStatus: resolveEngagementStatus(level.currentLevel),
     impact: computePersonalImpactMetrics(inputs.rows),
     impactMethodology: buildPersonalImpactMethodology(inputs.stats.qualityAverage),
-    dynamicRanking: buildDynamicRanking(inputs.individualItems, userId),
+    dynamicRanking: buildDynamicRanking(inputs.individualRanking),
     history: buildHistory(inputs.rows),
     monthlyMilestone: getCurrentMonthlyMilestone(
       inputs.annualImpact.wasteKg,

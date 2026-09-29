@@ -15,24 +15,27 @@ const GAMIFICATION_LEADERBOARD_CACHE_REVALIDATE_SECONDS = 120;
 
 const scopeSchema = z.enum(["individual","collective"]);
 const periodSchema = z.enum(["lifetime","yearToDate"]);
+const metricSchema = z.enum(["level", "xp", "badges"]);
 
 function buildLeaderboardCacheKey(
  scope: "individual" | "collective",
  period: "lifetime" | "yearToDate",
+ metric: "level" | "xp" | "badges",
 ): string {
- return [`scope:${scope}`, `period:${period}`].join("|");
+ return [`scope:${scope}`, `period:${period}`, `metric:${metric}`].join("|");
 }
 
 async function loadCachedGamificationLeaderboard(
  scope: "individual" | "collective",
  period: "lifetime" | "yearToDate",
+ metric: "level" | "xp" | "badges",
 ) {
  const cached = unstable_cache(
   async () => {
    const supabase = getSupabaseServerClient(true);
-   return getGamificationLeaderboard(supabase, scope, period);
+   return getGamificationLeaderboard(supabase, scope, period, metric);
   },
-  ["gamification-leaderboard", buildLeaderboardCacheKey(scope, period)],
+   ["gamification-leaderboard", buildLeaderboardCacheKey(scope, period, metric)],
   {
    revalidate: GAMIFICATION_LEADERBOARD_CACHE_REVALIDATE_SECONDS,
    tags: ["gamification-leaderboard"],
@@ -51,6 +54,7 @@ export async function GET(request: Request) {
  const url = new URL(request.url);
  const parsed = scopeSchema.safeParse(url.searchParams.get("scope") ??"individual");
  const period = periodSchema.safeParse(url.searchParams.get("period") ??"lifetime");
+ const metric = metricSchema.safeParse(url.searchParams.get("metric") ?? "level");
   if (!parsed.success) {
  return NextResponse.json(
  { error:"Invalid scope. Use individual|collective." },
@@ -63,12 +67,19 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
+  if (!metric.success) {
+    return NextResponse.json(
+      { error:"Invalid metric. Use level|xp|badges." },
+      { status: 400 },
+    );
+  }
 
   try {
- const leaderboard = await loadCachedGamificationLeaderboard(parsed.data, period.data);
+  const leaderboard = await loadCachedGamificationLeaderboard(parsed.data, period.data, metric.data);
  return NextResponse.json({
  status:"ok",
  period: period.data,
+  metric: metric.data,
  ...leaderboard,
  }, {
   headers: GAMIFICATION_LEADERBOARD_CACHE_HEADERS,

@@ -11,6 +11,7 @@ import {
   filterLeaderboardItems,
   type LeaderboardPeriod,
   type LeaderboardScope,
+  type LeaderboardMetric,
   type PublicIndividualLeaderboardItem,
   type PublicLeaderboardItem,
 } from "./gamification-leaderboard";
@@ -105,14 +106,13 @@ function LeaderboardItemCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[#a48d86]">{fr ? "Rang" : "Rank"} {individual.rank}</p>
-            <h4 className="mt-1 text-base font-black text-[#2c1a17]">{individual.actorName}</h4>
-            <p className="mt-1 text-xs text-[#806b65]">{individual.associationName}</p>
+            <h4 className="mt-1 text-base font-black text-[#2c1a17]">{individual.publicLabel}</h4>
           </div>
-          <span className="rounded-full border border-[#efc7c1] bg-[#fff5f2] px-2.5 py-1 text-xs font-black text-[#a13f38]">Niveau {individual.currentLevel}</span>
+          <span className="rounded-full border border-[#efc7c1] bg-[#fff5f2] px-2.5 py-1 text-xs font-black text-[#a13f38]">Niveau {individual.level}</span>
         </div>
         <div className="mt-4 flex flex-wrap gap-2 text-xs text-[#806b65]">
-          <span className="rounded-full bg-[#fffaf8] px-2.5 py-1">{individual.validatedActions} {fr ? "actions vérifiées" : "verified actions"}</span>
-          <span className="rounded-full bg-[#fffaf8] px-2.5 py-1">{individual.qualityAverage} % {fr ? "qualité" : "quality"}</span>
+          <span className="rounded-full bg-[#fffaf8] px-2.5 py-1">{individual.xpValidated} XP</span>
+          <span className="rounded-full bg-[#fffaf8] px-2.5 py-1">{individual.badgeTotal} {fr ? "badges" : "badges"}</span>
         </div>
       </article>
     );
@@ -194,7 +194,7 @@ function LeaderboardResults({
     return <p role="alert" className="rounded-[1.35rem] border border-[#f1c1b7] bg-[#fff5f2] p-5 text-sm text-[#8c3f38]">{fr ? "Le classement détaillé est indisponible pour ce scope." : "The detailed ranking is unavailable for this scope."}</p>;
   }
   if (items.length > 0) {
-    return <div className="grid gap-3 lg:grid-cols-2">{items.map((item) => <LeaderboardItemCard key={`${scope}-${item.rank}-${scope === "individual" ? (item as PublicIndividualLeaderboardItem).actorName : (item as Extract<PublicLeaderboardItem, { members: number }>).associationName}`} item={item} scope={scope} fr={fr} />)}</div>;
+    return <div className="grid gap-3 lg:grid-cols-2">{items.map((item) => <LeaderboardItemCard key={`${scope}-${item.rank}-${scope === "individual" ? (item as PublicIndividualLeaderboardItem).publicLabel : (item as Extract<PublicLeaderboardItem, { members: number }>).associationName}`} item={item} scope={scope} fr={fr} />)}</div>;
   }
   return <p className="rounded-[1.35rem] border border-dashed border-[#ead8d2] bg-[#fffaf8] p-5 text-sm text-[#806b65]">{searchQuery.trim() ? (fr ? "Aucune correspondance dans les résultats chargés." : "No match in the loaded results.") : (fr ? "Aucune contribution mise en lumière pour ce scope." : "No highlighted contribution for this scope.")}</p>;
 }
@@ -202,15 +202,18 @@ function LeaderboardResults({
 function LeaderboardDetails({ fr }: { fr: boolean }) {
   const [scope, setScope] = useState<LeaderboardScope>("individual");
   const [period, setPeriod] = useState<LeaderboardPeriod>("lifetime");
+  const [metric, setMetric] = useState<LeaderboardMetric>("level");
   const [searchQuery, setSearchQuery] = useState("");
-  const leaderboard = useSWR(buildLeaderboardKey(true, scope, period), fetchGamificationLeaderboard, swrRecentViewOptions);
+  const leaderboard = useSWR(buildLeaderboardKey(true, scope, period, metric), fetchGamificationLeaderboard, swrRecentViewOptions);
   const filteredItems = useMemo(() => filterLeaderboardItems(leaderboard.data?.items ?? [], scope, searchQuery), [leaderboard.data?.items, scope, searchQuery]);
 
   return (
     <div className="mt-5 space-y-4">
       <div className="flex flex-wrap gap-2">
-        {(["individual", "collective"] as const).map((value) => <button key={value} type="button" onClick={() => setScope(value)} className={cn("rounded-full border px-3 py-2 text-xs font-black uppercase tracking-[0.16em]", scope === value ? "border-[#c51f1f] bg-[#c51f1f] text-white" : "border-[#ead8d2] bg-white text-[#806b65]")}>{value === "individual" ? (fr ? "Individuel" : "Individual") : (fr ? "Collectif" : "Collective")}</button>)}
+        {/* The historical collective scope remains API COMPATIBILITY only. */}
+        {["individual" as const].map((value) => <button key={value} type="button" onClick={() => setScope(value)} className={cn("rounded-full border px-3 py-2 text-xs font-black uppercase tracking-[0.16em]", scope === value ? "border-[#c51f1f] bg-[#c51f1f] text-white" : "border-[#ead8d2] bg-white text-[#806b65]")}>{fr ? "Individuel" : "Individual"}</button>)}
         {(["lifetime", "yearToDate"] as const).map((value) => <button key={value} type="button" onClick={() => setPeriod(value)} className={cn("inline-flex items-center gap-1 rounded-full border px-3 py-2 text-xs font-black uppercase tracking-[0.16em]", period === value ? "border-[#c51f1f] bg-[#fff5f2] text-[#a13f38]" : "border-[#ead8d2] bg-white text-[#806b65]")}><CalendarRange size={12} />{value === "lifetime" ? (fr ? "Depuis toujours" : "Lifetime") : (fr ? "Année en cours" : "Year to date")}</button>)}
+        {scope === "individual" ? (["level", "xp", "badges"] as const).map((value) => <button key={value} type="button" onClick={() => setMetric(value)} className={cn("rounded-full border px-3 py-2 text-xs font-black uppercase tracking-[0.16em]", metric === value ? "border-[#c51f1f] bg-[#fff5f2] text-[#a13f38]" : "border-[#ead8d2] bg-white text-[#806b65]")}>{value === "level" ? (fr ? "Niveau" : "Level") : value === "xp" ? "XP" : (fr ? "Badges" : "Badges")}</button>) : null}
       </div>
       <div className="relative">
         <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#a58c86]" aria-hidden="true" />

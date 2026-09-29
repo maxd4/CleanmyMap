@@ -1,18 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { computePotentialLevel, deriveBadges } from "./progression-formulas";
+import { normalizeDisplayNameMode } from "@/lib/profiles";
 import { buildContributorRecognitionIndex } from "./contributor-recognition";
-import { getYearToDateStartDate, loadUserAnnualImpactStats } from "./annual-reset";
+import { loadGamificationCatalog } from "./gamification-catalog-loader";
+import { countCurrentLeaderboardBadges } from "./leaderboard-badges";
+import { getYearToDateStartDate } from "./annual-reset";
 import {
   actionQualityScoreFromRow,
   loadApprovedActionRows,
   parseAssociationNameFromActionNotes,
 } from "./progression-data";
-import { loadUserImpactStats, loadUserLabelSummary } from "./progression-ranking-data";
 import type {
   ActionRow,
   CollectiveLeaderboardItem,
   ContributorRecognitionSummary,
   IndividualLeaderboardItem,
+  LeaderboardMetric,
 } from "./progression-types";
 import { toFloat, toInt } from "./progression-utils";
 
@@ -26,26 +28,18 @@ type CollectiveGroup = {
   members: Set<string>;
 };
 
-type LeaderboardLabel = {
-  actorName: string;
-  associationName: string;
-};
-
-type LeaderboardImpact = {
-  qualityAverage: number;
-  validatedActions: number;
-  wasteKg: number;
-  wasteCoverageRate: number;
-  totalButts: number;
-};
-
 type IndividualProfileRow = {
   user_id: string;
-  xp_total: number;
-  xp_validated: number;
-  xp_pending: number;
-  current_level: number;
-  potential_level: number;
+  display_name: string | null;
+  display_name_mode: string | null;
+  handle: string | null;
+  leaderboard_public_opt_in: boolean | null;
+  xp_validated: number | null;
+  current_level: number | null;
+};
+
+type InternalIndividualLeaderboardItem = IndividualLeaderboardItem & {
+  userId: string;
 };
 
 function addCollectiveRow(grouped: Map<string, CollectiveGroup>, row: ActionRow): void {
@@ -69,6 +63,7 @@ function addCollectiveRow(grouped: Map<string, CollectiveGroup>, row: ActionRow)
   grouped.set(associationName, current);
 }
 
+/** COMPATIBILITY: legacy collective recognition is outside the CURRENT user metrics. */
 function toCollectiveLeaderboardItem(
   entry: [string, CollectiveGroup],
 ): CollectiveLeaderboardItem {
@@ -83,11 +78,12 @@ function toCollectiveLeaderboardItem(
       ? Math.min(500, value.wasteKg) * 0.25
       : 0) +
     value.validatedActions * 0.15;
-  const structureLevel = computePotentialLevel(Math.round(score * 10));
+  const structureLevel = Math.max(1, Math.trunc(score));
 
   return {
     rank: 0,
     associationName,
+    // COMPATIBILITY: retained only for the legacy collective response.
     score: Math.round(score * 10) / 10,
     currentLevel: structureLevel,
     potentialLevel: structureLevel,
@@ -118,123 +114,161 @@ function buildCollectiveLeaderboardItems(approvedActionRows: ActionRow[]): Colle
     .map((item, index) => ({ ...item, rank: index + 1 }));
 }
 
-function buildIndividualLeaderboardItem(
-  row: IndividualProfileRow,
-  labelsByUser: Map<string, LeaderboardLabel>,
-  impactByUser: Map<string, LeaderboardImpact>,
-): IndividualLeaderboardItem {
-  const labels = labelsByUser.get(row.user_id) ?? {
-    actorName: row.user_id,
-    associationName: "Sans association",
-  };
-  const impact = impactByUser.get(row.user_id) ?? {
-    qualityAverage: 0,
-    validatedActions: 0,
-    wasteKg: 0,
-    wasteCoverageRate: 0,
-    totalButts: 0,
-  };
-  const currentLevel = toInt(row.current_level, 1);
-  const xpValidated = toFloat(row.xp_validated, 0);
-  const xpTotal = toFloat(row.xp_total, 0);
-  const score =
-    impact.qualityAverage * 3 +
-    (impact.wasteCoverageRate === 100 ? Math.min(300, impact.wasteKg) * 0.2 : 0) +
-    impact.validatedActions * 0.5;
-
-  return {
-    rank: 0,
-    userId: row.user_id,
-    actorName: labels.actorName,
-    associationName: labels.associationName,
-    score: Math.round(score * 10) / 10,
-    xpValidated,
-    xpTotal,
-    currentLevel,
-    potentialLevel: toInt(row.potential_level, 1),
-    qualityAverage: impact.qualityAverage,
-    validatedActions: impact.validatedActions,
-    wasteKg: impact.wasteKg,
-    wasteCoverageRate: impact.wasteCoverageRate,
-    badges: deriveBadges({
-      currentLevel,
-      qualityAverage: impact.qualityAverage,
-      validationRatio:
-        impact.validatedActions > 0
-          ? Math.min(1, xpValidated / Math.max(1, xpTotal))
-          : 0,
-      collectiveEvents: 0,
-      totalKg: impact.wasteKg,
-      totalButts: impact.totalButts,
-      wasteCoverageRate: impact.wasteCoverageRate,
-    }),
-  } as IndividualLeaderboardItem;
+export function buildPublicLeaderboardLabel(row: Pick<IndividualProfileRow, "display_name" | "display_name_mode" | "handle">): string | null {
+  const mode = normalizeDisplayNameMode(row.display_name_mode);
+  const label = mode === "pseudo" ? row.handle : row.display_name;
+  const normalized = label?.trim() ?? "";
+  return normalized.length > 0 ? normalized : null;
 }
 
-function compareIndividualLeaderboardItems(
+export function isPublicLeaderboardProfile(
+  row: Pick<IndividualProfileRow, "display_name" | "display_name_mode" | "handle" | "leaderboard_public_opt_in">,
+): boolean {
+  return row.leaderboard_public_opt_in === true && Boolean(buildPublicLeaderboardLabel(row));
+}
+
+function comparePublicLabels(left: string, right: string): number {
+  return left.localeCompare(right, "fr-FR", { sensitivity: "base" }) || left.localeCompare(right);
+}
+
+export function compareIndividualLeaderboardItems(
   a: IndividualLeaderboardItem,
   b: IndividualLeaderboardItem,
-  period: LeaderboardPeriod,
+  metric: LeaderboardMetric,
 ): number {
-  if (period === "yearToDate") {
+  if (metric === "xp") {
     return (
-      b.score - a.score ||
-      b.validatedActions - a.validatedActions ||
-      b.qualityAverage - a.qualityAverage ||
-      b.currentLevel - a.currentLevel
+      b.xpValidated - a.xpValidated ||
+      b.level - a.level ||
+      b.badgeTotal - a.badgeTotal ||
+      comparePublicLabels(a.publicLabel, b.publicLabel)
     );
   }
 
-  return b.currentLevel - a.currentLevel || b.xpValidated - a.xpValidated || b.score - a.score;
+  if (metric === "badges") {
+    return (
+      b.badgeTotal - a.badgeTotal ||
+      b.gradeCount - a.gradeCount ||
+      b.oneShotCount - a.oneShotCount ||
+      b.xpValidated - a.xpValidated ||
+      b.level - a.level ||
+      comparePublicLabels(a.publicLabel, b.publicLabel)
+    );
+  }
+
+  return (
+    b.level - a.level ||
+    b.xpValidated - a.xpValidated ||
+    b.badgeTotal - a.badgeTotal ||
+    comparePublicLabels(a.publicLabel, b.publicLabel)
+  );
 }
 
-function rankIndividualLeaderboardItems(
-  items: IndividualLeaderboardItem[],
-  period: LeaderboardPeriod,
-): IndividualLeaderboardItem[] {
-  return items
-    .sort((a, b) => compareIndividualLeaderboardItems(a, b, period))
+export function rankIndividualLeaderboardItems(
+  items: readonly InternalIndividualLeaderboardItem[],
+  metric: LeaderboardMetric,
+): InternalIndividualLeaderboardItem[] {
+  return [...items]
+    .sort((a, b) => compareIndividualLeaderboardItems(a, b, metric))
     .slice(0, 60)
     .map((item, index) => ({ ...item, rank: index + 1 }));
 }
 
-export async function buildIndividualLeaderboard(
+async function loadOptedInProfiles(
+  supabase: SupabaseClient,
+): Promise<IndividualProfileRow[]> {
+  const result = await supabase
+    .from("profiles")
+    .select("id, display_name, display_name_mode, handle, leaderboard_public_opt_in")
+    .eq("leaderboard_public_opt_in", true)
+    .limit(1000);
+  if (result.error) throw new Error(result.error.message);
+
+  return ((result.data ?? []) as Array<IndividualProfileRow & { id?: string }>).flatMap((row) => {
+    const userId = row.user_id || row.id;
+    const profile = { ...row, user_id: userId ?? "" };
+    return userId && isPublicLeaderboardProfile(profile) ? [profile] : [];
+  });
+}
+
+export async function buildIndividualLeaderboardCandidates(
+  supabase: SupabaseClient,
+  metric: LeaderboardMetric,
+): Promise<InternalIndividualLeaderboardItem[]> {
+  const profiles = await loadOptedInProfiles(supabase);
+  const candidates = await Promise.all(
+    profiles.map(async (profile) => {
+      const catalog = await loadGamificationCatalog(supabase, profile.user_id);
+      const badgeCounts = countCurrentLeaderboardBadges(catalog);
+    const publicLabel = buildPublicLeaderboardLabel(profile);
+      if (!publicLabel) return null;
+
+      return {
+        rank: 0,
+        userId: profile.user_id,
+        publicLabel,
+        level: Math.max(1, toInt(profile.current_level, 1)),
+        xpValidated: Math.max(0, toFloat(profile.xp_validated, 0)),
+        ...badgeCounts,
+      } satisfies InternalIndividualLeaderboardItem;
+    }),
+  );
+
+  return rankIndividualLeaderboardItems(
+    candidates.filter((item): item is InternalIndividualLeaderboardItem => Boolean(item)),
+    metric,
+  );
+}
+
+async function buildIndividualLeaderboard(
   supabase: SupabaseClient,
   period: LeaderboardPeriod = "lifetime",
+  metric: LeaderboardMetric = "level",
 ): Promise<IndividualLeaderboardItem[]> {
-  const [profilesResult, labelsByUser, impactByUser] = await Promise.all([
-    supabase
-      .from("progression_profiles")
-      .select("user_id, xp_total, xp_validated, xp_pending, current_level, potential_level")
-      .limit(1000),
-    loadUserLabelSummary(supabase),
-    period === "yearToDate" ? loadUserAnnualImpactStats(supabase) : loadUserImpactStats(supabase),
-  ]);
-  if (profilesResult.error) {
-    throw new Error(profilesResult.error.message);
-  }
+  void period;
+  return (await buildIndividualLeaderboardCandidates(supabase, metric)).map((item) => {
+    const { userId, ...publicItem } = item;
+    void userId;
+    return publicItem;
+  });
+}
 
-  const rows = (profilesResult.data as IndividualProfileRow[] | null) ?? [];
-  const items = rows.map((row) =>
-    buildIndividualLeaderboardItem(
-      row,
-      labelsByUser as Map<string, LeaderboardLabel>,
-      impactByUser as Map<string, LeaderboardImpact>,
-    ),
-  );
-  return rankIndividualLeaderboardItems(items, period);
+export async function buildIndividualLeaderboardForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  metric: LeaderboardMetric = "level",
+): Promise<{ item: InternalIndividualLeaderboardItem | null; total: number }> {
+  const candidates = await buildIndividualLeaderboardCandidates(supabase, metric);
+  return {
+    item: candidates.find((candidate) => candidate.userId === userId) ?? null,
+    total: candidates.length,
+  };
 }
 
 export async function getGamificationLeaderboard(
   supabase: SupabaseClient,
   scope: "individual" | "collective",
   period: LeaderboardPeriod = "lifetime",
+  metric: LeaderboardMetric = "level",
 ): Promise<{
   scope: "individual" | "collective";
   generatedAt: string;
   items: IndividualLeaderboardItem[] | CollectiveLeaderboardItem[];
   recognition: ContributorRecognitionSummary;
 }> {
+  if (scope === "individual") {
+    return {
+      scope,
+      generatedAt: new Date().toISOString(),
+      items: await buildIndividualLeaderboard(supabase, period, metric),
+      recognition: {
+        // The CURRENT user projection never exposes impact, recognition or IDs.
+        topContributors: [],
+        currentContributor: null,
+      },
+    };
+  }
+
   const yearToDateStartDate = getYearToDateStartDate();
   const approvedActionRows = await loadApprovedActionRows(supabase);
   const yearToDateApprovedActionRows = await loadApprovedActionRows(
@@ -244,18 +278,6 @@ export async function getGamificationLeaderboard(
   );
   const recognitionRows = period === "yearToDate" ? yearToDateApprovedActionRows : approvedActionRows;
   const recognitionIndex = buildContributorRecognitionIndex(recognitionRows);
-
-  if (scope === "individual") {
-    return {
-      scope,
-      generatedAt: new Date().toISOString(),
-      items: await buildIndividualLeaderboard(supabase, period),
-      recognition: {
-        topContributors: recognitionIndex.topContributors,
-        currentContributor: null,
-      },
-    };
-  }
 
   return {
     scope,

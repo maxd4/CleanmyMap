@@ -3,11 +3,14 @@ import type {
   ContributorRecognitionCard,
   ContributorRecognitionSummary,
   IndividualLeaderboardItem,
+  LeaderboardMetric,
 } from "@/lib/gamification/progression-types";
+
+export type { LeaderboardMetric } from "@/lib/gamification/progression-types";
 
 export type LeaderboardScope = "individual" | "collective";
 export type LeaderboardPeriod = "lifetime" | "yearToDate";
-export type PublicIndividualLeaderboardItem = Omit<IndividualLeaderboardItem, "userId">;
+export type PublicIndividualLeaderboardItem = IndividualLeaderboardItem;
 export type PublicLeaderboardItem = PublicIndividualLeaderboardItem | CollectiveLeaderboardItem;
 type PublicRecognitionCard = Omit<ContributorRecognitionCard, "userId">;
 type PublicRecognitionSummary = Omit<ContributorRecognitionSummary, "topContributors" | "currentContributor"> & {
@@ -32,8 +35,9 @@ type RawGamificationLeaderboardResponse = Omit<GamificationLeaderboardResponse, 
 export function buildLeaderboardUrl(
   scope: LeaderboardScope,
   period: LeaderboardPeriod,
+  metric: LeaderboardMetric = "level",
 ): string {
-  const params = new URLSearchParams({ scope, period });
+  const params = new URLSearchParams({ scope, period, metric });
   return `/api/gamification/leaderboard?${params.toString()}`;
 }
 
@@ -41,8 +45,9 @@ export function buildLeaderboardKey(
   enabled: boolean,
   scope: LeaderboardScope,
   period: LeaderboardPeriod,
+  metric: LeaderboardMetric = "level",
 ): string | null {
-  return enabled ? buildLeaderboardUrl(scope, period) : null;
+  return enabled ? buildLeaderboardUrl(scope, period, metric) : null;
 }
 
 function withoutUserId<T extends { userId: string }>(item: T): Omit<T, "userId"> {
@@ -51,14 +56,35 @@ function withoutUserId<T extends { userId: string }>(item: T): Omit<T, "userId">
   ) as Omit<T, "userId">;
 }
 
+function sanitizePublicItem(
+  item: IndividualLeaderboardItem | CollectiveLeaderboardItem,
+): PublicLeaderboardItem {
+  if ("publicLabel" in item) {
+    return {
+      rank: item.rank,
+      publicLabel: item.publicLabel,
+      level: item.level,
+      xpValidated: item.xpValidated,
+      badgeTotal: item.badgeTotal,
+      gradeCount: item.gradeCount,
+      oneShotCount: item.oneShotCount,
+    };
+  }
+  if (
+    "userId" in item &&
+    typeof (item as { userId?: unknown }).userId === "string"
+  ) {
+    return withoutUserId(item as unknown as IndividualLeaderboardItem & { userId: string });
+  }
+  return item as PublicLeaderboardItem;
+}
+
 export function sanitizeLeaderboardResponse(
   response: RawGamificationLeaderboardResponse,
 ): GamificationLeaderboardResponse {
   return {
     ...response,
-    items: response.items.map((item) =>
-      "userId" in item ? withoutUserId(item) : item,
-    ),
+    items: response.items.map(sanitizePublicItem),
     recognition: {
       ...response.recognition,
       topContributors: response.recognition.topContributors.map(withoutUserId),
@@ -97,7 +123,7 @@ export function filterLeaderboardItems(
   return items.filter((item) => {
     const searchable =
       scope === "individual"
-      ? `${(item as PublicIndividualLeaderboardItem).actorName} ${(item as PublicIndividualLeaderboardItem).associationName}`
+      ? (item as PublicIndividualLeaderboardItem).publicLabel
       : (item as CollectiveLeaderboardItem).associationName;
     return searchable.toLocaleLowerCase("fr-FR").includes(normalizedQuery);
   });

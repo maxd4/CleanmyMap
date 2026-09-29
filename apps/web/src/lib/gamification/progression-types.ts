@@ -403,11 +403,6 @@ export type EventInsertParams = {
   metadata?: Record<string, unknown>;
 };
 
-export type UserLabelSummary = {
-  actorName: string;
-  associationName: string;
-};
-
 export type ContributorRecognitionType =
   | "terrain"
   | "diffusion"
@@ -441,23 +436,16 @@ type ContributorRecognitionSnapshot = {
   currentContributor: ContributorRecognitionCard | null;
 };
 
+export type LeaderboardMetric = "level" | "xp" | "badges";
+
 export type IndividualLeaderboardItem = {
   rank: number;
-  userId: string;
-  actorName: string;
-  associationName: string;
-  score: number;
+  publicLabel: string;
+  level: number;
   xpValidated: number; // May be decimal (0.5 increments)
-  xpTotal: number; // May be decimal (0.5 increments)
-  currentLevel: number;
-  potentialLevel: number;
-  qualityAverage: number;
-  validatedActions: number;
-  wasteKg: number;
-  wasteCoverageRate: number;
-  totalButts: number;
-  badges: string[];
-  recognition?: ContributorRecognitionCard | null;
+  badgeTotal: number;
+  gradeCount: number;
+  oneShotCount: number;
 };
 
 type MonthlyMilestone = {
@@ -521,7 +509,6 @@ type PersonalDynamicRanking = {
   rank: number | null;
   total: number;
   percentile: number | null;
-  score: number | null;
 };
 
 export type PersonalTimelineItem = {

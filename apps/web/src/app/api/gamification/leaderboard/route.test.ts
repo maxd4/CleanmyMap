@@ -6,7 +6,9 @@ describe("gamification leaderboard route", () => {
     const source = readFileSync(new URL("./route.ts", import.meta.url), "utf8");
 
     expect(source).toContain('const periodSchema = z.enum(["lifetime","yearToDate"]);');
+    expect(source).toContain('const metricSchema = z.enum(["level", "xp", "badges"]);');
     expect(source).toContain('period: period.data,');
-    expect(source).toContain('loadCachedGamificationLeaderboard(parsed.data, period.data)');
+    expect(source).toContain('metric: metric.data,');
+    expect(source).toContain('loadCachedGamificationLeaderboard(parsed.data, period.data, metric.data)');
   });
 });
