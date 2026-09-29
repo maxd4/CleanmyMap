@@ -734,9 +734,11 @@ Ne jamais poser comme prérequis que le lot précédent ait été poussé.
 3. Les lots successifs peuvent donc s’enchaîner localement avant publication,
    tant qu’ils respectent `MAIN-ONLY / SINGLE-WRITER` et que l’état local est
    cohérent.
-4. À la fin de tout prompt qui modifie des fichiers, **demander explicitement
-   à Codex de commit puis push les fichiers/modifications du lot**, après
-   validations requises.
+4. À la fin de tout prompt et de toute exécution qui modifie des fichiers,
+   **demander systématiquement explicitement si le lot doit être committé puis
+   poussé**, après les validations requises. Cette demande ne vaut pas
+   autorisation implicite : le commit local et le push distant restent deux
+   opérations distinctes, et le push nécessite un accord explicite.
 5. Le push est une étape de publication finale du lot, **pas un prérequis pour
    commencer le lot suivant**.
 6. Ne jamais utiliser l’absence de push du lot précédent comme `STOP CONDITION`

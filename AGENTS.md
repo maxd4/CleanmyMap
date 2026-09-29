@@ -109,6 +109,12 @@ Le workflow courant est `MAIN-ONLY / SINGLE-WRITER`.
 - le commit est non signé par défaut ;
 - le push n’est effectué que sur demande explicite de l’utilisateur.
 
+À la fin de chaque prompt et de chaque exécution, demander systématiquement
+explicitement si l’utilisateur autorise le commit puis le push du lot concerné,
+après les validations requises. Cette demande ne vaut pas autorisation implicite
+: le commit local et le push distant restent deux opérations distinctes, et le
+push ne doit être effectué qu’après accord explicite.
+
 L’absence de push d’un lot précédent ne bloque pas un nouveau lot local cohérent.
 
 Avant un push explicitement demandé :
