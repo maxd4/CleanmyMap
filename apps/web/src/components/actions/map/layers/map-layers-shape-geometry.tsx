@@ -15,10 +15,12 @@ import type {
   CurrentPlaceStateMode,
 } from "@/lib/actions/pollution/current-place-state";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
-import type { ActionPollutionScoreAvailability } from "../scores/pollution-score-scope";
 import { ActionPopupContent } from "../popup/action-popup-content";
 import { isActionMapItem } from "../popup/action-popup-content.helpers";
-import { GeometryTooltipContent } from "./map-geometry-tooltip-content";
+import {
+  GeometryTooltipContent,
+  type GeometryTooltipReading,
+} from "./map-geometry-tooltip-content";
 import {
   formatActionGeometryTooltipTitle,
   formatGeometryModeLabel,
@@ -32,30 +34,6 @@ import {
 } from "./map-layers.shared";
 import type { ActionShapeLayerRef } from "./map-layers-shape-item";
 
-export type ActionTooltipReading = {
-  scoreScope?: "global" | "department";
-  historicalScore: number;
-  projectedScore: number;
-  globalScore?: number | null;
-  globalWasteScore?: number | null;
-  globalButtsScore?: number | null;
-  departmentScore?: number | null;
-  departmentWasteScore?: number | null;
-  departmentButtsScore?: number | null;
-  departmentName?: string | null;
-  departmentUnavailable?: boolean;
-  departmentAvailability?: ActionPollutionScoreAvailability;
-  elapsedDays: number;
-  isEstimate: boolean;
-  projectionConfidenceLabel: string;
-  displayMode?: "observed" | "projected_today";
-  displaySource?: "observed" | "projected" | "historical";
-  displayedScore?: number | null;
-  displayedScoreKind?: "measured" | "projected" | "unavailable";
-  displayedStateLabel?: string;
-  displayedDate?: string;
-};
-
 export type ShapeGeometryRendererProps = {
   item: ActionMapItem;
   geometry: ActionMapGeometryViewModel;
@@ -65,7 +43,7 @@ export type ShapeGeometryRendererProps = {
   pollutionCategory: ShapePollutionCategory;
   basemapMode: ShapeBasemapMode;
   coords: { latitude: number | null; longitude: number | null };
-  actionTooltipReading?: ActionTooltipReading;
+  actionTooltipReading?: GeometryTooltipReading;
   currentPlaceState: CurrentPlaceState | null;
   displayMode: CurrentPlaceStateMode;
   scoreScope: PollutionScoreScope;
@@ -120,6 +98,152 @@ function setLayerRef(
   } else {
     delete layerRefs.current[itemId];
   }
+}
+
+function resolveVisibleShapePathOptions({
+  geometryKind,
+  displayColor,
+  renderStyle,
+  visibleWeight,
+  isSelected,
+}: Pick<ShapeGeometryRendererProps, "displayColor" | "renderStyle" | "isSelected"> & {
+  geometryKind: "polygon" | "polyline";
+  visibleWeight: number;
+}) {
+  return {
+    color: displayColor,
+    weight: visibleWeight,
+    opacity: isSelected ? 1 : renderStyle.strokeOpacity ?? (geometryKind === "polygon" ? 0.95 : 0.92),
+    ...(geometryKind === "polygon"
+      ? { fillOpacity: (renderStyle.fillOpacity ?? 0.24) + (isSelected ? 0.08 : 0) }
+      : {}),
+    dashArray: renderStyle.dashArray,
+  };
+}
+
+type PolygonGeometryRenderInput = {
+  item: ActionMapItem;
+  geometry: ActionMapGeometryViewModel;
+  renderStyle: ActionMapGeometryRenderStyle;
+  displayColor: string;
+  visibleWeight: number;
+  casingStyle: ReturnType<typeof resolveShapeCasingStyle>;
+  layerRefs: ShapeGeometryRendererProps["layerRefs"];
+  handlers: {
+    click: () => void;
+    mouseover: () => void;
+    mouseout: () => void;
+  };
+  tooltipProps: {
+    geometryModeLabel: string;
+    geometryPointsLabel: string;
+    geometryMetricLabel: string | null;
+    color: string;
+    actionReading?: GeometryTooltipReading;
+  };
+  commonPopupProps: Parameters<typeof ActionPopupContent>[0];
+  isSelected: boolean;
+};
+
+function renderPolygonGeometry({
+  item,
+  geometry,
+  renderStyle,
+  displayColor,
+  visibleWeight,
+  casingStyle,
+  layerRefs,
+  handlers,
+  tooltipProps,
+  commonPopupProps,
+  isSelected,
+}: PolygonGeometryRenderInput) {
+  return (
+    <Fragment>
+      {casingStyle ? (
+        <Polygon
+          key={`casing-${item.id}`}
+          ref={(layer) => setLayerRef(layerRefs, item.id, "casing", layer)}
+          positions={geometry.positions}
+          pathOptions={casingStyle}
+        />
+      ) : null}
+      <Polygon
+        key={`visible-shape-${item.id}`}
+        ref={(layer) => setLayerRef(layerRefs, item.id, "visible", layer)}
+        positions={geometry.positions}
+        eventHandlers={handlers}
+        pathOptions={resolveVisibleShapePathOptions({
+          geometryKind: "polygon",
+          displayColor,
+          renderStyle,
+          visibleWeight,
+          isSelected,
+        })}
+      >
+        <Tooltip className="glass-tooltip" direction="auto" sticky>
+          <GeometryTooltipContent
+            title={formatActionGeometryTooltipTitle("polygon", geometry.metrics.label)}
+            {...tooltipProps}
+          />
+        </Tooltip>
+        <Popup className="glass-popup custom-popup">
+          <ActionPopupContent {...commonPopupProps} key={item.id} />
+        </Popup>
+      </Polygon>
+    </Fragment>
+  );
+}
+
+function renderPolylineEndpointMarkers({
+  endpointMarkers,
+  isSelected,
+}: Pick<ShapeGeometryRendererProps, "endpointMarkers" | "isSelected">) {
+  if (!endpointMarkers) return null;
+  if (isSelected) {
+    return endpointMarkers.isLoop ? (
+      <Marker
+        position={endpointMarkers.start}
+        icon={createGeometryEndpointIcon("D/A")}
+        interactive={false}
+      />
+    ) : (
+      <>
+        <Marker
+          position={endpointMarkers.start}
+          icon={createGeometryEndpointIcon("D")}
+          interactive={false}
+        />
+        <Marker
+          position={endpointMarkers.end}
+          icon={createGeometryEndpointIcon("A")}
+          interactive={false}
+        />
+      </>
+    );
+  }
+  const marker = (position: [number, number]) => (
+    <CircleMarker
+      center={position}
+      radius={2.5}
+      interactive={false}
+      pathOptions={{
+        color: "#ffffff",
+        fillColor: "#64748b",
+        fillOpacity: 0.9,
+        opacity: 0.9,
+        weight: 1,
+      }}
+    />
+  );
+  return endpointMarkers.isLoop ? (
+    marker(endpointMarkers.start)
+  ) : (
+    <>
+      {marker(endpointMarkers.start)}
+      {marker(endpointMarkers.end)}
+    </>
+  );
 }
 
 export function ShapeGeometryRenderer({
@@ -187,41 +311,19 @@ export function ShapeGeometryRenderer({
   };
 
   if (geometry.kind === "polygon") {
-    return (
-      <Fragment>
-        {casingStyle ? (
-          <Polygon
-            key={`casing-${item.id}`}
-            ref={(layer) => setLayerRef(layerRefs, item.id, "casing", layer)}
-            positions={geometry.positions}
-            pathOptions={casingStyle}
-          />
-        ) : null}
-        <Polygon
-          key={`visible-shape-${item.id}`}
-          ref={(layer) => setLayerRef(layerRefs, item.id, "visible", layer)}
-          positions={geometry.positions}
-          eventHandlers={handlers}
-          pathOptions={{
-            color: displayColor,
-            weight: visibleWeight,
-            opacity: isSelected ? 1 : renderStyle.strokeOpacity ?? 0.95,
-            fillOpacity: (renderStyle.fillOpacity ?? 0.24) + (isSelected ? 0.08 : 0),
-            dashArray: renderStyle.dashArray,
-          }}
-        >
-          <Tooltip className="glass-tooltip" direction="auto" sticky>
-            <GeometryTooltipContent
-              title={formatActionGeometryTooltipTitle("polygon", geometry.metrics.label)}
-              {...tooltipProps}
-            />
-          </Tooltip>
-          <Popup className="glass-popup custom-popup">
-            <ActionPopupContent {...commonPopupProps} key={item.id} />
-          </Popup>
-        </Polygon>
-      </Fragment>
-    );
+    return renderPolygonGeometry({
+      item,
+      geometry,
+      renderStyle,
+      displayColor,
+      visibleWeight,
+      casingStyle,
+      layerRefs,
+      handlers,
+      tooltipProps,
+      commonPopupProps,
+      isSelected,
+    });
   }
 
   return (
@@ -239,12 +341,13 @@ export function ShapeGeometryRenderer({
         ref={(layer) => setLayerRef(layerRefs, item.id, "visible", layer)}
         positions={geometry.positions}
         eventHandlers={handlers}
-        pathOptions={{
-          color: displayColor,
-          weight: visibleWeight,
-          opacity: isSelected ? 1 : renderStyle.strokeOpacity ?? 0.92,
-          dashArray: renderStyle.dashArray,
-        }}
+        pathOptions={resolveVisibleShapePathOptions({
+          geometryKind: "polyline",
+          displayColor,
+          renderStyle,
+          visibleWeight,
+          isSelected,
+        })}
       >
         <Tooltip className="glass-tooltip" direction="auto" sticky>
           <GeometryTooltipContent
@@ -269,70 +372,7 @@ export function ShapeGeometryRenderer({
           eventHandlers={handlers}
         />
       ) : null}
-      {endpointMarkers ? (
-        isSelected ? (
-          endpointMarkers.isLoop ? (
-            <Marker
-              position={endpointMarkers.start}
-              icon={createGeometryEndpointIcon("D/A")}
-              interactive={false}
-            />
-          ) : (
-            <>
-              <Marker
-                position={endpointMarkers.start}
-                icon={createGeometryEndpointIcon("D")}
-                interactive={false}
-              />
-              <Marker
-                position={endpointMarkers.end}
-                icon={createGeometryEndpointIcon("A")}
-                interactive={false}
-              />
-            </>
-          )
-        ) : endpointMarkers.isLoop ? (
-          <CircleMarker
-            center={endpointMarkers.start}
-            radius={2.5}
-            interactive={false}
-            pathOptions={{
-              color: "#ffffff",
-              fillColor: "#64748b",
-              fillOpacity: 0.9,
-              opacity: 0.9,
-              weight: 1,
-            }}
-          />
-        ) : (
-          <>
-            <CircleMarker
-              center={endpointMarkers.start}
-              radius={2.5}
-              interactive={false}
-              pathOptions={{
-                color: "#ffffff",
-                fillColor: "#64748b",
-                fillOpacity: 0.9,
-                opacity: 0.9,
-                weight: 1,
-              }}
-            />
-            <CircleMarker
-              center={endpointMarkers.end}
-              radius={2.5}
-              interactive={false}
-              pathOptions={{
-                color: "#ffffff",
-                fillColor: "#64748b",
-                fillOpacity: 0.9,
-                opacity: 0.9,
-                weight: 1,
-              }}
-            />
-          </>
-        )
-      ) : null}
+      {renderPolylineEndpointMarkers({ endpointMarkers, isSelected })}
       {directionMarkers.map((marker, index) => (
         <Marker
           key={`direction-${item.id}-${index}`}

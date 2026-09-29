@@ -1,15 +1,9 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { readMigration } from "./read-migration";
 
-const readMigration = (name: string) =>
-  readFileSync(new URL(`../../../../supabase/migrations/${name}`, import.meta.url), "utf8")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-
-const migration = readMigration("20260927000002_harden_auth_rls_initplans.sql");
-const gamificationMigration = readMigration("20260920000000_harden_gamification_projection_writes.sql");
-const impactMigration = readMigration("20260908000001_incremental_public_impact_state.sql");
+const migration = readMigration(import.meta.url, "20260927000002_harden_auth_rls_initplans.sql");
+const gamificationMigration = readMigration(import.meta.url, "20260920000000_harden_gamification_projection_writes.sql");
+const impactMigration = readMigration(import.meta.url, "20260908000001_incremental_public_impact_state.sql");
 
 const impactPolicies = [
   ["public_impact_action_contributions_service_only", "public_impact_action_contributions"],

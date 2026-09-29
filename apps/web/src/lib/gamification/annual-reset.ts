@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { evaluateActionQualityScore, toFloat, toInt } from "./progression-utils";
+import { toFloat } from "./progression-utils";
 import type { ActionRow } from "./progression-types";
-import { isSpontaneousActionNotes } from "./progression-data";
+import { aggregateUserImpactStats, isSpontaneousActionNotes } from "./progression-data";
 import { getTimeScopeFloorDate } from "@/lib/time-scopes";
 import { runActionQuery } from "@/lib/actions/query";
 
@@ -40,67 +40,7 @@ export async function loadUserAnnualImpactStats(
       .limit(10000),
   );
 
-  const grouped = new Map<
-    string,
-    {
-      qualitySum: number;
-      validatedActions: number;
-      wasteKg: number;
-      wasteKnownActions: number;
-      totalButts: number;
-    }
-  >();
-
-  for (const row of result) {
-    if (!isSpontaneousActionNotes(row.notes)) {
-      continue;
-    }
-    const quality = evaluateActionQualityScore(row).score;
-    const previous = grouped.get(row.created_by_clerk_id) ?? {
-      qualitySum: 0,
-      validatedActions: 0,
-      wasteKg: 0,
-      wasteKnownActions: 0,
-      totalButts: 0,
-    };
-    previous.qualitySum += quality;
-    previous.validatedActions += 1;
-    if (row.waste_kg !== null && Number.isFinite(Number(row.waste_kg)) && Number(row.waste_kg) >= 0) {
-      previous.wasteKg += toFloat(row.waste_kg, 0);
-      previous.wasteKnownActions += 1;
-    }
-    previous.totalButts += toInt(row.cigarette_butts, 0);
-    grouped.set(row.created_by_clerk_id, previous);
-  }
-
-  const output = new Map<
-    string,
-    {
-      qualityAverage: number;
-      validatedActions: number;
-      wasteKg: number;
-      wasteCoverageRate: number;
-      totalButts: number;
-    }
-  >();
-
-  for (const [userId, value] of grouped.entries()) {
-    output.set(userId, {
-      qualityAverage:
-        value.validatedActions > 0
-          ? Math.round((value.qualitySum / value.validatedActions) * 10) / 10
-          : 0,
-      validatedActions: value.validatedActions,
-      wasteKg: Math.round(value.wasteKg * 10) / 10,
-      wasteCoverageRate:
-        value.validatedActions > 0
-          ? (value.wasteKnownActions / value.validatedActions) * 100
-          : 0,
-      totalButts: value.totalButts,
-    });
-  }
-
-  return output;
+  return aggregateUserImpactStats(result);
 }
 
 export async function getUserAnnualImpact(

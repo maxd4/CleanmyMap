@@ -23,7 +23,7 @@ import {
   resolveShapePollutionCategory,
   type ShapeBasemapMode,
 } from "./map-layers.shared";
-import type { ActionTooltipReading } from "./map-layers-shape-geometry";
+import type { GeometryTooltipReading } from "./map-geometry-tooltip-content";
 
 type ScoreModelInput = {
   item: ActionMapItem;
@@ -37,15 +37,7 @@ type ScoreModelInput = {
   now: Date;
 };
 
-function resolveActionTooltipDisplay({
-  item,
-  displayMode,
-  isGlobal,
-  currentPlaceState,
-  departmentActionScore,
-  actionProjection,
-  globalActionScore,
-}: {
+type ActionTooltipDisplayContext = {
   item: ActionMapItem;
   displayMode: CurrentPlaceStateMode;
   isGlobal: boolean;
@@ -53,79 +45,37 @@ function resolveActionTooltipDisplay({
   departmentActionScore: ReturnType<typeof resolveActionPollutionScore> | null;
   actionProjection: ReturnType<typeof presentActionPollutionProjection> | null;
   globalActionScore: ReturnType<typeof resolveActionPollutionScore>;
-}) {
+};
+
+function resolveActionTooltipDisplay(input: ActionTooltipDisplayContext) {
   return {
-    displayedScore: resolveDisplayedActionScore({ item, displayMode, isGlobal, currentPlaceState, departmentActionScore, actionProjection, globalActionScore }),
-    displayedScoreKind: resolveDisplayedScoreKind({ displayMode, isGlobal, currentPlaceState, departmentActionScore }),
-    displayedStateLabel: resolveDisplayedStateLabel({ displayMode, isGlobal, currentPlaceState, departmentActionScore }),
-    displaySource: resolveDisplayedSource({ displayMode, isGlobal, currentPlaceState }),
+    displayedScore: resolveDisplayedActionScore(input),
+    displayedScoreKind: resolveDisplayedScoreKind(input),
+    displayedStateLabel: resolveDisplayedStateLabel(input),
+    displaySource: resolveDisplayedSource(input),
   };
 }
 
-function resolveDisplayedActionScore({
-  item,
-  displayMode,
-  isGlobal,
-  currentPlaceState,
-  departmentActionScore,
-  actionProjection,
-  globalActionScore,
-}: {
-  item: ActionMapItem;
-  displayMode: CurrentPlaceStateMode;
-  isGlobal: boolean;
-  currentPlaceState: CurrentPlaceState | null;
-  departmentActionScore: ReturnType<typeof resolveActionPollutionScore> | null;
-  actionProjection: ReturnType<typeof presentActionPollutionProjection> | null;
-  globalActionScore: ReturnType<typeof resolveActionPollutionScore>;
-}) {
-  if (!isGlobal) return departmentActionScore?.score;
-  if (currentPlaceState?.score !== null && currentPlaceState?.score !== undefined) return currentPlaceState.score;
-  if (displayMode === "projected_today") return actionProjection?.projectedPollutionScore;
-  return mapItemPostActionPollutionScore(item) ?? globalActionScore.historicalScore;
+function resolveDisplayedActionScore(input: ActionTooltipDisplayContext) {
+  if (!input.isGlobal) return input.departmentActionScore?.score;
+  if (input.currentPlaceState?.score !== null && input.currentPlaceState?.score !== undefined) return input.currentPlaceState.score;
+  if (input.displayMode === "projected_today") return input.actionProjection?.projectedPollutionScore;
+  return mapItemPostActionPollutionScore(input.item) ?? input.globalActionScore.historicalScore;
 }
 
-function resolveDisplayedScoreKind({
-  displayMode,
-  isGlobal,
-  currentPlaceState,
-  departmentActionScore,
-}: {
-  displayMode: CurrentPlaceStateMode;
-  isGlobal: boolean;
-  currentPlaceState: CurrentPlaceState | null;
-  departmentActionScore: ReturnType<typeof resolveActionPollutionScore> | null;
-}) {
-  if (!isGlobal) return departmentActionScore?.score === null ? "unavailable" : "measured";
-  return currentPlaceState?.scoreKind ?? (displayMode === "projected_today" ? "projected" : "measured");
+function resolveDisplayedScoreKind(input: ActionTooltipDisplayContext) {
+  if (!input.isGlobal) return input.departmentActionScore?.score === null ? "unavailable" : "measured";
+  return input.currentPlaceState?.scoreKind ?? (input.displayMode === "projected_today" ? "projected" : "measured");
 }
 
-function resolveDisplayedStateLabel({
-  displayMode,
-  isGlobal,
-  currentPlaceState,
-  departmentActionScore,
-}: {
-  displayMode: CurrentPlaceStateMode;
-  isGlobal: boolean;
-  currentPlaceState: CurrentPlaceState | null;
-  departmentActionScore: ReturnType<typeof resolveActionPollutionScore> | null;
-}) {
-  if (!isGlobal) return departmentActionScore?.score === null ? "Comparaison départementale indisponible" : "Score relatif départemental";
-  return currentPlaceState?.stateLabel ?? (displayMode === "projected_today" ? "Pollution projetée" : "Pollution observée");
+function resolveDisplayedStateLabel(input: ActionTooltipDisplayContext) {
+  if (!input.isGlobal) return input.departmentActionScore?.score === null ? "Comparaison départementale indisponible" : "Score relatif départemental";
+  return input.currentPlaceState?.stateLabel ?? (input.displayMode === "projected_today" ? "Pollution projetée" : "Pollution observée");
 }
 
-function resolveDisplayedSource({
-  displayMode,
-  isGlobal,
-  currentPlaceState,
-}: {
-  displayMode: CurrentPlaceStateMode;
-  isGlobal: boolean;
-  currentPlaceState: CurrentPlaceState | null;
-}) {
-  if (!isGlobal) return undefined;
-  return currentPlaceState?.source ?? (displayMode === "projected_today" ? "projected" : "observed");
+function resolveDisplayedSource(input: ActionTooltipDisplayContext) {
+  if (!input.isGlobal) return undefined;
+  return input.currentPlaceState?.source ?? (input.displayMode === "projected_today" ? "projected" : "observed");
 }
 
 function resolveActionTooltipReading({
@@ -144,7 +94,7 @@ function resolveActionTooltipReading({
   globalActionScore: ReturnType<typeof resolveActionPollutionScore> | null;
   departmentActionScore: ReturnType<typeof resolveActionPollutionScore> | null;
   actionProjection: ReturnType<typeof presentActionPollutionProjection> | null;
-}): ActionTooltipReading | undefined {
+}): GeometryTooltipReading | undefined {
   if (!isActionMapItem(item) || !globalActionScore) {
     return undefined;
   }

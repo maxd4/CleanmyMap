@@ -102,6 +102,24 @@ function plan(overrides: Partial<GamificationReconciliationPlan> = {}): Gamifica
   };
 }
 
+function emptyPlan(): GamificationReconciliationPlan {
+  const base = plan();
+  return plan({
+    xpBefore: 0,
+    xpExpected: 0,
+    xpDelta: 0,
+    levelBefore: 1,
+    levelAfter: 1,
+    eventsToUpdate: [],
+    currentPersisted: [],
+    expected: { ...base.expected, events: [], expectedBadges: [] },
+    badgesAdded: [],
+    badgesRemoved: [],
+    milestonesAdded: [],
+    milestonesRemoved: [],
+  });
+}
+
 describe("GamificationReconciliationReceipt", () => {
   it("describes XP, level, progression, badge and milestone consequences", () => {
     const receipt = buildGamificationReconciliationReceipt(plan(), {
@@ -192,20 +210,7 @@ describe("GamificationReconciliationReceipt", () => {
   });
 
   it("does not request a user receipt for a zero-delta rebuild", () => {
-    const empty = plan({
-      xpBefore: 0,
-      xpExpected: 0,
-      xpDelta: 0,
-      levelBefore: 1,
-      levelAfter: 1,
-      eventsToUpdate: [],
-      currentPersisted: [],
-      expected: { ...plan().expected, events: [], expectedBadges: [] },
-      badgesAdded: [],
-      badgesRemoved: [],
-      milestonesAdded: [],
-      milestonesRemoved: [],
-    });
+    const empty = emptyPlan();
     const receipt = buildGamificationReconciliationReceipt(empty, { occurredAt: "2026-09-28T10:00:00.000Z" });
     expect(receipt.hasUserVisibleChanges).toBe(false);
   });
@@ -228,20 +233,7 @@ describe("GamificationReconciliationReceipt", () => {
 
     await persistGamificationReconciliationReceipt(supabase, first);
     await persistGamificationReconciliationReceipt(supabase, second);
-    await persistGamificationReconciliationReceipt(supabase, buildGamificationReconciliationReceipt(plan({
-      xpBefore: 0,
-      xpExpected: 0,
-      xpDelta: 0,
-      levelBefore: 1,
-      levelAfter: 1,
-      eventsToUpdate: [],
-      currentPersisted: [],
-      expected: { ...plan().expected, events: [], expectedBadges: [] },
-      badgesAdded: [],
-      badgesRemoved: [],
-      milestonesAdded: [],
-      milestonesRemoved: [],
-    })));
+    await persistGamificationReconciliationReceipt(supabase, buildGamificationReconciliationReceipt(emptyPlan()));
 
     expect(rows).toHaveLength(2);
     expect(rows.map((row) => row.user_id)).toEqual(["user-1", "user-2"]);
