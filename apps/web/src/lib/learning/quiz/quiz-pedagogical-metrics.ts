@@ -9,7 +9,7 @@ import { getQuizTrapLevel } from "./quiz-trap-levels";
 import type { QuizErrorTypeId } from "./quiz-error-grid";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-export type QuizPedagogicalMetricBucketType = "question" | "mode" | "skill" | "error_type";
+type QuizPedagogicalMetricBucketType = "question" | "mode" | "skill" | "error_type";
 
 export type QuizPedagogicalMetricRow = {
   bucket_type: QuizPedagogicalMetricBucketType;
@@ -21,7 +21,7 @@ export type QuizPedagogicalMetricRow = {
   last_seen_at: string | null;
 };
 
-export type QuizPedagogicalMetricsQuestionResult = {
+type QuizPedagogicalMetricsQuestionResult = {
   questionId: string;
   correct: boolean;
   skill: QuizReasoningType;
@@ -40,7 +40,7 @@ export type QuizPedagogicalMetricsSession = {
   questions: QuizPedagogicalMetricsQuestionResult[];
 };
 
-export type QuizPedagogicalMetricsQuestionStat = {
+type QuizPedagogicalMetricsQuestionStat = {
   questionId: string;
   question: string;
   answer: string;
@@ -62,7 +62,7 @@ export type QuizPedagogicalMetricsQuestionStat = {
   reviewTargetHref: string;
 };
 
-export type QuizPedagogicalMetricsModeStat = {
+type QuizPedagogicalMetricsModeStat = {
   id: QuizAccessTypeId;
   label: string;
   sessions: number;
@@ -73,7 +73,7 @@ export type QuizPedagogicalMetricsModeStat = {
   lastSeenAt: string | null;
 };
 
-export type QuizPedagogicalMetricsSkillStat = {
+type QuizPedagogicalMetricsSkillStat = {
   skill: QuizReasoningType;
   label: string;
   attempts: number;
@@ -83,7 +83,7 @@ export type QuizPedagogicalMetricsSkillStat = {
   lastSeenAt: string | null;
 };
 
-export type QuizPedagogicalMetricsErrorStat = {
+type QuizPedagogicalMetricsErrorStat = {
   errorType: string;
   count: number;
   lastSeenAt: string | null;
