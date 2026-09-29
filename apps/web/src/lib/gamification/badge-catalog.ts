@@ -179,10 +179,3 @@ export function findBadgeDefinition(idOrAlias: string): GamificationBadgeDefinit
 export function findBadgeDefinitionByFamily(family: string): GamificationBadgeDefinition | undefined {
   return BADGE_DEFINITIONS.find((definition) => definition.family === family);
 }
-
-export function findBadgeDefinitionByLabel(label: string): GamificationBadgeDefinition | undefined {
-  return BADGE_DEFINITIONS.find((definition) => {
-    const typedDefinition = definition as GamificationBadgeDefinition;
-    return typedDefinition.label === label || typedDefinition.legacyLabels?.includes(label) === true;
-  });
-}

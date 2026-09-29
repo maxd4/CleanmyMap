@@ -4,7 +4,7 @@ import { BadgeCheck, Eye, Flag, Settings2, ShieldCheck, Sparkles, TrendingUp, Us
 import { cn } from "@/lib/utils";
 import { SectionLabel } from "./gamification-shell";
 import { buildRoleStatusCards } from "./roles-status-panel";
-import type { MeResponse } from "./gamification-types";
+import type { GamificationPanelProps } from "./gamification-panel-state";
 import { formatProgressionRequirement } from "./progression-requirement-copy";
 
 type RoleCard = ReturnType<typeof buildRoleStatusCards>[number];
@@ -27,12 +27,7 @@ export function EngagementPanel({
   loading,
   error,
   locale,
-}: {
-  progression: MeResponse["progression"] | undefined;
-  loading: boolean;
-  error: unknown;
-  locale: string;
-}) {
+}: GamificationPanelProps) {
   const fr = locale === "fr";
 
   if (loading) {

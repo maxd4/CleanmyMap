@@ -2,7 +2,7 @@
 
 import { BadgePictogram } from"./badge-icon";
 
-export type BadgeSurfaceTone =
+type BadgeSurfaceTone =
  |"admin"
  |"role"
  |"profile"

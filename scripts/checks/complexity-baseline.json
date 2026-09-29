@@ -1122,15 +1122,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/sections/rubriques/gamification/personal-progress.tsx",
-      "line": 25,
-      "category": "React/JSX",
-      "ceiling": 32,
-      "status": "LEGACY",
-      "functionIdentity": "named:PersonalProgress#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/sections/rubriques/impact-terrain-2026-methodology-section.tsx",
       "line": 52,
       "category": "React/JSX",
@@ -4260,15 +4251,6 @@
       "ceiling": 194,
       "status": "LEGACY",
       "functionIdentity": "named:EngagementPanel#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/gamification/personal-progress.tsx",
-      "line": 25,
-      "category": "React/JSX",
-      "ceiling": 332,
-      "status": "LEGACY",
-      "functionIdentity": "named:PersonalProgress#1"
     },
     {
       "metric": "functionLength",

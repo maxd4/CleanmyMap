@@ -21,6 +21,8 @@ import type { MeResponse } from "./gamification-types";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { GamificationCatalogPanel } from "./gamification-catalog-panel";
 import { GamificationRulesMigrationNotice } from "./gamification-rules-migration-notice";
+import { GamificationImpactPanel } from "./gamification-impact-panel";
+import { GamificationLevelProgressPanel } from "./gamification-level-progress-panel";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { method: "GET", cache: "no-store" });
@@ -70,6 +72,12 @@ export function GamificationSection() {
 
           <div className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-2">
+              <GamificationLevelProgressPanel
+                progression={progression}
+                loading={meLoading}
+                error={meError}
+                locale={locale}
+              />
               <EngagementPanel
                 progression={progression}
                 loading={meLoading}
@@ -84,6 +92,13 @@ export function GamificationSection() {
                 setSearchQuery={setSearchQuery}
               />
             </div>
+
+            <GamificationImpactPanel
+              progression={progression}
+              loading={meLoading}
+              error={meError}
+              locale={locale}
+            />
 
             <div className="grid gap-6 lg:grid-cols-2">
               <CollectionsPanel
