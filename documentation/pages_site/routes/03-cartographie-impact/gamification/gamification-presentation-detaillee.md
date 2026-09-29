@@ -39,6 +39,26 @@
 
 La rubrique gamification sert à rendre lisible la progression personnelle, la reconnaissance utile et les paliers d engagement. Elle doit rester non compétitive, crédible et alignée avec la mission benevole du site.
 
+## Contrat produit CURRENT
+
+- La surface privée et la page publique partagent les deux scopes `user` et
+  `structure` ; le premier affiche le niveau utilisateur et le second le niveau
+  collectif.
+- Les trois métriques de classement sont `level`, `xp` et `badges`.
+- Le compteur de badges est `gradeCount + oneShotCount` et s'affiche au format
+  `(X grades + Y one-shot)` ; aucun détail de badge n'est publié.
+- L'opt-in public est une préférence de profil désactivée par défaut, gérée dans
+  `/reglages`. Le refus retire l'utilisateur de la projection publique.
+- La projection publique est limitée au label autorisé, au niveau, à l'XP
+  validée et aux compteurs de badges ; elle ne contient ni identifiant Clerk,
+  ni email, ni metadata, ni rôle, ni XP pending, ni détail de contribution,
+  d'impact, d'historique ou de modération.
+- Le leaderboard est l'unique exception à la règle de non-publication de la gamification.
+
+La page `/sections/gamification` reste privée. Elle réutilise le panneau public
+canonique et propose le CTA « Voir le classement public » sans ajouter le
+leaderboard à la navigation primaire.
+
 ## Ce que la rubrique montre
 
 - progression visible;

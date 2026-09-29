@@ -56,6 +56,9 @@
 - Les notifications de contenu sont persistées dans `legal_content_reports` avec l'URL, le motif et les identifiants facultatifs. L'historique des décisions est conservé dans `legal_content_report_decisions`, avec audit, snapshots bornés et état borné des notifications ; les décisions sont visibles uniquement dans le creator inbox et ne copient pas le contenu tiers.
 - Les emails de décision sont envoyés au déclarant lorsqu'un contact est disponible. L'auteur n'est notifié que si un email canonique est connu ; l'identité du déclarant n'est pas transmise à l'auteur.
 - La page renvoie vers `/signaler-contenu-illicite`, sans qualifier CleanMyMap de fournisseur d'hébergement au sens du DSA.
+- Le choix d'opt-in du classement public est désactivé par défaut et la
+  projection se limite au label autorisé, au niveau, à l'XP validée et aux
+  compteurs de badges ; aucun identifiant Clerk ou détail privé n'est exposé.
 
 ## Références legacy
 

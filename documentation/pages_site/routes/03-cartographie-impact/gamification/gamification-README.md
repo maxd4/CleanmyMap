@@ -22,12 +22,22 @@ Les collections CURRENT sont dérivées de `progression.summary` et distinguent
 les éléments acquis, en progression et à découvrir, sans recopier de catalogue
 dans l UI. La reconnaissance personnelle affiche d abord les cartes lifetime
 et année en cours issues de `progression.recognition` et
-`progression.annualRecognition`. La lecture communautaire reste secondaire :
-le classement détaillé ne charge qu une combinaison supportée de scope
-(`individual` ou `collective`) et de période (`lifetime` ou `yearToDate`) via
-`/api/gamification/leaderboard`.
+`progression.annualRecognition`.
 
-La route canonique reste publique et affiche un soft-gate aux visiteurs anonymes. Le lien « Se connecter » ouvre `/sign-in?redirect_url=%2Fsections%2Fgamification`; après une authentification Clerk reconnue, le retour s'effectue sur `/sections/gamification` et le contenu authentifié est rendu.
+La section privée réutilise le composant canonique `LeaderboardPanel` pour
+afficher un aperçu du classement public, avec un lien vers
+`/sections/leaderboard`. Le panneau public utilise les deux scopes `user` et
+`structure` et les trois métriques `level`, `xp` et `badges`. Pour un utilisateur,
+le niveau est le niveau utilisateur ; pour une structure, il s'agit du niveau
+collectif. Le compteur de badges suit `total = gradeCount + oneShotCount` et
+est affiché au format `(X grades + Y one-shot)`, sans exposer le détail des
+badges. La préférence d'opt-in est gérée dans `/reglages`, désactivée par
+défaut. Le leaderboard est l'unique exception à la règle de non-publication de la gamification.
+
+La page `/sections/gamification` reste privée et protégée par authentification.
+La page `/sections/leaderboard` est publique, sans indexation ni URL canonique,
+et sa projection n'expose que le label public, le niveau, l'XP validée et les
+compteurs de badges autorisés.
 
 **Contrat SEO** : `ACCESS=PRIVATE`, `SEARCH=NOINDEX`,
 `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Le soft-gate décrit la

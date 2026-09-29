@@ -13,6 +13,7 @@ describe("/reglages canonical settings contract", () => {
   it("renders the canonical editable preferences and account controls", () => {
     expect(pageSource).toContain('<SitePreferencesControls surface="light" />');
     expect(pageSource).toContain("<DisplayNameModeSetting");
+    expect(pageSource).toContain('<LeaderboardOptInSetting fr={locale === "fr"} />');
     expect(pageSource).toContain("<AccountSettingsSection locale={locale} />");
     expect(pageSource).not.toContain("Section réservée pour une prochaine phase");
   });

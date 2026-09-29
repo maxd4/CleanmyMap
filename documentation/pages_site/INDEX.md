@@ -111,6 +111,7 @@ hybride indexable ne rend donc pas ses données privées anonymement accessibles
 | Route ou motif | ACCESS | SEARCH | DISCOVERY | CANONICAL |
 | --- |---|---|---|---|
 | /sections/feedback | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /sections/leaderboard | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /sign-in | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /sign-up | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /error/429 | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |

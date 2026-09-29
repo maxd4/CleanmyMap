@@ -44,6 +44,137 @@ function DataList({ items }: { items: string[] }) {
   );
 }
 
+function PrivacyContactAndSecurity({ contactEmail }: { contactEmail: string }) {
+  return (
+    <>
+      <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
+        <h2 className="text-xl font-bold text-slate-950">11. Sécurité</h2>
+        <DataList
+          items={[
+            "Chiffrement en transit lorsque le fournisseur et le protocole utilisés l'exposent.",
+            "Accès restreint aux données côté administrateur et politiques Supabase appliquées par le schéma.",
+            "Journalisation des opérations sensibles et des erreurs techniques lorsqu'elle est activée.",
+            "Minimisation : les formulaires limitent les données demandées à la fonctionnalité concernée.",
+          ]}
+        />
+      </section>
+      <section className="rounded-3xl border border-slate-200 bg-emerald-50 p-5">
+        <h2 className="text-xl font-bold text-slate-950">12. Contact et réclamation</h2>
+        <p className="cmm-text-body mt-2">
+          Questions RGPD, retrait du consentement ou exercice de droits:{" "}
+          <a href={`mailto:${contactEmail}`} className="font-medium text-emerald-700 hover:underline">{contactEmail}</a>.
+        </p>
+        <p className="cmm-text-body mt-2">
+          Si vous estimez que votre demande n&apos;a pas été correctement traitée,
+          vous pouvez saisir la CNIL via{" "}
+          <a href="https://www.cnil.fr/fr/adresser-une-plainte" className="font-medium text-emerald-700 hover:underline">son site officiel</a>.
+        </p>
+        <p className="cmm-text-body mt-2">
+          Documents associés:{" "}
+          <Link href="/conditions-generales-utilisation" className="font-medium text-emerald-700 hover:underline">CGU</Link>{" · "}
+          <Link href="/politique-cookies" className="font-medium text-emerald-700 hover:underline">politique cookies</Link>{" · "}
+          <Link href="/mentions-legales" className="font-medium text-emerald-700 hover:underline">mentions légales</Link>{" · "}
+          <Link href="/signaler-contenu-illicite" className="font-medium text-emerald-700 hover:underline">notification de contenu</Link>
+        </p>
+      </section>
+    </>
+  );
+}
+
+function PrivacyIdentityAndData({ contactEmail }: { contactEmail: string }) {
+  return (
+    <>
+      <section className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 lg:grid-cols-2">
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold text-slate-950">Responsable du traitement</h2>
+          <p className="cmm-text-body">
+            Le responsable du traitement est <strong>Maxence Deroome</strong>, personne physique éditant CleanMyMap à titre non professionnel dans le cadre d&apos;un projet étudiant. Aucune société, entreprise, association ou autre personne morale n&apos;exploite actuellement le service. Le point de contact actuellement configuré pour les questions RGPD est :{" "}
+            <a href={`mailto:${contactEmail}`} className="font-medium text-emerald-700 hover:underline">{contactEmail}</a>.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold text-slate-950">Principe appliqué</h2>
+          <p className="cmm-text-body">
+            Les traitements sont limités aux besoins du service. Les analytics et la mesure d&apos;audience soumis au consentement ne sont activés qu&apos;après un choix positif, conservé six mois.
+          </p>
+        </div>
+      </section>
+      <section className="space-y-5">
+        <div className="space-y-2">
+          <Pill>Données traitées</Pill>
+          <h2 className="text-2xl font-bold text-slate-950">1. Compte, authentification et profil</h2>
+        </div>
+        <DataList
+          items={[
+            "Identifiant Clerk (`userId`) et données d'identité fournies par le fournisseur d'authentification.",
+            "Prénom, nom, pseudo / username, nom d'affichage, adresse email et numéro de téléphone lorsqu'il est fourni.",
+            "Image de profil / avatar et URL ou métadonnées associées.",
+            "Rôle applicatif, visibilité du profil, badges, progression et arrondissement éventuellement renseigné.",
+            "Préférence d'opt-in du classement public, désactivée par défaut et modifiable depuis `/reglages`.",
+            "Parrainage : code d'invitation, identifiant du parrain et rattachement du compte invité.",
+            "Cookies de session Clerk et données techniques nécessaires à l'authentification et à la sécurité.",
+          ]}
+        />
+        <p className="cmm-text-body">
+          L&apos;adresse email et les éléments nécessaires à l&apos;authentification sont obligatoires pour un compte. Le téléphone et les informations de profil complémentaires sont facultatifs lorsqu&apos;ils ne sont pas nécessaires à une fonctionnalité choisie.
+        </p>
+      </section>
+      <section className="space-y-5">
+        <div className="space-y-2">
+          <Pill>Contributions</Pill>
+          <h2 className="text-2xl font-bold text-slate-950">2. Signalements, actions et lieux</h2>
+        </div>
+        <DataList
+          items={[
+            "Actions et signalements : type, dates, libellé du lieu, coordonnées GPS saisies, état de modération et notes.",
+            "Mesures déclarées : poids collecté, mégots, bénévoles, durée, répartition des déchets et estimation visuelle.",
+            "Tracés : points de départ et d'arrivée, polylignes/polygones, source et niveau de confiance de la géométrie.",
+            "Identité affichée ou associée à une contribution : nom d'acteur, nom d'organisation fourni, identifiant utilisateur et métadonnées de profil utiles au service.",
+            "Médias de signalement : nom original, type MIME, taille, dimensions, état d'import et chemin de stockage ; la table métier ne contient pas le binaire de l'image.",
+          ]}
+        />
+      </section>
+      <section className="space-y-5">
+        <div className="space-y-2">
+          <Pill>Communauté et support</Pill>
+          <h2 className="text-2xl font-bold text-slate-950">3. Événements, messages et demandes</h2>
+        </div>
+        <DataList
+          items={[
+            "Événements communautaires et RSVP : titre, date, lieu, description, organisateur, participant et statut de réponse.",
+            "Messagerie privée ou territoriale : expéditeur, destinataire, contenu, zone ou arrondissement, pièce jointe facultative et type de pièce jointe.",
+            "Demandes de bug, feedback, promotion et onboarding partenaire : coordonnées fournies, contenu de la demande, page concernée, rôle ou organisation et état de traitement.",
+            "Demandes RGPD envoyées depuis `/contact` : email, type de demande, message, identifiant de compte lorsqu'il est disponible, date, page d'origine et état de notification dans `contact_requests`.",
+            "Notifications de contenu potentiellement illicite : URL exacte, motif circonstancié, type ou identifiant technique facultatif, identité et email lorsqu'ils sont fournis, exception d'identité lorsqu'elle est invoquée, date, état de traitement et identifiant de suivi.",
+            "Décisions administratives relatives à ces notifications : acteur admin canonique, date, action, origine, motif, moyens automatisés, fondement légal ou CGU lorsque pertinent, URL/identifiant du contenu et états avant/après bornés. L'audit n'inclut pas l'identité du déclarant ni le contenu tiers.",
+            "Notifications, progression, événements de service et journaux d'opérations d'administration nécessaires au fonctionnement et à la sécurité.",
+            "Classement public sur opt-in : seul un label public autorisé, le niveau, l'XP validée et les compteurs de badges peuvent être projetés. Les identifiants Clerk, emails, metadata, rôles, XP pending, contributions détaillées, impact personnel, historique et données de modération restent exclus.",
+            "Contributions financières via Stripe : identifiant de session Checkout, identifiant de PaymentIntent, catégorie choisie, montants total et remboursé en centimes, devise, statut, dates de paiement et de mise à jour, identifiants d'événements webhook, type, identifiant d'objet, date de traitement et agrégats publics par catégorie. CleanMyMap ne stocke pas le numéro de carte, sa date d'expiration, son cryptogramme ni les coordonnées de carte saisies sur Checkout Stripe.",
+          ]}
+        />
+        <p className="cmm-text-body">
+          Certaines données peuvent être reçues indirectement lorsqu&apos;un autre utilisateur vous associe à un événement, une participation, une action, un message ou un parrainage. Elles sont alors utilisées pour la fonctionnalité concernée et soumises aux mêmes droits.
+        </p>
+      </section>
+      <section className="space-y-5">
+        <div className="space-y-2">
+          <Pill>Cookies et mesure</Pill>
+          <h2 className="text-2xl font-bold text-slate-950">4. Préférences, analytics et observabilité</h2>
+        </div>
+        <DataList
+          items={[
+            "Préférences d'interface : langue, thème et mode d'affichage, stockés localement puis synchronisés dans des cookies SameSite=Lax lorsqu'ils sont actifs.",
+            "Le choix cookies est mémorisé dans `localStorage` sous `cleanmymap_cookie_consent` et dans `cleanmymap_analytics_consent` pendant six mois. Une décision expirée est nettoyée et le choix est reproposé.",
+            "PostHog, Vercel Analytics et Vercel Speed Insights ne sont activés qu'après consentement analytics. Le retrait arrête la capture PostHog et empêche le rendu des intégrations Vercel ; un nouveau consentement peut les réactiver.",
+            "Le suivi de tunnel `funnel_events` reste bloqué sans consentement ; lorsqu'il est autorisé, il peut contenir un identifiant de session, une étape, un mode, un identifiant Clerk éventuel et des métadonnées de parcours.",
+            "Sentry, lorsqu'il est activé par une DSN, est un outil d'observabilité et de sécurité, pas un outil d'analytics soumis au consentement cookies. Les erreurs peuvent contenir des traces, messages et métadonnées techniques utiles au diagnostic. Aucun masquage ou anonymisation spécifique supplémentaire n'est déclaré ici comme configuré.",
+          ]}
+        />
+      </section>
+    </>
+  );
+}
+
 export default function PolitiqueConfidentialitePage() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
@@ -59,112 +190,7 @@ export default function PolitiqueConfidentialitePage() {
           action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 20 septembre 2026</p>}
         />
 
-        <section className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 lg:grid-cols-2">
-          <div className="space-y-2">
-            <h2 className="text-xl font-bold text-slate-950">Responsable du traitement</h2>
-            <p className="cmm-text-body">
-              Le responsable du traitement est <strong>Maxence Deroome</strong>,
-              personne physique éditant CleanMyMap à titre non professionnel dans
-              le cadre d&apos;un projet étudiant. Aucune société, entreprise,
-              association ou autre personne morale n&apos;exploite actuellement le
-              service. Le point de contact actuellement
-              configuré pour les questions RGPD est :{" "}
-              <a href={`mailto:${contactEmail}`} className="font-medium text-emerald-700 hover:underline">
-                {contactEmail}
-              </a>
-              .
-            </p>
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-xl font-bold text-slate-950">Principe appliqué</h2>
-            <p className="cmm-text-body">
-              Les traitements sont limités aux besoins du service. Les analytics et
-              la mesure d&apos;audience soumis au consentement ne sont activés
-              qu&apos;après un choix positif, conservé six mois.
-            </p>
-          </div>
-        </section>
-
-        <section className="space-y-5">
-          <div className="space-y-2">
-            <Pill>Données traitées</Pill>
-            <h2 className="text-2xl font-bold text-slate-950">1. Compte, authentification et profil</h2>
-          </div>
-          <DataList
-            items={[
-              "Identifiant Clerk (`userId`) et données d'identité fournies par le fournisseur d'authentification.",
-              "Prénom, nom, pseudo / username, nom d'affichage, adresse email et numéro de téléphone lorsqu'il est fourni.",
-              "Image de profil / avatar et URL ou métadonnées associées.",
-              "Rôle applicatif, visibilité du profil, badges, progression et arrondissement éventuellement renseigné.",
-              "Parrainage : code d'invitation, identifiant du parrain et rattachement du compte invité.",
-              "Cookies de session Clerk et données techniques nécessaires à l'authentification et à la sécurité.",
-            ]}
-          />
-          <p className="cmm-text-body">
-            L&apos;adresse email et les éléments nécessaires à l&apos;authentification sont
-            obligatoires pour un compte. Le téléphone et les informations de profil
-            complémentaires sont facultatifs lorsqu&apos;ils ne sont pas nécessaires à
-            une fonctionnalité choisie.
-          </p>
-        </section>
-
-        <section className="space-y-5">
-          <div className="space-y-2">
-            <Pill>Contributions</Pill>
-            <h2 className="text-2xl font-bold text-slate-950">2. Signalements, actions et lieux</h2>
-          </div>
-          <DataList
-            items={[
-              "Actions et signalements : type, dates, libellé du lieu, coordonnées GPS saisies, état de modération et notes.",
-              "Mesures déclarées : poids collecté, mégots, bénévoles, durée, répartition des déchets et estimation visuelle.",
-              "Tracés : points de départ et d'arrivée, polylignes/polygones, source et niveau de confiance de la géométrie.",
-              "Identité affichée ou associée à une contribution : nom d'acteur, nom d'organisation fourni, identifiant utilisateur et métadonnées de profil utiles au service.",
-              "Médias de signalement : nom original, type MIME, taille, dimensions, état d'import et chemin de stockage ; la table métier ne contient pas le binaire de l'image.",
-            ]}
-          />
-        </section>
-
-        <section className="space-y-5">
-          <div className="space-y-2">
-            <Pill>Communauté et support</Pill>
-            <h2 className="text-2xl font-bold text-slate-950">3. Événements, messages et demandes</h2>
-          </div>
-          <DataList
-            items={[
-              "Événements communautaires et RSVP : titre, date, lieu, description, organisateur, participant et statut de réponse.",
-              "Messagerie privée ou territoriale : expéditeur, destinataire, contenu, zone ou arrondissement, pièce jointe facultative et type de pièce jointe.",
-              "Demandes de bug, feedback, promotion et onboarding partenaire : coordonnées fournies, contenu de la demande, page concernée, rôle ou organisation et état de traitement.",
-              "Demandes RGPD envoyées depuis `/contact` : email, type de demande, message, identifiant de compte lorsqu'il est disponible, date, page d'origine et état de notification dans `contact_requests`.",
-              "Notifications de contenu potentiellement illicite : URL exacte, motif circonstancié, type ou identifiant technique facultatif, identité et email lorsqu'ils sont fournis, exception d'identité lorsqu'elle est invoquée, date, état de traitement et identifiant de suivi.",
-              "Décisions administratives relatives à ces notifications : acteur admin canonique, date, action, origine, motif, moyens automatisés, fondement légal ou CGU lorsque pertinent, URL/identifiant du contenu et états avant/après bornés. L'audit n'inclut pas l'identité du déclarant ni le contenu tiers.",
-              "Notifications, progression, événements de service et journaux d'opérations d'administration nécessaires au fonctionnement et à la sécurité.",
-              "Contributions financières via Stripe : identifiant de session Checkout, identifiant de PaymentIntent, catégorie choisie, montants total et remboursé en centimes, devise, statut, dates de paiement et de mise à jour, identifiants d'événements webhook, type, identifiant d'objet, date de traitement et agrégats publics par catégorie. CleanMyMap ne stocke pas le numéro de carte, sa date d'expiration, son cryptogramme ni les coordonnées de carte saisies sur Checkout Stripe.",
-            ]}
-          />
-          <p className="cmm-text-body">
-            Certaines données peuvent être reçues indirectement lorsqu&apos;un autre
-            utilisateur vous associe à un événement, une participation, une action,
-            un message ou un parrainage. Elles sont alors utilisées pour la
-            fonctionnalité concernée et soumises aux mêmes droits.
-          </p>
-        </section>
-
-        <section className="space-y-5">
-          <div className="space-y-2">
-            <Pill>Cookies et mesure</Pill>
-            <h2 className="text-2xl font-bold text-slate-950">4. Préférences, analytics et observabilité</h2>
-          </div>
-          <DataList
-            items={[
-              "Préférences d'interface : langue, thème et mode d'affichage, stockés localement puis synchronisés dans des cookies SameSite=Lax lorsqu'ils sont actifs.",
-              "Le choix cookies est mémorisé dans `localStorage` sous `cleanmymap_cookie_consent` et dans `cleanmymap_analytics_consent` pendant six mois. Une décision expirée est nettoyée et le choix est reproposé.",
-              "PostHog, Vercel Analytics et Vercel Speed Insights ne sont activés qu'après consentement analytics. Le retrait arrête la capture PostHog et empêche le rendu des intégrations Vercel ; un nouveau consentement peut les réactiver.",
-              "Le suivi de tunnel `funnel_events` reste bloqué sans consentement ; lorsqu'il est autorisé, il peut contenir un identifiant de session, une étape, un mode, un identifiant Clerk éventuel et des métadonnées de parcours.",
-              "Sentry, lorsqu'il est activé par une DSN, est un outil d'observabilité et de sécurité, pas un outil d'analytics soumis au consentement cookies. Les erreurs peuvent contenir des traces, messages et métadonnées techniques utiles au diagnostic. Aucun masquage ou anonymisation spécifique supplémentaire n'est déclaré ici comme configuré.",
-            ]}
-          />
-        </section>
-
+        <PrivacyIdentityAndData contactEmail={contactEmail} />
         <section className="space-y-5">
           <div className="space-y-2">
             <Pill>Finalités</Pill>
@@ -190,6 +216,7 @@ export default function PolitiqueConfidentialitePage() {
                   ["Analytics et mesure d'audience", "Mesurer les parcours et la performance après accord", "Consentement"],
                   ["Sentry et sécurité", "Détecter, diagnostiquer et prévenir les erreurs, abus et incidents", "Intérêt légitime"],
                   ["Parrainage et progression", "Relier les invitations et afficher les éléments de progression du service", "Exécution du service ; intérêt légitime d'animation de la communauté"],
+                  ["Classement public sur opt-in", "Afficher une projection publique limitée lorsque la personne active cette préférence ; le retrait la rend à nouveau absente", "Consentement ou choix explicite de la personne ; retrait possible depuis `/reglages`"],
                   ["Contributions financières via Stripe", "Créer la session Checkout demandée, confirmer le paiement, prévenir la fraude, suivre les remboursements et conserver la traçabilité applicable", "Étapes demandées pour le paiement ; intérêt légitime de sécurité et de prévention de la fraude ; obligation légale lorsqu'elle s'applique"],
                 ].map(([treatment, purpose, basis]) => (
                   <tr key={treatment}>
@@ -298,38 +325,7 @@ export default function PolitiqueConfidentialitePage() {
           </p>
         </section>
 
-        <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
-          <h2 className="text-xl font-bold text-slate-950">11. Sécurité</h2>
-          <DataList
-            items={[
-              "Chiffrement en transit lorsque le fournisseur et le protocole utilisés l'exposent.",
-              "Accès restreint aux données côté administrateur et politiques Supabase appliquées par le schéma.",
-              "Journalisation des opérations sensibles et des erreurs techniques lorsqu'elle est activée.",
-              "Minimisation : les formulaires limitent les données demandées à la fonctionnalité concernée.",
-            ]}
-          />
-        </section>
-
-        <section className="rounded-3xl border border-slate-200 bg-emerald-50 p-5">
-          <h2 className="text-xl font-bold text-slate-950">12. Contact et réclamation</h2>
-          <p className="cmm-text-body mt-2">
-            Questions RGPD, retrait du consentement ou exercice de droits :{" "}
-            <a href={`mailto:${contactEmail}`} className="font-medium text-emerald-700 hover:underline">{contactEmail}</a>.
-          </p>
-          <p className="cmm-text-body mt-2">
-            Si vous estimez que votre demande n&apos;a pas été correctement traitée,
-            vous pouvez saisir la CNIL via{" "}
-            <a href="https://www.cnil.fr/fr/adresser-une-plainte" className="font-medium text-emerald-700 hover:underline">son site officiel</a>.
-          </p>
-          <p className="cmm-text-body mt-2">
-            Documents associés :{" "}
-            <Link href="/conditions-generales-utilisation" className="font-medium text-emerald-700 hover:underline">CGU</Link>{" · "}
-            <Link href="/politique-cookies" className="font-medium text-emerald-700 hover:underline">politique cookies</Link>{" · "}
-            <Link href="/mentions-legales" className="font-medium text-emerald-700 hover:underline">mentions légales</Link>
-            {" · "}
-            <Link href="/signaler-contenu-illicite" className="font-medium text-emerald-700 hover:underline">notification de contenu</Link>
-          </p>
-        </section>
+        <PrivacyContactAndSecurity contactEmail={contactEmail} />
         </CmmSectionGroup>
       </div>
       </CmmPageLayout>

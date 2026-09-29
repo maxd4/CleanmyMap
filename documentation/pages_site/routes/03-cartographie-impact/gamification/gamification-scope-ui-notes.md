@@ -14,6 +14,24 @@ La rubrique gamification doit rester:
 - cohérente entre progression personnelle, classement et reconnaissance sociale;
 - stable dans ses scopes temporels.
 
+## Contrat leaderboard CURRENT
+
+Le leaderboard est l'unique exception à la règle de non-publication de la gamification. La section privée `/sections/gamification` réutilise le
+`LeaderboardPanel` public et propose le CTA « Voir le classement public » vers
+`/sections/leaderboard`; elle ne crée ni moteur, ni requête, ni mapping, ni tri
+parallèle. Le classement n'est pas ajouté à la navigation primaire.
+
+Il existe deux scopes : `user` (niveau utilisateur) et `structure` (niveau
+collectif). Les trois métriques sont `level`, `xp` et `badges`. Le total de
+badges vaut `gradeCount + oneShotCount` et est rendu au format
+`(X grades + Y one-shot)`, sans publier le détail des badges. La préférence
+d'opt-in, désactivée par défaut, est contrôlée depuis `/reglages`.
+
+La projection publique est limitée au label/handle autorisé, au niveau, à l'XP
+validée, au total de badges et à ses deux compteurs. Les identifiants Clerk,
+emails, metadata, rôles, XP pending, contributions détaillées, impact,
+historique et données de modération restent exclus.
+
 ## Scopes temporels
 
 Le code partage désormais une convention explicite dans `apps/web/src/lib/time-scopes.ts`.
@@ -45,7 +63,6 @@ Règle de lecture:
 
 ### À dupliquer en `allTime` et `yearToDate`
 
-- leaderboard individuel;
 - reconnaissance contributeur;
 - vues de performance utilisateur dans le dashboard;
 - KPI publics si l on veut une lecture cumulée et une lecture annuelle.
@@ -73,6 +90,7 @@ Les ajustements récents reposent sur ces points d entrée:
 - `apps/web/src/lib/gamification/progression-data.ts`
 - `apps/web/src/lib/gamification/progression-user.ts` — owner de la progression personnelle
 - `apps/web/src/lib/gamification/progression-ranking.ts` — owner des classements
+- `apps/web/src/lib/gamification/progression-ranking-batch.ts` — owner des lectures batch des sources leaderboard
 - `apps/web/src/lib/gamification/progression-retention.ts` — owner de la rétention post-action
 - `apps/web/src/app/api/gamification/analytics/points/route.ts`
 - `apps/web/src/app/api/gamification/leaderboard/route.ts`
@@ -117,16 +135,18 @@ Le parti pris est de montrer:
 - La reconnaissance personnelle vient de
   `progression.recognition.currentContributor` et de
   `progression.annualRecognition.currentContributor`, avec un libellé explicite
-  `Lifetime` ou `Année en cours`.
-- Le classement détaillé est secondaire et n est chargé qu après interaction.
-  Il utilise uniquement `/api/gamification/leaderboard` avec les dimensions
-  supportées `scope=individual|collective` et
-  `period=lifetime|yearToDate`; la recherche filtre les lignes chargées.
+  `Lifetime` ou `Année en cours`. Ces périodes restent propres à la
+  reconnaissance, pas au classement détaillé.
+- Le panneau leaderboard réutilisé dans la reconnaissance charge uniquement la
+  projection publique via `/api/gamification/leaderboard/public`, avec les
+  dimensions supportées `scope=user|structure` et
+  `metric=level|xp|badges`.
 
 ## Points de vigilance
 
 - Ne pas confondre `XP cumulée` et `impact annuel`.
-- Ne pas présenter un leaderboard annuel comme un leaderboard lifetime.
+- Ne pas ajouter de période au leaderboard détaillé : les périodes restent
+  portées par les contrats de reconnaissance annuelle et lifetime.
 - Ne pas injecter de compétition agressive dans les formulations UI.
 - Ne pas remplir artificiellement les collections : un groupe sans donnée reste
   explicitement vide et aucun badge ou objectif n est inventé.

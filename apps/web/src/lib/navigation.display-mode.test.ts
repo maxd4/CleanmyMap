@@ -75,6 +75,7 @@ describe("navigation display modes", () => {
       "reports",
       "gamification",
     ]);
+    expect(spaces.flatMap((space) => space.items.map((item) => item.routeId))).not.toContain("leaderboard");
     expect(spaces.find((space) => space.id === "network")?.items.map((item) => item.routeId)).toEqual(EXPECTED_NETWORK_ROUTE_IDS);
     expect(spaces.find((space) => space.id === "learn")?.items.map((item) => item.routeId)).toEqual([
       "learn-comprendre",

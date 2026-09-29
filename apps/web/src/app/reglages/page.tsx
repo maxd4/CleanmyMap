@@ -8,6 +8,7 @@ import { getServerLocale } from "@/lib/server-preferences";
 import { DisplayNameModeSetting } from "@/components/account/display-name-mode-setting";
 import { AccountSettingsSection } from "@/components/account/account-settings-section";
 import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
+import { LeaderboardOptInSetting } from "@/components/sections/rubriques/gamification/leaderboard-opt-in-setting";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { HOME_ROUTE } from "@/lib/home-routes";
@@ -155,6 +156,8 @@ export default async function ReglagesPage() {
                   userId={identity?.userId || "unknown"}
                   locale={locale as "fr" | "en"}
                 />
+
+                <LeaderboardOptInSetting fr={locale === "fr"} />
                 
                 <Link
                   href={PROFIL_ROUTE}

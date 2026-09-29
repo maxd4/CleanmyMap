@@ -56,6 +56,10 @@ describe("privacy policy contract", () => {
       expect(source).toContain("CNIL");
       expect(source).toContain("un mois");
       expect(source).toContain("deux mois");
+      expect(source).toContain("opt-in");
+      expect(source).toContain("XP validée");
+      expect(source).toContain("identifiants Clerk");
+      expect(source).toContain("données de modération");
       expect(source).toContain("automatisée");
       expect(source).toContain("Stripe");
       expect(source).toContain("identifiant de session Checkout");

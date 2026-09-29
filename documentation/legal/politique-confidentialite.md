@@ -23,8 +23,8 @@ Selon les parcours utilisés, CleanMyMap traite notamment :
 
 - **Compte et profil** : identifiant Clerk, données d'identité fournies par
   Clerk, email, téléphone lorsqu'il est fourni, nom d'affichage, avatar, rôle,
-  visibilité, badges, progression, arrondissement et rattachement de
-  parrainage ;
+  visibilité, badges, progression, préférence d'opt-in du classement public,
+  arrondissement et rattachement de parrainage ;
 - **Authentification et sécurité** : données de session, identifiants
   techniques, données nécessaires à la prévention des abus et au diagnostic ;
 - **Actions, lieux et médias** : dates, types, libellés, coordonnées, notes,
@@ -71,6 +71,14 @@ parrainage ou un contenu.
 | Analytics et mesure d'audience | Mesurer les parcours après accord | Consentement |
 | Sentry | Détecter, diagnostiquer et prévenir les erreurs, abus et incidents | Intérêt légitime de sécurité et de fonctionnement |
 | Parrainage et progression | Relier une invitation et fournir les éléments de progression | Exécution du service ; intérêt légitime d'animation |
+| Classement public sur opt-in | Afficher une projection publique limitée du profil lorsque la personne active son choix | Consentement ou choix explicite de la personne ; retrait possible depuis `/reglages` |
+
+Lorsque le choix est activé, la projection du classement public peut contenir
+uniquement un label public autorisé, le niveau, l'XP validée et les compteurs de
+badges. Elle ne contient pas les identifiants Clerk, l'email, les metadata, le rôle,
+l'XP pending, les contributions détaillées, l'impact personnel, l'historique ou
+les données de modération ou la mécanique de modération ; le retrait du choix rend le profil absent de cette
+projection.
 | Contributions financières via Stripe | Créer la session Checkout demandée, confirmer le paiement, prévenir la fraude, traiter le suivi des remboursements et conserver la traçabilité nécessaire | Étapes demandées pour le paiement ; intérêt légitime de sécurité et de prévention de la fraude ; obligation légale lorsqu'elle s'applique |
 
 Les champs nécessaires à la fonction choisie sont obligatoires lorsqu'ils sont

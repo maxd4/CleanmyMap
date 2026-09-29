@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { MeResponse } from "./gamification-types";
 import { buildPersonalRecognitionCards } from "./gamification-recognition";
+
+const panelSource = readFileSync(new URL("./gamification-recognition.tsx", import.meta.url), "utf8");
 
 describe("personal gamification recognition", () => {
   it("has an explicit empty state when no contributor is available", () => {
@@ -53,5 +56,15 @@ describe("personal gamification recognition", () => {
     expect(cards.map((entry) => entry.label)).toEqual(["Depuis toujours", "Année en cours"]);
     expect(cards[0]?.card.mentorEligible).toBe(true);
     expect(cards[1]?.card.mentorEligible).toBe(false);
+  });
+
+  it("reuses the public leaderboard panel without a second private fetching engine", () => {
+    expect(panelSource).toContain('<LeaderboardPanel initialScope="user" />');
+    expect(panelSource).toContain('href="/sections/leaderboard"');
+    expect(panelSource).toContain("Voir le classement public");
+    expect(panelSource).toContain("La progression personnelle et toutes les données privées Gamification restent protégées.");
+    expect(panelSource).not.toContain("useSWR");
+    expect(panelSource).not.toContain("/api/gamification/leaderboard?");
+    expect(panelSource).not.toContain("buildLeaderboardKey");
   });
 });
