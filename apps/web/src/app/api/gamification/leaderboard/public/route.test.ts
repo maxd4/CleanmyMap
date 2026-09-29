@@ -47,6 +47,7 @@ beforeEach(() => {
     {
       rank: 1,
       publicLabel: "Les Rives",
+      structureType: "association",
       level: 2,
       xpValidated: 3,
       badgeTotal: 1,
@@ -74,6 +75,9 @@ describe("GET /api/gamification/leaderboard/public", () => {
     expect(JSON.stringify(body)).not.toContain("email");
     expect(JSON.stringify(body)).not.toContain("metadata");
     expect(JSON.stringify(body)).not.toContain("authorized_moderation");
+    if (scope === "structure") {
+      expect(body.items[0]).toEqual(expect.objectContaining({ structureType: "association" }));
+    }
   });
 
   it.each(["level", "xp", "badges"])("accepts metric=%s", async (metric) => {

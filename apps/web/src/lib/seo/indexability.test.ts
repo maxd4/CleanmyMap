@@ -145,7 +145,16 @@ describe("indexability helpers", () => {
     expect(privateRoutes).not.toContain("/sections/trash-spotter");
     expect(getPublicNoindexSectionRoutes()).toEqual([
       "/sections/feedback",
+      "/sections/leaderboard",
       "/sections/trash-spotter",
     ]);
+  });
+
+  it("keeps the public leaderboard noindex and out of the sitemap", () => {
+    expect(isPublicNoindexPath("/sections/leaderboard")).toBe(true);
+    expect(isPrivateAppPath("/sections/leaderboard")).toBe(false);
+    expect(getPublicSectionSitemapPaths()).not.toContain("/sections/leaderboard");
+    expect(getPrivateSectionRoutes()).not.toContain("/sections/leaderboard");
+    expect(getPrivateSectionRoutes()).toContain("/sections/gamification");
   });
 });

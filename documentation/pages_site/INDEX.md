@@ -253,6 +253,7 @@ primaire du bloc Agir.
 | `/actions/map` | [Carte des actions](./routes/03-cartographie-impact/actions-map/actions-map-README.md) | `public-visible` | sky | `apps/web/src/app/(app)/actions/map/page.tsx` |
 | `/methodologie` | [Méthodologie](./routes/03-cartographie-impact/methodologie/methodologie-README.md) | `public-visible` | red, exception `methodologie-impact` | `apps/web/src/app/(app)/methodologie/page.tsx` |
 | `/sections/gamification` | [Progression & badges](./routes/03-cartographie-impact/gamification/gamification-README.md) | `auth-disabled-gate` | red, exception `reports-impact` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/leaderboard` | [Classement public](./routes/03-cartographie-impact/leaderboard/leaderboard-README.md) | `public-visible` ; noindex ; consultation sans compte | red, exception `reports-impact` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/reports` | [Rapports d'impact](./routes/03-cartographie-impact/reports/reports-README.md) | synthèse publique ; génération/historique compte connecté ; export détaillé tout compte connecté, quota 1/jour | red | `apps/web/src/app/(app)/reports/page.tsx` |
 
 ### Alias Cartographie & Impact

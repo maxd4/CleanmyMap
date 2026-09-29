@@ -63,6 +63,9 @@ describe("page-families resolver", () => {
     expect(resolveBasePageFamilyId("/sections/gamification")).toBe(
       "cartographie-impact",
     );
+    expect(resolveBasePageFamilyId("/sections/leaderboard")).toBe(
+      "cartographie-impact",
+    );
 
     for (const route of [
       "/sections/community",
@@ -139,6 +142,11 @@ describe("page-families resolver", () => {
     });
 
     expect(resolvePageFamily("/sections/gamification")).toMatchObject({
+      id: "cartographie-impact",
+      exceptionId: "reports-impact",
+    });
+
+    expect(resolvePageFamily("/sections/leaderboard")).toMatchObject({
       id: "cartographie-impact",
       exceptionId: "reports-impact",
     });

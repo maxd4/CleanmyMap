@@ -77,6 +77,7 @@ workflow et aux deep-links ; il n'est jamais une rubrique primaire.
 
 ```txt
 /sections/gamification
+/sections/leaderboard
 ```
 
 ### Réseau & Discussions

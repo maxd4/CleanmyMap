@@ -11,6 +11,7 @@ import type {
   ActionRow,
   LeaderboardMetric,
   PublicLeaderboardItem,
+  PublicStructureLeaderboardItem,
 } from "./progression-types";
 
 const PUBLIC_LEADERBOARD_LIMIT = 60;
@@ -27,6 +28,7 @@ export type StructureProgressionEvent = {
 type StructureIdentity = {
   id: string;
   label: string;
+  type: NonNullable<ActionRow["organizer_type"]>;
 };
 
 type StructureAggregate = {
@@ -48,7 +50,7 @@ function structureIdentity(
   ) {
     return null;
   }
-  return { id, label };
+  return { id, label, type: row.organizer_type };
 }
 
 function isStructureEvent(event: StructureProgressionEvent): boolean {
@@ -87,10 +89,13 @@ function structureBadges(validatedActions: number) {
   return countCurrentLeaderboardBadgeFacts({ gradeIds: grades, oneShotIds: [] });
 }
 
-function toPublicStructureItem(value: StructureAggregate): PublicLeaderboardItem {
+function toPublicStructureItem(
+  value: StructureAggregate,
+): PublicStructureLeaderboardItem {
   return {
     rank: 0,
     publicLabel: value.identity.label,
+    structureType: value.identity.type,
     level: computePotentialLevel(value.validatedXp),
     xpValidated: value.validatedXp,
     ...structureBadges(value.validatedActions),

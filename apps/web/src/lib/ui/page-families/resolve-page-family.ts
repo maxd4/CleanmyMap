@@ -34,6 +34,7 @@ const AGIR_SECTION_ROUTES = [
 
 const CARTOGRAPHIE_IMPACT_SECTION_ROUTES = [
   "/sections/gamification",
+  "/sections/leaderboard",
 ] as const;
 
 const RESEAU_DISCUSSIONS_SECTION_ROUTES = [
@@ -211,7 +212,8 @@ function applyImplicitRouteOverrides(
   if (
     isRoute(pathname, "/reports") ||
     isRoute(pathname, "/gamification") ||
-    isRoute(pathname, "/sections/gamification")
+    isRoute(pathname, "/sections/gamification") ||
+    isRoute(pathname, "/sections/leaderboard")
   ) {
     return { ...IMPACT_REPORTS_FAMILY, exceptionId: "reports-impact" };
   }

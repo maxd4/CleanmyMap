@@ -84,6 +84,7 @@ export const PUBLIC_INDEXABLE_SECTION_IDS: ReadonlySet<string> = new Set([
 
 export const PUBLIC_NOINDEX_SECTION_IDS: ReadonlySet<string> = new Set([
   "feedback",
+  "leaderboard",
   "trash-spotter",
 ] as const);
 
@@ -149,8 +150,12 @@ export function isPrivateAppPath(pathname: string): boolean {
 }
 
 export function isPublicNoindexPath(pathname: string): boolean {
-  return PUBLIC_NOINDEX_ROUTE_PREFIXES.some((prefix) =>
-    matchesPathPrefix(pathname, prefix),
+  return (
+    PUBLIC_NOINDEX_ROUTE_PREFIXES.some((prefix) =>
+      matchesPathPrefix(pathname, prefix),
+    ) || getPublicNoindexSectionRoutes().some((route) =>
+      matchesPathPrefix(pathname, route),
+    )
   );
 }
 
