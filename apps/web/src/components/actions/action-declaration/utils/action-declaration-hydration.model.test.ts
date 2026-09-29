@@ -69,7 +69,6 @@ describe("action declaration hydration model", () => {
     expect(form.wasteRecyclablesKg).toBe("");
     expect(form.cigaretteButtsCount).toBe("");
     expect(form.wasteMegotsKg).toBe("");
-    expect(form.visionDensity).toBe("");
   });
 
   it("preserves legacy measurements, participation and derived route target", () => {

@@ -246,9 +246,6 @@ export function sanitizePreActionForm(form: FormState): FormState {
     wasteMetalKg: "",
     wasteMixteKg: "",
     triQuality: "moyenne",
-    visionBagsCount: "",
-    visionFillLevel: "",
-    visionDensity: "",
   };
 
   next.actionTitle = next.actionTitle.trim();

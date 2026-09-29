@@ -58,6 +58,23 @@ describe("action declaration draft storage", () => {
     expect(snapshot?.form.wasteKg).toBe("12");
   });
 
+  it("does not persist or hydrate the removed manual vision fields", () => {
+    const { store } = installLocalStorage();
+    const draft = createInitialFormState("Alice");
+
+    saveDraft(draft, "2026-05-13T10:45:00.000Z");
+
+    const stored = JSON.parse(store.get(ACTION_DECLARATION_DRAFT_KEY) ?? "{}") as Record<string, unknown>;
+    expect(stored).not.toHaveProperty("visionBagsCount");
+    expect(stored).not.toHaveProperty("visionFillLevel");
+    expect(stored).not.toHaveProperty("visionDensity");
+
+    const snapshot = loadDraftSnapshot(createInitialFormState("Fallback"));
+    expect(snapshot?.form).not.toHaveProperty("visionBagsCount");
+    expect(snapshot?.form).not.toHaveProperty("visionFillLevel");
+    expect(snapshot?.form).not.toHaveProperty("visionDensity");
+  });
+
   it("returns a stable snapshot reference while the stored draft stays unchanged", () => {
     installLocalStorage();
     const savedAt = "2026-05-13T10:45:00.000Z";
