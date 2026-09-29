@@ -1,10 +1,7 @@
 import type { OrganizerType } from "./organizer-type";
-import {
-  ORGANIZER_DIRECTORY,
-  ORGANIZER_DIRECTORY_VERIFIED_AT,
-} from "./organizer-directory-catalog";
+import { ORGANIZER_DIRECTORY } from "./organizer-directory-catalog";
 
-export { ORGANIZER_DIRECTORY, ORGANIZER_DIRECTORY_VERIFIED_AT };
+export { ORGANIZER_DIRECTORY };
 
 export type OrganizerDirectoryKnownEntry =
   (typeof ORGANIZER_DIRECTORY)[number];

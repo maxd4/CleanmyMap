@@ -39,7 +39,7 @@ const ACTION_MODERATION_SELECT_FIELDS = [
   "hidden_reason",
 ] as const;
 
-export const ACTION_SELECT_FIELDS = [
+const ACTION_SELECT_FIELDS = [
   ...ACTION_BASE_SELECT_FIELDS,
   ...ACTION_MODERATION_SELECT_FIELDS,
 ] as const;

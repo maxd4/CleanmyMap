@@ -1,5 +1,4 @@
 import type {
- ActionDrawing,
  ActionGpxImportMetadata,
  ActionLocationCoordinates,
  ActionMegotsCondition,
@@ -8,7 +7,6 @@ import type {
  ActionWasteMeasurementMethod,
 } from"@/lib/actions/types";
 import { PLACE_TYPE_OPTIONS } from"@/lib/actions/place-type-options";
-import { normalizeActionDrawing } from"../map/layers/actions-map-geometry.utils";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { OperationalRoute } from "@/lib/route/route-operational";
@@ -181,42 +179,9 @@ export type PostActionRetentionLoop = {
   nextActionSuggestion: string;
 };
 
-export function toOptionalNumber(input: string): number | undefined {
- const trimmed = input.trim();
- if (!trimmed) {
- return undefined;
- }
- const parsed = Number(trimmed);
- return Number.isFinite(parsed) ? parsed : undefined;
-}
-
 export function toRequiredNumber(input: string, fallback: number): number {
  const parsed = Number(input);
  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-export function getDrawingCentroid(drawing: ActionDrawing): {
- latitude: number;
- longitude: number;
-} {
- const points = drawing.coordinates;
- const total = points.reduce(
- (acc, [lat, lng]) => ({
- latitude: acc.latitude + lat,
- longitude: acc.longitude + lng,
- }),
- { latitude: 0, longitude: 0 },
- );
- return {
- latitude: Number((total.latitude / points.length).toFixed(6)),
- longitude: Number((total.longitude / points.length).toFixed(6)),
- };
-}
-
-export function isDrawingValid(
- drawing: ActionDrawing | null,
-): drawing is ActionDrawing {
- return normalizeActionDrawing(drawing) !== null;
 }
 
 export type ValidationIssue = {
