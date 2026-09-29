@@ -1,30 +1,11 @@
 import type {
   ContributorRecognitionSnapshot,
-  ContributorRecognitionSummary,
   GamificationBadgeDefinition,
   LevelRequirementAssessment,
+  PersonalTimelineItem,
 } from "@/lib/gamification/progression-types";
 import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
 import type { EngagementStatus } from "@/lib/gamification/engagement-status";
-
-export type PersonalHistoryItem = {
-  id: string;
-  actionDate: string;
-  locationLabel: string;
-  status: "pending" | "approved" | "rejected";
-  wasteKg: number | null;
-  cigaretteButts: number;
-  volunteersCount: number;
-  durationMinutes: number;
-  qualityScore: number;
-  qualityGrade: "A" | "B" | "C";
-  latitude: number | null;
-  longitude: number | null;
-  manualDrawing: {
-    kind: "polyline" | "polygon";
-    coordinates: [number, number][];
-  } | null;
-};
 
 export type MeResponse = {
   status: "ok";
@@ -80,8 +61,8 @@ export type MeResponse = {
       score: number | null;
     };
     history: {
-      timeline: PersonalHistoryItem[];
-      mapPoints: PersonalHistoryItem[];
+      timeline: PersonalTimelineItem[];
+      mapPoints: PersonalTimelineItem[];
     };
     monthlyMilestone?: {
       targetType: string;
@@ -100,43 +81,4 @@ export type MeResponse = {
       wasteCoverageRate: number;
     };
   };
-};
-
-export type IndividualItem = {
-  rank: number;
-  userId: string;
-  actorName: string;
-  associationName: string;
-  score: number;
-  xpValidated: number;
-  xpTotal: number;
-  currentLevel: number;
-  potentialLevel: number;
-  qualityAverage: number;
-  validatedActions: number;
-  wasteKg: number;
-  wasteCoverageRate: number;
-  badges: string[];
-};
-
-export type CollectiveItem = {
-  rank: number;
-  associationName: string;
-  score: number;
-  currentLevel: number;
-  potentialLevel: number;
-  members: number;
-  qualityAverage: number;
-  validatedActions: number;
-  wasteKg: number;
-  wasteCoverageRate: number;
-};
-
-export type LeaderboardResponse = {
-  status: "ok";
-  scope: "individual" | "collective";
-  period: "lifetime" | "yearToDate";
-  generatedAt: string;
-  items: Array<IndividualItem | CollectiveItem>;
-  recognition: ContributorRecognitionSummary;
 };

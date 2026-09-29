@@ -210,6 +210,160 @@
       "reason": "Le composant est requis par le flux CURRENT des champs complets du formulaire ; sa suppression casse l'import utilisé par action-declaration-form.sections.tsx.",
       "evidence": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.sections.tsx:7,76 importe et rend ActionDeclarationPhotoSection ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.photo-section.tsx",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "d8e97a6f1ffa38542d216326",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "RubriqueAvailability est un contrat de la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueAvailability",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "ee5cb8ab1829fd4a821b4799",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "RubriqueImplementation est un contrat de la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueImplementation",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "ac5fde6d015eee32fc523412",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "RubriqueKind est un contrat de la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueKind",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "011bcb002ce27de779bc2eb2",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "FinalizedSectionId est un contrat de la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:FinalizedSectionId",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "b83f0037c23976d7d694e89a",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "RubriqueAvailability est réexporté par l'owner de types nécessaire à la façade publique sections-registry.",
+      "evidence": "apps/web/src/lib/sections-registry/types.ts:export type RubriqueAvailability ; scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "3c4707e33ed04500bb544729",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "RubriqueImplementation est réexporté par l'owner de types nécessaire à la façade publique sections-registry.",
+      "evidence": "apps/web/src/lib/sections-registry/types.ts:export type RubriqueImplementation ; scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "93ec55274af96d9f268beec4",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "RubriqueKind est réexporté par l'owner de types nécessaire à la façade publique sections-registry.",
+      "evidence": "apps/web/src/lib/sections-registry/types.ts:export type RubriqueKind ; scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "a243e0e537f1a7964eaa0c04",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "FinalizedSectionId est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:FinalizedSectionId",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "e45cd8493b9f7010f7a74b39",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "RubriqueCategory est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueCategory",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "0fdafe62c3004b1ee9d047df",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "RubriqueDefinition est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueDefinition",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "af5b654d186dd367e6d28960",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "RubriqueImplementation est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueImplementation",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "3f1150b1bfb63bcfc5f7b8c7",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "RubriqueKind est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueKind",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "71b6bf8de6b1616fed831a25",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "SectionId est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:SectionId",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "a6f38d607680a09468d8c71b",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "SectionRubrique est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:SectionRubrique",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "5efe00c5250ca0586a6c4c9a",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "isRubriqueVisible est l'owner de l'helper réexporté par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/helpers.ts ; apps/web/src/lib/sections-registry/index.ts",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "d7b3d5be4c2fcbcfadfa0fd8",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "getVisibleRubriquesBySpace est l'owner de l'helper réexporté par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/helpers.ts ; apps/web/src/lib/sections-registry/index.ts",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "44cacb793690385a470bdaf1",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "normalizeSectionId est l'owner de l'helper réexporté par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/helpers.ts ; apps/web/src/lib/sections-registry/index.ts",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "9202c9c249e14c9bce2186be",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "getPendingSectionRubriques est l'owner de l'helper réexporté par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/helpers.ts ; apps/web/src/lib/sections-registry/index.ts",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "9002ab7387b5c3285951fe67",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "isRubriqueVisible est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:isRubriqueVisible",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "8367ec2907725ec4489811d0",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "getVisibleRubriquesBySpace est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:getVisibleRubriquesBySpace",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "f87f3f6172b1a8a631719ae9",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "normalizeSectionId est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:normalizeSectionId",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "d275e0cffdd57ab8948dd6d1",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "getPendingSectionRubriques est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:getPendingSectionRubriques",
+      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     }
   ]
 }

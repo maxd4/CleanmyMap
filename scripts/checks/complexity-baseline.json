@@ -1050,24 +1050,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/sections/rubriques/discussion-bug-report-form.tsx",
-      "line": 20,
-      "category": "React/JSX",
-      "ceiling": 42,
-      "status": "LEGACY",
-      "functionIdentity": "named:DiscussionBugReportForm#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/sections/rubriques/discussion-bug-report-form.tsx",
-      "line": 52,
-      "category": "React/JSX",
-      "ceiling": 22,
-      "status": "LEGACY",
-      "functionIdentity": "named:submitReport#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
       "line": 122,
       "category": "React/JSX",
@@ -1122,15 +1104,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/sections/rubriques/gamification/collections-panel.tsx",
-      "line": 73,
-      "category": "React/JSX",
-      "ceiling": 23,
-      "status": "LEGACY",
-      "functionIdentity": "named:CollectionsPanel#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/sections/rubriques/gamification/gamification-engagement.tsx",
       "line": 24,
       "category": "React/JSX",
@@ -1149,30 +1122,12 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/sections/rubriques/gamification/impact-feedback-panel.tsx",
-      "line": 33,
-      "category": "React/JSX",
-      "ceiling": 22,
-      "status": "LEGACY",
-      "functionIdentity": "named:ImpactFeedbackPanel#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/sections/rubriques/gamification/personal-progress.tsx",
       "line": 25,
       "category": "React/JSX",
       "ceiling": 32,
       "status": "LEGACY",
       "functionIdentity": "named:PersonalProgress#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/sections/rubriques/gamification/progression-visible-panel.tsx",
-      "line": 19,
-      "category": "React/JSX",
-      "ceiling": 27,
-      "status": "LEGACY",
-      "functionIdentity": "named:ProgressionVisiblePanel#1"
     },
     {
       "metric": "complexity",
@@ -4254,15 +4209,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/discussion-bug-report-form.tsx",
-      "line": 20,
-      "category": "React/JSX",
-      "ceiling": 288,
-      "status": "LEGACY",
-      "functionIdentity": "named:DiscussionBugReportForm#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
       "line": 122,
       "category": "React/JSX",
@@ -4317,24 +4263,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/gamification/collections-panel.tsx",
-      "line": 73,
-      "category": "React/JSX",
-      "ceiling": 158,
-      "status": "LEGACY",
-      "functionIdentity": "named:CollectionsPanel#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/gamification/contributor-recognition-panel.tsx",
-      "line": 16,
-      "category": "React/JSX",
-      "ceiling": 152,
-      "status": "LEGACY",
-      "functionIdentity": "named:ContributorRecognitionPanel#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/gamification/gamification-engagement.tsx",
       "line": 24,
       "category": "React/JSX",
@@ -4344,30 +4272,12 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/gamification/leaderboard-table.tsx",
-      "line": 12,
-      "category": "React/JSX",
-      "ceiling": 185,
-      "status": "LEGACY",
-      "functionIdentity": "named:LeaderboardTable#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/gamification/personal-progress.tsx",
       "line": 25,
       "category": "React/JSX",
       "ceiling": 332,
       "status": "LEGACY",
       "functionIdentity": "named:PersonalProgress#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/gamification/progression-visible-panel.tsx",
-      "line": 19,
-      "category": "React/JSX",
-      "ceiling": 207,
-      "status": "LEGACY",
-      "functionIdentity": "named:ProgressionVisiblePanel#1"
     },
     {
       "metric": "functionLength",
@@ -4404,15 +4314,6 @@
       "ceiling": 297,
       "status": "LEGACY",
       "functionIdentity": "named:MonthlyImpactHistoryChart#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/national-stats-section.tsx",
-      "line": 152,
-      "category": "React/JSX",
-      "ceiling": 163,
-      "status": "LEGACY",
-      "functionIdentity": "named:NationalStatsSection#1"
     },
     {
       "metric": "functionLength",

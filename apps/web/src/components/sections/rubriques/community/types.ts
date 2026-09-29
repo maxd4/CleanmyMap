@@ -1,11 +1,4 @@
 import type { AppError } from "@/lib/errors/app-errors";
-import type {
-  EventConversionRow,
-  EventConversionSummary,
-  EventReminder,
-  EventStaffingRow,
-  EventStaffingSummary,
-} from "@/lib/community/engagement";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { LegacyWasteCategory } from "@/lib/waste";
 
@@ -31,13 +24,7 @@ export type OpsDraft = {
   postMortem: string;
 };
 
-export type CommunityHighlightItem = {
-  date: string;
-  actions: number;
-  volunteers: number;
-};
-
-export type PostEventLoopRow = {
+type PostEventLoopRow = {
   event: CommunityEventItem;
   closed: boolean;
   hasAttendance: boolean;
@@ -53,18 +40,6 @@ export type PostEventLoop = {
   completionRate: number;
   missing: PostEventLoopRow[];
 };
-
-export type ConversionModel = {
-  summary: EventConversionSummary;
-  rows: EventConversionRow[];
-};
-
-export type StaffingModel = {
-  summary: EventStaffingSummary;
-  rows: EventStaffingRow[];
-};
-
-export type ReminderModel = EventReminder[];
 
 import type { toRsvpLabel } from "./helpers";
 import type { CommunityRsvpStatus } from "@/lib/community/http";

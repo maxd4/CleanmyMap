@@ -1,4 +1,4 @@
-import { Answer, Locale, Tone } from "./assistant-constants";
+import { Answer, Locale } from "./assistant-constants";
 import {
   findWasteCategorySlug,
   getWastePedagogicalProjection,
@@ -609,31 +609,4 @@ export function buildAnswer(question: string, locale: Locale): Answer {
   return createDefaultAnswer(locale);
 }
 
-export function toneClasses(tone: Tone): { shell: string; badge: string; title: string } {
-  switch (tone) {
-    case "emerald":
-      return {
-        shell: "border-emerald-500/10 bg-emerald-500/5",
-        badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-        title: "text-emerald-50",
-      };
-    case "amber":
-      return {
-        shell: "border-amber-500/10 bg-amber-500/5",
-        badge: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-        title: "text-amber-50",
-      };
-    case "rose":
-      return {
-        shell: "border-rose-500/10 bg-rose-500/5",
-        badge: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-        title: "text-rose-50",
-      };
-    default:
-      return {
-        shell: "border-white/5 bg-slate-900/40",
-        badge: "bg-white/5 text-slate-400 border-white/10",
-        title: "text-white",
-      };
-  }
-}
+// Tone presentation is owned by the current UI surface, not this answer model.

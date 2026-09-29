@@ -9,10 +9,12 @@ import {
   HelpCard,
   PillBadge,
   ShortcutsCard,
+} from "./rejoindre-un-formulaire-section.shared";
+import {
   getCardDisplayStatus,
   getParticipationStatusLabel,
   getRegistrationStatusLabel,
-} from "./rejoindre-un-formulaire-section.shared";
+} from "./rejoindre-un-formulaire-section.status";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 
 type ControllerState = ReturnType<typeof useJoinFormSectionController>;

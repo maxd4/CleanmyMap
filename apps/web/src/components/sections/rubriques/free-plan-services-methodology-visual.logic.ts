@@ -9,7 +9,6 @@ import {
 } from "@/lib/environmental-impact-estimator/service-risk";
 import { getServicePlanInfo, type ServicePlanType } from "@/lib/environmental-impact-estimator/service-plan";
 import type {
-  EnvironmentalImpactInfrastructureMetricKey,
   EnvironmentalImpactInfrastructureServiceEstimate,
   EnvironmentalImpactInfrastructureServiceKey,
 } from "@/lib/environmental-impact-estimator/types";
@@ -40,12 +39,6 @@ export type ImpactDetailMetric = {
   descriptionLabel?: string;
   valueLabel: string;
   statusLabel: "mesuré" | "estimé" | "à compléter";
-};
-
-export type ImpactDetailPostSpec = {
-  label: string;
-  description: string;
-  metricKey?: EnvironmentalImpactInfrastructureMetricKey;
 };
 
 export type DisplayService = {
@@ -139,7 +132,7 @@ export function formatImpactKg(value: number | null | undefined): string {
   }).format(value)} kg`;
 }
 
-export function formatCount(value: number | null | undefined): string {
+function formatCount(value: number | null | undefined): string {
   if (typeof value !== "number" || Number.isNaN(value)) {
     return "NA";
   }

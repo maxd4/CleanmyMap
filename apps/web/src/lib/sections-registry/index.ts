@@ -4,7 +4,6 @@ export type {
   LocalizedText,
   LocalizedKeywords,
   RubriqueAvailability,
-  RubriqueAnonymousPresentation,
   RubriqueCategory,
   RubriqueDefinition,
   RubriqueImplementation,

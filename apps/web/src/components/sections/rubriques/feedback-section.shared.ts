@@ -17,8 +17,8 @@ import {
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export type Locale = "fr" | "en";
-export type FeedbackReportType = "bug" | "idea" | "improvement" | "collaboration";
-export type FeedbackSource = "feedback_section" | "feedback_discussion";
+type FeedbackReportType = "bug" | "idea" | "improvement" | "collaboration";
+type FeedbackSource = "feedback_section" | "feedback_discussion";
 export type FeedbackTopicId =
   | "all"
   | "signalement"

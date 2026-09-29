@@ -17,7 +17,6 @@ import type {
   CompostPoint,
   CompostRuleCard,
   CompostTerritoryLink,
-  LocalizedText,
 } from "@/lib/learning/compost-guide-data";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 
@@ -121,42 +120,6 @@ export const CompostRulesList = memo(function CompostRulesList({
             ))}
           </ul>
         </RubriqueCard>
-      ))}
-    </div>
-  );
-});
-
-export const CompostStepCards = memo(function CompostStepCards({ 
-  steps, 
-  fr 
-}: { 
-  steps: Array<{
-    title: LocalizedText;
-    body: LocalizedText;
-  }>, 
-  fr: boolean 
-}) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      {steps.map((step, idx) => (
-        <motion.div 
-          key={idx} 
-        initial={{ opacity: 1, x: -20 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: idx * 0.1 }}
-          className="group bg-white/5 border border-white/10 rounded-[2rem] p-6 hover:border-emerald-500/30 transition-all duration-300"
-        >
-          <div className="flex items-center gap-4 mb-4">
-            <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 text-xs font-black border border-emerald-500/20">
-              {idx + 1}
-            </span>
-            <h5 className="font-black text-white text-lg tracking-tight">{fr ? step.title.fr : step.title.en}</h5>
-          </div>
-          <p className="text-slate-400 text-base leading-relaxed pl-12 font-medium">
-            {fr ? step.body.fr : step.body.en}
-          </p>
-        </motion.div>
       ))}
     </div>
   );

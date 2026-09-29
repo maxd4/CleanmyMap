@@ -1,69 +1,8 @@
-import type {
-  CleanupSupportLevel,
-  CleanupWasteType,
-} from "./event-ops";
-
-export type EventConversionRow = {
-  eventId: string;
-  title: string;
-  eventDate: string;
-  locationLabel: string;
-  capacityTarget: number | null;
-  rsvpYes: number;
-  rsvpMaybe: number;
-  rsvpNo: number;
-  attendanceCount: number | null;
-  cleanupObjective: string | null;
-  cleanupZone: string | null;
-  cleanupLogisticsNeeds: string | null;
-  cleanupSupportLevel: CleanupSupportLevel | null;
-  cleanupWasteTypesExpected: CleanupWasteType[];
-  linkedActions: number;
-  fillRate: number | null;
-  rsvpToAttendanceRate: number | null;
-  attendanceToActionRate: number | null;
-  rsvpToActionRate: number | null;
-};
-
-export type EventConversionSummary = {
-  eventsCount: number;
-  rsvpYesTotal: number;
-  attendanceTotalKnown: number;
-  linkedActionsTotal: number;
-  rsvpToAttendanceRate: number | null;
-  attendanceToActionRate: number | null;
-  rsvpToActionRate: number | null;
-};
-
-export type EventReminder = {
-  eventId: string;
-  priority: "haute" | "moyenne" | "faible";
-  daysToEvent: number;
-  reason: string;
-  message: string;
-};
-
-export type EventStaffingRow = {
-  eventId: string;
-  title: string;
-  eventDate: string;
-  locationLabel: string;
-  priority: "haute" | "moyenne" | "faible";
-  expectedParticipants: number;
-  recommendedStaff: number;
-  confirmedStaff: number;
-  staffingGap: number;
-  riskLevel: "vert" | "orange" | "rouge";
-  reason: string;
-};
-
-export type EventStaffingSummary = {
-  eventsCount: number;
-  atRiskCount: number;
-  totalRecommendedStaff: number;
-  totalConfirmedStaff: number;
-  totalStaffingGap: number;
-};
+export type {
+  EventConversionSummary,
+  EventReminder,
+  EventStaffingSummary,
+} from "./engagement/types";
 
 export type QualityLeaderboardRow = {
   actor: string;
