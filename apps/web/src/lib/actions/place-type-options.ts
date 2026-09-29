@@ -7,7 +7,6 @@ export const PLACE_TYPE_OPTIONS = [
   "Galerie/Passage couvert",
   "Monument",
 ] as const;
-
 export const PLACE_TYPE_FORM_OPTIONS = [
   { value: "N° Rue/Allée/Villa/Ruelle/Impasse", label: "N° Rue/Allée/Villa/Ruelle/Impasse" },
   { value: "Bois/Parc/Jardin/Square/Sentier", label: "Bois/Parc/Jardin/Square/Sentier" },
@@ -16,12 +15,3 @@ export const PLACE_TYPE_FORM_OPTIONS = [
   { value: "Gare/Station/Portique", label: "Gare/Station/Portique" },
   { value: "Galerie/Passage couvert", label: "Galerie & Monument" },
 ] as const;
-
-const PLACE_TYPE_UI_VALUE_ALIASES: Record<string, string> = {
-  Monument: "Galerie/Passage couvert",
-};
-
-export function normalizePlaceTypeForUi(value: string | null | undefined): string {
-  if (!value) return PLACE_TYPE_OPTIONS[0];
-  return PLACE_TYPE_UI_VALUE_ALIASES[value] ?? value;
-}

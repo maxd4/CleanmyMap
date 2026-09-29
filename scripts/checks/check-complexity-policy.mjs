@@ -330,10 +330,10 @@ async function main() {
     ],
   });
   const sourceFiles = view
-    ? sourceRoots.flatMap((root) => view.listFiles(root)).filter((file) => /\.(ts|tsx)$/.test(file) && (!(changedOnly || stagedOnly) || changedRanges.has(file)))
-    : (changedOnly
-      ? [...changedRanges.keys()].filter((file) => /\.(ts|tsx)$/.test(file) && fs.existsSync(path.join(repositoryRoot, file)))
-      : git(["ls-files", "--", ...sourceRoots]).split(/\r?\n/).filter((file) => /\.(ts|tsx)$/.test(file)));
+      ? sourceRoots.flatMap((root) => view.listFiles(root)).filter((file) => /\.(ts|tsx)$/.test(file) && (!(changedOnly || stagedOnly) || changedRanges.has(file)))
+      : (changedOnly
+        ? [...changedRanges.keys()].filter((file) => /\.(ts|tsx)$/.test(file) && fs.existsSync(path.join(repositoryRoot, file)))
+        : git(["ls-files", "--", ...sourceRoots]).split(/\r?\n/).filter((file) => /\.(ts|tsx)$/.test(file) && fs.existsSync(path.join(repositoryRoot, file))));
   const lintResults = await Promise.all(sourceFiles.map((file) => {
     const filePath = path.join(repositoryRoot, file);
     const source = view ? view.readText(file) : fs.readFileSync(filePath, "utf8");

@@ -7,8 +7,8 @@ const violations = [];
 const files = {
   primitive: "apps/web/src/components/ui/cmm-disclosure.tsx",
   legal: "apps/web/src/app/conditions-generales-utilisation/legal-accordion.tsx",
-  map: "apps/web/src/app/(app)/actions/map/_components/map-legend.tsx",
-  vision: "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.vision-fields.tsx",
+  map: "apps/web/src/components/actions/map/layers/map-geometry-legend.tsx",
+  vision: "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
   quiz: "apps/web/src/components/admin/quiz-bank-admin-view.question-card.tsx",
   documentation: "documentation/design-system/DISCLOSURE_ACCORDIONS.md",
 };
@@ -102,8 +102,8 @@ for (const marker of [
 
 const consumerScopes = {
   legal: extractScope(sources.legal, "export function LegalAccordion"),
-  map: extractScope(sources.map, "export function MapLegend"),
-  vision: extractScope(sources.vision, "export function ActionDeclarationVisionFields"),
+  map: extractScope(sources.map, "export function MapGeometryLegend"),
+  vision: extractScope(sources.vision, "<CmmDisclosure", '<div className="sticky bottom-3'),
   quiz: extractScope(sources.quiz, "export function QuestionCard"),
 };
 

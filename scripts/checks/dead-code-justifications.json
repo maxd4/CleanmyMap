@@ -9,20 +9,6 @@
       "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
     },
     {
-      "id": "9266c758389e7feb96add771",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "Le formulaire de déclaration utilise encore la normalisation UI des types de lieux.",
-      "evidence": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.waste-section.tsx:1,42 appelle normalizePlaceTypeForUi.",
-      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
-    },
-    {
-      "id": "105769e5aae99f0985f30084",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "Le fichier de smart assist est une façade CURRENT consommée par les sections du formulaire.",
-      "evidence": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.location-section.tsx:6 et action-declaration-form.waste-section.tsx:3 importent ce fichier.",
-      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
-    },
-    {
       "id": "c61f931a449d5147e12bba86",
       "classification": "KEEP_JUSTIFIED",
       "reason": "data-contract.ts est la façade publique étroite canonique Actions et apps/web/src/lib/actions/README.md documente explicitement l’exposition de ACTION_ENTITY_TYPES.",
@@ -153,62 +139,6 @@
       "classification": "KEEP_JUSTIFIED",
       "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:UnifiedContractOrigin",
-      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
-    },
-    {
-      "id": "0c5528607d5afef29885723a",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
-      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.identity-section.tsx",
-      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
-    },
-    {
-      "id": "dbd86c5a49393a84b4102727",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
-      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.location-section.tsx",
-      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
-    },
-    {
-      "id": "024ab304dbc14be0f551c128",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
-      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/ui/action-declaration-form.identity-fields.tsx",
-      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
-    },
-    {
-      "id": "c80e5382c0f4e513374413bc",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
-      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/ui/action-declaration-form.main-fields.tsx",
-      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
-    },
-    {
-      "id": "2196d1e39593d08622542102",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
-      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.sections.tsx",
-      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
-    },
-    {
-      "id": "a7992ce006ac19820cc1f59e",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
-      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.summary-section.tsx",
-      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
-    },
-    {
-      "id": "1bedb7d549d8127f00ffd9af",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
-      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.waste-section.tsx",
-      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
-    },
-    {
-      "id": "38f0fc4f3626e0b87cdc3aef",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "Le composant est requis par le flux CURRENT des champs complets du formulaire ; sa suppression casse l'import utilisé par action-declaration-form.sections.tsx.",
-      "evidence": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.sections.tsx:7,76 importe et rend ActionDeclarationPhotoSection ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.photo-section.tsx",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
