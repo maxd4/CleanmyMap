@@ -1,13 +1,7 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { readMigration } from "./read-migration";
 
-const readMigration = (name: string) =>
-  readFileSync(new URL(`../../../../supabase/migrations/${name}`, import.meta.url), "utf8")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-
-const cleanupMigration = readMigration("20260927000003_remove_redundant_unused_indexes.sql");
+const cleanupMigration = readMigration(import.meta.url, "20260927000003_remove_redundant_unused_indexes.sql");
 const retainedIndexSources = [
   ["idx_messages_dm", "create index if not exists idx_messages_dm on public.app_messages(sender_id, recipient_id) where channel_type = 'dm';"],
   ["idx_user_points", "create index if not exists idx_user_points on public.points_ledger (user_id);"],
@@ -35,9 +29,9 @@ describe("unused index cleanup migration", () => {
   });
 
   it("keeps the three zero-scan index pairs pending workload proof", () => {
-    const chatMigration = readMigration("20260420000015_advanced_chat_core.sql");
-    const pointsMigration = readMigration("20260615000000_add_points_system.sql");
-    const progressionMigration = readMigration("20260418000003_gamification_progression.sql");
+    const chatMigration = readMigration(import.meta.url, "20260420000015_advanced_chat_core.sql");
+    const pointsMigration = readMigration(import.meta.url, "20260615000000_add_points_system.sql");
+    const progressionMigration = readMigration(import.meta.url, "20260418000003_gamification_progression.sql");
 
     expect(chatMigration).toContain(retainedIndexSources[0][1]);
     expect(pointsMigration).toContain(retainedIndexSources[1][1]);

@@ -48,20 +48,8 @@ export async function loadCleanZoneSourcesForUser(
 ): Promise<ReturnType<typeof collectEligibleCleanZoneSources>> {
   return bestEffort<ReturnType<typeof collectEligibleCleanZoneSources>>([], async () => {
     const now = new Date();
-    const cooldownCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-
-    const [cleanPlacesResult, progressionEventsResult] = await Promise.all([
-      supabase
-        .from("trash_spotter_spots")
-        .select("id, status, latitude, longitude, notes, validated_at, cleaned_at")
-        .eq("user_id", userId)
-        .eq("spot_type", "clean_place")
-        .in("status", ["validated", "cleaned"])
-        .not("latitude", "is", null)
-        .not("longitude", "is", null)
-        .not("notes", "is", null)
-        .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`)
-        .limit(CLEAN_ZONE_SOURCE_LIMIT),
+    const [cleanPlaces, progressionEventsResult] = await Promise.all([
+      loadCleanZoneRowsForUser(supabase, userId),
       supabase
         .from("progression_events")
         .select("source_table, source_id")
@@ -71,10 +59,31 @@ export async function loadCleanZoneSourcesForUser(
     ]);
 
     return collectEligibleCleanZoneSources({
-      cleanPlaces: toCanonicalCleanZoneRows(cleanPlacesResult.data),
+      cleanPlaces,
       progressionEvents: toCleanZoneProgressionEvents(progressionEventsResult.data),
       now,
     });
+  });
+}
+
+export async function loadCleanZoneRowsForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<CleanZoneCanonicalRow[]> {
+  return bestEffort<CleanZoneCanonicalRow[]>([], async () => {
+    const cooldownCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const result = await supabase
+      .from("trash_spotter_spots")
+      .select("id, status, latitude, longitude, notes, validated_at, cleaned_at")
+      .eq("user_id", userId)
+      .eq("spot_type", "clean_place")
+      .in("status", ["validated", "cleaned"])
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
+      .not("notes", "is", null)
+      .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`)
+      .limit(CLEAN_ZONE_SOURCE_LIMIT);
+    return toCanonicalCleanZoneRows(result.data);
   });
 }
 

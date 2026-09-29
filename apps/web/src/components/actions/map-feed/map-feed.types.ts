@@ -18,7 +18,7 @@ import type {
 
 export type ActionsMapPresentation = "default" | "immersive" | "homepage-preview";
 
-export type ActionsMapCanvasComponent = ComponentType<{
+type ActionsMapCanvasProps = {
   items: ActionMapItem[];
   sourceItems?: ActionMapItem[];
   sourceCompleteness?: RepollutionDatasetCompleteness;
@@ -45,31 +45,74 @@ export type ActionsMapCanvasComponent = ComponentType<{
   onDateScopeChange?: (dateScope: ActionsMapDateScope) => void;
   onCategoryToggle?: (category: MarkerCategory) => void;
   onResetFilters?: () => void;
-}>;
+};
 
-export type ActionsMapFeedProps = {
+export type ActionsMapCanvasComponent = ComponentType<ActionsMapCanvasProps>;
+
+export type ActionsMapLayoutCommonProps = Pick<
+  ActionsMapCanvasProps,
+  | "recenterViewport"
+  | "scoreScope"
+  | "onScoreScopeChange"
+  | "displayMode"
+  | "onDisplayModeChange"
+  | "filters"
+  | "onZoneQueryChange"
+  | "onDateScopeChange"
+  | "onCategoryToggle"
+> & {
+  items: ActionMapItem[];
+  allItems: ActionMapItem[];
+  hasPartialSource: boolean;
+  partialSourcesLabel: string;
+  freshnessLabel: string | null;
+  isValidating: boolean;
+  mapCanvasError: string | null;
+  MapCanvas: ActionsMapCanvasComponent | null;
+  selectedActionId: string | null;
+  onClearSelection?: () => void;
+  frameSelectedActionId?: string | null;
+  onSelectAction: (actionId: string) => void;
+  onResetFilters: () => void;
+  onReload: () => void;
+  tone?: "sky" | "emerald";
+  compact?: boolean;
+  zoneQuery?: string;
+  mapExportTargetRef?: RefObject<HTMLDivElement | null>;
+  onViewportChange?: (viewport: MapViewportState) => void;
+  onViewportInteraction?: () => void;
+  initialViewport?: MapViewportState | null;
+  viewportRequest?: MapViewportState | null;
+  viewportRequestKey?: number;
+  isInitialViewportResolved?: boolean;
+  sourceCompleteness?: RepollutionDatasetCompleteness;
+};
+
+export type ActionsMapFeedProps = Partial<Pick<
+  ActionsMapLayoutCommonProps,
+  | "tone"
+  | "zoneQuery"
+  | "compact"
+  | "selectedActionId"
+  | "onResetFilters"
+  | "mapExportTargetRef"
+  | "onViewportChange"
+  | "scoreScope"
+  | "onScoreScopeChange"
+  | "displayMode"
+  | "onDisplayModeChange"
+>> & {
   types?: ActionRecordType[] | "all";
   days: number;
   dateScope?: ActionsMapDateScope;
   statusFilter: ActionStatus | "all";
   impactFilter: ActionImpactLevel | "all";
   qualityMin: number;
-  zoneQuery?: string;
   limit?: number;
   presentation?: ActionsMapPresentation;
-  tone?: "sky" | "emerald";
   showIntro?: boolean;
   fullViewport?: boolean;
   showStoriesCarousel?: boolean;
-  compact?: boolean;
   visibleCategories?: Record<MarkerCategory, boolean>;
-  selectedActionId?: string | null;
   onOpenAction?: (actionId: string) => void;
-  onResetFilters?: () => void;
-  mapExportTargetRef?: RefObject<HTMLDivElement | null>;
-  onViewportChange?: (viewport: MapViewportState) => void;
-  scoreScope?: PollutionScoreScope;
-  onScoreScopeChange?: (scope: PollutionScoreScope) => void;
-  displayMode?: CurrentPlaceStateMode;
-  onDisplayModeChange?: (mode: CurrentPlaceStateMode) => void;
 };

@@ -3,35 +3,37 @@ import { CmmBadge } from "@/components/ui/cmm-badge";
 import { formatScorePercent } from "@/lib/formatters/score";
 import type { ActionPollutionScoreAvailability } from "../scores/pollution-score-scope";
 
+export type GeometryTooltipReading = {
+  scoreScope?: "global" | "department";
+  historicalScore: number;
+  projectedScore: number;
+  globalScore?: number | null;
+  globalWasteScore?: number | null;
+  globalButtsScore?: number | null;
+  departmentScore?: number | null;
+  departmentWasteScore?: number | null;
+  departmentButtsScore?: number | null;
+  departmentName?: string | null;
+  departmentUnavailable?: boolean;
+  departmentAvailability?: ActionPollutionScoreAvailability;
+  elapsedDays: number;
+  isEstimate: boolean;
+  projectionConfidenceLabel: string;
+  displayMode?: "observed" | "projected_today";
+  displaySource?: "observed" | "projected" | "historical";
+  displayedScore?: number | null;
+  displayedScoreKind?: "measured" | "projected" | "unavailable";
+  displayedStateLabel?: string;
+  displayedDate?: string;
+};
+
 type GeometryTooltipContentProps = {
   title: string;
   geometryModeLabel: string;
   geometryPointsLabel: string;
   geometryMetricLabel: string | null;
   color: string;
-  actionReading?: {
-    scoreScope?: "global" | "department";
-    historicalScore: number;
-    projectedScore: number;
-    globalScore?: number | null;
-    globalWasteScore?: number | null;
-    globalButtsScore?: number | null;
-    departmentScore?: number | null;
-    departmentWasteScore?: number | null;
-    departmentButtsScore?: number | null;
-    departmentName?: string | null;
-    departmentUnavailable?: boolean;
-    departmentAvailability?: ActionPollutionScoreAvailability;
-    elapsedDays: number;
-    isEstimate: boolean;
-    projectionConfidenceLabel: string;
-    displayMode?: "observed" | "projected_today";
-    displaySource?: "observed" | "projected" | "historical";
-    displayedScore?: number | null;
-    displayedScoreKind?: "measured" | "projected" | "unavailable";
-    displayedStateLabel?: string;
-    displayedDate?: string;
-  };
+  actionReading?: GeometryTooltipReading;
 };
 
 export function GeometryTooltipContent({

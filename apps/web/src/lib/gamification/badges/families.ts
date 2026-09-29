@@ -239,13 +239,7 @@ export function buildExplorerFamily(currentPlaces: number): {
   summary: GamificationExplorerSummary;
 } {
   const current = Math.max(0, Math.trunc(currentPlaces));
-  let highestTierReached: ExplorerTier = EXPLORER_TIERS[0]!;
-
-  for (const tier of EXPLORER_TIERS) {
-    if (current >= tier.min) {
-      highestTierReached = tier;
-    }
-  }
+  const highestTierReached = getHighestExplorerTier(current);
 
   const nextTier: ExplorerTier | null = EXPLORER_TIERS.find((tier) => tier.min > highestTierReached.min) ?? null;
   const zonesToNext = nextTier ? Math.max(0, nextTier.min - current) : 0;

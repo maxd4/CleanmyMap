@@ -48,6 +48,27 @@ import {
 
 type CatalogProgressionEvent = MilestoneEvent & { source_table: string };
 
+type CatalogProgressionInputs = {
+  counters: Awaited<ReturnType<typeof loadGamificationUserCounters>>;
+  cleanZoneSources: Awaited<ReturnType<typeof loadCleanZoneSourcesForUser>>;
+  learning: Awaited<ReturnType<typeof loadQuizLearningProgression>>;
+  regularity: ReturnType<typeof computeMonthlyRegularitySummary>;
+  balance: Awaited<ReturnType<typeof loadActionBalanceSummary>>;
+};
+
+type GamificationCatalogOptions = {
+  actionRows?: ActionRow[];
+  progressionEvents?: Promise<readonly GamificationLedgerEvent[]>;
+  rulesMigrationState?: GamificationRulesMigrationState | Promise<GamificationRulesMigrationState>;
+};
+
+type CatalogLoadedData = CatalogProgressionInputs & {
+  referral: Awaited<ReturnType<typeof loadReferralSummary>>;
+  eventsResult: readonly GamificationLedgerEvent[];
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
+  rulesMigrationState: GamificationRulesMigrationState;
+};
+
 export type GamificationRulesMigrationState = {
   currentAppliedRulesRevision: number | null;
   lastAcknowledgedRulesRevision: number | null;
@@ -74,7 +95,7 @@ function progressionTiersFromGemConfig(
   }));
 }
 
-function progressionTiersFromLearning(
+function progressionTiersFromLabeled(
   tiers: readonly { id: string; label: string; threshold: number }[],
 ) {
   return tiers.map((tier) => ({
@@ -96,16 +117,6 @@ function continuationTitleFromTiers(
   tiers: readonly { title?: string; label?: string }[],
 ): (threshold: number) => string {
   return () => tiers.at(-1)?.title ?? tiers.at(-1)?.label ?? "Observateur";
-}
-
-function progressionTiersFromBadgeFamily(
-  tiers: readonly { id: string; label: string; threshold: number }[],
-) {
-  return tiers.map((tier) => ({
-    id: tier.id,
-    title: tier.label,
-    threshold: tier.threshold,
-  }));
 }
 
 function asMilestoneEvents(rows: unknown): CatalogProgressionEvent[] {
@@ -130,6 +141,107 @@ function actionRowsAsBalanceRows(rows: readonly ActionRow[]): ActionBalanceRow[]
     status: row.status,
     notes: row.notes,
   }));
+}
+
+function buildPrimaryProgressionFacts({
+  counters,
+  cleanZoneSources,
+}: CatalogProgressionInputs): Record<string, GamificationCatalogProgressionFact> {
+  return {
+    participation: {
+      currentValue: counters.participationCount,
+      started: counters.participationCount > 0,
+      tiers: progressionTiersFromLabeled(PARTICIPANT_TIERS),
+      continuationTitle: continuationTitleFromTiers(PARTICIPANT_TIERS),
+    },
+    organisation: {
+      currentValue: counters.completeActionsCount,
+      started: counters.completeActionsCount > 0,
+      tiers: progressionTiersFromGemConfig(ORGANISATION_GEM_CONFIG, counters.completeActionsCount),
+    },
+    exploration: {
+      currentValue: counters.visitedPlacesCount,
+      started: counters.visitedPlacesCount > 0,
+      tiers: progressionTiersFromExplorer(),
+      continuationTitle: continuationTitleFromTiers(EXPLORER_TIERS),
+    },
+    clean_zones: {
+      currentValue: cleanZoneSources.length,
+      started: cleanZoneSources.length > 0,
+      tiers: progressionTiersFromLabeled(CLEAN_ZONES_TIERS),
+      continuationTitle: continuationTitleFromTiers(CLEAN_ZONES_TIERS),
+    },
+  };
+}
+
+function buildSecondaryProgressionFacts({
+  regularity,
+  balance,
+}: CatalogProgressionInputs): Record<string, GamificationCatalogProgressionFact> {
+  return {
+    regularity: {
+      currentValue: regularity.activeMonthsTotal,
+      started: regularity.activeMonthsTotal > 0,
+      tiers: progressionTiersFromGemConfig(MONTHLY_REGULARITY_GEM_CONFIG, regularity.activeMonthsTotal),
+    },
+    versatility: {
+      currentValue: balance.balancedCycles,
+      started: balance.totalValidated > 0,
+      tiers: progressionTiersFromGemConfig(ACTION_BALANCE_GEM_CONFIG, balance.balancedCycles),
+    },
+  };
+}
+
+function buildProgressionFacts(input: CatalogProgressionInputs) {
+  return {
+    ...buildPrimaryProgressionFacts(input),
+    ...buildSecondaryProgressionFacts(input),
+    learning: {
+      currentValue: input.learning.totalCorrectAnswers,
+      started: input.learning.totalCorrectAnswers > 0,
+      tiers: progressionTiersFromLabeled(input.learning.tiers),
+      continuationTitle: (threshold: number) => `${threshold} réponses justes`,
+    },
+  } satisfies Record<string, GamificationCatalogProgressionFact>;
+}
+
+async function loadCatalogDependencies(
+  supabase: SupabaseClient,
+  userId: string,
+  options?: GamificationCatalogOptions,
+): Promise<CatalogLoadedData> {
+  const actionRowsPromise = options?.actionRows
+    ? Promise.resolve(options.actionRows)
+    : loadActionRowsForUser(supabase, userId);
+  const [counters, cleanZoneSources, learning, regularity, balance, referral, eventsResult, identity, rulesMigrationState] =
+    await Promise.all([
+      loadGamificationUserCounters(supabase, userId),
+      loadCleanZoneSourcesForUser(supabase, userId),
+      loadQuizLearningProgression(supabase, userId),
+      actionRowsPromise.then((rows) => computeMonthlyRegularitySummary(rows)),
+      actionRowsPromise.then((rows) =>
+        loadActionBalanceSummary(supabase, userId, {
+          actionRows: actionRowsAsBalanceRows(rows),
+        }),
+      ),
+      loadReferralSummary(supabase, userId),
+      options?.progressionEvents ?? loadGamificationLedgerEvents(supabase, userId),
+      getCurrentUserIdentity({ userId }).catch(() => null),
+      options?.rulesMigrationState
+        ? Promise.resolve(options.rulesMigrationState)
+        : loadGamificationRulesMigrationState(supabase, userId),
+    ]);
+  return {
+    counters,
+    cleanZoneSources,
+    learning,
+    regularity,
+    balance,
+    referral,
+    eventsResult,
+    identity,
+    rulesMigrationState,
+  };
 }
 
 export async function loadGamificationRulesMigrationState(
@@ -162,36 +274,19 @@ export async function loadGamificationRulesMigrationState(
 export async function loadGamificationCatalog(
   supabase: SupabaseClient,
   userId: string,
-  options?: {
-    actionRows?: ActionRow[];
-    progressionEvents?: Promise<readonly GamificationLedgerEvent[]>;
-    rulesMigrationState?: GamificationRulesMigrationState | Promise<GamificationRulesMigrationState>;
-  },
+  options?: GamificationCatalogOptions,
 ): Promise<GamificationCatalogItem[]> {
-  const actionRowsPromise = options?.actionRows
-    ? Promise.resolve(options.actionRows)
-    : loadActionRowsForUser(supabase, userId);
-  const progressionEventsPromise =
-    options?.progressionEvents ?? loadGamificationLedgerEvents(supabase, userId);
-  const rulesMigrationStatePromise = options?.rulesMigrationState
-    ? Promise.resolve(options.rulesMigrationState)
-    : loadGamificationRulesMigrationState(supabase, userId);
-  const [counters, cleanZoneSources, learning, regularity, balance, referral, eventsResult, identity, rulesMigrationState] =
-    await Promise.all([
-      loadGamificationUserCounters(supabase, userId),
-      loadCleanZoneSourcesForUser(supabase, userId),
-      loadQuizLearningProgression(supabase, userId),
-      actionRowsPromise.then((rows) => computeMonthlyRegularitySummary(rows)),
-      actionRowsPromise.then((rows) =>
-        loadActionBalanceSummary(supabase, userId, {
-          actionRows: actionRowsAsBalanceRows(rows),
-        }),
-      ),
-      loadReferralSummary(supabase, userId),
-      progressionEventsPromise,
-      getCurrentUserIdentity({ userId }).catch(() => null),
-      rulesMigrationStatePromise,
-    ]);
+  const {
+    counters,
+    cleanZoneSources,
+    learning,
+    regularity,
+    balance,
+    referral,
+    eventsResult,
+    identity,
+    rulesMigrationState,
+  } = await loadCatalogDependencies(supabase, userId, options);
 
   const events = asMilestoneEvents(eventsResult).map((event) => ({
     event_type: event.event_type as ProgressionEventType,
@@ -206,50 +301,13 @@ export async function loadGamificationCatalog(
     events,
   });
 
-  const progressionFacts: Record<string, GamificationCatalogProgressionFact> = {
-    participation: {
-      currentValue: counters.participationCount,
-      started: counters.participationCount > 0,
-      tiers: progressionTiersFromBadgeFamily(PARTICIPANT_TIERS),
-      continuationTitle: continuationTitleFromTiers(PARTICIPANT_TIERS),
-    },
-    organisation: {
-      currentValue: counters.completeActionsCount,
-      started: counters.completeActionsCount > 0,
-      tiers: progressionTiersFromGemConfig(ORGANISATION_GEM_CONFIG, counters.completeActionsCount),
-    },
-    exploration: {
-      currentValue: counters.visitedPlacesCount,
-      started: counters.visitedPlacesCount > 0,
-      tiers: progressionTiersFromExplorer(),
-      continuationTitle: continuationTitleFromTiers(EXPLORER_TIERS),
-    },
-    clean_zones: {
-      currentValue: cleanZoneSources.length,
-      started: cleanZoneSources.length > 0,
-      tiers: progressionTiersFromBadgeFamily(CLEAN_ZONES_TIERS),
-      continuationTitle: continuationTitleFromTiers(CLEAN_ZONES_TIERS),
-    },
-    regularity: {
-      currentValue: regularity.activeMonthsTotal,
-      started: regularity.activeMonthsTotal > 0,
-      tiers: progressionTiersFromGemConfig(
-        MONTHLY_REGULARITY_GEM_CONFIG,
-        regularity.activeMonthsTotal,
-      ),
-    },
-    versatility: {
-      currentValue: balance.balancedCycles,
-      started: balance.totalValidated > 0,
-      tiers: progressionTiersFromGemConfig(ACTION_BALANCE_GEM_CONFIG, balance.balancedCycles),
-    },
-    learning: {
-      currentValue: learning.totalCorrectAnswers,
-      started: learning.totalCorrectAnswers > 0,
-      tiers: progressionTiersFromLearning(learning.tiers),
-      continuationTitle: (threshold) => `${threshold} réponses justes`,
-    },
-  };
+  const progressionFacts = buildProgressionFacts({
+    counters,
+    cleanZoneSources,
+    learning,
+    regularity,
+    balance,
+  });
 
   const moderationApplicable = canViewModerationProgression(identity, userId);
   let applicableProgressionIds: readonly CurrentInfiniteProgressionId[] =

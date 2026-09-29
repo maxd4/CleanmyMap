@@ -1,18 +1,7 @@
-import type { ActionMapItem } from "@/lib/actions/types";
-import type { RefObject } from "react";
 import dynamic from "next/dynamic";
-import type { ActionsMapCanvasComponent } from "../map-feed.types";
+import type { ActionsMapLayoutCommonProps } from "../map-feed.types";
 import { MapEmptyState } from "./map-empty-state";
 import { MapLoadingState } from "./map-loading-state";
-import type { MapViewportState } from "@/lib/geo/map-viewport";
-import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
-import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
-import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
-import type {
-  ActionsMapDateScope,
-  ActionsMapFilters,
-} from "@/components/actions/map/filters/actions-map-filters.utils";
-import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 
 const ActionStoriesCarousel = dynamic(
   () => import("@/components/map/ActionStoriesCarousel").then((mod) => mod.ActionStoriesCarousel),
@@ -24,45 +13,11 @@ const ActionStoriesCarousel = dynamic(
   },
 );
 
-type ImmersiveLayoutProps = {
-  items: ActionMapItem[];
-  allItems: ActionMapItem[];
-  hasPartialSource: boolean;
-  partialSourcesLabel: string;
-  freshnessLabel: string | null;
-  isValidating: boolean;
-  mapCanvasError: string | null;
-  MapCanvas: ActionsMapCanvasComponent | null;
-  selectedActionId: string | null;
-  onClearSelection?: () => void;
-  frameSelectedActionId?: string | null;
+type ImmersiveLayoutProps = ActionsMapLayoutCommonProps & {
   onOpenAction: (actionId: string) => void;
-  onSelectAction: (actionId: string) => void;
-  onReload: () => void;
-  onResetFilters: () => void;
-  tone?: "sky" | "emerald";
   showIntro?: boolean;
   fullViewport?: boolean;
   showStoriesCarousel?: boolean;
-  compact?: boolean;
-  zoneQuery?: string;
-  mapExportTargetRef?: RefObject<HTMLDivElement | null>;
-  onViewportChange?: (viewport: MapViewportState) => void;
-  onViewportInteraction?: () => void;
-  initialViewport?: MapViewportState | null;
-  viewportRequest?: MapViewportState | null;
-  viewportRequestKey?: number;
-  recenterViewport?: MapViewportState | null;
-  isInitialViewportResolved?: boolean;
-  sourceCompleteness?: RepollutionDatasetCompleteness;
-  scoreScope?: PollutionScoreScope;
-  onScoreScopeChange?: (scope: PollutionScoreScope) => void;
-  displayMode?: CurrentPlaceStateMode;
-  onDisplayModeChange?: (mode: CurrentPlaceStateMode) => void;
-  filters?: ActionsMapFilters;
-  onZoneQueryChange?: (zoneQuery: string) => void;
-  onDateScopeChange?: (dateScope: ActionsMapDateScope) => void;
-  onCategoryToggle?: (category: MarkerCategory) => void;
 };
 
 export function ImmersiveLayout({

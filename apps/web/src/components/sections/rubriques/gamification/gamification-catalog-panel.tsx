@@ -24,28 +24,58 @@ function statusClass(state: GamificationSummaryProgression["state"] | Gamificati
   return "border-[#e4d7d2] bg-white text-[#806b65]";
 }
 
+function CatalogItemHeader({
+  label,
+  description,
+  state,
+  category,
+  categoryClassName,
+  isNewSinceLastRulesMigration,
+  fr,
+}: {
+  label: string;
+  description: string;
+  state: GamificationSummaryProgression["state"] | GamificationSummaryMilestone["state"];
+  category: GamificationSummaryMilestone["category"] | "XP_PROGRESSION";
+  categoryClassName: string;
+  isNewSinceLastRulesMigration: boolean;
+  fr: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-sm font-black text-[#2c1a17]">{label}</h3>
+          <span className={`rounded-full border px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] ${categoryClassName}`}>
+            {categoryLabel(category, fr)}
+          </span>
+          {isNewSinceLastRulesMigration ? (
+            <span className="rounded-full bg-[#2c1a17] px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] text-white">
+              {fr ? "Nouveau" : "New"}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-1 text-xs leading-5 text-[#806b65]">{description}</p>
+      </div>
+      <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${statusClass(state)}`}>
+        {stateLabel(state, fr)}
+      </span>
+    </div>
+  );
+}
+
 function ProgressionItem({ item, fr }: { item: GamificationSummaryProgression; fr: boolean }) {
   return (
     <article className="rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4 shadow-[0_8px_24px_rgba(126,31,20,0.04)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-black text-[#2c1a17]">{item.label}</h3>
-              <span className="rounded-full border border-[#f1c1b7] bg-[#fff5f2] px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] text-[#b4362e]">
-              {categoryLabel("XP_PROGRESSION", fr)}
-            </span>
-            {item.isNewSinceLastRulesMigration ? (
-              <span className="rounded-full bg-[#2c1a17] px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] text-white">
-                {fr ? "Nouveau" : "New"}
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-1 text-xs leading-5 text-[#806b65]">{item.description}</p>
-        </div>
-        <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${statusClass(item.state)}`}>
-          {stateLabel(item.state, fr)}
-        </span>
-      </div>
+      <CatalogItemHeader
+        label={item.label}
+        description={item.description}
+        state={item.state}
+        category="XP_PROGRESSION"
+        categoryClassName="border-[#f1c1b7] bg-[#fff5f2] text-[#b4362e]"
+        isNewSinceLastRulesMigration={item.isNewSinceLastRulesMigration}
+        fr={fr}
+      />
 
       <div className="mt-4 grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-end">
         <div>
@@ -78,25 +108,15 @@ function ProgressionItem({ item, fr }: { item: GamificationSummaryProgression; f
 function MilestoneItem({ item, fr }: { item: GamificationSummaryMilestone; fr: boolean }) {
   return (
     <article className="rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4 shadow-[0_8px_24px_rgba(126,31,20,0.04)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-black text-[#2c1a17]">{item.label}</h3>
-            <span className="rounded-full border border-[#ead8d2] bg-[#fffaf8] px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] text-[#806b65]">
-              {categoryLabel(item.category, fr)}
-            </span>
-            {item.isNewSinceLastRulesMigration ? (
-              <span className="rounded-full bg-[#2c1a17] px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] text-white">
-                {fr ? "Nouveau" : "New"}
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-1 text-xs leading-5 text-[#806b65]">{item.description}</p>
-        </div>
-        <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${statusClass(item.state)}`}>
-          {stateLabel(item.state, fr)}
-        </span>
-      </div>
+      <CatalogItemHeader
+        label={item.label}
+        description={item.description}
+        state={item.state}
+        category={item.category}
+        categoryClassName="border-[#ead8d2] bg-[#fffaf8] text-[#806b65]"
+        isNewSinceLastRulesMigration={item.isNewSinceLastRulesMigration}
+        fr={fr}
+      />
       {item.progressCurrent !== undefined && item.progressTarget !== undefined ? (
         <div className="mt-4">
           <div className="flex justify-between text-xs font-semibold text-[#765f59]">

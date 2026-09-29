@@ -44,6 +44,27 @@ function createSupabaseProfileClient(currentAppliedRulesRevision: number) {
   return { profileUpsert, supabase };
 }
 
+async function expectAcknowledgement(
+  currentAppliedRulesRevision: number,
+  expectedRulesRevision: number,
+) {
+  const { profileUpsert, supabase } = createSupabaseProfileClient(currentAppliedRulesRevision);
+  getSupabaseServerClientMock.mockReturnValue(supabase);
+
+  const response = await POST();
+
+  expect(response.status).toBe(200);
+  await expect(response.json()).resolves.toEqual({
+    status: "ok",
+    rulesRevision: expectedRulesRevision,
+  });
+  expect(profileUpsert).toHaveBeenCalledWith(
+    { user_id: "user-1", last_acknowledged_rules_revision: expectedRulesRevision },
+    { onConflict: "user_id" },
+  );
+  return profileUpsert;
+}
+
 describe("POST /api/gamification/me/acknowledge-rules-migration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -51,33 +72,13 @@ describe("POST /api/gamification/me/acknowledge-rules-migration", () => {
   });
 
   it("does not mark rules as applied when the profile is still at revision zero", async () => {
-    const { profileUpsert, supabase } = createSupabaseProfileClient(0);
-    getSupabaseServerClientMock.mockReturnValue(supabase);
-
-    const response = await POST();
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ status: "ok", rulesRevision: 0 });
-    expect(profileUpsert).toHaveBeenCalledWith(
-      { user_id: "user-1", last_acknowledged_rules_revision: 0 },
-      { onConflict: "user_id" },
-    );
+    const profileUpsert = await expectAcknowledgement(0, 0);
     expect(profileUpsert.mock.calls[0]?.[0]).not.toHaveProperty(
       "current_applied_rules_revision",
     );
   });
 
   it("caps acknowledgement at the revision actually applied", async () => {
-    const { profileUpsert, supabase } = createSupabaseProfileClient(3);
-    getSupabaseServerClientMock.mockReturnValue(supabase);
-
-    const response = await POST();
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ status: "ok", rulesRevision: 3 });
-    expect(profileUpsert).toHaveBeenCalledWith(
-      { user_id: "user-1", last_acknowledged_rules_revision: 3 },
-      { onConflict: "user_id" },
-    );
+    await expectAcknowledgement(3, 3);
   });
 });

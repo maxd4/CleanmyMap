@@ -1,47 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
-import type { GamificationRulesV1 } from "./gamification-rules";
 import { reconcileUserGamification } from "./gamification-reconciliation";
-import type { GamificationFacts } from "./gamification-reconstruction";
-
-function rules(version: string, category: "XP_MILESTONE" | "BADGE_ONLY" | "NON_GAMIFIED", amount = 1): GamificationRulesV1 {
-  return {
-    version,
-    rulesRevision: version === "v1" ? 1 : version === "v2" ? 2 : version === "v3" ? 3 : 4,
-    mechanics: [{
-      mechanicId: "mechanic-a",
-      category,
-      eventType: category === "NON_GAMIFIED" ? null : "action_declare_validation",
-      progressionId: null,
-      milestoneId: category === "NON_GAMIFIED" ? null : "mechanic-a",
-      badgeId: category === "NON_GAMIFIED" ? null : "badge-a",
-      sourceDomain: "actions",
-      xpPolicy: category === "BADGE_ONLY" || category === "NON_GAMIFIED"
-        ? { kind: "none", reason: "test" }
-        : { kind: "fixed_one_shot", amount },
-      awardPolicy: category === "XP_MILESTONE"
-        ? { kind: "fixed", amount }
-        : { kind: "none" },
-      eligibility: category === "NON_GAMIFIED"
-        ? { kind: "never", reason: "test" }
-        : { kind: "canonical_fact", factKey: "action" },
-      thresholds: [],
-      introducedInRulesRevision: 1,
-    }],
-  };
-}
-
-const facts: GamificationFacts = {
-  userId: "user-1",
-  sourceFacts: [{
-    mechanicId: "mechanic-a",
-    eventType: "action_declare_validation",
-    sourceTable: "actions",
-    sourceId: "action-1",
-    occurredOn: "2026-09-28",
-    xpAwarded: 1,
-  }],
-};
+import { facts, rules } from "./__tests__/reconciliation-fixtures";
 
 function createSupabase() {
   const rows: Array<Record<string, unknown>> = [];
@@ -100,7 +60,7 @@ describe("reconcileUserGamification", () => {
 
     await expect(reconcileUserGamification(fixture.supabase, "user-1", {
       facts,
-      rules: rules("v1", "XP_MILESTONE", 1),
+      rules: rules("v1", "XP_MILESTONE", 1, "mechanic-a"),
       refreshProfile: false,
     })).resolves.toMatchObject({ inserted: 1, updated: 0, removed: 0 });
     expect(fixture.rows).toHaveLength(1);
@@ -108,7 +68,7 @@ describe("reconcileUserGamification", () => {
 
     await expect(reconcileUserGamification(fixture.supabase, "user-1", {
       facts,
-      rules: rules("v2", "XP_MILESTONE", 2),
+      rules: rules("v2", "XP_MILESTONE", 2, "mechanic-a"),
       refreshProfile: false,
     })).resolves.toMatchObject({ inserted: 0, updated: 1, removed: 0 });
     expect(fixture.rows[0]?.xp_awarded).toBe(2);
@@ -116,14 +76,14 @@ describe("reconcileUserGamification", () => {
 
     await expect(reconcileUserGamification(fixture.supabase, "user-1", {
       facts,
-      rules: rules("v3", "BADGE_ONLY"),
+      rules: rules("v3", "BADGE_ONLY", 1, "mechanic-a"),
       refreshProfile: false,
     })).resolves.toMatchObject({ inserted: 0, updated: 1, removed: 0, expectedBadges: ["badge-a"] });
     expect(fixture.rows[0]?.xp_awarded).toBe(0);
 
     await expect(reconcileUserGamification(fixture.supabase, "user-1", {
       facts,
-      rules: rules("v4", "NON_GAMIFIED"),
+      rules: rules("v4", "NON_GAMIFIED", 1, "mechanic-a"),
       refreshProfile: false,
     })).resolves.toMatchObject({ inserted: 0, updated: 0, removed: 1, expectedEvents: 0 });
     expect(fixture.rows).toEqual([]);
@@ -146,7 +106,7 @@ describe("reconcileUserGamification", () => {
 
     const result = await reconcileUserGamification(fixture.supabase, "user-1", {
       facts,
-      rules: rules("v1", "XP_MILESTONE", 1),
+      rules: rules("v1", "XP_MILESTONE", 1, "mechanic-a"),
       refreshProfile: false,
     });
 

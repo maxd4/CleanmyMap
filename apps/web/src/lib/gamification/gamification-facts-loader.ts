@@ -20,6 +20,7 @@ import {
   loadResolvedModerationCasesForUser,
 } from "./moderation-progression";
 import { collectEligibleCleanZoneSources } from "./clean-zones";
+import { loadCleanZoneRowsForUser } from "./badges/listing";
 import { appendCounterFacts } from "./gamification-counter-facts";
 import {
   DETERMINISTIC_FALLBACK_OCCURRED_ON,
@@ -217,24 +218,10 @@ async function loadCleanZoneFacts(
   userId: string,
 ): Promise<GamificationSourceFact[]> {
   const facts: GamificationSourceFact[] = [];
-  const cleanPlaceResult = await supabase
-    .from("trash_spotter_spots")
-    .select("id, status, latitude, longitude, notes, validated_at, cleaned_at")
-    .eq("user_id", userId)
-    .eq("spot_type", "clean_place")
-    .in("status", ["validated", "cleaned"])
-    .not("latitude", "is", null)
-    .not("longitude", "is", null)
-    .not("notes", "is", null)
-    .limit(1000);
-  if (!cleanPlaceResult.error) {
-    const cleanPlaces = (cleanPlaceResult.data ?? []) as Array<{
-      id: string;
-      validated_at?: string | null;
-      cleaned_at?: string | null;
-    }>;
+  const cleanPlaces = await loadCleanZoneRowsForUser(supabase, userId);
+  {
     const cleanPlacesById = new Map(cleanPlaces.map((row) => [row.id, row]));
-    const sources = collectEligibleCleanZoneSources({ cleanPlaces: cleanPlaces as never[], progressionEvents: [] });
+    const sources = collectEligibleCleanZoneSources({ cleanPlaces, progressionEvents: [] });
     for (const source of sources) {
       facts.push(sourceFact({
         mechanicId: "clean_zones",
