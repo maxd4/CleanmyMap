@@ -1,9 +1,9 @@
 import { routeDistanceKm } from "./route-planner";
 
-export const ROUTE_EVENT_RECENT_WINDOW_DAYS = 16;
+const ROUTE_EVENT_RECENT_WINDOW_DAYS = 16;
 export const ROUTE_EVENT_SIGNAL_HORIZON_DAYS = 56;
-export const ROUTE_EVENT_SPATIAL_RADIUS_KM = 2;
-export const ROUTE_EVENT_MAX_SCORE_BOOST = 20;
+const ROUTE_EVENT_SPATIAL_RADIUS_KM = 2;
+const ROUTE_EVENT_MAX_SCORE_BOOST = 20;
 
 const DAY_MS = 86_400_000;
 const MAX_ATTENDANCE_PROXY = 12;
@@ -110,7 +110,7 @@ export function routeEventAgeDays(eventDate: string, now: Date): number | null {
   return ageDays >= 0 ? ageDays : null;
 }
 
-export function routeEventRecencyFactor(ageDays: number): number {
+function routeEventRecencyFactor(ageDays: number): number {
   if (!Number.isFinite(ageDays) || ageDays < 0) return 0;
   if (ageDays <= ROUTE_EVENT_RECENT_WINDOW_DAYS) {
     return 1 - 0.5 * (ageDays / ROUTE_EVENT_RECENT_WINDOW_DAYS);
@@ -123,7 +123,7 @@ export function routeEventRecencyFactor(ageDays: number): number {
   );
 }
 
-export function routeEventProximityFactor(distanceKm: number): number {
+function routeEventProximityFactor(distanceKm: number): number {
   if (!Number.isFinite(distanceKm) || distanceKm < 0) return 0;
   return clamp(1 - distanceKm / ROUTE_EVENT_SPATIAL_RADIUS_KM);
 }
@@ -186,7 +186,7 @@ export function calculateRouteEventPressure(
   };
 }
 
-export function combineRouteEventPressures(
+function combineRouteEventPressures(
   contributions: RouteEventPressureContribution[],
 ): RouteEventCandidatePressure {
   const ordered = [...contributions].sort((left, right) =>

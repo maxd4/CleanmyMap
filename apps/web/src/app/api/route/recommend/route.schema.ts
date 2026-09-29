@@ -1,6 +1,5 @@
 import { z } from "zod";
 import type { RouteRecommendationRequest } from "@/lib/route/route-response-contract";
-import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import {
   MAX_ROUTE_GROUP_COUNT,
   MAX_ROUTE_VOLUNTEERS,
@@ -61,8 +60,6 @@ export const ROUTE_RECOMMENDATION_RATE_LIMIT = {
 export type RouteRecommendationOptions = z.output<
   typeof routeRecommendationRequestSchema
 >;
-
-export type { RoutePlanningMode };
 
 export function parseRouteRecommendationRequest(rawPayload: unknown) {
   return routeRecommendationRequestSchema.safeParse(rawPayload);

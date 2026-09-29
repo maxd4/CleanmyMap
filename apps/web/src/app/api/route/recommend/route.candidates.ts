@@ -17,7 +17,7 @@ import { loadCachedRouteEventSignalContext } from "@/lib/route/route-event-press
 import type { RouteEventSignalContext } from "@/lib/route/route-event-pressure";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export const EMPTY_EVENT_PRESSURE_CONTEXT = {
+const EMPTY_EVENT_PRESSURE_CONTEXT = {
   pressureByArrondissement: new Map<number, number>(),
   eventSignals: [],
 };

@@ -154,7 +154,7 @@ export type RouteCalibrationMeasurementProvenance =
   | "unknown"
   | "missing";
 
-export type RouteCalibrationDuration = {
+type RouteCalibrationDuration = {
   totalMinutes: number | null;
   definition: "walking_plus_collection_sorting_weighing";
   source: "action.duration_minutes" | "missing";
@@ -166,20 +166,20 @@ export type RouteCalibrationDuration = {
   };
 };
 
-export type RouteCalibrationOrdinaryWaste = {
+type RouteCalibrationOrdinaryWaste = {
   wasteKg: number | null;
   measurementMethod: ActionWasteMeasurementMethod | null;
   provenance: RouteCalibrationMeasurementProvenance;
   breakdown: ActionWasteBreakdown | null;
 };
 
-export type RouteCalibrationCigaretteButts = {
+type RouteCalibrationCigaretteButts = {
   measurements: ActionCigaretteButtsMeasurements | null;
   legacyCount: number | null;
   provenance: CigaretteButtsProvenance | "missing";
 };
 
-export type RouteCalibrationVolunteerData = {
+type RouteCalibrationVolunteerData = {
   childrenCount: number | null;
   adultCount: number | null;
   retiredCount: number | null;
@@ -188,7 +188,7 @@ export type RouteCalibrationVolunteerData = {
   effectiveVolunteerUnitsFormulaVersion: string | null;
 };
 
-export type RouteCalibrationQuality = {
+type RouteCalibrationQuality = {
   status: "complete" | "partial" | "insufficient";
   ordinaryWasteAvailable: boolean;
   cigaretteButtsAvailable: boolean;
@@ -196,7 +196,7 @@ export type RouteCalibrationQuality = {
   dataQuality: ActionDataQualitySummary | null;
 };
 
-export type RouteCalibrationContractVersions = {
+type RouteCalibrationContractVersions = {
   routeCalibration: RouteCalibrationContext["version"];
   plannerSnapshot: RoutePlannerSnapshot["version"] | null;
   operationalRoute: OperationalRoute["version"] | null;

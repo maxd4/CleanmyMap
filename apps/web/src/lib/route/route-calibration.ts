@@ -30,12 +30,8 @@ import type {
 } from "./route-calibration-types";
 
 export {
-  ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION,
-  ROUTE_CALIBRATION_CONTEXT_VERIFIED_VERSION,
   ROUTE_CALIBRATION_CONTEXT_VERSION,
-  ROUTE_CALIBRATION_STATUSES,
   ROUTE_CLEANUP_DURATION_CONTRACT_VERSION,
-  ROUTE_PLANNER_SNAPSHOT_VERSION,
 } from "./route-calibration-contract";
 export type {
   RouteCalibrationStatus,
@@ -54,18 +50,7 @@ export { preserveHistoricalRouteCalibrationContext } from "./route-calibration-h
 export type {
   ApprovedActionForCalibration,
   RouteCalibrationContext,
-  RouteCalibrationContractVersions,
-  RouteCalibrationCigaretteButts,
   RouteCalibrationDataset,
-  RouteCalibrationDatasetEntry,
-  RouteCalibrationDuration,
-  RouteCalibrationMeasurementProvenance,
-  RouteCalibrationOrdinaryWaste,
-  RouteCalibrationQuality,
-  RouteCalibrationReadiness,
-  RouteCalibrationReadinessReason,
-  RouteCalibrationSample,
-  RouteCalibrationVolunteerData,
   RoutePlannerSnapshot,
   RouteCleanupDurationEstimate,
 } from "./route-calibration-types";
@@ -261,7 +246,7 @@ function buildCalibrationDatasetEntry(
   };
 }
 
-export function assessRouteCalibrationReadiness(input: {
+function assessRouteCalibrationReadiness(input: {
   samples: readonly RouteCalibrationSample[];
   runtimeHistoricalBridgeAvailable?: boolean;
   independentValidationAvailable?: boolean;
