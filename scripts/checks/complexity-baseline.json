@@ -5028,42 +5028,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/gamification/progression-leaderboard.ts",
-      "line": 107,
-      "category": "métier/domain pur",
-      "ceiling": 74,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildCollectiveLeaderboardItems#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/gamification/progression-leaderboard.ts",
-      "line": 186,
-      "category": "métier/domain pur",
-      "ceiling": 99,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildIndividualLeaderboard#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/gamification/progression-leaderboard.ts",
-      "line": 292,
-      "category": "métier/domain pur",
-      "ceiling": 101,
-      "status": "LEGACY",
-      "functionIdentity": "named:getUserProgression#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/gamification/progression-leaderboard.ts",
-      "line": 399,
-      "category": "métier/domain pur",
-      "ceiling": 63,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildPostActionRetentionLoop#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/lib/gamification/progression-tracking.ts",
       "line": 23,
       "category": "métier/domain pur",
