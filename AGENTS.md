@@ -98,26 +98,18 @@ Une preuve ne justifie que ce qu’elle mesure.
 Le workflow courant est `MAIN-ONLY / SINGLE-WRITER`.
 
 - la branche de travail normale est `main` ;
-- un seul agent peut modifier le checkout à la fois ; un seul chantier peut écrire à la fois ;
-- les analyses read-only peuvent être parallèles ;
+- deux agents peut modifier le checkout à la fois en faisant attention a ne pas créer de regréssions.
 - aucun nouveau worktree, clone ou branche de chantier n’est créé pour le
   workflow normal ;
-- avant un lot mutable, actualiser la connaissance de `origin/main` et vérifier
-  l’état local ;
-- un lot terminé produit un commit local isolé sur `main` après validation de
+- l'état local est prioritaire sur l'etat github
+- un lot terminé produit un au moins commit local sur `main` après validation de
   son candidat ;
 - le commit est non signé par défaut ;
-- le push n’est effectué que sur demande explicite de l’utilisateur.
-
-À la fin de chaque prompt et de chaque exécution, demander systématiquement
-explicitement si l’utilisateur autorise le commit puis le push du lot concerné,
-après les validations requises. Cette demande ne vaut pas autorisation implicite
-: le commit local et le push distant restent deux opérations distinctes, et le
-push ne doit être effectué qu’après accord explicite.
+- le push est toujours effectué sauf en cas de mode de développement rapide.
 
 L’absence de push d’un lot précédent ne bloque pas un nouveau lot local cohérent.
 
-Avant un push explicitement demandé :
+Lors du push :
 
 - auditer l’ascendance locale non publiée ;
 - vérifier `git diff --cached --name-only` avant le commit et

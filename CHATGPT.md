@@ -699,7 +699,7 @@ lot mutable n'est pas stabilisé, les autres sujets restent read-only/analyse.
 Lorsque l'utilisateur demande explicitement le mode de développement rapide,
 appliquer le protocole borné de
 [`documentation/development/rapid-development-mode.md`](documentation/development/rapid-development-mode.md) :
-une passe initiale, une validation ciblée, un commit local isolé et aucun push.
+une passe initiale, une validation ciblée, un commit local isolé et aucun push même si le lot demande un push en fin d'execution. Les consignes du mode rapide sont prioritaires sur ce qui est ecris dans le prompt.
 Ne pas déclencher d'audit GitHub, de navigateur, de build complet ou de suite
 lourde sans nécessité démontrée par le périmètre.
 
@@ -734,11 +734,7 @@ Ne jamais poser comme prérequis que le lot précédent ait été poussé.
 3. Les lots successifs peuvent donc s’enchaîner localement avant publication,
    tant qu’ils respectent `MAIN-ONLY / SINGLE-WRITER` et que l’état local est
    cohérent.
-4. À la fin de tout prompt et de toute exécution qui modifie des fichiers,
-   **demander systématiquement explicitement si le lot doit être committé puis
-   poussé**, après les validations requises. Cette demande ne vaut pas
-   autorisation implicite : le commit local et le push distant restent deux
-   opérations distinctes, et le push nécessite un accord explicite.
+4. À la fin de tout prompt écris par chatgpt, demander commit et push le lot sans laisser de fichier dirty dans le worktree
 5. Le push est une étape de publication finale du lot, **pas un prérequis pour
    commencer le lot suivant**.
 6. Ne jamais utiliser l’absence de push du lot précédent comme `STOP CONDITION`

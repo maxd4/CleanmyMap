@@ -48,7 +48,7 @@ import {
 
 type CatalogProgressionEvent = MilestoneEvent & { source_table: string };
 
-type CatalogProgressionInputs = {
+export type CatalogProgressionInputs = {
   counters: Awaited<ReturnType<typeof loadGamificationUserCounters>>;
   cleanZoneSources: Awaited<ReturnType<typeof loadCleanZoneSourcesForUser>>;
   learning: Awaited<ReturnType<typeof loadQuizLearningProgression>>;
@@ -192,7 +192,7 @@ function buildSecondaryProgressionFacts({
   };
 }
 
-function buildProgressionFacts(
+export function buildProgressionFacts(
   input: CatalogProgressionInputs,
 ): Record<string, GamificationCatalogProgressionFact> {
   return {

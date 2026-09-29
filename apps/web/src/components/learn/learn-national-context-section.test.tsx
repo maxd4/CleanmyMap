@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -15,6 +16,7 @@ describe("LearnNationalContextSection", () => {
 
   it("keeps source, declarative status, limits and real CTAs visible", () => {
     const markup = renderToStaticMarkup(createElement(LearnNationalContextSection, { locale: "fr" }));
+    const source = readFileSync(new URL("./learn-national-context-section.tsx", import.meta.url), "utf8");
 
     expect(markup).toContain("Contexte national");
     expect(markup).toContain("Ce que ces données signifient");
@@ -25,6 +27,11 @@ describe("LearnNationalContextSection", () => {
     expect(markup).toContain("/signalement");
     expect(markup).toContain("/learn/bonnes-pratiques/gestespropres-Barometre_2025.pdf");
     expect(markup).toContain("/learn/bonnes-pratiques/gestesprorpe-ifop-depots.pdf");
+    expect(markup).toContain('<details data-disclosure-tone="amber" data-disclosure-size="md" class="cmm-disclosure mt-4">');
+    expect(markup).toContain('data-disclosure-tone="amber"');
+    expect(markup).toContain('data-disclosure-size="md"');
+    expect(markup).toContain('<summary class="cmm-disclosure__summary">');
+    expect(source).not.toMatch(/<details\b|<summary\b/);
     expect(markup).not.toContain(["1", "M"].join(""));
     expect(markup).not.toContain(["1.2", "Mds"].join(""));
     expect(markup).not.toContain(["32", " kg"].join(""));

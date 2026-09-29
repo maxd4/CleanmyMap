@@ -473,32 +473,10 @@ type MonthlyMilestone = {
   isCompleted: boolean;
 };
 
-export type CollectiveLeaderboardItem = {
-  rank: number;
-  associationName: string;
-  score: number;
-  currentLevel: number;
-  potentialLevel: number;
-  members: number;
-  qualityAverage: number;
-  validatedActions: number;
-  wasteKg: number;
-  wasteCoverageRate: number;
-};
-
-/**
- * Server DTO for the CURRENT leaderboard HTTP contract.
- * Keep legacy collective calculation fields private to the ranking owner.
- */
-export type LeaderboardCollectiveItemDto = Pick<
-  CollectiveLeaderboardItem,
-  "rank" | "associationName" | "currentLevel" | "members" | "qualityAverage" | "validatedActions"
->;
-
 export type LeaderboardResponseDto = {
   scope: "individual" | "collective";
   generatedAt: string;
-  items: IndividualLeaderboardItem[] | LeaderboardCollectiveItemDto[];
+  items: IndividualLeaderboardItem[] | PublicStructureLeaderboardItem[];
   recognition: {
     topContributors: [];
     currentContributor: null;

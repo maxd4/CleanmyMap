@@ -1,6 +1,7 @@
 import { ArrowRight, FileText, ShieldAlert } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { cn } from "@/lib/utils";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
 import {
@@ -141,17 +142,19 @@ export function LearnNationalContextSection({ locale, className }: { locale: Lea
         </div>
       </div>
 
-      <details className="group mt-4 rounded-[1.35rem] border border-amber-200 bg-white px-4 py-3 shadow-sm">
-        <summary className="cursor-pointer list-none cmm-text-small font-black text-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70">
-          {locale === "fr" ? "Voir la méthodologie et les indicateurs détaillés" : "View methodology and detailed indicators"}
-        </summary>
-        <div className="mt-4 space-y-4">
+      <CmmDisclosure
+        summary={locale === "fr" ? "Voir la méthodologie et les indicateurs détaillés" : "View methodology and detailed indicators"}
+        tone="amber"
+        size="md"
+        className="mt-4"
+      >
+        <div className="space-y-4">
           <p className="cmm-text-small leading-relaxed cmm-text-secondary">{barometerStudy.methodology[locale]}</p>
           <p className="cmm-text-small leading-relaxed cmm-text-secondary">{ifopStudy.methodology[locale]}</p>
           <LearnGestesPropresBarometer locale={locale} />
           <LearnIfopDepotsSection locale={locale} />
         </div>
-      </details>
+      </CmmDisclosure>
     </section>
   );
 }

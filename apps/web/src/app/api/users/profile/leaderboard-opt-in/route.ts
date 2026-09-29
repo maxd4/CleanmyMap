@@ -1,8 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import { requireAuthenticatedAccess } from "@/lib/authz";
 import { requireSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 
 const updateSchema = z.object({
@@ -11,13 +11,10 @@ const updateSchema = z.object({
 
 export const runtime = "nodejs";
 
-async function currentUserId(): Promise<string | null> {
-  return (await auth()).userId;
-}
-
 export async function GET() {
-  const userId = await currentUserId();
-  if (!userId) return unauthorizedJsonResponse();
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) return unauthorizedJsonResponse();
+  const userId = access.userId;
 
   try {
     const supabase = await requireSupabaseClerkRlsClient();
@@ -40,8 +37,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const userId = await currentUserId();
-  if (!userId) return unauthorizedJsonResponse();
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) return unauthorizedJsonResponse();
+  const userId = access.userId;
 
   const payload = await request.json().catch(() => undefined);
   if (payload === undefined) {

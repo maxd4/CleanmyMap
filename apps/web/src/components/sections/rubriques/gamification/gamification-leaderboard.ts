@@ -1,39 +1,35 @@
 import type {
-  LeaderboardCollectiveItemDto,
   LeaderboardResponseDto,
   IndividualLeaderboardItem,
   LeaderboardMetric,
+  PublicStructureLeaderboardItem,
 } from "@/lib/gamification/progression-types";
 
 export type { LeaderboardMetric } from "@/lib/gamification/progression-types";
 
 export type LeaderboardScope = "individual" | "collective";
-export type LeaderboardPeriod = "lifetime" | "yearToDate";
 export type PublicIndividualLeaderboardItem = IndividualLeaderboardItem;
-type PublicCollectiveLeaderboardItem = LeaderboardCollectiveItemDto;
+type PublicCollectiveLeaderboardItem = PublicStructureLeaderboardItem;
 export type PublicLeaderboardItem = PublicIndividualLeaderboardItem | PublicCollectiveLeaderboardItem;
 
 export type GamificationLeaderboardResponse = LeaderboardResponseDto & {
   status: "ok";
-  period: LeaderboardPeriod;
 };
 
 export function buildLeaderboardUrl(
   scope: LeaderboardScope,
-  period: LeaderboardPeriod,
   metric: LeaderboardMetric = "level",
 ): string {
-  const params = new URLSearchParams({ scope, period, metric });
+  const params = new URLSearchParams({ scope, metric });
   return `/api/gamification/leaderboard?${params.toString()}`;
 }
 
 export function buildLeaderboardKey(
   enabled: boolean,
   scope: LeaderboardScope,
-  period: LeaderboardPeriod,
   metric: LeaderboardMetric = "level",
 ): string | null {
-  return enabled ? buildLeaderboardUrl(scope, period, metric) : null;
+  return enabled ? buildLeaderboardUrl(scope, metric) : null;
 }
 
 export async function fetchGamificationLeaderboard(
@@ -65,7 +61,7 @@ export function filterLeaderboardItems(
     const searchable =
       scope === "individual"
       ? (item as PublicIndividualLeaderboardItem).publicLabel
-      : (item as PublicCollectiveLeaderboardItem).associationName;
+      : (item as PublicCollectiveLeaderboardItem).publicLabel;
     return searchable.toLocaleLowerCase("fr-FR").includes(normalizedQuery);
   });
 }
