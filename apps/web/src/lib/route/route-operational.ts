@@ -28,12 +28,12 @@ export type OperationalRouteZone = {
   coordinate: [number, number] | null;
 };
 
-export type PlannerTechnicalStop = Pick<
+type PlannerTechnicalStop = Pick<
   RouteStop,
   "id" | "label" | "latitude" | "longitude"
 >;
 
-export type OperationalRouteLoop = {
+type OperationalRouteLoop = {
   routeId: string;
   groupIndex: number;
   geometry: RouteGeometry;

@@ -103,7 +103,7 @@ function parseEventDate(eventDate: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function routeEventAgeDays(eventDate: string, now: Date): number | null {
+function routeEventAgeDays(eventDate: string, now: Date): number | null {
   const eventTime = parseEventDate(eventDate);
   if (eventTime === null) return null;
   const ageDays = (now.getTime() - eventTime) / DAY_MS;

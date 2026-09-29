@@ -111,17 +111,3 @@ export function computePollutionScores(
 ): PollutionScoreBreakdown {
   return computePollutionScoresRelativeToReferences(inputs, references);
 }
-
-function computePollutionSeverityScore(
-  inputs: PollutionScoreInputs,
-  references?: PollutionScoreReference | null,
-): number | null {
-  return computePollutionScores(inputs, references).severityScore;
-}
-
-export function computePollutionScore(
-  inputs: PollutionScoreInputs,
-  references?: PollutionScoreReference | null,
-): number | null {
-  return computePollutionSeverityScore(inputs, references);
-}
