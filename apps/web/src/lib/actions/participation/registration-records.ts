@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionRegistrationRow } from "@/types/database";
-import type { ParticipationAuditValue } from "./group-participation-contract";
 
 export type ActionRegistrationStatus = ActionRegistrationRow["registration_status"];
 export type ActionRegistrationSource = ActionRegistrationRow["registration_source"];
@@ -44,24 +43,6 @@ export function resolveRegistrationUpdatedAt(
   return row.updated_at ?? row.registered_at ?? row.created_at;
 }
 
-export function buildRegistrationAuditValue(
-  row: Pick<
-    ActionRegistrationRow,
-    | "created_at"
-    | "registered_at"
-    | "updated_at"
-    | "registration_status"
-    | "registration_source"
-  >,
-): ParticipationAuditValue {
-  return {
-    participationStatus: row.registration_status,
-    participationSource: row.registration_source,
-    joinedAt: resolveRegisteredAt(row),
-    updatedAt: resolveRegistrationUpdatedAt(row),
-  };
-}
-
 export async function countActiveRegistrationsForAction(
   supabase: SupabaseClient,
   actionId: string,
@@ -71,22 +52,6 @@ export async function countActiveRegistrationsForAction(
     .select("id", { count: "exact", head: true })
     .eq("action_id", actionId)
     .eq("registration_status", "confirmed");
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  return Number(result.count ?? 0);
-}
-
-export async function countRegistrationsForAction(
-  supabase: SupabaseClient,
-  actionId: string,
-): Promise<number> {
-  const result = await supabase
-    .from("action_registrations")
-    .select("id", { count: "exact", head: true })
-    .eq("action_id", actionId);
 
   if (result.error) {
     throw new Error(result.error.message);

@@ -5,11 +5,11 @@ import type {
 } from "@/lib/actions/types";
 
 /** GPX 1.1 exportable geometry sources. */
-export type GpxGeometrySource = ActionGeometrySource;
+type GpxGeometrySource = ActionGeometrySource;
 
 export type GpxCoordinate = readonly [number, number];
 
-export type GpxWaypointRole =
+type GpxWaypointRole =
   | "departure"
   | "stop"
   | "midpoint"
@@ -41,7 +41,7 @@ export type GpxSerializerInput = {
   description?: string;
 };
 
-export const GPX_1_1_NAMESPACE = "http://www.topografix.com/GPX/1/1";
+const GPX_1_1_NAMESPACE = "http://www.topografix.com/GPX/1/1";
 
 const PERSONAL_DATA_PATTERN =
   /(?:[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}|(?:clerk|user)(?:[_-]?(?:id))?\s*[:=]|(?:clerk|user)_[A-Za-z0-9_-]{4,}|(?:bearer|authorization|token)\s*[:=]|\bparticipants?\b)/i;

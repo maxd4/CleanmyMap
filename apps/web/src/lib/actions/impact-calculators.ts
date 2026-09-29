@@ -10,9 +10,6 @@ import {
 
 export {
   BUTTS_PER_KG_REFERENCE,
-  CONDITION_WEIGHT_FACTORS,
-  computeButtsCount,
-  estimateButtsWeightKg,
 } from "@/lib/impact/impact-terrain-2026";
 
 export type ActionImpactInput = {

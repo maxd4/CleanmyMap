@@ -1,4 +1,4 @@
-export type EventWindowStatus =
+type EventWindowStatus =
   | "available"
   | "incomplete"
   | "invalid"
@@ -26,7 +26,7 @@ export function normalizeClockTime(value: string | null | undefined): string | n
   return normalized.slice(0, 5);
 }
 
-export function clockTimeToMinutes(value: string | null | undefined): number | null {
+function clockTimeToMinutes(value: string | null | undefined): number | null {
   const normalized = normalizeClockTime(value);
   if (!normalized) {
     return null;

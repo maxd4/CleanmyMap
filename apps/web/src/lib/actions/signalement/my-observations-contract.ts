@@ -1,7 +1,7 @@
 export const MY_OBSERVATION_TYPES = ["spot", "clean_place"] as const;
 export const MY_OBSERVATION_STATUSES = ["new", "validated", "cleaned"] as const;
 
-export type MyObservationType = (typeof MY_OBSERVATION_TYPES)[number];
+type MyObservationType = (typeof MY_OBSERVATION_TYPES)[number];
 export type MyObservationStatus = (typeof MY_OBSERVATION_STATUSES)[number];
 
 export type MyObservation = {

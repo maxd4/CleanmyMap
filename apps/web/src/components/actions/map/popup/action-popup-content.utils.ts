@@ -1,4 +1,4 @@
-export function hasValidCoordinates(coords: {
+function hasValidCoordinates(coords: {
   latitude: number | null;
   longitude: number | null;
 }): coords is { latitude: number; longitude: number } {

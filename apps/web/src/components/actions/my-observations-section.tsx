@@ -12,7 +12,7 @@ import type {
   MyObservationStatus,
 } from "@/lib/actions/signalement/my-observations-contract";
 
-export function getMyObservationStatusLabel(status: MyObservationStatus): string {
+function getMyObservationStatusLabel(status: MyObservationStatus): string {
   switch (status) {
     case "new":
       return "En attente de validation";

@@ -10,7 +10,7 @@ export type ActionUpdateInput = z.infer<typeof updateActionSchema>;
 export type ActionMetadata = ReturnType<typeof extractActionMetadataFromNotes>;
 export type ActionSnapshotSource = ActionRow;
 
-export type ActionAuditSnapshot = {
+type ActionAuditSnapshot = {
   status: ActionSnapshotSource["status"];
   actionPhase: ActionSnapshotSource["action_phase"];
   groupJoinEnabled: boolean;

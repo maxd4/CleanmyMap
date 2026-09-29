@@ -12,7 +12,7 @@ export type ActionWorkflowStepId =
   | "preparation"
   | "preformulaire";
 
-export const ACTION_CREATION_ROUTE = "/actions/new";
+const ACTION_CREATION_ROUTE = "/actions/new";
 
 export function normalizeActionCreationPanel(
   value: string | string[] | undefined,

@@ -31,7 +31,7 @@ export function isJoinableAction(item: ActionListItem): boolean {
   return item.record_type === "action" && item.contract?.metadata.groupJoinEnabled === true;
 }
 
-export function isOwnedByCurrentUser(
+function isOwnedByCurrentUser(
   item: ActionListItem,
   currentUserId: string | null,
 ): boolean {

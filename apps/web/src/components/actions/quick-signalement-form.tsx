@@ -445,6 +445,3 @@ export function TrashSpotterObservationForm({
     </div>
   );
 }
-
-/** Compatibility export for callers that still use the former quick-report name. */
-export const QuickSignalementForm = TrashSpotterObservationForm;

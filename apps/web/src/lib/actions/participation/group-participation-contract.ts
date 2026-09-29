@@ -4,9 +4,6 @@ import type {
   IndividualImpactMeasurement,
 } from "./individual-impact";
 import {
-  resolveJoinedAt,
-  resolveParticipationUpdatedAt,
-  type ActionParticipantStatusRow,
   type ParticipationSource,
   type ParticipationStatus,
 } from "./group-participation.helpers";
@@ -18,7 +15,7 @@ export type ParticipationAuditValue = {
   updatedAt: string | null;
 };
 
-export type ActionParticipationErrorStage =
+type ActionParticipationErrorStage =
   | "lookup"
   | "participation_update"
   | "post_update";
@@ -52,24 +49,6 @@ export async function runActionParticipationStep<T>(params: {
   } catch {
     throw new ActionParticipationOperationError(params);
   }
-}
-
-export function buildParticipationAuditValue(
-  row: Pick<
-    ActionParticipantStatusRow,
-    | "created_at"
-    | "joined_at"
-    | "updated_at"
-    | "participation_status"
-    | "participation_source"
-  >,
-): ParticipationAuditValue {
-  return {
-    participationStatus: row.participation_status,
-    participationSource: row.participation_source,
-    joinedAt: resolveJoinedAt(row),
-    updatedAt: resolveParticipationUpdatedAt(row),
-  };
 }
 
 export type JoinableActionItem = {

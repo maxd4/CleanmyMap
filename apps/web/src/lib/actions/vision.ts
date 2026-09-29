@@ -146,7 +146,7 @@ function deriveWasteKg(
   );
 }
 
-export function summarizeVisionStats(stats: ActionPhotoAnalysis[]): ActionPhotoAnalysis {
+function summarizeVisionStats(stats: ActionPhotoAnalysis[]): ActionPhotoAnalysis {
   if (stats.length === 0) {
     return {
       brightness: 0.5,

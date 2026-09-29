@@ -41,7 +41,7 @@ export const ACTION_POLLUTION_COLOR_THRESHOLDS = {
  BLACK: 100,
 } as const;
 
-export const COLOR_TOKENS = {
+const COLOR_TOKENS = {
  BLUE: { h: 199, s: 89, l: 48 }, // Premier seuil de pollution
  VIOLET: { h: 262, s: 80, l: 50 }, // Critique
  RED: { h: 2, s: 82, l: 62 }, // Fort (rouge clair)

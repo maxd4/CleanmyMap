@@ -1,9 +1,7 @@
 import type { ActionPhase, ActionPreparationData } from "./types";
 import { sanitizeFormalitiesWorkflowForCreation } from "./formalities-workflow";
 
-export const ADMINISTRATIVE_REQUIREMENT_STATUSES = ["pending", "validated"] as const;
-export type AdministrativeRequirementsStatus =
-  (typeof ADMINISTRATIVE_REQUIREMENT_STATUSES)[number];
+export type AdministrativeRequirementsStatus = "pending" | "validated";
 
 export type AdministrativeRequirements = {
   status: AdministrativeRequirementsStatus;
@@ -16,7 +14,7 @@ export type AdministrativeRequirementsRead = {
   validatedAt: string | null;
 };
 
-export const PENDING_ADMINISTRATIVE_REQUIREMENTS: AdministrativeRequirements = {
+const PENDING_ADMINISTRATIVE_REQUIREMENTS: AdministrativeRequirements = {
   status: "pending",
   validatedAt: null,
   validatedByUserId: null,

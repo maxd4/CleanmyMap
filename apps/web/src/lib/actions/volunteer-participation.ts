@@ -1,7 +1,7 @@
 export const EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION =
   "effective-volunteer-units-v1" as const;
 
-export const VOLUNTEER_CATEGORY_WEIGHTS = {
+const VOLUNTEER_CATEGORY_WEIGHTS = {
   children: 0.5,
   adult: 1,
   retired: 0.5,

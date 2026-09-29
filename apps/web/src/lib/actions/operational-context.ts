@@ -33,7 +33,7 @@ function normalizeContextText(value: string | null | undefined): string | null {
   return text.length > 0 ? text : null;
 }
 
-export function formatRouteStyleLabel(
+function formatRouteStyleLabel(
   routeStyle: "direct" | "souple" | null | undefined,
 ): string {
   if (routeStyle === "direct") {

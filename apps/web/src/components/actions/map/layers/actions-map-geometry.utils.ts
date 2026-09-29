@@ -35,7 +35,7 @@ export type ActionPolylineDirectionMarker = {
   bearing: number;
 };
 
-export type ActionMapGeometryMetric = {
+type ActionMapGeometryMetric = {
   kind: "length" | "area" | null;
   value: number | null;
   label: string | null;
@@ -52,7 +52,7 @@ export type ActionMapGeometryRenderStyle = {
   dashArray: string | undefined;
 };
 
-export type ActionDrawingValidationTone =
+type ActionDrawingValidationTone =
   | "neutral"
   | "success"
   | "warning"
@@ -264,7 +264,7 @@ export function resolveGeometryRenderStyle(
   };
 }
 
-export function normalizeDrawingCoordinates(
+function normalizeDrawingCoordinates(
   drawing: Pick<ActionDrawing, "coordinates"> | null | undefined,
 ): CoordinatePair[] {
   if (!drawing) {

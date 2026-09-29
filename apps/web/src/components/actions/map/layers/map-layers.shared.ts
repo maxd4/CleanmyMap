@@ -26,7 +26,7 @@ export type LeafletClusterLike = {
 };
 
 export const ACTION_TRACE_HIT_AREA_WEIGHT = 18;
-export const ACTION_TRACE_FIT_PADDING: [number, number] = [32, 32];
+const ACTION_TRACE_FIT_PADDING: [number, number] = [32, 32];
 /** Visual-only loading state; unavailable remains reserved for a real null score. */
 export const POLLUTION_SCORE_LOADING_COLOR = "#38bdf8";
 
