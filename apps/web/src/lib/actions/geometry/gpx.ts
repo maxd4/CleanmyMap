@@ -9,12 +9,12 @@ import {
   type GeodesicCoordinate,
 } from "@/lib/geo/geodesic-distance";
 
-export const ACTION_GPX_SOURCE = "gpx_import" as const;
+const ACTION_GPX_SOURCE = "gpx_import" as const;
 export const MAX_GPX_FILE_BYTES = 5_000_000;
 export const MAX_GPX_POINTS = 400;
-export const GPX_LOOP_CLOSURE_THRESHOLD_METERS = 50;
+const GPX_LOOP_CLOSURE_THRESHOLD_METERS = 50;
 
-export type GpxImportMetadata = ActionGpxImportMetadata;
+type GpxImportMetadata = ActionGpxImportMetadata;
 
 export type ParsedGpxTrack = {
   drawing: ActionDrawing;
@@ -185,7 +185,7 @@ function parseTrackSegments(xml: string): GeodesicCoordinate[][] {
   return segments;
 }
 
-export function isGpxLoop(coordinates: readonly GeodesicCoordinate[]): boolean {
+function isGpxLoop(coordinates: readonly GeodesicCoordinate[]): boolean {
   const first = coordinates[0];
   const last = coordinates.at(-1);
   return Boolean(

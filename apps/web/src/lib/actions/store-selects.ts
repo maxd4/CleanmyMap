@@ -1,4 +1,4 @@
-export const ACTION_BASE_SELECT_FIELDS = [
+const ACTION_BASE_SELECT_FIELDS = [
   "id",
   "created_at",
   "updated_at",
@@ -32,7 +32,7 @@ export const ACTION_BASE_SELECT_FIELDS = [
   "cancelled_from_status",
 ] as const;
 
-export const ACTION_MODERATION_SELECT_FIELDS = [
+const ACTION_MODERATION_SELECT_FIELDS = [
   "moderation_visibility",
   "hidden_at",
   "hidden_by_clerk_id",

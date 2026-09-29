@@ -138,7 +138,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-export function getDraftSavedAt(): string | null {
+function getDraftSavedAt(): string | null {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(ACTION_DECLARATION_DRAFT_DATE_KEY);
 }

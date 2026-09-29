@@ -9,7 +9,7 @@ type SummaryRowProps = {
   tone?: "slate" | "emerald";
 };
 
-export function SummaryRow({
+function SummaryRow({
   label,
   value,
   strong = false,
@@ -42,14 +42,14 @@ export function formatDraftDate(value: string | null): string | null {
   }).format(date);
 }
 
-export function formatActionDate(value: string): string {
+function formatActionDate(value: string): string {
   if (!value) return "Date non renseignée";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(date);
 }
 
-export function formatWasteSummary(wasteKg: string, megotsKg: string): string {
+function formatWasteSummary(wasteKg: string, megotsKg: string): string {
   const waste = Number(wasteKg);
   const megots = Number(megotsKg);
   const parts: string[] = [];

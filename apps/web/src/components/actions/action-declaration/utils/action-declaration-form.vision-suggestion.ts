@@ -1,6 +1,6 @@
 import type { ActionVisionEstimate } from"@/lib/actions/types";
 
-export const VISION_WASTE_CONFIDENCE_THRESHOLD = 0.55;
+const VISION_WASTE_CONFIDENCE_THRESHOLD = 0.55;
 
 export type WasteSuggestionSource ="vision" |"heuristic";
 

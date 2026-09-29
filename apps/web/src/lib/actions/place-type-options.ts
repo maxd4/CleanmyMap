@@ -8,8 +8,6 @@ export const PLACE_TYPE_OPTIONS = [
   "Monument",
 ] as const;
 
-export type PlaceTypeOption = (typeof PLACE_TYPE_OPTIONS)[number];
-
 export const PLACE_TYPE_FORM_OPTIONS = [
   { value: "N° Rue/Allée/Villa/Ruelle/Impasse", label: "N° Rue/Allée/Villa/Ruelle/Impasse" },
   { value: "Bois/Parc/Jardin/Square/Sentier", label: "Bois/Parc/Jardin/Square/Sentier" },
@@ -26,9 +24,4 @@ const PLACE_TYPE_UI_VALUE_ALIASES: Record<string, string> = {
 export function normalizePlaceTypeForUi(value: string | null | undefined): string {
   if (!value) return PLACE_TYPE_OPTIONS[0];
   return PLACE_TYPE_UI_VALUE_ALIASES[value] ?? value;
-}
-
-export function isValidPlaceType(value: string | null | undefined): boolean {
-  if (!value) return false;
-  return (PLACE_TYPE_OPTIONS as readonly string[]).includes(value);
 }

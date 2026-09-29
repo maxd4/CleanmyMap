@@ -4,13 +4,6 @@ import {
   ORGANIZER_DIRECTORY_VERIFIED_AT,
 } from "./organizer-directory-catalog";
 
-export type {
-  OrganizerActivityCadence,
-  OrganizerActivityRole,
-  OrganizerDirectoryEntry,
-  OrganizerGeographicScope,
-} from "./organizer-directory-contract";
-
 export { ORGANIZER_DIRECTORY, ORGANIZER_DIRECTORY_VERIFIED_AT };
 
 export type OrganizerDirectoryKnownEntry =
@@ -106,7 +99,7 @@ export type AssociationSelectionOption =
   (typeof ASSOCIATION_SELECTION_OPTIONS)[number];
 
 const ENTREPRISE_ASSOCIATION_OPTION = "Entreprise" as const;
-export const ENTREPRISE_UNSPECIFIED_ASSOCIATION_LABEL =
+const ENTREPRISE_UNSPECIFIED_ASSOCIATION_LABEL =
   "Entreprise - Non precise" as const;
 const ENTREPRISE_ASSOCIATION_PREFIX = `${ENTREPRISE_ASSOCIATION_OPTION} - `;
 
