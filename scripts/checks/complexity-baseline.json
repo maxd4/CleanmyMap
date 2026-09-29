@@ -3084,15 +3084,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.location-section.tsx",
-      "line": 40,
-      "category": "React/JSX",
-      "ceiling": 175,
-      "status": "LEGACY",
-      "functionIdentity": "named:ActionDeclarationLocationSection#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
       "line": 83,
       "category": "React/JSX",

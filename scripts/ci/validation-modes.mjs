@@ -477,7 +477,7 @@ export function createModeValidationPlan({
         label: full ? "Ratchet complexité/longueur complet" : "Ratchet complexité/longueur ciblé",
         estimatedSeconds: full ? 90 : 20,
         critical: true,
-        command: npmCommand("quality:complexity", full ? [] : ["--changed-only"]),
+        command: npmCommand("quality:complexity", full ? [] : ["--", "--changed-only"]),
       });
     }
     if (full) {
