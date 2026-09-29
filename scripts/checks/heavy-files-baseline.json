@@ -381,10 +381,10 @@
     {
       "path": "apps/web/src/lib/gamification/progression-leaderboard.ts",
       "kind": "runtime",
-      "status": "REVIEW",
+      "status": "IMPROVED",
       "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 516,
-      "maxBytes": 16469
+      "maxLines": 3,
+      "maxBytes": 197
     },
     {
       "path": "apps/web/src/components/account/greater-paris-select.tsx",
