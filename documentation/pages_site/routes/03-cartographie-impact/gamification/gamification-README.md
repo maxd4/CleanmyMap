@@ -12,6 +12,12 @@ Point d entrée de la rubrique gamification, désormais canonique sur `/sections
 
 La présentation détaillée décrit la section `/sections/gamification`. L URL `/gamification` reste un alias de compatibilité. La spec canonique centralise les règles métier des badges, des paliers, des XP et des garde-fous.
 
+La surface authentifiée expose désormais séparément le niveau global réel et
+potentiel, sa progression vers le prochain niveau et les prérequis manquants,
+puis un retour d'impact personnel. Les indicateurs d'eau, de CO₂e et de surface
+sont affichés comme des proxys, à partir des valeurs fournies par
+`GET /api/gamification/me`, avec un lien vers la méthodologie documentée.
+
 La route canonique reste publique et affiche un soft-gate aux visiteurs anonymes. Le lien « Se connecter » ouvre `/sign-in?redirect_url=%2Fsections%2Fgamification`; après une authentification Clerk reconnue, le retour s'effectue sur `/sections/gamification` et le contenu authentifié est rendu.
 
 **Contrat SEO** : `ACCESS=PRIVATE`, `SEARCH=NOINDEX`,

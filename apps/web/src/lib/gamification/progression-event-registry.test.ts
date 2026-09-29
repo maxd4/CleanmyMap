@@ -302,10 +302,6 @@ describe("progression event registry", () => {
       new URL("../../components/gamification/infinite-badges/InfiniteBadgesPanel.tsx", import.meta.url),
       "utf8",
     );
-    const personalProgress = readFileSync(
-      new URL("../../components/sections/rubriques/gamification/personal-progress.tsx", import.meta.url),
-      "utf8",
-    );
     const mohsBadge = readFileSync(
       new URL("../../components/gamification/mohs-badge.tsx", import.meta.url),
       "utf8",
@@ -329,7 +325,17 @@ describe("progression event registry", () => {
     expect(sensitiveZoneStore).toContain("milestoneThresholdsToInsert");
     expect(sensitiveZoneStore).toContain("milestoneThresholdsToRemove");
     expect(sensitiveZoneStore).not.toContain("CURRENT_INFINITE_PROGRESSION_IDS");
-    expect(personalProgress).toContain("<MohsBadge");
+    const levelPanel = readFileSync(
+      new URL("../../components/sections/rubriques/gamification/gamification-level-progress-panel.tsx", import.meta.url),
+      "utf8",
+    );
+    const impactPanel = readFileSync(
+      new URL("../../components/sections/rubriques/gamification/gamification-impact-panel.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(levelPanel).not.toContain("MohsBadge");
+    expect(impactPanel).not.toContain("MohsBadge");
+    expect(impactPanel).not.toContain("computeActionImpactKpis");
     expect(mohsBadge).toContain("nextXp");
     expect(mohsBadge).toContain('style={{ width: `${grade.progressPct}%` }}');
     expect(mohsBadge).toContain("Impact secondaire");

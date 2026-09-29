@@ -437,7 +437,7 @@ export type ContributorRecognitionSummary = {
   currentContributor: ContributorRecognitionCard | null;
 };
 
-export type ContributorRecognitionSnapshot = {
+type ContributorRecognitionSnapshot = {
   currentContributor: ContributorRecognitionCard | null;
 };
 
