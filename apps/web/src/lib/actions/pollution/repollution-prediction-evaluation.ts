@@ -24,16 +24,16 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const REPOLLUTION_EVALUATION_MODEL_VERSION =
   "action-repollution-projection-v1";
 
-export type RepollutionEvaluationMode =
+type RepollutionEvaluationMode =
   | "online_frozen"
   | "retrospective_replay";
 
-export type RepollutionEvaluationModelConfiguration = {
+type RepollutionEvaluationModelConfiguration = {
   version?: string;
   snapshot?: Record<string, unknown>;
 };
 
-export type RepollutionPredictionEvaluationMetrics = {
+type RepollutionPredictionEvaluationMetrics = {
   signedError: number;
   absoluteError: number;
   squaredError: number;
@@ -64,7 +64,7 @@ export type RepollutionPredictionEvaluationRecord =
     derivedPlaceKeySnapshot: string | null;
   };
 
-export type RepollutionPredictionNotEvaluableReason =
+type RepollutionPredictionNotEvaluableReason =
   | "observation_unscored"
   | "observation_not_completed"
   | "observation_data_quality_blocking"

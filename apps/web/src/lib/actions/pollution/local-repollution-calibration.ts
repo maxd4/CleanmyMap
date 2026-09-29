@@ -42,19 +42,19 @@ export type DerivedPlaceObservation = {
   postActionScoreSource: "measured" | "model_baseline";
 };
 
-export type LocalRepollutionIntervalStatus =
+type LocalRepollutionIntervalStatus =
   | "valid"
   | "rejected"
   | "rapid_repollution";
 
-export type LocalRepollutionIntervalRejectionReason =
+type LocalRepollutionIntervalRejectionReason =
   | "source_incomplete"
   | "delta_days_too_short"
   | "denominator_unusable"
   | "fraction_out_of_range"
   | "t80_out_of_bounds";
 
-export type LocalRepollutionInterval = {
+type LocalRepollutionInterval = {
   previousActionId: string;
   nextActionId: string;
   deltaDays: number;
@@ -68,7 +68,7 @@ export type LocalRepollutionInterval = {
   rejectionReason: LocalRepollutionIntervalRejectionReason | null;
 };
 
-export type LocalRepollutionConfidence =
+type LocalRepollutionConfidence =
   | "insufficient"
   | "low"
   | "medium"
@@ -93,7 +93,7 @@ export type DerivedPlaceHistory = {
   calibration: LocalRepollutionCalibration;
 };
 
-export type LocalRepollutionExcludedAction = {
+type LocalRepollutionExcludedAction = {
   actionId: string;
   reason:
     | "not_action"

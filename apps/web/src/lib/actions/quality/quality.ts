@@ -7,7 +7,7 @@ import {
 import type { ActionQualityGrade } from "./quality-rules";
 export type { ActionQualityGrade } from "./quality-rules";
 
-export type ActionQualityBreakdown = {
+type ActionQualityBreakdown = {
   completeness: number;
   coherence: number;
   geoloc: number;

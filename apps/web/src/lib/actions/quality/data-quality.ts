@@ -14,17 +14,12 @@ import type {
 } from "./data-quality-types";
 import { ACTION_DATA_MEASURE_LIMITS } from "./data-quality-types";
 export type {
-  ActionDataAnomaly,
-  ActionDataAnomalyCode,
-  ActionDataProvenance,
-  ActionDataQualityStatus,
-  ActionGeolocationState,
   ActionDataQualitySummary,
 } from "./data-quality-types";
 
-export const ACTION_DATA_QUALITY_VERSION = "action-data-quality-2026.08-v1";
+const ACTION_DATA_QUALITY_VERSION = "action-data-quality-2026.08-v1";
 
-export const ACTION_DATA_QUALITY_THRESHOLDS = {
+const ACTION_DATA_QUALITY_THRESHOLDS = {
   monthlyWarningRate: 0.1,
   monthlyBlockingRate: 0,
   monthlyPartialGeolocationRate: 0,

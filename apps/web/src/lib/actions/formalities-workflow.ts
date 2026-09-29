@@ -12,27 +12,20 @@ import {
 export {
   actionFormalitiesFactsSchema,
   deriveActionFormalitiesFacts,
-  snapshotFormalitiesFacts,
 } from "./formalities-facts";
-export type { FormalitiesFactsSnapshot } from "./formalities-facts";
 
-export const ACTION_FORMALITIES_WORKFLOW_SCHEMA_VERSION =
+const ACTION_FORMALITIES_WORKFLOW_SCHEMA_VERSION =
   "action-formalities-workflow-v1" as const;
 
-export const FORMALITIES_USER_STATUSES = [
-  "not_started",
-  "prepared",
-  "sent",
-] as const;
-export type FormalitiesUserStatus = (typeof FORMALITIES_USER_STATUSES)[number];
+type FormalitiesUserStatus = "not_started" | "prepared" | "sent";
 
-export type FormalitySendProof = {
+type FormalitySendProof = {
   kind: "user_declared" | "official_confirmation";
   reference: string | null;
   recordedAt: string;
 };
 
-export type ActionFormalityProgress = {
+type ActionFormalityProgress = {
   formalityId: string;
   userStatus: FormalitiesUserStatus;
   contentVersion: string;
@@ -43,7 +36,7 @@ export type ActionFormalityProgress = {
   invalidatedAt: string | null;
 };
 
-export type ActionFormalitiesTrace = {
+type ActionFormalitiesTrace = {
   qualifiedAt: string;
   rulesetVersion: string | null;
   officialSourceIds: string[];

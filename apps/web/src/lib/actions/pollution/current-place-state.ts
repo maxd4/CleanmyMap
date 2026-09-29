@@ -6,7 +6,6 @@ import {
 import {
   canMergeDerivedPlaceObservations,
   deriveLocalRepollutionHistories,
-  distanceBetweenCoordinatesMeters,
   normalizeDerivedPlaceLabel,
   presentActionPollutionProjectionWithLocalHistory,
   type DerivedPlaceHistory,
@@ -16,21 +15,19 @@ import {
 } from "./local-repollution-calibration";
 import { ACTION_POLLUTION_PROJECTION_CONSTANTS } from "./revisit-priority";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-export type CurrentPlaceStateSource =
+type CurrentPlaceStateSource =
   | "observed"
   | "projected"
   | "historical";
 
 export type CurrentPlaceStateMode = "observed" | "projected_today";
 
-export type CurrentPlaceStateScoreKind =
+type CurrentPlaceStateScoreKind =
   | "measured"
   | "projected"
   | "unavailable";
 
-export type CurrentPlaceStateProvenance =
+type CurrentPlaceStateProvenance =
   | "observed_action"
   | "observed_trash_spotter"
   | "observed_clean_place"
@@ -630,17 +627,3 @@ export function resolveCurrentPlaceStateForRecord(
 
   return null;
 }
-
-/** Alias naming the domain capability explicitly as a place-level resolver. */
-export const resolveCurrentPlaceStateByPlace = resolveCurrentPlaceStates;
-
-export function elapsedDaysSinceCurrentPlaceState(
-  state: CurrentPlaceState,
-  asOf: string | Date | number,
-): number {
-  const current = resolveAsOfMs(asOf);
-  const date = new Date(state.date).getTime();
-  return Number.isFinite(date) ? Math.max(0, (current - date) / DAY_MS) : 0;
-}
-
-export { distanceBetweenCoordinatesMeters };

@@ -13,9 +13,8 @@ import { createNationalFormalitiesRule } from "./formalities-national-rule";
  * do not establish.
  */
 
-export const ACTION_FORMALITIES_SCHEMA_VERSION = "action-formalities-qualification-v1" as const;
-export const PARIS_FORMALITIES_RULESET_VERSION = "paris-public-space-formalities-2026-04-16" as const;
-export const PARIS_TERRITORY_CODE = "FR-75" as const;
+const ACTION_FORMALITIES_SCHEMA_VERSION = "action-formalities-qualification-v1" as const;
+const PARIS_FORMALITIES_RULESET_VERSION = "paris-public-space-formalities-2026-04-16" as const;
 const PARIS_FORMALITIES_RULE_ID = "paris-public-space-formalities" as const;
 const PARIS_FORMALITIES_RULE_SCOPE: FormalityRuleScope = {
   kind: "special_territory",
@@ -73,7 +72,7 @@ export type FormalitiesOfficialSource = {
   scope: string;
 };
 
-export type FormalitiesOfficialChannel = {
+type FormalitiesOfficialChannel = {
   kind: "official_page" | "official_platform" | "official_email" | "manager_to_confirm";
   label: string;
   url: string | null;
@@ -81,7 +80,7 @@ export type FormalitiesOfficialChannel = {
   emailAddress?: string | null;
 };
 
-export type FormalitiesDeadline = {
+type FormalitiesDeadline = {
   minimumValue: number;
   unit: "days" | "months";
   note: string;
@@ -108,7 +107,7 @@ export type ActionFormality = {
   requestedDocuments: string[];
 };
 
-export type FormalitiesBoolean = boolean | "unknown";
+type FormalitiesBoolean = boolean | "unknown";
 
 export type ActionFormalitiesFacts = {
   territory: FormalitiesTerritory;
