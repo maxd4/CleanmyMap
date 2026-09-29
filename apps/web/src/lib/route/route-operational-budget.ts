@@ -42,7 +42,7 @@ export type RouteOperationalBudget = {
   weather: RouteWeatherBudgetEffect;
 };
 
-export type RouteWeatherBudgetEffect = {
+type RouteWeatherBudgetEffect = {
   status: "not_provided" | "nominal" | "limited" | "fallback";
   riskLevel: WeatherRiskLevel | null;
   reasons: string[];
@@ -53,7 +53,7 @@ export type RouteWeatherBudgetEffect = {
   weatherLimitedEventMinutes: number | null;
 };
 
-export type RouteOperationalBudgetEstimator = (input: {
+type RouteOperationalBudgetEstimator = (input: {
   context: RouteCalibrationContext;
   travelMinutes?: number | null;
 }) => RouteCleanupDurationEstimate;
@@ -144,24 +144,6 @@ export function buildRouteOperationalBudget(input: {
     durationProvenance: durationEstimate.provenance,
     weather,
   };
-}
-
-export function isOperationalBudgetAvailable(
-  budget: RouteOperationalBudget,
-): budget is RouteOperationalBudget & {
-  travelMinutes: number;
-  actionMinutes: number;
-  eventBudgetMinutes: number;
-  actionBudgetMinutes: number;
-  serviceMinutes: number;
-  totalMinutes: number;
-  withinBudget: boolean;
-} {
-  return budget.actionMinutes !== null &&
-    budget.eventBudgetMinutes !== null &&
-    budget.actionBudgetMinutes !== null &&
-    budget.totalMinutes !== null &&
-    budget.withinBudget !== null;
 }
 
 function unavailableDurationEstimate(): RouteCleanupDurationEstimate {

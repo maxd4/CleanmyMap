@@ -30,7 +30,7 @@ function boundedInteger(value: unknown, fallback: number, min: number, max: numb
     : fallback;
 }
 
-export function normalizeRouteOptions(value: unknown): RouteOptions {
+function normalizeRouteOptions(value: unknown): RouteOptions {
   const candidate = isRecord(value) ? value : {};
 
   const volunteers = boundedInteger(candidate.volunteers, DEFAULT_ROUTE_OPTIONS.volunteers, 1, 100);

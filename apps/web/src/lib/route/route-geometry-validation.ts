@@ -27,7 +27,7 @@ export function isRouteGeometry(value: unknown): value is RouteGeometry {
   );
 }
 
-export function isRouteGeometryLeg(value: unknown): value is RouteGeometryLeg {
+function isRouteGeometryLeg(value: unknown): value is RouteGeometryLeg {
   if (!value || typeof value !== "object") return false;
   const leg = value as Partial<RouteGeometryLeg>;
   return (

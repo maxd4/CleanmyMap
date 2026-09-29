@@ -11,10 +11,10 @@ import type { RouteGeometry } from "@/lib/route/route-contract";
 
 export const FOSSGIS_FOOT_BASE_URL =
   "https://routing.openstreetmap.de/routed-foot";
-export const FOSSGIS_FOOT_PROFILE_SEGMENT = "driving";
+const FOSSGIS_FOOT_PROFILE_SEGMENT = "driving";
 export const FOSSGIS_FOOT_PROVIDER = "fossgis-osrm" as const;
 export const FOSSGIS_FOOT_PROFILE = "foot" as const;
-export const FOSSGIS_FOOT_TIMEOUT_MS = 5000;
+const FOSSGIS_FOOT_TIMEOUT_MS = 5000;
 export const FOSSGIS_FOOT_USER_AGENT =
   "CleanMyMap route recommender (https://cleanmymap.fr/sections/route)";
 export const FOSSGIS_FOOT_REFERER = "https://cleanmymap.fr/sections/route";

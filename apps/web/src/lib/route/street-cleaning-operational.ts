@@ -60,7 +60,7 @@ function geometrySegmentKey(geometry: readonly SegmentCoordinate[] | undefined):
 }
 
 /** Derives only from an explicit provider reference or returned step geometry. */
-export function deriveStreetCleaningSegmentKey(
+function deriveStreetCleaningSegmentKey(
   step: Pick<RouteGeometryStep, "segmentReference" | "geometry">,
 ): string | null {
   return normalizeSegmentReference(step.segmentReference) ?? geometrySegmentKey(step.geometry);

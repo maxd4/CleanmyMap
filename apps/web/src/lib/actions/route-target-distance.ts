@@ -1,7 +1,6 @@
 import type { ActionPreparationData } from "./types";
 
 export const CURRENT_ROUTE_DISTANCE_POLICY_VERSION = "route-distance-v1" as const;
-export type RouteDistancePolicyVersion = typeof CURRENT_ROUTE_DISTANCE_POLICY_VERSION;
 export type RouteTargetDistanceSource = "derived" | "manual";
 
 export type RouteDistancePolicy = {
@@ -13,7 +12,7 @@ export const CURRENT_ROUTE_DISTANCE_POLICY: RouteDistancePolicy = {
   version: CURRENT_ROUTE_DISTANCE_POLICY_VERSION,
   kilometersPerHour: 1,
 };
-export const DEFAULT_ROUTE_TARGET_DISTANCE_KM = 1;
+const DEFAULT_ROUTE_TARGET_DISTANCE_KM = 1;
 
 export type ResolvedRouteTargetDistance = {
   distanceKm: number;
@@ -34,7 +33,7 @@ export function deriveRouteTargetDistanceKm(
   return Math.max(0, Number(((duration / 60) * policy.kilometersPerHour).toFixed(2)));
 }
 
-export function normalizeRouteTargetDistanceKm(
+function normalizeRouteTargetDistanceKm(
   value: number | string | null | undefined,
 ): number | undefined {
   const parsed = typeof value === "string" ? Number(value) : value;

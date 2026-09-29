@@ -5,7 +5,7 @@ import type {
 import { findNearestParisPressureZone } from "@/lib/geo/paris-pressure-lookup";
 
 /** Route-only policy: the spatial lookup itself remains owned by lib/geo. */
-export const PARIS_PRESSURE_MAX_ROUTE_SCORE_BOOST = 8;
+const PARIS_PRESSURE_MAX_ROUTE_SCORE_BOOST = 8;
 
 export type ParisPressureRouteCandidate = ParisPressurePoint & {
   id: string;

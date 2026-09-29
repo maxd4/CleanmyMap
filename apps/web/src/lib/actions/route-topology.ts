@@ -5,7 +5,7 @@ import type {
   LegacyActionRecordType,
 } from "./types";
 
-export const ACTION_ROUTE_TOPOLOGIES = ["loop", "point_to_point"] as const satisfies readonly ActionRouteTopology[];
+const ACTION_ROUTE_TOPOLOGIES = ["loop", "point_to_point"] as const satisfies readonly ActionRouteTopology[];
 
 /**
  * Resolves the canonical topology once at the contract boundary.
@@ -20,7 +20,7 @@ export function resolveActionRouteTopology(params: {
     return "loop";
   }
 
-  if (params.topology === "loop" || params.topology === "point_to_point") {
+  if (params.topology && ACTION_ROUTE_TOPOLOGIES.includes(params.topology)) {
     return params.topology;
   }
 
@@ -29,7 +29,7 @@ export function resolveActionRouteTopology(params: {
     : "loop";
 }
 
-export function requiresActionRouteArrival(topology: ActionRouteTopology): boolean {
+function requiresActionRouteArrival(topology: ActionRouteTopology): boolean {
   return topology === "point_to_point";
 }
 
@@ -41,7 +41,7 @@ export function clearActionRouteArrivalForLoop(
     topology: ActionRouteTopology;
   },
 ): ActionPreparationData {
-  if (params.recordType !== "action" || params.topology !== "loop") {
+  if (params.recordType !== "action" || requiresActionRouteArrival(params.topology)) {
     return preparationData;
   }
 

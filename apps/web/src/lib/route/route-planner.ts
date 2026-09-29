@@ -22,7 +22,7 @@ import type {
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export const ROUTE_PLANNER_ENGINE_VERSION = "route-planner-v2" as const;
-export const WALKING_SPEED_KM_PER_HOUR = 4.5;
+const WALKING_SPEED_KM_PER_HOUR = 4.5;
 
 export type RoutePlannerOrigin = {
   latitude: number;
@@ -71,7 +71,7 @@ export type RoutePlannerResult = {
   };
 };
 
-export type RoutePlannerCandidateEvaluation = {
+type RoutePlannerCandidateEvaluation = {
   candidateId: string;
   step: number;
   incrementalDistanceKm: number;
@@ -96,7 +96,7 @@ export type RoutePlannerCandidateEvaluation = {
   feasible: boolean;
 };
 
-export type RoutePlannerSelection = RoutePlannerCandidateEvaluation & {
+type RoutePlannerSelection = RoutePlannerCandidateEvaluation & {
   budgetBeforeMinutes: number;
   budgetAfterMinutes: number;
   selectionReason: string;

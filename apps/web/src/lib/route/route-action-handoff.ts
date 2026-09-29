@@ -1,6 +1,5 @@
 import {
   normalizeOperationalRoute,
-  type OperationalRoute,
   type PlannerActionHandoff,
 } from "./route-operational";
 import type { ActionPreparationData } from "@/lib/actions/types";
@@ -21,7 +20,6 @@ export function writePlannerActionHandoff(input: PlannerActionHandoff): void {
     // The form remains usable without the optional handoff when storage is unavailable.
   }
 }
-
 export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
   if (typeof window === "undefined") return null;
   let raw: string | null = null;
@@ -115,8 +113,4 @@ function isPlannerPreparationData(value: unknown): value is ActionPreparationDat
 
 function isIsoDateInFuture(value: unknown): value is string {
   return typeof value === "string" && !Number.isNaN(Date.parse(value)) && Date.parse(value) > Date.now();
-}
-
-export function cloneOperationalRoute(value: OperationalRoute): OperationalRoute {
-  return structuredClone(value);
 }

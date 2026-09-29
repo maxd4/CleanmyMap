@@ -27,7 +27,7 @@ import { projectAdministrativeRequirementsForRead } from "@/lib/actions/administ
 
 export type ActionEntityType = ActionRecordType;
 
-export type ActionDataLocation = {
+type ActionDataLocation = {
   label: string;
   latitude: number | null;
   longitude: number | null;
@@ -35,7 +35,7 @@ export type ActionDataLocation = {
   departmentName: string | null;
 };
 
-export type ActionDataGeometry = {
+type ActionDataGeometry = {
   kind: ActionGeometryKind;
   coordinates: [number, number][];
   geojson: string | null;
@@ -44,7 +44,7 @@ export type ActionDataGeometry = {
   origin: ActionGeometryOrigin;
 };
 
-export type ActionDataDates = {
+type ActionDataDates = {
   observedAt: string;
   createdAt: string | null;
   importedAt: string | null;
@@ -53,7 +53,7 @@ export type ActionDataDates = {
   eventEndTime?: string | null;
 };
 
-export type ActionDataMetadata = {
+type ActionDataMetadata = {
   actorName: string | null;
   associationName: string | null;
   organizerType: OrganizerType | null;

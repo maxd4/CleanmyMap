@@ -87,7 +87,7 @@ export type RouteTraceSelectedStop = {
   cleanupWorkload: CleanupWorkload;
 };
 
-export type RouteTraceSegment = {
+type RouteTraceSegment = {
   from: "origin" | string;
   to: "origin" | string;
   distanceKm: number | null;

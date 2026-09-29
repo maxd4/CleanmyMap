@@ -26,7 +26,6 @@ import type {
   RouteRiskFocus,
 } from "./route-target-contract";
 
-export { URBAN_PRESSURE_MODEL_SOURCE } from "./route-target-contract";
 export type {
   RouteObservedEvidence,
   RoutePredictedCandidate,
@@ -35,13 +34,13 @@ export type {
   RouteTargetEvidence,
 } from "./route-target-contract";
 
-export const PREDICTED_CORRIDOR_RADIUS_KM = 1.5;
-export const PREDICTED_DEDUPLICATION_RADIUS_KM = 0.35;
-export const PREDICTED_MAX_DETOUR_MINUTES = 20;
-export const PREDICTED_STRONG_RISK_THRESHOLD = 70;
-export const PREDICTED_PRIORITY_FACTOR = 0.72;
+const PREDICTED_CORRIDOR_RADIUS_KM = 1.5;
+const PREDICTED_DEDUPLICATION_RADIUS_KM = 0.35;
+const PREDICTED_MAX_DETOUR_MINUTES = 20;
+const PREDICTED_STRONG_RISK_THRESHOLD = 70;
+const PREDICTED_PRIORITY_FACTOR = 0.72;
 
-export type RoutePredictionAvailability = {
+type RoutePredictionAvailability = {
   status: "available" | "partial" | "unavailable";
   source: typeof URBAN_PRESSURE_MODEL_SOURCE;
   modelVersion: string | null;

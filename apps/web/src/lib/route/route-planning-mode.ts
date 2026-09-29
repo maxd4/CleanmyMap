@@ -2,8 +2,6 @@ export type RoutePlanningMode =
   | { type: "free" }
   | { type: "event-centered"; eventId: string };
 
-export const FREE_ROUTE_PLANNING_MODE: RoutePlanningMode = { type: "free" };
-
 export type RouteEventTemporalStatus = "past" | "today" | "future";
 
 export function routeEventTemporalStatus(

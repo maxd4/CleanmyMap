@@ -1,10 +1,7 @@
-export type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 export type {
   RouteOptions,
   RouteOriginMode,
   RouteRecommendationOrigin,
-  RouteRecommendationRequest,
-  RouteRecommendationResponse,
   RouteResponse,
   RouteResponseOrigin,
   RoutePickupPreference,
@@ -14,7 +11,7 @@ export type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 export type RouteOrganizationMode = "whole" | "split";
 export type RouteMultiRouteDisplayMode = "colors" | "patterns";
 
-export const ROUTE_GROUP_COLORS = [
+const ROUTE_GROUP_COLORS = [
   "#34d399",
   "#60a5fa",
   "#fbbf24",
@@ -29,7 +26,7 @@ export const ROUTE_GROUP_COLORS = [
   "#2dd4bf",
 ] as const;
 
-export const ROUTE_GROUP_DASH_PATTERNS = [
+const ROUTE_GROUP_DASH_PATTERNS = [
   undefined,
   "12 8",
   "3 7",
