@@ -8,7 +8,7 @@ const ACTION_DEPARTMENT_CACHE_MAX_ENTRIES = 2_000;
 
 export type Coordinate = readonly [number, number];
 
-export type ActionDepartmentGeometry = {
+type ActionDepartmentGeometry = {
   kind?: ActionGeometryKind | null;
   coordinates?: readonly Coordinate[] | null;
   geojson?: string | null;
@@ -296,7 +296,7 @@ async function resolveFromCoordinates(
   );
 }
 
-export async function resolveActionDepartmentFromCoordinates(
+async function resolveActionDepartmentFromCoordinates(
   coordinate: Coordinate,
   options: { fetchImpl?: FetchLike } = {},
 ): Promise<ResolvedDepartment | null> {

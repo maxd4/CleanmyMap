@@ -1,13 +1,13 @@
 import type { ActionDrawing } from "../actions/types.ts";
 
-export type GeoReference = {
+type GeoReference = {
   keywords: string[];
   type: "clean_place" | "action";
   drawing: ActionDrawing;
 };
 
 // Coordonnées approximatives pour les grands parcs (Polygones simplifiés)
-export const GEOMETRY_REFERENCES: GeoReference[] = [
+const GEOMETRY_REFERENCES: GeoReference[] = [
   {
     keywords: ["vincennes"],
     type: "clean_place",

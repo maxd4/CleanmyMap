@@ -6,12 +6,12 @@ import type {
   RouteGeometryProfile,
 } from "@/lib/route/route-contract";
 
-export const OSRM_PROVIDER = "osrm" as const;
-export const OSRM_PROFILE = "foot" as const;
-export const OSRM_BASE_URL = "https://router.project-osrm.org";
-export const OSRM_MAX_COORDINATES = 100;
+const OSRM_PROVIDER = "osrm" as const;
+const OSRM_PROFILE = "foot" as const;
+const OSRM_BASE_URL = "https://router.project-osrm.org";
+const OSRM_MAX_COORDINATES = 100;
 
-export type RoutingTransport = (
+type RoutingTransport = (
   input: RequestInfo | URL,
   init?: RequestInit,
 ) => Promise<Response>;

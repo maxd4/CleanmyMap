@@ -24,7 +24,7 @@ export const PARIS_ARRONDISSEMENTS = [
 export type ParisArrondissement = (typeof PARIS_ARRONDISSEMENTS)[number]["value"];
 export type TerritoryArrondissement = ParisArrondissement;
 export type ArrondissementCity = "Paris" | "Lyon" | "Marseille";
-export type MarseilleSector = "1/7" | "2/3" | "4/5" | "6/8" | "9/10" | "11/12" | "13/14" | "15/16";
+type MarseilleSector = "1/7" | "2/3" | "4/5" | "6/8" | "9/10" | "11/12" | "13/14" | "15/16";
 
 export type ArrondissementCityOption = {
   value: ArrondissementCity;
@@ -33,7 +33,7 @@ export type ArrondissementCityOption = {
   description: string;
 };
 
-export const ARRONDISSEMENT_CITY_OPTIONS: ArrondissementCityOption[] = [
+const ARRONDISSEMENT_CITY_OPTIONS: ArrondissementCityOption[] = [
   {
     value: "Paris",
     label: "Paris",
@@ -158,12 +158,6 @@ export function getArrondissementHelpLabel(
   return null;
 }
 
-export function normalizeArrondissementCityLabel(
-  city: ArrondissementCity,
-): string {
-  return city;
-}
-
 export function getArrondissementCityCount(city: ArrondissementCity): number {
   return ARRONDISSEMENT_CITY_OPTIONS.find((option) => option.value === city)?.arrondissementCount ?? 0;
 }
@@ -180,22 +174,10 @@ export function isParisArrondissement(
   return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 20;
 }
 
-export function isTerritoryArrondissement(
-  value: number | null | undefined,
-): value is TerritoryArrondissement {
-  return isParisArrondissement(value);
-}
-
 export function getParisArrondissementLabel(
   arrondissement: ParisArrondissement,
 ): string {
   return ARRONDISSEMENT_LOOKUP.get(arrondissement)?.label ?? `Paris ${arrondissement}e`;
-}
-
-export function getTerritoryArrondissementLabel(
-  arrondissement: TerritoryArrondissement,
-): string {
-  return getParisArrondissementLabel(arrondissement);
 }
 
 export function getParisArrondissementCenter(
@@ -246,14 +228,6 @@ export function distanceToParisArrondissementKm(
     return Number.POSITIVE_INFINITY;
   }
   return haversineDistanceKm(lat, lng, center.lat, center.lng);
-}
-
-export function distanceToTerritoryArrondissementKm(
-  lat: number,
-  lng: number,
-  arrondissement: TerritoryArrondissement,
-): number {
-  return distanceToParisArrondissementKm(lat, lng, arrondissement);
 }
 
 /**
