@@ -146,7 +146,7 @@ export type ActionPhotoAsset = {
   dataUrl: string;
 };
 
-export type ActionVisionConfidence<T> = {
+type ActionVisionConfidence<T> = {
   value: T;
   confidence: number;
   interval?: [number, number] | null;

@@ -23,18 +23,18 @@ type CleanupWorkloadExclusionReason =
   | "unsafe_predicted_candidate"
   | "unknown_predicted_safety";
 
-export type CleanupWorkloadAxis = {
+type CleanupWorkloadAxis = {
   relativePressure: number | null;
   observedPresence: boolean | null;
   confidence: number | null;
 };
 
-export type CleanupWorkloadConfidence = {
+type CleanupWorkloadConfidence = {
   ordinaryWaste: number | null;
   cigaretteButts: number | null;
 };
 
-export type CleanupWorkloadProvenance = {
+type CleanupWorkloadProvenance = {
   source: "trash_spotter_spots" | "urban-pressure-model" | null;
   evidenceFamily: "observed" | "predicted" | null;
   observedAt: string | null;

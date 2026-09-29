@@ -22,7 +22,7 @@ const EMPTY_EVENT_PRESSURE_CONTEXT = {
   eventSignals: [],
 };
 
-export const EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
+const EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
   candidatePressureById: new Map(),
   completedEventsConsidered: 0,
   geolocatedCompletedEvents: 0,

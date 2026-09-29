@@ -8,7 +8,7 @@ import {
 import type { PollutionScoreReferences } from "./pollution-score";
 
 export const INITIAL_MAP_SEARCH_RADII_KM = [5, 20, 75, 150] as const;
-export const DISTANCE_TIE_EPSILON_KM = 0.001;
+const DISTANCE_TIE_EPSILON_KM = 0.001;
 
 export type MapReferencePoint = {
   latitude: number;
