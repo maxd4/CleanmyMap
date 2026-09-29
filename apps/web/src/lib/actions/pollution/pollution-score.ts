@@ -104,13 +104,6 @@ export function computePollutionScoresRelativeToReferences(
   };
 }
 
-export function computePollutionSeverityScoreRelativeToReferences(
-  inputs: PollutionScoreInputs,
-  references?: PollutionScoreReference | null,
-): number | null {
-  return computePollutionScoresRelativeToReferences(inputs, references).severityScore;
-}
-
 /** Compatibility helper: without a versioned reference it deliberately stays unavailable. */
 export function computePollutionScores(
   inputs: PollutionScoreInputs,
@@ -119,23 +112,11 @@ export function computePollutionScores(
   return computePollutionScoresRelativeToReferences(inputs, references);
 }
 
-export function computePollutionSeverityScore(
+function computePollutionSeverityScore(
   inputs: PollutionScoreInputs,
   references?: PollutionScoreReference | null,
 ): number | null {
   return computePollutionScores(inputs, references).severityScore;
-}
-
-export function computeWasteContributionScore(
-  wasteKg: number | null | undefined,
-): number | null {
-  return isValidMetric(wasteKg) ? wasteKg : null;
-}
-
-export function computeButtsContributionScore(
-  cigaretteButts: number | null | undefined,
-): number | null {
-  return isValidMetric(cigaretteButts) ? cigaretteButts : null;
 }
 
 export function computePollutionScore(

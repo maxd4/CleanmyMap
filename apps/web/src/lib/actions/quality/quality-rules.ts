@@ -10,7 +10,7 @@ export const ACTION_QUALITY_WEIGHTS = {
   freshness: 0.15,
 } as const;
 
-export const ACTION_QUALITY_THRESHOLDS = {
+const ACTION_QUALITY_THRESHOLDS = {
   gradeA: 80,
   gradeB: 60,
 } as const;

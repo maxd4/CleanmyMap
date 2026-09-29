@@ -103,7 +103,7 @@ function toTimestamp(value: string | Date | number): number | null {
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
-export function resolveElapsedActionDays(
+function resolveElapsedActionDays(
   actionAt: string | Date | number,
   now: string | Date | number = new Date(),
 ): number {

@@ -8,13 +8,13 @@ export const PROJECTION_CONFIDENCE_CONSTANTS = {
 
 export type ProjectionConfidenceLevel = "low" | "medium" | "high";
 
-export type ProjectionConfidenceGeometryFactor =
+type ProjectionConfidenceGeometryFactor =
   | "reliable"
   | "documented"
   | "approximate"
   | "unknown";
 
-export type ProjectionConfidenceReason =
+type ProjectionConfidenceReason =
   | "reliable_geometry"
   | "documented_geometry"
   | "approximate_or_unknown_geometry"
@@ -38,7 +38,7 @@ export type ProjectionConfidenceInput = {
   sourceCompleteness: "complete" | "partial";
 };
 
-export type ProjectionConfidenceFactors = {
+type ProjectionConfidenceFactors = {
   geometry: ProjectionConfidenceGeometryFactor;
   postActionScore: "measured" | "model_baseline";
   localHistory: "sufficient" | "insufficient";

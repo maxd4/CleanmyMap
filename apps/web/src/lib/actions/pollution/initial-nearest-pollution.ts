@@ -15,10 +15,6 @@ export type MapReferencePoint = {
   longitude: number;
 };
 
-export type InitialPollutionSearchBounds = ActionMapViewportQuery & {
-  radiusKm: number;
-};
-
 export function deriveReferenceFromBounds(
   bounds: ActionMapViewportQuery,
 ): MapReferencePoint {

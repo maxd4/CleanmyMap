@@ -34,7 +34,7 @@ export type CorridorMatch = {
   matchedLengthMeters: number;
 };
 
-export type CorridorCalibrationInput = {
+type CorridorCalibrationInput = {
   derivedCorridorKey: string;
   observations: readonly ActionDataContract[];
 };
@@ -50,7 +50,7 @@ export type CorridorHistory = {
   calibrationInput: CorridorCalibrationInput;
 };
 
-export type CorridorObservedScore = {
+type CorridorObservedScore = {
   actionId: string;
   observedAt: string;
   score: number | null;
@@ -554,5 +554,3 @@ export function summarizeCorridorHistory(
     calibrationInput: history.calibrationInput,
   };
 }
-
-export { distanceBetweenPoints };
