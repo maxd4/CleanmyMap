@@ -310,6 +310,19 @@ KEEP_JUSTIFIED
 - `KEEP_JUSTIFIED` : conservation nécessaire avec une justification
   vérifiable.
 
+Seul `KEEP_JUSTIFIED` peut être protégé durablement. Les protections sont
+enregistrées dans `scripts/checks/dead-code-justifications.json` par l'ID stable
+d'un finding déjà présent dans `scripts/checks/dead-code-baseline.json`, avec
+une raison, une preuve vérifiable et un SHA complet de revue. Le finding doit
+rester exactement présent dans le rapport Knip courant ; toute disparition ou
+modification d'identité produit `STALE_KEEP_JUSTIFIED` et bloque jusqu'à une
+requalification explicite. Une entrée du registre ne peut jamais couvrir un
+finding absent de la baseline ni un finding nouveau. `DELETE_PROVEN`,
+`INTERNALIZE`, `MIGRATE` et `RESTORE_FUNCTIONALITY` restent actionnables et ne
+peuvent pas être transformés en protection durable. Les futurs lots dead-code
+visent 60 à 100 findings actionnables corrigés ; les `KEEP_JUSTIFIED` n'entrent
+pas dans cette cible.
+
 Interdictions :
 
 - transformer un finding Knip directement en suppression sans qualification ;
