@@ -26,4 +26,5 @@ export {
   buildPostActionRetentionLoop,
   getUserProgression,
   getGamificationLeaderboard,
+  projectGamificationLeaderboardResponse,
 } from "./progression-leaderboard";
