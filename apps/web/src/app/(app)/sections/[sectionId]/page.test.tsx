@@ -49,6 +49,22 @@ vi.mock("@/components/ui/clerk-required-gate", () => ({
 
 import SectionPage, { generateMetadata } from "./page";
 
+async function expectPublicNoindexMetadata(sectionId: string) {
+  mocks.getSectionRubriqueById.mockReturnValue({
+    id: sectionId,
+    label: { fr: "Page publique", en: "Public page" },
+    description: { fr: "Page", en: "Page" },
+  });
+
+  const metadata = await generateMetadata({
+    params: Promise.resolve({ sectionId }),
+    searchParams: Promise.resolve({}),
+  });
+
+  expect(metadata.robots).toEqual({ index: false, follow: true, nocache: true });
+  expect(metadata).not.toHaveProperty("alternates");
+}
+
 describe("section authentication gate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -106,20 +122,31 @@ describe("section authentication gate", () => {
     expect(searchParams.then).not.toHaveBeenCalled();
   });
 
-  it("keeps Feedback public and noindex without a canonical URL", async () => {
+  it("renders the public leaderboard without Clerk or the private gamification gate", async () => {
     mocks.getSectionRubriqueById.mockReturnValue({
-      id: "feedback",
-      label: { fr: "Retour", en: "Feedback" },
-      description: { fr: "Retour", en: "Feedback" },
+      id: "leaderboard",
+      anonymousPresentation: "visible",
+      label: { fr: "Classement public", en: "Public leaderboard" },
+      description: { fr: "Classement", en: "Leaderboard" },
     });
+    const markup = renderToStaticMarkup(
+      await SectionPage({
+        params: Promise.resolve({ sectionId: "leaderboard" }),
+        searchParams: Promise.resolve({}),
+      }),
+    );
 
-    const metadata = await generateMetadata({
-      params: Promise.resolve({ sectionId: "feedback" }),
-      searchParams: Promise.resolve({}),
-    });
+    expect(markup).toContain('data-section-id="leaderboard"');
+    expect(markup).not.toContain("gamification-me");
+    expect(mocks.getSafeAuthSession).not.toHaveBeenCalled();
+  });
 
-    expect(metadata.robots).toEqual({ index: false, follow: true, nocache: true });
-    expect(metadata).not.toHaveProperty("alternates");
+  it("keeps Feedback public and noindex without a canonical URL", async () => {
+    await expectPublicNoindexMetadata("feedback");
+  });
+
+  it("keeps the public leaderboard noindex without a canonical URL", async () => {
+    await expectPublicNoindexMetadata("leaderboard");
   });
 
   it("keeps public section metadata deterministic and French", async () => {

@@ -327,6 +327,22 @@ export const RUBRIQUE_REGISTRY = [
     implementation: "finalized",
   },
   {
+    id: "leaderboard",
+    categoryId: "community",
+    spaceId: "decide",
+    priority: 61,
+    kind: "section",
+    anonymousPresentation: "visible",
+    route: "/sections/leaderboard",
+    label: { fr: "Classement public", en: "Public leaderboard" },
+    description: {
+      fr: "Consulter les niveaux, XP et badges rendus publics",
+      en: "Browse publicly shared levels, XP, and badges",
+    },
+    availability: "available",
+    implementation: "finalized",
+  },
+  {
     id: "actors",
     categoryId: "community",
     spaceId: "prepare",

@@ -30,6 +30,9 @@ const ActorsSection = dynamic(() =>
 const GamificationSection = dynamic(() =>
   import("./gamification").then((module) => module.GamificationSection),
 );
+const LeaderboardSection = dynamic(() =>
+  import("./leaderboard").then((module) => module.LeaderboardSection),
+);
 const AnnuaireSection = dynamic(() =>
   import("./annuaire").then((module) => module.AnnuaireSection),
 );
@@ -102,6 +105,7 @@ export const FINALIZED_SECTION_RENDERERS = {
   community: () => <CommunitySection />,
   feedback: () => <FeedbackSection />,
   gamification: () => <GamificationSection />,
+  leaderboard: () => <LeaderboardSection />,
   actors: (_fundingOnParticipeUrl, initialData) => (
     <ActorsSection initialData={initialData?.actors} />
   ),

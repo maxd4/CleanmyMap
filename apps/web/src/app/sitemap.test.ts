@@ -40,6 +40,7 @@ describe("public sitemap metadata", () => {
       "/partners/network",
       "/partners/network/pepite",
       "/sections/feedback",
+      "/sections/leaderboard",
       "/sections/route",
       "/sections/weather",
       "/sign-in",

@@ -452,6 +452,17 @@ export type IndividualLeaderboardItem = {
   oneShotCount: number;
 };
 
+export type PublicStructureLeaderboardItem = {
+  rank: number;
+  publicLabel: string;
+  structureType: OrganizerType;
+  level: number;
+  xpValidated: number;
+  badgeTotal: number;
+  gradeCount: number;
+  oneShotCount: number;
+};
+
 type MonthlyMilestone = {
   id: string;
   month: number;
@@ -494,7 +505,9 @@ export type LeaderboardResponseDto = {
   };
 };
 
-export type PublicLeaderboardItem = IndividualLeaderboardItem;
+export type PublicLeaderboardItem =
+  | IndividualLeaderboardItem
+  | PublicStructureLeaderboardItem;
 
 export type PublicLeaderboardResponseDto = {
   scope: "user" | "structure";

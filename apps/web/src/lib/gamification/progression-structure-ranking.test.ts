@@ -59,6 +59,7 @@ describe("CURRENT structure leaderboard", () => {
 
     expect(items).toHaveLength(2);
     expect(items.map((item) => item.publicLabel)).toEqual(["Les Rives", "Les Rives"]);
+    expect(items[0]).toMatchObject({ structureType: "association" });
   });
 
   it("excludes spontaneous actions and legacy rows without organizerId", () => {
