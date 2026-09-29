@@ -4,7 +4,7 @@ export type QuizSchoolLevel = "6e" | "5e" | "4e" | "3e";
 
 export const QUIZ_SCHOOL_LEVEL_ORDER: readonly QuizSchoolLevel[] = ["6e", "5e", "4e", "3e"];
 
-export const DEFAULT_QUIZ_SCHOOL_LEVEL: QuizSchoolLevel = "4e";
+const DEFAULT_QUIZ_SCHOOL_LEVEL: QuizSchoolLevel = "4e";
 
 export const QUIZ_SCHOOL_SESSION_DURATION_MINUTES = 30;
 export const QUIZ_SCHOOL_SESSION_SIZE = 15;
@@ -19,10 +19,7 @@ export const QUIZ_SCHOOL_WORKSHOP_ACTIVITY_DURATION_MINUTES = 30;
 /** The pre-quiz keeps eight shared concepts; the post-quiz adds two transfers. */
 export const QUIZ_SCHOOL_WORKSHOP_PRE_QUIZ_SIZE = 8;
 export const QUIZ_SCHOOL_WORKSHOP_POST_QUIZ_SIZE = 10;
-/** @deprecated Use the explicit pre/post sizes for new code. */
-export const QUIZ_SCHOOL_WORKSHOP_QUIZ_SIZE = QUIZ_SCHOOL_WORKSHOP_PRE_QUIZ_SIZE;
-
-export function isQuizSchoolFormat(value: string | null | undefined): value is QuizSchoolFormat {
+function isQuizSchoolFormat(value: string | null | undefined): value is QuizSchoolFormat {
   return Boolean(value) && QUIZ_SCHOOL_FORMAT_ORDER.includes(value as QuizSchoolFormat);
 }
 
@@ -39,7 +36,7 @@ export type QuizSchoolQuestionEligibility = Partial<
   Record<QuizSchoolLevel, QuizSchoolQuestionLevelProfile>
 >;
 
-export function isQuizSchoolLevel(value: string | null | undefined): value is QuizSchoolLevel {
+function isQuizSchoolLevel(value: string | null | undefined): value is QuizSchoolLevel {
   return Boolean(value) && QUIZ_SCHOOL_LEVEL_ORDER.includes(value as QuizSchoolLevel);
 }
 

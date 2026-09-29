@@ -42,14 +42,14 @@ export function getQuestionFormatLabel(type: QuizQuestion["type"]) {
   return "Choix Multiple";
 }
 
-export function getResolvedReviewTarget(question: QuizQuestion): QuizReviewTarget {
+function getResolvedReviewTarget(question: QuizQuestion): QuizReviewTarget {
   return (
     question.reviewTarget ??
     getQuizReviewTarget(question.category, question.review, question.reasoningType)
   );
 }
 
-export function getResolvedErrorType(question: QuizQuestion): QuizErrorTypeId {
+function getResolvedErrorType(question: QuizQuestion): QuizErrorTypeId {
   return question.errorType ?? buildQuizErrorGrid(question).errorType;
 }
 
@@ -83,11 +83,11 @@ export function getAnswerFeedbackBody(
         : question.feedbackWrong ?? "Erreur pédagogique : le corrigé explique pourquoi la réponse attendue est la bonne.";
 }
 
-export function getAnswerLabel(options: readonly string[]): string {
+function getAnswerLabel(options: readonly string[]): string {
   return options.join(", ");
 }
 
-export function getCorrectAnswerLabel(answer: QuizQuestion["answer"]): string {
+function getCorrectAnswerLabel(answer: QuizQuestion["answer"]): string {
   return Array.isArray(answer) ? answer.join(", ") : answer;
 }
 

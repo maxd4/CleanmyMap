@@ -138,18 +138,6 @@ export function getQuizSchoolTrack(trackId: QuizSchoolTrackId): QuizSchoolTrackD
   return QUIZ_SCHOOL_TRACK_BY_ID[trackId];
 }
 
-export function listQuizSchoolTrackIds(): QuizSchoolTrackId[] {
-  return QUIZ_SCHOOL_TRACKS.map((track) => track.id);
-}
-
-export function getQuizSchoolKeyMessages(trackId: QuizSchoolTrackId, locale: SupportedLocale): string[] {
-  return QUIZ_SCHOOL_TRACK_BY_ID[trackId].keyMessages[locale];
-}
-
 export function getQuizSchoolTrackLabel(trackId: QuizSchoolTrackId, locale: SupportedLocale): string {
   return getQuizUiCopy(locale, QUIZ_SCHOOL_TRACK_BY_ID[trackId].labelKey);
-}
-
-export function getQuizSchoolTrackDescription(trackId: QuizSchoolTrackId, locale: SupportedLocale): string {
-  return QUIZ_SCHOOL_TRACK_BY_ID[trackId].description[locale];
 }

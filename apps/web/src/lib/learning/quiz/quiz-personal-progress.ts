@@ -57,7 +57,7 @@ export type QuizPersonalProgressSession = {
   playedAt?: string;
 };
 
-export type QuizPersonalProgressModeStat = {
+type QuizPersonalProgressModeStat = {
   id: QuizAccessTypeId;
   label: string;
   sessions: number;
@@ -67,7 +67,7 @@ export type QuizPersonalProgressModeStat = {
   lastPlayedAt: string | null;
 };
 
-export type QuizPersonalProgressSkillStat = {
+type QuizPersonalProgressSkillStat = {
   label: QuizReasoningType;
   attempts: number;
   correctAnswers: number;
@@ -75,13 +75,13 @@ export type QuizPersonalProgressSkillStat = {
   lastPlayedAt: string | null;
 };
 
-export type QuizPersonalProgressErrorStat = {
+type QuizPersonalProgressErrorStat = {
   label: string;
   count: number;
   lastSeenAt: string | null;
 };
 
-export type QuizPersonalProgressTargetStat = {
+type QuizPersonalProgressTargetStat = {
   label: string;
   href: string;
   attempts: number;
@@ -90,15 +90,15 @@ export type QuizPersonalProgressTargetStat = {
   lastSeenAt: string | null;
 };
 
-export type QuizPersonalProgressRecommendation = {
+type QuizPersonalProgressRecommendation = {
   id: QuizAccessTypeId;
   label: string;
   reason: string;
 };
 
-export type QuizProgressTone = "emerald" | "sky" | "amber" | "violet";
+type QuizProgressTone = "emerald" | "sky" | "amber" | "violet";
 
-export type QuizPersonalProgressSignal = {
+type QuizPersonalProgressSignal = {
   id: "score" | "regularity" | "improvement";
   label: string;
   value: string;
@@ -106,7 +106,7 @@ export type QuizPersonalProgressSignal = {
   tone: QuizProgressTone;
 };
 
-export type QuizPersonalModeLevelStat = QuizPersonalProgressModeStat & {
+type QuizPersonalModeLevelStat = QuizPersonalProgressModeStat & {
   level: number;
   levelLabel: string;
   detail: string;
@@ -114,7 +114,7 @@ export type QuizPersonalModeLevelStat = QuizPersonalProgressModeStat & {
   nextSessions: number | null;
 };
 
-export type QuizPersonalBadgeStat = {
+type QuizPersonalBadgeStat = {
   id: string;
   label: string;
   description: string;

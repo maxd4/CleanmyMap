@@ -50,7 +50,7 @@ export type QuizQuestion = {
   localized?: QuizQuestionLocalizedFields;
 };
 
-export type QuizQuestionFollowUp = {
+type QuizQuestionFollowUp = {
   label: string;
   href: string;
   modeId: QuizAccessTypeId;
@@ -58,7 +58,7 @@ export type QuizQuestionFollowUp = {
   reason: string;
 };
 
-export type QuizQuestionContentBlock = {
+type QuizQuestionContentBlock = {
   prompt: string;
   answer: string | string[];
   options?: string[];
@@ -67,7 +67,7 @@ export type QuizQuestionContentBlock = {
   localized?: QuizQuestionLocalizedFields;
 };
 
-export type QuizQuestionTaxonomyBlock = {
+type QuizQuestionTaxonomyBlock = {
   category: QuizQuestionCategory;
   type: QuizQuestion["type"];
   reasoningType: QuizReasoningType;
@@ -78,7 +78,7 @@ export type QuizQuestionTaxonomyBlock = {
   trapLevel: QuizTrapLevelId;
 };
 
-export type QuizQuestionSourceBlock = {
+type QuizQuestionSourceBlock = {
   sourceUrl: string;
   sourceLabel: string;
   sourceType: QuizSourceType;
@@ -89,7 +89,7 @@ export type QuizQuestionSourceBlock = {
   needsReview: boolean;
 };
 
-export type QuizQuestionReviewBlock = {
+type QuizQuestionReviewBlock = {
   target: QuizReviewTarget;
   errorType: QuizErrorTypeId;
   misconception: string;
