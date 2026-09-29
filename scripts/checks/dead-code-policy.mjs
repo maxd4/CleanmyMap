@@ -7,6 +7,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 export const DEAD_CODE_BASELINE_SCHEMA_VERSION = 1;
+export const DEAD_CODE_JUSTIFICATION_SCHEMA_VERSION = 1;
 export const DEAD_CODE_TOOL = "knip";
 export const DEAD_CODE_TOOL_VERSION = "6.37.0";
 export const DEAD_CODE_CONFIG = "scripts/knip.json";
@@ -29,6 +30,7 @@ const ISSUE_TYPES = Object.freeze([
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const baselinePath = path.join(repositoryRoot, "scripts", "checks", "dead-code-baseline.json");
+const justificationsPath = path.join(repositoryRoot, "scripts", "checks", "dead-code-justifications.json");
 const knipPath = path.join(repositoryRoot, "node_modules", "knip", "bin", "knip.js");
 
 function normalizePath(value) {
@@ -136,15 +138,61 @@ export function validateDeadCodeBaseline(baseline) {
   }
 
   const keys = new Set();
+  const ids = new Set();
   for (const finding of baseline.findings) {
     const key = findingKey(finding);
     if (keys.has(key)) throw new Error(`Duplicate dead-code baseline finding: ${key}`);
     keys.add(key);
+    if (!/^[0-9a-f]{24}$/i.test(finding.id ?? "")) {
+      throw new Error(`Dead-code baseline finding has an invalid stable id: ${key}`);
+    }
+    if (ids.has(finding.id)) throw new Error(`Duplicate dead-code baseline finding id: ${finding.id}`);
+    ids.add(finding.id);
     if (finding.classification !== "historical-debt") {
       throw new Error(`Dead-code baseline finding is not classified as historical debt: ${key}`);
     }
   }
   return baseline;
+}
+
+export function validateDeadCodeJustifications(registry) {
+  if (!registry || registry.schemaVersion !== DEAD_CODE_JUSTIFICATION_SCHEMA_VERSION) {
+    throw new Error("Dead-code justification registry schema mismatch.");
+  }
+  if (!Array.isArray(registry.justifications)) {
+    throw new Error("Dead-code justification registry is malformed: expected a justifications array.");
+  }
+
+  const ids = new Set();
+  for (const justification of registry.justifications) {
+    if (!justification || typeof justification !== "object" || Array.isArray(justification)) {
+      throw new Error("Dead-code justification registry entry is malformed.");
+    }
+    if (!/^[0-9a-f]{24}$/i.test(justification.id ?? "")) {
+      throw new Error("Dead-code justification id must be a 24-character hexadecimal stable finding id.");
+    }
+    if (ids.has(justification.id)) {
+      throw new Error(`Duplicate dead-code justification id: ${justification.id}`);
+    }
+    ids.add(justification.id);
+    if (justification.classification !== "KEEP_JUSTIFIED") {
+      throw new Error(`Dead-code justification ${justification.id} must use KEEP_JUSTIFIED classification.`);
+    }
+    if (typeof justification.reason !== "string" || justification.reason.trim().length === 0) {
+      throw new Error(`Dead-code justification ${justification.id} requires a non-empty reason.`);
+    }
+    if (typeof justification.evidence !== "string" || justification.evidence.trim().length === 0) {
+      throw new Error(`Dead-code justification ${justification.id} requires non-empty evidence.`);
+    }
+    if (!/^[0-9a-f]{40}$/i.test(justification.reviewedRef ?? "")) {
+      throw new Error(`Dead-code justification ${justification.id} requires a complete reviewedRef SHA.`);
+    }
+  }
+  return registry;
+}
+
+export function loadDeadCodeJustifications(filePath = justificationsPath) {
+  return validateDeadCodeJustifications(JSON.parse(fs.readFileSync(filePath, "utf8")));
 }
 
 function isAncestor(sourceCommit) {
@@ -157,16 +205,48 @@ function isAncestor(sourceCommit) {
   }
 }
 
-export function compareDeadCodeFindings(currentFindings, baseline) {
+export function compareDeadCodeFindings(
+  currentFindings,
+  baseline,
+  justifications = { schemaVersion: DEAD_CODE_JUSTIFICATION_SCHEMA_VERSION, justifications: [] },
+) {
   validateDeadCodeBaseline(baseline);
+  validateDeadCodeJustifications(justifications);
   const baselineByKey = new Map(baseline.findings.map((finding) => [findingKey(finding), finding]));
+  const baselineById = new Map(baseline.findings.map((finding) => [finding.id, finding]));
   const currentByKey = new Map(currentFindings.map((finding) => [findingKey(finding), finding]));
   const newFindings = currentFindings.filter((finding) => !baselineByKey.has(findingKey(finding)));
   const resolvedFindings = baseline.findings.filter((finding) => !currentByKey.has(findingKey(finding)));
+  for (const justification of justifications.justifications) {
+    if (!baselineById.has(justification.id)) {
+      throw new Error(`Dead-code justification targets a finding absent from the historical baseline: ${justification.id}`);
+    }
+  }
+
+  const currentByBaselineId = new Map();
+  for (const finding of currentFindings) {
+    const historicalFinding = baselineByKey.get(findingKey(finding));
+    if (historicalFinding) currentByBaselineId.set(historicalFinding.id, finding);
+  }
+  const justifiedIds = new Set(justifications.justifications.map((justification) => justification.id));
+  const keepJustifiedFindings = currentFindings.filter((finding) => {
+    const historicalFinding = baselineByKey.get(findingKey(finding));
+    return historicalFinding && justifiedIds.has(historicalFinding.id);
+  });
+  const historicalActionableFindings = currentFindings.filter((finding) => {
+    const historicalFinding = baselineByKey.get(findingKey(finding));
+    return historicalFinding && !justifiedIds.has(historicalFinding.id);
+  });
+  const staleKeepJustifications = justifications.justifications
+    .filter((justification) => !currentByBaselineId.has(justification.id))
+    .map((justification) => ({ ...justification, status: "STALE_KEEP_JUSTIFIED" }));
 
   return {
     newFindings,
     resolvedFindings,
+    historicalActionableFindings,
+    keepJustifiedFindings,
+    staleKeepJustifications,
     currentCount: currentFindings.length,
     baselineCount: baseline.findings.length,
     baselineFresh: isAncestor(baseline.sourceCommit),
@@ -212,18 +292,33 @@ function formatFinding(finding) {
 export function formatDeadCodeReport({ comparison }) {
   const lines = [
     `Knip dead-code: ${comparison.currentCount} current finding(s), ${comparison.baselineCount} historical baseline finding(s).`,
+    `Historical actionable findings: ${comparison.historicalActionableFindings.length}.`,
+    `KEEP_JUSTIFIED findings: ${comparison.keepJustifiedFindings.length}.`,
     `Resolved historical findings: ${comparison.resolvedFindings.length}.`,
+    `New findings: ${comparison.newFindings.length}.`,
+    `STALE_KEEP_JUSTIFIED: ${comparison.staleKeepJustifications.length}.`,
   ];
   for (const finding of comparison.newFindings.slice(0, 50)) lines.push(`NEW_DEAD_CODE: ${formatFinding(finding)}`);
   if (comparison.newFindings.length > 50) lines.push(`NEW_DEAD_CODE: ... ${comparison.newFindings.length - 50} more`);
+  for (const finding of comparison.staleKeepJustifications) {
+    lines.push(`STALE_KEEP_JUSTIFIED: ${finding.id}`);
+  }
   return lines.join("\n");
 }
 
-export function runDeadCodePolicy({ report, baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8")) } = {}) {
+export function hasBlockingDeadCodeFindings(comparison) {
+  return comparison.newFindings.length > 0 || comparison.staleKeepJustifications.length > 0;
+}
+
+export function runDeadCodePolicy({
+  report,
+  baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8")),
+  justifications = loadDeadCodeJustifications(),
+} = {}) {
   const currentFindings = normalizeKnipReport(report);
-  const comparison = compareDeadCodeFindings(currentFindings, baseline);
+  const comparison = compareDeadCodeFindings(currentFindings, baseline, justifications);
   if (!comparison.baselineFresh) throw new Error(`Dead-code baseline stale: ${baseline.sourceCommit} is not an ancestor of HEAD.`);
-  return { baseline, currentFindings, comparison };
+  return { baseline, currentFindings, justifications, comparison };
 }
 
 async function main() {
@@ -231,8 +326,11 @@ async function main() {
     const report = runKnipReport();
     const result = runDeadCodePolicy({ report });
     console.log(formatDeadCodeReport(result));
-    if (result.comparison.newFindings.length > 0) {
-      console.error(`FAIL: ${result.comparison.newFindings.length} new dead-code finding(s).`);
+    if (hasBlockingDeadCodeFindings(result.comparison)) {
+      console.error(
+        `FAIL: ${result.comparison.newFindings.length} new dead-code finding(s); ` +
+        `${result.comparison.staleKeepJustifications.length} stale KEEP_JUSTIFIED finding(s).`,
+      );
       process.exitCode = 1;
       return;
     }

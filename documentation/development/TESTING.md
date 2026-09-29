@@ -385,6 +385,18 @@ finding historique résolu est rapporté comme amélioration et devient un
 nouveau plafond uniquement après ratification explicite de la baseline. La
 commande est intégrée au FULL et à la CI Web, sans dupliquer la logique Knip.
 
+Les findings historiques conservés par décision explicite sont recensés dans
+`scripts/checks/dead-code-justifications.json`. Une entrée
+`KEEP_JUSTIFIED` doit référencer exactement un ID de la baseline et fournir une
+raison, une preuve vérifiable et un SHA complet de revue. Le rapport distingue
+les findings historiques actionnables, les `KEEP_JUSTIFIED`, les historiques
+résolus, les nouveaux findings et les `STALE_KEEP_JUSTIFIED`. Un KEEP disparu
+ou dont l'identité change bloque jusqu'à revue ; un finding nouveau reste
+`NEW_DEAD_CODE` bloquant même si une tentative d'entrée au registre existe.
+Le registre ne modifie ni Knip ni `dead-code-baseline.json` et ne remplace
+jamais une correction de configuration ou d'entrypoint Knip lorsqu'un finding
+est un faux positif technique.
+
 ## Mutation ciblée des tests
 
 La qualité des tests de quelques fonctions pures critiques est mesurée avec
@@ -442,6 +454,11 @@ les fixtures/data restent strictes. Les clones déjà présents dans les
 baselines natives restent historiques et peuvent être réduits progressivement
 sans renouveler la baseline. Le fingerprint de politique
 (`DUPLICATION_POLICY_FINGERPRINT`) reste un invariant distinct et strict.
+Un clone historique reste donc une dette et ne constitue pas une justification
+implicite. Une duplication volontaire nécessitant une protection doit faire
+l'objet d'une décision explicite et d'un garde-fou dédié, sans exclusion,
+relèvement de seuil ou abstraction artificielle ajoutée uniquement pour
+satisfaire jscpd.
 
 La stabilisation court terme de la CI quotidienne distingue trois résultats :
 `PASS`, `PASS_WITH_GRACE` et `FAIL`. `PASS_WITH_GRACE` accepte uniquement une

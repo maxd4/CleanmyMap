@@ -669,6 +669,15 @@ KEEP_JUSTIFIED
 6. décider si la capacité doit être supprimée, internalisée, migrée,
    restaurée ou conservée.
 
+Le statut `KEEP_JUSTIFIED` n'est durable que s'il est inscrit dans le registre
+canonique `scripts/checks/dead-code-justifications.json`, avec l'ID stable du
+finding historique, une raison, une preuve vérifiable et un SHA complet de
+revue. Il ne peut viser ni un finding absent de la baseline ni un finding
+nouveau, et devient stale si le finding disparaît ou change d'identité. Les
+autres statuts restent des findings actionnables. Les lots futurs doivent
+prioriser 60 à 100 findings actionnables ; les KEEP justifiés ne sont pas
+comptés dans cette cible.
+
 ChatGPT ne doit pas déléguer cet arbitrage à Codex via un prompt vague. Si le
 nombre de findings empêche un audit sérieux, réduire le périmètre avant de
 produire le prompt Codex.
