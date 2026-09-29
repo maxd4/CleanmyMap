@@ -10,11 +10,6 @@ import {
   type ActionCancellationResult,
 } from "./cancellation-contract";
 
-export {
-  ACTION_CANCELLATION_CONFIRMATION,
-  ACTION_CANCELLATION_REASONS,
-  ActionCancellationError,
-} from "./cancellation-contract";
 export type {
   ActionCancellationReason,
   ActionCancellationResult,

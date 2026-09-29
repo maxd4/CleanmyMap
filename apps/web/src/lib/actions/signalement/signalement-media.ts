@@ -12,17 +12,8 @@ import {
   type SignalementMediaUploadState,
 } from "./signalement-media-contract";
 
-export {
-  SIGNALEMENT_EVIDENCE_ALLOWED_MIME_TYPES,
-  SIGNALEMENT_EVIDENCE_BUCKET,
-  SIGNALEMENT_EVIDENCE_MAX_MEDIA,
-  SIGNALEMENT_EVIDENCE_MAX_SIZE_BYTES,
-  SIGNALEMENT_EVIDENCE_SIGNED_URL_TTL_SECONDS,
-} from "./signalement-media-contract";
-export type {
-  SignalementEvidenceMimeType,
-  SignalementMediaUploadState,
-} from "./signalement-media-contract";
+export { SIGNALEMENT_EVIDENCE_BUCKET, SIGNALEMENT_EVIDENCE_MAX_MEDIA } from "./signalement-media-contract";
+export type { SignalementEvidenceMimeType } from "./signalement-media-contract";
 
 export type SignalementMediaUploadIntent = {
   mediaId: string;
@@ -79,7 +70,7 @@ export class SignalementMediaError extends Error {
   }
 }
 
-export function isSignalementEvidenceMimeType(
+function isSignalementEvidenceMimeType(
   value: string,
 ): value is SignalementEvidenceMimeType {
   return (SIGNALEMENT_EVIDENCE_ALLOWED_MIME_TYPES as readonly string[]).includes(
@@ -426,42 +417,4 @@ export async function listSignalementMedia(
     items.push({ ...row, signedUrl: signed.data.signedUrl });
   }
   return items;
-}
-
-export async function cleanupPendingSignalementMedia(
-  supabase: SupabaseClient,
-  params: { olderThanMinutes?: number; maxRows?: number } = {},
-): Promise<{ inspected: number; markedFailed: number }> {
-  const olderThanMinutes = Math.min(24 * 60, Math.max(15, Math.trunc(params.olderThanMinutes ?? 24 * 60)));
-  const maxRows = Math.min(50, Math.max(1, Math.trunc(params.maxRows ?? 25)));
-  const cutoff = new Date(Date.now() - olderThanMinutes * 60_000).toISOString();
-  const stale = await supabase
-    .from("signalement_media")
-    .select("id, storage_bucket, storage_path")
-    .eq("upload_state", "pending")
-    .lt("created_at", cutoff)
-    .order("created_at", { ascending: true })
-    .limit(maxRows);
-  if (stale.error) {
-    throw normalizeStorageError("Les preuves orphelines ne peuvent pas être inspectées.");
-  }
-  const rows = (stale.data ?? []) as Array<{ id: string; storage_bucket: string; storage_path: string }>;
-  if (rows.length === 0) {
-    return { inspected: 0, markedFailed: 0 };
-  }
-  const paths = rows
-    .filter((row) => row.storage_bucket === SIGNALEMENT_EVIDENCE_BUCKET)
-    .map((row) => row.storage_path);
-  if (paths.length > 0) {
-    await supabase.storage.from(SIGNALEMENT_EVIDENCE_BUCKET).remove(paths);
-  }
-  const ids = rows.map((row) => row.id);
-  const update = await supabase
-    .from("signalement_media")
-    .update({ upload_state: "failed", failure_reason: "pending_expired" })
-    .in("id", ids);
-  if (update.error) {
-    throw normalizeStorageError("Les preuves orphelines ne peuvent pas être clôturées.");
-  }
-  return { inspected: rows.length, markedFailed: rows.length };
 }

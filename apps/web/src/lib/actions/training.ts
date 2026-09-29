@@ -6,7 +6,7 @@ import type {
 import { env } from "@/lib/env";
 import { logWarning } from "@/lib/logging/failure-log";
 
-export type TrainingExampleStatus =
+type TrainingExampleStatus =
   | "pending_label"
   | "labelled"
   | "needs_review"
@@ -35,7 +35,7 @@ export type VisionTrainingMetrics = {
   statusCounts: Record<TrainingExampleStatus, number>;
 };
 
-export function isVisionTrainingEnabled(): boolean {
+function isVisionTrainingEnabled(): boolean {
   return env.VISION_TRAINING_ENABLED === true;
 }
 
@@ -115,80 +115,6 @@ export function buildTrainingExampleInsert(params: {
   });
 }
 
-type TrainingMetricsAccumulator = {
-  totalAbsError: number;
-  totalSquaredError: number;
-  labelledCount: number;
-  latestModelVersion: string | null;
-  latestTimestamp: number;
-  statusCounts: VisionTrainingMetrics["statusCounts"];
-};
-
-function createTrainingStatusCounts(): VisionTrainingMetrics["statusCounts"] {
-  return {
-    pending_label: 0,
-    labelled: 0,
-    needs_review: 0,
-    no_photo: 0,
-  };
-}
-
-function buildTrainingMetricsAccumulator(): TrainingMetricsAccumulator {
-  return {
-    totalAbsError: 0,
-    totalSquaredError: 0,
-    labelledCount: 0,
-    latestModelVersion: null,
-    latestTimestamp: 0,
-    statusCounts: createTrainingStatusCounts(),
-  };
-}
-
-function updateTrainingStatusCounts(
-  statusCounts: VisionTrainingMetrics["statusCounts"],
-  status: TrainingExampleStatus | null,
-): void {
-  if (status && status in statusCounts) {
-    statusCounts[status] += 1;
-  }
-}
-
-function updateTrainingLatestModelVersion(
-  accumulator: TrainingMetricsAccumulator,
-  row: {
-    model_version: string | null;
-    created_at: string | null;
-  },
-): void {
-  if (!row.model_version || !row.created_at) {
-    return;
-  }
-  const timestamp = Date.parse(row.created_at);
-  if (Number.isFinite(timestamp) && timestamp >= accumulator.latestTimestamp) {
-    accumulator.latestTimestamp = timestamp;
-    accumulator.latestModelVersion = row.model_version;
-  }
-}
-
-function accumulateTrainingError(
-  accumulator: TrainingMetricsAccumulator,
-  row: {
-    poids_reel: number | null;
-    poids_estime: number | null;
-  },
-): void {
-  if (
-    typeof row.poids_reel !== "number" ||
-    typeof row.poids_estime !== "number"
-  ) {
-    return;
-  }
-  const error = row.poids_reel - row.poids_estime;
-  accumulator.totalAbsError += Math.abs(error);
-  accumulator.totalSquaredError += error * error;
-  accumulator.labelledCount += 1;
-}
-
 export async function recordTrainingExample(
   supabase: SupabaseClient,
   insert: TrainingExampleInsert | null,
@@ -213,67 +139,4 @@ export async function recordTrainingExample(
       reason: error instanceof Error ? error.message : String(error),
     });
   }
-}
-
-export async function loadVisionTrainingMetrics(
-  supabase: SupabaseClient,
-): Promise<VisionTrainingMetrics> {
-  const fallback: VisionTrainingMetrics = {
-    count: 0,
-    labelledCount: 0,
-    mae: null,
-    rmse: null,
-    latestModelVersion: null,
-    lowDataWarning: true,
-    paused: !isVisionTrainingEnabled(),
-    statusCounts: {
-      pending_label: 0,
-      labelled: 0,
-      needs_review: 0,
-      no_photo: 0,
-    },
-  };
-
-  if (!isVisionTrainingEnabled()) {
-    return fallback;
-  }
-
-  const result = await supabase
-    .from("training_examples")
-    .select("poids_reel, poids_estime, model_version, status, created_at");
-
-  if (result.error || !result.data) {
-    return fallback;
-  }
-
-  const accumulator = buildTrainingMetricsAccumulator();
-
-  for (const row of result.data as Array<{
-    poids_reel: number | null;
-    poids_estime: number | null;
-    model_version: string | null;
-    status: TrainingExampleStatus | null;
-    created_at: string | null;
-  }>) {
-    updateTrainingStatusCounts(accumulator.statusCounts, row.status);
-    updateTrainingLatestModelVersion(accumulator, row);
-    accumulateTrainingError(accumulator, row);
-  }
-
-  return {
-    count: result.data.length,
-    labelledCount: accumulator.labelledCount,
-    mae:
-      accumulator.labelledCount > 0
-        ? accumulator.totalAbsError / accumulator.labelledCount
-        : null,
-    rmse:
-      accumulator.labelledCount > 0
-        ? Math.sqrt(accumulator.totalSquaredError / accumulator.labelledCount)
-        : null,
-    latestModelVersion: accumulator.latestModelVersion,
-    lowDataWarning: result.data.length < 20,
-    paused: result.data.length === 0,
-    statusCounts: accumulator.statusCounts,
-  };
 }

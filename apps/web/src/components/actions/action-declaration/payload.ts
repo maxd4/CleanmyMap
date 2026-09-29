@@ -26,14 +26,7 @@ import {
  resolveRouteTargetDistance,
 } from "@/lib/actions/route-target-distance";
 
-export const PARK_PLACE_TYPE ="Bois/Parc/Jardin/Square/Sentier";
 export const OTHER_VOLUNTEER_ASSOCIATION_VALUE = "__autre_benevole__";
-
-export const associationOptionLabels: Record<string, string> = {
-  "Action spontanée":
-    "Action spontanée - bénévole non rattaché à une association",
-  Entreprise: "Entreprise - participation dans un cadre RSE",
-};
 
 export function parseOrganizerAccounts(input: string): string[] {
  return [...new Set(
@@ -243,20 +236,6 @@ export function applyPreparationDataToForm(
   operationalRoute: preparationData.operationalRoute ?? form.operationalRoute,
   routeCalibrationContext:
    preparationData.routeCalibrationContext ?? form.routeCalibrationContext,
- };
-}
-
-export function getFormResetState(previous: FormState): FormState {
- return {
- ...initialState,
- actorName: previous.actorName,
- associationName: previous.associationName,
- organizerId: previous.organizerId,
- organizerName: previous.organizerName,
- organizerAccounts: previous.organizerAccounts,
- participantAccounts: previous.participantAccounts,
- actionDate: previous.actionDate,
- recordType: previous.recordType,
  };
 }
 

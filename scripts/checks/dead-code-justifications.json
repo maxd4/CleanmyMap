@@ -1,4 +1,68 @@
 {
   "schemaVersion": 1,
-  "justifications": []
+  "justifications": [
+    {
+      "id": "4fae4a25111fb87ab2e0e1ac",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le dashboard CURRENT consomme le contrat de métriques d'entraînement vision.",
+      "evidence": "apps/web/src/components/dashboard/vision-training-panel.tsx:1-14 importe et consomme VisionTrainingMetrics.",
+      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
+    },
+    {
+      "id": "b35955d21cd0c400c05c06cf",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le contrat de sélection agrégé reste la base des sélections consommées par les requêtes CURRENT.",
+      "evidence": "apps/web/src/lib/actions/store-selects.ts:42-50 compose ACTION_SELECT_FIELDS_WITH_PHASE; apps/web/src/lib/actions/store-queries.ts:111,160 consomme cette sélection.",
+      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
+    },
+    {
+      "id": "9266c758389e7feb96add771",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le formulaire de déclaration utilise encore la normalisation UI des types de lieux.",
+      "evidence": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.waste-section.tsx:1,42 appelle normalizePlaceTypeForUi.",
+      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
+    },
+    {
+      "id": "9177e665f029bfb5b6a61a45",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le helper de centroïde appartient encore au contrat CURRENT de géométrie de déclaration.",
+      "evidence": "apps/web/src/components/actions/action-declaration/model.ts:199-214 conserve l'implémentation de géométrie; le flux payload CURRENT est dans payload.ts:277-291.",
+      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
+    },
+    {
+      "id": "0e885bf1d0fe9fcf8c7edc4f",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La validation de dessin est consommée par le hook CURRENT du formulaire.",
+      "evidence": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts:11,117 importe et appelle isDrawingValid.",
+      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
+    },
+    {
+      "id": "78549a05730537ca09186dfc",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le helper de conversion numérique reste requis par le flux payload CURRENT.",
+      "evidence": "apps/web/src/components/actions/action-declaration/payload.ts:77-84,359-469 utilise la conversion numérique du flux de déclaration.",
+      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
+    },
+    {
+      "id": "105769e5aae99f0985f30084",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le fichier de smart assist est une façade CURRENT consommée par les sections du formulaire.",
+      "evidence": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.location-section.tsx:6 et action-declaration-form.waste-section.tsx:3 importent ce fichier.",
+      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
+    },
+    {
+      "id": "036ae187a64dfc94bb703146",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le contrat historique de chargement de brouillon fait partie du module CURRENT de persistance du formulaire.",
+      "evidence": "apps/web/src/components/actions/action-declaration/draft-storage.ts:252-357 expose le contrat de lecture; le hook CURRENT consomme le snapshot au même module.",
+      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
+    },
+    {
+      "id": "425b639dd70e8aa33232d2d3",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le type de source des suggestions est partagé par le contrat de suggestion CURRENT.",
+      "evidence": "apps/web/src/components/actions/action-declaration/utils/action-declaration-form.vision-suggestion.ts:5,11-16 utilise WasteSuggestionSource dans WasteSuggestion.",
+      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
+    }
+  ]
 }

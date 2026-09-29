@@ -20,9 +20,7 @@ import { buildViewportFromPoints } from "@/lib/geo/map-viewport-fallback";
 
 export type { InitialPollutionCandidateFetcher, MapReferencePoint } from "@/lib/actions/pollution/initial-nearest-pollution";
 export {
-  DISTANCE_TIE_EPSILON_KM,
   INITIAL_MAP_SEARCH_RADII_KM,
-  deriveReferenceFromBounds,
   haversineDistanceKm,
   isActivePollutionItem,
   isWithinRadialSearch,
@@ -43,7 +41,7 @@ export type InitialMapViewportResolution = {
   searchRadiiKm: number[];
 };
 
-export const INITIAL_PUBLIC_ACTION_SEARCH_RADII_KM = [5, 20, 75, 150] as const;
+const INITIAL_PUBLIC_ACTION_SEARCH_RADII_KM = [5, 20, 75, 150] as const;
 const INITIAL_PUBLIC_CITY_SEARCH_RADIUS_KM = 30;
 const INITIAL_PUBLIC_ACTION_LIMIT = 300;
 
@@ -146,7 +144,7 @@ export function selectMostRecentPublicAction(items: ActionMapItem[]): ActionMapI
     })[0] ?? null;
 }
 
-export function selectNearestPublicAction(
+function selectNearestPublicAction(
   items: ActionMapItem[],
   reference: MapReferencePoint,
   maxDistanceKm?: number,
@@ -169,7 +167,7 @@ export function selectNearestPublicAction(
     })[0]?.item ?? null;
 }
 
-export function fetchInitialPublicActions({
+function fetchInitialPublicActions({
   viewport,
   limit,
 }: {
@@ -312,7 +310,7 @@ function isValidReferencePoint(point: MapReferencePoint): boolean {
   );
 }
 
-export function buildMapSearchViewport(
+function buildMapSearchViewport(
   reference: MapReferencePoint,
   radiusKm: number,
 ): MapViewportState {

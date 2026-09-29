@@ -277,7 +277,7 @@ export function buildActionDeclarationShareText(params: {
   return lines.join("\n");
 }
 
-export function buildActionDeclarationSocialSvg(params: {
+function buildActionDeclarationSocialSvg(params: {
   form: ExportForm;
   actorName: string;
   preset: ActionDeclarationExportPreset;
@@ -446,7 +446,7 @@ export async function downloadActionDeclarationExportImage(params: {
   return true;
 }
 
-export async function createActionDeclarationExportPngBlob(params: {
+async function createActionDeclarationExportPngBlob(params: {
   form: ExportForm;
   actorName: string;
   preset: ActionDeclarationExportPreset;
