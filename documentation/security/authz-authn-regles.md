@@ -313,6 +313,18 @@ client privilégié. Les tests doivent couvrir les chemins anonyme, refusé,
 scopé et autorisé selon le contrat, et démontrer qu'aucun accès privilégié
 n'est exécuté après un refus.
 
+### `PUBLIC_LEADERBOARD_EXCEPTION`
+
+`GET /api/gamification/leaderboard/public` est une lecture publique
+explicitement bornée, et non une capacité AuthZ. Le handler valide uniquement
+`scope=user|structure` et `metric=level|xp|badges`, applique le rate limiting,
+utilise le client serveur privilégié uniquement pour construire la projection
+et ne transmet jamais `userId`, `organizerId`, email, metadata ou champs de
+modération. Le scope utilisateur repose sur le consentement serveur
+`profiles.leaderboard_public_opt_in`; le scope structure repose sur
+`organizer_id` et `organizer_name` canoniques. La réponse est une projection
+publique minimale et ne donne aucun droit sur les ressources classées.
+
 ### Contrat courant de `/pilotage`
 
 `/pilotage` est une surface métier scoped, distincte de la modération et des

@@ -64,6 +64,18 @@ soumission unique ne doivent pas persister chaque frappe ou un auto-save
 permanent ; un document généré doit être produit à la demande et ne laisser en
 base qu'un résumé minimal lorsque ce suivi apporte une valeur métier.
 
+### Consentement du leaderboard public
+
+Le propriétaire canonique du consentement de publication utilisateur est
+`profiles.leaderboard_public_opt_in`, exposé à l'utilisateur connecté par
+`/api/users/profile/leaderboard-opt-in`. Sa valeur par défaut est `false` et
+aucun compte existant ne devient public par migration implicite. La route
+publique Gamification lit ce consentement côté serveur avant toute projection;
+elle ne reçoit ni ne fait confiance à un opt-in fourni par le navigateur. Les
+identités de structure proviennent séparément des champs canoniques
+`actions.organizer_id` et `actions.organizer_name` et ne constituent pas un
+consentement utilisateur.
+
 Déplacer une donnée métier de Supabase vers `localStorage` exige de préserver
 la synchronisation, l'historique, les permissions et la conformité. En cas de
 doute, conserver la donnée dans sa source de vérité serveur et documenter le

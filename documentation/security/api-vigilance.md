@@ -35,3 +35,9 @@ Fallback statique:
 - `/api/admin/*`
 - endpoints d'import/export data
 - endpoints de moderation et classement
+
+Le classement public Gamification est une exception explicitement nommée :
+`PUBLIC_LEADERBOARD_EXCEPTION`. Sa route dédiée borne les paramètres côté
+serveur, applique un rate limit de lecture et ne renvoie qu'une projection
+sanitizée. Elle ne doit jamais être utilisée comme source d'AuthZ ni être
+confondue avec le leaderboard authentifié CURRENT.

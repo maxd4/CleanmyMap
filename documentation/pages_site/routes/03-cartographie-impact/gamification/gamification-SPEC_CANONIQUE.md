@@ -2,6 +2,48 @@
 
 Ce document est la référence unique à lire en premier pour comprendre la gamification CleanMyMap.
 
+## Leaderboard CURRENT et projection publique
+
+Le contrat CURRENT de classement utilise exclusivement les métriques
+`level`, `xp` et `badges`. Pour un utilisateur, elles correspondent à
+`currentLevel`, `xpValidated` et `badgeTotal`. Le classement structurel suit
+le même contrat public : `collectiveLevel` est dérivé de `structureXpValidated`
+avec la courbe XP canonique, sans prérequis individuels et sans ledger XP
+structurel parallèle.
+
+`badges` vaut toujours `gradeCount + oneShotCount`. Les grades acquis sont
+dédoublonnés par identifiant canonique et le seuil 0 (`Observateur`) n'est pas
+acquis. Les jalons CURRENT atteints comptent une fois, même avec 0 XP. Pour
+les structures, seules les preuves rattachées sans ambiguïté à un
+`organizer_id` canonique sont admissibles. La famille `organisation` est la
+seule famille structurelle démontrée ; les familles participation,
+exploration, zones propres, régularité, polyvalence, apprentissage,
+modération et les reconnaissances historiques restent exclues de ce scope.
+
+L'identité structurelle vient de `actions.organizer_type`,
+`actions.organizer_id` et `actions.organizer_name`. Une action spontanée, une
+ligne sans `organizer_id` ou une ancienne note sans identifiant ne crée ni ne
+fusionne une structure. Les événements XP structurels sont les événements
+`progression_events` validés dont `source_table = actions` et dont le
+`source_id` pointe vers une action canonique structurée ; chaque événement
+est compté une seule fois.
+
+L'ordre est déterministe : `level` trie par niveau, XP validée, badges puis
+label public ; `xp` par XP validée, niveau, badges puis label ; `badges` par
+total, grades, one-shot, XP validée, niveau puis label. Le rang est recalculé
+après le tri choisi.
+
+La route publique dédiée est
+`GET /api/gamification/leaderboard/public?scope=user|structure&metric=level|xp|badges`.
+Elle ne demande pas de session Clerk mais renvoie uniquement une projection
+sanitizée `publicLabel`, `level`, `xpValidated`, `badgeTotal`, `gradeCount`,
+`oneShotCount` et `rank`. Le scope utilisateur exige
+`profiles.leaderboard_public_opt_in = true` et un label déterminé par
+`display_name_mode`; aucun identifiant Clerk, email, metadata, donnée de
+modération ou détail de badge n'est public. Le leaderboard est la seule
+exception publique Gamification nommée `PUBLIC_LEADERBOARD_EXCEPTION` ; il
+n'est jamais une source AuthZ et ne change ni XP, ni badges, ni impact.
+
 Il centralise:
 
 - les règles métier réellement appliquées par le code;

@@ -40,9 +40,9 @@ import {
 import { awardActionMilestonesForUserWithDependencies } from "./action-milestone-awards";
 const SPONTANEOUS_ASSOCIATION_KEY = "action spontanee";
 const ACTION_FULL_COLUMNS =
-  "id, created_at, created_by_clerk_id, type, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, action_phase, preparation_data, published_at";
+  "id, created_at, created_by_clerk_id, type, actor_name, organizer_type, organizer_id, organizer_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, action_phase, preparation_data, published_at";
 export const ACTION_APPROVED_COLUMNS =
-  "id, created_at, created_by_clerk_id, type, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, action_phase, preparation_data, published_at";
+  "id, created_at, created_by_clerk_id, type, actor_name, organizer_type, organizer_id, organizer_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, action_phase, preparation_data, published_at";
 const CURRENT_ACTION_SYNC_EVENT_TYPES = [
   "action_declare_validation",
   "action_monthly_regularity",
