@@ -71,12 +71,16 @@ Les ajustements récents reposent sur ces points d entrée:
 - `apps/web/src/lib/time-scopes.ts`
 - `apps/web/src/lib/gamification/annual-reset.ts`
 - `apps/web/src/lib/gamification/progression-data.ts`
-- `apps/web/src/lib/gamification/progression-leaderboard.ts`
+- `apps/web/src/lib/gamification/progression-user.ts` — owner de la progression personnelle
+- `apps/web/src/lib/gamification/progression-ranking.ts` — owner des classements
+- `apps/web/src/lib/gamification/progression-retention.ts` — owner de la rétention post-action
 - `apps/web/src/app/api/gamification/analytics/points/route.ts`
 - `apps/web/src/app/api/gamification/leaderboard/route.ts`
-- `apps/web/src/components/sections/rubriques/gamification/index.tsx`
-- `apps/web/src/components/sections/rubriques/gamification/personal-progress.tsx`
-- `apps/web/src/components/sections/rubriques/gamification/gamification-types.ts`
+- `apps/web/src/components/sections/rubriques/gamification/gamification-level-progress-panel.tsx` — panneau niveau/progression
+- `apps/web/src/components/sections/rubriques/gamification/gamification-impact-panel.tsx` — panneau impact personnel
+- `apps/web/src/components/sections/rubriques/gamification/gamification-catalog-panel.tsx` — panneau collections
+- `apps/web/src/components/sections/rubriques/gamification/gamification-recognition.tsx` — panneau reconnaissance et lecture leaderboard
+- `apps/web/src/components/sections/rubriques/gamification/gamification-types.ts` — types de composition UI
 
 ## État UI actuel
 

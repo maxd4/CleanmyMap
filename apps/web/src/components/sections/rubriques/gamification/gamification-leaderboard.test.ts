@@ -1,12 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildLeaderboardKey,
   buildLeaderboardUrl,
   filterLeaderboardItems,
-  sanitizeLeaderboardResponse,
+  fetchGamificationLeaderboard,
   type PublicIndividualLeaderboardItem,
 } from "./gamification-leaderboard";
-import type { IndividualLeaderboardItem } from "@/lib/gamification/progression-types";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("gamification leaderboard contract", () => {
   it("loads no variant before explicit detail interaction and one active variant after", () => {
@@ -29,15 +32,14 @@ describe("gamification leaderboard contract", () => {
     expect(filterLeaderboardItems(items, "individual", "")).toHaveLength(2);
   });
 
-  it("removes user and Clerk identifiers before rendering other contributors", () => {
-    const response = sanitizeLeaderboardResponse({
-      status: "ok",
-      scope: "individual",
-      period: "lifetime",
+  it("consumes the server projection without a client privacy sanitizer", async () => {
+    const responseBody = {
+      status: "ok" as const,
+      scope: "individual" as const,
+      period: "lifetime" as const,
       generatedAt: "2026-09-29T10:00:00.000Z",
       items: [
         {
-          userId: "clerk-user-1",
           rank: 1,
           publicLabel: "Alice",
           level: 3,
@@ -45,17 +47,16 @@ describe("gamification leaderboard contract", () => {
           badgeTotal: 2,
           gradeCount: 1,
           oneShotCount: 1,
-        } as unknown as IndividualLeaderboardItem & { userId: string },
+        },
       ],
-      recognition: {
-        topContributors: [],
-        currentContributor: null,
-      },
-    });
+      recognition: { topContributors: [], currentContributor: null },
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(responseBody), { status: 200 }),
+    ));
 
-    expect(response.items[0]).not.toHaveProperty("userId");
-    expect((response.items[0] as PublicIndividualLeaderboardItem | undefined)?.publicLabel).toBe("Alice");
-    expect(response.items[0]).not.toHaveProperty("xpPending");
+    await expect(fetchGamificationLeaderboard("/api/gamification/leaderboard")).resolves.toEqual(responseBody);
+    expect((responseBody.items[0] as PublicIndividualLeaderboardItem).publicLabel).toBe("Alice");
   });
 
   it("keeps only the supported scope and period dimensions in the URL", () => {

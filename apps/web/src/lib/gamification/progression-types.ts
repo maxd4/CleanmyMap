@@ -471,6 +471,25 @@ export type CollectiveLeaderboardItem = {
   wasteCoverageRate: number;
 };
 
+/**
+ * Server DTO for the CURRENT leaderboard HTTP contract.
+ * Keep legacy collective calculation fields private to the ranking owner.
+ */
+export type LeaderboardCollectiveItemDto = Pick<
+  CollectiveLeaderboardItem,
+  "rank" | "associationName" | "currentLevel" | "members" | "qualityAverage" | "validatedActions"
+>;
+
+export type LeaderboardResponseDto = {
+  scope: "individual" | "collective";
+  generatedAt: string;
+  items: IndividualLeaderboardItem[] | LeaderboardCollectiveItemDto[];
+  recognition: {
+    topContributors: [];
+    currentContributor: null;
+  };
+};
+
 export type PersonalImpactMetrics = {
   waterSavedLiters: number;
   co2AvoidedKg: number;

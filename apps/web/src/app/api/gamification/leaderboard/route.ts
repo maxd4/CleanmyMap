@@ -2,7 +2,10 @@ import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { unstable_cache } from"next/cache";
 import { z } from"zod";
-import { getGamificationLeaderboard } from"@/lib/gamification/progression";
+import {
+  getGamificationLeaderboard,
+  projectGamificationLeaderboardResponse,
+} from "@/lib/gamification/progression";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
@@ -33,7 +36,8 @@ async function loadCachedGamificationLeaderboard(
  const cached = unstable_cache(
   async () => {
    const supabase = getSupabaseServerClient(true);
-   return getGamificationLeaderboard(supabase, scope, period, metric);
+    const leaderboard = await getGamificationLeaderboard(supabase, scope, period, metric);
+    return projectGamificationLeaderboardResponse(leaderboard);
   },
    ["gamification-leaderboard", buildLeaderboardCacheKey(scope, period, metric)],
   {

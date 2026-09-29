@@ -14,7 +14,9 @@ import type {
   CollectiveLeaderboardItem,
   ContributorRecognitionSummary,
   IndividualLeaderboardItem,
+  LeaderboardCollectiveItemDto,
   LeaderboardMetric,
+  LeaderboardResponseDto,
 } from "./progression-types";
 import { toFloat, toInt } from "./progression-utils";
 
@@ -285,6 +287,75 @@ export async function getGamificationLeaderboard(
     items: buildCollectiveLeaderboardItems(approvedActionRows),
     recognition: {
       topContributors: recognitionIndex.topContributors,
+      currentContributor: null,
+    },
+  };
+}
+
+function projectIndividualLeaderboardItem(
+  item: IndividualLeaderboardItem,
+): IndividualLeaderboardItem | null {
+  const publicLabel = typeof item.publicLabel === "string" ? item.publicLabel.trim() : "";
+  if (!publicLabel) return null;
+
+  return {
+    rank: item.rank,
+    publicLabel,
+    level: item.level,
+    xpValidated: item.xpValidated,
+    badgeTotal: item.badgeTotal,
+    gradeCount: item.gradeCount,
+    oneShotCount: item.oneShotCount,
+  };
+}
+
+function projectCollectiveLeaderboardItem(
+  item: CollectiveLeaderboardItem,
+): LeaderboardCollectiveItemDto {
+  return {
+    rank: item.rank,
+    associationName: item.associationName,
+    currentLevel: item.currentLevel,
+    members: item.members,
+    qualityAverage: item.qualityAverage,
+    validatedActions: item.validatedActions,
+  };
+}
+
+type GamificationLeaderboardResult = Awaited<ReturnType<typeof getGamificationLeaderboard>>;
+
+/**
+ * Project the internal ranking result at the server boundary.
+ * This is the confidentiality boundary; the browser must not sanitize IDs.
+ */
+export function projectGamificationLeaderboardResponse(
+  response: GamificationLeaderboardResult,
+): LeaderboardResponseDto {
+  if (response.scope === "individual") {
+    const individualItems = response.items as IndividualLeaderboardItem[];
+    return {
+      scope: response.scope,
+      generatedAt: response.generatedAt,
+      items: individualItems.flatMap((item) => {
+        if (!("publicLabel" in item)) return [];
+        const projected = projectIndividualLeaderboardItem(item);
+        return projected ? [projected] : [];
+      }),
+      recognition: {
+        topContributors: [],
+        currentContributor: null,
+      },
+    };
+  }
+
+  const collectiveItems = response.items as CollectiveLeaderboardItem[];
+
+  return {
+    scope: response.scope,
+    generatedAt: response.generatedAt,
+    items: collectiveItems.map(projectCollectiveLeaderboardItem),
+    recognition: {
+      topContributors: [],
       currentContributor: null,
     },
   };
