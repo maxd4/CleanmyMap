@@ -24,7 +24,7 @@ export function isPublicStructureItem(
 }
 
 export function formatBadgeBreakdown(item: PublicLeaderboardItem): string {
-  return `${item.badgeTotal} badges (${item.gradeCount} grades + ${item.oneShotCount} one-shot)`;
+  return `(${item.gradeCount} grades + ${item.oneShotCount} one-shot)`;
 }
 
 export async function fetchPublicLeaderboard(

@@ -34,7 +34,7 @@ describe("public leaderboard panel model", () => {
       structureType: "association" as const,
     };
 
-    expect(formatBadgeBreakdown(user)).toBe("9 badges (7 grades + 2 one-shot)");
+    expect(formatBadgeBreakdown(user)).toBe("(7 grades + 2 one-shot)");
     expect(isPublicStructureItem(user)).toBe(false);
     expect(isPublicStructureItem(structure)).toBe(true);
   });
