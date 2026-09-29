@@ -1,4 +1,4 @@
-export const ROUTE_PICKUP_PREFERENCES = [
+const ROUTE_PICKUP_PREFERENCES = [
   "balanced",
   "waste",
   "cigarette_butts",

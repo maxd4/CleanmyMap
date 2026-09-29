@@ -18,9 +18,9 @@ import type {
 import type { ActionPreparationData } from "@/lib/actions/types";
 import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
 
-export const OPERATIONAL_ROUTE_VERSION = "operational-route-v1" as const;
+const OPERATIONAL_ROUTE_VERSION = "operational-route-v1" as const;
 
-export type OperationalRouteState = "planner_copy" | "edited";
+type OperationalRouteState = "planner_copy" | "edited";
 export type OperationalRouteZoneKey = "departure" | "midpoint" | "arrival";
 
 export type OperationalRouteZone = {

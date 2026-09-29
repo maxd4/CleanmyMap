@@ -11,9 +11,7 @@ import {
 import type { VolunteerAdditionalityResult, VolunteerSafetyAssessment } from "@/lib/geo/volunteer-additionality-contract";
 import type { TrashSpotterActionableCandidate } from "@/lib/actions/trash-spotter-actionable-candidates";
 
-export const ROUTE_PLANNER_ADDITIONALITY_WEIGHT = 0.25;
-export const ROUTE_PLANNER_ADDITIONALITY_MODEL_VERSION =
-  "route-planner-volunteer-additionality-v1" as const;
+const ROUTE_PLANNER_ADDITIONALITY_WEIGHT = 0.25;
 
 export type RoutePlannerContribution = {
   pollutionPriority: number;

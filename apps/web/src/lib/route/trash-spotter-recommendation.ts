@@ -29,7 +29,6 @@ export function distanceKm(
   const longitudeKm = (a.longitude - b.longitude) * 73;
   return Math.sqrt(latitudeKm * latitudeKm + longitudeKm * longitudeKm);
 }
-
 export function freshnessScore(
   observedAt: string,
   now = new Date(),
@@ -93,25 +92,4 @@ export function buildTrashSpotterRouteCandidates(
       } satisfies TrashSpotterRouteCandidate;
     })
     .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));
-}
-
-export function selectNextTrashSpotterStop(
-  current: TrashSpotterRouteCandidate,
-  candidates: TrashSpotterRouteCandidate[],
-  priorityWeight: number,
-  distanceWeight: number,
-): TrashSpotterRouteCandidate | undefined {
-  let bestCandidate: TrashSpotterRouteCandidate | undefined;
-  let bestValue = Number.NEGATIVE_INFINITY;
-
-  for (const candidate of candidates) {
-    const distance = distanceKm(current, candidate);
-    const value = candidate.score * priorityWeight - distance * 8 * distanceWeight;
-    if (value > bestValue) {
-      bestValue = value;
-      bestCandidate = candidate;
-    }
-  }
-
-  return bestCandidate;
 }

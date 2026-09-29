@@ -21,8 +21,8 @@ import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 export const MAX_ROUTE_VOLUNTEERS = 100;
 export const MAX_ROUTE_GROUP_COUNT = 12;
 export const MAX_ROUTE_PARTITION_CANDIDATES = 72;
-export const ROUTE_GROUP_SHARED_ORIGIN_RADIUS_KM = 0.35;
-export const ROUTE_GROUP_CORRIDOR_OVERLAP_RADIUS_KM = 0.35;
+const ROUTE_GROUP_SHARED_ORIGIN_RADIUS_KM = 0.35;
+const ROUTE_GROUP_CORRIDOR_OVERLAP_RADIUS_KM = 0.35;
 
 export type RouteGroupPartitionInput = {
   origin: RoutePlannerOrigin;
@@ -64,7 +64,7 @@ export type RoutePartitionMetrics = {
   balanceTargetCount: number;
 };
 
-export type RoutePartitionAssignmentAudit = {
+type RoutePartitionAssignmentAudit = {
   candidateId: string;
   groupIndex: number;
   plannerValue: number;

@@ -308,7 +308,7 @@ export type ActionListResponse = {
   };
 };
 
-export type ActionDrawingKind = "polyline" | "polygon";
+type ActionDrawingKind = "polyline" | "polygon";
 
 export type ActionDrawing = {
   kind: ActionDrawingKind;

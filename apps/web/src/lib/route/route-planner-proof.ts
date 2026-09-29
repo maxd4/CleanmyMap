@@ -9,12 +9,7 @@ import {
   type RoutePlannerProof,
 } from "./route-planner-proof-contract";
 
-export {
-  ROUTE_PLANNER_PROOF_TTL_SECONDS,
-  ROUTE_PLANNER_PROOF_VERSION,
-  type RoutePlannerProof,
-} from "./route-planner-proof-contract";
-export { hashRoutePlannerSnapshot } from "./route-planner-snapshot-hash";
+export type { RoutePlannerProof } from "./route-planner-proof-contract";
 
 type RoutePlannerProofPayload = {
   proofVersion: typeof ROUTE_PLANNER_PROOF_VERSION;

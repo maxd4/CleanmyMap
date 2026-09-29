@@ -5,43 +5,43 @@
  * reinterpreted as a sidewalk corridor without side-specific evidence.
  */
 
-export const STREET_CLEANING_CORRIDOR_SCHEMA_VERSION =
+const STREET_CLEANING_CORRIDOR_SCHEMA_VERSION =
   "street-cleaning-corridor-v1" as const;
 
-export type StreetCleaningCorridorSide =
+type StreetCleaningCorridorSide =
   | "left"
   | "right"
   | "single"
   | "unknown";
 
-export type StreetCleaningCoordinate = readonly [number, number];
+type StreetCleaningCoordinate = readonly [number, number];
 
-export type StreetCleaningConfidenceLevel =
+type StreetCleaningConfidenceLevel =
   | "unknown"
   | "low"
   | "medium"
   | "high";
 
-export type StreetCleaningCorridorConfidence = {
+type StreetCleaningCorridorConfidence = {
   score: number;
   level: StreetCleaningConfidenceLevel;
 };
 
-export type StreetCleaningReferenceSegment = {
+type StreetCleaningReferenceSegment = {
   id: string;
   label: string | null;
   /** The source geometry of the reference segment, never an artificial offset. */
   geometry: StreetCleaningCoordinate[];
 };
 
-export type StreetCleaningReferenceOrientation = {
+type StreetCleaningReferenceOrientation = {
   /** left/right are defined relative to the direction from `from` to `to`. */
   from: StreetCleaningCoordinate;
   to: StreetCleaningCoordinate;
   bearingDegrees: number;
 };
 
-export type StreetCleaningCorridorSource = {
+type StreetCleaningCorridorSource = {
   id: string;
   publisher: string;
   dataset: string;
@@ -86,7 +86,7 @@ export type StreetCleaningCorridor = {
   safeCrossingsStatus: "proven" | "unknown";
 };
 
-export type StreetCleaningCorridorProof =
+type StreetCleaningCorridorProof =
   | {
       type: "sidewalk_geometry";
       side: "left" | "right";
@@ -137,7 +137,7 @@ export type StreetCleaningOperationalStreet = {
   note: string;
 };
 
-export type StreetCleaningPollutionSignal = {
+type StreetCleaningPollutionSignal = {
   wasteRisk: number | null;
   cigaretteButtRisk: number | null;
   workload: number | null;

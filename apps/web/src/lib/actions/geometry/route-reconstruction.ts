@@ -1,6 +1,5 @@
 import "server-only";
 
-export { ActionRouteReconstructionError } from "./route-reconstruction-error";
 import { ActionRouteReconstructionError } from "./route-reconstruction-error";
 
 import type {
@@ -94,7 +93,7 @@ export function buildClosedLoopWaypoints(
   return [origin, north, northEast, east, origin];
 }
 
-export function buildLoopWaypoints(
+function buildLoopWaypoints(
   origin: [number, number],
   midpoint?: [number, number] | null,
   targetDistanceKm = 1,

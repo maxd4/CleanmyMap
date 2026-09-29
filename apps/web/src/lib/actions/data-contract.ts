@@ -2,10 +2,6 @@ export { ACTION_ENTITY_TYPES } from "./types";
 
 export type {
   ActionEntityType,
-  ActionDataLocation,
-  ActionDataGeometry,
-  ActionDataDates,
-  ActionDataMetadata,
   ActionDataContract,
   BuildActionContractParams,
 } from "./contracts/contract-model";

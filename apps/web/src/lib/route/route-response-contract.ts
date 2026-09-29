@@ -21,7 +21,6 @@ import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import type { StreetCleaningCorridorHandoff } from "./street-cleaning-corridor";
 
 export {
-  ROUTE_PICKUP_PREFERENCES,
   isRoutePickupPreference,
 } from "./route-pickup-preference";
 export type { RoutePickupPreference } from "./route-pickup-preference";
@@ -192,8 +191,3 @@ export type RouteMultiRouteMetrics = {
 };
 
 export type RouteResponse = RouteRecommendationResponse;
-
-export type {
-  RouteGeometry,
-  RouteStop,
-} from "./route-contract";

@@ -1,4 +1,4 @@
-import { RouteStop } from "../route-types";
+import type { RouteStop } from "@/lib/route/route-contract";
 
 interface RouteListProps {
   hasRoute: boolean;
