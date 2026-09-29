@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import useSWR from "swr";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -39,8 +39,6 @@ async function fetchJson<T>(url: string): Promise<T> {
 export function GamificationSection() {
   const { locale, theme, displayMode, setDisplayMode, toggleTheme } = useSitePreferences();
   const fr = locale === "fr";
-  const [scope, setScope] = useState<"individual" | "collective">("individual");
-  const [searchQuery, setSearchQuery] = useState("");
 
   const {
     data: meData,
@@ -85,11 +83,10 @@ export function GamificationSection() {
                 locale={locale}
               />
               <RecognitionPanel
+                progression={progression}
+                loading={meLoading}
+                error={meError}
                 locale={locale}
-                scope={scope}
-                setScope={setScope}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
               />
             </div>
 
@@ -102,6 +99,7 @@ export function GamificationSection() {
 
             <div className="grid gap-6 lg:grid-cols-2">
               <CollectionsPanel
+                summary={progression?.summary}
                 loading={meLoading}
                 error={meError}
                 locale={locale}

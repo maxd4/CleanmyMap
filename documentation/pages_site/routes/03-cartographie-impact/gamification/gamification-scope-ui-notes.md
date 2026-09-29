@@ -85,8 +85,8 @@ La page gamification a été réalignée sur une direction visuelle rouge et cla
 - un hero éditorial blanc et rouge;
 - un visuel abstrait de paysage rouge;
 - un bloc de parcours d engagement avec statut actuel, statuts suivants et moteur de progression;
-- une carte de reconnaissance sociale avec bascule comptes / structures et recherche;
-- une carte de collections volontairement en état vide;
+- une carte de reconnaissance personnelle, lifetime puis année en cours, avant la lecture communautaire;
+- une carte de collections alimentée par `progression.summary`, groupée en `Acquis`, `En progression` et `À découvrir`;
 - une carte de célébrations légères avec aperçu;
 - une bannière de méthodologie d impact;
 - un statut opérationnel;
@@ -100,12 +100,32 @@ Le parti pris est de montrer:
 - les états vides sans faux signal;
 - la méthode d impact séparée du XP.
 
+### Contrats CURRENT des collections et de la reconnaissance
+
+- Les collections ne maintiennent aucune liste de badges dans le composant : elles
+  lisent l inventaire exhaustif `progression.summary` produit par le registre
+  CURRENT.
+- Les progressions infinies restent `En progression` après leur première
+  contribution ; leur carte expose le badge courant, le prochain badge et le
+  pourcentage sans les déclarer terminées.
+- `isNewSinceLastRulesMigration` est affiché comme un signal de nouveauté de
+  règles, sans changer l état métier de l élément.
+- La reconnaissance personnelle vient de
+  `progression.recognition.currentContributor` et de
+  `progression.annualRecognition.currentContributor`, avec un libellé explicite
+  `Lifetime` ou `Année en cours`.
+- Le classement détaillé est secondaire et n est chargé qu après interaction.
+  Il utilise uniquement `/api/gamification/leaderboard` avec les dimensions
+  supportées `scope=individual|collective` et
+  `period=lifetime|yearToDate`; la recherche filtre les lignes chargées.
+
 ## Points de vigilance
 
 - Ne pas confondre `XP cumulée` et `impact annuel`.
 - Ne pas présenter un leaderboard annuel comme un leaderboard lifetime.
 - Ne pas injecter de compétition agressive dans les formulations UI.
-- Ne pas remplir artificiellement la vitrine de collections quand les données ne sont pas prêtes.
+- Ne pas remplir artificiellement les collections : un groupe sans donnée reste
+  explicitement vide et aucun badge ou objectif n est inventé.
 - Garder les CTA de réglages reliés à de vraies préférences disponibles.
 - Les paliers quiz (`Progression quiz par type` et `Quiz équilibré`) sont deux
   vues de la progression CURRENT `Apprentissage`, pas deux progressions
