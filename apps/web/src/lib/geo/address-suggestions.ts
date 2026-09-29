@@ -15,7 +15,7 @@ function normalizeSuggestionKey(suggestion: Pick<GeoAddressSuggestion, "label" |
   return `${suggestion.label.trim().toLowerCase()}|${suggestion.latitude}|${suggestion.longitude}`;
 }
 
-export function mapTerritoryAddressSuggestion(
+function mapTerritoryAddressSuggestion(
   suggestion: TerritoryAddressSuggestion,
 ): GeoAddressSuggestion {
   return {
@@ -55,11 +55,4 @@ export function mergeGeoAddressSuggestions(
   }
 
   return merged;
-}
-
-export function shouldSkipRemoteGeoSearch(
-  localSuggestions: GeoAddressSuggestion[],
-  limit: number,
-): boolean {
-  return localSuggestions.length >= Math.max(1, Math.min(8, Math.trunc(limit) || 1));
 }

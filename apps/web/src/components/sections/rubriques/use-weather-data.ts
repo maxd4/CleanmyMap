@@ -7,7 +7,7 @@ import {
   buildInterventionWindows,
   evaluateWeatherRisk,
 } from "@/lib/weather/ops-weather";
-import { FRANCE_TERRITORY_CENTER } from "@/lib/geo/territory";
+import { TERRITORY_CENTER } from "@/lib/geo/territory";
 import {
   getLocalGeoAddressSuggestions,
   type GeoAddressSuggestion,
@@ -32,8 +32,8 @@ import type {
 const DEFAULT_LOCATION: WeatherLocation = {
   label: "France",
   subtitle: "Vue nationale",
-  latitude: FRANCE_TERRITORY_CENTER[0],
-  longitude: FRANCE_TERRITORY_CENTER[1],
+  latitude: TERRITORY_CENTER[0],
+  longitude: TERRITORY_CENTER[1],
   importance: null,
 };
 

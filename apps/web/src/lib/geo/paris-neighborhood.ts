@@ -143,10 +143,6 @@ export function getZonesInSameDepartment(zoneName: string): string[] {
   return getZonesByDepartment(zone.department).map((z) => z.name);
 }
 
-export function getBorderZones(): Zone[] {
-  return ALL_NEIGHBORHOODS.filter((z) => z.adjacentZones.length > 0);
-}
-
 export function getZonesByType(type: AreaType): Zone[] {
   return ALL_NEIGHBORHOODS.filter((z) => z.areaType === type);
 }
@@ -202,9 +198,4 @@ export function getAreaTypeForZone(name: string): AreaType | null {
 export function getDepartmentForZone(name: string): string | null {
   const zone = findZoneWithNeighbors(name);
   return zone?.department || null;
-}
-
-export function getDepartmentNameForZone(name: string): string | null {
-  const zone = findZoneWithNeighbors(name);
-  return zone?.departmentName || null;
 }

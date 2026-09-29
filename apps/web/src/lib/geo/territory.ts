@@ -1,4 +1,4 @@
-export type TerritoryBounds = {
+type TerritoryBounds = {
   west: number;
   south: number;
   east: number;
@@ -7,55 +7,41 @@ export type TerritoryBounds = {
 
 // Metropolitan France bbox. Kept intentionally broad so territory-level geocoding
 // is no longer biased toward Île-de-France.
-export const FRANCE_TERRITORY_BOUNDS: TerritoryBounds = {
+const TERRITORY_BOUNDS: TerritoryBounds = {
   west: -5.5,
   south: 41.0,
   east: 10.0,
   north: 51.5,
 };
 
-export const FRANCE_TERRITORY_CENTER: [number, number] = [46.603354, 1.888334];
+export const TERRITORY_CENTER: [number, number] = [46.603354, 1.888334];
 
-export const TERRITORY_BOUNDS = FRANCE_TERRITORY_BOUNDS;
-export const TERRITORY_CENTER = FRANCE_TERRITORY_CENTER;
-
-export function buildFranceTerritoryViewbox(): string {
+function buildTerritoryViewbox(): string {
   return [
-    FRANCE_TERRITORY_BOUNDS.west,
-    FRANCE_TERRITORY_BOUNDS.north,
-    FRANCE_TERRITORY_BOUNDS.east,
-    FRANCE_TERRITORY_BOUNDS.south,
+    TERRITORY_BOUNDS.west,
+    TERRITORY_BOUNDS.north,
+    TERRITORY_BOUNDS.east,
+    TERRITORY_BOUNDS.south,
   ]
     .map(String)
     .join(",");
 }
 
-export function buildTerritoryViewbox(): string {
-  return buildFranceTerritoryViewbox();
-}
-
-export function buildFranceTerritoryLeafletBounds(): [[number, number], [number, number]] {
+export function buildTerritoryLeafletBounds(): [[number, number], [number, number]] {
   return [
-    [FRANCE_TERRITORY_BOUNDS.south, FRANCE_TERRITORY_BOUNDS.west],
-    [FRANCE_TERRITORY_BOUNDS.north, FRANCE_TERRITORY_BOUNDS.east],
+    [TERRITORY_BOUNDS.south, TERRITORY_BOUNDS.west],
+    [TERRITORY_BOUNDS.north, TERRITORY_BOUNDS.east],
   ];
 }
 
-export function buildTerritoryLeafletBounds(): [[number, number], [number, number]] {
-  return buildFranceTerritoryLeafletBounds();
-}
-
-export function buildFranceTerritoryNominatimSearchUrl(query: string): string | null {
-  return buildFranceTerritoryNominatimSearchUrlWithLimit(query, 1);
-}
-
 export function buildTerritoryNominatimSearchUrl(query: string): string | null {
-  return buildFranceTerritoryNominatimSearchUrl(query);
+  return buildTerritoryNominatimSearchUrlWithLimit(query, 1);
 }
 
-export function buildFranceTerritoryNominatimSearchUrlWithLimit(
+export function buildTerritoryNominatimSearchUrlWithLimit(
   query: string,
   limit: number,
+  viewbox = buildTerritoryViewbox(),
 ): string | null {
   const normalizedQuery = query.trim();
   if (!normalizedQuery) {
@@ -69,17 +55,10 @@ export function buildFranceTerritoryNominatimSearchUrlWithLimit(
     addressdetails: "1",
     countrycodes: "fr",
     bounded: "1",
-    viewbox: buildFranceTerritoryViewbox(),
+    viewbox,
   });
 
   return `https://nominatim.openstreetmap.org/search?${params.toString()}`;
-}
-
-export function buildTerritoryNominatimSearchUrlWithLimit(
-  query: string,
-  limit: number,
-): string | null {
-  return buildFranceTerritoryNominatimSearchUrlWithLimit(query, limit);
 }
 
 export type TerritoryAddressSuggestion = {
@@ -222,123 +201,7 @@ export function searchLocalTerritoryAddressSuggestions(
   });
 }
 
-export type NominatimAddress = {
-  house_number?: string;
-  road?: string;
-  pedestrian?: string;
-  footway?: string;
-  cycleway?: string;
-  path?: string;
-  place?: string;
-  suburb?: string;
-  village?: string;
-  town?: string;
-  city?: string;
-  municipality?: string;
-  postcode?: string;
-  state?: string;
-  country?: string;
-};
-
-export type NominatimSearchResult = {
-  lat?: string;
-  lon?: string;
-  display_name?: string;
-  importance?: number;
-  address?: NominatimAddress;
-};
-
-function cleanLabelPart(value: string | undefined): string {
-  return value?.trim().replace(/\s+/g, " ") ?? "";
-}
-
-function firstCleanLabelPart(...values: Array<string | undefined>): string {
-  for (const value of values) {
-    const cleaned = cleanLabelPart(value);
-    if (cleaned) {
-      return cleaned;
-    }
-  }
-  return "";
-}
-
-function joinLabelParts(...values: Array<string | undefined>): string {
-  return values.map(cleanLabelPart).filter(Boolean).join(" ").trim();
-}
-
-function buildFranceTerritoryAddressLines(address: NominatimAddress): {
-  firstLine: string;
-  cityLine: string;
-} {
-  const streetName = firstCleanLabelPart(
-    address.road,
-    address.pedestrian,
-    address.footway,
-    address.cycleway,
-    address.path,
-    address.place,
-  );
-  const number = cleanLabelPart(address.house_number);
-  const city = firstCleanLabelPart(
-    address.city,
-    address.town,
-    address.municipality,
-    address.village,
-    address.suburb,
-  );
-  return {
-    firstLine: joinLabelParts(number, streetName),
-    cityLine: joinLabelParts(address.postcode, city),
-  };
-}
-
-export function formatFranceTerritoryAddressLabel(result: NominatimSearchResult): string {
-  const address = result.address;
-  if (!address) {
-    return cleanLabelPart(result.display_name) || "Adresse sans libellé";
-  }
-
-  const { firstLine, cityLine } = buildFranceTerritoryAddressLines(address);
-
-  if (firstLine && cityLine) {
-    return `${firstLine}, ${cityLine}`;
-  }
-  if (firstLine) {
-    return firstLine;
-  }
-  if (cityLine) {
-    return cityLine;
-  }
-
-  return cleanLabelPart(result.display_name) || "Adresse sans libellé";
-}
-
-export function formatTerritoryAddressLabel(result: NominatimSearchResult): string {
-  return formatFranceTerritoryAddressLabel(result);
-}
-
-export function formatFranceTerritoryAddressSubtitle(result: NominatimSearchResult): string {
-  const address = result.address;
-  if (!address) {
-    return "Adresse exacte";
-  }
-
-  const city =
-    cleanLabelPart(address.city) ||
-    cleanLabelPart(address.town) ||
-    cleanLabelPart(address.municipality) ||
-    cleanLabelPart(address.village) ||
-    cleanLabelPart(address.suburb);
-  const state = cleanLabelPart(address.state);
-  const parts = [city, state].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Adresse exacte";
-}
-
-export function formatTerritoryAddressSubtitle(result: NominatimSearchResult): string {
-  return formatFranceTerritoryAddressSubtitle(result);
-}
-
-export function parseFranceTerritoryCoordinates(
+export function parseTerritoryCoordinates(
   result: unknown,
 ): { latitude: number; longitude: number } | null {
   if (!result || typeof result !== "object") {
@@ -356,27 +219,14 @@ export function parseFranceTerritoryCoordinates(
   return { latitude, longitude };
 }
 
-export function parseTerritoryCoordinates(
-  result: unknown,
-): { latitude: number; longitude: number } | null {
-  return parseFranceTerritoryCoordinates(result);
-}
-
-export function isWithinFranceTerritoryBounds(
-  latitude: number,
-  longitude: number,
-): boolean {
-  return (
-    latitude >= FRANCE_TERRITORY_BOUNDS.south &&
-    latitude <= FRANCE_TERRITORY_BOUNDS.north &&
-    longitude >= FRANCE_TERRITORY_BOUNDS.west &&
-    longitude <= FRANCE_TERRITORY_BOUNDS.east
-  );
-}
-
 export function isWithinTerritoryBounds(
   latitude: number,
   longitude: number,
 ): boolean {
-  return isWithinFranceTerritoryBounds(latitude, longitude);
+  return (
+    latitude >= TERRITORY_BOUNDS.south &&
+    latitude <= TERRITORY_BOUNDS.north &&
+    longitude >= TERRITORY_BOUNDS.west &&
+    longitude <= TERRITORY_BOUNDS.east
+  );
 }

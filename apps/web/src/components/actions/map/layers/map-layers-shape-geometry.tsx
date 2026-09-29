@@ -145,6 +145,36 @@ type PolygonGeometryRenderInput = {
   isSelected: boolean;
 };
 
+type GeometryInteractionOverlaysProps = {
+  item: ActionMapItem;
+  geometryKind: "polygon" | "polyline";
+  geometryLabel: string | null;
+  tooltipProps: PolygonGeometryRenderInput["tooltipProps"];
+  commonPopupProps: PolygonGeometryRenderInput["commonPopupProps"];
+};
+
+function GeometryInteractionOverlays({
+  item,
+  geometryKind,
+  geometryLabel,
+  tooltipProps,
+  commonPopupProps,
+}: GeometryInteractionOverlaysProps) {
+  return (
+    <>
+      <Tooltip className="glass-tooltip" direction="auto" sticky>
+        <GeometryTooltipContent
+          title={formatActionGeometryTooltipTitle(geometryKind, geometryLabel)}
+          {...tooltipProps}
+        />
+      </Tooltip>
+      <Popup className="glass-popup custom-popup">
+        <ActionPopupContent {...commonPopupProps} key={item.id} />
+      </Popup>
+    </>
+  );
+}
+
 function renderPolygonGeometry({
   item,
   geometry,
@@ -181,15 +211,13 @@ function renderPolygonGeometry({
           isSelected,
         })}
       >
-        <Tooltip className="glass-tooltip" direction="auto" sticky>
-          <GeometryTooltipContent
-            title={formatActionGeometryTooltipTitle("polygon", geometry.metrics.label)}
-            {...tooltipProps}
-          />
-        </Tooltip>
-        <Popup className="glass-popup custom-popup">
-          <ActionPopupContent {...commonPopupProps} key={item.id} />
-        </Popup>
+        <GeometryInteractionOverlays
+          item={item}
+          geometryKind="polygon"
+          geometryLabel={geometry.metrics.label}
+          tooltipProps={tooltipProps}
+          commonPopupProps={commonPopupProps}
+        />
       </Polygon>
     </Fragment>
   );
@@ -349,15 +377,13 @@ export function ShapeGeometryRenderer({
           isSelected,
         })}
       >
-        <Tooltip className="glass-tooltip" direction="auto" sticky>
-          <GeometryTooltipContent
-            title={formatActionGeometryTooltipTitle("polyline", geometry.metrics.label)}
-            {...tooltipProps}
-          />
-        </Tooltip>
-        <Popup className="glass-popup custom-popup">
-          <ActionPopupContent {...commonPopupProps} key={item.id} />
-        </Popup>
+        <GeometryInteractionOverlays
+          item={item}
+          geometryKind="polyline"
+          geometryLabel={geometry.metrics.label}
+          tooltipProps={tooltipProps}
+          commonPopupProps={commonPopupProps}
+        />
       </Polyline>
       {isActionMapItem(item) ? (
         <Polyline
