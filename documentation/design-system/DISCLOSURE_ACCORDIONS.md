@@ -85,7 +85,7 @@ Les migrations représentatives actuelles utilisent :
 
 - légal : `tone="slate"`, `size="lg"` ;
 - carte : `tone="sky"` ;
-- précisions IA : `tone="emerald"` ;
+- formulaire Actions : disclosures complémentaires « Détails de l’organisation », « Détails de la collecte », « Photos et estimation », « Parcours et géométrie » et « Détails temporels », en `tone="emerald"` ;
 - `QuestionCard` : tone dérivé de son état de source existant et `id` conservé.
 
 ## Modes d'affichage et mouvement

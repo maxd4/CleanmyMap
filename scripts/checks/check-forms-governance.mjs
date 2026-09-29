@@ -13,6 +13,9 @@ const migratedFiles = [
   "apps/web/src/components/reports/admin-workflow/step-confirm.tsx",
 ].map((file) => path.join(repositoryRoot, file));
 
+// The CURRENT Actions declaration form is intentionally outside this migration
+// boundary; this check does not claim to govern its ActionStep* controls.
+
 const violations = [];
 const directUtility = /(?:^|[\s"'`])(?:bg|border|rounded|p|px|py|shadow|ring|outline|focus|transition|duration|gap|h|min-h|max-h|w|min-w|max-w|translate|scale|blur|opacity)-[\w/[.:%-]+/;
 const directStyle = /(?:style\s*=|\b(?:background(?:Color)?|border(?:Color|Radius|Width)?|boxShadow|outline|padding(?:Block|Inline|Left|Right|Top|Bottom)?)\s*:)/;

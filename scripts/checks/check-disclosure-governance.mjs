@@ -8,7 +8,7 @@ const files = {
   primitive: "apps/web/src/components/ui/cmm-disclosure.tsx",
   legal: "apps/web/src/app/conditions-generales-utilisation/legal-accordion.tsx",
   map: "apps/web/src/components/actions/map/layers/map-geometry-legend.tsx",
-  vision: "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
+  actionForm: "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
   quiz: "apps/web/src/components/admin/quiz-bank-admin-view.question-card.tsx",
   documentation: "documentation/design-system/DISCLOSURE_ACCORDIONS.md",
 };
@@ -103,11 +103,20 @@ for (const marker of [
 const consumerScopes = {
   legal: extractScope(sources.legal, "export function LegalAccordion"),
   map: extractScope(sources.map, "export function MapGeometryLegend"),
-  vision: extractScope(sources.vision, "<CmmDisclosure", '<div className="sticky bottom-3'),
+  actionForm: extractScope(
+    sources.actionForm,
+    '<div className="space-y-3">\n                  <CmmDisclosure\n                    id="action-disclosure-organization"',
+    '\n                </div>\n\n                <div className="sticky bottom-3',
+  ),
   quiz: extractScope(sources.quiz, "export function QuestionCard"),
 };
 
 for (const [key, scope] of Object.entries(consumerScopes)) {
+  if (!scope) {
+    violations.push(`${files[key]}: disclosure governance scope could not be extracted`);
+    continue;
+  }
+
   requireText(key, "@/components/ui/cmm-disclosure", "consumer must use CmmDisclosure");
   requireText(key, "<CmmDisclosure", "consumer must render CmmDisclosure");
 
@@ -144,7 +153,17 @@ for (const [key, scope] of Object.entries(consumerScopes)) {
 for (const [key, required] of [
   ["legal", ['tone="slate"', 'size="lg"']],
   ["map", ['tone="sky"']],
-  ["vision", ['tone="emerald"']],
+  [
+    "actionForm",
+    [
+      'tone="emerald"',
+      'id="action-disclosure-organization"',
+      'id="action-disclosure-collection"',
+      'id="action-disclosure-photos"',
+      'id="action-disclosure-route"',
+      'id="action-disclosure-time"',
+    ],
+  ],
   ["quiz", ["id={question.id}", "tone={getQuestionTone(question)}"]],
 ]) {
   for (const marker of required) requireText(key, marker, `migration contract marker is missing: ${marker}`);

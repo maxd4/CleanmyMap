@@ -45,9 +45,6 @@ describe("sanitizePreActionForm", () => {
       wasteMetalKg: "6",
       wasteMixteKg: "7",
       triQuality: "elevee",
-      visionBagsCount: "8",
-      visionFillLevel: "75",
-      visionDensity: "humide_dense",
       notes: "bilan final",
       wasteCategories: ["plastic"],
     });
@@ -63,9 +60,6 @@ describe("sanitizePreActionForm", () => {
     expect(sanitized.wasteMetalKg).toBe("");
     expect(sanitized.wasteMixteKg).toBe("");
     expect(sanitized.triQuality).toBe("moyenne");
-    expect(sanitized.visionBagsCount).toBe("");
-    expect(sanitized.visionFillLevel).toBe("");
-    expect(sanitized.visionDensity).toBe("");
     expect(sanitized.notes).toBe("");
     expect(sanitized.wasteCategories).toEqual(["plastic"]);
   });

@@ -85,9 +85,6 @@ const FORM_STATE_KEYS = [
   "wasteMixteKg",
   "triQuality",
   "placeType",
-  "visionBagsCount",
-  "visionFillLevel",
-  "visionDensity",
 ] as const satisfies readonly (keyof FormState)[];
 
 function parseCoordinates(value: unknown): ActionLocationCoordinates | null {

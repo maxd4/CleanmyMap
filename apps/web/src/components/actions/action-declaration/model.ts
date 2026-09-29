@@ -82,9 +82,6 @@ export type FormState = {
  wasteMixteKg: string;
  triQuality:"faible" |"moyenne" |"elevee";
  placeType: string;
- visionBagsCount: string;
- visionFillLevel:"" |"25" |"50" |"75" |"100";
- visionDensity:"" |"sec" |"humide_dense" |"mouille";
  operationalRoute?: OperationalRoute | null;
  gpxImport?: ActionGpxImportMetadata | null;
  routeCalibrationContext?: RouteCalibrationContext | null;
@@ -157,9 +154,6 @@ export const initialState: FormState = {
  wasteMixteKg:"",
  triQuality:"moyenne",
  placeType: PLACE_TYPE_OPTIONS[0],
- visionBagsCount:"",
- visionFillLevel:"",
- visionDensity:"",
  operationalRoute: null,
  gpxImport: null,
  routeCalibrationContext: null,

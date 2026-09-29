@@ -42,9 +42,6 @@ function clearPostActionMeasurements(form: FormState): void {
   form.wasteVerreKg = "";
   form.wasteMetalKg = "";
   form.wasteMixteKg = "";
-  form.visionBagsCount = "";
-  form.visionFillLevel = "";
-  form.visionDensity = "";
 }
 
 function getStoredBreakdown(action: ActionEditorRecord): Record<string, unknown> {
