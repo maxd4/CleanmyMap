@@ -1,4 +1,3 @@
-import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { unstable_cache } from"next/cache";
 import { z } from"zod";
@@ -8,6 +7,7 @@ import {
 } from "@/lib/gamification/progression";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
+import { requireAuthenticatedAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 
 export const runtime ="nodejs";
@@ -17,29 +17,26 @@ const GAMIFICATION_LEADERBOARD_CACHE_HEADERS = {
 const GAMIFICATION_LEADERBOARD_CACHE_REVALIDATE_SECONDS = 120;
 
 const scopeSchema = z.enum(["individual","collective"]);
-const periodSchema = z.enum(["lifetime","yearToDate"]);
 const metricSchema = z.enum(["level", "xp", "badges"]);
 
 function buildLeaderboardCacheKey(
  scope: "individual" | "collective",
- period: "lifetime" | "yearToDate",
  metric: "level" | "xp" | "badges",
 ): string {
- return [`scope:${scope}`, `period:${period}`, `metric:${metric}`].join("|");
+ return [`scope:${scope}`, `metric:${metric}`].join("|");
 }
 
 async function loadCachedGamificationLeaderboard(
  scope: "individual" | "collective",
- period: "lifetime" | "yearToDate",
  metric: "level" | "xp" | "badges",
 ) {
  const cached = unstable_cache(
   async () => {
    const supabase = getSupabaseServerClient(true);
-    const leaderboard = await getGamificationLeaderboard(supabase, scope, period, metric);
+    const leaderboard = await getGamificationLeaderboard(supabase, scope, metric);
     return projectGamificationLeaderboardResponse(leaderboard);
   },
-   ["gamification-leaderboard", buildLeaderboardCacheKey(scope, period, metric)],
+   ["gamification-leaderboard", buildLeaderboardCacheKey(scope, metric)],
   {
    revalidate: GAMIFICATION_LEADERBOARD_CACHE_REVALIDATE_SECONDS,
    tags: ["gamification-leaderboard"],
@@ -50,26 +47,17 @@ async function loadCachedGamificationLeaderboard(
 }
 
 export async function GET(request: Request) {
- const { userId } = await auth();
- if (!userId) {
- return unauthorizedJsonResponse();
- }
+ const access = await requireAuthenticatedAccess();
+ if (!access.ok) return unauthorizedJsonResponse();
 
  const url = new URL(request.url);
  const parsed = scopeSchema.safeParse(url.searchParams.get("scope") ??"individual");
- const period = periodSchema.safeParse(url.searchParams.get("period") ??"lifetime");
  const metric = metricSchema.safeParse(url.searchParams.get("metric") ?? "level");
   if (!parsed.success) {
  return NextResponse.json(
  { error:"Invalid scope. Use individual|collective." },
  { status: 400 },
  );
-  }
-  if (!period.success) {
-    return NextResponse.json(
-      { error:"Invalid period. Use lifetime|yearToDate." },
-      { status: 400 },
-    );
   }
   if (!metric.success) {
     return NextResponse.json(
@@ -79,10 +67,9 @@ export async function GET(request: Request) {
   }
 
   try {
-  const leaderboard = await loadCachedGamificationLeaderboard(parsed.data, period.data, metric.data);
+  const leaderboard = await loadCachedGamificationLeaderboard(parsed.data, metric.data);
  return NextResponse.json({
  status:"ok",
- period: period.data,
   metric: metric.data,
  ...leaderboard,
  }, {

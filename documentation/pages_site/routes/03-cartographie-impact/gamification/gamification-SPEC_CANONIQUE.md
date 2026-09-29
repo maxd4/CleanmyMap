@@ -44,6 +44,14 @@ modération ou détail de badge n'est public. Le leaderboard est la seule
 exception publique Gamification nommée `PUBLIC_LEADERBOARD_EXCEPTION` ; il
 n'est jamais une source AuthZ et ne change ni XP, ni badges, ni impact.
 
+La route authentifiée historique
+`GET /api/gamification/leaderboard?scope=individual|collective&metric=level|xp|badges`
+réutilise les mêmes métriques et le même moteur de projection CURRENT. Le scope
+`individual` lit les utilisateurs opt-in ; le scope `collective` délègue au
+classement structurel. Cette route détaillée n'a pas de paramètre `period` :
+les contrats lifetime et année en cours restent ceux de la reconnaissance
+personnelle, séparée du leaderboard.
+
 Il centralise:
 
 - les règles métier réellement appliquées par le code;
@@ -355,7 +363,7 @@ La gamification manipule maintenant des scopes explicitement nommés.
 | Scope | Sens | Usage |
 |---|---|---|
 | `allTime` | cumul depuis la création du compte | progression personnelle, badges persistants, historique |
-| `yearToDate` | année civile en cours | bilans, classements annuels, reconnaissance éditoriale |
+| `yearToDate` | année civile en cours | bilans et reconnaissance éditoriale |
 | `rolling30d` | 30 derniers jours | pilotage opérationnel |
 | `rolling90d` | 90 derniers jours | lecture intermédiaire |
 | `rolling365d` | 365 derniers jours | tendance de fond |

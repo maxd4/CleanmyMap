@@ -13,12 +13,12 @@ afterEach(() => {
 
 describe("gamification leaderboard contract", () => {
   it("loads no variant before explicit detail interaction and one active variant after", () => {
-    expect(buildLeaderboardKey(false, "individual", "lifetime")).toBeNull();
-    expect(buildLeaderboardKey(true, "individual", "lifetime")).toBe(
-      "/api/gamification/leaderboard?scope=individual&period=lifetime&metric=level",
+    expect(buildLeaderboardKey(false, "individual")).toBeNull();
+    expect(buildLeaderboardKey(true, "individual")).toBe(
+      "/api/gamification/leaderboard?scope=individual&metric=level",
     );
-    expect(buildLeaderboardKey(true, "collective", "yearToDate")).toBe(
-      "/api/gamification/leaderboard?scope=collective&period=yearToDate&metric=level",
+    expect(buildLeaderboardKey(true, "collective")).toBe(
+      "/api/gamification/leaderboard?scope=collective&metric=level",
     );
   });
 
@@ -36,7 +36,6 @@ describe("gamification leaderboard contract", () => {
     const responseBody = {
       status: "ok" as const,
       scope: "individual" as const,
-      period: "lifetime" as const,
       generatedAt: "2026-09-29T10:00:00.000Z",
       items: [
         {
@@ -59,8 +58,8 @@ describe("gamification leaderboard contract", () => {
     expect((responseBody.items[0] as PublicIndividualLeaderboardItem).publicLabel).toBe("Alice");
   });
 
-  it("keeps only the supported scope and period dimensions in the URL", () => {
-    expect(buildLeaderboardUrl("individual", "yearToDate", "badges")).toContain("scope=individual&period=yearToDate&metric=badges");
-    expect(buildLeaderboardUrl("collective", "lifetime")).toContain("scope=collective&period=lifetime&metric=level");
+  it("keeps only the supported scope and metric dimensions in the URL", () => {
+    expect(buildLeaderboardUrl("individual", "badges")).toContain("scope=individual&metric=badges");
+    expect(buildLeaderboardUrl("collective")).toContain("scope=collective&metric=level");
   });
 });

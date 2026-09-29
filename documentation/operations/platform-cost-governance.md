@@ -209,7 +209,7 @@ nécessaire, un cache HTTP privé.
 | Pression événements pour itinéraire | clé unique de snapshot | au plus 560 événements + 4000 RSVP | 900 s | recommandations d'itinéraire ; invalidation événement/RSVP |
 | Pression par arrondissement | clé unique | au plus 280 événements + 4000 RSVP | 900 s | recommandations d'itinéraire ; invalidation événement/RSVP |
 | Spots | `limit` 1..300 × statut borné, au plus ~1200 lanes théoriques | au plus 300 spots par lecture | 60 s | carte spots authentifiée ; tag `spots-map` invalidé à la création d'un signalement |
-| Leaderboard gamification | 2 scopes × 2 périodes, 4 clés | classement borné par le loader | 120 s | leaderboard authentifié ; tag de classement |
+| Leaderboard gamification | 2 scopes × 3 métriques, 6 clés | classement borné par le loader | 120 s | leaderboard borné par le loader ; tag de classement |
 | Labels progression | clé partagée unique | au plus 10000 lignes d'actions | 120 s | progression/gamification ; tag commun |
 | Export referrals admin | clé unique, sans dimension utilisateur | toutes les lignes de profils, paginées par lots de 1000 ; volume total dépendant du nombre de profils | 600 s | export admin ; tag `admin-referral-lineage-export` |
 
