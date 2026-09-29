@@ -294,6 +294,6 @@ export function buildPreActionSummaryNote(form: FormState): string | null {
   return chunks.length > 0 ? chunks.join(" · ") : null;
 }
 
-export function labelForPreparationState(value: FormState["preparationState"]): string {
+function labelForPreparationState(value: FormState["preparationState"]): string {
   return PREPARATION_STATE_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }

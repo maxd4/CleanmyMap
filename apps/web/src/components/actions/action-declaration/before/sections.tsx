@@ -494,7 +494,7 @@ export function PlannedActionSection({ form, updateField, hasAttemptedSubmit, va
   );
 }
 
-export function ExpectedWasteSection({ form, updateField }: BaseSectionProps) {
+function ExpectedWasteSection({ form, updateField }: BaseSectionProps) {
   return (
     <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-4">
       <p className="mb-4 text-sm font-black text-emerald-950">Déchets attendus</p>

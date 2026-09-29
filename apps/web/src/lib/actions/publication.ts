@@ -8,9 +8,3 @@ export type ActionPublicationState = {
 export function canPublishPreAction(action: ActionPublicationState): boolean {
   return action.actionPhase === "pre_action" && !action.publishedAt;
 }
-
-export function isExplicitlyPublished(
-  action: Pick<ActionPublicationState, "publishedAt">,
-): boolean {
-  return Boolean(action.publishedAt);
-}

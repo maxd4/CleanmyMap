@@ -6,7 +6,7 @@ import {
   type MyObservation,
 } from "./my-observations-contract";
 
-export type MyObservationsReadStatus = "idle" | "loading" | "ready" | "empty" | "error";
+type MyObservationsReadStatus = "idle" | "loading" | "ready" | "empty" | "error";
 
 export type MyObservationsReadSnapshot = {
   status: MyObservationsReadStatus;

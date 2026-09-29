@@ -32,7 +32,7 @@ type FetchUnifiedActionContractsResult = {
   sourceHealth: ActionMapResponse["sourceHealth"];
 };
 
-export function isPublicFutureActionContract(
+function isPublicFutureActionContract(
   contract: ActionDataContract,
   now = new Date(),
 ): boolean {

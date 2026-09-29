@@ -140,23 +140,6 @@ function isCreatorToken(
   );
 }
 
-export function parseOrganizerAccountTokens(
-  raw: string | string[] | null | undefined,
-): string[] {
-  if (Array.isArray(raw)) {
-    return uniqueTokens(raw);
-  }
-  if (typeof raw !== "string") {
-    return [];
-  }
-  return uniqueTokens(
-    raw
-      .split(/[,;\n]+/)
-      .map((token) => token.trim())
-      .filter((token) => token.length > 0),
-  );
-}
-
 function normalizeProfileRow(row: ProfileLookupRow): ResolvedActionAccount {
   return {
     userId: row.id,
@@ -449,7 +432,7 @@ export async function syncActionManualParticipants(params: {
   return resolution;
 }
 
-export async function loadActionOrganizerRowsForAction(
+async function loadActionOrganizerRowsForAction(
   supabase: SupabaseClient,
   actionId: string,
 ): Promise<

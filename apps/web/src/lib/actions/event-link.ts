@@ -1,4 +1,4 @@
-export const EVENT_REF_NOTE_PREFIX = "[EVENT_REF]";
+const EVENT_REF_NOTE_PREFIX = "[EVENT_REF]";
 
 function normalizeEventId(value: string | null | undefined): string | null {
   const candidate = (value ?? "").trim();

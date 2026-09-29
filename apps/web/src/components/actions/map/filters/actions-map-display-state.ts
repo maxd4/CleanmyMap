@@ -16,7 +16,7 @@ import type {
 } from "@/lib/actions/pollution/local-repollution-calibration";
 import type { ActionMapItem } from "@/lib/actions/types";
 
-export function resolveMapSourceContracts(
+function resolveMapSourceContracts(
   items: readonly ActionMapItem[],
 ): ActionDataContract[] {
   const contracts = new Map<string, ActionDataContract>();

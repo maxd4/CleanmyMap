@@ -4,7 +4,7 @@ import { evaluateActionQuality } from "./quality/quality";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { resolveEffectiveVolunteerUnits } from "./volunteer-participation";
 
-export type PostActionImpactMetric = {
+type PostActionImpactMetric = {
   id: "co2" | "water" | "surface";
   label: string;
   value: number;

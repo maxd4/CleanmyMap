@@ -2,7 +2,7 @@ import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { reconcileModerationProgressionForUser } from "@/lib/gamification/moderation-progression";
 
-export type ActionModerationAuditOutcome = "success" | "error";
+type ActionModerationAuditOutcome = "success" | "error";
 
 export type ActionModerationAuditParams = {
   operationId: string;

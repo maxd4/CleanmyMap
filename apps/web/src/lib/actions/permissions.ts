@@ -1,9 +1,9 @@
 import type { ActionPhase, ActionStatus } from "@/lib/actions/types";
 import type { AppProfile } from "@/lib/profiles";
 
-export const ACTION_GLOBAL_ADMIN_ROLES = ["admin", "max"] as const;
+const ACTION_GLOBAL_ADMIN_ROLES = ["admin", "max"] as const;
 
-export type ActionGlobalAdminRole = (typeof ACTION_GLOBAL_ADMIN_ROLES)[number];
+type ActionGlobalAdminRole = (typeof ACTION_GLOBAL_ADMIN_ROLES)[number];
 
 export type ActionPermissionIdentity = {
   userId: string;

@@ -25,7 +25,7 @@ export type SignalementEvidenceUploadResult = {
   failed: Array<{ item: SignalementEvidenceUploadItem; message: string }>;
 };
 
-export type SignalementMediaReadStatus =
+type SignalementMediaReadStatus =
   | "idle"
   | "loading"
   | "ready"

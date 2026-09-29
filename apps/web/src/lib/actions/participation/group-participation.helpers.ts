@@ -167,7 +167,7 @@ export function buildJoinableItem(
   };
 }
 
-export async function countActiveParticipants(
+async function countActiveParticipants(
   supabase: SupabaseClient,
   actionId: string,
 ): Promise<number> {

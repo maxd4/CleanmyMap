@@ -1,11 +1,11 @@
 import type { OrganizerType } from "./organizer-type";
 
-export type OrganizerGeographicScope = "local" | "regional" | "national";
-export type OrganizerActivityCadence =
+type OrganizerGeographicScope = "local" | "regional" | "national";
+type OrganizerActivityCadence =
   | "monthly"
   | "multiple_per_year"
   | "annual";
-export type OrganizerActivityRole =
+type OrganizerActivityRole =
   | "direct_organizer"
   | "network_coordinator"
   | "both";

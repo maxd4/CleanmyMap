@@ -11,7 +11,7 @@ import {
   stripWasteCategoryMarkersFromNotes,
 } from "@/lib/waste";
 
-export type SignalementType = "clean_place" | "spot";
+type SignalementType = "clean_place" | "spot";
 
 export type CreateSignalementParams = {
   userId: string;

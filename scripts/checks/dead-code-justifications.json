@@ -28,6 +28,188 @@
       "reason": "data-contract.ts est la façade publique étroite canonique Actions et apps/web/src/lib/actions/README.md documente explicitement l’exposition de ACTION_ENTITY_TYPES.",
       "evidence": "apps/web/src/lib/actions/README.md ; apps/web/src/lib/actions/data-contract.ts",
       "reviewedRef": "1c01d1cef50b9a7bca0a0db90cd4d31458df7722"
+    },
+    {
+      "id": "aef3265fcbbcec4534faca62",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:buildUnifiedActionContracts",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "e98b64e23ab36762166d414a",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:filterContractsByViewport",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "7f8f09d93f0388577109a4d9",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:mapActionStatusToSpotStatuses",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "444bf661d8ae79ca48c709bc",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:toActionContract",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "2b20e67a27812668ab757c2e",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:UnifiedActionContractsParams",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "db9b35c13b6921da0d652bbc",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:UnifiedActionSourceLoadResult",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "dda326bfceb898838dc79ded",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:UnifiedContractCandidate",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "e6e5d6757df63bef35d31971",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:UnifiedContractOrigin",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "090ba5bfebe7c31c7ca988ec",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:buildUnifiedActionContracts",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "eebdc82fb5594ebddb3de6a2",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:filterContractsByViewport",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "ba3babc41e885701128dba59",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:mapActionStatusToSpotStatuses",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "597c1320511095fd6a5634ef",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:normalizeExternalActionImport",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "7f72430e1779c1fcd1b40da3",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:toActionContract",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "54d6932c6f808bef4336b498",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:toCanonicalSpotContract",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "5f898de3601cf45dd60d93f6",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:TrashSpotterSpotRow",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "7c4ca2df0c6fb582ee9b198b",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:UnifiedActionSourceLoadResult",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "a577c691e5462215a45318dd",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:UnifiedContractCandidate",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "6b490b48973a637864295460",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:UnifiedContractOrigin",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "0c5528607d5afef29885723a",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
+      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.identity-section.tsx",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "dbd86c5a49393a84b4102727",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
+      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.location-section.tsx",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "024ab304dbc14be0f551c128",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
+      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/ui/action-declaration-form.identity-fields.tsx",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "c80e5382c0f4e513374413bc",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
+      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/ui/action-declaration-form.main-fields.tsx",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "2196d1e39593d08622542102",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
+      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.sections.tsx",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "a7992ce006ac19820cc1f59e",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
+      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.summary-section.tsx",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "1bedb7d549d8127f00ffd9af",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le fichier reste un contrat CURRENT du contrôle Forms & Controls ; sa suppression ferait échouer le garde de gouvernance.",
+      "evidence": "scripts/checks/check-forms-governance.mjs:migratedFiles/readRequired ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.waste-section.tsx",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
+    },
+    {
+      "id": "38f0fc4f3626e0b87cdc3aef",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "Le composant est requis par le flux CURRENT des champs complets du formulaire ; sa suppression casse l'import utilisé par action-declaration-form.sections.tsx.",
+      "evidence": "apps/web/src/components/actions/action-declaration/sections/action-declaration-form.sections.tsx:7,76 importe et rend ActionDeclarationPhotoSection ; apps/web/src/components/actions/action-declaration/sections/action-declaration-form.photo-section.tsx",
+      "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     }
   ]
 }

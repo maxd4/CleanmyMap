@@ -14,7 +14,7 @@ export type TrashSpotterSpecializationReason =
   | "missing_categories"
   | "unknown_categories";
 
-export type TrashSpotterVolunteerEligibility =
+type TrashSpotterVolunteerEligibility =
   | "eligible"
   | "specialized_required";
 

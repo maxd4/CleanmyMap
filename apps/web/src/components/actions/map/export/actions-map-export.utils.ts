@@ -215,7 +215,7 @@ export function toActionsMapCsvRows(
   });
 }
 
-export function buildActionsMapGeoJson(
+function buildActionsMapGeoJson(
   items: ActionMapItem[],
   context: ActionsMapExportContext = {},
 ): GeoJsonFeatureCollection {

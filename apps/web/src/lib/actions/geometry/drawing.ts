@@ -1,7 +1,6 @@
 import type { ActionDrawing } from "@/lib/actions/types";
 import {
   isRenderableDrawing,
-  parseDrawingFromGeoJson,
   toGeoJsonString,
 } from "@/lib/actions/geometry/derived-geometry";
 import { stripEventRefFromNotes } from "../event-link";
@@ -103,4 +102,4 @@ export function parseDrawingFromNotes(
   }
 }
 
-export { parseDrawingFromGeoJson, toGeoJsonString };
+export { toGeoJsonString };

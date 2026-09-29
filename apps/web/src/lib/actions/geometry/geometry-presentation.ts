@@ -8,7 +8,7 @@ export type GeometryPresentation = {
   strokeStyle: "solid" | "dashed" | "point";
 };
 
-export function toGeometryPresentationOrigin(
+function toGeometryPresentationOrigin(
   item: ActionMapItem,
 ): ActionGeometryOrigin {
   const contractGeometry = item.contract?.geometry;
@@ -26,7 +26,6 @@ export function toGeometryPresentationOrigin(
     contractGeometry?.confidence ?? item.geometry_confidence ?? null,
   );
 }
-
 /**
  * Retourne les propriétés visuelles et textuelles pour représenter la géométrie d'une action.
  */
@@ -79,14 +78,4 @@ export function getGeometryPresentation(
         strokeStyle: "point",
       };
   }
-}
-
-export function isRealGeometryOrigin(origin: ActionGeometryOrigin): boolean {
-  return origin === "manual" || origin === "gpx_import" || origin === "reference";
-}
-
-export function isEstimatedGeometryOrigin(
-  origin: ActionGeometryOrigin,
-): boolean {
-  return origin === "routed" || origin === "estimated_route" || origin === "estimated_area";
 }

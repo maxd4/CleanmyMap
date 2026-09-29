@@ -1,13 +1,10 @@
 export type {
-  ActionParticipationErrorStage,
   ActionParticipationReviewItem,
   ActionParticipationSearchItem,
   JoinableActionHistoryItem,
   JoinableActionItem,
 } from "./group-participation-contract";
 export { ActionParticipationOperationError } from "./group-participation-contract";
-export { usesRegistrationStore } from "./action-phase";
-
 export {
   isVisibleInGroupForms,
   loadJoinableActions,
