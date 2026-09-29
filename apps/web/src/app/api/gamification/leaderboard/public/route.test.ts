@@ -75,6 +75,7 @@ describe("GET /api/gamification/leaderboard/public", () => {
     expect(JSON.stringify(body)).not.toContain("email");
     expect(JSON.stringify(body)).not.toContain("metadata");
     expect(JSON.stringify(body)).not.toContain("authorized_moderation");
+    expect(JSON.stringify(body)).not.toMatch(/xpPending|role|contributions|impact|history/iu);
     if (scope === "structure") {
       expect(body.items[0]).toEqual(expect.objectContaining({ structureType: "association" }));
     }

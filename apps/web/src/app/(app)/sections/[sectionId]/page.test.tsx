@@ -149,6 +149,23 @@ describe("section authentication gate", () => {
     await expectPublicNoindexMetadata("leaderboard");
   });
 
+  it("keeps private gamification noindex and non-followable", async () => {
+    mocks.getSectionRubriqueById.mockReturnValue({
+      id: "gamification",
+      anonymousPresentation: "disabled",
+      label: { fr: "Gamification", en: "Gamification" },
+      description: { fr: "Progression", en: "Progression" },
+    });
+
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ sectionId: "gamification" }),
+      searchParams: Promise.resolve({}),
+    });
+
+    expect(metadata.robots).toEqual({ index: false, follow: false, nocache: true });
+    expect(metadata).not.toHaveProperty("alternates");
+  });
+
   it("keeps public section metadata deterministic and French", async () => {
     mocks.getSectionRubriqueById.mockReturnValue({
       id: "community",

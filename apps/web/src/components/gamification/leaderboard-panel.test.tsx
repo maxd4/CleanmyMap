@@ -51,6 +51,7 @@ describe("LeaderboardPanel", () => {
     expect(html).toContain("Utilisateur");
     expect(html).not.toContain("userId");
     expect(html).not.toContain("clerk");
+    expect(html).not.toMatch(/email|metadata|xpPending|contributions|impact|history|moderation/iu);
   });
 
   it("renders structure type and collective level without an organizer id", () => {
