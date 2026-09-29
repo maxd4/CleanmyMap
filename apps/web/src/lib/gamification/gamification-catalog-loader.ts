@@ -192,7 +192,9 @@ function buildSecondaryProgressionFacts({
   };
 }
 
-function buildProgressionFacts(input: CatalogProgressionInputs) {
+function buildProgressionFacts(
+  input: CatalogProgressionInputs,
+): Record<string, GamificationCatalogProgressionFact> {
   return {
     ...buildPrimaryProgressionFacts(input),
     ...buildSecondaryProgressionFacts(input),
