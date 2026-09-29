@@ -1860,15 +1860,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/geo/greater-paris.ts",
-      "line": 229,
-      "category": "métier/domain pur",
-      "ceiling": 17,
-      "status": "LEGACY",
-      "functionIdentity": "named:formatGreaterParisAddressLabel#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/lib/geo/municipal-cleaning-serviceability.ts",
       "line": 363,
       "category": "métier/domain pur",
