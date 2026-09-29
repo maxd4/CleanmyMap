@@ -8,6 +8,19 @@ export type CurrentLeaderboardBadgeCounts = {
   oneShotCount: number;
 };
 
+export function countCurrentLeaderboardBadgeFacts(input: {
+  gradeIds: Iterable<string>;
+  oneShotIds: Iterable<string>;
+}): CurrentLeaderboardBadgeCounts {
+  const gradeCount = new Set(input.gradeIds).size;
+  const oneShotCount = new Set(input.oneShotIds).size;
+  return {
+    badgeTotal: gradeCount + oneShotCount,
+    gradeCount,
+    oneShotCount,
+  };
+}
+
 function isPublicCurrentDefinition(item: GamificationCatalogItem): boolean {
   const definition = item.kind === "progression"
     ? findBadgeDefinitionByFamily(
@@ -51,11 +64,5 @@ export function countCurrentLeaderboardBadges(
     }
   }
 
-  const gradeCount = gradeIds.size;
-  const oneShotCount = oneShotIds.size;
-  return {
-    badgeTotal: gradeCount + oneShotCount,
-    gradeCount,
-    oneShotCount,
-  };
+  return countCurrentLeaderboardBadgeFacts({ gradeIds, oneShotIds });
 }

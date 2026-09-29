@@ -133,7 +133,7 @@ function comparePublicLabels(left: string, right: string): number {
   return left.localeCompare(right, "fr-FR", { sensitivity: "base" }) || left.localeCompare(right);
 }
 
-export function compareIndividualLeaderboardItems(
+export function compareLeaderboardItems(
   a: IndividualLeaderboardItem,
   b: IndividualLeaderboardItem,
   metric: LeaderboardMetric,
@@ -166,6 +166,14 @@ export function compareIndividualLeaderboardItems(
   );
 }
 
+export function compareIndividualLeaderboardItems(
+  a: IndividualLeaderboardItem,
+  b: IndividualLeaderboardItem,
+  metric: LeaderboardMetric,
+): number {
+  return compareLeaderboardItems(a, b, metric);
+}
+
 export function rankIndividualLeaderboardItems(
   items: readonly InternalIndividualLeaderboardItem[],
   metric: LeaderboardMetric,
@@ -181,7 +189,7 @@ async function loadOptedInProfiles(
 ): Promise<IndividualProfileRow[]> {
   const result = await supabase
     .from("profiles")
-    .select("id, display_name, display_name_mode, handle, leaderboard_public_opt_in")
+    .select("id, display_name, display_name_mode, handle, leaderboard_public_opt_in, xp_validated, current_level")
     .eq("leaderboard_public_opt_in", true)
     .limit(1000);
   if (result.error) throw new Error(result.error.message);
@@ -245,6 +253,17 @@ export async function buildIndividualLeaderboardForUser(
     item: candidates.find((candidate) => candidate.userId === userId) ?? null,
     total: candidates.length,
   };
+}
+
+export async function buildPublicUserLeaderboard(
+  supabase: SupabaseClient,
+  metric: LeaderboardMetric,
+): Promise<IndividualLeaderboardItem[]> {
+  return (await buildIndividualLeaderboardCandidates(supabase, metric)).map((candidate) => {
+    const { userId, ...item } = candidate;
+    void userId;
+    return item;
+  });
 }
 
 export async function getGamificationLeaderboard(

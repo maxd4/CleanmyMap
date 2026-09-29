@@ -68,6 +68,7 @@
     "apps/web/src/app/api/gamification/analytics/points/route.ts",
     "apps/web/src/app/api/gamification/badges/[userId]/route.ts",
     "apps/web/src/app/api/gamification/badges/list/route.ts",
+    "apps/web/src/app/api/gamification/leaderboard/public/route.ts",
     "apps/web/src/app/api/gamification/leaderboard/route.ts",
     "apps/web/src/app/api/gamification/me/acknowledge-rules-migration/route.ts",
     "apps/web/src/app/api/gamification/me/route.ts",
@@ -108,6 +109,7 @@
     "apps/web/src/app/api/users/checklist-progress/route.ts",
     "apps/web/src/app/api/users/map-viewport-fallback/route.ts",
     "apps/web/src/app/api/users/profile/display-name-mode/route.ts",
-    "apps/web/src/app/api/users/profile/handle/route.ts"
+    "apps/web/src/app/api/users/profile/handle/route.ts",
+    "apps/web/src/app/api/users/profile/leaderboard-opt-in/route.ts"
   ]
 }

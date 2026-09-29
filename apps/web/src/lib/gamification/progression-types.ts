@@ -3,6 +3,7 @@ import type {
   ActionGeometryKind,
   ActionGeometrySource,
 } from "@/lib/actions/types";
+import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { EngagementStatus } from "./engagement-status";
 import type {
   ProgressionRulesVersion,
@@ -284,6 +285,9 @@ export type ActionRow = {
   created_by_clerk_id: string;
   type?: string | null;
   actor_name: string | null;
+  organizer_type?: OrganizerType | null;
+  organizer_id?: string | null;
+  organizer_name?: string | null;
   action_date: string;
   location_label: string;
   latitude: number | null;
@@ -488,6 +492,15 @@ export type LeaderboardResponseDto = {
     topContributors: [];
     currentContributor: null;
   };
+};
+
+export type PublicLeaderboardItem = IndividualLeaderboardItem;
+
+export type PublicLeaderboardResponseDto = {
+  scope: "user" | "structure";
+  metric: LeaderboardMetric;
+  generatedAt: string;
+  items: PublicLeaderboardItem[];
 };
 
 export type PersonalImpactMetrics = {

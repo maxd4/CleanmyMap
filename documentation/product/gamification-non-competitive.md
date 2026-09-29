@@ -143,6 +143,17 @@ Implication pour CleanMyMap:
 - comparaison sociale permanente;
 - mecanismes qui poussent a declarer plus vite au lieu de declarer mieux.
 
+### Exception publique nommée : `PUBLIC_LEADERBOARD_EXCEPTION`
+
+Le leaderboard n'est pas une mécanique compétitive principale. L'unique
+exception publique Gamification autorisée est la projection
+`PUBLIC_LEADERBOARD_EXCEPTION`, servie par
+`GET /api/gamification/leaderboard/public` : elle est bornée aux métriques
+CURRENT `level`, `xp` et `badges`, n'est pas une source d'AuthZ et ne modifie
+ni l'XP, ni les badges, ni les métriques d'impact. Les utilisateurs doivent
+avoir activé leur consentement explicite ; les structures sont limitées aux
+identités canoniques attribuables par `organizer_id`.
+
 ## Architecture ludique recommandee pour CleanMyMap
 
 ### Progression
