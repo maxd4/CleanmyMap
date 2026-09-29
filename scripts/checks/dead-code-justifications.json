@@ -63,6 +63,13 @@
       "reason": "Le type de source des suggestions est partagé par le contrat de suggestion CURRENT.",
       "evidence": "apps/web/src/components/actions/action-declaration/utils/action-declaration-form.vision-suggestion.ts:5,11-16 utilise WasteSuggestionSource dans WasteSuggestion.",
       "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
+    },
+    {
+      "id": "c61f931a449d5147e12bba86",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "data-contract.ts est la façade publique étroite canonique Actions et apps/web/src/lib/actions/README.md documente explicitement l’exposition de ACTION_ENTITY_TYPES.",
+      "evidence": "apps/web/src/lib/actions/README.md ; apps/web/src/lib/actions/data-contract.ts",
+      "reviewedRef": "1c01d1cef50b9a7bca0a0db90cd4d31458df7722"
     }
   ]
 }
