@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildSupabaseMock, type ChatMessageRow } from "./route.test.helpers";
+import { GET, POST } from "./route";
 
 vi.mock("server-only", () => ({}));
 
@@ -87,7 +88,6 @@ describe("admin_elu topics in the Chat API", () => {
       rlsClientMock.mockResolvedValue(supabaseMock.supabase);
       serverClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
-      const { GET } = await import("./route");
       const response = await GET(
         new Request("http://localhost/api/chat?channelType=admin_elu"),
       );
@@ -123,7 +123,6 @@ describe("admin_elu topics in the Chat API", () => {
       rlsClientMock.mockResolvedValue(supabaseMock.supabase);
       serverClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
-      const { POST } = await import("./route");
       const response = await POST(
         new Request("http://localhost/api/chat", {
           method: "POST",
@@ -164,7 +163,6 @@ describe("admin_elu topics in the Chat API", () => {
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const { GET } = await import("./route");
     const response = await GET(
       new Request("http://localhost/api/chat?channelType=admin_elu"),
     );
@@ -175,7 +173,7 @@ describe("admin_elu topics in the Chat API", () => {
 
   it("denies admin_elu poll creation to other roles before opening the RLS client", async () => {
     identityMock.mockResolvedValueOnce({ activeRole: "benevole" });
-    const response = await (await import("./route")).POST(
+    const response = await POST(
       new Request("http://localhost/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -206,7 +204,6 @@ describe("admin_elu topics in the Chat API", () => {
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const { GET } = await import("./route");
     const aggregateResponse = await GET(
       new Request("http://localhost/api/chat?channelType=admin_elu"),
     );
@@ -256,7 +253,6 @@ describe("admin_elu topics in the Chat API", () => {
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const { POST } = await import("./route");
     const response = await POST(
       new Request("http://localhost/api/chat", {
         method: "POST",
@@ -286,7 +282,6 @@ describe("admin_elu topics in the Chat API", () => {
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const { POST } = await import("./route");
     const response = await POST(
       new Request("http://localhost/api/chat", {
         method: "POST",
