@@ -11,7 +11,8 @@ import { canonicalAgentFiles, validateAgentGovernance } from "./check-agent-gove
 function createValidFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-agent-governance-"));
   const content = {
-    "AGENTS.md": "apps/web scripts documentation fichiers scoped MAIN-ONLY / SINGLE-WRITER origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push\n\n### LEGACY / COMPATIBILITY\nworkspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire",
+    "AGENTS.md": "apps/web scripts documentation fichiers scoped MAIN-ONLY / SINGLE-WRITER origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push\nun seul writer mutable peut agir à la fois ; les analyses read-only peuvent être parallèles.\nmain publié = référence versionnée ;\nune candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;\ntout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.\nHors mode de développement rapide : validation → commit isolé → push main → vérification de convergence\nMode de développement rapide explicitement activé : commit local selon son protocole, sans push tant que le mode reste actif\n\n### LEGACY / COMPATIBILITY\nworkspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire",
+    "CHATGPT.md": "MAIN-ONLY / SINGLE-WRITER\nHors mode de développement rapide : validation → commit isolé → push main → vérification de convergence\nMode de développement rapide explicitement activé : commit local selon son protocole, sans push tant que le mode reste actif",
     "apps/web/AGENTS.md": "Next.js Server/Client Leaflet",
     "apps/web/src/app/api/AGENTS.md": "AuthN AuthZ contrat de réponse propre",
     "apps/web/supabase/AGENTS.md": "apps/web/supabase/migrations/ unique RLS",
@@ -29,6 +30,8 @@ function createValidFixture() {
     fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
     fs.writeFileSync(absolutePath, `${content[relativePath]}\n`);
   }
+
+  fs.writeFileSync(path.join(root, "CHATGPT.md"), `${content["CHATGPT.md"]}\n`);
 
   fs.mkdirSync(path.join(root, "apps", "web", "supabase", "migrations"), { recursive: true });
   return root;
@@ -73,6 +76,33 @@ describe("AGENTS hierarchy governance", () => {
     const fixture = createValidFixture();
     try {
       assert.deepEqual(validateAgentGovernance(fixture), []);
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects contradictory CURRENT workflow wording", () => {
+    const fixture = createValidFixture();
+    const agentsPath = path.join(fixture, "AGENTS.md");
+    const chatgptPath = path.join(fixture, "CHATGPT.md");
+    fs.writeFileSync(
+      agentsPath,
+      fs.readFileSync(agentsPath, "utf8").replace(
+        "main publié = référence versionnée ;",
+        "l'état local est prioritaire sur l'etat github",
+      ),
+    );
+    fs.writeFileSync(
+      chatgptPath,
+      fs.readFileSync(chatgptPath, "utf8").replace(
+        "push main",
+        "push origin/main sur demande explicite",
+      ),
+    );
+    try {
+      const findings = validateAgentGovernance(fixture);
+      assert.ok(findings.some((finding) => finding.includes("global local-over-GitHub priority")));
+      assert.ok(findings.some((finding) => finding.includes("publication must not depend")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }

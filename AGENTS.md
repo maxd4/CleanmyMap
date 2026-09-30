@@ -98,14 +98,29 @@ Une preuve ne justifie que ce qu’elle mesure.
 Le workflow courant est `MAIN-ONLY / SINGLE-WRITER`.
 
 - la branche de travail normale est `main` ;
-- un seul chantier peut écrire à la fois dans le checkout partagé ; les lots restent coordonnés pour éviter les régressions.
+- un seul writer mutable peut agir à la fois ; les analyses read-only peuvent être parallèles.
 - aucun nouveau worktree, clone ou branche de chantier n’est créé pour le
   workflow normal ;
-- l'état local est prioritaire sur l'etat github
+- main publié = référence versionnée ;
+- une candidate locale explicitement fournie ou produite pour le lot courant
+  est autoritative pour ce lot jusqu’à intégration ;
+- tout changement local préexistant doit être préservé et ne doit jamais être
+  écrasé par une synchronisation avec Git.
 - un lot terminé produit un au moins commit local sur `main` après validation de
   son candidat ;
 - le commit est non signé par défaut ;
-- le push est toujours effectué sauf en cas de mode de développement rapide.
+
+Hors mode de développement rapide :
+
+```text
+validation → commit isolé → push main → vérification de convergence
+```
+
+Mode de développement rapide explicitement activé :
+
+```text
+commit local selon son protocole, sans push tant que le mode reste actif
+```
 
 L’absence de push d’un lot précédent ne bloque pas un nouveau lot local cohérent.
 
