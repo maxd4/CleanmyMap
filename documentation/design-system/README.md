@@ -39,6 +39,7 @@ et `display-modes.css`; `CmmIcon` reste la primitive canonique pour les glyphes.
 
 ## Références non canoniques
 
+- [`GAMIFICATION_BADGES_VISUAL_DIRECTION.md`](./GAMIFICATION_BADGES_VISUAL_DIRECTION.md) — direction visuelle `PLAN` pour les badges, progressions, jalons, gemmes et le marqueur `New`; les assets finaux restent différés.
 - [`ANIMATION_LIBRARY.md`](./ANIMATION_LIBRARY.md) — `PLAN / REFERENCE`,
   recettes Framer Motion optionnelles ; le contrat est
   [`MOTION_TRANSITIONS.md`](./MOTION_TRANSITIONS.md).

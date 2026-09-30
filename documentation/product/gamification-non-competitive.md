@@ -119,6 +119,12 @@ Implication pour CleanMyMap:
 
 ## Principes de design recommandes
 
+L’identité visuelle préparatoire des badges est consignée dans le
+[decision record produit](./GAMIFICATION_BADGES_PRODUCT_DECISIONS.md), sans
+remplacer la spec métier canonique. Le contrat reste :
+`badges = progression personnelle + reconnaissance + contribution`, et non
+`badges = podium + victoire sociale + rareté marchande`.
+
 ### Faire
 
 - privilegier la progression personnelle au classement;

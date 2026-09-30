@@ -910,6 +910,14 @@ brute de l'équivalent sec utilisé par Mohs.
 - [Gamification non competitive](../../../../product/gamification-non-competitive.md)
 - [Objectifs validés](../../../../product/objectifs-valides.md)
 - [Objectifs non pertinents](./gamification-objectifs-non-pertinents.md)
+- [Direction visuelle préparatoire des badges](../../../../design-system/GAMIFICATION_BADGES_VISUAL_DIRECTION.md) — document `PLAN` distinct du contrat métier.
+
+Les choix graphiques finaux des badges ne sont pas encore `CURRENT`. La
+direction préparatoire est documentée dans
+`documentation/design-system/GAMIFICATION_BADGES_VISUAL_DIRECTION.md` ; aucun
+asset final ne doit être dérivé automatiquement de cette direction avant la
+stabilisation de l’architecture de gamification. Cette spec reste la source de
+vérité pour les familles, règles, XP, paliers et critères d’éligibilité.
 
 ## Vérification
 
