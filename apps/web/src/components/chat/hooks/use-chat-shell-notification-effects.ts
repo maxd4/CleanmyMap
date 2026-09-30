@@ -23,20 +23,14 @@ type UseChatShellNotificationEffectsParams = {
   messages: { id: string }[];
 };
 
-export function useChatShellNotificationEffects({
+type ReadMarkerRef = { current: string | null };
+
+function useSelectedRecipientSync({
   activeChannelType,
-  activeTopicId,
-  selectedActionId,
-  feedState,
-  messagerieMode,
-  selectedRecipient,
   conversations,
+  selectedRecipient,
   setSelectedRecipient,
-  markConversationRead,
-  markChatNotificationsRead,
-  messages,
-}: UseChatShellNotificationEffectsParams) {
-  const activeTopicIds = getChatTopicIdsForPresentationScope(activeChannelType, activeTopicId);
+}: Pick<UseChatShellNotificationEffectsParams, "activeChannelType" | "conversations" | "selectedRecipient" | "setSelectedRecipient">) {
   useEffect(() => {
     if (activeChannelType !== "dm" || !selectedRecipient) {
       return;
@@ -54,11 +48,18 @@ export function useChatShellNotificationEffects({
       setSelectedRecipient(inboxConversation.peer);
     }
   }, [activeChannelType, conversations, selectedRecipient, setSelectedRecipient]);
+}
 
-  const latestMessageId = messages[messages.length - 1]?.id ?? "empty";
-  const lastMarkedConversationRef = useRef<string | null>(null);
-  const lastMarkedChatNotificationRef = useRef<string | null>(null);
-
+function useDirectMessageReadEffect({
+  activeChannelType,
+  feedState,
+  messagerieMode,
+  selectedRecipient,
+  markConversationRead,
+  markChatNotificationsRead,
+  latestMessageId,
+  markerRef,
+}: Pick<UseChatShellNotificationEffectsParams, "activeChannelType" | "feedState" | "messagerieMode" | "selectedRecipient" | "markConversationRead" | "markChatNotificationsRead"> & { latestMessageId: string; markerRef: ReadMarkerRef }) {
   useEffect(() => {
     if (
       !messagerieMode ||
@@ -71,11 +72,11 @@ export function useChatShellNotificationEffects({
     }
 
     const markKey = `${selectedRecipient.id}:${latestMessageId}`;
-    if (lastMarkedConversationRef.current === markKey) {
+    if (markerRef.current === markKey) {
       return;
     }
 
-    lastMarkedConversationRef.current = markKey;
+    markerRef.current = markKey;
     void Promise.all([
       markConversationRead(selectedRecipient.id),
       markChatNotificationsRead({
@@ -83,8 +84,8 @@ export function useChatShellNotificationEffects({
         peerId: selectedRecipient.id,
       }),
     ]).catch(() => {
-      if (lastMarkedConversationRef.current === markKey) {
-        lastMarkedConversationRef.current = null;
+      if (markerRef.current === markKey) {
+        markerRef.current = null;
       }
     });
   }, [
@@ -93,10 +94,21 @@ export function useChatShellNotificationEffects({
     latestMessageId,
     markChatNotificationsRead,
     markConversationRead,
+    markerRef,
     messagerieMode,
     selectedRecipient,
   ]);
+}
 
+function useChannelReadEffect({
+  activeChannelType,
+  activeTopicId,
+  activeTopicIds,
+  feedState,
+  messagerieMode,
+  markChatNotificationsRead,
+  markerRef,
+}: Pick<UseChatShellNotificationEffectsParams, "activeChannelType" | "activeTopicId" | "feedState" | "messagerieMode" | "markChatNotificationsRead"> & { activeTopicIds: readonly ChatTopicId[] | null; markerRef: ReadMarkerRef }) {
   useEffect(() => {
     if (
       !messagerieMode ||
@@ -110,18 +122,18 @@ export function useChatShellNotificationEffects({
     }
 
     const markKey = `${activeChannelType}:${activeTopicIds?.join(",") ?? activeTopicId ?? "global"}`;
-    if (lastMarkedChatNotificationRef.current === markKey) {
+    if (markerRef.current === markKey) {
       return;
     }
 
-    lastMarkedChatNotificationRef.current = markKey;
+    markerRef.current = markKey;
     void markChatNotificationsRead({
       channelType: activeChannelType,
       topicId: activeTopicIds?.length === 1 ? activeTopicIds[0] : null,
       topicIds: activeTopicIds,
     }).catch(() => {
-      if (lastMarkedChatNotificationRef.current === markKey) {
-        lastMarkedChatNotificationRef.current = null;
+      if (markerRef.current === markKey) {
+        markerRef.current = null;
       }
     });
   }, [
@@ -130,9 +142,20 @@ export function useChatShellNotificationEffects({
     activeTopicIds,
     feedState,
     markChatNotificationsRead,
+    markerRef,
     messagerieMode,
   ]);
+}
 
+function useActionReadEffect({
+  activeChannelType,
+  feedState,
+  latestMessageId,
+  markChatNotificationsRead,
+  messagerieMode,
+  markerRef,
+  selectedActionId,
+}: Pick<UseChatShellNotificationEffectsParams, "activeChannelType" | "feedState" | "markChatNotificationsRead" | "messagerieMode" | "selectedActionId"> & { latestMessageId: string; markerRef: ReadMarkerRef }) {
   useEffect(() => {
     if (
       !messagerieMode ||
@@ -144,11 +167,11 @@ export function useChatShellNotificationEffects({
       return;
     }
     const markKey = `action:${selectedActionId}:${latestMessageId}`;
-    if (lastMarkedChatNotificationRef.current === markKey) return;
-    lastMarkedChatNotificationRef.current = markKey;
+    if (markerRef.current === markKey) return;
+    markerRef.current = markKey;
     void markChatNotificationsRead({ channelType: "action", actionId: selectedActionId }).catch(() => {
-      if (lastMarkedChatNotificationRef.current === markKey) {
-        lastMarkedChatNotificationRef.current = null;
+      if (markerRef.current === markKey) {
+        markerRef.current = null;
       }
     });
   }, [
@@ -157,6 +180,56 @@ export function useChatShellNotificationEffects({
     latestMessageId,
     markChatNotificationsRead,
     messagerieMode,
+    markerRef,
     selectedActionId,
   ]);
+}
+
+export function useChatShellNotificationEffects({
+  activeChannelType,
+  activeTopicId,
+  selectedActionId,
+  feedState,
+  messagerieMode,
+  selectedRecipient,
+  conversations,
+  setSelectedRecipient,
+  markConversationRead,
+  markChatNotificationsRead,
+  messages,
+}: UseChatShellNotificationEffectsParams) {
+  const activeTopicIds = getChatTopicIdsForPresentationScope(activeChannelType, activeTopicId);
+  const latestMessageId = messages[messages.length - 1]?.id ?? "empty";
+  const lastMarkedConversationRef = useRef<string | null>(null);
+  const lastMarkedChatNotificationRef = useRef<string | null>(null);
+
+  useSelectedRecipientSync({ activeChannelType, conversations, selectedRecipient, setSelectedRecipient });
+  useDirectMessageReadEffect({
+    activeChannelType,
+    feedState,
+    messagerieMode,
+    selectedRecipient,
+    markConversationRead,
+    markChatNotificationsRead,
+    latestMessageId,
+    markerRef: lastMarkedConversationRef,
+  });
+  useChannelReadEffect({
+    activeChannelType,
+    activeTopicId,
+    activeTopicIds,
+    feedState,
+    messagerieMode,
+    markChatNotificationsRead,
+    markerRef: lastMarkedChatNotificationRef,
+  });
+  useActionReadEffect({
+    activeChannelType,
+    feedState,
+    latestMessageId,
+    markChatNotificationsRead,
+    messagerieMode,
+    markerRef: lastMarkedChatNotificationRef,
+    selectedActionId,
+  });
 }

@@ -103,17 +103,36 @@ function buildSearchPageKey(
   return `${url.pathname}${url.search}`;
 }
 
-export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) {
-  const surfaceActive = useChatSurfaceActivity();
-  const [debouncedQuery, setDebouncedQuery] = useState(() => normalizeChatSearchQuery(params.query));
-  const [continuation, setContinuation] = useState<{
-    searchKey: string | null;
-    sourceData: ChatSearchResponse | undefined;
-    extraResults: ChatSearchResult[];
-    nextCursor: ChatHistoryCursor | null;
-    hasMore: boolean;
-    loadMoreError: string | null;
-  }>({
+function useDebouncedChatQuery(query: string): string {
+  const [debouncedQuery, setDebouncedQuery] = useState(() => normalizeChatSearchQuery(query));
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedQuery(normalizeChatSearchQuery(query));
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+  return debouncedQuery;
+}
+
+type ChatSearchContinuation = {
+  searchKey: string | null;
+  sourceData: ChatSearchResponse | undefined;
+  extraResults: ChatSearchResult[];
+  nextCursor: ChatHistoryCursor | null;
+  hasMore: boolean;
+  loadMoreError: string | null;
+};
+
+function useChatSearchContinuation({
+  data,
+  searchFetcher,
+  searchKey,
+}: {
+  data: ChatSearchResponse | undefined;
+  searchFetcher: (url: string) => Promise<ChatSearchResponse>;
+  searchKey: string | null;
+}) {
+  const [continuation, setContinuation] = useState<ChatSearchContinuation>({
     searchKey: null,
     sourceData: undefined,
     extraResults: [],
@@ -122,14 +141,86 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
     loadMoreError: null,
   });
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const searchAbortRef = useRef<AbortController | null>(null);
+  const continuationIsCurrent = continuation.searchKey === searchKey && continuation.sourceData === data;
+  const extraResults = continuationIsCurrent ? continuation.extraResults : [];
+  const pagination = useMemo(
+    () =>
+      continuationIsCurrent
+        ? { nextCursor: continuation.nextCursor, hasMore: continuation.hasMore }
+        : { nextCursor: data?.nextCursor ?? null, hasMore: data?.hasMore ?? false },
+    [
+      continuation.hasMore,
+      continuation.nextCursor,
+      continuationIsCurrent,
+      data?.hasMore,
+      data?.nextCursor,
+    ],
+  );
+  const loadMoreError = continuationIsCurrent ? continuation.loadMoreError : null;
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setDebouncedQuery(normalizeChatSearchQuery(params.query));
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [params.query]);
+  const loadMore = useCallback(async () => {
+    if (!searchKey || !pagination.hasMore || !pagination.nextCursor || isLoadingMore) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+    setContinuation((current) => ({
+      ...current,
+      searchKey,
+      sourceData: data,
+      extraResults: continuationIsCurrent ? current.extraResults : [],
+      nextCursor: pagination.nextCursor,
+      hasMore: pagination.hasMore,
+      loadMoreError: null,
+    }));
+    try {
+      const nextPage = await searchFetcher(buildSearchPageKey(searchKey, pagination.nextCursor));
+      setContinuation((current) => {
+        const currentResults =
+          current.searchKey === searchKey && current.sourceData === data
+            ? current.extraResults
+            : [];
+        const currentIds = new Set(currentResults.map((result) => result.messageId));
+        return {
+          searchKey,
+          sourceData: data,
+          extraResults: [
+            ...currentResults,
+            ...nextPage.results.filter((result) => !currentIds.has(result.messageId)),
+          ],
+          nextCursor: nextPage.nextCursor,
+          hasMore: nextPage.hasMore,
+          loadMoreError: null,
+        };
+      });
+    } catch (loadError) {
+      setContinuation((current) => ({
+        ...current,
+        searchKey,
+        sourceData: data,
+        loadMoreError:
+          loadError instanceof Error
+            ? loadError.message
+            : "Les résultats suivants ne peuvent pas être chargés.",
+      }));
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [continuationIsCurrent, data, isLoadingMore, pagination, searchFetcher, searchKey]);
+
+  return {
+    extraResults,
+    hasMore: pagination.hasMore,
+    isLoadingMore,
+    loadMore,
+    loadMoreError,
+  };
+}
+
+export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) {
+  const surfaceActive = useChatSurfaceActivity();
+  const debouncedQuery = useDebouncedChatQuery(params.query);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
   const searchKey = useMemo(
     () =>
@@ -195,84 +286,16 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
     },
   );
 
-  const continuationIsCurrent =
-    continuation.searchKey === searchKey && continuation.sourceData === data;
-  const extraResults = continuationIsCurrent ? continuation.extraResults : [];
-  const pagination = useMemo(
-    () =>
-      continuationIsCurrent
-        ? { nextCursor: continuation.nextCursor, hasMore: continuation.hasMore }
-        : { nextCursor: data?.nextCursor ?? null, hasMore: data?.hasMore ?? false },
-    [
-      continuation.hasMore,
-      continuation.nextCursor,
-      continuationIsCurrent,
-      data?.hasMore,
-      data?.nextCursor,
-    ],
-  );
-  const loadMoreError = continuationIsCurrent ? continuation.loadMoreError : null;
-
-  const loadMore = useCallback(async () => {
-    if (!searchKey || !pagination.hasMore || !pagination.nextCursor || isLoadingMore) {
-      return;
-    }
-
-    setIsLoadingMore(true);
-    setContinuation((current) => ({
-      ...current,
-      searchKey,
-      sourceData: data,
-      extraResults: continuationIsCurrent ? current.extraResults : [],
-      nextCursor: pagination.nextCursor,
-      hasMore: pagination.hasMore,
-      loadMoreError: null,
-    }));
-    try {
-      const nextPage = await searchFetcher(
-        buildSearchPageKey(searchKey, pagination.nextCursor),
-      );
-      setContinuation((current) => {
-        const currentResults =
-          current.searchKey === searchKey && current.sourceData === data
-            ? current.extraResults
-            : [];
-        const currentIds = new Set(currentResults.map((result) => result.messageId));
-        return {
-          searchKey,
-          sourceData: data,
-          extraResults: [
-            ...currentResults,
-            ...nextPage.results.filter((result) => !currentIds.has(result.messageId)),
-          ],
-          nextCursor: nextPage.nextCursor,
-          hasMore: nextPage.hasMore,
-          loadMoreError: null,
-        };
-      });
-    } catch (loadError) {
-      setContinuation((current) => ({
-        ...current,
-        searchKey,
-        sourceData: data,
-        loadMoreError:
-          loadError instanceof Error
-            ? loadError.message
-            : "Les résultats suivants ne peuvent pas être chargés.",
-      }));
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [continuationIsCurrent, data, isLoadingMore, pagination, searchFetcher, searchKey]);
+  const continuation = useChatSearchContinuation({ data, searchFetcher, searchKey });
 
   return {
-    results: [...(data?.results ?? []), ...extraResults],
+    results: [...(data?.results ?? []), ...continuation.extraResults],
     isLoading: Boolean(searchKey) && (isLoading || !data),
     error: error instanceof Error ? error : null,
-    hasMore: pagination.hasMore,
-    isLoadingMore,
-    loadMoreError,
-    loadMore,
+    hasMore: continuation.hasMore,
+    isLoadingMore: continuation.isLoadingMore,
+    loadMoreError: continuation.loadMoreError,
+    loadMore: continuation.loadMore,
     hasSearched: Boolean(searchKey),
   };
 }
