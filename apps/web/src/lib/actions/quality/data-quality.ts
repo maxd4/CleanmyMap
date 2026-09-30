@@ -358,7 +358,7 @@ export function buildMonthlyActionDataQualityReview(params: {
     alerts.push({
       id: "blocking-anomalies",
       severity: "critical",
-      message: `${blockingAnomalyCount} anomalie(s) bloquante(s) a revoir avant diffusion.`,
+      message: `${blockingAnomalyCount} anomalie(s) bloquante(s) à revoir avant diffusion.`,
     });
   }
   if (partialRate > ACTION_DATA_QUALITY_THRESHOLDS.monthlyPartialGeolocationRate) {

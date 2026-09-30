@@ -149,7 +149,7 @@ export function computeBusinessAlerts(params: {
         title: "Anomalies data bloquantes",
         severity: "high",
         ageLabel: "Contrat qualite courant",
-        impactLabel: `${blockingQualityCount} action(s) a revoir avant diffusion`,
+        impactLabel: `${blockingQualityCount} action(s) à revoir avant diffusion`,
         actionHref: "/actions/history",
         actionLabel: "Revoir les anomalies",
       });

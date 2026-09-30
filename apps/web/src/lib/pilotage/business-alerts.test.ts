@@ -68,9 +68,9 @@ describe("computeBusinessAlerts", () => {
       mapItems: [],
     });
 
-    expect(alerts.some((alert) => alert.id === "blocking-data-quality")).toBe(
-      true,
-    );
+    const alert = alerts.find((item) => item.id === "blocking-data-quality");
+    expect(alert).toBeDefined();
+    expect(alert?.impactLabel).toContain("à revoir");
   });
 
   it("returns moderation backlog and zone critical alerts", () => {
