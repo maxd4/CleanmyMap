@@ -101,6 +101,11 @@ Le code et les tests priment si une divergence apparaît.
   explicitement l'XP de compatibilité historique non rattachée à une mécanique
   CURRENT ; aucun composant ne recalcule un niveau, un badge ou un prochain
   palier.
+- La surface utilisateur `/api/gamification/me` et ses acquittements
+  (`acknowledge-reconciliation` et `acknowledge-rules-migration`) passent par
+  `requireAuthenticatedAccess()`. Le `userId` utilisé pour les lectures et
+  mutations est exclusivement celui retourné par ce garde ; aucun client
+  Supabase privilégié n'est créé avant la réussite de l'AuthN.
 - Une progression infinie est `not_started` tant qu'aucune contribution
   éligible n'est démontrée, puis `in_progress` pour toujours. Son palier
   courant est le dernier palier atteint et son prochain palier est la cible en
@@ -212,6 +217,22 @@ l'historique et la lecture protégée par RLS ; la migration ajoute
 `seen_at`/`acknowledged_at` et une clé d'idempotence par réconciliation. Elle
 ne remplace pas `progression_events` et `admin_operations_audit` n'est jamais
 utilisé comme boîte de réception.
+
+La route `POST
+/api/gamification/me/acknowledge-reconciliation` accepte uniquement un objet
+strict contenant `notificationId` sous forme d'UUID. Les propriétés inconnues,
+le JSON malformé et toute valeur qui n'est pas un UUID sont rejetés en `400`
+avant l'accès privilégié. La mutation reste idempotente et est bornée par
+`notificationId`, `user_id`, le type de notification et
+`acknowledged_at IS NULL` ; elle ne révèle donc pas si un UUID appartient à un
+autre compte.
+
+Lors de la lecture, le payload est validé comme reçu de réconciliation,
+non-acquitté et cohérent avec l'utilisateur demandé (`receipt.userId ===
+userId`). Un payload malformé, d'un autre type, déjà acquitté ou portant un
+propriétaire incohérent est ignoré et n'est jamais transmis à l'UI. Le filtre
+SQL `app_notifications.user_id = userId` et les protections RLS restent
+obligatoires.
 
 Un rebuild dont `hasUserVisibleChanges` vaut `false` ne crée aucune
 notification. Le front-end lit le reçu via le payload structuré et ne

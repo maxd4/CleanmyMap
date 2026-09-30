@@ -52,9 +52,10 @@ function isReceipt(value: unknown): value is GamificationReconciliationReceipt {
     && value.hasUserVisibleChanges;
 }
 
-function receiptFromPayload(payload: unknown): GamificationReconciliationReceipt | null {
+function receiptFromPayload(payload: unknown, userId: string): GamificationReconciliationReceipt | null {
   if (!isRecord(payload) || payload.kind !== "gamification_reconciliation_receipt") return null;
-  return isReceipt(payload.receipt) ? payload.receipt : null;
+  if (!isReceipt(payload.receipt) || payload.receipt.userId !== userId) return null;
+  return payload.receipt;
 }
 
 export async function loadPendingGamificationReconciliation(
@@ -80,7 +81,7 @@ export async function loadPendingGamificationReconciliation(
   }>;
   for (const row of rows) {
     if (typeof row.id !== "string" || typeof row.created_at !== "string" || row.acknowledged_at !== null) continue;
-    const receipt = receiptFromPayload(row.payload);
+    const receipt = receiptFromPayload(row.payload, userId);
     if (receipt) return { notificationId: row.id, createdAt: row.created_at, receipt };
   }
   return null;

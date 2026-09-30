@@ -1,19 +1,17 @@
-import { NextResponse } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { authMock, getSupabaseServerClientMock, handleApiErrorMock } = vi.hoisted(() => ({
-  authMock: vi.fn(),
-  getSupabaseServerClientMock: vi.fn(),
-  handleApiErrorMock: vi.fn((error: unknown) =>
-    NextResponse.json({ error: String(error) }, { status: 500 }),
-  ),
-}));
+const mocks = vi.hoisted(() => {
+  const requireAuthenticatedAccessMock = vi.fn();
+  const getSupabaseServerClientMock = vi.fn();
+  return { requireAuthenticatedAccessMock, getSupabaseServerClientMock };
+});
 
-vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
-vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseServerClient: getSupabaseServerClientMock,
+vi.mock("@/lib/authz", () => ({
+  requireAuthenticatedAccess: mocks.requireAuthenticatedAccessMock,
 }));
-vi.mock("@/lib/http/api-errors", () => ({ handleApiError: handleApiErrorMock }));
+vi.mock("@/lib/supabase/server", () => ({
+  getSupabaseServerClient: mocks.getSupabaseServerClientMock,
+}));
 
 import { POST } from "./route";
 
@@ -49,7 +47,7 @@ async function expectAcknowledgement(
   expectedRulesRevision: number,
 ) {
   const { profileUpsert, supabase } = createSupabaseProfileClient(currentAppliedRulesRevision);
-  getSupabaseServerClientMock.mockReturnValue(supabase);
+  mocks.getSupabaseServerClientMock.mockReturnValue(supabase);
 
   const response = await POST();
 
@@ -68,7 +66,7 @@ async function expectAcknowledgement(
 describe("POST /api/gamification/me/acknowledge-rules-migration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authMock.mockResolvedValue({ userId: "user-1" });
+    mocks.requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
   });
 
   it("does not mark rules as applied when the profile is still at revision zero", async () => {
@@ -80,5 +78,18 @@ describe("POST /api/gamification/me/acknowledge-rules-migration", () => {
 
   it("caps acknowledgement at the revision actually applied", async () => {
     await expectAcknowledgement(3, 3);
+  });
+
+  it("returns 401 and does not create a privileged client for anonymous access", async () => {
+    mocks.requireAuthenticatedAccessMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
+
+    const response = await POST();
+
+    expect(response.status).toBe(401);
+    expect(mocks.getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 });

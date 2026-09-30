@@ -43,6 +43,14 @@ mécanique introduite par la dernière révision applicable peut être
 `POST /api/gamification/me/acknowledge-rules-migration` acquitte l'affichage
 sans supprimer la mécanique, ses faits ni l'historique des reçus.
 
+La lecture `GET /api/gamification/me` et les deux acquittements de cette
+surface utilisent `requireAuthenticatedAccess()` ; les handlers ne dérivent
+jamais l'identité depuis une autre source après le garde et n'initialisent pas
+de client Supabase privilégié avant l'AuthN. L'acquittement de
+réconciliation accepte uniquement `{ notificationId: UUID }` sans propriété
+supplémentaire. Sa mutation reste owner-scoped et idempotente, sans révéler
+qu'une notification existe pour un autre compte.
+
 Les tests de reconstruction couvrent notamment `XP → XP`, `XP → BADGE_ONLY`
 et `BADGE_ONLY → NON_GAMIFIED`, avec baisse possible de l'XP et du niveau.
 
@@ -64,6 +72,12 @@ reste propriétaire de l'utilisateur et protégée par RLS ; `app_notifications`
 est une boîte de réception utilisateur, jamais un remplacement de
 `admin_operations_audit`. Le client peut extraire le reçu avec
 `getGamificationReconciliationReceipt` sans recalculer le delta.
+
+Le loader ignore tout payload qui n'est pas un reçu de réconciliation valide,
+qui est déjà acquitté ou dont `receipt.userId` ne correspond pas à l'utilisateur
+demandeur. Cette vérification complète le filtre SQL par
+`app_notifications.user_id` et ne modifie ni le reçu persistant ni le moteur
+de réconciliation.
 
 ## Outil de réconciliation administrative
 

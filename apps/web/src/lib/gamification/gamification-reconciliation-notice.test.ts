@@ -61,8 +61,15 @@ describe("loadPendingGamificationReconciliation", () => {
       acknowledged_at: null,
       payload: { kind: "other" },
     });
+    const wrongOwner = createSupabase({
+      id: "notification-3",
+      created_at: "2026-09-30T10:00:00.000Z",
+      acknowledged_at: null,
+      payload: { ...receipt, receipt: { ...receipt.receipt, userId: "user-2" } },
+    });
 
     expect(await loadPendingGamificationReconciliation(acknowledged.supabase as never, "user-1")).toBeNull();
     expect(await loadPendingGamificationReconciliation(malformed.supabase as never, "user-1")).toBeNull();
+    expect(await loadPendingGamificationReconciliation(wrongOwner.supabase as never, "user-1")).toBeNull();
   });
 });

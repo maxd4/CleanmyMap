@@ -1,24 +1,28 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireAuthenticatedAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
 
 export const runtime = "nodejs";
 
+const acknowledgeReconciliationSchema = z.object({
+  notificationId: z.string().uuid(),
+}).strict();
+
 export async function POST(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return unauthorizedJsonResponse();
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) return unauthorizedJsonResponse();
+  const { userId } = access;
 
   try {
     const body = await request.json().catch(() => null);
-    const notificationId =
-      body && typeof body === "object" && "notificationId" in body
-        ? (body as { notificationId?: unknown }).notificationId
-        : null;
-    if (typeof notificationId !== "string" || notificationId.length === 0) {
+    const parsed = acknowledgeReconciliationSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json({ error: "notificationId requis." }, { status: 400 });
     }
+    const { notificationId } = parsed.data;
 
     const { error } = await getSupabaseServerClient(true)
       .from("app_notifications")
