@@ -24,6 +24,13 @@ export type GamificationSummaryNextLevel = {
   requirements: LevelRequirementAssessment;
 };
 
+type GamificationSummaryTier = {
+  id: string;
+  label: string;
+  threshold: number;
+  achieved: boolean;
+};
+
 export type GamificationSummaryProgression = {
   id: CurrentInfiniteProgressionId;
   label: string;
@@ -34,6 +41,9 @@ export type GamificationSummaryProgression = {
   xpContribution: number;
   currentBadge: GamificationBadgeReference | null;
   nextBadge: GamificationBadgeReference | null;
+  currentTier?: GamificationSummaryTier;
+  nextTier?: GamificationSummaryTier;
+  previousTiers?: GamificationSummaryTier[];
   progressPercent: number;
   state: GamificationCatalogState;
   introducedInRulesRevision: number;
@@ -142,6 +152,20 @@ function badgeReference(
   return id && title ? { id, label: title } : null;
 }
 
+function tierReference(tier: {
+  id: string;
+  title: string;
+  threshold: number;
+  achieved: boolean;
+}): GamificationSummaryTier {
+  return {
+    id: tier.id,
+    label: tier.title,
+    threshold: tier.threshold,
+    achieved: tier.achieved,
+  };
+}
+
 function buildXpContributions(events: readonly GamificationLedgerEvent[]) {
   const progressions = new Map<CurrentInfiniteProgressionId, number>();
   const milestones = new Map<CurrentMilestoneId, number>();
@@ -161,6 +185,64 @@ function buildXpContributions(events: readonly GamificationLedgerEvent[]) {
   return { progressions, milestones, total };
 }
 
+type CatalogProgressionItem = GamificationCatalogItem & {
+  progression: NonNullable<GamificationCatalogItem["progression"]>;
+};
+
+function buildSummaryProgression(
+  item: CatalogProgressionItem,
+  xpContribution: number,
+): GamificationSummaryProgression {
+  const progression = item.progression;
+  return {
+    id: item.id as CurrentInfiniteProgressionId,
+    label: item.title,
+    description: item.description,
+    currentValue: progression.currentValue,
+    metricLabel: CURRENT_INFINITE_PROGRESSIONS.find((definition) => definition.id === item.id)?.metricLabel ?? item.id,
+    grantsXp: item.grantsXp,
+    xpContribution,
+    currentBadge: progression.currentTierAchieved
+      ? badgeReference(progression.currentTier.id, progression.currentTier.title)
+      : null,
+    nextBadge: badgeReference(progression.nextTier.id, progression.nextTier.title),
+    currentTier: tierReference(progression.currentTier),
+    nextTier: tierReference(progression.nextTier),
+    previousTiers: progression.previousTiers.map(tierReference),
+    progressPercent: progression.progressPercent,
+    state: item.state,
+    introducedInRulesRevision: item.introducedInRulesRevision,
+    isNewSinceLastRulesMigration: item.isNewSinceLastRulesMigration,
+  };
+}
+
+type CatalogMilestoneItem = GamificationCatalogItem & {
+  milestone: NonNullable<GamificationCatalogItem["milestone"]>;
+};
+
+function buildSummaryMilestone(
+  item: CatalogMilestoneItem,
+  xpContribution: number,
+): GamificationSummaryMilestone {
+  return {
+    id: item.id as CurrentMilestoneId,
+    category: item.category as "XP_MILESTONE" | "BADGE_ONLY",
+    label: item.title,
+    description: item.description,
+    grantsXp: item.grantsXp,
+    xpAmountOrPolicy: item.xpAmountOrPolicy,
+    state: item.state,
+    xpContribution,
+    achieved: item.milestone.achieved,
+    achievedAt: item.milestone.achievedAt,
+    progressCurrent: item.milestone.progressCurrent,
+    progressTarget: item.milestone.progressTarget,
+    progressPercent: item.milestone.progressPercent,
+    introducedInRulesRevision: item.introducedInRulesRevision,
+    isNewSinceLastRulesMigration: item.isNewSinceLastRulesMigration,
+  };
+}
+
 export function buildGamificationSummary(input: {
   catalog: readonly GamificationCatalogItem[];
   events: readonly GamificationLedgerEvent[];
@@ -174,46 +256,12 @@ export function buildGamificationSummary(input: {
 }): GamificationSummary {
   const contributions = buildXpContributions(input.events);
   const progressions = input.catalog
-    .filter((item): item is GamificationCatalogItem & { progression: NonNullable<GamificationCatalogItem["progression"]> } => item.kind === "progression" && Boolean(item.progression))
-    .map((item) => ({
-      id: item.id as CurrentInfiniteProgressionId,
-      label: item.title,
-      description: item.description,
-      currentValue: item.progression.currentValue,
-      metricLabel:
-        CURRENT_INFINITE_PROGRESSIONS.find((definition) => definition.id === item.id)?.metricLabel ??
-        item.id,
-      grantsXp: item.grantsXp,
-      xpContribution: contributions.progressions.get(item.id as CurrentInfiniteProgressionId) ?? 0,
-      currentBadge: item.progression.currentTierAchieved
-        ? badgeReference(item.progression.currentTier.id, item.progression.currentTier.title)
-        : null,
-      nextBadge: badgeReference(item.progression.nextTier.id, item.progression.nextTier.title),
-      progressPercent: item.progression.progressPercent,
-      state: item.state,
-      introducedInRulesRevision: item.introducedInRulesRevision,
-      isNewSinceLastRulesMigration: item.isNewSinceLastRulesMigration,
-    }));
+    .filter((item): item is CatalogProgressionItem => item.kind === "progression" && Boolean(item.progression))
+    .map((item) => buildSummaryProgression(item, contributions.progressions.get(item.id as CurrentInfiniteProgressionId) ?? 0));
 
   const milestones = input.catalog
-    .filter((item): item is GamificationCatalogItem & { milestone: NonNullable<GamificationCatalogItem["milestone"]> } => item.kind === "milestone" && Boolean(item.milestone))
-    .map((item) => ({
-      id: item.id as CurrentMilestoneId,
-      category: item.category as "XP_MILESTONE" | "BADGE_ONLY",
-      label: item.title,
-      description: item.description,
-      grantsXp: item.grantsXp,
-      xpAmountOrPolicy: item.xpAmountOrPolicy,
-      state: item.state,
-      xpContribution: contributions.milestones.get(item.id as CurrentMilestoneId) ?? 0,
-      achieved: item.milestone.achieved,
-      achievedAt: item.milestone.achievedAt,
-      progressCurrent: item.milestone.progressCurrent,
-      progressTarget: item.milestone.progressTarget,
-      progressPercent: item.milestone.progressPercent,
-      introducedInRulesRevision: item.introducedInRulesRevision,
-      isNewSinceLastRulesMigration: item.isNewSinceLastRulesMigration,
-    }));
+    .filter((item): item is CatalogMilestoneItem => item.kind === "milestone" && Boolean(item.milestone))
+    .map((item) => buildSummaryMilestone(item, contributions.milestones.get(item.id as CurrentMilestoneId) ?? 0));
 
   const progressionXp = [...contributions.progressions.values()].reduce((sum, value) => sum + value, 0);
   const milestoneXp = [...contributions.milestones.values()].reduce((sum, value) => sum + value, 0);
