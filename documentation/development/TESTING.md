@@ -355,6 +355,23 @@ exhaustive des deux roots. `quality:top-heavy` réutilise lui aussi les roots
 source canonique du ratchet de taille des fichiers et de ses seuils
 `REVIEW_REQUIRED`/`HARD`.
 
+Pour un lot de modularisation de routes API ou de services backend, répéter la
+preuve après chaque sous-domaine compilable, puis sur le candidat final :
+
+```bash
+npm run quality:complexity -- --changed-only
+npm run quality:dead-code
+npm run quality:duplication
+npm run quality:top-heavy -- --enforce
+```
+
+Ajouter les tests ciblés de la route ou du service après chaque extraction ;
+ajouter `npm run test:security` lorsqu'une route, un scope ou une frontière
+AuthN/AuthZ est touché. La baseline de complexité ne peut être ratifiée que
+pour une baisse mesurée sur le candidat exact : on abaisse le plafond amélioré,
+on n'augmente pas un ceiling et on n'ajoute pas d'exception pour faire passer
+le contrôle.
+
 ## Dead code et ratchet Knip
 
 La commande informative historique reste disponible :
