@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "f0f39bdbdd8e0d30077768a9bc2b271ae22432a8",
+  "sourceCommit": "425a62e9555e2fb5bcbe1facca7483e34b541d0a",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -1114,10 +1114,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/sections/rubriques/gamification/gamification-recognition.tsx",
-      "line": 7,
+      "line": 116,
       "category": "React/JSX",
-      "ceiling": 24,
-      "status": "LEGACY",
+      "ceiling": 6,
+      "status": "IMPROVED",
       "functionIdentity": "named:RecognitionPanel#1"
     },
     {
@@ -2455,28 +2455,28 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.queue.ts",
-      "line": 15,
+      "line": 16,
       "category": "routes API",
-      "ceiling": 101,
-      "status": "LEGACY",
+      "ceiling": 89,
+      "status": "IMPROVED",
       "functionIdentity": "named:handleGroupJoinQueue#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.review.ts",
-      "line": 23,
+      "line": 213,
       "category": "routes API",
-      "ceiling": 288,
-      "status": "LEGACY",
+      "ceiling": 136,
+      "status": "IMPROVED",
       "functionIdentity": "named:handleGroupJoinReview#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.test.helpers.ts",
-      "line": 314,
+      "line": 268,
       "category": "tests",
-      "ceiling": 256,
-      "status": "LEGACY",
+      "ceiling": 253,
+      "status": "IMPROVED",
       "functionIdentity": "named:createParticipantsChain#1"
     },
     {
@@ -2491,10 +2491,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.toggle.ts",
-      "line": 25,
+      "line": 71,
       "category": "routes API",
-      "ceiling": 189,
-      "status": "LEGACY",
+      "ceiling": 130,
+      "status": "IMPROVED",
       "functionIdentity": "named:handleGroupJoinToggle#1"
     },
     {
@@ -2536,10 +2536,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/actions/route.ts",
-      "line": 350,
+      "line": 337,
       "category": "routes API",
-      "ceiling": 105,
-      "status": "LEGACY",
+      "ceiling": 89,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2698,19 +2698,19 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/chat/route.get.ts",
-      "line": 38,
+      "line": 335,
       "category": "routes API",
-      "ceiling": 323,
-      "status": "LEGACY",
+      "ceiling": 150,
+      "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/chat/route.post.ts",
-      "line": 50,
+      "line": 38,
       "category": "routes API",
-      "ceiling": 473,
-      "status": "LEGACY",
+      "ceiling": 469,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2734,10 +2734,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/community/bug-reports/route.ts",
-      "line": 74,
+      "line": 119,
       "category": "routes API",
-      "ceiling": 102,
-      "status": "LEGACY",
+      "ceiling": 45,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2761,10 +2761,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/community/events/route.ts",
-      "line": 264,
+      "line": 302,
       "category": "routes API",
-      "ceiling": 136,
-      "status": "LEGACY",
+      "ceiling": 132,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2779,10 +2779,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/community/promotion-requests/route.ts",
-      "line": 28,
+      "line": 27,
       "category": "routes API",
-      "ceiling": 116,
-      "status": "LEGACY",
+      "ceiling": 91,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2923,10 +2923,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/politique-confidentialite/page.tsx",
-      "line": 47,
+      "line": 178,
       "category": "React/JSX",
-      "ceiling": 274,
-      "status": "LEGACY",
+      "ceiling": 149,
+      "status": "IMPROVED",
       "functionIdentity": "named:PolitiqueConfidentialitePage#1"
     },
     {
@@ -2941,10 +2941,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/reglages/page.tsx",
-      "line": 25,
+      "line": 84,
       "category": "React/JSX",
-      "ceiling": 227,
-      "status": "LEGACY",
+      "ceiling": 179,
+      "status": "IMPROVED",
       "functionIdentity": "named:ReglagesPage#1"
     },
     {
@@ -2986,10 +2986,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/accueil/accueil-community-credibility.tsx",
-      "line": 300,
+      "line": 283,
       "category": "React/JSX",
-      "ceiling": 318,
-      "status": "LEGACY",
+      "ceiling": 303,
+      "status": "IMPROVED",
       "functionIdentity": "named:HomeCommunityCredibility#1"
     },
     {
@@ -3004,10 +3004,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-creation-shell.tsx",
-      "line": 110,
+      "line": 138,
       "category": "React/JSX",
-      "ceiling": 187,
-      "status": "LEGACY",
+      "ceiling": 59,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionCreationShell#1"
     },
     {
@@ -3022,10 +3022,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/before/sections.tsx",
-      "line": 197,
+      "line": 181,
       "category": "React/JSX",
-      "ceiling": 300,
-      "status": "LEGACY",
+      "ceiling": 296,
+      "status": "IMPROVED",
       "functionIdentity": "named:PlannedActionSection#1"
     },
     {
@@ -3060,8 +3060,8 @@
       "path": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form-confirmation.tsx",
       "line": 32,
       "category": "React/JSX",
-      "ceiling": 275,
-      "status": "LEGACY",
+      "ceiling": 272,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionDeclarationFormConfirmation#1"
     },
     {
@@ -3076,28 +3076,28 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
-      "line": 83,
+      "line": 82,
       "category": "React/JSX",
-      "ceiling": 622,
-      "status": "LEGACY",
+      "ceiling": 621,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionDeclarationForm#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
-      "line": 85,
+      "line": 55,
       "category": "hooks",
-      "ceiling": 651,
-      "status": "LEGACY",
+      "ceiling": 294,
+      "status": "IMPROVED",
       "functionIdentity": "named:useActionDeclarationForm#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/payload.ts",
-      "line": 388,
+      "line": 294,
       "category": "React/JSX",
-      "ceiling": 162,
-      "status": "LEGACY",
+      "ceiling": 157,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildCreateActionPayload#1"
     },
     {
@@ -3130,10 +3130,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx",
-      "line": 128,
+      "line": 156,
       "category": "React/JSX",
-      "ceiling": 643,
-      "status": "LEGACY",
+      "ceiling": 472,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionStepIdentity#1"
     },
     {
@@ -3220,10 +3220,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/actions-map-canvas.tsx",
-      "line": 148,
+      "line": 53,
       "category": "React/JSX",
-      "ceiling": 375,
-      "status": "LEGACY",
+      "ceiling": 134,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionsMapCanvas#1"
     },
     {
@@ -3274,10 +3274,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/map/popup/action-popup-content-header.tsx",
-      "line": 111,
+      "line": 53,
       "category": "React/JSX",
-      "ceiling": 460,
-      "status": "LEGACY",
+      "ceiling": 139,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionPopupContentHeader#1"
     },
     {
@@ -3285,8 +3285,8 @@
       "path": "apps/web/src/components/actions/map/popup/action-popup-content-compact-header.tsx",
       "line": 38,
       "category": "React/JSX",
-      "ceiling": 165,
-      "status": "LEGACY",
+      "ceiling": 10,
+      "status": "IMPROVED",
       "functionIdentity": "named:CompactActionHeader#1"
     },
     {
@@ -3310,19 +3310,19 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/map/layers/map-layers-shape-layers.tsx",
-      "line": 100,
+      "line": 16,
       "category": "React/JSX",
-      "ceiling": 519,
-      "status": "LEGACY",
+      "ceiling": 74,
+      "status": "IMPROVED",
       "functionIdentity": "named:ShapeLayers#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/map/layers/map-layers-shape-layers.tsx",
-      "line": 162,
+      "line": 70,
       "category": "React/JSX",
-      "ceiling": 461,
-      "status": "LEGACY",
+      "ceiling": 21,
+      "status": "IMPROVED",
       "functionIdentity": "callback:items . map:0:#1"
     },
     {
@@ -3391,10 +3391,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/admin/free-plan-services-panel.tsx",
-      "line": 42,
+      "line": 31,
       "category": "React/JSX",
-      "ceiling": 404,
-      "status": "LEGACY",
+      "ceiling": 39,
+      "status": "IMPROVED",
       "functionIdentity": "named:FreePlanServicesPanel#1"
     },
     {
@@ -3517,10 +3517,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/chat/chat-shell.tsx",
-      "line": 99,
+      "line": 97,
       "category": "React/JSX",
-      "ceiling": 748,
-      "status": "LEGACY",
+      "ceiling": 641,
+      "status": "IMPROVED",
       "functionIdentity": "named:ChatShell#1"
     },
     {
@@ -3589,28 +3589,28 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/chat/hooks/use-chat-submit.ts",
-      "line": 104,
+      "line": 180,
       "category": "hooks",
-      "ceiling": 270,
-      "status": "LEGACY",
+      "ceiling": 192,
+      "status": "IMPROVED",
       "functionIdentity": "named:useChatSubmit#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/chat/hooks/use-chat-submit.ts",
-      "line": 140,
+      "line": 216,
       "category": "hooks",
-      "ceiling": 186,
-      "status": "LEGACY",
+      "ceiling": 108,
+      "status": "IMPROVED",
       "functionIdentity": "callback:useCallback:0:#2"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/chat/ui/chat-message-item.tsx",
-      "line": 55,
+      "line": 56,
       "category": "React/JSX",
-      "ceiling": 276,
-      "status": "LEGACY",
+      "ceiling": 274,
+      "status": "IMPROVED",
       "functionIdentity": "named:ChatMessageItem#1"
     },
     {
@@ -3652,19 +3652,19 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/dashboard/storage-usage-panel.tsx",
-      "line": 106,
+      "line": 18,
       "category": "React/JSX",
-      "ceiling": 445,
-      "status": "LEGACY",
+      "ceiling": 51,
+      "status": "IMPROVED",
       "functionIdentity": "named:StorageUsagePanel#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/dashboard/system-status-panel.tsx",
-      "line": 20,
+      "line": 279,
       "category": "React/JSX",
-      "ceiling": 255,
-      "status": "LEGACY",
+      "ceiling": 37,
+      "status": "IMPROVED",
       "functionIdentity": "named:SystemStatusPanel#1"
     },
     {
@@ -3697,10 +3697,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/gamification/infinite-badges/InfiniteBadgesPanel.tsx",
-      "line": 13,
+      "line": 14,
       "category": "React/JSX",
-      "ceiling": 166,
-      "status": "LEGACY",
+      "ceiling": 149,
+      "status": "IMPROVED",
       "functionIdentity": "named:InfiniteBadgesPanel#1"
     },
     {
@@ -3715,10 +3715,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/gamification/referral-invite-badge.tsx",
-      "line": 27,
+      "line": 26,
       "category": "React/JSX",
-      "ceiling": 222,
-      "status": "LEGACY",
+      "ceiling": 212,
+      "status": "IMPROVED",
       "functionIdentity": "named:ReferralInviteBadge#1"
     },
     {
@@ -3733,10 +3733,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/learn/giac-content.tsx",
-      "line": 28,
+      "line": 29,
       "category": "React/JSX",
-      "ceiling": 192,
-      "status": "LEGACY",
+      "ceiling": 184,
+      "status": "IMPROVED",
       "functionIdentity": "named:GIECContent#1"
     },
     {
@@ -3760,10 +3760,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/learn/learn-practice-theme-tabs.tsx",
-      "line": 26,
+      "line": 25,
       "category": "React/JSX",
-      "ceiling": 217,
-      "status": "LEGACY",
+      "ceiling": 216,
+      "status": "IMPROVED",
       "functionIdentity": "named:LearnPracticeThemeTabs#1"
     },
     {
@@ -3778,10 +3778,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/learn/learn-rubric-shell.tsx",
-      "line": 35,
+      "line": 91,
       "category": "React/JSX",
-      "ceiling": 275,
-      "status": "LEGACY",
+      "ceiling": 271,
+      "status": "IMPROVED",
       "functionIdentity": "named:LearnRubricShell#1"
     },
     {
@@ -3859,19 +3859,19 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/learn/quiz/session/use-quiz-session-controller.ts",
-      "line": 24,
+      "line": 29,
       "category": "hooks",
-      "ceiling": 135,
-      "status": "LEGACY",
+      "ceiling": 132,
+      "status": "IMPROVED",
       "functionIdentity": "named:useQuizSessionController#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/learn/sustainable-goals.tsx",
-      "line": 7,
+      "line": 8,
       "category": "React/JSX",
-      "ceiling": 161,
-      "status": "LEGACY",
+      "ceiling": 153,
+      "status": "IMPROVED",
       "functionIdentity": "named:SustainableGoalsInteractive#1"
     },
     {
@@ -4246,10 +4246,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/gamification/gamification-engagement.tsx",
-      "line": 24,
+      "line": 25,
       "category": "React/JSX",
-      "ceiling": 194,
-      "status": "LEGACY",
+      "ceiling": 192,
+      "status": "IMPROVED",
       "functionIdentity": "named:EngagementPanel#1"
     },
     {
@@ -4273,19 +4273,19 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/methodologie-page-client.tsx",
-      "line": 219,
+      "line": 218,
       "category": "React/JSX",
-      "ceiling": 435,
-      "status": "LEGACY",
+      "ceiling": 432,
+      "status": "IMPROVED",
       "functionIdentity": "named:LegacyMethodologieContent#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/monthly-impact-history-chart.tsx",
-      "line": 212,
+      "line": 160,
       "category": "React/JSX",
-      "ceiling": 297,
-      "status": "LEGACY",
+      "ceiling": 290,
+      "status": "IMPROVED",
       "functionIdentity": "named:MonthlyImpactHistoryChart#1"
     },
     {
@@ -4381,10 +4381,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/rejoindre-une-action.past-actions.tsx",
-      "line": 36,
+      "line": 156,
       "category": "React/JSX",
-      "ceiling": 177,
-      "status": "LEGACY",
+      "ceiling": 99,
+      "status": "IMPROVED",
       "functionIdentity": "named:PastActionsPanel#1"
     },
     {
@@ -4426,10 +4426,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/route/route-section.tsx",
-      "line": 72,
+      "line": 68,
       "category": "React/JSX",
-      "ceiling": 543,
-      "status": "LEGACY",
+      "ceiling": 538,
+      "status": "IMPROVED",
       "functionIdentity": "named:RouteSection#1"
     },
     {
@@ -4642,10 +4642,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/actions/participation/group-participation-review.ts",
-      "line": 59,
+      "line": 60,
       "category": "métier/domain pur",
-      "ceiling": 89,
-      "status": "LEGACY",
+      "ceiling": 83,
+      "status": "IMPROVED",
       "functionIdentity": "named:loadActionParticipationReviews#1"
     },
     {
@@ -4768,19 +4768,19 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/actions/store-create-contract.ts",
-      "line": 77,
+      "line": 90,
       "category": "runtime/services/orchestration",
-      "ceiling": 124,
-      "status": "LEGACY",
+      "ceiling": 120,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildActionInsertPayload#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/actions/store-create.ts",
-      "line": 157,
+      "line": 159,
       "category": "runtime/services/orchestration",
-      "ceiling": 109,
-      "status": "LEGACY",
+      "ceiling": 108,
+      "status": "IMPROVED",
       "functionIdentity": "named:createAction#1"
     },
     {
@@ -4795,10 +4795,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/actions/unified-source/load.ts",
-      "line": 59,
+      "line": 74,
       "category": "métier/domain pur",
-      "ceiling": 77,
-      "status": "LEGACY",
+      "ceiling": 75,
+      "status": "IMPROVED",
       "functionIdentity": "named:loadUnifiedActionSourceData#1"
     },
     {
@@ -4939,10 +4939,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/environmental-impact-estimator/project-signals-loader.ts",
-      "line": 69,
+      "line": 70,
       "category": "métier/domain pur",
-      "ceiling": 161,
-      "status": "LEGACY",
+      "ceiling": 158,
+      "status": "IMPROVED",
       "functionIdentity": "named:loadProjectSignalData#1"
     },
     {
@@ -4957,10 +4957,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/environmental-impact-estimator/project-signals-scope.ts",
-      "line": 143,
+      "line": 221,
       "category": "métier/domain pur",
-      "ceiling": 130,
-      "status": "LEGACY",
+      "ceiling": 123,
+      "status": "IMPROVED",
       "functionIdentity": "named:calculateAllTimeScopeInput#1"
     },
     {
@@ -5002,10 +5002,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts",
-      "line": 549,
+      "line": 478,
       "category": "runtime/services/orchestration",
-      "ceiling": 135,
-      "status": "LEGACY",
+      "ceiling": 109,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildInfrastructureEstimate#1"
     },
     {
@@ -5013,8 +5013,8 @@
       "path": "apps/web/src/lib/gamification/annual-reset.ts",
       "line": 16,
       "category": "métier/domain pur",
-      "ceiling": 82,
-      "status": "LEGACY",
+      "ceiling": 26,
+      "status": "IMPROVED",
       "functionIdentity": "named:loadUserAnnualImpactStats#1"
     },
     {
@@ -5038,37 +5038,37 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/gamification/progression-tracking.ts",
-      "line": 372,
+      "line": 395,
       "category": "métier/domain pur",
-      "ceiling": 66,
-      "status": "LEGACY",
+      "ceiling": 53,
+      "status": "IMPROVED",
       "functionIdentity": "named:trackNewPlaceVisited#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/gamification/quiz-balance-progress.ts",
-      "line": 81,
+      "line": 75,
       "category": "métier/domain pur",
-      "ceiling": 88,
-      "status": "LEGACY",
+      "ceiling": 81,
+      "status": "IMPROVED",
       "functionIdentity": "named:syncQuizQuestionTypeBalanceProgress#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/gamification/quiz-progress.ts",
-      "line": 88,
+      "line": 83,
       "category": "métier/domain pur",
-      "ceiling": 92,
-      "status": "LEGACY",
+      "ceiling": 85,
+      "status": "IMPROVED",
       "functionIdentity": "named:syncQuizQuestionTypeProgress#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/gamification/referrals/referrals.ts",
-      "line": 211,
+      "line": 239,
       "category": "métier/domain pur",
-      "ceiling": 85,
-      "status": "LEGACY",
+      "ceiling": 62,
+      "status": "IMPROVED",
       "functionIdentity": "named:ensureReferralInviteForUser#1"
     },
     {
@@ -5632,10 +5632,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/ui/page-families/resolve-page-family.ts",
-      "line": 59,
+      "line": 60,
       "category": "métier/domain pur",
-      "ceiling": 95,
-      "status": "LEGACY",
+      "ceiling": 90,
+      "status": "IMPROVED",
       "functionIdentity": "named:resolveBasePageFamilyId#1"
     },
     {
