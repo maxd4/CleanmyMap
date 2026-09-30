@@ -1,8 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { CURRENT_GAMIFICATION_RULES_REVISION } from "./progression-types";
 
 const loadUserProgressionStatsMock = vi.hoisted(() => vi.fn());
+const broadcastGamificationAnnouncementMock = vi.hoisted(() => vi.fn());
+const logFailureMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./progression-data", () => ({
   fetchActionById: vi.fn(),
@@ -15,8 +17,86 @@ vi.mock("./progression-data", () => ({
 vi.mock("@/lib/actions/participation/group-participation-read", () => ({
   loadConfirmedParticipantImpactAttributions: vi.fn(async () => []),
 }));
+vi.mock("@/lib/gamification/announcements", () => ({
+  broadcastGamificationAnnouncement: broadcastGamificationAnnouncementMock,
+}));
+vi.mock("@/lib/logging/failure-log", () => ({
+  logFailure: logFailureMock,
+}));
 
 import { refreshProgressionProfile } from "./progression-tracking";
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+function createLevelRefreshSupabase(params: {
+  previousLevel: number;
+  events: Array<{ status_phase: "pending" | "validated"; xp_awarded: number }>;
+  notificationFailure?: Error;
+}) {
+  const profileUpsert = vi.fn(async (row: Record<string, unknown>) => ({
+    data: row,
+    error: null,
+  }));
+  const notificationInsert = vi.fn(async () => {
+    if (params.notificationFailure) {
+      throw params.notificationFailure;
+    }
+    return { error: null };
+  });
+  const progressionEventsChain = {
+    select: vi.fn(() => progressionEventsChain),
+    eq: vi.fn(() => progressionEventsChain),
+    limit: vi.fn(async () => ({
+      data: params.events,
+      error: null,
+    })),
+  };
+  const progressionProfilesChain = {
+    select: vi.fn(() => progressionProfilesChain),
+    eq: vi.fn(() => progressionProfilesChain),
+    maybeSingle: vi.fn(async () => ({
+      data: { current_level: params.previousLevel },
+      error: null,
+    })),
+  };
+  const supabase = {
+    from: vi.fn((table: string) => {
+      if (table === "progression_events") return progressionEventsChain;
+      if (table === "progression_profiles") {
+        return {
+          ...progressionProfilesChain,
+          upsert: profileUpsert,
+        };
+      }
+      if (table === "app_notifications") {
+        return { insert: notificationInsert };
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    }),
+  } as unknown as SupabaseClient;
+
+  return { profileUpsert, notificationInsert, supabase };
+}
+
+function completeLevelSixStats() {
+  return {
+    totalActions: 9,
+    approvedActions: 9,
+    validatedActions: 9,
+    verifiedContributions: 9,
+    verifiedContributionFamilies: ["organisation"],
+    qualityAverage: 70,
+    validationRatio: 0.6,
+    diversityTypes: 2,
+    collectiveEvents: 1,
+    totalKg: 0,
+    wasteKnownActions: 0,
+    wasteCoverageRate: 0,
+    totalButts: 0,
+  };
+}
 
 it("includes action balance XP in the validated profile total", async () => {
   loadUserProgressionStatsMock.mockResolvedValue({
@@ -35,46 +115,13 @@ it("includes action balance XP in the validated profile total", async () => {
     totalButts: 60,
   });
 
-  const profileUpsert = vi.fn(async (row: Record<string, unknown>) => ({
-    data: row,
-    error: null,
-  }));
-  const progressionEventsChain = {
-    select: vi.fn(() => progressionEventsChain),
-    eq: vi.fn(() => progressionEventsChain),
-    limit: vi.fn(async () => ({
-      data: [
-        { status_phase: "validated", xp_awarded: 1 },
-        { status_phase: "validated", xp_awarded: 2 },
-      ],
-      error: null,
-    })),
-  };
-  const progressionProfilesChain = {
-    select: vi.fn(() => progressionProfilesChain),
-    eq: vi.fn(() => progressionProfilesChain),
-    maybeSingle: vi.fn(async () => ({
-      data: { current_level: 1 },
-      error: null,
-    })),
-  };
-  const supabase = {
-    from: vi.fn((table: string) => {
-      if (table === "progression_events") {
-        return progressionEventsChain;
-      }
-      if (table === "progression_profiles") {
-        return {
-          ...progressionProfilesChain,
-          upsert: profileUpsert,
-        };
-      }
-      if (table === "app_notifications") {
-        return { insert: vi.fn(async () => ({ error: null })) };
-      }
-      throw new Error(`Unexpected table: ${table}`);
-    }),
-  } as unknown as SupabaseClient;
+  const { profileUpsert, supabase } = createLevelRefreshSupabase({
+    previousLevel: 1,
+    events: [
+      { status_phase: "validated", xp_awarded: 1 },
+      { status_phase: "validated", xp_awarded: 2 },
+    ],
+  });
 
   await refreshProgressionProfile(supabase, "user-1");
 
@@ -107,44 +154,13 @@ it("counts validated participant tiers in validated XP", async () => {
     totalButts: 0,
   });
 
-  const profileUpsert = vi.fn(async (row: Record<string, unknown>) => ({
-    data: row,
-    error: null,
-  }));
-  const progressionEventsChain = {
-    select: vi.fn(() => progressionEventsChain),
-    eq: vi.fn(() => progressionEventsChain),
-    limit: vi.fn(async () => ({
-      data: [
-        { status_phase: "pending", xp_awarded: 1 },
-        { status_phase: "validated", xp_awarded: 1 },
-      ],
-      error: null,
-    })),
-  };
-  const progressionProfilesChain = {
-    select: vi.fn(() => progressionProfilesChain),
-    eq: vi.fn(() => progressionProfilesChain),
-    maybeSingle: vi.fn(async () => ({
-      data: { current_level: 1 },
-      error: null,
-    })),
-  };
-  const supabase = {
-    from: vi.fn((table: string) => {
-      if (table === "progression_events") return progressionEventsChain;
-      if (table === "progression_profiles") {
-        return {
-          ...progressionProfilesChain,
-          upsert: profileUpsert,
-        };
-      }
-      if (table === "app_notifications") {
-        return { insert: vi.fn(async () => ({ error: null })) };
-      }
-      throw new Error(`Unexpected table: ${table}`);
-    }),
-  } as unknown as SupabaseClient;
+  const { profileUpsert, supabase } = createLevelRefreshSupabase({
+    previousLevel: 1,
+    events: [
+      { status_phase: "pending", xp_awarded: 1 },
+      { status_phase: "validated", xp_awarded: 1 },
+    ],
+  });
 
   await refreshProgressionProfile(supabase, "user-1");
 
@@ -156,4 +172,48 @@ it("counts validated participant tiers in validated XP", async () => {
     }),
     { onConflict: "user_id" },
   );
+});
+
+it("keeps the resolved previous level when the secondary notification fails", async () => {
+  loadUserProgressionStatsMock.mockResolvedValue(completeLevelSixStats());
+  const { profileUpsert, notificationInsert, supabase } = createLevelRefreshSupabase({
+    previousLevel: 5,
+    events: [{ status_phase: "validated", xp_awarded: 15 }],
+    notificationFailure: new Error("notification insert failed"),
+  });
+
+  await refreshProgressionProfile(supabase, "user-1");
+
+  expect(profileUpsert).toHaveBeenCalledWith(
+    expect.objectContaining({ current_level: 6 }),
+    { onConflict: "user_id" },
+  );
+  expect(notificationInsert).toHaveBeenCalledTimes(1);
+  expect(broadcastGamificationAnnouncementMock).toHaveBeenCalledWith(
+    supabase,
+    expect.objectContaining({
+      type: "level_up",
+      previousLevel: 5,
+      newLevel: 6,
+    }),
+  );
+  expect(logFailureMock).toHaveBeenCalledWith(
+    "Gamification/LevelUp",
+    "Notification write skipped",
+    expect.any(Error),
+    { userId: "user-1" },
+  );
+});
+
+it("does not announce when the current level does not change", async () => {
+  loadUserProgressionStatsMock.mockResolvedValue(completeLevelSixStats());
+  const { notificationInsert, supabase } = createLevelRefreshSupabase({
+    previousLevel: 6,
+    events: [{ status_phase: "validated", xp_awarded: 15 }],
+  });
+
+  await refreshProgressionProfile(supabase, "user-1");
+
+  expect(notificationInsert).not.toHaveBeenCalled();
+  expect(broadcastGamificationAnnouncementMock).not.toHaveBeenCalled();
 });

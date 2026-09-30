@@ -21,6 +21,7 @@ import { broadcastGamificationAnnouncement } from "@/lib/gamification/announceme
 import { logFailure } from "@/lib/logging/failure-log";
 import { rebuildUserGamificationBadges } from "./badges/rebuild";
 import { reconcileMohsImpactProgression } from "./mohs-impact-reconciliation";
+import { loadPreviousLevel, notifyLevelUp } from "./progression-level-refresh";
 import {
   awardReferralForUsefulContribution,
   removeReferralAwardForRejectedContribution,
@@ -54,34 +55,6 @@ function calculateProgressionTotals(
     },
     { xpTotal: 0, xpPending: 0, xpValidated: 0 },
   );
-}
-
-async function loadPreviousLevelAndNotify(
-  supabase: SupabaseClient,
-  userId: string,
-  currentLevel: number,
-): Promise<number> {
-  try {
-    const { data: existingProfile } = await supabase
-      .from("progression_profiles")
-      .select("current_level")
-      .eq("user_id", userId)
-      .maybeSingle();
-    const previousLevel = (existingProfile as { current_level?: number | null } | null)?.current_level ?? 1;
-    if (currentLevel > previousLevel) {
-      await supabase.from("app_notifications").insert({
-        user_id: userId,
-        type: "system",
-        title: "Niveau Supérieur ! 🏆",
-        content: `Félicitations ! Vous avez atteint le niveau ${currentLevel}. Votre impact sur CleanMyMap grandit !`,
-        payload: { oldLevel: previousLevel, newLevel: currentLevel },
-      });
-    }
-    return previousLevel;
-  } catch (notifError) {
-    logFailure("Gamification/LevelUp", "Notification write skipped", notifError, { userId });
-    return 1;
-  }
 }
 
 async function upsertProgressionProfile(
@@ -127,6 +100,19 @@ async function announceLevelUp(
   });
 }
 
+async function finalizeProgressionRefresh(
+  supabase: SupabaseClient,
+  userId: string,
+  totals: { xpTotal: number; xpPending: number; xpValidated: number },
+  currentLevel: number,
+  potentialLevel: number,
+  previousLevel: number,
+): Promise<void> {
+  await notifyLevelUp(supabase, userId, previousLevel, currentLevel);
+  await upsertProgressionProfile(supabase, userId, totals, currentLevel, potentialLevel);
+  await announceLevelUp(supabase, userId, previousLevel, currentLevel);
+}
+
 export async function refreshProgressionProfile(
   supabase: SupabaseClient,
   userId: string,
@@ -159,9 +145,8 @@ export async function refreshProgressionProfile(
 
   const potentialLevel = computePotentialLevel(totals.xpValidated);
   const currentLevel = computeCurrentLevel(totals.xpValidated, stats);
-  const previousLevel = await loadPreviousLevelAndNotify(supabase, userId, currentLevel);
-  await upsertProgressionProfile(supabase, userId, totals, currentLevel, potentialLevel);
-  await announceLevelUp(supabase, userId, previousLevel, currentLevel);
+  const previousLevel = await loadPreviousLevel(supabase, userId);
+  await finalizeProgressionRefresh(supabase, userId, totals, currentLevel, potentialLevel, previousLevel);
 }
 
 export async function trackActionCreated(
