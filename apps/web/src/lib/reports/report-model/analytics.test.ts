@@ -187,6 +187,15 @@ describe("reports web analytics", () => {
  expect(report.climate.streetCleaningSavings).toEqual(expected.streetCleaningSavings);
  expect(report.climate.streetCleaningSavingsEuros).toBe(expected.euroSaved);
  expect(report.monthRows6.reduce((sum, row) => sum + row.kg, 0)).toBe(expected.wasteKg);
+  expect(report.trendPercent).toBe(100);
+  expect(report.climate.six).toEqual({ actions: 2, kg: expected.wasteKg, butts: expected.butts });
+  expect(report.climate.twelve).toEqual({ actions: 2, kg: expected.wasteKg, butts: expected.butts });
+  expect(report.map).toMatchObject({ points: 2, traces: 0, polylines: 0, polygons: 0 });
+  expect(report.moderation).toMatchObject({ availability: "available", approved: 2 });
+  expect(report.quality).toMatchObject({ geolocRate: 100 });
+  expect(report.annualRows).toEqual([["10e", "2", "2,0 kg", "13 975", "1,00 kg/action"]]);
+  expect(report.highlightActions).toEqual([]);
+  expect(report.highlightPhotos).toEqual([]);
  });
 
  it("groups monthly rows by month key", () => {

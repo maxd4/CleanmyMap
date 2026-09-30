@@ -4974,20 +4974,20 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts",
-      "line": 315,
+      "path": "apps/web/src/lib/environmental-impact-estimator/project-signals-timeline.ts",
+      "line": 190,
       "category": "métier/domain pur",
-      "ceiling": 131,
-      "status": "LEGACY",
+      "ceiling": 37,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildScopeInputFromRows#1"
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts",
-      "line": 452,
+      "path": "apps/web/src/lib/environmental-impact-estimator/project-signals-highlights.ts",
+      "line": 174,
       "category": "métier/domain pur",
-      "ceiling": 111,
-      "status": "LEGACY",
+      "ceiling": 12,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildProjectSignalsHighlights#1"
     },
     {
@@ -5461,10 +5461,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/reports/report-model/compute-report-model.ts",
-      "line": 278,
+      "line": 359,
       "category": "métier/domain pur",
-      "ceiling": 160,
-      "status": "LEGACY",
+      "ceiling": 36,
+      "status": "IMPROVED",
       "functionIdentity": "named:computeReportModel#1"
     },
     {

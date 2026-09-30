@@ -365,10 +365,10 @@
     {
       "path": "apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts",
       "kind": "runtime",
-      "status": "REVIEW",
+      "status": "IMPROVED",
       "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 703,
-      "maxBytes": 22010
+      "maxLines": 218,
+      "maxBytes": 5935
     },
     {
       "path": "apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts",
