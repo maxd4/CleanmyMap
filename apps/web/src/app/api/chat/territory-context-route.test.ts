@@ -3,22 +3,24 @@ import { buildSupabaseMock, type ChatMessageRow } from "./route.test.helpers";
 
 vi.mock("server-only", () => ({}));
 
-const authMock = vi.hoisted(() => vi.fn());
-const identityMock = vi.hoisted(() => vi.fn());
-const rlsMock = vi.hoisted(() => vi.fn());
-const serverMock = vi.hoisted(() => vi.fn());
-const verifyMock = vi.hoisted(() => vi.fn());
-const rateResponseMock = vi.hoisted(() => vi.fn());
-const reserveMock = vi.hoisted(() => vi.fn());
-const notificationsMock = vi.hoisted(() => vi.fn());
+const [
+  authMock,
+  identityMock,
+  rlsMock,
+  serverMock,
+  verifyMock,
+  rateResponseMock,
+  reserveMock,
+  notificationsMock,
+] = vi.hoisted(() => Array.from({ length: 8 }, () => vi.fn()));
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
-vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: identityMock }));
 vi.mock("@/lib/supabase/clerk-rls", () => ({ getSupabaseClerkRlsClient: rlsMock }));
-vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: serverMock }));
 vi.mock("@/lib/rate-limit/server", () => ({ verifyRateLimit: verifyMock, createServerRateLimitResponse: rateResponseMock }));
-vi.mock("@/lib/community/discussion-rate-limit", () => ({ reserveDiscussionMessageSlot: reserveMock, toDiscussionRateLimitErrorPayload: vi.fn() }));
+vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: identityMock }));
+vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: serverMock }));
 vi.mock("@/lib/chat/chat-notifications", () => ({ createChatNotificationsForMessage: notificationsMock }));
+vi.mock("@/lib/community/discussion-rate-limit", () => ({ reserveDiscussionMessageSlot: reserveMock, toDiscussionRateLimitErrorPayload: vi.fn() }));
 
 describe("chat territory context", () => {
   beforeEach(() => {
