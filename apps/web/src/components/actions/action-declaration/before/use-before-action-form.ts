@@ -1,103 +1,22 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import {
-  createAction,
-  fetchActionById,
-  publishAction,
-  updateAction,
-  type ActionEditorRecord,
-} from "@/lib/actions/http";
-import { trackFunnel } from "@/lib/analytics/funnel-client";
-import {
-  createInitialFormState,
-  buildCreateActionPayload,
-  applyPreparationDataToForm,
-} from "../payload";
-import { saveDraft, loadDraftSnapshot } from "../draft-storage";
-import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
+import { useMemo, useState } from "react";
+import type { ActionEditorRecord } from "@/lib/actions/http";
 import type { FormState } from "../model";
-import type {
-  ActionPhotoAsset,
-  ActionVisionEstimate,
-  CreateActionPayload,
-} from "@/lib/actions/types";
+import { saveDraft } from "../draft-storage";
 import {
   buildPreActionSummaryNote,
-  isResumablePreAction,
   sanitizePreActionForm,
   type ActionBeforeDeclarationFormProps,
-  type BeforeActionFieldUpdater,
   type TerminalPreActionStatus,
 } from "./model";
-import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
-import { applyOrganizerFormUpdates } from "./organizer-form-state";
+import {
+  buildBeforeActionInitialForm,
+  useBeforeActionFieldUpdates,
+  useBeforeActionHydration,
+  useBeforeActionPublication,
+  useBeforeActionSubmission,
+} from "./use-before-action-workflow";
 
-type BeforeValidationField =
-  | "actionTitle"
-  | "actionDate"
-  | "associationName"
-  | "organizerType"
-  | "departureLocationLabel"
-  | "eventStartTime";
-
-function buildPrefillForm(
-  actorNameOptions: string[],
-  defaultActorName: string,
-  initialRecordType: "action",
-): FormState {
-  const fallback = createInitialFormState(
-    actorNameOptions.includes(defaultActorName)
-      ? defaultActorName
-      : actorNameOptions[0] ?? defaultActorName,
-    initialRecordType,
-  );
-
-  const snapshot = loadDraftSnapshot(fallback, initialRecordType);
-  return sanitizePreActionForm(snapshot?.form ?? fallback);
-}
-
-function mergePlannerHandoffIntoForm(
-  form: FormState,
-  handoff: ReturnType<typeof consumePlannerActionHandoff>,
-): FormState {
-  if (!handoff) return form;
-  const preparationData = handoff.preparationData
-    ? {
-        ...handoff.preparationData,
-        operationalRoute: handoff.operationalRoute,
-        routeCalibrationContext: handoff.routeCalibrationContext ?? undefined,
-      }
-    : {
-        operationalRoute: handoff.operationalRoute,
-        routeCalibrationContext: handoff.routeCalibrationContext ?? undefined,
-      };
-  const prepared = sanitizePreActionForm(applyPreparationDataToForm(form, preparationData));
-  if (
-    handoff.preparationData?.volunteersExpected !== undefined &&
-    !handoff.preparationData.volunteerParticipation
-  ) {
-    prepared.childrenCount = "";
-    prepared.adultCount = "";
-    prepared.retiredCount = "";
-  }
-  return prepared;
-}
-
-export async function persistBeforeAction(
-  actionId: string | null | undefined,
-  payload: CreateActionPayload,
-  dependencies: {
-    create: typeof createAction;
-    update: typeof updateAction;
-  } = { create: createAction, update: updateAction },
-): Promise<{ actionId: string; created: boolean }> {
-  const result = actionId
-    ? await dependencies.update(actionId, payload)
-    : await dependencies.create(payload);
-  return {
-    actionId: "id" in result ? result.id : result.actionId,
-    created: !actionId,
-  };
-}
+export { persistBeforeAction } from "./use-before-action-workflow";
 
 export function useBeforeActionForm({
   actorNameOptions,
@@ -111,318 +30,32 @@ export function useBeforeActionForm({
   onFormChange,
   onActionPersisted,
 }: ActionBeforeDeclarationFormProps) {
-  const resolvedDefaultActorName = actorNameOptions.includes(defaultActorName)
-    ? defaultActorName
-    : (actorNameOptions[0] ?? userMetadata.userId);
-  const [form, setForm] = useState<FormState>(() =>
-    buildPrefillForm(actorNameOptions, resolvedDefaultActorName, initialRecordType),
-  );
-  const plannerHandoffHydratedRef = useRef(false);
+  const resolvedDefaultActorName = actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? userMetadata.userId;
+  const [form, setForm] = useState<FormState>(() => buildBeforeActionInitialForm(actorNameOptions, resolvedDefaultActorName, initialRecordType));
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [publishedAction, setPublishedAction] = useState<ActionEditorRecord | null>(null);
-  const [terminalActionStatus, setTerminalActionStatus] =
-    useState<TerminalPreActionStatus | null>(null);
+  const [terminalActionStatus, setTerminalActionStatus] = useState<TerminalPreActionStatus | null>(null);
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [publicationState, setPublicationState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [publicationError, setPublicationError] = useState<string | null>(null);
   const [publicationConfirmationOpen, setPublicationConfirmationOpen] = useState(false);
-  const [isHydratingAction, setIsHydratingAction] = useState(Boolean(initialActionId));
   const [validationIssues, setValidationIssues] = useState<string[]>([]);
-  const [validationIssueFields, setValidationIssueFields] = useState<BeforeValidationField[]>([]);
+  const [validationIssueFields, setValidationIssueFields] = useState<Array<"actionTitle" | "actionDate" | "associationName" | "organizerType" | "departureLocationLabel" | "eventStartTime">>([]);
   const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
-  const hasTrackedStartRef = useRef(false);
 
-  useEffect(() => {
-    if (!initialActionId) {
-      return;
-    }
-
-    let active = true;
-    fetchActionById(initialActionId)
-      .then((action) => {
-        if (!active) return;
-        if (action.actionPhase !== "pre_action") {
-          throw new Error("Cette action n'est plus une pré-action publiable.");
-        }
-        if (!isResumablePreAction(action)) {
-          if (action.status !== "rejected" && action.status !== "cancelled") {
-            throw new Error("Cette pré-action ne peut pas être reprise dans ce parcours.");
-          }
-          setCreatedId(action.id);
-          setPublishedAction(action);
-          setPublishedAt(null);
-          setTerminalActionStatus(action.status);
-          setSubmissionState("success");
-          setIsHydratingAction(false);
-          return;
-        }
-        const hydrated = sanitizePreActionForm(
-          applyPreparationDataToForm(
-            createInitialFormState(resolvedDefaultActorName, initialRecordType),
-            action.preparationData,
-          ),
-        );
-        const nextForm = {
-          ...hydrated,
-          actorName: action.actorName ?? hydrated.actorName,
-          associationName: action.associationName ?? hydrated.associationName,
-          organizerType: action.organizerType ?? hydrated.organizerType,
-          organizerId: action.organizerId ?? hydrated.organizerId,
-          organizerName: action.organizerName ?? action.associationName ?? hydrated.organizerName,
-          actionDate: action.actionDate,
-          locationLabel: action.locationLabel,
-          departureLocationLabel:
-            action.departureLocationLabel ?? hydrated.departureLocationLabel,
-          arrivalLocationLabel:
-            action.arrivalLocationLabel ?? hydrated.arrivalLocationLabel,
-          eventStartTime: action.eventStartTime ?? hydrated.eventStartTime,
-          eventEndTime: action.eventEndTime ?? hydrated.eventEndTime,
-          volunteersCount: String(action.volunteersCount),
-          durationMinutes: String(action.durationMinutes),
-          groupJoinEnabled: action.groupJoinEnabled,
-          participantAccounts: action.participantAccounts,
-        };
-        const handoff = consumePlannerActionHandoff();
-        const matchingHandoff =
-          handoff?.actionId === action.id ? handoff : null;
-        const hydratedForm = mergePlannerHandoffIntoForm(nextForm, matchingHandoff);
-        setForm(hydratedForm);
-        onFormChange?.(hydratedForm);
-        setCreatedId(action.id);
-        setPublishedAction(action);
-        setPublishedAt(action.publishedAt ?? null);
-        setTerminalActionStatus(null);
-        setSubmissionState(matchingHandoff ? "idle" : "success");
-        setIsHydratingAction(false);
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
-        setErrorMessage(
-          error instanceof Error && error.message
-            ? error.message
-            : "Impossible de reprendre cette pré-action pour le moment.",
-        );
-        setSubmissionState("error");
-        setIsHydratingAction(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [initialActionId, initialRecordType, onFormChange, resolvedDefaultActorName]);
-
-  useEffect(() => {
-    if (initialActionId || plannerHandoffHydratedRef.current) return;
-    plannerHandoffHydratedRef.current = true;
-    const handoff = consumePlannerActionHandoff();
-    if (!handoff) return;
-    const prepared = mergePlannerHandoffIntoForm(form, handoff);
-
-    // Hydrate after the client boundary so sessionStorage never changes SSR markup.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional external handoff hydration
-    setForm(prepared);
-    onFormChange?.(prepared);
-    saveDraft(prepared);
-  // The handoff is intentionally consumed once on mount; the current form is the merge base.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialActionId, onFormChange]);
-
-  const shareLink = createdId
-    ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}`
-    : null;
+  const isHydratingAction = useBeforeActionHydration({ resolvedDefaultActorName, initialActionId, initialRecordType, form, setForm, onFormChange, setCreatedId, setPublishedAction, setPublishedAt, setTerminalActionStatus, setSubmissionState, setErrorMessage });
+  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, linkedEventId, submissionState, setForm, onFormChange, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
+  const handleSubmit = useBeforeActionSubmission({ form, submissionState, initialActionId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
+  const { requestPublish, cancelPublication, confirmPublish } = useBeforeActionPublication({ createdId, publishedAt, publicationState, setForm, setPublishedAction, setCreatedId, setPublishedAt, setPublicationState, setPublicationError, setPublicationConfirmationOpen });
+  const shareLink = createdId ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}` : null;
   const summaryNote = useMemo(() => buildPreActionSummaryNote(form), [form]);
-
-  const updateFields = (updates: Partial<FormState>) => {
-    if (!hasTrackedStartRef.current) {
-      hasTrackedStartRef.current = true;
-      trackFunnel("start_form", "quick", {
-        source: "action_before_declaration_form",
-        recordType: form.recordType,
-        routePath: typeof window !== "undefined" ? window.location.pathname : null,
-        formVariant: "quick",
-        linkedEventId: linkedEventId ?? null,
-      }).catch(() => undefined);
-    }
-
-    const nextForm = sanitizePreActionForm({ ...form, ...updates } as FormState);
-    if ("routeStyle" in updates) {
-      nextForm.routeStyle = "souple";
-    }
-    applyOrganizerFormUpdates(nextForm, form, updates);
-
-    setForm(nextForm);
-    onFormChange?.(nextForm);
-    saveDraft(nextForm);
-    if (submissionState === "error") {
-      setSubmissionState("idle");
-      setErrorMessage(null);
-      setValidationIssues([]);
-      setValidationIssueFields([]);
-    }
-  };
-
-  const updateField: BeforeActionFieldUpdater = (key, value) => {
-    updateFields({ [key]: value } as Partial<FormState>);
-  };
-
-  async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
-    event?.preventDefault();
-    if (submissionState === "pending") {
-      return;
-    }
-
-    const issues: Array<{ field: BeforeValidationField; message: string }> = [];
-    if (!form.actionTitle.trim()) {
-      issues.push({ field: "actionTitle", message: "Indiquez un titre pour enregistrer le pré-formulaire." });
-    }
-    if (!form.actionDate.trim()) {
-      issues.push({ field: "actionDate", message: "Indiquez la date prévue avant d'enregistrer le pré-formulaire." });
-    }
-    if (!form.associationName.trim()) {
-      issues.push({ field: "associationName", message: "Sélectionnez une structure ou un cadre d'engagement." });
-    }
-    if (!form.organizerType) {
-      issues.push({ field: "organizerType", message: "Sélectionnez un type de structure avant d'enregistrer le pré-formulaire." });
-    }
-    if (!form.departureLocationLabel.trim()) {
-      issues.push({ field: "departureLocationLabel", message: "Indiquez le point de rendez-vous avant d'enregistrer." });
-    }
-    const timeMessage = getTimeContractValidationMessage({
-      actionDurationMinutes: Number(form.durationMinutes),
-      startTime: form.eventStartTime,
-      endTime: form.eventEndTime,
-    });
-    if (timeMessage) {
-      issues.push({ field: "eventStartTime", message: timeMessage });
-    }
-
-    if (issues.length > 0) {
-      setValidationIssues(issues.map((issue) => issue.message));
-      setValidationIssueFields(issues.map((issue) => issue.field));
-      setErrorMessage(issues[0]?.message ?? "Complétez les informations connues avant de continuer.");
-      setSubmissionState("error");
-      return;
-    }
-
-    const normalizedForm = sanitizePreActionForm(form);
-    const payload = buildCreateActionPayload({
-      form: normalizedForm,
-      declarationMode: "quick",
-      isEntrepriseMode: false,
-      effectiveManualDrawingEnabled: false,
-      drawingIsValid: false,
-      manualDrawing: null,
-      linkedEventId,
-      photos: [] as ActionPhotoAsset[],
-      visionEstimate: null as ActionVisionEstimate | null,
-      userMetadata,
-    });
-
-    setSubmissionState("pending");
-    setErrorMessage(null);
-    setValidationIssues([]);
-    setValidationIssueFields([]);
-
-    try {
-      const result = await persistBeforeAction(initialActionId, payload);
-      const persistedId = result.actionId;
-      setCreatedId(persistedId);
-      onActionPersisted?.(persistedId);
-      if (initialActionId) {
-        const canonicalAction = await fetchActionById(persistedId);
-        setPublishedAction(canonicalAction);
-        setPublishedAt(canonicalAction.publishedAt ?? null);
-      }
-      setSubmissionState("success");
-      saveDraft(normalizedForm);
-      await trackFunnel("submit_success", "quick", {
-        source: "action_before_declaration_form",
-        createdId: result.actionId,
-        isAuthenticated,
-      });
-    } catch (error: unknown) {
-      setSubmissionState("error");
-      setErrorMessage(
-        error instanceof Error && error.message
-          ? error.message
-          : "Impossible d'enregistrer le pré-formulaire pour le moment.",
-      );
-    }
-  }
-
-  function requestPublish() {
-    if (!createdId || publishedAt || publicationState === "pending") return;
-    setPublicationConfirmationOpen(true);
-  }
-
-  function cancelPublication() {
-    setPublicationConfirmationOpen(false);
-  }
-
-  async function confirmPublish() {
-    if (!createdId || publishedAt || publicationState === "pending") return;
-    setPublicationConfirmationOpen(false);
-    setPublicationState("pending");
-    setPublicationError(null);
-    try {
-      const result = await publishAction(createdId);
-      if (result.id !== createdId) {
-        throw new Error("La publication a retourné une action différente.");
-      }
-      const canonicalAction = await fetchActionById(result.id);
-      setPublishedAction(canonicalAction);
-      setForm((current) =>
-        sanitizePreActionForm(
-          applyPreparationDataToForm(current, canonicalAction.preparationData),
-        ),
-      );
-      setCreatedId(canonicalAction.id);
-      setPublishedAt(canonicalAction.publishedAt ?? result.publishedAt);
-      setPublicationState("success");
-    } catch (error: unknown) {
-      setPublicationState("error");
-      setPublicationError(
-        error instanceof Error && error.message
-          ? error.message
-          : "Impossible de publier cette action pour le moment.",
-      );
-    }
-  }
-
   const onContinueComplete = () => {
-    if (!createdId) {
-      return;
-    }
+    if (!createdId) return;
     saveDraft(sanitizePreActionForm(form));
-    void onPassToComplete(createdId);
+    onPassToComplete(createdId);
   };
 
-  return {
-    form,
-    submissionState,
-    errorMessage,
-    createdId,
-    publishedAction,
-    terminalActionStatus,
-    publishedAt,
-    publicationState,
-    publicationError,
-    publicationConfirmationOpen,
-    isHydratingAction,
-    validationIssues,
-    validationIssueFields,
-    showGroupJoinHelp,
-    setShowGroupJoinHelp,
-    shareLink,
-    summaryNote,
-    updateField,
-    updateFields,
-    handleSubmit,
-    requestPublish,
-    cancelPublication,
-    confirmPublish,
-    onContinueComplete,
-  };
+  return { form, submissionState, errorMessage, createdId, publishedAction, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction, validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete };
 }

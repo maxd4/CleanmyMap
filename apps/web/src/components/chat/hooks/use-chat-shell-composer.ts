@@ -75,20 +75,61 @@ export function canSubmitChatMessage({
   activeActionId,
 }: CanSubmitChatMessageParams): boolean {
   const announcementMode = composerMode === "announcement";
+  const hasIdentity = Boolean(userId && isLoaded && isSignedIn);
+  const hasContent = Boolean(message.trim().length > 0 || file);
+  const isIdle = !isSending && !isUploading;
+  const modeIsValid = !announcementMode || isValidAnnouncement({
+    announcementTemplate,
+    announcementEventRequested,
+    relatedEvent,
+    announcementEventLoading,
+    announcementEventError,
+  });
 
   return Boolean(
-    userId &&
-      isLoaded &&
-      isSignedIn &&
-      (message.trim().length > 0 || file) &&
-      !isSending &&
-      !isUploading &&
-      (composerMode !== "poll" || !getChatPollOptionsValidationError(pollOptions)) &&
-      (!announcementMode || Boolean(announcementTemplate)) &&
-      (!announcementMode || !announcementEventRequested || Boolean(relatedEvent)) &&
-      (!announcementMode || !announcementEventLoading) &&
-      (!announcementMode || !announcementEventError) &&
-      !(activeChannelType === "dm" && !selectedRecipient) &&
+    hasIdentity &&
+      hasContent &&
+      isIdle &&
+      isValidPoll(composerMode, pollOptions) &&
+      modeIsValid &&
+      isValidChatDestination({
+        activeChannelType,
+        activeActionId,
+        selectedRecipient,
+        effectiveZone,
+        territoryFocus,
+      }),
+  );
+}
+
+function isValidPoll(composerMode: ChatShellComposerMode, pollOptions: string[]): boolean {
+  return composerMode !== "poll" || !getChatPollOptionsValidationError(pollOptions);
+}
+
+function isValidAnnouncement({
+  announcementTemplate,
+  announcementEventRequested,
+  relatedEvent,
+  announcementEventLoading,
+  announcementEventError,
+}: Pick<CanSubmitChatMessageParams, "announcementTemplate" | "announcementEventRequested" | "relatedEvent" | "announcementEventLoading" | "announcementEventError">): boolean {
+  return Boolean(
+    announcementTemplate &&
+      (!announcementEventRequested || relatedEvent) &&
+      !announcementEventLoading &&
+      !announcementEventError,
+  );
+}
+
+function isValidChatDestination({
+  activeChannelType,
+  activeActionId,
+  selectedRecipient,
+  effectiveZone,
+  territoryFocus,
+}: Pick<CanSubmitChatMessageParams, "activeChannelType" | "activeActionId" | "selectedRecipient" | "effectiveZone" | "territoryFocus">): boolean {
+  return Boolean(
+    !(activeChannelType === "dm" && !selectedRecipient) &&
       !(activeChannelType === "territory" && !effectiveZone && territoryFocus === null) &&
       !(activeChannelType === "action" && !activeActionId),
   );
@@ -119,33 +160,27 @@ type UseChatShellComposerParams = {
   setSendError: Dispatch<SetStateAction<string | null>>;
 };
 
-export function useChatShellComposer({
+type ChatComposerModeStateParams = Pick<
+  UseChatShellComposerParams,
+  | "initialComposerMode"
+  | "initialAnnouncementTemplate"
+  | "initialRelatedEvent"
+  | "setActiveTopicId"
+  | "setFile"
+  | "setMessage"
+  | "setSendError"
+>;
+
+function useChatComposerModeState({
   initialComposerMode,
   initialAnnouncementTemplate,
   initialRelatedEvent,
-  announcementEventRequested,
-  announcementEventLoading,
-  announcementEventError,
-  userId,
-  isLoaded,
-  isSignedIn,
-  message,
-  file,
-  isSending,
-  isUploading,
-  activeChannelType,
-  activeActionId,
-  selectedRecipient,
-  effectiveZone,
-  territoryFocus,
   setActiveTopicId,
   setFile,
   setMessage,
   setSendError,
-}: UseChatShellComposerParams) {
-  const [composerMode, setComposerMode] = useState<ChatShellComposerMode>(
-    initialComposerMode,
-  );
+}: ChatComposerModeStateParams) {
+  const [composerMode, setComposerMode] = useState<ChatShellComposerMode>(initialComposerMode);
   const [announcementTemplate, setAnnouncementTemplate] =
     useState<CommunityAnnouncementTemplateKey | null>(initialAnnouncementTemplate);
   const [relatedEventOverride, setRelatedEventOverride] = useState<
@@ -200,6 +235,62 @@ export function useChatShellComposer({
     [announcementMode, setActiveTopicId],
   );
 
+  const resetComposerForChannelChange = useCallback(() => {
+    setComposerMode("message");
+    setAnnouncementTemplate(null);
+    setRelatedEventOverride(null);
+    setPollOptions(createInitialChatPollOptionDraft());
+  }, []);
+
+  return {
+    announcementMode,
+    announcementTemplate,
+    composerMode,
+    handleAnnouncementTemplateChange,
+    handleComposerModeChange,
+    handleSelectTopic,
+    pollOptions,
+    relatedEvent,
+    resetComposerForChannelChange,
+    setAnnouncementTemplate,
+    setPollOptions,
+  };
+}
+
+export function useChatShellComposer({
+  initialComposerMode,
+  initialAnnouncementTemplate,
+  initialRelatedEvent,
+  announcementEventRequested,
+  announcementEventLoading,
+  announcementEventError,
+  userId,
+  isLoaded,
+  isSignedIn,
+  message,
+  file,
+  isSending,
+  isUploading,
+  activeChannelType,
+  activeActionId,
+  selectedRecipient,
+  effectiveZone,
+  territoryFocus,
+  setActiveTopicId,
+  setFile,
+  setMessage,
+  setSendError,
+}: UseChatShellComposerParams) {
+  const modeState = useChatComposerModeState({
+    initialComposerMode,
+    initialAnnouncementTemplate,
+    initialRelatedEvent,
+    setActiveTopicId,
+    setFile,
+    setMessage,
+    setSendError,
+  });
+
   const handleInsertLink = useCallback(
     (url: string) => {
       setMessage((current) => appendChatLinkToMessage(current, url));
@@ -207,13 +298,6 @@ export function useChatShellComposer({
     },
     [setMessage, setSendError],
   );
-
-  const resetComposerForChannelChange = useCallback(() => {
-    setComposerMode("message");
-    setAnnouncementTemplate(null);
-    setRelatedEventOverride(null);
-    setPollOptions(createInitialChatPollOptionDraft());
-  }, []);
 
   const canSubmitMessage = useMemo(
     () =>
@@ -225,11 +309,11 @@ export function useChatShellComposer({
         file,
         isSending,
         isUploading,
-        composerMode,
-        pollOptions,
-        announcementTemplate,
+        composerMode: modeState.composerMode,
+        pollOptions: modeState.pollOptions,
+        announcementTemplate: modeState.announcementTemplate,
         announcementEventRequested,
-        relatedEvent,
+        relatedEvent: modeState.relatedEvent,
         announcementEventLoading,
         announcementEventError,
         activeChannelType,
@@ -246,11 +330,11 @@ export function useChatShellComposer({
       file,
       isSending,
       isUploading,
-      composerMode,
-      pollOptions,
-      announcementTemplate,
+       modeState.composerMode,
+       modeState.pollOptions,
+       modeState.announcementTemplate,
       announcementEventRequested,
-      relatedEvent,
+       modeState.relatedEvent,
       announcementEventLoading,
       announcementEventError,
       activeChannelType,
@@ -262,18 +346,8 @@ export function useChatShellComposer({
   );
 
   return {
-    announcementMode,
-    announcementTemplate,
+    ...modeState,
     canSubmitMessage,
-    composerMode,
-    handleAnnouncementTemplateChange,
-    handleComposerModeChange,
     handleInsertLink,
-    handleSelectTopic,
-    pollOptions,
-    relatedEvent,
-    resetComposerForChannelChange,
-    setAnnouncementTemplate,
-    setPollOptions,
   };
 }

@@ -1,0 +1,289 @@
+import { type FormEvent, type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
+import { createInitialFormState, applyPreparationDataToForm } from "../payload";
+import { saveDraft, loadDraftSnapshot } from "../draft-storage";
+import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
+import { trackFunnel } from "@/lib/analytics/funnel-client";
+import { createAction, fetchActionById, publishAction, updateAction, type ActionEditorRecord } from "@/lib/actions/http";
+import type { FormState } from "../model";
+import type { CreateActionPayload } from "@/lib/actions/types";
+import {
+  isResumablePreAction,
+  sanitizePreActionForm,
+  type ActionBeforeDeclarationFormProps,
+  type BeforeActionFieldUpdater,
+  type TerminalPreActionStatus,
+} from "./model";
+import { applyOrganizerFormUpdates } from "./organizer-form-state";
+import { buildBeforeActionPayload, validateBeforeActionForm, type BeforeValidationField } from "./form-logic";
+
+type SubmissionState = "idle" | "pending" | "success" | "error";
+type PublicationState = "idle" | "pending" | "success" | "error";
+type StateSetter<T> = Dispatch<SetStateAction<T>>;
+type BeforeActionRecordSetters = {
+  setForm: StateSetter<FormState>;
+  onFormChange?: (form: FormState) => void;
+  setCreatedId: StateSetter<string | null>;
+  setPublishedAction: StateSetter<ActionEditorRecord | null>;
+  setPublishedAt: StateSetter<string | null>;
+  setTerminalActionStatus: StateSetter<TerminalPreActionStatus | null>;
+  setSubmissionState: StateSetter<SubmissionState>;
+};
+
+export async function persistBeforeAction(
+  actionId: string | null | undefined,
+  payload: CreateActionPayload,
+  dependencies: { create: typeof createAction; update: typeof updateAction } = { create: createAction, update: updateAction },
+): Promise<{ actionId: string; created: boolean }> {
+  const result = actionId ? await dependencies.update(actionId, payload) : await dependencies.create(payload);
+  return { actionId: "id" in result ? result.id : result.actionId, created: !actionId };
+}
+
+function usePlannerActionHandoffHydration({
+  initialActionId,
+  form,
+  setForm,
+  onFormChange,
+}: {
+  initialActionId?: string | null;
+  form: FormState;
+  setForm: StateSetter<FormState>;
+  onFormChange?: (form: FormState) => void;
+}) {
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (initialActionId || hydratedRef.current) return;
+    hydratedRef.current = true;
+    const handoff = consumePlannerActionHandoff();
+    if (!handoff) return;
+    const prepared = mergePlannerHandoffIntoForm(form, handoff);
+    // Hydrate after the client boundary so sessionStorage never changes SSR markup.
+    setForm(prepared); onFormChange?.(prepared); saveDraft(prepared);
+  // The handoff is intentionally consumed once on mount; the current form is the merge base.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialActionId, onFormChange]);
+}
+
+function applyFetchedBeforeAction({
+  action,
+  resolvedDefaultActorName,
+  initialRecordType,
+  setForm,
+  onFormChange,
+  setCreatedId,
+  setPublishedAction,
+  setPublishedAt,
+  setTerminalActionStatus,
+  setSubmissionState,
+  setIsHydratingAction,
+}: {
+  action: Awaited<ReturnType<typeof fetchActionById>>;
+  resolvedDefaultActorName: string;
+  initialRecordType: "action";
+  setIsHydratingAction: StateSetter<boolean>;
+} & BeforeActionRecordSetters) {
+  if (action.actionPhase !== "pre_action") throw new Error("Cette action n'est plus une pré-action publiable.");
+  if (!isResumablePreAction(action)) {
+    if (action.status !== "rejected" && action.status !== "cancelled") throw new Error("Cette pré-action ne peut pas être reprise dans ce parcours.");
+    setCreatedId(action.id); setPublishedAction(action); setPublishedAt(null); setTerminalActionStatus(action.status); setSubmissionState("success"); setIsHydratingAction(false); return;
+  }
+  const hydrated = sanitizePreActionForm(applyPreparationDataToForm(createInitialFormState(resolvedDefaultActorName, initialRecordType), action.preparationData));
+  const nextForm = { ...hydrated, actorName: action.actorName ?? hydrated.actorName, associationName: action.associationName ?? hydrated.associationName, organizerType: action.organizerType ?? hydrated.organizerType, organizerId: action.organizerId ?? hydrated.organizerId, organizerName: action.organizerName ?? action.associationName ?? hydrated.organizerName, actionDate: action.actionDate, locationLabel: action.locationLabel, departureLocationLabel: action.departureLocationLabel ?? hydrated.departureLocationLabel, arrivalLocationLabel: action.arrivalLocationLabel ?? hydrated.arrivalLocationLabel, eventStartTime: action.eventStartTime ?? hydrated.eventStartTime, eventEndTime: action.eventEndTime ?? hydrated.eventEndTime, volunteersCount: String(action.volunteersCount), durationMinutes: String(action.durationMinutes), groupJoinEnabled: action.groupJoinEnabled, participantAccounts: action.participantAccounts };
+  const handoff = consumePlannerActionHandoff();
+  const matchingHandoff = handoff?.actionId === action.id ? handoff : null;
+  const hydratedForm = mergePlannerHandoffIntoForm(nextForm, matchingHandoff);
+  setForm(hydratedForm); onFormChange?.(hydratedForm); setCreatedId(action.id); setPublishedAction(action); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState(matchingHandoff ? "idle" : "success"); setIsHydratingAction(false);
+}
+
+export function buildBeforeActionInitialForm(actorNameOptions: string[], defaultActorName: string, initialRecordType: "action"): FormState {
+  const fallback = createInitialFormState(actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? defaultActorName, initialRecordType);
+  const snapshot = loadDraftSnapshot(fallback, initialRecordType);
+  return sanitizePreActionForm(snapshot?.form ?? fallback);
+}
+
+function mergePlannerHandoffIntoForm(form: FormState, handoff: ReturnType<typeof consumePlannerActionHandoff>): FormState {
+  if (!handoff) return form;
+  const preparationData = handoff.preparationData
+    ? { ...handoff.preparationData, operationalRoute: handoff.operationalRoute, routeCalibrationContext: handoff.routeCalibrationContext ?? undefined }
+    : { operationalRoute: handoff.operationalRoute, routeCalibrationContext: handoff.routeCalibrationContext ?? undefined };
+  const prepared = sanitizePreActionForm(applyPreparationDataToForm(form, preparationData));
+  if (handoff.preparationData?.volunteersExpected !== undefined && !handoff.preparationData.volunteerParticipation) {
+    prepared.childrenCount = "";
+    prepared.adultCount = "";
+    prepared.retiredCount = "";
+  }
+  return prepared;
+}
+
+export function useBeforeActionHydration({
+  resolvedDefaultActorName,
+  initialActionId,
+  initialRecordType,
+  form,
+  setForm,
+  onFormChange,
+  setCreatedId,
+  setPublishedAction,
+  setPublishedAt,
+  setTerminalActionStatus,
+  setSubmissionState,
+  setErrorMessage,
+}: {
+  resolvedDefaultActorName: string;
+  initialActionId?: string | null;
+  initialRecordType: "action";
+  form: FormState;
+  setErrorMessage: StateSetter<string | null>;
+} & BeforeActionRecordSetters) {
+  const [isHydratingAction, setIsHydratingAction] = useState(Boolean(initialActionId));
+
+  useEffect(() => {
+    if (!initialActionId) return;
+    let active = true;
+    fetchActionById(initialActionId).then((action) => {
+      if (!active) return;
+      applyFetchedBeforeAction({ action, resolvedDefaultActorName, initialRecordType, setForm, onFormChange, setCreatedId, setPublishedAction, setPublishedAt, setTerminalActionStatus, setSubmissionState, setIsHydratingAction });
+    }).catch((error: unknown) => {
+      if (!active) return;
+      setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible de reprendre cette pré-action pour le moment."); setSubmissionState("error"); setIsHydratingAction(false);
+    });
+    return () => { active = false; };
+  }, [initialActionId, initialRecordType, onFormChange, resolvedDefaultActorName, setCreatedId, setErrorMessage, setForm, setPublishedAction, setPublishedAt, setSubmissionState, setTerminalActionStatus]);
+
+  usePlannerActionHandoffHydration({ initialActionId, form, setForm, onFormChange });
+
+  return isHydratingAction;
+}
+
+export function useBeforeActionFieldUpdates({
+  form,
+  linkedEventId,
+  submissionState,
+  setForm,
+  onFormChange,
+  setSubmissionState,
+  setErrorMessage,
+  setValidationIssues,
+  setValidationIssueFields,
+}: {
+  form: FormState;
+  linkedEventId?: string;
+  submissionState: SubmissionState;
+  setForm: StateSetter<FormState>;
+  onFormChange?: (form: FormState) => void;
+  setSubmissionState: StateSetter<SubmissionState>;
+  setErrorMessage: StateSetter<string | null>;
+  setValidationIssues: StateSetter<string[]>;
+  setValidationIssueFields: StateSetter<BeforeValidationField[]>;
+}) {
+  const hasTrackedStartRef = useRef(false);
+  const updateFields = (updates: Partial<FormState>) => {
+    if (!hasTrackedStartRef.current) {
+      hasTrackedStartRef.current = true;
+      trackFunnel("start_form", "quick", { source: "action_before_declaration_form", recordType: form.recordType, routePath: typeof window !== "undefined" ? window.location.pathname : null, formVariant: "quick", linkedEventId: linkedEventId ?? null }).catch(() => undefined);
+    }
+    const nextForm = sanitizePreActionForm({ ...form, ...updates } as FormState);
+    if ("routeStyle" in updates) nextForm.routeStyle = "souple";
+    applyOrganizerFormUpdates(nextForm, form, updates);
+    setForm(nextForm); onFormChange?.(nextForm); saveDraft(nextForm);
+    if (submissionState === "error") { setSubmissionState("idle"); setErrorMessage(null); setValidationIssues([]); setValidationIssueFields([]); }
+  };
+  const updateField: BeforeActionFieldUpdater = (key, value) => updateFields({ [key]: value } as Partial<FormState>);
+  return { updateField, updateFields };
+}
+
+export function useBeforeActionSubmission({
+  form,
+  submissionState,
+  initialActionId,
+  linkedEventId,
+  userMetadata,
+  isAuthenticated,
+  setSubmissionState,
+  setErrorMessage,
+  setValidationIssues,
+  setValidationIssueFields,
+  setCreatedId,
+  setPublishedAction,
+  setPublishedAt,
+  onActionPersisted,
+}: {
+  form: FormState;
+  submissionState: SubmissionState;
+  initialActionId?: string | null;
+  linkedEventId?: string;
+  userMetadata: ActionBeforeDeclarationFormProps["userMetadata"];
+  isAuthenticated: boolean;
+  setSubmissionState: StateSetter<SubmissionState>;
+  setErrorMessage: StateSetter<string | null>;
+  setValidationIssues: StateSetter<string[]>;
+  setValidationIssueFields: StateSetter<BeforeValidationField[]>;
+  setCreatedId: StateSetter<string | null>;
+  setPublishedAction: StateSetter<ActionEditorRecord | null>;
+  setPublishedAt: StateSetter<string | null>;
+  onActionPersisted?: (actionId: string) => void;
+}) {
+  async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    if (submissionState === "pending") return;
+    const issues = validateBeforeActionForm(form);
+    if (issues.length > 0) {
+      setValidationIssues(issues.map((issue) => issue.message)); setValidationIssueFields(issues.map((issue) => issue.field)); setErrorMessage(issues[0]?.message ?? "Complétez les informations connues avant de continuer."); setSubmissionState("error"); return;
+    }
+    const normalizedForm = sanitizePreActionForm(form);
+    const payload = buildBeforeActionPayload({ form: normalizedForm, linkedEventId, userMetadata });
+    setSubmissionState("pending"); setErrorMessage(null); setValidationIssues([]); setValidationIssueFields([]);
+    try {
+      const result = await persistBeforeAction(initialActionId, payload);
+      setCreatedId(result.actionId); onActionPersisted?.(result.actionId);
+      if (initialActionId) { const canonicalAction = await fetchActionById(result.actionId); setPublishedAction(canonicalAction); setPublishedAt(canonicalAction.publishedAt ?? null); }
+      setSubmissionState("success"); saveDraft(normalizedForm);
+      await trackFunnel("submit_success", "quick", { source: "action_before_declaration_form", createdId: result.actionId, isAuthenticated });
+    } catch (error: unknown) {
+      setSubmissionState("error"); setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible d'enregistrer le pré-formulaire pour le moment.");
+    }
+  }
+  return handleSubmit;
+}
+
+export function useBeforeActionPublication({
+  createdId,
+  publishedAt,
+  publicationState,
+  setForm,
+  setPublishedAction,
+  setCreatedId,
+  setPublishedAt,
+  setPublicationState,
+  setPublicationError,
+  setPublicationConfirmationOpen,
+}: {
+  createdId: string | null;
+  publishedAt: string | null;
+  publicationState: PublicationState;
+  setForm: StateSetter<FormState>;
+  setPublishedAction: StateSetter<ActionEditorRecord | null>;
+  setCreatedId: StateSetter<string | null>;
+  setPublishedAt: StateSetter<string | null>;
+  setPublicationState: StateSetter<PublicationState>;
+  setPublicationError: StateSetter<string | null>;
+  setPublicationConfirmationOpen: StateSetter<boolean>;
+}) {
+  function requestPublish() {
+    if (!createdId || publishedAt || publicationState === "pending") return;
+    setPublicationConfirmationOpen(true);
+  }
+  function cancelPublication() { setPublicationConfirmationOpen(false); }
+  async function confirmPublish() {
+    if (!createdId || publishedAt || publicationState === "pending") return;
+    setPublicationConfirmationOpen(false); setPublicationState("pending"); setPublicationError(null);
+    try {
+      const result = await publishAction(createdId);
+      if (result.id !== createdId) throw new Error("La publication a retourné une action différente.");
+      const canonicalAction = await fetchActionById(result.id);
+      setPublishedAction(canonicalAction); setForm((current) => sanitizePreActionForm(applyPreparationDataToForm(current, canonicalAction.preparationData))); setCreatedId(canonicalAction.id); setPublishedAt(canonicalAction.publishedAt ?? result.publishedAt); setPublicationState("success");
+    } catch (error: unknown) {
+      setPublicationState("error"); setPublicationError(error instanceof Error && error.message ? error.message : "Impossible de publier cette action pour le moment.");
+    }
+  }
+  return { requestPublish, cancelPublication, confirmPublish };
+}

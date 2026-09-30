@@ -20,6 +20,9 @@ const chatShellLayoutSource = readFileSync(
 const chatSidebarSource = readFileSync(
   new URL("../../chat/chat-sidebar.tsx", import.meta.url),
   "utf8",
+) + readFileSync(
+  new URL("../../chat/chat-sidebar-sections.tsx", import.meta.url),
+  "utf8",
 );
 const chatActionSurfaceSource = readFileSync(
   new URL("../../chat/chat-action-surface.tsx", import.meta.url),

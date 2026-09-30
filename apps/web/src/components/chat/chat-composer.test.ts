@@ -7,7 +7,10 @@ import {
 } from "./chat-composer";
 import { appendChatLinkToMessage } from "./hooks/use-chat-shell-composer";
 
-const source = readFileSync(new URL("./chat-composer.tsx", import.meta.url), "utf8");
+const source = [
+  readFileSync(new URL("./chat-composer.tsx", import.meta.url), "utf8"),
+  readFileSync(new URL("./chat-composer-input.tsx", import.meta.url), "utf8"),
+].join("\n");
 const shareLinkActionSource = readFileSync(
   new URL("./ui/chat-share-link-action.tsx", import.meta.url),
   "utf8",
@@ -29,8 +32,8 @@ describe("ChatComposer progressive disclosure", () => {
   it("keeps advanced forms behind the plus menu and removes the permanent DM picker", () => {
     expect(source).toContain("canChooseAnnouncement");
     expect(source).toContain("canChoosePoll");
-    expect(source).toContain('selectComposerMode("announcement")');
-    expect(source).toContain('selectComposerMode("poll")');
+    expect(source).toContain('onSelectMode("announcement")');
+    expect(source).toContain('onSelectMode("poll")');
     expect(shareLinkActionSource).toContain("Partager un lien");
     expect(source).toContain("onInsertLink");
     expect(source).not.toContain("onRecipientQueryChange");

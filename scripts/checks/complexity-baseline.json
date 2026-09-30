@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "cb428258e75e5e923d796cad3754062b5b6ad235",
+  "sourceCommit": "9d2f74ea12567d1069ee35c3045f0804f2416be5",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -286,10 +286,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/actions/action-declaration/before/form.tsx",
-      "line": 35,
+      "line": 30,
       "category": "React/JSX",
-      "ceiling": 35,
-      "status": "LEGACY",
+      "ceiling": 18,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionBeforeDeclarationForm#1"
     },
     {
@@ -412,19 +412,19 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/actions/action-formalities-workflow-panel.tsx",
-      "line": 128,
+      "line": 38,
       "category": "React/JSX",
-      "ceiling": 26,
-      "status": "LEGACY",
-      "functionIdentity": "callback:qualification . formalities . map:0:#1"
+      "ceiling": 13,
+      "status": "IMPROVED",
+      "functionIdentity": "named:ActionFormalitiesWorkflowPanel#1"
     },
     {
       "metric": "complexity",
       "path": "apps/web/src/components/actions/actions-history-list-details.tsx",
-      "line": 65,
+      "line": 38,
       "category": "React/JSX",
-      "ceiling": 33,
-      "status": "LEGACY",
+      "ceiling": 4,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionsHistoryListDetails#1"
     },
     {
@@ -691,10 +691,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/chat/chat-composer.tsx",
-      "line": 75,
+      "line": 92,
       "category": "React/JSX",
-      "ceiling": 79,
-      "status": "LEGACY",
+      "ceiling": 17,
+      "status": "IMPROVED",
       "functionIdentity": "named:ChatComposer#1"
     },
     {
@@ -727,10 +727,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/chat/chat-sidebar.tsx",
-      "line": 55,
+      "line": 51,
       "category": "React/JSX",
-      "ceiling": 29,
-      "status": "LEGACY",
+      "ceiling": 13,
+      "status": "IMPROVED",
       "functionIdentity": "named:ChatSidebar#1"
     },
     {
@@ -745,7 +745,7 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/chat/dm-inbox.tsx",
-      "line": 44,
+      "line": 56,
       "category": "React/JSX",
       "ceiling": 34,
       "status": "LEGACY",
@@ -756,8 +756,8 @@
       "path": "apps/web/src/components/chat/hooks/use-chat-shell-composer.ts",
       "line": 44,
       "category": "hooks",
-      "ceiling": 25,
-      "status": "LEGACY",
+      "ceiling": 11,
+      "status": "IMPROVED",
       "functionIdentity": "named:canSubmitChatMessage#1"
     },
     {
@@ -2347,11 +2347,11 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts",
-      "line": 143,
+      "line": 21,
       "category": "hooks",
-      "ceiling": 21,
-      "status": "LEGACY",
-      "functionIdentity": "callback:fetchActionById ( initialActionId ) . then:0:#1"
+      "ceiling": 5,
+      "status": "IMPROVED",
+      "functionIdentity": "named:useBeforeActionForm#1"
     },
     {
       "metric": "complexity",
@@ -3013,10 +3013,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/before/form.tsx",
-      "line": 35,
+      "line": 30,
       "category": "React/JSX",
-      "ceiling": 339,
-      "status": "LEGACY",
+      "ceiling": 78,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionBeforeDeclarationForm#1"
     },
     {
@@ -3031,10 +3031,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts",
-      "line": 102,
+      "line": 21,
       "category": "hooks",
-      "ceiling": 298,
-      "status": "LEGACY",
+      "ceiling": 39,
+      "status": "IMPROVED",
       "functionIdentity": "named:useBeforeActionForm#1"
     },
     {
@@ -3175,10 +3175,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-formalities-workflow-panel.tsx",
-      "line": 199,
+      "line": 38,
       "category": "React/JSX",
-      "ceiling": 227,
-      "status": "LEGACY",
+      "ceiling": 131,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionFormalitiesWorkflowPanel#1"
     },
     {
@@ -3193,10 +3193,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/actions-history-list-details.tsx",
-      "line": 65,
+      "line": 38,
       "category": "React/JSX",
-      "ceiling": 224,
-      "status": "LEGACY",
+      "ceiling": 48,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionsHistoryListDetails#1"
     },
     {
@@ -3499,10 +3499,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/chat/chat-composer.tsx",
-      "line": 75,
+      "line": 92,
       "category": "React/JSX",
-      "ceiling": 388,
-      "status": "LEGACY",
+      "ceiling": 45,
+      "status": "IMPROVED",
       "functionIdentity": "named:ChatComposer#1"
     },
     {
@@ -3526,10 +3526,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/chat/chat-sidebar.tsx",
-      "line": 55,
+      "line": 51,
       "category": "React/JSX",
-      "ceiling": 186,
-      "status": "LEGACY",
+      "ceiling": 28,
+      "status": "IMPROVED",
       "functionIdentity": "named:ChatSidebar#1"
     },
     {
@@ -3544,28 +3544,28 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/chat/hooks/use-chat-search.ts",
-      "line": 94,
+      "line": 220,
       "category": "hooks",
-      "ceiling": 129,
-      "status": "LEGACY",
+      "ceiling": 74,
+      "status": "IMPROVED",
       "functionIdentity": "named:useChatSearch#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/chat/hooks/use-chat-shell-composer.ts",
-      "line": 110,
+      "line": 260,
       "category": "hooks",
-      "ceiling": 143,
-      "status": "LEGACY",
+      "ceiling": 91,
+      "status": "IMPROVED",
       "functionIdentity": "named:useChatShellComposer#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/chat/hooks/use-chat-shell-notification-effects.ts",
-      "line": 25,
+      "line": 188,
       "category": "hooks",
-      "ceiling": 125,
-      "status": "LEGACY",
+      "ceiling": 47,
+      "status": "IMPROVED",
       "functionIdentity": "named:useChatShellNotificationEffects#1"
     },
     {
