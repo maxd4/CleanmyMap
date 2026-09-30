@@ -29,9 +29,19 @@ la fois, et les analyses read-only peuvent être parallèles. Aucun nouveau
 worktree, clone, claim, lock, run ou branche de chantier n'est créé.
 
 Chaque lot fait `git fetch origin main`, vérifie `main`, stage une allowlist,
-valide `STAGED` et crée un commit local isolé. Un push est une publication
-explicitement demandée, pas une release implicite ; les commits locaux
-séquentiels sur `main` restent permis lorsque le push n'est pas demandé.
+valide `STAGED` et crée un commit local isolé.
+
+Hors mode de développement rapide :
+
+```text
+validation → commit isolé → push main → vérification de convergence
+```
+
+Mode de développement rapide explicitement activé :
+
+```text
+commit local selon son protocole, sans push tant que le mode reste actif
+```
 
 ### LEGACY / COMPATIBILITY
 

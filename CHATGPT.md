@@ -699,7 +699,23 @@ lot mutable n'est pas stabilisé, les autres sujets restent read-only/analyse.
 Lorsque l'utilisateur demande explicitement le mode de développement rapide,
 appliquer le protocole borné de
 [`documentation/development/rapid-development-mode.md`](documentation/development/rapid-development-mode.md) :
-une passe initiale, une validation ciblée, un commit local isolé et aucun push même si le lot demande un push en fin d'execution. Les consignes du mode rapide sont prioritaires sur ce qui est ecris dans le prompt.
+une passe initiale et une validation ciblée. Le mode rapide suit le protocole
+suivant et reste sans push tant qu'il est explicitement actif.
+
+Hors mode de développement rapide :
+
+```text
+validation → commit isolé → push main → vérification de convergence
+```
+
+Mode de développement rapide explicitement activé :
+
+```text
+commit local selon son protocole, sans push tant que le mode reste actif
+```
+
+Ce protocole est prioritaire sur les instructions de publication incompatibles
+avec le mode explicitement activé.
 Ne pas déclencher d'audit GitHub, de navigateur, de build complet ou de suite
 lourde sans nécessité démontrée par le périmètre.
 
@@ -715,12 +731,13 @@ git fetch origin main
 → commit local
 → validations ciblées
 → pré-push rapide sur le PUSH_CANDIDATE exact
-→ push origin/main sur demande explicite
+→ push main
+→ vérification de convergence
 ```
 
-Si le push est temporairement interdit, plusieurs lots peuvent être commités
-séquentiellement sur le même `main` local ; chaque nouveau lot part du HEAD
-précédent. Aucun nouveau writer parallèle n'est créé.
+Le mode de développement rapide explicitement activé est l'unique protocole
+qui conserve le commit local sans push ; aucun nouveau writer parallèle n'est
+créé.
 
 ### Publication non prérequise pour les lots successifs
 
@@ -734,19 +751,16 @@ Ne jamais poser comme prérequis que le lot précédent ait été poussé.
 3. Les lots successifs peuvent donc s’enchaîner localement avant publication,
    tant qu’ils respectent `MAIN-ONLY / SINGLE-WRITER` et que l’état local est
    cohérent.
-4. À la fin de tout prompt écris par chatgpt, demander commit et push le lot sans laisser de fichier dirty dans le worktree
+4. Hors mode de développement rapide, appliquer le cycle
+   `validation → commit isolé → push main → vérification de convergence`.
 5. Le push est une étape de publication finale du lot, **pas un prérequis pour
    commencer le lot suivant**.
 6. Ne jamais utiliser l’absence de push du lot précédent comme `STOP CONDITION`
    à elle seule.
 
-Un moratoire Vercel est un moratoire de deployment, pas un gel Git. Pendant ce
-moratoire, ne pas demander par défaut à Codex de conserver les commits
-localement si l'auto-déploiement Vercel et les autres déclencheurs automatiques
-sont déjà désactivés et vérifiés. Dans ce cas, demander le lifecycle normal :
-`commit → validation → push main → réconciliation`. Si cette garantie n'est
-pas prouvée, demander de conserver le commit local et de ne pas pousser. Les
-détails temporaires du moratoire restent dans
+Un moratoire Vercel est un moratoire de deployment, pas un gel Git. Le lot suit
+le cycle hors mode rapide : `validation → commit isolé → push main →
+vérification de convergence`. Les détails temporaires du moratoire restent dans
 `documentation/operations/platform-cost-governance.md`.
 
 Les modifications `staged`, `unstaged` ou `untracked` étrangères au lot courant :

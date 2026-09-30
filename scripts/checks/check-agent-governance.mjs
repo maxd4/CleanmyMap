@@ -62,6 +62,7 @@ const legacyCoordinatorTerms = Object.freeze([
   "UNPUBLISHED_PATH_CONFLICT",
   "WORKTREE_BASE_DIVERGED",
   "checkout partagé",
+  "un seul chantier peut écrire à la fois",
   "RUN_OWNED_PATHS",
   "OWNED_FILES",
 ]);
@@ -100,6 +101,60 @@ function validateCurrentCoordinatorDoctrine(view, findings) {
         );
       }
     }
+  }
+}
+
+const normalPublicationPolicy = "validation → commit isolé → push main → vérification de convergence";
+const rapidPublicationPolicy = "commit local selon son protocole, sans push tant que le mode reste actif";
+
+function validateCurrentWorkflowDoctrine(view, findings) {
+  const rootAgents = readIfPresent(view, "AGENTS.md");
+  const chatgpt = readIfPresent(view, "CHATGPT.md");
+
+  if (!rootAgents) findings.push("AGENTS.md: missing CURRENT workflow doctrine.");
+  if (!chatgpt) findings.push("CHATGPT.md: missing CURRENT workflow doctrine.");
+
+  const normalizeWorkflowContent = (content) => content
+    .replace(/```(?:text)?/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const normalizedRoot = rootAgents ? normalizeWorkflowContent(rootAgents) : "";
+  const normalizedChatgpt = chatgpt ? normalizeWorkflowContent(chatgpt) : "";
+  const normalizedCurrentChatgpt = contentOutsideLegacySections(chatgpt ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (rootAgents && !normalizedRoot.includes("un seul writer mutable peut agir à la fois ; les analyses read-only peuvent être parallèles.")) {
+    findings.push("AGENTS.md: CURRENT workflow must allow parallel read-only analysis and only one mutable writer.");
+  }
+  if (rootAgents && !normalizedRoot.includes("main publié = référence versionnée ;")) {
+    findings.push("AGENTS.md: CURRENT workflow must identify published main as the versioned reference.");
+  }
+  if (rootAgents && !normalizedRoot.includes("une candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;")) {
+    findings.push("AGENTS.md: CURRENT workflow must scope local candidate authority to the current lot.");
+  }
+  if (rootAgents && !normalizedRoot.includes("tout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.")) {
+    findings.push("AGENTS.md: CURRENT workflow must preserve pre-existing local changes during synchronization.");
+  }
+
+  for (const [relativePath, content, normalizedContent] of [
+    ["AGENTS.md", rootAgents, normalizedRoot],
+    ["CHATGPT.md", chatgpt, normalizedChatgpt],
+  ]) {
+    if (!content) continue;
+    if (!normalizedContent.includes(`Hors mode de développement rapide : ${normalPublicationPolicy}`)) {
+      findings.push(`${relativePath}: missing the normal commit/push/convergence policy.`);
+    }
+    if (!normalizedContent.includes(`Mode de développement rapide explicitement activé : ${rapidPublicationPolicy}`)) {
+      findings.push(`${relativePath}: missing the explicit rapid-mode no-push exception.`);
+    }
+  }
+
+  if (/l['’]état local est prioritaire sur l['’](?:état|etat) github/i.test(normalizedRoot)) {
+    findings.push("AGENTS.md: global local-over-GitHub priority is not a CURRENT rule.");
+  }
+  if (/push origin\/main sur demande explicite|demander commit et push le lot|committer et pousser sur main lorsque l'utilisateur l'a demandé/i.test(normalizedCurrentChatgpt)) {
+    findings.push("CHATGPT.md: publication must not depend on an explicit user request outside rapid mode.");
   }
 }
 
@@ -195,6 +250,7 @@ function validateMarkers(view, findings) {
   }
 
   validateCurrentCoordinatorDoctrine(view, findings);
+  validateCurrentWorkflowDoctrine(view, findings);
 
   const supabaseContent = readIfPresent(view, "apps/web/supabase/AGENTS.md");
   if (supabaseContent && /(?<!apps\/web\/)supabase\/migrations\//.test(supabaseContent)) {
