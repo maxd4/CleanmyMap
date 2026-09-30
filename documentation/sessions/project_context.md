@@ -37,10 +37,10 @@ restent dans les sources de session ou les documents d'audit appropriés.
 
 - `.codexignore` exclut les sorties locales déjà identifiées comme générées :
   `artifacts/`, `**/artifacts/`, `.quarto/` et `**/.quarto/`.
-- `.artifacts/` n'est pas exclu globalement : il contient des preuves et
-  inventaires versionnés, notamment `.artifacts/README.md`. Toute nouvelle
-  exclusion doit d'abord vérifier la provenance, le suivi Git et le caractère
-  régénérable des fichiers concernés.
+- `.artifacts/` est un espace local ignoré pour les candidates de validation et
+  les sorties de travail bornées. Les preuves durables relèvent de
+  `documentation/operations/audits/` ou du domaine documentaire concerné ; une
+  nouvelle sortie ne doit pas être versionnée dans `.artifacts/`.
 - Les dossiers lourds suivants ne sont pas à scanner par défaut :
   `node_modules/`, `.next/`, `.vercel/`, `.playwright-mcp/`, `.gitnexus/`,
   `artifacts/`, `backups/` et les caches Quarto.
@@ -60,8 +60,8 @@ Pour une tâche ordinaire, lire dans cet ordre :
 Un audit explicitement global peut élargir ce périmètre. Les historiques de
 session non pertinents, `node_modules/`, `.next/`, `.vercel/`, `.artifacts/`,
 `artifacts/`, `backups/`, `.playwright-mcp/`, `.gitnexus/` et les caches Quarto
-ne sont pas explorés par défaut ; l'exception `.artifacts/` protège ses preuves
-versionnées et impose une lecture ciblée lorsqu'un fichier y est concerné.
+ne sont pas explorés par défaut. Les candidates `.artifacts/` ne sont lues que
+lorsqu'un contrôle ou un fichier explicitement concerné l'exige.
 
 ## Frontières d'architecture
 

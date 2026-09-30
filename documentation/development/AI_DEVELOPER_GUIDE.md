@@ -7,6 +7,9 @@ il fournit uniquement les repères propres au développement de CleanMyMap.
 
 ## 1. Vocabulaire métier canonique
 
+Le vocabulaire produit transversal est défini dans
+[`documentation/product/ubiquitous-language.md`](../product/ubiquitous-language.md).
+
 Le vocabulaire d'autorisation est défini par
 `apps/web/src/lib/domain-language.ts` et `apps/web/src/lib/profiles.ts`.
 

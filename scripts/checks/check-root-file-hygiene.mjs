@@ -6,12 +6,6 @@ import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs"
 const repoRoot = process.cwd();
 const allowRootFileGeneration = process.env.ALLOW_ROOT_FILE_GENERATION === "1";
 
-export const machineLocalRootFiles = new Set([
-  ".aLANCER_SITE_LOCAL_ROLE_BENEVOLE.bat",
-  ".aLANCER_SITE_LOCAL_ROLE_MAX.bat",
-  ".aLANCER_SITE_LOCAL_ROLE_ADMIN.bat",
-]);
-
 export const versionableRootFiles = new Set([
   ".codexignore",
   ".cursorrules",
@@ -23,10 +17,6 @@ export const versionableRootFiles = new Set([
   "AGENTS.md",
   "AUTHORS.md",
   "CHATGPT.md",
-  "COMMANDES_UTILISATEUR.md",
-  "INSTALLER_APP_MOBILE_ANDROID.bat",
-  "LANCER_APP_MOBILE_ANDROID.bat",
-  "LANCER_APP_MOBILE_WEB.bat",
   "LICENSE",
   "package-lock.json",
   "package.json",
@@ -34,13 +24,10 @@ export const versionableRootFiles = new Set([
   "PRE_PUSH_GUARD.md",
   "README.md",
   "SECURITY.md",
-  "TESTER_APP_MOBILE.bat",
-  "UBIQUITOUS_LANGUAGE.md",
 ]);
 
 export const trackedCanonicalRootDirectories = [
   ".agents",
-  ".artifacts",
   ".codex",
   ".devcontainer",
   ".githooks",
@@ -59,6 +46,8 @@ export const trackedTransitionalRootDirectories = [];
 
 export const localOnlyRootDirectories = [
   "artifacts",
+  ".artifacts",
+  ".local",
   "backups",
   "scratch",
   ".gitnexus",
@@ -94,10 +83,6 @@ export function findForbiddenTrackedPaths(trackedFiles) {
   );
 }
 
-export function findForbiddenTrackedRootFiles(trackedFiles) {
-  return trackedFiles.filter((file) => machineLocalRootFiles.has(file));
-}
-
 export function listTrackedWorktreeFiles(repositoryRoot = repoRoot) {
   const output = execFileSync("git", ["ls-files", "-z", "--"], {
     cwd: repositoryRoot,
@@ -122,25 +107,17 @@ export function validateRootFileHygiene(
   const rootDirectories = view.rootDirectories();
   const forbidden = allowRootFileGeneration
     ? []
-    : rootFiles.filter(
-        (file) =>
-          !versionableRootFiles.has(file) && !machineLocalRootFiles.has(file),
-      );
+    : rootFiles.filter((file) => !versionableRootFiles.has(file));
   const forbiddenRootDirectories = findForbiddenRootDirectories(rootDirectories);
   const forbiddenTrackedPaths = findForbiddenTrackedPaths(
     getTrackedFilesForHygiene(view, repositoryRoot),
   );
-  const forbiddenTrackedRootFiles = findForbiddenTrackedRootFiles(
-    getTrackedFilesForHygiene(view, repositoryRoot),
-  );
-
   return {
     rootFiles,
     rootDirectories,
     forbidden,
     forbiddenRootDirectories,
     forbiddenTrackedPaths,
-    forbiddenTrackedRootFiles,
   };
 }
 
@@ -153,15 +130,13 @@ function main() {
     forbidden,
     forbiddenRootDirectories,
     forbiddenTrackedPaths,
-    forbiddenTrackedRootFiles,
   } =
     validateRootFileHygiene(view, { allowRootFileGeneration });
 
   if (
     forbidden.length > 0 ||
     forbiddenRootDirectories.length > 0 ||
-    forbiddenTrackedPaths.length > 0 ||
-    forbiddenTrackedRootFiles.length > 0
+    forbiddenTrackedPaths.length > 0
   ) {
     const messages = ["Root file and directory hygiene failed."];
     if (forbidden.length > 0) {
@@ -186,16 +161,8 @@ function main() {
         "The following local-only paths must not be tracked by Git:",
         ...forbiddenTrackedPaths.map((file) => `- ${file}`),
         "",
-        "Keep local-only root directories local and ignored; .artifacts/ is reserved for versioned evidence.",
+        "Keep local-only root directories local and ignored; durable audits belong under documentation/.",
         "Any exception must be explicitly documented before it is added to the allowlist.",
-      );
-    }
-    if (forbiddenTrackedRootFiles.length > 0) {
-      messages.push(
-        "The following machine-local root files must not be tracked by Git:",
-        ...forbiddenTrackedRootFiles.map((file) => `- ${file}`),
-        "",
-        "Keep these launcher wrappers on the local workstation only; the canonical launcher is scripts/dev/launch-local-role.mjs.",
       );
     }
     console.error(messages.join("\n"));

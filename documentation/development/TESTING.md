@@ -10,6 +10,31 @@ Le workflow Codex distingue exactement deux modes de validation : `RAPIDE` et
 `COMPLET`. Les tests spécialisés restent des briques appelables séparément,
 pas des modes supplémentaires.
 
+## Artefacts de validation
+
+Les sorties locales et les candidates de contrôle ne sont pas des sources
+documentaires :
+
+- `artifacts/` contient les sorties générées ou régénérables ;
+- `.artifacts/validation/prepush-candidate/<sha>/` contient les candidates
+  temporaires matérialisées pour la validation dynamique et doit être nettoyé
+  par son owner ;
+- les audits durables sont conservés sous `documentation/`, dans le domaine
+  concerné, et non dans `.artifacts/`.
+
+Ne jamais versionner une preuve dans `.artifacts/` par commodité. Vérifier sa
+provenance, sa reproductibilité et son emplacement documentaire avant de la
+conserver.
+
+Les anciens lanceurs Windows peuvent être conservés localement sous
+`.local/root-wrappers/`. Ce dossier est ignoré et n'est pas une surface
+versionnée ; les commandes du workspace mobile restent la référence
+reproductible.
+
+Pour un nettoyage local ponctuel, utiliser `npm run clean:temp`. La variante
+`clean:temp:force` exige que les outils du dépôt soient fermés ; `npm run
+dev:clean` combine le nettoyage et le redémarrage du développement.
+
 ## Installation
 
 ```bash

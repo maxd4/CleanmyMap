@@ -9,9 +9,7 @@ import {
   allowedRootDirectories,
   findForbiddenRootDirectories,
   findForbiddenTrackedPaths,
-  findForbiddenTrackedRootFiles,
   getTrackedFilesForHygiene,
-  machineLocalRootFiles,
   validateRootFileHygiene,
   localOnlyRootDirectories,
   localOnlyTrackedPrefixes,
@@ -34,6 +32,7 @@ test("root directory contract accepts canonical directories", () => {
     [],
   );
   assert.ok(allowedRootDirectories.includes(".artifacts"));
+  assert.ok(allowedRootDirectories.includes(".local"));
   assert.ok(allowedRootDirectories.includes("apps"));
   assert.equal(allowedRootDirectories.includes("companion-app"), false);
 });
@@ -46,18 +45,7 @@ test("linked worktree metadata file is allowed at the repository root", () => {
   assert.deepEqual(result.forbidden, []);
 });
 
-test("machine-local launcher wrappers are allowed in the worktree but not as tracked root files", () => {
-  assert.deepEqual(
-    findForbiddenTrackedRootFiles([
-      "README.md",
-      ...machineLocalRootFiles,
-      "scripts/dev/launch-local-role.mjs",
-    ]),
-    [...machineLocalRootFiles],
-  );
-});
-
-test("versioned mobile launcher wrappers are allowed at the repository root", () => {
+test("mobile launcher wrappers are rejected at the root and local wrappers use the ignored directory", () => {
   const wrappers = [
     "LANCER_APP_MOBILE_WEB.bat",
     "LANCER_APP_MOBILE_ANDROID.bat",
@@ -71,10 +59,10 @@ test("versioned mobile launcher wrappers are allowed at the repository root", ()
     rootDirectories: () => [],
   };
 
-  assert.ok(wrappers.every((file) => versionableRootFiles.has(file)));
   const result = validateRootFileHygiene(gitView);
-  assert.deepEqual(result.forbidden, []);
-  assert.deepEqual(result.forbiddenTrackedRootFiles, []);
+  assert.deepEqual(result.forbidden, wrappers);
+  assert.equal(wrappers.every((file) => versionableRootFiles.has(file)), false);
+  assert.deepEqual(findForbiddenRootDirectories([".local"]), []);
 });
 
 test("root directory contract accepts local-only directories when untracked", () => {
@@ -97,6 +85,7 @@ test("local-only tracking guard rejects every local-only root directory", () => 
     findForbiddenTrackedPaths([
       "README.md",
       ".artifacts/validation/report.json",
+      ".local/root-wrappers/TESTER_APP_MOBILE.bat",
       "backups/example.json",
       "scratch/tool.py",
       ".codex-remote-attachments/session/image.jpg",
@@ -108,6 +97,8 @@ test("local-only tracking guard rejects every local-only root directory", () => 
       "scripts/checks/check-root-file-hygiene.mjs",
     ]),
     [
+      ".artifacts/validation/report.json",
+      ".local/root-wrappers/TESTER_APP_MOBILE.bat",
       "backups/example.json",
       "scratch/tool.py",
       ".codex-remote-attachments/session/image.jpg",
@@ -146,33 +137,6 @@ test("filesystem mode distinguishes physical artifacts from tracked artifacts", 
     { repositoryRoot: root },
   );
   assert.deepEqual(blocked.forbiddenTrackedPaths, ["artifacts/tracked-output.json"]);
-});
-
-test("filesystem mode passes without wrappers and with local wrappers, but rejects tracked wrappers", (t) => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-root-hygiene-launchers-"));
-  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-
-  execFileSync("git", ["init", "-q"], { cwd: root });
-  writeFile(root, ".gitignore", "/.aLANCER_SITE_LOCAL_ROLE_*.bat\n");
-  writeFile(root, "README.md", "fixture\n");
-  execFileSync("git", ["add", "--", ".gitignore", "README.md"], { cwd: root });
-  execFileSync("git", [
-    "-c", "user.name=Codex test", "-c", "user.email=codex-test",
-    "commit", "-qm", "fixture",
-  ], { cwd: root });
-
-  const clean = validateRootFileHygiene(createFilesystemRepositoryView(root), { repositoryRoot: root });
-  assert.deepEqual(clean.forbidden, []);
-  assert.deepEqual(clean.forbiddenTrackedRootFiles, []);
-
-  writeFile(root, ".aLANCER_SITE_LOCAL_ROLE_ADMIN.bat", "local wrapper\n");
-  const localOnly = validateRootFileHygiene(createFilesystemRepositoryView(root), { repositoryRoot: root });
-  assert.deepEqual(localOnly.forbidden, []);
-  assert.deepEqual(localOnly.forbiddenTrackedRootFiles, []);
-
-  execFileSync("git", ["add", "-f", "--", ".aLANCER_SITE_LOCAL_ROLE_ADMIN.bat"], { cwd: root });
-  const tracked = validateRootFileHygiene(createFilesystemRepositoryView(root), { repositoryRoot: root });
-  assert.deepEqual(tracked.forbiddenTrackedRootFiles, [".aLANCER_SITE_LOCAL_ROLE_ADMIN.bat"]);
 });
 
 test("filesystem mode still reports unknown root directories", (t) => {

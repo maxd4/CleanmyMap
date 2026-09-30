@@ -77,6 +77,9 @@ guards CURRENT.
   npm/Vercel utilisent explicitement `--dependency-mode=isolated`. Cette voie
   complète est opt-in avec `npm run prepush:guard -- -Full`; les validations
   larges restent disponibles via les commandes de release canoniques ;
+- `.artifacts/` est ignoré par Git et réservé aux candidates et sorties
+  locales de validation ; une preuve durable doit être déplacée vers
+  `documentation/` avant d'être versionnée ;
 - les lifecycle de candidates doivent réutiliser le helper
   `scripts/ci/candidate-lifecycle.mjs` et la seule racine
   `.artifacts/validation/prepush-candidate/<sha>/`. Toute candidate porte un
@@ -86,12 +89,10 @@ guards CURRENT.
   autorisé ; le check read-only `check:candidate-lifecycle` signale les
   résidus sans les supprimer ;
 - `npm run check:candidate-lifecycle -- --strict` applique le ratchet contre
-  `scripts/checks/candidate-lifecycle-baseline.json` : les trois preuves
-  historiques qui y sont documentées restent tolérées, tandis que toute
-  nouvelle candidate générée, entrée canonique inconnue ou entrée ad hoc est
-  bloquante. La baseline est une exception historique explicite, pas une
-  autorisation de créer de nouveaux chemins ; aucune entrée inconnue n'est
-  supprimée automatiquement ;
+  `scripts/checks/candidate-lifecycle-baseline.json` : toute nouvelle
+  candidate générée, entrée canonique inconnue ou entrée ad hoc est bloquante.
+  La baseline ne contient plus de résidu historique ; aucune entrée inconnue
+  n'est supprimée automatiquement ;
 - un rapport de script qui crée une candidate doit indiquer
   `CANDIDATE_CREATED`, `CANDIDATE_PATH` et `CANDIDATE_CLEANUP`. Un cleanup en
   échec est bloquant pour un verdict final `terminé` ;

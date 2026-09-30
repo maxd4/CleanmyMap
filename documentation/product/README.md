@@ -31,6 +31,11 @@ Point d'entrée de la documentation produit CleanMyMap.
 - `methodologie-carte-actions.md` — lecture de la carte d'actions, score constaté, projection de re-pollution, couleurs, géométries et limites ;
 - documentation de méthodologie et impact dans les dossiers techniques ou les fiches de page concernées.
 
+### Vocabulaire
+
+- [`ubiquitous-language.md`](./ubiquitous-language.md) — termes métier
+  transversaux et ambiguïtés à éviter.
+
 ## Hiérarchie de lecture
 
 Pour une fonctionnalité :
