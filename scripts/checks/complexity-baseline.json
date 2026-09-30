@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "9d2f74ea12567d1069ee35c3045f0804f2416be5",
+  "sourceCommit": "4c5382958adc641c41cb3368e0a2a26335aec925",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -241,10 +241,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/app/learn/comprendre/page.tsx",
-      "line": 40,
+      "line": 16,
       "category": "React/JSX",
-      "ceiling": 30,
-      "status": "LEGACY",
+      "ceiling": 4,
+      "status": "IMPROVED",
       "functionIdentity": "named:LearnVulgarisationPage#1"
     },
     {
@@ -862,10 +862,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/learn/quiz/environmental-quiz.tsx",
-      "line": 76,
+      "line": 40,
       "category": "React/JSX",
-      "ceiling": 56,
-      "status": "LEGACY",
+      "ceiling": 19,
+      "status": "IMPROVED",
       "functionIdentity": "named:EnvironmentalQuiz#1"
     },
     {
@@ -943,10 +943,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-content.tsx",
-      "line": 43,
+      "line": 28,
       "category": "React/JSX",
-      "ceiling": 28,
-      "status": "LEGACY",
+      "ceiling": 8,
+      "status": "IMPROVED",
       "functionIdentity": "named:PilotageOverviewContent#1"
     },
     {
@@ -2419,19 +2419,19 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/(app)/profil/[profile]/page.tsx",
-      "line": 32,
+      "line": 134,
       "category": "React/JSX",
-      "ceiling": 180,
-      "status": "LEGACY",
+      "ceiling": 115,
+      "status": "IMPROVED",
       "functionIdentity": "named:ProfilPage#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/(app)/reports/page.tsx",
-      "line": 108,
+      "line": 232,
       "category": "React/JSX",
-      "ceiling": 187,
-      "status": "LEGACY",
+      "ceiling": 100,
+      "status": "IMPROVED",
       "functionIdentity": "named:ReportsPage#1"
     },
     {
@@ -2905,10 +2905,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/learn/comprendre/page.tsx",
-      "line": 40,
+      "line": 16,
       "category": "React/JSX",
-      "ceiling": 196,
-      "status": "LEGACY",
+      "ceiling": 53,
+      "status": "IMPROVED",
       "functionIdentity": "named:LearnVulgarisationPage#1"
     },
     {
@@ -3796,10 +3796,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/learn/quiz/environmental-quiz.tsx",
-      "line": 76,
+      "line": 40,
       "category": "React/JSX",
-      "ceiling": 488,
-      "status": "LEGACY",
+      "ceiling": 142,
+      "status": "IMPROVED",
       "functionIdentity": "named:EnvironmentalQuiz#1"
     },
     {
@@ -3967,10 +3967,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-content.tsx",
-      "line": 43,
+      "line": 28,
       "category": "React/JSX",
-      "ceiling": 392,
-      "status": "LEGACY",
+      "ceiling": 7,
+      "status": "IMPROVED",
       "functionIdentity": "named:PilotageOverviewContent#1"
     },
     {
@@ -4084,10 +4084,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/actors-section.tsx",
-      "line": 23,
+      "line": 27,
       "category": "React/JSX",
-      "ceiling": 165,
-      "status": "LEGACY",
+      "ceiling": 64,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActorsSection#1"
     },
     {
@@ -4138,10 +4138,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/climate/climate-section.tsx",
-      "line": 37,
+      "line": 17,
       "category": "React/JSX",
-      "ceiling": 187,
-      "status": "LEGACY",
+      "ceiling": 46,
+      "status": "IMPROVED",
       "functionIdentity": "named:ClimateSection#1"
     },
     {
@@ -4165,10 +4165,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/compare-section.tsx",
-      "line": 42,
+      "line": 13,
       "category": "React/JSX",
-      "ceiling": 262,
-      "status": "LEGACY",
+      "ceiling": 17,
+      "status": "IMPROVED",
       "functionIdentity": "named:CompareSection#1"
     },
     {
@@ -4183,10 +4183,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/connect-section.tsx",
-      "line": 19,
+      "line": 11,
       "category": "React/JSX",
-      "ceiling": 240,
-      "status": "LEGACY",
+      "ceiling": 13,
+      "status": "IMPROVED",
       "functionIdentity": "named:ConnectSection#1"
     },
     {

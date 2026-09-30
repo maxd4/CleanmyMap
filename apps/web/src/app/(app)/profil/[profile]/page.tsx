@@ -10,6 +10,7 @@ import {
   getProfileSubtitle,
   getSwitchableProfiles,
   isAppProfile,
+  type AppProfile,
 } from "@/lib/profiles";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
@@ -27,10 +28,108 @@ import { MilestonesPanel } from "@/components/gamification/milestones-panel";
 import { buildCurrentMilestones } from "@/lib/gamification/milestones";
 import { getUserProgression } from "@/lib/gamification/progression";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import type { UserIdentity } from "@/lib/authz-identity";
+import type { ComponentProps } from "react";
 
 type ProfilPageProps = {
   params: Promise<{ profile: string }>;
 };
+
+type ProfilePageContentProps = {
+  normalized: AppProfile;
+  profileLabel: string;
+  profileSubtitle: string;
+  grantedRole: UserIdentity["role"];
+  activeProfile: UserIdentity["activeRole"];
+  switchableProfiles: ReturnType<typeof getSwitchableProfiles>;
+  gamification: Awaited<ReturnType<typeof getUserProgression>> | null;
+  infiniteTotals: ComponentProps<typeof InfiniteBadgesPanel>["totals"] & {
+    milestones: ComponentProps<typeof MilestonesPanel>["milestones"];
+  };
+  referralSummary: Awaited<ReturnType<typeof fetchCachedReferralSummary>>;
+  referralLineageView: Awaited<ReturnType<typeof loadCachedReferralLineageView>> | null;
+  referralLineageError: string | null;
+  referralInviteHref: string;
+};
+
+function ProfilePageContent({
+  normalized,
+  profileLabel,
+  profileSubtitle,
+  grantedRole,
+  activeProfile,
+  switchableProfiles,
+  gamification,
+  infiniteTotals,
+  referralSummary,
+  referralLineageView,
+  referralLineageError,
+  referralInviteHref,
+}: ProfilePageContentProps) {
+  return (
+    <SectionShell
+      id="profile"
+      title={profileLabel}
+      subtitle={`${profileSubtitle}. Gérez votre compte et accédez à vos outils privilégiés.`}
+    >
+      <div className="space-y-12 pt-8">
+        <AccountEvolutionCta currentRole={grantedRole} />
+
+        <FamilyRubriqueCard withTopBar={true} topBarContent="Accès Prioritaires" className="p-12">
+          <div className="relative z-10">
+            <RolePrimaryActions profile={normalized} title="" tone="warm" />
+          </div>
+        </FamilyRubriqueCard>
+
+        <FamilyRubriqueCard withTopBar={true} topBarContent="Progression & badges" className="p-12">
+          <ProfileGamificationSummary summary={gamification?.summary} />
+          <InfiniteBadgesPanel totals={infiniteTotals} />
+          <MilestonesPanel milestones={infiniteTotals.milestones} />
+        </FamilyRubriqueCard>
+
+        <FamilyRubriqueCard
+          id="parrainage"
+          withTopBar={true}
+          topBarContent="Parrainage"
+          className="p-12 scroll-mt-28"
+        >
+          <ReferralProfileTabs
+            summary={referralSummary}
+            lineageView={referralLineageView}
+            lineageError={referralLineageError}
+            emptyCtaHref={referralInviteHref}
+          />
+        </FamilyRubriqueCard>
+
+        {switchableProfiles.length > 1 && (
+          <FamilyRubriqueCard withTopBar={true} topBarContent="Rôles actifs autorisés" className="p-12">
+            <div className="flex flex-wrap gap-4">
+              {switchableProfiles.map((p) => (
+                <CmmButton
+                  key={p}
+                  href={buildProfileRoute(p)}
+                  tone={p === activeProfile ? "primary" : "tertiary"}
+                  variant="pill"
+                  className={
+                    p === activeProfile
+                      ? "rounded-2xl border border-amber-200/30 bg-amber-100/12 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-2xl transition-all hover:-translate-y-1"
+                      : "rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.38)] px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-amber-50/70 transition-all hover:-translate-y-1 hover:bg-[rgba(69,26,3,0.54)] hover:text-white"
+                  }
+                >
+                  {getProfileLabel(p, "fr")}
+                </CmmButton>
+              ))}
+            </div>
+          </FamilyRubriqueCard>
+        )}
+
+        <FamilyRubriqueCard withTopBar={true} topBarContent="Configuration" className="p-12">
+          <AccountSettingsSection compact />
+        </FamilyRubriqueCard>
+      </div>
+    </SectionShell>
+  );
+}
 
 export default async function ProfilPage({ params }: ProfilPageProps) {
   const { profile } = await params;
@@ -137,90 +236,19 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
   const referralInviteHref = `${buildProfileRoute(normalized)}#parrainage`;
 
   return (
-    <SectionShell
-      id="profile"
-      title={profileLabel}
-      subtitle={`${profileSubtitle}. Gérez votre compte et accédez à vos outils privilégiés.`}
-    >
-      <div className="space-y-12 pt-8">
-        <AccountEvolutionCta currentRole={grantedRole} />
-
-        {/* ── Actions recommandées ── */}
-        <FamilyRubriqueCard
-          withTopBar={true}
-          topBarContent="Accès Prioritaires"
-          className="p-12"
-        >
-          <div className="relative z-10">
-            <RolePrimaryActions profile={normalized} title="" tone="warm" />
-          </div>
-        </FamilyRubriqueCard>
-
-        {/* ── Badges infinis ── */}
-        <FamilyRubriqueCard
-          withTopBar={true}
-          topBarContent="Progression & badges"
-          className="p-12"
-        >
-          <ProfileGamificationSummary
-            summary={gamification?.summary}
-          />
-          <InfiniteBadgesPanel totals={infiniteTotals} />
-          <MilestonesPanel milestones={infiniteTotals.milestones} />
-        </FamilyRubriqueCard>
-
-        <FamilyRubriqueCard
-          id="parrainage"
-          withTopBar={true}
-          topBarContent="Parrainage"
-          className="p-12 scroll-mt-28"
-        >
-          <ReferralProfileTabs
-            summary={referralSummary}
-            lineageView={referralLineageView}
-            lineageError={referralLineageError}
-            emptyCtaHref={referralInviteHref}
-          />
-        </FamilyRubriqueCard>
-
-        {/* ── Changer de profil ── */}
-        {switchableProfiles.length > 1 && (
-          <FamilyRubriqueCard
-            withTopBar={true}
-            topBarContent={
-              "Rôles actifs autorisés"
-            }
-            className="p-12"
-          >
-            <div className="flex flex-wrap gap-4">
-              {switchableProfiles.map((p) => (
-                <CmmButton
-                  key={p}
-                  href={buildProfileRoute(p)}
-                  tone={p === activeProfile ? "primary" : "tertiary"}
-                  variant="pill"
-                  className={
-                    p === activeProfile
-                      ? "rounded-2xl border border-amber-200/30 bg-amber-100/12 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-2xl transition-all hover:-translate-y-1"
-                      : "rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.38)] px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-amber-50/70 transition-all hover:-translate-y-1 hover:bg-[rgba(69,26,3,0.54)] hover:text-white"
-                  }
-                >
-                  {getProfileLabel(p, "fr")}
-                </CmmButton>
-              ))}
-            </div>
-          </FamilyRubriqueCard>
-        )}
-
-        {/* ── Accès aux réglages ── */}
-        <FamilyRubriqueCard
-          withTopBar={true}
-          topBarContent="Configuration"
-          className="p-12"
-        >
-          <AccountSettingsSection compact />
-        </FamilyRubriqueCard>
-      </div>
-    </SectionShell>
+    <ProfilePageContent
+      normalized={normalized}
+      profileLabel={profileLabel}
+      profileSubtitle={profileSubtitle}
+      grantedRole={grantedRole}
+      activeProfile={activeProfile}
+      switchableProfiles={switchableProfiles}
+      gamification={gamification}
+      infiniteTotals={infiniteTotals}
+      referralSummary={referralSummary}
+      referralLineageView={referralLineageView}
+      referralLineageError={referralLineageError}
+      referralInviteHref={referralInviteHref}
+    />
   );
 }

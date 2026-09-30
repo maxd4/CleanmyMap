@@ -9,6 +9,15 @@ const connectSectionSource = readFileSync(
   new URL("./connect-section.tsx", import.meta.url),
   "utf8",
 );
+const connectSectionViewSource = readFileSync(
+  new URL("./connect-section-view.tsx", import.meta.url),
+  "utf8",
+);
+const connectNavigationSource = readFileSync(
+  new URL("./connect-section-navigation.ts", import.meta.url),
+  "utf8",
+);
+const connectImplementationSource = `${connectSectionSource}\n${connectSectionViewSource}\n${connectNavigationSource}`;
 const chatShellSource = readFileSync(
   new URL("../../chat/chat-shell.tsx", import.meta.url),
   "utf8",
@@ -51,19 +60,20 @@ const topicGraphSource = readFileSync(
 
 describe("Messagerie navigation shell", () => {
   it("keeps both tab shells mounted so tab round-trips retain local state", () => {
-    expect(connectSectionSource).toContain('data-connect-panel="discussions"');
-    expect(connectSectionSource).toContain('data-connect-panel="dm"');
-    expect(connectSectionSource).not.toContain("key={discussionShellKey}");
-    expect(connectSectionSource).not.toContain("key={dmShellKey}");
-    expect(connectSectionSource).toContain('surfaceActive={activeTab === "discussions"}');
-    expect(connectSectionSource).toContain('surfaceActive={activeTab === "dm"}');
+    expect(connectImplementationSource).toContain('data-connect-panel={tab}');
+    expect(connectImplementationSource).toContain('panel("discussions"');
+    expect(connectImplementationSource).toContain('panel("dm"');
+    expect(connectImplementationSource).not.toContain("key={discussionShellKey}");
+    expect(connectImplementationSource).not.toContain("key={dmShellKey}");
+    expect(connectImplementationSource).toContain('surfaceActive: activeTab === "discussions"');
+    expect(connectImplementationSource).toContain('surfaceActive: activeTab === "dm"');
   });
 
   it("uses a shell navigation contract for URL synchronization and restoration", () => {
-    expect(connectSectionSource).toContain("synchronizeConnectNavigationParams");
-    expect(connectSectionSource).toContain("onNavigationChange");
-    expect(connectSectionSource).toContain("navigationState={activeTab ===");
-    expect(connectSectionSource).toContain("router[historyMode]");
+    expect(connectImplementationSource).toContain("synchronizeConnectNavigationParams");
+    expect(connectImplementationSource).toContain("onNavigationChange");
+    expect(connectImplementationSource).toContain("navigationState: activeTab ===");
+    expect(connectImplementationSource).toContain("router[historyMode]");
   });
 
   it("connects each rendered tab to its tabpanel in both directions", () => {
@@ -156,11 +166,11 @@ describe("Messagerie navigation shell", () => {
   });
 
   it("uses the canonical page header, fluid shell height, and real tab semantics", () => {
-    expect(connectSectionSource).toContain("<PageHeader");
-    expect(connectSectionSource).not.toContain("action={<ConnectTabs");
-    expect(connectSectionSource).toContain("<ConnectTabs activeTab={activeTab}");
-    expect(connectSectionSource).not.toContain("h-[calc(100dvh-8.5rem)]");
-    expect(connectSectionSource).toContain('role="tabpanel"');
+    expect(connectImplementationSource).toContain("<PageHeader");
+    expect(connectImplementationSource).not.toContain("action={<ConnectTabs");
+    expect(connectImplementationSource).toContain("<ConnectTabs activeTab={activeTab}");
+    expect(connectImplementationSource).not.toContain("h-[calc(100dvh-8.5rem)]");
+    expect(connectImplementationSource).toContain('role="tabpanel"');
     expect(connectSectionSource).toContain("useReducedMotion");
     expect(connectComponentsSource).toContain('role="tablist"');
     expect(connectComponentsSource).toContain('role="tab"');

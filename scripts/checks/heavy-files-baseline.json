@@ -197,10 +197,10 @@
     {
       "path": "apps/web/src/components/learn/quiz/environmental-quiz.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 606,
-      "maxBytes": 22265
+      "status": "IMPROVED",
+      "reviewedRef": "4c5382958adc641c41cb3368e0a2a26335aec925",
+      "maxLines": 182,
+      "maxBytes": 9209
     },
     {
       "path": "apps/web/src/components/reports/web-document/reports-web-document.shared.tsx",

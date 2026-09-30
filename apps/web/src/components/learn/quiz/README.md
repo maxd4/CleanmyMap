@@ -6,7 +6,7 @@ La famille `school/` regroupe les composants exclusivement scolaires : choix du 
 
 La logique, les contrats génériques, la taxonomy, la sélection, la progression et les audits sont dans `apps/web/src/lib/learning/quiz/`. Les contrats et règles propres au Mode École sont dans `apps/web/src/lib/learning/quiz/school/`. La direction autorisée est donc `components/learn/quiz/` vers le domaine Quiz ; le domaine ne doit jamais remonter vers cette UI.
 
-La banque de questions reste dans `apps/web/data/environmental-quiz-bank.ts`, tandis que `environmental-quiz.tsx` conserve les réexports publics déjà consommés. Les nouveaux modules placés ici doivent être des composants ou de la composition visuelle ; une règle pédagogique pure doit rejoindre `lib/learning/quiz/`.
+La banque de questions reste dans `apps/web/data/environmental-quiz-bank.ts`, tandis que `environmental-quiz.tsx` conserve les réexports publics déjà consommés. Le compositeur principal délègue désormais le mode, les données SRS, la progression persistée, le contrôleur de session et le rendu à des modules cohésifs du même dossier ; ces hooks restent des adaptateurs d'orchestration UI et ne créent ni store global ni seconde source de vérité. Une règle pédagogique pure doit rejoindre `lib/learning/quiz/`.
 
 L’atelier `atelier-60` affiche dans son bilan les résultats collectifs avant/après,
 les notions retenues ou fragiles, trois actions collège et jusqu’à trois
