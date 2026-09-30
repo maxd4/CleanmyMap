@@ -239,15 +239,6 @@ export function validateBaselineShape(baseline) {
   return baseline;
 }
 
-function policySnapshot() {
-  return {
-    version: COMPLEXITY_POLICY_VERSION,
-    fingerprint: COMPLEXITY_POLICY_FINGERPRINT,
-    complexity: COMPLEXITY_THRESHOLDS,
-    functionLength: FUNCTION_LENGTH_THRESHOLDS,
-  };
-}
-
 export function classifyFileKind(file) {
   const normalized = file.replaceAll("\\", "/");
   const base = normalized.slice(normalized.lastIndexOf("/") + 1);
