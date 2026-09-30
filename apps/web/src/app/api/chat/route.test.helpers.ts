@@ -41,6 +41,31 @@ export type ChatMessageRow = {
   };
 };
 
+type ChatMessageFilter =
+  | { kind: "eq" | "in"; field: string; value: unknown }
+  | { kind: "keyset"; expression: string };
+
+function filterChatMessages(
+  messages: ChatMessageRow[],
+  filters: ChatMessageFilter[],
+): ChatMessageRow[] {
+  return messages.filter((message) => filters.every((filter) => {
+    if (filter.kind === "keyset") {
+      const match = filter.expression.match(
+        /^created_at\.(lt|lte)\.([^,]+),and\(created_at\.eq\.([^,]+),id\.(lt|lte)\.([^\)]+)\)$/,
+      );
+      if (!match) return false;
+      const messageTime = Date.parse(message.created_at);
+      const cursorTime = Date.parse(match[3]);
+      if (messageTime !== cursorTime) return match[1] === "lt" ? messageTime < cursorTime : messageTime <= cursorTime;
+      const idIsBefore = message.id.localeCompare(match[5]) < 0;
+      return match[4] === "lt" ? idIsBefore : idIsBefore || message.id === match[5];
+    }
+    if (filter.kind === "eq") return message[filter.field as keyof ChatMessageRow] === filter.value;
+    return (filter.value as unknown[]).includes(message[filter.field as keyof ChatMessageRow]);
+  }));
+}
+
 export function buildSupabaseMock(options: {
   profile: ProfileRow;
   messages: ChatMessageRow[];
@@ -90,36 +115,8 @@ export function buildSupabaseMock(options: {
     single: vi.fn(),
   };
   const createMessagesQuery = () => {
-    const filters: Array<
-      | { kind: "eq" | "in"; field: string; value: unknown }
-      | { kind: "keyset"; expression: string }
-    > = [];
-    const filterMessages = () =>
-      options.messages.filter((message) =>
-        filters.every((filter) =>
-          filter.kind === "keyset"
-            ? (() => {
-                const match = filter.expression.match(
-                  /^created_at\.(lt|lte)\.([^,]+),and\(created_at\.eq\.([^,]+),id\.(lt|lte)\.([^\)]+)\)$/,
-                );
-                if (!match) return false;
-                const messageTime = Date.parse(message.created_at);
-                const cursorTime = Date.parse(match[3]);
-                if (messageTime !== cursorTime) {
-                  return match[1] === "lt"
-                    ? messageTime < cursorTime
-                    : messageTime <= cursorTime;
-                }
-                const idIsBefore = message.id.localeCompare(match[5]) < 0;
-                return match[4] === "lt" ? idIsBefore : idIsBefore || message.id === match[5];
-              })()
-            : filter.kind === "eq"
-            ? message[filter.field as keyof ChatMessageRow] === filter.value
-            : (filter.value as unknown[]).includes(
-                message[filter.field as keyof ChatMessageRow],
-              ),
-        ),
-      );
+    const filters: ChatMessageFilter[] = [];
+    const filterMessages = () => filterChatMessages(options.messages, filters);
     const query = {
       select: vi.fn(() => query),
       order: vi.fn((...args: unknown[]) => {

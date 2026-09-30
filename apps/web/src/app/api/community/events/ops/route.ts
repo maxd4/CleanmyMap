@@ -63,6 +63,226 @@ type CommunityEventOpsAuditValue = {
 
 const ADMIN_OVERRIDE_OPERATION = "update_community_event_ops_admin_override";
 
+type UpdateEventOpsPayload = z.infer<typeof updateEventOpsSchema>;
+type CommunityEventSupabase = ReturnType<typeof getSupabaseServerClient>;
+
+function parseUpdateEventOpsPayload(payload: unknown):
+  | { data: UpdateEventOpsPayload }
+  | { response: NextResponse } {
+  const parsed = updateEventOpsSchema.safeParse(payload);
+  if (!parsed.success) {
+    return {
+      response: NextResponse.json(
+        { error: "Invalid payload", details: parsed.error.flatten().fieldErrors },
+        { status: 400 },
+      ),
+    };
+  }
+  if (
+    parsed.data.location &&
+    !isValidCommunityEventCoordinatePair(
+      parsed.data.location.latitude,
+      parsed.data.location.longitude,
+    )
+  ) {
+    return {
+      response: NextResponse.json({ error: "Invalid event coordinates" }, { status: 400 }),
+    };
+  }
+  return { data: parsed.data };
+}
+
+async function loadCommunityEvent(
+  supabase: CommunityEventSupabase,
+  eventId: string,
+): Promise<CommunityEventRow | { response: NextResponse }> {
+  const result = await supabase
+    .from("community_events")
+    .select(
+      "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
+    )
+    .eq("id", eventId)
+    .maybeSingle();
+  if (result.error) {
+    return {
+      response: handleApiError(
+        result.error,
+        "POST /api/community/events/ops (event lookup)",
+      ),
+    };
+  }
+  if (!result.data) {
+    return { response: NextResponse.json({ error: "Event not found" }, { status: 404 }) };
+  }
+  return result.data as CommunityEventRow;
+}
+
+function authorizeCommunityEventOps(
+  event: CommunityEventRow,
+  userId: string | null,
+  adminAccess: Awaited<ReturnType<typeof requireAdminAccess>>,
+  reason: string,
+):
+  | { isOrganizer: boolean; isAdminOverride: boolean; operationId: string | null; auditDetails: Record<string, unknown> | null }
+  | { response: NextResponse } {
+  const isOrganizer = event.organizer_clerk_id === userId;
+  if (!isOrganizer && !adminAccess.ok) {
+    return { response: adminAccessErrorJsonResponse(adminAccess) };
+  }
+  const isAdminOverride = !isOrganizer && adminAccess.ok;
+  if (isAdminOverride && reason.length < 5) {
+    return {
+      response: NextResponse.json(
+        { error: "A reason of at least 5 characters is required for an admin override" },
+        { status: 400 },
+      ),
+    };
+  }
+  const operationId = isAdminOverride ? `community-event-ops-${randomUUID()}` : null;
+  return {
+    isOrganizer,
+    isAdminOverride,
+    operationId,
+    auditDetails: isAdminOverride
+      ? {
+          operation: ADMIN_OVERRIDE_OPERATION,
+          targetUserId: event.organizer_clerk_id,
+          reason,
+        }
+      : null,
+  };
+}
+
+function buildCommunityEventUpdate(
+  event: CommunityEventRow,
+  payload: UpdateEventOpsPayload,
+) {
+  const parsedDescription = parseCommunityEventDescription(event.description);
+  const mergedOps = mergeCommunityEventOps(parsedDescription.ops, {
+    capacityTarget: payload.capacityTarget,
+    attendanceCount: payload.attendanceCount,
+    postMortem: payload.postMortem,
+  });
+  return {
+    parsedDescription,
+    mergedOps,
+    description: serializeCommunityEventDescription(parsedDescription.plainDescription, mergedOps),
+    location: payload.location === undefined
+      ? {}
+      : payload.location === null
+        ? communityEventLocationToDatabase(null)
+        : communityEventLocationToDatabase(payload.location as CommunityEventLocationInput),
+  };
+}
+
+async function auditCommunityEventOverride({
+  operationId,
+  adminAccess,
+  eventId,
+  auditDetails,
+  outcome,
+  stage,
+  values,
+}: {
+  operationId: string;
+  adminAccess: Extract<Awaited<ReturnType<typeof requireAdminAccess>>, { ok: true }>;
+  eventId: string;
+  auditDetails: Record<string, unknown>;
+  outcome: "success" | "error";
+  stage?: string;
+  values?: { previousValue: CommunityEventOpsAuditValue; newValue: CommunityEventOpsAuditValue };
+}) {
+  await appendAdminOperationAudit({
+    operationId,
+    at: new Date().toISOString(),
+    actorUserId: adminAccess.userId,
+    operationType: "admin_operation",
+    outcome,
+    targetId: eventId,
+    details: {
+      ...auditDetails,
+      ...(stage ? { stage } : {}),
+      ...(values ?? {}),
+    },
+  });
+}
+
+async function persistCommunityEventUpdate({
+  supabase,
+  eventId,
+  update,
+  adminAccess,
+  operationId,
+  auditDetails,
+}: {
+  supabase: CommunityEventSupabase;
+  eventId: string;
+  update: ReturnType<typeof buildCommunityEventUpdate>;
+  adminAccess: Awaited<ReturnType<typeof requireAdminAccess>>;
+  operationId: string | null;
+  auditDetails: Record<string, unknown> | null;
+}): Promise<CommunityEventRow | { response: NextResponse }> {
+  try {
+    const updated = await supabase
+      .from("community_events")
+      .update({ description: update.description, ...update.location })
+      .eq("id", eventId)
+      .select(
+        "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
+      )
+      .single();
+    if (updated.error) {
+      if (operationId && auditDetails && adminAccess.ok) {
+        await auditCommunityEventOverride({
+          operationId,
+          adminAccess,
+          eventId,
+          auditDetails,
+          outcome: "error",
+          stage: "event_update",
+        });
+      }
+      return { response: handleApiError(updated.error, "POST /api/community/events/ops (update)") };
+    }
+    return updated.data as CommunityEventRow;
+  } catch (error) {
+    if (operationId && auditDetails && adminAccess.ok) {
+      await auditCommunityEventOverride({
+        operationId,
+        adminAccess,
+        eventId,
+        auditDetails,
+        outcome: "error",
+        stage: "event_update",
+      });
+    }
+    return { response: handleApiError(error, "POST /api/community/events/ops (update)") };
+  }
+}
+
+async function trackCommunityEventOps(
+  supabase: CommunityEventSupabase,
+  userId: string | null,
+  eventId: string,
+  item: ReturnType<typeof toEventResponseItem>,
+) {
+  if (!userId) return;
+  try {
+    await trackCommunityOpsUpdate(supabase, {
+      userId,
+      eventId,
+      attendanceCount: item.attendanceCount,
+      hasPostMortem: (item.postMortem ?? "").trim().length >= 20,
+    });
+  } catch (progressionError) {
+    console.error("Progression tracking failed for community ops update", {
+      userId,
+      eventId,
+      message: progressionError instanceof Error ? progressionError.message : String(progressionError),
+    });
+  }
+}
+
 function toCommunityEventOpsAuditValue(
  ops: ReturnType<typeof defaultCommunityEventOps>,
 ): CommunityEventOpsAuditValue {
@@ -136,152 +356,47 @@ export async function POST(request: Request) {
  );
  }
 
- const parsed = updateEventOpsSchema.safeParse(payload);
- if (!parsed.success) {
- return NextResponse.json(
- {
- error:"Invalid payload",
- details: parsed.error.flatten().fieldErrors,
- },
- { status: 400 },
- );
- }
-
- if (
-  parsed.data.location &&
-  !isValidCommunityEventCoordinatePair(
-   parsed.data.location.latitude,
-   parsed.data.location.longitude,
-  )
- ) {
-  return NextResponse.json(
-   { error: "Invalid event coordinates" },
-   { status: 400 },
-  );
- }
+  const parsed = parseUpdateEventOpsPayload(payload);
+  if ("response" in parsed) return parsed.response;
 
  const supabase = getSupabaseServerClient(true);
- const eventResult = await supabase
- .from("community_events")
- .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
- )
- .eq("id", parsed.data.eventId)
- .maybeSingle();
+  const event = await loadCommunityEvent(supabase, parsed.data.eventId);
+  if ("response" in event) return event.response;
 
- if (eventResult.error) {
- return handleApiError(
-  eventResult.error,
-  "POST /api/community/events/ops (event lookup)",
- );
- }
- if (!eventResult.data) {
- return NextResponse.json({ error:"Event not found" }, { status: 404 });
- }
+  const permission = authorizeCommunityEventOps(
+    event,
+    userId,
+    adminAccess,
+    parsed.data.reason?.trim() ?? "",
+  );
+  if ("response" in permission) return permission.response;
 
- const isOrganizer = eventResult.data.organizer_clerk_id === userId;
- if (!isOrganizer && !adminAccess.ok) {
- return adminAccessErrorJsonResponse(adminAccess);
- }
-
- const isAdminOverride = !isOrganizer && adminAccess.ok;
- const reason = parsed.data.reason?.trim() ?? "";
- if (isAdminOverride && reason.length < 5) {
- return NextResponse.json(
- { error:"A reason of at least 5 characters is required for an admin override" },
- { status: 400 },
- );
- }
-
- const parsedDescription = parseCommunityEventDescription(
- eventResult.data.description,
- );
- const mergedOps = mergeCommunityEventOps(parsedDescription.ops, {
- capacityTarget: parsed.data.capacityTarget,
- attendanceCount: parsed.data.attendanceCount,
- postMortem: parsed.data.postMortem,
- });
- const description = serializeCommunityEventDescription(
- parsedDescription.plainDescription,
- mergedOps,
- );
-
- const previousValue = toCommunityEventOpsAuditValue(parsedDescription.ops);
- const newValue = toCommunityEventOpsAuditValue(mergedOps);
- const operationId = isAdminOverride
- ? `community-event-ops-${randomUUID()}`
- : null;
- const auditDetails = isAdminOverride
- ? {
- operation: ADMIN_OVERRIDE_OPERATION,
- targetUserId: eventResult.data.organizer_clerk_id,
- reason,
- previousValue,
- newValue,
- }
- : null;
-
- let updated;
- try {
- updated = await supabase
- .from("community_events")
- .update({
-  description,
-  ...(parsed.data.location === undefined
-   ? {}
-   : parsed.data.location === null
-     ? communityEventLocationToDatabase(null)
-     : communityEventLocationToDatabase(
-         parsed.data.location as CommunityEventLocationInput,
-       )),
- })
- .eq("id", parsed.data.eventId)
- .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
- )
- .single();
- } catch (error) {
- if (isAdminOverride && operationId && auditDetails) {
- await appendAdminOperationAudit({
- operationId,
- at: new Date().toISOString(),
- actorUserId: adminAccess.userId,
- operationType: "admin_operation",
- outcome: "error",
- targetId: parsed.data.eventId,
- details: { ...auditDetails, stage: "event_update" },
- });
- }
- return handleApiError(error, "POST /api/community/events/ops (update)");
- }
-
- if (updated.error) {
- if (isAdminOverride && operationId && auditDetails) {
- await appendAdminOperationAudit({
- operationId,
- at: new Date().toISOString(),
- actorUserId: adminAccess.userId,
- operationType: "admin_operation",
- outcome: "error",
- targetId: parsed.data.eventId,
- details: { ...auditDetails, stage: "event_update" },
- });
- }
- return handleApiError(updated.error, "POST /api/community/events/ops (update)");
- }
+  const update = buildCommunityEventUpdate(event, parsed.data);
+  const previousValue = toCommunityEventOpsAuditValue(update.parsedDescription.ops);
+  const newValue = toCommunityEventOpsAuditValue(update.mergedOps);
+  const auditDetails = permission.auditDetails
+    ? { ...permission.auditDetails, previousValue, newValue }
+    : null;
+  const updated = await persistCommunityEventUpdate({
+    supabase,
+    eventId: parsed.data.eventId,
+    update,
+    adminAccess,
+    operationId: permission.operationId,
+    auditDetails,
+  });
+  if ("response" in updated) return updated.response;
 
  revalidateCommunityEventCaches();
 
- if (isAdminOverride && operationId && auditDetails) {
- await appendAdminOperationAudit({
- operationId,
- at: new Date().toISOString(),
- actorUserId: adminAccess.userId,
- operationType: "admin_operation",
- outcome: "success",
- targetId: parsed.data.eventId,
- details: auditDetails,
- });
+  if (permission.operationId && auditDetails && adminAccess.ok) {
+    await auditCommunityEventOverride({
+      operationId: permission.operationId,
+      adminAccess,
+      eventId: parsed.data.eventId,
+      auditDetails,
+      outcome: "success",
+    });
  }
 
  const summaries = await loadCommunityEventRsvpSummaries(supabase, {
@@ -290,30 +405,12 @@ export async function POST(request: Request) {
  });
 
  const item = toEventResponseItem(
-  updated.data as CommunityEventRow,
+  updated,
   summaries[0] ?? null,
-  isOrganizer,
+  permission.isOrganizer,
  );
 
- if (userId) {
- try {
- await trackCommunityOpsUpdate(supabase, {
- userId,
- eventId: parsed.data.eventId,
- attendanceCount: item.attendanceCount,
- hasPostMortem: (item.postMortem ??"").trim().length >= 20,
- });
- } catch (progressionError) {
- console.error("Progression tracking failed for community ops update", {
- userId,
- eventId: parsed.data.eventId,
- message:
- progressionError instanceof Error
- ? progressionError.message
- : String(progressionError),
- });
- }
- }
+  await trackCommunityEventOps(supabase, userId, parsed.data.eventId, item);
 
  return NextResponse.json({ status:"ok", item });
 }

@@ -24,6 +24,141 @@ const cancellationPayloadSchema = z.object({
   reason: z.enum(ACTION_CANCELLATION_REASONS).nullable().optional(),
 }).strict();
 
+type CancellationPayload = z.infer<typeof cancellationPayloadSchema>;
+
+async function parseCancellationPayload(
+  request: Request,
+  operationId: string,
+): Promise<{ data: CancellationPayload } | { response: NextResponse }> {
+  let payload: unknown;
+  try {
+    payload = await request.json();
+  } catch {
+    return {
+      response: adminErrorResponse({
+        status: 400,
+        code: "invalid_json",
+        message: "Invalid JSON payload",
+        hint: "Vérifier le JSON d'annulation.",
+        operationId,
+      }),
+    };
+  }
+
+  const parsed = cancellationPayloadSchema.safeParse(payload);
+  if (!parsed.success) {
+    return {
+      response: adminErrorResponse({
+        status: 400,
+        code: "invalid_payload",
+        message: "Payload d'annulation invalide.",
+        hint: "Le motif doit être une catégorie connue et la confirmation est obligatoire.",
+        operationId,
+        details: parsed.error.flatten().fieldErrors,
+      }),
+    };
+  }
+
+  return { data: parsed.data };
+}
+
+function confirmationErrorResponse(operationId: string): NextResponse {
+  return adminErrorResponse({
+    status: 409,
+    code: "confirmation_required",
+    message: "Confirmation explicite requise.",
+    hint: `Renseigner exactement : ${ACTION_CANCELLATION_CONFIRMATION}`,
+    operationId,
+  });
+}
+
+function cancellationErrorDetails(error: unknown) {
+  const cancellationError = error instanceof ActionCancellationError ? error : null;
+  const status =
+    cancellationError?.code === "not_found"
+      ? 404
+      : cancellationError?.code === "conflict"
+        ? 409
+        : cancellationError?.code === "not_eligible"
+          ? 422
+          : 500;
+  const code: "not_found" | "server_error" | "state_conflict" | "confirmation_required" | "invalid_payload" =
+    status === 404
+      ? "not_found"
+      : status === 500
+        ? "server_error"
+        : status === 409
+          ? cancellationError?.code === "conflict"
+            ? "state_conflict"
+            : "confirmation_required"
+          : "invalid_payload";
+
+  return { cancellationError, status, code };
+}
+
+async function auditCancellationError({
+  operationId,
+  actorUserId,
+  actionId,
+  reason,
+  error,
+}: {
+  operationId: string;
+  actorUserId: string;
+  actionId: string;
+  reason: CancellationPayload["reason"];
+  error: unknown;
+}) {
+  const { cancellationError, code } = cancellationErrorDetails(error);
+  await appendActionModerationAudit({
+    operationId,
+    actorUserId,
+    targetActionId: actionId,
+    operation: "cancel_action",
+    outcome: "error",
+    reason: reason ?? null,
+    details: {
+      code,
+      ...(cancellationError ? { cancellationCode: cancellationError.code } : {}),
+    },
+  }).catch(() => undefined);
+}
+
+async function cancellationErrorResponse({
+  operationId,
+  actorUserId,
+  actionId,
+  reason,
+  error,
+}: {
+  operationId: string;
+  actorUserId: string;
+  actionId: string;
+  reason: CancellationPayload["reason"];
+  error: unknown;
+}): Promise<NextResponse> {
+  const { cancellationError, status, code } = cancellationErrorDetails(error);
+  await auditCancellationError({ operationId, actorUserId, actionId, reason, error });
+
+  if (cancellationError) {
+    return adminErrorResponse({
+      status,
+      code,
+      message: cancellationError.message,
+      hint:
+        status === 422
+          ? "Vérifier que l'action est publiée, future et en pré-action."
+          : "Rafraîchir l'action puis réessayer.",
+      operationId,
+    });
+  }
+
+  return NextResponse.json(
+    { error: "L'annulation de l'action a échoué.", operationId },
+    { status: 500 },
+  );
+}
+
 export async function POST(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
@@ -45,39 +180,11 @@ export async function POST(
     });
   }
 
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return adminErrorResponse({
-      status: 400,
-      code: "invalid_json",
-      message: "Invalid JSON payload",
-      hint: "Vérifier le JSON d'annulation.",
-      operationId,
-    });
-  }
-
-  const parsed = cancellationPayloadSchema.safeParse(payload);
-  if (!parsed.success) {
-    return adminErrorResponse({
-      status: 400,
-      code: "invalid_payload",
-      message: "Payload d'annulation invalide.",
-      hint: "Le motif doit être une catégorie connue et la confirmation est obligatoire.",
-      operationId,
-      details: parsed.error.flatten().fieldErrors,
-    });
-  }
+  const parsed = await parseCancellationPayload(request, operationId);
+  if ("response" in parsed) return parsed.response;
 
   if (parsed.data.confirmPhrase.trim().toUpperCase() !== ACTION_CANCELLATION_CONFIRMATION) {
-    return adminErrorResponse({
-      status: 409,
-      code: "confirmation_required",
-      message: "Confirmation explicite requise.",
-      hint: `Renseigner exactement : ${ACTION_CANCELLATION_CONFIRMATION}`,
-      operationId,
-    });
+    return confirmationErrorResponse(operationId);
   }
 
   try {
@@ -115,56 +222,12 @@ export async function POST(
       payload: result,
     });
   } catch (error) {
-    const cancellationError =
-      error instanceof ActionCancellationError ? error : null;
-    const status =
-      cancellationError?.code === "not_found"
-        ? 404
-        : cancellationError?.code === "conflict"
-          ? 409
-          : cancellationError?.code === "not_eligible"
-            ? 422
-            : 500;
-    const code =
-      status === 404
-        ? "not_found"
-        : status === 500
-          ? "server_error"
-          : status === 409
-            ? cancellationError?.code === "conflict"
-              ? "state_conflict"
-              : "confirmation_required"
-            : "invalid_payload";
-
-    await appendActionModerationAudit({
+    return cancellationErrorResponse({
       operationId,
       actorUserId: access.userId,
-      targetActionId: actionId,
-      operation: "cancel_action",
-      outcome: "error",
+      actionId,
       reason: parsed.data.reason ?? null,
-      details: {
-        code,
-        ...(cancellationError ? { cancellationCode: cancellationError.code } : {}),
-      },
-    }).catch(() => undefined);
-
-    if (cancellationError) {
-      return adminErrorResponse({
-        status,
-        code,
-        message: cancellationError.message,
-        hint:
-          status === 422
-            ? "Vérifier que l'action est publiée, future et en pré-action."
-            : "Rafraîchir l'action puis réessayer.",
-        operationId,
-      });
-    }
-
-    return NextResponse.json(
-      { error: "L'annulation de l'action a échoué.", operationId },
-      { status: 500 },
-    );
+      error,
+    });
   }
 }
