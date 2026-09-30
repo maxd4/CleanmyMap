@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 export const CANDIDATE_MARKER = ".cleanmymap-candidate.json";
-export const VALIDATION_ROOT = [".artifacts", "validation"];
+const VALIDATION_ROOT = [".artifacts", "validation"];
 export const CANDIDATE_FAMILIES = Object.freeze({
   PREPUSH: "prepush-candidate",
 });
@@ -18,7 +18,7 @@ function assertCandidateKey(family, key) {
   throw new Error(`Unsupported candidate family: ${family}`);
 }
 
-export function getCandidateFamilyRoot(repositoryRoot, family) {
+function getCandidateFamilyRoot(repositoryRoot, family) {
   if (!Object.values(CANDIDATE_FAMILIES).includes(family)) {
     throw new Error(`Unsupported candidate family: ${family}`);
   }

@@ -604,12 +604,6 @@ export {
   aggregateContributions,
   classifySession,
   classifyAndAggregate,
-  loadPrimaryArtifacts,
-  normalizeOrigin,
-  normalizePath,
-  parseArgs,
-  projectBreakdown,
-  tokenValues,
 };
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

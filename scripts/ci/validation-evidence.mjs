@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-export const VALIDATION_EVIDENCE_VERSION = 1;
+const VALIDATION_EVIDENCE_VERSION = 1;
 export const VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
   "artifacts",
   "validation",

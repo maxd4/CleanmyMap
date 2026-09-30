@@ -3,13 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const reportsDirectory = path.dirname(fileURLToPath(import.meta.url));
-export const repositoryRoot = path.resolve(reportsDirectory, '../..');
-export const impactReportDirectory = path.join(
-  repositoryRoot,
-  'documentation',
-  'plans',
-  'rapport_impact',
-);
+const repositoryRoot = path.resolve(reportsDirectory, '../..');
 
 export const impactReportMaster = 'documentation/plans/rapport_impact/impact_IA.md';
 
@@ -43,10 +37,8 @@ const annexEntries = [
 const byKey = (entries) => Object.fromEntries(entries.map(([key, relativePath]) => [key, relativePath]));
 
 export const impactReportParts = Object.freeze(byKey(partEntries));
-export const impactReportFaq = faqEntry[1];
-export const impactReportAnnexes = Object.freeze(byKey(annexEntries));
 
-export const impactReportAssemblyEntries = Object.freeze([
+const impactReportAssemblyEntries = Object.freeze([
   ['part-i', impactReportParts['part-i']],
   faqEntry,
   ['part-ii-index', impactReportParts['part-ii-index']],
@@ -56,7 +48,7 @@ export const impactReportAssemblyEntries = Object.freeze([
   ...annexEntries,
 ]);
 
-export const impactReportDocuments = Object.freeze([
+const impactReportDocuments = Object.freeze([
   ['master', impactReportMaster],
   ...partEntries,
   faqEntry,

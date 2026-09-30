@@ -4,14 +4,14 @@ import { delimiter, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = resolve(fileURLToPath(new URL(".", import.meta.url)));
-export const repoRoot = resolve(scriptDir, "../..");
-export const webDir = resolve(repoRoot, "apps/web");
-export const devServerScript = resolve(scriptDir, "dev-with-fallback-port.mjs");
+const repoRoot = resolve(scriptDir, "../..");
+const webDir = resolve(repoRoot, "apps/web");
+const devServerScript = resolve(scriptDir, "dev-with-fallback-port.mjs");
 const WINDOWS_CTRL_C_EXIT_CODES = new Set([-1073741510, 3221225786]);
 const VERCEL_CLI_MISSING_MESSAGE =
   "[launcher] CLI Vercel introuvable dans le PATH. Installe-la avec 'npm install --global vercel', puis relance le launcher.";
 
-export const LOCAL_ROLE_CONFIGS = Object.freeze({
+const LOCAL_ROLE_CONFIGS = Object.freeze({
   max: Object.freeze({
     role: "max",
     userId: "dev-max",
@@ -146,7 +146,7 @@ export function resolveVercelCliInvocation({
   throw new Error(VERCEL_CLI_MISSING_MESSAGE);
 }
 
-export function isValidVercelProjectConfig(config) {
+function isValidVercelProjectConfig(config) {
   return Boolean(
     config &&
       typeof config === "object" &&
@@ -241,7 +241,7 @@ export function exitCodeForChild(code, signal) {
   return code ?? 1;
 }
 
-export function launchLocalRole(role, args = process.argv.slice(3)) {
+function launchLocalRole(role, args = process.argv.slice(3)) {
   ensureDevelopmentEnv();
   const child = spawn(process.execPath, [devServerScript, "--open-browser", ...args], {
     cwd: repoRoot,

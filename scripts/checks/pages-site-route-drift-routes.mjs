@@ -26,7 +26,7 @@ const SECTION_PRESENTATION_TO_ACCESS = new Map([
   ["disabled", "auth-disabled-gate"],
 ]);
 
-export function normalizeRoute(value) {
+function normalizeRoute(value) {
   const trimmed = String(value ?? "").trim();
   if (!trimmed.startsWith("/")) {
     return "";

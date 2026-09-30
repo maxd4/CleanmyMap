@@ -19,7 +19,7 @@ export const VALIDATION_MODE_BUDGETS = Object.freeze({
 const SECURITY_GROUP_FILES = new Set(getVitestFiles({ groups: ["security"] }));
 const REGRESSION_GROUP_FILES = new Set(getVitestFiles({ groups: ["regression"] }));
 
-export function normalizePath(file) {
+function normalizePath(file) {
   return String(file).replaceAll("\\", "/").replace(/^\.\//, "");
 }
 

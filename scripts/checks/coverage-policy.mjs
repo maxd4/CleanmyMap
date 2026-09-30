@@ -20,7 +20,7 @@ export const COVERAGE_GRACE = Object.freeze({
   persistence: 0.75,
 });
 
-export const COVERAGE_DOMAINS = Object.freeze({
+const COVERAGE_DOMAINS = Object.freeze({
   "auth-authz": Object.freeze([
     "src/lib/auth/",
     "src/lib/authz",
@@ -49,7 +49,7 @@ export const COVERAGE_DOMAINS = Object.freeze({
   ]),
 });
 
-export const COVERAGE_SCOPE = Object.freeze({
+const COVERAGE_SCOPE = Object.freeze({
   include: ["src/**/*.{js,jsx,ts,tsx}"],
   exclude: [
     "src/**/*.test.{js,jsx,ts,tsx}",
@@ -86,7 +86,7 @@ const MOBILE_COVERAGE_SCOPE = Object.freeze({
   ],
 });
 
-export const COVERAGE_POLICY_VERSION = 1;
+const COVERAGE_POLICY_VERSION = 1;
 export const COVERAGE_SCOPE_FINGERPRINT = createHash("sha256")
   .update(JSON.stringify({ version: COVERAGE_POLICY_VERSION, scope: COVERAGE_SCOPE, domains: COVERAGE_DOMAINS }))
   .digest("hex");
@@ -123,7 +123,7 @@ function metricValue(metric, key, label) {
   return value;
 }
 
-export function normalizeCoveragePath(file, scope = "web") {
+function normalizeCoveragePath(file, scope = "web") {
   const normalized = String(file).replaceAll("\\", "/");
   const marker = `/${getCoverageScope(scope).root}/`;
   const markerIndex = normalized.indexOf(marker);
@@ -133,7 +133,7 @@ export function normalizeCoveragePath(file, scope = "web") {
   return normalized;
 }
 
-export function normalizeMetricRecord(metric, label) {
+function normalizeMetricRecord(metric, label) {
   const total = metricValue(metric, "total", label);
   const covered = metricValue(metric, "covered", label);
   if (covered > total || total === 0) {

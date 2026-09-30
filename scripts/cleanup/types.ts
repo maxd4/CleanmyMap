@@ -7,62 +7,6 @@
 // CHANGE RECORD — trace chaque modification effectuée
 // ============================================================
 
-export type ChangeType = 'REMOVAL' | 'MODIFICATION';
-export type ChangeCategory = 'CSS' | 'SCRIPT' | 'FIGMA';
-
-export interface ChangeRecord {
-  /** Chemin relatif du fichier modifié (depuis la racine du projet) */
-  file: string;
-  /** Numéro de ligne (1-based) où la modification a eu lieu */
-  lineNumber: number;
-  /** Contenu original avant modification */
-  originalContent: string;
-  /** Contenu après modification (vide si suppression pure) */
-  newContent: string;
-  /** Type de changement : suppression ou modification */
-  changeType: ChangeType;
-  /** Catégorie du fichier traité */
-  category: ChangeCategory;
-}
-
-// ============================================================
-// VALIDATION RESULT — résultat de validation d'un fichier
-// ============================================================
-
-export interface ValidationResult {
-  /** Chemin relatif du fichier validé */
-  file: string;
-  /** true si le fichier est valide après nettoyage */
-  isValid: boolean;
-  /** Liste des erreurs bloquantes détectées */
-  errors: string[];
-  /** Liste des avertissements non-bloquants */
-  warnings: string[];
-  /** Nombre de références dark encore présentes (0 = nettoyage complet) */
-  darkReferencesRemaining: number;
-}
-
-// ============================================================
-// CLEANUP REPORT — rapport global du processus de nettoyage
-// ============================================================
-
-export interface CleanupReport {
-  /** Nombre total de fichiers traités */
-  totalFilesProcessed: number;
-  /** Nombre total de changements effectués */
-  totalChanges: number;
-  /** Répartition des changements par catégorie */
-  changesByCategory: Record<ChangeCategory, number>;
-  /** Résultats de validation par fichier */
-  validationResults: ValidationResult[];
-  /** Résumé textuel du nettoyage */
-  summary: string;
-  /** Horodatage ISO du rapport */
-  timestamp: string;
-  /** Indique si le nettoyage est considéré comme réussi */
-  success: boolean;
-}
-
 // ============================================================
 // BACKUP MANIFEST — manifeste de la sauvegarde
 // ============================================================

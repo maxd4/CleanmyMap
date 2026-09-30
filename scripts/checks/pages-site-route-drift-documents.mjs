@@ -9,7 +9,7 @@ import {
 const ALLOWED_FAMILY_DIRECTORIES = new Set(["screenshots"]);
 const EXACT_CURRENT_SCOPE_PLACEHOLDER = /^\s*-\s+\*\*Scope\*\*\s*:\s*à corriger\s*$/im;
 
-export function isWithin(root, candidate) {
+function isWithin(root, candidate) {
   const relative = path.relative(root, candidate);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }

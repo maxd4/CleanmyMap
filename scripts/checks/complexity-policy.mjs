@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import ts from "typescript";
 
-export const COMPLEXITY_POLICY_VERSION = 3;
+const COMPLEXITY_POLICY_VERSION = 3;
 
 const COMPLEXITY_THRESHOLDS = Object.freeze({
   "métier/domain pur": Object.freeze({ target: 15, blockAbove: 20 }),
@@ -20,7 +20,7 @@ const FUNCTION_LENGTH_THRESHOLDS = Object.freeze({
   "routes API": Object.freeze({ target: 100, blockAbove: 150 }),
 });
 
-export const COMPLEXITY_POLICY_FINGERPRINT = createHash("sha256")
+const COMPLEXITY_POLICY_FINGERPRINT = createHash("sha256")
   .update(JSON.stringify({
     version: COMPLEXITY_POLICY_VERSION,
     complexity: COMPLEXITY_THRESHOLDS,
@@ -239,7 +239,7 @@ export function validateBaselineShape(baseline) {
   return baseline;
 }
 
-export function policySnapshot() {
+function policySnapshot() {
   return {
     version: COMPLEXITY_POLICY_VERSION,
     fingerprint: COMPLEXITY_POLICY_FINGERPRINT,

@@ -93,7 +93,7 @@ const DUPLICATION_POLICY_DESCRIPTOR = {
 
 export const DUPLICATION_POLICY_FINGERPRINT = computeDuplicationPolicyFingerprint(DUPLICATION_POLICY_DESCRIPTOR);
 
-export const DUPLICATION_METRICS_BASELINE_SCHEMA_VERSION = 2;
+const DUPLICATION_METRICS_BASELINE_SCHEMA_VERSION = 2;
 
 export function buildJscpdArguments(scopeName, baselinePath, outputDirectory) {
   const scope = DUPLICATION_SCOPES[scopeName];
