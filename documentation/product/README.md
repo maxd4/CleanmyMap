@@ -22,6 +22,7 @@ Point d'entrée de la documentation produit CleanMyMap.
 - `gamification-non-competitive.md` ;
 - `objectifs-valides.md` ;
 - `gamification-inventory.md` ;
+- [`GAMIFICATION_BADGES_PRODUCT_DECISIONS.md`](./GAMIFICATION_BADGES_PRODUCT_DECISIONS.md) — décision produit sur l’identité visuelle de la gamification, ses choix et non-choix, avec implémentation gelée jusqu’à la convergence fonctionnelle ;
 - mémoire locale des idées écartées dans la fiche canonique de la rubrique.
 
 ### Méthodologie
