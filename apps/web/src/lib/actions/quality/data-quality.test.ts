@@ -107,6 +107,9 @@ describe("action data quality contract", () => {
     expect(review.inspectedCount).toBe(2);
     expect(review.geolocation.partial).toBe(1);
     expect(review.status).toBe("blocking");
+    expect(review.alerts.find((alert) => alert.id === "blocking-anomalies")?.message).toContain(
+      "à revoir",
+    );
     expect(review.alerts.map((alert) => alert.id)).toContain(
       "partial-geolocation",
     );

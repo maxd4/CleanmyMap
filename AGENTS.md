@@ -98,7 +98,7 @@ Une preuve ne justifie que ce qu’elle mesure.
 Le workflow courant est `MAIN-ONLY / SINGLE-WRITER`.
 
 - la branche de travail normale est `main` ;
-- deux agents peut modifier le checkout à la fois en faisant attention a ne pas créer de regréssions.
+- un seul chantier peut écrire à la fois dans le checkout partagé ; les lots restent coordonnés pour éviter les régressions.
 - aucun nouveau worktree, clone ou branche de chantier n’est créé pour le
   workflow normal ;
 - l'état local est prioritaire sur l'etat github
