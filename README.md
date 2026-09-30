@@ -60,11 +60,16 @@ Les rubriques et leurs routes sont répertoriées dans la [matrice produit](./do
 CleanMyMap est un monorepo composé de deux applications déployables qui partagent les contrats métier nécessaires :
 
 ```text
-Web    — Next.js / React, routes API et interface principale
-Mobile — Expo / React Native, parcours terrain natif
-       └── Clerk — identité et rôles
-       └── Supabase / PostgreSQL — données et persistance
-       └── Vercel — déploiement web
+Web
+├── Next.js / React — interface et routes API
+└── Vercel — déploiement web
+
+Mobile
+└── Expo / React Native — parcours terrain natif
+
+Web + Mobile
+├── Clerk — identité et rôles
+└── Supabase / PostgreSQL — données et persistance
 ```
 
 La [documentation d'architecture](./documentation/architecture/README.md) décrit les frontières et décisions structurantes. La [méthodologie produit](./documentation/product/SCIENTIFIC_PROTOCOL.md) précise la lecture des mesures, estimations et limites.
@@ -78,7 +83,7 @@ Next.js 16, React 19, TypeScript 7, Tailwind CSS 4, Clerk, Supabase/PostgreSQL, 
 | Chemin | Rôle |
 | --- | --- |
 | `apps/web/` | Application web Next.js, interface et routes API |
-| `apps/mobile/` | Application mobile Expo/React Native |
+| `apps/mobile/` | Application mobile Expo/React Native — développement actif, pas encore prête pour la production |
 | `apps/web/supabase/` | Configuration et migrations Supabase du workspace web |
 | `documentation/` | Documentation produit, architecture, sécurité, développement et opérations |
 | `scripts/` | Contrôles et outils de maintenance du dépôt |
