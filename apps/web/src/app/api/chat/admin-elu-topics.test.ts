@@ -58,6 +58,18 @@ function message(overrides: Partial<ChatMessageRow> = {}): ChatMessageRow {
   };
 }
 
+function buildTopicRequest(topicId: string, content: string): Request {
+  return new Request("http://localhost/api/chat", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      channelType: "admin_elu",
+      topicId,
+      content,
+    }),
+  });
+}
+
 describe("admin_elu topics in the Chat API", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -253,17 +265,7 @@ describe("admin_elu topics in the Chat API", () => {
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const response = await POST(
-      new Request("http://localhost/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          channelType: "admin_elu",
-          topicId,
-          content: "Point de coordination",
-        }),
-      }),
-    );
+    const response = await POST(buildTopicRequest(topicId, "Point de coordination"));
 
     expect(response.status).toBe(201);
     expect(supabaseMock.appMessagesTable.insert).toHaveBeenCalledWith(
@@ -282,17 +284,7 @@ describe("admin_elu topics in the Chat API", () => {
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const response = await POST(
-      new Request("http://localhost/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          channelType: "admin_elu",
-          topicId,
-          content: "Tentative invalide",
-        }),
-      }),
-    );
+    const response = await POST(buildTopicRequest(topicId, "Tentative invalide"));
 
     expect(response.status).toBe(400);
     expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
