@@ -6,7 +6,7 @@ function isIgnoredPath(file) {
   return /(?:^|\/)(?:\.git|node_modules|\.next|dist|build|coverage|maintenance)(?:\/|$)/.test(file);
 }
 
-export function isMeasuredFile(file) {
+function isMeasuredFile(file) {
   return HEAVY_FILE_EXTENSIONS.has(path.posix.extname(file)) && !isIgnoredPath(file);
 }
 
@@ -19,7 +19,7 @@ export function measureContent(content) {
   };
 }
 
-export function measureRepositoryFile(view, file) {
+function measureRepositoryFile(view, file) {
   const content = view.readBinary(file);
   const kind = classifyFileKind(file);
   return {

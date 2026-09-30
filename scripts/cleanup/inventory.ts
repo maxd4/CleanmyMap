@@ -43,7 +43,6 @@ export function escapeMarkdownTableCell(value: string): string {
     .replaceAll('\r', ' ')
     .replaceAll('\n', ' ');
 }
-
 // ============================================================
 // ANALYSE
 // ============================================================
@@ -238,5 +237,3 @@ if (require.main === module) {
     process.exit(1);
   }
 }
-
-export { runInventory };

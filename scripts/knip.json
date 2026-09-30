@@ -22,7 +22,8 @@
         "scripts/**/*.{js,mjs,cjs,ts,tsx}",
         "documentation/pages_site/screen/**/*.mjs"
       ],
-      "ignore": ["scripts/security/semgrep/fixtures/**"]
+      "ignore": ["scripts/security/semgrep/fixtures/**"],
+      "ignoreDependencies": ["next"]
     },
     "apps/mobile": {
       "entry": [

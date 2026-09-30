@@ -16,7 +16,7 @@ const TEST_SUFFIXES = Object.freeze([
  * they protect. Keep this registry explicit so FAST never falls back to all
  * Vitest or all script tests for a small database change.
  */
-export const MIGRATION_CONTRACT_REGISTRY = Object.freeze([
+const MIGRATION_CONTRACT_REGISTRY = Object.freeze([
   Object.freeze({
     family: "action_registrations",
     migrationPattern: /action[_-]registrations/i,

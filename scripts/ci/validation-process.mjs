@@ -14,7 +14,7 @@ export function resolveValidationCommand(command, platform, execPath) {
   return command;
 }
 
-export function terminateProcessTree(pid) {
+function terminateProcessTree(pid) {
   if (!pid) return;
   if (process.platform === "win32") {
     try {

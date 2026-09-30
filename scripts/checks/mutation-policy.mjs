@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 
-export const MUTATION_POLICY_VERSION = 1;
-export const MUTATION_TOOL = "stryker";
-export const MUTATION_TOOL_VERSION = "10.0.0";
-export const MUTATION_RUNNER_VERSION = "10.0.0";
-export const MUTATION_STATUSES = Object.freeze([
+const MUTATION_POLICY_VERSION = 1;
+const MUTATION_TOOL = "stryker";
+const MUTATION_TOOL_VERSION = "10.0.0";
+const MUTATION_RUNNER_VERSION = "10.0.0";
+const MUTATION_STATUSES = Object.freeze([
   "Killed",
   "Survived",
   "NoCoverage",
@@ -135,7 +135,7 @@ function scoreDecreased(current, baseline) {
   return current.counts.Killed * baselineExecutable < baseline.counts.Killed * currentExecutable;
 }
 
-export function compareMutationSummary(current, baseline) {
+function compareMutationSummary(current, baseline) {
   const failures = [];
   if (scoreDecreased(current, baseline)) failures.push(`mutation score decreased from ${baseline.score.toFixed(2)}% to ${current.score.toFixed(2)}%`);
   if (current.counts.NoCoverage > baseline.counts.NoCoverage) failures.push(`no coverage increased from ${baseline.counts.NoCoverage} to ${current.counts.NoCoverage}`);
