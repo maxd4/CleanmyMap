@@ -8,6 +8,7 @@ import {
   toActionMapItem,
   toContractCreatePayload,
 } from "./data-contract";
+import type { ActionPhotoAsset, ActionVisionEstimate, CreateActionPayload } from "./types";
 import { getActionOperationalContext } from "./operational-context";
 
 it("maps polygon geometry to map payload without breaking point fields", () => {
@@ -350,6 +351,112 @@ it("builds contract create payload from legacy create payload", () => {
   expect(contractPayload.location.label).toBe("Canal Saint-Martin");
   expect(contractPayload.geometry?.kind).toBe("polyline");
   expect(contractPayload.geometry?.coordinates.length).toBe(2);
+});
+
+it("round trips a complete point-to-point create payload without losing domain fields", () => {
+  const photo = Object.assign(
+    { id: "photo-rich", name: "terrain.jpg", mimeType: "image/jpeg" },
+    { size: 42_000, width: 1200, height: 900, dataUrl: "data:image/jpeg;base64,AAA" },
+  ) satisfies ActionPhotoAsset;
+  const visionEstimate = Object.assign(
+    { modelVersion: "vision-hybrid-v1", source: "hybrid", provisional: false },
+    { bagsCount: { value: 3, confidence: 0.84, interval: [2, 4] } },
+    { fillLevel: { value: 72, confidence: 0.79, interval: [58, 86] } },
+    { density: { value: "humide_dense", confidence: 0.73, interval: null } },
+    { wasteKg: { value: 4.2, confidence: 0.84, interval: [3.4, 5] } },
+  ) satisfies ActionVisionEstimate;
+  const payload = {
+    actorName: "Alice",
+    associationName: "Collectif des quais",
+    organizerType: "association",
+    organizerId: "org-42",
+    organizerName: "Collectif des quais",
+    groupJoinEnabled: true,
+    actionPhase: "pre_action",
+    preparationData: {
+      actionTitle: "Nettoyage du canal",
+      zoneCiblePrevue: "Pont vers le quai",
+      routeTopology: "point_to_point",
+    },
+    actionDate: "2026-09-20",
+    locationLabel: "Canal Saint-Martin",
+    departmentCode: "75",
+    departmentName: "Paris",
+    departureLocationLabel: "Écluse du Temple",
+    arrivalLocationLabel: "Quai de Valmy",
+    routeTopology: "point_to_point",
+    routeStyle: "souple",
+    routeAdjustmentMessage: "Contourner la zone travaux",
+    latitude: 48.871,
+    longitude: 2.365,
+    wasteKg: 4.2,
+    cigaretteButtsMeasurements: {
+      cigaretteButtsCount: 3000,
+      cigaretteButtsMassKg: 1.2,
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsCondition: "propre",
+    },
+    volunteerParticipation: {
+      childrenCount: 2,
+      adultCount: 4,
+      retiredCount: 2,
+      participantsCount: 8,
+      effectiveVolunteerUnits: 6,
+      effectiveVolunteerUnitsFormulaVersion: "effective-volunteer-units-v1",
+    },
+    cigaretteButtsMassKg: 1.2,
+    cigaretteButtsVolumeLiters: 2.5,
+    cigaretteButtsCondition: "propre",
+    cigaretteButtsKg: 1.2,
+    cigaretteButts: 3000,
+    volunteersCount: 8,
+    durationMinutes: 75,
+    eventStartTime: "09:00",
+    eventEndTime: "10:15",
+    notes: "Préparation validée.",
+    placeType: "Quai",
+    manualDrawing: {
+      kind: "polyline",
+      coordinates: [[48.871, 2.365], [48.872, 2.366]],
+    },
+    geometrySource: "routed",
+    submissionMode: "complete",
+    wasteBreakdown: {
+      recyclablesKg: 1.2,
+      glassKg: 0.8,
+      householdWasteKg: 1.5,
+      otherWasteKg: 0.7,
+    },
+    wasteMeasurementMethod: "balance_au_sol",
+    photos: [photo],
+    visionEstimate,
+  } satisfies CreateActionPayload;
+
+  const contractPayload = toContractCreatePayload(payload);
+  const normalized = normalizeCreatePayload(contractPayload);
+
+  expect(contractPayload).toMatchObject({
+    type: "action",
+    source: "web_form",
+    routeTopology: "point_to_point",
+    geometry: payload.manualDrawing,
+    dates: {
+      observedAt: payload.actionDate,
+      eventStartTime: payload.eventStartTime,
+      eventEndTime: payload.eventEndTime,
+    },
+    metadata: {
+      organizerId: payload.organizerId,
+      preparationData: payload.preparationData,
+      cigaretteButtsMeasurements: payload.cigaretteButtsMeasurements,
+      volunteerParticipation: payload.volunteerParticipation,
+      wasteBreakdown: payload.wasteBreakdown,
+      wasteMeasurementMethod: payload.wasteMeasurementMethod,
+      photos: payload.photos,
+      visionEstimate: payload.visionEstimate,
+    },
+  });
+  expect(normalized).toMatchObject(payload);
 });
 
 it("carries explicit department fields through the contract create adapter", () => {

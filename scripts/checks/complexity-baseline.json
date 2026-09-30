@@ -1375,19 +1375,19 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/lib/actions/contracts/contract-builders.ts",
-      "line": 198,
+      "line": 363,
       "category": "métier/domain pur",
-      "ceiling": 39,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "named:normalizeContractCreatePayload#1"
     },
     {
       "metric": "complexity",
       "path": "apps/web/src/lib/actions/contracts/contract-builders.ts",
-      "line": 270,
+      "line": 410,
       "category": "métier/domain pur",
-      "ceiling": 17,
-      "status": "LEGACY",
+      "ceiling": 2,
+      "status": "IMPROVED",
       "functionIdentity": "named:normalizeCreatePayload#1"
     },
     {
@@ -2356,10 +2356,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/lib/actions/action-editor-payload.ts",
-      "line": 9,
+      "line": 87,
       "category": "métier/domain pur",
-      "ceiling": 16,
-      "status": "LEGACY",
+      "ceiling": 5,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildActionEditorPayload#1"
     },
     {
@@ -4489,10 +4489,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/actions/action-editor-payload.ts",
-      "line": 9,
+      "line": 87,
       "category": "métier/domain pur",
-      "ceiling": 68,
-      "status": "LEGACY",
+      "ceiling": 29,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildActionEditorPayload#1"
     },
     {
@@ -4516,19 +4516,19 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/actions/contracts/contract-builders.ts",
-      "line": 89,
+      "line": 164,
       "category": "métier/domain pur",
-      "ceiling": 66,
-      "status": "LEGACY",
+      "ceiling": 17,
+      "status": "IMPROVED",
       "functionIdentity": "named:toContractCreatePayload#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/actions/contracts/contract-builders.ts",
-      "line": 198,
+      "line": 363,
       "category": "métier/domain pur",
-      "ceiling": 71,
-      "status": "LEGACY",
+      "ceiling": 8,
+      "status": "IMPROVED",
       "functionIdentity": "named:normalizeContractCreatePayload#1"
     },
     {
