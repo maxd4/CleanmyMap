@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeDisplayNameMode } from "@/lib/profiles";
 import { buildPublicStructureLeaderboard } from "./progression-structure-ranking";
 import { loadLeaderboardBatchData } from "./progression-ranking-batch";
+import { compareLeaderboardItems } from "./progression-ranking-comparison";
 import type {
   IndividualLeaderboardItem,
   LeaderboardMetric,
@@ -33,20 +34,6 @@ export function isPublicLeaderboardProfile(
   row: Pick<IndividualProfileRow, "display_name" | "display_name_mode" | "handle" | "leaderboard_public_opt_in">,
 ): boolean {
   return row.leaderboard_public_opt_in === true && Boolean(buildPublicLeaderboardLabel(row));
-}
-
-function comparePublicLabels(left: string, right: string): number {
-  return left.localeCompare(right, "fr-FR", { sensitivity: "base" }) || left.localeCompare(right);
-}
-
-export function compareLeaderboardItems(a: IndividualLeaderboardItem, b: IndividualLeaderboardItem, metric: LeaderboardMetric): number {
-  if (metric === "xp") {
-    return b.xpValidated - a.xpValidated || b.level - a.level || b.badgeTotal - a.badgeTotal || comparePublicLabels(a.publicLabel, b.publicLabel);
-  }
-  if (metric === "badges") {
-    return b.badgeTotal - a.badgeTotal || b.gradeCount - a.gradeCount || b.oneShotCount - a.oneShotCount || b.xpValidated - a.xpValidated || b.level - a.level || comparePublicLabels(a.publicLabel, b.publicLabel);
-  }
-  return b.level - a.level || b.xpValidated - a.xpValidated || b.badgeTotal - a.badgeTotal || comparePublicLabels(a.publicLabel, b.publicLabel);
 }
 
 export function compareIndividualLeaderboardItems(a: IndividualLeaderboardItem, b: IndividualLeaderboardItem, metric: LeaderboardMetric): number {

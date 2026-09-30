@@ -6,7 +6,7 @@ import { isCurrentActionValidated } from "./action-milestones";
 import { buildInfiniteGemGradeCatalog, ORGANISATION_GEM_CONFIG } from "./gem-progression";
 import { countCurrentLeaderboardBadgeFacts } from "./leaderboard-badges";
 import { computePotentialLevel } from "./progression-formulas";
-import { compareLeaderboardItems } from "./progression-ranking";
+import { compareLeaderboardItems } from "./progression-ranking-comparison";
 import type {
   ActionRow,
   LeaderboardMetric,

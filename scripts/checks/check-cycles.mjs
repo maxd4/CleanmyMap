@@ -27,7 +27,7 @@ export function cycleFingerprint(cycle) {
 }
 
 export function normalizeCycleReport(report) {
-  if (!report || report.status !== "clean" || report.enumeration !== "complete" || !Array.isArray(report.cycles)) {
+  if (!report || !["clean", "cycles_found"].includes(report.status) || report.enumeration !== "complete" || !Array.isArray(report.cycles)) {
     throw new Error("GitNexus cycle report malformed or incomplete.");
   }
   return report.cycles.map(cycleFingerprint).sort();
@@ -55,24 +55,38 @@ function assertBaselineFresh(baseline) {
   }
 }
 
-export function runCycleGate() {
+function parseCycleReport(stdout) {
+  const jsonStarts = [...stdout.matchAll(/\{\s*"status"\s*:/g)].map((match) => match.index ?? -1);
+  const jsonStart = jsonStarts.at(-1) ?? -1;
+  if (jsonStart < 0) throw new Error("GitNexus cycle check produced no JSON report.");
+  try {
+    return JSON.parse(stdout.slice(jsonStart));
+  } catch {
+    throw new Error("GitNexus cycle check JSON report is incomplete.");
+  }
+}
+
+export function formatCycleDiagnostic(cycle) {
+  const files = Array.isArray(cycle?.files) ? cycle.files.join(" -> ") : "unknown files";
+  return `files=${files}`;
+}
+
+export function runCycleGate({ runAudit = () => spawnSync(process.execPath, [auditScriptPath, "--cycles"], {
+  cwd: repositoryRoot,
+  encoding: "utf8",
+  windowsHide: true,
+}) } = {}) {
   if (!fs.existsSync(auditScriptPath)) throw new Error(`HOST_ENVIRONMENT: GitNexus audit script missing: ${auditScriptPath}.`);
   const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
   assertBaselineFresh(baseline);
-  const result = spawnSync(process.execPath, [auditScriptPath, "--cycles"], {
-    cwd: repositoryRoot,
-    encoding: "utf8",
-    windowsHide: true,
-  });
-  if (result.status !== 0) throw new Error(`GitNexus cycle check failed with exit ${result.status}: ${result.stderr || result.stdout}`);
-  const jsonStart = result.stdout.lastIndexOf("{\n  \"status\"");
-  if (jsonStart < 0) throw new Error("GitNexus cycle check produced no JSON report.");
-  const jsonEnd = result.stdout.indexOf("\n}", jsonStart);
-  if (jsonEnd < 0) throw new Error("GitNexus cycle check JSON report is incomplete.");
-  const report = JSON.parse(result.stdout.slice(jsonStart, jsonEnd + 2));
+  const result = runAudit();
+  const report = parseCycleReport(result.stdout ?? "");
+  if (result.status !== 0 && report.status !== "cycles_found") {
+    throw new Error(`GitNexus cycle check failed with exit ${result.status}: ${result.stderr || result.stdout}`);
+  }
   const cycles = normalizeCycleReport(report);
   const comparison = compareCycleBaseline(cycles, baseline.cycles);
-  return { report, cycles, comparison };
+  return { report, cycles, comparison, cycleObjects: report.cycles };
 }
 
 async function main() {
@@ -80,7 +94,8 @@ async function main() {
     const result = runCycleGate();
     console.log(`GitNexus cycles: ${result.cycles.length} current, ${result.comparison.added.length} new, ${result.comparison.stale.length} stale baseline entrie(s).`);
     if (result.comparison.added.length > 0 || result.comparison.stale.length > 0) {
-      for (const cycle of result.comparison.added) console.error(`NEW_CYCLE: ${cycle}`);
+      const cyclesByFingerprint = new Map(result.cycleObjects.map((cycle) => [cycleFingerprint(cycle), cycle]));
+      for (const cycle of result.comparison.added) console.error(`NEW_CYCLE: ${cycle} ${formatCycleDiagnostic(cyclesByFingerprint.get(cycle))}`);
       for (const cycle of result.comparison.stale) console.error(`STALE_CYCLE_BASELINE: ${cycle}`);
       process.exitCode = 1;
       return;
