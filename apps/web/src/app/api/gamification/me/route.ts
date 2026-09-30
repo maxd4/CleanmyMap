@@ -1,7 +1,7 @@
-import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { getUserProgression } from"@/lib/gamification/progression";
 import { loadPendingGamificationReconciliation } from"@/lib/gamification/gamification-reconciliation-notice";
+import { requireAuthenticatedAccess } from"@/lib/authz";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
@@ -11,10 +11,9 @@ const GAMIFICATION_ME_CACHE_HEADERS = {
  "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
 };
 export async function GET() {
- const { userId } = await auth();
- if (!userId) {
- return unauthorizedJsonResponse();
- }
+ const access = await requireAuthenticatedAccess();
+ if (!access.ok) return unauthorizedJsonResponse();
+ const { userId } = access;
 
  try {
  const supabase = getSupabaseServerClient(true);

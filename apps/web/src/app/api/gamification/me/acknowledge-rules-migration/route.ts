@@ -1,5 +1,5 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { requireAuthenticatedAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
@@ -8,8 +8,9 @@ import { CURRENT_GAMIFICATION_RULES_REVISION } from "@/lib/gamification/progress
 export const runtime = "nodejs";
 
 export async function POST() {
-  const { userId } = await auth();
-  if (!userId) return unauthorizedJsonResponse();
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) return unauthorizedJsonResponse();
+  const { userId } = access;
 
   try {
     const supabase = getSupabaseServerClient(true);
