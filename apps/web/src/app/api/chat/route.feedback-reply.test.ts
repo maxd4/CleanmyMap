@@ -3,6 +3,7 @@ import {
   buildSupabaseMock,
   type ChatMessageRow,
 } from "./route.test.helpers";
+import { POST } from "./route";
 
 vi.mock("server-only", () => ({}));
 
@@ -138,8 +139,6 @@ describe("POST /api/chat — réponse privée à un feedback", () => {
 
   it("délègue la réponse complète à la RPC atomique avec la cible canonique", async () => {
     const supabaseMock = configureFeedbackRoute({});
-    const { POST } = await import("./route");
-
     const response = await POST(feedbackRequest());
 
     expect(response.status).toBe(201);
@@ -158,8 +157,6 @@ describe("POST /api/chat — réponse privée à un feedback", () => {
 
   it("refuse un non-admin avant l'appel de la RPC", async () => {
     const supabaseMock = configureFeedbackRoute({ activeRole: "elu" });
-    const { POST } = await import("./route");
-
     const response = await POST(feedbackRequest());
 
     expect(response.status).toBe(403);
@@ -168,8 +165,6 @@ describe("POST /api/chat — réponse privée à un feedback", () => {
 
   it("refuse un feedback sans auteur canonique", async () => {
     const supabaseMock = configureFeedbackRoute({ submittedByUserId: "unknown" });
-    const { POST } = await import("./route");
-
     const response = await POST(feedbackRequest());
 
     expect(response.status).toBe(403);
@@ -178,8 +173,6 @@ describe("POST /api/chat — réponse privée à un feedback", () => {
 
   it("refuse un destinataire spoofé avant toute écriture", async () => {
     const supabaseMock = configureFeedbackRoute({});
-    const { POST } = await import("./route");
-
     const response = await POST(feedbackRequest({ recipientId: "user-3" }));
 
     expect(response.status).toBe(403);
@@ -204,8 +197,6 @@ describe("POST /api/chat — réponse privée à un feedback", () => {
         return { data: { already_processed: false, message }, error: null };
       }),
     });
-    const { POST } = await import("./route");
-
     expect((await POST(feedbackRequest())).status).toBe(201);
     expect((await POST(feedbackRequest())).status).toBe(201);
     expect(supabaseMock.serviceRpc).toHaveBeenCalledTimes(2);
@@ -220,8 +211,6 @@ describe("POST /api/chat — réponse privée à un feedback", () => {
         error: { message: "atomic transaction failed" },
       }),
     });
-    const { POST } = await import("./route");
-
     const response = await POST(feedbackRequest());
 
     expect(response.status).toBe(500);
@@ -234,8 +223,6 @@ describe("POST /api/chat — réponse privée à un feedback", () => {
     createChatNotificationsForMessageMock.mockRejectedValueOnce(
       new Error("notification unavailable"),
     );
-    const { POST } = await import("./route");
-
     const response = await POST(feedbackRequest());
 
     expect(response.status).toBe(201);
