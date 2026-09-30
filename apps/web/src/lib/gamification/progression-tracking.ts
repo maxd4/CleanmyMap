@@ -41,6 +41,92 @@ async function syncOrganizersProgression(
   );
 }
 
+function calculateProgressionTotals(
+  rows: Array<{ status_phase: ProgressionStatusPhase; xp_awarded: number }>,
+) {
+  return rows.reduce(
+    (totals, row) => {
+      const xp = toFloat(row.xp_awarded, 0);
+      totals.xpTotal += xp;
+      if (row.status_phase === "pending") totals.xpPending += xp;
+      if (row.status_phase === "validated") totals.xpValidated += xp;
+      return totals;
+    },
+    { xpTotal: 0, xpPending: 0, xpValidated: 0 },
+  );
+}
+
+async function loadPreviousLevelAndNotify(
+  supabase: SupabaseClient,
+  userId: string,
+  currentLevel: number,
+): Promise<number> {
+  try {
+    const { data: existingProfile } = await supabase
+      .from("progression_profiles")
+      .select("current_level")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const previousLevel = (existingProfile as { current_level?: number | null } | null)?.current_level ?? 1;
+    if (currentLevel > previousLevel) {
+      await supabase.from("app_notifications").insert({
+        user_id: userId,
+        type: "system",
+        title: "Niveau Supérieur ! 🏆",
+        content: `Félicitations ! Vous avez atteint le niveau ${currentLevel}. Votre impact sur CleanMyMap grandit !`,
+        payload: { oldLevel: previousLevel, newLevel: currentLevel },
+      });
+    }
+    return previousLevel;
+  } catch (notifError) {
+    logFailure("Gamification/LevelUp", "Notification write skipped", notifError, { userId });
+    return 1;
+  }
+}
+
+async function upsertProgressionProfile(
+  supabase: SupabaseClient,
+  userId: string,
+  totals: { xpTotal: number; xpPending: number; xpValidated: number },
+  currentLevel: number,
+  potentialLevel: number,
+) {
+  const upsert = await supabase.from("progression_profiles").upsert(
+    {
+      user_id: userId,
+      xp_total: totals.xpTotal,
+      xp_pending: totals.xpPending,
+      xp_validated: totals.xpValidated,
+      current_level: currentLevel,
+      potential_level: potentialLevel,
+      current_applied_rules_revision: CURRENT_GAMIFICATION_RULES_REVISION,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+  if (upsert.error) throw new Error(upsert.error.message);
+}
+
+async function announceLevelUp(
+  supabase: SupabaseClient,
+  userId: string,
+  previousLevel: number,
+  currentLevel: number,
+) {
+  if (currentLevel <= previousLevel) return;
+  await broadcastGamificationAnnouncement(supabase, {
+    type: "level_up",
+    userId,
+    previousLevel,
+    newLevel: currentLevel,
+    title: "Niveau Supérieur ! 🏆",
+    message: `Félicitations ! Vous avez atteint le niveau ${currentLevel}. Votre impact sur CleanMyMap grandit !`,
+    icon: "🏆",
+    source: "progression-tracking",
+    dedupeKey: `level_up:${userId}:${currentLevel}`,
+  });
+}
+
 export async function refreshProgressionProfile(
   supabase: SupabaseClient,
   userId: string,
@@ -69,84 +155,13 @@ export async function refreshProgressionProfile(
     (eventsResult.data as Array<{ status_phase: ProgressionStatusPhase; xp_awarded: number }>) ??
     [];
 
-  let xpTotal = 0;
-  let xpPending = 0;
-  let xpValidated = 0;
+  const totals = calculateProgressionTotals(rows);
 
-  for (const row of rows) {
-    const xp = toFloat(row.xp_awarded, 0);
-    xpTotal += xp;
-    if (row.status_phase === "pending") {
-      xpPending += xp;
-    }
-    if (row.status_phase === "validated") {
-      xpValidated += xp;
-    }
-  }
-
-  const potentialLevel = computePotentialLevel(xpValidated);
-  const currentLevel = computeCurrentLevel(xpValidated, stats);
-  let previousLevel = 1;
-
-  // --- Level Up Detection ---
-  try {
-    const { data: existingProfile } = await supabase
-      .from("progression_profiles")
-      .select("current_level")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    previousLevel = (existingProfile as { current_level?: number | null } | null)?.current_level ?? 1;
-
-    const didLevelUp = currentLevel > previousLevel;
-
-    if (didLevelUp) {
-      await supabase.from("app_notifications").insert({
-        user_id: userId,
-        type: "system",
-        title: "Niveau Supérieur ! 🏆",
-        content: `Félicitations ! Vous avez atteint le niveau ${currentLevel}. Votre impact sur CleanMyMap grandit !`,
-        payload: { oldLevel: previousLevel, newLevel: currentLevel },
-      });
-    }
-  } catch (notifError) {
-    logFailure("Gamification/LevelUp", "Notification write skipped", notifError, {
-      userId,
-    });
-  }
-  // --- End Level Up Detection ---
-
-  const upsert = await supabase.from("progression_profiles").upsert(
-    {
-      user_id: userId,
-      xp_total: xpTotal,
-      xp_pending: xpPending,
-      xp_validated: xpValidated,
-      current_level: currentLevel,
-      potential_level: potentialLevel,
-      current_applied_rules_revision: CURRENT_GAMIFICATION_RULES_REVISION,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
-
-  if (upsert.error) {
-    throw new Error(upsert.error.message);
-  }
-
-  if (currentLevel > previousLevel) {
-    await broadcastGamificationAnnouncement(supabase, {
-      type: "level_up",
-      userId,
-      previousLevel,
-      newLevel: currentLevel,
-      title: "Niveau Supérieur ! 🏆",
-      message: `Félicitations ! Vous avez atteint le niveau ${currentLevel}. Votre impact sur CleanMyMap grandit !`,
-      icon: "🏆",
-      source: "progression-tracking",
-      dedupeKey: `level_up:${userId}:${currentLevel}`,
-    });
-  }
+  const potentialLevel = computePotentialLevel(totals.xpValidated);
+  const currentLevel = computeCurrentLevel(totals.xpValidated, stats);
+  const previousLevel = await loadPreviousLevelAndNotify(supabase, userId, currentLevel);
+  await upsertProgressionProfile(supabase, userId, totals, currentLevel, potentialLevel);
+  await announceLevelUp(supabase, userId, previousLevel, currentLevel);
 }
 
 export async function trackActionCreated(

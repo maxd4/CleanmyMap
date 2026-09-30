@@ -271,146 +271,123 @@ export async function loadConfirmedParticipantImpactAttributions(
   });
 }
 
+type ParticipationHistoryContext = {
+  actionIds: string[];
+  actionById: Map<string, ActionPreviewRow>;
+  registrationRows: ActionRegistrationStatusRow[];
+  participationRows: ActionParticipantRecordRow[];
+  participantImpactByActionId: Awaited<ReturnType<typeof loadParticipantImpactAttributions>>;
+  participantCounts: Map<string, number>;
+  participantSummaryByActionId: Map<string, ActionParticipantSummary>;
+};
+
+async function loadParticipationHistorySources(
+  supabase: SupabaseClient,
+  params: { userId: string; limit: number },
+) {
+  const [registrationResult, participationResult] = await Promise.all([
+    supabase.from("action_registrations")
+      .select("action_id, created_at, registered_at, updated_at, registration_status, registration_source")
+      .eq("user_id", params.userId).order("updated_at", { ascending: false })
+      .order("registered_at", { ascending: false }).limit(params.limit),
+    supabase.from("action_participants")
+      .select(`user_id, action_id, created_at, joined_at, updated_at, participation_status, participation_source, ${INDIVIDUAL_IMPACT_SELECT}`)
+      .eq("user_id", params.userId).order("updated_at", { ascending: false })
+      .order("joined_at", { ascending: false }).limit(params.limit),
+  ]);
+  if (registrationResult.error) throw new Error(registrationResult.error.message);
+  if (participationResult.error) throw new Error(participationResult.error.message);
+  return {
+    registrationRows: (registrationResult.data ?? []) as ActionRegistrationStatusRow[],
+    participationRows: (participationResult.data ?? []) as unknown as ActionParticipantRecordRow[],
+  };
+}
+
+async function loadParticipationHistoryContext(
+  supabase: SupabaseClient,
+  params: { userId: string; limit: number },
+): Promise<ParticipationHistoryContext | null> {
+  const sources = await loadParticipationHistorySources(supabase, params);
+  if (sources.registrationRows.length === 0 && sources.participationRows.length === 0) return null;
+  const actionIds = [...new Set([
+    ...sources.registrationRows.map((row) => row.action_id),
+    ...sources.participationRows.map((row) => row.action_id),
+  ])];
+  const actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
+    query.select(ACTION_PREVIEW_COLUMNS).in("id", actionIds),
+  );
+  const actionById = new Map(actions.map((action) => [action.id, action] as const));
+  const finalActionIds = actionIds.filter((actionId) => {
+    const action = actionById.get(actionId);
+    return action && !usesRegistrationStore(action.action_phase);
+  });
+  const participantImpactByActionId = await loadParticipantImpactAttributions(supabase, actionById, finalActionIds);
+  const participantCounts = new Map<string, number>();
+  const participantSummaryByActionId = new Map<string, ActionParticipantSummary>();
+  const summaries = await loadActionParticipantSummaries(supabase, { actionIds, userId: params.userId });
+  for (const summary of summaries) {
+    participantCounts.set(summary.actionId, summary.activeCount);
+    participantSummaryByActionId.set(summary.actionId, summary);
+  }
+  return { actionIds, actionById, ...sources, participantImpactByActionId, participantCounts, participantSummaryByActionId };
+}
+
+function buildActionHistoryItems(
+  context: ParticipationHistoryContext,
+  actionId: string,
+): JoinableActionHistoryItem[] {
+  const action = context.actionById.get(actionId);
+  if (!action) return [];
+  const registrations = context.registrationRows.filter((row) => row.action_id === actionId);
+  const participations = context.participationRows.filter((row) => row.action_id === actionId);
+  const records = usesRegistrationStore(action.action_phase)
+    ? registrations.map((registration) => ({
+        status: registration.registration_status, source: registration.registration_source,
+        joinedAt: resolveRegisteredAt(registration), updatedAt: resolveRegistrationUpdatedAt(registration),
+      }))
+    : participations.map((participation) => ({
+        status: participation.participation_status, source: participation.participation_source,
+        joinedAt: resolveJoinedAt(participation), updatedAt: resolveParticipationUpdatedAt(participation),
+        participantId: participation.user_id, individualImpact: toIndividualImpactMeasurement(participation),
+      }));
+  const metadata = extractActionMetadataFromNotes(action.notes);
+  return records.map((record) => {
+    const publicAction = { ...action };
+    delete publicAction.preparation_data;
+    return {
+      ...publicAction,
+      actionTitle: getActionTitle(action), actionPhase: action.action_phase ?? "post_action_complete",
+      participantsCount: context.participantCounts.get(action.id) ?? 0,
+      joined: record.status === ACTIVE_PARTICIPATION_STATUS,
+      awaitingApproval: record.status === PENDING_PARTICIPATION_STATUS,
+      joinedAt: record.joinedAt, participationStatus: record.status, participationSource: record.source,
+      participationUpdatedAt: record.updatedAt, groupJoinEnabled: metadata.groupJoinEnabled,
+      pendingRequestsCount: Math.max(0, (context.participantSummaryByActionId.get(action.id)?.totalCount ?? 0) - (context.participantCounts.get(action.id) ?? 0)),
+      individualImpact: "individualImpact" in record ? record.individualImpact : null,
+      personalImpactAttribution: "participantId" in record
+        ? context.participantImpactByActionId.get(action.id)?.get(record.participantId) ?? null
+        : null,
+    } satisfies JoinableActionHistoryItem;
+  });
+}
+
+function buildParticipationHistory(
+  context: ParticipationHistoryContext,
+  limit: number,
+): JoinableActionHistoryItem[] {
+  return context.actionIds.flatMap((actionId) => buildActionHistoryItems(context, actionId))
+    .sort((left, right) => (right.participationUpdatedAt ?? "").localeCompare(left.participationUpdatedAt ?? ""))
+    .slice(0, limit);
+}
+
 export async function loadUserParticipationHistory(
   supabase: SupabaseClient,
-  params: {
-    userId: string;
-    limit: number;
-  },
+  params: { userId: string; limit: number },
 ): Promise<JoinableActionHistoryItem[]> {
   try {
-    if (params.limit <= 0) {
-      return [];
-    }
-
-    const [registrationResult, participationResult] = await Promise.all([
-      supabase
-        .from("action_registrations")
-        .select(
-          "action_id, created_at, registered_at, updated_at, registration_status, registration_source",
-        )
-        .eq("user_id", params.userId)
-        .order("updated_at", { ascending: false })
-        .order("registered_at", { ascending: false })
-        .limit(params.limit),
-      supabase
-        .from("action_participants")
-        .select(`user_id, action_id, created_at, joined_at, updated_at, participation_status, participation_source, ${INDIVIDUAL_IMPACT_SELECT}`)
-        .eq("user_id", params.userId)
-        .order("updated_at", { ascending: false })
-        .order("joined_at", { ascending: false })
-        .limit(params.limit),
-    ]);
-
-    if (registrationResult.error) {
-      throw new Error(registrationResult.error.message);
-    }
-    if (participationResult.error) {
-      throw new Error(participationResult.error.message);
-    }
-
-    const registrationRows = (registrationResult.data ?? []) as ActionRegistrationStatusRow[];
-    const participationRows = (participationResult.data ?? []) as unknown as ActionParticipantRecordRow[];
-
-    if (registrationRows.length === 0 && participationRows.length === 0) {
-      return [];
-    }
-
-    const actionIds = [
-      ...new Set([
-        ...registrationRows.map((row) => row.action_id),
-        ...participationRows.map((row) => row.action_id),
-      ]),
-    ];
-    const actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
-      query.select(ACTION_PREVIEW_COLUMNS).in("id", actionIds),
-    );
-    const actionById = new Map(actions.map((action) => [action.id, action] as const));
-
-    const finalActionIds = actionIds.filter((actionId) => {
-      const action = actionById.get(actionId);
-      return action && !usesRegistrationStore(action.action_phase);
-    });
-    const participantImpactByActionId = await loadParticipantImpactAttributions(
-      supabase,
-      actionById,
-      finalActionIds,
-    );
-
-    const participantCounts = new Map<string, number>();
-    const participantSummaryByActionId = new Map<string, ActionParticipantSummary>();
-    const participantSummaries = await loadActionParticipantSummaries(supabase, {
-      actionIds,
-      userId: params.userId,
-    });
-    for (const summary of participantSummaries) {
-      participantCounts.set(summary.actionId, summary.activeCount);
-      participantSummaryByActionId.set(summary.actionId, summary);
-    }
-
-    const history = actionIds.flatMap((actionId) => {
-      const action = actionById.get(actionId);
-      if (!action) {
-        return [];
-      }
-
-      const usesRegistrationHistory = usesRegistrationStore(action.action_phase);
-      const registrations = registrationRows.filter((row) => row.action_id === actionId);
-      const participations = participationRows.filter((row) => row.action_id === actionId);
-      const records = usesRegistrationHistory
-        ? registrations.map((registration) => ({
-            status: registration.registration_status,
-            source: registration.registration_source,
-            joinedAt: resolveRegisteredAt(registration),
-            updatedAt: resolveRegistrationUpdatedAt(registration),
-          }))
-        : participations.map((participation) => ({
-            status: participation.participation_status,
-            source: participation.participation_source,
-            joinedAt: resolveJoinedAt(participation),
-            updatedAt: resolveParticipationUpdatedAt(participation),
-            participantId: participation.user_id,
-            individualImpact: toIndividualImpactMeasurement(participation),
-          }));
-
-      return records.map((record) => {
-        const metadata = extractActionMetadataFromNotes(action.notes);
-        const publicAction = { ...action };
-        delete publicAction.preparation_data;
-        const joined = record.status === ACTIVE_PARTICIPATION_STATUS;
-        const awaitingApproval = record.status === PENDING_PARTICIPATION_STATUS;
-        return {
-          ...publicAction,
-          actionTitle: getActionTitle(action),
-          actionPhase: action.action_phase ?? "post_action_complete",
-          participantsCount: participantCounts.get(action.id) ?? 0,
-          joined,
-          awaitingApproval,
-          joinedAt: record.joinedAt,
-          participationStatus: record.status,
-          participationSource: record.source,
-          participationUpdatedAt: record.updatedAt,
-          groupJoinEnabled: metadata.groupJoinEnabled,
-          pendingRequestsCount: Math.max(
-            0,
-            (participantSummaryByActionId.get(action.id)?.totalCount ?? 0) -
-              (participantCounts.get(action.id) ?? 0),
-          ),
-          individualImpact:
-            "individualImpact" in record ? record.individualImpact : null,
-          personalImpactAttribution:
-            "participantId" in record
-              ? participantImpactByActionId.get(action.id)?.get(record.participantId) ?? null
-              : null,
-        } satisfies JoinableActionHistoryItem;
-      });
-    });
-
-    return history
-      .sort((left, right) =>
-        (right.participationUpdatedAt ?? "").localeCompare(left.participationUpdatedAt ?? ""),
-      )
-      .slice(0, params.limit);
+    if (params.limit <= 0) return [];
+    const context = await loadParticipationHistoryContext(supabase, params);
+    return context ? buildParticipationHistory(context, params.limit) : [];
   } catch (error) {
     console.warn("[group-participation] unable to load participation history", {
       userId: params.userId,

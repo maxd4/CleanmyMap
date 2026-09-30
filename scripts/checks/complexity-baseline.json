@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "425a62e9555e2fb5bcbe1facca7483e34b541d0a",
+  "sourceCommit": "cb428258e75e5e923d796cad3754062b5b6ad235",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -52,10 +52,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/app/api/actions/[actionId]/cancel/route.ts",
-      "line": 26,
+      "line": 162,
       "category": "routes API",
-      "ceiling": 24,
-      "status": "LEGACY",
+      "ceiling": 8,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -142,10 +142,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/app/api/chat/search/route.ts",
-      "line": 107,
+      "line": 327,
       "category": "routes API",
-      "ceiling": 20,
-      "status": "LEGACY",
+      "ceiling": 8,
+      "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
     {
@@ -160,10 +160,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/app/api/community/events/ops/route.ts",
-      "line": 124,
+      "line": 345,
       "category": "routes API",
-      "ceiling": 35,
-      "status": "LEGACY",
+      "ceiling": 14,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2448,8 +2448,8 @@
       "path": "apps/web/src/app/api/actions/[actionId]/cancel/route.ts",
       "line": 26,
       "category": "routes API",
-      "ceiling": 128,
-      "status": "LEGACY",
+      "ceiling": 65,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2599,19 +2599,19 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/admin/moderation/route.test.action-form-scenario.ts",
-      "line": 5,
+      "line": 106,
       "category": "tests",
-      "ceiling": 178,
-      "status": "LEGACY",
+      "ceiling": 22,
+      "status": "IMPROVED",
       "functionIdentity": "named:registerActionFormScenario#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/admin/moderation/route.test.action-form-scenario.ts",
-      "line": 19,
+      "line": 117,
       "category": "tests",
-      "ceiling": 164,
-      "status": "LEGACY",
+      "ceiling": 11,
+      "status": "IMPROVED",
       "functionIdentity": "callback:it:1:\"updates action form fields and status in one admin operation\"#1"
     },
     {
@@ -2716,19 +2716,19 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/chat/route.test.helpers.ts",
-      "line": 40,
+      "line": 69,
       "category": "tests",
-      "ceiling": 195,
-      "status": "LEGACY",
+      "ceiling": 179,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildSupabaseMock#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/chat/search/route.ts",
-      "line": 107,
+      "line": 327,
       "category": "routes API",
-      "ceiling": 200,
-      "status": "LEGACY",
+      "ceiling": 37,
+      "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
     {
@@ -2752,10 +2752,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/community/events/ops/route.ts",
-      "line": 124,
+      "line": 345,
       "category": "routes API",
-      "ceiling": 177,
-      "status": "LEGACY",
+      "ceiling": 61,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2824,10 +2824,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/reports/generations/route.ts",
-      "line": 39,
+      "line": 191,
       "category": "routes API",
-      "ceiling": 140,
-      "status": "LEGACY",
+      "ceiling": 35,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -4624,7 +4624,7 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/actions/participation/group-participation-read.ts",
-      "line": 74,
+      "line": 79,
       "category": "métier/domain pur",
       "ceiling": 63,
       "status": "LEGACY",
@@ -4633,10 +4633,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/actions/participation/group-participation-read.ts",
-      "line": 145,
+      "line": 383,
       "category": "métier/domain pur",
-      "ceiling": 121,
-      "status": "LEGACY",
+      "ceiling": 17,
+      "status": "IMPROVED",
       "functionIdentity": "named:loadUserParticipationHistory#1"
     },
     {
@@ -4930,10 +4930,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/environmental-impact-estimator/codex-usage-store.ts",
-      "line": 364,
+      "line": 417,
       "category": "runtime/services/orchestration",
-      "ceiling": 117,
-      "status": "LEGACY",
+      "ceiling": 41,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildCodexMonthlyUsageEstimate#1"
     },
     {
@@ -5029,10 +5029,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/gamification/progression-tracking.ts",
-      "line": 23,
+      "line": 130,
       "category": "métier/domain pur",
-      "ceiling": 85,
-      "status": "LEGACY",
+      "ceiling": 29,
+      "status": "IMPROVED",
       "functionIdentity": "named:refreshProgressionProfile#1"
     },
     {
