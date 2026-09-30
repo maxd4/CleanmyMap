@@ -24,6 +24,7 @@ type QueryCall = {
   method: "range" | "limit";
   from?: number;
   to?: number;
+  orders: string[];
   filters: Array<{ kind: "eq" | "in"; column: string; value: string | string[] }>;
 };
 
@@ -62,7 +63,7 @@ function buildBatchSupabase(fixture: Fixture) {
       return result;
     };
     const result = (method: QueryCall["method"], from?: number, to?: number) => {
-      calls.push({ table, method, from, to, filters: [...filters] });
+      calls.push({ table, method, from, to, orders: [...orders], filters: [...filters] });
       const source = rows();
       return {
         data: method === "range" ? source.slice(from, (to ?? source.length - 1) + 1) : source,
@@ -159,6 +160,16 @@ describe("batch user leaderboard source", () => {
     expect(rows).toHaveLength(32);
     expect(calls.filter((call) => call.table === "progression_profiles" && call.method === "range")).toHaveLength(1);
     expect(calls.filter((call) => call.table === "progression_events" && call.method === "range")).toHaveLength(1);
+    expect(calls.find((call) => call.table === "progression_profiles")?.orders).toEqual(["user_id"]);
+    expect(calls.find((call) => call.table === "progression_profiles")?.orders).not.toContain("id");
+    expect(calls.find((call) => call.table === "progression_events")?.orders).toEqual(["user_id", "id"]);
+    expect(calls.find((call) => call.table === "profiles")?.orders).toEqual(["id"]);
+    expect(calls.find((call) => call.table === "actions")?.orders).toEqual(["created_by_clerk_id", "id"]);
+    expect(calls.find((call) => call.table === "action_organizers")?.orders).toEqual(["organizer_clerk_id", "id"]);
+    expect(calls.find((call) => call.table === "action_participants")?.orders).toEqual(["user_id", "id"]);
+    expect(calls.find((call) => call.table === "user_visited_places")?.orders).toEqual(["user_id", "id"]);
+    expect(calls.find((call) => call.table === "quiz_type_progress")?.orders).toEqual(["user_id", "id"]);
+    expect(calls.find((call) => call.table === "trash_spotter_spots")?.orders).toEqual(["user_id", "id"]);
     expect(calls.some((call) => call.table === "gamification_catalog")).toBe(false);
   });
 
@@ -172,13 +183,19 @@ describe("batch user leaderboard source", () => {
     ];
     fixture.action_organizers = [{ id: "organizer-1", action_id: "organized", organizer_clerk_id: "user-1" }];
     fixture.forms = fixture.actions.map((action) => buildValidatedForm(String(action.id)));
-    const { supabase } = buildBatchSupabase(fixture);
+    const { supabase, calls } = buildBatchSupabase(fixture);
 
     const currentRows = await loadActionRowsForUser(supabase as never, "user-1");
     expect(new Set(currentRows.map((row) => row.id))).toEqual(new Set(["spontaneous-owned", "organized"]));
 
+    const callCountBeforeBatch = calls.length;
     const batch = await loadLeaderboardBatchData(supabase as never);
     expect(batch.badgeCounts.get("user-1")).toEqual({ badgeTotal: 2, gradeCount: 2, oneShotCount: 0 });
+    expect(calls.slice(callCountBeforeBatch).filter((call) => call.table === "actions").map((call) => call.orders)).toEqual([
+      ["created_by_clerk_id", "id"],
+      ["id"],
+    ]);
+    expect(calls.slice(callCountBeforeBatch).find((call) => call.table === "forms")?.orders).toEqual(["action_id", "id"]);
   });
 
   it.each([
