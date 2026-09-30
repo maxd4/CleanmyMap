@@ -156,6 +156,44 @@ pas changer sans décision fonctionnelle distincte :
 Pour le réseau, SQL, concurrence, transactions, navigateur, lifecycle et
 orchestration, caractériser le comportement avant de déplacer la logique.
 
+### Routes API et services backend
+
+Pour une route API, conserver un handler lisible qui orchestre les étapes dans
+leur ordre observable :
+
+```text
+AuthN/AuthZ
+→ parsing et validation
+→ appel métier
+→ audit et autres effets de bord
+→ mapping de la réponse
+```
+
+Les sous-responsabilités peuvent être extraites lorsqu'elles forment une unité
+cohérente : parsing du payload, validation d'une règle, chargement autorisé,
+construction d'un scope ou d'un DTO, mapping d'erreur, persistance ou audit.
+L'extraction ne doit ni déplacer une décision d'autorisation hors de sa
+frontière serveur, ni changer l'ordre des mutations, des audits, des
+revalidations ou de la libération d'une réservation.
+
+Pour un service backend, privilégier des frontières explicites entre lectures,
+projections pures, normalisation, mutation et persistance. Les fonctions pures
+ne doivent pas recréer une source de vérité pour les participants, les scopes,
+les événements, les identifiants ou les calculs d'usage ; elles préparent les
+données pour la primitive déjà canonique.
+
+Les helpers de tests suivent les mêmes frontières : factories pour les états,
+builders pour les requêtes et helpers d'assertion pour les invariants. Réduire
+la longueur d'un scénario ne justifie jamais la suppression d'un cas métier.
+
+Ces conventions ont été appliquées aux dernières cibles backend de la baseline
+de complexité, notamment les routes d'annulation d'action, de recherche chat,
+d'opérations d'événement et de génération de rapport, ainsi qu'aux services de
+participation, d'usage Codex et de progression. Les contrats HTTP, AuthN/AuthZ,
+les règles métier et les effets de bord restent définis par le code et les
+contrats spécialisés ; cette section documente seulement leurs frontières de
+découpage.
+
 ## Méthode de travail
 
 Traiter une cible principale à la fois.
