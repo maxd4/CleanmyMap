@@ -21,26 +21,15 @@ import type { CommunityEventItem } from "@/lib/community/http";
 
 import { normalizeListType } from "./helpers";
 import { average, median } from "./math";
-import { buildRouteSteps, buildMonthRows, buildCalendarRows, buildExecutiveNarrative } from "./builders";
-import { toFrInt, toFrNumber } from "./formatters";
+import { buildCalendarRows, buildExecutiveNarrative } from "./builders";
 import {
   computeCommunityEngagementMetrics,
-  computeEnvironmentalProxyMetrics,
   computeMapCoverageMetrics,
 } from "./metrics";
-import { safeImageSource } from "@/lib/security/html-escape";
-
-function toActionImpactInput(item: ActionListItem): ActionImpactInput {
-  return item.contract ?? {
-    metadata: {
-      wasteKg: item.waste_kg,
-      cigaretteButts: item.cigarette_butts,
-      volunteersCount: item.volunteers_count,
-      durationMinutes: item.duration_minutes,
-      wasteBreakdown: item.waste_breakdown,
-    },
-  };
-}
+import {
+  buildReportProjections,
+  toActionImpactInput,
+} from "./compute-report-model.projections";
 
 function toMapImpactInput(item: ActionMapItem): ActionImpactInput {
   return item.contract ?? {
@@ -276,6 +265,97 @@ function computeAreaStats(mapApprovedActions: ActionMapItem[]) {
   return byArea;
 }
 
+type ReportAssemblyInput = {
+  now: Date;
+  approvedActions: ActionListItem[];
+  totals: ReturnType<typeof computeTotals>;
+  moderationStats: ReturnType<typeof computeModerationStats>;
+  mapMetrics: ReturnType<typeof computeMapMetrics>;
+  qualityMetrics: ReturnType<typeof computeQualityMetrics>;
+  byArea: ReturnType<typeof computeAreaStats>;
+  communityStats: ReturnType<typeof computeCommunityStats>;
+  projections: ReturnType<typeof buildReportProjections>;
+};
+
+function buildReportProjectionSections(
+  projections: ReportAssemblyInput["projections"],
+  now: Date,
+) {
+  return {
+    trendPercent: projections.trendPercent,
+    monthRows6: projections.monthRows6,
+    monthRows12: projections.monthRows12,
+    routeSteps: projections.routeSteps,
+    routeDistance: projections.routeDistance,
+    annualRows: projections.annualRows,
+    calendar: buildCalendarRows(now),
+    highlightPhotos: projections.highlightPhotos,
+    highlightActions: projections.highlightActions,
+  };
+}
+
+function buildReportSections(input: ReportAssemblyInput) {
+  const { mapMetrics, moderationStats, qualityMetrics, projections, totals } = input;
+  return {
+    generatedAt: new Intl.DateTimeFormat("fr-FR", {
+      dateStyle: "long",
+      timeStyle: "short",
+    }).format(input.now),
+    totals: {
+      actions: input.approvedActions.length,
+      kg: totals.totalKg,
+      knownWasteActions: totals.wasteKnownActions,
+      butts: totals.totalButts,
+      volunteers: totals.totalVolunteers,
+      hours: totals.totalHours,
+    },
+    map: {
+      points: mapMetrics.geolocatedCount,
+      traces: mapMetrics.traceCount,
+      polylines: mapMetrics.polylineCount,
+      polygons: mapMetrics.polygonCount,
+      geoCoverage: mapMetrics.geoCoverage,
+      traceCoverage: mapMetrics.traceCoverage,
+    },
+    moderation: moderationStats,
+    quality: {
+      completenessScore: qualityMetrics.completenessScore,
+      coherenceScore: qualityMetrics.coherenceScore,
+      freshnessDays: qualityMetrics.freshnessDays,
+      geolocRate: mapMetrics.geoCoverage,
+    },
+    areas: input.byArea,
+    ...buildReportProjectionSections(projections, input.now),
+    terrain: {
+      actionCount: mapMetrics.mapApprovedActions.length,
+      spotCount: mapMetrics.mapSpots.length,
+      cleanPlaceCount: mapMetrics.mapCleanPlaces.length,
+    },
+    recycling: {
+      recyclableKg: projections.environmental.recyclableKg,
+      triIndex: projections.environmental.triIndex,
+    },
+    climate: {
+      six: projections.climate6,
+      twelve: projections.climate12,
+      waterProtectedLiters: totals.waterSavedLiters,
+      co2AvoidedKg: totals.co2AvoidedKg,
+      streetCleaningSavings: totals.streetCleaningSavings,
+      streetCleaningSavingsEuros: totals.euroSaved,
+    },
+    community: input.communityStats,
+    impactMethodology: buildPersonalImpactMethodology(qualityMetrics.pollutionScoreAverage),
+  };
+}
+
+function assembleReportModel(input: ReportAssemblyInput): ReportModel {
+  const report = buildReportSections(input);
+  return {
+    ...report,
+    executive: buildExecutiveNarrative(report as Parameters<typeof buildExecutiveNarrative>[0]),
+  };
+}
+
 export function computeReportModel(input: ReportModelInput): ReportModel {
   const now = input.now ?? new Date();
   const nowMs = now.getTime();
@@ -295,159 +375,23 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
   const qualityMetrics = computeQualityMetrics(approvedActions, nowMs);
   const byArea = computeAreaStats(mapMetrics.mapApprovedActions);
   const communityStats = computeCommunityStats(allItems, approvedActions, events, now);
-
-  const currentFloor = nowMs - 30 * 24 * 60 * 60 * 1000;
-  const previousFloor = nowMs - 60 * 24 * 60 * 60 * 1000;
-  const currentActions = approvedActions.filter((item) => {
-    const timestamp = new Date(item.action_date).getTime();
-    return Number.isFinite(timestamp) && timestamp >= currentFloor;
-  });
-  const previousActions = approvedActions.filter((item) => {
-    const timestamp = new Date(item.action_date).getTime();
-    return Number.isFinite(timestamp) && timestamp >= previousFloor && timestamp < currentFloor;
-  });
-  const trendPercent =
-    previousActions.length > 0
-      ? ((currentActions.length - previousActions.length) / previousActions.length) * 100
-      : currentActions.length > 0
-      ? 100
-      : 0;
-
-  const monthRows = buildMonthRows(approvedActions);
-  const monthRows6 = monthRows.slice(-6);
-  const monthRows12 = monthRows.slice(-12);
-  const routeSteps = buildRouteSteps(mapMetrics.mapApprovedActions, 6);
-  const routeDistance = routeSteps.reduce((sum, step) => sum + step.segmentKm, 0);
-
-  const environmental = computeEnvironmentalProxyMetrics(totals.totalButts, totals.totalKg);
-
-  const sixMonthsFloor = nowMs - 183 * 24 * 60 * 60 * 1000;
-  const twelveMonthsFloor = nowMs - 365 * 24 * 60 * 60 * 1000;
-  const sixMonthsItems = approvedActions.filter((item) => {
-    const timestamp = new Date(item.action_date).getTime();
-    return Number.isFinite(timestamp) && timestamp >= sixMonthsFloor;
-  });
-  const twelveMonthsItems = approvedActions.filter((item) => {
-    const timestamp = new Date(item.action_date).getTime();
-    return Number.isFinite(timestamp) && timestamp >= twelveMonthsFloor;
+  const projections = buildReportProjections({
+    approvedActions,
+    mapApprovedActions: mapMetrics.mapApprovedActions,
+    byArea,
+    nowMs,
+    totals,
   });
 
-  const climate6 = {
-    actions: sixMonthsItems.length,
-    ...(() => {
-      const impact = sumActionImpactKpis(sixMonthsItems.map(toActionImpactInput));
-      return { kg: impact.wasteKg, butts: impact.butts };
-    })(),
-  };
-  const climate12 = {
-    actions: twelveMonthsItems.length,
-    ...(() => {
-      const impact = sumActionImpactKpis(twelveMonthsItems.map(toActionImpactInput));
-      return { kg: impact.wasteKg, butts: impact.butts };
-    })(),
-  };
-
-
-  const annualRows = byArea.slice(0, 8).map((row) => [
-    row.area,
-    toFrInt(row.actions),
-    `${toFrNumber(row.kg)} kg`,
-    toFrInt(row.butts),
-    `${toFrNumber(row.actions > 0 ? row.kg / row.actions : 0, 2)} kg/action`,
-  ]);
-
-  const highlightActions = approvedActions
-    .filter((item) => (item.contract?.metadata.photos?.length ?? 0) > 0)
-    .slice(0, 4)
-    .map((item) => ({
-      id: item.id,
-      label: item.location_label,
-      kg: computeActionImpactKpis(toActionImpactInput(item)).wasteKg,
-      butts: computeActionImpactKpis(toActionImpactInput(item)).butts,
-      photos: item.contract?.metadata.photos
-        ?.map((photo) => safeImageSource(photo.dataUrl))
-        .filter((url): url is string => Boolean(url)) ?? [],
-    }));
-
-  const highlightPhotos: Array<{ url: string; label: string; date: string }> = [];
-  highlightActions.forEach((action) => {
-    action.photos.slice(0, 2).forEach((photoUrl) => {
-      highlightPhotos.push({
-        url: photoUrl,
-        label: action.label,
-        date: approvedActions.find((a) => a.id === action.id)?.action_date ?? "",
-      });
-    });
+  return assembleReportModel({
+    now,
+    approvedActions,
+    totals,
+    moderationStats,
+    mapMetrics,
+    qualityMetrics,
+    byArea,
+    communityStats,
+    projections,
   });
-
-  const report = {
-    generatedAt: new Intl.DateTimeFormat("fr-FR", {
-      dateStyle: "long",
-      timeStyle: "short",
-    }).format(now),
-    totals: {
-      actions: approvedActions.length,
-      kg: totals.totalKg,
-      knownWasteActions: totals.wasteKnownActions,
-      butts: totals.totalButts,
-      volunteers: totals.totalVolunteers,
-      hours: totals.totalHours,
-    },
-    map: {
-      points: mapMetrics.geolocatedCount,
-      traces: mapMetrics.traceCount,
-      polylines: mapMetrics.polylineCount,
-      polygons: mapMetrics.polygonCount,
-      geoCoverage: mapMetrics.geoCoverage,
-      traceCoverage: mapMetrics.traceCoverage,
-    },
-    moderation: {
-      availability: moderationStats.availability,
-      pending: moderationStats.pending,
-      approved: moderationStats.approved,
-      rejected: moderationStats.rejected,
-      conversion: moderationStats.conversion,
-      delayDays: moderationStats.delayDays,
-    },
-    quality: {
-      completenessScore: qualityMetrics.completenessScore,
-      coherenceScore: qualityMetrics.coherenceScore,
-      freshnessDays: qualityMetrics.freshnessDays,
-      geolocRate: mapMetrics.geoCoverage,
-    },
-    areas: byArea,
-    trendPercent,
-    monthRows6,
-    monthRows12,
-    routeSteps,
-    routeDistance,
-    terrain: {
-      actionCount: mapMetrics.mapApprovedActions.length,
-      spotCount: mapMetrics.mapSpots.length,
-      cleanPlaceCount: mapMetrics.mapCleanPlaces.length,
-    },
-    recycling: {
-      recyclableKg: environmental.recyclableKg,
-      triIndex: environmental.triIndex,
-    },
-    climate: {
-      six: climate6,
-      twelve: climate12,
-      waterProtectedLiters: totals.waterSavedLiters,
-      co2AvoidedKg: totals.co2AvoidedKg,
-      streetCleaningSavings: totals.streetCleaningSavings,
-      streetCleaningSavingsEuros: totals.euroSaved,
-    },
-    community: communityStats,
-    impactMethodology: buildPersonalImpactMethodology(qualityMetrics.pollutionScoreAverage),
-    annualRows,
-    calendar: buildCalendarRows(now),
-    highlightPhotos: highlightPhotos.slice(0, 6),
-    highlightActions,
-  };
-
-  return {
-    ...report,
-    executive: buildExecutiveNarrative(report as Parameters<typeof buildExecutiveNarrative>[0]),
-  };
 }

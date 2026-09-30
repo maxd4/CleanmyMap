@@ -5,7 +5,11 @@ import {
   loadEnvironmentalImpactProjectSignals,
   PROJECT_SIGNAL_ROW_LIMIT,
 } from "./project-signals";
-import { normalizeCanonicalSpotRows } from "./project-signals.calculations";
+import {
+  buildProjectSignalsHighlights,
+  buildScopeInputFromRows,
+  normalizeCanonicalSpotRows,
+} from "./project-signals.calculations";
 import { summarizeFunnelRows } from "./project-signals-funnel";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
@@ -282,6 +286,40 @@ it("keeps the environmental signal result identical for the bounded funnel aggre
   expect(aggregateSignals.userInput).toEqual(rawSignals.userInput);
   expect(aggregateSignals.signalBreakdown).toEqual(rawSignals.signalBreakdown);
   expect(aggregateSignals.infrastructureInput.usage).toEqual(rawSignals.infrastructureInput.usage);
+});
+
+it("preserves the pure timeline and highlight projections for the current fixture", () => {
+  const scope = buildScopeInputFromRows(projectSignalsRows, {
+    userId: null,
+    fromMs: subDays(projectSignalsNow, 30).getTime(),
+    untilMs: projectSignalsNow.getTime(),
+  });
+  const highlights = buildProjectSignalsHighlights(projectSignalsRows);
+
+  expect(scope).toMatchObject({
+    pageViews: 2,
+    storedImages: 2,
+    apiRequests: 14,
+    pdfExports: 1,
+    maps: 2,
+    aiCalls: 1,
+    monthlyActiveUsers: 2,
+  });
+  expect(highlights.map(({ label, value }) => [label, value])).toEqual([
+    ["Pages vues CleanMyMap", 2],
+    ["Pages vues tunnel", 2],
+    ["Routes distinctes", 2],
+    ["Actions terrain", 2],
+    ["Images stockées", 3],
+    ["Exports PDF", 1],
+    ["Emails Resend", 3],
+    ["Événements communauté", 1],
+    ["RSVP communauté", 2],
+    ["Notifications app", 2],
+    ["Notifications non lues", 1],
+    ["Appels IA", 2],
+    ["Utilisateurs actifs", 2],
+  ]);
 });
 
 it("keeps the legacy view_new fallback in the aggregate path", () => {
