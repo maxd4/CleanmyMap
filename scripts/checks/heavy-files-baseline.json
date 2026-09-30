@@ -85,10 +85,10 @@
     {
       "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 851,
-      "maxBytes": 30807
+      "status": "IMPROVED",
+      "reviewedRef": "425a62e9555e2fb5bcbe1facca7483e34b541d0a",
+      "maxLines": 375,
+      "maxBytes": 12646
     },
     {
       "path": "apps/web/src/components/actions/action-declaration/payload.ts",
@@ -125,18 +125,18 @@
     {
       "path": "apps/web/src/components/actions/actions-map-canvas.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 529,
-      "maxBytes": 23043
+      "status": "IMPROVED",
+      "reviewedRef": "425a62e9555e2fb5bcbe1facca7483e34b541d0a",
+      "maxLines": 187,
+      "maxBytes": 7248
     },
     {
       "path": "apps/web/src/components/actions/map/popup/action-popup-content-header.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 792,
-      "maxBytes": 33740
+      "status": "IMPROVED",
+      "reviewedRef": "425a62e9555e2fb5bcbe1facca7483e34b541d0a",
+      "maxLines": 193,
+      "maxBytes": 6194
     },
     {
       "path": "apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts",
@@ -149,10 +149,10 @@
     {
       "path": "apps/web/src/components/actions/map/layers/map-layers-shape-layers.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 631,
-      "maxBytes": 24032
+      "status": "IMPROVED",
+      "reviewedRef": "425a62e9555e2fb5bcbe1facca7483e34b541d0a",
+      "maxLines": 94,
+      "maxBytes": 2825
     },
     {
       "path": "apps/web/src/components/admin/admin-dashboard-ui.tsx",
@@ -181,10 +181,10 @@
     {
       "path": "apps/web/src/components/dashboard/storage-usage-panel.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 577,
-      "maxBytes": 23980
+      "status": "IMPROVED",
+      "reviewedRef": "425a62e9555e2fb5bcbe1facca7483e34b541d0a",
+      "maxLines": 71,
+      "maxBytes": 2408
     },
     {
       "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
@@ -397,10 +397,10 @@
     {
       "path": "apps/web/src/lib/geo/greater-paris.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 660,
-      "maxBytes": 16393
+      "status": "IMPROVED",
+      "reviewedRef": "425a62e9555e2fb5bcbe1facca7483e34b541d0a",
+      "maxLines": 406,
+      "maxBytes": 9288
     },
     {
       "path": "apps/web/src/lib/geo/municipal-cleaning-serviceability.ts",
