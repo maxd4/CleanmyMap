@@ -23,6 +23,7 @@ import { GamificationCatalogPanel } from "./gamification-catalog-panel";
 import { GamificationRulesMigrationNotice } from "./gamification-rules-migration-notice";
 import { GamificationImpactPanel } from "./gamification-impact-panel";
 import { GamificationLevelProgressPanel } from "./gamification-level-progress-panel";
+import { GamificationReconciliationNotice } from "./gamification-reconciliation-notice";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { method: "GET", cache: "no-store" });
@@ -69,6 +70,14 @@ export function GamificationSection() {
           <HeroBlock fr={fr} />
 
           <div className="space-y-6">
+            <GamificationReconciliationNotice
+              reconciliation={meData?.reconciliation}
+              progression={progression}
+              locale={locale}
+              onAcknowledged={async () => {
+                await mutateMe();
+              }}
+            />
             <div className="grid gap-6 lg:grid-cols-2">
               <GamificationLevelProgressPanel
                 progression={progression}
