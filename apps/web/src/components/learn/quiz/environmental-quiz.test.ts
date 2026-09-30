@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { QUIZ_QUESTIONS } from "./environmental-quiz";
+import { buildNextReasoningTypeQuestions } from "./use-environmental-quiz-data";
 import {
   QUIZ_ACCESS_TYPES,
   getQuizAccessTypesForQuestion,
@@ -9,6 +10,20 @@ import {
 } from "@/lib/learning/quiz/quiz-access-types";
 import { getQuizTrapLevel, matchesQuizTrapLevel } from "@/lib/learning/quiz/quiz-trap-levels";
 import { QUIZ_REVIEW_TARGETS, getQuizReviewTarget } from "@/lib/learning/quiz/quiz-review-targets";
+import { getNextReasoningType } from "@/lib/learning/quiz/quiz-reasoning-types";
+
+function buildMiniChallenge(currentReasoningType: Parameters<typeof getNextReasoningType>[0], selectedAccessType: "terrain" | "tri-securite") {
+  const nextReasoningType = getNextReasoningType(currentReasoningType);
+  return {
+    nextReasoningType,
+    nextQuestions: buildNextReasoningTypeQuestions({
+      selectedAccessType,
+      selectedTrapLevel: null,
+      nextReasoningType,
+      srsData: {},
+    }),
+  };
+}
 
 describe("EnvironmentalQuiz", () => {
   const reasoningTypes = [
@@ -127,6 +142,23 @@ describe("EnvironmentalQuiz", () => {
     expect(QUIZ_QUESTIONS.some((question) => matchesQuizTrapLevel("medium", question))).toBe(true);
     expect(QUIZ_QUESTIONS.some((question) => matchesQuizTrapLevel("low", question))).toBe(true);
     expect(QUIZ_QUESTIONS.every((question) => matchesQuizTrapLevel(null, question))).toBe(true);
+  });
+
+  it("keeps the next-reasoning mini-challenge stocked from the full bank", () => {
+    const { nextReasoningType, nextQuestions } = buildMiniChallenge("idée reçue", "tri-securite");
+
+    expect(nextReasoningType).toBe("terrain");
+    expect(nextQuestions.length).toBeGreaterThan(0);
+    expect(nextQuestions.every((question) => question.reasoningType === nextReasoningType)).toBe(true);
+    expect(2 >= 2 && nextQuestions.length > 0).toBe(true);
+  });
+
+  it("does not offer a mini-challenge when the next reasoning deck is empty", () => {
+    const { nextReasoningType, nextQuestions } = buildMiniChallenge("cas-limites", "terrain");
+
+    expect(nextReasoningType).toBe("mini-enquetes");
+    expect(nextQuestions).toHaveLength(0);
+    expect(2 >= 2 && nextQuestions.length > 0).toBe(false);
   });
 
   it("rewrites the weakest questions as tricky true-false prompts", () => {

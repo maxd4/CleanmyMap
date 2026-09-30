@@ -7,6 +7,17 @@ import type { ChatShellNavigationState } from "@/components/chat/chat-navigation
 import { synchronizeConnectNavigationParams, useConnectData } from "./use-connect-data";
 import type { ConnectTab } from "./connect-types";
 
+export function getConnectShellNavigationStates(
+  activeTab: ConnectTab,
+  discussionNavigation: ChatShellNavigationState,
+  dmNavigation: ChatShellNavigationState,
+): { discussions: ChatShellNavigationState | null; dm: ChatShellNavigationState | null } {
+  return {
+    discussions: activeTab === "discussions" ? discussionNavigation : null,
+    dm: activeTab === "dm" ? dmNavigation : null,
+  };
+}
+
 type ConnectData = ReturnType<typeof useConnectData>;
 
 export function useConnectNavigation({

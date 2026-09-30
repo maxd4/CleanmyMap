@@ -10,7 +10,6 @@ import { useEnvironmentalQuizData } from "@/components/learn/quiz/use-environmen
 import { useEnvironmentalQuizMode } from "@/components/learn/quiz/use-environmental-quiz-mode";
 import { useEnvironmentalQuizProgress } from "@/components/learn/quiz/use-environmental-quiz-progress";
 import { getQuizStateFromStats, summarizeQuizStates, formatCognitiveDate } from "@/lib/learning/cognitive-principles";
-import { getNextReasoningType } from "@/lib/learning/quiz/quiz-reasoning-types";
 import type { QuizAccessTypeId } from "@/lib/learning/quiz/quiz-access-types";
 import type { QuizSchoolFormat, QuizSchoolLevel } from "@/lib/learning/quiz/school/quiz-school-types";
 import { readQuizPersonalProgress, type QuizPersonalProgressState } from "@/lib/learning/quiz/quiz-personal-progress";
@@ -84,14 +83,7 @@ export function EnvironmentalQuiz({
   const quizSummary = useMemo(() => summarizeQuizStates(effectiveSrsData, QUIZ_QUESTIONS.map((item) => item.id)), [effectiveSrsData]);
   const currentQuestionStats = question ? effectiveSrsData[question.id] : undefined;
   const currentQuestionState = useMemo(() => question ? getQuizStateFromStats(currentQuestionStats) : null, [currentQuestionStats, question]);
-  const nextReasoningType = useMemo(() => {
-    const current = mode.selectedReasoningType;
-    return current ? getNextReasoningType(current) : null;
-  }, [mode.selectedReasoningType]);
-  const nextReasoningTypeQuestions = useMemo(() => {
-    if (!mode.selectedAccessType || mode.selectedAccessType === "mixte" || !nextReasoningType) return [];
-    return data.filteredQuestions.filter((item) => item.reasoningType === nextReasoningType);
-  }, [data.filteredQuestions, mode.selectedAccessType, nextReasoningType]);
+  const { nextReasoningType, nextReasoningTypeQuestions } = data;
   const shouldOfferMiniChallenge = correctStreak >= 2 && nextReasoningType !== null && nextReasoningTypeQuestions.length > 0;
   const currentQuestionReviewDate = useMemo(() => formatCognitiveDate(currentQuestionStats?.next_review_at ?? null, locale), [currentQuestionStats, locale]);
   const currentQuestionSeenToday = useMemo(() => Boolean(currentQuestionStats?.last_seen_at?.includes(new Date().toISOString().split("T")[0])), [currentQuestionStats]);
