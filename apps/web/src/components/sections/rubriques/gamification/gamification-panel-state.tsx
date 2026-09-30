@@ -8,9 +8,17 @@ export type GamificationPanelProps = {
   locale: string;
 };
 
-export function GamificationPanelShell({ children }: { children: ReactNode }) {
+export function GamificationPanelShell({
+  children,
+  id,
+  tabIndex,
+}: {
+  children: ReactNode;
+  id?: string;
+  tabIndex?: number;
+}) {
   return (
-    <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
+    <section id={id} tabIndex={tabIndex} className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c51f1f] lg:p-7">
       {children}
     </section>
   );

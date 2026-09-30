@@ -115,7 +115,7 @@ function MonthlyMilestoneCard({ milestone, fr }: { milestone: NonNullable<Progre
 
 function LevelContent({ progression, fr, locale }: { progression: Progression; fr: boolean; locale: string }) {
   return (
-    <GamificationPanelShell>
+    <GamificationPanelShell id="gamification-level-progress" tabIndex={-1}>
       <SectionLabel
         icon={TrendingUp}
         title={fr ? "Niveau global" : "Global level"}

@@ -1,6 +1,7 @@
 import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { getUserProgression } from"@/lib/gamification/progression";
+import { loadPendingGamificationReconciliation } from"@/lib/gamification/gamification-reconciliation-notice";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
@@ -16,10 +17,15 @@ export async function GET() {
  }
 
  try {
- const progression = await getUserProgression(getSupabaseServerClient(true), userId);
+ const supabase = getSupabaseServerClient(true);
+ const [progression, reconciliation] = await Promise.all([
+  getUserProgression(supabase, userId),
+  loadPendingGamificationReconciliation(supabase, userId),
+ ]);
  return NextResponse.json({
  status:"ok",
  progression,
+ reconciliation,
  }, {
   headers: GAMIFICATION_ME_CACHE_HEADERS,
  });

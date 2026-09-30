@@ -179,7 +179,7 @@ export function GamificationCatalogPanel({
         </span>
       </div>
 
-      <div className="mt-6">
+      <div id="gamification-progressions" className="mt-6 scroll-mt-6">
         <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#a48d86]">
           <TrendingUp size={14} /> {fr ? "Progressions infinies" : "Infinite progressions"}
         </div>
@@ -188,7 +188,7 @@ export function GamificationCatalogPanel({
         </div>
       </div>
 
-      <div className="mt-7">
+      <div id="gamification-milestones" className="mt-7 scroll-mt-6">
         <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#a48d86]">
           <Flag size={14} /> {fr ? "Jalons one-shot" : "One-shot milestones"}
         </div>
