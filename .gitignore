@@ -34,15 +34,10 @@ node_modules/
 cache/
 tmp/
 output/
-# CleanMyMap local generated outputs. `.artifacts/validation/` is intentional evidence.
-# Legacy location for the FAST/FULL mode-evidence cache; current code writes below /artifacts/.
-/.artifacts/validation/mode-evidence/
-/.artifacts/validation/repository-inventory/
-/.artifacts/validation/prepush-candidate/
-/.artifacts/validation/publication-candidate/
-/.artifacts/validation/jury-ui/
-# Runtime-only metadata for local parallel work coordination.
-/.artifacts/coordination/
+# CleanMyMap local validation workspaces and generated outputs.
+# Durable audits belong under documentation/; candidates stay below this ignored path.
+/.artifacts/
+/.local/
 /artifacts/
 **/artifacts/
 **/backups/
@@ -72,11 +67,6 @@ runtime/
 CleanmyMap-sync/
 .gitnexus/
 .codex-remote-attachments/
-
-# Machine-local role launchers; never version these credentials/config wrappers.
-/.aLANCER_SITE_LOCAL_ROLE_BENEVOLE.bat
-/.aLANCER_SITE_LOCAL_ROLE_MAX.bat
-/.aLANCER_SITE_LOCAL_ROLE_ADMIN.bat
 
 # Next-generated local agent instructions
 /apps/web/AGENTS.md

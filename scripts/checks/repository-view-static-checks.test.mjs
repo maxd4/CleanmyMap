@@ -4,7 +4,30 @@ import { performance } from "node:perf_hooks";
 import test from "node:test";
 
 const STATIC_CHECK_TIMEOUT_MS = 60_000;
-const ref = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+const baseRef = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+
+function createIndexCandidate(parentRef) {
+  const tree = execFileSync("git", ["write-tree"], { encoding: "utf8" }).trim();
+  return execFileSync(
+    "git",
+    ["commit-tree", tree, "-p", parentRef, "-m", "static-check candidate"],
+    {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        GIT_AUTHOR_NAME: "CleanMyMap static-check test",
+        GIT_AUTHOR_EMAIL: "codex-static-check.invalid",
+        GIT_COMMITTER_NAME: "CleanMyMap static-check test",
+        GIT_COMMITTER_EMAIL: "codex-static-check.invalid",
+      },
+    },
+  ).trim();
+}
+
+// Static checks must see the exact staged candidate during local validation.
+// The temporary commit is deliberately left unreachable: no branch or ref is
+// changed, while repository-view can inspect the index tree as a Git commit.
+const ref = createIndexCandidate(baseRef);
 const checks = [
   "scripts/checks/check-env-contract.mjs",
   "scripts/checks/check-root-file-hygiene.mjs",

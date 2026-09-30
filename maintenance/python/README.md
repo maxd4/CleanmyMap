@@ -29,8 +29,9 @@ sous-arbre.
   `scripts/` ou `tests/` selon sa responsabilité.
 
 Les artefacts temporaires et caches doivent rester dans les emplacements
-prévus par l'outil ou dans un dossier technique dédié. Ils ne doivent pas être
-confondus avec les preuves versionnées de `.artifacts/`.
+prévus par l'outil ou dans un dossier technique dédié. Les candidates locales
+de validation sous `.artifacts/` ne sont pas des preuves versionnées ; les
+preuves durables relèvent de `documentation/`.
 
 Pour un changement Python, lancer les tests ciblés depuis ce dossier avec son
 environnement Python et son fichier `pytest.ini`.

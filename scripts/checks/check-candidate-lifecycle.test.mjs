@@ -18,11 +18,7 @@ const BASELINE = {
   legacy: {
     generatedCandidates: [],
     unknownCanonicalEntries: [],
-    adHocEntries: [
-      ".artifacts/validation/chrome-onboarding-publication-20260904",
-      ".artifacts/validation/governance-candidate-20260903.index",
-      ".artifacts/validation/ribbon-home-logo-publication-20260905",
-    ],
+    adHocEntries: [],
   },
 };
 
@@ -40,14 +36,9 @@ function writeEntry(root, relativePath, content = "fixture\n") {
   fs.writeFileSync(fullPath, content, "utf8");
 }
 
-test("historical baseline passes strict policy", () => {
+test("an empty baseline passes strict policy without residual candidates", () => {
   const root = createFixture();
   try {
-    for (const entry of BASELINE.legacy.adHocEntries) {
-      if (entry.endsWith(".index")) writeEntry(root, entry);
-      else fs.mkdirSync(path.join(root, entry), { recursive: true });
-    }
-
     const report = buildCandidateLifecycleReport(root, BASELINE);
     assert.deepEqual(getStrictViolations(report), {
       generatedCandidates: [],
