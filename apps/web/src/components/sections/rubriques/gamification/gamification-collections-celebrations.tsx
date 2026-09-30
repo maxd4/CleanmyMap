@@ -1,159 +1,19 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { BadgeCheck, Flag, PartyPopper, Play, Target, TrendingUp } from "lucide-react";
+import { BadgeCheck, PartyPopper, Play } from "lucide-react";
 import { announceGamificationGain } from "@/lib/gamification/announcements";
 import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
 import { buildLightCelebrationPreview } from "./light-celebrations-panel";
 import { GamificationPanelLoading, SectionLabel } from "./gamification-shell";
 
-type CollectionEntry = {
-  id: string;
-  kind: "progression" | "milestone";
-  label: string;
-  description: string;
-  state: "not_started" | "in_progress" | "completed";
-  isNewSinceLastRulesMigration: boolean;
-  currentBadgeLabel?: string | null;
-  nextBadgeLabel?: string | null;
-  progressPercent?: number;
-  currentValue?: number;
-  progressCurrent?: number;
-  progressTarget?: number;
-};
-
-export type CollectionSections = {
-  acquired: CollectionEntry[];
-  inProgress: CollectionEntry[];
-  toDiscover: CollectionEntry[];
-};
-
-export function buildCollectionSections(
-  summary: GamificationSummary | undefined,
-): CollectionSections {
-  const entries: CollectionEntry[] = [
-    ...(summary?.progressions ?? []).map((item) => ({
-      id: `progression:${item.id}`,
-      kind: "progression" as const,
-      label: item.label,
-      description: item.description,
-      state: item.state,
-      isNewSinceLastRulesMigration: item.isNewSinceLastRulesMigration,
-      currentBadgeLabel: item.currentBadge?.label ?? null,
-      nextBadgeLabel: item.nextBadge?.label ?? null,
-      progressPercent: item.progressPercent,
-      currentValue: item.currentValue,
-    })),
-    ...(summary?.milestones ?? []).map((item) => ({
-      id: `milestone:${item.id}`,
-      kind: "milestone" as const,
-      label: item.label,
-      description: item.description,
-      state: item.state,
-      isNewSinceLastRulesMigration: item.isNewSinceLastRulesMigration,
-      progressPercent: item.progressPercent,
-      progressCurrent: item.progressCurrent,
-      progressTarget: item.progressTarget,
-    })),
-  ];
-
-  return entries.reduce<CollectionSections>(
-    (sections, entry) => {
-      if (entry.state === "completed") {
-        sections.acquired.push(entry);
-      } else if (entry.state === "not_started") {
-        sections.toDiscover.push(entry);
-      } else {
-        sections.inProgress.push(entry);
-      }
-      return sections;
-    },
-    { acquired: [], inProgress: [], toDiscover: [] },
+export function acquiredGamificationSummary(summary: GamificationSummary | undefined) {
+  const tiers = (summary?.progressions ?? []).reduce(
+    (count, progression) => count + (progression.previousTiers?.length ?? 0) + (progression.currentTier?.achieved ? 1 : 0),
+    0,
   );
-}
-
-function stateLabel(state: CollectionEntry["state"], fr: boolean): string {
-  if (state === "completed") return fr ? "Acquis" : "Acquired";
-  if (state === "in_progress") return fr ? "En progression" : "In progress";
-  return fr ? "À découvrir" : "To discover";
-}
-
-function CollectionEntryCard({ entry, fr }: { entry: CollectionEntry; fr: boolean }) {
-  return (
-    <article className="rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4 shadow-[0_8px_24px_rgba(126,31,20,0.04)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            {entry.kind === "progression" ? <TrendingUp size={15} className="text-[#c51f1f]" /> : <Flag size={15} className="text-[#c51f1f]" />}
-            <h4 className="text-sm font-black text-[#2c1a17]">{entry.label}</h4>
-            {entry.isNewSinceLastRulesMigration ? (
-              <span className="rounded-full bg-[#2c1a17] px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] text-white">
-                {fr ? "Nouveau" : "New"}
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-1 text-xs leading-5 text-[#806b65]">{entry.description}</p>
-        </div>
-        <span className="shrink-0 rounded-full border border-[#e4d7d2] bg-[#fffaf8] px-2.5 py-1 text-xs font-bold text-[#806b65]">
-          {stateLabel(entry.state, fr)}
-        </span>
-      </div>
-
-      {entry.kind === "progression" ? (
-        <div className="mt-4">
-          <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[#765f59]">
-            <span>{entry.currentBadgeLabel ?? (fr ? "Observateur" : "Observer")}</span>
-            <span>{entry.nextBadgeLabel ?? (fr ? "Palier suivant" : "Next tier")}</span>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f5e7e2]" aria-label={`${entry.progressPercent ?? 0}%`}>
-            <div className="h-full rounded-full bg-[#cf3b34]" style={{ width: `${entry.progressPercent ?? 0}%` }} />
-          </div>
-          <p className="mt-2 text-xs text-[#a48d86]">
-            {fr ? `${entry.currentValue ?? 0} contribution(s) · cette progression continue.` : `${entry.currentValue ?? 0} contribution(s) · this progression continues.`}
-          </p>
-        </div>
-      ) : entry.progressCurrent !== undefined && entry.progressTarget !== undefined ? (
-        <div className="mt-4">
-          <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[#765f59]">
-            <span>{fr ? "Progression du jalon" : "Milestone progress"}</span>
-            <span>{entry.progressCurrent}/{entry.progressTarget}</span>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f5e7e2]">
-            <div className="h-full rounded-full bg-[#cf3b34]" style={{ width: `${entry.progressPercent ?? 0}%` }} />
-          </div>
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-function CollectionGroup({
-  title,
-  entries,
-  emptyLabel,
-  fr,
-}: {
-  title: string;
-  entries: CollectionEntry[];
-  emptyLabel: string;
-  fr: boolean;
-}) {
-  return (
-    <div>
-      <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#a48d86]">
-        <Target size={14} /> {title}
-      </div>
-      {entries.length > 0 ? (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {entries.map((entry) => <CollectionEntryCard key={entry.id} entry={entry} fr={fr} />)}
-        </div>
-      ) : (
-        <p className="rounded-[1.35rem] border border-dashed border-[#ead8d2] bg-[#fffaf8] p-4 text-sm text-[#806b65]">
-          {emptyLabel}
-        </p>
-      )}
-    </div>
-  );
+  const milestones = (summary?.milestones ?? []).filter((item) => item.state === "completed").length;
+  return { tiers, milestones, xp: summary?.xpTotal ?? 0 };
 }
 
 export function CollectionsPanel(props: {
@@ -171,26 +31,35 @@ export function CollectionsPanel(props: {
   if (error || !summary) {
     return (
       <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
-        <SectionLabel icon={BadgeCheck} title={fr ? "Collections personnelles" : "Personal collections"} subtitle={fr ? "Les distinctions CURRENT sont lues depuis le registre utilisateur." : "CURRENT distinctions are read from the user registry."} />
+        <SectionLabel icon={BadgeCheck} title={fr ? "Résumé des acquis" : "Acquired summary"} subtitle={fr ? "Les compteurs restent synchronisés avec l’inventaire CURRENT." : "Counters stay synchronized with the CURRENT inventory."} />
         <p role="alert" className="mt-6 rounded-[1.35rem] border border-[#f1c1b7] bg-[#fff5f2] p-5 text-sm leading-6 text-[#8c3f38]">
-          {fr ? "Les collections ne sont pas disponibles pour le moment." : "Collections are not available right now."}
+          {fr ? "Le résumé des acquis n’est pas disponible pour le moment." : "The acquired summary is not available right now."}
         </p>
       </section>
     );
   }
 
-  const sections = buildCollectionSections(summary);
+  const acquired = acquiredGamificationSummary(summary);
   return (
-    <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
+    <section aria-label={fr ? "Résumé des acquis" : "Acquired summary"} className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
       <SectionLabel
         icon={BadgeCheck}
-        title={fr ? "Collections personnelles" : "Personal collections"}
-        subtitle={fr ? "Les distinctions, progressions et jalons restent reliés aux mécaniques CURRENT." : "Distinctions, progressions and milestones stay connected to CURRENT mechanics."}
+        title={fr ? "Résumé des acquis" : "Acquired summary"}
+        subtitle={fr ? "Un aperçu compact ; le détail exhaustif est présenté dans Progressions & paliers et Jalons." : "A compact overview; the full detail is shown in Progressions & tiers and Milestones."}
       />
-      <div className="mt-6 space-y-7">
-        <CollectionGroup title={fr ? "Acquis" : "Acquired"} entries={sections.acquired} emptyLabel={fr ? "Aucune distinction acquise pour le moment." : "No distinction acquired yet."} fr={fr} />
-        <CollectionGroup title={fr ? "En progression" : "In progress"} entries={sections.inProgress} emptyLabel={fr ? "Aucune progression en cours." : "No progression in progress."} fr={fr} />
-        <CollectionGroup title={fr ? "À découvrir" : "To discover"} entries={sections.toDiscover} emptyLabel={fr ? "Toutes les mécaniques applicables sont déjà commencées." : "All applicable mechanics have already started."} fr={fr} />
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-[1.35rem] border border-[#f1dfd8] bg-[#fffaf8] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#a48d86]">{fr ? "Paliers obtenus" : "Tiers reached"}</p>
+          <p className="mt-2 text-2xl font-black text-[#c51f1f]">{acquired.tiers}</p>
+        </div>
+        <div className="rounded-[1.35rem] border border-[#f1dfd8] bg-[#fffaf8] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#a48d86]">{fr ? "Jalons terminés" : "Milestones completed"}</p>
+          <p className="mt-2 text-2xl font-black text-[#c51f1f]">{acquired.milestones}</p>
+        </div>
+        <div className="rounded-[1.35rem] border border-[#f1dfd8] bg-[#fffaf8] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#a48d86]">XP</p>
+          <p className="mt-2 text-2xl font-black text-[#c51f1f]">{acquired.xp}</p>
+        </div>
       </div>
     </section>
   );

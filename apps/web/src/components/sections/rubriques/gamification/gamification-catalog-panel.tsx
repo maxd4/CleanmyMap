@@ -6,22 +6,28 @@ import type {
   GamificationSummaryProgression,
 } from "@/lib/gamification/gamification-summary";
 
-function stateLabel(state: GamificationSummaryProgression["state"] | GamificationSummaryMilestone["state"], fr: boolean): string {
-  if (state === "completed") return fr ? "Acquis" : "Completed";
+type CatalogState = GamificationSummaryProgression["state"] | GamificationSummaryMilestone["state"];
+
+function stateLabel(state: CatalogState, fr: boolean): string {
+  if (state === "completed") return fr ? "Terminé" : "Completed";
   if (state === "in_progress") return fr ? "En cours" : "In progress";
-  return fr ? "À commencer" : "Not started";
+  return fr ? "À découvrir" : "To discover";
+}
+
+function stateClass(state: CatalogState): string {
+  if (state === "completed") return "border-[#b7d9c4] bg-[#effaf2] text-[#287348]";
+  if (state === "in_progress") return "border-[#f1c18c] bg-[#fff7ed] text-[#9a5a16]";
+  return "border-[#e4d7d2] bg-white text-[#806b65]";
 }
 
 function categoryLabel(category: GamificationSummaryMilestone["category"] | "XP_PROGRESSION", fr: boolean): string {
   if (category === "BADGE_ONLY") return fr ? "Badge" : "Badge only";
   if (category === "XP_MILESTONE") return fr ? "Jalon XP" : "XP milestone";
-  return fr ? "Progression XP" : "XP progression";
+  return fr ? "Progression" : "Progression";
 }
 
-function statusClass(state: GamificationSummaryProgression["state"] | GamificationSummaryMilestone["state"]): string {
-  if (state === "completed") return "border-[#b7d9c4] bg-[#effaf2] text-[#287348]";
-  if (state === "in_progress") return "border-[#f1c18c] bg-[#fff7ed] text-[#9a5a16]";
-  return "border-[#e4d7d2] bg-white text-[#806b65]";
+function newStateLabel(state: CatalogState, fr: boolean): string {
+  return `${fr ? "Nouveau" : "New"} · ${stateLabel(state, fr)}`;
 }
 
 function CatalogItemHeader({
@@ -35,7 +41,7 @@ function CatalogItemHeader({
 }: {
   label: string;
   description: string;
-  state: GamificationSummaryProgression["state"] | GamificationSummaryMilestone["state"];
+  state: CatalogState;
   category: GamificationSummaryMilestone["category"] | "XP_PROGRESSION";
   categoryClassName: string;
   isNewSinceLastRulesMigration: boolean;
@@ -49,17 +55,76 @@ function CatalogItemHeader({
           <span className={`rounded-full border px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] ${categoryClassName}`}>
             {categoryLabel(category, fr)}
           </span>
-          {isNewSinceLastRulesMigration ? (
-            <span className="rounded-full bg-[#2c1a17] px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] text-white">
-              {fr ? "Nouveau" : "New"}
-            </span>
-          ) : null}
         </div>
         <p className="mt-1 text-xs leading-5 text-[#806b65]">{description}</p>
       </div>
-      <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${statusClass(state)}`}>
-        {stateLabel(state, fr)}
+      <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${stateClass(state)}`}>
+        {isNewSinceLastRulesMigration ? newStateLabel(state, fr) : stateLabel(state, fr)}
       </span>
+    </div>
+  );
+}
+
+function ProgressionTierProgress({ item, fr }: { item: GamificationSummaryProgression; fr: boolean }) {
+  const currentTier = item.currentTier;
+  const nextTier = item.nextTier;
+  const currentTierLabel = currentTier?.achieved
+    ? currentTier.label
+    : item.currentBadge?.label ?? (fr ? "Observateur" : "Observer");
+  const nextTierLabel = nextTier?.label ?? item.nextBadge?.label ?? (fr ? "Palier suivant" : "Next tier");
+  const nextThreshold = nextTier?.threshold;
+  const progressLabel = `${item.progressPercent}%`;
+
+  return (
+    <div className="mt-4 grid gap-4 sm:grid-cols-[auto_1fr]">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#a48d86]">{fr ? "Valeur actuelle" : "Current value"}</p>
+          <p className="mt-1 text-xl font-black text-[#c51f1f]">{item.currentValue}</p>
+          <p className="mt-1 max-w-32 text-xs leading-5 text-[#806b65]">{item.metricLabel}</p>
+        </div>
+
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs font-semibold text-[#765f59]">
+            <span>{fr ? "Palier actuel : " : "Current tier: "}{currentTierLabel}{currentTier?.achieved ? " ✓" : ""}</span>
+            <span>{fr ? "Prochain palier : " : "Next tier: "}{nextTierLabel}{nextThreshold !== undefined ? ` — ${nextThreshold}` : ""}</span>
+          </div>
+          <div
+            className="mt-2 h-2 overflow-hidden rounded-full bg-[#f5e7e2]"
+            role="progressbar"
+            aria-label={fr ? `Progression vers ${nextTierLabel}` : `Progress toward ${nextTierLabel}`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={item.progressPercent}
+          >
+            <div className="h-full rounded-full bg-[#cf3b34]" style={{ width: progressLabel }} />
+          </div>
+          <p className="mt-2 text-xs font-semibold text-[#a48d86]">{progressLabel}</p>
+        </div>
+    </div>
+  );
+}
+
+function ProgressionRewardDetails({ item, fr }: { item: GamificationSummaryProgression; fr: boolean }) {
+  const attainedTiers = [
+    ...(item.previousTiers ?? []),
+    ...(item.currentTier?.achieved ? [item.currentTier] : []),
+  ];
+  return (
+    <div className="mt-4 grid gap-3 border-t border-[#f1dfd8] pt-3 text-xs text-[#806b65] sm:grid-cols-2">
+        <div>
+          <p className="font-black uppercase tracking-[0.16em] text-[#a48d86]">{fr ? "Paliers atteints" : "Tiers reached"}</p>
+          <p className="mt-1 leading-5">
+            {attainedTiers.length > 0 ? attainedTiers.map((tier) => `${tier.label} ✓`).join(" · ") : (fr ? "Aucun palier obtenu" : "No tier reached yet")}
+          </p>
+        </div>
+        <div>
+          <p className="font-black uppercase tracking-[0.16em] text-[#a48d86]">{fr ? "Récompense" : "Reward"}</p>
+          <p className="mt-1 leading-5">
+            {item.grantsXp
+              ? `${fr ? "XP liée aux paliers · cumulée : " : "XP linked to tiers · earned: "}${item.xpContribution}`
+              : (fr ? "Reconnaissance, sans XP" : "Recognition, no XP")}
+          </p>
+        </div>
     </div>
   );
 }
@@ -76,36 +141,22 @@ function ProgressionItem({ item, fr }: { item: GamificationSummaryProgression; f
         isNewSinceLastRulesMigration={item.isNewSinceLastRulesMigration}
         fr={fr}
       />
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-end">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#a48d86]">
-            {fr ? "Valeur" : "Value"}
-          </p>
-            <p className="mt-1 text-xl font-black text-[#c51f1f]">{item.currentValue}</p>
-        </div>
-        <div>
-          <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[#765f59]">
-            <span>{item.currentBadge?.label ?? (fr ? "Observateur" : "Observer")}{item.currentBadge ? " ✓" : ""}</span>
-            <span>{item.nextBadge?.label ?? (fr ? "Palier suivant" : "Next tier")}</span>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f5e7e2]" aria-label={`${item.progressPercent}%`}>
-            <div className="h-full rounded-full bg-[#cf3b34]" style={{ width: `${item.progressPercent}%` }} />
-          </div>
-          <p className="mt-2 text-xs text-[#a48d86]">
-            {fr ? "Contribution XP : " : "XP contribution: "}{item.xpContribution}
-            {item.metricLabel ? ` · ${item.metricLabel}` : ""}
-          </p>
-        </div>
-        <p className="text-right text-xs font-semibold text-[#a48d86]">
-          {item.grantsXp ? (fr ? "XP selon paliers" : "XP by tier") : (fr ? "Sans XP" : "No XP")}
-        </p>
-      </div>
+      <ProgressionTierProgress item={item} fr={fr} />
+      <ProgressionRewardDetails item={item} fr={fr} />
     </article>
   );
 }
 
+function milestoneReward(item: GamificationSummaryMilestone, fr: boolean): string {
+  if (item.grantsXp) {
+    if (item.xpAmountOrPolicy.kind === "fixed_one_shot") return `+${item.xpAmountOrPolicy.amount} XP`;
+    return fr ? "Récompense XP" : "XP reward";
+  }
+  return fr ? "Reconnaissance" : "Recognition";
+}
+
 function MilestoneItem({ item, fr }: { item: GamificationSummaryMilestone; fr: boolean }) {
+  const hasRealProgress = item.state === "in_progress" && item.progressCurrent !== undefined && item.progressTarget !== undefined;
   return (
     <article className="rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4 shadow-[0_8px_24px_rgba(126,31,20,0.04)]">
       <CatalogItemHeader
@@ -117,26 +168,60 @@ function MilestoneItem({ item, fr }: { item: GamificationSummaryMilestone; fr: b
         isNewSinceLastRulesMigration={item.isNewSinceLastRulesMigration}
         fr={fr}
       />
-      {item.progressCurrent !== undefined && item.progressTarget !== undefined ? (
-        <div className="mt-4">
-          <div className="flex justify-between text-xs font-semibold text-[#765f59]">
-            <span>{fr ? "Invitations enregistrées" : "Registered invites"}</span>
-            <span>{item.progressCurrent}/{item.progressTarget}</span>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f5e7e2]">
-            <div className="h-full rounded-full bg-[#cf3b34]" style={{ width: `${item.progressPercent ?? 0}%` }} />
-          </div>
-        </div>
+      {hasRealProgress ? (
+        <p className="mt-4 rounded-xl bg-[#fff8f6] px-3 py-2 text-xs font-semibold text-[#765f59]">
+          {fr ? "Progression : " : "Progress: "}{item.progressCurrent}/{item.progressTarget} {fr ? "étapes réalisées" : "steps completed"}
+        </p>
       ) : null}
       <p className="mt-4 text-xs font-semibold text-[#a48d86]">
-        {item.achievedAt
-          ? `${fr ? "Obtenu le" : "Achieved on"} ${item.achievedAt.slice(0, 10)}`
-          : item.grantsXp
-            ? (fr ? "Récompense XP one-shot" : "One-shot XP reward")
-            : (fr ? "Reconnaissance one-shot" : "One-shot recognition")}
-        {` · XP : ${item.xpContribution}`}
+        {item.achievedAt ? `${fr ? "Obtenu le" : "Achieved on"} ${item.achievedAt.slice(0, 10)}` : milestoneReward(item, fr)}
+        {item.achievedAt && item.grantsXp ? ` · ${milestoneReward(item, fr)}` : null}
       </p>
     </article>
+  );
+}
+
+export function buildCatalogGroups(summary: GamificationSummary) {
+  return {
+    progressions: {
+      newItems: summary.progressions.filter((item) => item.isNewSinceLastRulesMigration),
+      inProgress: summary.progressions.filter((item) => !item.isNewSinceLastRulesMigration && item.state === "in_progress"),
+      toDiscover: summary.progressions.filter((item) => !item.isNewSinceLastRulesMigration && item.state === "not_started"),
+    },
+    milestones: {
+      newItems: summary.milestones.filter((item) => item.isNewSinceLastRulesMigration),
+      inProgress: summary.milestones.filter((item) => !item.isNewSinceLastRulesMigration && item.state === "in_progress"),
+      completed: summary.milestones.filter((item) => !item.isNewSinceLastRulesMigration && item.state === "completed"),
+      toDiscover: summary.milestones.filter((item) => !item.isNewSinceLastRulesMigration && item.state === "not_started"),
+    },
+  };
+}
+
+function CatalogGroup({
+  title,
+  items,
+  fr,
+  kind,
+}: {
+  title: string;
+  items: GamificationSummaryProgression[] | GamificationSummaryMilestone[];
+  fr: boolean;
+  kind: "progression" | "milestone";
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <h3 className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#a48d86]">
+        {kind === "progression" ? <TrendingUp size={14} aria-hidden="true" /> : <Flag size={14} aria-hidden="true" />}
+        {title}
+        <span className="rounded-full bg-[#fff1ef] px-2 py-0.5 text-xs text-[#b4362e]">{items.length}</span>
+      </h3>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {kind === "progression"
+          ? (items as GamificationSummaryProgression[]).map((item) => <ProgressionItem key={item.id} item={item} fr={fr} />)
+          : (items as GamificationSummaryMilestone[]).map((item) => <MilestoneItem key={item.id} item={item} fr={fr} />)}
+      </div>
+    </div>
   );
 }
 
@@ -153,47 +238,50 @@ export function GamificationCatalogPanel({
 }) {
   const fr = locale === "fr";
   if (loading) {
-    return <GamificationPanelLoading ariaLabel={fr ? "Chargement du catalogue" : "Loading catalog"} headingWidth="w-80" cardHeight="h-32" />;
+    return <GamificationPanelLoading ariaLabel={fr ? "Chargement de la gamification" : "Loading gamification"} headingWidth="w-80" cardHeight="h-32" />;
   }
-
   if (error || !summary) {
     return (
       <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
-        <SectionLabel icon={Target} title={fr ? "Objectifs de progression" : "Progression goals"} subtitle={fr ? "Le catalogue personnel est temporairement indisponible." : "The personal catalog is temporarily unavailable."} />
+        <SectionLabel icon={Target} title={fr ? "Progressions & paliers" : "Progressions & tiers"} subtitle={fr ? "L’inventaire CURRENT est temporairement indisponible." : "The CURRENT inventory is temporarily unavailable."} />
       </section>
     );
   }
 
-  const progressions = summary.progressions;
-  const milestones = summary.milestones;
+  const groups = buildCatalogGroups(summary);
+
   return (
     <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
       <div className="flex items-start justify-between gap-4">
         <SectionLabel
           icon={Sparkles}
-          title={fr ? "Inventaire des objectifs" : "Goal inventory"}
+          title={fr ? "Progressions & paliers" : "Progressions & tiers"}
           subtitle={fr ? "Toutes les mécaniques CURRENT applicables, y compris celles qui restent à commencer." : "Every applicable CURRENT mechanic, including goals not started yet."}
         />
         <span className="hidden shrink-0 items-center gap-1 rounded-full border border-[#f1c1b7] bg-[#fff5f2] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#b4362e] sm:inline-flex">
-          <TrendingUp size={13} /> {progressions.length + milestones.length}
+          <TrendingUp size={13} aria-hidden="true" /> {summary.progressions.length}
         </span>
       </div>
 
-      <div id="gamification-progressions" className="mt-6 scroll-mt-6">
-        <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#a48d86]">
-          <TrendingUp size={14} /> {fr ? "Progressions infinies" : "Infinite progressions"}
-        </div>
-        <div className="grid gap-3 lg:grid-cols-2">
-          {progressions.map((item) => <ProgressionItem key={item.id} item={item} fr={fr} />)}
-        </div>
+      <div id="gamification-progressions" className="mt-6 space-y-6 scroll-mt-6">
+        <CatalogGroup title={fr ? "Nouveautés" : "New"} items={groups.progressions.newItems} fr={fr} kind="progression" />
+        <CatalogGroup title={fr ? "En cours" : "In progress"} items={groups.progressions.inProgress} fr={fr} kind="progression" />
+        <CatalogGroup title={fr ? "À découvrir" : "To discover"} items={groups.progressions.toDiscover} fr={fr} kind="progression" />
       </div>
 
-      <div id="gamification-milestones" className="mt-7 scroll-mt-6">
-        <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#a48d86]">
-          <Flag size={14} /> {fr ? "Jalons one-shot" : "One-shot milestones"}
+      <div id="gamification-milestones" className="mt-8 border-t border-[#ead8d2] pt-7 scroll-mt-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-black text-[#2c1a17]"><Flag size={18} className="text-[#c51f1f]" aria-hidden="true" /> {fr ? "Jalons" : "Milestones"}</h2>
+            <p className="mt-1 text-xs leading-5 text-[#806b65]">{fr ? "Tous les jalons CURRENT applicables, obtenus ou non." : "Every applicable CURRENT milestone, whether completed or not."}</p>
+          </div>
+          <span className="hidden rounded-full bg-[#fff8f6] px-3 py-1 text-xs font-black text-[#b4362e] sm:inline-flex">{summary.milestones.length}</span>
         </div>
-        <div className="grid gap-3 lg:grid-cols-2">
-          {milestones.map((item) => <MilestoneItem key={item.id} item={item} fr={fr} />)}
+        <div className="mt-6 space-y-6">
+          <CatalogGroup title={fr ? "Nouveaux" : "New"} items={groups.milestones.newItems} fr={fr} kind="milestone" />
+          <CatalogGroup title={fr ? "En cours" : "In progress"} items={groups.milestones.inProgress} fr={fr} kind="milestone" />
+          <CatalogGroup title={fr ? "Terminés" : "Completed"} items={groups.milestones.completed} fr={fr} kind="milestone" />
+          <CatalogGroup title={fr ? "À découvrir" : "To discover"} items={groups.milestones.toDiscover} fr={fr} kind="milestone" />
         </div>
       </div>
     </section>

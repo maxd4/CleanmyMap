@@ -78,13 +78,21 @@ export function GamificationSection() {
                 await mutateMe();
               }}
             />
+            <GamificationLevelProgressPanel
+              progression={progression}
+              loading={meLoading}
+              error={meError}
+              locale={locale}
+            />
+
+            <GamificationCatalogPanel
+              summary={progression?.summary}
+              loading={meLoading}
+              error={meError}
+              locale={locale}
+            />
+
             <div className="grid gap-6 lg:grid-cols-2">
-              <GamificationLevelProgressPanel
-                progression={progression}
-                loading={meLoading}
-                error={meError}
-                locale={locale}
-              />
               <EngagementPanel
                 progression={progression}
                 loading={meLoading}
@@ -115,13 +123,6 @@ export function GamificationSection() {
               />
               <CelebrationsPanel locale={locale} />
             </div>
-
-            <GamificationCatalogPanel
-              summary={progression?.summary}
-              loading={meLoading}
-              error={meError}
-              locale={locale}
-            />
 
             <GamificationRulesMigrationNotice
               summary={progression?.summary}
