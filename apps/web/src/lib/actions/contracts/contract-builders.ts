@@ -85,6 +85,79 @@ export type ActionContractCreatePayload = {
   };
 };
 
+function buildContractLocation(payload: CreateActionPayload): ActionContractCreatePayload["location"] {
+  return {
+    label: payload.locationLabel,
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    departmentCode: payload.departmentCode ?? null,
+    departmentName: payload.departmentName ?? null,
+  };
+}
+
+function buildContractGeometry(
+  payload: CreateActionPayload,
+): ActionContractCreatePayload["geometry"] {
+  if (!payload.manualDrawing) {
+    return undefined;
+  }
+
+  return {
+    kind: payload.manualDrawing.kind,
+    coordinates: payload.manualDrawing.coordinates,
+    geometrySource: payload.geometrySource ?? null,
+  };
+}
+
+function buildContractDates(payload: CreateActionPayload): ActionContractCreatePayload["dates"] {
+  return {
+    observedAt: payload.actionDate,
+    eventStartTime: payload.eventStartTime ?? null,
+    eventEndTime: payload.eventEndTime ?? null,
+  };
+}
+
+function buildContractMetadata(
+  payload: CreateActionPayload,
+): ActionContractCreatePayload["metadata"] {
+  return {
+    actorName: payload.actorName,
+    associationName: payload.associationName,
+    organizerType: payload.organizerType,
+    organizerId: payload.organizerId,
+    organizerName: payload.organizerName,
+    organizerAccounts: payload.organizerAccounts,
+    participantAccounts: payload.participantAccounts,
+    groupJoinEnabled: payload.groupJoinEnabled,
+    actionPhase: payload.actionPhase,
+    preparationData: withRouteCalibrationContext(
+      payload.preparationData,
+      payload.routeCalibrationContext,
+    ),
+    plannerSnapshotProof: payload.plannerSnapshotProof ?? null,
+    placeType: payload.placeType,
+    wasteKg: payload.wasteKg,
+    cigaretteButtsMeasurements: payload.cigaretteButtsMeasurements,
+    volunteerParticipation: payload.volunteerParticipation,
+    cigaretteButtsMassKg: payload.cigaretteButtsMassKg,
+    cigaretteButtsVolumeLiters: payload.cigaretteButtsVolumeLiters,
+    cigaretteButtsCondition: payload.cigaretteButtsCondition,
+    cigaretteButtsKg: payload.cigaretteButtsKg,
+    cigaretteButts: payload.cigaretteButts,
+    volunteersCount: payload.volunteersCount,
+    durationMinutes: payload.durationMinutes,
+    notes: payload.notes,
+    routeStyle: payload.routeStyle,
+    routeTopology: payload.routeTopology,
+    routeAdjustmentMessage: payload.routeAdjustmentMessage,
+    submissionMode: payload.submissionMode,
+    wasteBreakdown: payload.wasteBreakdown,
+    wasteMeasurementMethod: payload.wasteMeasurementMethod,
+    photos: payload.photos,
+    visionEstimate: payload.visionEstimate,
+  };
+}
+
 /**
  * Prépare le payload pour la création d'un contrat via l'API.
  */
@@ -94,66 +167,15 @@ export function toContractCreatePayload(
   return {
     type: payload.recordType ?? "action",
     source: "web_form",
-    location: {
-      label: payload.locationLabel,
-      latitude: payload.latitude,
-      longitude: payload.longitude,
-      departmentCode: payload.departmentCode ?? null,
-      departmentName: payload.departmentName ?? null,
-    },
+    location: buildContractLocation(payload),
     departureLocationLabel: payload.departureLocationLabel,
     arrivalLocationLabel: payload.arrivalLocationLabel,
     routeTopology: payload.routeTopology,
     routeStyle: payload.routeStyle,
     routeAdjustmentMessage: payload.routeAdjustmentMessage,
-    geometry: payload.manualDrawing
-      ? {
-          kind: payload.manualDrawing.kind,
-          coordinates: payload.manualDrawing.coordinates,
-          geometrySource: payload.geometrySource ?? null,
-        }
-      : undefined,
-    dates: {
-      observedAt: payload.actionDate,
-      eventStartTime: payload.eventStartTime ?? null,
-      eventEndTime: payload.eventEndTime ?? null,
-    },
-    metadata: {
-      actorName: payload.actorName,
-      associationName: payload.associationName,
-      organizerType: payload.organizerType,
-      organizerId: payload.organizerId,
-      organizerName: payload.organizerName,
-      organizerAccounts: payload.organizerAccounts,
-      participantAccounts: payload.participantAccounts,
-      groupJoinEnabled: payload.groupJoinEnabled,
-      actionPhase: payload.actionPhase,
-      preparationData: withRouteCalibrationContext(
-        payload.preparationData,
-        payload.routeCalibrationContext,
-      ),
-      plannerSnapshotProof: payload.plannerSnapshotProof ?? null,
-      placeType: payload.placeType,
-      wasteKg: payload.wasteKg,
-      cigaretteButtsMeasurements: payload.cigaretteButtsMeasurements,
-      volunteerParticipation: payload.volunteerParticipation,
-      cigaretteButtsMassKg: payload.cigaretteButtsMassKg,
-      cigaretteButtsVolumeLiters: payload.cigaretteButtsVolumeLiters,
-      cigaretteButtsCondition: payload.cigaretteButtsCondition,
-      cigaretteButtsKg: payload.cigaretteButtsKg,
-      cigaretteButts: payload.cigaretteButts,
-      volunteersCount: payload.volunteersCount,
-      durationMinutes: payload.durationMinutes,
-      notes: payload.notes,
-      routeStyle: payload.routeStyle,
-      routeTopology: payload.routeTopology,
-      routeAdjustmentMessage: payload.routeAdjustmentMessage,
-      submissionMode: payload.submissionMode,
-      wasteBreakdown: payload.wasteBreakdown,
-      wasteMeasurementMethod: payload.wasteMeasurementMethod,
-      photos: payload.photos,
-      visionEstimate: payload.visionEstimate,
-    },
+    geometry: buildContractGeometry(payload),
+    dates: buildContractDates(payload),
+    metadata: buildContractMetadata(payload),
   };
 }
 
@@ -196,12 +218,35 @@ function buildManualDrawing(
   };
 }
 
-/**
- * Normalise un payload de création (qu'il vienne du formulaire web ou d'un contrat existant).
- */
-function normalizeContractCreatePayload(
+function normalizePreparationData(params: {
+  preparationData: ActionPreparationData | null | undefined;
+  recordType: ActionRecordType;
+  topology: ActionRouteTopology;
+  arrivalLocationLabel: string | null | undefined;
+}): ActionPreparationData {
+  const { preparationData, recordType, topology, arrivalLocationLabel } = params;
+  return clearActionRouteArrivalForLoop(
+    {
+      ...(preparationData ?? {}),
+      ...(recordType !== "action" && arrivalLocationLabel && !preparationData?.zoneCiblePrevue
+        ? { zoneCiblePrevue: arrivalLocationLabel }
+        : {}),
+      routeTopology: topology,
+    },
+    { recordType, topology },
+  );
+}
+
+type ContractNormalizationContext = {
+  recordType: ActionRecordType;
+  arrivalLocationLabel: string;
+  routeTopology: ActionRouteTopology;
+  preparationData: ActionPreparationData;
+};
+
+function buildContractNormalizationContext(
   payload: ActionContractCreatePayload,
-): CreateActionPayload {
+): ContractNormalizationContext {
   const recordType = payload.type;
   const arrivalLocationLabel = fallbackString(
     payload.arrivalLocationLabel,
@@ -212,16 +257,24 @@ function normalizeContractCreatePayload(
     arrivalLocationLabel,
     recordType,
   });
-  const preparationData = clearActionRouteArrivalForLoop(
-    {
-      ...(payload.metadata.preparationData ?? {}),
-      ...(recordType !== "action" && arrivalLocationLabel && !payload.metadata.preparationData?.zoneCiblePrevue
-        ? { zoneCiblePrevue: arrivalLocationLabel }
-        : {}),
-      routeTopology,
-    },
-    { recordType, topology: routeTopology },
-  );
+
+  return {
+    recordType,
+    arrivalLocationLabel,
+    routeTopology,
+    preparationData: normalizePreparationData({
+      preparationData: payload.metadata.preparationData,
+      recordType,
+      topology: routeTopology,
+      arrivalLocationLabel,
+    }),
+  };
+}
+
+function buildNormalizedIdentityFields(
+  payload: ActionContractCreatePayload,
+  context: ContractNormalizationContext,
+){
   return {
     actorName: payload.metadata.actorName,
     associationName: payload.metadata.associationName,
@@ -230,12 +283,21 @@ function normalizeContractCreatePayload(
     organizerName: payload.metadata.organizerName ?? payload.metadata.associationName,
     groupJoinEnabled: payload.metadata.groupJoinEnabled,
     actionPhase: payload.metadata.actionPhase ?? undefined,
-    preparationData,
+    preparationData: context.preparationData,
     plannerSnapshotProof: payload.metadata.plannerSnapshotProof ?? null,
     organizerAccounts: payload.metadata.organizerAccounts ?? undefined,
     participantAccounts: payload.metadata.participantAccounts ?? undefined,
     actionDate: payload.dates.observedAt,
     recordType: payload.type,
+  };
+}
+
+function buildNormalizedLocationFields(
+  payload: ActionContractCreatePayload,
+  context: ContractNormalizationContext,
+) {
+  const { recordType, arrivalLocationLabel, routeTopology } = context;
+  return {
     locationLabel: payload.location.label,
     departureLocationLabel: fallbackString(payload.departureLocationLabel, payload.metadata.departureLocationLabel),
     arrivalLocationLabel:
@@ -249,6 +311,11 @@ function normalizeContractCreatePayload(
     longitude: payload.location.longitude,
     departmentCode: payload.location.departmentCode ?? null,
     departmentName: payload.location.departmentName ?? null,
+  };
+}
+
+function buildNormalizedMeasurementFields(payload: ActionContractCreatePayload) {
+  return {
     wasteKg: payload.metadata.wasteKg ?? null,
     cigaretteButtsMeasurements: payload.metadata.cigaretteButtsMeasurements ?? null,
     volunteerParticipation: payload.metadata.volunteerParticipation ?? null,
@@ -263,6 +330,11 @@ function normalizeContractCreatePayload(
     eventEndTime: payload.dates.eventEndTime ?? null,
     notes: payload.metadata.notes,
     submissionMode: payload.metadata.submissionMode ?? "complete",
+  };
+}
+
+function buildNormalizedMediaFields(payload: ActionContractCreatePayload) {
+  return {
     wasteBreakdown: payload.metadata.wasteBreakdown,
     wasteMeasurementMethod: payload.metadata.wasteMeasurementMethod ?? undefined,
     photos: payload.metadata.photos ?? undefined,
@@ -273,51 +345,73 @@ function normalizeContractCreatePayload(
   };
 }
 
+function buildNormalizedContractPayload(
+  payload: ActionContractCreatePayload,
+  context: ContractNormalizationContext,
+): CreateActionPayload {
+  return {
+    ...buildNormalizedIdentityFields(payload, context),
+    ...buildNormalizedLocationFields(payload, context),
+    ...buildNormalizedMeasurementFields(payload),
+    ...buildNormalizedMediaFields(payload),
+  };
+}
+
+/**
+ * Normalise un payload de création (qu'il vienne du formulaire web ou d'un contrat existant).
+ */
+function normalizeContractCreatePayload(
+  payload: ActionContractCreatePayload,
+): CreateActionPayload {
+  return buildNormalizedContractPayload(
+    payload,
+    buildContractNormalizationContext(payload),
+  );
+}
+
+function normalizeLegacyCreatePayload(payload: CreateActionPayload): CreateActionPayload {
+  const recordType = payload.recordType ?? "action";
+  const arrivalLocationLabel = payload.arrivalLocationLabel ?? payload.preparationData?.zoneCiblePrevue;
+  const routeTopology = resolveActionRouteTopology({
+    topology: payload.routeTopology ?? payload.preparationData?.routeTopology,
+    arrivalLocationLabel,
+    recordType,
+  });
+  const normalizedPayload = {
+    ...payload,
+    wasteKg: payload.wasteKg ?? null,
+    cigaretteButts: payload.cigaretteButts ?? null,
+    routeTopology,
+    arrivalLocationLabel:
+      recordType !== "action" || routeTopology === "point_to_point"
+        ? payload.arrivalLocationLabel
+        : undefined,
+    preparationData: normalizePreparationData({
+      preparationData: payload.preparationData,
+      recordType,
+      topology: routeTopology,
+      arrivalLocationLabel,
+    }),
+  };
+
+  if (!payload.routeCalibrationContext) {
+    return normalizedPayload;
+  }
+
+  return {
+    ...normalizedPayload,
+    preparationData: withRouteCalibrationContext(
+      normalizedPayload.preparationData,
+      payload.routeCalibrationContext,
+    ),
+  };
+}
+
 export function normalizeCreatePayload(
   payload: CreateActionPayload | ActionContractCreatePayload,
 ): CreateActionPayload {
   if ("actionDate" in payload) {
-    const recordType = payload.recordType ?? "action";
-    const arrivalLocationLabel =
-      payload.arrivalLocationLabel ?? payload.preparationData?.zoneCiblePrevue;
-    const normalizedMeasurements = {
-      ...payload,
-      wasteKg: payload.wasteKg ?? null,
-      cigaretteButts: payload.cigaretteButts ?? null,
-      routeTopology: resolveActionRouteTopology({
-        topology: payload.routeTopology ?? payload.preparationData?.routeTopology,
-        arrivalLocationLabel,
-        recordType,
-      }),
-    };
-    const preparationData = clearActionRouteArrivalForLoop(
-      {
-        ...(payload.preparationData ?? {}),
-        ...(recordType !== "action" && arrivalLocationLabel && !payload.preparationData?.zoneCiblePrevue
-          ? { zoneCiblePrevue: arrivalLocationLabel }
-          : {}),
-        routeTopology: normalizedMeasurements.routeTopology,
-      },
-      { recordType, topology: normalizedMeasurements.routeTopology },
-    );
-    const normalizedPayload = {
-      ...normalizedMeasurements,
-      arrivalLocationLabel:
-        recordType !== "action" || normalizedMeasurements.routeTopology === "point_to_point"
-          ? payload.arrivalLocationLabel
-          : undefined,
-      preparationData,
-    };
-    if (!payload.routeCalibrationContext) {
-      return normalizedPayload;
-    }
-    return {
-      ...normalizedPayload,
-      preparationData: withRouteCalibrationContext(
-        normalizedPayload.preparationData,
-        payload.routeCalibrationContext,
-      ),
-    };
+    return normalizeLegacyCreatePayload(payload);
   }
   return normalizeContractCreatePayload(payload);
 }
