@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { main, parseArgs } from "./audit-gitnexus.mjs";
+import { main, parseArgs, runGitNexusCommand } from "./audit-gitnexus.mjs";
 
 test("GitNexus audit accepts only the optional cycles flag", () => {
   assert.deepEqual(parseArgs([]), { cycles: false });
@@ -17,4 +17,19 @@ test("GitNexus audit fails clearly when the local runner is missing", (t) => {
   t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
 
   assert.equal(main([], repoRoot), 1);
+});
+
+test("GitNexus audit captures a non-zero report for its parent checker", (t) => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-audit-"));
+  const runnerPath = path.join(repoRoot, ".gitnexus", "run.cjs");
+  fs.mkdirSync(path.dirname(runnerPath), { recursive: true });
+  fs.writeFileSync(
+    runnerPath,
+    "process.stdout.write(JSON.stringify({ status: 'cycles_found', enumeration: 'complete', cycles: [{ files: ['a.ts', 'b.ts', 'a.ts'] }] })); process.exitCode = 1;\n",
+  );
+  t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
+
+  const result = runGitNexusCommand(repoRoot, ["check", "--cycles", "--json"]);
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /cycles_found/);
 });

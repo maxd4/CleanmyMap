@@ -24,7 +24,8 @@ export function parseArgs(argv) {
 export function runGitNexusCommand(repoDirectory, args) {
   const result = spawnSync(process.execPath, [runnerRelativePath, ...args], {
     cwd: repoDirectory,
-    stdio: "inherit",
+    encoding: "utf8",
+    stdio: ["inherit", "pipe", "pipe"],
     windowsHide: true,
   });
 
@@ -32,7 +33,11 @@ export function runGitNexusCommand(repoDirectory, args) {
     throw new Error(`GitNexus command failed: ${result.error.message}`);
   }
 
-  return result.status ?? 1;
+  return {
+    status: result.status ?? 1,
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+  };
 }
 
 export function main(argv = process.argv.slice(2), repoDirectory = repoRoot) {
@@ -60,9 +65,11 @@ export function main(argv = process.argv.slice(2), repoDirectory = repoRoot) {
   }
 
   for (const args of commands) {
-    const exitCode = runGitNexusCommand(repoDirectory, args);
-    if (exitCode !== 0) {
-      return exitCode;
+    const result = runGitNexusCommand(repoDirectory, args);
+    process.stdout.write(result.stdout);
+    process.stderr.write(result.stderr);
+    if (result.status !== 0) {
+      return result.status;
     }
   }
 
