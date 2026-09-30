@@ -3,6 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { ConnectTabs, CONNECT_TABS } from "./connect-components";
+import { getConnectShellNavigationStates } from "./connect-section-navigation";
+import type { ChatShellNavigationState } from "@/components/chat/chat-navigation";
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 
 const connectSectionSource = readFileSync(
@@ -58,6 +60,22 @@ const topicGraphSource = readFileSync(
   "utf8",
 );
 
+function buildNavigationState(activeChannelType: ChatShellNavigationState["activeChannelType"]): ChatShellNavigationState {
+  return {
+    activeChannelType,
+    activeTopicId: activeChannelType === "dm" ? null : "arbitrages",
+    selectedActionId: activeChannelType === "dm" ? null : "action-1",
+    selectedRecipient: null,
+    selectedZone: "Paris",
+    territoryFocus: 1,
+    messageId: "message-1",
+    feedbackId: null,
+    contactRequestId: null,
+    announcementTemplate: null,
+    eventId: null,
+  };
+}
+
 describe("Messagerie navigation shell", () => {
   it("keeps both tab shells mounted so tab round-trips retain local state", () => {
     expect(connectImplementationSource).toContain('data-connect-panel={tab}');
@@ -72,8 +90,21 @@ describe("Messagerie navigation shell", () => {
   it("uses a shell navigation contract for URL synchronization and restoration", () => {
     expect(connectImplementationSource).toContain("synchronizeConnectNavigationParams");
     expect(connectImplementationSource).toContain("onNavigationChange");
-    expect(connectImplementationSource).toContain("navigationState: activeTab ===");
     expect(connectImplementationSource).toContain("router[historyMode]");
+  });
+
+  it("restores navigation only in the visible shell while preserving the hidden shell state", () => {
+    const navigationState = buildNavigationState("action");
+    const dmNavigation = buildNavigationState("dm");
+
+    expect(getConnectShellNavigationStates("discussions", navigationState, dmNavigation)).toEqual({
+      discussions: navigationState,
+      dm: null,
+    });
+    expect(getConnectShellNavigationStates("dm", navigationState, dmNavigation)).toEqual({
+      discussions: null,
+      dm: dmNavigation,
+    });
   });
 
   it("connects each rendered tab to its tabpanel in both directions", () => {
