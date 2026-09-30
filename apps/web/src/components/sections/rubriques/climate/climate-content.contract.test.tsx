@@ -5,6 +5,11 @@ import { computeClimateContext } from "@/lib/analytics/climate-context";
 import { ClimateProxyNotice } from "./climate-components";
 
 const climateSection = readFileSync(new URL("./climate-section.tsx", import.meta.url), "utf8");
+const climateSectionView = readFileSync(
+  new URL("./climate-section-view.tsx", import.meta.url),
+  "utf8",
+);
+const climateImplementation = `${climateSection}\n${climateSectionView}`;
 const climateComponents = readFileSync(
   new URL("./climate-components.tsx", import.meta.url),
   "utf8",
@@ -40,7 +45,7 @@ describe("Climate public content contract", () => {
       <ClimateProxyNotice version={context.modelVersion} fr />,
     );
 
-    expect(climateSection).toContain(
+    expect(climateImplementation).toContain(
       "<ClimateProxyNotice version={context.modelVersion} fr={fr} />",
     );
     expect(markup).toContain("proxies de pilotage");
@@ -50,14 +55,14 @@ describe("Climate public content contract", () => {
   });
 
   it("uses a snapshot wording without claiming real-time freshness", () => {
-    expect(climateSection).toContain("Snapshot d’impact");
-    expect(climateSection).toContain("Recalculé à chaque chargement");
-    expect(climateSection).not.toMatch(/Flux Temps Réel|Real[- ]time flow|Calculé à l'instant|Calculated just now/i);
-    expect(climateSection).not.toContain("generatedAt");
+    expect(climateImplementation).toContain("Snapshot d’impact");
+    expect(climateImplementation).toContain("Recalculé à chaque chargement");
+    expect(climateImplementation).not.toMatch(/Flux Temps Réel|Real[- ]time flow|Calculé à l'instant|Calculated just now/i);
+    expect(climateImplementation).not.toContain("generatedAt");
   });
 
   it("links the water-impact CTA to the existing methodology anchor", () => {
-    expect(climateSection).toContain('href="/methodologie#impact-services"');
+    expect(climateImplementation).toContain('href="/methodologie#impact-services"');
     expect(methodologyClient).toContain('sectionId="impact-services"');
     expect(methodologyVisual).toContain("id={sectionId}");
   });

@@ -99,6 +99,128 @@ function buildReportsAnalysisContent({
   );
 }
 
+function buildReportsPublicSummaryContent(
+  publicSummary: Awaited<ReturnType<typeof loadReportsPublicSummary>> | null,
+) {
+  return publicSummary ? (
+    <section
+      className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+      data-testid="reports-public-summary"
+    >
+      <div>
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-red-600">
+          Synthèse publique
+        </p>
+        <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+          L&apos;impact visible des actions CleanMyMap
+        </h2>
+        <p className="cmm-text-body mt-2">
+          Consultez les indicateurs publics. Un compte est demandé uniquement pour générer un
+          export détaillé ou retrouver votre historique.
+        </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          ["Actions visibles", publicSummary.visibleActions],
+          ["Lieux couverts", publicSummary.distinctLocations],
+          ["Déchets récoltés", `${publicSummary.wasteKg} kg`],
+          ["Bénévoles mobilisés", publicSummary.volunteers],
+        ].map(([label, value]) => (
+          <div key={String(label)} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-xs font-semibold text-slate-500">{label}</p>
+            <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  ) : (
+    <section role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+      La synthèse publique est temporairement indisponible.
+    </section>
+  );
+}
+
+function buildReportsGenerationContent({
+  generationData,
+  historyResult,
+  dailyExportAvailability,
+}: {
+  generationData: Awaited<ReturnType<typeof loadReportsGenerationData>> | null;
+  historyResult: Awaited<ReturnType<typeof listReportGenerationHistory>> extends infer Rows
+    ? { rows: Rows; availability: "available" | "unavailable" }
+    : never;
+  dailyExportAvailability: ReportExportAvailability;
+}) {
+  return generationData ? (
+    <DeferredReportsWebDocument
+      contracts={generationData.contracts}
+      isTruncated={generationData.isTruncated}
+      sourceHealth={generationData.sourceHealth}
+      communityEvents={generationData.communityEvents}
+      communityEventsAvailability={generationData.communityEventsAvailability}
+      initialRecentRows={historyResult.rows}
+      initialHistoryAvailability={historyResult.availability}
+      dailyExportAvailability={dailyExportAvailability}
+    />
+  ) : (
+    <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
+      <p className="text-sm font-black uppercase tracking-[0.16em] text-red-600">
+        Génération indisponible
+      </p>
+      <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+        Le document détaillé n&apos;a pas pu être chargé
+      </h2>
+      <p className="cmm-text-body mt-2">
+        Réessayez dans un instant. Le chargement serveur des contrats a échoué.
+      </p>
+    </section>
+  );
+}
+
+function buildReportsAnalysisUnavailableContent() {
+  return (
+    <section
+      role="alert"
+      className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 shadow-[0_10px_24px_-18px_rgba(180,83,9,0.25)]"
+    >
+      <p className="text-sm font-black uppercase tracking-[0.16em] text-amber-700">
+        Analyse temporairement indisponible
+      </p>
+      <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+        Les indicateurs n&apos;ont pas pu être chargés
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-amber-900">
+        Réessayez dans un instant. Aucun zéro n&apos;est affiché tant que les données Analyse ne
+        sont pas disponibles.
+      </p>
+    </section>
+  );
+}
+
+function buildAnonymousGenerationContent(clerkReachable: boolean) {
+  return (
+    <ClerkRequiredGate
+      isAuthenticated={false}
+      authUnavailable={!clerkReachable}
+      mode="blur"
+      stateHeadingLevel="h2"
+      lockedPreview={
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-700">
+            Compte requis pour générer
+          </p>
+          <p className="cmm-text-body mt-3">
+            La synthèse est publique. Connectez-vous uniquement pour préparer un export détaillé ou
+            consulter votre historique.
+          </p>
+        </section>
+      }
+    >
+      <div />
+    </ClerkRequiredGate>
+  );
+}
+
 export const metadata: Metadata = {
   title: "Rapports d'impact",
   description:
@@ -143,68 +265,13 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       return (
         <ReportsPageV2Layout
           activeTab={activeTab}
-          generationContent={
-            <ClerkRequiredGate
-              isAuthenticated={false}
-              authUnavailable={!clerkReachable}
-              mode="blur"
-              stateHeadingLevel="h2"
-              lockedPreview={
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-700">
-                    Compte requis pour générer
-                  </p>
-                  <p className="cmm-text-body mt-3">
-                    La synthèse est publique. Connectez-vous uniquement pour préparer un export
-                    détaillé ou consulter votre historique.
-                  </p>
-                </section>
-              }
-            >
-              <div />
-            </ClerkRequiredGate>
-          }
+          generationContent={buildAnonymousGenerationContent(clerkReachable)}
         />
       );
     }
 
     const publicSummary = await loadReportsPublicSummary().catch(() => null);
-    const publicSummaryContent = publicSummary ? (
-      <section
-        className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-        data-testid="reports-public-summary"
-      >
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-red-600">
-            Synthèse publique
-          </p>
-          <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
-            L&apos;impact visible des actions CleanMyMap
-          </h2>
-          <p className="cmm-text-body mt-2">
-            Consultez les indicateurs publics. Un compte est demandé uniquement pour générer un
-            export détaillé ou retrouver votre historique.
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ["Actions visibles", publicSummary.visibleActions],
-            ["Lieux couverts", publicSummary.distinctLocations],
-            ["Déchets récoltés", `${publicSummary.wasteKg} kg`],
-            ["Bénévoles mobilisés", publicSummary.volunteers],
-          ].map(([label, value]) => (
-            <div key={String(label)} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-              <p className="text-xs font-semibold text-slate-500">{label}</p>
-              <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-    ) : (
-      <section role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
-        La synthèse publique est temporairement indisponible.
-      </section>
-    );
+    const publicSummaryContent = buildReportsPublicSummaryContent(publicSummary);
 
     return <ReportsPageV2Layout activeTab="analysis" analysisContent={publicSummaryContent} />;
   }
@@ -220,30 +287,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       ),
     ]);
 
-    const generationContent = generationData ? (
-      <DeferredReportsWebDocument
-        contracts={generationData.contracts}
-        isTruncated={generationData.isTruncated}
-        sourceHealth={generationData.sourceHealth}
-        communityEvents={generationData.communityEvents}
-        communityEventsAvailability={generationData.communityEventsAvailability}
-        initialRecentRows={historyResult.rows}
-        initialHistoryAvailability={historyResult.availability}
-        dailyExportAvailability={dailyExportAvailability}
-      />
-    ) : (
-      <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
-        <p className="text-sm font-black uppercase tracking-[0.16em] text-red-600">
-          Génération indisponible
-        </p>
-        <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
-          Le document détaillé n&apos;a pas pu être chargé
-        </h2>
-        <p className="cmm-text-body mt-2">
-          Réessayez dans un instant. Le chargement serveur des contrats a échoué.
-        </p>
-      </section>
-    );
+    const generationContent = buildReportsGenerationContent({
+      generationData,
+      historyResult,
+      dailyExportAvailability,
+    });
 
     return (
       <AccountCompletionGate state={accountCompletion}>
@@ -262,21 +310,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     () => "unavailable" as ReportExportAvailability,
   );
   const analysisContent = analysisResult.availability === "unavailable" ? (
-    <section
-      role="alert"
-      className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 shadow-[0_10px_24px_-18px_rgba(180,83,9,0.25)]"
-    >
-      <p className="text-sm font-black uppercase tracking-[0.16em] text-amber-700">
-        Analyse temporairement indisponible
-      </p>
-      <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
-        Les indicateurs n&apos;ont pas pu être chargés
-      </h2>
-      <p className="mt-2 text-sm leading-6 text-amber-900">
-        Réessayez dans un instant. Aucun zéro n&apos;est affiché tant que les données Analyse ne
-        sont pas disponibles.
-      </p>
-    </section>
+    buildReportsAnalysisUnavailableContent()
   ) : (
     (() => {
       const { overview, report, monthlyData } = analysisResult.data;
