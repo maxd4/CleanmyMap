@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -41,6 +42,8 @@ async function fetchJson<T>(url: string): Promise<T> {
 export function GamificationSection() {
   const { locale, theme, displayMode, setDisplayMode, toggleTheme } = useSitePreferences();
   const fr = locale === "fr";
+  const searchParams = useSearchParams();
+  const receiptId = searchParams?.get("receipt") ?? null;
 
   const {
     data: meData,
@@ -48,8 +51,10 @@ export function GamificationSection() {
     error: meError,
     mutate: mutateMe,
   } = useSWR(
-    "gamification-me",
-    () => fetchJson<MeResponse>("/api/gamification/me"),
+    ["gamification-me", receiptId],
+    () => fetchJson<MeResponse>(receiptId
+      ? `/api/gamification/me?receipt=${encodeURIComponent(receiptId)}`
+      : "/api/gamification/me"),
     swrRecentViewOptions,
   );
 
@@ -95,6 +100,7 @@ export function GamificationSection() {
 
             <GamificationReconciliationHistory
               history={meData?.reconciliationHistory}
+              targetedEntry={meData?.reconciliationTarget}
               progression={progression}
               loading={meLoading}
               error={meError}

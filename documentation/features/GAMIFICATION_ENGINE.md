@@ -232,11 +232,14 @@ avant l'accès privilégié. La mutation reste idempotente et est bornée par
 `acknowledged_at IS NULL` ; elle ne révèle donc pas si un UUID appartient à un
 autre compte.
 
-Lors de la lecture, le payload est validé comme reçu de réconciliation,
-non-acquitté et cohérent avec l'utilisateur demandé (`receipt.userId ===
-userId`). Un payload malformé, d'un autre type, déjà acquitté ou portant un
-propriétaire incohérent est ignoré et n'est jamais transmis à l'UI. Le filtre
-SQL `app_notifications.user_id = userId` et les protections RLS restent
+Lors de la lecture de l'historique, le payload est validé comme reçu de
+réconciliation et cohérent avec l'utilisateur demandé (`receipt.userId ===
+userId`), qu'il soit acquitté ou non. Un payload malformé, d'un autre type ou
+portant un propriétaire incohérent est ignoré et n'est jamais transmis à l'UI.
+Le pending est chargé par une requête distincte, bornée par
+`app_notifications.user_id = userId`, `type = 'gamification_reconciliation'`
+et `acknowledged_at IS NULL`; ses compteurs ne sont donc pas calculés sur les
+50 lignes de l'historique. Le filtre SQL et les protections RLS restent
 obligatoires.
 
 Un rebuild dont `hasUserVisibleChanges` vaut `false` ne crée aucune
@@ -257,13 +260,21 @@ ultérieure remplace la nouveauté de la vue principale, tandis que les reçus
 antérieurs restent consultables.
 
 La page `/sections/gamification` propose un historique secondaire, du plus
-récent au plus ancien, limité aux 50 derniers reçus du compte courant. Chaque
-ligne résume la date, la version CURRENT, le delta XP, le niveau avant/après et
-les compteurs de changements ; le détail réutilise le dialogue existant. Un
-reçu ciblé peut être ouvert avec `/sections/gamification?receipt=<id>` depuis
-la notification ou l'historique. La lecture utilise `Cache-Control: private,
-no-store` afin que l'état AFTER et le reçu restent cohérents après une
-réconciliation.
+récent au plus ancien, limité aux 50 derniers reçus du compte courant. Les
+reçus acquittés restent consultables dans cette fenêtre. Chaque ligne résume
+la date, la version CURRENT, le delta XP, le niveau avant/après et les
+compteurs de changements ; le détail réutilise le dialogue existant. Une
+notification ouvre `/sections/gamification?receipt=<UUID opaque de
+notification>` : cet identifiant borné est résolu côté serveur avec le scope
+de l'utilisateur authentifié et peut cibler un reçu conservé hors des 50
+derniers. Un identifiant malformé, inexistant ou d'un autre compte n'ouvre
+aucun reçu. La lecture utilise `Cache-Control: private, no-store` afin que
+l'état AFTER et le reçu restent cohérents après une réconciliation.
+
+`seen_at` représente la première consultation de la notification depuis la
+cloche ou le tableau de bord ; `unseenCount` désigne donc les mises à jour non
+encore consultées, et non les mises à jour survenues depuis une visite de la
+page Gamification.
 
 La notification globale réutilise `public.app_notifications`. Elle est créée
 uniquement pour une réconciliation avec changement visible, et son CTA ouvre

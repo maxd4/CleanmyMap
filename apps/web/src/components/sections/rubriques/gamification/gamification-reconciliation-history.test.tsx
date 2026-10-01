@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const entry = {
-  notificationId: "notification-1",
+  notificationId: "11111111-1111-4111-8111-111111111111",
   createdAt: "2026-09-30T10:00:00.000Z",
   seenAt: null,
   acknowledgedAt: null,
@@ -55,11 +55,33 @@ describe("GamificationReconciliationHistory", () => {
   });
 
   it("opens the history when a receipt deep-link targets a known reconciliation", () => {
-    navigation.searchParams = new URLSearchParams("receipt=reconciliation-1");
+    navigation.searchParams = new URLSearchParams("receipt=11111111-1111-4111-8111-111111111111");
 
     const markup = renderToStaticMarkup(
       <GamificationReconciliationHistory
         history={[entry]}
+        progression={undefined}
+        loading={false}
+        error={null}
+        locale="fr"
+      />,
+    );
+
+    expect(markup).toContain("<details open");
+  });
+
+  it("opens a server-resolved receipt that is outside the displayed history window", () => {
+    navigation.searchParams = new URLSearchParams("receipt=22222222-2222-4222-8222-222222222222");
+    const targetedEntry = {
+      ...entry,
+      notificationId: "22222222-2222-4222-8222-222222222222",
+      receipt: { ...entry.receipt, reconciliationId: "composite-user-xp-version" },
+    };
+
+    const markup = renderToStaticMarkup(
+      <GamificationReconciliationHistory
+        history={[entry]}
+        targetedEntry={targetedEntry}
         progression={undefined}
         loading={false}
         error={null}

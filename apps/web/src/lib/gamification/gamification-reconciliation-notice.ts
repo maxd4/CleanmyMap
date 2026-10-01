@@ -22,10 +22,12 @@ export type GamificationReconciliationHistoryEntry = {
 export type GamificationReconciliationInbox = {
   history: GamificationReconciliationHistoryEntry[];
   pending: PendingGamificationReconciliation | null;
+  targeted: GamificationReconciliationHistoryEntry | null;
 };
 
 const GAMIFICATION_RECONCILIATION_HISTORY_LIMIT = 50;
 const RECONCILIATION_NOTIFICATION_SELECT = "id, created_at, seen_at, acknowledged_at, payload";
+const OPAQUE_NOTIFICATION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type UnknownRecord = Record<string, unknown>;
 type ReconciliationNotificationRow = {
@@ -35,6 +37,10 @@ type ReconciliationNotificationRow = {
   acknowledged_at?: unknown;
   payload?: unknown;
 };
+
+export function isGamificationReconciliationNotificationId(value: unknown): value is string {
+  return typeof value === "string" && OPAQUE_NOTIFICATION_ID_PATTERN.test(value);
+}
 
 function isRecord(value: unknown): value is UnknownRecord {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -106,6 +112,25 @@ async function loadReconciliationRows(
   return (result.data ?? []) as ReconciliationNotificationRow[];
 }
 
+export async function loadGamificationReconciliationTarget(
+  supabase: SupabaseClient,
+  userId: string,
+  notificationId: string | null,
+): Promise<GamificationReconciliationHistoryEntry | null> {
+  if (!isGamificationReconciliationNotificationId(notificationId)) return null;
+
+  const { data, error } = await supabase
+    .from("app_notifications")
+    .select(RECONCILIATION_NOTIFICATION_SELECT)
+    .eq("id", notificationId)
+    .eq("user_id", userId)
+    .eq("type", "gamification_reconciliation")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+
+  return parseReconciliationRows(data ? [data as ReconciliationNotificationRow] : [], userId)[0] ?? null;
+}
+
 function parseReconciliationRows(
   rows: ReconciliationNotificationRow[],
   userId: string,
@@ -146,10 +171,12 @@ export async function loadGamificationReconciliationHistory(
 export async function loadGamificationReconciliationInbox(
   supabase: SupabaseClient,
   userId: string,
+  targetNotificationId: string | null = null,
 ): Promise<GamificationReconciliationInbox> {
-  const [historyRows, pendingRows] = await Promise.all([
+  const [historyRows, pendingRows, targeted] = await Promise.all([
     loadReconciliationRows(supabase, userId, { limit: GAMIFICATION_RECONCILIATION_HISTORY_LIMIT }),
     loadReconciliationRows(supabase, userId, { onlyUnacknowledged: true }),
+    loadGamificationReconciliationTarget(supabase, userId, targetNotificationId),
   ]);
   const history = parseReconciliationRows(historyRows, userId);
   const pendingEntries = parseReconciliationRows(pendingRows, userId)
@@ -158,6 +185,7 @@ export async function loadGamificationReconciliationInbox(
 
   return {
     history,
+    targeted,
     pending: latest
       ? {
           ...latest,

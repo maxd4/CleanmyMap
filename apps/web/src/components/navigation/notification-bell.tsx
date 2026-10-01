@@ -226,7 +226,7 @@ function NotificationBellSession({
     if (!isCurrentRequest(request)) {
       return;
     }
-    const href = buildNotificationHref(notification.payload);
+    const href = buildNotificationHref(notification.payload, notification.id);
     if (href) {
       setIsOpen(false);
       router.push(href);

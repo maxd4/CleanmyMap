@@ -2,23 +2,26 @@ import { describe, expect, it } from "vitest";
 import { buildGamificationReconciliationHref } from "./gamification-notification-targets";
 
 describe("buildGamificationReconciliationHref", () => {
-  it("targets the receipt history entry with the canonical query parameter", () => {
+  const notificationId = "11111111-1111-4111-8111-111111111111";
+
+  it("uses only the opaque notification identity in the canonical query parameter", () => {
     expect(buildGamificationReconciliationHref({
       kind: "gamification_reconciliation_receipt",
-      reconciliationId: "reconciliation/1",
-    })).toBe("/sections/gamification?receipt=reconciliation%2F1");
+      reconciliationId: "user-1|v1|xp=48|secret-change-identities",
+    }, notificationId)).toBe(`/sections/gamification?receipt=${notificationId}`);
   });
 
-  it("accepts the persisted nested receipt shape", () => {
+  it("does not derive a target from the composite reconciliation id", () => {
     expect(buildGamificationReconciliationHref({
       kind: "gamification_reconciliation_receipt",
       receipt: { reconciliationId: "reconciliation-2" },
-    })).toBe("/sections/gamification?receipt=reconciliation-2");
+    }, undefined)).toBeNull();
   });
 
-  it("does not create a navigation target for unrelated or incomplete notifications", () => {
+  it("does not create a navigation target for unrelated, malformed, or incomplete notifications", () => {
     expect(buildGamificationReconciliationHref({ kind: "system" })).toBeNull();
-    expect(buildGamificationReconciliationHref({ kind: "gamification_reconciliation_receipt" })).toBeNull();
+    expect(buildGamificationReconciliationHref({ kind: "gamification_reconciliation_receipt" }, "notification-1")).toBeNull();
+    expect(buildGamificationReconciliationHref({ kind: "gamification_reconciliation_receipt" }, "user-1")).toBeNull();
     expect(buildGamificationReconciliationHref(null)).toBeNull();
   });
 });
