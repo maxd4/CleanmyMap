@@ -3,8 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import type { GamificationReconciliationHistoryEntry } from "@/lib/gamification/gamification-reconciliation-notice";
 import { GamificationReconciliationHistory } from "./gamification-reconciliation-history";
 
+const navigation = vi.hoisted(() => ({
+  searchParams: null as URLSearchParams | null,
+}));
+
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => navigation.searchParams,
 }));
 
 const entry = {
@@ -26,7 +30,9 @@ const entry = {
 } as unknown as GamificationReconciliationHistoryEntry;
 
 describe("GamificationReconciliationHistory", () => {
-  it("keeps the history secondary and exposes the required receipt summary", () => {
+  it("renders without a search-params context", () => {
+    navigation.searchParams = null;
+
     const markup = renderToStaticMarkup(
       <GamificationReconciliationHistory
         history={[entry]}
@@ -46,5 +52,21 @@ describe("GamificationReconciliationHistory", () => {
     expect(markup).toContain("Voir le détail");
     expect(markup).toContain('id="gamification-reconciliation-history"');
     expect(markup).not.toContain("user-1");
+  });
+
+  it("opens the history when a receipt deep-link targets a known reconciliation", () => {
+    navigation.searchParams = new URLSearchParams("receipt=reconciliation-1");
+
+    const markup = renderToStaticMarkup(
+      <GamificationReconciliationHistory
+        history={[entry]}
+        progression={undefined}
+        loading={false}
+        error={null}
+        locale="fr"
+      />,
+    );
+
+    expect(markup).toContain("<details open");
   });
 });

@@ -39,6 +39,15 @@ function changeCounts(entry: GamificationReconciliationHistoryEntry): {
   };
 }
 
+function findTargetedEntry(
+  entries: GamificationReconciliationHistoryEntry[],
+  receiptId: string | null,
+  dismissedReceiptId: string | null,
+): GamificationReconciliationHistoryEntry | null {
+  if (!receiptId || receiptId === dismissedReceiptId) return null;
+  return entries.find((entry) => entry.receipt.reconciliationId === receiptId) ?? null;
+}
+
 function HistoryEntry({
   entry,
   locale,
@@ -87,6 +96,35 @@ function HistoryEntry({
   );
 }
 
+function HistoryContent({
+  entries,
+  error,
+  locale,
+  onOpen,
+}: {
+  entries: GamificationReconciliationHistoryEntry[];
+  error: unknown;
+  locale: string;
+  onOpen: (entry: GamificationReconciliationHistoryEntry) => void;
+}) {
+  const fr = locale === "fr";
+  return (
+    <div className="mt-5 border-t border-[#f1dfd8] pt-5">
+      {error ? (
+        <p className="text-sm font-semibold text-[#b4362e]" role="alert">{fr ? "L’historique est momentanément indisponible." : "History is temporarily unavailable."}</p>
+      ) : entries.length === 0 ? (
+        <p className="text-sm text-[#806b65]">{fr ? "Aucune mise à jour de progression enregistrée." : "No progress update recorded."}</p>
+      ) : (
+        <ol className="space-y-3" aria-label={fr ? "Reçus de réconciliation, du plus récent au plus ancien" : "Reconciliation receipts, newest first"}>
+          {entries.map((entry) => (
+            <HistoryEntry key={entry.notificationId} entry={entry} locale={locale} onOpen={() => onOpen(entry)} />
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 export function GamificationReconciliationHistory({
   history,
   progression,
@@ -102,7 +140,7 @@ export function GamificationReconciliationHistory({
 }) {
   const fr = locale === "fr";
   const searchParams = useSearchParams();
-  const receiptId = searchParams.get("receipt");
+  const receiptId = searchParams?.get("receipt") ?? null;
   const [isOpen, setIsOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<GamificationReconciliationHistoryEntry | null>(null);
   const [dismissedReceiptId, setDismissedReceiptId] = useState<string | null>(null);
@@ -116,9 +154,7 @@ export function GamificationReconciliationHistory({
     () => "",
   );
   const targetedEntry = useMemo(
-    () => receiptId && receiptId !== dismissedReceiptId
-      ? entries.find((entry) => entry.receipt.reconciliationId === receiptId) ?? null
-      : null,
+    () => findTargetedEntry(entries, receiptId, dismissedReceiptId),
     [dismissedReceiptId, entries, receiptId],
   );
   const activeEntry = selectedEntry ?? targetedEntry;
@@ -162,19 +198,7 @@ export function GamificationReconciliationHistory({
           <span className="shrink-0 text-xs font-black uppercase tracking-[0.14em] text-[#b4362e]">{isOpen ? (fr ? "Réduire" : "Collapse") : (fr ? "Afficher" : "Show")}</span>
         </summary>
 
-        <div className="mt-5 border-t border-[#f1dfd8] pt-5">
-          {error ? (
-            <p className="text-sm font-semibold text-[#b4362e]" role="alert">{fr ? "L’historique est momentanément indisponible." : "History is temporarily unavailable."}</p>
-          ) : entries.length === 0 ? (
-            <p className="text-sm text-[#806b65]">{fr ? "Aucune mise à jour de progression enregistrée." : "No progress update recorded."}</p>
-          ) : (
-            <ol className="space-y-3" aria-label={fr ? "Reçus de réconciliation, du plus récent au plus ancien" : "Reconciliation receipts, newest first"}>
-              {entries.map((entry) => (
-                <HistoryEntry key={entry.notificationId} entry={entry} locale={locale} onOpen={() => setSelectedEntry(entry)} />
-              ))}
-            </ol>
-          )}
-        </div>
+        <HistoryContent entries={entries} error={error} locale={locale} onOpen={setSelectedEntry} />
       </details>
 
       {selectedDetailCopy ? (
