@@ -19,7 +19,7 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
 vi.mock("@/lib/actions/participation/organizers", () => ({
-  loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
+  loadCanonicalActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
 }));
 vi.mock("@/lib/gamification/progression-tracking", () => ({
   refreshProgressionProfile: refreshProgressionProfileMock,

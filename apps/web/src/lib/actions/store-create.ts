@@ -43,6 +43,54 @@ import { resolveCanonicalCreateActionPayload } from "./organizer-directory-regis
 
 export { buildActionInsertPayload, buildCreateActionGeometry } from "./store-create-contract";
 
+async function persistActionOrganizers(
+  supabase: SupabaseClient,
+  actionId: string,
+  organizers: ResolvedActionOrganizer[],
+  requirement: "required" | "optional" | undefined,
+): Promise<void> {
+  if (requirement !== "optional" || organizers.length > 0) {
+    await insertActionOrganizers(supabase, actionId, organizers);
+  }
+}
+
+async function persistCreatedActionData(
+  supabase: SupabaseClient,
+  params: {
+    actionId: string;
+    creatorUserId: string;
+    organizers: ResolvedActionOrganizer[];
+    organizerRequirement?: "required" | "optional";
+    manualParticipants: ResolvedActionParticipant[];
+    payload: CreateActionPayload;
+    status?: Exclude<ActionStatus, "cancelled">;
+  },
+): Promise<void> {
+  await persistActionOrganizers(
+    supabase,
+    params.actionId,
+    params.organizers,
+    params.organizerRequirement,
+  );
+  await insertActionRegistrations(
+    supabase,
+    params.actionId,
+    buildInitialActionRegistrationRows({
+      actionId: params.actionId,
+      creatorUserId: params.creatorUserId,
+      organizers: params.organizers,
+      manualParticipants: params.manualParticipants,
+    }),
+  );
+  await recordCreateActionTrainingExample(supabase, {
+    actionId: params.actionId,
+    payload: params.payload,
+  });
+  if (params.status === "approved") {
+    await recordRepollutionPredictionEvaluationForAction(supabase, params.actionId);
+  }
+}
+
 type ResolvedCreateActionDrawing = {
   drawing: ActionDrawing | null;
   geometrySource: ActionGeometrySource | null;
@@ -162,6 +210,7 @@ export async function createAction(
     userId: string;
     payload: CreateActionPayload;
     organizers: ResolvedActionOrganizer[];
+    organizerRequirement?: "required" | "optional";
     manualParticipants?: ResolvedActionParticipant[];
     status?: Exclude<ActionStatus, "cancelled">;
     departmentAttribution?: {
@@ -247,25 +296,15 @@ export async function createAction(
     status: params.status,
   });
 
-  await insertActionOrganizers(supabase, actionId, params.organizers);
-  await insertActionRegistrations(
-    supabase,
+  await persistCreatedActionData(supabase, {
     actionId,
-    buildInitialActionRegistrationRows({
-      actionId,
-      creatorUserId: params.userId,
-      organizers: params.organizers,
-      manualParticipants: params.manualParticipants ?? [],
-    }),
-  );
-  await recordCreateActionTrainingExample(supabase, {
-    actionId,
+    creatorUserId: params.userId,
+    organizers: params.organizers,
+    organizerRequirement: params.organizerRequirement,
+    manualParticipants: params.manualParticipants ?? [],
     payload: payloadWithDepartment,
+    status: params.status,
   });
-
-  if (params.status === "approved") {
-    await recordRepollutionPredictionEvaluationForAction(supabase, actionId);
-  }
 
   return { id: String(actionId) };
 }

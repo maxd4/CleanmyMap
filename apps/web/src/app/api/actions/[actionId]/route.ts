@@ -19,7 +19,7 @@ import {
 } from "@/lib/actions/moderation-audit";
 import { loadManualRegistrationIdsForAction } from "@/lib/actions/participation/registration-records";
 import {
-  loadActionOrganizerIdsForAction,
+  loadCanonicalActionOrganizerIdsForAction,
 } from "@/lib/actions/participation/organizers";
 import { updateActionSchema } from "@/lib/validation/action";
 import { buildActionEditorPayload } from "@/lib/actions/action-editor-payload";
@@ -75,10 +75,9 @@ export async function GET(
     const permissionIdentity = identity
       ? { userId, role: identity.role, activeRole: identity.activeRole }
       : null;
-    const organizerIds = await loadActionOrganizerIdsForAction(
+    const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
       supabase,
       trimmedActionId,
-      row.created_by_clerk_id,
     );
     if (
       !canManageAction(
@@ -173,10 +172,9 @@ export async function PATCH(
     const permissionIdentity = identity
       ? { userId, role: identity.role, activeRole: identity.activeRole }
       : null;
-    const organizerIds = await loadActionOrganizerIdsForAction(
+    const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
       supabase,
       trimmedActionId,
-      current.created_by_clerk_id,
     );
     if (
       !canManageAction(
@@ -280,7 +278,6 @@ export async function PATCH(
       actionId: trimmedActionId,
       updateData,
       body,
-      current,
       userId,
       identity,
       shouldAuditModeration,

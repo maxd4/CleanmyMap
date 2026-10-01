@@ -1,7 +1,6 @@
 import { z } from "zod";
 import type { ActionStatus } from "@/lib/actions/types";
 import { createAction } from "@/lib/actions/store";
-import type { ResolvedActionOrganizer } from "@/lib/actions/participation/organizers";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { isValidAssociationName } from "@/lib/actions/association-options";
 import type { ActionDataQualitySummary } from "@/lib/actions/quality/data-quality-types";
@@ -175,14 +174,6 @@ function buildImportStats(items: PreparedImport[]) {
 
   return stats;
 }
-
-const adminImportOrganizer = (userId: string): ResolvedActionOrganizer => ({
-  userId,
-  displayName: "Import administrateur",
-  handle: null,
-  isPrimary: true,
-  sourceToken: null,
-});
 
 export async function POST(request: Request) {
   const operationId = newOperationId();
@@ -379,7 +370,6 @@ export async function POST(request: Request) {
     }
 
     const supabase = getSupabaseServerClient(true);
-    const organizer = adminImportOrganizer(access.userId);
     stage = "item_write";
     for (const [index, item] of preparedItems.entries()) {
       currentItemIndex = index;
@@ -387,7 +377,10 @@ export async function POST(request: Request) {
       await createAction(supabase, {
         userId: access.userId,
         payload: item.payload,
-        organizers: [organizer],
+        // The ingestion actor is persisted as the technical creator required
+        // by the current actions schema, not as a business organizer.
+        organizers: [],
+        organizerRequirement: "optional",
         status: item.status,
         departmentAttribution: {
           trust: "trusted",

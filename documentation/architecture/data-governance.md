@@ -666,6 +666,15 @@ canonique. Les anomalies de date, de mesure et de geolocalisation sont exposees
 par `apps/web/src/lib/actions/quality/data-quality.ts` afin que dashboard, rapports et
 exports partagent le meme diagnostic.
 
+L'import administrateur est un `BUSINESS_IMPORT`, pas une preuve d'ownership :
+`importedBy`/l'acteur technique est conservé pour l'exécution et l'audit, mais
+ne devient pas une ligne `action_organizers` par défaut. Si la source ne fournit
+aucun organisateur métier identifiable, cette absence est conservée. Les droits
+de créateur éventuels restent ceux du contrat explicite de la ressource ; ils ne
+transforment pas l'acteur d'ingestion en organisateur et ne remplacent pas la
+relation canonique `action_organizers`. Les allowlists `GRANTED_ROLE`, les
+configurations d'admin et `service_role` ne sont pas des relations métier.
+
 Une sauvegarde interne n'est pas une ingestion externe. Le format
 `cleanmymap.action-backup` version 2 est un contrat
 `DISASTER_RECOVERY_RESTORE` : `npm run restore:actions -w apps/web` valide le

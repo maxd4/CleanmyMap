@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  loadCanonicalActionOrganizerIdsForAction,
   resolveActionOrganizers,
   resolveDefaultActionOrganizerIds,
 } from "./organizers";
@@ -136,5 +137,52 @@ describe("resolveDefaultActionOrganizerIds", () => {
         creatorIsGlobalAdmin: false,
       }),
     ).toEqual(["user-admin-1"]);
+  });
+});
+
+describe("loadCanonicalActionOrganizerIdsForAction", () => {
+  it("returns only persisted organizer relations, even when an admin allowlist exists", async () => {
+    const relationQuery = {
+      select: vi.fn(() => relationQuery),
+      eq: vi.fn(() => relationQuery),
+      order: vi
+        .fn()
+        .mockImplementationOnce(() => relationQuery)
+        .mockResolvedValueOnce({
+          data: [
+            { organizer_clerk_id: " organizer-1 " },
+            { organizer_clerk_id: "organizer-1" },
+          ],
+          error: null,
+        }),
+    };
+    const supabase = {
+      from: vi.fn((table: string) => {
+        expect(table).toBe("action_organizers");
+        return relationQuery;
+      }),
+    } as unknown as SupabaseClient;
+
+    await expect(
+      loadCanonicalActionOrganizerIdsForAction(supabase, "action-1"),
+    ).resolves.toEqual(["organizer-1"]);
+  });
+
+  it("preserves an absent relation instead of inventing an admin or creator organizer", async () => {
+    const relationQuery = {
+      select: vi.fn(() => relationQuery),
+      eq: vi.fn(() => relationQuery),
+      order: vi
+        .fn()
+        .mockImplementationOnce(() => relationQuery)
+        .mockResolvedValueOnce({ data: [], error: null }),
+    };
+    const supabase = {
+      from: vi.fn(() => relationQuery),
+    } as unknown as SupabaseClient;
+
+    await expect(
+      loadCanonicalActionOrganizerIdsForAction(supabase, "action-without-organizer"),
+    ).resolves.toEqual([]);
   });
 });

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionQualityGrade } from "@/lib/actions/quality/quality-rules";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { logFailure } from "@/lib/logging/failure-log";
 import {
   actionMilestoneSourceId,
@@ -23,6 +23,13 @@ type ActionMilestoneAwardDependencies = {
     params: EventInsertParams,
   ) => Promise<boolean>;
 };
+
+async function loadActionMilestoneOrganizerIds(
+  supabase: SupabaseClient,
+  action: ActionRow,
+): Promise<string[]> {
+  return loadCanonicalActionOrganizerIdsForAction(supabase, action.id).catch(() => []);
+}
 
 async function loadConfirmedParticipantUserIdsByAction(
   supabase: SupabaseClient,
@@ -130,11 +137,7 @@ export async function awardActionMilestonesForUserWithDependencies(
   );
 
   for (const action of orderedActions) {
-    const canonicalOrganizerIds = await loadActionOrganizerIdsForAction(
-      supabase,
-      action.id,
-      action.created_by_clerk_id,
-    ).catch(() => [action.created_by_clerk_id].filter(Boolean));
+    const canonicalOrganizerIds = await loadActionMilestoneOrganizerIds(supabase, action);
     const qualityGrade = validationQualityGrades.get(action.id) ?? null;
     const assessments = assessActionMilestones({
       action,

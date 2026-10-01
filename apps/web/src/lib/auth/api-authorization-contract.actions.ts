@@ -20,8 +20,9 @@ export const actionsAuthorizationContract = {
     POST: {
       expected: "ACTIVE_ROLE=admin|max plus mandatory import audit",
       dimensions: ["admin/creator role", "audit"],
-      actual: "requireAdminAccess + import success/failure audit",
-      evidence: ["requireAdminAccess", "auditImportFailure"],
+      actual: "requireAdminAccess + normalizeExternalActionImport + createAction; the ingestion actor is audited but no synthetic action_organizers relation is created when the source organizer is unknown",
+      evidence: ["requireAdminAccess", "normalizeExternalActionImport", "createAction", "auditImportFailure"],
+      evidenceScope: "module",
     },
   },
   "actions/map/initial-nearest": {
@@ -266,7 +267,7 @@ export const actionsAuthorizationContract = {
       evidence: [
         "requireAuthenticatedAccess",
         "loadActionById",
-        "loadActionOrganizerIdsForAction",
+        "loadCanonicalActionOrganizerIdsForAction",
         "canManageAction",
         "isPublishedFuturePreAction",
       ],
@@ -279,7 +280,7 @@ export const actionsAuthorizationContract = {
       evidence: [
         "requireAuthenticatedAccess",
         "loadActionById",
-        "loadActionOrganizerIdsForAction",
+        "loadCanonicalActionOrganizerIdsForAction",
         "canManageAction",
         "isPublishedFuturePreAction",
       ],

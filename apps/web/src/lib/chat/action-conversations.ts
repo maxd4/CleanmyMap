@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { UserIdentity } from "@/lib/authz";
 import type { ActiveRole } from "@/lib/domain-language";
 import { loadActionById } from "@/lib/actions/store";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
 import { isPublishedFuturePreAction } from "@/lib/actions/temporal";
 import type { ActionRow } from "@/types/database";
@@ -230,10 +230,9 @@ export async function canModerateActionConversation(
     return true;
   }
 
-  const organizerIds = await loadActionOrganizerIdsForAction(
+  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
     supabase,
     actionId,
-    action.created_by_clerk_id,
   );
   return canModerateActionConversationForIdentity(identity, action, organizerIds);
 }

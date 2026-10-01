@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentUserIdentity } from "@/lib/authz";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { assessActionMilestones } from "./action-milestones";
 import { loadGamificationUserCounters } from "./counters";
 import { computeActionBalanceSummary } from "./action-balance-calculation";
@@ -57,7 +57,7 @@ async function loadCanonicalOrganizerIds(
   for (const action of actions) {
     canonicalOrganizerIds.set(
       action.id,
-      await loadActionOrganizerIdsForAction(supabase, action.id, action.created_by_clerk_id).catch(() => [action.created_by_clerk_id]),
+      await loadCanonicalActionOrganizerIdsForAction(supabase, action.id).catch(() => []),
     );
   }
   return canonicalOrganizerIds;

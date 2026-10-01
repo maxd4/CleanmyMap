@@ -36,6 +36,16 @@ Les imports externes administrateur passent par `normalizeExternalActionImport` 
 directe dans `actions` n'est pas un chemin d'import valide : elle contourne les
 organisateurs, la geometrie persistee et les metadonnees du contrat.
 
+Le compte qui exécute `/api/actions/import` est un acteur technique d'ingestion
+et d'audit. Il n'est pas ajouté automatiquement à `action_organizers`. La
+relation organisateur n'est persistée que lorsqu'elle est fournie et résolue par
+le contrat métier ; une source qui ne connaît pas l'organisateur conserve une
+relation absente. `GRANTED_ROLE`, `CLERK_ADMIN_USER_IDS`, `ACTIVE_ROLE` et les
+fallbacks de création ne deviennent jamais des `organizerIds` de décision
+AuthZ. Les fallbacks de création existants ne s'appliquent qu'au moment où une
+relation explicite est effectivement persistée et ne sont pas des fallbacks de
+lecture ou d'autorisation.
+
 Le resume de qualite est versionne par
 `apps/web/src/lib/actions/quality/data-quality.ts` et distingue :
 

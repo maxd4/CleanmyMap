@@ -1,4 +1,4 @@
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild";
 import {
   refreshProgressionProfile,
@@ -14,10 +14,9 @@ export async function refreshActionImpactProgressionDependents(
     creatorUserId: string | null;
   },
 ): Promise<string[]> {
-  const organizerIds = await loadActionOrganizerIdsForAction(
+  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
     supabase,
     params.actionId,
-    params.creatorUserId,
   );
   const affectedUserIds = Array.from(
     new Set(organizerIds.map((value) => value.trim()).filter(Boolean)),

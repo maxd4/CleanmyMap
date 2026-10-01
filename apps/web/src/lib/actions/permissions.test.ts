@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canManageAction,
   canManageActionsGlobally,
   canModerateActionsGlobally,
   canOverrideActionParticipants,
@@ -73,6 +74,58 @@ describe("action permissions", () => {
     expect(canOverrideActionParticipants({ activeRole: "max" })).toBe(true);
     expect(canOverrideActionParticipants({ activeRole: "elu" })).toBe(false);
     expect(canModerateActionsGlobally({ activeRole: "elu" })).toBe(false);
+  });
+
+  it("does not treat a granted admin role as an organizer relation when the active role is benevole", () => {
+    const identity = {
+      userId: "admin-1",
+      role: "admin" as const,
+      activeRole: "benevole" as const,
+    };
+    const action = { createdByClerkId: "creator-1" };
+
+    expect(canManageAction(identity, action, [])).toBe(false);
+    expect(canReviewActionParticipants(identity, action, [])).toBe(false);
+    expect(
+      canValidateActionAdministrativeRequirements(identity, action, []),
+    ).toBe(false);
+  });
+
+  it.each(["admin", "max"] as const)(
+    "uses the privileged active role %s as the only global action capability",
+    (activeRole) => {
+      const identity = {
+        userId: "privileged-1",
+        role: "benevole" as const,
+        activeRole,
+      };
+      expect(canManageAction(identity, { createdByClerkId: "creator-1" }, [])).toBe(true);
+    },
+  );
+
+  it("keeps a real organizer relation and keeps creator access limited to the explicit creator contract", () => {
+    const action = { createdByClerkId: "creator-1" };
+    expect(
+      canManageAction(
+        { userId: "organizer-1", role: "benevole", activeRole: "benevole" },
+        action,
+        ["organizer-1"],
+      ),
+    ).toBe(true);
+    expect(
+      canManageAction(
+        { userId: "creator-1", role: "benevole", activeRole: "benevole" },
+        action,
+        [],
+      ),
+    ).toBe(true);
+    expect(
+      canValidateActionAdministrativeRequirements(
+        { userId: "creator-1", activeRole: "benevole" },
+        action,
+        [],
+      ),
+    ).toBe(false);
   });
 
   it("lets creators, organizers and coorganizers review their action participants", () => {
