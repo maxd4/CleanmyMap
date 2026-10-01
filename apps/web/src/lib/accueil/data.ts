@@ -73,16 +73,10 @@ export type LandingSummary = {
   dataAvailability: LandingDataAvailability;
 } & PublicLandingActionAggregation;
 
-export const EMPTY_HOME_COMMUNITY_ACTIVITY: HomeCommunityActivitySummary = {
-  visibleActions: 0,
-  distinctLocations: 0,
-  items: [],
-};
-
 const HOMEPAGE_COMMUNITY_ACTION_LIMIT = 3;
 const LANDING_FALLBACK_CONTRACT_LIMIT = 500;
 
-export const ACCUEIL_TEST_MARKERS = [
+const ACCUEIL_TEST_MARKERS = [
   "test",
   "demo",
   "seed",
@@ -96,7 +90,7 @@ export const ACCUEIL_TEST_MARKERS = [
   "exemple",
 ] as const;
 
-export function isLikelyTestContract(contract: ActionDataContract): boolean {
+function isLikelyTestContract(contract: ActionDataContract): boolean {
   const haystack = [
     contract.id,
     contract.source,
@@ -427,7 +421,7 @@ async function attachActionPreviewImages(
   };
 }
 
-export function buildHomeCommunityActivityFromRecentContracts(
+function buildHomeCommunityActivityFromRecentContracts(
   recentContracts: ActionDataContract[],
   floorDate: string,
   totals: Pick<HomeCommunityActivitySummary, "visibleActions" | "distinctLocations">,
@@ -475,7 +469,7 @@ export function buildLandingSummaryFromContracts(
   };
 }
 
-export function buildLandingSummaryFromImpactSnapshot(
+function buildLandingSummaryFromImpactSnapshot(
   payload: PublicImpactSnapshotPayload,
   recentContracts: ActionDataContract[],
   sourceHealth: UnifiedSourceHealth = DEFAULT_LANDING_SOURCE_HEALTH,

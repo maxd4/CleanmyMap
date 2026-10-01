@@ -21,7 +21,7 @@ export function isDevAuthBypassForced(): boolean {
   return readEnvFlag("CMM_DEV_AUTH_BYPASS");
 }
 
-export function isGitHubCodespaces(): boolean {
+function isGitHubCodespaces(): boolean {
   return readEnvFlag("CODESPACES");
 }
 

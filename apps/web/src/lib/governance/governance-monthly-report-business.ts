@@ -37,7 +37,7 @@ export function getFastestGrowingContribution(
   })[0] ?? null;
 }
 
-export function formatContributionGrowth(item: GovernanceStorageContributionItem): string {
+function formatContributionGrowth(item: GovernanceStorageContributionItem): string {
   if (item.deltaBytes === 0) {
     return "stable";
   }

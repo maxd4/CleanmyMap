@@ -10,7 +10,7 @@ import {
   type PartnerCoverage,
 } from "@/lib/partners/onboarding-types";
 
-export const INITIAL_AVAILABILITY_SLOT: PartnerAvailabilitySlot = {
+const INITIAL_AVAILABILITY_SLOT: PartnerAvailabilitySlot = {
   day: "tue",
   start: "09:00",
   end: "18:00",

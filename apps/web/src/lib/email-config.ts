@@ -1,6 +1,6 @@
 import { env } from "@/lib/env";
 
-export const PUBLIC_CONTACT_EMAIL = "contact@cleanmymap.fr";
+const PUBLIC_CONTACT_EMAIL = "contact@cleanmymap.fr";
 
 function trimToUndefined(value: string | undefined): string | undefined {
   const trimmed = value?.trim();

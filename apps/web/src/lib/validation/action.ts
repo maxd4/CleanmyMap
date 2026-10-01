@@ -664,5 +664,3 @@ export const updateActionSchema = createActionLegacyBaseSchema
   reason: z.string().trim().max(500).optional(),
   })
   .superRefine(addTemporalContractIssue);
-
-export type CreateActionInput = z.infer<typeof createActionSchema>;

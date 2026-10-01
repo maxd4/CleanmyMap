@@ -14,7 +14,7 @@ export type MapCoverageMetrics = {
   traceCoverage: number;
 };
 
-export function isTraceItem(item: ActionMapItem): boolean {
+function isTraceItem(item: ActionMapItem): boolean {
   const geometryKind = item.contract?.geometry.kind ?? item.manual_drawing?.kind ?? null;
   return Boolean(
     item.manual_drawing ||

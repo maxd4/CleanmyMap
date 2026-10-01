@@ -97,27 +97,3 @@ export function RubriqueCard({
     </motion.div>
   );
 }
-
-/**
- * Sous-composant optionnel pour une icône de mise en avant avec effet glassmorphism
- */
-export function RubriqueCardIcon({ 
-  icon: Icon, 
-  themeColor = "fuchsia",
-  className,
-  size = 24
-}: { 
-  icon: LucideIcon, 
-  themeColor?: RubriqueTheme,
-  className?: string,
-  size?: number
-}) {
-  return (
-    <div
-      data-rubrique-theme={themeColor}
-      className={cn("cmm-rubrique-card-icon", className)}
-    >
-      <Icon size={size} />
-    </div>
-  );
-}

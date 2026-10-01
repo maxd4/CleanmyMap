@@ -84,12 +84,6 @@ export type PartnerAvailability = {
   note?: string;
 };
 
-export type PublicChannel = {
-  platform: "site web" | "instagram" | "facebook" | "email" | "téléphone";
-  label: string;
-  url: string;
-};
-
 export type PartnerOnboardingRequestInput = {
   organizationName: string;
   organizationType: OrganizationType;
@@ -107,7 +101,7 @@ export type PartnerOnboardingRequestInput = {
 
 export type PartnerTrustState = "trusted" | "pending" | "incomplete" | "editorial";
 
-export function formatParisArrondissementLabel(value: number): string {
+function formatParisArrondissementLabel(value: number): string {
   return value === 1 ? "1er" : `${value}e`;
 }
 
@@ -267,7 +261,7 @@ export function formatPartnerScopeLabel(scope: PartnerScope): string {
   return "Couverture France";
 }
 
-export function formatAvailabilitySlot(slot: PartnerAvailabilitySlot): string {
+function formatAvailabilitySlot(slot: PartnerAvailabilitySlot): string {
   const dayLabel = WEEKDAY_OPTIONS.find((option) => option.value === slot.day)?.label ?? slot.day;
   return `${dayLabel} ${slot.start}-${slot.end}`;
 }

@@ -1,5 +1,4 @@
 export const GOVERNANCE_METHODOLOGY_PATH = "/methodologie#governance-report";
-export const GOVERNANCE_ADMIN_REPORT_PATH = "/admin/services#governance-report";
 export const GOVERNANCE_ADMIN_FREE_PLANS_PATH = "/admin/services#free-plans";
 export const GOVERNANCE_ADMIN_STORAGE_PATH = "/admin/services#storage";
 export const GOVERNANCE_MONTHLY_REPORT_PATH = "/api/reports/governance-monthly";

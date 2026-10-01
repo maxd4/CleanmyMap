@@ -19,7 +19,7 @@ export type AppNotification = {
 const notificationColumns =
   "id, type, title, content, read_at, seen_at, acknowledged_at, created_at, payload" as const;
 
-export const NOTIFICATIONS_PAGE_SIZE = 20;
+const NOTIFICATIONS_PAGE_SIZE = 20;
 
 export type NotificationPageCursor = {
   createdAt: string;

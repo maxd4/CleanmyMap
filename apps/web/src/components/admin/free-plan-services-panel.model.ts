@@ -98,7 +98,7 @@ export function formatNumber(value: number | null, maximumFractionDigits?: numbe
   }).format(value);
 }
 
-export function toReportMonth(value: string | null): string {
+function toReportMonth(value: string | null): string {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) {
     const fallback = new Date();
@@ -140,7 +140,7 @@ export function getHealthLabel(state: ServiceStatusInfo["state"]): string {
   }
 }
 
-export function getEstimateTone(
+function getEstimateTone(
   status: EnvironmentalImpactInfrastructureServiceEstimate["status"],
 ): string {
   switch (status) {
@@ -156,7 +156,7 @@ export function getEstimateTone(
   }
 }
 
-export function getEstimateLabel(
+function getEstimateLabel(
   status: EnvironmentalImpactInfrastructureServiceEstimate["status"],
 ): string {
   switch (status) {
@@ -206,7 +206,7 @@ export function countMetricsBySource(
   );
 }
 
-export function getSnapshotServiceCharge(
+function getSnapshotServiceCharge(
   snapshot: EnvironmentalImpactSnapshotRecord | null | undefined,
   serviceKey: EnvironmentalImpactInfrastructureServiceKey,
 ): number {

@@ -168,7 +168,7 @@ export function formatLifecycleQuantity(value: number | null, unitLabel: string)
   }).format(value)} ${unitLabel}`;
 }
 
-export function buildReductionAction(service: {
+function buildReductionAction(service: {
   key: string;
   label: string;
   sharePercent: number;

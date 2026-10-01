@@ -1,6 +1,4 @@
-export const ACTIVITY_STATUSES = ["active", "inactive"] as const;
-
-export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number];
+export type ActivityStatus = "active" | "inactive";
 
 export function readActivityStatus(metadata: unknown): ActivityStatus {
   if (!metadata || typeof metadata !== "object") {

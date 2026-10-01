@@ -112,15 +112,4 @@ export const metadata: Metadata = {
   },
 };
 
-export function generateSeoKeywords(page: string): string[] {
-  const pageKeywords: Record<string, string[]> = {
-    home: [...KEYWORDS_BASE, ...KEYWORDS_ECO, ...KEYWORDS_ACTION],
-    dashboard: ["mon dashboard", "mes actions", "mon impact", "statistiques benevole", "impact terrain"],
-    reports: ["rapport impact", "statistiques", "kpis depollution", "bilan propreté", "valorisation résultats"],
-    admin: ["administration", "moderation", "gestion utilisateurs", "coordination"],
-    learn: ["apprendre écologie", "bonnes pratiques", "développement durable", "formation bénévole"],
-  };
-  return pageKeywords[page] || KEYWORDS_BASE;
-}
-
 export default metadata;

@@ -6,9 +6,6 @@ export const NAVIGATION_DROPDOWN_PANEL_CONTENT_CLASS_NAME =
 
 export const NAVIGATION_DROPDOWN_PANEL_LIST_CLASS_NAME = "mt-1.5";
 
-export const NAVIGATION_DROPDOWN_PANEL_SCROLL_LIST_CLASS_NAME =
-  "max-h-[min(22rem,calc(100vh-10rem))] space-y-1 overflow-y-auto px-3 pb-2.5 pt-0";
-
 export const NAVIGATION_DROPDOWN_TITLE_CLASS_NAME =
   "w-full whitespace-nowrap text-center text-[0.92rem] font-black leading-tight tracking-[-0.03em] sm:text-[1rem]";
 
@@ -35,8 +32,6 @@ export const NAVIGATION_DROPDOWN_CARD_LABEL_CLASS_NAME =
 
 export const NAVIGATION_DROPDOWN_CARD_CHEVRON_CLASS_NAME =
   "h-[0.58rem] w-[0.58rem] shrink-0 sm:h-[0.82rem] sm:w-[0.82rem]";
-
-export const NAVIGATION_DROPDOWN_ITEM_LINK_GAP_CLASS_NAME = "gap-1";
 
 export const NAVIGATION_DROPDOWN_HELP_TEXT_CLASS_NAME =
   "block w-full whitespace-normal break-words cmm-text-caption text-left leading-snug text-black opacity-100 !italic";

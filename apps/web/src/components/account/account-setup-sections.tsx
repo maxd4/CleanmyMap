@@ -19,7 +19,7 @@ import { DISPLAY_MODE_DESCRIPTIONS, DISPLAY_MODES, type DisplayMode, type Locale
 import { AccountSetupChoiceCard } from "@/components/account/account-setup-primitives";
 import { cn } from "@/lib/utils";
 
-export const PROFILE_ICONS: Record<AppProfile, LucideIcon> = {
+const PROFILE_ICONS: Record<AppProfile, LucideIcon> = {
   benevole: UserRound,
   coordinateur: UsersRound,
   scientifique: FlaskConical,
