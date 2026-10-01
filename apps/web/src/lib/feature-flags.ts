@@ -1,18 +1,10 @@
 interface FeatureFlags {
-  useSimpleForm: boolean
-  enableFormAnalytics: boolean
-  showFormComparison: boolean
   pageTemplateV2: boolean
-  parcoursNavV2: boolean
   quizServerSync: boolean
 }
 
 const defaultFlags: FeatureFlags = {
-  useSimpleForm: true,
-  enableFormAnalytics: true,
-  showFormComparison: true,
   pageTemplateV2: true,
-  parcoursNavV2: true,
   quizServerSync: false
 }
 

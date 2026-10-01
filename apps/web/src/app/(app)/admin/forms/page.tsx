@@ -8,8 +8,8 @@ export default function AdminFormPage() {
  <CmmPageLayout>
  <PageHeader
   tone="slate"
-  title="Form Admin Panel"
-  subtitle="Manage A/B testing, feature flags and monitor form analytics."
+  title="Administration des feature flags"
+  subtitle="Piloter uniquement les flags consommés par les parcours CURRENT."
  />
  <CmmSectionGroup>
       <EnhancedAdmin />
