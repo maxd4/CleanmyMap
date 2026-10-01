@@ -19,12 +19,14 @@ Dependances actives :
 - storage ;
 - migrations SQL ;
 - clients serveur et navigateur ;
-- scripts de sync/import/export.
+- scripts de synchronisation, d'export et de restauration versionnée.
 
 Points d'appui deja presents :
 
 - `apps/web/supabase/migrations/*`
 - `npm run data:archive:supabase`
+- `npm run backup:actions` et `npm run restore:actions` pour l'état action
+  versionné, avec plan préalable et écriture atomique confirmée
 - flux Google Sheet vers Supabase retire et non supporte
 - `npm run backend:supabase:push`
 - `npm run backend:supabase:preview:ensure`
@@ -77,6 +79,7 @@ Points d'appui deja presents :
 | Besoin | Artefact actuel |
 | --- | --- |
 | Export des donnees Supabase | `npm run data:archive:supabase` |
+| Backup/restauration de l'etat action | `npm run backup:actions` / `npm run restore:actions` |
 | Push schema / migrations | `npm run backend:supabase:push` |
 | Associer / reactiver un preview Supabase | `npm run backend:supabase:preview:ensure` |
 | Sync env Vercel | `npm run backend:vercel:env:sync` |
@@ -92,7 +95,6 @@ Points d'appui deja presents :
 
 ## Prochaine iteration utile
 
-1. formaliser un export de restauration complet associe a Supabase ;
+1. documenter un exercice de restauration sur environnement neutre ;
 2. ajouter un inventaire des points d'entree Vercel / Supabase dans le code ;
-3. documenter un exercice de restauration sur environnement neutre ;
-4. etendre ensuite la strategie a Clerk et PostHog.
+3. etendre ensuite la strategie a Clerk et PostHog.
