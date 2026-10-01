@@ -98,7 +98,7 @@ function ReconciliationActions({
         </CmmButton>
       ) : null}
       {copy.hasNewMilestonesOrBadges ? (
-        <CmmButton href="#gamification-milestones" tone="secondary" variant="pill" size="sm">
+        <CmmButton href={`#${copy.firstMilestoneTarget}`} tone="secondary" variant="pill" size="sm">
           {fr ? "Voir mes nouveaux jalons" : "View my new milestones"}
         </CmmButton>
       ) : null}

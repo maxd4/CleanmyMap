@@ -13,7 +13,7 @@ import type {
 type CatalogState = GamificationSummaryProgression["state"] | GamificationSummaryMilestone["state"];
 
 function stateLabel(state: CatalogState, fr: boolean): string {
-  if (state === "completed") return fr ? "Terminé" : "Completed";
+  if (state === "completed") return fr ? "✓ Terminé" : "✓ Completed";
   if (state === "in_progress") return fr ? "En cours" : "In progress";
   return fr ? "À découvrir" : "To discover";
 }
@@ -153,7 +153,7 @@ function ProgressionItem({ item, fr }: { item: GamificationSummaryProgression; f
 
 function milestoneReward(item: GamificationSummaryMilestone, fr: boolean): string {
   if (item.grantsXp) {
-    if (item.xpAmountOrPolicy.kind === "fixed_one_shot") return `+${item.xpAmountOrPolicy.amount} XP`;
+    if (item.xpAmountOrPolicy.kind === "fixed_one_shot" && item.xpAmountOrPolicy.amount > 0) return `+${item.xpAmountOrPolicy.amount} XP`;
     return fr ? "Récompense XP" : "XP reward";
   }
   return fr ? "Reconnaissance" : "Recognition";
@@ -178,8 +178,7 @@ function MilestoneItem({ item, fr }: { item: GamificationSummaryMilestone; fr: b
         </p>
       ) : null}
       <p className="mt-4 text-xs font-semibold text-[#a48d86]">
-        {item.achievedAt ? `${fr ? "Obtenu le" : "Achieved on"} ${item.achievedAt.slice(0, 10)}` : milestoneReward(item, fr)}
-        {item.achievedAt && item.grantsXp ? ` · ${milestoneReward(item, fr)}` : null}
+        {item.achievedAt ? `${fr ? "Obtenu le" : "Achieved on"} ${item.achievedAt.slice(0, 10)} · ${milestoneReward(item, fr)}` : milestoneReward(item, fr)}
       </p>
     </article>
   );
@@ -279,7 +278,9 @@ export function GamificationCatalogPanel({
       </div>
 
       <div id="gamification-progressions" tabIndex={-1} className="mt-6 space-y-6 scroll-mt-6">
-        <CatalogGroup title={fr ? "Nouveautés" : "New"} items={groups.progressions.newItems} fr={fr} kind="progression" />
+        <div id="gamification-progressions-new" className="scroll-mt-8">
+          <CatalogGroup title={fr ? "Nouveautés" : "New"} items={groups.progressions.newItems} fr={fr} kind="progression" />
+        </div>
         <CatalogGroup title={fr ? "En cours" : "In progress"} items={groups.progressions.inProgress} fr={fr} kind="progression" />
         <CatalogGroup title={fr ? "À découvrir" : "To discover"} items={groups.progressions.toDiscover} fr={fr} kind="progression" />
       </div>
@@ -293,7 +294,9 @@ export function GamificationCatalogPanel({
           <span className="hidden rounded-full bg-[#fff8f6] px-3 py-1 text-xs font-black text-[#b4362e] sm:inline-flex">{summary.milestones.length}</span>
         </div>
         <div className="mt-6 space-y-6">
-          <CatalogGroup title={fr ? "Nouveaux" : "New"} items={groups.milestones.newItems} fr={fr} kind="milestone" />
+          <div id="gamification-milestones-new" className="scroll-mt-8">
+            <CatalogGroup title={fr ? "Nouveaux" : "New"} items={groups.milestones.newItems} fr={fr} kind="milestone" />
+          </div>
           <CatalogGroup title={fr ? "En cours" : "In progress"} items={groups.milestones.inProgress} fr={fr} kind="milestone" />
           <CatalogGroup title={fr ? "Terminés" : "Completed"} items={groups.milestones.completed} fr={fr} kind="milestone" />
           <CatalogGroup title={fr ? "À découvrir" : "To discover"} items={groups.milestones.toDiscover} fr={fr} kind="milestone" />

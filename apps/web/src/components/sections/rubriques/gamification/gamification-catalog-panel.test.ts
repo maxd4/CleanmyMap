@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+import { createElement } from "react";
 import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
-import { buildCatalogGroups } from "./gamification-catalog-panel";
+import { buildCatalogGroups, GamificationCatalogPanel } from "./gamification-catalog-panel";
 
 function summary(overrides: Partial<GamificationSummary> = {}): GamificationSummary {
   return {
@@ -16,7 +18,7 @@ function summary(overrides: Partial<GamificationSummary> = {}): GamificationSumm
   };
 }
 
-function progression(id: "participation" | "organisation", state: "in_progress" | "not_started", isNewSinceLastRulesMigration: boolean) {
+function progression(id: "participation" | "organisation" | "exploration", state: "in_progress" | "not_started", isNewSinceLastRulesMigration: boolean) {
   return {
     id,
     label: id,
@@ -39,6 +41,7 @@ describe("buildCatalogGroups", () => {
     const groups = buildCatalogGroups(summary({
       progressions: [
         progression("participation", "in_progress", true),
+        progression("exploration", "not_started", true),
         progression("organisation", "not_started", false),
       ],
       milestones: [
@@ -59,10 +62,42 @@ describe("buildCatalogGroups", () => {
       ],
     }));
 
-    expect(groups.progressions.newItems.map((item) => item.id)).toEqual(["participation"]);
+    expect(groups.progressions.newItems.map((item) => item.id)).toEqual(["participation", "exploration"]);
     expect(groups.progressions.inProgress).toEqual([]);
     expect(groups.progressions.toDiscover.map((item) => item.id)).toEqual(["organisation"]);
     expect(groups.milestones.newItems.map((item) => item.id)).toEqual(["premiere_trace_utile"]);
     expect(groups.milestones.completed).toEqual([]);
+  });
+
+  it("keeps a newly introduced completed milestone in New with its real recognition state", () => {
+    const summaryValue = summary({
+      milestones: [{
+        id: "parcours_documente",
+        category: "BADGE_ONLY",
+        label: "Parcours documenté",
+        description: "Une preuve de parcours documentée.",
+        grantsXp: false,
+        xpAmountOrPolicy: { kind: "fixed_one_shot", amount: 0 },
+        state: "completed",
+        xpContribution: 0,
+        achieved: true,
+        achievedAt: "2026-10-01T00:00:00.000Z",
+        introducedInRulesRevision: 13,
+        isNewSinceLastRulesMigration: true,
+      }],
+    });
+
+    const markup = renderToStaticMarkup(createElement(GamificationCatalogPanel, {
+      summary: summaryValue,
+      loading: false,
+      error: null,
+      locale: "fr",
+    }));
+
+    expect(markup).toContain("Nouveau · ✓ Terminé");
+    expect(markup).toContain("Parcours documenté");
+    expect(markup).toContain("Reconnaissance");
+    expect(markup).toContain('id="milestone-parcours_documente"');
+    expect(markup).not.toContain("À découvrir 1");
   });
 });

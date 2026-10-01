@@ -55,6 +55,7 @@ describe("GamificationReconciliationNotice", () => {
     expect(markup).toContain("Voir mes nouvelles progressions");
     expect(markup).toContain('href="#progression-moderation"');
     expect(markup).toContain("Voir mes nouveaux jalons");
+    expect(markup).toContain('href="#milestone-boucle_bouclee"');
     expect(markup).toContain("Compris");
     expect(markup).toContain('role="status"');
     expect(markup).toContain('aria-live="polite"');
