@@ -19,6 +19,6 @@ describe("computeQualityLeaderboard (module)", () => {
     expect(leaderboard[0]?.avgQuality).toBeGreaterThanOrEqual(
       leaderboard[1]?.avgQuality ?? 0,
     );
-    expect(leaderboard[0]?.badge).toBeTruthy();
+    expect(leaderboard[0]).not.toHaveProperty("badge");
   });
 });

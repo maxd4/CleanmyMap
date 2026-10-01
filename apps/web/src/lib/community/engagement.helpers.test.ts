@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ActionListItem } from "../actions/types";
 import {
-  badgeFromQuality,
   extractArea,
   extractEventRefFromAction,
   percent,
@@ -45,9 +44,5 @@ describe("engagement helpers", () => {
     });
 
     expect(extractEventRefFromAction(action)).toBe("event-42");
-  });
-
-  it("assigns quality badges without prescribing an actor action", () => {
-    expect(badgeFromQuality(86, 8, 0.5)).toBe("Ambassadeur qualite");
   });
 });

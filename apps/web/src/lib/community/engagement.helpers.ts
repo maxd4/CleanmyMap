@@ -46,20 +46,3 @@ export function extractEventRefFromAction(item: ActionListItem): string | null {
   }
   return null;
 }
-
-export function badgeFromQuality(
-  avgQuality: number,
-  actions: number,
-  rateA: number,
-): string {
-  if (avgQuality >= 85 && actions >= 8 && rateA >= 0.5) {
-    return "Ambassadeur qualite";
-  }
-  if (avgQuality >= 75 && actions >= 10) {
-    return "Pilier terrain";
-  }
-  if (avgQuality >= 70 && actions >= 5) {
-    return "Contributeur fiable";
-  }
-  return "En progression";
-}
