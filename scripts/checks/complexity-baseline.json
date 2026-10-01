@@ -969,15 +969,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/reports/web-document/sections.tsx",
-      "line": 55,
-      "category": "React/JSX",
-      "ceiling": 33,
-      "status": "LEGACY",
-      "functionIdentity": "named:ReportsWebSections#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/reports/web-document/use-reports-web-document-model.ts",
       "line": 41,
       "category": "hooks",
@@ -3990,15 +3981,6 @@
       "ceiling": 307,
       "status": "LEGACY",
       "functionIdentity": "named:buildPdfData#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/reports/web-document/sections.tsx",
-      "line": 55,
-      "category": "React/JSX",
-      "ceiling": 603,
-      "status": "LEGACY",
-      "functionIdentity": "named:ReportsWebSections#1"
     },
     {
       "metric": "functionLength",

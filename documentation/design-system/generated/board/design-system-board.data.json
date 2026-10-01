@@ -49,9 +49,7 @@
       "page-header.tsx",
       "page-reading-template.tsx",
       "page-structure.tsx",
-      "page-transition.tsx",
       "permission-error-state.tsx",
-      "punchy-slogan.tsx",
       "qrcode-dialog.tsx",
       "rubrique-card.tsx",
       "rubrique-excel-export-button.tsx",
@@ -100,7 +98,6 @@
       "identity-profile-banner",
       "network-toast",
       "notification-bell",
-      "page-transition",
       "permission-error-state",
       "site-preferences-controls",
       "vibrant-background"

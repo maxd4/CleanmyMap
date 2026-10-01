@@ -7,8 +7,6 @@ import {
   auditRevealVisibilityCss,
   auditFramerMotionVisibility,
   auditRubriqueCard,
-  auditPageTransition,
-  auditPunchySlogan,
 } from "./check-motion-governance.mjs";
 
 const canonicalMotionCss = `
@@ -114,44 +112,6 @@ test("accepts a static sobre helper contract", () => {
   `;
 
   assert.deepEqual(auditDisplayModesCss(source), []);
-});
-
-test("rejects PageTransition without useReducedMotion", () => {
-  const source = `
-  import { motion } from "framer-motion";
-  import { useSitePreferences } from "./site-preferences-provider";
-  const { displayMode } = useSitePreferences();
-  const isMinimal = displayMode === "minimaliste";
-  const isStatic = displayMode === "sobre";
-  <motion.div animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0 }} />;
-  `;
-  const violations = auditPageTransition(source);
-
-  assert.ok(violations.some((violation) => /useReducedMotion/.test(violation)));
-});
-
-test("rejects PunchySlogan without displayMode", () => {
-  const source = `
-  import { motion, useReducedMotion } from "framer-motion";
-  const shouldReduceMotion = useReducedMotion();
-  const isSober = shouldReduceMotion;
-  const isMinimal = false;
-  <motion.div />;
-  `;
-  const violations = auditPunchySlogan(source);
-
-  assert.ok(violations.some((violation) => /displayMode/.test(violation)));
-});
-
-test("rejects reduced motion being assimilated to the sobre display mode", () => {
-  const source = `
-  const shouldReduceMotion = useReducedMotion();
-  const isSober = displayMode === "sobre" || shouldReduceMotion;
-  const isMinimal = displayMode === "minimaliste";
-  `;
-  const violations = auditPunchySlogan(source);
-
-  assert.ok(violations.some((violation) => /assimilated to isSober/.test(violation)));
 });
 
 test("rejects ActionCard local lift and icon nudge recipes", () => {

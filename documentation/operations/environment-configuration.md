@@ -157,7 +157,6 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `IMPORT_DRY_RUN_SECRET` | CleanMyMap | SECRET | O | O | O | O | Vercel / opérateur | preuve import |
 | `VISION_TRAINING_ENABLED` | CleanMyMap | CONFIG | O | O | O | O | Vercel / template local | entraînement vision |
 | `NEXT_PUBLIC_ENABLE_SUPABASE_CHAT_REALTIME` | CleanMyMap/Supabase | PUBLIC | O | O | O | O | Vercel / template local | chat realtime |
-| `NEXT_PUBLIC_GAMIFICATION_WS` | CleanMyMap | PUBLIC | O | O | O | O | Vercel / template local | WebSocket gamification |
 | `ALLOW_LOCAL_FILE_STORE_FALLBACK` | CleanMyMap | CONFIG | O | O | — | — | local/CI | fallback local |
 | `ALLOW_LOCAL_ACTION_STORE_IN_PROD` | CleanMyMap | CONFIG | — | — | — | O explicite | opérateur | garde-fou store |
 | `CMM_DEV_AUTH_BYPASS` | CleanMyMap | LOCAL | R | — | — | — | `.env.local` | auth dev |

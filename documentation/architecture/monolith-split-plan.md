@@ -65,7 +65,6 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | préserver les deux exports publics ; ajout d'une nouvelle famille de méthodologie ou rupture du contrat legacy |
 | `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | ALREADY_MODULARIZED | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | aucun ; nouvelle responsabilité métier ajoutée à la façade |
 | `apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts` | PROACTIVE_SPLIT | NONE | AFTER_ACTIVE_CHANGES | signaux complémentaires non mesurés | changements actifs du parcours déclaration ; prochain changement du draft, de la géométrie ou du payload |
-| `apps/web/src/components/reports/web-document/sections.tsx` | PROACTIVE_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | préserver l'ordre et les contrats de `ReportModel` ; ajout d'une nouvelle section ou évolution de plusieurs familles de métriques |
 
 ## E. Décisions établies
 
@@ -81,7 +80,6 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | COHESIVE_SINGLE_FILE | NONE | préserver les deux exports publics | ajout d'une nouvelle famille de méthodologie ou rupture du contrat legacy |
 | `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | ALREADY_MODULARIZED | NONE | aucun | nouvelle responsabilité métier ajoutée à la façade |
 | `apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts` | PROACTIVE_SPLIT | AFTER_ACTIVE_CHANGES | changements actifs du parcours déclaration | prochain changement du draft, de la géométrie ou du payload |
-| `apps/web/src/components/reports/web-document/sections.tsx` | PROACTIVE_SPLIT | LATER | préserver l'ordre et les contrats de `ReportModel` | ajout d'une nouvelle section ou évolution de plusieurs familles de métriques |
 
 ### Décisions établies — grille détaillée
 
@@ -238,22 +236,6 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | DEPENDENCY_OR_BLOCKER | changements actifs du parcours déclaration |
 | NEXT_TRIGGER | prochain changement du draft, de la géométrie ou du payload |
 
-#### `apps/web/src/components/reports/web-document/sections.tsx`
-
-| Champ | Valeur |
-| --- | --- |
-| RESPONSIBILITIES | orchestration des sections, métriques, profils, tableaux et états de rapport |
-| PUBLIC_CONTRACTS | props `ReportsWebSectionsProps` et contrat `ReportModel` |
-| SIDE_EFFECTS | aucun effet de données ; rendu dépendant du modèle chargé |
-| MAIN_CONSUMERS | document web de rapports |
-| TEST_BOUNDARY | sections de rapport, formatters et états loading/error |
-| COUPLING | modèle de rapport, constantes de sections et primitives UI |
-| NATURAL_EXTRACTION_BOUNDARY | une unité de rendu par famille de sections ou de métriques |
-| ARCHITECTURE_DECISION | PROACTIVE_SPLIT |
-| RATIONALE | les sections sont une frontière de rendu naturelle ; l'extraction peut réduire le couplage sans créer de couche générique |
-| PRIORITY | LATER |
-| DEPENDENCY_OR_BLOCKER | préserver l'ordre et les contrats de `ReportModel` |
-| NEXT_TRIGGER | ajout d'une nouvelle section ou évolution de plusieurs familles de métriques |
 <!-- RADAR:HUMAN_DECISIONS:END -->
 
 ## F. Radar brut à auditer
@@ -275,7 +257,6 @@ de découpage.
 | `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | `5d7cc97bf2b522e936495db7f1055188f795f2a2` | 681 | 29429 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
 | `apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx` | `5d7cc97bf2b522e936495db7f1055188f795f2a2` | 679 | 25408 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
 | `apps/web/src/app/docs/[...segments]/route.ts` | `5d7cc97bf2b522e936495db7f1055188f795f2a2` | 677 | 18727 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
-| `apps/web/src/components/reports/web-document/sections.tsx` | `5d7cc97bf2b522e936495db7f1055188f795f2a2` | 674 | 26318 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
 | `apps/web/src/lib/validation/action.ts` | `5d7cc97bf2b522e936495db7f1055188f795f2a2` | 669 | 25101 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
 | `apps/web/src/lib/pdf-export/simple-pdf.ts` | `5d7cc97bf2b522e936495db7f1055188f795f2a2` | 661 | 18944 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |
 | `apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx` | `5d7cc97bf2b522e936495db7f1055188f795f2a2` | 647 | 27997 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | REVIEW_REQUIRED |

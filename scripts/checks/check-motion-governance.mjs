@@ -5,8 +5,6 @@ export const MOTION_PATHS = {
   motionCss: "apps/web/src/styles/motion.css",
   baseCss: "apps/web/src/styles/base.css",
   displayModesCss: "apps/web/src/styles/display-modes.css",
-  pageTransition: "apps/web/src/components/ui/page-transition.tsx",
-  punchySlogan: "apps/web/src/components/ui/punchy-slogan.tsx",
   rubriqueCard: "apps/web/src/components/ui/rubrique-card.tsx",
   pageStructure: "apps/web/src/components/ui/page-structure.tsx",
   documentation: "documentation/design-system/MOTION_TRANSITIONS.md",
@@ -175,25 +173,6 @@ function auditConsumer(source, filePath) {
   return violations;
 }
 
-export function auditPageTransition(source, filePath = MOTION_PATHS.pageTransition) {
-  const violations = auditConsumer(source, filePath);
-  for (const marker of ["animate=", "exit=", "blur(10px)", "duration: 0.2", "duration: 0"]) {
-    requireText(source, filePath, marker, violations);
-  }
-  return violations;
-}
-
-export function auditPunchySlogan(source, filePath = MOTION_PATHS.punchySlogan) {
-  const violations = auditConsumer(source, filePath);
-  for (const marker of ["isSober", "isMinimal", "duration: 0.2"]) {
-    requireText(source, filePath, marker, violations);
-  }
-  if (/isSober\s*=.*shouldReduceMotion/.test(source)) {
-    violations.push(`${filePath}: shouldReduceMotion must not be assimilated to isSober`);
-  }
-  return violations;
-}
-
 export function auditActionCard(source, filePath = MOTION_PATHS.pageStructure) {
   const violations = [];
   const actionCard = extractScope(source, "export function ActionCard", "export type CTAGroupProps");
@@ -239,8 +218,6 @@ export function auditMotionRepository(repositoryRoot) {
       ...auditFramerMotionVisibility(fs.readFileSync(filePath, "utf8"), relativePath),
     );
   }
-  violations.push(...auditPageTransition(sources.pageTransition));
-  violations.push(...auditPunchySlogan(sources.punchySlogan));
   violations.push(...auditActionCard(sources.pageStructure));
 
   for (const marker of ["MOTION_TRANSITIONS.md", "CmmIcon", "check:motion"]) {
