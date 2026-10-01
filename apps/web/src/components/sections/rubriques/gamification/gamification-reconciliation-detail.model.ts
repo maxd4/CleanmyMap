@@ -87,10 +87,12 @@ export function buildReconciliationTargetSummary(
     ...receipt.progressions.added.map((item) => item.id),
     ...receipt.progressions.changed.map((item) => item.id),
     ...receipt.catalogChanges.newProgressionIds,
+    ...progression.summary.progressions.filter((item) => item.isNewSinceLastRulesMigration).map((item) => item.id),
   ]).filter((id) => currentProgressionIds.has(id as never));
   const milestoneIds = uniqueIds([
     ...receipt.milestones.unlocked.map((item) => item.id),
     ...receipt.catalogChanges.newMilestoneIds,
+    ...progression.summary.milestones.filter((item) => item.isNewSinceLastRulesMigration).map((item) => item.id),
   ]).filter((id) => currentMilestoneIds.has(id as never));
 
   return {

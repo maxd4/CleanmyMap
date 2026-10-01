@@ -146,6 +146,30 @@ describe("buildReconciliationNoticeCopy", () => {
     expect(multipleProgressions.hasNewMilestonesOrBadges).toBe(false);
   });
 
+  it("targets every still-new CURRENT mechanic, including a completed one", () => {
+    const currentSummary = {
+      ...summary,
+      progressions: [
+        ...summary.progressions,
+        { id: "participation", label: "Participation", isNewSinceLastRulesMigration: true },
+      ],
+      milestones: [
+        ...summary.milestones,
+        { id: "parcours_documente", label: "Parcours documenté", isNewSinceLastRulesMigration: true },
+      ],
+    } as GamificationSummary;
+    const currentProgression = { ...progression, summary: currentSummary } as unknown as UserProgressionResponse;
+
+    const copy = buildReconciliationNoticeCopy(receipt({
+      progressions: { added: [], removed: [], changed: [] },
+      badges: { unlocked: [], removed: [], upgraded: [], downgraded: [] },
+      milestones: { unlocked: [], removed: [] },
+    }), currentProgression, "fr");
+
+    expect(copy.firstProgressionTarget).toBe("progression-participation");
+    expect(copy.firstMilestoneTarget).toBe("milestone-parcours_documente");
+  });
+
   it("does not expose catalogue CTAs when only XP or level changed", () => {
     const copy = buildReconciliationNoticeCopy(receipt({
       progressions: { added: [], removed: [], changed: [] },
