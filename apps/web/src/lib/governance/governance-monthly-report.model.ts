@@ -278,12 +278,12 @@ export function buildGovernanceMonthlyReportPayload(params: {
     })),
   );
   const previousImpactSnapshot = params.environmentalImpact.snapshots[1] ?? null;
-  const topService = currentServices[0] ?? null;
+  const topMeasuredService = getTopMeasuredService(currentServices);
   const impactGrowthHighlights = buildTopGrowthHighlights(
     currentServices.map((service) => ({
       key: service.key,
       label: service.label,
-      monthlyKgCo2eProxy: service.monthlyKgCo2eProxy ?? 0,
+      monthlyKgCo2eProxy: service.monthlyKgCo2eProxy,
     })),
     previousImpactSnapshot,
   );
