@@ -24,7 +24,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "profile",
     categoryId: "pilotage",
-    spaceId: "decide",
     priority: 20,
     kind: "app-route",
     route: PROFIL_ROUTE,
@@ -35,7 +34,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "explorer",
     categoryId: "resources",
-    spaceId: "decide",
     priority: 18,
     kind: "app-route",
     route: EXPLORER_ROUTE,
@@ -50,7 +48,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "dashboard",
     categoryId: "pilotage",
-    spaceId: "decide",
     priority: 10,
     kind: "app-route",
     route: DASHBOARD_ROUTE,
@@ -62,7 +59,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "reports",
     categoryId: "analysis",
-    spaceId: "decide",
     priority: 30,
     kind: "app-route",
     route: "/reports",
@@ -76,7 +72,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "methodologie",
     categoryId: "analysis",
-    spaceId: "decide",
     priority: 32,
     kind: "app-route",
     route: "/methodologie",
@@ -90,7 +85,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "admin",
     categoryId: "pilotage",
-    spaceId: "supervise",
     priority: 10,
     kind: "app-route",
     route: ADMIN_ROUTE,
@@ -105,7 +99,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "pilotage",
     categoryId: "pilotage",
-    spaceId: "decide",
     priority: 14,
     kind: "app-route",
     route: PILOTAGE_ROUTE,
@@ -121,7 +114,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "elus",
     categoryId: "pilotage",
-    spaceId: "decide",
     priority: 40,
     kind: "section",
     anonymousPresentation: "disabled",
@@ -137,7 +129,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "new",
     categoryId: "terrain",
-    spaceId: "execute",
     priority: 12,
     kind: "app-route",
     route: "/actions/new",
@@ -152,7 +143,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "rejoindre-une-action",
     categoryId: "terrain",
-    spaceId: "execute",
     priority: 10,
     kind: "section",
     anonymousPresentation: "visible",
@@ -168,7 +158,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "signalement",
     categoryId: "terrain",
-    spaceId: "execute",
     priority: 14,
     kind: "app-route",
     route: "/signalement",
@@ -183,7 +172,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "map",
     categoryId: "terrain",
-    spaceId: "execute",
     priority: 20,
     kind: "app-route",
     route: "/actions/map",
@@ -195,7 +183,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "history",
     categoryId: "terrain",
-    spaceId: "supervise",
     priority: 20,
     kind: "app-route",
     route: "/actions/history",
@@ -210,7 +197,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "recycling",
     categoryId: "terrain",
-    spaceId: "prepare",
     priority: 30,
     kind: "section",
     anonymousPresentation: "visible",
@@ -223,7 +209,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "compost",
     categoryId: "terrain",
-    spaceId: "prepare",
     priority: 31,
     kind: "section",
     anonymousPresentation: "visible",
@@ -239,7 +224,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "climate",
     categoryId: "analysis",
-    spaceId: "decide",
     priority: 50,
     kind: "section",
     anonymousPresentation: "visible",
@@ -255,7 +239,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "community",
     categoryId: "community",
-    spaceId: "execute",
     priority: 40,
     kind: "section",
     anonymousPresentation: "visible",
@@ -271,7 +254,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "feedback",
     categoryId: "community",
-    spaceId: "decide",
     priority: 41,
     kind: "section",
     anonymousPresentation: "visible",
@@ -287,7 +269,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "gamification",
     categoryId: "community",
-    spaceId: "decide",
     priority: 60,
     kind: "section",
     anonymousPresentation: "disabled",
@@ -300,7 +281,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "leaderboard",
     categoryId: "community",
-    spaceId: "decide",
     priority: 61,
     kind: "section",
     anonymousPresentation: "visible",
@@ -316,7 +296,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "actors",
     categoryId: "community",
-    spaceId: "prepare",
     priority: 40,
     kind: "section",
     anonymousPresentation: "visible",
@@ -329,7 +308,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "annuaire",
     categoryId: "community",
-    spaceId: "prepare",
     priority: 45,
     kind: "section",
     anonymousPresentation: "visible",
@@ -345,7 +323,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "messagerie",
     categoryId: "community",
-    spaceId: "execute",
     priority: 42,
     kind: "section",
     anonymousPresentation: "blur",
@@ -361,7 +338,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "open-data",
     categoryId: "analysis",
-    spaceId: "decide",
     priority: 47,
     kind: "section",
     anonymousPresentation: "visible",
@@ -377,7 +353,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "funding",
     categoryId: "community",
-    spaceId: "decide",
     priority: 48,
     kind: "section",
     anonymousPresentation: "visible",
@@ -393,7 +368,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "trash-spotter",
     categoryId: "community",
-    spaceId: "supervise",
     priority: 50,
     kind: "section",
     anonymousPresentation: "blur",
@@ -409,7 +383,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "learn-comprendre",
     categoryId: "analysis",
-    spaceId: "prepare",
     priority: 6,
     kind: "app-route",
     route: "/learn/comprendre",
@@ -424,7 +397,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "learn-sentrainer",
     categoryId: "resources",
-    spaceId: "prepare",
     priority: 7,
     kind: "app-route",
     route: "/learn/sentrainer",
@@ -439,7 +411,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "learn-bonnes-pratiques",
     categoryId: "resources",
-    spaceId: "prepare",
     priority: 8,
     kind: "app-route",
     route: "/learn/bonnes-pratiques",
@@ -457,7 +428,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "sponsor",
     categoryId: "pilotage",
-    spaceId: "decide",
     priority: 35,
     kind: "app-route",
     route: SPONSOR_PORTAL_ROUTE,
@@ -469,7 +439,6 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "godmode",
     categoryId: "pilotage",
-    spaceId: "supervise",
     priority: 5,
     kind: "app-route",
     route: ADMIN_GODMODE_ROUTE,

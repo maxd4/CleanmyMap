@@ -3,7 +3,6 @@ import type {
   Rubrique,
   RubriqueCategory,
   RubriqueDefinition,
-  RubriqueSpaceId,
   SectionId,
   SectionRubrique,
   SectionRubriqueDefinition,
@@ -35,23 +34,6 @@ export function getVisibleRubriquesByCategory(
   return RUBRIQUE_REGISTRY.filter(
     (rubrique) =>
       rubrique.categoryId === categoryId && isRubriqueVisible(rubrique),
-  ).sort(
-    (a, b) =>
-      a.priority - b.priority ||
-      a.label[locale].localeCompare(b.label[locale]),
-  );
-}
-
-/**
- * Returns visible rubriques for a given space.
- * If called frequently, consider memoizing the result using useMemo on the caller side.
- */
-export function getVisibleRubriquesBySpace(
-  spaceId: RubriqueSpaceId,
-  locale: Locale = "fr",
-): Rubrique[] {
-  return RUBRIQUE_REGISTRY.filter(
-    (rubrique) => rubrique.spaceId === spaceId && isRubriqueVisible(rubrique),
   ).sort(
     (a, b) =>
       a.priority - b.priority ||

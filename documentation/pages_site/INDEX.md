@@ -159,6 +159,11 @@ existants : elle n'est pas une rubrique CURRENT et redirige vers la surface
 canonique. Les aliases de compatibilité restent documentés ici, mais ne doivent
 pas être ajoutés au registre ni à la navigation visible.
 
+La navigation CURRENT possède un seul modèle de regroupement : les blocs
+`NavigationBlockId` définis par `apps/web/src/lib/navigation.ts`. Le terme
+produit général « espace » ne constitue pas une seconde taxonomie du registry ;
+les routes de compatibilité restent uniquement des `COMPATIBILITY_REDIRECT`.
+
 ### Redirects et alias
 
 Les routes suivantes sont des compatibilités techniques, pas des pages SEO

@@ -8,7 +8,6 @@ export type {
   RubriqueDefinition,
   RubriqueImplementation,
   RubriqueKind,
-  RubriqueSpaceId,
 } from "./base-types";
 
 import { RUBRIQUE_REGISTRY } from "./config";
