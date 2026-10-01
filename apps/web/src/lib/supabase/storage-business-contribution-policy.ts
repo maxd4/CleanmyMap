@@ -1,0 +1,28 @@
+/** POLICY storage-business-contribution-v1: current governance thresholds. */
+export const STORAGE_BUSINESS_CONTRIBUTION_POLICY = {
+  version: "storage-business-contribution-v1",
+  shareWarningPercent: 25,
+  shareCriticalPercent: 40,
+  growthWarningPercent: 35,
+  growthCriticalPercent: 75,
+  accelerationWarningBytes: 3 * 1024 * 1024,
+  accelerationCriticalBytes: 6 * 1024 * 1024,
+  photoDominanceSharePercent: 30,
+  socleHeavyExportBytes: 4 * 1024 * 1024,
+  priorityQuotaCriticalPercent: 40,
+  priorityGrowthCap: 40,
+  priorityGrowthBytesPerPoint: 50_000,
+  pressureScore: {
+    minimum: 1,
+    volumeCap: 14,
+    volumeWeight: 2.5,
+    shareCap: 56,
+    shareWeight: 0.58,
+    growthCap: 18,
+    growthWeight: 0.32,
+    accelerationCap: 12,
+    accelerationWeight: 0.14,
+    countCap: 8,
+    countWeight: 0.45,
+  },
+} as const;

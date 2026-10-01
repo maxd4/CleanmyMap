@@ -10,6 +10,7 @@ import {
   WEATHER_OPERATIONAL_RULE_VERSION,
   type WeatherRiskLevel,
 } from "./ops-weather";
+import { parseCivilDateAsUtc } from "@/lib/time/civil-date";
 
 export const PLANNER_WEATHER_SNAPSHOT_VERSION = "planner-weather-snapshot-v1" as const;
 export const PLANNER_WEATHER_PROVIDER = "open-meteo" as const;
@@ -118,7 +119,8 @@ function toLocalDateTime(value: Date): string {
 }
 
 function addDays(date: string, days: number): string {
-  const parsed = new Date(`${date}T12:00:00Z`);
+  const parsed = parseCivilDateAsUtc(date);
+  if (!parsed) return date;
   parsed.setUTCDate(parsed.getUTCDate() + days);
   return parsed.toISOString().slice(0, 10);
 }

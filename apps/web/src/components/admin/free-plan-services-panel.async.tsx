@@ -49,6 +49,221 @@ export function FreePlanErrorState({
   );
 }
 
+type FreePlanServicesPanelModel = ReturnType<typeof buildFreePlanServicesPanelModel>;
+
+function FreePlanServiceGrowthPanel({
+  previousSnapshot,
+  previousSnapshotLabel,
+  servicePressureGrowth,
+  servicePressureLeader,
+}: Pick<FreePlanServicesPanelModel, "previousSnapshot" | "previousSnapshotLabel" | "servicePressureGrowth" | "servicePressureLeader">) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+      <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">Dérive mensuelle</p>
+            <p className="mt-1 text-sm text-white/55">Les services triés par croissance d&apos;après le snapshot précédent.</p>
+          </div>
+          {previousSnapshot ? (
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/20">
+              Base: {previousSnapshotLabel}
+            </p>
+          ) : null}
+        </div>
+
+        {previousSnapshot ? (
+          <div className="mt-4 space-y-2">
+            {servicePressureGrowth.slice(0, 3).map((item) => (
+              <div key={item.key} className="rounded-2xl border border-white/5 bg-slate-950/40 px-3 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">{item.label}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/25">
+                      {formatNumber(item.previousKgCo2eProxy, 2)} kg → {formatNumber(item.currentKgCo2eProxy, 2)} kg CO2e proxy
+                    </p>
+                  </div>
+                  <p className={cn(
+                    "text-sm font-black",
+                    item.deltaKgCo2eProxy !== null && item.deltaKgCo2eProxy > 0 ? "text-rose-300" : item.deltaKgCo2eProxy !== null && item.deltaKgCo2eProxy < 0 ? "text-emerald-300" : "text-white",
+                  )}>
+                    {item.deltaKgCo2eProxy === null ? "NA" : `${item.deltaKgCo2eProxy > 0 ? "+" : ""}${formatNumber(item.deltaKgCo2eProxy, 2)}`}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-slate-950/30 p-4 text-sm text-white/35">
+            Le prochain snapshot servira de base pour mesurer la dérive par service.
+          </div>
+        )}
+      </article>
+
+      <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">Service le plus exposé</p>
+        {servicePressureLeader ? (
+          <>
+            <p className="mt-2 text-3xl font-black text-white">{servicePressureLeader.label}</p>
+            <p className="mt-2 text-sm font-semibold text-white">
+              {formatNumber(servicePressureLeader.currentKgCo2eProxy, 2)} kg CO2e proxy / mois
+            </p>
+            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
+              Confiance {formatNumber(servicePressureLeader.confidencePercent, 0)}%
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-white/35">Aucun service disponible pour le moment.</p>
+        )}
+      </article>
+    </div>
+  );
+}
+
+function FreePlanServiceThresholdAlerts({
+  serviceThresholdAlerts,
+}: Pick<FreePlanServicesPanelModel, "serviceThresholdAlerts">) {
+  return (
+    <div className="rounded-3xl border border-white/5 bg-white/5 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">Franchissement de seuil</p>
+          <p className="mt-1 text-sm text-white/50">Déclenchement sur croissance mensuelle, quota alloué à la catégorie ou pente sur 2 mois.</p>
+        </div>
+        <div className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+          {serviceThresholdAlerts.length} alerte{serviceThresholdAlerts.length > 1 ? "s" : ""}
+        </div>
+      </div>
+
+      {serviceThresholdAlerts.length ? (
+        <div className="mt-4 grid gap-3 xl:grid-cols-2">
+          {serviceThresholdAlerts.map((alert) => (
+            <article key={alert.id} className={cn("rounded-3xl border p-4", getAlertTone(alert.severity))}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] opacity-70">{alert.serviceKey}</p>
+                  <p className="mt-1 text-sm font-black text-white">{alert.serviceLabel}</p>
+                  <p className="mt-1 text-xs leading-relaxed opacity-80">{alert.title}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] opacity-70">{alert.severity}</p>
+                  <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] opacity-70">{alert.signal}</p>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2">
+                <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">Seuil</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{alert.thresholdLabel}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">De combien</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{alert.details}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">Depuis quand</p>
+                  <p className="mt-1 text-sm font-semibold text-white">Depuis {alert.sinceLabel}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">Action recommandée</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{alert.recommendedAction}</p>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-4 rounded-2xl border border-dashed border-white/10 bg-black/10 p-4 text-sm text-white/35">
+          Aucun seuil n&apos;est franchi pour le moment.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function FreePlanServicesSummaryCards({
+  totalMonthlyPressure,
+  readyServices,
+  monitoredMetrics,
+  inputMetrics,
+  derivedMetrics,
+  referenceMetrics,
+  trackedServices,
+  generatedAtLabel,
+  snapshotCount,
+  inputMetricsLabel,
+  trackedServicesLabel,
+  snapshotLabel,
+}: Pick<FreePlanServicesPanelModel, "totalMonthlyPressure" | "readyServices" | "monitoredMetrics" | "inputMetrics" | "derivedMetrics" | "referenceMetrics" | "trackedServices" | "generatedAtLabel" | "snapshotCount" | "inputMetricsLabel" | "trackedServicesLabel" | "snapshotLabel">) {
+  return (
+    <div className="grid gap-4 md:grid-cols-4">
+      <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">Pression mensuelle totale</p>
+        <p className="mt-2 text-3xl font-black text-white">{formatNumber(totalMonthlyPressure, 2)} kg</p>
+        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Coût proxy agrégé du mois courant</p>
+      </article>
+      <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">Services configurés</p>
+        <p className="mt-2 text-3xl font-black text-white">{readyServices}</p>
+        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">D&apos;après /api/services</p>
+      </article>
+      <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">Métriques branchées</p>
+        <p className="mt-2 text-3xl font-black text-white">{monitoredMetrics}</p>
+        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
+          {inputMetrics} {inputMetricsLabel} · {derivedMetrics} estimées · {referenceMetrics} de référence
+        </p>
+        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
+          {trackedServices} {trackedServicesLabel} hors dépendances externes
+        </p>
+      </article>
+      <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">Dernière lecture</p>
+        <p className="mt-2 text-lg font-black text-white">{generatedAtLabel}</p>
+        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">{snapshotCount} {snapshotLabel}</p>
+      </article>
+    </div>
+  );
+}
+
+function FreePlanServicesMethodologyLinks({
+  methodologyLinks,
+  totalMonthlyPressure,
+}: Pick<FreePlanServicesPanelModel, "methodologyLinks" | "totalMonthlyPressure">) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+      <article className="rounded-3xl border border-sky-400/20 bg-sky-500/10 p-4 text-sm text-sky-100/80">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-200/70">Liens de pilotage</p>
+            <p>Le même mois est documenté dans le PDF de gouvernance, la méthodologie et les vues admin. La fiche reste cohérente avec la trace mensuelle archivée.</p>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-200/50">
+            {formatNumber(totalMonthlyPressure, 2)} kg / mois
+          </p>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {methodologyLinks.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              target={item.href.startsWith("/api/") ? "_blank" : "_self"}
+              className="rounded-full border border-sky-300/20 bg-sky-400/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-50 transition hover:bg-sky-400/20"
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+      </article>
+      <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">Lecture admin</p>
+        <p className="mt-2 text-sm leading-relaxed text-white/55">
+          Cette fiche ne lit pas les quotas officiels des fournisseurs. Elle suit la pression mensuelle, la fiabilité des métriques et le glissement des services pour piloter le quota gratuit sans masquer les données manquantes.
+        </p>
+      </article>
+    </div>
+  );
+}
+
 export function FreePlanServicesDataView({
   panelModel,
   serviceHealth,
@@ -84,57 +299,20 @@ export function FreePlanServicesDataView({
 
   return (
 <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-4">
-            <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-                Pression mensuelle totale
-              </p>
-              <p className="mt-2 text-3xl font-black text-white">
-                {formatNumber(totalMonthlyPressure, 2)} kg
-              </p>
-              <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
-                Coût proxy agrégé du mois courant
-              </p>
-            </article>
-
-            <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-                Services configurés
-              </p>
-              <p className="mt-2 text-3xl font-black text-white">{readyServices}</p>
-              <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
-                D&apos;après /api/services
-              </p>
-            </article>
-
-            <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-                Métriques branchées
-              </p>
-              <p className="mt-2 text-3xl font-black text-white">
-                {monitoredMetrics}
-              </p>
-              <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
-                {inputMetrics} {inputMetricsLabel} · {derivedMetrics} estimées ·{" "}
-                {referenceMetrics} de référence
-              </p>
-              <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
-                {trackedServices} {trackedServicesLabel} hors dépendances externes
-              </p>
-            </article>
-
-            <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-                Dernière lecture
-              </p>
-              <p className="mt-2 text-lg font-black text-white">
-                {generatedAtLabel}
-              </p>
-              <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
-                {snapshotCount} {snapshotLabel}
-              </p>
-            </article>
-          </div>
+          <FreePlanServicesSummaryCards
+            totalMonthlyPressure={totalMonthlyPressure}
+            readyServices={readyServices}
+            monitoredMetrics={monitoredMetrics}
+            inputMetrics={inputMetrics}
+            derivedMetrics={derivedMetrics}
+            referenceMetrics={referenceMetrics}
+            trackedServices={trackedServices}
+            generatedAtLabel={generatedAtLabel}
+            snapshotCount={snapshotCount}
+            inputMetricsLabel={inputMetricsLabel}
+            trackedServicesLabel={trackedServicesLabel}
+            snapshotLabel={snapshotLabel}
+          />
 
             <FreePlanServicesVisual
               services={quotaServices}
@@ -142,50 +320,10 @@ export function FreePlanServicesDataView({
               serviceHealth={serviceHealth}
             />
 
-          <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-            <article className="rounded-3xl border border-sky-400/20 bg-sky-500/10 p-4 text-sm text-sky-100/80">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-200/70">
-                    Liens de pilotage
-                  </p>
-                  <p>
-                    Le même mois est documenté dans le PDF de gouvernance, la
-                    méthodologie et les vues admin. La fiche reste cohérente
-                    avec la trace mensuelle archivée.
-                  </p>
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-200/50">
-                  {formatNumber(totalMonthlyPressure, 2)} kg / mois
-                </p>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {methodologyLinks.map((item) => (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    target={item.href.startsWith("/api/") ? "_blank" : "_self"}
-                    className="rounded-full border border-sky-300/20 bg-sky-400/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-50 transition hover:bg-sky-400/20"
-                  >
-                    {item.label}
-                  </a>
-                ))}
-              </div>
-            </article>
-
-            <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-                Lecture admin
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-white/55">
-                Cette fiche ne lit pas les quotas officiels des fournisseurs.
-                Elle suit la pression mensuelle, la fiabilité des métriques et
-                le glissement des services pour piloter le quota gratuit sans
-                masquer les données manquantes.
-              </p>
-            </article>
-          </div>
+          <FreePlanServicesMethodologyLinks
+            methodologyLinks={methodologyLinks}
+            totalMonthlyPressure={totalMonthlyPressure}
+          />
 
           <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100/80">
             <div className="flex items-start gap-3">
@@ -199,90 +337,12 @@ export function FreePlanServicesDataView({
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-            <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-                    Dérive mensuelle
-                  </p>
-                  <p className="mt-1 text-sm text-white/55">
-                    Les services triés par croissance d&apos;après le snapshot précédent.
-                  </p>
-                </div>
-                {previousSnapshot ? (
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/20">
-                    Base:{" "}
-                    {previousSnapshotLabel}
-                  </p>
-                ) : null}
-              </div>
-
-              {previousSnapshot ? (
-                <div className="mt-4 space-y-2">
-                  {servicePressureGrowth.slice(0, 3).map((item) => (
-                    <div
-                      key={item.key}
-                      className="rounded-2xl border border-white/5 bg-slate-950/40 px-3 py-3"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-white">
-                            {item.label}
-                          </p>
-                          <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/25">
-                            {formatNumber(item.previousKgCo2eProxy, 2)} kg →{" "}
-                            {formatNumber(item.currentKgCo2eProxy, 2)} kg CO2e proxy
-                          </p>
-                        </div>
-                        <p
-                          className={cn(
-                            "text-sm font-black",
-                            item.deltaKgCo2eProxy > 0
-                              ? "text-rose-300"
-                              : item.deltaKgCo2eProxy < 0
-                                ? "text-emerald-300"
-                                : "text-white",
-                          )}
-                        >
-                          {item.deltaKgCo2eProxy > 0 ? "+" : ""}
-                          {formatNumber(item.deltaKgCo2eProxy, 2)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-slate-950/30 p-4 text-sm text-white/35">
-                  Le prochain snapshot servira de base pour mesurer la dérive par
-                  service.
-                </div>
-              )}
-            </article>
-
-            <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-                Service le plus exposé
-              </p>
-              {servicePressureLeader ? (
-                <>
-                  <p className="mt-2 text-3xl font-black text-white">
-                    {servicePressureLeader.label}
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-white">
-                    {formatNumber(servicePressureLeader.currentKgCo2eProxy, 2)} kg CO2e proxy / mois
-                  </p>
-                  <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
-                    Confiance {formatNumber(servicePressureLeader.confidencePercent, 0)}%
-                  </p>
-                </>
-              ) : (
-                <p className="mt-2 text-sm text-white/35">
-                  Aucun service disponible pour le moment.
-                </p>
-              )}
-            </article>
-          </div>
+          <FreePlanServiceGrowthPanel
+            previousSnapshot={previousSnapshot}
+            previousSnapshotLabel={previousSnapshotLabel}
+            servicePressureGrowth={servicePressureGrowth}
+            servicePressureLeader={servicePressureLeader}
+          />
 
           <div className="rounded-3xl border border-white/5 bg-white/5 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -296,7 +356,7 @@ export function FreePlanServicesDataView({
               </div>
               {serviceRiskLeader ? (
                 <div className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-                  Max {serviceRiskLeader.label} · {formatScorePercent(serviceRiskLeader.score)} ·{" "}
+                  Max {serviceRiskLeader.label} · {serviceRiskLeader.score === null ? "NA" : formatScorePercent(serviceRiskLeader.score)} ·{" "}
                   {formatServiceRiskBandLabel(serviceRiskLeader.band)}
                 </div>
               ) : null}
@@ -318,94 +378,7 @@ export function FreePlanServicesDataView({
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/5 bg-white/5 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-                  Franchissement de seuil
-                </p>
-                <p className="mt-1 text-sm text-white/50">
-                  Déclenchement sur croissance mensuelle, quota alloué à la catégorie ou pente sur 2 mois.
-                </p>
-              </div>
-              <div className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-                {serviceThresholdAlerts.length} alerte
-                {serviceThresholdAlerts.length > 1 ? "s" : ""}
-              </div>
-            </div>
-
-            {serviceThresholdAlerts.length ? (
-              <div className="mt-4 grid gap-3 xl:grid-cols-2">
-                {serviceThresholdAlerts.map((alert) => (
-                  <article
-                    key={alert.id}
-                    className={cn("rounded-3xl border p-4", getAlertTone(alert.severity))}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em] opacity-70">
-                          {alert.serviceKey}
-                        </p>
-                        <p className="mt-1 text-sm font-black text-white">
-                          {alert.serviceLabel}
-                        </p>
-                        <p className="mt-1 text-xs leading-relaxed opacity-80">
-                          {alert.title}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] opacity-70">
-                          {alert.severity}
-                        </p>
-                        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] opacity-70">
-                          {alert.signal}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 space-y-2">
-                      <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                          Seuil
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-white">
-                          {alert.thresholdLabel}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                          De combien
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-white">
-                          {alert.details}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                          Depuis quand
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-white">
-                          Depuis {alert.sinceLabel}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                          Action recommandée
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-white">
-                          {alert.recommendedAction}
-                        </p>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-4 rounded-2xl border border-dashed border-white/10 bg-black/10 p-4 text-sm text-white/35">
-                Aucun seuil n&apos;est franchi pour le moment.
-              </p>
-            )}
-          </div>
+          <FreePlanServiceThresholdAlerts serviceThresholdAlerts={serviceThresholdAlerts} />
 
           <FreePlanServicesRiskCards cards={serviceRiskCards} />
 

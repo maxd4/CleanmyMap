@@ -9,10 +9,23 @@ import type {
   StorageBusinessContributionReport,
 } from "@/lib/supabase/storage-business-contribution";
 
+type StorageContributionItem = StorageBusinessContributionReport["items"][number];
+type StorageContributionMimeSubtype = StorageContributionItem["mimeSubtypes"][number];
+
 function formatPercent(value: number): string {
   return new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits: 1,
   }).format(value);
+}
+
+function formatNullablePercent(value: number | null): string {
+  return value === null ? "Donnée indisponible" : `${formatPercent(value)}% du domaine`;
+}
+
+function formatMimeSubtypeSize(mimeSubtype: StorageContributionMimeSubtype): string {
+  return mimeSubtype.knownSizeCount === 0
+    ? "Donnée indisponible"
+    : formatStorageBytes(mimeSubtype.bytes);
 }
 
 function formatSignedBytes(value: number): string {
@@ -106,6 +119,140 @@ function MimeSubtypeRow({
   );
 }
 
+function StorageContributionAlerts({
+  alerts,
+}: {
+  alerts: StorageBusinessContributionAlert[];
+}) {
+  return (
+    <div className="mt-4 rounded-3xl border border-rose-500/20 bg-rose-500/10 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-rose-100/60">
+            Alertes de gouvernance
+          </p>
+          <p className="mt-1 text-sm text-rose-50/80">
+            Les seuils de part, de croissance et d&apos;accélération remontent automatiquement avant saturation.
+          </p>
+        </div>
+        <span className="rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-rose-100">
+          {alerts.length} alerte{alerts.length > 1 ? "s" : ""}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 xl:grid-cols-2">
+        {alerts.slice(0, 6).map((alert) => (
+          <article key={alert.id} className={cn("rounded-2xl border p-3", alertToneClasses(alert.severity))}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[0.22em] opacity-70">{alert.label}</p>
+                <p className="mt-1 text-sm font-semibold">{alert.title}</p>
+                <p className="mt-1 text-xs opacity-80">{alert.message}</p>
+              </div>
+              <span className="shrink-0 rounded-full border border-white/10 bg-white/10 px-2 py-1 text-xs font-black uppercase tracking-[0.2em]">
+                {alert.signal}
+              </span>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StorageContributionItemDetails({ item }: { item: StorageContributionItem }) {
+  return (
+    <div className="mt-4">
+      <div className="rounded-2xl border border-white/5 bg-slate-950/30 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-white/25">
+            Historique 3 mois
+          </p>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-white/20">
+            {item.history.length} mois
+          </p>
+        </div>
+        <ul className="mt-3 space-y-2">
+          {item.history.slice(0, 3).map((point) => (
+            <li
+              key={`${item.id}-${point.snapshotMonth}`}
+              className="rounded-2xl border border-white/5 bg-white/5 px-3 py-2 text-xs text-white"
+            >
+              {formatTrendLine(point)}
+              <span className="ml-2 text-white/30">
+                Δ {formatStorageBytes(point.deltaBytes)} · 3 mois{" "}
+                {formatStorageBytes(point.cumulative3MonthBytes)} · acc{" "}
+                {formatStorageBytes(point.accelerationBytes)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-white/25">
+              Top fichiers
+            </p>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-white/20">
+              {item.topFiles.length} visible{item.topFiles.length > 1 ? "s" : ""}
+            </p>
+          </div>
+
+          {item.topFiles.length === 0 ? (
+            <p className="mt-3 text-sm text-white/35">
+              Aucun fichier disponible pour cette catégorie.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {item.topFiles.map((file) => (
+                <TopFileRow
+                  key={`${item.id}-${file.bucketId}-${file.name}`}
+                  name={file.name}
+                  sizeLabel={file.sizeLabel}
+                  bucketLabel={file.bucketLabel}
+                  extension={file.extension}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-white/25">
+              Top sous-types MIME
+            </p>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-white/20">
+              {item.mimeSubtypes.length} visible
+              {item.mimeSubtypes.length > 1 ? "s" : ""}
+            </p>
+          </div>
+
+          {item.mimeSubtypes.length === 0 ? (
+            <p className="mt-3 text-sm text-white/35">
+              Aucun sous-type MIME identifié pour cette catégorie.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {item.mimeSubtypes.map((mimeSubtype) => (
+                <MimeSubtypeRow
+                  key={`${item.id}-${mimeSubtype.key}`}
+                  label={mimeSubtype.label}
+                  sizeLabel={formatMimeSubtypeSize(mimeSubtype)}
+                  count={mimeSubtype.count}
+                  shareLabel={formatNullablePercent(mimeSubtype.sharePercent)}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function StorageBusinessContributionPanel({
   report,
 }: {
@@ -137,43 +284,7 @@ export function StorageBusinessContributionPanel({
         <StorageBusinessContributionDonut report={report} />
       </div>
 
-      {hasAlerts ? (
-        <div className="mt-4 rounded-3xl border border-rose-500/20 bg-rose-500/10 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-rose-100/60">
-                Alertes de gouvernance
-              </p>
-              <p className="mt-1 text-sm text-rose-50/80">
-                Les seuils de part, de croissance et d&apos;accélération
-                remontent automatiquement avant saturation.
-              </p>
-            </div>
-            <span className="rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-rose-100">
-              {report.alerts.length} alerte{report.alerts.length > 1 ? "s" : ""}
-            </span>
-          </div>
-
-          <div className="mt-4 grid gap-3 xl:grid-cols-2">
-            {report.alerts.slice(0, 6).map((alert) => (
-              <article key={alert.id} className={cn("rounded-2xl border p-3", alertToneClasses(alert.severity))}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] opacity-70">
-                      {alert.label}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold">{alert.title}</p>
-                    <p className="mt-1 text-xs opacity-80">{alert.message}</p>
-                  </div>
-                  <span className="shrink-0 rounded-full border border-white/10 bg-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.2em]">
-                    {alert.signal}
-                  </span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      {hasAlerts ? <StorageContributionAlerts alerts={report.alerts} /> : null}
 
       {!hasItems ? (
         <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-slate-950/30 p-4 text-sm text-white/35">
@@ -278,94 +389,7 @@ export function StorageBusinessContributionPanel({
                   />
                 </div>
 
-                <div className="mt-4">
-                  <div className="rounded-2xl border border-white/5 bg-slate-950/30 p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/25">
-                        Historique 3 mois
-                      </p>
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/20">
-                        {item.history.length} mois
-                      </p>
-                    </div>
-                    <ul className="mt-3 space-y-2">
-                      {item.history.slice(0, 3).map((point) => (
-                        <li
-                          key={`${item.id}-${point.snapshotMonth}`}
-                          className="rounded-2xl border border-white/5 bg-white/5 px-3 py-2 text-xs text-white"
-                        >
-                          {formatTrendLine(point)}
-                          <span className="ml-2 text-white/30">
-                            Δ {formatStorageBytes(point.deltaBytes)} · 3 mois{" "}
-                            {formatStorageBytes(point.cumulative3MonthBytes)} · acc{" "}
-                            {formatStorageBytes(point.accelerationBytes)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="grid gap-4 xl:grid-cols-2">
-                    <div>
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/25">
-                          Top fichiers
-                        </p>
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/20">
-                          {item.topFiles.length} visible{item.topFiles.length > 1 ? "s" : ""}
-                        </p>
-                      </div>
-
-                      {item.topFiles.length === 0 ? (
-                        <p className="mt-3 text-sm text-white/35">
-                          Aucun fichier disponible pour cette catégorie.
-                        </p>
-                      ) : (
-                        <ul className="mt-3 space-y-2">
-                          {item.topFiles.map((file) => (
-                            <TopFileRow
-                              key={`${item.id}-${file.bucketId}-${file.name}`}
-                              name={file.name}
-                              sizeLabel={file.sizeLabel}
-                              bucketLabel={file.bucketLabel}
-                              extension={file.extension}
-                            />
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/25">
-                          Top sous-types MIME
-                        </p>
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/20">
-                          {item.mimeSubtypes.length} visible
-                          {item.mimeSubtypes.length > 1 ? "s" : ""}
-                        </p>
-                      </div>
-
-                      {item.mimeSubtypes.length === 0 ? (
-                        <p className="mt-3 text-sm text-white/35">
-                          Aucun sous-type MIME identifié pour cette catégorie.
-                        </p>
-                      ) : (
-                        <ul className="mt-3 space-y-2">
-                          {item.mimeSubtypes.map((mimeSubtype) => (
-                            <MimeSubtypeRow
-                              key={`${item.id}-${mimeSubtype.key}`}
-                              label={mimeSubtype.label}
-                              sizeLabel={formatStorageBytes(mimeSubtype.bytes)}
-                              count={mimeSubtype.count}
-                              shareLabel={`${formatPercent(mimeSubtype.sharePercent)}% du domaine`}
-                            />
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <StorageContributionItemDetails item={item} />
               </article>
             );
           })}

@@ -8,6 +8,7 @@ import {
   type CommunityAnnouncementTemplateKey,
 } from "@/lib/chat/announcements";
 import { CHAT_POLL_MAX_OPTIONS, getChatPollOptionsValidationError } from "@/lib/chat/polls";
+import { parseCivilDateAsUtc } from "@/lib/time/civil-date";
 
 type ChatComposerModePanelProps = {
   isLight: boolean;
@@ -83,10 +84,10 @@ function ChatComposerPollPanel({
 }
 
 function formatEventDate(value: string): string {
-  const parsed = new Date(`${value}T00:00:00`);
-  return Number.isNaN(parsed.getTime())
+  const parsed = parseCivilDateAsUtc(value);
+  return !parsed
     ? value
-    : new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(parsed);
+    : new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeZone: "UTC" }).format(parsed);
 }
 
 function ChatComposerAnnouncementPanel({

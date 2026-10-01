@@ -47,7 +47,7 @@ type ActionFormalitiesTrace = {
     verifiedOn: string;
   }>;
   verifiedOn: string | null;
-  /** Stable, non-reversible marker for action dependencies that affect venue/date rules. */
+  /** Versioned canonical representation of dependencies affecting venue/date rules. */
   actionDependencyFingerprint: string;
   determiningFacts: FormalitiesFactsSnapshot;
   formalities: Array<{
@@ -57,6 +57,8 @@ type ActionFormalitiesTrace = {
     sourceId: string | null;
   }>;
 };
+
+const ACTION_DEPENDENCY_FINGERPRINT_VERSION = "canonical-v2" as const;
 
 export type ActionFormalitiesWorkflowState = {
   schemaVersion: typeof ACTION_FORMALITIES_WORKFLOW_SCHEMA_VERSION;
@@ -123,19 +125,31 @@ function dependencyChanged(
   );
 }
 
+function normalizeDependencyValue(value: string | null | undefined): string | null {
+  const normalized = value?.trim() ?? "";
+  return normalized.length > 0 ? normalized : null;
+}
+
 function actionDependencyFingerprint(params: {
   locationLabel?: string | null;
   actionDate?: string | null;
   territoryFingerprint?: string | null;
 }): string {
-  const locationDependency = params.territoryFingerprint?.trim() || params.locationLabel?.trim() || "";
-  const source = `${locationDependency}\u001f${params.actionDate?.trim() ?? ""}`;
-  let hash = 2166136261;
-  for (let index = 0; index < source.length; index += 1) {
-    hash ^= source.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return `fnv1a-${(hash >>> 0).toString(16).padStart(8, "0")}`;
+  const territoryFingerprint = normalizeDependencyValue(params.territoryFingerprint);
+  return `${ACTION_DEPENDENCY_FINGERPRINT_VERSION}:${JSON.stringify({
+    territoryFingerprint,
+    locationLabel: territoryFingerprint === null
+      ? normalizeDependencyValue(params.locationLabel)
+      : null,
+    actionDate: normalizeDependencyValue(params.actionDate),
+  })}`;
+}
+
+function actionDependencyTraceChanged(previousFingerprint: string, currentFingerprint: string): boolean {
+  // FNV traces are intentionally never accepted as equivalent to the
+  // canonical representation. The first read after this change requalifies
+  // the workflow and persists the new trace.
+  return previousFingerprint.startsWith("fnv1a-") || previousFingerprint !== currentFingerprint;
 }
 
 function contentVersionForQualification(
@@ -227,7 +241,10 @@ export function buildFormalitiesWorkflowState(params: {
   const actionDependenciesChanged =
     params.previous !== undefined &&
     params.previous !== null &&
-    params.previous.trace.actionDependencyFingerprint !== currentActionDependencyFingerprint;
+    actionDependencyTraceChanged(
+      params.previous.trace.actionDependencyFingerprint,
+      currentActionDependencyFingerprint,
+    );
   const previousById = new Map(
     (params.previous?.progress ?? []).map((progress) => [progress.formalityId, progress]),
   );

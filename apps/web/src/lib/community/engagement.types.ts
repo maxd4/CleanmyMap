@@ -7,7 +7,11 @@ export type {
 export type QualityLeaderboardRow = {
   actor: string;
   actions: number;
-  wasteKg: number;
+  wasteKg: number | null;
+  wasteKgCoverage: {
+    knownActions: number;
+    totalActions: number;
+  };
   avgQuality: number;
   qualityA: number;
   qualityB: number;

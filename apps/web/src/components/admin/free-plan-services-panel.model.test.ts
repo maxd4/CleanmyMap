@@ -154,6 +154,7 @@ describe("buildFreePlanServicesPanelModel", () => {
       surveiller: 0,
       alerte: 1,
       critique: 0,
+      NA: 0,
     });
     expect(Object.values(model.serviceRiskCounts).reduce((sum, count) => sum + count, 0)).toBe(
       model.serviceRiskRows.length,
