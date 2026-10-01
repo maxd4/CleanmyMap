@@ -92,6 +92,11 @@ serveur dédiés.
 
 ## Routes canoniques et alias
 
+`CURRENT_SURFACE` désigne une page ou une rubrique rendue par son contrat
+runtime courant et susceptible d'être disponible dans le registry. Une
+`COMPATIBILITY_REDIRECT` conserve une ancienne URL et ses paramètres utiles,
+mais ne constitue pas une rubrique CURRENT ni une entrée de navigation.
+
 Le bloc Agir expose exactement trois entrées utilisateur :
 `/sections/rejoindre-une-action`, `/actions/new` et `/signalement`. Les routes
 `/missions/[id]` et `/actions/history` restent accessibles pour leurs
@@ -105,8 +110,13 @@ et `/signalement` porte l'unique création d'observation.
 - `/explorer` et `/reports` sont les routes canoniques des pages Sommaire et Rapports.
 - `/sections/feedback`, `/sections/community`, `/sections/messagerie`, `/sections/open-data` et `/sections/actors` sont les routes canoniques des sections publiques correspondantes.
 - `/community`, `/messagerie`, `/open-data`, `/partners/network` et `/partners/network/pepite` restent des alias legacy ou des redirections techniques.
-- `/sections/route` redirige vers `/actions/new?panel=itineraire`.
-- `/sections/weather` et `/sections/guide` redirigent vers `/actions/new?panel=meteo`.
+- `/actions/new?panel=itineraire` et `/actions/new?panel=meteo` sont les
+  `CURRENT_SURFACE` des moteurs itinéraire et météo, rendus respectivement par
+  `RouteSection` et `WeatherSection`.
+- `/sections/route` est une `COMPATIBILITY_REDIRECT` vers
+  `/actions/new?panel=itineraire`.
+- `/sections/weather` et `/sections/guide` sont des `COMPATIBILITY_REDIRECT`
+  vers `/actions/new?panel=meteo`.
 - `/learn/hub` et `/learn/ressources` sont des surfaces intégrées, plus des pages autonomes.
 - `/observatoire` et `/sections/sandbox` ne sont plus des routes UI canoniques du repo actuel.
 

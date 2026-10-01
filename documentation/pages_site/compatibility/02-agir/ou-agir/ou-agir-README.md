@@ -1,12 +1,13 @@
 # Où agir
 
-## Fiche de compatibilité
+## Fiche `COMPATIBILITY_REDIRECT`
 
 - **Route historique** : `/sections/route`
 - **Cible actuelle** : `/actions/new?panel=itineraire`
 - **Fichier du redirect** : `apps/web/src/app/(app)/sections/route/page.tsx`
 - **Moteur réutilisé** : `apps/web/src/components/sections/rubriques/route/route-section.tsx`
 - **Type fonctionnel** : panneau itinéraire de la page canonique `Créer une action`
+- **Statut** : `COMPATIBILITY_REDIRECT`, hors registry CURRENT et hors navigation
 - **Accès runtime** : `public-visible` ; l'URL historique redirige vers le panneau sans hard gate supplémentaire
 - **Objectif** : proposer un itinéraire de nettoyage priorisé et contraint à
   partir des données disponibles.

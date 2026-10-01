@@ -29,15 +29,19 @@ describe("navigation registry consistency", () => {
     expect(byRoute.get("/actions/new")?.description.fr).toBe(
       "Préparer une action et renseigner ses résultats.",
     );
-    expect(byRoute.get("/sections/weather")?.label).toEqual({
-      fr: "Météo & conditions terrain",
-      en: "Weather & field conditions",
-    });
     expect(byRoute.get("/sections/trash-spotter")?.label.fr).toBe(
       "Suivi Trash Spotter",
     );
     expect(byRoute.get("/sections/trash-spotter")?.description.fr).toContain(
       "signalements",
+    );
+  });
+
+  it("keeps compatibility redirects out of visible CURRENT navigation", () => {
+    const registeredIds = RUBRIQUE_REGISTRY.map((rubrique) => rubrique.id);
+
+    expect(registeredIds).not.toEqual(
+      expect.arrayContaining(["route", "weather", "dm", "network"]),
     );
   });
 
@@ -86,6 +90,7 @@ describe("navigation registry consistency", () => {
         for (const item of space.items) {
           const rubrique = byId.get(item.routeId);
           expect(rubrique).toBeDefined();
+          expect(rubrique?.availability).toBe("available");
           expect(item.href).toBe(rubrique?.route);
         }
       }

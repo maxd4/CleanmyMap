@@ -60,21 +60,11 @@ const ClimateSection = dynamic(() =>
 const CompareSection = dynamic(() =>
   import("./compare-section").then((module) => module.CompareSection),
 );
-const WeatherSection = dynamic(() =>
-  import("./weather-section").then((module) => module.WeatherSection),
-);
 const JoinFormSection = dynamic(() =>
   import("./rejoindre-un-formulaire-section").then((module) => module.JoinActionSection),
 );
 const ConnectSection = dynamic(() =>
   import("./connect-section").then((module) => module.ConnectSection),
-);
-const RouteSection = dynamic<{ actionId?: string | null }>(() =>
-  import("./route").then((module) => ({
-    default: (props: { actionId?: string | null }) => (
-      <module.RouteSection {...props} />
-    ),
-  })),
 );
 
 function OpenDataFundingLink() {
@@ -120,7 +110,6 @@ export const FINALIZED_SECTION_RENDERERS = {
     <FundingSection onParticipeUrl={fundingOnParticipeUrl} />
   ),
   "trash-spotter": () => <TrashSpotterSection />,
-  route: () => <RouteSection />,
   "rejoindre-une-action": () => <JoinFormSection />,
   recycling: (_fundingOnParticipeUrl, initialData) => (
     <RecyclingSection initialData={initialData?.recycling} />
@@ -137,7 +126,6 @@ export const FINALIZED_SECTION_RENDERERS = {
       </div>
     </div>
   ),
-  weather: () => <WeatherSection />,
   messagerie: () => <ConnectSection defaultTab="discussions" />,
   elus: () => <ElusSection />,
 } satisfies Record<

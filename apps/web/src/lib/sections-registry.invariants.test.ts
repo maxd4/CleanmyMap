@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   RUBRIQUE_REGISTRY,
+  getSectionRubriqueById,
   getSectionRouteParams,
   isSectionRouteEnabled,
 } from "@/lib/sections-registry";
@@ -37,6 +38,16 @@ describe("sections registry invariants", () => {
 
     expect(new Set(ids).size).toBe(ids.length);
     expect(new Set(routes).size).toBe(routes.length);
+  });
+
+  it("keeps compatibility aliases out of the CURRENT registry", () => {
+    const compatibilityIds = ["route", "weather", "dm", "network"];
+    const registeredIds = RUBRIQUE_REGISTRY.map((item) => item.id);
+
+    for (const id of compatibilityIds) {
+      expect(registeredIds).not.toContain(id);
+      expect(getSectionRubriqueById(id)).toBeUndefined();
+    }
   });
 
   it("keeps section routes aligned with section ids", () => {
@@ -133,6 +144,9 @@ describe("sections registry invariants", () => {
 
     expect(Object.keys(FINALIZED_SECTION_RENDERERS).sort()).toEqual(
       visibleFinalSectionIds,
+    );
+    expect(Object.keys(FINALIZED_SECTION_RENDERERS)).not.toEqual(
+      expect.arrayContaining(["route", "weather"]),
     );
   });
 });

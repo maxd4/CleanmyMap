@@ -150,11 +150,24 @@ par ce lot. La dette explicite est
 `PUBLICATION_RIGHTS_DECISION_REQUIRED` : une décision produit doit confirmer
 les droits de publication avant toute ouverture SEO ou modification de données.
 
+### `CURRENT_SURFACE` et `COMPATIBILITY_REDIRECT`
+
+`CURRENT_SURFACE` désigne une page ou une rubrique réellement rendue par son
+contrat runtime courant et pouvant appartenir au registre des rubriques
+disponibles. `COMPATIBILITY_REDIRECT` désigne une URL conservée pour les liens
+existants : elle n'est pas une rubrique CURRENT et redirige vers la surface
+canonique. Les aliases de compatibilité restent documentés ici, mais ne doivent
+pas être ajoutés au registre ni à la navigation visible.
+
 ### Redirects et alias
 
 Les routes suivantes sont des compatibilités techniques, pas des pages SEO
 autonomes. Leur canonical est la cible réelle et leur découverte relève de la
 redirection :
+
+Les fiches détaillées de ces compatibilités sont classées hors des packages
+`CURRENT` : [Où agir](./compatibility/02-agir/ou-agir/ou-agir-README.md) et
+[Météo](./compatibility/02-agir/weather/weather-README.md).
 
 | Route | Cible | ACCESS | SEARCH | DISCOVERY | CANONICAL |
 | --- |---|---|---|---|---|
@@ -226,8 +239,6 @@ entrées visibles appartiennent à la navigation primaire Agir.
 | `/actions/new` | [Créer une action](./routes/02-agir/actions-new/actions-new-README.md) | `clerk-context` ; **entrée visible** ; préparation accessible sans compte ; identité requise pour créer, compléter ou envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
 | `/sections/rejoindre-une-action` | [Rejoindre une action](./routes/02-agir/rejoindre-une-action/rejoindre-une-action-README.md) | `public-visible` ; **entrée visible** ; compte requis pour rejoindre | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/missions/[id]` | [Missions](./routes/02-agir/missions/missions-README.md) | `protected` ; workflow/deep-link hors navigation primaire | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
-| `/sections/route` | [Où agir — compatibilité](./routes/02-agir/ou-agir/ou-agir-README.md) | `public-visible` ; redirect vers `/actions/new?panel=itineraire`, hors navigation primaire | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
-| `/sections/weather` | [Météo — compatibilité](./routes/02-agir/weather/weather-README.md) | `public-visible` ; redirect vers `/actions/new?panel=meteo`, hors navigation primaire | agir | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/signalement` | [Signalement déchets](./routes/02-agir/signalement/signalement-README.md) | `clerk-context` ; **entrée visible** ; formulaire accessible sans compte ; identité requise pour transmettre, gérer les preuves et consulter ses observations | agir | `apps/web/src/app/(app)/signalement/page.tsx` |
 
 `/missions/[id]` reste une route dynamique : `[id]` est un segment paramétré
@@ -237,15 +248,18 @@ aux deep-links ; elle ne devient pas une rubrique primaire.
 
 La route `/actions/history` reste documentée et accessible comme workflow
 secondaire protégé hors navigation primaire. Les routes `/sections/route` et
-`/sections/weather` restent documentées et accessibles pour compatibilité ;
-elles redirigent vers le shell `/actions/new` et restent hors navigation
+`/sections/weather` restent documentées et accessibles comme
+`COMPATIBILITY_REDIRECT` ; elles redirigent vers les panneaux itinéraire et
+météo de la `CURRENT_SURFACE` `/actions/new` et restent hors navigation
 primaire du bloc Agir.
 
 ### Alias et redirections Agir
 
 | Route | Cible | Statut |
 |---|---|---|
-| `/sections/guide` | `/actions/new?panel=meteo` | `redirect` avec paramètres conservés |
+| `/sections/guide` | `/actions/new?panel=meteo` | `COMPATIBILITY_REDIRECT` ; redirection avec paramètres conservés |
+| `/sections/route` | `/actions/new?panel=itineraire` | `COMPATIBILITY_REDIRECT` ; redirection avec paramètres conservés |
+| `/sections/weather` | `/actions/new?panel=meteo` | `COMPATIBILITY_REDIRECT` ; redirection avec paramètres conservés |
 
 ## Cartographie & Impact
 
@@ -342,9 +356,9 @@ Note : aucune page canonique `/learn` n'est documentée dans l'état actuel. Le 
 | `/sections/[sectionId]` | pattern dynamique partagé — pas une page autonome | `dynamic` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 
 Le pattern `/sections/[sectionId]` est un mécanisme de rendu partagé. Les
-sections concrètes sont inventoriées par leurs routes runtime ci-dessus et dans
-le registre des sections ; le pattern ne possède donc pas de fiche de page
-propre.
+sections concrètes `CURRENT_SURFACE` sont inventoriées par leurs routes runtime
+ci-dessus et dans le registre des sections ; les `COMPATIBILITY_REDIRECT` n'y
+figurent pas et le pattern ne possède donc pas de fiche de page propre.
 
 ## Admin & Super-admin
 

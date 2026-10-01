@@ -76,13 +76,13 @@ describe("section authentication gate", () => {
     "returns to the canonical section and preserves useful query parameters in %s mode",
     async (mode) => {
       mocks.getSectionRubriqueById.mockReturnValue({
-        id: "route",
+        id: "messagerie",
         anonymousPresentation: mode,
       });
 
       const markup = renderToStaticMarkup(
         await SectionPage({
-          params: Promise.resolve({ sectionId: "route" }),
+          params: Promise.resolve({ sectionId: "messagerie" }),
           searchParams: Promise.resolve({
             tab: "history",
             filter: ["soil", "water"],
@@ -93,7 +93,7 @@ describe("section authentication gate", () => {
 
       expect(markup).toContain(`data-mode="${mode}"`);
       expect(markup).toContain(
-        'data-sign-in-href="/sign-in?redirect_url=%2Fsections%2Froute%3Ftab%3Dhistory%26filter%3Dsoil%26filter%3Dwater"',
+        'data-sign-in-href="/sign-in?redirect_url=%2Fsections%2Fmessagerie%3Ftab%3Dhistory%26filter%3Dsoil%26filter%3Dwater"',
       );
       expect(mocks.getSafeAuthSession).toHaveBeenCalledTimes(1);
     },

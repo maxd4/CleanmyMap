@@ -114,13 +114,16 @@ export function getLocalizedText(
 }
 
 type RouteId = Rubrique["id"];
+type NavigableRouteId = Extract<
+  Rubrique,
+  { availability: "available" }
+>["id"];
 type ProfileSpacePageMap = Record<
   AppProfile,
-  Record<NavigationBlockId, RouteId[]>
+  Record<NavigationBlockId, NavigableRouteId[]>
 >;
 
-const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
-  "profile",
+const SOBRE_ALLOWED_ROUTE_IDS = new Set<NavigableRouteId>([
   "new",
   "rejoindre-une-action",
   "signalement",
@@ -134,9 +137,6 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "open-data",
   "funding",
   "reports",
-  "climate",
-  "weather",
-  "elus",
   "admin",
   "pilotage",
   "learn-comprendre",
@@ -144,8 +144,7 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "learn-bonnes-pratiques",
 ]);
 
-const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
-  "profile",
+const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<NavigableRouteId>([
   "new",
   "rejoindre-une-action",
   "signalement",
@@ -163,25 +162,27 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "learn-bonnes-pratiques",
 ]);
 
-const ACT_VISIBLE_ROUTE_IDS: RouteId[] = [
+const ACT_VISIBLE_ROUTE_IDS: NavigableRouteId[] = [
   "rejoindre-une-action",
   "new",
   "signalement",
 ];
 
 const COMMON_PROFILE_SPACE_PAGES: Omit<
-  Record<NavigationBlockId, RouteId[]>,
+  Record<NavigationBlockId, NavigableRouteId[]>,
   "home"
 > = {
   act: ACT_VISIBLE_ROUTE_IDS,
   visualize: ["map", "methodologie", "reports", "gamification"],
   impact: [],
-  network: ["community", "feedback", "messagerie", "network", "open-data", "annuaire", "funding"],
+  network: ["community", "feedback", "messagerie", "open-data", "annuaire", "funding"],
   connect: [],
   learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
 };
 
-function buildProfileSpacePages(home: RouteId[]): Record<NavigationBlockId, RouteId[]> {
+function buildProfileSpacePages(
+  home: NavigableRouteId[],
+): Record<NavigationBlockId, NavigableRouteId[]> {
   return { home, ...COMMON_PROFILE_SPACE_PAGES };
 }
 
@@ -212,7 +213,7 @@ function toNavItem(rubrique: Rubrique): NavigationItem {
 }
 
 function isRouteAllowedByDisplayMode(
-  routeId: RouteId,
+  routeId: NavigableRouteId,
   displayMode: DisplayMode,
 ): boolean {
   if (displayMode === "exhaustif") {
@@ -239,7 +240,7 @@ function getMappedRubriquesForProfile(
   displayMode: DisplayMode,
   locale: Locale = "fr",
 ): Rubrique[] {
-  const routeIds = new Set<RouteId>(
+  const routeIds = new Set<NavigableRouteId>(
     Object.values(PARCOURS_SPACE_PAGE_MAP[profile]).flatMap((ids) => ids),
   );
   return [...routeIds]
