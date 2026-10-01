@@ -190,10 +190,9 @@ export function buildFreePlanDashboardState(params: {
   const riskRows = buildServiceRiskRows(quotaServices, previousQuotaServices);
   const riskByKey = new Map(riskRows.map((row) => [row.key, row] as const));
 
-  const totalMonthlyKgCo2eProxy = quotaServices.reduce(
-    (sum, service) => sum + (service.monthlyKgCo2eProxy ?? 0),
-    0,
-  );
+  const monthlyAggregateState = getMonthlyAggregateState(quotaServices, previousQuotaServices);
+  const currentMonthlyAggregate = monthlyAggregateState.current;
+  const totalMonthlyKgCo2eProxy = currentMonthlyAggregate.value;
   const hasAllAnnualValues = quotaServices.every(
     (service) => service.annualKgCo2eProxy !== null && service.annualKgCo2eProxy !== undefined,
   );
