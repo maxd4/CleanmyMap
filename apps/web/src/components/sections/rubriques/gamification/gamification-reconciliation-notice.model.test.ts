@@ -125,4 +125,38 @@ describe("buildReconciliationNoticeCopy", () => {
     expect(copy.changes.join(" ")).not.toContain("retired-progression");
     expect(copy.changes.join(" ")).not.toContain("retired-milestone");
   });
+
+  it("keeps CTA targets limited to the actual catalogue changes", () => {
+    const onlyMilestone = buildReconciliationNoticeCopy(receipt({
+      progressions: { added: [], removed: [], changed: [] },
+      badges: { unlocked: [], removed: [], upgraded: [], downgraded: [] },
+      milestones: { unlocked: [{ id: "boucle_bouclee" }], removed: [] },
+      catalogChanges: { newProgressionIds: [], newMilestoneIds: [], retiredMechanicIds: [] },
+    }), progression, "fr");
+    expect(onlyMilestone.firstProgressionTarget).toBeNull();
+    expect(onlyMilestone.firstMilestoneTarget).toBe("milestone-boucle_bouclee");
+
+    const multipleProgressions = buildReconciliationNoticeCopy(receipt({
+      progressions: { added: [], removed: [], changed: [] },
+      badges: { unlocked: [], removed: [], upgraded: [], downgraded: [] },
+      milestones: { unlocked: [], removed: [] },
+      catalogChanges: { newProgressionIds: ["regularity", "moderation"], newMilestoneIds: [], retiredMechanicIds: [] },
+    }), progression, "fr");
+    expect(multipleProgressions.firstProgressionTarget).toBe("progression-regularity");
+    expect(multipleProgressions.hasNewMilestonesOrBadges).toBe(false);
+  });
+
+  it("does not expose catalogue CTAs when only XP or level changed", () => {
+    const copy = buildReconciliationNoticeCopy(receipt({
+      progressions: { added: [], removed: [], changed: [] },
+      badges: { unlocked: [], removed: [], upgraded: [], downgraded: [] },
+      milestones: { unlocked: [], removed: [] },
+      catalogChanges: { newProgressionIds: [], newMilestoneIds: [], retiredMechanicIds: [] },
+    }), progression, "fr");
+
+    expect(copy.firstProgressionTarget).toBeNull();
+    expect(copy.firstMilestoneTarget).toBeNull();
+    expect(copy.hasProgressionChanges).toBe(false);
+    expect(copy.hasNewMilestonesOrBadges).toBe(false);
+  });
 });
