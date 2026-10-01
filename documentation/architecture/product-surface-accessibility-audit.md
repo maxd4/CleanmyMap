@@ -70,7 +70,7 @@ décision automatique de suppression.
 | `/open-data` | REDIRECT_COMPAT | NO | — | UNKNOWN | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/parcours` | UNKNOWN | NO | — | protected | CURRENT | preuve de reachability insuffisante |
 | `/parcours/[profile]` | UNKNOWN | NO | — | protected | CURRENT | pattern dynamique ; les consumers concrets doivent être résolus séparément |
-| `/partners/dashboard` | SECONDARY_NAV | NO | 2 — apps/web/src/components/admin/partner-onboarding-requests-panel.tsx | protected | CURRENT | consumer runtime hors ruban principal |
+| `/partners/dashboard` | SECONDARY_NAV | NO | 1 — apps/web/src/app/(app)/partners/dashboard/page.tsx | protected | CURRENT | consumer runtime hors ruban principal |
 | `/partners/network` | REDIRECT_COMPAT | NO | — | UNKNOWN | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/partners/network/pepite` | REDIRECT_COMPAT | NO | — | UNKNOWN | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/partners/onboarding` | SECONDARY_NAV | NO | 6 — apps/web/src/components/sections/rubriques/annuaire/annuaire-filters-card.tsx, apps/web/src/components/sections/rubriques/annuaire/annuaire-governance-panel.tsx, apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx (+2) | protected | CURRENT | consumer runtime hors ruban principal |

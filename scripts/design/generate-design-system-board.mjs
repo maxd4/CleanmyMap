@@ -42,9 +42,7 @@ const HIGHLIGHT_COMPONENTS = new Set([
   "network-toast.tsx",
   "identity-badge.tsx",
   "identity-profile-banner.tsx",
-  "display-mode-onboarding-gate.tsx",
   "conditional-analytics.tsx",
-  "error-boundary.tsx",
   "error-message.tsx",
   "permission-error-state.tsx",
 ]);

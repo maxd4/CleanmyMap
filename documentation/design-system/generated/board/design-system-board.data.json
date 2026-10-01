@@ -39,11 +39,8 @@
       "conditional-analytics.tsx",
       "cookie-consent-banner.tsx",
       "decision-page-header.tsx",
-      "display-mode-onboarding-gate.tsx",
-      "error-boundary.tsx",
       "error-message.tsx",
       "family-rubrique-card.tsx",
-      "hub-page-backdrop.tsx",
       "identity-badge.tsx",
       "identity-profile-banner.tsx",
       "inline-field-error.tsx",
@@ -70,7 +67,6 @@
       "weather-warning-bar.tsx"
     ],
     "navigationFiles": [
-      "app-breadcrumb.tsx",
       "app-navigation-block-dropdown-act.tsx",
       "app-navigation-block-dropdown-home.tsx",
       "app-navigation-block-dropdown-learn.tsx",
@@ -98,8 +94,6 @@
       "cmm-section",
       "conditional-analytics",
       "cookie-consent-banner",
-      "display-mode-onboarding-gate",
-      "error-boundary",
       "error-message",
       "global-search",
       "identity-badge",

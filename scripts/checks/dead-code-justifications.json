@@ -4,8 +4,8 @@
     {
       "id": "4fae4a25111fb87ab2e0e1ac",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "Le dashboard CURRENT consomme le contrat de métriques d'entraînement vision.",
-      "evidence": "apps/web/src/components/dashboard/vision-training-panel.tsx:1-14 importe et consomme VisionTrainingMetrics.",
+      "reason": "capacité produit à reconnecter — la collecte d'exemples vision est active côté actions ; le type de métriques attend un owner dashboard CURRENT.",
+      "evidence": "apps/web/src/lib/actions/training.ts:VisionTrainingMetrics et recordTrainingExample ; apps/web/src/lib/env.ts:VISION_TRAINING_ENABLED ; apps/web/src/components/dashboard/vision-training-panel.tsx",
       "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
     },
     {
@@ -18,268 +18,422 @@
     {
       "id": "aef3265fcbbcec4534faca62",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — la façade publique unifiée CURRENT reste l’owner importable du contrat Actions ; le contrôle 9C protège cette surface.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:buildUnifiedActionContracts",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "e98b64e23ab36762166d414a",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — filterContractsByViewport est exposé par la façade Actions CURRENT et consommé par le garde 9C.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:filterContractsByViewport",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "7f8f09d93f0388577109a4d9",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — mapActionStatusToSpotStatuses reste une transformation canonique de la façade Actions CURRENT.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:mapActionStatusToSpotStatuses",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "444bf661d8ae79ca48c709bc",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — toActionContract porte la conversion canonique exposée par la façade Actions CURRENT.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:toActionContract",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "2b20e67a27812668ab757c2e",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — UnifiedActionContractsParams fait partie du contrat d’entrée de la façade Actions CURRENT.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:UnifiedActionContractsParams",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "db9b35c13b6921da0d652bbc",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — UnifiedActionSourceLoadResult décrit le résultat public de chargement des Actions CURRENT.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:UnifiedActionSourceLoadResult",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "dda326bfceb898838dc79ded",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — UnifiedContractCandidate décrit une unité de contrat consommée par la façade Actions CURRENT.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:UnifiedContractCandidate",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "e6e5d6757df63bef35d31971",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — UnifiedContractOrigin conserve la provenance requise par la façade Actions CURRENT.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceApi ; apps/web/src/lib/actions/unified-source.ts:UnifiedContractOrigin",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "090ba5bfebe7c31c7ca988ec",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — buildUnifiedActionContracts est l’owner de composition de la façade Actions CURRENT.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:buildUnifiedActionContracts",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "eebdc82fb5594ebddb3de6a2",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — filterContractsByViewport est exposé par l’index de la façade Actions CURRENT.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:filterContractsByViewport",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "ba3babc41e885701128dba59",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — mapActionStatusToSpotStatuses reste la projection canonique de l’index Actions CURRENT.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:mapActionStatusToSpotStatuses",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "597c1320511095fd6a5634ef",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — normalizeExternalActionImport est l’entrée canonique de normalisation des imports Actions.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:normalizeExternalActionImport",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "7f72430e1779c1fcd1b40da3",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — toActionContract reste l’adaptateur public de l’index Actions CURRENT.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:toActionContract",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "54d6932c6f808bef4336b498",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — toCanonicalSpotContract maintient la projection publique canonique des spots.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:toCanonicalSpotContract",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "5f898de3601cf45dd60d93f6",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — TrashSpotterSpotRow décrit le contrat public de lecture des spots signalés.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:TrashSpotterSpotRow",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "7c4ca2df0c6fb582ee9b198b",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — UnifiedActionSourceLoadResult est le résultat public de chargement partagé par la façade.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:UnifiedActionSourceLoadResult",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "a577c691e5462215a45318dd",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — UnifiedContractCandidate reste le type de contrat importable par les consommateurs Actions.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:UnifiedContractCandidate",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
       "id": "6b490b48973a637864295460",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "La façade publique unifiée CURRENT est explicitement protégée par check-9c-public-facades.mjs.",
+      "reason": "contrat public volontaire — UnifiedContractOrigin porte la provenance publique du contrat Actions.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:unifiedSourceIndexApi ; apps/web/src/lib/actions/unified-source/index.ts:UnifiedContractOrigin",
       "reviewedRef": "3c24fb5e529f429adbde509cc34b4bebf7443ddb"
     },
     {
+      "id": "51b8b6442b86318e06d5aa66",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "consumer framework implicite — le contrôle de gouvernance des animations inspecte directement ce composant pour préserver le contrat de transitions.",
+      "evidence": "scripts/checks/check-motion-governance.mjs:auditPageTransition ; apps/web/src/components/ui/page-transition.tsx",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "c5ea4050f9688b0134893520",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "consumer framework implicite — le contrôle de gouvernance du mouvement inspecte directement ce composant pour préserver le contrat de slogan animé.",
+      "evidence": "scripts/checks/check-motion-governance.mjs:auditPunchySlogan ; apps/web/src/components/ui/punchy-slogan.tsx",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
       "id": "d8e97a6f1ffa38542d216326",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "RubriqueAvailability est un contrat de la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — RubriqueAvailability décrit le contrat CURRENT des rubriques et est exposé par la façade sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueAvailability",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "ee5cb8ab1829fd4a821b4799",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "RubriqueImplementation est un contrat de la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — RubriqueImplementation décrit le contrat CURRENT d’implémentation et est exposé par la façade sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueImplementation",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "ac5fde6d015eee32fc523412",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "RubriqueKind est un contrat de la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — RubriqueKind décrit la catégorie CURRENT d’une rubrique et est exposé par la façade sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueKind",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "011bcb002ce27de779bc2eb2",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "FinalizedSectionId est un contrat de la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — FinalizedSectionId porte l’identité CURRENT des sections finalisées exposées par la façade sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:FinalizedSectionId",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "b83f0037c23976d7d694e89a",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "RubriqueAvailability est réexporté par l'owner de types nécessaire à la façade publique sections-registry.",
+      "reason": "contrat public volontaire — RubriqueAvailability est réexporté par l’owner de types de la façade sections-registry.",
       "evidence": "apps/web/src/lib/sections-registry/types.ts:export type RubriqueAvailability ; scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "3c4707e33ed04500bb544729",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "RubriqueImplementation est réexporté par l'owner de types nécessaire à la façade publique sections-registry.",
+      "reason": "contrat public volontaire — RubriqueImplementation est réexporté par l’owner de types de la façade sections-registry.",
       "evidence": "apps/web/src/lib/sections-registry/types.ts:export type RubriqueImplementation ; scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "93ec55274af96d9f268beec4",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "RubriqueKind est réexporté par l'owner de types nécessaire à la façade publique sections-registry.",
+      "reason": "contrat public volontaire — RubriqueKind est réexporté par l’owner de types de la façade sections-registry.",
       "evidence": "apps/web/src/lib/sections-registry/types.ts:export type RubriqueKind ; scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "a243e0e537f1a7964eaa0c04",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "FinalizedSectionId est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — FinalizedSectionId est exposé par la façade publique sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:FinalizedSectionId",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "e45cd8493b9f7010f7a74b39",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "RubriqueCategory est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — RubriqueCategory est exposé par la façade publique sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueCategory",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "0fdafe62c3004b1ee9d047df",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "RubriqueDefinition est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — RubriqueDefinition est exposé par la façade publique sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueDefinition",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "af5b654d186dd367e6d28960",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "RubriqueImplementation est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — RubriqueImplementation est exposé par la façade publique sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueImplementation",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "3f1150b1bfb63bcfc5f7b8c7",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "RubriqueKind est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — RubriqueKind est exposé par la façade publique sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueKind",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "71b6bf8de6b1616fed831a25",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "SectionId est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — SectionId est exposé par la façade publique sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:SectionId",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "a6f38d607680a09468d8c71b",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "SectionRubrique est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — SectionRubrique est exposé par la façade publique sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:SectionRubrique",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "5efe00c5250ca0586a6c4c9a",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "isRubriqueVisible est l'owner de l'helper réexporté par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "owner canonique utilisé indirectement — isRubriqueVisible est l’implémentation de l’helper réexporté par la façade sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/helpers.ts ; apps/web/src/lib/sections-registry/index.ts",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "44cacb793690385a470bdaf1",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "normalizeSectionId est l'owner de l'helper réexporté par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "owner canonique utilisé indirectement — normalizeSectionId est l’implémentation de l’helper réexporté par la façade sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/helpers.ts ; apps/web/src/lib/sections-registry/index.ts",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "9202c9c249e14c9bce2186be",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "getPendingSectionRubriques est l'owner de l'helper réexporté par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "owner canonique utilisé indirectement — getPendingSectionRubriques est l’implémentation de l’helper réexporté par la façade sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/helpers.ts ; apps/web/src/lib/sections-registry/index.ts",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "9002ab7387b5c3285951fe67",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "isRubriqueVisible est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — isRubriqueVisible est exposé par la façade publique sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:isRubriqueVisible",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "f87f3f6172b1a8a631719ae9",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "normalizeSectionId est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — normalizeSectionId est exposé par la façade publique sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:normalizeSectionId",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
       "id": "d275e0cffdd57ab8948dd6d1",
       "classification": "KEEP_JUSTIFIED",
-      "reason": "getPendingSectionRubriques est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
+      "reason": "contrat public volontaire — getPendingSectionRubriques est exposé par la façade publique sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:getPendingSectionRubriques",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "3b578f63fba8f704d44ca5ff",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "capacité sécurité/opérationnelle — le backfill de style de route reste un outil de maintenance Supabase borné et explicitement dry-run par défaut.",
+      "evidence": "apps/web/scripts/backfill-route-style.mjs:--apply et BATCH_SIZE ; documentation/operations/audits/vercel-surface-report.md:maintenance scripts",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "5a6d0e152f30f8e6a58910ee",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "capacité sécurité/opérationnelle — ce smoke check vérifie les statuts d’accès des endpoints sensibles sans écriture.",
+      "evidence": "apps/web/scripts/smoke-tests.mjs:ENDPOINTS_TO_CHECK ; scripts/ci/run_checks.ps1:targeted maintenance smoke tests",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "f8b57e5ff635f416e266f893",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "fonctionnalité pertinente en attente de refactor/convergence — les alertes business appartiennent au cockpit de pilotage mais leur panneau n’est plus monté par le shell actuel.",
+      "evidence": "apps/web/src/lib/pilotage/business-alerts.ts:computeBusinessAlerts ; documentation/operations/audits/vercel-function-invocations-audit.md:panneaux de supervision ; apps/web/src/components/dashboard/business-alerts-panel.tsx",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "120e27e181e9a38d780f120d",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "capacité produit à reconnecter — le retour utilisateur post-dashboard doit rester disponible derrière le contrat communautaire existant.",
+      "evidence": "apps/web/src/components/dashboard/closed-loop-panel.tsx:/api/community/bug-reports ; documentation/pages_site/routes/01-accueil-pilotage/pilotage/pilotage-README.md:boucle post-événement",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "cbd8e77e82078cc332f12528",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "fonctionnalité pertinente en attente de refactor/convergence — l’agrégat funnel reste un contrat analytics admin, même si ce panneau de lecture n’est plus raccordé.",
+      "evidence": "apps/web/src/app/api/analytics/funnel/route.ts:GET ; apps/web/src/lib/analytics/funnel-metrics.test.ts ; documentation/pages_site/routes/01-accueil-pilotage/pilotage/pilotage-README.md:export funnel",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "3121841a18eb050356debc26",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "capacité produit à reconnecter — la collecte d’exemples vision est active côté actions et son panneau de métriques attend un owner dashboard explicite.",
+      "evidence": "apps/web/src/lib/actions/training.ts:buildTrainingExampleInsert et recordTrainingExample ; apps/web/src/lib/env.ts:VISION_TRAINING_ENABLED ; documentation/operations/environment-configuration.md:VISION_TRAINING_ENABLED",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "ca53fd7dc6113df166b0c2e9",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "capacité sécurité/opérationnelle — la gestion des rôles ne doit pas disparaître avec son panneau tant que son API protégée et ses invariants d’auto-révocation existent.",
+      "evidence": "apps/web/src/app/api/admin/role-accounts/route.ts ; apps/web/src/lib/admin/role-management.ts ; documentation/operations/audits/validation-transverse-interactions-2026-08-29.md:gestion des rôles",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "b0799458a7bd52754d0303d2",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "fonctionnalité pertinente en attente de refactor/convergence — la revue admin du lignage referral doit rejoindre l’endpoint d’export et l’inbox admin canoniques.",
+      "evidence": "apps/web/src/app/api/admin/referrals.csv/route.ts ; apps/web/src/lib/admin/referral-lineage-export.ts ; documentation/operations/platform-cost-governance.md:Export referrals admin",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "a7ff2e85f8457c04147d2bc1",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "capacité produit à reconnecter — l’inscription newsletter reste un parcours produit protégé par une API, mais sa surface UI n’est plus montée dans les rubriques actuelles.",
+      "evidence": "apps/web/src/app/api/newsletter/subscribe/route.ts ; apps/web/src/lib/botid/protected-routes.ts:/api/newsletter/subscribe ; apps/web/src/lib/events/emit.ts:emitNewsletterSubscribed",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "83f9201b7e6ae2942c73eada",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "fonctionnalité pertinente en attente de refactor/convergence — les fenêtres KPI de pilotage doivent être réunies avec le composant KpiComparisonGrid actuel.",
+      "evidence": "apps/web/src/lib/pilotage/metrics.ts:PilotageComparisonResult ; apps/web/src/components/pilotage/kpi-comparison-grid.tsx ; documentation/pages_site/routes/01-accueil-pilotage/pilotage/pilotage-README.md",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "bcd3f6b41134ebe5b0b35be3",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "fonctionnalité pertinente en attente de refactor/convergence — la comparaison inter-périodes reste une capacité de pilotage distincte du détail reporting.",
+      "evidence": "apps/web/src/lib/analytics/period-comparison.ts ; documentation/pages_site/routes/01-accueil-pilotage/pilotage/pilotage-README.md:pilotage ; apps/web/src/components/pilotage/period-comparison-panel.tsx",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "c8f904198bf100f5ed2ea806",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "fonctionnalité pertinente en attente de refactor/convergence — les chapitres et le glossaire de rapport ont un contrat ReportModel documenté, même si leur renderer historique n’est plus l’owner monté.",
+      "evidence": "documentation/architecture/monolith-split-plan.md:sections.tsx ; apps/web/src/lib/reports/report-model/types.ts:ChapterDef ; apps/web/src/components/reports/web-document/constants.ts",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "98c90ade79a0a4d23ad02ced",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "fonctionnalité pertinente en attente de refactor/convergence — ce renderer de sections reste la source de contenu à réconcilier avec le document web CURRENT.",
+      "evidence": "documentation/architecture/monolith-split-plan.md:sections.tsx ; apps/web/src/components/reports/web-document/sections.tsx:ReportsWebSections",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "1ab573503a342eb18a55d340",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "capacité produit à reconnecter — le host de célébration gamification reste prévu par le contrat WebSocket optionnel.",
+      "evidence": "apps/web/src/types/env.d.ts:NEXT_PUBLIC_GAMIFICATION_WS ; apps/web/src/hooks/useGamificationRealtime.tsx ; documentation/operations/environment-configuration.md:NEXT_PUBLIC_GAMIFICATION_WS",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "ecc19971727e66900709854a",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "owner canonique utilisé indirectement — le bus d’événements est l’adaptateur commun des effets de progression et notifications émis par les actions et la modération.",
+      "evidence": "apps/web/src/lib/events/emit.ts ; apps/web/src/lib/events/bus.ts ; apps/web/src/lib/actions/create-submission.ts:emitActionCreated",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "591f6f9b012a158acd5b8d65",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "owner canonique utilisé indirectement — l’initialisation du bus est une activation par effet de bord serveur à reconnecter aux entrypoints runtime.",
+      "evidence": "apps/web/src/lib/events/init.ts ; apps/web/src/lib/events/handlers.ts:registerEventHandlers ; apps/web/src/lib/events/emit.ts",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "cad6ed790b815111318a2767",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "capacité produit à reconnecter — le transport temps réel gamification est une extension optionnelle du catalogue CURRENT de célébrations.",
+      "evidence": "apps/web/src/lib/gamification/announcements.ts ; apps/web/src/lib/gamification/realtime.ts ; apps/web/src/types/env.d.ts:NEXT_PUBLIC_GAMIFICATION_WS",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "8aa7eb243b66399ef9b4d149",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "fonctionnalité pertinente en attente de refactor/convergence — l’adaptateur Pinecone est une intégration vectorielle optionnelle explicitement déclarée, mais sans chaîne de recherche CURRENT complète.",
+      "evidence": "apps/web/src/lib/services/registry.ts:pinecone ; apps/web/src/app/api/services/route.ts:case pinecone ; documentation/operations/services-stack.md:Pinecone",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "a4fd48a3fbe6a36d6c8d6a33",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "capacité produit à reconnecter — le relais WebSocket gamification constitue l’owner opérationnel du contrat NEXT_PUBLIC_GAMIFICATION_WS, sans consumer web actuel.",
+      "evidence": "apps/web/tools/gamification-ws-server.js ; documentation/sessions/history/gamification-ws-integration-historical.md ; apps/web/src/types/env.d.ts:NEXT_PUBLIC_GAMIFICATION_WS",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
+    },
+    {
+      "id": "a05fdc7b6acbe8c80665ed6f",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "capacité produit à reconnecter — le cue pédagogique est cohérent avec la surface Learn CURRENT, mais son montage doit rejoindre le owner des ressources d’apprentissage.",
+      "evidence": "apps/web/src/components/learn/cognitive-cue-strip.tsx ; apps/web/src/app/learn/ressources ; documentation/pages_site/routes/05-apprendre/apprendre-README.md",
+      "reviewedRef": "de7327e127a4d10c05c050b293c47baa550a39d0"
     }
   ]
 }
