@@ -1,4 +1,4 @@
-export const ACTION_BACKUP_FORMAT = "cleanmymap.action-backup";
+const ACTION_BACKUP_FORMAT = "cleanmymap.action-backup";
 export const ACTION_BACKUP_VERSION = 2;
 export const ACTION_BACKUP_CONFIRMATION = "RESTORE ACTION BACKUP";
 

@@ -4,7 +4,7 @@ import { extractArea, round1, toFinite } from "./engagement.helpers";
 import type { ActorActivityCard, QualityLeaderboardRow } from "./engagement.types";
 
 /** POLICY engagement-quality-v1: values are product policy, not observations. */
-export const ENGAGEMENT_QUALITY_POLICY = {
+const ENGAGEMENT_QUALITY_POLICY = {
   version: "engagement-quality-v1",
   qualityWeight: 0.7,
   gradeAWeight: 35,
