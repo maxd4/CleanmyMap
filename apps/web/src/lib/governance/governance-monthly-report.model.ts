@@ -255,7 +255,7 @@ export function buildGovernanceMonthlyReportPayload(params: {
     params.environmentalImpact.model.infrastructure.services.map((service) => ({
       key: service.key,
       label: service.label,
-      monthlyKgCo2eProxy: service.monthlyKgCo2eProxy ?? 0,
+      monthlyKgCo2eProxy: service.monthlyKgCo2eProxy,
       sharePercent: service.sharePercent,
       confidencePercent: service.confidencePercent,
       uncertaintyPercent: service.uncertaintyPercent,
@@ -276,7 +276,7 @@ export function buildGovernanceMonthlyReportPayload(params: {
     currentServices.map((service) => ({
       key: service.key,
       label: service.label,
-      monthlyKgCo2eProxy: service.monthlyKgCo2eProxy ?? 0,
+      monthlyKgCo2eProxy: service.monthlyKgCo2eProxy,
     })),
     previousImpactSnapshot,
   );
@@ -306,8 +306,8 @@ export function buildGovernanceMonthlyReportPayload(params: {
 
   const summary = [
     `Risque global du mois: ${getGovernanceRiskLabel(governanceRiskScore)} (${formatScorePercent(governanceRiskScore)}).`,
-    topService
-      ? `Service le plus exposé: ${topService.label} (${formatNumber(topService.monthlyKgCo2eProxy ?? 0, 2)} kg CO2e proxy / mois).`
+    topMeasuredService
+      ? `Service le plus exposé: ${topMeasuredService.label} (${formatNumber(topMeasuredService.monthlyKgCo2eProxy, 2)} kg CO2e proxy / mois).`
       : "Service le plus exposé: aucune donnée de service disponible.",
     storageTopContribution
       ? `Catégorie métier la plus coûteuse: ${storageTopContribution.label} (${formatStorageBytes(storageTopContribution.currentBytes)}, ${formatNumber(storageTopContribution.currentSharePercent, 1)}% du total).`
