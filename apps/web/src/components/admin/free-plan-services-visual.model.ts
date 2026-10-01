@@ -260,7 +260,7 @@ export function buildFreePlanDashboardState(params: {
   const selectedMonthlyKgCo2eProxy =
     resolvedSelectedKey === "total"
       ? totalMonthlyKgCo2eProxy
-      : selectedService?.monthlyKgCo2eProxy ?? 0;
+      : selectedService?.monthlyKgCo2eProxy ?? null;
   const selectedAnnualKgCo2eProxy =
     resolvedSelectedKey === "total"
       ? totalAnnualKgCo2eProxy
