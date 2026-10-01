@@ -25,6 +25,7 @@ function progression(id: "participation" | "organisation" | "exploration", state
     description: id,
     currentValue: state === "in_progress" ? 1 : 0,
     metricLabel: "actions",
+    awardCategory: "XP_PROGRESSION",
     grantsXp: true,
     xpContribution: 0,
     currentBadge: null,
@@ -47,6 +48,7 @@ describe("buildCatalogGroups", () => {
       milestones: [
         {
           id: "premiere_trace_utile",
+          awardCategory: "XP_MILESTONE",
           category: "XP_MILESTONE",
           label: "Trace",
           description: "Trace",
@@ -73,6 +75,7 @@ describe("buildCatalogGroups", () => {
     const summaryValue = summary({
       milestones: [{
         id: "parcours_documente",
+        awardCategory: "BADGE_ONLY",
         category: "BADGE_ONLY",
         label: "Parcours documenté",
         description: "Une preuve de parcours documentée.",
@@ -94,7 +97,7 @@ describe("buildCatalogGroups", () => {
       locale: "fr",
     }));
 
-    expect(markup).toContain(">New<");
+    expect(markup).toContain(">Nouveau<");
     expect(markup).toContain("✓ Terminé");
     expect(markup).toContain("Parcours documenté");
     expect(markup).toContain("Reconnaissance");
@@ -120,6 +123,54 @@ describe("buildCatalogGroups", () => {
     expect(markup).toContain("Nouvelles tâches");
     expect(markup).toContain("En cours");
     expect(markup).toContain('id="progression-participation"');
-    expect(markup).toContain(">New<");
+    expect(markup).toContain(">Nouveau<");
+  });
+
+  it("separates XP milestones from recognition and never renders a zero XP reward", () => {
+    const markup = renderToStaticMarkup(createElement(GamificationCatalogPanel, {
+      summary: summary({
+        milestones: [
+          {
+            id: "boucle_bouclee",
+            awardCategory: "XP_MILESTONE",
+            category: "XP_MILESTONE",
+            label: "Boucle bouclée",
+            description: "Une boucle validée.",
+            grantsXp: true,
+            xpAmountOrPolicy: { kind: "fixed_one_shot", amount: 1 },
+            state: "completed",
+            xpContribution: 1,
+            achieved: true,
+            achievedAt: "2026-10-01T00:00:00.000Z",
+            introducedInRulesRevision: 1,
+            isNewSinceLastRulesMigration: false,
+          },
+          {
+            id: "parcours_documente",
+            awardCategory: "BADGE_ONLY",
+            category: "BADGE_ONLY",
+            label: "Parcours documenté",
+            description: "Une preuve documentée.",
+            grantsXp: false,
+            xpAmountOrPolicy: { kind: "none", reason: "Reconnaissance" },
+            state: "completed",
+            xpContribution: 0,
+            achieved: true,
+            achievedAt: "2026-10-01T00:00:00.000Z",
+            introducedInRulesRevision: 1,
+            isNewSinceLastRulesMigration: false,
+          },
+        ],
+      }),
+      loading: false,
+      error: null,
+      locale: "fr",
+    }));
+
+    expect(markup).toContain("Jalons avec XP");
+    expect(markup).toContain("Jalons de reconnaissance");
+    expect(markup).toContain("+1 XP");
+    expect(markup).not.toContain("+0 XP");
+    expect(markup).toContain("sans XP supplémentaire");
   });
 });

@@ -29,6 +29,7 @@ describe("acquiredGamificationSummary", () => {
         description: "Contributions confirmées.",
         currentValue: 8,
         metricLabel: "actions",
+        awardCategory: "XP_PROGRESSION",
         grantsXp: true,
         xpContribution: 2,
         currentBadge: { id: "participant-4", label: "Rubis" },
@@ -47,6 +48,7 @@ describe("acquiredGamificationSummary", () => {
       }],
       milestones: [{
         id: "premiere_trace_utile",
+        awardCategory: "XP_MILESTONE",
         category: "XP_MILESTONE",
         label: "Première trace utile",
         description: "Première action validée.",

@@ -4,6 +4,7 @@ import {
 } from "./progression-utils";
 import type {
   CurrentInfiniteProgressionId,
+  GamificationAwardCategory,
   GamificationCategory,
   GamificationMilestoneState,
   GamificationXpPolicy,
@@ -43,6 +44,7 @@ export type GamificationCatalogItem = {
   id: string;
   kind: "progression" | "milestone";
   category: Exclude<GamificationCategory, "NON_GAMIFIED">;
+  awardCategory: GamificationAwardCategory;
   title: string;
   description: string;
   grantsXp: boolean;
@@ -167,6 +169,7 @@ function buildProgressionItem(
     id: definition.id,
     kind: "progression",
     category: definition.category,
+    awardCategory: definition.category,
     title: definition.label,
     description: definition.description,
     grantsXp: definition.xpPolicy.kind !== "none",
@@ -174,10 +177,7 @@ function buildProgressionItem(
     applicability: "applicable",
     state: fact.started ? "in_progress" : "not_started",
     introducedInRulesRevision: definition.introducedInRulesRevision,
-    isNewSinceLastRulesMigration: isMechanicNewSinceLastRulesMigration(
-      definition.introducedInRulesRevision,
-      migrationState,
-    ),
+    isNewSinceLastRulesMigration: isMechanicNewSinceLastRulesMigration(definition.introducedInRulesRevision, migrationState),
     progression: {
       currentValue,
       currentTier,
@@ -207,6 +207,7 @@ function buildMilestoneItem(
     id: definition.id,
     kind: "milestone",
     category: definition.category,
+    awardCategory: definition.category,
     title: definition.label,
     description: definition.description,
     grantsXp: definition.xpPolicy.kind !== "none",

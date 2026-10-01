@@ -109,6 +109,7 @@ describe("buildGamificationCatalog", () => {
     const milestone = items.find((item) => item.kind === "milestone")!;
 
     expect(milestone.category).toBe("XP_MILESTONE");
+    expect(milestone.awardCategory).toBe("XP_MILESTONE");
     expect(milestone.grantsXp).toBe(true);
     expect(milestone.introducedInRulesRevision).toBe(1);
     expect(milestone.isNewSinceLastRulesMigration).toBe(false);

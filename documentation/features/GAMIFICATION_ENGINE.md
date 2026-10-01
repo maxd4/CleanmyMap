@@ -97,10 +97,15 @@ Le code et les tests priment si une divergence apparaît.
   progressions infinies des jalons one-shot `XP_MILESTONE` ou `BADGE_ONLY` ;
   les entrées `NON_GAMIFIED` en sont exclues. `summary.xpTotal` est la somme
   du ledger `progression_events`, et chaque progression/jalon porte sa
-  contribution dérivée des mêmes événements. La réconciliation distingue
+  `awardCategory`, son booléen `grantsXp` et sa contribution `xpContribution`
+  dérivée des mêmes événements. La réconciliation distingue
   explicitement l'XP de compatibilité historique non rattachée à une mécanique
   CURRENT ; aucun composant ne recalcule un niveau, un badge ou un prochain
   palier.
+- La page Gamification sépare visuellement les progressions XP, les jalons avec
+  XP et les jalons de reconnaissance `BADGE_ONLY`. Les métriques d'impact
+  (poids, mégots, bénévoles, démographie et proxys calculés) restent des
+  données d'impact et ne sont pas converties automatiquement en XP.
 - La surface utilisateur `/api/gamification/me` et ses acquittements
   (`acknowledge-reconciliation` et `acknowledge-rules-migration`) passent par
   `requireAuthenticatedAccess()`. Le `userId` utilisé pour les lectures et

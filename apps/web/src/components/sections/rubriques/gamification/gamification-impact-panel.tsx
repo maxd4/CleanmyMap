@@ -80,7 +80,9 @@ function ImpactContent({ progression, fr }: { progression: Progression; fr: bool
       <SectionLabel
         icon={Leaf}
         title={fr ? "Impact personnel" : "Personal impact"}
-        subtitle={fr ? "Des repères individuels calculés à partir des données terrain disponibles." : "Personal indicators calculated from available field data."}
+        subtitle={fr
+          ? "Des repères individuels calculés à partir des données terrain disponibles ; ils ne constituent pas une jauge XP."
+          : "Personal indicators calculated from available field data; they are not an XP gauge."}
       />
       <ImpactMetricCards impact={impact} fr={fr} />
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_auto]">

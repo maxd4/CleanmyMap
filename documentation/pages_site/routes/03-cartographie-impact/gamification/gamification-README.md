@@ -33,6 +33,15 @@ de progressions, badges et jalons modifiés. Une notification de la boîte
 `/sections/gamification?receipt=<id>` sans acquittement automatique. Les
 réconciliations sans changement visible ne créent ni reçu ni notification.
 
+Le catalogue distingue explicitement les sept axes généraux `Participation`,
+`Organisation`, `Exploration`, `Zones propres`, `Régularité`, `Polyvalence` et
+`Apprentissage`. `Modération` n'est ajoutée que pour le compte courant lorsque
+l'AuthZ autorise réellement cette capacité. Chaque entrée d'API porte
+`awardCategory`, `grantsXp` et `xpContribution` ; les jalons avec XP et les
+jalons de reconnaissance sont présentés dans deux groupes distincts. Les
+indicateurs d'impact restent dans leur panneau dédié et ne forment pas une
+jauge XP.
+
 La section privée réutilise le composant canonique `LeaderboardPanel` pour
 afficher un aperçu du classement public, avec un lien vers
 `/sections/leaderboard`. Le panneau public utilise les deux scopes `user` et

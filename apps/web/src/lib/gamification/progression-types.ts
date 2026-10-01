@@ -21,6 +21,8 @@ export type GamificationCategory =
   | "BADGE_ONLY"
   | "NON_GAMIFIED";
 
+export type GamificationAwardCategory = Exclude<GamificationCategory, "NON_GAMIFIED">;
+
 export type GamificationVisibility =
   | "current_user"
   | "authorized_moderation"
