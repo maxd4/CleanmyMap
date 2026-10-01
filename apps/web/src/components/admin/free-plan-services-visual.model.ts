@@ -138,6 +138,19 @@ function getMonthlyAggregateState(
   };
 }
 
+function getMonthlyCoverageLabel(
+  aggregate: ReturnType<typeof getMonthlyAggregate>,
+): string {
+  const { knownServices, totalServices, status } = aggregate.coverage;
+  const description =
+    status === "complete"
+      ? "total complet"
+      : status === "partial"
+        ? "total partiel"
+        : "aucune mesure connue";
+  return `${knownServices}/${totalServices} services mesurés · ${description}.`;
+}
+
 function getServiceVisualMeta(key: FreePlanSelectionKey) {
   if (key === "total") {
     return TOTAL_VISUAL;
@@ -356,7 +369,7 @@ export function buildFreePlanDashboardState(params: {
       unit: "kg",
       hint:
         resolvedSelectedKey === "total"
-          ? "Somme de tous les services suivis."
+          ? getMonthlyCoverageLabel(currentMonthlyAggregate)
           : "Charge proxy du service sélectionné.",
       tone: "sky",
     },
