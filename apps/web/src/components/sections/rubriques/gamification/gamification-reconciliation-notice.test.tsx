@@ -4,7 +4,7 @@ import type { PendingGamificationReconciliation } from "@/lib/gamification/gamif
 import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
 import { GamificationReconciliationNotice } from "./gamification-reconciliation-notice";
 
-const progression = {
+export const progression = {
   summary: {
     progressions: [{ id: "moderation", label: "Modération" }],
     milestones: [{ id: "boucle_bouclee", label: "Boucle bouclée" }],
@@ -12,7 +12,7 @@ const progression = {
   badgeCatalog: [{ id: "badge-saphir", label: "Saphir" }],
 } as unknown as UserProgressionResponse;
 
-const reconciliation = {
+export const reconciliation = {
   notificationId: "notification-1",
   createdAt: "2026-09-30T10:00:00.000Z",
   receipt: {
@@ -53,6 +53,7 @@ describe("GamificationReconciliationNotice", () => {
     expect(markup).toContain("Niveau 4 → Niveau 5");
     expect(markup).toContain("Voir le détail");
     expect(markup).toContain("Voir mes nouvelles progressions");
+    expect(markup).toContain('href="#progression-moderation"');
     expect(markup).toContain("Voir mes nouveaux jalons");
     expect(markup).toContain("Compris");
     expect(markup).toContain('role="status"');

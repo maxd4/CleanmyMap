@@ -6,6 +6,9 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import type { PendingGamificationReconciliation } from "@/lib/gamification/gamification-reconciliation-notice";
 import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
 import { buildReconciliationNoticeCopy, type ReconciliationNoticeCopy } from "./gamification-reconciliation-notice.model";
+import { GamificationReconciliationDetail } from "./gamification-reconciliation-detail";
+import { buildReconciliationDetailCopy } from "./gamification-reconciliation-detail.model";
+import { navigateToGamificationTarget } from "./gamification-focus";
 
 type NoticeDirection = "up" | "down" | "same";
 
@@ -76,19 +79,21 @@ function ReconciliationActions({
   fr,
   isSubmitting,
   onAcknowledge,
+  onOpenDetails,
 }: {
   copy: ReconciliationNoticeCopy;
   fr: boolean;
   isSubmitting: boolean;
   onAcknowledge: () => void;
+  onOpenDetails: () => void;
 }) {
   return (
     <div className="mt-6 flex flex-wrap items-center gap-2">
-      <CmmButton href="#gamification-reconciliation-changes" tone="important" variant="pill" size="sm">
+      <CmmButton type="button" tone="important" variant="pill" size="sm" onClick={onOpenDetails}>
         {fr ? "Voir le détail" : "View details"}
       </CmmButton>
       {copy.hasProgressionChanges ? (
-        <CmmButton href="#gamification-progressions" tone="secondary" variant="pill" size="sm">
+        <CmmButton href={`#${copy.firstProgressionTarget}`} tone="secondary" variant="pill" size="sm">
           {fr ? "Voir mes nouvelles progressions" : "View my new progressions"}
         </CmmButton>
       ) : null}
@@ -116,6 +121,7 @@ export function GamificationReconciliationNotice({
   onAcknowledged: () => Promise<void> | void;
 }) {
   const fr = locale === "fr";
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const { acknowledge, error, isSubmitting } = useReconciliationAcknowledgement(
     reconciliation?.notificationId ?? "",
     fr,
@@ -124,6 +130,12 @@ export function GamificationReconciliationNotice({
   if (!reconciliation || !progression) return null;
 
   const copy = buildReconciliationNoticeCopy(reconciliation.receipt, progression, locale);
+  const detailCopy = buildReconciliationDetailCopy(reconciliation.receipt, progression, locale);
+
+  function focusTarget(targetId: string) {
+    setIsDetailOpen(false);
+    window.setTimeout(() => navigateToGamificationTarget(targetId), 0);
+  }
 
   return (
     <section
@@ -164,7 +176,14 @@ export function GamificationReconciliationNotice({
         ))}
       </ul>
 
-      <ReconciliationActions copy={copy} fr={fr} isSubmitting={isSubmitting} onAcknowledge={acknowledge} />
+      <ReconciliationActions copy={copy} fr={fr} isSubmitting={isSubmitting} onAcknowledge={acknowledge} onOpenDetails={() => setIsDetailOpen(true)} />
+      <GamificationReconciliationDetail
+        open={isDetailOpen}
+        copy={detailCopy}
+        locale={locale}
+        onClose={() => setIsDetailOpen(false)}
+        onFocusTarget={focusTarget}
+      />
       {error ? <p className="mt-3 text-sm font-semibold text-[#b4362e]" role="alert">{error}</p> : null}
     </section>
   );

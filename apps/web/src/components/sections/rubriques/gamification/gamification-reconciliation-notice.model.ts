@@ -1,6 +1,7 @@
 import type { GamificationSummary } from "@/lib/gamification/gamification-summary";
 import type { UserProgressionResponse } from "@/lib/gamification/progression-types";
 import type { GamificationReconciliationReceipt } from "@/lib/gamification/gamification-reconciliation-receipt";
+import { buildReconciliationTargetSummary } from "./gamification-reconciliation-detail.model";
 
 export type ReconciliationNoticeCopy = {
   xpBeforeAfter: string;
@@ -9,26 +10,28 @@ export type ReconciliationNoticeCopy = {
   changes: string[];
   hasProgressionChanges: boolean;
   hasNewMilestonesOrBadges: boolean;
+  firstProgressionTarget: string | null;
+  firstMilestoneTarget: string | null;
 };
 
 function formatNumber(value: number | null, locale: string): string {
   return value === null ? "—" : new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-US").format(value);
 }
 
-function labelForProgression(id: string, summary: GamificationSummary): string {
-  return summary.progressions.find((item) => item.id === id)?.label ?? id;
+function labelForProgression(id: string, summary: GamificationSummary, fr: boolean): string {
+  return summary.progressions.find((item) => item.id === id)?.label ?? (fr ? "Progression indisponible" : "Progression unavailable");
 }
 
-function labelForMilestone(id: string, summary: GamificationSummary): string {
-  return summary.milestones.find((item) => item.id === id)?.label ?? id;
+function labelForMilestone(id: string, summary: GamificationSummary, fr: boolean): string {
+  return summary.milestones.find((item) => item.id === id)?.label ?? (fr ? "Jalon retiré" : "Milestone removed");
 }
 
-function labelForBadge(id: string, progression: UserProgressionResponse): string {
-  return progression.badgeCatalog.find((badge) => badge.id === id)?.label ?? id;
+function labelForBadge(id: string, progression: UserProgressionResponse, fr: boolean): string {
+  return progression.badgeCatalog.find((badge) => badge.id === id)?.label ?? (fr ? "Palier précédent" : "Previous tier");
 }
 
 function badgeLabel(id: string | undefined, progression: UserProgressionResponse, fr: boolean): string {
-  return id ? labelForBadge(id, progression) : (fr ? "Palier précédent" : "Previous tier");
+  return id ? labelForBadge(id, progression, fr) : (fr ? "Palier précédent" : "Previous tier");
 }
 
 function buildProgressionChanges(
@@ -38,16 +41,16 @@ function buildProgressionChanges(
 ): string[] {
   const changes: string[] = [];
   for (const item of receipt.progressions.added) {
-    changes.push(`${fr ? "Nouvelle progression" : "New progression"} : ${labelForProgression(item.id, progression.summary)}`);
+    changes.push(`${fr ? "Nouvelle progression" : "New progression"} : ${labelForProgression(item.id, progression.summary, fr)}`);
   }
   for (const item of receipt.progressions.removed) {
-    changes.push(`${fr ? "Progression retirée" : "Progression removed"} : ${labelForProgression(item.id, progression.summary)}`);
+    changes.push(`${fr ? "Progression retirée" : "Progression removed"} : ${labelForProgression(item.id, progression.summary, fr)}`);
   }
   for (const change of receipt.progressions.changed) {
     const from = change.before.badgeIds.at(-1);
     const to = change.after.badgeIds.at(-1);
     changes.push(
-      `${labelForProgression(change.id, progression.summary)} : ${badgeLabel(from, progression, fr)} → ${badgeLabel(to, progression, fr)}`,
+      `${labelForProgression(change.id, progression.summary, fr)} : ${badgeLabel(from, progression, fr)} → ${badgeLabel(to, progression, fr)}`,
     );
   }
   return changes;
@@ -91,8 +94,8 @@ function buildMilestoneChanges(
   fr: boolean,
 ): string[] {
   return [
-    ...receipt.milestones.unlocked.map((item) => `${fr ? "Nouveau jalon" : "New milestone"} : ${labelForMilestone(item.id, progression.summary)}`),
-    ...receipt.milestones.removed.map((item) => `${fr ? "Jalon retiré" : "Milestone removed"} : ${labelForMilestone(item.id, progression.summary)}`),
+    ...receipt.milestones.unlocked.map((item) => `${fr ? "Nouveau jalon" : "New milestone"} : ${labelForMilestone(item.id, progression.summary, fr)}`),
+    ...receipt.milestones.removed.map((item) => `${fr ? "Jalon retiré" : "Milestone removed"} : ${labelForMilestone(item.id, progression.summary, fr)}`),
   ];
 }
 
@@ -118,13 +121,16 @@ export function buildReconciliationNoticeCopy(
     ...buildBadgeChanges(receipt, fr),
     ...buildMilestoneChanges(receipt, progression, fr),
   ];
+  const targets = buildReconciliationTargetSummary(receipt, progression);
 
   return {
     xpBeforeAfter: `${xpBefore} → ${xpAfter} XP`,
     xpDelta,
     level,
     changes,
-    hasProgressionChanges: receipt.progressions.added.length > 0 || receipt.progressions.changed.length > 0,
-    hasNewMilestonesOrBadges: receipt.milestones.unlocked.length > 0 || receipt.badges.unlocked.length > 0,
+    hasProgressionChanges: targets.firstProgressionTarget !== null,
+    hasNewMilestonesOrBadges: targets.firstMilestoneTarget !== null,
+    firstProgressionTarget: targets.firstProgressionTarget,
+    firstMilestoneTarget: targets.firstMilestoneTarget,
   };
 }
