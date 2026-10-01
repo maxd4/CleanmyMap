@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "0af9d4c64940dfb154aa56f554557a21163ec819",
+  "sourceCommit": "6c936639c72449d9e14f4f8f3126faba70ab4f1e",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -3753,7 +3753,7 @@
       "path": "apps/web/src/components/learn/quiz/environmental-quiz.tsx",
       "line": 40,
       "category": "React/JSX",
-      "ceiling": 142,
+      "ceiling": 135,
       "status": "IMPROVED",
       "functionIdentity": "named:EnvironmentalQuiz#1"
     },
@@ -4536,8 +4536,8 @@
       "path": "apps/web/src/lib/actions/metadata.ts",
       "line": 294,
       "category": "métier/domain pur",
-      "ceiling": 69,
-      "status": "LEGACY",
+      "ceiling": 66,
+      "status": "IMPROVED",
       "functionIdentity": "named:applyParsedStructuredActionNotesMeta#1"
     },
     {
@@ -4833,8 +4833,8 @@
       "path": "apps/web/src/lib/community/engagement.quality.ts",
       "line": 11,
       "category": "métier/domain pur",
-      "ceiling": 69,
-      "status": "LEGACY",
+      "ceiling": 68,
+      "status": "IMPROVED",
       "functionIdentity": "named:computeQualityLeaderboard#1"
     },
     {

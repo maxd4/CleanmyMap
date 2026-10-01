@@ -330,10 +330,7 @@ function applyParsedStructuredActionNotesMeta(
       deriveMissingFromMassOrCount: false,
     });
   }
-  if (
-    parsed.volunteerParticipation &&
-    typeof parsed.volunteerParticipation === "object"
-  ) {
+  if (parsed.volunteerParticipation && typeof parsed.volunteerParticipation === "object") {
     state.volunteerParticipation = normalizeVolunteerParticipation(
       parsed.volunteerParticipation,
     );
