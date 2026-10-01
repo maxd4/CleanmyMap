@@ -1,5 +1,4 @@
 import type { Locale } from "@/lib/ui/preferences";
-import type { RubriqueSpaceId } from "@/lib/sections-registry";
 import type { ActiveRole, GrantedRole, Parcours, Role, SessionRole } from "@/lib/domain-language";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import { PROFILE_CTA_CONFIG, type ProfileAction } from "./profiles-cta";
@@ -18,7 +17,6 @@ type ProfileDefinition = {
   id: Parcours;
   label: Localized;
   subtitle: Localized;
-  spacePriority: Record<RubriqueSpaceId, number>;
 };
 
 export function normalizeDisplayNameMode(
@@ -76,7 +74,6 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
       fr: "Déclaration terrain et suivi local",
       en: "Field declaration and local follow-up",
     },
-    spacePriority: { execute: 1, supervise: 2, decide: 3, prepare: 4 },
   },
   coordinateur: {
     id: "coordinateur",
@@ -85,7 +82,6 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
       fr: "Organisation des actions collectives",
       en: "Collective action coordination",
     },
-    spacePriority: { execute: 1, supervise: 2, decide: 3, prepare: 4 },
   },
   scientifique: {
     id: "scientifique",
@@ -94,7 +90,6 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
       fr: "Analyse des données et évidence statistique",
       en: "Data analysis and statistical evidence",
     },
-    spacePriority: { decide: 1, supervise: 2, prepare: 3, execute: 4 },
   },
   entreprise: {
     id: "entreprise",
@@ -103,7 +98,6 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
       fr: "Partenariats et mécénat d'entreprise",
       en: "Partnerships and corporate sponsorship",
     },
-    spacePriority: { decide: 1, supervise: 2, prepare: 3, execute: 4 },
   },
   elu: {
     id: "elu",
@@ -112,7 +106,6 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
       fr: "Pilotage institutionnel et décisionnel",
       en: "Institutional and decision oversight",
     },
-    spacePriority: { decide: 1, supervise: 2, prepare: 3, execute: 4 },
   },
   admin: {
     id: "admin",
@@ -121,7 +114,6 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
       fr: "Modération et supervision",
       en: "Moderation and supervision",
     },
-    spacePriority: { supervise: 1, execute: 2, decide: 3, prepare: 4 },
   },
   max: {
     id: "max",
@@ -130,7 +122,6 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
       fr: "Supervision propriétaire et arbitrage final",
       en: "Owner supervision and final arbitration",
     },
-    spacePriority: { supervise: 1, execute: 2, decide: 3, prepare: 4 },
   },
 };
 
@@ -294,13 +285,6 @@ export function getProfileSecondaryAction(
   profile: AppProfile,
 ): ProfileAction | null {
   return PROFILE_CTA_CONFIG[profile].secondaryCTA ?? null;
-}
-
-export function getProfileSpacePriority(
-  profile: AppProfile,
-  spaceId: RubriqueSpaceId,
-): number {
-  return PROFILE_DEFINITIONS[profile].spacePriority[spaceId];
 }
 
 export function isAppProfile(value: string): value is AppProfile {

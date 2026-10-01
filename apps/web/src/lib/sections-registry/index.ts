@@ -8,7 +8,6 @@ export type {
   RubriqueDefinition,
   RubriqueImplementation,
   RubriqueKind,
-  RubriqueSpaceId,
   Rubrique,
   SectionRubrique,
   SectionRubriqueDefinition,
@@ -20,7 +19,6 @@ export type {
 export {
   isRubriqueVisible,
   getVisibleRubriquesByCategory,
-  getVisibleRubriquesBySpace,
   normalizeSectionId,
   getSectionRubriqueById,
   isSectionRouteEnabled,

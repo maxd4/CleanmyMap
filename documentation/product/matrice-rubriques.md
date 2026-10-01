@@ -77,6 +77,12 @@ principal et ne se confond pas avec `/reports`, qui reste collectif.
 - `apps/web/src/lib/navigation.ts`
 - `documentation/pages_site/INDEX.md`
 
+La navigation CURRENT suit le contrat unique `NavigationBlockId` (`home`,
+`act`, `visualize`, `impact`, `network`, `connect`, `learn`). Le registry des
+rubriques ne porte pas de `spaceId` parallèle : le terme produit général
+« espace » ne doit pas être interprété comme une seconde taxonomie de
+navigation.
+
 ## Parcours, structures et autorisation
 
 Cette matrice décrit une navigation UX, pas une matrice de permissions. Les

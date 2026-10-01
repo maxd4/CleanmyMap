@@ -1,6 +1,5 @@
 import type { Locale } from "@/lib/ui/preferences";
 import type {
-  Espace,
   PageRoute,
   RubriqueKind as DomainRubriqueKind,
 } from "@/lib/domain-language";
@@ -16,13 +15,11 @@ export type RubriqueCategory = {
 export type RubriqueAvailability = "available" | "hidden";
 export type RubriqueKind = DomainRubriqueKind;
 export type RubriqueImplementation = "finalized" | "pending";
-export type RubriqueSpaceId = Espace;
 type RubriqueAnonymousPresentation = "visible" | "blur" | "disabled";
 
 type RubriqueDefinitionBase = {
   id: string;
   categoryId: RubriqueCategory["id"];
-  spaceId: RubriqueSpaceId;
   priority: number;
   kind: RubriqueKind;
   route: PageRoute;

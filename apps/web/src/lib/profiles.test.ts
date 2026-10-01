@@ -9,6 +9,7 @@ import {
   resolveActiveRole,
   getSwitchableProfiles,
   MAX_ROLE_STORAGE_VALUES,
+  PROFILE_DEFINITIONS,
   type AppProfile,
 } from "./profiles";
 import { getEffectiveAccessForSessionRole } from "./domain-language";
@@ -30,6 +31,14 @@ const EXPECTED_PROFILE_ACTIONS: Record<AppProfile, readonly string[]> = {
 };
 
 describe("profile aliases", () => {
+  it("keeps profile definitions free from the retired rubrique space taxonomy", () => {
+    for (const definition of Object.values(PROFILE_DEFINITIONS)) {
+      expect(Object.prototype.hasOwnProperty.call(definition, "spacePriority")).toBe(
+        false,
+      );
+    }
+  });
+
   it("keeps IMU as the displayed label for the top profile", () => {
     expect(getProfileLabel("max", "fr")).toBe("IMU");
     expect(getProfileLabel("max", "en")).toBe("IMU");

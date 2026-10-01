@@ -40,6 +40,12 @@ describe("sections registry invariants", () => {
     expect(new Set(routes).size).toBe(routes.length);
   });
 
+  it("uses the current navigation model instead of a legacy rubrique space", () => {
+    for (const rubrique of RUBRIQUE_REGISTRY) {
+      expect(Object.prototype.hasOwnProperty.call(rubrique, "spaceId")).toBe(false);
+    }
+  });
+
   it("keeps compatibility aliases out of the CURRENT registry", () => {
     const compatibilityIds = ["route", "weather", "dm", "network"];
     const registeredIds = RUBRIQUE_REGISTRY.map((item) => item.id);

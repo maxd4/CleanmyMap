@@ -35,9 +35,6 @@ export type SessionRole = Role | "anonymous";
 // CTA et les libellés. Il ne constitue pas une autorisation serveur.
 export type Parcours = ActiveRole;
 
-// Espace stable de navigation transverse.
-export type Espace = "execute" | "supervise" | "decide" | "prepare";
-
 // Route applicative explicite.
 export type PageRoute = `/${string}`;
 
@@ -67,8 +64,8 @@ export const DOMAIN_GLOSSARY: Record<
   parcours:
     "Projection UX du persona actif dans la navigation, les CTA et les libellés, sans autorité serveur.",
   espace:
-    "Bloc stable de navigation transverse (Accueil & Pilotage, Agir, Cartographie & Impact, Réseau & Discussions, Apprendre).",
-  rubrique: "Entree de navigation rattachee a un espace et a une route.",
+    "Terme metier general ; la navigation CURRENT est structuree par les blocs NavigationBlockId.",
+  rubrique: "Entree de navigation rattachee a un bloc de navigation et a une route.",
   page: "Route applicative rendue (app-route) ou section rendue via /sections/[sectionId].",
   cta_primary: "Action principale affichee pour le parcours courant.",
   cta_secondary: "Action secondaire affichee a cote du CTA principal.",

@@ -247,13 +247,6 @@
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
-      "id": "d7b3d5be4c2fcbcfadfa0fd8",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "getVisibleRubriquesBySpace est l'owner de l'helper réexporté par la façade publique sections-registry protégée par le contrôle 9C.",
-      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/helpers.ts ; apps/web/src/lib/sections-registry/index.ts",
-      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
-    },
-    {
       "id": "44cacb793690385a470bdaf1",
       "classification": "KEEP_JUSTIFIED",
       "reason": "normalizeSectionId est l'owner de l'helper réexporté par la façade publique sections-registry protégée par le contrôle 9C.",
@@ -272,13 +265,6 @@
       "classification": "KEEP_JUSTIFIED",
       "reason": "isRubriqueVisible est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:isRubriqueVisible",
-      "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
-    },
-    {
-      "id": "8367ec2907725ec4489811d0",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "getVisibleRubriquesBySpace est exposé par la façade publique sections-registry protégée par le contrôle 9C.",
-      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:getVisibleRubriquesBySpace",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
     },
     {
