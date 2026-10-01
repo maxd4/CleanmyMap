@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "justifications": [
+    {
+      "scope": "tests",
+      "fingerprint": "d33cb13e5c169272",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les tests des frontières server/app et client/component restent indépendants pour conserver une vérification explicite de chaque frontière d'exécution ; une fixture commune masquerait précisément la séparation de sécurité testée.",
+      "evidence": "apps/web/src/app/server-translation-boundary.test.ts:1-45 et apps/web/src/components/client-boundary.test.ts:1-40 ; les suites parcourent des arbres distincts et appliquent des contrats de frontière distincts.",
+      "reviewedRef": "21c83ff399cb812c1dba18b1f19411b5fc7833e4"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0441c7af01b96961",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Le setup répété entre les contrôles de frontière server/app et server/lib est volontaire : chaque suite doit rester lisible et autonome car elle protège un périmètre d'import différent.",
+      "evidence": "apps/web/src/app/server-translation-boundary.test.ts:1-45 et apps/web/src/lib/client-boundary.test.ts:1-35 ; les racines, patterns d'ignorance et règles de hooks ne sont pas interchangeables.",
+      "reviewedRef": "21c83ff399cb812c1dba18b1f19411b5fc7833e4"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2051a8d78ac4bb70",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les assertions de frontière composant et application restent dupliquées pour que chaque périmètre d'arbre soit testé et diagnostiqué indépendamment ; une abstraction paramétrée rendrait la preuve de frontière moins explicite.",
+      "evidence": "apps/web/src/app/server-translation-boundary.test.ts:55-66 et apps/web/src/components/client-boundary.test.ts:34-45 ; les suites parcourent des racines différentes avec le même contrat de fail-closed.",
+      "reviewedRef": "21c83ff399cb812c1dba18b1f19411b5fc7833e4"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "69dad6373a596ab8",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les assertions de frontière lib et application restent dupliquées pour que chaque périmètre d'arbre soit testé et diagnostiqué indépendamment ; une abstraction paramétrée rendrait la preuve de frontière moins explicite.",
+      "evidence": "apps/web/src/app/server-translation-boundary.test.ts:55-66 et apps/web/src/lib/client-boundary.test.ts:34-45 ; les suites parcourent des racines différentes avec le même contrat de fail-closed.",
+      "reviewedRef": "21c83ff399cb812c1dba18b1f19411b5fc7833e4"
+    }
+  ]
+}

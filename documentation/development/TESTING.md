@@ -500,7 +500,13 @@ Un clone historique reste donc une dette et ne constitue pas une justification
 implicite. Une duplication volontaire nécessitant une protection doit faire
 l'objet d'une décision explicite et d'un garde-fou dédié, sans exclusion,
 relèvement de seuil ou abstraction artificielle ajoutée uniquement pour
-satisfaire jscpd.
+satisfaire jscpd. Les décisions `KEEP_INTENTIONAL` sont enregistrées dans
+`scripts/checks/duplication-justifications.json` avec le fingerprint natif, une
+raison, une preuve et un SHA complet de revue. Le contrôle vérifie que le
+fingerprint existe dans la baseline native et dans le rapport CURRENT SARIF ;
+une justification disparue produit `STALE_KEEP_INTENTIONAL` et bloque. Ce
+registre ne neutralise jamais `NEW_CLONE_FINGERPRINTS_BLOCKING` : un nouveau
+fingerprint reste bloquant même lorsqu'un registre de KEEP existe.
 
 La stabilisation court terme de la CI quotidienne distingue trois résultats :
 `PASS`, `PASS_WITH_GRACE` et `FAIL`. `PASS_WITH_GRACE` accepte uniquement une

@@ -6,6 +6,7 @@ export const DUPLICATION_TOOL_VERSION = "5.3.0";
 export const DUPLICATION_MIN_LINES = 5;
 export const DUPLICATION_MIN_TOKENS = 50;
 export const DUPLICATION_NEW_CLONE_FINGERPRINTS_BLOCKING = true;
+const DUPLICATION_JUSTIFICATIONS_SCHEMA_VERSION = 1;
 
 export const DUPLICATION_GRACE = Object.freeze({
   runtime: Object.freeze({
@@ -95,9 +96,12 @@ export const DUPLICATION_POLICY_FINGERPRINT = computeDuplicationPolicyFingerprin
 
 const DUPLICATION_METRICS_BASELINE_SCHEMA_VERSION = 2;
 
-export function buildJscpdArguments(scopeName, baselinePath, outputDirectory) {
+export function buildJscpdArguments(scopeName, baselinePath, outputDirectory, reporters = "json") {
   const scope = DUPLICATION_SCOPES[scopeName];
   if (!scope) throw new Error(`Unknown duplication scope: ${scopeName}`);
+  if (typeof reporters !== "string" || reporters.trim().length === 0) {
+    throw new Error("Duplication reporters must be a non-empty string.");
+  }
   return [
     ...scope.paths,
     "--pattern", scope.pattern,
@@ -105,7 +109,7 @@ export function buildJscpdArguments(scopeName, baselinePath, outputDirectory) {
     "--min-tokens", String(DUPLICATION_MIN_TOKENS),
     "--ignore", scope.ignores.join(","),
     "--baseline", baselinePath,
-    "--reporters", "json",
+    "--reporters", reporters,
     "--output", outputDirectory,
     "--silent",
     "--no-colors",
@@ -218,4 +222,87 @@ export function nativeBaselineFingerprintCount(baseline) {
     throw new Error("jscpd baseline malformed: version 1 fingerprints are required.");
   }
   return Object.keys(baseline.fingerprints).length;
+}
+
+export function readJscpdFingerprints(sarifReport) {
+  const results = sarifReport?.runs?.[0]?.results;
+  if (!Array.isArray(results)) {
+    throw new Error("jscpd SARIF report malformed: runs[0].results is required.");
+  }
+
+  const fingerprints = new Set();
+  for (const result of results) {
+    const fingerprint = result?.partialFingerprints?.["jscpdCloneHash/v1"];
+    if (typeof fingerprint !== "string" || fingerprint.length === 0) {
+      throw new Error("jscpd SARIF report malformed: jscpdCloneHash/v1 is required.");
+    }
+    fingerprints.add(fingerprint);
+  }
+  return fingerprints;
+}
+
+function justificationError(message) {
+  throw new Error(`duplication justifications malformed: ${message}`);
+}
+
+export function validateDuplicationJustificationsRegistry(
+  registry,
+  { nativeBaselines = {}, currentFingerprintsByScope = null } = {},
+) {
+  if (!registry || registry.schemaVersion !== DUPLICATION_JUSTIFICATIONS_SCHEMA_VERSION) {
+    justificationError(`schemaVersion ${DUPLICATION_JUSTIFICATIONS_SCHEMA_VERSION} required.`);
+  }
+  if (!Array.isArray(registry.justifications)) {
+    justificationError("justifications array is required.");
+  }
+
+  const seen = new Set();
+  const counts = Object.fromEntries(Object.keys(DUPLICATION_SCOPES).map((scopeName) => [scopeName, 0]));
+  const stale = [];
+  for (const [index, justification] of registry.justifications.entries()) {
+    if (!justification || typeof justification !== "object") {
+      justificationError(`entry ${index} must be an object.`);
+    }
+    const { scope, fingerprint, classification, reason, evidence, reviewedRef } = justification;
+    if (!Object.hasOwn(DUPLICATION_SCOPES, scope)) {
+      justificationError(`entry ${index} has an unknown scope.`);
+    }
+    if (typeof fingerprint !== "string" || !/^[0-9a-f]{16}$/i.test(fingerprint)) {
+      justificationError(`entry ${index} has an invalid fingerprint.`);
+    }
+    const identity = `${scope}:${fingerprint}`;
+    if (seen.has(identity)) {
+      justificationError(`duplicate entry for ${identity}.`);
+    }
+    seen.add(identity);
+    if (classification !== "KEEP_INTENTIONAL") {
+      justificationError(`entry ${index} must use KEEP_INTENTIONAL.`);
+    }
+    if (typeof reason !== "string" || reason.trim().length === 0) {
+      justificationError(`entry ${index} requires a non-empty reason.`);
+    }
+    if (typeof evidence !== "string" || evidence.trim().length === 0) {
+      justificationError(`entry ${index} requires non-empty evidence.`);
+    }
+    if (typeof reviewedRef !== "string" || !/^[0-9a-f]{40}$/i.test(reviewedRef)) {
+      justificationError(`entry ${index} requires a full reviewedRef SHA.`);
+    }
+
+    const baseline = nativeBaselines[scope];
+    nativeBaselineFingerprintCount(baseline);
+    if (!Object.hasOwn(baseline.fingerprints, fingerprint)) {
+      justificationError(`entry ${index} targets an unknown native fingerprint.`);
+    }
+
+    const currentFingerprints = currentFingerprintsByScope?.[scope];
+    if (currentFingerprints && !currentFingerprints.has(fingerprint)) {
+      stale.push(identity);
+    }
+    counts[scope] += 1;
+  }
+
+  if (stale.length > 0) {
+    throw new Error(`STALE_KEEP_INTENTIONAL: ${stale.join(", ")}`);
+  }
+  return { counts, stale };
 }

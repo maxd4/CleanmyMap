@@ -10,13 +10,16 @@ import {
   compareDuplicationMetrics,
   DUPLICATION_SCOPES,
   nativeBaselineFingerprintCount,
+  readJscpdFingerprints,
   readJscpdMetrics,
+  validateDuplicationJustificationsRegistry,
   validateDuplicationMetricsBaseline,
 } from "./duplication-policy.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const metricsBaselinePath = path.join(repositoryRoot, "scripts", "checks", "duplication-metrics-baseline.json");
 const nativeBaselineDirectory = path.join(repositoryRoot, "scripts", "checks");
+const justificationsPath = path.join(nativeBaselineDirectory, "duplication-justifications.json");
 
 function git(args) {
   return execFileSync("git", args, { cwd: repositoryRoot, encoding: "utf8" }).trim();
@@ -44,7 +47,7 @@ function runScope(scopeName, baseline) {
   try {
     const runner = path.join(repositoryRoot, "node_modules", "jscpd", "run-jscpd.js");
     if (!fs.existsSync(runner)) throw new Error("HOST_ENVIRONMENT: jscpd 5.3.0 is not installed.");
-    const result = spawnSync(process.execPath, [runner, ...buildJscpdArguments(scopeName, nativeBaselinePath, outputDirectory)], {
+    const result = spawnSync(process.execPath, [runner, ...buildJscpdArguments(scopeName, nativeBaselinePath, outputDirectory, "json,sarif")], {
       cwd: repositoryRoot,
       encoding: "utf8",
       windowsHide: true,
@@ -54,12 +57,18 @@ function runScope(scopeName, baseline) {
       throw new Error(`jscpd report missing for ${scopeName}: ${result.stderr || result.stdout || "no output"}`);
     }
     const metrics = readJscpdMetrics(JSON.parse(fs.readFileSync(reportPath, "utf8")));
+    const sarifPath = path.join(outputDirectory, "jscpd-report.sarif");
+    if (!fs.existsSync(sarifPath)) {
+      throw new Error(`jscpd SARIF report missing for ${scopeName}.`);
+    }
+    const fingerprints = readJscpdFingerprints(JSON.parse(fs.readFileSync(sarifPath, "utf8")));
     const comparison = compareDuplicationMetrics(metrics, baseline.scopes[scopeName], scopeName);
     const failures = [...comparison.failures];
     if (result.status !== 0) failures.push(`jscpd execution failed (exit ${result.status})`);
     return {
       scopeName,
       metrics,
+      fingerprints,
       comparison: {
         ...comparison,
         status: failures.length > 0 ? "FAIL" : comparison.status,
@@ -75,7 +84,20 @@ export function runDuplicationPolicy() {
   const baseline = JSON.parse(fs.readFileSync(metricsBaselinePath, "utf8"));
   assertBaselineFresh(baseline);
   const results = Object.keys(DUPLICATION_SCOPES).map((scopeName) => runScope(scopeName, baseline));
-  return { baseline, results };
+  if (!fs.existsSync(justificationsPath)) {
+    throw new Error(`duplication justifications missing: ${justificationsPath}`);
+  }
+  const nativeBaselines = Object.fromEntries(Object.keys(DUPLICATION_SCOPES).map((scopeName) => {
+    const fileName = scopeName === "fixtures/data" ? "duplication-data-baseline.json" : `duplication-${scopeName}-baseline.json`;
+    return [scopeName, JSON.parse(fs.readFileSync(path.join(nativeBaselineDirectory, fileName), "utf8"))];
+  }));
+  const currentFingerprintsByScope = Object.fromEntries(results.map((result) => [result.scopeName, result.fingerprints]));
+  const justifications = JSON.parse(fs.readFileSync(justificationsPath, "utf8"));
+  const justificationReport = validateDuplicationJustificationsRegistry(justifications, {
+    nativeBaselines,
+    currentFingerprintsByScope,
+  });
+  return { baseline, results, justificationReport };
 }
 
 export function formatDuplicationReport({ results }) {
@@ -97,6 +119,10 @@ async function main() {
   try {
     const report = runDuplicationPolicy();
     console.log(formatDuplicationReport(report));
+    console.log(`KEEP_INTENTIONAL_RUNTIME: ${report.justificationReport.counts.runtime}`);
+    console.log(`KEEP_INTENTIONAL_TESTS: ${report.justificationReport.counts.tests}`);
+    console.log(`KEEP_INTENTIONAL_DATA: ${report.justificationReport.counts["fixtures/data"]}`);
+    console.log("STALE_KEEP_INTENTIONAL: 0");
     const statuses = report.results.map((result) => result.comparison.status);
     const status = statuses.includes("FAIL")
       ? "FAIL"
