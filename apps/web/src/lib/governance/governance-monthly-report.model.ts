@@ -53,13 +53,13 @@ function getReportMonth(generatedAt: string): string {
 function getSnapshotServiceCharge(
   snapshot: EnvironmentalImpactCaptureResult["snapshots"][number] | null | undefined,
   serviceKey: string,
-): number {
+): number | null {
   if (!snapshot) {
-    return 0;
+    return null;
   }
 
   const service = snapshot.model.infrastructure.services.find((item) => item.key === serviceKey);
-  return service?.monthlyKgCo2eProxy ?? 0;
+  return service?.monthlyKgCo2eProxy ?? null;
 }
 
 type GovernanceInfrastructureService = {
@@ -100,8 +100,9 @@ function sortServicesForGovernance(
         return rightScore - leftScore;
       }
 
-      if ((right.monthlyKgCo2eProxy ?? 0) !== (left.monthlyKgCo2eProxy ?? 0)) {
-        return (right.monthlyKgCo2eProxy ?? 0) - (left.monthlyKgCo2eProxy ?? 0);
+      const byCharge = (right.monthlyKgCo2eProxy ?? 0) - (left.monthlyKgCo2eProxy ?? 0);
+      if (byCharge !== 0) {
+        return byCharge;
       }
 
       return left.label.localeCompare(right.label, "fr");
@@ -113,22 +114,25 @@ function buildTopGrowthHighlights(
   previous: EnvironmentalImpactCaptureResult["snapshots"][number] | null | undefined,
 ): Array<{
   label: string;
-  previousKgCo2eProxy: number;
-  currentKgCo2eProxy: number;
-  deltaKgCo2eProxy: number;
+  previousKgCo2eProxy: number | null;
+  currentKgCo2eProxy: number | null;
+  deltaKgCo2eProxy: number | null;
 }> {
   return current
     .map((service) => {
       const previousKgCo2eProxy = getSnapshotServiceCharge(previous, service.key);
-      const currentKgCo2eProxy = service.monthlyKgCo2eProxy ?? 0;
+      const currentKgCo2eProxy = service.monthlyKgCo2eProxy;
       return {
         label: service.label,
         previousKgCo2eProxy,
         currentKgCo2eProxy,
-        deltaKgCo2eProxy: currentKgCo2eProxy - previousKgCo2eProxy,
+        deltaKgCo2eProxy:
+          currentKgCo2eProxy === null || previousKgCo2eProxy === null
+            ? null
+            : currentKgCo2eProxy - previousKgCo2eProxy,
       };
     })
-    .sort((left, right) => right.deltaKgCo2eProxy - left.deltaKgCo2eProxy)
+    .sort((left, right) => (right.deltaKgCo2eProxy ?? -Infinity) - (left.deltaKgCo2eProxy ?? -Infinity))
     .slice(0, 3);
 }
 
@@ -138,19 +142,22 @@ function buildServiceEvolutionBreakdown(
 ): Array<{
   key: string;
   label: string;
-  currentKgCo2eProxy: number;
-  previousKgCo2eProxy: number;
-  deltaKgCo2eProxy: number;
+  currentKgCo2eProxy: number | null;
+  previousKgCo2eProxy: number | null;
+  deltaKgCo2eProxy: number | null;
 }> {
   return current.map((service) => {
     const previousKgCo2eProxy = getSnapshotServiceCharge(previous, service.key);
-    const currentKgCo2eProxy = service.monthlyKgCo2eProxy ?? 0;
+    const currentKgCo2eProxy = service.monthlyKgCo2eProxy;
     return {
       key: service.key,
       label: service.label,
       currentKgCo2eProxy,
       previousKgCo2eProxy,
-      deltaKgCo2eProxy: currentKgCo2eProxy - previousKgCo2eProxy,
+      deltaKgCo2eProxy:
+        currentKgCo2eProxy === null || previousKgCo2eProxy === null
+          ? null
+          : currentKgCo2eProxy - previousKgCo2eProxy,
     };
   });
 }
