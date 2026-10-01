@@ -17,6 +17,29 @@ type DisplayedService = ReturnType<
   typeof import("./free-plan-services-methodology-visual.logic").buildDisplayedServices
 >[number];
 
+function getMonthlyCoverageLabel(displayedServices: DisplayedService[], isFrench: boolean): string {
+  const measuredServices = displayedServices.filter(
+    (service) => service.service?.monthlyKgCo2eProxy !== null && service.service?.monthlyKgCo2eProxy !== undefined,
+  );
+  const totalMonthlyKgCo2eProxy = measuredServices.reduce(
+    (sum, service) => sum + (service.service?.monthlyKgCo2eProxy as number),
+    0,
+  );
+  if (measuredServices.length === 0) {
+    return isFrench
+      ? `NA (aucune mesure connue sur ${displayedServices.length} service${displayedServices.length > 1 ? "s" : ""})`
+      : `NA (no known measure across ${displayedServices.length} service${displayedServices.length > 1 ? "s" : ""})`;
+  }
+  if (measuredServices.length === displayedServices.length) {
+    return isFrench
+      ? `${formatImpactKg(totalMonthlyKgCo2eProxy)} (couverture complète)`
+      : `${formatImpactKg(totalMonthlyKgCo2eProxy)} (complete coverage)`;
+  }
+  return isFrench
+    ? `${formatImpactKg(totalMonthlyKgCo2eProxy)} (${measuredServices.length}/${displayedServices.length} services mesurés · couverture partielle)`
+    : `${formatImpactKg(totalMonthlyKgCo2eProxy)} (${measuredServices.length}/${displayedServices.length} services measured · partial coverage)`;
+}
+
 type Props = {
   displayedServices: DisplayedService[];
   githubStats?: GitHubRepositoryStats | null;
@@ -48,10 +71,7 @@ export function FreePlanServicesMethodologyVisualQuotas({
   const nearLimitCount = displayedServices.filter(
     (service) => service.state === "proche limite" || service.state === "dépassé",
   ).length;
-  const totalMonthlyKgCo2eProxy = displayedServices.reduce(
-    (sum, service) => sum + (service.service?.monthlyKgCo2eProxy ?? 0),
-    0,
-  );
+  const totalMonthlyCoverageLabel = getMonthlyCoverageLabel(displayedServices, isFrench);
   const title = isFrench ? "Quotas & plans des services web" : "Web services quotas and plans";
   const subtitle = isFrench
     ? "L'onglet quotas répond à une seule question: est-ce qu'un service risque de dépasser son plan ? GitHub est relié au dépôt réel."
@@ -308,7 +328,7 @@ export function FreePlanServicesMethodologyVisualQuotas({
               {" "}
               Le total mensuel affiché ici est
               {" "}
-              <span className="font-semibold text-slate-800">{formatImpactKg(totalMonthlyKgCo2eProxy)}</span>.
+              <span className="font-semibold text-slate-800">{totalMonthlyCoverageLabel}</span>.
             </>
           ) : (
             <>
@@ -320,7 +340,7 @@ export function FreePlanServicesMethodologyVisualQuotas({
               {" "}
               The monthly total shown here is
               {" "}
-              <span className="font-semibold text-slate-800">{formatImpactKg(totalMonthlyKgCo2eProxy)}</span>.
+              <span className="font-semibold text-slate-800">{totalMonthlyCoverageLabel}</span>.
             </>
           )}
         </div>
