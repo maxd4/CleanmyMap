@@ -26,12 +26,18 @@ et année en cours issues de `progression.recognition` et
 
 La page affiche aussi un historique secondaire des reçus de réconciliation,
 du plus récent au plus ancien. Il est limité aux 50 derniers reçus du compte
-courant et réutilise le dialogue de détail existant ; chaque ligne expose la
-date, la version CURRENT, le delta XP, le niveau avant/après et les compteurs
-de progressions, badges et jalons modifiés. Une notification de la boîte
-`app_notifications` ouvre un reçu ciblé avec
-`/sections/gamification?receipt=<id>` sans acquittement automatique. Les
+courant ; les reçus acquittés restent consultables et seul le pending exclut
+les reçus acquittés. Chaque ligne expose la date, la version CURRENT, le delta
+XP, le niveau avant/après et les compteurs de progressions, badges et jalons
+modifiés. Une notification de la boîte `app_notifications` ouvre un reçu ciblé
+avec `/sections/gamification?receipt=<UUID opaque de notification>` sans
+acquittement automatique. Le serveur résout cette identité dans le scope du
+compte authentifié, y compris lorsque le reçu est hors de la fenêtre des 50
+derniers ; une cible malformée, inexistante ou étrangère est ignorée. Les
 réconciliations sans changement visible ne créent ni reçu ni notification.
+`seen_at` correspond à la consultation de la notification depuis la cloche ou
+le tableau de bord ; le compteur associé désigne les mises à jour non encore
+consultées.
 
 Le catalogue distingue explicitement les sept axes généraux `Participation`,
 `Organisation`, `Exploration`, `Zones propres`, `Régularité`, `Polyvalence` et

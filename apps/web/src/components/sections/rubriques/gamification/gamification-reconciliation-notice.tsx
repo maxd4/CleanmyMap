@@ -172,8 +172,8 @@ export function GamificationReconciliationNotice({
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#f1dfd8] bg-[#fffaf8] px-4 py-3 text-sm text-[#765f59]">
           <p>
             {fr
-              ? `${reconciliation.unseenCount} mises à jour de progression depuis votre dernière visite.`
-              : `${reconciliation.unseenCount} progress updates since your last visit.`}
+              ? `${reconciliation.unseenCount} mises à jour de progression non encore consultées.`
+              : `${reconciliation.unseenCount} progress updates not yet viewed.`}
           </p>
           <CmmButton href="#gamification-reconciliation-history" tone="secondary" variant="pill" size="sm">
             {fr ? "Ouvrir l’historique" : "Open history"}

@@ -229,6 +229,18 @@ rebuild idempotent sans conséquence visible ne crée aucun reçu. Le front-end
 consomme ce contrat et ne déduit jamais un delta depuis le seul total XP ni
 depuis des logs texte.
 
+L'historique secondaire affiche au plus les 50 reçus les plus récents ; cette
+fenêtre de présentation ne détermine ni le pending ni ses compteurs. Les
+reçus acquittés restent dans l'historique, tandis que le pending sélectionne
+uniquement les reçus avec `acknowledged_at IS NULL`. Un deep-link utilise
+`/sections/gamification?receipt=<UUID opaque de notification>` : l'UUID de la
+notification est borné, ne contient pas le `reconciliationId` composite et le
+serveur résout le reçu avec `user_id`, le type de notification et la
+validation de `receipt.userId`. Une cible conservée peut donc être ouverte
+hors des 50 lignes ; une cible malformée, inexistante ou étrangère est
+ignorée. `seen_at` désigne la première consultation de la notification,
+depuis la cloche ou le tableau de bord, et non une visite implicite de la page.
+
 ## Taxonomie CURRENT et registre des décisions
 
 `GAMIFICATION_REGISTRY` dans

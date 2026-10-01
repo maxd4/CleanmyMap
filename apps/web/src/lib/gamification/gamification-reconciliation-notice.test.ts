@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   loadGamificationReconciliationInbox,
   loadGamificationReconciliationHistory,
+  loadGamificationReconciliationTarget,
   loadPendingGamificationReconciliation,
 } from "./gamification-reconciliation-notice";
 
@@ -11,6 +12,7 @@ type MockQueryChain = {
   is: ReturnType<typeof vi.fn>;
   order: ReturnType<typeof vi.fn>;
   limit: ReturnType<typeof vi.fn>;
+  maybeSingle: ReturnType<typeof vi.fn>;
   then: (
     resolve: (value: unknown) => unknown,
     reject?: (reason: unknown) => unknown,
@@ -21,6 +23,7 @@ function createSupabase(
   data: unknown,
   error: { message: string } | null = null,
   pendingData: unknown = data,
+  targetData: unknown = null,
 ) {
   const chains: MockQueryChain[] = [];
   function createChain(): MockQueryChain {
@@ -41,6 +44,7 @@ function createSupabase(
       }),
       order: vi.fn(() => chain),
       limit: vi.fn(async () => getResult()),
+      maybeSingle: vi.fn(async () => ({ data: targetData, error })),
       then: (resolve, reject) => Promise.resolve(getResult()).then(resolve, reject),
     };
     chains.push(chain);
@@ -190,5 +194,41 @@ describe("loadPendingGamificationReconciliation", () => {
       ]),
     );
     expect(pendingChain?.is).toHaveBeenCalledWith("acknowledged_at", null);
+  });
+
+  it("resolves a retained targeted receipt independently from the history window", async () => {
+    const notificationId = "11111111-1111-4111-8111-111111111111";
+    const targetRow = {
+      id: notificationId,
+      created_at: "2026-08-01T10:00:00.000Z",
+      seen_at: "2026-08-01T10:01:00.000Z",
+      acknowledged_at: "2026-08-01T10:02:00.000Z",
+      payload: receipt,
+    };
+    const { supabase, chains } = createSupabase([], null, [], targetRow);
+
+    const targeted = await loadGamificationReconciliationTarget(supabase as never, "user-1", notificationId);
+
+    expect(targeted?.notificationId).toBe(notificationId);
+    expect(targeted?.acknowledgedAt).toBe("2026-08-01T10:02:00.000Z");
+    const targetChain = chains.find((chain) => chain.maybeSingle.mock.calls.length > 0);
+    expect(targetChain?.eq.mock.calls).toEqual(
+      expect.arrayContaining([
+        ["id", notificationId],
+        ["user_id", "user-1"],
+        ["type", "gamification_reconciliation"],
+      ]),
+    );
+  });
+
+  it("fails closed for malformed, missing, or foreign targeted receipts", async () => {
+    const { supabase, chains } = createSupabase([], null, [], {
+      id: "11111111-1111-4111-8111-111111111111",
+      created_at: "2026-08-01T10:00:00.000Z",
+      payload: { ...receipt, receipt: { ...receipt.receipt, userId: "user-2" } },
+    });
+    expect(await loadGamificationReconciliationTarget(supabase as never, "user-1", "reconciliation-1")).toBeNull();
+    expect(await loadGamificationReconciliationTarget(supabase as never, "user-1", "22222222-2222-4222-8222-222222222222")).toBeNull();
+    expect(chains.find((chain) => chain.maybeSingle.mock.calls.length > 0)).toBeDefined();
   });
 });

@@ -9,4 +9,5 @@ export type MeResponse = {
   progression: UserProgressionResponse;
   reconciliation: PendingGamificationReconciliation | null;
   reconciliationHistory: GamificationReconciliationHistoryEntry[];
+  reconciliationTarget: GamificationReconciliationHistoryEntry | null;
 };

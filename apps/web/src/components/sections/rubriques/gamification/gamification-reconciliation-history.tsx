@@ -41,11 +41,13 @@ function changeCounts(entry: GamificationReconciliationHistoryEntry): {
 
 function findTargetedEntry(
   entries: GamificationReconciliationHistoryEntry[],
+  serverTarget: GamificationReconciliationHistoryEntry | null | undefined,
   receiptId: string | null,
   dismissedReceiptId: string | null,
 ): GamificationReconciliationHistoryEntry | null {
   if (!receiptId || receiptId === dismissedReceiptId) return null;
-  return entries.find((entry) => entry.receipt.reconciliationId === receiptId) ?? null;
+  if (serverTarget?.notificationId === receiptId) return serverTarget;
+  return entries.find((entry) => entry.notificationId === receiptId) ?? null;
 }
 
 function HistoryEntry({
@@ -131,12 +133,14 @@ export function GamificationReconciliationHistory({
   loading,
   error,
   locale,
+  targetedEntry: serverTarget,
 }: {
   history: GamificationReconciliationHistoryEntry[] | undefined;
   progression: UserProgressionResponse | undefined;
   loading: boolean;
   error: unknown;
   locale: string;
+  targetedEntry?: GamificationReconciliationHistoryEntry | null;
 }) {
   const fr = locale === "fr";
   const searchParams = useSearchParams();
@@ -154,8 +158,8 @@ export function GamificationReconciliationHistory({
     () => "",
   );
   const targetedEntry = useMemo(
-    () => findTargetedEntry(entries, receiptId, dismissedReceiptId),
-    [dismissedReceiptId, entries, receiptId],
+    () => findTargetedEntry(entries, serverTarget, receiptId, dismissedReceiptId),
+    [dismissedReceiptId, entries, receiptId, serverTarget],
   );
   const activeEntry = selectedEntry ?? targetedEntry;
   const selectedDetailCopy = useMemo(
@@ -167,7 +171,7 @@ export function GamificationReconciliationHistory({
 
   function closeDetail() {
     setSelectedEntry(null);
-    if (targetedEntry) setDismissedReceiptId(targetedEntry.receipt.reconciliationId);
+    if (targetedEntry) setDismissedReceiptId(targetedEntry.notificationId);
   }
 
   function focusTarget(targetId: string) {

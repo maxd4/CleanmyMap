@@ -21,8 +21,8 @@ type NotificationAuthState = Pick<
   "getToken" | "isLoaded" | "isSignedIn" | "userId"
 >;
 
-function navigateToNotification(router: { push: (href: string) => void }, payload: unknown) {
-  const href = buildNotificationHref(payload);
+function navigateToNotification(router: { push: (href: string) => void }, notification: AppNotification) {
+  const href = buildNotificationHref(notification.payload, notification.id);
   if (href) router.push(href);
 }
 
@@ -178,7 +178,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
         markReadInFlightRef.current = null;
       }
     }
-    navigateToNotification(router, notification.payload);
+    navigateToNotification(router, notification);
   };
 
   return (
