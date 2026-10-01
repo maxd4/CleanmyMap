@@ -13,7 +13,7 @@ import {
 } from "./progression-contributions";
 import type { ActionQualityGrade } from "@/lib/actions/quality/quality-rules";
 import {
-  loadActionOrganizerIdsForAction,
+  loadCanonicalActionOrganizerIdsForAction,
 } from "@/lib/actions/participation/organizers";
 import {
   actionRowToListItem,
@@ -526,11 +526,10 @@ export async function syncUserActionProgression(
 
   for (const action of actions) {
     const associationName = parseAssociationNameFromActionNotes(action.notes);
-    const organizerIds = await loadActionOrganizerIdsForAction(
+    const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
       supabase,
       action.id,
-      action.created_by_clerk_id,
-    ).catch(() => [action.created_by_clerk_id].filter((value): value is string => typeof value === "string" && value.trim().length > 0));
+    ).catch(() => []);
     const organizerCount = Math.max(1, organizerIds.length);
     const weight = inferActionWeight(action);
     const pendingAward = computeActionPendingAward(weight);

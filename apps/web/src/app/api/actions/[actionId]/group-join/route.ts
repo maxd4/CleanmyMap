@@ -12,7 +12,7 @@ import {
   canOverrideActionParticipants,
 } from "@/lib/actions/permissions";
 import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { cancelActionParticipation } from "@/lib/actions/participation/group-participation";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
 import { handleGroupJoinQueue } from "./route.queue";
@@ -74,10 +74,9 @@ export const resolveReviewerAccess: ReviewerAccessResolver = async (params) => {
     role: identity?.role ?? null,
     activeRole: identity?.activeRole ?? null,
   };
-  const organizerIds = await loadActionOrganizerIdsForAction(
+  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
     params.supabase,
     params.actionId,
-    null,
   );
   if (
     canReviewActionParticipants(

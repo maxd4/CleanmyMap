@@ -5,7 +5,7 @@ import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getCurrentUserIdentity, requireAuthenticatedAccess } from "@/lib/authz";
 import { canManageAction } from "@/lib/actions/permissions";
 import { loadActionById } from "@/lib/actions/store";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { canPublishPreAction } from "@/lib/actions/publication";
 import { initializeActionRouteVersioning } from "@/lib/actions/route-version-persistence";
 import type { ActionRow } from "@/types/database";
@@ -59,10 +59,9 @@ export async function POST(
     const permissionIdentity = identity
       ? { userId: access.userId, role: identity.role, activeRole: identity.activeRole }
       : null;
-    const organizerIds = await loadActionOrganizerIdsForAction(
+    const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
       supabase,
       actionId,
-      current.created_by_clerk_id,
     );
     if (
       !canManageAction(

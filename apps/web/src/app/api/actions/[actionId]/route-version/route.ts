@@ -7,7 +7,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadActionById } from "@/lib/actions/store";
 import { normalizeActionId } from "@/lib/actions/action-id";
 import { canManageAction } from "@/lib/actions/permissions";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { isPublishedFuturePreAction } from "@/lib/actions/temporal";
 import { buildPersistedGeometry } from "@/lib/actions/geometry/derived-geometry";
 import {
@@ -127,10 +127,9 @@ async function loadAuthorizedFutureAction(params: {
     };
   }
   const identity = await getCurrentUserIdentity();
-  const organizers = await loadActionOrganizerIdsForAction(
+  const organizers = await loadCanonicalActionOrganizerIdsForAction(
     params.supabase,
     params.actionId,
-    current.created_by_clerk_id,
   );
   const canManage = canManageAction(
     identity

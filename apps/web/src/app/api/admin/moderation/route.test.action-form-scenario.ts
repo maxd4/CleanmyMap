@@ -96,7 +96,7 @@ async function assertActionFormScenario(
       refreshedProgressionUserIds: ["creator-1", "organizer-1"], publicSurfaceSnapshotsInvalidated: true,
     }),
   }));
-  expect(mocks.loadActionOrganizerIdsForActionMock).toHaveBeenCalledWith(expect.anything(), "action-1", "creator-1");
+  expect(mocks.loadActionOrganizerIdsForActionMock).toHaveBeenCalledWith(expect.anything(), "action-1");
   expect(mocks.syncUserActionProgressionMock).toHaveBeenCalledTimes(2);
   expect(mocks.rebuildUserGamificationBadgesMock).toHaveBeenCalledTimes(2);
   expect(mocks.refreshProgressionProfileMock).toHaveBeenCalledTimes(2);

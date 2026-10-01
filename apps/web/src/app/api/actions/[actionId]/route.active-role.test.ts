@@ -28,7 +28,7 @@ vi.mock("@/lib/actions/participation/registration-records", () => ({
 }));
 vi.mock("@/lib/actions/participation/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
-  loadCanonicalActionOrganizerIdsForAction: loadCanonicalActionOrganizerIdsForActionMock,
+  loadCanonicalActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
   syncActionManualParticipants: vi.fn(),
 }));
 vi.mock("@/lib/actions/store-notes", () => ({

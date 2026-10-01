@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUserIdentity, requireAuthenticatedAccess } from "@/lib/authz";
 import { listAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import { canViewActionModerationAudit } from "@/lib/actions/permissions";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -27,10 +27,9 @@ async function canViewActionAudit(params: {
     return true;
   }
 
-  const organizerIds = await loadActionOrganizerIdsForAction(
+  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
     params.supabase,
     params.actionId,
-    null,
   );
   return organizerIds.includes(params.userId);
 }

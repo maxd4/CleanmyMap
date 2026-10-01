@@ -18,7 +18,7 @@ vi.mock("@/lib/authz", () => ({
 }));
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionMock }));
 vi.mock("@/lib/actions/participation/organizers", () => ({
-  loadActionOrganizerIdsForAction: organizersMock,
+  loadCanonicalActionOrganizerIdsForAction: organizersMock,
 }));
 vi.mock("@/lib/actions/participation/participant-summaries", () => ({
   loadActionParticipantSummaries: participantSummariesMock,

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { recordRepollutionPredictionEvaluationForAction } from "./store-post-processing";
 import {
-  loadActionOrganizerIdsForAction,
+  loadCanonicalActionOrganizerIdsForAction,
   syncActionManualParticipants,
 } from "./participation/organizers";
 import type { appendActionModerationAudit } from "./moderation-audit";
@@ -10,7 +10,6 @@ import type {
   ActionAuditSnapshots,
   ActionUpdateInput,
 } from "./action-update-audit";
-import type { ActionRow } from "@/types/database";
 
 export type AdminOverrideErrorStage =
   | "action_update"
@@ -26,7 +25,6 @@ export async function runActionUpdatePostProcessing(params: {
   actionId: string;
   updateData: Record<string, unknown>;
   body: ActionUpdateInput;
-  current: ActionRow;
   userId: string;
   identity: UserIdentity | null;
   shouldAuditModeration: boolean;
@@ -43,7 +41,6 @@ export async function runActionUpdatePostProcessing(params: {
     actionId,
     updateData,
     body,
-    current,
     userId,
     identity,
     shouldAuditModeration,
@@ -63,10 +60,9 @@ export async function runActionUpdatePostProcessing(params: {
 
   if (body.participantAccounts !== undefined) {
     setErrorStage("participant_sync");
-    const organizerIds = await loadActionOrganizerIdsForAction(
+    const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
       supabase,
       actionId,
-      current.created_by_clerk_id,
     );
     const resolvedIdentity = identity ?? {
       displayName: userId,

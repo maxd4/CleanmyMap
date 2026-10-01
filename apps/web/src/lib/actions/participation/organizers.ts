@@ -1,6 +1,5 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { runSingleActionQuery } from "@/lib/actions/query";
 import { env } from "@/lib/env";
 import { buildFallbackHandle } from "@/lib/auth/identity-handle";
 import {
@@ -468,36 +467,7 @@ async function loadActionOrganizerRowsForAction(
   }>;
 }
 
-export async function loadActionOrganizerIdsForAction(
-  supabase: SupabaseClient,
-  actionId: string,
-  fallbackUserId?: string | null,
-): Promise<string[]> {
-  const rows = await loadActionOrganizerRowsForAction(supabase, actionId).catch(() => []);
-  const organizerIds = [...new Set(rows.map((row) => row.organizer_clerk_id))];
-
-  if (organizerIds.length > 0) {
-    return organizerIds;
-  }
-
-  const configuredAdminIds = parseCsvUserIds(env.CLERK_ADMIN_USER_IDS);
-  if (configuredAdminIds.length > 0) {
-    return [configuredAdminIds[0]];
-  }
-
-  const actionResult = await runSingleActionQuery<{
-    created_by_clerk_id: string | null;
-  }>(supabase, (query) => query.select("created_by_clerk_id").eq("id", actionId).maybeSingle());
-
-  const creatorId =
-    actionResult?.created_by_clerk_id?.trim() ||
-    fallbackUserId?.trim() ||
-    null;
-
-  return creatorId ? [creatorId] : [];
-}
-
-/** Returns only the canonical relation; never falls back to the action creator. */
+/** Returns only the persisted action_organizers relation. */
 export async function loadCanonicalActionOrganizerIdsForAction(
   supabase: SupabaseClient,
   actionId: string,
@@ -506,6 +476,11 @@ export async function loadCanonicalActionOrganizerIdsForAction(
   return [...new Set(rows.map((row) => row.organizer_clerk_id.trim()).filter(Boolean))];
 }
 
+/**
+ * Creation-only compatibility default. Its result is persisted as an explicit
+ * action_organizers relation by create-submission; it must never be used as a
+ * read-time ownership or authorization fallback.
+ */
 export function resolveDefaultActionOrganizerIds(params: {
   creatorUserId: string;
   creatorIsGlobalAdmin: boolean;

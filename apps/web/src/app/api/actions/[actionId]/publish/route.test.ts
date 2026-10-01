@@ -12,7 +12,7 @@ vi.mock("@/lib/authz", () => ({
 }));
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionByIdMock }));
 vi.mock("@/lib/actions/participation/organizers", () => ({
-  loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
+  loadCanonicalActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,

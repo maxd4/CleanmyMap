@@ -238,7 +238,8 @@ describe("POST /api/actions/import", () => {
       {},
       expect.objectContaining({
         payload: expect.objectContaining({ recordType: "action" }),
-        organizers: [expect.objectContaining({ userId: "admin-1", isPrimary: true })],
+        organizers: [],
+        organizerRequirement: "optional",
         departmentAttribution: {
           trust: "trusted",
           source: "admin_import",

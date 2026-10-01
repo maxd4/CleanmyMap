@@ -158,6 +158,35 @@ actuellement principalement un parcours d'analyse. Une association, une
 entreprise, une collectivité ou un territoire ne devient un scope autorisable
 qu'au travers de sa relation canonique persistée et vérifiée côté serveur.
 
+Pour les actions, cette distinction est obligatoire :
+
+```txt
+action_organizers
+= relation organisateur/coorganisateur métier persistée et canonique
+
+GRANTED_ROLE / CLERK_ADMIN_USER_IDS
+= attribution ou allowlist de rôle ; jamais une relation avec une action
+
+ACTIVE_ROLE
+= capability globale explicitement prévue par le domaine ; jamais une
+  relation organisateur synthétique
+
+acteur technique d'import
+= identité d'exécution et de traçabilité de l'ingestion ; jamais un
+  organisateur métier par défaut
+
+creator
+= droit de créateur uniquement lorsqu'il est explicitement prévu par le
+  contrat de la capacité ; il ne remplace pas action_organizers
+```
+
+Une décision d'ownership ou d'AuthZ Actions ne doit donc consommer que la
+relation `action_organizers`, ou une capability globale calculée depuis
+`ACTIVE_ROLE`. Une allowlist, une configuration, un acteur `service_role`, un
+acteur d'import ou un fallback créateur ne doit pas être converti en
+`organizerIds`. Les helpers de compatibilité peuvent servir à une migration ou
+à une projection non sensible identifiée, mais jamais à une garde d'accès.
+
 Un parcours UX ne donne jamais de droit serveur supplémentaire : un CTA, un
 libellé ou une route proposée par la navigation ne remplace ni la capacité,
 ni le scope, ni l'ownership ou la relation requise par le handler.

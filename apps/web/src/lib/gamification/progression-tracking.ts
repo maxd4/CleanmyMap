@@ -8,7 +8,7 @@ import {
   loadUserProgressionStats,
   syncUserActionProgression,
 } from "./progression-data";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import {
   CURRENT_GAMIFICATION_RULES_REVISION,
   type ProgressionStatusPhase,
@@ -158,10 +158,9 @@ export async function trackActionCreated(
     return;
   }
 
-  const organizerIds = await loadActionOrganizerIdsForAction(
+  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
     supabase,
     action.id,
-    params.userId,
   );
   await syncOrganizersProgression(supabase, organizerIds);
 }
@@ -175,10 +174,9 @@ export async function trackActionValidationBonus(
     return;
   }
 
-  const organizerIds = await loadActionOrganizerIdsForAction(
+  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
     supabase,
     action.id,
-    action.created_by_clerk_id,
   );
   await syncOrganizersProgression(supabase, organizerIds);
   await Promise.all(
@@ -202,10 +200,9 @@ export async function trackActionRejection(
     return;
   }
 
-  const organizerIds = await loadActionOrganizerIdsForAction(
+  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
     supabase,
     action.id,
-    action.created_by_clerk_id,
   );
 
   await syncOrganizersProgression(supabase, organizerIds);

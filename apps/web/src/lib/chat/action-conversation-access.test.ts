@@ -15,7 +15,7 @@ const loadActionByIdMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionByIdMock }));
 vi.mock("@/lib/actions/participation/organizers", () => ({
-  loadActionOrganizerIdsForAction: vi.fn().mockResolvedValue([]),
+  loadCanonicalActionOrganizerIdsForAction: vi.fn().mockResolvedValue([]),
 }));
 
 const appliedMigration = readFileSync(
