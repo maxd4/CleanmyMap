@@ -9,7 +9,7 @@ import { Bell, Check } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmCountBadge } from "@/components/ui/cmm-count-badge";
 import { CmmPopover } from "@/components/ui/cmm-popover";
-import { buildChatNotificationHref } from "@/lib/chat/chat-notification-targets";
+import { buildNotificationHref } from "@/lib/notifications/notification-targets";
 import { logFailure } from "@/lib/logging/failure-log";
 import {
   loadNotificationsForCurrentUser,
@@ -226,7 +226,7 @@ function NotificationBellSession({
     if (!isCurrentRequest(request)) {
       return;
     }
-    const href = buildChatNotificationHref(notification.payload);
+    const href = buildNotificationHref(notification.payload);
     if (href) {
       setIsOpen(false);
       router.push(href);

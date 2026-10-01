@@ -125,7 +125,25 @@ export function NotificationListItem({
         >
           {notification.content}
         </p>
+        <NotificationActionHint notification={notification} compact={compact} locale={locale} />
       </div>
     </button>
+  );
+}
+
+function NotificationActionHint({
+  notification,
+  compact,
+  locale,
+}: {
+  notification: AppNotification;
+  compact: boolean;
+  locale: string;
+}) {
+  if (notification.type !== "gamification_reconciliation") return null;
+  return (
+    <span className={`block pt-1 text-xs font-black ${compact ? "text-sky-300" : "text-amber-200"}`}>
+      {locale === "fr" ? "Voir les changements" : "View changes"}
+    </span>
   );
 }

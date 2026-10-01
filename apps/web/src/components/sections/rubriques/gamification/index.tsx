@@ -24,6 +24,7 @@ import { GamificationRulesMigrationNotice } from "./gamification-rules-migration
 import { GamificationImpactPanel } from "./gamification-impact-panel";
 import { GamificationLevelProgressPanel } from "./gamification-level-progress-panel";
 import { GamificationReconciliationNotice } from "./gamification-reconciliation-notice";
+import { GamificationReconciliationHistory } from "./gamification-reconciliation-history";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { method: "GET", cache: "no-store" });
@@ -87,6 +88,14 @@ export function GamificationSection() {
 
             <GamificationCatalogPanel
               summary={progression?.summary}
+              loading={meLoading}
+              error={meError}
+              locale={locale}
+            />
+
+            <GamificationReconciliationHistory
+              history={meData?.reconciliationHistory}
+              progression={progression}
               loading={meLoading}
               error={meError}
               locale={locale}

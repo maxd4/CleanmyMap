@@ -15,6 +15,10 @@ export const progression = {
 export const reconciliation = {
   notificationId: "notification-1",
   createdAt: "2026-09-30T10:00:00.000Z",
+  seenAt: null,
+  acknowledgedAt: null,
+  unacknowledgedCount: 1,
+  unseenCount: 1,
   receipt: {
     reconciliationId: "reconciliation-1",
     userId: "user-1",

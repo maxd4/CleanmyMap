@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 import { NotificationListItem } from "@/components/notifications/notification-list-item";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -13,11 +14,17 @@ import {
   type NotificationPageCursor,
 } from "@/lib/notifications/client";
 import { useNotificationRequestIdentity } from "@/lib/notifications/use-notification-request-identity";
+import { buildNotificationHref } from "@/lib/notifications/notification-targets";
 
 type NotificationAuthState = Pick<
   ReturnType<typeof useAuth>,
   "getToken" | "isLoaded" | "isSignedIn" | "userId"
 >;
+
+function navigateToNotification(router: { push: (href: string) => void }, payload: unknown) {
+  const href = buildNotificationHref(payload);
+  if (href) router.push(href);
+}
 
 export function DashboardNotificationsSection() {
   const auth = useAuth();
@@ -30,7 +37,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
   const { getToken, isLoaded, isSignedIn, userId } = auth;
   const { locale } = useSitePreferences();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); const router = useRouter();
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
   const [nextCursor, setNextCursor] = useState<NotificationPageCursor | null>(null);
@@ -171,9 +178,8 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
         markReadInFlightRef.current = null;
       }
     }
+    navigateToNotification(router, notification.payload);
   };
-
-  const isInitialLoading = !isLoaded || (loading && visibleNotifications.length === 0);
 
   return (
     <section
@@ -202,7 +208,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
         ) : null}
       </div>
 
-      {isInitialLoading ? (
+      {!isLoaded || (loading && visibleNotifications.length === 0) ? (
         <div className="space-y-3 pt-5" role="status">
           <div className="h-14 animate-pulse rounded-2xl bg-amber-950/35" />
           <div className="h-14 animate-pulse rounded-2xl bg-amber-950/35" />

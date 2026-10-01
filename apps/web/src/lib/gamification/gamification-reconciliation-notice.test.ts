@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { loadPendingGamificationReconciliation } from "./gamification-reconciliation-notice";
+import {
+  loadGamificationReconciliationHistory,
+  loadPendingGamificationReconciliation,
+} from "./gamification-reconciliation-notice";
 
 function createSupabase(data: unknown, error: { message: string } | null = null) {
   const chain = {
@@ -7,7 +10,7 @@ function createSupabase(data: unknown, error: { message: string } | null = null)
     eq: vi.fn(() => chain),
     is: vi.fn(() => chain),
     order: vi.fn(() => chain),
-    limit: vi.fn(async () => ({ data: data ? [data] : [], error })),
+    limit: vi.fn(async () => ({ data: Array.isArray(data) ? data : data ? [data] : [], error })),
   };
   return { supabase: { from: vi.fn(() => chain) }, chain };
 }
@@ -42,10 +45,9 @@ describe("loadPendingGamificationReconciliation", () => {
     expect(pending?.notificationId).toBe("notification-1");
     expect(pending?.receipt.reconciliationId).toBe("reconciliation-1");
     expect(supabase.from).toHaveBeenCalledWith("app_notifications");
-    expect(chain.select).toHaveBeenCalledWith("id, created_at, acknowledged_at, payload");
+    expect(chain.select).toHaveBeenCalledWith("id, created_at, seen_at, acknowledged_at, payload");
     expect(chain.eq).toHaveBeenCalledWith("user_id", "user-1");
     expect(chain.eq).toHaveBeenCalledWith("type", "gamification_reconciliation");
-    expect(chain.is).toHaveBeenCalledWith("acknowledged_at", null);
   });
 
   it("does not expose an acknowledged or malformed notification", async () => {
@@ -71,5 +73,36 @@ describe("loadPendingGamificationReconciliation", () => {
     expect(await loadPendingGamificationReconciliation(acknowledged.supabase as never, "user-1")).toBeNull();
     expect(await loadPendingGamificationReconciliation(malformed.supabase as never, "user-1")).toBeNull();
     expect(await loadPendingGamificationReconciliation(wrongOwner.supabase as never, "user-1")).toBeNull();
+  });
+
+  it("returns the current user's receipt history newest first without exposing other users", async () => {
+    const { supabase } = createSupabase([
+      {
+        id: "notification-2",
+        created_at: "2026-09-30T11:00:00.000Z",
+        seen_at: "2026-09-30T11:01:00.000Z",
+        acknowledged_at: "2026-09-30T11:02:00.000Z",
+        payload: receipt,
+      },
+      {
+        id: "notification-1",
+        created_at: "2026-09-30T10:00:00.000Z",
+        seen_at: null,
+        acknowledged_at: null,
+        payload: { ...receipt, receipt: { ...receipt.receipt, reconciliationId: "reconciliation-0" } },
+      },
+      {
+        id: "notification-other",
+        created_at: "2026-09-30T09:00:00.000Z",
+        seen_at: null,
+        acknowledged_at: null,
+        payload: { ...receipt, receipt: { ...receipt.receipt, userId: "user-2" } },
+      },
+    ]);
+
+    const history = await loadGamificationReconciliationHistory(supabase as never, "user-1");
+
+    expect(history.map((entry) => entry.notificationId)).toEqual(["notification-2", "notification-1"]);
+    expect(history[0]?.acknowledgedAt).toBe("2026-09-30T11:02:00.000Z");
   });
 });
