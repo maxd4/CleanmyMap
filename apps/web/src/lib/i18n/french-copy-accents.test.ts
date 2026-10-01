@@ -22,9 +22,7 @@ const COPY_FILES = [
   "src/components/sections/rubriques/shared.tsx",
   "src/app/(app)/actions/history/page.tsx",
   "src/app/(app)/partners/dashboard/page.tsx",
-  "src/components/reports/web-document/constants.ts",
   "src/components/reports/web-document/ui.tsx",
-  "src/components/reports/web-document/sections.tsx",
   "src/lib/reports/report-model/compute-report-model.ts",
 ] as const;
 

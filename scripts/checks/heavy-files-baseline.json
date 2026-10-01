@@ -211,14 +211,6 @@
       "maxBytes": 21754
     },
     {
-      "path": "apps/web/src/components/reports/web-document/sections.tsx",
-      "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 674,
-      "maxBytes": 26318
-    },
-    {
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
       "kind": "runtime",
       "status": "REVIEW",

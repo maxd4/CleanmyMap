@@ -315,7 +315,7 @@ Activation:
 
 Code clé:
 
-- [apps/web/src/lib/services/pinecone.ts](../../apps/web/src/lib/services/pinecone.ts)
+- [apps/web/src/lib/services/registry.ts](../../apps/web/src/lib/services/registry.ts) — état de configuration uniquement ; aucun client Pinecone runtime CURRENT n’est raccordé.
 
 Logs:
 

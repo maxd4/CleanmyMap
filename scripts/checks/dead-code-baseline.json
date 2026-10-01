@@ -3,7 +3,7 @@
   "tool": "knip",
   "toolVersion": "6.37.0",
   "config": "scripts/knip.json",
-  "sourceCommit": "6c936639c72449d9e14f4f8f3126faba70ab4f1e",
+  "sourceCommit": "a5e506e5042f8b442da0a3da0da019e94d4f87f0",
   "source": "provided Knip audit snapshot",
   "findings": [
     {
@@ -2728,16 +2728,6 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/dashboard/closed-loop-panel.tsx",
-      "name": "apps/web/src/components/dashboard/closed-loop-panel.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "120e27e181e9a38d780f120d",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
       "file": "apps/web/src/components/dashboard/funnel-conversion-panel.tsx",
       "name": "apps/web/src/components/dashboard/funnel-conversion-panel.tsx",
       "namespace": null,
@@ -2764,16 +2754,6 @@
       "kind": null,
       "specifier": null,
       "id": "b0799458a7bd52754d0303d2",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/components/learn/cognitive-cue-strip.tsx",
-      "name": "apps/web/src/components/learn/cognitive-cue-strip.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "a05fdc7b6acbe8c80665ed6f",
       "classification": "historical-debt"
     },
     {
@@ -2808,56 +2788,6 @@
     },
     {
       "type": "files",
-      "file": "apps/web/src/components/reports/web-document/constants.ts",
-      "name": "apps/web/src/components/reports/web-document/constants.ts",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "c8f904198bf100f5ed2ea806",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/components/reports/web-document/sections.tsx",
-      "name": "apps/web/src/components/reports/web-document/sections.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "98c90ade79a0a4d23ad02ced",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/components/ui/page-transition.tsx",
-      "name": "apps/web/src/components/ui/page-transition.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "51b8b6442b86318e06d5aa66",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/components/ui/punchy-slogan.tsx",
-      "name": "apps/web/src/components/ui/punchy-slogan.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "c5ea4050f9688b0134893520",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/hooks/useGamificationRealtime.tsx",
-      "name": "apps/web/src/hooks/useGamificationRealtime.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "1ab573503a342eb18a55d340",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
       "file": "apps/web/src/lib/events/handlers.ts",
       "name": "apps/web/src/lib/events/handlers.ts",
       "namespace": null,
@@ -2874,36 +2804,6 @@
       "kind": null,
       "specifier": null,
       "id": "591f6f9b012a158acd5b8d65",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/lib/gamification/realtime.ts",
-      "name": "apps/web/src/lib/gamification/realtime.ts",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "cad6ed790b815111318a2767",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/lib/services/pinecone.ts",
-      "name": "apps/web/src/lib/services/pinecone.ts",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "8aa7eb243b66399ef9b4d149",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/tools/gamification-ws-server.js",
-      "name": "apps/web/tools/gamification-ws-server.js",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "a4fd48a3fbe6a36d6c8d6a33",
       "classification": "historical-debt"
     },
     {

@@ -37,7 +37,6 @@ const HIGHLIGHT_COMPONENTS = new Set([
   "notification-bell.tsx",
   "site-preferences-controls.tsx",
   "vibrant-background.tsx",
-  "page-transition.tsx",
   "cookie-consent-banner.tsx",
   "network-toast.tsx",
   "identity-badge.tsx",

@@ -78,7 +78,6 @@ const envSchema = z.object({
   NEXT_PUBLIC_SENTRY_ENVIRONMENT: z.enum(["production", "preview", "development"]).optional(),
   NEXT_PUBLIC_CONTACT_EMAIL: z.string().email().optional(),
   NEXT_PUBLIC_ENABLE_SUPABASE_CHAT_REALTIME: optionalBoolean,
-  NEXT_PUBLIC_GAMIFICATION_WS: z.string().optional(),
   FUNDING_ONPARTICIPE_URL: optionalHttpsUrl,
 
   CLERK_SECRET_KEY: z.string().optional(),
