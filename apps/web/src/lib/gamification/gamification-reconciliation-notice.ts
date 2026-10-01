@@ -25,8 +25,16 @@ export type GamificationReconciliationInbox = {
 };
 
 const GAMIFICATION_RECONCILIATION_HISTORY_LIMIT = 50;
+const RECONCILIATION_NOTIFICATION_SELECT = "id, created_at, seen_at, acknowledged_at, payload";
 
 type UnknownRecord = Record<string, unknown>;
+type ReconciliationNotificationRow = {
+  id?: unknown;
+  created_at?: unknown;
+  seen_at?: unknown;
+  acknowledged_at?: unknown;
+  payload?: unknown;
+};
 
 function isRecord(value: unknown): value is UnknownRecord {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -77,6 +85,47 @@ function receiptFromPayload(payload: unknown, userId: string): GamificationRecon
   return payload.receipt;
 }
 
+async function loadReconciliationRows(
+  supabase: SupabaseClient,
+  userId: string,
+  options: { onlyUnacknowledged?: boolean; limit?: number } = {},
+): Promise<ReconciliationNotificationRow[]> {
+  let query = supabase
+    .from("app_notifications")
+    .select(RECONCILIATION_NOTIFICATION_SELECT)
+    .eq("user_id", userId)
+    .eq("type", "gamification_reconciliation");
+
+  if (options.onlyUnacknowledged) query = query.is("acknowledged_at", null);
+
+  query = query.order("created_at", { ascending: false }).order("id", { ascending: false });
+  if (options.limit !== undefined) query = query.limit(options.limit);
+
+  const result = await query;
+  if (result.error) throw new Error(result.error.message);
+  return (result.data ?? []) as ReconciliationNotificationRow[];
+}
+
+function parseReconciliationRows(
+  rows: ReconciliationNotificationRow[],
+  userId: string,
+): GamificationReconciliationHistoryEntry[] {
+  const entries: GamificationReconciliationHistoryEntry[] = [];
+  for (const row of rows) {
+    if (typeof row.id !== "string" || typeof row.created_at !== "string") continue;
+    const receipt = receiptFromPayload(row.payload, userId);
+    if (!receipt) continue;
+    entries.push({
+      notificationId: row.id,
+      createdAt: row.created_at,
+      seenAt: typeof row.seen_at === "string" ? row.seen_at : null,
+      acknowledgedAt: typeof row.acknowledged_at === "string" ? row.acknowledged_at : null,
+      receipt,
+    });
+  }
+  return entries;
+}
+
 export async function loadPendingGamificationReconciliation(
   supabase: SupabaseClient,
   userId: string,
@@ -88,45 +137,23 @@ export async function loadGamificationReconciliationHistory(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<GamificationReconciliationHistoryEntry[]> {
-  const result = await supabase
-    .from("app_notifications")
-    .select("id, created_at, seen_at, acknowledged_at, payload")
-    .eq("user_id", userId)
-    .eq("type", "gamification_reconciliation")
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false })
-    .limit(GAMIFICATION_RECONCILIATION_HISTORY_LIMIT);
-
-  if (result.error) throw new Error(result.error.message);
-  const rows = (result.data ?? []) as Array<{
-    id?: unknown;
-    created_at?: unknown;
-    seen_at?: unknown;
-    acknowledged_at?: unknown;
-    payload?: unknown;
-  }>;
-  const history: GamificationReconciliationHistoryEntry[] = [];
-  for (const row of rows) {
-    if (typeof row.id !== "string" || typeof row.created_at !== "string") continue;
-    const receipt = receiptFromPayload(row.payload, userId);
-    if (!receipt) continue;
-    history.push({
-      notificationId: row.id,
-      createdAt: row.created_at,
-      seenAt: typeof row.seen_at === "string" ? row.seen_at : null,
-      acknowledgedAt: typeof row.acknowledged_at === "string" ? row.acknowledged_at : null,
-      receipt,
-    });
-  }
-  return history;
+  const rows = await loadReconciliationRows(supabase, userId, {
+    limit: GAMIFICATION_RECONCILIATION_HISTORY_LIMIT,
+  });
+  return parseReconciliationRows(rows, userId);
 }
 
 export async function loadGamificationReconciliationInbox(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<GamificationReconciliationInbox> {
-  const history = await loadGamificationReconciliationHistory(supabase, userId);
-  const pendingEntries = history.filter((entry) => entry.acknowledgedAt === null);
+  const [historyRows, pendingRows] = await Promise.all([
+    loadReconciliationRows(supabase, userId, { limit: GAMIFICATION_RECONCILIATION_HISTORY_LIMIT }),
+    loadReconciliationRows(supabase, userId, { onlyUnacknowledged: true }),
+  ]);
+  const history = parseReconciliationRows(historyRows, userId);
+  const pendingEntries = parseReconciliationRows(pendingRows, userId)
+    .filter((entry) => entry.acknowledgedAt === null);
   const latest = pendingEntries[0];
 
   return {
