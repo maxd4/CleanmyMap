@@ -28,6 +28,11 @@ const MIGRATION_CONTRACT_REGISTRY = Object.freeze([
     vitestTests: Object.freeze(["src/lib/chat/action-conversations-migration.test.ts"]),
   }),
   Object.freeze({
+    family: "action_backup_restore",
+    migrationPattern: /action[_-]backup[_-]restore/i,
+    vitestTests: Object.freeze(["src/lib/supabase/migration-contracts/action-backup-restore-migration.test.ts"]),
+  }),
+  Object.freeze({
     family: "action_message_references",
     migrationPattern: /action[_-]message[_-]references?/i,
     vitestTests: Object.freeze(["src/lib/chat/action-message-reference-migration.test.ts"]),
