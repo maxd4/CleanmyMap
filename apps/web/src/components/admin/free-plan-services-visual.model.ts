@@ -278,7 +278,9 @@ export function buildFreePlanDashboardState(params: {
               return null;
             }
 
-            return selectedMonthlyKgCo2eProxy - previousMonthlyKgCo2eProxy;
+            return selectedMonthlyKgCo2eProxy === null
+              ? null
+              : selectedMonthlyKgCo2eProxy - previousMonthlyKgCo2eProxy;
           })()
         : null;
   const selectedThresholdProximityPercent =
