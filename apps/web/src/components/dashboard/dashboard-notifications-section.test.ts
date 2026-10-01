@@ -8,12 +8,18 @@ const source = readFileSync(
   new URL("./dashboard-notifications-section.tsx", import.meta.url),
   "utf8",
 );
+const itemSource = readFileSync(
+  new URL("../notifications/notification-list-item.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("dashboard notifications section contract", () => {
   it("uses the existing app_notifications client without dashboard polling", () => {
     expect(source).toContain('id="notifications"');
     expect(source).toContain("loadNotificationsPageForCurrentUser");
     expect(source).toContain("markNotificationAsReadForCurrentUser");
+    expect(source).toContain("buildNotificationHref");
+    expect(itemSource).toContain("Voir les changements");
     expect(source).toContain("key={identityKey}");
     expect(source).toContain("useNotificationRequestIdentity");
     expect(source).not.toContain("setInterval");

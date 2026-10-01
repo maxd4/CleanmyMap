@@ -361,8 +361,8 @@ export async function persistGamificationReconciliationReceipt(
   const { error } = await supabase.from("app_notifications").insert({
     user_id: receipt.userId,
     type: "gamification_reconciliation",
-    title: "Votre progression a été mise à jour",
-    content: "Votre progression, vos badges ou vos jalons ont évolué.",
+    title: "Votre progression CleanMyMap a été mise à jour.",
+    content: "Voir les changements sur la page Gamification.",
     created_at: receipt.occurredAt,
     seen_at: null,
     acknowledged_at: null,

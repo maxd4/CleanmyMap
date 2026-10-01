@@ -168,6 +168,19 @@ export function GamificationReconciliationNotice({
 
       <ReconciliationSummary copy={copy} deltaDirection={getNoticeDirection(reconciliation.receipt.xp.delta)} fr={fr} />
 
+      {reconciliation.unseenCount > 1 ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#f1dfd8] bg-[#fffaf8] px-4 py-3 text-sm text-[#765f59]">
+          <p>
+            {fr
+              ? `${reconciliation.unseenCount} mises à jour de progression depuis votre dernière visite.`
+              : `${reconciliation.unseenCount} progress updates since your last visit.`}
+          </p>
+          <CmmButton href="#gamification-reconciliation-history" tone="secondary" variant="pill" size="sm">
+            {fr ? "Ouvrir l’historique" : "Open history"}
+          </CmmButton>
+        </div>
+      ) : null}
+
       <ul id="gamification-reconciliation-changes" tabIndex={-1} className="mt-5 space-y-2" aria-label={fr ? "Détails des changements" : "Change details"}>
         {copy.changes.map((change, index) => (
           <li key={`${change}-${index}`} className="rounded-2xl border border-[#f0e3de] bg-[#fffaf9] px-4 py-3 text-sm font-semibold text-[#5f4843]">

@@ -78,6 +78,8 @@ describe("privacy policy contract", () => {
 
   it("covers contact requests and keeps purge archives free of payloads", () => {
     expect(retentionCleanup).toContain('{ table: "contact_requests", createdColumn: "created_at" }');
+    expect(retentionCleanup).toContain('value: "gamification_reconciliation"');
+    expect(retentionCleanup).toContain("retentionDays: 120");
     expect(retentionCleanup).toContain('"contact_requests.json"');
     expect(retentionCleanup).not.toContain("items: rows");
     expect(retentionCleanup).not.toContain("items: paths");

@@ -4,8 +4,27 @@ import type { GamificationReconciliationReceipt } from "./gamification-reconcili
 export type PendingGamificationReconciliation = {
   notificationId: string;
   createdAt: string;
+  seenAt: string | null;
+  acknowledgedAt: string | null;
+  unacknowledgedCount: number;
+  unseenCount: number;
   receipt: GamificationReconciliationReceipt;
 };
+
+export type GamificationReconciliationHistoryEntry = {
+  notificationId: string;
+  createdAt: string;
+  seenAt: string | null;
+  acknowledgedAt: string | null;
+  receipt: GamificationReconciliationReceipt;
+};
+
+export type GamificationReconciliationInbox = {
+  history: GamificationReconciliationHistoryEntry[];
+  pending: PendingGamificationReconciliation | null;
+};
+
+const GAMIFICATION_RECONCILIATION_HISTORY_LIMIT = 50;
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -62,27 +81,62 @@ export async function loadPendingGamificationReconciliation(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<PendingGamificationReconciliation | null> {
+  return (await loadGamificationReconciliationInbox(supabase, userId)).pending;
+}
+
+export async function loadGamificationReconciliationHistory(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<GamificationReconciliationHistoryEntry[]> {
   const result = await supabase
     .from("app_notifications")
-    .select("id, created_at, acknowledged_at, payload")
+    .select("id, created_at, seen_at, acknowledged_at, payload")
     .eq("user_id", userId)
     .eq("type", "gamification_reconciliation")
-    .is("acknowledged_at", null)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
-    .limit(20);
+    .limit(GAMIFICATION_RECONCILIATION_HISTORY_LIMIT);
 
   if (result.error) throw new Error(result.error.message);
   const rows = (result.data ?? []) as Array<{
     id?: unknown;
     created_at?: unknown;
+    seen_at?: unknown;
     acknowledged_at?: unknown;
     payload?: unknown;
   }>;
+  const history: GamificationReconciliationHistoryEntry[] = [];
   for (const row of rows) {
-    if (typeof row.id !== "string" || typeof row.created_at !== "string" || row.acknowledged_at !== null) continue;
+    if (typeof row.id !== "string" || typeof row.created_at !== "string") continue;
     const receipt = receiptFromPayload(row.payload, userId);
-    if (receipt) return { notificationId: row.id, createdAt: row.created_at, receipt };
+    if (!receipt) continue;
+    history.push({
+      notificationId: row.id,
+      createdAt: row.created_at,
+      seenAt: typeof row.seen_at === "string" ? row.seen_at : null,
+      acknowledgedAt: typeof row.acknowledged_at === "string" ? row.acknowledged_at : null,
+      receipt,
+    });
   }
-  return null;
+  return history;
+}
+
+export async function loadGamificationReconciliationInbox(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<GamificationReconciliationInbox> {
+  const history = await loadGamificationReconciliationHistory(supabase, userId);
+  const pendingEntries = history.filter((entry) => entry.acknowledgedAt === null);
+  const latest = pendingEntries[0];
+
+  return {
+    history,
+    pending: latest
+      ? {
+          ...latest,
+          unacknowledgedCount: pendingEntries.length,
+          unseenCount: pendingEntries.filter((entry) => entry.seenAt === null).length,
+        }
+      : null,
+  };
 }

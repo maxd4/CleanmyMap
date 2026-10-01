@@ -24,6 +24,8 @@ const TABLES = [
   { table: "partner_onboarding_requests", createdColumn: "created_at" },
   // RGPD requests are personal data and must follow the same explicit cleanup path.
   { table: "contact_requests", createdColumn: "created_at" },
+  // Reconciliation receipts contain structured deltas, not exhaustive account snapshots.
+  { table: "app_notifications", createdColumn: "created_at", filter: { column: "type", value: "gamification_reconciliation" }, retentionDays: 120 },
 ];
 
 const LOCAL_STORE_FILES = [
@@ -90,12 +92,15 @@ async function exportJson(outDir, relativePath, payload) {
   await writeFile(targetPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
 }
 
-async function fetchAllRows(table, createdColumn, cutoff) {
+async function fetchAllRows(table, createdColumn, cutoff, filter) {
   const rows = [];
   let from = 0;
   while (true) {
     const to = from + PAGE_SIZE - 1;
     let query = supabase.from(table).select("*").range(from, to);
+    if (filter) {
+      query = query.eq(filter.column, filter.value);
+    }
     if (createdColumn) {
       query = query.order(createdColumn, { ascending: true });
     }
@@ -113,8 +118,8 @@ async function fetchAllRows(table, createdColumn, cutoff) {
   return rows;
 }
 
-async function deleteTableRows(table, column, cutoff, dryRun) {
-  const rows = await fetchAllRows(table, column, cutoff);
+async function deleteTableRows(table, column, cutoff, dryRun, filter) {
+  const rows = await fetchAllRows(table, column, cutoff, filter);
   const ids = rows.map((row) => row.id).filter((id) => typeof id === "string" || typeof id === "number");
   if (ids.length === 0) {
     return { count: 0, rows };
@@ -221,21 +226,24 @@ async function main() {
     localStores: [],
   };
 
-  for (const { table, createdColumn, deleteUsing } of TABLES) {
+  for (const { table, createdColumn, deleteUsing, filter, retentionDays } of TABLES) {
     try {
+      const tableCutoff = retentionDays ? buildCutoff(retentionDays) : cutoff;
       const { count } = await deleteTableRows(
         table,
         deleteUsing ?? createdColumn,
-        cutoff,
+        tableCutoff,
         dryRun,
+        filter,
       );
       await exportJson(baseDir, join("archives", "tables", `${table}.json`), {
         exportedAt: new Date().toISOString(),
         table,
-        cutoff: cutoff.toISOString(),
+        cutoff: tableCutoff.toISOString(),
+        filter: filter ?? null,
         count,
       });
-      summary.tables.push({ table, deleted: dryRun ? 0 : count, archived: count });
+      summary.tables.push({ table, deleted: dryRun ? 0 : count, archived: count, cutoff: tableCutoff.toISOString(), filter: filter ?? null });
     } catch (error) {
       summary.tables.push({
         table,

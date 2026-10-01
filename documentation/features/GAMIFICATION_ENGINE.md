@@ -251,6 +251,22 @@ ne supprime ni mécanique, ni preuve métier, ni reçu historique. Une révision
 ultérieure remplace la nouveauté de la vue principale, tandis que les reçus
 antérieurs restent consultables.
 
+La page `/sections/gamification` propose un historique secondaire, du plus
+récent au plus ancien, limité aux 50 derniers reçus du compte courant. Chaque
+ligne résume la date, la version CURRENT, le delta XP, le niveau avant/après et
+les compteurs de changements ; le détail réutilise le dialogue existant. Un
+reçu ciblé peut être ouvert avec `/sections/gamification?receipt=<id>` depuis
+la notification ou l'historique. La lecture utilise `Cache-Control: private,
+no-store` afin que l'état AFTER et le reçu restent cohérents après une
+réconciliation.
+
+La notification globale réutilise `public.app_notifications`. Elle est créée
+uniquement pour une réconciliation avec changement visible, et son CTA ouvre
+le reçu concerné sans acquitter automatiquement la réconciliation. Les reçus
+restent des deltas structurés, sans snapshot exhaustif ; le cleanup explicite
+de rétention supprime les reçus `gamification_reconciliation` de plus de 120
+jours et conserve uniquement un manifeste de comptage.
+
 ## Évolution
 
 Toute modification du moteur doit vérifier ensemble :

@@ -50,6 +50,6 @@ describe("notification bell compact preview contract", () => {
     expect(source).toContain("const request = getRequest()");
     expect(source).toContain("if (!isCurrentRequest(request))");
     expect(source).toContain("markReadInFlightRef");
-    expect(source).toContain("buildChatNotificationHref");
+    expect(source).toContain("buildNotificationHref");
   });
 });

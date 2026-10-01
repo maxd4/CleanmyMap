@@ -149,6 +149,11 @@ runtime :
   conservées aussi longtemps que nécessaire à l'examen, au suivi, à la
   traçabilité et au respect des obligations applicables. Aucun délai fixe
   supplémentaire n'est configuré par le dépôt ;
+- les reçus structurés de réconciliation de gamification sont conservés au
+  plus 120 jours lorsque le cleanup explicite prévu par le dépôt est exécuté.
+  Ils contiennent des deltas nécessaires à l'historique utilisateur, pas un
+  snapshot exhaustif du compte ; le dépôt ne prouve ni une exécution planifiée
+  ni une purge automatique hors de ce cleanup ;
 - les profils, actions, lieux, médias, rapports, notifications, progression et
   audits suivent le besoin du service, les paramètres de publication et les
   nécessités de sécurité ou de preuve. Aucune durée générique non vérifiée

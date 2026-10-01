@@ -24,6 +24,15 @@ dans l UI. La reconnaissance personnelle affiche d abord les cartes lifetime
 et année en cours issues de `progression.recognition` et
 `progression.annualRecognition`.
 
+La page affiche aussi un historique secondaire des reçus de réconciliation,
+du plus récent au plus ancien. Il est limité aux 50 derniers reçus du compte
+courant et réutilise le dialogue de détail existant ; chaque ligne expose la
+date, la version CURRENT, le delta XP, le niveau avant/après et les compteurs
+de progressions, badges et jalons modifiés. Une notification de la boîte
+`app_notifications` ouvre un reçu ciblé avec
+`/sections/gamification?receipt=<id>` sans acquittement automatique. Les
+réconciliations sans changement visible ne créent ni reçu ni notification.
+
 La section privée réutilise le composant canonique `LeaderboardPanel` pour
 afficher un aperçu du classement public, avec un lien vers
 `/sections/leaderboard`. Le panneau public utilise les deux scopes `user` et
