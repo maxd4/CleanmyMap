@@ -20,10 +20,6 @@ export function setDisplayNameModeOverride(
   return normalized;
 }
 
-export function clearDisplayNameModeOverridesForTests(): void {
-  displayNameModeByUserId.clear();
-}
-
 export async function getDisplayNameModeCookieOverride(): Promise<DisplayNameMode | null> {
   try {
     const cookieStore = await cookies();

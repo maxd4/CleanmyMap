@@ -32,7 +32,7 @@ const FAMILY_META = Object.fromEntries(
   FAMILY_MANIFEST.map((entry) => [entry.runtimeId, entry]),
 ) as Record<PageFamilyId, PageFamilyManifestEntry>;
 
-export const darkHero = (
+const darkHero = (
   accent: "emerald" | "sky" | "red" | "pink" | "indigo" | "yellow",
 ): PageFamilyHeroTokens => {
   const map = {

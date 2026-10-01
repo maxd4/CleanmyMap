@@ -42,7 +42,7 @@ async function loadImage(source: Blob): Promise<HTMLImageElement> {
   }
 }
 
-export function isCompressibleImageFile(file: File): boolean {
+function isCompressibleImageFile(file: File): boolean {
   return isImageMimeType(file.type);
 }
 

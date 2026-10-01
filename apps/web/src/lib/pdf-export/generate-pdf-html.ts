@@ -8,7 +8,7 @@ import { buildPdfPrintStyles } from "./generate-pdf-html.templates";
 import { escapeHtml } from "@/lib/security/html-escape";
 import { sanitizeExecutiveNarrative, sanitizeReportForPdfHtml } from "./generate-pdf-html.safe-data";
 
-export function collectHeadStyles(): string {
+function collectHeadStyles(): string {
   if (typeof document === "undefined") return "";
   return Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
     .map((node) => node.outerHTML)

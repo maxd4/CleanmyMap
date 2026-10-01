@@ -1,29 +1,22 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import fallbackManifest from "../../../public/images/action-fallbacks/action-fallback-images.json";
 
-export const ACTION_FALLBACK_ENVIRONMENTS = [
-  "urban",
-  "park",
-  "forest",
-  "riverside",
-  "canal",
-  "lake",
-  "beach",
-  "village",
-  "countryside",
-] as const;
-
 export type ActionFallbackEnvironment =
-  (typeof ACTION_FALLBACK_ENVIRONMENTS)[number];
+  | "urban"
+  | "park"
+  | "forest"
+  | "riverside"
+  | "canal"
+  | "lake"
+  | "beach"
+  | "village"
+  | "countryside";
 
-export const ACTION_FALLBACK_KINDS = [
-  "cleanup",
-  "sorting",
-  "cigarette_butts",
-  "mixed_waste",
-] as const;
-
-export type ActionFallbackKind = (typeof ACTION_FALLBACK_KINDS)[number];
+export type ActionFallbackKind =
+  | "cleanup"
+  | "sorting"
+  | "cigarette_butts"
+  | "mixed_waste";
 
 export type ActionFallbackImage = {
   id: string;

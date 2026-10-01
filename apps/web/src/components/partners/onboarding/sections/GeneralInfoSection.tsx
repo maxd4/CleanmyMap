@@ -1,13 +1,13 @@
 import { PARTNER_SCOPES, formatPartnerScopeLabel, type OrganizationType, type PartnerScope } from "@/lib/partners/onboarding-types";
 
-export const TYPE_OPTIONS = [
+const TYPE_OPTIONS = [
   { value: "association", label: "Association" },
   { value: "commerce", label: "Commerçant·e" },
   { value: "entreprise", label: "Entreprise" },
   { value: "collectif", label: "Collectif" },
 ] as const;
 
-export const SCOPE_OPTIONS = PARTNER_SCOPES.map((scope) => ({
+const SCOPE_OPTIONS = PARTNER_SCOPES.map((scope) => ({
   value: scope,
   label: formatPartnerScopeLabel(scope),
 }));

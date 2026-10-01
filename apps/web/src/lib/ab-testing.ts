@@ -154,7 +154,3 @@ class ABTestingService {
 export const abTestingService = new ABTestingService()
 
 // Hook for React components
-export function useABTest(testName: string, userId: string = 'anonymous') {
-  const result = abTestingService.getVariant(testName, userId)
-  return result.variant
-}

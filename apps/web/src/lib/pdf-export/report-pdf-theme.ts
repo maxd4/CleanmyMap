@@ -14,7 +14,7 @@ export const reportPdfColors = {
   ink: "#0F172A",
 } as const;
 
-export const reportPdfTypography = {
+const reportPdfTypography = {
   family: "Inter, Arial, 'TeX Gyre Heros', system-ui, sans-serif",
   body: "11pt",
   small: "9pt",
@@ -25,7 +25,7 @@ export const reportPdfTypography = {
   lineHeight: "1.1",
 } as const;
 
-export const reportPdfSpacing = {
+const reportPdfSpacing = {
   pageMargin: "10mm",
   block: "8mm",
   paragraph: "4.8pt",
@@ -33,7 +33,7 @@ export const reportPdfSpacing = {
   radius: "3mm",
 } as const;
 
-export const reportPdfPage = {
+const reportPdfPage = {
   size: "A4",
   width: "210mm",
   minHeight: "297mm",

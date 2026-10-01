@@ -11,7 +11,7 @@ import type { GovernanceMonthlyReportPayload } from "./governance-monthly-report
 
 export const GOVERNANCE_RISK_BANNER_THRESHOLD = 70;
 
-export function normalizeNumber(value: number | null | undefined): number | null {
+function normalizeNumber(value: number | null | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 

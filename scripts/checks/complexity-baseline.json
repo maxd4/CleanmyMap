@@ -3894,15 +3894,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/navigation/app-navigation.tsx",
-      "line": 37,
-      "category": "React/JSX",
-      "ceiling": 318,
-      "status": "LEGACY",
-      "functionIdentity": "named:AppNavigation#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/navigation/global-search.tsx",
       "line": 38,
       "category": "React/JSX",
@@ -4908,15 +4899,6 @@
       "ceiling": 72,
       "status": "LEGACY",
       "functionIdentity": "named:computeEventConversions#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/community/engagement/leaderboard.ts",
-      "line": 23,
-      "category": "métier/domain pur",
-      "ceiling": 69,
-      "status": "LEGACY",
-      "functionIdentity": "named:computeQualityLeaderboard#1"
     },
     {
       "metric": "functionLength",

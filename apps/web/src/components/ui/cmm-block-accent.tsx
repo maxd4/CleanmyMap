@@ -7,7 +7,6 @@ import {
   type BlockId,
   getAccentClasses,
   getBlockAccent,
-  getBlockClasses,
 } from "@/lib/ui/block-accents";
 
 export type AccentElement = "dot" | "bar" | "ring" | "gradient" | "glow";
@@ -54,7 +53,7 @@ export interface CmmBlockAccentProps {
  * <CmmBlockAccent blockId="impact" element="bar" barPosition="left" />
  * <CmmBlockCard blockId="visualize">...</CmmBlockCard>
  */
-export function CmmBlockAccent({
+function CmmBlockAccent({
   accent: accentProp,
   blockId,
   element = "dot",
@@ -173,18 +172,6 @@ export function CmmBlockAccent({
   }
 
   return children ?? null;
-}
-
-/**
- * Hook pour récupérer l'accent du bloc courant
- * Usage dans les composants de page/rubrique
- */
-export function useBlockAccent(blockId: BlockId) {
-  return {
-    accent: getBlockClasses(blockId),
-    accentKey: blockId,
-    classes: getBlockClasses(blockId),
-  };
 }
 
 /**

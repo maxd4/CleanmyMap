@@ -10,8 +10,7 @@ export const ADMIN_ROUTE = "/admin";
 export const ADMIN_GODMODE_ROUTE = "/admin/godmode";
 export const SPONSOR_PORTAL_ROUTE = "/sponsor-portal";
 export const REPORTS_ROUTE = "/reports";
-export const SIGN_IN_ROUTE = "/sign-in";
-export const ONBOARDING_LOCALISATION_ROUTE = "/onboarding/localisation";
+const ONBOARDING_LOCALISATION_ROUTE = "/onboarding/localisation";
 
 export const PROFILE_ROUTE_PREFIX = PROFIL_ROUTE;
 export const PARCOURS_ROUTE_PREFIX = PARCOURS_ROUTE;

@@ -35,7 +35,7 @@ export type BlockId =
 /**
  * Mapping bloc -> accent (source de vérité des tokens visuels)
  */
-export const BLOCK_ACCENT_MAP: Record<BlockId, BlockAccent> = {
+const BLOCK_ACCENT_MAP: Record<BlockId, BlockAccent> = {
   home: "amber",      // Accueil  → Orange
   act: "emerald",     // Agir     → Vert
   visualize: "sky",   // Visualiser → Bleu ciel
@@ -49,7 +49,7 @@ export const BLOCK_ACCENT_MAP: Record<BlockId, BlockAccent> = {
  * Tokens CSS pour chaque accent
  * Utilisés par tous les modes d'affichage
  */
-export const ACCENT_TOKENS: Record<
+const ACCENT_TOKENS: Record<
   BlockAccent,
   {
     light: string;
@@ -242,13 +242,6 @@ export function getBlockAccent(blockId: BlockId): BlockAccent {
  */
 export function getAccentTokens(accent: BlockAccent) {
   return ACCENT_TOKENS[accent];
-}
-
-/**
- * Récupère les tokens pour un bloc donné
- */
-export function getBlockTokens(blockId: BlockId) {
-  return ACCENT_TOKENS[BLOCK_ACCENT_MAP[blockId]];
 }
 
 /**

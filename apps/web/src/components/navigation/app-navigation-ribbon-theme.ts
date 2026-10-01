@@ -47,7 +47,7 @@ export function relativeLuminance(color: Pick<RgbaColor, "r" | "g" | "b">): numb
   );
 }
 
-export function rgbaToCss(color: RgbaColor, alpha = color.a): string {
+function rgbaToCss(color: RgbaColor, alpha = color.a): string {
   return `rgba(${toChannel(color.r)}, ${toChannel(color.g)}, ${toChannel(color.b)}, ${clamp(alpha, 0, 1)})`;
 }
 

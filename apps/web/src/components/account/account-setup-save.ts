@@ -12,7 +12,7 @@ export type AccountSetupPersistenceStep =
   | "metadata"
   | "displayMode";
 
-export const ACCOUNT_SETUP_DEFERRED_METADATA_KEYS = [
+const ACCOUNT_SETUP_DEFERRED_METADATA_KEYS = [
   "profileSetupDeferred",
   "profileSetupDeferredVersion",
   "profileSetupDeferredAt",

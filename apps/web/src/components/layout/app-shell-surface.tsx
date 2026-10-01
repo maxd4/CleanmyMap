@@ -11,7 +11,7 @@ type AppShellSurfaceProps = {
   children: ReactNode;
 };
 
-export function isRouteRecommendationPath(pathname: string | null): boolean {
+function isRouteRecommendationPath(pathname: string | null): boolean {
   return pathname === "/sections/route";
 }
 

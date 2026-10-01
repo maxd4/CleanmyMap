@@ -1,11 +1,10 @@
-import { formatDistanceToNow } from "date-fns";
-import { enUS, fr } from "date-fns/locale";
 import { Bug, Mail, MapPin, MessageCircle, Shield, Users, type LucideIcon } from "lucide-react";
 import type { useUser } from "@clerk/nextjs";
 import {
   getChatChannelDefinition,
   type ChatChannelType,
 } from "@/lib/chat/channels";
+import { parseParisArrondissement } from "@/lib/geo/paris-arrondissements";
 import {
   getDiscussionGuidance,
   type ChatTopicId,
@@ -64,7 +63,7 @@ export function toMetadataRecord(
   return value as Record<string, unknown>;
 }
 
-export function readMetadataString(
+function readMetadataString(
   metadata: unknown,
   key: string,
 ): string | null {
@@ -76,21 +75,6 @@ export function readMetadataString(
   return typeof value === "string" ? value.trim() : null;
 }
 
-export function parseArrondissement(value: unknown): number | null {
-  const parsed =
-    typeof value === "number"
-      ? value
-      : typeof value === "string"
-        ? Number.parseInt(value, 10)
-        : Number.NaN;
-
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 20) {
-    return null;
-  }
-
-  return parsed;
-}
-
 export function getClerkRoleLabel(user: ReturnType<typeof useUser>["user"]): string {
   const publicRole = readMetadataString(user?.publicMetadata, "role");
   return (publicRole ?? "benevole").toLowerCase();
@@ -98,7 +82,7 @@ export function getClerkRoleLabel(user: ReturnType<typeof useUser>["user"]): str
 
 export function getClerkArrondissement(user: ReturnType<typeof useUser>["user"]): number | null {
   const publicMetadata = toMetadataRecord(user?.publicMetadata);
-  const publicArrondissement = parseArrondissement(
+  const publicArrondissement = parseParisArrondissement(
     publicMetadata?.["parisArrondissement"],
   );
   return publicArrondissement;
@@ -167,19 +151,4 @@ export function getEmptyStateCopy(
 
 export function getChannelTitle(channelType: ChatChannelType): string {
   return getChatChannelDefinition(channelType).label;
-}
-
-export function formatRecentActivityLabel(
-  locale: "fr" | "en",
-  lastMessageAt: string | null,
-): string {
-  if (!lastMessageAt) {
-    return locale === "fr" ? "Aucun message pour l'instant" : "No message yet";
-  }
-
-  const distance = formatDistanceToNow(new Date(lastMessageAt), {
-    addSuffix: true,
-    locale: locale === "fr" ? fr : enUS,
-  });
-  return locale === "fr" ? `Dernier message ${distance}` : `Last message ${distance}`;
 }

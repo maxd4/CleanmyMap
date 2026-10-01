@@ -104,7 +104,7 @@ export function getSpontaneousActionCategory(
   };
 }
 
-export function classifyActionForDistribution(
+function classifyActionForDistribution(
   action: ActionAggregationAction,
 ): Classification {
   const organizerType = action.metadata.organizerType;

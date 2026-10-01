@@ -10,7 +10,7 @@ export type TimeScopeDefinition = {
   days: number | null;
 };
 
-export const TIME_SCOPE_DEFINITIONS: Record<TimeScope, TimeScopeDefinition> = {
+const TIME_SCOPE_DEFINITIONS: Record<TimeScope, TimeScopeDefinition> = {
   allTime: {
     label: {
       fr: "Depuis la création",
@@ -48,7 +48,7 @@ export const TIME_SCOPE_DEFINITIONS: Record<TimeScope, TimeScopeDefinition> = {
   },
 };
 
-export function isTimeScope(raw: string | null | undefined): raw is TimeScope {
+function isTimeScope(raw: string | null | undefined): raw is TimeScope {
   return (
     raw === "allTime" ||
     raw === "yearToDate" ||

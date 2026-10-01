@@ -20,8 +20,6 @@ export type QualificationStatus =
   | "partenaire_actif"
   | "contact_non_qualifie";
 
-export type AnnuaireEntryProvenance = "editorial_seed" | "published_partner";
-
 export type AssociationPublicCallType =
   | "benevoles"
   | "dons"

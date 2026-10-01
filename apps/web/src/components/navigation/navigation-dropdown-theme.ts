@@ -13,10 +13,6 @@ export function getNavigationDropdownTitleGradientStyle(spaceId: NavigationBlock
   };
 }
 
-export function getNavigationDropdownTitleLabel(locale: Locale, label: string): string {
-  return locale === "fr" ? `Bloc : ${label}` : `Block: ${label}`;
-}
-
 export function getNavigationDropdownTitlePrefix(locale: Locale): string {
   return locale === "fr" ? "Bloc :" : "Block:";
 }

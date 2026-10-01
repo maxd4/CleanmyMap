@@ -51,10 +51,6 @@ class FeatureFlagService {
 
 export const featureFlags = new FeatureFlagService()
 
-export function useFeatureFlag(flag: keyof FeatureFlags): boolean {
-  return featureFlags.isEnabled(flag)
-}
-
 export function isFeatureEnabled(flag: keyof FeatureFlags): boolean {
   return featureFlags.isEnabled(flag)
 }
