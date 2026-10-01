@@ -35,7 +35,7 @@ export type NavigationBlockId =
   | "network"
   | "connect"
   | "learn";
-export type NavigationSpaceMeta = {
+type NavigationSpaceMeta = {
   id: NavigationBlockId;
   label: LocalizedText;
   icon: string;
@@ -390,18 +390,4 @@ export function getNavigationProfileOverview(
     secondaryCTA:
       displayMode === "exhaustif" ? getProfileSecondaryAction(profile) : null,
   };
-}
-
-/**
- * Vérifie si une section (par routeId) est autorisée pour un profil donné.
- * Source de vérité: PARCOURS_SPACE_PAGE_MAP.
- */
-export function isSectionAllowedForProfile(
-  sectionId: string,
-  profile: AppProfile,
-): boolean {
-  const allowed = new Set<string>(
-    Object.values(PARCOURS_SPACE_PAGE_MAP[profile]).flatMap((ids) => ids),
-  );
-  return allowed.has(sectionId);
 }

@@ -7,7 +7,7 @@
  */
 
 // Rôles ouverts, sélectionnables par tous les comptes authentifiés.
-export type OpenRole =
+type OpenRole =
   | "benevole"
   | "coordinateur"
   | "scientifique"
@@ -49,30 +49,6 @@ export type EffectiveAccess = {
   canAccessPilotage: boolean;
 };
 
-export const DOMAIN_GLOSSARY: Record<
-  | "role"
-  | "parcours"
-  | "espace"
-  | "rubrique"
-  | "page"
-  | "cta_primary"
-  | "cta_secondary"
-  | "effective_access",
-  string
-> = {
-  role: "Attribution métier obtenue par le compte (benevole, coordinateur, scientifique, entreprise, elu, admin, max / IMU).",
-  parcours:
-    "Projection UX du persona actif dans la navigation, les CTA et les libellés, sans autorité serveur.",
-  espace:
-    "Terme metier general ; la navigation CURRENT est structuree par les blocs NavigationBlockId.",
-  rubrique: "Entree de navigation rattachee a un bloc de navigation et a une route.",
-  page: "Route applicative rendue (app-route) ou section rendue via /sections/[sectionId].",
-  cta_primary: "Action principale affichee pour le parcours courant.",
-  cta_secondary: "Action secondaire affichee a cote du CTA principal.",
-  effective_access:
-    "Droits reels observes dans le code (middleware + checks de role/API).",
-};
-
 /**
  * Droits effectifs observes dans le code actuel.
  * Attention: ce mapping decrit l'etat reel d'implementation, pas l'intention produit cible.
@@ -87,8 +63,4 @@ export function getEffectiveAccessForSessionRole(
     canAccessAdminPage: isAdmin,
     canAccessPilotage,
   };
-}
-
-export function isAdminLikeRole(role: SessionRole): boolean {
-  return role === "admin" || role === "max";
 }

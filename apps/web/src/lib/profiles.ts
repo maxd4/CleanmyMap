@@ -3,7 +3,7 @@ import type { ActiveRole, GrantedRole, Parcours, Role, SessionRole } from "@/lib
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import { PROFILE_CTA_CONFIG, type ProfileAction } from "./profiles-cta";
 import roleAliases from "./auth/role-aliases.json";
-export type { ProfileAction, ProfileCtaConfig } from "./profiles-cta";
+export type { ProfileAction } from "./profiles-cta";
 
 // Alias legacy conservés pour compatibilité; vocabulaire canonique: Role/Parcours/SessionRole.
 export type AppProfile = ActiveRole;
@@ -61,8 +61,6 @@ export const OPEN_PROFILE_ORDER = [
   "scientifique",
   "entreprise",
 ] as const satisfies readonly AppProfile[];
-
-export const SELF_SERVICE_PROFILE_ORDER = OPEN_PROFILE_ORDER;
 
 export type SelfServiceProfile = (typeof OPEN_PROFILE_ORDER)[number];
 
@@ -238,22 +236,15 @@ export function getProfileEntryPath(profile: AppProfile): string {
   return buildProfileRoute(profile);
 }
 
-export function isSelfServiceProfile(
-  profile: string,
-): profile is SelfServiceProfile {
-  return (SELF_SERVICE_PROFILE_ORDER as readonly string[]).includes(profile);
-}
-
 export function cycleSelfServiceProfile(
   current: AppProfile,
 ): SelfServiceProfile {
-  const index = SELF_SERVICE_PROFILE_ORDER.indexOf(
+  const index = OPEN_PROFILE_ORDER.indexOf(
     current as SelfServiceProfile,
   );
   return (
-    SELF_SERVICE_PROFILE_ORDER[
-      (index + 1) % SELF_SERVICE_PROFILE_ORDER.length
-    ] ?? SELF_SERVICE_PROFILE_ORDER[0]
+    OPEN_PROFILE_ORDER[(index + 1) % OPEN_PROFILE_ORDER.length] ??
+    OPEN_PROFILE_ORDER[0]
   );
 }
 
