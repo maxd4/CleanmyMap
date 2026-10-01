@@ -32,6 +32,14 @@
       "reason": "Les assertions de frontière lib et application restent dupliquées pour que chaque périmètre d'arbre soit testé et diagnostiqué indépendamment ; une abstraction paramétrée rendrait la preuve de frontière moins explicite.",
       "evidence": "apps/web/src/app/server-translation-boundary.test.ts:55-66 et apps/web/src/lib/client-boundary.test.ts:34-45 ; les suites parcourent des racines différentes avec le même contrat de fail-closed.",
       "reviewedRef": "21c83ff399cb812c1dba18b1f19411b5fc7833e4"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "b60caef890a905b3",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux panneaux partagent volontairement uniquement leur enveloppe de présentation admin, mais leurs workflows restent distincts : feedback qualité d'un côté, revue de promotion de rôle de l'autre. Une extraction paramétrée couplerait des contrats métier, des payloads et des décisions d'administration qui doivent rester explicites.",
+      "evidence": "apps/web/src/components/admin/feedback-requests-panel.tsx:149-161 et apps/web/src/components/admin/promotion-requests-panel.tsx:141-153 ; les tests associés vérifient des payloads et des contrats différents dans feedback-requests-panel.test.tsx:28-49 et promotion-requests-panel.test.tsx:29-56.",
+      "reviewedRef": "ed27967b18cc00de974522d20e0fa41ee4b39d72"
     }
   ]
 }
