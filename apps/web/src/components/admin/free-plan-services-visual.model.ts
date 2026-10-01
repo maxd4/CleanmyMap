@@ -394,7 +394,7 @@ export function buildFreePlanDashboardState(params: {
       label: "Total portefeuille",
       value: totalMonthlyKgCo2eProxy,
       unit: "kg",
-      hint: `${quotaServices.length} service${quotaServices.length > 1 ? "s" : ""} web suivis.`,
+      hint: `${currentMonthlyAggregate.coverage.knownServices}/${currentMonthlyAggregate.coverage.totalServices} services mesurés.`,
       tone: "amber",
     },
   ];
@@ -415,6 +415,7 @@ export function buildFreePlanDashboardState(params: {
     totalMonthlyKgCo2eProxy,
     totalAnnualKgCo2eProxy,
     totalDeltaKgCo2eProxy,
+    totalMonthlyCoverage: currentMonthlyAggregate.coverage,
     serviceCount: quotaServices.length,
     quotaCards,
     impactCards,
