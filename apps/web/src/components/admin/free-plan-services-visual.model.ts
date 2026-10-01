@@ -219,12 +219,12 @@ export function buildFreePlanDashboardState(params: {
   const totalDeltaKgCo2eProxy =
     totalPreviousKgCo2eProxy === null
       ? null
-      : totalMonthlyKgCo2eProxy - totalPreviousKgCo2eProxy;
+      : monthlyAggregateState.delta;
 
   const totalGrowthPercent =
     totalPreviousKgCo2eProxy === null
       ? null
-      : getGrowthPercent(totalMonthlyKgCo2eProxy, totalPreviousKgCo2eProxy);
+      : monthlyAggregateState.growthPercent;
   const totalConfidencePercent = getWeightAverage(
     params.services.map((service) => ({
       value: service.confidencePercent,
