@@ -1,5 +1,9 @@
+"use client";
+
+import { useEffect } from "react";
 import { Flag, Sparkles, Target, TrendingUp } from "lucide-react";
 import { GamificationPanelLoading, SectionLabel } from "./gamification-shell";
+import { focusGamificationTarget } from "./gamification-focus";
 import type {
   GamificationSummary,
   GamificationSummaryMilestone,
@@ -131,7 +135,7 @@ function ProgressionRewardDetails({ item, fr }: { item: GamificationSummaryProgr
 
 function ProgressionItem({ item, fr }: { item: GamificationSummaryProgression; fr: boolean }) {
   return (
-    <article className="rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4 shadow-[0_8px_24px_rgba(126,31,20,0.04)]">
+    <article id={`progression-${item.id}`} tabIndex={-1} className="scroll-mt-8 rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4 shadow-[0_8px_24px_rgba(126,31,20,0.04)] transition-shadow">
       <CatalogItemHeader
         label={item.label}
         description={item.description}
@@ -158,7 +162,7 @@ function milestoneReward(item: GamificationSummaryMilestone, fr: boolean): strin
 function MilestoneItem({ item, fr }: { item: GamificationSummaryMilestone; fr: boolean }) {
   const hasRealProgress = item.state === "in_progress" && item.progressCurrent !== undefined && item.progressTarget !== undefined;
   return (
-    <article className="rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4 shadow-[0_8px_24px_rgba(126,31,20,0.04)]">
+    <article id={`milestone-${item.id}`} tabIndex={-1} className="scroll-mt-8 rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4 shadow-[0_8px_24px_rgba(126,31,20,0.04)] transition-shadow">
       <CatalogItemHeader
         label={item.label}
         description={item.description}
@@ -237,6 +241,17 @@ export function GamificationCatalogPanel({
   locale: string;
 }) {
   const fr = locale === "fr";
+  useEffect(() => {
+    const focusHashTarget = () => {
+      const targetId = decodeURIComponent(window.location.hash.slice(1));
+      if (!/^(?:progression-|milestone-|gamification-milestones$|gamification-progressions$)/.test(targetId)) return;
+      window.setTimeout(() => focusGamificationTarget(targetId), 0);
+    };
+
+    focusHashTarget();
+    window.addEventListener("hashchange", focusHashTarget);
+    return () => window.removeEventListener("hashchange", focusHashTarget);
+  }, [loading, summary]);
   if (loading) {
     return <GamificationPanelLoading ariaLabel={fr ? "Chargement de la gamification" : "Loading gamification"} headingWidth="w-80" cardHeight="h-32" />;
   }
@@ -263,13 +278,13 @@ export function GamificationCatalogPanel({
         </span>
       </div>
 
-      <div id="gamification-progressions" className="mt-6 space-y-6 scroll-mt-6">
+      <div id="gamification-progressions" tabIndex={-1} className="mt-6 space-y-6 scroll-mt-6">
         <CatalogGroup title={fr ? "Nouveautés" : "New"} items={groups.progressions.newItems} fr={fr} kind="progression" />
         <CatalogGroup title={fr ? "En cours" : "In progress"} items={groups.progressions.inProgress} fr={fr} kind="progression" />
         <CatalogGroup title={fr ? "À découvrir" : "To discover"} items={groups.progressions.toDiscover} fr={fr} kind="progression" />
       </div>
 
-      <div id="gamification-milestones" className="mt-8 border-t border-[#ead8d2] pt-7 scroll-mt-6">
+      <div id="gamification-milestones" tabIndex={-1} className="mt-8 border-t border-[#ead8d2] pt-7 scroll-mt-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-black text-[#2c1a17]"><Flag size={18} className="text-[#c51f1f]" aria-hidden="true" /> {fr ? "Jalons" : "Milestones"}</h2>

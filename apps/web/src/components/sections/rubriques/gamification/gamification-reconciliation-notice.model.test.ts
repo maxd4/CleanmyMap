@@ -106,5 +106,23 @@ describe("buildReconciliationNoticeCopy", () => {
 
     expect(copy.changes).toEqual(["Régularité : Topaze → Saphir", "1 badge a changé de palier"]);
     expect(copy.hasProgressionChanges).toBe(true);
+    expect(copy.firstProgressionTarget).toBe("progression-regularity");
+  });
+
+  it("does not expose technical ids or offer a broken CTA for a removed-only item", () => {
+    const copy = buildReconciliationNoticeCopy(receipt({
+      progressions: { added: [], removed: [{ id: "retired-progression" }], changed: [] },
+      milestones: { unlocked: [], removed: [{ id: "retired-milestone" }] },
+      badges: { unlocked: [], removed: [], upgraded: [], downgraded: [] },
+    }), progression, "fr");
+
+    expect(copy.changes).toEqual([
+      "Progression retirée : Progression indisponible",
+      "Jalon retiré : Jalon retiré",
+    ]);
+    expect(copy.hasProgressionChanges).toBe(false);
+    expect(copy.hasNewMilestonesOrBadges).toBe(false);
+    expect(copy.changes.join(" ")).not.toContain("retired-progression");
+    expect(copy.changes.join(" ")).not.toContain("retired-milestone");
   });
 });
