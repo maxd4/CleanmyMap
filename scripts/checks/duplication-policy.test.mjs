@@ -13,7 +13,9 @@ import {
   DUPLICATION_SCOPES,
   DUPLICATION_TOOL,
   DUPLICATION_TOOL_VERSION,
+  readJscpdFingerprints,
   readJscpdMetrics,
+  validateDuplicationJustificationsRegistry,
   validateDuplicationMetricsBaseline,
 } from "./duplication-policy.mjs";
 import { formatDuplicationReport } from "./check-duplication.mjs";
@@ -31,6 +33,12 @@ const BASELINE = {
     tests: { files: 10, lines: 10000, tokens: 100000, clones: 3, fingerprints: 3, duplicatedLines: 300, duplicatedTokens: 3000, percentage: 3, percentageTokens: 3 },
     "fixtures/data": { files: 1, lines: 100, tokens: 1000, clones: 0, fingerprints: 0, duplicatedLines: 0, duplicatedTokens: 0, percentage: 0, percentageTokens: 0 },
   },
+};
+
+const NATIVE_BASELINES = {
+  runtime: { version: 1, fingerprints: { "a1b2c3d4e5f60718": 1 } },
+  tests: { version: 1, fingerprints: { "b1c2d3e4f5061728": 1, "c1d2e3f405162738": 1 } },
+  "fixtures/data": { version: 1, fingerprints: {} },
 };
 
 test("stable duplication baseline passes and a lower percentage is accepted", () => {
@@ -205,4 +213,89 @@ test("jscpd report metrics are read from the canonical total", () => {
   assert.deepEqual(readJscpdMetrics({ statistics: { total: { sources: 2, lines: 100, tokens: 200, clones: 1, duplicatedLines: 5, duplicatedTokens: 10, percentage: 5, percentageTokens: 5, newClones: 0 } } }), {
     files: 2, lines: 100, tokens: 200, clones: 1, duplicatedLines: 5, duplicatedTokens: 10, percentage: 5, percentageTokens: 5, newClones: 0,
   });
+});
+
+test("SARIF fingerprints use the native jscpd partial fingerprint", () => {
+  assert.deepEqual(
+    readJscpdFingerprints({
+      runs: [{ results: [
+        { partialFingerprints: { "jscpdCloneHash/v1": "a1b2c3d4e5f60718" } },
+        { partialFingerprints: { "jscpdCloneHash/v1": "a1b2c3d4e5f60718" } },
+      ] }],
+    }),
+    new Set(["a1b2c3d4e5f60718"]),
+  );
+});
+
+test("a valid KEEP_INTENTIONAL registry entry targets a current native fingerprint", () => {
+  const result = validateDuplicationJustificationsRegistry({
+    schemaVersion: 1,
+    justifications: [{
+      scope: "tests",
+      fingerprint: "b1c2d3e4f5061728",
+      classification: "KEEP_INTENTIONAL",
+      reason: "Independent security boundary suites.",
+      evidence: "app/server-boundary.test.ts and lib/client-boundary.test.ts",
+      reviewedRef: "21c83ff399cb812c1dba18b1f19411b5fc7833e4",
+    }],
+  }, {
+    nativeBaselines: NATIVE_BASELINES,
+    currentFingerprintsByScope: { tests: new Set(["b1c2d3e4f5061728"]) },
+  });
+  assert.deepEqual(result.counts, { runtime: 0, tests: 1, "fixtures/data": 0 });
+});
+
+test("an unknown native fingerprint cannot be justified", () => {
+  assert.throws(() => validateDuplicationJustificationsRegistry({
+    schemaVersion: 1,
+    justifications: [{
+      scope: "runtime",
+      fingerprint: "d1e2f30415263748",
+      classification: "KEEP_INTENTIONAL",
+      reason: "Not a real native clone.",
+      evidence: "synthetic test",
+      reviewedRef: "21c83ff399cb812c1dba18b1f19411b5fc7833e4",
+    }],
+  }, { nativeBaselines: NATIVE_BASELINES }), /unknown native fingerprint/);
+});
+
+test("malformed justification fields fail explicitly", () => {
+  assert.throws(() => validateDuplicationJustificationsRegistry({
+    schemaVersion: 1,
+    justifications: [{
+      scope: "tests",
+      fingerprint: "b1c2d3e4f5061728",
+      classification: "DEFER_DIFFERENT_SEMANTICS",
+      reason: "",
+      evidence: "",
+      reviewedRef: "short",
+    }],
+  }, { nativeBaselines: NATIVE_BASELINES }), /must use KEEP_INTENTIONAL/);
+});
+
+test("a disappeared justified clone is reported as STALE_KEEP_INTENTIONAL", () => {
+  assert.throws(() => validateDuplicationJustificationsRegistry({
+    schemaVersion: 1,
+    justifications: [{
+      scope: "tests",
+      fingerprint: "c1d2e3f405162738",
+      classification: "KEEP_INTENTIONAL",
+      reason: "Independent boundary suite.",
+      evidence: "two current test suites",
+      reviewedRef: "21c83ff399cb812c1dba18b1f19411b5fc7833e4",
+    }],
+  }, {
+    nativeBaselines: NATIVE_BASELINES,
+    currentFingerprintsByScope: { tests: new Set() },
+  }), /STALE_KEEP_INTENTIONAL/);
+});
+
+test("a new fingerprint remains blocking independently of the KEEP registry", () => {
+  const comparison = compareDuplicationMetrics(
+    { clones: 3, lines: 1000, tokens: 10000, duplicatedLines: 20, duplicatedTokens: 200, newClones: 1 },
+    BASELINE.scopes.runtime,
+    "runtime",
+  );
+  assert.equal(comparison.status, "FAIL");
+  assert.ok(comparison.failures.some((failure) => failure.includes("new clone fingerprints")));
 });
