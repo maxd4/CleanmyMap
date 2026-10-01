@@ -23,7 +23,8 @@
         "documentation/pages_site/screen/**/*.mjs"
       ],
       "ignore": ["scripts/security/semgrep/fixtures/**"],
-      "ignoreDependencies": ["next"]
+      "ignoreBinaries": ["pwsh"],
+      "ignoreDependencies": ["next", "image-size", "jscpd"]
     },
     "apps/mobile": {
       "entry": [
@@ -38,7 +39,9 @@
         "!vendor/**"
       ],
       "ignoreIssues": {
-        "app.json": ["unlisted"]
+        "app.json": ["unlisted"],
+        "security/image-size-security.test.mjs": ["unlisted"],
+        "security/stream-json-jayson-security.test.mjs": ["unlisted"]
       },
       "ignoreDependencies": ["stream-json"]
     }
