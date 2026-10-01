@@ -118,4 +118,4 @@ CleanMyMap a été initié et conçu par [Maxence Deroome](./AUTHORS.md).
 
 ## Licence
 
-Le code source propre à CleanMyMap est distribué sous la [GNU Affero General Public License v3.0](./LICENSE), SPDX `AGPL-3.0-only`. Les frontières entre code, données, contenus et marque sont précisées dans la [documentation juridique](./documentation/legal/README.md).
+Le code source propre à CleanMyMap est distribué sous la [GNU Affero General Public License v3.0](./LICENSE), SPDX `AGPL-3.0-only`. Cette licence concerne le code CleanMyMap ; les données personnelles ne sont pas placées sous licence ouverte, et les données tierces conservent leurs licences et conditions d'origine. Le nom, le logo et l'identité visuelle CleanMyMap restent réservés. Les frontières entre code, données, contenus et marque sont précisées dans la [documentation juridique](./documentation/legal/README.md).
