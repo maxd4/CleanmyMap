@@ -1,11 +1,6 @@
 import { evaluateActionQuality } from "../actions/quality/quality";
 import type { ActionListItem } from "../actions/types";
-import {
-  badgeFromQuality,
-  extractArea,
-  round1,
-  toFinite,
-} from "./engagement.helpers";
+import { extractArea, round1, toFinite } from "./engagement.helpers";
 import type { ActorActivityCard, QualityLeaderboardRow } from "./engagement.types";
 
 export function computeQualityLeaderboard(
@@ -69,7 +64,6 @@ export function computeQualityLeaderboard(
         qualityC: row.qualityC,
         rateA: round1(rateA * 100),
         weightedScore: round1(weightedScore),
-        badge: badgeFromQuality(avgQuality, row.actions, rateA),
       };
     })
     .sort(

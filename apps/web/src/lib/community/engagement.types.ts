@@ -14,7 +14,6 @@ export type QualityLeaderboardRow = {
   qualityC: number;
   rateA: number;
   weightedScore: number;
-  badge: string;
 };
 
 export type ActorActivityCard = {
