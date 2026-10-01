@@ -266,6 +266,34 @@ Pour une erreur locale évidente, corriger directement avec la preuve adaptée.
 Rechercher une cause systémique lorsque le défaut révèle un contrat insuffisant,
 se répète ou peut raisonnablement apparaître ailleurs.
 
+## Propriété sémantique et recherche de collision
+
+Avant de créer une formule, un seuil, un statut, un score, un classement, un
+badge, une catégorie, une règle de décision, une constante métier, un type
+public, une table, une RPC ou un vocabulaire utilisateur :
+
+- rechercher le nom prévu, ses synonymes, les valeurs caractéristiques et les
+  owners du même domaine dans le code, les tests et la documentation canonique ;
+- identifier l'owner CURRENT éventuel et son état `CURRENT`, `COMPATIBILITY`,
+  `TARGET` ou `LEGACY` ;
+- étendre le contrat canonique lorsque c'est possible, plutôt que créer une
+  seconde définition parce qu'elle est plus pratique localement.
+
+Une règle métier durable possède un owner unique. Une abstraction n'est
+justifiée que si elle centralise un invariant réel ou supprime une duplication
+de connaissance. Avant extraction, pouvoir répondre :
+
+```text
+Quel invariant devient propriétaire de ce module ?
+Quels consommateurs doivent évoluer ensemble ?
+Quelle divergence devient impossible après l'extraction ?
+```
+
+Si ces réponses ne sont pas claires, conserver temporairement les
+implémentations séparées et classifier le cas pour revue. Les règles chiffrées,
+les identités métier et les assertions de leurs tests sont précisées dans les
+instructions scoped de l'application et dans `documentation/development/TESTING.md`.
+
 ## Exports, types et façades
 
 Les symboles sont privés par défaut. Un `export` n'est justifié que par un
@@ -297,6 +325,26 @@ Avant de supprimer ou remplacer un élément, vérifier qu’il ne porte pas enc
 - une entrée utilisateur ou un changement local à préserver.
 
 L’absence d’import runtime ne suffit pas à prouver qu’un élément est supprimable.
+
+### Cycle de vie du code dormant
+
+L'absence de consumer CURRENT ne suffit pas à démontrer qu'une fonctionnalité
+doit être supprimée. Avant suppression, classifier lorsque pertinent :
+
+```text
+CURRENT
+IMPLEMENTED_NOT_EXPOSED
+COMPATIBILITY
+TARGET
+LEGACY
+DELETE_PROVEN
+```
+
+Une capacité `IMPLEMENTED_NOT_EXPOSED` doit avoir une raison de conservation,
+un owner identifiable, une condition d'activation et un test ou contrat qui
+protège la capacité conservée. Une capacité sans consumer, contrat,
+documentation produit ni raison démontrée de réactivation reste candidate à
+`DELETE_PROVEN`, selon la qualification dead-code ci-dessous.
 
 ### Qualification obligatoire du dead-code
 

@@ -10,6 +10,43 @@ Le workflow Codex distingue exactement deux modes de validation : `RAPIDE` et
 `COMPLET`. Les tests spécialisés restent des briques appelables séparément,
 pas des modes supplémentaires.
 
+## Niveau de preuve et contrats exécutés
+
+Toujours distinguer :
+
+```text
+présence textuelle
+≠ structure statique
+≠ comportement exécuté
+≠ propriété métier démontrée
+```
+
+Un test qui lit une migration SQL et vérifie des chaînes, des noms ou des
+regex est un `STATIC_CONTRACT`. Il peut protéger la présence de RLS, grants,
+revokes, fonctions, `search_path` ou clauses obligatoires, mais ne prouve pas
+l'idempotence, l'atomicité, les contraintes à l'exécution, les effets de
+triggers, les interactions RLS, la concurrence ou le résultat d'une RPC.
+
+Un `EXECUTED_DB_CONTRACT` exécute réellement le contrat dans l'environnement
+de validation supporté et doit être nommé comme tel dans le compte rendu. Si
+cette exécution n'est pas disponible dans le lot, rapporter
+`DB_SEMANTICS_NOT_EXECUTED`; ne jamais présenter le test statique comme une
+preuve équivalente.
+
+## Seuils et qualité des assertions
+
+Un test doit protéger un invariant identifiable et non reproduire la structure
+actuelle de l'implémentation. Rechercher l'élément par son ID, sa clé ou son
+prédicat métier ; `items[0]` ou `items[1]` n'est acceptable que lorsque l'ordre
+fait partie du contrat testé.
+
+Pour une règle à seuil, couvrir lorsque pertinent : juste sous le seuil,
+exactement au seuil, juste au-dessus, absence ou valeur nulle, et interaction
+avec le niveau de seuil supérieur. Une assertion doit nommer ou vérifier la
+frontière qu'elle protège ; ajouter un second test avec les mêmes entrées et
+les mêmes assertions n'est pas une nouvelle preuve. Il doit couvrir une autre
+frontière, un autre contrat public ou être consolidé.
+
 ## Artefacts de validation
 
 Les sorties locales et les candidates de contrôle ne sont pas des sources

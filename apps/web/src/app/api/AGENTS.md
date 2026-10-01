@@ -54,6 +54,25 @@ les écarts avec les statuts `MISSING_AUTHZ`, `PUBLIC_SAFE`,
 pas transformer automatiquement un usage technique privilégié en finding
 d'AuthZ.
 
+## Atomicité des mutations par lots
+
+Toute route ou orchestration HTTP qui écrit plusieurs enregistrements ou
+ressources doit déclarer le contrat `ATOMIC` ou `PARTIAL_ALLOWED`.
+
+- `ATOMIC` : aucun sous-effet métier ne subsiste après un échec ; la
+  transaction ou la RPC propriétaire doit porter cette garantie ;
+- `PARTIAL_ALLOWED` : compter les éléments réellement écrits, identifier le
+  point d'échec, définir la reprise, la déduplication ou l'idempotence et
+  auditer l'état partiel ; le comportement ne doit jamais émerger d'une simple
+  boucle.
+
+Une route HTTP reste une frontière de transport : lecture, validation d'entrée,
+AuthN/AuthZ, appel de l'orchestrateur et conversion en réponse. La
+normalisation métier, les calculs, le dry-run/confirmation, l'orchestration de
+mutations multiples, l'audit et la reprise ont un owner dédié lorsqu'ils
+deviennent substantiels. Une modification de `route.ts` ne doit pas ajouter
+silencieusement une de ces responsabilités durables.
+
 ## Contrôles selon le contrat
 
 - appliquer le rate limiting pour les surfaces qui le requièrent ;
