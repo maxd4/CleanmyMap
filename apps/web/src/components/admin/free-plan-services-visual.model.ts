@@ -28,7 +28,7 @@ export type FreePlanChartEntry = {
   key: EnvironmentalImpactInfrastructureServiceKey;
   label: string;
   value: number;
-  monthlyKgCo2eProxy: number;
+  monthlyKgCo2eProxy: number | null;
   color: string;
   selected: boolean;
 };
@@ -43,12 +43,17 @@ export type FreePlanDashboardState = {
   selectedColor: string;
   selectedPrimaryQuotaLabel: string;
   selectedPrimaryQuotaState: string;
-  selectedMonthlyKgCo2eProxy: number;
+  selectedMonthlyKgCo2eProxy: number | null;
   selectedAnnualKgCo2eProxy: number | null;
   selectedDeltaKgCo2eProxy: number | null;
-  totalMonthlyKgCo2eProxy: number;
+  totalMonthlyKgCo2eProxy: number | null;
   totalAnnualKgCo2eProxy: number | null;
   totalDeltaKgCo2eProxy: number | null;
+  totalMonthlyCoverage: {
+    knownServices: number;
+    totalServices: number;
+    status: "complete" | "partial" | "none";
+  };
   serviceCount: number;
   quotaCards: FreePlanMetricCard[];
   impactCards: FreePlanMetricCard[];
@@ -89,6 +94,50 @@ function getWeightAverage(values: Array<{ value: number; weight: number }>): num
   return weightedSum / totalWeight;
 }
 
+function getMonthlyAggregate(services: EnvironmentalImpactInfrastructureServiceEstimate[]) {
+  const knownServices = services.filter((service) => service.monthlyKgCo2eProxy !== null);
+  return {
+    value:
+      knownServices.length === 0
+        ? null
+        : knownServices.reduce((sum, service) => sum + (service.monthlyKgCo2eProxy as number), 0),
+    coverage: {
+      knownServices: knownServices.length,
+      totalServices: services.length,
+      status:
+        knownServices.length === 0
+          ? ("none" as const)
+          : knownServices.length === services.length
+            ? ("complete" as const)
+            : ("partial" as const),
+    },
+  };
+}
+
+function getMonthlyAggregateState(
+  currentServices: EnvironmentalImpactInfrastructureServiceEstimate[],
+  previousServices: EnvironmentalImpactInfrastructureServiceEstimate[],
+) {
+  const current = getMonthlyAggregate(currentServices);
+  const previous = getMonthlyAggregate(previousServices);
+  const delta =
+    current.value === null ||
+    previous.value === null ||
+    current.coverage.status !== "complete" ||
+    previous.coverage.status !== "complete"
+      ? null
+      : current.value - previous.value;
+  return {
+    current,
+    previous,
+    delta,
+    growthPercent:
+      delta === null || current.value === null || previous.value === null
+        ? null
+        : getGrowthPercent(current.value, previous.value),
+  };
+}
+
 function getServiceVisualMeta(key: FreePlanSelectionKey) {
   if (key === "total") {
     return TOTAL_VISUAL;
@@ -119,7 +168,7 @@ export function buildFreePlanChartEntries(params: {
       key: service.key,
       label: service.label,
       value: Math.max(0, service.sharePercent ?? 0),
-      monthlyKgCo2eProxy: service.monthlyKgCo2eProxy ?? 0,
+      monthlyKgCo2eProxy: service.monthlyKgCo2eProxy,
       color: meta.color ?? CHART_COLORS[index % CHART_COLORS.length],
       selected:
         params.selectedKey === "total" ? true : params.selectedKey === service.key,
