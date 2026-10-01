@@ -4,6 +4,7 @@ import { allowLocalFileStoreFallback, canUseSupabaseServerPersistence } from "@/
 import type { ServiceThresholdAlert } from "@/lib/environmental-impact-estimator/service-risk";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { StorageBusinessContributionReport } from "@/lib/supabase/storage-business-contribution";
+import { normalizeGovernanceImpactPayload } from "./governance-monthly-report-impact-normalizer";
 
 export type GovernanceMonthlyReportPayload = {
   generatedAt: string;
@@ -42,15 +43,15 @@ export type GovernanceMonthlyReportPayload = {
     serviceBreakdown: Array<{
       key: string;
       label: string;
-      currentKgCo2eProxy: number;
-      previousKgCo2eProxy: number;
-      deltaKgCo2eProxy: number;
+      currentKgCo2eProxy: number | null;
+      previousKgCo2eProxy: number | null;
+      deltaKgCo2eProxy: number | null;
     }>;
     growthHighlights: Array<{
       label: string;
-      previousKgCo2eProxy: number;
-      currentKgCo2eProxy: number;
-      deltaKgCo2eProxy: number;
+      previousKgCo2eProxy: number | null;
+      currentKgCo2eProxy: number | null;
+      deltaKgCo2eProxy: number | null;
     }>;
   };
   storage: {
@@ -166,44 +167,6 @@ function normalizeProjectSignals(
       emailsSent: payload.communication?.emailsSent ?? 0,
       pdfExports: payload.communication?.pdfExports ?? 0,
     },
-  };
-}
-
-function normalizeImpactPayload(
-  payload: GovernanceMonthlyReportPayload["impact"] | null | undefined,
-): GovernanceMonthlyReportPayload["impact"] {
-  if (!payload) {
-    return {
-      monthlyKgCo2eProxy: null,
-      confidencePercent: null,
-      snapshotCount: 0,
-      latestSnapshotDate: null,
-      topServiceLabel: null,
-      topServiceMonthlyKgCo2eProxy: null,
-      topServiceDeltaKgCo2eProxy: null,
-      serviceBreakdown: [],
-      growthHighlights: [],
-    };
-  }
-
-  return {
-    monthlyKgCo2eProxy: payload.monthlyKgCo2eProxy ?? null,
-    confidencePercent: payload.confidencePercent ?? null,
-    snapshotCount: payload.snapshotCount ?? 0,
-    latestSnapshotDate: payload.latestSnapshotDate ?? null,
-    topServiceLabel: payload.topServiceLabel ?? null,
-    topServiceMonthlyKgCo2eProxy: payload.topServiceMonthlyKgCo2eProxy ?? null,
-    topServiceDeltaKgCo2eProxy: payload.topServiceDeltaKgCo2eProxy ?? null,
-    serviceBreakdown: Array.isArray(payload.serviceBreakdown)
-      ? payload.serviceBreakdown.map((item) => ({
-          key: typeof item.key === "string" ? item.key : "",
-          label: typeof item.label === "string" ? item.label : "",
-          currentKgCo2eProxy: item.currentKgCo2eProxy ?? 0,
-          previousKgCo2eProxy: item.previousKgCo2eProxy ?? 0,
-          deltaKgCo2eProxy: item.deltaKgCo2eProxy ?? 0,
-        }))
-      : [],
-    growthHighlights: Array.isArray(payload.growthHighlights) ? payload.growthHighlights : [],
   };
 }
 
@@ -330,7 +293,7 @@ function normalizePayload(
           pdfGeneratedAt: payload.artifacts.pdfGeneratedAt ?? null,
         }
       : undefined,
-    impact: normalizeImpactPayload(payload.impact),
+    impact: normalizeGovernanceImpactPayload(payload.impact),
     projectSignals: normalizeProjectSignals(payload.projectSignals),
     storage: normalizeStoragePayload(payload.storage),
     serviceThresholdAlerts: normalizeServiceThresholdAlerts(payload.serviceThresholdAlerts),

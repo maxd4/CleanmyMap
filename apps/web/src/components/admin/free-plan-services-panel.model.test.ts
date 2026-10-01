@@ -160,4 +160,35 @@ describe("buildFreePlanServicesPanelModel", () => {
       model.serviceRiskRows.length,
     );
   });
+
+  it("expose la couverture du total mensuel et conserve un zéro observé", () => {
+    const model = buildFreePlanServicesPanelModel({
+      services: [
+        makeService({ key: "vercel", monthlyKgCo2eProxy: 0 }),
+        makeService({ key: "supabase", monthlyKgCo2eProxy: null }),
+      ],
+      snapshots: [],
+      generatedAt: "2026-06-20T12:00:00.000Z",
+      serviceHealth: {},
+    });
+
+    expect(model.totalMonthlyPressure).toBe(0);
+    expect(model.totalMonthlyPressureCoverage).toEqual({
+      knownServices: 1,
+      totalServices: 2,
+      status: "partial",
+    });
+    expect(model.servicePressureLeader?.key).toBe("vercel");
+
+    const unknownModel = buildFreePlanServicesPanelModel({
+      services: [makeService({ key: "vercel", monthlyKgCo2eProxy: null })],
+      snapshots: [],
+      generatedAt: "2026-06-20T12:00:00.000Z",
+      serviceHealth: {},
+    });
+
+    expect(unknownModel.totalMonthlyPressure).toBeNull();
+    expect(unknownModel.totalMonthlyPressureCoverage.status).toBe("none");
+    expect(unknownModel.servicePressureLeader).toBeNull();
+  });
 });

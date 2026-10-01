@@ -24,26 +24,36 @@ vi.mock("@/lib/persistence/runtime-store", () => ({
   allowLocalFileStoreFallback: allowLocalFileStoreFallbackMock,
 }));
 
-import { loadGovernanceMonthlyReport } from "./governance-monthly-report-store";
+import {
+  loadGovernanceMonthlyReport,
+  upsertGovernanceMonthlyReport,
+} from "./governance-monthly-report-store";
+
+function makeQueryBuilder(data: unknown[]) {
+  const queryBuilder = {
+    eq: vi.fn(() => queryBuilder),
+    gte: vi.fn(() => queryBuilder),
+    lt: vi.fn(() => queryBuilder),
+    order: vi.fn(() => queryBuilder),
+    limit: vi.fn(async () => ({ data, error: null })),
+  };
+  return queryBuilder;
+}
+
+function mockSupabaseClient(queryBuilder: ReturnType<typeof makeQueryBuilder>, upsert?: ReturnType<typeof vi.fn>) {
+  getSupabaseServerClientMock.mockReturnValue({
+    from: vi.fn(() => ({
+      select: vi.fn(() => queryBuilder),
+      ...(upsert ? { upsert } : {}),
+    })),
+  });
+}
 
 describe("governance monthly report store", () => {
   it("loads a specific month with a single Supabase row", async () => {
-    const queryBuilder = {
-      eq: vi.fn(() => queryBuilder),
-      gte: vi.fn(() => queryBuilder),
-      lt: vi.fn(() => queryBuilder),
-      order: vi.fn(() => queryBuilder),
-      limit: vi.fn(async () => ({
-        data: [governanceReportRow],
-        error: null,
-      })),
-    };
+    const queryBuilder = makeQueryBuilder([governanceReportRow]);
 
-    getSupabaseServerClientMock.mockReturnValue({
-      from: vi.fn(() => ({
-        select: vi.fn(() => queryBuilder),
-      })),
-    });
+    mockSupabaseClient(queryBuilder);
 
     const report = await loadGovernanceMonthlyReport("2026-05-17");
 
@@ -56,22 +66,9 @@ describe("governance monthly report store", () => {
   });
 
   it("loads the latest report with a single ordered Supabase row", async () => {
-    const queryBuilder = {
-      eq: vi.fn(() => queryBuilder),
-      gte: vi.fn(() => queryBuilder),
-      lt: vi.fn(() => queryBuilder),
-      order: vi.fn(() => queryBuilder),
-      limit: vi.fn(async () => ({
-        data: [governanceReportRow],
-        error: null,
-      })),
-    };
+    const queryBuilder = makeQueryBuilder([governanceReportRow]);
 
-    getSupabaseServerClientMock.mockReturnValue({
-      from: vi.fn(() => ({
-        select: vi.fn(() => queryBuilder),
-      })),
-    });
+    mockSupabaseClient(queryBuilder);
 
     const report = await loadGovernanceMonthlyReport();
 
@@ -81,5 +78,68 @@ describe("governance monthly report store", () => {
     expect(queryBuilder.lt).not.toHaveBeenCalled();
     expect(queryBuilder.order).toHaveBeenCalledWith("report_month", { ascending: false });
     expect(queryBuilder.limit).toHaveBeenCalledWith(1);
+  });
+
+  it("preserves null and observed zero in impact history on read and write", async () => {
+    const payload = {
+      impact: {
+        serviceBreakdown: [
+          {
+            key: "supabase",
+            label: "Supabase",
+            currentKgCo2eProxy: null,
+            previousKgCo2eProxy: null,
+            deltaKgCo2eProxy: null,
+          },
+          {
+            key: "vercel",
+            label: "Vercel",
+            currentKgCo2eProxy: 0,
+            previousKgCo2eProxy: 0,
+            deltaKgCo2eProxy: 0,
+          },
+        ],
+        growthHighlights: [
+          {
+            label: "Supabase",
+            previousKgCo2eProxy: null,
+            currentKgCo2eProxy: null,
+            deltaKgCo2eProxy: null,
+          },
+        ],
+      },
+    };
+    const row = { ...governanceReportRow, payload };
+    const queryBuilder = makeQueryBuilder([row]);
+    const upsert = vi.fn(async () => ({ error: null }));
+
+    mockSupabaseClient(queryBuilder, upsert);
+
+    const loaded = await loadGovernanceMonthlyReport();
+    expect(loaded?.payload.impact.serviceBreakdown).toEqual(payload.impact.serviceBreakdown);
+    expect(loaded?.payload.impact.growthHighlights).toEqual(payload.impact.growthHighlights);
+
+    await upsertGovernanceMonthlyReport({
+      ...governanceReportRow,
+      id: "governance-2026-05-01",
+      reportKey: "cleanmymap-governance",
+      reportMonth: "2026-05-01",
+      generatedAt: "2026-05-20T12:00:00.000Z",
+      version: "test",
+      title: "test",
+      payload,
+    } as never);
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          impact: expect.objectContaining({
+            serviceBreakdown: payload.impact.serviceBreakdown,
+            growthHighlights: payload.impact.growthHighlights,
+          }),
+        }),
+      }),
+      { onConflict: "report_key,report_month" },
+    );
   });
 });
