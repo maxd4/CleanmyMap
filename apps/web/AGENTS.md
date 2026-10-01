@@ -38,6 +38,32 @@ Les versions exactes restent celles de `apps/web/package.json`.
   apps/web/src/proxy.ts
   ```
 
+## Propriété des règles métier web
+
+Avant d'ajouter une formule, un seuil, un score, un classement, un badge, une
+catégorie ou un statut web, rechercher son équivalent et son owner dans le
+code, les tests et la documentation. Une valeur numérique non triviale doit
+indiquer son unité et sa signification, appartenir à une policy ou un contrat
+nommé lorsqu'elle gouverne plusieurs branches, et avoir une origine ou une
+justification identifiable. Une suite de nombres littéraux dans une fonction
+ne constitue pas un contrat suffisant.
+
+Un concept métier possède une identité stable indépendante de son libellé.
+Avant d'introduire un libellé utilisateur ou un synonyme de statut, niveau,
+badge, rôle, état ou catégorie : rechercher le vocabulaire existant, vérifier
+son owner et son état `CURRENT`, `COMPATIBILITY` ou `LEGACY`. Les modules
+métier retournent de préférence l'identifiant ou l'état stable ; les libellés,
+traductions et variantes typographiques sont résolus par le catalogue ou la
+couche de présentation appropriée.
+
+Les tests web protègent un invariant identifiable, pas la structure courante
+de l'implémentation. Pour une règle à seuil, couvrir lorsque pertinent la
+valeur juste sous le seuil, le seuil exact, juste au-dessus, l'absence ou la
+valeur nulle, ainsi que l'interaction avec le niveau supérieur. Rechercher un
+élément par son identifiant, sa clé ou son prédicat métier ; l'index n'est un
+contrat que lorsque l'ordre l'est. Les niveaux de preuve et la qualité des
+assertions sont détaillés dans `documentation/development/TESTING.md`.
+
 ## Auth locale et validations navigateur
 
 Avant toute validation navigateur, classifier la surface et annoncer le

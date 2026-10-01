@@ -104,6 +104,24 @@ Documenter uniquement une connaissance durable pertinente :
 Modifier la source spécialisée réellement concernée. Préférer un lien à une
 copie.
 
+## Information dérivable et métriques CURRENT
+
+Une information entièrement dérivable du runtime, du code ou d'un registre
+canonique ne doit pas devenir une seconde source manuelle de vérité. Pour les
+inventaires de routes, aliases, statuts SEO, capacités, registres, métriques
+ou surfaces, préférer :
+
+1. une génération depuis l'owner canonique ;
+2. une vérification automatique de dérive ;
+3. une duplication manuelle seulement si une information documentaire non
+   dérivable justifie la table.
+
+La documentation humaine conserve prioritairement le pourquoi, les exceptions,
+les décisions produit et les limites. Ne pas ajouter dans un document `CURRENT`
+un compteur ou un snapshot mutable simplement parce qu'il est disponible au
+moment du chantier. Toute métrique conservée doit indiquer son owner, son
+périmètre et sa date de mesure, ou être générée et contrôlée automatiquement.
+
 ## Documents explicitement fournis par l'utilisateur
 
 Un document explicitement fourni ou téléchargé par l'utilisateur est une entrée intentionnelle.

@@ -39,6 +39,32 @@ Ne jamais désactiver RLS pour débloquer un flux. Ne jamais introduire
 `service_role` côté client ; ce secret reste réservé aux opérations serveur
 autorisées.
 
+## Contrat des migrations SQL non triviales
+
+Pour toute migration qui introduit une RPC, un trigger, une fonction
+`SECURITY DEFINER` ou une mutation métier non triviale, rendre vérifiables dans
+le SQL ou un commentaire court :
+
+```text
+PURPOSE
+CALLER
+AUTHORIZATION_BOUNDARY
+IDEMPOTENCY
+ATOMICITY
+FAILURE_BEHAVIOR
+SEARCH_PATH
+GRANTS
+```
+
+Une fonction `SECURITY DEFINER` doit permettre d'identifier rapidement qui peut
+l'appeler, pourquoi ce mode est nécessaire, son `search_path` et les tables ou
+capacités qu'elle expose. Le test d'une migration par lecture de texte ou
+regex est un `STATIC_CONTRACT` ; il ne prouve ni atomicité réelle, ni
+idempotence, ni contraintes, triggers, RLS ou résultat RPC. Lorsqu'un
+`EXECUTED_DB_CONTRACT` n'est pas disponible dans l'environnement supporté,
+rapporter `DB_SEMANTICS_NOT_EXECUTED` plutôt que d'assimiler le test statique à
+une preuve SQL exécutée.
+
 ## Validation Supabase ciblée
 
 Avant de clôturer un changement de migration ou de contrat SQL :
