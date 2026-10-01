@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "32b59d63aa3e177bbae20d13f699a7791f4ae12e",
+  "sourceCommit": "fd927aa067b15fe0f5803f3b395b21c234f75ac6",
   "tool": "jscpd",
   "toolVersion": "5.3.0",
   "minLines": 5,
@@ -8,26 +8,26 @@
   "policyFingerprint": "93c9f907e5320ec229f6df6e7aad86b37b0f4ef5273530b2875a49c3b8945783",
   "scopes": {
     "runtime": {
-      "files": 1629,
-      "lines": 281759,
-      "tokens": 1462561,
-      "clones": 414,
-      "fingerprints": 414,
-      "duplicatedLines": 5561,
-      "duplicatedTokens": 32187,
-      "percentage": 1.9736725357486364,
-      "percentageTokens": 2.2007287217422045
+      "files": 1674,
+      "lines": 279828,
+      "tokens": 1476192,
+      "clones": 349,
+      "fingerprints": 349,
+      "duplicatedLines": 4275,
+      "duplicatedTokens": 24787,
+      "percentage": 1.5277241734208156,
+      "percentageTokens": 1.6791176215560037
     },
     "tests": {
-      "files": 930,
-      "lines": 110070,
-      "tokens": 661891,
-      "clones": 374,
-      "fingerprints": 372,
-      "duplicatedLines": 4234,
-      "duplicatedTokens": 25873,
-      "percentage": 3.846643045334787,
-      "percentageTokens": 3.9089517760477177
+      "files": 978,
+      "lines": 115470,
+      "tokens": 700154,
+      "clones": 352,
+      "fingerprints": 350,
+      "duplicatedLines": 3967,
+      "duplicatedTokens": 23752,
+      "percentage": 3.435524378626483,
+      "percentageTokens": 3.3923965299062777
     },
     "fixtures/data": {
       "files": 12,

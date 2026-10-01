@@ -482,8 +482,10 @@ contient le fingerprint SHA-256 de la politique courante. Toute modification de
 l'outil, de sa version, des seuils, des scopes, des patterns ou des exclusions
 rend la baseline métrique stale ; son évolution doit être ratifiée explicitement.
 Les snapshots, fichiers générés, vendors et duplications de fixtures
-volontairement répétitives ne sont pas traités comme de la dette runtime. La
-commande :
+volontairement répétitives ne sont pas traités comme de la dette runtime. Les
+baselines natives jscpd sont des ratchets versionnés : elles représentent
+l'ensemble des fingerprints acceptés à un commit donné et ne sont jamais mises
+à jour automatiquement par `quality:duplication`. La commande :
 
 ```bash
 npm run quality:duplication
@@ -492,9 +494,12 @@ npm run quality:duplication
 réutilise les fingerprints natifs jscpd et compare aussi les blocs, les lignes
 et les tokens dupliqués à la baseline métrique. Tout nouveau fingerprint de
 clone (`NEW_CLONE_FINGERPRINTS > 0`) est bloquant pour le runtime et les tests ;
-les fixtures/data restent strictes. Les clones déjà présents dans les
-baselines natives restent historiques et peuvent être réduits progressivement
-sans renouveler la baseline. Le fingerprint de politique
+les fixtures/data restent strictes. Les clones déjà présents dans les baselines
+natives restent historiques. Une réduction validée est acquise explicitement
+sur le commit mesuré avec `--baseline <baseline-file> --update-baseline`, en
+conservant exactement les mêmes scopes, patterns, seuils, ignores et version
+jscpd. Un fingerprint supprimé qui réapparaît ensuite devient un nouveau
+fingerprint bloquant. Le fingerprint de politique
 (`DUPLICATION_POLICY_FINGERPRINT`) reste un invariant distinct et strict.
 Un clone historique reste donc une dette et ne constitue pas une justification
 implicite. Une duplication volontaire nécessitant une protection doit faire
@@ -519,8 +524,11 @@ baseline. Dépasser une seule limite redevient bloquant (`FAIL`). Aucune hausse
 de baseline, de seuil ou d'exclusion ne peut servir à faire passer un lot.
 
 La sortie expose par scope le statut, les nouveaux fingerprints et les deltas
-réels de lignes, tokens et pourcentages. Les baselines natives jscpd restent
-des références historiques séparées et ne sont pas régénérées automatiquement.
+réels de lignes, tokens et pourcentages. Les `KEEP_INTENTIONAL` restent
+présents dans la baseline native et sont documentés séparément dans
+`scripts/checks/duplication-justifications.json` ; ils ne peuvent jamais
+autoriser un nouveau fingerprint. Aucun seuil, ignore ou grace ne peut être
+relevé pour masquer une régression.
 
 Le contrôle de cycles réutilise l'analyseur GitNexus existant. La CI installe
 explicitement la version épinglée `1.6.12` puis initialise son index en mode
