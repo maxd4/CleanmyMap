@@ -1,10 +1,10 @@
-# Météo — compatibilité
+# Météo — `COMPATIBILITY_REDIRECT`
 
 ## Fiche de compatibilité
 
 - **Route historique** : `/sections/weather`
 - **Cible actuelle** : `/actions/new?panel=meteo`
-- **Dossier canonique** : `weather`
+- **Statut** : `COMPATIBILITY_REDIRECT`, hors registry CURRENT et hors navigation
 - **Famille** : Agir
 - **Accès runtime** : `public-visible` ; redirection vers le panneau météo public de `/actions/new`
 - **Palette runtime** : agir / emerald

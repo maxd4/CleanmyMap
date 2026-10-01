@@ -82,6 +82,18 @@ describe("indexability helpers", () => {
         new URLSearchParams("panel=legacy&source=legacy"),
       ),
     ).toBe("/actions/new?panel=itineraire&source=legacy");
+    expect(
+      buildSeoRedirectTarget(
+        "/sections/weather",
+        new URLSearchParams("panel=legacy&source=legacy"),
+      ),
+    ).toBe("/actions/new?panel=meteo&source=legacy");
+    expect(
+      buildSeoRedirectTarget("/sections/dm", {
+        tab: "legacy",
+        source: "legacy",
+      }),
+    ).toBe("/sections/messagerie?tab=dm&source=legacy");
     expect(SEO_HTTP_REDIRECT_SOURCES).not.toContain("/onboarding/localisation");
     for (const alias of Object.keys(SEO_REDIRECT_TARGETS)) {
       expect(PUBLIC_APP_SITEMAP_PATHS).not.toContain(alias);

@@ -84,11 +84,21 @@ describe("proxy route context", () => {
     const route = getSeoHttpRedirectResponse(
       new NextRequest("http://localhost/sections/route?panel=legacy&source=legacy"),
     );
+    const weather = getSeoHttpRedirectResponse(
+      new NextRequest("http://localhost/sections/weather?panel=legacy&source=legacy"),
+    );
+    const directMessage = getSeoHttpRedirectResponse(
+      new NextRequest("http://localhost/sections/dm?tab=legacy&source=legacy"),
+    );
 
     expect(new URL(partners?.headers.get("location") ?? "http://invalid").searchParams.getAll("tab"))
       .toEqual(["partners"]);
     expect(new URL(route?.headers.get("location") ?? "http://invalid").searchParams.getAll("panel"))
       .toEqual(["itineraire"]);
+    expect(new URL(weather?.headers.get("location") ?? "http://invalid").searchParams.getAll("panel"))
+      .toEqual(["meteo"]);
+    expect(new URL(directMessage?.headers.get("location") ?? "http://invalid").searchParams.getAll("tab"))
+      .toEqual(["dm"]);
   });
 
   it("keeps context-only page semantics explicit", () => {

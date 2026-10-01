@@ -10,6 +10,7 @@ export const REQUIRED_SURFACE_ACCESS_ROUTES = new Set([
 export const DYNAMIC_ALIASES_HANDLED_INSIDE_ROUTE = new Set([
   "/sections/dm",
   "/sections/guide",
+  "/sections/weather",
 ]);
 
 const DOCUMENTED_ACCESS_MODES = [
