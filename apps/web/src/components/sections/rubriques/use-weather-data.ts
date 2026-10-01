@@ -17,6 +17,7 @@ import { swrRecentViewOptions } from "@/lib/swr-config";
 import { formatDateShort } from "@/components/sections/rubriques/helpers";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
 import { fetchOpenMeteoForecast } from "@/lib/weather/open-meteo-client";
+import { parseCivilDateAsUtc } from "@/lib/time/civil-date";
 import {
   readStoredWeatherLocation,
   storeWeatherLocation,
@@ -144,8 +145,8 @@ async function resolveWeatherLocationFromPreference(
 }
 
 function formatDayLabel(value: string): string {
-  const date = new Date(`${value}T12:00:00`);
-  if (Number.isNaN(date.getTime())) {
+  const date = parseCivilDateAsUtc(value);
+  if (!date) {
     return value;
   }
 
@@ -153,6 +154,7 @@ function formatDayLabel(value: string): string {
     weekday: "short",
     day: "numeric",
     month: "short",
+    timeZone: "UTC",
   }).format(date);
 }
 

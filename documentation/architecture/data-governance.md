@@ -696,6 +696,16 @@ version, incomplet ou incompatible est rejeté avant toute écriture ; le mode
 plan est la valeur par défaut et `--apply` exige la confirmation explicite
 documentée par la commande.
 
+Les calculs de gouvernance et d'engagement distinguent systématiquement une
+mesure observée de son absence. `NULL`/`NA` conserve la provenance et la
+couverture; il ne devient zéro que lorsque la source complète établit
+explicitement l'élément neutre de l'agrégation. Les seuils et poids non
+triviaux ont un owner de policy versionné dans le module qui les consomme.
+Les dates civiles `YYYY-MM-DD` ne sont pas des instants : tout adaptateur vers
+`Date` doit déclarer sa timezone (`UTC` pour l'adaptateur générique, ou
+`Europe/Paris` lorsque le contrat Actions l'exige) et ne doit jamais dépendre
+de la timezone du processus.
+
 Ne pas créer un nouveau chemin d'ingestion concurrent sans vérifier :
 
 - contrat canonique ;

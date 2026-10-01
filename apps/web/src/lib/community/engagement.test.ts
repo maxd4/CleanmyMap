@@ -134,6 +134,34 @@ describe("computeQualityLeaderboard", () => {
       leaderboard[1]?.avgQuality ?? 0,
     );
   });
+
+  it("keeps missing waste distinct from an observed zero and preserves coverage", () => {
+    const leaderboard = computeQualityLeaderboard([
+      makeAction({ id: "known-zero", actor_name: "Alice", waste_kg: 0 }),
+      makeAction({ id: "unknown", actor_name: "Alice", waste_kg: null }),
+    ]);
+
+    expect(leaderboard[0]).toMatchObject({
+      wasteKg: 0,
+      wasteKgCoverage: { knownActions: 1, totalActions: 2 },
+    });
+  });
+
+  it("applies the action-volume cap below, at and above its policy boundary", () => {
+    const makeActions = (count: number) =>
+      Array.from({ length: count }, (_, index) =>
+        makeAction({ id: `volume-${count}-${index}`, actor_name: `Actor ${count}` }),
+      );
+    const rows = computeQualityLeaderboard([
+      ...makeActions(19),
+      ...makeActions(20),
+      ...makeActions(21),
+    ]);
+    const scores = new Map(rows.map((row) => [row.actor, row.weightedScore]));
+
+    expect((scores.get("Actor 20") ?? 0) - (scores.get("Actor 19") ?? 0)).toBeGreaterThan(0);
+    expect(scores.get("Actor 21")).toBe(scores.get("Actor 20"));
+  });
 });
 
 describe("buildActorActivityCards", () => {

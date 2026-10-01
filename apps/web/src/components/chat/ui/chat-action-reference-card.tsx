@@ -10,11 +10,12 @@ import {
   type PublicActionReference,
 } from "@/lib/chat/action-reference-http";
 import { cn } from "@/lib/utils";
+import { parseCivilDateAsUtc } from "@/lib/time/civil-date";
 
 function dateLabel(action: PublicActionReference): string {
-  const parsed = new Date(`${action.actionDate}T12:00:00`);
-  if (Number.isNaN(parsed.getTime())) return action.actionDate;
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(parsed);
+  const parsed = parseCivilDateAsUtc(action.actionDate);
+  if (!parsed) return action.actionDate;
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeZone: "UTC" }).format(parsed);
 }
 
 function timeLabel(action: PublicActionReference): string | null {

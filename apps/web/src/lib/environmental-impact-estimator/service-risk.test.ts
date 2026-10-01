@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildServiceQuotaSummary, buildServiceThresholdAlerts, formatServiceQuotaStateLabel } from "./service-risk";
+import { buildServiceQuotaSummary, buildServiceRiskRows, buildServiceThresholdAlerts, formatServiceQuotaStateLabel } from "./service-risk";
 import { thresholdAlertCurrentServices, thresholdAlertSnapshots, quotaSummaryMetricEstimates } from "./service-risk.fixtures";
 
 describe("buildServiceThresholdAlerts", () => {
@@ -72,5 +72,65 @@ describe("buildServiceQuotaSummary", () => {
     expect(summary.primaryMetric?.consumedPercent).toBe(92);
     expect(summary.metrics[0]?.isPrimary).toBe(true);
     expect(summary.metrics[1]?.state).toBe("ok");
+  });
+});
+
+describe("buildServiceRiskRows", () => {
+  it("keeps an unavailable current measure out of the risk score", () => {
+    const [row] = buildServiceRiskRows([
+      {
+        key: "vercel",
+        label: "Vercel",
+        monthlyKgCo2eProxy: null,
+        sharePercent: 0,
+        confidencePercent: 90,
+        metricEstimates: [],
+      },
+    ]);
+
+    expect(row).toMatchObject({
+      currentKgCo2eProxy: null,
+      previousKgCo2eProxy: null,
+      deltaKgCo2eProxy: null,
+      growthPercent: null,
+      score: null,
+      band: "NA",
+      scoreCoverage: "partial",
+    });
+  });
+});
+
+describe("service risk policy boundaries", () => {
+  it.each([
+    [69, false],
+    [70, true],
+    [71, true],
+  ])("applies the quota threshold at %s%%", (sharePercent, expectedAlert) => {
+    const alerts = buildServiceThresholdAlerts({
+      currentGeneratedAt: "2026-05-20T12:00:00.000Z",
+      currentServices: [
+        {
+          key: "supabase",
+          label: "Supabase",
+          monthlyKgCo2eProxy: 2,
+          sharePercent,
+          confidencePercent: 90,
+          metricEstimates: [],
+        },
+      ],
+      snapshots: [
+        {
+          snapshotDate: "2026-04-20",
+          generatedAt: "2026-04-20T12:00:00.000Z",
+          model: {
+            infrastructure: {
+              services: [{ key: "supabase", label: "Supabase", monthlyKgCo2eProxy: 1 }],
+            },
+          },
+        },
+      ] as never,
+    });
+
+    expect(alerts.some((alert) => alert.signal === "quotaShare")).toBe(expectedAlert);
   });
 });

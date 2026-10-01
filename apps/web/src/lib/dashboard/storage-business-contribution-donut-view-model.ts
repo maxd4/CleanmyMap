@@ -1,4 +1,5 @@
 import { formatStorageBytes } from "@/lib/supabase/storage-usage";
+import { STORAGE_BUSINESS_CONTRIBUTION_POLICY } from "@/lib/supabase/storage-business-contribution-policy";
 import type {
   StorageBusinessContributionHistoryPoint,
   StorageBusinessContributionItem,
@@ -125,13 +126,14 @@ export function computePressureValue(point: {
   deltaPercent: number | null;
   accelerationPercent: number | null;
 }): number {
-  const volumeScore = Math.min(14, Math.log10(point.currentBytes + 1) * 2.5);
-  const shareScore = Math.min(56, point.sharePercent * 0.58);
-  const growthScore = Math.min(18, Math.max(0, point.deltaPercent ?? 0) * 0.32);
-  const accelerationScore = Math.min(12, Math.max(0, point.accelerationPercent ?? 0) * 0.14);
-  const countScore = Math.min(8, point.currentCount * 0.45);
+  const policy = STORAGE_BUSINESS_CONTRIBUTION_POLICY.pressureScore;
+  const volumeScore = Math.min(policy.volumeCap, Math.log10(point.currentBytes + 1) * policy.volumeWeight);
+  const shareScore = Math.min(policy.shareCap, point.sharePercent * policy.shareWeight);
+  const growthScore = Math.min(policy.growthCap, Math.max(0, point.deltaPercent ?? 0) * policy.growthWeight);
+  const accelerationScore = Math.min(policy.accelerationCap, Math.max(0, point.accelerationPercent ?? 0) * policy.accelerationWeight);
+  const countScore = Math.min(policy.countCap, point.currentCount * policy.countWeight);
 
-  return Math.max(1, Math.round(volumeScore + shareScore + growthScore + accelerationScore + countScore));
+  return Math.max(policy.minimum, Math.round(volumeScore + shareScore + growthScore + accelerationScore + countScore));
 }
 
 function resolvePressurePoint(

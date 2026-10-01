@@ -78,7 +78,10 @@ function formatPercent(value: number | null | undefined) {
   return `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(value)}%`;
 }
 
-function getRiskTone(score: number) {
+function getRiskTone(score: number | null) {
+  if (score === null) {
+    return "border-white/10 bg-white/5 text-white/60";
+  }
   if (score >= 80) {
     return "border-rose-500/20 bg-rose-500/10 text-rose-100";
   }

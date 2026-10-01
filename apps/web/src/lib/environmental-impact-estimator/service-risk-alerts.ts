@@ -1,5 +1,6 @@
 import type { EnvironmentalImpactSnapshotRecord } from "./types";
 import type { EnvironmentalImpactInfrastructureServiceKey } from "./types";
+import { SERVICE_RISK_POLICY } from "./service-risk-policy";
 
 type ServiceThresholdAlertSeverity = "warning" | "critical";
 type ServiceThresholdAlertSignal = "quotaShare" | "growth" | "trend";
@@ -37,11 +38,11 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function getGrowthPercent(currentKgCo2eProxy: number, previousKgCo2eProxy: number | null | undefined): number {
-  if (currentKgCo2eProxy <= 0) {
-    return 0;
+function getGrowthPercent(currentKgCo2eProxy: number | null, previousKgCo2eProxy: number | null | undefined): number | null {
+  if (currentKgCo2eProxy === null || previousKgCo2eProxy === null || previousKgCo2eProxy === undefined) {
+    return null;
   }
-  if (previousKgCo2eProxy === null || previousKgCo2eProxy === undefined) {
+  if (currentKgCo2eProxy <= 0) {
     return 0;
   }
   if (previousKgCo2eProxy <= 0) {
@@ -102,7 +103,7 @@ type QuotaPoint = {
   snapshotDate: string;
   monthLabel: string;
   sharePercent: number;
-  monthlyKgCo2eProxy: number;
+  monthlyKgCo2eProxy: number | null;
 };
 
 function buildHistorySnapshots(params: {
@@ -140,14 +141,14 @@ function buildQuotaSeries(service: ServiceRiskSource, historySnapshots: HistoryS
         snapshotDate: snapshot.snapshotDate,
         monthLabel: snapshot.monthLabel,
         sharePercent: clamp(item.sharePercent, 0, 100),
-        monthlyKgCo2eProxy: item.monthlyKgCo2eProxy ?? 0,
+        monthlyKgCo2eProxy: item.monthlyKgCo2eProxy,
       };
     })
     .filter((item): item is QuotaPoint => item !== null);
 }
 
 function buildQuotaAlert(service: ServiceRiskSource, current: QuotaPoint): ServiceThresholdAlert {
-  const overage = current.sharePercent - 70;
+  const overage = current.sharePercent - SERVICE_RISK_POLICY.alerts.quotaShare;
   return {
     id: `${service.key}:quotaShare:${current.snapshotDate}`,
     serviceKey: service.key,
@@ -155,7 +156,7 @@ function buildQuotaAlert(service: ServiceRiskSource, current: QuotaPoint): Servi
     severity: "critical",
     signal: "quotaShare",
     title: "Quota de catégorie dépassé",
-    thresholdLabel: "usage > 70 % du quota alloué à la catégorie",
+    thresholdLabel: `usage > ${SERVICE_RISK_POLICY.alerts.quotaShare} % du quota alloué à la catégorie`,
     details: `${formatPercentValue(current.sharePercent)} % consommés, soit +${formatPercentValue(overage)} points au-dessus du seuil.`,
     sinceLabel: current.monthLabel,
     recommendedAction: getRecommendedAction("quotaShare"),
@@ -163,7 +164,7 @@ function buildQuotaAlert(service: ServiceRiskSource, current: QuotaPoint): Servi
 }
 
 function buildGrowthAlert(service: ServiceRiskSource, current: QuotaPoint, currentGrowth: number): ServiceThresholdAlert {
-  const overage = currentGrowth - 15;
+  const overage = currentGrowth - SERVICE_RISK_POLICY.alerts.growth;
   return {
     id: `${service.key}:growth:${current.snapshotDate}`,
     serviceKey: service.key,
@@ -171,7 +172,7 @@ function buildGrowthAlert(service: ServiceRiskSource, current: QuotaPoint, curre
     severity: "critical",
     signal: "growth",
     title: "Croissance mensuelle excessive",
-    thresholdLabel: "croissance > +15 % sur un mois",
+    thresholdLabel: `croissance > +${SERVICE_RISK_POLICY.alerts.growth} % sur un mois`,
     details: `Croissance de +${formatPercentValue(currentGrowth)} % ce mois-ci, soit +${formatPercentValue(overage)} points au-dessus du seuil.`,
     sinceLabel: current.monthLabel,
     recommendedAction: getRecommendedAction("growth"),
@@ -192,7 +193,7 @@ function buildTrendAlert(
     severity: "warning",
     signal: "trend",
     title: "Pente forte sur 2 mois",
-    thresholdLabel: "croissance > +10 % sur deux mois d'affilée",
+    thresholdLabel: `croissance > +${SERVICE_RISK_POLICY.alerts.trend} % sur deux mois d'affilée`,
     details: `Croissance de +${formatPercentValue(currentGrowth)} % ce mois-ci et +${formatPercentValue(previousGrowth)} % le mois précédent.`,
     sinceLabel,
     recommendedAction: getRecommendedAction("trend"),
@@ -209,7 +210,7 @@ function buildGrowthSeries(quotaSeries: QuotaPoint[]) {
 }
 
 function getQuotaAlertIfNeeded(service: ServiceRiskSource, quotaSeries: QuotaPoint[]): ServiceThresholdAlert | null {
-  if (getStreakEndLabel(quotaSeries, (item) => item.sharePercent >= 70) < 0) {
+  if (getStreakEndLabel(quotaSeries, (item) => item.sharePercent >= SERVICE_RISK_POLICY.alerts.quotaShare) < 0) {
     return null;
   }
   return buildQuotaAlert(service, quotaSeries[0]);
@@ -218,20 +219,20 @@ function getQuotaAlertIfNeeded(service: ServiceRiskSource, quotaSeries: QuotaPoi
 function getGrowthAlertIfNeeded(
   service: ServiceRiskSource,
   quotaSeries: QuotaPoint[],
-  growthSeries: Array<{ monthLabel: string; growthPercent: number }>,
+  growthSeries: Array<{ monthLabel: string; growthPercent: number | null }>,
 ): ServiceThresholdAlert | null {
-  const currentGrowth = growthSeries[0]?.growthPercent ?? 0;
-  if (currentGrowth < 15 || getStreakEndLabel(growthSeries, (item) => item.growthPercent >= 15) < 0) {
+  const currentGrowth = growthSeries[0]?.growthPercent ?? null;
+  if (currentGrowth === null || currentGrowth < SERVICE_RISK_POLICY.alerts.growth || getStreakEndLabel(growthSeries, (item) => item.growthPercent !== null && item.growthPercent >= SERVICE_RISK_POLICY.alerts.growth) < 0) {
     return null;
   }
   return buildGrowthAlert(service, quotaSeries[0], currentGrowth);
 }
 
 function buildTrendSinceLabel(
-  growthSeries: Array<{ monthLabel: string; growthPercent: number }>,
+  growthSeries: Array<{ monthLabel: string; growthPercent: number | null }>,
   quotaSeries: QuotaPoint[],
 ): string {
-  const trendStreakEnd = getStreakEndLabel(growthSeries, (item) => item.growthPercent >= 10);
+  const trendStreakEnd = getStreakEndLabel(growthSeries, (item) => item.growthPercent !== null && item.growthPercent >= SERVICE_RISK_POLICY.alerts.trend);
   const current = quotaSeries[0];
   const previous = quotaSeries[1] ?? null;
   return trendStreakEnd >= 0
@@ -242,12 +243,12 @@ function buildTrendSinceLabel(
 function getTrendAlertIfNeeded(
   service: ServiceRiskSource,
   quotaSeries: QuotaPoint[],
-  growthSeries: Array<{ monthLabel: string; growthPercent: number }>,
+  growthSeries: Array<{ monthLabel: string; growthPercent: number | null }>,
 ): ServiceThresholdAlert | null {
   const current = quotaSeries[0];
-  const currentGrowth = growthSeries[0]?.growthPercent ?? 0;
+  const currentGrowth = growthSeries[0]?.growthPercent ?? null;
   const previousGrowth = growthSeries[1]?.growthPercent ?? null;
-  if (currentGrowth < 10 || previousGrowth === null || previousGrowth < 10) {
+  if (currentGrowth === null || currentGrowth < SERVICE_RISK_POLICY.alerts.trend || previousGrowth === null || previousGrowth < SERVICE_RISK_POLICY.alerts.trend) {
     return null;
   }
   return buildTrendAlert(service, current, currentGrowth, previousGrowth, buildTrendSinceLabel(growthSeries, quotaSeries));

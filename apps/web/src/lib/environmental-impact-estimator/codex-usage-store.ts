@@ -7,6 +7,7 @@ import {
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION } from "./constants";
+import { parseCivilDateAsUtc } from "@/lib/time/civil-date";
 import type {
   EnvironmentalImpactCodexUsageMonthlyEstimate,
   EnvironmentalImpactCodexUsageSource,
@@ -38,9 +39,10 @@ function parseDateOrNull(value: string | null | undefined): Date | null {
     return null;
   }
 
-  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value;
-  const date = new Date(normalizedValue);
-  if (Number.isNaN(date.getTime())) {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? parseCivilDateAsUtc(value)
+    : new Date(value);
+  if (!date || Number.isNaN(date.getTime())) {
     return null;
   }
 
@@ -48,9 +50,9 @@ function parseDateOrNull(value: string | null | undefined): Date | null {
 }
 
 function toIsoDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 

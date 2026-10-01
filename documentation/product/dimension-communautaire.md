@@ -19,6 +19,15 @@ CleanMyMap peut renforcer son utilite en transformant la participation ponctuell
 - Remerciements automatiques apres action par association ou coordinateur.
 - Statut mentor ou referent pour les profils reguliers et fiables.
 
+Le leaderboard qualité est une vue dérivée, portée par
+`apps/web/src/lib/community/engagement.quality.ts` et versionnée par la policy
+`engagement-quality-v1`. Les coefficients actuels sont des `POLICY` (qualité
+0,7 ; taux A 35 ; volume plafonné à 20 actions à 1,5 ; pénalité C de 2) et
+ne sont pas des mesures observées. `wasteKg` est une mesure `OBSERVED` : un
+zéro déclaré reste zéro, tandis qu'une absence reste `NULL`; la couverture
+des actions connues est exposée séparément. Le score ne doit pas imputer une
+masse absente ni transformer le volume en preuve d'utilité à lui seul.
+
 ### Valorisation des associations
 
 - Pages association enrichies avec mission, zones couvertes, besoins recurrents, actions passees et ressources utiles.

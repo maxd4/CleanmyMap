@@ -196,6 +196,40 @@ describe("formalities workflow", () => {
     );
   });
 
+  it("requalifies a legacy FNV trace instead of accepting it as equivalent", () => {
+    const facts = parisFacts();
+    const qualification = qualifyActionFormalities(facts);
+    const initial = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      actionDependencies: { locationLabel: "Rue A", actionDate: "2026-09-20" },
+      now: "2026-09-17T10:00:00.000Z",
+    });
+    const sent = applyFormalitiesWorkflowTransition({
+      workflow: initial,
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
+      now: "2026-09-17T10:01:00.000Z",
+    });
+    const legacy = {
+      ...sent,
+      trace: { ...sent.trace, actionDependencyFingerprint: "fnv1a-test" },
+    };
+
+    const requalified = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      actionDependencies: { locationLabel: "Rue A", actionDate: "2026-09-20" },
+      previous: legacy,
+      now: "2026-09-17T10:02:00.000Z",
+    });
+
+    expect(requalified.trace.actionDependencyFingerprint).toMatch(/^canonical-v2:/);
+    expect(requalified.progress[0]).toMatchObject({
+      validForQualification: false,
+      invalidatedAt: "2026-09-17T10:02:00.000Z",
+    });
+  });
+
   it("does not block for recommendation or unknown qualification", () => {
     const facts = parisFacts({ manager: { kind: "unknown", label: null }, hasInstallations: false, requiresPhysicalOccupation: false });
     const qualification = qualifyActionFormalities(facts);

@@ -15,6 +15,14 @@ import {
   type StorageUsageBreakdownItem,
   toStorageUsageSnapshot,
 } from "./storage-usage";
+import { STORAGE_BUSINESS_CONTRIBUTION_POLICY } from "./storage-business-contribution-policy";
+import {
+  buildStorageBusinessContributionAlerts,
+  buildStorageBusinessContributionAlertId,
+  getAlertSeverityRank,
+  getAlertSignalRank,
+  pushStorageBusinessContributionAlert,
+} from "./storage-business-contribution-alerts";
 
 export type StorageBusinessContributionTopFile = {
   bucketId: string;
@@ -37,8 +45,9 @@ export type StorageBusinessContributionMimeSubtype = {
   label: string;
   bytes: number;
   count: number;
-  sharePercent: number;
-  averageBytes: number;
+  sharePercent: number | null;
+  averageBytes: number | null;
+  knownSizeCount?: number;
 };
 
 export type StorageBusinessContributionHistoryPoint = {
@@ -152,7 +161,7 @@ function getHistorySeries(
     .slice(0, 4);
 }
 
-function extractSizeBytes(value: unknown): number {
+function extractSizeBytes(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
     return Math.trunc(value);
   }
@@ -164,7 +173,7 @@ function extractSizeBytes(value: unknown): number {
     }
   }
 
-  return 0;
+  return null;
 }
 
 function buildTopFilesByDomain(
@@ -174,6 +183,9 @@ function buildTopFilesByDomain(
 
   for (const object of objects) {
     const size = extractSizeBytes(object.metadata?.["size"]);
+    if (size === null) {
+      continue;
+    }
     const classification = classifyStorageBusinessObject({
       bucketId: object.bucket_id,
       name: object.name,
@@ -222,7 +234,7 @@ function buildMimeSubtypesByDomain(
 ): Map<StorageBusinessDomainId, StorageBusinessContributionMimeSubtype[]> {
   const grouped = new Map<
     StorageBusinessDomainId,
-    Map<string, { label: string; bytes: number; count: number }>
+    Map<string, { label: string; bytes: number; count: number; knownSizeCount: number }>
   >();
 
   for (const object of objects) {
@@ -243,9 +255,13 @@ function buildMimeSubtypesByDomain(
       label,
       bytes: 0,
       count: 0,
+      knownSizeCount: 0,
     };
-    current.bytes += size;
     current.count += 1;
+    if (size !== null) {
+      current.bytes += size;
+      current.knownSizeCount += 1;
+    }
     domain.set(key, current);
     grouped.set(classification.id, domain);
   }
@@ -259,8 +275,9 @@ function buildMimeSubtypesByDomain(
         label: item.label,
         bytes: item.bytes,
         count: item.count,
-        sharePercent: 0,
-        averageBytes: item.count > 0 ? item.bytes / item.count : 0,
+        sharePercent: null,
+        averageBytes: item.knownSizeCount > 0 ? item.bytes / item.knownSizeCount : null,
+        knownSizeCount: item.knownSizeCount,
       }))
       .sort((left, right) => {
         if (right.bytes !== left.bytes) {
@@ -273,12 +290,17 @@ function buildMimeSubtypesByDomain(
       });
 
     const totalBytes = sortedEntries.reduce((sum, item) => sum + item.bytes, 0);
+    const hasUnknownSizes = sortedEntries.some((item) => item.knownSizeCount < item.count);
     const topFive = sortedEntries.slice(0, 5);
     result.set(
       domainId,
       topFive.map((item) => ({
         ...item,
-        sharePercent: totalBytes > 0 ? (item.bytes / totalBytes) * 100 : 0,
+        sharePercent: totalBytes > 0
+          ? (item.bytes / totalBytes) * 100
+          : hasUnknownSizes
+            ? null
+            : 0,
       })),
     );
   }
@@ -337,247 +359,6 @@ function computeTrendPointSeries(
   });
 }
 
-function buildAlertId(domainId: StorageBusinessDomainId, signal: string, snapshotMonth: string) {
-  return `${domainId}:${signal}:${snapshotMonth}`;
-}
-
-function pushAlert(
-  alerts: StorageBusinessContributionAlert[],
-  alert: StorageBusinessContributionAlert,
-) {
-  if (alerts.some((item) => item.id === alert.id)) {
-    return;
-  }
-  alerts.push(alert);
-}
-
-function getAlertSeverityRank(severity: StorageBusinessContributionAlertSeverity): number {
-  if (severity === "critical") {
-    return 3;
-  }
-
-  if (severity === "warning") {
-    return 2;
-  }
-
-  return 1;
-}
-
-function getAlertSignalRank(signal: StorageBusinessContributionAlert["signal"]): number {
-  switch (signal) {
-    case "growth":
-      return 5;
-    case "acceleration":
-      return 4;
-    case "heavyExports":
-      return 3;
-    case "photoDominance":
-      return 2;
-    case "quotaShare":
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-function buildAlertsForDomain(params: {
-  domainId: StorageBusinessDomainId;
-  label: string;
-  history: StorageBusinessContributionHistoryPoint[];
-  currentBytes: number;
-  currentSharePercent: number;
-  topFiles: StorageBusinessContributionTopFile[];
-}): StorageBusinessContributionAlert[] {
-  const alerts: StorageBusinessContributionAlert[] = [];
-  const current = params.history[0] ?? null;
-  const previous = params.history[1] ?? null;
-
-  const shareWarning = 25;
-  const shareCritical = 40;
-  const growthWarningPercent = 35;
-  const growthCriticalPercent = 75;
-  const accelerationWarningBytes = 3 * 1024 * 1024;
-  const accelerationCriticalBytes = 6 * 1024 * 1024;
-  const photoDominanceShare = 30;
-  const socleHeavyExportBytes = 4 * 1024 * 1024;
-
-  if (current && params.currentSharePercent >= shareCritical) {
-    pushAlert(alerts, {
-      id: buildAlertId(params.domainId, "quotaShare-critical", current.snapshotMonth),
-      domainId: params.domainId,
-      label: params.label,
-      title: "Part de quota critique",
-      message: `${params.label} consomme ${params.currentSharePercent.toFixed(1)}% du stockage métier.`,
-      severity: "critical",
-      signal: "quotaShare",
-      snapshotMonth: current.snapshotMonth,
-      currentBytes: params.currentBytes,
-      thresholdBytes: null,
-      currentSharePercent: params.currentSharePercent,
-      thresholdSharePercent: shareCritical,
-    });
-  } else if (current && params.currentSharePercent >= shareWarning) {
-    pushAlert(alerts, {
-      id: buildAlertId(params.domainId, "quotaShare-warning", current.snapshotMonth),
-      domainId: params.domainId,
-      label: params.label,
-      title: "Part de quota élevée",
-      message: `${params.label} représente ${params.currentSharePercent.toFixed(1)}% du stockage métier.`,
-      severity: "warning",
-      signal: "quotaShare",
-      snapshotMonth: current.snapshotMonth,
-      currentBytes: params.currentBytes,
-      thresholdBytes: null,
-      currentSharePercent: params.currentSharePercent,
-      thresholdSharePercent: shareWarning,
-    });
-  }
-
-  if (current && current.deltaPercent !== null) {
-    if (current.deltaPercent >= growthCriticalPercent) {
-      pushAlert(alerts, {
-        id: buildAlertId(params.domainId, "growth-critical", current.snapshotMonth),
-        domainId: params.domainId,
-        label: params.label,
-        title: "Croissance critique",
-        message: `${params.label} progresse de ${current.deltaPercent.toFixed(1)}% sur le dernier mois.`,
-        severity: "critical",
-        signal: "growth",
-        snapshotMonth: current.snapshotMonth,
-        currentBytes: params.currentBytes,
-        thresholdBytes: null,
-        currentSharePercent: params.currentSharePercent,
-        thresholdSharePercent: null,
-      });
-    } else if (current.deltaPercent >= growthWarningPercent) {
-      pushAlert(alerts, {
-        id: buildAlertId(params.domainId, "growth-warning", current.snapshotMonth),
-        domainId: params.domainId,
-        label: params.label,
-        title: "Croissance rapide",
-        message: `${params.label} progresse de ${current.deltaPercent.toFixed(1)}% sur le dernier mois.`,
-        severity: "warning",
-        signal: "growth",
-        snapshotMonth: current.snapshotMonth,
-        currentBytes: params.currentBytes,
-        thresholdBytes: null,
-        currentSharePercent: params.currentSharePercent,
-        thresholdSharePercent: null,
-      });
-    }
-  }
-
-  if (current && current.accelerationBytes >= accelerationCriticalBytes) {
-    pushAlert(alerts, {
-      id: buildAlertId(params.domainId, "acceleration-critical", current.snapshotMonth),
-      domainId: params.domainId,
-      label: params.label,
-      title: "Accélération anormale",
-      message: `${params.label} accélère fortement sur les derniers mois (+${formatStorageBytes(current.accelerationBytes)} de surcroît).`,
-      severity: "critical",
-      signal: "acceleration",
-      snapshotMonth: current.snapshotMonth,
-      currentBytes: params.currentBytes,
-      thresholdBytes: accelerationCriticalBytes,
-      currentSharePercent: params.currentSharePercent,
-      thresholdSharePercent: null,
-    });
-  } else if (current && current.accelerationBytes >= accelerationWarningBytes) {
-    pushAlert(alerts, {
-      id: buildAlertId(params.domainId, "acceleration-warning", current.snapshotMonth),
-      domainId: params.domainId,
-      label: params.label,
-      title: "Accélération à surveiller",
-      message: `${params.label} accélère sur les derniers mois (+${formatStorageBytes(current.accelerationBytes)} de surcroît).`,
-      severity: "warning",
-      signal: "acceleration",
-      snapshotMonth: current.snapshotMonth,
-      currentBytes: params.currentBytes,
-      thresholdBytes: accelerationWarningBytes,
-      currentSharePercent: params.currentSharePercent,
-      thresholdSharePercent: null,
-    });
-  }
-
-  if (params.domainId === "pieces_jointes_photo" && params.currentSharePercent >= photoDominanceShare) {
-    pushAlert(alerts, {
-      id: buildAlertId(params.domainId, "photo-dominance", current?.snapshotMonth ?? "current"),
-      domainId: params.domainId,
-      label: params.label,
-      title: "Les photos dominent",
-      message: `${params.label} représente ${params.currentSharePercent.toFixed(1)}% du stockage métier et domine la répartition.`,
-      severity: "warning",
-      signal: "photoDominance",
-      snapshotMonth: current?.snapshotMonth ?? "current",
-      currentBytes: params.currentBytes,
-      thresholdBytes: null,
-      currentSharePercent: params.currentSharePercent,
-      thresholdSharePercent: photoDominanceShare,
-    });
-  }
-
-  if (params.domainId === "socle_estimateur_impact") {
-    const topFile = params.topFiles[0] ?? null;
-    if (topFile && topFile.bytes >= socleHeavyExportBytes) {
-      pushAlert(alerts, {
-        id: buildAlertId(params.domainId, "heavy-exports", current?.snapshotMonth ?? "current"),
-        domainId: params.domainId,
-        label: params.label,
-        title: "Exports du socle trop lourds",
-        message: `Le plus gros export du socle atteint ${topFile.sizeLabel} et mérite une surveillance.`,
-        severity: "critical",
-        signal: "heavyExports",
-        snapshotMonth: current?.snapshotMonth ?? "current",
-        currentBytes: topFile.bytes,
-        thresholdBytes: socleHeavyExportBytes,
-        currentSharePercent: params.currentSharePercent,
-        thresholdSharePercent: null,
-      });
-    } else if (params.currentBytes >= socleHeavyExportBytes && current) {
-      pushAlert(alerts, {
-        id: buildAlertId(params.domainId, "heavy-exports-total", current.snapshotMonth),
-        domainId: params.domainId,
-        label: params.label,
-        title: "Exports du socle lourds",
-        message: `${params.label} pèse ${formatStorageBytes(params.currentBytes)} dans le quota métier.`,
-        severity: "warning",
-        signal: "heavyExports",
-        snapshotMonth: current.snapshotMonth,
-        currentBytes: params.currentBytes,
-        thresholdBytes: socleHeavyExportBytes,
-        currentSharePercent: params.currentSharePercent,
-        thresholdSharePercent: null,
-      });
-    }
-  }
-
-  if (
-    params.history.length >= 3 &&
-    current &&
-    previous &&
-    current.deltaBytes > 0 &&
-    previous.deltaBytes > 0 &&
-    current.deltaBytes > previous.deltaBytes * 1.5
-  ) {
-    pushAlert(alerts, {
-      id: buildAlertId(params.domainId, "anomaly", current.snapshotMonth),
-      domainId: params.domainId,
-      label: params.label,
-      title: "Accélération anormale détectée",
-      message: `${params.label} progresse plus vite que le mois précédent (${formatStorageBytes(previous.deltaBytes)} -> ${formatStorageBytes(current.deltaBytes)}).`,
-      severity: "warning",
-      signal: "acceleration",
-      snapshotMonth: current.snapshotMonth,
-      currentBytes: params.currentBytes,
-      thresholdBytes: null,
-      currentSharePercent: params.currentSharePercent,
-      thresholdSharePercent: null,
-    });
-  }
-
-  return alerts;
-}
-
 function getItemPriorityScore(item: {
   currentBytes: number;
   currentSharePercent: number;
@@ -590,9 +371,14 @@ function getItemPriorityScore(item: {
     return Math.max(max, severityRank * 10 + signalRank);
   }, 0);
 
-  const quotaPriority = item.currentSharePercent >= 40 ? 100 : 0;
+  const quotaPriority = item.currentSharePercent >= STORAGE_BUSINESS_CONTRIBUTION_POLICY.priorityQuotaCriticalPercent ? 100 : 0;
   const shareScore = Math.round(item.currentSharePercent * 2);
-  const growthScore = item.deltaBytes > 0 ? Math.min(40, Math.round(item.deltaBytes / 50_000)) : 0;
+  const growthScore = item.deltaBytes > 0
+    ? Math.min(
+        STORAGE_BUSINESS_CONTRIBUTION_POLICY.priorityGrowthCap,
+        Math.round(item.deltaBytes / STORAGE_BUSINESS_CONTRIBUTION_POLICY.priorityGrowthBytesPerPoint),
+      )
+    : 0;
 
   return quotaPriority + criticalAlertScore + shareScore + growthScore;
 }
@@ -625,7 +411,7 @@ export function buildStorageBusinessContributions(params: {
       const deltaBytes = currentBytes - previousBytes;
       const deltaCount = currentCount - previousCount;
       const history = computeTrendPointSeries(historySnapshots, domain.id);
-      const alerts = buildAlertsForDomain({
+       const alerts = buildStorageBusinessContributionAlerts({
         domainId: domain.id,
         label: domain.label,
         history,
@@ -677,8 +463,8 @@ export function buildStorageBusinessContributions(params: {
   const topPhotoItem = items.find((item) => item.id === "pieces_jointes_photo") ?? null;
   if (topPhotoItem && items[0]?.id === "pieces_jointes_photo") {
     const currentHistory = topPhotoItem.history[0] ?? null;
-    pushAlert(reportAlerts, {
-      id: buildAlertId("pieces_jointes_photo", "photo-dominance-global", currentHistory?.snapshotMonth ?? "current"),
+    pushStorageBusinessContributionAlert(reportAlerts, {
+      id: buildStorageBusinessContributionAlertId("pieces_jointes_photo", "photo-dominance-global", currentHistory?.snapshotMonth ?? "current"),
       domainId: "pieces_jointes_photo",
       label: topPhotoItem.label,
       title: "Les pièces jointes photo dominent",

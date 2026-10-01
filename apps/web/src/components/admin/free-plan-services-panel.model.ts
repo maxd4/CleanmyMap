@@ -25,9 +25,9 @@ import type { ServiceStatusInfo } from "@/lib/dashboard/status";
 export type ServicePressureRow = {
   key: string;
   label: string;
-  currentKgCo2eProxy: number;
-  previousKgCo2eProxy: number;
-  deltaKgCo2eProxy: number;
+  currentKgCo2eProxy: number | null;
+  previousKgCo2eProxy: number | null;
+  deltaKgCo2eProxy: number | null;
   confidencePercent: number;
 };
 
@@ -172,7 +172,10 @@ function getEstimateLabel(
   }
 }
 
-export function getRiskTone(score: number): string {
+export function getRiskTone(score: number | null): string {
+  if (score === null) {
+    return "border-white/10 bg-white/5 text-white/60";
+  }
   if (score >= 80) {
     return "border-rose-500/20 bg-rose-500/10 text-rose-100";
   }
@@ -209,16 +212,16 @@ export function countMetricsBySource(
 function getSnapshotServiceCharge(
   snapshot: EnvironmentalImpactSnapshotRecord | null | undefined,
   serviceKey: EnvironmentalImpactInfrastructureServiceKey,
-): number {
+): number | null {
   if (!snapshot) {
-    return 0;
+    return null;
   }
 
   const service = snapshot.model.infrastructure.services.find(
     (item) => item.key === serviceKey,
   );
 
-  return service?.monthlyKgCo2eProxy ?? 0;
+  return service?.monthlyKgCo2eProxy ?? null;
 }
 
 function formatGeneratedAt(value: string | null): string {
@@ -246,13 +249,16 @@ function buildServicePressureRows(
 ): ServicePressureRow[] {
   return sortedServices.map((service) => {
     const previousKgCo2eProxy = getSnapshotServiceCharge(previousSnapshot, service.key);
-    const currentKgCo2eProxy = service.monthlyKgCo2eProxy ?? 0;
+    const currentKgCo2eProxy = service.monthlyKgCo2eProxy;
     return {
       key: service.key,
       label: service.label,
       currentKgCo2eProxy,
       previousKgCo2eProxy,
-      deltaKgCo2eProxy: currentKgCo2eProxy - previousKgCo2eProxy,
+      deltaKgCo2eProxy:
+        currentKgCo2eProxy === null || previousKgCo2eProxy === null
+          ? null
+          : currentKgCo2eProxy - previousKgCo2eProxy,
       confidencePercent: service.confidencePercent,
     };
   });
@@ -297,7 +303,9 @@ function buildRiskCards(
         deltaLabel:
           previousSnapshot === null
             ? "NA"
-            : `${row.deltaKgCo2eProxy > 0 ? "+" : ""}${formatNumber(row.deltaKgCo2eProxy, 2)} kg`,
+            : row.deltaKgCo2eProxy === null
+              ? "NA"
+              : `${row.deltaKgCo2eProxy > 0 ? "+" : ""}${formatNumber(row.deltaKgCo2eProxy, 2)} kg`,
         estimateTone: getEstimateTone(service.status),
         estimateLabel: getEstimateLabel(service.status),
       },
@@ -342,7 +350,7 @@ export function buildFreePlanServicesPanelModel({
   const servicePressureRows = buildServicePressureRows(sortedServices, previousSnapshot);
   const servicePressureGrowth = servicePressureRows
     .slice()
-    .sort((left, right) => right.deltaKgCo2eProxy - left.deltaKgCo2eProxy);
+    .sort((left, right) => (right.deltaKgCo2eProxy ?? -Infinity) - (left.deltaKgCo2eProxy ?? -Infinity));
   const servicePressureLeader = servicePressureRows[0] ?? null;
   const totalMonthlyPressure = sortedServices.reduce(
     (acc, service) => acc + (service.monthlyKgCo2eProxy ?? 0),
@@ -361,7 +369,7 @@ export function buildFreePlanServicesPanelModel({
       acc[row.band] += 1;
       return acc;
     },
-    { faible: 0, surveiller: 0, alerte: 0, critique: 0 },
+    { faible: 0, surveiller: 0, alerte: 0, critique: 0, NA: 0 },
   );
 
   return {

@@ -79,6 +79,48 @@ describe("storage business contributions", () => {
 
     expectStorageBusinessContributionReport(report);
   });
+
+  it("does not turn an unknown object size into a measured zero", () => {
+    const objects = [
+      ...currentObjects,
+      {
+        bucket_id: "chat-attachments",
+        name: "dm/size-unavailable.pdf",
+        metadata: { mimetype: "application/pdf" },
+      },
+    ];
+    const current = buildStorageUsageSnapshot(objects, quotaInfo, "2026-05-20T12:00:00.000Z");
+    const report = buildStorageBusinessContributions({
+      objects,
+      currentSnapshot: current,
+      previousSnapshot: null,
+    });
+    const documentItem = report.items.find((item) => item.id === "pieces_jointes_document");
+    const pdfSubtype = documentItem?.mimeSubtypes.find((item) => item.key === "application/pdf");
+
+    expect(documentItem?.topFiles.some((file) => file.name.includes("size-unavailable"))).toBe(false);
+    expect(pdfSubtype).toMatchObject({ count: 2, knownSizeCount: 1, bytes: 3_000 });
+  });
+
+  it.each([
+    [24.9, false],
+    [25, true],
+    [25.1, true],
+  ])("applies the quota-share warning boundary at %s%%", (sharePercent, expectedAlert) => {
+    const snapshot = {
+      ...buildStorageUsageSnapshot([], quotaInfo, "2026-05-20T12:00:00.000Z"),
+      businessBreakdown: [
+        { key: "actions_terrain", label: "Actions terrain", bytes: 1, count: 1, sharePercent, averageBytes: 1 },
+      ],
+    };
+    const report = buildStorageBusinessContributions({
+      objects: [],
+      currentSnapshot: snapshot,
+      previousSnapshot: null,
+    });
+
+    expect(report.alerts.some((alert) => alert.signal === "quotaShare")).toBe(expectedAlert);
+  });
 });
 
 function expectStorageBusinessContributionReport(

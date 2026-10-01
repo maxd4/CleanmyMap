@@ -1,5 +1,6 @@
 import { extractEventRefFromNotes } from "../actions/event-link";
 import type { ActionListItem } from "../actions/types";
+import { parseCivilDateAsUtc } from "../time/civil-date";
 
 export function toFinite(value: unknown, fallback = 0): number {
   const parsed = Number(value);
@@ -18,8 +19,7 @@ export function percent(numerator: number, denominator: number): number | null {
 }
 
 export function parseEventDateMs(eventDate: string): number | null {
-  const ms = new Date(`${eventDate}T12:00:00`).getTime();
-  return Number.isFinite(ms) ? ms : null;
+  return parseCivilDateAsUtc(eventDate)?.getTime() ?? null;
 }
 
 export function extractArea(label: string): string {

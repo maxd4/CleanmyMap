@@ -3,10 +3,11 @@ import type {
   EnvironmentalImpactInfrastructureServiceEstimate,
   EnvironmentalImpactInfrastructureServiceKey,
 } from "./types";
+import { SERVICE_RISK_POLICY } from "./service-risk-policy";
 export { buildServiceThresholdAlerts } from "./service-risk-alerts";
 export type { ServiceThresholdAlert } from "./service-risk-alerts";
 
-export type ServiceRiskBand = "faible" | "surveiller" | "alerte" | "critique";
+export type ServiceRiskBand = "faible" | "surveiller" | "alerte" | "critique" | "NA";
 
 export type ServiceQuotaState = "ok" | "attention" | "proche limite" | "dépassé" | "NA";
 
@@ -30,26 +31,27 @@ export type ServiceQuotaSummary = {
 };
 
 type ServiceRiskDriverBreakdown = {
-  quotaConsumedPercent: number;
-  growthPercent: number;
-  confidencePressurePercent: number;
-  criticalityPercent: number;
-  thresholdProximityPercent: number;
+  quotaConsumedPercent: number | null;
+  growthPercent: number | null;
+  confidencePressurePercent: number | null;
+  criticalityPercent: number | null;
+  thresholdProximityPercent: number | null;
 };
 
 export type ServiceRiskRow = {
   key: EnvironmentalImpactInfrastructureServiceKey;
   label: string;
-  score: number;
+  score: number | null;
+  scoreCoverage: "complete" | "partial";
   band: ServiceRiskBand;
-  currentKgCo2eProxy: number;
-  previousKgCo2eProxy: number;
-  deltaKgCo2eProxy: number;
-  quotaConsumedPercent: number;
-  growthPercent: number;
-  confidencePressurePercent: number;
-  criticalityPercent: number;
-  thresholdProximityPercent: number;
+  currentKgCo2eProxy: number | null;
+  previousKgCo2eProxy: number | null;
+  deltaKgCo2eProxy: number | null;
+  quotaConsumedPercent: number | null;
+  growthPercent: number | null;
+  confidencePressurePercent: number | null;
+  criticalityPercent: number | null;
+  thresholdProximityPercent: number | null;
   driverBreakdown: ServiceRiskDriverBreakdown;
 };
 
@@ -78,23 +80,6 @@ export function isDevelopmentAiServiceKey(
   return DEVELOPMENT_AI_SERVICE_KEYS.has(serviceKey);
 }
 
-const SERVICE_CRITICALITY_BY_KEY: Partial<
-  Record<EnvironmentalImpactInfrastructureServiceKey, number>
-> = {
-  supabase: 100,
-  vercel: 95,
-  clerk: 90,
-  resend: 72,
-  stripe: 70,
-  upstash: 66,
-  sentry: 62,
-  posthog: 58,
-  pinecone: 56,
-  chatgpt: 54,
-  codex: 64,
-  lwsDomain: 40,
-};
-
 function round(value: number): number {
   return Math.round(value);
 }
@@ -103,16 +88,23 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function weightedScoreComponent(value: number | null, weight: number): number {
+  // The score is a partial weighted sum when no prior snapshot exists. This
+  // neutral contribution is distinct from a measured zero and is exposed by
+  // scoreCoverage.
+  return value === null ? 0 : value * weight;
+}
+
 function getRiskBand(score: number): ServiceRiskBand {
-  if (score >= 80) {
+  if (score >= SERVICE_RISK_POLICY.scoreBands.critique) {
     return "critique";
   }
 
-  if (score >= 60) {
+  if (score >= SERVICE_RISK_POLICY.scoreBands.alerte) {
     return "alerte";
   }
 
-  if (score >= 30) {
+  if (score >= SERVICE_RISK_POLICY.scoreBands.surveiller) {
     return "surveiller";
   }
 
@@ -124,15 +116,15 @@ function getServiceQuotaState(consumedPercent: number | null): ServiceQuotaState
     return "NA";
   }
 
-  if (consumedPercent >= 100) {
+  if (consumedPercent >= SERVICE_RISK_POLICY.quotaStates.depasse) {
     return "dépassé";
   }
 
-  if (consumedPercent >= 90) {
+  if (consumedPercent >= SERVICE_RISK_POLICY.quotaStates.procheLimite) {
     return "proche limite";
   }
 
-  if (consumedPercent >= 70) {
+  if (consumedPercent >= SERVICE_RISK_POLICY.quotaStates.attention) {
     return "attention";
   }
 
@@ -269,7 +261,7 @@ export function buildPortfolioQuotaSummary(
 function getServiceCriticalityPercent(
   serviceKey: EnvironmentalImpactInfrastructureServiceKey,
 ): number {
-  return SERVICE_CRITICALITY_BY_KEY[serviceKey] ?? 50;
+  return SERVICE_RISK_POLICY.criticalityPercentByService[serviceKey];
 }
 
 function getThresholdProximityPercent(
@@ -296,14 +288,13 @@ function getThresholdProximityPercent(
 }
 
 function getGrowthPercent(
-  currentKgCo2eProxy: number,
+  currentKgCo2eProxy: number | null,
   previousKgCo2eProxy: number | null | undefined,
-): number {
-  if (currentKgCo2eProxy <= 0) {
-    return 0;
+): number | null {
+  if (currentKgCo2eProxy === null || previousKgCo2eProxy === null || previousKgCo2eProxy === undefined) {
+    return null;
   }
-
-  if (previousKgCo2eProxy === null || previousKgCo2eProxy === undefined) {
+  if (currentKgCo2eProxy <= 0) {
     return 0;
   }
 
@@ -324,7 +315,7 @@ function computeServiceRiskScore(params: {
   service: ServiceRiskSource;
   previousKgCo2eProxy?: number | null;
 }): ServiceRiskRow {
-  const currentKgCo2eProxy = params.service.monthlyKgCo2eProxy ?? 0;
+  const currentKgCo2eProxy = params.service.monthlyKgCo2eProxy;
   const previousKgCo2eProxy = params.previousKgCo2eProxy ?? null;
   const quotaConsumedPercent = round(clamp(params.service.sharePercent, 0, 100));
   const growthPercent = getGrowthPercent(currentKgCo2eProxy, previousKgCo2eProxy);
@@ -335,24 +326,30 @@ function computeServiceRiskScore(params: {
     params.service.metricEstimates,
   );
 
-  const score = clamp(
-    quotaConsumedPercent * 0.24 +
-      growthPercent * 0.22 +
-      confidencePressurePercent * 0.16 +
-      criticalityPercent * 0.18 +
-      thresholdProximityPercent * 0.2,
-    0,
-    100,
-  );
+  const score = currentKgCo2eProxy === null
+    ? null
+    : clamp(
+        weightedScoreComponent(quotaConsumedPercent, SERVICE_RISK_POLICY.scoreWeights.quotaConsumed) +
+          weightedScoreComponent(growthPercent, SERVICE_RISK_POLICY.scoreWeights.growth) +
+          weightedScoreComponent(confidencePressurePercent, SERVICE_RISK_POLICY.scoreWeights.confidencePressure) +
+          weightedScoreComponent(criticalityPercent, SERVICE_RISK_POLICY.scoreWeights.criticality) +
+          weightedScoreComponent(thresholdProximityPercent, SERVICE_RISK_POLICY.scoreWeights.thresholdProximity),
+        0,
+        100,
+      );
 
   return {
     key: params.service.key,
     label: params.service.label,
-    score: round(score),
-    band: getRiskBand(score),
+    score: score === null ? null : round(score),
+    scoreCoverage: score === null || growthPercent === null ? "partial" : "complete",
+    band: score === null ? "NA" : getRiskBand(score),
     currentKgCo2eProxy,
-    previousKgCo2eProxy: previousKgCo2eProxy ?? 0,
-    deltaKgCo2eProxy: round(currentKgCo2eProxy - (previousKgCo2eProxy ?? 0)),
+    previousKgCo2eProxy,
+    deltaKgCo2eProxy:
+      currentKgCo2eProxy === null || previousKgCo2eProxy === null
+        ? null
+        : round(currentKgCo2eProxy - previousKgCo2eProxy),
     quotaConsumedPercent,
     growthPercent,
     confidencePressurePercent,
@@ -373,7 +370,7 @@ export function buildServiceRiskRows(
   previousServices: ServiceRiskPreviousSource[] | null | undefined = null,
 ): ServiceRiskRow[] {
   const previousByKey = new Map(
-    (previousServices ?? []).map((service) => [service.key, service.monthlyKgCo2eProxy ?? 0] as const),
+    (previousServices ?? []).map((service) => [service.key, service.monthlyKgCo2eProxy] as const),
   );
 
   return services
@@ -385,11 +382,11 @@ export function buildServiceRiskRows(
     )
     .sort((left, right) => {
       if (right.score !== left.score) {
-        return right.score - left.score;
+        return (right.score ?? -1) - (left.score ?? -1);
       }
 
       if (right.currentKgCo2eProxy !== left.currentKgCo2eProxy) {
-        return right.currentKgCo2eProxy - left.currentKgCo2eProxy;
+        return (right.currentKgCo2eProxy ?? -1) - (left.currentKgCo2eProxy ?? -1);
       }
 
       return left.label.localeCompare(right.label, "fr");
@@ -404,6 +401,8 @@ export function formatServiceRiskBandLabel(band: ServiceRiskBand): string {
       return "alerte";
     case "surveiller":
       return "surveiller";
+    case "NA":
+      return "NA";
     default:
       return "faible";
   }
