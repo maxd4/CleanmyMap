@@ -13,7 +13,6 @@ const rawH1Allowlist = new Map([
   ["apps/web/src/app/sign-in/[[...sign-in]]/page.tsx", "Clerk auth branding"],
   ["apps/web/src/app/sign-up/[[...sign-up]]/page.tsx", "Clerk auth branding"],
   ["apps/web/src/components/account/account-setup-form.tsx", "onboarding form step"],
-  ["apps/web/src/components/account/user-location-onboarding-form.tsx", "onboarding form step"],
   ["apps/web/src/components/actions/action-declaration-entry-flow.tsx", "declaration flow state"],
   ["apps/web/src/components/actions/action-declaration/before/form.tsx", "declaration sub-form"],
   ["apps/web/src/components/profil/impact-profile-page.tsx", "internal impact label"],

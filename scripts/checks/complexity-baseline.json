@@ -276,15 +276,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/account/user-location-onboarding-form.tsx",
-      "line": 37,
-      "category": "React/JSX",
-      "ceiling": 22,
-      "status": "LEGACY",
-      "functionIdentity": "named:UserLocationOnboardingForm#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/actions/action-declaration/before/form.tsx",
       "line": 30,
       "category": "React/JSX",
@@ -831,15 +822,6 @@
       "ceiling": 32,
       "status": "LEGACY",
       "functionIdentity": "named:EnvironmentalImpactCurveChart#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/gamification/CleanZonesBadge.tsx",
-      "line": 18,
-      "category": "React/JSX",
-      "ceiling": 25,
-      "status": "LEGACY",
-      "functionIdentity": "named:CleanZonesBadge#1"
     },
     {
       "metric": "complexity",
@@ -2967,15 +2949,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/account/user-location-onboarding-form.tsx",
-      "line": 37,
-      "category": "React/JSX",
-      "ceiling": 213,
-      "status": "LEGACY",
-      "functionIdentity": "named:UserLocationOnboardingForm#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/accueil/accueil-community-credibility.tsx",
       "line": 283,
       "category": "React/JSX",
@@ -3423,15 +3396,6 @@
       "ceiling": 323,
       "status": "LEGACY",
       "functionIdentity": "named:FreePlanServicesVisual#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/admin/partner-onboarding-requests-panel.tsx",
-      "line": 31,
-      "category": "React/JSX",
-      "ceiling": 195,
-      "status": "LEGACY",
-      "functionIdentity": "named:PartnerOnboardingRequestsPanel#1"
     },
     {
       "metric": "functionLength",
@@ -3999,15 +3963,6 @@
       "ceiling": 305,
       "status": "LEGACY",
       "functionIdentity": "named:useAdminWorkflow#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/reports/reports-kpi-summary.tsx",
-      "line": 29,
-      "category": "React/JSX",
-      "ceiling": 165,
-      "status": "LEGACY",
-      "functionIdentity": "named:ReportsKpiSummary#1"
     },
     {
       "metric": "functionLength",

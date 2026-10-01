@@ -26,7 +26,7 @@ les migrations suivies sous `apps/web/supabase/migrations/` et ne les modifient
 pas.
 
 Les clients et le runtime restent à la racine de cette arborescence
-(`client.ts`, `server.ts`, `clerk-rls.ts`, `mirror.ts`). Les tests de runtime,
+(`client.ts`, `server.ts`, `clerk-rls.ts`). Les tests de runtime,
 de permissions, de RLS ou d'advisors qui ne sont pas strictement des contrats
 de migration restent également à ce niveau.
 
