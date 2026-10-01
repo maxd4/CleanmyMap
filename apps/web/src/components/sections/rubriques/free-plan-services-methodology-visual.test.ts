@@ -545,6 +545,7 @@ describe("FreePlanServicesMethodologyVisual", () => {
     expect(markup).toContain("2 adresses e-mails pro");
     expect(markup).toContain("10 000 e-mails stockés par boîte");
     expect(markup).toContain("Pièce jointe jusqu’à 25 Mo");
+    expect(markup).toContain("couverture partielle");
     expect(markup).not.toContain("GPT-5.4 mini — développement du site");
     expect(markup).not.toContain("Croissance mensuelle");
     expect(markup).not.toContain("Delta vs N-1");
@@ -564,5 +565,6 @@ describe("FreePlanServicesMethodologyVisual", () => {
     expect(markup).toContain("Historique insuffisant");
     expect(markup).toContain("Réinitialisation du cycle le 25 de chaque mois");
     expect(markup).toContain("Taille base de données: 0,5 GB");
+    expect(markup).toContain("NA (aucune mesure connue");
   });
 });

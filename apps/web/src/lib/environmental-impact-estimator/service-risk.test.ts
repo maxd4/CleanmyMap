@@ -2,6 +2,42 @@ import { describe, expect, it } from "vitest";
 import { buildServiceQuotaSummary, buildServiceRiskRows, buildServiceThresholdAlerts, formatServiceQuotaStateLabel } from "./service-risk";
 import { thresholdAlertCurrentServices, thresholdAlertSnapshots, quotaSummaryMetricEstimates } from "./service-risk.fixtures";
 
+function buildSupabaseThresholdAlerts(params: {
+  currentMonthly: number;
+  previousMonthly: number;
+  olderMonthly?: number;
+}) {
+  const snapshots = [
+    {
+      snapshotDate: "2026-04-20",
+      generatedAt: "2026-04-20T12:00:00.000Z",
+      model: { infrastructure: { services: [{ key: "supabase", label: "Supabase", monthlyKgCo2eProxy: params.previousMonthly }] } },
+    },
+  ];
+  if (params.olderMonthly !== undefined) {
+    snapshots.push({
+      snapshotDate: "2026-03-20",
+      generatedAt: "2026-03-20T12:00:00.000Z",
+      model: { infrastructure: { services: [{ key: "supabase", label: "Supabase", monthlyKgCo2eProxy: params.olderMonthly }] } },
+    });
+  }
+
+  return buildServiceThresholdAlerts({
+    currentGeneratedAt: "2026-05-20T12:00:00.000Z",
+    currentServices: [
+      {
+        key: "supabase",
+        label: "Supabase",
+        monthlyKgCo2eProxy: params.currentMonthly,
+        sharePercent: 10,
+        confidencePercent: 90,
+        metricEstimates: [],
+      },
+    ],
+    snapshots: snapshots as never,
+  });
+}
+
 describe("buildServiceThresholdAlerts", () => {
   it("detects quota, growth and trend threshold breaches with actionable metadata", () => {
     const generatedAt = "2026-05-20T12:00:00.000Z";
@@ -21,7 +57,7 @@ describe("buildServiceThresholdAlerts", () => {
       serviceLabel: "Supabase",
       severity: "critical",
       signal: "quotaShare",
-      thresholdLabel: "usage > 70 % du quota alloué à la catégorie",
+      thresholdLabel: "usage ≥ 70 % du quota alloué à la catégorie",
       sinceLabel: "mai 2026",
     });
 
@@ -29,7 +65,7 @@ describe("buildServiceThresholdAlerts", () => {
       serviceLabel: "Vercel",
       severity: "critical",
       signal: "growth",
-      thresholdLabel: "croissance > +15 % sur un mois",
+      thresholdLabel: "croissance ≥ +15 % sur un mois",
       sinceLabel: "mai 2026",
     });
 
@@ -37,7 +73,7 @@ describe("buildServiceThresholdAlerts", () => {
       serviceLabel: "Resend",
       severity: "warning",
       signal: "trend",
-      thresholdLabel: "croissance > +10 % sur deux mois d'affilée",
+      thresholdLabel: "croissance ≥ +10 % sur deux mois d'affilée",
       sinceLabel: "avril 2026",
     });
 
@@ -132,5 +168,39 @@ describe("service risk policy boundaries", () => {
     });
 
     expect(alerts.some((alert) => alert.signal === "quotaShare")).toBe(expectedAlert);
+    if (sharePercent === 70) {
+      expect(alerts.find((alert) => alert.signal === "quotaShare")?.details).toContain(
+        "au niveau du seuil",
+      );
+    }
+  });
+
+  it.each([
+    [2.28, false],
+    [2.3, true],
+    [2.32, true],
+  ])("applies the monthly growth threshold below/equal/above at %s kg", (currentMonthly, expectedAlert) => {
+    const alerts = buildSupabaseThresholdAlerts({ currentMonthly, previousMonthly: 2 });
+
+    expect(alerts.some((alert) => alert.signal === "growth")).toBe(expectedAlert);
+    if (currentMonthly === 2.3) {
+      expect(alerts.find((alert) => alert.signal === "growth")?.details).toContain(
+        "au niveau du seuil",
+      );
+    }
+  });
+
+  it.each([
+    [2.18, 2 / 1.1, false],
+    [2.2, 2 / 1.1, true],
+    [2.22, 2 / 1.11, true],
+  ])("applies the two-month trend threshold below/equal/above", (currentMonthly, olderMonthly, expectedAlert) => {
+    const alerts = buildSupabaseThresholdAlerts({
+      currentMonthly,
+      previousMonthly: 2,
+      olderMonthly,
+    });
+
+    expect(alerts.some((alert) => alert.signal === "trend")).toBe(expectedAlert);
   });
 });

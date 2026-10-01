@@ -31,6 +31,12 @@ export type ServicePressureRow = {
   confidencePercent: number;
 };
 
+type MeasurementCoverage = {
+  knownServices: number;
+  totalServices: number;
+  status: "complete" | "partial" | "none";
+};
+
 export type FreePlanServicesPanelRiskCard = {
   row: ServiceRiskRow;
   service: EnvironmentalImpactInfrastructureServiceEstimate;
@@ -77,7 +83,8 @@ export type FreePlanServicesPanelModel = {
   inputMetricsLabel: string;
   trackedServicesLabel: string;
   snapshotLabel: string;
-  totalMonthlyPressure: number;
+  totalMonthlyPressure: number | null;
+  totalMonthlyPressureCoverage: MeasurementCoverage;
   reportMonth: string;
   methodologyLinks: ReturnType<typeof buildGovernanceMethodologyLinks>;
   serviceRiskRows: ServiceRiskRow[];
@@ -338,10 +345,10 @@ export function buildFreePlanServicesPanelModel({
   const derivedMetrics = countMetricsBySource(quotaServices, "derived");
   const referenceMetrics = countMetricsBySource(quotaServices, "reference");
   const sortedServices = quotaServices.slice().sort((left, right) => {
-    const byCharge =
-      (right.monthlyKgCo2eProxy ?? 0) - (left.monthlyKgCo2eProxy ?? 0);
-    if (byCharge !== 0) {
-      return byCharge;
+    const leftCharge = left.monthlyKgCo2eProxy ?? 0;
+    const rightCharge = right.monthlyKgCo2eProxy ?? 0;
+    if (rightCharge !== leftCharge) {
+      return rightCharge - leftCharge;
     }
 
     return left.label.localeCompare(right.label);
@@ -351,11 +358,28 @@ export function buildFreePlanServicesPanelModel({
   const servicePressureGrowth = servicePressureRows
     .slice()
     .sort((left, right) => (right.deltaKgCo2eProxy ?? -Infinity) - (left.deltaKgCo2eProxy ?? -Infinity));
-  const servicePressureLeader = servicePressureRows[0] ?? null;
-  const totalMonthlyPressure = sortedServices.reduce(
-    (acc, service) => acc + (service.monthlyKgCo2eProxy ?? 0),
-    0,
+  const servicePressureLeader =
+    servicePressureRows.find((row) => row.currentKgCo2eProxy !== null) ?? null;
+  const knownMonthlyServices = sortedServices.filter(
+    (service) => service.monthlyKgCo2eProxy !== null,
   );
+  const totalMonthlyPressure =
+    knownMonthlyServices.length === 0
+      ? null
+      : knownMonthlyServices.reduce(
+          (acc, service) => acc + (service.monthlyKgCo2eProxy as number),
+          0,
+        );
+  const totalMonthlyPressureCoverage: MeasurementCoverage = {
+    knownServices: knownMonthlyServices.length,
+    totalServices: sortedServices.length,
+    status:
+      knownMonthlyServices.length === 0
+        ? "none"
+        : knownMonthlyServices.length === sortedServices.length
+          ? "complete"
+          : "partial",
+  };
   const reportMonth = toReportMonth(generatedAt);
   const serviceRiskRows = buildServiceRiskRows(quotaServices, previousServices);
   const serviceThresholdAlerts = buildServiceThresholdAlerts({
@@ -396,6 +420,7 @@ export function buildFreePlanServicesPanelModel({
     trackedServicesLabel: trackedServices === 1 ? "service actif" : "services actifs",
     snapshotLabel: snapshotCount === 1 ? "snapshot conservé" : "snapshots conservés",
     totalMonthlyPressure,
+    totalMonthlyPressureCoverage,
     reportMonth,
     methodologyLinks: buildGovernanceMethodologyLinks(reportMonth),
     serviceRiskRows,

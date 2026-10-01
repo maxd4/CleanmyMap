@@ -63,8 +63,8 @@ function buildService(
     sourceNote: overrides.sourceNote ?? `${overrides.label} source note`,
     basis: overrides.basis ?? "monthly",
     status: overrides.status ?? "ready",
-    monthlyKgCo2eProxy: overrides.monthlyKgCo2eProxy ?? 0,
-    annualKgCo2eProxy: overrides.annualKgCo2eProxy ?? 0,
+    monthlyKgCo2eProxy: overrides.monthlyKgCo2eProxy === undefined ? 0 : overrides.monthlyKgCo2eProxy,
+    annualKgCo2eProxy: overrides.annualKgCo2eProxy === undefined ? 0 : overrides.annualKgCo2eProxy,
     sharePercent: overrides.sharePercent ?? 0,
     confidencePercent: overrides.confidencePercent ?? 0,
     uncertaintyPercent: overrides.uncertaintyPercent ?? 0,
@@ -286,5 +286,47 @@ describe("free-plan-services visual", () => {
     expect(markup).toContain("NA");
     expect(markup).toContain("Delta vs N-1");
     expect(markup).toContain("Croissance mensuelle");
+  });
+
+  it("exposes partial and empty monthly coverage instead of turning unknown services into zero", () => {
+    const partialState = buildFreePlanDashboardState({
+      services: [
+        services[0],
+        buildService({
+          key: "supabase",
+          label: "Supabase",
+          monthlyKgCo2eProxy: null,
+          annualKgCo2eProxy: null,
+        }),
+      ],
+      previousServices: [
+        buildService({ key: "vercel", label: "Vercel", monthlyKgCo2eProxy: 0.8 }),
+        buildService({ key: "supabase", label: "Supabase", monthlyKgCo2eProxy: null }),
+      ],
+      serviceHealth,
+      selectedKey: "total",
+    });
+
+    expect(partialState.totalMonthlyKgCo2eProxy).toBe(1.2);
+    expect(partialState.totalMonthlyCoverage).toEqual({
+      knownServices: 1,
+      totalServices: 2,
+      status: "partial",
+    });
+    expect(partialState.totalDeltaKgCo2eProxy).toBeNull();
+    expect(partialState.impactCards[0]?.hint).toContain("total partiel");
+
+    const unknownState = buildFreePlanDashboardState({
+      services: [
+        buildService({ key: "vercel", label: "Vercel", monthlyKgCo2eProxy: null }),
+      ],
+      previousServices: [],
+      serviceHealth,
+      selectedKey: "total",
+    });
+
+    expect(unknownState.totalMonthlyKgCo2eProxy).toBeNull();
+    expect(unknownState.totalMonthlyCoverage.status).toBe("none");
+    expect(unknownState.impactCards[0]?.value).toBeNull();
   });
 });

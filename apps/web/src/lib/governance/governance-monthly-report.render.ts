@@ -14,7 +14,11 @@ import type {
   GovernanceMonthlyReportRecord,
 } from "./governance-monthly-report-store";
 
-function formatDelta(value: number): string {
+function formatDelta(value: number | null): string {
+  if (value === null) {
+    return "—";
+  }
+
   const sign = value > 0 ? "+" : "";
   return `${sign}${formatNumber(value, 2)} kg`;
 }

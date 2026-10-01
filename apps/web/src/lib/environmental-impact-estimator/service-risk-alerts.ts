@@ -156,8 +156,11 @@ function buildQuotaAlert(service: ServiceRiskSource, current: QuotaPoint): Servi
     severity: "critical",
     signal: "quotaShare",
     title: "Quota de catégorie dépassé",
-    thresholdLabel: `usage > ${SERVICE_RISK_POLICY.alerts.quotaShare} % du quota alloué à la catégorie`,
-    details: `${formatPercentValue(current.sharePercent)} % consommés, soit +${formatPercentValue(overage)} points au-dessus du seuil.`,
+    thresholdLabel: `usage ≥ ${SERVICE_RISK_POLICY.alerts.quotaShare} % du quota alloué à la catégorie`,
+    details:
+      overage === 0
+        ? `${formatPercentValue(current.sharePercent)} % consommés, au niveau du seuil.`
+        : `${formatPercentValue(current.sharePercent)} % consommés, soit +${formatPercentValue(overage)} points au-dessus du seuil.`,
     sinceLabel: current.monthLabel,
     recommendedAction: getRecommendedAction("quotaShare"),
   };
@@ -172,8 +175,11 @@ function buildGrowthAlert(service: ServiceRiskSource, current: QuotaPoint, curre
     severity: "critical",
     signal: "growth",
     title: "Croissance mensuelle excessive",
-    thresholdLabel: `croissance > +${SERVICE_RISK_POLICY.alerts.growth} % sur un mois`,
-    details: `Croissance de +${formatPercentValue(currentGrowth)} % ce mois-ci, soit +${formatPercentValue(overage)} points au-dessus du seuil.`,
+    thresholdLabel: `croissance ≥ +${SERVICE_RISK_POLICY.alerts.growth} % sur un mois`,
+    details:
+      overage === 0
+        ? `Croissance de +${formatPercentValue(currentGrowth)} % ce mois-ci, au niveau du seuil.`
+        : `Croissance de +${formatPercentValue(currentGrowth)} % ce mois-ci, soit +${formatPercentValue(overage)} points au-dessus du seuil.`,
     sinceLabel: current.monthLabel,
     recommendedAction: getRecommendedAction("growth"),
   };
@@ -193,7 +199,7 @@ function buildTrendAlert(
     severity: "warning",
     signal: "trend",
     title: "Pente forte sur 2 mois",
-    thresholdLabel: `croissance > +${SERVICE_RISK_POLICY.alerts.trend} % sur deux mois d'affilée`,
+    thresholdLabel: `croissance ≥ +${SERVICE_RISK_POLICY.alerts.trend} % sur deux mois d'affilée`,
     details: `Croissance de +${formatPercentValue(currentGrowth)} % ce mois-ci et +${formatPercentValue(previousGrowth)} % le mois précédent.`,
     sinceLabel,
     recommendedAction: getRecommendedAction("trend"),

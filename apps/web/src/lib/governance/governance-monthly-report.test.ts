@@ -105,8 +105,102 @@ it("builds a readable monthly report payload", () => {
       [],
     );
 
-    expect(highRiskReport.summary[1]).toContain("Service le plus exposé: Supabase");
+    expect(highRiskReport.summary[1]).toContain("Service le plus exposé: Vercel");
     expect(highRiskReport.summary[4]).toContain("Bandeau rouge de gouvernance");
     expect(lines.join("\n")).toContain("!! Bandeau rouge de gouvernance");
     expect(lines.join("\n")).toContain("Exports du socle trop lourds");
-});
+  });
+
+  it("keeps unknown measures distinct from an observed zero and only computes complete deltas", () => {
+    const currentServices = highRiskEnvironmentalImpact.model.infrastructure.services.map((service, index) =>
+      index === 0
+        ? { ...service, monthlyKgCo2eProxy: null }
+        : { ...service, monthlyKgCo2eProxy: 0 },
+    );
+    const previousServices = highRiskEnvironmentalImpact.snapshots[1].model.infrastructure.services.map(
+      (service, index) =>
+        index === 0 ? { ...service, monthlyKgCo2eProxy: null } : { ...service, monthlyKgCo2eProxy: 0 },
+    );
+    const environmentalImpact = {
+      ...highRiskEnvironmentalImpact,
+      model: {
+        ...highRiskEnvironmentalImpact.model,
+        infrastructure: {
+          ...highRiskEnvironmentalImpact.model.infrastructure,
+          services: currentServices,
+        },
+      },
+      snapshots: [
+        highRiskEnvironmentalImpact.snapshots[0],
+        {
+          ...highRiskEnvironmentalImpact.snapshots[1],
+          model: {
+            ...highRiskEnvironmentalImpact.snapshots[1].model,
+            infrastructure: {
+              ...highRiskEnvironmentalImpact.snapshots[1].model.infrastructure,
+              services: previousServices,
+            },
+          },
+        },
+      ],
+    } as typeof highRiskEnvironmentalImpact;
+
+    const payload = buildGovernanceMonthlyReportPayload({
+      generatedAt: "2026-05-20T12:00:00.000Z",
+      environmentalImpact,
+      storageUsage: highRiskStorageUsage,
+    });
+
+    expect(payload.impact.serviceBreakdown.find((service) => service.key === "supabase")).toMatchObject({
+      currentKgCo2eProxy: null,
+      previousKgCo2eProxy: null,
+      deltaKgCo2eProxy: null,
+    });
+    expect(payload.impact.serviceBreakdown.find((service) => service.key === "vercel")).toMatchObject({
+      currentKgCo2eProxy: 0,
+      previousKgCo2eProxy: 0,
+      deltaKgCo2eProxy: 0,
+    });
+    expect(payload.impact.topServiceLabel).toBe("Vercel");
+    expect(payload.impact.topServiceMonthlyKgCo2eProxy).toBe(0);
+    expect(payload.summary[1]).toContain("Vercel (0 kg");
+  });
+
+  it("does not expose an exposure leader when every service measure is unknown", () => {
+    const currentOnlyPayload = buildGovernanceMonthlyReportPayload({
+      generatedAt: "2026-05-20T12:00:00.000Z",
+      environmentalImpact: { ...highRiskEnvironmentalImpact, snapshots: [] },
+      storageUsage: highRiskStorageUsage,
+    });
+    expect(currentOnlyPayload.impact.serviceBreakdown.find((service) => service.key === "supabase")).toMatchObject({
+      currentKgCo2eProxy: 2.4,
+      previousKgCo2eProxy: null,
+      deltaKgCo2eProxy: null,
+    });
+
+    const environmentalImpact = {
+      ...highRiskEnvironmentalImpact,
+      model: {
+        ...highRiskEnvironmentalImpact.model,
+        infrastructure: {
+          ...highRiskEnvironmentalImpact.model.infrastructure,
+          monthlyKgCo2eProxy: null,
+          services: highRiskEnvironmentalImpact.model.infrastructure.services.map((service) => ({
+            ...service,
+            monthlyKgCo2eProxy: null,
+          })),
+        },
+      },
+      snapshots: [],
+    } as typeof highRiskEnvironmentalImpact;
+
+    const payload = buildGovernanceMonthlyReportPayload({
+      generatedAt: "2026-05-20T12:00:00.000Z",
+      environmentalImpact,
+      storageUsage: highRiskStorageUsage,
+    });
+
+    expect(payload.impact.topServiceLabel).toBeNull();
+    expect(payload.impact.topServiceMonthlyKgCo2eProxy).toBeNull();
+    expect(payload.summary[1]).toContain("aucune donnée");
+  });

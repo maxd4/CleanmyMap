@@ -51,6 +51,20 @@ export function FreePlanErrorState({
 
 type FreePlanServicesPanelModel = ReturnType<typeof buildFreePlanServicesPanelModel>;
 
+function formatMonthlyPressure(
+  value: number | null,
+  coverage: FreePlanServicesPanelModel["totalMonthlyPressureCoverage"],
+): string {
+  const valueLabel = value === null ? "NA" : `${formatNumber(value, 2)} kg`;
+  const coverageLabel =
+    coverage.status === "complete"
+      ? "couverture complète"
+      : coverage.status === "partial"
+        ? `${coverage.knownServices}/${coverage.totalServices} services mesurés · couverture partielle`
+        : "aucune mesure connue";
+  return `${valueLabel} · ${coverageLabel}`;
+}
+
 function FreePlanServiceGrowthPanel({
   previousSnapshot,
   previousSnapshotLabel,
@@ -182,6 +196,7 @@ function FreePlanServiceThresholdAlerts({
 
 function FreePlanServicesSummaryCards({
   totalMonthlyPressure,
+  totalMonthlyPressureCoverage,
   readyServices,
   monitoredMetrics,
   inputMetrics,
@@ -193,13 +208,13 @@ function FreePlanServicesSummaryCards({
   inputMetricsLabel,
   trackedServicesLabel,
   snapshotLabel,
-}: Pick<FreePlanServicesPanelModel, "totalMonthlyPressure" | "readyServices" | "monitoredMetrics" | "inputMetrics" | "derivedMetrics" | "referenceMetrics" | "trackedServices" | "generatedAtLabel" | "snapshotCount" | "inputMetricsLabel" | "trackedServicesLabel" | "snapshotLabel">) {
+}: Pick<FreePlanServicesPanelModel, "totalMonthlyPressure" | "totalMonthlyPressureCoverage" | "readyServices" | "monitoredMetrics" | "inputMetrics" | "derivedMetrics" | "referenceMetrics" | "trackedServices" | "generatedAtLabel" | "snapshotCount" | "inputMetricsLabel" | "trackedServicesLabel" | "snapshotLabel">) {
   return (
     <div className="grid gap-4 md:grid-cols-4">
       <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">Pression mensuelle totale</p>
-        <p className="mt-2 text-3xl font-black text-white">{formatNumber(totalMonthlyPressure, 2)} kg</p>
-        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Coût proxy agrégé du mois courant</p>
+        <p className="mt-2 text-3xl font-black text-white">{totalMonthlyPressure === null ? "NA" : `${formatNumber(totalMonthlyPressure, 2)} kg`}</p>
+        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">{formatMonthlyPressure(totalMonthlyPressure, totalMonthlyPressureCoverage).split(" · ").slice(1).join(" · ")}</p>
       </article>
       <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">Services configurés</p>
@@ -228,7 +243,8 @@ function FreePlanServicesSummaryCards({
 function FreePlanServicesMethodologyLinks({
   methodologyLinks,
   totalMonthlyPressure,
-}: Pick<FreePlanServicesPanelModel, "methodologyLinks" | "totalMonthlyPressure">) {
+  totalMonthlyPressureCoverage,
+}: Pick<FreePlanServicesPanelModel, "methodologyLinks" | "totalMonthlyPressure" | "totalMonthlyPressureCoverage">) {
   return (
     <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
       <article className="rounded-3xl border border-sky-400/20 bg-sky-500/10 p-4 text-sm text-sky-100/80">
@@ -238,7 +254,7 @@ function FreePlanServicesMethodologyLinks({
             <p>Le même mois est documenté dans le PDF de gouvernance, la méthodologie et les vues admin. La fiche reste cohérente avec la trace mensuelle archivée.</p>
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-200/50">
-            {formatNumber(totalMonthlyPressure, 2)} kg / mois
+            {formatMonthlyPressure(totalMonthlyPressure, totalMonthlyPressureCoverage)} / mois
           </p>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -290,6 +306,7 @@ export function FreePlanServicesDataView({
     trackedServicesLabel,
     snapshotLabel,
     totalMonthlyPressure,
+    totalMonthlyPressureCoverage,
     methodologyLinks,
     serviceRiskLeader,
     serviceRiskCounts,
@@ -301,6 +318,7 @@ export function FreePlanServicesDataView({
 <div className="space-y-6">
           <FreePlanServicesSummaryCards
             totalMonthlyPressure={totalMonthlyPressure}
+            totalMonthlyPressureCoverage={totalMonthlyPressureCoverage}
             readyServices={readyServices}
             monitoredMetrics={monitoredMetrics}
             inputMetrics={inputMetrics}
@@ -323,6 +341,7 @@ export function FreePlanServicesDataView({
           <FreePlanServicesMethodologyLinks
             methodologyLinks={methodologyLinks}
             totalMonthlyPressure={totalMonthlyPressure}
+            totalMonthlyPressureCoverage={totalMonthlyPressureCoverage}
           />
 
           <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100/80">
