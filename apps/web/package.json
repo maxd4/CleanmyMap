@@ -14,7 +14,7 @@
     "test:security": "node ../../scripts/checks/validation-policy.mjs --run-vitest --groups security",
     "test:regression-gates": "node ../../scripts/checks/validation-policy.mjs --run-vitest --groups regression",
     "backup:actions": "node scripts/export-actions-backup.mjs",
-    "import:actions": "node scripts/import-actions-backup.mjs",
+    "restore:actions": "node scripts/restore-actions-backup.mjs",
     "data:test:build": "node scripts/build-test-local-store.mjs",
     "data:sheet:build-import": "node scripts/build-admin-import-from-sheet.mjs",
     "data:geometry:backfill": "node --experimental-strip-types scripts/backfill-derived-geometry.mjs",

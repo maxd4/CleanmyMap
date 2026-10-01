@@ -179,9 +179,19 @@ Ne pas réactiver un ancien flux d'import sans vérifier :
 Commandes existantes :
 
 ```bash
+npm run backup:actions -w apps/web
+npm run restore:actions -w apps/web -- path/to/actions-backup-v2.json
+npm run restore:actions -w apps/web -- path/to/actions-backup-v2.json --apply --confirm="RESTORE ACTION BACKUP"
 npm run data:archive:supabase -w apps/web
 npm run data:cleanup:supabase -w apps/web
 ```
+
+`restore:actions` est une restauration de disaster recovery, pas un import
+métier : le premier appel produit un plan sans mutation. La restauration
+effective exige `--apply` et la confirmation exacte `RESTORE ACTION BACKUP`.
+L'import métier reste porté par `/api/actions/import`, avec normalisation,
+contrôle de qualité, dry-run, confirmation et audit ; aucun script nommé
+`import:actions` ne doit contourner ce contrat.
 
 Avant toute suppression distante :
 

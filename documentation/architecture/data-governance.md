@@ -218,6 +218,9 @@ Supabase local n'étant pas disponibles.
 
 Les outils d'opérations suivent la même séparation :
 
+- `export-actions-backup.mjs` produit uniquement le format versionné de
+  restauration d'état action ; `restore-actions-backup.mjs` est la seule voie
+  de restauration et n'est pas un import métier ;
 - `export-supabase-archive.mjs` archive `trash_spotter_spots`,
   `legacy_spot_migrations` et `spots`, ce dernier étant explicitement marqué
   comme archive legacy dans le manifeste ;
@@ -662,6 +665,27 @@ normalisation de ce module avant l'ecriture dans `actions`, puis utiliser le sto
 canonique. Les anomalies de date, de mesure et de geolocalisation sont exposees
 par `apps/web/src/lib/actions/quality/data-quality.ts` afin que dashboard, rapports et
 exports partagent le meme diagnostic.
+
+Une sauvegarde interne n'est pas une ingestion externe. Le format
+`cleanmymap.action-backup` version 2 est un contrat
+`DISASTER_RECOVERY_RESTORE` : `npm run restore:actions -w apps/web` valide le
+format, les identités, la géométrie persistée et les relations action avant tout
+plan d'écriture, puis appelle une restauration `service_role` atomique qui
+préserve les identités et les champs historiques. Cette voie ne déclenche pas
+`normalizeExternalActionImport` ni `createAction`, et ne doit pas être exposée
+sous un nom `import`.
+
+Le périmètre restauré couvre `actions`, `action_organizers`,
+`action_registrations`, `action_participants`, `training_examples`, `forms`,
+les conversations et exclusions d'action, ainsi que les demandes de partage
+liées. Les messages et notifications génériques, la projection incrémentale d'Impact,
+la ledger de prédiction et les objets Storage restent des projections ou
+domaines externes : ils sont explicitement exclus du backup d'action ; la
+projection d'Impact est recalculée par ses triggers lors de la restauration et
+les autres domaines relèvent de l'archive Supabase générale. Un payload sans
+version, incomplet ou incompatible est rejeté avant toute écriture ; le mode
+plan est la valeur par défaut et `--apply` exige la confirmation explicite
+documentée par la commande.
 
 Ne pas créer un nouveau chemin d'ingestion concurrent sans vérifier :
 
