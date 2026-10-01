@@ -109,6 +109,21 @@ function sortServicesForGovernance(
     });
 }
 
+function getTopMeasuredService(
+  services: GovernanceInfrastructureService[],
+): GovernanceInfrastructureService | null {
+  return services
+    .filter((service) => service.monthlyKgCo2eProxy !== null)
+    .reduce<GovernanceInfrastructureService | null>(
+      (leader, service) =>
+        leader === null ||
+        (service.monthlyKgCo2eProxy as number) > (leader.monthlyKgCo2eProxy as number)
+          ? service
+          : leader,
+      null,
+    );
+}
+
 function buildTopGrowthHighlights(
   current: Array<{ key: string; label: string; monthlyKgCo2eProxy: number | null }>,
   previous: EnvironmentalImpactCaptureResult["snapshots"][number] | null | undefined,
