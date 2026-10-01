@@ -199,7 +199,7 @@ export function buildFreePlanDashboardState(params: {
   const totalAnnualKgCo2eProxy = hasAllAnnualValues
     ? quotaServices.reduce((sum, service) => sum + (service.annualKgCo2eProxy ?? 0), 0)
     : null;
-  const hasPreviousBaseline = previousQuotaServices.length > 0;
+  const hasPreviousBaseline = monthlyAggregateState.previous.value !== null;
   const totalPreviousKgCo2eProxy = hasPreviousBaseline
     ? previousQuotaServices.reduce(
         (sum, service) => sum + (service.monthlyKgCo2eProxy ?? 0),
