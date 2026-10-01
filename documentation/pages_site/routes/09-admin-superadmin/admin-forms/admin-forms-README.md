@@ -10,10 +10,10 @@
 - **Famille / bloc fonctionnel** : Admin & Super-admin (hors bloc)
 - **Statut** : technique
 - **Contexte nécessaire** : Compte connecté via le proxy ; cette page ne vérifie pas elle-même un rôle métier supplémentaire.
-- **Objectif utilisateur principal** : Consulter et ajuster les réglages locaux de simplification de formulaire, les feature flags et les analytics de formulaire du navigateur.
-- **Action principale attendue** : Modifier la répartition du trafic, activer/désactiver un flag local ou vider les analytics locales.
+- **Objectif utilisateur principal** : Consulter et ajuster les feature flags locaux réellement consommés par les parcours CURRENT.
+- **Action principale attendue** : Activer ou désactiver un flag local consommé par un parcours CURRENT.
 - **Palette attendue** : amber / brun sombre
-- **Scope** : panneau interne de comparaison/A-B testing des formulaires, feature flags locaux, analytics de formulaire et action de test du formulaire simple.
+- **Scope** : panneau technique de pilotage des feature flags CURRENT ; aucun système A/B de formulaire n'est exposé ici.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : admin — canvas #15111d, halo rgba(245, 158, 11, 0.20)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
