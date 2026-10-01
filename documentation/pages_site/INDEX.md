@@ -164,6 +164,12 @@ La navigation CURRENT possède un seul modèle de regroupement : les blocs
 produit général « espace » ne constitue pas une seconde taxonomie du registry ;
 les routes de compatibilité restent uniquement des `COMPATIBILITY_REDIRECT`.
 
+Le catalogue `SEO_REDIRECT_TARGETS` dans
+`apps/web/src/lib/seo/indexability.ts` est l'owner des cibles de ces
+compatibilités. Le proxy et les pages de repli consomment
+`buildSeoRedirectTarget` ; `/onboarding/localisation` reste une exception
+page-owned pour conserver la sanitization de `next` et `ref`.
+
 ### Redirects et alias
 
 Les routes suivantes sont des compatibilités techniques, pas des pages SEO

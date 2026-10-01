@@ -43,7 +43,6 @@ describe("rubrique entrypoints", () => {
     expect(renderer).toContain('import("./climate")');
     expect(renderer).toContain('import("./compost")');
     expect(renderer).toContain('import("./feedback")');
-    expect(renderer).toContain('import("./route")');
     expect(renderer).toContain('import("./gamification")');
     expect(renderer).toContain('import("./actors-section")');
     expect(renderer).not.toContain('from "./community-section"');
@@ -64,8 +63,8 @@ describe("rubrique entrypoints", () => {
     const routeEntrypoint = readFileSync(routeEntrypointPath, "utf8");
 
     expect(routePage).toContain('from "next/navigation"');
-    expect(routePage).toContain("buildActionCreationPanelHref");
-    expect(routePage).toContain('"itineraire"');
+    expect(routePage).toContain("buildSeoRedirectTarget");
+    expect(routePage).toContain('"/sections/route"');
     expect(routePage).not.toContain('from "@/components/sections/rubriques/route"');
     expect(routeEntrypoint).toContain('export { RouteSection } from "./route-section";');
 

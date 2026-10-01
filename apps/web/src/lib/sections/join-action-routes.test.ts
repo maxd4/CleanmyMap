@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   buildJoinActionHref,
   buildJoinActionTabHref,
-  buildLegacyJoinActionRedirect,
 } from "./join-action-routes";
 
 describe("join action routes", () => {
@@ -26,11 +25,4 @@ describe("join action routes", () => {
     );
   });
 
-  it("preserves legacy query parameters during compatibility redirect", () => {
-    expect(
-      buildLegacyJoinActionRedirect({ actionId: "action 42", tab: ["future", "past"] }),
-    ).toBe(
-      "/sections/rejoindre-une-action?actionId=action+42&tab=future&tab=past",
-    );
-  });
 });
