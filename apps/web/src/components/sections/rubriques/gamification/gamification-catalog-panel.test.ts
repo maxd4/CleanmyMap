@@ -37,7 +37,7 @@ function progression(id: "participation" | "organisation" | "exploration", state
 }
 
 describe("buildCatalogGroups", () => {
-  it("keeps new mechanics out of the regular state groups", () => {
+  it("keeps the canonical state while isolating only new untouched mechanics", () => {
     const groups = buildCatalogGroups(summary({
       progressions: [
         progression("participation", "in_progress", true),
@@ -62,14 +62,14 @@ describe("buildCatalogGroups", () => {
       ],
     }));
 
-    expect(groups.progressions.newItems.map((item) => item.id)).toEqual(["participation", "exploration"]);
-    expect(groups.progressions.inProgress).toEqual([]);
+    expect(groups.progressions.newItems.map((item) => item.id)).toEqual(["exploration"]);
+    expect(groups.progressions.inProgress.map((item) => item.id)).toEqual(["participation"]);
     expect(groups.progressions.toDiscover.map((item) => item.id)).toEqual(["organisation"]);
-    expect(groups.milestones.newItems.map((item) => item.id)).toEqual(["premiere_trace_utile"]);
-    expect(groups.milestones.completed).toEqual([]);
+    expect(groups.milestones.newItems).toEqual([]);
+    expect(groups.milestones.completed.map((item) => item.id)).toEqual(["premiere_trace_utile"]);
   });
 
-  it("keeps a newly introduced completed milestone in New with its real recognition state", () => {
+  it("keeps a newly introduced completed milestone in Terminés with a separate New marker", () => {
     const summaryValue = summary({
       milestones: [{
         id: "parcours_documente",
@@ -94,10 +94,32 @@ describe("buildCatalogGroups", () => {
       locale: "fr",
     }));
 
-    expect(markup).toContain("Nouveau · ✓ Terminé");
+    expect(markup).toContain(">New<");
+    expect(markup).toContain("✓ Terminé");
     expect(markup).toContain("Parcours documenté");
     expect(markup).toContain("Reconnaissance");
     expect(markup).toContain('id="milestone-parcours_documente"');
+    expect(markup).toContain("Terminés");
+    expect(markup).not.toContain("Nouveau ·");
     expect(markup).not.toContain("À découvrir 1");
+  });
+
+  it("shows a new progression with activity in En cours and keeps the New marker", () => {
+    const markup = renderToStaticMarkup(createElement(GamificationCatalogPanel, {
+      summary: summary({
+        progressions: [
+          progression("participation", "in_progress", true),
+          progression("exploration", "not_started", true),
+        ],
+      }),
+      loading: false,
+      error: null,
+      locale: "fr",
+    }));
+
+    expect(markup).toContain("Nouvelles tâches");
+    expect(markup).toContain("En cours");
+    expect(markup).toContain('id="progression-participation"');
+    expect(markup).toContain(">New<");
   });
 });

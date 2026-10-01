@@ -30,8 +30,16 @@ function categoryLabel(category: GamificationSummaryMilestone["category"] | "XP_
   return fr ? "Progression" : "Progression";
 }
 
-function newStateLabel(state: CatalogState, fr: boolean): string {
-  return `${fr ? "Nouveau" : "New"} · ${stateLabel(state, fr)}`;
+function NewBadge({ fr }: { fr: boolean }) {
+  return (
+    <span
+      role="status"
+      aria-label={fr ? "Nouvelle mécanique" : "New mechanic"}
+      className="rounded-full border border-[#b7d9c4] bg-[#effaf2] px-2 py-0.5 text-xs font-black tracking-[0.08em] text-[#287348]"
+    >
+      New
+    </span>
+  );
 }
 
 function CatalogItemHeader({
@@ -56,6 +64,7 @@ function CatalogItemHeader({
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-sm font-black text-[#2c1a17]">{label}</h3>
+          {isNewSinceLastRulesMigration ? <NewBadge fr={fr} /> : null}
           <span className={`rounded-full border px-2 py-0.5 text-xs font-black uppercase tracking-[0.16em] ${categoryClassName}`}>
             {categoryLabel(category, fr)}
           </span>
@@ -63,7 +72,7 @@ function CatalogItemHeader({
         <p className="mt-1 text-xs leading-5 text-[#806b65]">{description}</p>
       </div>
       <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${stateClass(state)}`}>
-        {isNewSinceLastRulesMigration ? newStateLabel(state, fr) : stateLabel(state, fr)}
+        {stateLabel(state, fr)}
       </span>
     </div>
   );
@@ -187,14 +196,14 @@ function MilestoneItem({ item, fr }: { item: GamificationSummaryMilestone; fr: b
 export function buildCatalogGroups(summary: GamificationSummary) {
   return {
     progressions: {
-      newItems: summary.progressions.filter((item) => item.isNewSinceLastRulesMigration),
-      inProgress: summary.progressions.filter((item) => !item.isNewSinceLastRulesMigration && item.state === "in_progress"),
+      newItems: summary.progressions.filter((item) => item.isNewSinceLastRulesMigration && item.state === "not_started"),
+      inProgress: summary.progressions.filter((item) => item.state === "in_progress"),
       toDiscover: summary.progressions.filter((item) => !item.isNewSinceLastRulesMigration && item.state === "not_started"),
     },
     milestones: {
-      newItems: summary.milestones.filter((item) => item.isNewSinceLastRulesMigration),
-      inProgress: summary.milestones.filter((item) => !item.isNewSinceLastRulesMigration && item.state === "in_progress"),
-      completed: summary.milestones.filter((item) => !item.isNewSinceLastRulesMigration && item.state === "completed"),
+      newItems: summary.milestones.filter((item) => item.isNewSinceLastRulesMigration && item.state === "not_started"),
+      inProgress: summary.milestones.filter((item) => item.state === "in_progress"),
+      completed: summary.milestones.filter((item) => item.state === "completed"),
       toDiscover: summary.milestones.filter((item) => !item.isNewSinceLastRulesMigration && item.state === "not_started"),
     },
   };
@@ -243,7 +252,7 @@ export function GamificationCatalogPanel({
   useEffect(() => {
     const focusHashTarget = () => {
       const targetId = decodeURIComponent(window.location.hash.slice(1));
-      if (!/^(?:progression-|milestone-|gamification-milestones$|gamification-progressions$)/.test(targetId)) return;
+      if (!/^(?:progression-|milestone-|gamification-milestones(?:-new)?$|gamification-progressions(?:-new)?$)/.test(targetId)) return;
       window.setTimeout(() => focusGamificationTarget(targetId), 0);
     };
 
@@ -279,7 +288,7 @@ export function GamificationCatalogPanel({
 
       <div id="gamification-progressions" tabIndex={-1} className="mt-6 space-y-6 scroll-mt-6">
         <div id="gamification-progressions-new" className="scroll-mt-8">
-          <CatalogGroup title={fr ? "Nouveautés" : "New"} items={groups.progressions.newItems} fr={fr} kind="progression" />
+          <CatalogGroup title={fr ? "Nouvelles tâches" : "New tasks"} items={groups.progressions.newItems} fr={fr} kind="progression" />
         </div>
         <CatalogGroup title={fr ? "En cours" : "In progress"} items={groups.progressions.inProgress} fr={fr} kind="progression" />
         <CatalogGroup title={fr ? "À découvrir" : "To discover"} items={groups.progressions.toDiscover} fr={fr} kind="progression" />
@@ -295,7 +304,7 @@ export function GamificationCatalogPanel({
         </div>
         <div className="mt-6 space-y-6">
           <div id="gamification-milestones-new" className="scroll-mt-8">
-            <CatalogGroup title={fr ? "Nouveaux" : "New"} items={groups.milestones.newItems} fr={fr} kind="milestone" />
+            <CatalogGroup title={fr ? "Nouvelles tâches" : "New tasks"} items={groups.milestones.newItems} fr={fr} kind="milestone" />
           </div>
           <CatalogGroup title={fr ? "En cours" : "In progress"} items={groups.milestones.inProgress} fr={fr} kind="milestone" />
           <CatalogGroup title={fr ? "Terminés" : "Completed"} items={groups.milestones.completed} fr={fr} kind="milestone" />
