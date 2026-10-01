@@ -2265,15 +2265,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/supabase/storage-business-contribution-history.ts",
-      "line": 96,
-      "category": "runtime/services/orchestration",
-      "ceiling": 41,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildAlertsForDomain#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/lib/supabase/storage-business-contribution.ts",
       "line": 383,
       "category": "runtime/services/orchestration",
@@ -5574,15 +5565,6 @@
       "ceiling": 131,
       "status": "LEGACY",
       "functionIdentity": "named:planOperationalStreetCorridors#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/supabase/storage-business-contribution-history.ts",
-      "line": 96,
-      "category": "runtime/services/orchestration",
-      "ceiling": 181,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildAlertsForDomain#1"
     },
     {
       "metric": "functionLength",
