@@ -11,7 +11,7 @@ vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: identityMock }));
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionMock }));
 vi.mock("@/lib/actions/participation/organizers", () => ({
-  loadActionOrganizerIdsForAction: organizerMock,
+  loadCanonicalActionOrganizerIdsForAction: organizerMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: serverMock }));
 vi.mock("@/lib/actions/moderation-audit", () => ({
