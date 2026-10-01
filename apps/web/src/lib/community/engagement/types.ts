@@ -64,16 +64,3 @@ export type EventStaffingSummary = {
   totalConfirmedStaff: number;
   totalStaffingGap: number;
 };
-
-export type QualityLeaderboardRow = {
-  actor: string;
-  actions: number;
-  wasteKg: number;
-  avgQuality: number;
-  qualityA: number;
-  qualityB: number;
-  qualityC: number;
-  rateA: number;
-  weightedScore: number;
-  badge: string;
-};
