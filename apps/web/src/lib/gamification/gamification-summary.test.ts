@@ -71,11 +71,16 @@ describe("buildGamificationSummary", () => {
     expect(summary.xpTotal).toBe(4);
     expect(summary.progressions.find((item) => item.id === "participation")?.xpContribution).toBe(2);
     expect(summary.progressions.find((item) => item.id === "participation")).toMatchObject({
+      awardCategory: "XP_PROGRESSION",
       currentTier: { label: "Premier", threshold: 1, achieved: true },
       nextTier: { threshold: 6, achieved: false },
       previousTiers: [],
     });
     expect(summary.milestones.find((item) => item.id === "premiere_trace_utile")?.xpContribution).toBe(1);
+    expect(summary.milestones.find((item) => item.id === "premiere_trace_utile")).toMatchObject({
+      awardCategory: "XP_MILESTONE",
+      grantsXp: true,
+    });
     expect(summary.xpReconciliation).toMatchObject({
       progressionXp: 2,
       milestoneXp: 1,

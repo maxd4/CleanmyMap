@@ -274,6 +274,14 @@ Chaque progression suit le contrat commun `GamificationProgressionState` :
 calculée au total global ; il n'existe aucun solde XP indépendant par
 progression.
 
+La projection utilisateur de `GET /api/gamification/me` expose pour chaque
+entrée de `progression.summary` les champs explicites `awardCategory`,
+`grantsXp` et `xpContribution`. `awardCategory` porte la catégorie canonique
+de la récompense (`XP_PROGRESSION`, `XP_MILESTONE` ou `BADGE_ONLY`) ; les
+composants ne doivent jamais la déduire d'une valeur XP positive ou nulle.
+Les signaux `NON_GAMIFIED` restent dans le registre de décision mais ne sont
+pas projetés dans le catalogue personnel.
+
 Les catégories ont le sens suivant :
 
 - `XP_PROGRESSION` : progression infinie, badge évolutif et XP uniquement selon

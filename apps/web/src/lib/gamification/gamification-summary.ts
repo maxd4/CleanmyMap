@@ -7,6 +7,7 @@ import {
 import type {
   CurrentInfiniteProgressionId,
   CurrentMilestoneId,
+  GamificationAwardCategory,
   GamificationBadgeReference,
   GamificationXpPolicy,
   LevelRequirementAssessment,
@@ -33,6 +34,7 @@ type GamificationSummaryTier = {
 
 export type GamificationSummaryProgression = {
   id: CurrentInfiniteProgressionId;
+  awardCategory: Extract<GamificationAwardCategory, "XP_PROGRESSION">;
   label: string;
   description: string;
   currentValue: number;
@@ -52,6 +54,8 @@ export type GamificationSummaryProgression = {
 
 export type GamificationSummaryMilestone = {
   id: CurrentMilestoneId;
+  awardCategory: Extract<GamificationAwardCategory, "XP_MILESTONE" | "BADGE_ONLY">;
+  /** Compatibility alias; use awardCategory in new consumers. */
   category: "XP_MILESTONE" | "BADGE_ONLY";
   label: string;
   description: string;
@@ -196,6 +200,7 @@ function buildSummaryProgression(
   const progression = item.progression;
   return {
     id: item.id as CurrentInfiniteProgressionId,
+    awardCategory: "XP_PROGRESSION",
     label: item.title,
     description: item.description,
     currentValue: progression.currentValue,
@@ -226,7 +231,8 @@ function buildSummaryMilestone(
 ): GamificationSummaryMilestone {
   return {
     id: item.id as CurrentMilestoneId,
-    category: item.category as "XP_MILESTONE" | "BADGE_ONLY",
+    awardCategory: item.awardCategory as "XP_MILESTONE" | "BADGE_ONLY",
+    category: item.awardCategory as "XP_MILESTONE" | "BADGE_ONLY",
     label: item.title,
     description: item.description,
     grantsXp: item.grantsXp,
