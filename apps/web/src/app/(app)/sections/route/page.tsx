@@ -1,5 +1,5 @@
 import { permanentRedirect } from "next/navigation";
-import { buildActionCreationPanelHref } from "@/lib/actions/action-creation-routes";
+import { buildSeoRedirectTarget } from "@/lib/seo/indexability";
 
 type RoutePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -7,9 +7,9 @@ type RoutePageProps = {
 
 export default async function RoutePage({ searchParams }: RoutePageProps) {
   permanentRedirect(
-    buildActionCreationPanelHref(
-      "itineraire",
-      searchParams ? await searchParams : undefined,
+    buildSeoRedirectTarget(
+      "/sections/route",
+      searchParams ? await searchParams : {},
     ),
   );
 }

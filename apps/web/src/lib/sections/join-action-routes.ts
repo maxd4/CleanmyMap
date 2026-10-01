@@ -51,19 +51,3 @@ export function buildJoinActionTabHref(
   }
   return `${CANONICAL_JOIN_ACTION_ROUTE}?${params.toString()}`;
 }
-
-export function buildLegacyJoinActionRedirect(
-  query: Record<string, string | string[] | undefined>,
-): string {
-  const params = new URLSearchParams();
-  for (const [key, rawValue] of Object.entries(query)) {
-    if (Array.isArray(rawValue)) {
-      for (const value of rawValue) params.append(key, value);
-    } else if (typeof rawValue === "string") {
-      params.set(key, rawValue);
-    }
-  }
-
-  const queryString = params.toString();
-  return `${CANONICAL_JOIN_ACTION_ROUTE}${queryString ? `?${queryString}` : ""}`;
-}

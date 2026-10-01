@@ -11,11 +11,10 @@ import {
 } from "@/lib/sections-registry";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import {
-  buildLegacyJoinActionRedirect,
   LEGACY_JOIN_FORM_ROUTE,
 } from "@/lib/sections/join-action-routes";
-import { buildActionCreationPanelHref } from "@/lib/actions/action-creation-routes";
 import {
+  buildSeoRedirectTarget,
   PUBLIC_INDEXABLE_SECTION_IDS,
   PUBLIC_NOINDEX_SECTION_IDS,
 } from "@/lib/seo/indexability";
@@ -25,17 +24,6 @@ type SectionPageProps = {
   params: Promise<{ sectionId: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-function buildDirectMessageRedirect(
-  searchParams: Record<string, string | string[] | undefined>,
-): string {
-  const query = new URLSearchParams({ tab: "dm" });
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (key === "tab" || value === undefined) continue;
-    for (const item of Array.isArray(value) ? value : [value]) query.append(key, item);
-  }
-  return `/sections/messagerie?${query.toString()}`;
-}
 
 export function generateStaticParams() {
   return getSectionRouteParams();
@@ -94,17 +82,24 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
   const normalizedSectionId = sectionId.toLowerCase();
 
   if (normalizedSectionId === LEGACY_JOIN_FORM_ROUTE.split("/").at(-1)) {
-    permanentRedirect(buildLegacyJoinActionRedirect(await searchParams));
+    permanentRedirect(
+      buildSeoRedirectTarget(
+        "/sections/rejoindre-un-formulaire",
+        await searchParams,
+      ),
+    );
   }
 
   if (normalizedSectionId === "dm") {
-    permanentRedirect(buildDirectMessageRedirect(await searchParams));
+    permanentRedirect(buildSeoRedirectTarget("/sections/dm", await searchParams));
   }
 
   if (normalizedSectionId === "guide" || normalizedSectionId === "weather") {
     permanentRedirect(
-      buildActionCreationPanelHref(
-        "meteo",
+      buildSeoRedirectTarget(
+        normalizedSectionId === "guide"
+          ? "/sections/guide"
+          : "/sections/weather",
         await searchParams,
       ),
     );
