@@ -1,4 +1,4 @@
-export type RateLimitStrategy = "token-bucket" | "sliding-window";
+type RateLimitStrategy = "token-bucket" | "sliding-window";
 
 export interface RateLimitConfig {
   limit: number;

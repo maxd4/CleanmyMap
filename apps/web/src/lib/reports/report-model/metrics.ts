@@ -56,13 +56,13 @@ export function computeMapCoverageMetrics(
   };
 }
 
-export type CommunitySourceBuckets = {
+type CommunitySourceBuckets = {
   citoyen: number;
   associatif: number;
   institutionnel: number;
 };
 
-export type CommunityLeaderboardEntry = {
+type CommunityLeaderboardEntry = {
   name: string;
   actions: number;
   kg: number;

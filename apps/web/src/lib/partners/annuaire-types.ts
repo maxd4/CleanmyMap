@@ -14,13 +14,13 @@ export type ContributionType =
   | "financement"
   | "communication";
 
-export type VerificationStatus = "verifie" | "en_cours" | "a_revalider";
+type VerificationStatus = "verifie" | "en_cours" | "a_revalider";
 
-export type QualificationStatus =
+type QualificationStatus =
   | "partenaire_actif"
   | "contact_non_qualifie";
 
-export type AssociationPublicCallType =
+type AssociationPublicCallType =
   | "benevoles"
   | "dons"
   | "communication"
@@ -56,7 +56,7 @@ export type AssociationProfile = {
   structureStatus?: "active" | "validated" | "active_validated" | "pending";
 };
 
-export type EditorialAssociationProfile = Omit<
+type EditorialAssociationProfile = Omit<
   AssociationProfile,
   "impactHistory" | "structureStatus"
 > & {

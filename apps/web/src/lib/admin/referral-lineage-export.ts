@@ -25,7 +25,7 @@ export type ReferralLineageExportRow = {
   referral_chain_display_names: string;
 };
 
-export type ReferralLineageExportSummary = {
+type ReferralLineageExportSummary = {
   totalProfiles: number;
   profilesWithReferralCode: number;
   rootProfiles: number;

@@ -1,10 +1,7 @@
-import type { QuizAccessTypeId } from "./quiz-access-types";
 import { QUIZ_QUESTION_FORMATS, type QuizQuestionFormatId } from "./quiz-question-formats.ts";
 import type { QuizReasoningType } from "./quiz-reasoning-types";
 import type { QuizReviewTarget } from "./quiz-review-targets";
 import type { QuizTrapLevelId } from "./quiz-trap-levels";
-
-export type QuizModeId = QuizAccessTypeId;
 
 export type QuizPedagogicalTypeId =
   | QuizQuestionFormatId

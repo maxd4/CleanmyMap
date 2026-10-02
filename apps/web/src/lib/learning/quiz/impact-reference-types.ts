@@ -1,7 +1,5 @@
 export const IMPACT_SCOPES = ["territorial", "consumption", "usage-only", "cycle-of-life"] as const;
 
-export type ImpactScope = (typeof IMPACT_SCOPES)[number];
-
 export const IMPACT_VALUE_SCOPES = [...IMPACT_SCOPES, "human-development"] as const;
 
 type ImpactValueScope = (typeof IMPACT_VALUE_SCOPES)[number];

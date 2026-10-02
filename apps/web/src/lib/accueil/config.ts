@@ -16,16 +16,3 @@ export type HomeImpactSnapshot = Readonly<{
   impactTerrain: ImpactTerrain2026PublicResults;
   streetCleaningSavings: ImpactTerrain2026StreetCleaningSavings;
 }>;
-
-export type HomeIconName =
-  | 'layout-dashboard'
-  | 'zap'
-  | 'map'
-  | 'target'
-  | 'network'
-  | 'book-open'
-  | 'map-pin'
-  | 'bar-chart-3'
-  | 'users'
-  | 'file-text'
-  | 'shield';

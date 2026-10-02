@@ -33,7 +33,7 @@ export type ActionDistributionEntry = {
   count: number;
 };
 
-export type ActionAggregationWarning = {
+type ActionAggregationWarning = {
   code: string;
   count: number;
 };

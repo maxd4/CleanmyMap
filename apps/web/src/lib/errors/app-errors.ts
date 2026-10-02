@@ -2,7 +2,7 @@ export type AppErrorKind = "validation" | "network" | "server" | "permission";
 
 export type AppErrorSurface = "inline" | "toast" | "card" | "modal";
 
-export type AppErrorActionType =
+type AppErrorActionType =
   | "fix-field"
   | "retry"
   | "refresh"

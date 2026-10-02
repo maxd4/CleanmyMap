@@ -68,8 +68,3 @@ export interface Event<T extends EventType = EventType> {
 export type EventHandler<T extends EventType = EventType> = (
   event: Event<T>
 ) => Promise<void> | void;
-
-export interface EventSubscription {
-  eventType: EventType;
-  handler: EventHandler;
-}

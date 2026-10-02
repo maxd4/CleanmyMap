@@ -32,11 +32,11 @@ export const MAINTENANCE_JOB_IDS = [
   "governance-report",
 ] as const;
 
-export type MaintenanceJobId = (typeof MAINTENANCE_JOB_IDS)[number];
-export type MaintenanceJobCadence = "weekly" | "monthly";
-export type MaintenanceJobStatus = "executed" | "skipped" | "failed";
+type MaintenanceJobId = (typeof MAINTENANCE_JOB_IDS)[number];
+type MaintenanceJobCadence = "weekly" | "monthly";
+type MaintenanceJobStatus = "executed" | "skipped" | "failed";
 
-export type MaintenanceJobOutcome = {
+type MaintenanceJobOutcome = {
   job: MaintenanceJobId;
   cadence: MaintenanceJobCadence;
   period: string;

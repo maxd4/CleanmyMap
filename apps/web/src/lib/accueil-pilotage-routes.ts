@@ -12,8 +12,6 @@ export const SPONSOR_PORTAL_ROUTE = "/sponsor-portal";
 export const REPORTS_ROUTE = "/reports";
 const ONBOARDING_LOCALISATION_ROUTE = "/onboarding/localisation";
 
-export const PROFILE_ROUTE_PREFIX = PROFIL_ROUTE;
-export const PARCOURS_ROUTE_PREFIX = PARCOURS_ROUTE;
 
 export function buildProfileRoute(profile: string): string {
   return `${PROFIL_ROUTE}/${profile}`;

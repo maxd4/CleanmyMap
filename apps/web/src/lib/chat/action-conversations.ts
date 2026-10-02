@@ -7,11 +7,6 @@ import { usesRegistrationStore } from "@/lib/actions/participation/action-phase"
 import { isPublishedFuturePreAction } from "@/lib/actions/temporal";
 import type { ActionRow } from "@/types/database";
 
-export type ActionConversationRow = {
-  id: string;
-  action_id: string;
-};
-
 /** Compatibility wrapper for the technical notification audience only. It is
  * intentionally not used to authorize reading or writing action discussions. */
 export async function ensureActionConversationMember(

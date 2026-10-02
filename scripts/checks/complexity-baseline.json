@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "6c936639c72449d9e14f4f8f3126faba70ab4f1e",
+  "sourceCommit": "92a9552a4bb06b4ba4f66ed5749578964309f5b4",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -2937,15 +2937,6 @@
       "ceiling": 303,
       "status": "IMPROVED",
       "functionIdentity": "named:HomeCommunityCredibility#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/accueil/accueil-impact-summary.tsx",
-      "line": 127,
-      "category": "React/JSX",
-      "ceiling": 314,
-      "status": "LEGACY",
-      "functionIdentity": "named:HomeImpactSummary#1"
     },
     {
       "metric": "functionLength",
@@ -6307,15 +6298,6 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 161,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'refuses to start tracking when foreground GPS permission is denied'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 130,
       "category": "tests",
       "ceiling": 1,
@@ -6681,15 +6663,6 @@
       "ceiling": 16,
       "status": "LEGACY",
       "functionIdentity": "callback:it:1:'flushes the GPS buffer before completing and never writes derived metrics'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 161,
-      "category": "tests",
-      "ceiling": 7,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'refuses to start tracking when foreground GPS permission is denied'#1"
     },
     {
       "metric": "functionLength",

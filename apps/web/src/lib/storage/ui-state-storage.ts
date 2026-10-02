@@ -16,7 +16,7 @@ import {
   type ThemeMode,
 } from "@/lib/ui/preferences";
 
-export type ConsentChoice = "accepted" | "rejected" | null;
+type ConsentChoice = "accepted" | "rejected" | null;
 
 export type CookieConsentState = {
   choice: ConsentChoice;

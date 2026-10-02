@@ -11,7 +11,7 @@ import {
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-export type ContactRequestType = "access" | "rectification" | "erasure" | "portability" | "other";
+type ContactRequestType = "access" | "rectification" | "erasure" | "portability" | "other";
 export type ContactRequestStatus = "queued" | "sent" | "failed";
 
 export type ContactRequestRecord = {

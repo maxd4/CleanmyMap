@@ -5,7 +5,7 @@ type FunnelWindowEvent = Pick<
   "at" | "step" | "mode" | "sessionId"
 >;
 
-export type FunnelModeMetrics = {
+type FunnelModeMetrics = {
   mode: FunnelMode;
   counts: { views: number; starts: number; submits: number };
   sessions: { views: number; starts: number; submits: number };
@@ -14,7 +14,7 @@ export type FunnelModeMetrics = {
   completionUnder60Rate: number | null;
 };
 
-export type FunnelMetrics = {
+type FunnelMetrics = {
   byMode: FunnelModeMetrics[];
   totals: { views: number; starts: number; submits: number };
   conversion: { viewToSubmit: number; startToSubmit: number };

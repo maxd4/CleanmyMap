@@ -16,7 +16,7 @@ import type { ChatTopicId } from "@/lib/chat/topics";
 
 export type { ChatTopicId } from "@/lib/chat/topics";
 
-export type DiscussionLocale = "fr" | "en";
+type DiscussionLocale = "fr" | "en";
 
 export type DiscussionGuidance = {
   cardTitle: string;

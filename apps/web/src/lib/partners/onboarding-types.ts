@@ -66,7 +66,7 @@ export const WEEKDAY_OPTIONS = [
   { value: "sun", label: "Dimanche" },
 ] as const;
 
-export type Weekday = (typeof WEEKDAY_OPTIONS)[number]["value"];
+type Weekday = (typeof WEEKDAY_OPTIONS)[number]["value"];
 
 export type PartnerCoverage = {
   arrondissements: number[];

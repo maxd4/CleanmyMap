@@ -72,7 +72,7 @@ export type CommunityCreateEventPayload = {
 };
 
 
-export type CommunityClientErrorCode =
+type CommunityClientErrorCode =
   | "invalid_payload"
   | "permission_denied"
   | "not_found"

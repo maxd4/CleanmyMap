@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type ActionShareRequestResult =
+type ActionShareRequestResult =
   | "created"
   | "already_pending"
   | "cooldown"
@@ -13,7 +13,7 @@ export type ActionShareRequestCreation = {
 };
 
 export type ActionShareRequestDecision = "accept" | "reject" | "ignore";
-export type ActionShareRequestStatus = "accepted" | "rejected" | "ignored" | "unavailable";
+type ActionShareRequestStatus = "accepted" | "rejected" | "ignored" | "unavailable";
 
 export type ActionShareRequestResponse = {
   status: ActionShareRequestStatus;

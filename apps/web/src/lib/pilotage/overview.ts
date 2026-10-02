@@ -22,7 +22,6 @@ import {
 } from "./scope";
 
 export type {
-  DecisionSummary,
   LoadPilotageOverviewParams,
   PilotageOverview,
 } from "./overview.types";

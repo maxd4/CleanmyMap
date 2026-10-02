@@ -45,7 +45,7 @@ export type StorageBusinessContributionTopFile = {
   updatedAt: string | null;
 };
 
-export type StorageBusinessContributionMimeSubtype = {
+type StorageBusinessContributionMimeSubtype = {
   key: string;
   label: string;
   bytes: number;

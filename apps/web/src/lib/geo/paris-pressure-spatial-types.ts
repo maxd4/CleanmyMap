@@ -3,7 +3,7 @@ export type ParisPressurePoint = {
   longitude: number;
 };
 
-export type ParisPressureCoordinate = readonly [number, number];
+type ParisPressureCoordinate = readonly [number, number];
 
 export type ParisPressureGeometry =
   | {
