@@ -15,12 +15,10 @@ import { ClerkProvider, useAuth, useClerk } from '@clerk/expo'
 import { useHostedAuth } from '@clerk/expo/hosted-auth'
 import { tokenCache } from '@clerk/expo/token-cache'
 import {
-  createMission,
   getMission,
-  requestTrackingPermissions,
   restoreActiveTracking,
   saveMissionAction,
-  startTracking,
+  startMobileMission,
   stopTracking,
 } from './lib/tracking-service'
 import { getBufferCount } from './lib/storage'
@@ -112,23 +110,7 @@ function CompanionApp() {
 
     setPhase('requesting')
 
-    const permissionResult = await requestTrackingPermissions()
-    if (!permissionResult.ok) {
-      setErrorMsg(permissionResult.error)
-      setPhase('idle')
-      Alert.alert('Permission GPS requise', permissionResult.error)
-      return
-    }
-
-    const missionResult = await createMission(userId)
-    if (!missionResult.ok) {
-      setErrorMsg(missionResult.error)
-      setPhase('idle')
-      Alert.alert('Mission impossible', missionResult.error)
-      return
-    }
-
-    const trackingResult = await startTracking(missionResult.data.id)
+    const trackingResult = await startMobileMission(userId)
     if (!trackingResult.ok) {
       setErrorMsg(trackingResult.error)
       setPhase('idle')
@@ -160,45 +142,7 @@ function CompanionApp() {
 
   async function handleTakePhoto() {
     if (!mission) return
-
-    const { status } = await ImagePicker.requestCameraPermissionsAsync()
-    if (status !== 'granted') {
-      Alert.alert('Permission refusée', "L'accès à la caméra est requis pour cette action.")
-      return
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.7,
-    })
-
-    if (!result.canceled && result.assets && result.assets[0]) {
-      setActionLoading('photo')
-      const photoUri = result.assets[0].uri
-
-      const { path, error } = await uploadMissionPhoto(mission.id, photoUri)
-
-      if (error || !path) {
-        Alert.alert('Erreur Upload', error ?? "Impossible d'envoyer la photo.")
-        setActionLoading(null)
-        return
-      }
-
-      const recordResult = await saveMissionAction(
-        mission.id,
-        'photo',
-        undefined,
-        'Photo du terrain',
-        path,
-      )
-      setActionLoading(null)
-
-      if (recordResult.ok) {
-        Alert.alert('Succès', 'Photo enregistrée et liée à la mission.')
-      }
-    }
+    await captureMissionPhoto(mission.id, setActionLoading)
   }
 
   async function handleRecordAction(type: MissionActionType, label: string) {
@@ -243,84 +187,140 @@ function CompanionApp() {
   }
 
   if (phase === 'tracking' && mission) {
-    return (
-      <View style={styles.darkContainer}>
-        <StatusBar style="light" />
-
-        <View style={styles.hudHeader}>
-          <View>
-            <Text style={styles.hudLabel}>MISSION ACTIVE</Text>
-            <Text style={styles.hudTitleSmall}>{mission.label}</Text>
-          </View>
-          <View style={styles.hudStatus}>
-            <View style={styles.hudStatusDot} />
-            <Text style={styles.hudStatusText}>LIVE</Text>
-          </View>
-        </View>
-
-        {errorMsg ? (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorText}>{errorMsg}</Text>
-          </View>
-        ) : null}
-
-        <View style={styles.hudStatsRow}>
-          <View style={styles.hudStatBox}>
-            <Text style={styles.hudStatLabel}>DURÉE</Text>
-            <Text style={styles.hudStatValue}>{duration}</Text>
-          </View>
-          <View style={styles.hudStatBox}>
-            <Text style={styles.hudStatLabel}>SYNC BUFFER</Text>
-            <Text style={[styles.hudStatValue, bufferCount > 0 && { color: '#fbbf24' }]}>{bufferCount}</Text>
-          </View>
-        </View>
-
-        <View style={styles.actionGridContainer}>
-          <Text style={styles.hudLabelSection}>ENREGISTREMENT RAPIDE</Text>
-          <View style={styles.actionGrid}>
-            <ActionButton
-              icon="trash-outline"
-              label="DÉCHET TROUVÉ"
-              color="#fbbf24"
-              loading={actionLoading === 'trash_found'}
-              onPress={() => handleRecordAction('trash_found', 'Déchet trouvé')}
-            />
-            <ActionButton
-              icon="checkmark-done-outline"
-              label="RAMASSÉ"
-              color="#10b981"
-              loading={actionLoading === 'trash_collected'}
-              onPress={() => handleRecordAction('trash_collected', 'Déchet ramassé')}
-            />
-            <ActionButton
-              icon="camera-outline"
-              label="PHOTO"
-              color="#a78bfa"
-              loading={actionLoading === 'photo'}
-              onPress={() => handleRecordAction('photo', 'Photo')}
-            />
-            <ActionButton
-              icon="warning-outline"
-              label="DANGER"
-              color="#f87171"
-              loading={actionLoading === 'hazard'}
-              onPress={() => handleRecordAction('hazard', 'Danger signalé')}
-            />
-          </View>
-        </View>
-
-        <View style={{ flex: 1 }} />
-
-        <TouchableOpacity style={styles.hudBtnDanger} onPress={handleStop}>
-          <Text style={styles.hudBtnText}>TERMINER LA MISSION</Text>
-        </TouchableOpacity>
-      </View>
-    )
+    return <MissionActiveScreen
+      mission={mission}
+      duration={duration}
+      bufferCount={bufferCount}
+      errorMsg={errorMsg}
+      actionLoading={actionLoading}
+      onStop={handleStop}
+      onRecordAction={handleRecordAction}
+    />
   }
 
   return <MobileShell onSignOut={() => void signOut()} onStartActivity={handleStartMobileMission} />
 }
 
+async function captureMissionPhoto(missionId: string, setLoading: (value: string | null) => void) {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync()
+  if (status !== 'granted') {
+    Alert.alert('Permission refusée', "L'accès à la caméra est requis pour cette action.")
+    return
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    aspect: [4, 3],
+    quality: 0.7,
+  })
+
+  if (result.canceled || !result.assets || !result.assets[0]) return
+
+  setLoading('photo')
+  const { path, error } = await uploadMissionPhoto(missionId, result.assets[0].uri)
+  if (error || !path) {
+    Alert.alert('Erreur Upload', error ?? "Impossible d'envoyer la photo.")
+    setLoading(null)
+    return
+  }
+
+  const recordResult = await saveMissionAction(missionId, 'photo', undefined, 'Photo du terrain', path)
+  setLoading(null)
+  if (recordResult.ok) Alert.alert('Succès', 'Photo enregistrée et liée à la mission.')
+}
+
+function MissionActiveScreen({
+  mission,
+  duration,
+  bufferCount,
+  errorMsg,
+  actionLoading,
+  onStop,
+  onRecordAction,
+}: {
+  mission: Mission
+  duration: string
+  bufferCount: number
+  errorMsg: string | null
+  actionLoading: string | null
+  onStop: () => void
+  onRecordAction: (type: MissionActionType, label: string) => void
+}) {
+  return (
+    <View style={styles.darkContainer}>
+      <StatusBar style="light" />
+
+      <View style={styles.hudHeader}>
+        <View>
+          <Text style={styles.hudLabel}>MISSION ACTIVE</Text>
+          <Text style={styles.hudTitleSmall}>{mission.label}</Text>
+        </View>
+        <View style={styles.hudStatus}>
+          <View style={styles.hudStatusDot} />
+          <Text style={styles.hudStatusText}>LIVE</Text>
+        </View>
+      </View>
+
+      {errorMsg ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{errorMsg}</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.hudStatsRow}>
+        <View style={styles.hudStatBox}>
+          <Text style={styles.hudStatLabel}>DURÉE</Text>
+          <Text style={styles.hudStatValue}>{duration}</Text>
+        </View>
+        <View style={styles.hudStatBox}>
+          <Text style={styles.hudStatLabel}>SYNC BUFFER</Text>
+          <Text style={[styles.hudStatValue, bufferCount > 0 && { color: '#fbbf24' }]}>{bufferCount}</Text>
+        </View>
+      </View>
+
+      <View style={styles.actionGridContainer}>
+        <Text style={styles.hudLabelSection}>ENREGISTREMENT RAPIDE</Text>
+        <View style={styles.actionGrid}>
+          <ActionButton
+            icon="trash-outline"
+            label="DÉCHET TROUVÉ"
+            color="#fbbf24"
+            loading={actionLoading === 'trash_found'}
+            onPress={() => onRecordAction('trash_found', 'Déchet trouvé')}
+          />
+          <ActionButton
+            icon="checkmark-done-outline"
+            label="RAMASSÉ"
+            color="#10b981"
+            loading={actionLoading === 'trash_collected'}
+            onPress={() => onRecordAction('trash_collected', 'Déchet ramassé')}
+          />
+          <ActionButton
+            icon="camera-outline"
+            label="PHOTO"
+            color="#a78bfa"
+            loading={actionLoading === 'photo'}
+            onPress={() => onRecordAction('photo', 'Photo')}
+          />
+          <ActionButton
+            icon="warning-outline"
+            label="DANGER"
+            color="#f87171"
+            loading={actionLoading === 'hazard'}
+            onPress={() => onRecordAction('hazard', 'Danger signalé')}
+          />
+        </View>
+      </View>
+
+      <View style={{ flex: 1 }} />
+
+      <TouchableOpacity style={styles.hudBtnDanger} onPress={onStop}>
+        <Text style={styles.hudBtnText}>TERMINER LA MISSION</Text>
+      </TouchableOpacity>
+    </View>
+  )
+}
 function SignedOutScreen() {
   const { startHostedAuth } = useHostedAuth()
   const [loading, setLoading] = useState(false)

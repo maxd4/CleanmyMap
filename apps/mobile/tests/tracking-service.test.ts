@@ -53,8 +53,8 @@ import {
   createMission,
   getMission,
   restoreActiveTracking,
+  requestTrackingPermissions,
   saveLocationPoint,
-  startTracking,
   stopTracking,
 } from '../lib/tracking-service'
 import { bufferPoint, flushBuffer } from '../lib/storage'
@@ -158,11 +158,11 @@ describe('mobile tracking service', () => {
     })
   })
 
-  it('refuses to start tracking when foreground GPS permission is denied', async () => {
+  it('refuses the permission gate when foreground GPS permission is denied', async () => {
     state.client = missionClient()
     state.foregroundPermission = 'denied'
 
-    const result = await startTracking('mission-1')
+    const result = await requestTrackingPermissions()
 
     expect(result).toEqual({ ok: false, error: 'Permission GPS premier plan refusée.' })
     expect(state.client.from).not.toHaveBeenCalled()
