@@ -112,6 +112,34 @@ jobs:
           echo "build_relevant=$build_relevant" >> "$GITHUB_OUTPUT"
           echo "dependency_graph_relevant=$dependency_graph_relevant" >> "$GITHUB_OUTPUT"
 
+  secret-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout candidate tree
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+
+      - name: Verify candidate tree and run secret audit
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          npm run security:secrets -- --ref="$CANDIDATE_SHA"
+
   dependency-audit:
     needs: scope
     if: needs.scope.outputs.dependency_graph_relevant == 'true'
@@ -183,10 +211,6 @@ jobs:
 
       - name: Install Node dependencies
         run: npm ci
-
-      # Security and repository governance must run even for documentation-only changes.
-      - name: Secret audit
-        run: npm run security:secrets
 
       - name: Security deception contract
         run: npm run check:security-deception
@@ -475,12 +499,6 @@ jobs:
 
       - name: Install mobile dependencies
         run: npm ci
-
-      # Mobile-only changes own the shared security gates. A mixed web/mobile
-      # commit uses the existing web jobs once instead of running duplicates.
-      - name: Secret audit (mobile-only)
-        if: needs.scope.outputs.web_code_relevant != 'true'
-        run: npm run security:secrets
 
       - name: Install architectural Semgrep (mobile-only)
         if: needs.scope.outputs.web_code_relevant != 'true'

@@ -17,6 +17,12 @@ const SCANNED_EXTENSIONS = new Set([
   ".md",
   ".yml",
   ".yaml",
+  ".py",
+  ".sql",
+  ".toml",
+  ".ini",
+  ".sh",
+  ".ps1",
 ]);
 const EXACT_SCANNED_FILES = new Set([".env.example", ".env.local.example"]);
 const GENERATED_UNTRACKED_PATHS = [
