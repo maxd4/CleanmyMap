@@ -28,7 +28,7 @@ export function renderReportWindow(
   renderReportHtmlWindow(reportWindow, buildOfficialReportHtml(payload));
 }
 
-export function renderReportHtmlWindow(reportWindow: Window, html: string): void {
+function renderReportHtmlWindow(reportWindow: Window, html: string): void {
   reportWindow.document.open();
   reportWindow.document.write(html);
   reportWindow.document.close();
@@ -40,14 +40,6 @@ export function openPrintableHtmlWindow(html: string): boolean {
   if (!reportWindow) return false;
 
   renderReportHtmlWindow(reportWindow, html);
-  return true;
-}
-
-export function openReportWindow(payload: PdfReportPayload): boolean {
-  const reportWindow = window.open("", "_blank");
-  if (!reportWindow) return false;
-
-  renderReportWindow(reportWindow, payload);
   return true;
 }
 

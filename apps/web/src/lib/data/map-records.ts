@@ -1,4 +1,4 @@
-import type { ActionMapItem, ActionStatus } from "@/lib/actions/types";
+import type { ActionStatus } from "@/lib/actions/types";
 import { parseDrawingFromNotes, toGeoJsonString } from "@/lib/actions/geometry/drawing";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { readAllLocalStores } from "@/lib/data/local-store";
@@ -6,7 +6,6 @@ import { mapLocalStatusToActionStatus } from "@/lib/data/local-records";
 import { allowLocalActionStoreInCurrentRuntime } from "@/lib/persistence/runtime-store";
 import {
   buildActionDataContract,
-  toActionMapItem,
 } from "@/lib/actions/data-contract";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 
@@ -183,18 +182,4 @@ export async function loadLocalActionContracts(params: {
     .sort((a, b) => b.dates.observedAt.localeCompare(a.dates.observedAt));
 
   return params.limit === null ? sorted : sorted.slice(0, params.limit);
-}
-
-export async function loadLocalMapItems(params: {
-  status: ActionStatus | null;
-  floorDate: string;
-  limit: number;
-}): Promise<ActionMapItem[]> {
-  const contracts = await loadLocalActionContracts({
-    status: params.status,
-    floorDate: params.floorDate,
-    limit: params.limit,
-    requireCoordinates: true,
-  });
-  return contracts.map((contract) => toActionMapItem(contract));
 }

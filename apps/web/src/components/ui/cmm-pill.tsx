@@ -4,7 +4,7 @@ import type { ReactNode } from"react";
 import { cn } from"@/lib/utils";
 
 export type PillTone ="slate" |"emerald" |"sky" |"amber" |"violet" |"muted";
-export type PillSize ="sm" |"md";
+type PillSize ="sm" |"md";
 
 export interface CmmPillProps {
  children: ReactNode;

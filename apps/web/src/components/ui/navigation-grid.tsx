@@ -49,7 +49,7 @@ const ICON_MAP = {
   Users,
 } satisfies Record<string, LucideIcon>;
 
-export type NavigationGridIconName = keyof typeof ICON_MAP;
+type NavigationGridIconName = keyof typeof ICON_MAP;
 
 interface NavigationGridProps {
   items: NavigationGridItem[];

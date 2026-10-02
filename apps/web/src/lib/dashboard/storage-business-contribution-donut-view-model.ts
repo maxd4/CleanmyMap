@@ -6,7 +6,7 @@ import type {
   StorageBusinessContributionReport,
 } from "@/lib/supabase/storage-business-contribution";
 
-export const STORAGE_COLORS = [
+const STORAGE_COLORS = [
   "#38bdf8",
   "#34d399",
   "#f59e0b",
@@ -16,7 +16,7 @@ export const STORAGE_COLORS = [
   "#22c55e",
 ] as const;
 
-export const PRESSURE_COLORS = [
+const PRESSURE_COLORS = [
   "#60a5fa",
   "#22c55e",
   "#f97316",
@@ -63,7 +63,7 @@ export function formatSignedPercent(value: number | null): string {
   return `${sign}${formatPercent(Math.abs(value))}%`;
 }
 
-export function formatSignedNumber(value: number): string {
+function formatSignedNumber(value: number): string {
   const sign = value > 0 ? "+" : value < 0 ? "-" : "";
   return `${sign}${Math.abs(Math.round(value))}`;
 }
@@ -99,7 +99,7 @@ export function getModeValueLabel(mode: ContributionMetricMode, value: number): 
   return mode === "pressure" ? `${Math.round(value)} pts` : formatStorageBytes(value);
 }
 
-export function formatSignedStorageBytes(value: number): string {
+function formatSignedStorageBytes(value: number): string {
   const sign = value > 0 ? "+" : value < 0 ? "-" : "";
   return `${sign}${formatStorageBytes(Math.abs(value))}`;
 }
@@ -108,7 +108,7 @@ export function getModeDeltaLabel(mode: ContributionMetricMode, value: number): 
   return mode === "pressure" ? `${formatSignedNumber(value)} pts` : formatSignedStorageBytes(value);
 }
 
-export function getModeColors(mode: ContributionMetricMode): readonly string[] {
+function getModeColors(mode: ContributionMetricMode): readonly string[] {
   return mode === "pressure" ? PRESSURE_COLORS : STORAGE_COLORS;
 }
 

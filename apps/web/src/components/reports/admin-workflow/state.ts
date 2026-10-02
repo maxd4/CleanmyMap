@@ -19,7 +19,7 @@ import type {
  ModerationJournalEntry,
 } from"./types";
 
-export const DEFAULT_IMPORT_PAYLOAD = '{\n"items": []\n}';
+const DEFAULT_IMPORT_PAYLOAD = '{\n"items": []\n}';
 
 export function resolveAdminWorkflowInitialValues(params: {
  initialStatus?: ActionStatus | "all";

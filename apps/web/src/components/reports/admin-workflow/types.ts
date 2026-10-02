@@ -5,7 +5,6 @@ import type {
  ActionListItem,
  ActionStatus,
  ActionSubmissionMode,
- ActionWasteBreakdown,
 } from"@/lib/actions/types";
 import type { ReportScopeChoice, ReportScopeKind } from"@/lib/reports/scope";
 import type {
@@ -49,7 +48,7 @@ export type ImportDryRunSummary = {
 
 export type AdminOperationAuditItem = AdminOperationAuditEntry;
 
-export type PreviewRow = {
+type PreviewRow = {
  item: ActionListItem;
  quality: ActionQualityResult;
 };
@@ -180,14 +179,4 @@ export type AdminWorkflowController = {
  onImportDryRun: () => Promise<void>;
  onImportPastActions: () => Promise<void>;
  onModerateEntity: () => Promise<void>;
-};
-
-export type WorkflowActionLike = {
- id: string;
- action_date: string;
- location_label: string;
- status: ActionStatus;
- association_name?: string | null;
- submission_mode?: ActionSubmissionMode | null;
- waste_breakdown?: ActionWasteBreakdown | null;
 };

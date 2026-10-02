@@ -505,7 +505,3 @@ export function buildOfficialReportHtml(payload: PdfReportPayload): string {
 </body>
 </html>`;
 }
-
-export const __testing = {
-  escapeHtml,
-};

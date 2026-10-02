@@ -99,7 +99,7 @@ const SOMMAIRE_EXPLORER_HERO: PageFamilyHeroTokens = {
 };
 
 /** Bloc 01 — orange + brun combinés (fond page + titres). */
-export const ACCUEIL_PILOTAGE_FAMILY: PageFamilyDefinition = {
+const ACCUEIL_PILOTAGE_FAMILY: PageFamilyDefinition = {
   id: "accueil-pilotage",
   label: FAMILY_META["accueil-pilotage"].label,
   backdropToneKey: FAMILY_META["accueil-pilotage"].backdropToneKey,
@@ -113,9 +113,6 @@ export const ACCUEIL_PILOTAGE_FAMILY: PageFamilyDefinition = {
   },
   card: ACCUEIL_PILOTAGE_CARD,
 };
-
-/** @deprecated Utiliser `ACCUEIL_PILOTAGE_FAMILY.hero` ou `resolvePageFamily`. */
-export const ACCUEIL_PILOTAGE_PAGE_HERO = ACCUEIL_PILOTAGE_FAMILY.hero;
 
 export const PAGE_FAMILIES = {
   homepage: {

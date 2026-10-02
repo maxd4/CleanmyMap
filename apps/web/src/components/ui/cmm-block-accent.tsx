@@ -11,7 +11,7 @@ import {
 
 export type AccentElement = "dot" | "bar" | "ring" | "gradient" | "glow";
 
-export interface CmmBlockAccentProps {
+interface CmmBlockAccentProps {
   /** Accent à utiliser (direct) */
   accent?: BlockAccent;
   /** Section pour dériver l'accent (alternative) */

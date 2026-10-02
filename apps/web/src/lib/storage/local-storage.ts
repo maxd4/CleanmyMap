@@ -24,7 +24,7 @@ export function canUseLocalStorage(): boolean {
   return isBrowser();
 }
 
-export function readLocalStorageRaw(key: string): string | null {
+function readLocalStorageRaw(key: string): string | null {
   if (!isBrowser()) {
     return null;
   }
@@ -36,7 +36,7 @@ export function readLocalStorageRaw(key: string): string | null {
   }
 }
 
-export function writeLocalStorageRaw(key: string, value: string): boolean {
+function writeLocalStorageRaw(key: string, value: string): boolean {
   if (!isBrowser()) {
     return false;
   }
@@ -121,23 +121,6 @@ export function createLocalStorageStore<T>(
   };
 }
 
-export function createLocalStorageJsonStore<T>(
-  key: string,
-  guard: LocalStorageJsonGuard<T>,
-): LocalStorageStore<T> {
-  return createLocalStorageStore<T>(key, {
-    parse: (raw) => {
-      try {
-        const parsed: unknown = JSON.parse(raw);
-        return guard(parsed) ? parsed : null;
-      } catch {
-        return null;
-      }
-    },
-    serialize: (value) => JSON.stringify(value),
-  });
-}
-
 export function createLocalStorageStringStore<T extends string>(
   key: string,
   allowedValues: readonly T[],
@@ -159,12 +142,4 @@ export function isBooleanRecord(value: unknown): value is Record<string, boolean
   }
 
   return Object.values(value).every((entry) => typeof entry === "boolean");
-}
-
-export function isStringRecord(value: unknown): value is Record<string, string> {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return Object.values(value).every((entry) => typeof entry === "string");
 }
