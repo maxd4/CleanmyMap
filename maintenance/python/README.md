@@ -17,6 +17,10 @@ Les fichiers de dépendances (`requirements.txt`,
 `requirements-dev.txt`) et `pytest.ini` définissent l'environnement de ce
 sous-arbre.
 
+L'interpréteur supporté est Python `>=3.10`. Le code CURRENT utilise notamment
+la syntaxe d'annotations union et les génériques intégrés introduits par cette
+version.
+
 ## Frontières et règles
 
 - Ne pas importer la logique de maintenance dans `apps/web` ou `apps/mobile`.
