@@ -6,8 +6,8 @@ export const LEGAL_CONTENT_REPORT_MAX_URL_LENGTH = 2048;
 export const LEGAL_CONTENT_REPORT_MAX_REASON_LENGTH = 5000;
 export const LEGAL_CONTENT_REPORT_MAX_IDENTITY_EXCEPTION_REASON_LENGTH = 1000;
 
-export type LegalContentReportStatus = "open" | "treated" | "archived";
-export type LegalContentReportCreatorState =
+type LegalContentReportStatus = "open" | "treated" | "archived";
+type LegalContentReportCreatorState =
   | "new"
   | "responded"
   | "treated"

@@ -19,21 +19,21 @@ export type LocalRecordSource =
   | "manual_import"
   | "system_sync";
 
-export type LocalGeo = {
+type LocalGeo = {
   label: string;
   city?: string | null;
   latitude?: number | null;
   longitude?: number | null;
 };
 
-export type LocalMetrics = {
+type LocalMetrics = {
   wasteKg?: number | null;
   cigaretteButts?: number | null;
   volunteersCount?: number | null;
   durationMinutes?: number | null;
 };
 
-export type LocalTrace = {
+type LocalTrace = {
   externalId?: string | null;
   originTable?: string | null;
   validatedBy?: string | null;
@@ -42,7 +42,7 @@ export type LocalTrace = {
   notes?: string | null;
 };
 
-export type LocalMapMeta = {
+type LocalMapMeta = {
   displayable: boolean;
   lat?: number | null;
   lon?: number | null;

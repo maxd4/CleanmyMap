@@ -1,7 +1,7 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import fallbackManifest from "../../../public/images/action-fallbacks/action-fallback-images.json";
 
-export type ActionFallbackEnvironment =
+type ActionFallbackEnvironment =
   | "urban"
   | "park"
   | "forest"
@@ -12,7 +12,7 @@ export type ActionFallbackEnvironment =
   | "village"
   | "countryside";
 
-export type ActionFallbackKind =
+type ActionFallbackKind =
   | "cleanup"
   | "sorting"
   | "cigarette_butts"

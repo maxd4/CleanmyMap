@@ -1,9 +1,9 @@
 import {
-  PARCOURS_ROUTE_PREFIX,
-  PROFILE_ROUTE_PREFIX,
+  PARCOURS_ROUTE,
+  PROFIL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
 
-const PROFILE_ROUTE_PREFIXES = [PROFILE_ROUTE_PREFIX, PARCOURS_ROUTE_PREFIX] as const;
+const PROFILE_ROUTE_PREFIXES = [PROFIL_ROUTE, PARCOURS_ROUTE] as const;
 
 export function getRoleSwitchTargetPath(
   currentPathname: string,

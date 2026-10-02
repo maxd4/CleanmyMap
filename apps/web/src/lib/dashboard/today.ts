@@ -9,18 +9,18 @@ export type DashboardRecommendedAction = {
   reason: string;
 };
 
-export type DashboardTodayTile = {
+type DashboardTodayTile = {
   label: string;
   title: string;
   detail: string;
   meta: string;
 };
 
-export type DashboardActionTile = DashboardTodayTile & {
+type DashboardActionTile = DashboardTodayTile & {
   href: string;
 };
 
-export type DashboardTodayReadyState = {
+type DashboardTodayReadyState = {
   kind: "ready";
   syncedAtLabel: string;
   latestActivity: DashboardTodayTile;
@@ -28,14 +28,14 @@ export type DashboardTodayReadyState = {
   nextAction: DashboardActionTile;
 };
 
-export type DashboardTodayEmptyState = {
+type DashboardTodayEmptyState = {
   kind: "empty";
   syncedAtLabel: string;
   message: string;
   nextAction: DashboardActionTile;
 };
 
-export type DashboardTodayErrorState = {
+type DashboardTodayErrorState = {
   kind: "error";
   message: string;
   nextAction: DashboardActionTile;

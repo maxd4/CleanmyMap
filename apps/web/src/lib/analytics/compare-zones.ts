@@ -9,7 +9,7 @@ export type ZoneCompareInput = {
   volunteersCount: number;
 };
 
-export type ZoneCompareRow = {
+type ZoneCompareRow = {
   area: string;
   surfaceKm2: number;
   currentActions: number;

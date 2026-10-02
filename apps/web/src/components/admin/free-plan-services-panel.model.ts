@@ -22,7 +22,7 @@ import type {
 import type { EnvironmentalImpactInfrastructureServiceKey } from "@/lib/environmental-impact-estimator/types";
 import type { ServiceStatusInfo } from "@/lib/dashboard/status";
 
-export type ServicePressureRow = {
+type ServicePressureRow = {
   key: string;
   label: string;
   currentKgCo2eProxy: number | null;

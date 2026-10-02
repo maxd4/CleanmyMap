@@ -24,7 +24,7 @@ export type CreatorInboxStatus =
   | "content_removed"
   | "closed";
 
-export type CreatorInboxItemDetail = {
+type CreatorInboxItemDetail = {
   label: string;
   value: string;
 };

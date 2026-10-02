@@ -11,8 +11,8 @@ export type ModerationEntityType = "action" | "clean_place";
 export type ModerationActionStatus = "pending" | "approved" | "rejected";
 export type ModerationCleanPlaceStatus = "new" | "validated" | "cleaned";
 export type ModerationVisibility = "unchanged" | "visible" | "hidden";
-export type ModerationSignalementSource = "trash_spotter_spots";
-export type ModerationSourceTable =
+type ModerationSignalementSource = "trash_spotter_spots";
+type ModerationSourceTable =
   | "actions"
   | "submissions"
   | ModerationSignalementSource;

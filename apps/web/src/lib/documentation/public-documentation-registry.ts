@@ -1,4 +1,4 @@
-export type PublicDocumentationKind = "markdown" | "image" | "text";
+type PublicDocumentationKind = "markdown" | "image" | "text";
 
 export type PublicDocumentationEntry = {
   name: string;

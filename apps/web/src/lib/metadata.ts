@@ -111,5 +111,3 @@ export const metadata: Metadata = {
     title: "CleanMyMap",
   },
 };
-
-export default metadata;

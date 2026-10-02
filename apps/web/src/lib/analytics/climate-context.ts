@@ -41,7 +41,7 @@ export type ClimateIndicator = {
   confidence: IndicatorConfidence;
 };
 
-export type ClimateComparison = {
+type ClimateComparison = {
   current: {
     actionsTotal: number;
     volumeKg: number;

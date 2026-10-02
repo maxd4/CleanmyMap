@@ -2,7 +2,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { getClerkService } from "@/lib/services/clerk";
 import type { LegalContentReportDecisionAction } from "@/lib/legal-content-report/legal-content-report";
 
-export type LegalContentMutationSnapshot = {
+type LegalContentMutationSnapshot = {
   source: "actions";
   status: string | null;
   moderationVisibility: string | null;

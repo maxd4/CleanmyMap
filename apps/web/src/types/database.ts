@@ -22,14 +22,6 @@ export type CommunityEventRow = {
   location_source: CommunityEventLocationSource | null;
   description: string | null;
 };
-
-export type EventRsvpRow = {
-  event_id: string;
-  participant_clerk_id: string;
-  status: "yes" | "maybe" | "no";
-  updated_at?: string;
-};
-
 export type ActionParticipantRow = {
   id: string;
   created_at: string;
@@ -74,36 +66,6 @@ export type ActionRegistrationRow = {
     | "admin"
     | "admin_override"
     | "import";
-};
-
-export type ActionConversationRow = {
-  id: string;
-  action_id: string;
-  created_at: string;
-  updated_at: string;
-};
-
-export type ActionConversationMemberRow = {
-  conversation_id: string;
-  user_id: string;
-  granted_at: string;
-  access_source:
-    | "owner"
-    | "action_participant"
-    | "organizer"
-    | "future_registration"
-    | "final_participant";
-};
-
-export type ActionConversationExclusionRow = {
-  conversation_id: string;
-  user_id: string;
-  excluded_by_user_id: string;
-  excluded_at: string;
-  reason: string | null;
-  active: boolean;
-  reinstated_at: string | null;
-  reinstated_by_user_id: string | null;
 };
 
 export type ActionRow = {
@@ -151,27 +113,4 @@ export type ActionRow = {
   action_phase: ActionPhase;
   preparation_data: ActionPreparationData;
   geometry_source?: ActionGeometrySource | null;
-};
-
-export type ActionOrganizerRow = {
-  id: string;
-  created_at: string;
-  action_id: string;
-  organizer_clerk_id: string;
-  organizer_label: string;
-  organizer_handle: string | null;
-  is_primary: boolean;
-};
-
-export type TrainingExampleRow = {
-  action_id: string;
-  created_at: string;
-  photos: unknown;
-  poids_reel: number | null;
-  poids_estime: number | null;
-  intervalle: unknown;
-  confiance: number | null;
-  metadata: Record<string, unknown>;
-  model_version: string;
-  status: "pending_label" | "labelled" | "needs_review" | "no_photo";
 };

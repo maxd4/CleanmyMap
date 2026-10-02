@@ -2,7 +2,7 @@ export type RollingTimeScope = "rolling30d" | "rolling90d" | "rolling365d";
 
 export type TimeScope = "allTime" | "yearToDate" | RollingTimeScope;
 
-export type TimeScopeDefinition = {
+type TimeScopeDefinition = {
   label: {
     fr: string;
     en: string;

@@ -18,7 +18,7 @@ import type {
 import type { ModerationBlockSummary } from "@/components/admin/moderation-by-block-panel";
 import { ADMIN_SIGNALEMENTS_MODERATION_HREF } from "@/components/reports/admin-workflow/helpers";
 
-export type PendingActionModerationRow = {
+type PendingActionModerationRow = {
   id: string;
   action_date: string;
   location_label: string;
@@ -27,7 +27,7 @@ export type PendingActionModerationRow = {
   duration_minutes: number;
 };
 
-export type AdminSource<T> =
+type AdminSource<T> =
   | { status: "available"; data: T }
   | { status: "unavailable" };
 
