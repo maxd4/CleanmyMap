@@ -6,7 +6,9 @@ const migration = readFileSync(
   "utf8",
 );
 
-describe("funding Stripe migration contract", () => {
+// STATIC_CONTRACT: this source guard does not execute PostgreSQL RPC semantics,
+// including idempotence, atomicity, rollback or effective RLS.
+describe("funding Stripe migration STATIC_CONTRACT", () => {
   it("keeps funding facts and aggregates server-owned", () => {
     for (const table of ["funding_contributions", "funding_webhook_events", "funding_public_aggregates"]) {
       expect(migration).toMatch(new RegExp(`alter table public\\.${table} enable row level security`, "i"));
@@ -15,7 +17,7 @@ describe("funding Stripe migration contract", () => {
     }
   });
 
-  it("provides idempotent checkout and refund RPC boundaries", () => {
+  it("declares checkout and refund RPC idempotency guards", () => {
     expect(migration).toContain("on conflict (stripe_event_id) do nothing");
     expect(migration).toContain("create or replace function public.apply_funding_checkout");
     expect(migration).toContain("create or replace function public.apply_funding_refund");

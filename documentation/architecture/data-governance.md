@@ -200,19 +200,11 @@ administratif dédié) après la décision AuthN/AuthZ du serveur ; l'anon key n
 porte toutefois pas à elle seule un JWT Clerk et ne remplace donc pas le
 client RLS Clerk pour une lecture authentifiée.
 
-État de vérification au 25 août 2026 : les contrats d'authentification et les
-tests offline des flux canonical passent. Le smoke production authentifié a
-ensuite été exécuté avec une session Clerk temporaire : `POST /api/spots` a
-retourné `201`, la ligne `spot`/`new` a été retrouvée dans
-`trash_spotter_spots`, l'événement `spot_create_pending` est resté à `0` XP,
-aucun `points_ledger`, `xp_audit` ou notification de validation n'a été créé,
-et le signalement est apparu dans les flux spots, actions unifiés et carte.
-Le marker `CMM_PROD_SMOKE_1787677027552` et l'ID de signalement
-`47bcd82a-aed2-45b3-a2e2-2e26f5cb0ab1` ont ensuite été nettoyés avec leurs
-artefacts de progression ; aucune ligne ne subsiste dans la source canonical,
-la table legacy ou `progression_events`. La session Clerk temporaire a été
-révoquée. Le replay persistant local reste non exécuté, Docker et le runtime
-Supabase local n'étant pas disponibles.
+Les contrats d'authentification et de gouvernance restent séparés de leurs
+preuves ponctuelles d'exploitation. Les résultats de smoke, marqueurs,
+identifiants temporaires et limites d'exécution sont conservés dans le
+[CHANGELOG opérationnel](../operations/CHANGELOG.md), lorsqu'ils doivent être
+préservés ; ils ne constituent pas le contrat CURRENT.
 
 ### Maintenance et opérations
 

@@ -14,7 +14,9 @@ const createActionSignature =
 const moderateActionSignature =
   "public.moderate_action_atomically( uuid, text, text )";
 
-it("revokes action RPC execution from public client roles", () => {
+// STATIC_CONTRACT: privilege source shape only; effective EXECUTE privileges
+// require an executed PostgreSQL integration proof.
+it("revokes action RPC execution from public client roles [STATIC_CONTRACT]", () => {
   expect(migration).toContain(
     `revoke all on function ${createActionSignature} from public, anon, authenticated;`,
   );
@@ -23,7 +25,7 @@ it("revokes action RPC execution from public client roles", () => {
   );
 });
 
-it("retains execution only for service_role", () => {
+it("retains execution only for service_role [STATIC_CONTRACT]", () => {
   expect(migration).toContain(
     `grant execute on function ${createActionSignature} to service_role;`,
   );
@@ -35,7 +37,7 @@ it("retains execution only for service_role", () => {
   );
 });
 
-it("does not alter function bodies, actions RLS, or Storage", () => {
+it("does not alter function bodies, actions RLS, or Storage [STATIC_CONTRACT]", () => {
   expect(migration).not.toMatch(/create\s+(?:or\s+replace\s+)?function/);
   expect(migration).not.toMatch(/(?:create|alter|drop)\s+policy/);
   expect(migration).not.toMatch(/public\.actions/);

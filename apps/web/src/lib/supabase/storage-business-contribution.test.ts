@@ -121,6 +121,68 @@ describe("storage business contributions", () => {
 
     expect(report.alerts.some((alert) => alert.signal === "quotaShare")).toBe(expectedAlert);
   });
+
+  it.each([
+    [34.9, false],
+    [35, true],
+    [35.1, true],
+  ])("applies the growth warning boundary at %s%%", (growthPercent, expectedAlert) => {
+    const currentBytes = 100 * (1 + growthPercent / 100);
+    const currentSnapshot = {
+      ...buildStorageUsageSnapshot([], quotaInfo, "2026-05-20T12:00:00.000Z"),
+      businessBreakdown: [
+        { key: "actions_terrain", label: "Actions terrain", bytes: currentBytes, count: 1, sharePercent: 10, averageBytes: currentBytes },
+      ],
+    };
+    const previousSnapshot = {
+      ...currentSnapshot,
+      snapshotMonth: "2026-04-01",
+      businessBreakdown: [
+        { key: "actions_terrain", label: "Actions terrain", bytes: 100, count: 1, sharePercent: 10, averageBytes: 100 },
+      ],
+    };
+    const report = buildStorageBusinessContributions({
+      objects: [],
+      currentSnapshot,
+      previousSnapshot,
+      historyRecords: [{
+        snapshot_month: "2026-04-01",
+        generated_at: "2026-04-20T12:00:00.000Z",
+        quota_bytes: quotaInfo.bytes,
+        total_bytes: 100,
+        remaining_bytes: quotaInfo.bytes - 100,
+        usage_percent: 0.5,
+        object_count: 1,
+        bucket_breakdown: [],
+        extension_breakdown: [],
+        business_breakdown: previousSnapshot.businessBreakdown,
+        largest_files: [],
+        business_contributions: [],
+        warnings: [],
+      }],
+    });
+    const item = report.items.find((entry) => entry.id === "actions_terrain");
+
+    expect(item?.deltaPercent).toBeCloseTo(growthPercent);
+    expect(item?.alerts.some((alert) => alert.signal === "growth")).toBe(expectedAlert);
+  });
+
+  it("does not emit a growth alert when the previous measurement is absent", () => {
+    const currentSnapshot = {
+      ...buildStorageUsageSnapshot([], quotaInfo, "2026-05-20T12:00:00.000Z"),
+      businessBreakdown: [
+        { key: "actions_terrain", label: "Actions terrain", bytes: 135, count: 1, sharePercent: 10, averageBytes: 135 },
+      ],
+    };
+    const report = buildStorageBusinessContributions({
+      objects: [],
+      currentSnapshot,
+      previousSnapshot: null,
+    });
+
+    expect(report.items.find((item) => item.id === "actions_terrain")?.deltaPercent).toBeNull();
+    expect(report.alerts.some((alert) => alert.signal === "growth")).toBe(false);
+  });
 });
 
 function expectStorageBusinessContributionReport(
