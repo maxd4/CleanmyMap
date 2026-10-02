@@ -31,6 +31,12 @@ Fallback statique:
 - Reponses 429 homogenes sur les surfaces publiques
 - Permissions minimales sur les jobs CI qui appellent ces routes
 
+Les honeypots mentionnés ici participent au traitement anti-abus des formulaires
+publics ; ils ne sont pas des honeytokens, decoys ou canaries de cybersécurité.
+Ces contrôles actifs distincts suivent le contrat `CURRENT` de
+[`SECURITY.md`](./SECURITY.md#contr%C3%B4les-de-deception-et-anti-abus) et son
+registre exécutable.
+
 ## Zones sensibles
 - `/api/admin/*`
 - endpoints d'import/export data

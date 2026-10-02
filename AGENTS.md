@@ -441,6 +441,20 @@ Les règles spécialisées de sécurité et d’accès vivent dans
 `documentation/security/`, `apps/web/AGENTS.md`,
 `apps/web/src/app/api/AGENTS.md` et `apps/web/supabase/AGENTS.md`.
 
+### Deception de sécurité
+
+Un honeypot, honeytoken, decoy ou canary de sécurité est un contrôle actif de
+détection, jamais du dead-code de diversion. Les honeypots anti-spam qui
+participent au traitement d'un formulaire restent des protections anti-abus
+normales. Tout futur leurre cybersécurité doit avoir une entrée précise, aucun
+privilège ni secret réel, aucun effet métier, un monitoring exploitable, un
+owner, des tests positifs et négatifs et une documentation `CURRENT` ; son
+absence de consumer normal ne suffit pas à le conserver. Le registre
+`scripts/checks/security-deception-registry.json` et
+`npm run check:security-deception` gardent ce contrat sans affaiblir Knip,
+jscpd, CodeQL, Semgrep ou Secret Scanning. La source canonique détaillée est
+`documentation/security/SECURITY.md`.
+
 ## Code Review Rules
 
 ### Préservation des changements utilisateur

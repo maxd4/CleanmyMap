@@ -99,6 +99,64 @@ npm run security:secrets
 
 La CI doit exécuter cet audit même pour un commit uniquement documentaire.
 
+## Contrôles de deception et anti-abus
+
+Un honeypot, honeytoken, decoy ou canary de sécurité est un contrôle actif de
+détection. Ce n'est jamais du code mort ajouté pour brouiller l'analyse ou
+ralentir un attaquant.
+
+Le registre machine [`security-deception-registry.json`](../../scripts/checks/security-deception-registry.json)
+est la source de vérité de l'état courant. Il est volontairement vide : aucun
+honeytoken, decoy ou canary de cybersécurité n'est nécessaire actuellement.
+Le contrôle associé est exécutable avec :
+
+```bash
+npm run check:security-deception
+```
+
+| État CURRENT | Contrat |
+|---|---|
+| Honeypots anti-spam applicatifs | `KEEP` lorsqu'ils participent réellement au traitement d'un formulaire |
+| Honeytokens de cybersécurité | Non nécessaires actuellement |
+| Faux code ou dead-code de diversion | Interdit |
+| Fausses vulnérabilités | Interdit |
+| Decoy, honeytoken ou canary futur | Décision de sécurité explicite et monitoring exploitable requis |
+
+Tout futur mécanisme de deception doit être explicitement approuvé comme
+capacité de sécurité et déclarer dans le registre :
+
+- un objectif de détection, une entrée précise et un marqueur vérifiable ;
+- aucun privilège, credential, token, secret ou donnée personnelle réelle ;
+- aucun effet métier légitime et aucun accès à une ressource sensible ;
+- une observation et une alerte exploitables ;
+- un owner de maintenance ;
+- des tests positifs et négatifs exécutables ;
+- une documentation `CURRENT` et une décision de sécurité revue sur un SHA
+  complet.
+
+Les honeypots anti-spam qui participent réellement au traitement d'un formulaire
+restent des protections applicatives anti-abus normales. L'absence de consumer
+métier normal peut être intentionnelle pour un leurre, mais ne suffit jamais à
+justifier sa conservation.
+
+La politique qualité reste inchangée : un finding historique déjà présent dans
+la baseline ne peut recevoir `KEEP_JUSTIFIED` que si le contrat de sécurité et
+les preuves démontrent que l'absence de consumer normal est intentionnelle.
+Un nouveau mécanisme ne peut pas contourner `NEW_DEAD_CODE` par justification
+opportuniste, exclusion globale ou affaiblissement de Knip ; son registre,
+son garde-fou et son point d'entrée doivent exister avant son introduction.
+De même, un clone historique de deception ne peut recevoir `KEEP_INTENTIONAL`
+qu'avec raison, preuve et revue explicites. Un nouveau clone laisse
+`NEW_CLONE_FINGERPRINTS` bloquant : aucune baseline, aucun seuil et aucun ignore
+ne peut être modifié uniquement pour introduire un leurre.
+
+Sont interdits : reproduire une vraie vulnérabilité, créer un endpoint privilégié
+exploitable, stocker de vrais credentials/tokens/données personnelles comme
+appât, ajouter du dead-code de diversion, créer une seconde logique métier
+factice ou affaiblir CodeQL, Semgrep, Knip, jscpd, Secret Scanning ou un autre
+garde-fou. Toute future décision de decoy ou honeytoken doit conserver un
+monitoring exploitable et être enregistrée dans ce contrat.
+
 ## Supabase
 
 Règles :
