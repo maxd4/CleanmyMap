@@ -425,46 +425,97 @@ scientifique, ni l'état `clean_place`.
 
 La couleur ne doit pas porter l'information de fiabilité géométrique. Cette information utilise d'autres canaux.
 
-### Parcours
+### Réalité / déclaration / hypothèse
 
-- trait plein : parcours déclaré ou connu ;
-- trait pointillé : parcours indicatif ou reconstruit.
+La provenance géométrique est une information métier indépendante de la
+couleur de la carte :
 
-Le pointillé signifie donc « parcours reconstruit », pas « pollution incertaine ».
+- `gpx_import` = observation d'une trajectoire fournie par l'utilisateur ; sa
+  distance est mesurée depuis la trace GPX ;
+- `manual` = parcours ou zone explicitement déclaré ou dessiné par
+  l'utilisateur ; ce n'est pas une observation GPS ;
+- `reference` = géométrie connue d'une emprise identifiable, notamment un parc,
+  jardin, campus, place ou autre espace clos lorsqu'une emprise fiable existe ;
+- `routed` = parcours reconstruit sur le réseau piéton ; c'est une hypothèse
+  géographique, jamais un trajet réellement observé ;
+- `estimated_route` = reconstruction plus incertaine ou fallback géodésique ;
+  elle reste explicitement hypothétique ;
+- `fallback_point` = localisation seule, utilisée lorsqu'aucune représentation
+  plus informative n'est exploitable.
 
-Pour une action sans géométrie réelle, le serveur reconstruit une topologie
+`loop` et `point_to_point` décrivent exclusivement une topologie. Ils ne
+constituent jamais une preuve de trajet réel. Un trait plein peut donc être une
+déclaration ou une référence ; un trait pointillé signale un parcours
+reconstruit, pas un niveau de pollution.
+
+La hiérarchie de résolution canonique est :
+
+1. `gpx_import` ;
+2. `manual` ;
+3. `reference` ;
+4. `routed` ;
+5. `estimated_route` ;
+6. `fallback_point`.
+
+Après les géométries réellement fournies (`gpx_import` et `manual`), le moteur
+de reconstruction suit donc : `référence pertinente → réseau piéton →
+reconstruction réseau hypothétique → vol d'oiseau → point`. Une adresse seule
+ne prouve pas l'emprise d'une zone : le resolver générique ne fabrique plus
+d'ellipse 85×55 m ou 110×72 m. `estimated_area` est conservé uniquement pour
+la lecture compatible de géométries déjà persistées ; il ne constitue plus une
+sortie normale de reconstruction.
+
+Pour une action sans géométrie fournie, le serveur conserve une topologie
 canonique explicite : `loop` ou `point_to_point`. En mode `loop`, le départ est
 obligatoire, le mi-parcours est optionnel et le dernier point revient
-explicitement au départ ; sans mi-parcours, quelques points bornés sont générés
-autour de l'origine. En mode `point_to_point`, le départ et l'arrivée sont
-obligatoires, le mi-parcours reste optionnel et aucun retour automatique n'est
-ajouté. Les anciens payloads sont centralisés par compatibilité : arrivée
-présente sans topologie → `point_to_point`, arrivée absente → `loop`. Une
-arrivée manquante ou non résolue est une erreur explicite.
+explicitement au départ. Avec un mi-parcours déclaré, le moteur route
+`départ → mi-parcours → départ`. Sans mi-parcours, il génère plusieurs
+hypothèses bornées et déterministes autour du départ, les route sur le réseau
+piéton, puis retient la géométrie réseau valide la plus proche de la cible,
+avec des critères secondaires de cohérence, de continuité des segments nommés
+et de stabilité du résultat. La forme de l'hypothèse n'est jamais le tracé
+final par elle-même.
+
+En mode `point_to_point`, le départ et l'arrivée sont obligatoires, le
+mi-parcours reste optionnel et aucun retour automatique n'est ajouté. Le réseau
+piéton est prioritaire. Si la distance minimale nécessaire entre les extrémités
+est supérieure à la cible, la géographie réelle prime ; le moteur ne fabrique
+pas un trajet artificiellement plus court. Les anciens payloads sont
+centralisés par compatibilité : arrivée présente sans topologie →
+`point_to_point`, arrivée absente → `loop`. Une arrivée manquante ou non
+résolue est une erreur explicite.
 
 La distance cible est éditable dans `/actions/new`. La politique métier
-actuelle est versionnée `route-distance-v1` et applique 1 km par heure d'action.
+actuelle est versionnée `route-distance-v1` et applique `1 km par heure d'action`.
+La règle est donc : `routeTargetDistanceKm = durée × 1 km/h`.
+
 Une cible automatique est persistée avec `routeTargetDistanceSource =
 "derived"` et cette version de politique ; une modification explicite devient
 `"manual"` et sa valeur n'est jamais recalculée par une nouvelle politique.
-Les anciennes actions sans provenance canonique sont traitées comme dérivées
-à la lecture, sans mutation silencieuse de leur ligne. Les snapshots et les
-rebuilds recalculent uniquement la cible effective et sa présentation dérivée,
-jamais la géométrie persistée. La distance finale affichée, lorsqu'elle
-existe, est celle retournée par FOSSGIS/OSRM et reste distincte de cette cible.
-Une réponse réseau porte la source `routed` ; un repli local déterministe porte
-`estimated_route` et ne doit pas être présenté comme un parcours mesuré.
+Cette valeur est une contrainte de reconstruction, pas la preuve de la
+distance parcourue. Il faut distinguer strictement :
 
-La priorité de géométrie est : tracé GPX valide (`gpx_import`), tracé manuel
-valide, parcours opérationnel réel, reconstruction réseau serveur, géométrie de
-référence, repli estimé explicite, puis localisation ponctuelle. Un GPX est
-une géométrie fournie par l'utilisateur : sa distance observée est calculée
-depuis ses coordonnées et reste distincte de `routeTargetDistanceKm`. Il n'est
-ni classé `manual`, ni routé ou snappé par FOSSGIS/OSRM. Les traces multi-
-segments sont refusées lorsque la LineString canonique ne peut pas conserver
-leur séparation sans fabriquer une liaison. Aucun appel de routage n'est
-effectué depuis le navigateur et les anciennes polylignes synthétiques courtes
-ne sont plus produites par le resolver générique.
+- `routeObservedDistanceKm` = distance mesurée depuis un GPX ;
+- `routeNetworkDistanceKm` = distance retournée par le routage ou son mode de
+  provenance ;
+- `routeTargetDistanceKm` = cible métier de planification ;
+- distance à vol d'oiseau = distance géodésique de dernier recours, jamais une
+  distance réseau ou observée.
+
+Les anciennes actions sans provenance canonique sont traitées comme dérivées à
+la lecture, sans mutation silencieuse de leur ligne. Les snapshots et les
+rebuilds recalculent uniquement la cible effective et sa présentation dérivée,
+jamais la géométrie persistée. Un fallback géodésique conserve
+`estimated_route`, `routeGeometryMode = "fallback"` et le provider `none` (ou
+le contrat équivalent existant).
+
+Le provider FOSSGIS/OSRM expose un profil piéton, des segments et, lorsqu'ils
+sont disponibles, des noms d'étapes. Le moteur peut utiliser la continuité,
+la longueur des segments nommés, le nombre limité de changements de direction
+et la cohérence générale comme proxys de lisibilité. Il ne transforme pas ces
+proxys en classification OSM `primary`, `secondary` ou autre catégorie de voie
+que le provider ne fournit pas. Aucun appel de routage n'est effectué depuis le
+navigateur.
 
 ### Zones
 

@@ -33,4 +33,16 @@ describe("geometry presentation provenance", () => {
       strokeStyle: "solid",
     });
   });
+
+  it("keeps observation, declaration and reference wording distinct", () => {
+    expect(getGeometryPresentation(buildItem("gpx_import")).label).toBe(
+      "Tracé observé · GPX importé",
+    );
+    expect(getGeometryPresentation(buildItem("manual")).label).toBe(
+      "Géométrie déclarée · manuelle",
+    );
+    expect(getGeometryPresentation(buildItem("reference")).label).toBe(
+      "Zone de référence · emprise connue",
+    );
+  });
 });

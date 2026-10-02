@@ -39,8 +39,8 @@ describe("server-side action route reconstruction", () => {
     vi.unstubAllGlobals();
   });
 
-  it("builds a bounded closed loop whose target is passed to the network provider", async () => {
-    routeProviderMock.mockResolvedValueOnce(networkGeometry);
+  it("routes bounded loop hypotheses and keeps the provider distance authoritative", async () => {
+    routeProviderMock.mockResolvedValue(networkGeometry);
 
     const result = await reconstructActionRoute({
       latitude: 48.85,
@@ -50,6 +50,7 @@ describe("server-side action route reconstruction", () => {
     });
 
     const requestedWaypoints = routeProviderMock.mock.calls[0]?.[0] as [number, number][];
+    expect(routeProviderMock).toHaveBeenCalledTimes(4);
     expect(requestedWaypoints).toHaveLength(5);
     expect(requestedWaypoints[0]).toEqual([48.85, 2.35]);
     expect(requestedWaypoints.at(-1)).toEqual([48.85, 2.35]);
@@ -63,7 +64,7 @@ describe("server-side action route reconstruction", () => {
   });
 
   it("uses the explicit target without changing the measured provider distance", async () => {
-    routeProviderMock.mockResolvedValueOnce(networkGeometry);
+    routeProviderMock.mockResolvedValue(networkGeometry);
 
     await reconstructActionRoute({
       latitude: 48.85,
@@ -80,7 +81,7 @@ describe("server-side action route reconstruction", () => {
   });
 
   it("marks a provider fallback as an estimated route and keeps the loop", async () => {
-    routeProviderMock.mockResolvedValueOnce({
+    routeProviderMock.mockResolvedValue({
       ...networkGeometry,
       mode: "fallback",
       provider: "none",
@@ -110,6 +111,42 @@ describe("server-side action route reconstruction", () => {
     const waypoints = buildClosedLoopWaypoints([48.85, 2.35], 1);
     expect(waypoints).toHaveLength(5);
     expect(waypoints[0]).toEqual(waypoints.at(-1));
+  });
+
+  it("selects the network hypothesis closest to the target deterministically", async () => {
+    const distances = [0.62, 1.18, 0.91, 1.42];
+    let callIndex = 0;
+    routeProviderMock.mockImplementation(async (waypoints: [number, number][]) => ({
+      ...networkGeometry,
+      coordinates: waypoints,
+      distanceKm: distances[callIndex++] ?? 0.62,
+    }));
+
+    const result = await reconstructActionRoute({
+      topology: "loop",
+      latitude: 48.85,
+      longitude: 2.35,
+      locationLabel: "Rue de test, Paris",
+      durationMinutes: 60,
+    });
+
+    expect(routeProviderMock).toHaveBeenCalledTimes(4);
+    expect(result?.geometrySource).toBe("routed");
+    expect(result?.routeGeometry?.distanceKm).toBe(0.91);
+    expect(result?.drawing.coordinates[0]).toEqual(result?.drawing.coordinates.at(-1));
+  });
+
+  it("prefers a reliable closed-space reference before synthetic routing", async () => {
+    const result = await reconstructActionRoute({
+      topology: "loop",
+      latitude: 48.846,
+      longitude: 2.338,
+      locationLabel: "Jardin du Luxembourg",
+      durationMinutes: 60,
+    });
+
+    expect(routeProviderMock).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ geometrySource: "reference", drawing: { kind: "polygon" } });
   });
 
   it("respects a loop midpoint before returning to the departure", async () => {

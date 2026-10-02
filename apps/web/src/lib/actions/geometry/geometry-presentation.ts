@@ -42,10 +42,10 @@ export function getGeometryPresentation(
         reality: "real",
         label:
           origin === "manual"
-            ? "Géométrie réelle · manuelle"
+            ? "Géométrie déclarée · manuelle"
             : origin === "gpx_import"
-              ? "Tracé réel · GPX importé"
-              : "Zone réelle · référence",
+              ? "Tracé observé · GPX importé"
+              : "Zone de référence · emprise connue",
         strokeStyle: "solid",
       };
     case "routed":
