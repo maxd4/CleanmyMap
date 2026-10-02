@@ -35,9 +35,9 @@ pour être stabilisée et publiée rapidement. Le site web reste la surface
 complète du produit et continue d'évoluer indépendamment ; l'application mobile
 ne cherche pas à reproduire toutes ses pages ou capacités.
 
-Les deux axes qui pourront recevoir un développement mobile approfondi sont :
+Les deux axes de développement mobile approfondi sont :
 
-- le mode activité GPS live avec carte et tracé temps réel ;
+- le mode activité GPS live avec carte, restauration du tracé et suivi temps réel ;
 - les contacts d'urgence.
 
 Les autres capacités réutilisent au maximum les contrats, données et services
@@ -54,9 +54,11 @@ Le shell expose cinq destinations simples : `Accueil`, `Carte`, `Agir`,
 - `Démarrer une action` vérifie une seule fois les permissions GPS avant de créer
   une mission `pending` owner-scoped avec le `sub` Clerk, puis réutilise
   `startTracking` pour afficher la mission active. Si le démarrage GPS échoue,
-  la mission créée est annulée et l'écran actif n'est pas affiché. La carte live
-  et le tracé temps réel restent un lot dédié ; aucun formulaire d'action natif
-  ni lien `mission_actions` n'est ajouté ici ;
+  la mission créée est annulée et l'écran actif n'est pas affiché. La mission
+  active restaure les `gps_points` owner-scoped, fusionne son tracé UX local et
+  reprend le suivi foreground au retour au premier plan. Ce suivi ne réécrit pas
+  les points ni les métriques dans Supabase ; aucun formulaire d'action natif ni
+  lien `mission_actions` n'est ajouté ici ;
 - `Rejoindre une action` ouvre `/sections/rejoindre-une-action` sur le web ;
 - `Organiser une action` ouvre `/actions/new` sur le web ;
 - `Signaler un déchet` ouvre `/signalement` sur le web.
@@ -270,7 +272,8 @@ Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 ☑ Finalisation distance côté serveur ou RPC sûre (LOT 2B)
 ☑ Erreur de calcul de distance traitée
 ☑ Buffer offline conservé sans token Clerk
-☑ Restauration mission active testée
+  ☑ Restauration mission active et du tracé testée
+  ☑ Fusion serveur/local sans doublons visibles testée
 ☑ Refus de permissions testé
 ☑ Cohérence identité Clerk → Supabase testée
 ☑ Cache de token Clerk dans SecureStore configuré (LOT 1)
@@ -283,6 +286,9 @@ Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 ```bash
 npm run mobile:typecheck
 npm run mobile:test
+npm run mobile:security
+npm run mobile:lint
+npm run quality:mobile-coverage
 ```
 
 La baseline M0 couvre désormais par tests unitaires et contractuels :

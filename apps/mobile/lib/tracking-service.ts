@@ -378,6 +378,34 @@ export async function getMission(missionId: string): Promise<ServiceResult<Missi
   );
 }
 
+export async function getMissionTrack(missionId: string): Promise<ServiceResult<MissionLocation[]>> {
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+
+  try {
+    const result = await client
+      .from('gps_points')
+      .select('id, mission_id, latitude, longitude, accuracy_m, altitude_m, recorded_at')
+      .eq('mission_id', missionId)
+      .order('recorded_at', { ascending: true });
+
+    if (result.error) {
+      return { ok: false, error: `Impossible de restaurer le tracé : ${result.error.message}` };
+    }
+
+    const points = (result.data ?? []) as MissionLocation[];
+    points.sort((first, second) => Date.parse(first.recorded_at) - Date.parse(second.recorded_at));
+    return { ok: true, data: points };
+  } catch (error) {
+    return {
+      ok: false,
+      error: `Impossible de restaurer le tracé : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
+    };
+  }
+}
+
 export async function restoreActiveTracking(): Promise<string | null> {
   return await getStoredMissionId();
 }

@@ -76,4 +76,5 @@ describe('mobile GPS offline storage', () => {
     expect(insert).toHaveBeenCalledWith([point])
     expect(await getBufferCount()).toBe(1)
   })
+
 })
