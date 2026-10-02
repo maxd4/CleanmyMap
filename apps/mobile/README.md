@@ -51,10 +51,12 @@ Le shell expose cinq destinations simples : `Accueil`, `Carte`, `Agir`,
 
 `Agir` présente quatre choix :
 
-- `Démarrer une action` vérifie les permissions GPS, crée une mission `pending`
-  owner-scoped avec le `sub` Clerk, puis réutilise `startTracking` pour afficher
-  la mission active. La carte live et le tracé temps réel restent un lot dédié ;
-  aucun formulaire d'action natif ni lien `mission_actions` n'est ajouté ici ;
+- `Démarrer une action` vérifie une seule fois les permissions GPS avant de créer
+  une mission `pending` owner-scoped avec le `sub` Clerk, puis réutilise
+  `startTracking` pour afficher la mission active. Si le démarrage GPS échoue,
+  la mission créée est annulée et l'écran actif n'est pas affiché. La carte live
+  et le tracé temps réel restent un lot dédié ; aucun formulaire d'action natif
+  ni lien `mission_actions` n'est ajouté ici ;
 - `Rejoindre une action` ouvre `/sections/rejoindre-une-action` sur le web ;
 - `Organiser une action` ouvre `/actions/new` sur le web ;
 - `Signaler un déchet` ouvre `/signalement` sur le web.

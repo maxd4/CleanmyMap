@@ -45,24 +45,64 @@ async function requestPermissions(): Promise<ServiceResult> {
     return { ok: false, error: trackingWarning };
   }
 
-  const { status: fg } = await Location.requestForegroundPermissionsAsync();
-  if (fg !== 'granted') {
-    return { ok: false, error: 'Permission GPS premier plan refusée.' };
-  }
+  try {
+    const { status: fg } = await Location.requestForegroundPermissionsAsync();
+    if (fg !== 'granted') {
+      return { ok: false, error: 'Permission GPS premier plan refusée.' };
+    }
 
-  const { status: bg } = await Location.requestBackgroundPermissionsAsync();
-  if (bg !== 'granted') {
+    const { status: bg } = await Location.requestBackgroundPermissionsAsync();
+    if (bg !== 'granted') {
+      return {
+        ok: false,
+        error: 'Permission GPS arrière-plan refusée. Le suivi s\'arrêtera si l\'écran est éteint.',
+      };
+    }
+
+    return { ok: true, data: undefined };
+  } catch (error) {
     return {
       ok: false,
-      error: 'Permission GPS arrière-plan refusée. Le suivi s\'arrêtera si l\'écran est éteint.',
+      error: `Impossible de vérifier les permissions GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
     };
   }
-
-  return { ok: true, data: undefined };
 }
 
 export async function requestTrackingPermissions(): Promise<ServiceResult> {
   return requestPermissions();
+}
+
+async function cancelMissionAfterStartFailure(missionId: string): Promise<void> {
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) return;
+
+  const result = await executeMissionQuery(
+    async () => client
+      .from('missions')
+      .update({
+        status: 'cancelled',
+        ended_at: new Date().toISOString(),
+      })
+      .eq('id', missionId)
+      .select()
+      .single<Mission>(),
+    'Impossible d\'annuler la mission interrompue',
+  );
+
+  if (!result.ok) {
+    console.warn('[TrackingService] Nettoyage de mission échoué :', result.error);
+  }
+}
+
+async function stopStartedTracking(): Promise<void> {
+  try {
+    await Location.stopLocationUpdatesAsync(GPS_TASK_NAME);
+  } catch (error) {
+    console.warn(
+      '[TrackingService] Arrêt du GPS après échec impossible :',
+      error instanceof Error ? error.message : error,
+    );
+  }
 }
 
 async function executeMissionQuery(
@@ -100,8 +140,25 @@ export async function startTracking(missionId: string): Promise<ServiceResult<Mi
     return { ok: false, error: trackingWarning };
   }
 
-  const permResult = await requestPermissions();
-  if (!permResult.ok) return permResult;
+  try {
+    await Location.startLocationUpdatesAsync(GPS_TASK_NAME, {
+      accuracy: Location.Accuracy.Balanced,
+      timeInterval: 5 * 60 * 1000,
+      distanceInterval: 50,
+      deferredUpdatesInterval: 5 * 60 * 1000,
+      showsBackgroundLocationIndicator: true,
+      foregroundService: {
+        notificationTitle: 'CleanMyMap — Mission en cours',
+        notificationBody: 'Suivi GPS actif. Vous pouvez éteindre l\'écran.',
+        notificationColor: '#10b981',
+      },
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      error: `Impossible de démarrer le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
+    };
+  }
 
   const missionResult = await executeMissionQuery(
     async () => client
@@ -115,24 +172,39 @@ export async function startTracking(missionId: string): Promise<ServiceResult<Mi
       .single<Mission>(),
     'Impossible de démarrer la mission',
   );
-  if (!missionResult.ok) return missionResult;
+  if (!missionResult.ok) {
+    await stopStartedTracking();
+    return missionResult;
+  }
 
-  await setStoredMissionId(missionId);
-
-  await Location.startLocationUpdatesAsync(GPS_TASK_NAME, {
-    accuracy: Location.Accuracy.Balanced,
-    timeInterval: 5 * 60 * 1000,
-    distanceInterval: 50,
-    deferredUpdatesInterval: 5 * 60 * 1000,
-    showsBackgroundLocationIndicator: true,
-    foregroundService: {
-      notificationTitle: 'CleanMyMap — Mission en cours',
-      notificationBody: 'Suivi GPS actif. Vous pouvez éteindre l\'écran.',
-      notificationColor: '#10b981',
-    },
-  });
+  try {
+    await setStoredMissionId(missionId);
+  } catch (error) {
+    await stopStartedTracking();
+    return {
+      ok: false,
+      error: `Impossible de mémoriser la mission active : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
+    };
+  }
 
   return missionResult;
+}
+
+export async function startMobileMission(
+  volunteerId: string,
+  label = 'Action bénévole mobile',
+): Promise<ServiceResult<Mission>> {
+  const permissionResult = await requestTrackingPermissions();
+  if (!permissionResult.ok) return permissionResult;
+
+  const missionResult = await createMission(volunteerId, label);
+  if (!missionResult.ok) return missionResult;
+
+  const trackingResult = await startTracking(missionResult.data.id);
+  if (trackingResult.ok) return trackingResult;
+
+  await cancelMissionAfterStartFailure(missionResult.data.id);
+  return trackingResult;
 }
 
 export async function createMission(volunteerId: string, label = 'Action bénévole mobile'): Promise<ServiceResult<Mission>> {
