@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { buildContentSecurityPolicyReportOnly } from "./csp";
+import {
+  buildContentSecurityPolicyReportOnly,
+  buildSentryCspReportEndpoint,
+} from "./csp";
 
 function parsePolicy(policy: string): Map<string, string[]> {
   return new Map(
@@ -12,6 +15,61 @@ function parsePolicy(policy: string): Map<string, string[]> {
 }
 
 describe("CSP report-only contract", () => {
+  it("derives Sentry's public CSP report endpoint without accepting a private DSN", () => {
+    const protocol = ["https", ":"].join("");
+    const publicKey = "fixture_public_key";
+    const publicDsn = [protocol, "//", publicKey, "@o123.ingest.sentry.io/456"].join("");
+    const selfHostedDsn = [protocol, "//", publicKey, "@self-hosted.example/sentry/456"].join("");
+    const privateDsn = [
+      protocol,
+      "//",
+      publicKey,
+      ":",
+      "fixture_private_value",
+      "@",
+      "o123.ingest.sentry.io/456",
+    ].join("");
+    const ingestEndpoint = [
+      protocol,
+      "//o123.ingest.sentry.io/api/456/csp-report/?sentry_key=",
+      publicKey,
+    ].join("");
+    const selfHostedEndpoint = [
+      protocol,
+      "//self-hosted.example/sentry/api/456/csp-report/?sentry_key=",
+      publicKey,
+    ].join("");
+
+    expect(buildSentryCspReportEndpoint(publicDsn)).toBe(ingestEndpoint);
+    expect(buildSentryCspReportEndpoint(selfHostedDsn)).toBe(
+      selfHostedEndpoint,
+    );
+    expect(buildSentryCspReportEndpoint(privateDsn)).toBeUndefined();
+    expect(
+      buildContentSecurityPolicyReportOnly({ NEXT_PUBLIC_SENTRY_DSN: privateDsn }),
+    ).not.toContain("report-uri");
+    expect(buildSentryCspReportEndpoint("not-a-dsn")).toBeUndefined();
+  });
+
+  it("publishes the Sentry CSP report-uri from the public DSN", () => {
+    const protocol = ["https", ":"].join("");
+    const publicKey = "fixture_public_key";
+    const publicDsn = [protocol, "//", publicKey, "@o123.ingest.sentry.io/456"].join("");
+    const policy = buildContentSecurityPolicyReportOnly({
+      NEXT_PUBLIC_SENTRY_DSN: publicDsn,
+    });
+    const directives = parsePolicy(policy);
+    const expectedEndpoint = [
+      protocol,
+      "//o123.ingest.sentry.io/api/456/csp-report/?sentry_key=",
+      publicKey,
+    ].join("");
+
+    expect(directives.get("report-uri")).toEqual([expectedEndpoint]);
+    expect(policy).not.toContain("report-sample");
+    expect(policy).not.toContain("fixture_private_value");
+  });
+
   it("contains the required restrictive directives without an all-origins wildcard", () => {
     const policy = buildContentSecurityPolicyReportOnly({});
     const directives = parsePolicy(policy);
@@ -40,6 +98,7 @@ describe("CSP report-only contract", () => {
     expect(policy).not.toContain("'nonce-");
     expect(policy).not.toMatch(/(?:^|\s)(?:https?:|wss?:|\*)(?:\s|;|$)/);
     expect(directives.get("script-src")).not.toContain("'unsafe-eval'");
+    expect(directives.has("report-uri")).toBe(false);
     expect(directives.get("script-src")).toContain("https://va.vercel-scripts.com");
     expect(directives.get("connect-src")).toEqual(
       expect.arrayContaining([
@@ -97,5 +156,6 @@ describe("CSP report-only contract", () => {
     expect(nextConfig).toContain("Content-Security-Policy-Report-Only");
     expect(nextConfig).not.toContain('key: "Content-Security-Policy"');
     expect(nextConfig).not.toContain("force-dynamic");
+    expect(nextConfig).not.toContain("report-sample");
   });
 });
