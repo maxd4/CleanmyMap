@@ -23,10 +23,7 @@ import {
 
 export type {
   DecisionSummary,
-  DecisionSummaryKpi,
   LoadPilotageOverviewParams,
-  MethodDefinition,
-  PilotageDataAvailability,
   PilotageOverview,
 } from "./overview.types";
 

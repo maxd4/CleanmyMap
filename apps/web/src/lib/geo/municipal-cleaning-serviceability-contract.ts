@@ -24,7 +24,7 @@ export type CleaningSurfaceClass =
   | "embankment"
   | "other_complex_public_space";
 
-export type CleaningSourceStatus = "available" | "partial" | "unavailable";
+type CleaningSourceStatus = "available" | "partial" | "unavailable";
 
 export type CleaningEvidenceType =
   | "municipal_coverage"
@@ -50,7 +50,7 @@ export type CleaningSourceEvidence = {
   notes: string[];
 };
 
-export type CleaningPoint = {
+type CleaningPoint = {
   latitude: number;
   longitude: number;
 };

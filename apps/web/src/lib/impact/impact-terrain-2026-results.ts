@@ -3,7 +3,6 @@ import { estimateActionWasteKg } from "@/lib/actions/impact-calculators";
 import {
   BUTT_LENGTH_METERS,
   BUTTS_PER_KG_REFERENCE,
-  CONDITION_WEIGHT_FACTORS,
   computeImpactTerrain2026Co2Conversions,
   computeImpactTerrain2026WaterConversions,
   MEGOTS_CONDITIONS,
@@ -23,7 +22,7 @@ export type ImpactTerrainActionMetricsInput = {
   > | null;
 };
 
-export type ImpactTerrain2026ButtsDistributionEntry = {
+type ImpactTerrain2026ButtsDistributionEntry = {
   condition: ActionMegotsCondition;
   label: ImpactTerrain2026LocalizedText;
   count: number;
@@ -132,7 +131,7 @@ export function buildImpactTerrain2026PublicResults(params: {
   };
 }
 
-export function estimateActionWasteKgFromImpactTerrainMetrics(
+function estimateActionWasteKgFromImpactTerrainMetrics(
   input: ImpactTerrainActionMetricsInput,
 ): number | null {
   return estimateActionWasteKg({
@@ -207,10 +206,6 @@ export function buildImpactTerrain2026PublicResultsFromAggregate(params: {
     buttsTotal: Number(params.cigaretteButts ?? 0),
     qualifiedButtsByCondition,
   });
-}
-
-export function getConditionFactor(condition: ActionMegotsCondition): number {
-  return CONDITION_WEIGHT_FACTORS[condition];
 }
 
 export const IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION =

@@ -125,7 +125,7 @@ export type ParisPressureRiskContribution = {
   sourceReliability: number;
 };
 
-export type ParisPressureCleanlinessCorrection = {
+type ParisPressureCleanlinessCorrection = {
   /** The canonical prior is anomaly pressure: higher means less clean. */
   normalizedPressure: number | null;
   points: number;

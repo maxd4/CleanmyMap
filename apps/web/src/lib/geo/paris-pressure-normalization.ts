@@ -8,7 +8,7 @@ import {
   type ParisPressureUrbanMorphologyFeature,
 } from "./paris-pressure-contract";
 
-export const PARIS_PRESSURE_WEIGHTS = {
+const PARIS_PRESSURE_WEIGHTS = {
   residentPopulation: 0.35,
   transport: 0.25,
   tourism: 0.25,

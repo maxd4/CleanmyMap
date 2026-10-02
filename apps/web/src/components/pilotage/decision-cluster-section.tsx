@@ -4,7 +4,7 @@ import { DecisionReadingSection } from "@/components/pilotage/decision-reading-s
 import type { PilotageClusterLink } from "@/components/pilotage/pilotage-cluster-panels";
 import type { Locale } from "@/lib/ui/preferences";
 
-export type DecisionClusterSurfaceId = "dashboard" | "pilotage" | "sponsor" | "governance";
+type DecisionClusterSurfaceId = "dashboard" | "pilotage" | "sponsor" | "governance";
 
 type DecisionClusterSectionProps = {
   locale: Locale;

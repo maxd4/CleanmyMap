@@ -9,7 +9,7 @@
 export const PARIS_PRESSURE_SNAPSHOT_SCHEMA_VERSION =
   "paris-pressure-v1" as const;
 
-export type ParisPressureGeographicLevel = "iris" | "grid" | "arrondissement";
+type ParisPressureGeographicLevel = "iris" | "grid" | "arrondissement";
 
 export type ParisPressureSourceStatus =
   | "available"
@@ -53,7 +53,7 @@ export type ParisPressureUrbanMorphologyFeature =
   | "terraceProximity"
   | "touristProximity";
 
-export type ParisPressureUrbanMorphologyFeatures = Record<
+type ParisPressureUrbanMorphologyFeatures = Record<
   ParisPressureUrbanMorphologyFeature,
   number | null
 >;
@@ -72,7 +72,7 @@ import type {
 
 export type { ParisPressurePoint } from "./paris-pressure-spatial-types";
 
-export type ParisPressureSpatialJoin = {
+type ParisPressureSpatialJoin = {
   pointInPolygonMatches: number;
   nearestCentroidFallbackMatches: number;
 };

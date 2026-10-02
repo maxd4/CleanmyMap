@@ -4,7 +4,7 @@ import {
   type ParisPressureRiskEvent,
 } from "./paris-pressure-risk-contract";
 
-export function clamp01(value: number): number {
+function clamp01(value: number): number {
   return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
 }
 

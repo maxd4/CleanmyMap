@@ -14,13 +14,7 @@ import type {
   UrbanMorphologyPriorStatus,
 } from "./urban-morphology-prior-contract";
 
-export { URBAN_MORPHOLOGY_PRIOR_VERSION } from "./urban-morphology-prior-contract";
-export type {
-  UrbanMorphologyPriorApplication,
-  UrbanMorphologyPriorStatus,
-} from "./urban-morphology-prior-contract";
-
-export const URBAN_MORPHOLOGY_PRIOR_CONFIG = {
+const URBAN_MORPHOLOGY_PRIOR_CONFIG = {
   confidenceThreshold: 0.55,
   maximumPoints: {
     waste: 10,

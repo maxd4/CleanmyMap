@@ -10,7 +10,7 @@ import { extractEventRefFromAction } from "@/lib/community/engagement/shared";
 import type { CommunityEventItem } from "@/lib/community/http";
 import { loadCachedReportCommunityEvents } from "@/lib/community/report-events";
 
-export type PilotagePostEventLoopRow = {
+type PilotagePostEventLoopRow = {
   event: CommunityEventItem;
   closed: boolean;
   hasAttendance: boolean;

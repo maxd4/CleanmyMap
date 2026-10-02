@@ -8,10 +8,7 @@ import type {
   ParisPressurePoint,
 } from "./paris-pressure-spatial-types";
 
-export type {
-  ParisPressureCoordinate,
-  ParisPressureGeometry,
-} from "./paris-pressure-spatial-types";
+export type { ParisPressureGeometry } from "./paris-pressure-spatial-types";
 
 export function isValidParisPressureGeometry(
   geometry: ParisPressureGeometry | null | undefined,

@@ -10,7 +10,7 @@ import {
   pointInParisPressureGeometry,
 } from "./paris-pressure-geometry";
 
-export const PARIS_PRESSURE_LOOKUP_RADIUS_KM = 1.5;
+const PARIS_PRESSURE_LOOKUP_RADIUS_KM = 1.5;
 
 export type ParisPressureAtPoint = {
   zoneId: string;

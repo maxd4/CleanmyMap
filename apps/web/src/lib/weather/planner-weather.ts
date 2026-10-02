@@ -12,14 +12,14 @@ import {
 } from "./ops-weather";
 import { parseCivilDateAsUtc } from "@/lib/time/civil-date";
 
-export const PLANNER_WEATHER_SNAPSHOT_VERSION = "planner-weather-snapshot-v1" as const;
-export const PLANNER_WEATHER_PROVIDER = "open-meteo" as const;
-export const PLANNER_WEATHER_TIMEZONE = "Europe/Paris" as const;
+const PLANNER_WEATHER_SNAPSHOT_VERSION = "planner-weather-snapshot-v1" as const;
+const PLANNER_WEATHER_PROVIDER = "open-meteo" as const;
+const PLANNER_WEATHER_TIMEZONE = "Europe/Paris" as const;
 export const PLANNER_WEATHER_FORECAST_DAYS = 16;
 
-export type PlannerWeatherStatus = "available" | "unavailable";
+type PlannerWeatherStatus = "available" | "unavailable";
 
-export type PlannerWeatherUnavailableReason =
+type PlannerWeatherUnavailableReason =
   | "missing_window"
   | "invalid_window"
   | "outside_forecast_horizon"
@@ -28,12 +28,12 @@ export type PlannerWeatherUnavailableReason =
   | "provider_error"
   | "invalid_response";
 
-export type PlannerWeatherWindow = {
+type PlannerWeatherWindow = {
   startAt: string;
   endAt: string;
 };
 
-export type PlannerWeatherHourlyPoint = {
+type PlannerWeatherHourlyPoint = {
   time: string;
   temperatureC: number | null;
   apparentTemperatureC: number | null;
@@ -44,7 +44,7 @@ export type PlannerWeatherHourlyPoint = {
   weatherCode: number | null;
 };
 
-export type PlannerWeatherSummary = {
+type PlannerWeatherSummary = {
   temperatureC: number | null;
   apparentTemperatureC: number | null;
   precipitationMm: number | null;
