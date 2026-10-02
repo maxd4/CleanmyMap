@@ -238,5 +238,6 @@ backport local.
 
 - `apps/web` n'est pas concerné : `image-size` n'est ni dans son graphe npm,
   ni importé par son code source.
-- Le runtime mobile n'expose pas directement `image-size` : le code compagnon
-  utilise `expo-image-picker` et transmet l'URI de la photo à l'upload.
+- Le runtime mobile n'expose pas directement `image-size` et n'utilise pas
+  d'upload photo natif dans la V1 courante. `expo-image-picker` et la capacité
+  d'upload photo mobile ne font pas partie du graphe runtime publié.

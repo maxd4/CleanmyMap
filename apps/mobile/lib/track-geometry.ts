@@ -7,7 +7,7 @@ function toRadians(value: number): number {
   return (value * Math.PI) / 180
 }
 
-export function distanceBetweenPointsMeters(first: ForegroundTrackPoint, second: ForegroundTrackPoint): number {
+function distanceBetweenPointsMeters(first: ForegroundTrackPoint, second: ForegroundTrackPoint): number {
   const earthRadiusMeters = 6_371_000
   const latitudeDelta = toRadians(second.latitude - first.latitude)
   const longitudeDelta = toRadians(second.longitude - first.longitude)

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createSupabaseMock } from './support/tracking-mocks'
 
 const state = vi.hoisted(() => ({
   task: null as ((input: { data?: unknown; error?: Error }) => Promise<void>) | null,
@@ -18,9 +19,7 @@ vi.mock('expo-location', () => ({}))
 
 vi.mock('../lib/tracking-service', () => ({ GPS_TASK_NAME: 'GPS_TRACKING' }))
 
-vi.mock('../lib/supabase', () => ({
-  getAuthenticatedSupabaseClient: vi.fn(async () => state.client),
-}))
+vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
 
 vi.mock('../lib/storage', () => ({
   getStoredMissionId: vi.fn(async () => state.missionId),

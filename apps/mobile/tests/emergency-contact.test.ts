@@ -1,26 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createAsyncStorageMock, createSecureStoreMock } from './support/persistence-mocks'
 
 const state = vi.hoisted(() => ({ values: new Map<string, string>() }))
 
 vi.mock('react-native', () => ({ Platform: { OS: 'android' } }))
 
 vi.mock('@react-native-async-storage/async-storage', () => ({
-  default: {
-    getItem: vi.fn(async () => null),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-  },
+  ...createAsyncStorageMock(state),
 }))
 
-vi.mock('expo-secure-store', () => ({
-  getItemAsync: vi.fn(async (key: string) => state.values.get(key) ?? null),
-  setItemAsync: vi.fn(async (key: string, value: string) => {
-    state.values.set(key, value)
-  }),
-  deleteItemAsync: vi.fn(async (key: string) => {
-    state.values.delete(key)
-  }),
-}))
+vi.mock('expo-secure-store', () => createSecureStoreMock(state))
 
 vi.mock('../lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => null),

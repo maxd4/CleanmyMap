@@ -1,4 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  createMissionIdStorageOptions,
+  createPermissionLocationMock,
+  createMissionClient,
+  createStandaloneExpoConstantsMock,
+  createSupabaseMock,
+  createTrackingStorageMock,
+} from './support/tracking-mocks'
 
 const state = vi.hoisted(() => ({
   client: null as any,
@@ -10,19 +18,14 @@ const state = vi.hoisted(() => ({
   sequence: [] as string[],
 }))
 
-vi.mock('expo-constants', () => ({
-  default: { appOwnership: 'standalone', executionEnvironment: 'standalone' },
-}))
+vi.mock('expo-constants', () => createStandaloneExpoConstantsMock())
 
 vi.mock('expo-location', () => ({
-  Accuracy: { Balanced: 'balanced' },
-  requestForegroundPermissionsAsync: vi.fn(async () => {
-    state.sequence.push('permission-foreground')
-    return { status: state.foreground }
-  }),
-  requestBackgroundPermissionsAsync: vi.fn(async () => {
-    state.sequence.push('permission-background')
-    return { status: state.background }
+  ...createPermissionLocationMock({
+    foreground: () => state.foreground,
+    background: () => state.background,
+    onForeground: () => state.sequence.push('permission-foreground'),
+    onBackground: () => state.sequence.push('permission-background'),
   }),
   startLocationUpdatesAsync: vi.fn(async () => {
     if (state.startError) throw state.startError
@@ -37,19 +40,10 @@ vi.mock('expo-task-manager', () => ({
   isTaskRegisteredAsync: vi.fn(async () => false),
 }))
 
-vi.mock('../lib/supabase', () => ({
-  getAuthenticatedSupabaseClient: vi.fn(async () => state.client),
-}))
+vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
 
-vi.mock('../lib/storage', () => ({
-  getStoredMissionId: vi.fn(async () => state.storedMissionId),
-  setStoredMissionId: vi.fn(async (id: string) => {
-    state.storedMissionId = id
-  }),
-  clearStoredMissionId: vi.fn(async () => undefined),
-  bufferPoint: vi.fn(async () => undefined),
-  bufferAction: vi.fn(async () => undefined),
-  flushBuffer: vi.fn(async () => undefined),
+vi.mock('../lib/storage', () => createTrackingStorageMock({
+  ...createMissionIdStorageOptions(state),
 }))
 
 import * as Location from 'expo-location'
@@ -70,29 +64,13 @@ const pendingMission = {
 const activeMission = { ...pendingMission, status: 'tracking' as const, started_at: '2026-10-02T08:01:00.000Z' }
 
 function missionClient() {
-  const insertPayloads: unknown[] = []
-  const updatePayloads: unknown[] = []
-  const client = {
-    insertPayloads,
-    updatePayloads,
-    from: vi.fn((table: string) => {
-      if (table !== 'missions') throw new Error(`Unexpected table: ${table}`)
-      return {
-        insert: (payload: unknown) => {
-          state.sequence.push('insert')
-          insertPayloads.push(payload)
-          return { select: () => ({ single: async () => ({ data: pendingMission, error: null }) }) }
-        },
-        update: (payload: unknown) => {
-          state.sequence.push('update')
-          updatePayloads.push(payload)
-          const error = state.updateErrors.shift() ?? null
-          return { eq: () => ({ select: () => ({ single: async () => ({ data: activeMission, error }) }) }) }
-        },
-      }
-    }),
-  }
-  return client
+  return createMissionClient({
+    data: activeMission,
+    insertData: pendingMission,
+    updateData: activeMission,
+    nextUpdateError: () => state.updateErrors.shift() ?? null,
+    sequence: state.sequence,
+  })
 }
 
 describe('mobile mission startup', () => {
