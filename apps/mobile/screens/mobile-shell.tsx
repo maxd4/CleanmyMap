@@ -8,6 +8,7 @@ import {
   MOBILE_WEB_BRIDGE_PATHS,
   type MobileDestinationId,
 } from './mobile-shell-contract'
+import { EmergencyContactPanel } from './emergency-contact'
 
 type MobileSurface = MobileDestinationId
 
@@ -148,11 +149,7 @@ function ProfileScreen({ onSignOut }: { onSignOut: () => void }) {
       <Text style={styles.bodyText}>Les réglages essentiels restent accessibles avec votre compte Clerk.</Text>
       <WebButton path={MOBILE_WEB_BRIDGE_PATHS.profile} icon="person-outline" label="Ouvrir mon profil web" />
       <WebButton path={MOBILE_WEB_BRIDGE_PATHS.settings} icon="settings-outline" label="Ouvrir mes réglages" />
-      <InfoCard
-        icon="shield-checkmark-outline"
-        title="Contact d'urgence"
-        description="Emplacement réservé pour un futur lot ; aucun contrat métier n'est encore implémenté."
-      />
+      <EmergencyContactPanel />
       <TouchableOpacity style={styles.signOutButton} onPress={onSignOut}>
         <Text style={styles.signOutLabel}>SE DÉCONNECTER</Text>
       </TouchableOpacity>

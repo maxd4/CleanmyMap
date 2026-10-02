@@ -21,6 +21,7 @@ import { clearStoredForegroundTrack, getPendingGpsPointCount } from './lib/stora
 import { MobileShell } from './screens/mobile-shell'
 import { MissionActiveMap } from './screens/mission-active-map'
 import { MissionCompletionScreen, MissionFinalizationScreen } from './screens/mission-finalization'
+import { EmergencyCallActions } from './screens/emergency-call-actions'
 import type { Mission, MissionFinalizationStage, TrackingPhase } from './types/mission'
 
 const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''
@@ -259,6 +260,8 @@ function MissionActiveScreen({
       </View>
 
       <MissionActiveMap missionId={mission.id} pendingGpsPointCount={pendingGpsPointCount} />
+
+      <EmergencyCallActions />
 
       <TouchableOpacity style={styles.hudBtnDanger} onPress={onStop}>
         <Text style={styles.hudBtnText}>TERMINER LA MISSION</Text>
