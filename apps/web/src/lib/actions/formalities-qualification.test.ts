@@ -294,6 +294,12 @@ describe("action formalities qualification", () => {
     expect(result.formalities[0]).toMatchObject({
       requirementStatus: "not_required",
       procedureKind: "none",
+      recipient: null,
+      supportingSources: [],
+      deadline: null,
+      officialChannel: null,
+      requestedInformation: [],
+      requestedDocuments: [],
     });
     expect(result.formalities[0].source?.verifiedOn).toBe(FORMALITIES_RULE_VERIFIED_ON);
   });
@@ -309,7 +315,29 @@ describe("action formalities qualification", () => {
       "unknown",
     ]);
     expect(result.unresolvedQuestions).toContain("gestionnaire effectif du lieu");
-    expect(result.formalities[0].source?.url).toContain("paris.fr");
+    expect(result.formalities[0]).toMatchObject({
+      id: "identify-public-space-manager",
+      requirementStatus: "recommended",
+      procedureKind: "information_only",
+      competentAuthority: {
+        kind: "unknown",
+        label: "Gestionnaire du lieu à identifier",
+      },
+      recipient: null,
+      source: expect.objectContaining({
+        id: "ville-paris-evenements-espace-public-33659",
+      }),
+      supportingSources: [],
+      scope: "Espace public parisien dont le propriétaire ou gestionnaire n'est pas établi.",
+      justification: expect.stringContaining("identifier le gestionnaire"),
+      deadline: null,
+      officialChannel: {
+        kind: "manager_to_confirm",
+        url: null,
+      },
+      requestedInformation: ["propriétaire ou gestionnaire effectif du lieu"],
+      requestedDocuments: [],
+    });
   });
 
   it("does not turn a simple cleanwalk without installation into an AOT or a police declaration", () => {
