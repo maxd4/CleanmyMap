@@ -11,6 +11,8 @@ vi.mock('@clerk/expo', () => ({
   getClerkInstance: vi.fn(() => ({ session: { getToken: state.getToken } })),
 }))
 
+vi.mock('@clerk/expo/token-cache', () => ({ tokenCache: undefined }))
+
 vi.mock('@supabase/supabase-js', () => ({
   createClient: state.createClient,
 }))

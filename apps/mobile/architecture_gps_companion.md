@@ -83,11 +83,11 @@ Lorsqu'une mission passe à `completed`, ce trigger `BEFORE UPDATE` lit les
 la durée, puis renseigne `NEW.distance_m` et `NEW.duration_s`. Il est
 `SECURITY INVOKER` et n'ajoute aucun droit d'écriture client sur ces colonnes.
 
-L'identité Clerk, les RLS missions/GPS et la finalisation des métriques sont
-finalisées et restent invariantes pendant le développement actif. Les sujets
-encore ouverts et non prêts pour la production sont le background headless,
-`mission_actions`, la validation opérationnelle et l'évolution future du
-produit mobile.
+L'identité Clerk, les RLS missions/GPS, la finalisation des métriques et le
+chargement Clerk headless avec le `tokenCache` SecureStore sont finalisés et
+restent invariants pendant le développement actif. Les sujets encore ouverts
+et non prêts pour la production sont `mission_actions`, la validation
+opérationnelle et l'évolution future du produit mobile.
 
 ### Proposition historique — non cible actuelle
 
@@ -211,9 +211,9 @@ sequenceDiagram
 ## 7. Historique — recommandation MVP initiale
 
 Cette section conserve la recommandation technique initiale pour référence. Elle
-ne constitue pas une nouvelle cible : l'identité Clerk, les RLS missions/GPS et
-la finalisation des métriques sont déjà finalisées et invariantes. Les seuls
-sujets ouverts restent le background headless, `mission_actions`, la validation
+ne constitue pas une nouvelle cible : l'identité Clerk, les RLS missions/GPS,
+la finalisation des métriques et le chargement headless sont déjà finalisés et
+invariants. Les seuls sujets ouverts restent `mission_actions`, la validation
 opérationnelle et l'évolution future du produit mobile.
 
 > [!TIP]

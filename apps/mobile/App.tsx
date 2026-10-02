@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  AppState,
   Alert,
   StyleSheet,
   Text,
@@ -37,6 +38,52 @@ function formatDuration(startedAt: string): string {
   return `${remainingSeconds}s`
 }
 
+function useRestoreActiveMission({
+  isLoaded,
+  isSignedIn,
+  setMission,
+  setPhase,
+  startDurationTimer,
+  stopDurationTimer,
+}: {
+  isLoaded: boolean
+  isSignedIn: boolean
+  setMission: React.Dispatch<React.SetStateAction<Mission | null>>
+  setPhase: React.Dispatch<React.SetStateAction<TrackingPhase>>
+  startDurationTimer: (startedAt: string) => void
+  stopDurationTimer: () => void
+}) {
+  useEffect(() => {
+    stopDurationTimer()
+    setMission(null)
+    if (!isLoaded || !isSignedIn) return
+
+    let cancelled = false
+    async function restoreMission() {
+      const id = await restoreActiveTracking()
+      if (!id || cancelled) return
+
+      const result = await getMission(id)
+      if (!cancelled && result.ok && result.data.status === 'tracking') {
+        setMission(result.data)
+        setPhase('tracking')
+        startDurationTimer(result.data.started_at ?? new Date().toISOString())
+      }
+    }
+
+    void restoreMission()
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') void restoreMission()
+    })
+
+    return () => {
+      cancelled = true
+      appStateSubscription.remove()
+      stopDurationTimer()
+    }
+  }, [isLoaded, isSignedIn, setMission, setPhase, startDurationTimer, stopDurationTimer])
+}
+
 function CompanionApp() {
   const { isLoaded, isSignedIn, userId } = useAuth()
   const { signOut } = useClerk()
@@ -51,32 +98,31 @@ function CompanionApp() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bufferTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  useEffect(() => {
+  const stopDurationTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    timerRef.current = null
+  }, [])
+
+  const startDurationTimer = useCallback((startedAt: string) => {
     stopDurationTimer()
-    setMission(null)
+    setDuration(formatDuration(startedAt))
+    timerRef.current = setInterval(() => setDuration(formatDuration(startedAt)), 1000)
+  }, [stopDurationTimer])
+
+  useRestoreActiveMission({
+    isLoaded,
+    isSignedIn: Boolean(isSignedIn),
+    setMission,
+    setPhase,
+    startDurationTimer,
+    stopDurationTimer,
+  })
+
+  useEffect(() => {
     setCompletionSummary(null)
     setFinalizationStage(null)
     setPhase('idle')
-
-    if (!isLoaded || !isSignedIn) return
-
-    let cancelled = false
-    restoreActiveTracking().then(async (id) => {
-      if (!id || cancelled) return
-
-      const result = await getMission(id)
-      if (!cancelled && result.ok && result.data.status === 'tracking') {
-        setMission(result.data)
-        setPhase('tracking')
-        startDurationTimer(result.data.started_at ?? new Date().toISOString())
-      }
-    })
-
-    return () => {
-      cancelled = true
-      stopDurationTimer()
-    }
-  }, [isLoaded, isSignedIn])
+  }, [isLoaded, isSignedIn, setPhase])
 
   useEffect(() => {
     async function refreshPendingGpsPointCount() {
@@ -90,16 +136,6 @@ function CompanionApp() {
       if (bufferTimerRef.current) clearInterval(bufferTimerRef.current)
     }
   }, [])
-
-  function startDurationTimer(startedAt: string) {
-    setDuration(formatDuration(startedAt))
-    timerRef.current = setInterval(() => setDuration(formatDuration(startedAt)), 1000)
-  }
-
-  function stopDurationTimer() {
-    if (timerRef.current) clearInterval(timerRef.current)
-    timerRef.current = null
-  }
 
   async function handleStartMobileMission() {
     setErrorMsg(null)

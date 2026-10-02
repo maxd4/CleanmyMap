@@ -140,8 +140,9 @@ copié dans l'app et aucune clé `service_role` n'est embarquée.
 Le contrat RLS lit le `sub` Clerk et le rapproche de `missions.volunteer_id`.
 Il est porté par la migration additive du LOT 2A. L'application mobile ne doit
 toujours pas être qualifiée de prête pour la production : les capacités
-`mission_actions`, le renouvellement headless et l'usage opérationnel réel
-restent non validés.
+`mission_actions` et l'usage opérationnel réel restent non validés. Le
+renouvellement Clerk headless est maintenant câblé et couvert par des tests
+automatisés ; il doit encore être confirmé sur development build.
 
 Voir `ADR-004`.
 
@@ -222,15 +223,13 @@ npx expo run:ios
 ```
 
 Le TaskManager demande le token Clerk courant avant toute écriture Supabase.
-Lorsqu'un réveil headless ne dispose pas d'un token Clerk valide, il ne tente
-aucune authentification alternative : les points sont conservés dans le buffer
-local sécurisé et la synchronisation est différée.
-
-Le LOT 2B ne prétend pas résoudre le renouvellement d'un token Clerk lorsque le
-TaskManager est réveillé sans contexte JavaScript Clerk complet. Sans token
-valide, les données restent dans le buffer local et aucune authentification
-alternative n'est tentée. Cette limite, ainsi que `mission_actions`, demeure
-hors production et motive le statut `NOT_PRODUCTION_READY`.
+Lorsqu'un réveil headless intervient après un kill ou une reprise réseau, le
+singleton Clerk est initialisé avec le publishable key et le `tokenCache`
+SecureStore, puis chargé avant la demande du token. Si aucun token valide n'est
+disponible, aucune authentification alternative n'est tentée : les points sont
+conservés dans le buffer local sécurisé et seront rejoués lors d'un réveil
+ultérieur avec une session valide. Cette résilience automatisée ne remplace pas
+la validation terrain et `mission_actions` demeure hors production.
 
 ## Structure
 
@@ -285,7 +284,7 @@ Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 ☑ Refus de permissions testé
 ☑ Cohérence identité Clerk → Supabase testée
 ☑ Cache de token Clerk dans SecureStore configuré (LOT 1)
-□ Renouvellement du token Clerk en background headless
+☑ Renouvellement du token Clerk en background headless (câblage + tests automatisés)
 □ Usage opérationnel web et validation production
 ```
 
