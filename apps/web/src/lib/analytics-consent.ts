@@ -4,7 +4,7 @@ import {
   COOKIE_CONSENT_MAX_AGE_MS,
 } from "@/lib/storage/ui-state-storage";
 
-export const ANALYTICS_CONSENT_COOKIE_NAME = "cleanmymap_analytics_consent";
+const ANALYTICS_CONSENT_COOKIE_NAME = "cleanmymap_analytics_consent";
 export const ANALYTICS_CONSENT_MAX_AGE_SECONDS = Math.floor(
   COOKIE_CONSENT_MAX_AGE_MS / 1000,
 );

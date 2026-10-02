@@ -8,7 +8,7 @@ import {
 let posthogNode: PostHog | null = null;
 let envWarningLogged = false;
 
-export function getPostHogServerClient() {
+function getPostHogServerClient() {
   const key = getPostHogKey();
   if (!key) return null;
   if (posthogNode) return posthogNode;

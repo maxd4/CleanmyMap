@@ -117,10 +117,6 @@ export type ReviewerAccessResolver = (params: {
   actorUserId: string;
 }) => Promise<ReviewerAccess>;
 
-export type AdminAuditIdentityResolver = (
-  fallbackUserId?: string,
-) => Promise<{ actorUserId: string } | null>;
-
 export type ModerationAuditAppender = (
   params: ActionModerationAuditParams,
 ) => Promise<void>;

@@ -9,7 +9,6 @@ import {
 import {
   disablePostHogClient,
   initPostHogClient,
-  isPostHogInitialized,
 } from "@/lib/posthog/client";
 import {
   COOKIE_CONSENT_CHANGE_EVENT,
@@ -28,7 +27,6 @@ function subscribe(onStoreChange: () => void): () => void {
     window.removeEventListener(COOKIE_CONSENT_CHANGE_EVENT, handler);
   };
 }
-
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const consentDecision = useSyncExternalStore(
     subscribe,
@@ -65,5 +63,3 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-
-export { isPostHogInitialized };

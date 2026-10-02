@@ -106,7 +106,7 @@ function toDateMs(value) {
   return Number.isFinite(ms) ? ms : Number.NaN;
 }
 
-export function evaluateActionRow(row) {
+function evaluateActionRow(row) {
   const reasons = [];
 
   const wasteKg = toNumber(row.waste_kg);
@@ -184,7 +184,7 @@ export function evaluateActionRow(row) {
   };
 }
 
-export function evaluateSignalementRow(row) {
+function evaluateSignalementRow(row) {
   const reasons = [];
   const lat = row.latitude === null ? null : toNumber(row.latitude);
   const lon = row.longitude === null ? null : toNumber(row.longitude);

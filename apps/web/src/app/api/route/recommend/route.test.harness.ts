@@ -42,38 +42,19 @@ const routeEventSignalContextMock = vi.hoisted(() => vi.fn());
 const loadRouteEventCenteredAnchorMock = vi.hoisted(() => vi.fn());
 
 export {
-  getSafeAuthSessionMock,
-  verifyRateLimitMock,
-  createServerRateLimitResponseMock,
   loadRouteRecommendationSourceMock,
-  buildTrashSpotterActionableCandidatesMock,
   getCurrentUserLocationPreferenceMock,
   trackRouteRecommendationUseMock,
   buildTrashSpotterRouteCandidatesMock,
   applyOriginRouteGeometryLegsMock,
   createFallbackRouteGeometryMock,
   routePolylineThroughFossgisFootMock,
-  buildHotspotsMock,
-  buildProactiveAssistantMock,
-  defaultRouteAssistantPayloadMock,
-  defaultRouteRecommendationFloorDateMock,
   loadCachedEventPressureByArrondissementMock,
-  getSupabaseServerClientMock,
   getTerritoryArrondissementCenterMock,
   planRouteMock,
   fallbackRoutePrefixWithinBudgetMock,
-  loadParisPressureSnapshotMock,
-  loadMunicipalCleaningServiceabilitySnapshotMock,
-  applyParisPressureToCandidatesMock,
   buildPredictedRouteCandidatesMock,
   buildRoutePlannerCandidatePoolMock,
-  applyRoutePredictionPoolAuditMock,
-  applyRoutePredictionPlannerBudgetAuditMock,
-  applyRoutePredictionFinalRoutingBudgetAuditMock,
-  resolveRouteDataStatusMock,
-  resolveRouteDataLayersMock,
-  routeEventSignalContextMock,
-  loadRouteEventCenteredAnchorMock,
 };
 
 vi.mock("@/lib/auth/safe-session", () => ({

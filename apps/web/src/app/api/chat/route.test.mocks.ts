@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 
 export const authMock = vi.fn();
-export const getCurrentUserIdentityMock = vi.fn();
+const getCurrentUserIdentityMock = vi.fn();
 export const getSupabaseClerkRlsClientMock = vi.fn();
 export const getSupabaseServerClientMock = vi.fn();
 export const verifyRateLimitMock = vi.fn();

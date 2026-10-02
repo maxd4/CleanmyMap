@@ -43,7 +43,7 @@ export function pollCtx(
   };
 }
 
-export async function loadVisiblePollIds(
+async function loadVisiblePollIds(
   supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
   candidateIds: string[],
 ): Promise<string[]> {

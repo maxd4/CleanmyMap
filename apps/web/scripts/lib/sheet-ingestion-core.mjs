@@ -94,7 +94,7 @@ export function toCsv(rows) {
   return `${rows.map((row) => row.map((cell) => escapeCell(cell)).join(",")).join("\n")}\n`;
 }
 
-export function normalizeHeaderCell(value) {
+function normalizeHeaderCell(value) {
   return fixMojibake(String(value || ""))
     .toLowerCase()
     .normalize("NFD")
@@ -133,7 +133,7 @@ export function parseIsoDateFlexible(raw) {
   return null;
 }
 
-export function toNumber(raw, fallback = 0) {
+function toNumber(raw, fallback = 0) {
   const value = Number(
     String(raw ?? "")
       .replace(",", ".")
@@ -165,7 +165,7 @@ export function toInteger(raw, fallback = 0) {
   return Math.trunc(toNumber(raw, fallback));
 }
 
-export function normalizeMegotsCondition(raw) {
+function normalizeMegotsCondition(raw) {
   const value = normalizeHeaderCell(String(raw || ""));
   if (!value) {
     return "propre";
@@ -258,7 +258,7 @@ export function parseCoordsFromText(raw) {
   return { latitude, longitude };
 }
 
-export async function sleep(ms) {
+async function sleep(ms) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 

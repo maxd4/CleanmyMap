@@ -2,7 +2,7 @@
  * Types partagés pour l'application compagnon GPS CleanMyMap.
  */
 
-export type MissionStatus = 'pending' | 'tracking' | 'completed' | 'cancelled'
+type MissionStatus = 'pending' | 'tracking' | 'completed' | 'cancelled'
 
 export interface Mission {
   id: string
