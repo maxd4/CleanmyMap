@@ -38,6 +38,7 @@ les sources de vérité sans recopier leurs contrats détaillés.
 | Validation d'URL | [`url-validation-security.md`](./url-validation-security.md) |
 | Regex et ReDoS | [`regex-security.md`](./regex-security.md) |
 | Prévention XSS DOM | [`dom-xss-prevention.md`](./dom-xss-prevention.md) |
+| Contrôles de deception et anti-abus | [`SECURITY.md`](./SECURITY.md#contr%C3%B4les-de-deception-et-anti-abus) et [`security-deception-registry.json`](../../scripts/checks/security-deception-registry.json) |
 | CSP initiale en Report-Only | [`csp.md`](./csp.md) |
 | DAST public passif OWASP ZAP Baseline | [`dast-zap-baseline.md`](./dast-zap-baseline.md) |
 | Durcissement et audits GitHub Actions | [`github-actions-hardening.md`](./github-actions-hardening.md) |

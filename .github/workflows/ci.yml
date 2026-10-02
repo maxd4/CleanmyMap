@@ -188,6 +188,9 @@ jobs:
       - name: Secret audit
         run: npm run security:secrets
 
+      - name: Security deception contract
+        run: npm run check:security-deception
+
       - name: Environment contract
         run: npm run check:env-contract
 
