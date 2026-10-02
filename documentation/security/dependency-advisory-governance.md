@@ -101,6 +101,35 @@ browser de l'application mobile. Cette décision est spécifique au canal
 Dedicated Worker et au Node tooling Expo : elle ne crée aucune exclusion
 globale CodeQL et ne justifie aucune modification du code upstream vendorisé.
 
+### CodeQL `js/polynomial-redos` : alertes #935, #936 et #937
+
+Ces trois alertes High dans `lib/pem.js` restent `OPEN` et sont classées
+`KEEP_VISIBLE_UPSTREAM`. `js/polynomial-redos` décrit une classe de risque
+ReDoS réelle ; le seul fait que le package soit vendorisé ne permet pas de les
+classer faux positifs.
+
+La vérification upstream du 2026-10-02 n'a trouvé ni release npm corrigée, ni
+commit/PR revu, ni issue/advisory upstream correspondant à ces regex PEM.
+`node-forge@1.4.0` reste la release npm `latest` compatible avec le graphe
+Expo. La comparaison upstream `v1.4.0`
+(`2ae172f7cda6831b358c3fc111f4f3e1781782b2`) → `main`
+(`723240415b25120d47146f982809fa69344ab890`) ne modifie pas `lib/pem.js`.
+Le détail de provenance et des APIs Expo est conservé dans
+`apps/mobile/vendor/node-forge/SECURITY-PATCH.md`.
+
+La frontière CURRENT ne fournit pas d'entrée non fiable à `pem.decode` : les
+APIs PEM d'Expo sont présentes pour le tooling, mais CleanMyMap n'active ni
+`updates.codeSigningCertificate` ni `updates.codeSigningMetadata`, et le
+`extra.eas.projectId` mobile reste un placeholder. Le seul consumer versionné
+actuel est le smoke test de sécurité avec des PEM générés localement. Cette
+classification ne constitue ni un dismissal ni une exclusion CodeQL.
+
+Réouvrir l'analyse lorsqu'une correction upstream revue est publiée, qu'un
+consumer CleanMyMap accepte un PEM non fiable ou distant, ou que la
+configuration Expo signing/update devient active. Une mitigation future devra
+être le correctif upstream minimal ou une limite de taille justifiée par le
+contrat réel, jamais un seuil arbitraire.
+
 ## Compatibilité `jayson` et CVE-2026-71429
 
 Le graphe mobile réel est :
