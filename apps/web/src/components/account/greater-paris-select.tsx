@@ -29,7 +29,7 @@ import type {
   TerritoryLocationSelection,
 } from "@/lib/user-location-preference";
 
-export type { TerritoryLocationLevel, TerritoryLocationSelection };
+export type { TerritoryLocationSelection };
 
 const LEVEL_OPTIONS: Array<{
   value: TerritoryLocationLevel;
@@ -236,7 +236,7 @@ function levelConfig(level: TerritoryLocationLevel) {
   );
 }
 
-export function TerritoryLocationSelector({
+function TerritoryLocationSelector({
   value,
   onChange,
   placeholder = "Rechercher un lieu...",
@@ -617,16 +617,6 @@ export function TerritoryLocationSelector({
       </div> : null}
     </div>
   );
-}
-
-export function GreaterParisLocationSelector(props: {
-  value: TerritoryLocationSelection | null;
-  onChange: (value: TerritoryLocationSelection | null) => void;
-  placeholder?: string;
-  appearance?: "dark" | "light";
-  compact?: boolean;
-}) {
-  return <TerritoryLocationSelector {...props} />;
 }
 
 export function GreaterParisSelect(props: {

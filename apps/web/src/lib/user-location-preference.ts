@@ -406,7 +406,7 @@ export function createTerritoryLocationMetadataFromLabel(
   );
 }
 
-export function createGreaterParisMetadata(
+function createGreaterParisMetadata(
   zone: string,
   department: string,
   areaType: AreaType,

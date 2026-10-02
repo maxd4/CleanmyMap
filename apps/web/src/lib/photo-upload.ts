@@ -4,13 +4,13 @@ import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-cl
 import { logFailure, logWarning } from "@/lib/logging/failure-log";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export interface PhotoUploadResult {
+interface PhotoUploadResult {
   url: string
   path: string
   error?: string
 }
 
-export class PhotoUploadService {
+class PhotoUploadService {
   private supabase: SupabaseClient | null = null
   private bucket = "action-photos"
   private bucketHint = "Le bucket public Supabase 'action-photos' est manquant. Crée-le et rends-le public pour activer les uploads photo."

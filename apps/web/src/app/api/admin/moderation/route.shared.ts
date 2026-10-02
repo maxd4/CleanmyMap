@@ -35,7 +35,6 @@ export const moderationPayloadSchema = z.union([
 
 export type ActionModerationPayload = z.infer<typeof actionPayloadSchema>;
 export type CleanPlaceModerationPayload = z.infer<typeof cleanPlacePayloadSchema>;
-export type ModerationPayload = z.infer<typeof moderationPayloadSchema>;
 export type ActionEdits = z.infer<typeof actionEditsSchema>;
 
 export type ModerationSupabaseClient = ReturnType<

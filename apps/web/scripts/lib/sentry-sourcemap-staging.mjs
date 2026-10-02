@@ -21,7 +21,7 @@ export function collectFiles(rootDir, predicate, results = []) {
   return results;
 }
 
-export function isUploadableArtifact(sourceFile) {
+function isUploadableArtifact(sourceFile) {
   return (
     sourceFile.endsWith(".js") ||
     sourceFile.endsWith(".jsbundle") ||
@@ -36,7 +36,7 @@ function copyFileWithParents(source, destinationRoot, sourceRoot) {
   copyFileSync(source, destination);
 }
 
-export function readSourceMappingURL(sourceFile) {
+function readSourceMappingURL(sourceFile) {
   let source;
   try {
     source = readFileSync(sourceFile, "utf8");
@@ -52,7 +52,7 @@ export function readSourceMappingURL(sourceFile) {
   return matches.at(-1)?.[1] ?? null;
 }
 
-export function resolveSourceMappingURL(sourceFile, reference) {
+function resolveSourceMappingURL(sourceFile, reference) {
   if (!reference || reference.startsWith("data:") || /^[a-z][a-z\d+.-]*:/i.test(reference)) {
     return null;
   }

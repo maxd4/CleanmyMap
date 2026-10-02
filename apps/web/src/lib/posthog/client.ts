@@ -11,10 +11,6 @@ let initialized = false;
 let envWarningLogged = false;
 let posthogModulePromise: Promise<typeof import("posthog-js")> | null = null;
 
-export function isPostHogInitialized(): boolean {
-  return initialized;
-}
-
 async function loadPostHogModule() {
   if (typeof window === "undefined") {
     return null;

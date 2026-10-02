@@ -1,9 +1,9 @@
-export const GOVERNANCE_METHODOLOGY_PATH = "/methodologie#governance-report";
-export const GOVERNANCE_ADMIN_FREE_PLANS_PATH = "/admin/services#free-plans";
-export const GOVERNANCE_ADMIN_STORAGE_PATH = "/admin/services#storage";
-export const GOVERNANCE_MONTHLY_REPORT_PATH = "/api/reports/governance-monthly";
+const GOVERNANCE_METHODOLOGY_PATH = "/methodologie#governance-report";
+const GOVERNANCE_ADMIN_FREE_PLANS_PATH = "/admin/services#free-plans";
+const GOVERNANCE_ADMIN_STORAGE_PATH = "/admin/services#storage";
+const GOVERNANCE_MONTHLY_REPORT_PATH = "/api/reports/governance-monthly";
 
-export function buildGovernanceMonthlyReportPath(reportMonth: string): string {
+function buildGovernanceMonthlyReportPath(reportMonth: string): string {
   const encodedMonth = encodeURIComponent(reportMonth);
   return `${GOVERNANCE_MONTHLY_REPORT_PATH}?month=${encodedMonth}`;
 }

@@ -62,9 +62,9 @@ export type ParticipantRow = {
   registration_source?: "group_form" | "admin" | "admin_override" | "import";
 };
 
-export type ManyResult<T> = { data: T[]; error: null };
+type ManyResult<T> = { data: T[]; error: null };
 
-export type SingleResult<T> = { data: T | null; error: null };
+type SingleResult<T> = { data: T | null; error: null };
 
 export type ActionsChain = {
   select: (columns: string) => ActionsChain;
@@ -106,13 +106,13 @@ export type ParticipantsChain = {
   ) => Promise<void>;
 };
 
-export type ProgressionEventsChain = {
+type ProgressionEventsChain = {
   select: (columns: string) => {
     delete: () => Promise<{ error: null }>;
   };
 };
 
-export function createActionsChain(actions: ActionRow[]): ActionsChain {
+function createActionsChain(actions: ActionRow[]): ActionsChain {
   const sourceActions = actions.map((action) => ({
     ...action,
     action_phase: action.action_phase ?? "post_action_complete",
@@ -218,7 +218,7 @@ export function createActionsChain(actions: ActionRow[]): ActionsChain {
   return chain;
 }
 
-export function createParticipantsChain(
+function createParticipantsChain(
   participants: ParticipantRow[],
   table: "participants" | "registrations" = "participants",
 ): ParticipantsChain {

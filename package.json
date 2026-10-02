@@ -164,6 +164,7 @@
   },
   "homepage": "https://github.com/maxd4/CleanMyMap#readme",
   "devDependencies": {
+    "@clerk/backend": "^3.17.2",
     "@clerk/testing": "^2.2.31",
     "@playwright/test": "^1.62.1",
     "@supabase/supabase-js": "^2.112.3",
