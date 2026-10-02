@@ -27,6 +27,18 @@ revokes, fonctions, `search_path` ou clauses obligatoires, mais ne prouve pas
 l'idempotence, l'atomicité, les contraintes à l'exécution, les effets de
 triggers, les interactions RLS, la concurrence ou le résultat d'une RPC.
 
+Les niveaux de preuve sont distincts et ne doivent pas être interchangeables :
+
+- `STATIC_CONTRACT` vérifie la source, la structure ou la configuration sans
+  exécuter la frontière concernée ;
+- `EXECUTED_BEHAVIOR` exécute le code applicatif et observe son comportement
+  dans le harness correspondant ;
+- `INTEGRATION_PROOF` exécute réellement une frontière externe ou persistante
+  (par exemple PostgreSQL, Supabase, Storage ou HTTP) et en observe le résultat.
+
+Un `EXECUTED_DB_CONTRACT` est une forme spécialisée d'`INTEGRATION_PROOF`.
+Ainsi, `STATIC_CONTRACT` ≠ `EXECUTED_BEHAVIOR` ≠ `INTEGRATION_PROOF`.
+
 Un `EXECUTED_DB_CONTRACT` exécute réellement le contrat dans l'environnement
 de validation supporté et doit être nommé comme tel dans le compte rendu. Si
 cette exécution n'est pas disponible dans le lot, rapporter

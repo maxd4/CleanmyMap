@@ -10,8 +10,10 @@ function readMigration(): string {
   return readFileSync(migrationPath, "utf8");
 }
 
-describe("feedback private reply RPC contract", () => {
-  it("is append-only, service-role-only, and idempotent at the database boundary", () => {
+// STATIC_CONTRACT: SQL shape only; transactionality and idempotence require an
+// executed PostgreSQL integration proof.
+describe("feedback private reply RPC STATIC_CONTRACT", () => {
+  it("declares append-only, service-role-only, and idempotency guards", () => {
     const sql = readMigration();
 
     expect(sql).toContain("add column if not exists feedback_reply_operation_id text");
@@ -24,7 +26,7 @@ describe("feedback private reply RPC contract", () => {
     expect(sql).toMatch(/grant execute on function public\.send_feedback_private_reply[\s\S]*to service_role/i);
   });
 
-  it("keeps feedback, message, and audit writes in one transaction without audit content", () => {
+  it("declares the write ordering and audit-content boundary", () => {
     const sql = readMigration();
     const insertPosition = sql.indexOf("insert into public.app_messages");
     const updatePosition = sql.indexOf("update public.community_bug_reports");

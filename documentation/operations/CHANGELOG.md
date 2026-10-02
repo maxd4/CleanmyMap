@@ -1,5 +1,19 @@
 # Change Log
 
+## 2026-08-25
+
+### Preuve ponctuelle du flux authentifié spots
+
+- Les contrats offline du flux canonical étaient passants et un smoke de
+  production authentifié avec une session Clerk temporaire a retourné `201`
+  pour `POST /api/spots`. Le signalement a été retrouvé dans les flux spots,
+  actions unifiés et carte, sans création de points, `xp_audit` ou notification
+  de validation.
+- Le marker `CMM_PROD_SMOKE_1787677027552` et le signalement
+  `47bcd82a-aed2-45b3-a2e2-2e26f5cb0ab1` ont été nettoyés, puis la session
+  temporaire révoquée. Le replay persistant local n'était pas exécuté, Docker
+  et le runtime Supabase local n'étant pas disponibles.
+
 ## 2026-08-27
 
 ### Lots sécurité, performance et quotas — SEC-01, SEC-02, PERF-01, QUOTA-01

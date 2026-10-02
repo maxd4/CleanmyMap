@@ -6,7 +6,9 @@ const migration = readFileSync(
   "utf8",
 );
 
-describe("action sharing and first-contact SQL contract", () => {
+// STATIC_CONTRACT: source assertions do not prove runtime locking, RLS or
+// concurrent deduplication.
+describe("action sharing and first-contact SQL STATIC_CONTRACT", () => {
   it("keeps sharing on one public predicate for future invitations and completed results", () => {
     expect(migration).toContain("create or replace function public.is_public_action_reference_available(");
     expect(migration).toContain("p_action_phase = 'post_action_complete'");
@@ -16,7 +18,7 @@ describe("action sharing and first-contact SQL contract", () => {
     expect(migration).toContain("create or replace function public.can_view_action_conversation(");
   });
 
-  it("makes first contact persistent, recipient-controlled and atomically deduplicated", () => {
+  it("declares persistent, recipient-controlled and deduplication guards", () => {
     expect(migration).toContain("create table if not exists public.action_share_contact_requests");
     expect(migration).toContain("status in ('pending', 'accepted', 'rejected', 'ignored')");
     expect(migration).toContain("action_share_contact_requests_active_pair_idx");

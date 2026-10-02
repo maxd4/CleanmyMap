@@ -55,7 +55,9 @@ const attachmentContract = readFileSync(
   "utf8",
 );
 
-describe("chat attachment privacy contract", () => {
+// STATIC_CONTRACT: these checks protect the declared Storage/RLS source shape;
+// they do not prove effective RLS, signed URL issuance or end-to-end upload.
+describe("chat attachment privacy STATIC_CONTRACT", () => {
   it("keeps the bucket private and binds object access to the owner", () => {
     expect(migration).toContain(
       "update storage.buckets set public = false where id = 'chat-attachments';",

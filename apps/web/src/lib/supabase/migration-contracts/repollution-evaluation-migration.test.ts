@@ -17,8 +17,10 @@ const privilegeHardeningMigration = readFileSync(
   "utf8",
 );
 
-describe("repollution evaluation ledger migration", () => {
-  it("keeps the ledger append-only, private and idempotent", () => {
+// STATIC_CONTRACT: migration source shape only; append-only and idempotence
+// require an executed PostgreSQL integration proof.
+describe("repollution evaluation ledger migration STATIC_CONTRACT", () => {
+  it("declares the append-only, private and idempotency guards", () => {
     expect(migration).toContain(
       "create table if not exists public.action_pollution_prediction_evaluations",
     );

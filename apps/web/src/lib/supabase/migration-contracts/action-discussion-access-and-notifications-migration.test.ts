@@ -11,7 +11,9 @@ const profilePrivilegesMigration = readFileSync(
   "utf8",
 );
 
-describe("current action discussion access and notification contract", () => {
+// STATIC_CONTRACT: SQL source assertions; effective AuthZ, RLS and notification
+// fan-out require an executed PostgreSQL/Supabase integration proof.
+describe("current action discussion access and notification STATIC_CONTRACT", () => {
   it("requires a real action relationship for reading and writing", () => {
     expect(migration).toContain("a.created_by_clerk_id = (select auth.jwt()) ->> 'sub'");
     expect(migration).toContain("action_organizers");
@@ -60,7 +62,7 @@ describe("current action discussion access and notification contract", () => {
     expect(audience).not.toMatch(/role_label|active_role_label|admin|max/);
   });
 
-  it("keeps notification fan-out idempotent and marks action notifications read", () => {
+  it("declares notification fan-out deduplication and read markers", () => {
     expect(migration).toContain("n.type in ('chat', 'action_discussion')");
     expect(migration).toContain("payload ->> 'messageId'");
     expect(migration).toContain("p_action_id::text");

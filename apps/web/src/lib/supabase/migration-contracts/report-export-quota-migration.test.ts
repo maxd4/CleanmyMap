@@ -6,8 +6,10 @@ const migration = readFileSync(
   "utf8",
 );
 
-describe("report export daily quota migration", () => {
-  it("keeps the daily reservation atomic and service-only", () => {
+// STATIC_CONTRACT: SQL source shape only; reservation atomicity and RLS require
+// an executed PostgreSQL integration proof.
+describe("report export daily quota migration STATIC_CONTRACT", () => {
+  it("declares the daily reservation and service-only guards", () => {
     expect(migration).toContain("primary key (user_id, quota_day)");
     expect(migration).toContain("statement_timestamp() at time zone 'Europe/Paris'");
     expect(migration).toContain("on conflict (user_id, quota_day) do nothing");

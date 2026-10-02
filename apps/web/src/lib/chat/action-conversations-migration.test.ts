@@ -5,7 +5,9 @@ import { resolve } from "node:path";
 const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/20260915000001_action_conversations.sql"), "utf8");
 const audienceMigration = readFileSync(resolve(process.cwd(), "supabase/migrations/20260915000017_action_notification_audience.sql"), "utf8");
 
-describe("action conversation migration contract", () => {
+// STATIC_CONTRACT: these assertions protect migration source shape only; they
+// do not prove trigger execution, notification idempotence or RLS behavior.
+describe("action conversation migration STATIC_CONTRACT", () => {
   it("keeps one canonical conversation per action and separates chat access from participation", () => {
     expect(migration).toContain("action_id uuid not null unique references public.actions");
     expect(migration).toContain("primary key (conversation_id, user_id)");
@@ -55,7 +57,7 @@ describe("action conversation migration contract", () => {
     expect(audienceFunction).not.toMatch(/role_label/);
   });
 
-  it("keeps the projection technical and synchronizes all source transitions", () => {
+  it("declares the technical projection and source-transition guards", () => {
     expect(audienceMigration).toContain("sync_action_conversation_notification_audience");
     expect(audienceMigration).toContain("action_registrations_notification_audience_sync");
     expect(audienceMigration).toContain("action_participants_notification_audience_sync");

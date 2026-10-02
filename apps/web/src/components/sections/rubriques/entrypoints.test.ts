@@ -28,7 +28,9 @@ const complexEntrypoints = [
   join(rubriquesRoot, "gamification", "index.tsx"),
 ];
 
-describe("rubrique entrypoints", () => {
+// STATIC_CONTRACT: source and filesystem topology only; this does not prove
+// browser navigation or end-to-end route reachability.
+describe("rubrique entrypoints STATIC_CONTRACT", () => {
   it("exposes one public entrypoint per complex rubrique", () => {
     for (const entrypoint of complexEntrypoints) {
       expect(existsSync(entrypoint)).toBe(true);

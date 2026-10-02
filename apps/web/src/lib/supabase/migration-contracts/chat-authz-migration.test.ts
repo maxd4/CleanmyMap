@@ -6,7 +6,9 @@ const migrationPath = new URL(
   import.meta.url,
 );
 
-describe("chat authorization RLS migration", () => {
+// STATIC_CONTRACT: source assertions only; effective RLS requires an executed
+// PostgreSQL/Supabase integration proof.
+describe("chat authorization RLS migration STATIC_CONTRACT", () => {
   it("keeps admin_elu max access aligned with the application channel helper", () => {
     const sql = readFileSync(migrationPath, "utf8");
 

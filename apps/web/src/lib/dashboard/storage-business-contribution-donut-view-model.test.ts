@@ -94,26 +94,21 @@ describe("storage business contribution donut view-model", () => {
 
     const model = buildStorageBusinessContributionDonutViewModel(report, "storage");
 
-    expect(model.data).toEqual([
-      {
-        key: "pieces_jointes_photo",
-        label: "pieces_jointes_photo",
-        value: 500,
-        previousValue: 400,
-        deltaValue: 100,
-        deltaPercent: 100,
-        sharePercent: 60,
-      },
-      {
-        key: "socle_estimateur_impact",
-        label: "socle_estimateur_impact",
-        value: 200,
-        previousValue: 100,
-        deltaValue: 100,
-        deltaPercent: 100,
-        sharePercent: 40,
-      },
-    ]);
+    const dataByKey = new Map(model.data.map((item) => [item.key, item]));
+    expect(dataByKey.get("pieces_jointes_photo")).toMatchObject({
+      value: 500,
+      previousValue: 400,
+      deltaValue: 100,
+      deltaPercent: 100,
+      sharePercent: 60,
+    });
+    expect(dataByKey.get("socle_estimateur_impact")).toMatchObject({
+      value: 200,
+      previousValue: 100,
+      deltaValue: 100,
+      deltaPercent: 100,
+      sharePercent: 40,
+    });
     expect(model.currentTotalValue).toBe(700);
     expect(model.previousTotalValue).toBe(500);
     expect(model.deltaValue).toBe(200);
@@ -122,6 +117,18 @@ describe("storage business contribution donut view-model", () => {
     expect(report.items.map((item) => item.id)).toEqual([
       "socle_estimateur_impact",
       "pieces_jointes_photo",
+    ]);
+  });
+
+  it("orders chart data by current bytes when order is the chart contract", () => {
+    const report = makeReport([
+      makeItem("socle_estimateur_impact", { currentBytes: 200 }),
+      makeItem("pieces_jointes_photo", { currentBytes: 500 }),
+    ]);
+
+    expect(buildStorageChartData(report).map((item) => item.key)).toEqual([
+      "pieces_jointes_photo",
+      "socle_estimateur_impact",
     ]);
   });
 
@@ -142,14 +149,16 @@ describe("storage business contribution donut view-model", () => {
     const historicalData = buildPressureChartData(makeReport([historicalItem]));
     const fallbackData = buildPressureChartData(makeReport([fallbackItem]));
 
-    expect(historicalData[0]).toMatchObject({
+    const historicalPoint = historicalData.find((item) => item.key === "socle_estimateur_impact");
+    const fallbackPoint = fallbackData.find((item) => item.key === "pieces_jointes_photo");
+    expect(historicalPoint).toMatchObject({
       value: 8,
       previousValue: 5,
       deltaValue: 3,
       deltaPercent: 60,
       sharePercent: 100,
     });
-    expect(fallbackData[0]).toMatchObject({
+    expect(fallbackPoint).toMatchObject({
       value: 52,
     });
     expect(computePressureValue({

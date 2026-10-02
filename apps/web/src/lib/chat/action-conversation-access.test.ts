@@ -105,7 +105,7 @@ describe("action discussion access contract", () => {
     expect(isActionDiscussionAvailable(action)).toBe(discussionExpected);
   });
 
-  it("keeps the historical conversation migrations and their exclusions contract intact", () => {
+  it("keeps the historical conversation migrations and their exclusions contract intact [STATIC_CONTRACT]", () => {
     expect(appliedMigration).toContain("create table if not exists public.action_conversation_exclusions");
     expect(appliedMigration).toContain("reinstated_at timestamptz");
     expect(appliedMigration).toContain("and a.status = 'approved'");
@@ -196,7 +196,7 @@ describe("action discussion access contract", () => {
     });
   });
 
-  it("does not couple participation routes to discussion membership", () => {
+  it("does not couple participation routes to discussion membership [STATIC_CONTRACT]", () => {
     const joinRoute = readFileSync(resolve(process.cwd(), "src/app/api/actions/group-join/route.ts"), "utf8");
     const reviewRoute = readFileSync(resolve(process.cwd(), "src/app/api/actions/[actionId]/group-join/route.review.ts"), "utf8");
     expect(joinRoute).not.toContain("ensureActionConversationMember");
