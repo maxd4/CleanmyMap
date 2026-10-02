@@ -1,4 +1,5 @@
 import type { ActionListItem, ActionStatus } from "@/lib/actions/types";
+import type { ActionGeometryProvenance } from "@/lib/actions/quality/data-quality-types";
 import { parsePositiveInteger } from "@/lib/http/query-params";
 import { buildUtcDateFloor } from "@/lib/time/utc-runtime";
 import { buildDeliverableFilename } from "./deliverable-name";
@@ -38,7 +39,7 @@ export type ActionCsvRowWithDrawing = ActionCsvRow & {
   data_quality_status?: "ok" | "warning" | "blocking" | null;
   data_quality_anomalies?: string | null;
   measures_provenance?: "measured" | "derived" | "estimated" | "missing" | null;
-  geometry_provenance?: "measured" | "derived" | "estimated" | "missing" | null;
+  geometry_provenance?: ActionGeometryProvenance | null;
   impact_provenance?: "derived" | null;
 };
 

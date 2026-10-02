@@ -1,12 +1,13 @@
 import type { ActionDataContract } from "../contracts/contract-model";
 import type {
-  ActionGeometryOrigin,
+  ActionGeometrySource,
   ActionStatus,
   ActionVisionEstimate,
 } from "../types";
 import type {
   ActionDataAnomaly,
   ActionDataAnomalyCode,
+  ActionGeometryProvenance,
   ActionDataProvenance,
   ActionDataQualityStatus,
   ActionGeolocationState,
@@ -17,7 +18,7 @@ export type {
   ActionDataQualitySummary,
 } from "./data-quality-types";
 
-const ACTION_DATA_QUALITY_VERSION = "action-data-quality-2026.08-v1";
+const ACTION_DATA_QUALITY_VERSION = "action-data-quality-2026.10-v2";
 
 const ACTION_DATA_QUALITY_THRESHOLDS = {
   monthlyWarningRate: 0.1,
@@ -39,7 +40,7 @@ export type ActionDataQualityInput = {
   volunteersCount?: unknown;
   durationMinutes?: unknown;
   visionEstimate?: ActionVisionEstimate | null;
-  geometrySource?: ActionGeometryOrigin | null;
+  geometrySource?: ActionGeometrySource | null;
   geometryConfidence?: number | null;
   hasGeometry?: boolean;
 };
@@ -75,19 +76,30 @@ function classifyGeolocation(
 }
 
 function geometryProvenance(
-  source: ActionGeometryOrigin | null | undefined,
+  source: ActionGeometrySource | null | undefined,
   hasGeometry: boolean,
-): ActionDataProvenance {
+): ActionGeometryProvenance {
   if (!hasGeometry) {
     return "missing";
   }
-  if (source === "reference" || source === "routed") {
-    return "derived";
+
+  switch (source) {
+    case "gpx_import":
+      return "observed";
+    case "manual":
+      return "declared";
+    case "reference":
+      return "reference";
+    case "routed":
+      return "reconstructed";
+    case "estimated_route":
+    case "estimated_area":
+      return "estimated";
+    case "fallback_point":
+      return "fallback";
+    default:
+      return "unknown";
   }
-  if (source === "estimated_route" || source === "estimated_area" || source === "fallback_point") {
-    return "estimated";
-  }
-  return "measured";
 }
 
 function buildAnomaly(
@@ -284,6 +296,7 @@ export type MonthlyActionDataQualityReview = {
   anomaliesByCode: Record<ActionDataAnomalyCode, number>;
   geolocation: Record<ActionGeolocationState, number>;
   provenance: Record<ActionDataProvenance, number>;
+  geometryProvenance: Record<ActionGeometryProvenance, number>;
   thresholds: typeof ACTION_DATA_QUALITY_THRESHOLDS;
   alerts: Array<{
     id: string;
@@ -330,12 +343,23 @@ export function buildMonthlyActionDataQualityReview(params: {
     estimated: 0,
     missing: 0,
   } satisfies Record<ActionDataProvenance, number>;
+  const geometryProvenance = {
+    observed: 0,
+    declared: 0,
+    reference: 0,
+    reconstructed: 0,
+    estimated: 0,
+    fallback: 0,
+    missing: 0,
+    unknown: 0,
+  } satisfies Record<ActionGeometryProvenance, number>;
 
   let blockingAnomalyCount = 0;
   let warningAnomalyCount = 0;
   for (const summary of summaries) {
     geolocation[summary.geolocation.state] += 1;
     provenance[summary.provenance.measures] += 1;
+    geometryProvenance[summary.provenance.geometry] += 1;
     for (const anomaly of summary.anomalies) {
       anomaliesByCode[anomaly.code] += 1;
       if (anomaly.severity === "blocking") {
@@ -400,6 +424,7 @@ export function buildMonthlyActionDataQualityReview(params: {
     anomaliesByCode,
     geolocation,
     provenance,
+    geometryProvenance,
     thresholds: ACTION_DATA_QUALITY_THRESHOLDS,
     alerts,
   };

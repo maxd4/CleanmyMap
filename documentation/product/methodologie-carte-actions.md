@@ -502,10 +502,11 @@ distance parcourue. Il faut distinguer strictement :
 - distance à vol d'oiseau = distance géodésique de dernier recours, jamais une
   distance réseau ou observée.
 
-Les anciennes actions sans provenance canonique sont traitées comme dérivées à
-la lecture, sans mutation silencieuse de leur ligne. Les snapshots et les
-rebuilds recalculent uniquement la cible effective et sa présentation dérivée,
-jamais la géométrie persistée. Un fallback géodésique conserve
+Les anciennes actions sans provenance canonique restent `unknown` dans le
+diagnostic de qualité, sans inférence depuis la seule confiance et sans
+mutation silencieuse de leur ligne. Les snapshots et les rebuilds recalculent
+uniquement la cible effective et sa présentation dérivée, jamais la géométrie
+persistée. Un fallback géodésique conserve
 `estimated_route`, `routeGeometryMode = "fallback"` et le provider `none` (ou
 le contrat équivalent existant).
 

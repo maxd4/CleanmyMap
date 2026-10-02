@@ -75,6 +75,7 @@ describe("report csv helpers", () => {
         manual_drawing_coordinates_json:
           "[[48.85,2.35],[48.851,2.351],[48.852,2.352]]",
         manual_drawing_geojson: '{"type":"Polygon"}',
+        geometry_provenance: "declared",
       },
     ]);
 
@@ -86,6 +87,8 @@ describe("report csv helpers", () => {
     expect(csv).toContain("geometry_kind");
     expect(csv).toContain("geometry_confidence");
     expect(csv).toContain("manual_drawing_geojson");
+    expect(csv).toContain("geometry_provenance");
+    expect(csv).toContain("declared");
     expect(csv).toContain('"{""type"":""Polygon""}"');
   });
 
