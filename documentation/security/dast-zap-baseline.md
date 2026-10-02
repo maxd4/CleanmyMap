@@ -58,3 +58,27 @@ Toute nouvelle route publique stable doit être ajoutée explicitement au
 contexte et documentée ici. Toute route de mutation, d'upload, de webhook,
 d'administration ou d'authentification reste hors de ce scan et relève de son
 contrat de test ou de sécurité propre.
+
+## Qualification CURRENT des catégories observées
+
+Le run réel `36977345907` a produit les catégories `10017`, `10038-1`, `10098`,
+`90003` et `90004-2`. Elles restent visibles dans les rapports ZAP ; ces
+qualifications ne sont ni une allowlist générale ni une désactivation de règle.
+
+- `10017` — dépendance cross-origin Clerk de confiance : `KEEP_VISIBLE`. Le
+  signal est conservé pour revue, car le loader Clerk reste une dépendance
+  externe de l’application.
+- `10038-1` — dette transitoire CSP en `Report-Only` : à corriger dans la
+  gouvernance CSP ; ce n’est pas un faux positif permanent et aucune exclusion
+  durable ne doit être ajoutée.
+- `10098` — `KEEP_PUBLIC_NONCREDENTIALLED_CORS` uniquement tant que le wildcard
+  reste limité aux ressources publiques et qu’aucune réponse ne porte
+  `Access-Control-Allow-Credentials`. Le contrat ZAP garde les API privées hors
+  périmètre et le test de contrat inspecte leurs handlers pour interdire la
+  combinaison wildcard + credentials.
+- `90003` — risque SRI résiduel du loader Clerk : le finding reste visible et ne
+  doit pas être ignoré.
+- `90004-2` — `KEEP_NOT_APPLICABLE_CROSS_ORIGIN_ISOLATION` tant qu’aucun
+  consumer `SharedArrayBuffer`, `crossOriginIsolated` ou besoin équivalent
+  n’existe dans CleanMyMap. Cette qualification devra être réévaluée à
+  l’apparition d’un tel consumer.
