@@ -6,7 +6,9 @@ GitHub lus à distance. Il décrit le contrat courant sans exposer de secret.
 ## Protections versionnées
 
 - `ci.yml` et `codeql.yml` ne se déclenchent que pour `main` et les pull requests
-  ciblant `main`.
+  ciblant `main`; les workflows Scorecard, ZAP et zizmor ont chacun leur
+  déclenchement spécialisé documenté ci-dessous et ne modifient pas les règles
+  de protection de `main`.
 - Le workflow CodeQL versionné analyse `javascript-typescript`, le Python de
   maintenance (les fichiers suivis sous `maintenance/python`) et les workflows
   et métadonnées GitHub Actions (`actions`), avec les suites
@@ -37,6 +39,27 @@ GitHub lus à distance. Il décrit le contrat courant sans exposer de secret.
 - Le build CI reçoit uniquement les variables publiques de build
   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` et `CONTACT_EMAIL`;
   aucune `service_role` n’est injectée.
+
+## Contrôles planifiés et audit de couverture
+
+- [`scorecard.yml`](../../.github/workflows/scorecard.yml) exécute OpenSSF
+  Scorecard chaque semaine et sur demande. Il produit un JSON informatif dans
+  un artefact à courte rétention, sans `publish_results`, sans `id-token`, sans
+  `security-events: write` et sans statut de merge.
+- [`zizmor.yml`](../../.github/workflows/zizmor.yml) s'exécute seulement lorsque
+  les workflows changent, sur `main`, ou sur demande. L'action est épinglée,
+  utilise la version `1.30.1`, désactive les audits en ligne et reste en mode
+  console informatif (`advanced-security: false`). Aucun finding n'est ignoré.
+- L'exécution ponctuelle de `zizmor 1.30.1` sur les workflows actuels a trouvé
+  `adhoc-packages` sur l'installation globale `gitnexus@1.6.12` de `ci.yml`.
+  Cette classe signale l'installation hors manifeste verrouillé et la résolution
+  transitive non contrôlée ; elle n'est pas couverte par
+  `scripts/checks/check-github-actions-security.mjs`, qui contrôle les SHA,
+  permissions, secrets et credentials de checkout. Les alertes CodeQL ouvertes
+  ne couvrent actuellement pas ce cas sur les workflows. Le contrôle zizmor est
+  donc conservé comme détection ciblée, sans allowlist et sans gate de merge.
+
+Ce lot n'ajoute ni SBOM permanent ni workflow SLSA.
 
 ## Paramètres GitHub observés
 

@@ -40,6 +40,7 @@ les sources de vérité sans recopier leurs contrats détaillés.
 | Prévention XSS DOM | [`dom-xss-prevention.md`](./dom-xss-prevention.md) |
 | CSP initiale en Report-Only | [`csp.md`](./csp.md) |
 | DAST public passif OWASP ZAP Baseline | [`dast-zap-baseline.md`](./dast-zap-baseline.md) |
+| Durcissement et audits GitHub Actions | [`github-actions-hardening.md`](./github-actions-hardening.md) |
 
 Les autres audits présents dans ce dossier restent des preuves ou des contrats
 de leur propre périmètre. Ils ne remplacent pas les sources `CURRENT` ci-dessus.
