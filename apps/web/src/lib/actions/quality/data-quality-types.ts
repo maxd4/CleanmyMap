@@ -9,6 +9,23 @@ export type ActionDataProvenance =
   | "estimated"
   | "missing";
 
+/**
+ * Semantic projection of ActionGeometrySource for quality diagnostics.
+ *
+ * ActionGeometrySource remains the fine-grained source of truth. This type is
+ * deliberately smaller so reports can distinguish observed, declared,
+ * reference, reconstructed, estimated, fallback, missing, and unknown data.
+ */
+export type ActionGeometryProvenance =
+  | "observed"
+  | "declared"
+  | "reference"
+  | "reconstructed"
+  | "estimated"
+  | "fallback"
+  | "missing"
+  | "unknown";
+
 export type ActionDataQualityStatus = "ok" | "warning" | "blocking";
 
 export type ActionGeolocationState = "valid" | "missing" | "partial" | "invalid";
@@ -45,7 +62,7 @@ export type ActionDataQualitySummary = {
   };
   provenance: {
     measures: ActionDataProvenance;
-    geometry: ActionDataProvenance;
+    geometry: ActionGeometryProvenance;
     impact: "derived";
   };
   confidence: number | null;

@@ -82,11 +82,55 @@ describe("action data quality contract", () => {
     });
 
     expect(result.provenance.measures).toBe("estimated");
-    expect(result.provenance.geometry).toBe("derived");
+    expect(result.provenance.geometry).toBe("reconstructed");
     expect(result.provenance.impact).toBe("derived");
     expect(result.warnings.map((item) => item.code)).toContain(
       "estimated_measure",
     );
+  });
+
+  it.each([
+    ["gpx_import", "observed"],
+    ["manual", "declared"],
+    ["reference", "reference"],
+    ["routed", "reconstructed"],
+    ["estimated_route", "estimated"],
+    ["estimated_area", "estimated"],
+    ["fallback_point", "fallback"],
+  ] as const)("projects %s geometry source to %s provenance", (source, provenance) => {
+    const result = auditActionData({
+      observedAt: "2026-08-04",
+      locationLabel: "Quai de test",
+      latitude: 48.85,
+      longitude: 2.35,
+      wasteKg: 4,
+      geometrySource: source,
+      hasGeometry: true,
+    });
+
+    expect(result.provenance.geometry).toBe(provenance);
+  });
+
+  it("keeps absent and unknown geometry provenance explicit", () => {
+    const missing = auditActionData({
+      observedAt: "2026-08-04",
+      locationLabel: "Quai de test",
+      latitude: 48.85,
+      longitude: 2.35,
+      wasteKg: 4,
+      hasGeometry: false,
+    });
+    const unknown = auditActionData({
+      observedAt: "2026-08-04",
+      locationLabel: "Quai de test",
+      latitude: 48.85,
+      longitude: 2.35,
+      wasteKg: 4,
+      hasGeometry: true,
+    });
+
+    expect(missing.provenance.geometry).toBe("missing");
+    expect(unknown.provenance.geometry).toBe("unknown");
   });
 
   it("produces a monthly review and raises thresholds for blocking geolocation", () => {
@@ -106,6 +150,8 @@ describe("action data quality contract", () => {
 
     expect(review.inspectedCount).toBe(2);
     expect(review.geolocation.partial).toBe(1);
+    expect(review.geometryProvenance.missing).toBe(1);
+    expect(review.geometryProvenance.fallback).toBe(1);
     expect(review.status).toBe("blocking");
     expect(review.alerts.find((alert) => alert.id === "blocking-anomalies")?.message).toContain(
       "à revoir",
