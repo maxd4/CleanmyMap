@@ -1,34 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const buildStorageUsageReport = () => ({
+  current: {
+    totalBytes: 5_000,
+    objectCount: 2,
+    usagePercent: 50,
+  },
+  history: [{ snapshotMonth: "2026-05-01" }],
+  comparison: { previousSnapshotMonth: null },
+  warnings: [] as string[],
+  timestamp: "2026-05-20T12:00:00.000Z",
+  snapshotMonth: "2026-05-01",
+  snapshotPersisted: true,
+});
+
 const loadStorageUsageReportMock = vi.hoisted(() =>
-  vi.fn(async () => ({
-    current: {
-      totalBytes: 5_000,
-      objectCount: 2,
-      usagePercent: 50,
-    },
-    history: [{ snapshotMonth: "2026-05-01" }],
-    comparison: { previousSnapshotMonth: null },
-    warnings: [] as string[],
-    timestamp: "2026-05-20T12:00:00.000Z",
-    snapshotMonth: "2026-05-01",
-    snapshotPersisted: true,
-  })),
+  vi.fn(async () => buildStorageUsageReport()),
 );
 const captureStorageUsageReportMock = vi.hoisted(() =>
-  vi.fn(async () => ({
-    current: {
-      totalBytes: 5_000,
-      objectCount: 2,
-      usagePercent: 50,
-    },
-    history: [{ snapshotMonth: "2026-05-01" }],
-    comparison: { previousSnapshotMonth: null },
-    warnings: [] as string[],
-    timestamp: "2026-05-20T12:00:00.000Z",
-    snapshotMonth: "2026-05-01",
-    snapshotPersisted: true,
-  })),
+  vi.fn(async () => buildStorageUsageReport()),
 );
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const StorageUsageCaptureErrorMock = vi.hoisted(
@@ -63,19 +53,7 @@ import { GET, POST } from "./route";
 describe("admin storage usage route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    captureStorageUsageReportMock.mockResolvedValue({
-      current: {
-        totalBytes: 5_000,
-        objectCount: 2,
-        usagePercent: 50,
-      },
-      history: [{ snapshotMonth: "2026-05-01" }],
-      comparison: { previousSnapshotMonth: null },
-      warnings: [] as string[],
-      timestamp: "2026-05-20T12:00:00.000Z",
-      snapshotMonth: "2026-05-01",
-      snapshotPersisted: true,
-    });
+    captureStorageUsageReportMock.mockResolvedValue(buildStorageUsageReport());
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
   });
 
