@@ -71,6 +71,15 @@ function buildManualDrawingGeoJson(item: ActionMapItem): string | null {
   return toGeoJsonString(manualDrawing);
 }
 
+function parseGeoJsonCoordinatePair(pair: unknown): [number, number] | null {
+  if (!Array.isArray(pair) || pair.length < 2) {
+    return null;
+  }
+  const lng = Number(pair[0]);
+  const lat = Number(pair[1]);
+  return Number.isFinite(lat) && Number.isFinite(lng) ? [lng, lat] : null;
+}
+
 function parseGeoJsonGeometry(raw: string | null | undefined): GeoJsonGeometry | null {
   if (!raw) {
     return null;
@@ -87,15 +96,8 @@ function parseGeoJsonGeometry(raw: string | null | undefined): GeoJsonGeometry |
 
     if (parsed?.type === "LineString" && Array.isArray(parsed.coordinates)) {
       const coordinates = (parsed.coordinates as unknown[]).flatMap((pair) => {
-        if (!Array.isArray(pair) || pair.length < 2) {
-          return [];
-        }
-        const lng = Number(pair[0]);
-        const lat = Number(pair[1]);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-          return [];
-        }
-        return [[lng, lat] as [number, number]];
+        const coordinate = parseGeoJsonCoordinatePair(pair);
+        return coordinate ? [coordinate] : [];
       });
 
       if (coordinates.length >= 2) {
@@ -107,15 +109,8 @@ function parseGeoJsonGeometry(raw: string | null | undefined): GeoJsonGeometry |
       const rings = (parsed.coordinates as unknown[]).map((ring) =>
         Array.isArray(ring)
           ? (ring as unknown[]).flatMap((pair) => {
-              if (!Array.isArray(pair) || pair.length < 2) {
-                return [];
-              }
-              const lng = Number(pair[0]);
-              const lat = Number(pair[1]);
-              if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-                return [];
-              }
-              return [[lng, lat] as [number, number]];
+              const coordinate = parseGeoJsonCoordinatePair(pair);
+              return coordinate ? [coordinate] : [];
             })
           : [],
       );
