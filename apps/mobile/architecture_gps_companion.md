@@ -211,9 +211,9 @@ sequenceDiagram
 ## 7. Historique — recommandation MVP initiale
 
 Cette section conserve la recommandation technique initiale pour référence. Elle
-ne constitue pas une nouvelle cible : l'identité Clerk, les RLS missions/GPS,
-la finalisation des métriques et le chargement headless sont déjà finalisés et
-invariants. Les seuls sujets ouverts restent `mission_actions`, la validation
+ne constitue pas une nouvelle cible : l'identité Clerk, les RLS missions/GPS et
+la finalisation des métriques sont déjà finalisées et invariantes. Les seuls
+sujets ouverts restent le background headless, `mission_actions`, la validation
 opérationnelle et l'évolution future du produit mobile.
 
 > [!TIP]
