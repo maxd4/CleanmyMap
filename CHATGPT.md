@@ -211,7 +211,21 @@ lorsque ChatGPT peut prendre la décision lui-même.
 
 Ne pas demander à Codex de redécouvrir une décision déjà prise sans raison explicite.
 
-Un lot doit rester suffisamment court pour être relu, exécuté et validé sans ambiguïté. Si plusieurs objectifs techniques indépendants apparaissent, les découper en lots séquentiels.
+Un lot doit être suffisamment cohérent, borné et relisible pour être exécuté et
+validé sans ambiguïté. ChatGPT Web ne doit pas fragmenter une même correction
+cohérente en micro-lots artificiels : le plus petit périmètre recherché est le
+plus petit lot complet qui contient tous les fichiers, tests, contrats et
+adaptations directement nécessaires à la correction. Il est interdit de
+produire une succession de prompts ou d'exécutions du type « un fichier »,
+« une ligne », « un test » ou « une assertion » lorsque ces éléments relèvent
+du même objectif et doivent être validés ensemble.
+
+Le découpage en plusieurs lots n'est autorisé que si les lots portent des
+objectifs réellement indépendants, une frontière de risque ou de déploiement
+distincte, une migration nécessitant une séquence, un blocage d'autorisation,
+ou une demande explicite de l'utilisateur. Chaque lot ainsi séparé doit rester
+complet, cohérent et clôturable ; une simple réduction de la taille du diff ne
+constitue pas une justification.
 
 ## 7. Méthode générale de prise de décision
 
@@ -577,10 +591,11 @@ ordre :
 
 Ne pas créer mécaniquement de `index.ts`, de façade ou de sous-dossier, et ne
 pas déplacer pour l'esthétique seule. Préserver les contrats publics utiles,
-privilégier une forte cohésion et un faible couplage. Les petits lots physiques
-doivent rester courts ; les passes logiques et de gouvernance transversales
-interviennent après stabilisation de l'arborescence, sans imposer toutes ces
-passes à chaque petit lot.
+privilégier une forte cohésion et un faible couplage. Un lot structurel peut
+rester physiquement ciblé, mais il ne doit pas être artificiellement découpé
+en micro-lots lorsque les passes logiques et de gouvernance concernent la même
+correction. Ces passes interviennent après stabilisation de l'arborescence et
+restent proportionnées au lot complet.
 
 Les règles détaillées de dette structurelle, de modularisation, de suppression,
 de documentation et de validation de ce contrat s'appliquent à chacun de ces
