@@ -7,12 +7,14 @@ import {
 } from "./src/lib/observability/sentry-metadata.mjs";
 import { resolvePublicAppUrl } from "./src/lib/app-url.mjs";
 import { PUBLIC_DOCUMENTATION_TRACE_FILES } from "./src/lib/documentation/public-documentation-registry";
+import { buildContentSecurityPolicyReportOnly } from "./src/lib/security/csp";
 
 const repoRoot = path.resolve(__dirname, "../..");
 const env = process.env;
 const sentryRelease = resolveSentryRelease(env) ?? "";
 const sentryEnvironment = resolveSentryEnvironment(env);
 const publicAppUrl = resolvePublicAppUrl(env);
+const contentSecurityPolicyReportOnly = buildContentSecurityPolicyReportOnly(env);
 const DOCUMENTATION_TRACE_GLOB = "../../documentation/**/*";
 
 const nextConfig: NextConfig = {
@@ -92,6 +94,7 @@ const nextConfig: NextConfig = {
           { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           { key: "Cross-Origin-Resource-Policy", value: "same-site" },
+          { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicyReportOnly },
         ],
       },
       {

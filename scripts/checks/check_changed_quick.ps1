@@ -73,6 +73,7 @@ if ($changedFiles.Count -eq 0) {
 $webSourceFiles = @($changedFiles | Where-Object {
         $_ -like "apps/web/*" -and
         $_ -ne "apps/web/eslint.config.mjs" -and
+        $_ -ne "apps/web/next.config.ts" -and
         $_ -match "\.(ts|tsx|js|jsx|mjs|cjs)$" -and
         $_ -notmatch "\.d\.ts$"
     })

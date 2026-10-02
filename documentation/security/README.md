@@ -38,6 +38,7 @@ les sources de vérité sans recopier leurs contrats détaillés.
 | Validation d'URL | [`url-validation-security.md`](./url-validation-security.md) |
 | Regex et ReDoS | [`regex-security.md`](./regex-security.md) |
 | Prévention XSS DOM | [`dom-xss-prevention.md`](./dom-xss-prevention.md) |
+| CSP initiale en Report-Only | [`csp.md`](./csp.md) |
 
 Les autres audits présents dans ce dossier restent des preuves ou des contrats
 de leur propre périmètre. Ils ne remplacent pas les sources `CURRENT` ci-dessus.
