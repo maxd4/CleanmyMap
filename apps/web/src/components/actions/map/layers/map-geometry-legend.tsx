@@ -114,12 +114,13 @@ export function MapGeometryLegend({ scoreScope = "global", displayMode = "projec
           <section aria-labelledby="map-legend-geometry" className="space-y-2">
             <h3 id="map-legend-geometry" className="text-sm font-semibold text-slate-950">Géométries</h3>
             <div className="grid gap-2 text-sm font-medium leading-snug text-slate-700">
-              <p className="flex items-center gap-2"><span className="h-0.5 w-6 shrink-0 bg-slate-700" aria-hidden="true" />Trait plein : parcours déclaré ou connu</p>
-              <p className="flex items-center gap-2"><span className="h-0.5 w-6 shrink-0 border-t-2 border-dashed border-slate-700" aria-hidden="true" />Trait pointillé : parcours reconstruit</p>
-              <p className="flex items-center gap-2"><span className="h-3.5 w-6 shrink-0 rounded-sm border border-slate-700 bg-slate-500/25" aria-hidden="true" />Surface remplie : zone d&apos;action</p>
+              <p className="flex items-center gap-2"><span className="h-0.5 w-6 shrink-0 bg-slate-700" aria-hidden="true" />Trait plein : trace GPS observée, parcours déclaré ou zone connue</p>
+              <p className="flex items-center gap-2"><span className="h-0.5 w-6 shrink-0 border-t-2 border-dashed border-slate-700" aria-hidden="true" />Pointillé régulier : parcours reconstruit par le réseau</p>
+              <p className="flex items-center gap-2"><span className="h-0.5 w-6 shrink-0 border-t-2 border-dashed border-slate-500 opacity-60" aria-hidden="true" />Pointillé léger : parcours estimé ou liaison indicative</p>
+              <p className="flex items-center gap-2"><span className="h-3.5 w-6 shrink-0 rounded-sm border border-slate-700 bg-slate-500/25" aria-hidden="true" />Surface remplie : zone d&apos;action, de référence ou indicative</p>
               <p className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full border border-slate-700 bg-slate-500/60" aria-hidden="true" />Point : localisation seule</p>
             </div>
-            <p className="text-sm font-medium leading-snug text-slate-500">Zone indicative : opacité réduite et libellé explicite.</p>
+            <p className="text-sm font-medium leading-snug text-slate-500">Un trait pointillé est une hypothèse géographique, jamais une trace GPS observée. L&apos;opacité et le libellé précisent les zones indicatives.</p>
           </section>
           <a href="/methodologie#methodologie-carte-actions" className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-center text-sm font-semibold leading-tight text-sky-800 transition hover:border-sky-300 hover:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50">Voir la méthodologie détaillée</a>
         </div>

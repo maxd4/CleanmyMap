@@ -8,6 +8,12 @@ import {
 import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import type { GeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import { isRenderableDrawing } from "@/lib/actions/geometry/derived-geometry";
+import {
+  computeCoordinateDistanceMeters,
+  resolveGeometryMetric,
+  type ActionMapGeometryMetric,
+} from "./actions-map-geometry-metrics";
+export type { ActionMapGeometryMetric } from "./actions-map-geometry-metrics";
 
 type CoordinatePair = [number, number];
 
@@ -33,12 +39,6 @@ export type ActionPolylineEndpointMarkers = {
 export type ActionPolylineDirectionMarker = {
   position: CoordinatePair;
   bearing: number;
-};
-
-type ActionMapGeometryMetric = {
-  kind: "length" | "area" | null;
-  value: number | null;
-  label: string | null;
 };
 
 export type ActionMapGeometryRenderStyle = {
@@ -98,126 +98,12 @@ function toRadians(value: number): number {
   return (value * Math.PI) / 180;
 }
 
-function computeCoordinateDistanceMeters(
-  left: CoordinatePair,
-  right: CoordinatePair,
-): number {
-  const deltaLat = toRadians(right[0] - left[0]);
-  const deltaLng = toRadians(right[1] - left[1]);
-  const a =
-    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-    Math.cos(toRadians(left[0])) *
-      Math.cos(toRadians(right[0])) *
-      Math.sin(deltaLng / 2) *
-      Math.sin(deltaLng / 2);
-  return 2 * 6_371_000 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function computePolylineLengthMeters(coordinates: CoordinatePair[]): number | null {
-  if (coordinates.length < 2) {
-    return null;
-  }
-
-  let total = 0;
-  for (let index = 1; index < coordinates.length; index += 1) {
-    total += computeCoordinateDistanceMeters(
-      coordinates[index - 1],
-      coordinates[index],
-    );
-  }
-
-  return total;
-}
-
-function projectCoordinate(
-  coordinate: CoordinatePair,
-  metersPerDegreeLng: number,
-  metersPerDegreeLat: number,
-): CoordinatePair {
-  const [latitude, longitude] = coordinate;
-  return [longitude * metersPerDegreeLng, latitude * metersPerDegreeLat];
-}
-
-function computePolygonAreaSquareMeters(
-  coordinates: CoordinatePair[],
-): number | null {
-  if (coordinates.length < 3) {
-    return null;
-  }
-
-  const meanLatitude =
-    coordinates.reduce((sum, [latitude]) => sum + latitude, 0) /
-    coordinates.length;
-  const metersPerDegreeLat = 111_320;
-  const metersPerDegreeLng =
-    111_320 * Math.max(0.1, Math.cos(toRadians(meanLatitude)));
-
-  const projected = coordinates.map((coordinate) =>
-    projectCoordinate(coordinate, metersPerDegreeLng, metersPerDegreeLat),
-  );
-
-  let area = 0;
-  for (let index = 0; index < projected.length; index += 1) {
-    const [x1, y1] = projected[index];
-    const [x2, y2] = projected[(index + 1) % projected.length];
-    area += x1 * y2 - x2 * y1;
-  }
-
-  return Math.abs(area) / 2;
-}
-
-function formatDistanceLabel(meters: number): string {
-  if (meters >= 1000) {
-    return `Longueur ~ ${(meters / 1000).toFixed(1).replace(".", ",")} km`;
-  }
-  return `Longueur ~ ${Math.round(meters)} m`;
-}
-
-function formatAreaLabel(squareMeters: number): string {
-  if (squareMeters >= 10_000) {
-    return `Surface ~ ${(squareMeters / 10_000).toFixed(1).replace(".", ",")} ha`;
-  }
-  return `Surface ~ ${Math.round(squareMeters)} m²`;
-}
-
 export function formatActionGeometryTooltipTitle(
   kind: "polyline" | "polygon",
   metricLabel: string | null,
 ): string {
-  if (kind === "polygon") {
-    return metricLabel ? `Zone d'action · ${metricLabel}` : "Zone d'action";
-  }
-
-  return metricLabel ? `Parcours d'action · ${metricLabel}` : "Parcours d'action";
-}
-
-function resolveGeometryMetric(
-  kind: ActionGeometryKind | "point" | null,
-  coordinates: CoordinatePair[],
-): ActionMapGeometryMetric {
-  if (kind === "polyline") {
-    const lengthMeters = computePolylineLengthMeters(coordinates);
-    return {
-      kind: "length",
-      value: lengthMeters,
-      label: lengthMeters === null ? null : formatDistanceLabel(lengthMeters),
-    };
-  }
-
-  if (kind === "polygon") {
-    const areaSquareMeters = computePolygonAreaSquareMeters(coordinates);
-    return {
-      kind: "area",
-      value: areaSquareMeters,
-      label: areaSquareMeters === null ? null : formatAreaLabel(areaSquareMeters),
-    };
-  }
-
-  return {
-    kind: null,
-    value: null,
-    label: null,
-  };
+  if (metricLabel) return metricLabel;
+  return kind === "polygon" ? "Zone d'action" : "Parcours d'action";
 }
 
 export function resolveGeometryRenderStyle(
@@ -238,7 +124,10 @@ export function resolveGeometryRenderStyle(
   }
 
   if (geometry.kind === "polygon") {
-    const isIndicative = geometry.presentation.reality === "estimated";
+    const isIndicative =
+      geometry.presentation.variant === "indicative" ||
+      (geometry.presentation.variant === undefined &&
+        geometry.presentation.reality === "estimated");
     return {
       pointRadius: null,
       pointWeight: null,
@@ -251,16 +140,26 @@ export function resolveGeometryRenderStyle(
     };
   }
 
-  const isReconstructed = geometry.presentation.origin === "routed";
+  const isNetworkRoute =
+    geometry.presentation.variant === "network" ||
+    (geometry.presentation.variant === undefined &&
+      geometry.presentation.strokeStyle === "dashed");
+  const isIndicativeRoute =
+    geometry.presentation.variant === "indicative" &&
+    geometry.presentation.strokeStyle === "dashed";
   return {
     pointRadius: null,
     pointWeight: null,
     pointOpacity: null,
     pointFillOpacity: null,
     strokeWeight: 4,
-    strokeOpacity: isReconstructed ? 0.75 : 0.92,
+    strokeOpacity: isNetworkRoute ? 0.75 : isIndicativeRoute ? 0.62 : 0.92,
     fillOpacity: null,
-    dashArray: isReconstructed ? "8 8" : undefined,
+    dashArray: isNetworkRoute
+      ? "8 8"
+      : isIndicativeRoute
+        ? "4 8"
+        : undefined,
   };
 }
 
@@ -539,31 +438,8 @@ export function formatGeometryModeLabel(
   kind: ActionGeometryKind | "point" | null,
   presentation: GeometryPresentation,
 ): string {
-  if (kind === "point" || presentation.origin === "fallback_point") {
-    return "Localisation seule";
-  }
-
-  if (kind === "polyline") {
-    return presentation.origin === "gpx_import"
-      ? "Tracé GPX importé"
-      : presentation.origin === "routed" || presentation.origin === "estimated_route"
-      ? "Parcours reconstruit"
-      : "Parcours déclaré";
-  }
-
-  if (kind === "polygon") {
-    if (presentation.origin === "reference") {
-      return "Zone de référence";
-    }
-    if (presentation.origin === "estimated_area") {
-      return "Zone indicative";
-    }
-    return "Zone déclarée";
-  }
-
-  return presentation.origin === "estimated_area"
-    ? "Zone indicative"
-    : "Localisation seule";
+  void kind;
+  return presentation.label;
 }
 
 export function resolveActionMapGeometryViewModel(
@@ -584,7 +460,7 @@ export function resolveActionMapGeometryViewModel(
       anchor: resolveAnchorFromCoordinates(coordinates),
       pointCount: coordinates.length,
       confidence,
-      metrics: resolveGeometryMetric(drawing.kind, coordinates),
+      metrics: resolveGeometryMetric(drawing.kind, coordinates, item, presentation),
       label: formatGeometryModeLabel(kind, presentation),
       presentation,
       drawing,
@@ -605,7 +481,7 @@ export function resolveActionMapGeometryViewModel(
       anchor: anchor as LatLngTuple,
       pointCount: 1,
       confidence,
-      metrics: resolveGeometryMetric("point", [anchor]),
+      metrics: resolveGeometryMetric("point", [anchor], item, presentation),
       label: formatGeometryModeLabel("point", presentation),
       presentation,
       drawing: null,
@@ -619,7 +495,7 @@ export function resolveActionMapGeometryViewModel(
     anchor: null,
     pointCount: 0,
     confidence,
-    metrics: resolveGeometryMetric(null, []),
+    metrics: resolveGeometryMetric(null, [], item, presentation),
     label: formatGeometryModeLabel(null, presentation),
     presentation,
     drawing: null,

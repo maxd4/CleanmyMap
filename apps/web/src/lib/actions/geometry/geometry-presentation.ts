@@ -1,11 +1,21 @@
-import { ActionGeometryOrigin, ActionMapItem } from "../types";
+import type { ActionGeometryKind, ActionGeometryOrigin, ActionMapItem } from "../types";
 import { resolveGeometryOriginFromConfidence } from "./derived-geometry";
+
+export type GeometryPresentationVariant =
+  | "observed"
+  | "declared"
+  | "reference"
+  | "network"
+  | "estimated"
+  | "indicative"
+  | "point";
 
 export type GeometryPresentation = {
   origin: ActionGeometryOrigin;
   reality: "real" | "estimated" | "fallback";
   label: string;
   strokeStyle: "solid" | "dashed" | "point";
+  variant?: GeometryPresentationVariant;
 };
 
 function toGeometryPresentationOrigin(
@@ -26,6 +36,55 @@ function toGeometryPresentationOrigin(
     contractGeometry?.confidence ?? item.geometry_confidence ?? null,
   );
 }
+
+function toGeometryKind(item: ActionMapItem): ActionGeometryKind | null {
+  return item.contract?.geometry.kind ?? item.manual_drawing?.kind ?? null;
+}
+
+function isIndicativeRouteFallback(item: ActionMapItem): boolean {
+  const preparationData = item.contract?.metadata.preparationData;
+  return (
+    preparationData?.routeGeometryMode === "fallback" ||
+    preparationData?.routeGeometryProvider === "none"
+  );
+}
+
+function getManualLabel(kind: ActionGeometryKind | null): string {
+  if (kind === "polygon") return "Zone d’action";
+  if (kind === "polyline") return "Parcours déclaré";
+  return "Localisation seule";
+}
+
+function buildPresentation(
+  origin: ActionGeometryOrigin,
+  reality: GeometryPresentation["reality"],
+  label: string,
+  strokeStyle: GeometryPresentation["strokeStyle"],
+  variant: GeometryPresentationVariant,
+): GeometryPresentation {
+  return { origin, reality, label, strokeStyle, variant };
+}
+
+function getEstimatedRoutePresentation(item: ActionMapItem): GeometryPresentation {
+  if (isIndicativeRouteFallback(item)) {
+    return buildPresentation(
+      "estimated_route",
+      "estimated",
+      "Liaison indicative à vol d’oiseau",
+      "dashed",
+      "indicative",
+    );
+  }
+
+  return buildPresentation(
+    "estimated_route",
+    "estimated",
+    "Parcours estimé",
+    "dashed",
+    "estimated",
+  );
+}
+
 /**
  * Retourne les propriétés visuelles et textuelles pour représenter la géométrie d'une action.
  */
@@ -33,49 +92,22 @@ export function getGeometryPresentation(
   item: ActionMapItem,
 ): GeometryPresentation {
   const origin = toGeometryPresentationOrigin(item);
+  const kind = toGeometryKind(item);
   switch (origin) {
     case "manual":
+      return buildPresentation(origin, "real", getManualLabel(kind), "solid", "declared");
     case "reference":
+      return buildPresentation(origin, "real", "Zone de référence", "solid", "reference");
     case "gpx_import":
-      return {
-        origin,
-        reality: "real",
-        label:
-          origin === "manual"
-            ? "Géométrie déclarée · manuelle"
-            : origin === "gpx_import"
-              ? "Tracé observé · GPX importé"
-              : "Zone de référence · emprise connue",
-        strokeStyle: "solid",
-      };
+      return buildPresentation(origin, "real", "Trace GPS observée", "solid", "observed");
     case "routed":
-      return {
-        origin,
-        reality: "estimated",
-        label: "Parcours reconstruit · estimation",
-        strokeStyle: "dashed",
-      };
+      return buildPresentation(origin, "estimated", "Parcours reconstruit", "dashed", "network");
     case "estimated_route":
-      return {
-        origin,
-        reality: "estimated",
-        label: "Parcours estimé · repli local",
-        strokeStyle: "dashed",
-      };
+      return getEstimatedRoutePresentation(item);
     case "estimated_area":
-      return {
-        origin,
-        reality: "estimated",
-        label: "Zone indicative · emprise estimée",
-        strokeStyle: "solid",
-      };
+      return buildPresentation(origin, "estimated", "Zone indicative", "solid", "indicative");
     case "fallback_point":
     default:
-      return {
-        origin: "fallback_point",
-        reality: "fallback",
-        label: "Localisation seule",
-        strokeStyle: "point",
-      };
+      return buildPresentation("fallback_point", "fallback", "Localisation seule", "point", "point");
   }
 }

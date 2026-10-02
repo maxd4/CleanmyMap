@@ -300,13 +300,25 @@ Les résultats collectés restent présentés comme des résultats de l'action, 
 
 ## Géométrie et interactions
 
-La couleur ne porte pas la fiabilité géométrique :
+La couleur porte uniquement la lecture de pollution. Elle ne porte jamais la
+fiabilité géométrique. La présentation publique distingue les provenances
+suivantes, sur la carte, dans la légende, les tooltips et les popups :
 
-- trait plein : parcours déclaré ou connu ;
-- trait pointillé : parcours indicatif ou reconstruit ;
-- polygone rempli à bord plein : zone réelle ou indicative ;
-- point : localisation seule ;
-- épaisseur : sélection et lisibilité, jamais score.
+- `Trace GPS observée` : trace GPX fournie par l'utilisateur, trait plein ;
+- `Parcours déclaré` : parcours dessiné ou déclaré, trait plein ;
+- `Parcours reconstruit` : parcours piéton retourné par le réseau, trait
+  pointillé régulier et opacité réduite ;
+- `Parcours estimé` : estimation sans trace observée, trait pointillé plus
+  léger ;
+- `Liaison indicative à vol d'oiseau` : repli géographique quand le réseau
+  n'est pas disponible, trait pointillé léger ;
+- `Zone d'action`, `Zone de référence` et `Zone indicative` : surfaces à bord
+  plein, la zone indicative ayant un remplissage plus transparent ;
+- `Localisation seule` : point sans tracé.
+
+Un trait pointillé représente une hypothèse géographique, jamais une trace GPS
+observée. L'épaisseur sert uniquement à la sélection et à la lisibilité ; elle
+ne constitue pas un score.
 
 Une action sans tracé réel peut recevoir une géométrie reconstruite côté serveur.
 La topologie canonique est `loop` ou `point_to_point`, indépendamment de
@@ -318,10 +330,19 @@ impossible à localiser dans le mode `point_to_point` produit une validation
 explicite.
 
 `routed` désigne une géométrie retournée par le réseau piéton FOSSGIS/OSRM ;
-`estimated_route` désigne uniquement le repli local déterministe lorsque ce
-réseau ou son quota est indisponible. La distance cible saisie dans
-`/actions/new` n'est jamais confondue avec la distance réseau finale. Le
-navigateur ne déclenche pas de routage pour produire ou recaler cette géométrie.
+`estimated_route` porte le repli local déterministe lorsque ce réseau ou son
+quota est indisponible. Le runtime lit `routeGeometryMode` et
+`routeGeometryProvider` pour différencier le parcours estimé de la liaison
+indicative ; une ancienne donnée sans ces métadonnées reste rendue comme
+`Parcours estimé`, sans inventer un fournisseur.
+
+Les distances gardent leur provenance et ne sont pas recalculées sous un
+libellé générique : `Distance observée` pour un GPX, `Distance du parcours
+reconstruit` pour un parcours réseau, `Parcours estimé` accompagné de
+`Distance cible` pour une estimation réseau, et `Distance indicative à vol
+d'oiseau` pour le repli. Une distance cible isolée reste libellée `Distance
+cible`. Le navigateur ne déclenche pas de routage pour produire ou recaler
+cette géométrie.
 
 Un fichier GPX valide constitue un tracé fourni par l'utilisateur : sa source
 reste `gpx_import`, sa longueur observée est calculée séparément de la distance

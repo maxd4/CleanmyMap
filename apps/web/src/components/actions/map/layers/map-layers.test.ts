@@ -548,7 +548,7 @@ describe("ShapeLayers", () => {
       }),
     );
 
-    expect(markup).toContain("Parcours d&#x27;action · Longueur ~");
+    expect(markup).toContain("Parcours déclaré ·");
     expect(markup).toContain('data-color="hsl(');
   });
 
