@@ -38,6 +38,14 @@ export const EXPLICIT_MITIGATIONS = Object.freeze([
     documentation: GOVERNANCE_DOCUMENT,
     verification: "apps/mobile/security/stream-json-jayson-security.test.mjs",
   }),
+  Object.freeze({
+    advisory: "GHSA-86w9-cpqp-85rv",
+    packageName: "node-forge",
+    version: "1.4.0",
+    path: "apps/mobile/vendor/node-forge",
+    documentation: GOVERNANCE_DOCUMENT,
+    verification: "apps/mobile/security/node-forge-security.test.mjs",
+  }),
 ]);
 
 function normalizePath(value) {
@@ -84,6 +92,38 @@ function findingNodes(packageKey, vulnerability) {
   return [`node_modules/${packageKey}`];
 }
 
+function exactMitigationCoversPackage(packageKey, vulnerability, vulnerabilities, packages, seen = new Set()) {
+  if (seen.has(packageKey)) return false;
+  const nextSeen = new Set(seen).add(packageKey);
+  const details = auditDetails(vulnerability);
+  if (details.some((detail) => detail && findingNodes(packageKey, vulnerability).some((node) => {
+    const resolved = resolveLockfilePackage(node, packages);
+    return EXPLICIT_MITIGATIONS.some((mitigation) => mitigationMatches({
+      advisory: advisoryIdFromDetail(detail),
+      packageName: vulnerability.name ?? packageKey,
+      version: resolved.version,
+      path: resolved.path,
+    }, mitigation));
+  }))) {
+    return true;
+  }
+
+  const via = vulnerability?.via;
+  if (!Array.isArray(via) || via.length === 0 || via.some((entry) => typeof entry !== "string")) {
+    return false;
+  }
+  return via.every((dependencyName) => {
+    const dependency = vulnerabilities[dependencyName];
+    return dependency && exactMitigationCoversPackage(
+      dependencyName,
+      dependency,
+      vulnerabilities,
+      packages,
+      nextSeen,
+    );
+  });
+}
+
 export function extractAuditFindings(auditReport, lockfile = {}) {
   const vulnerabilities = auditReport?.vulnerabilities;
   if (!vulnerabilities || typeof vulnerabilities !== "object") return [];
@@ -93,6 +133,11 @@ export function extractAuditFindings(auditReport, lockfile = {}) {
   const findings = [];
 
   for (const [packageKey, vulnerability] of Object.entries(vulnerabilities)) {
+    const details = auditDetails(vulnerability);
+    if (details.length === 1 && details[0] === null
+      && exactMitigationCoversPackage(packageKey, vulnerability, vulnerabilities, packages)) {
+      continue;
+    }
     for (const node of findingNodes(packageKey, vulnerability)) {
       const resolved = resolveLockfilePackage(node, packages);
       for (const detail of auditDetails(vulnerability)) {

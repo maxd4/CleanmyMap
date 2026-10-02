@@ -225,7 +225,11 @@
     },
     "@expo/cli": {
       "tar": "7.5.22",
-      "undici": "6.27.0"
+      "undici": "6.27.0",
+      "node-forge": "file:apps/mobile/vendor/node-forge"
+    },
+    "@expo/code-signing-certificates": {
+      "node-forge": "file:apps/mobile/vendor/node-forge"
     },
     "@expo/xcpretty": {
       "js-yaml": "4.3.2"

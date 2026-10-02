@@ -103,6 +103,43 @@ test("a High finding without an exact mitigation fails, including string-only vi
   assert.equal(result.unmitigated[0].path, "node_modules/node-forge");
 });
 
+test("transitive npm audit relay findings disappear only when their full chain reaches an exact mitigation", () => {
+  const result = evaluateAuditPolicy({
+    auditReport: {
+      vulnerabilities: {
+        "node-forge": {
+          name: "node-forge",
+          severity: "high",
+          via: [{
+            url: "https://github.com/advisories/GHSA-86w9-cpqp-85rv",
+            severity: "high",
+          }],
+          nodes: ["node_modules/node-forge"],
+        },
+        "@expo/code-signing-certificates": {
+          name: "@expo/code-signing-certificates",
+          severity: "high",
+          via: ["node-forge"],
+          nodes: ["node_modules/@expo/code-signing-certificates"],
+        },
+      },
+    },
+    lockfile: {
+      packages: {
+        ...lockfile.packages,
+        "node_modules/node-forge": {
+          link: true,
+          resolved: "apps/mobile/vendor/node-forge",
+        },
+        "apps/mobile/vendor/node-forge": { version: "1.4.0" },
+      },
+    },
+  });
+  assert.equal(result.passed, true);
+  assert.equal(result.mitigated.length, 1);
+  assert.equal(result.unmitigated.length, 0);
+});
+
 test("the gate invocation is exactly npm audit --json", () => {
   assert.deepEqual(buildNpmAuditInvocation().args, ["audit", "--json"]);
 });

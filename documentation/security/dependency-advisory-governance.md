@@ -11,6 +11,7 @@ package, de niveau de sévérité ou de scanner.
 | [GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) | CVE-2025-71330 | `apps/mobile/vendor/image-size` `2.0.3` | `@expo/metro` → `metro` → `image-size` | Rejet des entrées ICNS trop courtes, hors limites ou non progressives |
 | [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) | CVE-2025-71329 | `apps/mobile/vendor/image-size` `2.0.3` | `react-native` → `@react-native/community-cli-plugin` → `metro` → `image-size` | Conservation de la garde de progression des boîtes JXL/HEIF de taille nulle |
 | [GHSA-528h-pc64-c93x](https://github.com/advisories/GHSA-528h-pc64-c93x) | CVE-2026-71429 | `apps/mobile/vendor/stream-json` `1.9.1` | `@clerk/expo` → `@clerk/clerk-js` → `@solana/wallet-adapter-base` → `@solana/web3.js@1.99.0` → `jayson@4.3.0` → `stream-json` | Backport CommonJS borné à `StreamValues` et `Verifier`, sans surface de filtres JSON |
+| [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) | CVE-2026-85393 | `apps/mobile/vendor/node-forge` `1.4.0` | `expo@57.0.22` → `@expo/cli@57.0.24` → `node-forge`, et `@expo/code-signing-certificates@0.0.6` → `node-forge` | Backport du contrôle du nombre d'enfants de `DigestAlgorithm` depuis `forge#1152` (`ceba344...`) |
 
 ## Mitigation effectivement versionnée
 
@@ -39,7 +40,7 @@ le graphe npm ou un lockfile est modifié. Ce gate lance exactement
 correspond pas à une mitigation exacte. Il n'existe ni ignore global, ni
 exception par package, ni exception par niveau de sévérité.
 
-Les exceptions du gate sont limitées aux trois lignes du registre versionné dans
+Les exceptions du gate sont limitées aux quatre lignes du registre versionné dans
 `scripts/security/audit-dependencies.mjs`. Chaque ligne doit matcher exactement
 l'advisory, le package, la version et le chemin résolu, et référence cette
 documentation ainsi que le test de sécurité du backport. Une alerte qui ne
@@ -51,6 +52,32 @@ La mitigation ne rend pas fiable un asset spécialement forgé par lui-même :
 Aucun asset non fiable ne doit entrer dans un build Metro. Les assets d'un
 build doivent provenir du dépôt contrôlé ou d'une source vérifiée avant
 exécution de Metro.
+
+## Mitigation `node-forge` du graphe Expo
+
+Le package local `apps/mobile/vendor/node-forge` part exactement du tarball
+publié `node-forge@1.4.0`. Il conserve sa licence, son identité et sa
+provenance upstream, mais ne contient que `package.json`, `LICENSE`, ce
+document et les 42 fichiers `lib/*.js` atteignables depuis l'entrée Node
+consommée par les deux packages Expo. Les tests, exemples, documentation,
+benchmarks, artefacts de build et modules runtime non atteignables sont exclus
+du vendor reproductible.
+
+Le seul changement de code est le contrôle de la cardinalité de la séquence
+nichée `DigestAlgorithm`, repris du commit upstream
+`ceba34402e329f0365134f23fe19898756527d65` de `digitalbazaar/forge#1152`.
+`apps/mobile/security/node-forge-security.test.mjs` vérifie le vecteur RSA
+forgé : la copie exacte vulnérable de `1.4.0` l'accepte, tandis que le
+backport la rejette, puis exerce les fonctions node-forge réellement appelées
+par `@expo/code-signing-certificates`.
+
+Les overrides sont limités à `@expo/cli` et
+`@expo/code-signing-certificates`; aucun override global `node-forge` n'est
+autorisé. Le lockfile doit continuer à résoudre ces deux chemins vers le
+vendor local. CleanMyMap ne déclare actuellement ni `codeSigningCertificate`,
+ni `codeSigningMetadata`, ni `expo-updates` : cette mitigation protège le
+tooling Expo et ne constitue pas une affirmation d'exposition du runtime
+public.
 
 ## Compatibilité `jayson` et CVE-2026-71429
 
@@ -119,6 +146,18 @@ local ni déduire que les filtres concernés ont été retirés. Ce signal n'est
 ignoré globalement ; il est contrôlé par le test de surface local ci-dessus et
 doit rester visible jusqu'à la suppression de la mitigation ou à la prise en
 charge explicite de ce backport par le scanner.
+
+## Conditions de retrait — `node-forge`
+
+Le vendor `node-forge` et ses deux overrides ne pourront être retirés que
+lorsqu'une release upstream publiée contenant le correctif de
+`GHSA-86w9-cpqp-85rv` / `CVE-2026-85393` sera disponible et compatible avec
+`@expo/cli@57.0.24` et `@expo/code-signing-certificates@0.0.6` (ou avec les
+versions Expo alors supportées). Le retrait exige la vérification de l'arbre
+réel, la régénération du lockfile et le succès du test RSA, des validations
+mobile, de `npm audit` et de `npm run check:lockfile-policy`. Sans cette
+preuve, le backport reste versionné ; aucune mise à jour majeure d'Expo ne
+constitue une condition implicite de retrait.
 
 ## Conditions de retrait — `image-size`
 
