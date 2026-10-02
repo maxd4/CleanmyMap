@@ -158,4 +158,15 @@ describe("CSP report-only contract", () => {
     expect(nextConfig).not.toContain("force-dynamic");
     expect(nextConfig).not.toContain("report-sample");
   });
+
+  it("restricts CleanMyMap resources to the same origin", () => {
+    const nextConfig = readFileSync(new URL("../../../next.config.ts", import.meta.url), "utf8");
+
+    expect(nextConfig).toContain(
+      '{ key: "Cross-Origin-Resource-Policy", value: "same-origin" }',
+    );
+    expect(nextConfig).not.toContain(
+      '{ key: "Cross-Origin-Resource-Policy", value: "same-site" }',
+    );
+  });
 });
