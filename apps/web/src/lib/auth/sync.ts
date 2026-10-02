@@ -21,6 +21,7 @@ import {
   extractTerritoryLocationPreferenceFromMetadata,
 } from "@/lib/user-location-preference";
 import { buildFallbackHandle } from "@/lib/auth/identity-handle";
+import { describeUnknownError } from "@/lib/errors/app-errors";
 
 const MAX_HANDLE_LENGTH = 30;
 
@@ -321,7 +322,7 @@ async function loadExistingProfile(
 
   if (error) {
     console.warn(
-      `[User Sync] Could not read existing profile for ${userId}: ${describeSyncError(error)}`,
+      `[User Sync] Could not read existing profile for ${userId}: ${describeUnknownError(error)}`,
     );
   }
 
@@ -364,7 +365,7 @@ async function upsertSyncedProfile(
 
   if (error) {
     console.warn(
-      `[User Sync] Sync skipped for user ${userId}: ${describeSyncError(error)}`,
+      `[User Sync] Sync skipped for user ${userId}: ${describeUnknownError(error)}`,
     );
     return null;
   }
@@ -444,22 +445,6 @@ async function resolveUniqueHandle(
   }
 
   return normalizeHandleSegment(`${compactBase}_${user.id.slice(-10)}`);
-}
-
-function describeSyncError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message || error.name;
-  }
-
-  if (typeof error === "string") {
-    return error;
-  }
-
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return String(error);
-  }
 }
 
 async function resolveWritableClient(allowServiceRoleFallback: boolean) {

@@ -1,6 +1,7 @@
 import { canUseLocalStorage } from "@/lib/storage/local-storage";
 import {
   cookieConsentStorage,
+  COOKIE_CONSENT_CHANGE_EVENT,
   COOKIE_CONSENT_MAX_AGE_MS,
 } from "@/lib/storage/ui-state-storage";
 
@@ -66,6 +67,20 @@ export function getAnalyticsConsentDecision(): boolean | null {
   }
 
   return null;
+}
+
+export function subscribeAnalyticsConsent(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const handler = () => onStoreChange();
+  window.addEventListener("storage", handler);
+  window.addEventListener(COOKIE_CONSENT_CHANGE_EVENT, handler);
+  return () => {
+    window.removeEventListener("storage", handler);
+    window.removeEventListener(COOKIE_CONSENT_CHANGE_EVENT, handler);
+  };
 }
 
 export function hasAnalyticsConsent(): boolean {

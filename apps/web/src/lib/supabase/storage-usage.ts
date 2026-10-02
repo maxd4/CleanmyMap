@@ -5,6 +5,11 @@ import {
   classifyStorageBusinessObject,
   type StorageBusinessClassificationSignalType,
 } from "./storage-business-classification";
+import {
+  compareStorageUsageEntries,
+  extractStorageFileExtension,
+  parseStorageSizeBytes,
+} from "./storage-size";
 
 const BYTES_PER_KB = 1024;
 const BYTES_PER_MB = BYTES_PER_KB * 1024;
@@ -212,30 +217,6 @@ function formatMonthLabel(snapshotMonth: string): string {
   }).format(parsed);
 }
 
-function extractSizeBytes(value: unknown): number {
-  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
-    return Math.trunc(value);
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed) && parsed >= 0) {
-      return Math.trunc(parsed);
-    }
-  }
-
-  return 0;
-}
-
-function extractExtension(name: string): string {
-  const fileName = name.split("/").pop() ?? name;
-  const index = fileName.lastIndexOf(".");
-  if (index <= 0 || index === fileName.length - 1) {
-    return "";
-  }
-  return fileName.slice(index + 1).toLowerCase();
-}
-
 export function inferStorageFileTypeLabel(extension: string, mimeType: string | null): string {
   if (mimeType) {
     const normalized = mimeType.trim().toLowerCase();
@@ -302,7 +283,7 @@ function groupStorageObjects<T extends StorageUsageObjectRow>(
   >();
 
   for (const object of objects) {
-    const size = extractSizeBytes(object.metadata?.["size"]);
+    const size = parseStorageSizeBytes(object.metadata?.["size"]) ?? 0;
     const { key, label } = selector(object);
     const current = grouped.get(key) ?? {
       label,
@@ -315,7 +296,7 @@ function groupStorageObjects<T extends StorageUsageObjectRow>(
   }
 
   const totalBytes = objects.reduce(
-    (accumulator, object) => accumulator + extractSizeBytes(object.metadata?.["size"]),
+    (accumulator, object) => accumulator + (parseStorageSizeBytes(object.metadata?.["size"]) ?? 0),
     0,
   );
 
@@ -328,15 +309,7 @@ function groupStorageObjects<T extends StorageUsageObjectRow>(
       sharePercent: totalBytes > 0 ? (item.bytes / totalBytes) * 100 : 0,
       averageBytes: item.count > 0 ? item.bytes / item.count : 0,
     }))
-    .sort((left, right) => {
-      if (right.bytes !== left.bytes) {
-        return right.bytes - left.bytes;
-      }
-      if (right.count !== left.count) {
-        return right.count - left.count;
-      }
-      return left.label.localeCompare(right.label, "fr");
-    });
+    .sort(compareStorageUsageEntries);
 }
 
 function buildLargestFiles(
@@ -345,8 +318,8 @@ function buildLargestFiles(
 ): StorageUsageLargestFile[] {
   return objects
     .map((object) => {
-      const size = extractSizeBytes(object.metadata?.["size"]);
-      const extension = extractExtension(object.name);
+      const size = parseStorageSizeBytes(object.metadata?.["size"]) ?? 0;
+      const extension = extractStorageFileExtension(object.name);
       const classification = classifyStorageBusinessObject({
         bucketId: object.bucket_id,
         name: object.name,
@@ -386,7 +359,7 @@ export function buildStorageUsageSnapshot(
   generatedAt = new Date().toISOString(),
 ): StorageUsageSnapshot {
   const totalBytes = objects.reduce(
-    (accumulator, object) => accumulator + extractSizeBytes(object.metadata?.["size"]),
+    (accumulator, object) => accumulator + (parseStorageSizeBytes(object.metadata?.["size"]) ?? 0),
     0,
   );
   const remainingBytes = quotaInfo.bytes - totalBytes;
@@ -413,7 +386,7 @@ export function buildStorageUsageSnapshot(
   });
 
   const extensionBreakdown = groupStorageObjects(objects, (object) => {
-    const extension = extractExtension(object.name);
+    const extension = extractStorageFileExtension(object.name);
     const fileTypeLabel = inferStorageFileTypeLabel(
       extension,
       toStringOrNull(object.metadata?.["mimetype"]),

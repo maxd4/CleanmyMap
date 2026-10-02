@@ -23,6 +23,27 @@ const parisFacts = (overrides: Partial<ActionFormalitiesFacts> = {}): ActionForm
   ...overrides,
 });
 
+function sentParisFormalitiesWorkflow(actionDependencies?: {
+  locationLabel: string;
+  actionDate: string;
+  territoryFingerprint?: string;
+}) {
+  const facts = parisFacts();
+  const qualification = qualifyActionFormalities(facts);
+  const initial = buildFormalitiesWorkflowState({
+    facts,
+    qualification,
+    actionDependencies,
+    now: "2026-09-17T10:00:00.000Z",
+  });
+  const sent = applyFormalitiesWorkflowTransition({
+    workflow: initial,
+    transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
+    now: "2026-09-17T10:01:00.000Z",
+  });
+  return { facts, qualification, sent };
+}
+
 describe("formalities workflow", () => {
   it("starts every newly qualified formality as not_started and keeps the blocking policy pure", () => {
     const facts = parisFacts();
@@ -102,18 +123,9 @@ describe("formalities workflow", () => {
   });
 
   it("invalidates a qualification when the venue or date changes, without using the title as a dependency", () => {
-    const facts = parisFacts();
-    const qualification = qualifyActionFormalities(facts);
-    const initial = buildFormalitiesWorkflowState({
-      facts,
-      qualification,
-      actionDependencies: { locationLabel: "Rue A", actionDate: "2026-09-20" },
-      now: "2026-09-17T10:00:00.000Z",
-    });
-    const sent = applyFormalitiesWorkflowTransition({
-      workflow: initial,
-      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
-      now: "2026-09-17T10:01:00.000Z",
+    const { facts, qualification, sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
     });
     const sameDependencies = buildFormalitiesWorkflowState({
       facts: { ...facts, isCleanwalk: false },
@@ -197,18 +209,9 @@ describe("formalities workflow", () => {
   });
 
   it("requalifies a legacy FNV trace instead of accepting it as equivalent", () => {
-    const facts = parisFacts();
-    const qualification = qualifyActionFormalities(facts);
-    const initial = buildFormalitiesWorkflowState({
-      facts,
-      qualification,
-      actionDependencies: { locationLabel: "Rue A", actionDate: "2026-09-20" },
-      now: "2026-09-17T10:00:00.000Z",
-    });
-    const sent = applyFormalitiesWorkflowTransition({
-      workflow: initial,
-      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
-      now: "2026-09-17T10:01:00.000Z",
+    const { facts, qualification, sent } = sentParisFormalitiesWorkflow({
+      locationLabel: "Rue A",
+      actionDate: "2026-09-20",
     });
     const legacy = {
       ...sent,

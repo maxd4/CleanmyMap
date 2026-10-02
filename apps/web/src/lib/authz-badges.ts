@@ -6,6 +6,19 @@ export type AccountBadge = {
   icon: string;
 };
 
+export function extractBadgeIds(metadata: Record<string, unknown> | null | undefined): string[] {
+  if (!metadata) {
+    return [];
+  }
+  const badges = metadata["badges"];
+  if (!Array.isArray(badges)) {
+    return [];
+  }
+  return badges
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim().toLowerCase());
+}
+
 const BADGE_CATALOG: Record<string, AccountBadge> = {
   admin: { id: "admin", label: "Administrateur", icon: "shield" },
   role_admin: { id: "role_admin", label: "Administrateur", icon: "crown" },

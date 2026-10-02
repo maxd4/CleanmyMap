@@ -9,6 +9,7 @@ import {
 } from "./profiles";
 import type { ActiveRole, Role } from "@/lib/domain-language";
 import {
+  extractBadgeIds,
   getProfileBadgeId,
   getRoleBadgeId,
   mapBadgeIdsToBadges,
@@ -22,6 +23,7 @@ import {
   resolveIdentityNameParts,
 } from "./authz-identity-names";
 import { buildFallbackHandle } from "./auth/identity-handle";
+import { describeUnknownError } from "@/lib/errors/app-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { syncActiveRoleProjectionToSupabase } from "@/lib/auth/active-role-projection";
@@ -44,7 +46,6 @@ import {
   parseAdminUserIds,
   parseMaxUserIds,
   resolveClerkRole,
-  type ClerkMetadata,
 } from "@/lib/auth/role-resolution";
 
 export type UserIdentity = {
@@ -66,19 +67,6 @@ export type UserIdentity = {
   badges: AccountBadge[];
   locationPreference?: UserLocationPreference | null;
 };
-
-function extractBadgeIds(metadata: ClerkMetadata): string[] {
-  if (!metadata) {
-    return [];
-  }
-  const badges = metadata["badges"];
-  if (!Array.isArray(badges)) {
-    return [];
-  }
-  return badges
-    .filter((value): value is string => typeof value === "string")
-    .map((value) => value.trim().toLowerCase());
-}
 
 export function buildActorNameOptions(
   firstName: string | null,
@@ -118,20 +106,6 @@ export async function getClerkUser(
     const msg =
       error instanceof Error && error.message ? error.message : `Clerk getUser failed for ${userId}`;
     throw new Error(msg, { cause: error });
-  }
-}
-
-function describeBackgroundSyncError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message || error.name;
-  }
-  if (typeof error === "string") {
-    return error;
-  }
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return String(error);
   }
 }
 
@@ -401,7 +375,7 @@ async function buildAuthenticatedIdentity(
       await syncActiveRoleProjectionToSupabase(fetchedUser);
     } else {
       syncClerkUserToSupabase(fetchedUser, { allowServiceRoleFallback: false }).catch((err) => {
-        console.warn(`[Authz] Background sync skipped for ${userId}: ${describeBackgroundSyncError(err)}`);
+        console.warn(`[Authz] Background sync skipped for ${userId}: ${describeUnknownError(err)}`);
       });
     }
 

@@ -42,6 +42,18 @@ export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
 export const dynamic = "force-dynamic";
 
+async function loadActionPermissionContext(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  userId: string,
+  actionId: string,
+) {
+  const identity = await getCurrentUserIdentity();
+  const permissionIdentity = identity
+    ? { userId, role: identity.role, activeRole: identity.activeRole }
+    : null;
+  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, actionId);
+  return { identity, permissionIdentity, organizerIds };
+}
 
 export async function GET(
   _request: Request,
@@ -71,12 +83,9 @@ export async function GET(
       );
     }
 
-    const identity = await getCurrentUserIdentity();
-    const permissionIdentity = identity
-      ? { userId, role: identity.role, activeRole: identity.activeRole }
-      : null;
-    const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
+    const { permissionIdentity, organizerIds } = await loadActionPermissionContext(
       supabase,
+      userId,
       trimmedActionId,
     );
     if (
@@ -168,12 +177,9 @@ export async function PATCH(
       );
     }
 
-    const identity = await getCurrentUserIdentity();
-    const permissionIdentity = identity
-      ? { userId, role: identity.role, activeRole: identity.activeRole }
-      : null;
-    const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
+    const { identity, permissionIdentity, organizerIds } = await loadActionPermissionContext(
       supabase,
+      userId,
       trimmedActionId,
     );
     if (

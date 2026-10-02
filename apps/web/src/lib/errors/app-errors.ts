@@ -41,6 +41,20 @@ export type AppErrorOptions = {
   source?: string;
 };
 
+export function describeUnknownError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message || error.name;
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 const SUPPORT_FORM_PATH = "/sections/feedback";

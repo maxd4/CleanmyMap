@@ -1,3 +1,5 @@
+import { decodeClerkPublishableKeyPayload } from "../auth/clerk-publishable-key";
+
 type CspEnvironment = {
   [key: string]: string | undefined;
   NEXT_PUBLIC_APP_URL?: string;
@@ -101,23 +103,10 @@ function parseHostOrigin(raw: string | undefined): string | undefined {
 }
 
 function decodeClerkPublishableKeyHost(raw: string | undefined): string | undefined {
-  if (!raw || raw.trim().length === 0) {
-    return undefined;
-  }
-
-  const payload = raw.trim().replace(/^pk_(?:test|live)_/, "").replace(/\$$/, "");
-  if (!payload) {
-    return undefined;
-  }
-
-  try {
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-    const decoded = atob(padded).trim().replace(/\$$/, "");
-    return parseHostOrigin(decoded.includes("://") ? decoded : `https://${decoded}`);
-  } catch {
-    return undefined;
-  }
+  const decoded = decodeClerkPublishableKeyPayload(raw);
+  return decoded
+    ? parseHostOrigin(decoded.includes("://") ? decoded : `https://${decoded}`)
+    : undefined;
 }
 
 function websocketOrigin(origin: string): string | undefined {
