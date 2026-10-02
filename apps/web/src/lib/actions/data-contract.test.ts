@@ -234,7 +234,7 @@ it("keeps point geometry only as a last resort when nothing exploitable exists",
   expect(mapItem.contract?.geometry.origin).toBe("fallback_point");
 });
 
-it("does not synthesize a short route in the generic contract resolver", () => {
+it("does not synthesize a route or area from endpoint labels in the generic resolver", () => {
   const contract = buildActionDataContract({
     id: "action-derived-route",
     type: "action",
@@ -251,14 +251,14 @@ it("does not synthesize a short route in the generic contract resolver", () => {
 
   const mapItem = toActionMapItem(contract);
 
-  expect(mapItem.contract?.geometry.kind).toBe("polygon");
-  expect(mapItem.contract?.geometry.coordinates.length).toBeGreaterThanOrEqual(3);
-  expect(mapItemShouldRenderPoint(mapItem)).toBe(false);
-  expect(mapItem.contract?.geometry.geometrySource).toBe("estimated_area");
-  expect(mapItem.contract?.geometry.origin).toBe("estimated_area");
+  expect(mapItem.contract?.geometry.kind).toBe("point");
+  expect(mapItem.contract?.geometry.coordinates).toEqual([[48.871, 2.381]]);
+  expect(mapItemShouldRenderPoint(mapItem)).toBe(true);
+  expect(mapItem.contract?.geometry.geometrySource).toBe("fallback_point");
+  expect(mapItem.contract?.geometry.origin).toBe("fallback_point");
 });
 
-it("derives a compact polygon when one precise location label exists", () => {
+it("keeps a simple coordinate as a point when no reference geometry exists", () => {
   const contract = buildActionDataContract({
     id: "action-precise-place",
     type: "action",
@@ -272,11 +272,11 @@ it("derives a compact polygon when one precise location label exists", () => {
 
   const mapItem = toActionMapItem(contract);
 
-  expect(mapItem.contract?.geometry.kind).toBe("polygon");
-  expect(mapItem.contract?.geometry.coordinates.length).toBeGreaterThanOrEqual(8);
-  expect(mapItemShouldRenderPoint(mapItem)).toBe(false);
-  expect(mapItem.contract?.geometry.geometrySource).toBe("estimated_area");
-  expect(mapItem.contract?.geometry.origin).toBe("estimated_area");
+  expect(mapItem.contract?.geometry.kind).toBe("point");
+  expect(mapItem.contract?.geometry.coordinates).toEqual([[48.866769, 2.409144]]);
+  expect(mapItemShouldRenderPoint(mapItem)).toBe(true);
+  expect(mapItem.contract?.geometry.geometrySource).toBe("fallback_point");
+  expect(mapItem.contract?.geometry.origin).toBe("fallback_point");
 });
 
 it("exposes operational context fields for dashboards and exports", () => {
@@ -308,7 +308,7 @@ it("exposes operational context fields for dashboards and exports", () => {
   expect(context.routeStyleLabel).toBe("Trajet souple");
 });
 
-it("derives an intervention ellipse when only coordinates exist", () => {
+it("keeps coordinates as a point when no reference geometry exists", () => {
   const contract = buildActionDataContract({
     id: "action-coords-only",
     type: "action",
@@ -322,9 +322,10 @@ it("derives an intervention ellipse when only coordinates exist", () => {
 
   const mapItem = toActionMapItem(contract);
 
-  expect(mapItem.contract?.geometry.kind).toBe("polygon");
-  expect(mapItem.contract?.geometry.coordinates.length).toBeGreaterThanOrEqual(8);
-  expect(mapItemShouldRenderPoint(mapItem)).toBe(false);
+  expect(mapItem.contract?.geometry.kind).toBe("point");
+  expect(mapItem.contract?.geometry.coordinates).toEqual([[48.87, 2.4]]);
+  expect(mapItem.contract?.geometry.geometrySource).toBe("fallback_point");
+  expect(mapItemShouldRenderPoint(mapItem)).toBe(true);
 });
 
 it("builds contract create payload from legacy create payload", () => {

@@ -49,7 +49,7 @@ describe("actions contract regression gates", () => {
     expect(mapItem.waste_pollution_score).toBe(25);
     expect(mapItem.cigarette_butts_pollution_score).toBe(8);
     expect(mapItem.status).toBe("approved");
-    expect(mapItem.geometry_source).toBe("estimated_area");
+    expect(mapItem.geometry_source).toBe("fallback_point");
     expect(mapItem.contract?.metadata.volunteersCount).toBe(3);
 
     const listItem = toActionListItem(contract, undefined, pollutionScoreReferences);

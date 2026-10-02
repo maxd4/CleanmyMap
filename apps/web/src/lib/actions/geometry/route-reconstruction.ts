@@ -28,6 +28,13 @@ type GeoPoint = {
 
 const GEOCODING_TIMEOUT_MS = 4_000;
 const GEOCODING_CACHE_TTL_MS = 5 * 60_000;
+/** Four rotated, bounded hypotheses keep loop reconstruction deterministic without inventing a route. */
+const LOOP_HYPOTHESIS_ROTATIONS_DEGREES = [0, 45, 90, 135] as const;
+/** The minimum side keeps a zero/very short target routable while remaining visibly bounded. */
+const LOOP_MIN_SIDE_METERS = 25;
+/** A provider detour this large is treated as geographically incoherent for candidate ranking. */
+const LOOP_MAX_TARGET_DISTANCE_FACTOR = 4;
+const LOOP_MAX_EXCESS_DISTANCE_KM = 5;
 const geocodingCache = new Map<string, { expiresAt: number; value: GeoPoint | null }>();
 const geocodingInFlight = new Map<string, Promise<GeoPoint | null>>();
 
@@ -71,36 +78,176 @@ function metersToLongitudeDelta(meters: number, latitude: number): number {
   return meters / (111_320 * Math.max(0.1, Math.cos((latitude * Math.PI) / 180)));
 }
 
+function roundCoordinate(value: number): number {
+  return Number(value.toFixed(6));
+}
+
+function buildClosedLoopWaypointsForRotation(
+  origin: [number, number],
+  targetDistanceKm: number,
+  rotationDegrees: number,
+): [number, number][] {
+  const [latitude, longitude] = origin;
+  const sideMeters = Math.max(
+    LOOP_MIN_SIDE_METERS,
+    (Math.max(0, targetDistanceKm) * 1000) / 4,
+  );
+  const rotationRadians = (rotationDegrees * Math.PI) / 180;
+  const offsets: [number, number][] = [
+    [0, 0],
+    [sideMeters, 0],
+    [sideMeters, sideMeters],
+    [0, sideMeters],
+    [0, 0],
+  ];
+
+  return offsets.map(([northMeters, eastMeters]) => {
+    const rotatedNorth =
+      northMeters * Math.cos(rotationRadians) - eastMeters * Math.sin(rotationRadians);
+    const rotatedEast =
+      northMeters * Math.sin(rotationRadians) + eastMeters * Math.cos(rotationRadians);
+    return [
+      roundCoordinate(latitude + metersToLatitudeDelta(rotatedNorth)),
+      roundCoordinate(longitude + metersToLongitudeDelta(rotatedEast, latitude)),
+    ];
+  });
+}
+
 /**
- * Creates a small bounded loop around the origin. Its target is only an input
- * to the planner: the measured distance is always the provider result.
+ * Keeps the legacy one-hypothesis helper available for callers and tests. The
+ * reconstruction engine routes a bounded set of rotated hypotheses instead of
+ * using this synthetic shape as its final geometry.
  */
 export function buildClosedLoopWaypoints(
   origin: [number, number],
   targetDistanceKm: number,
 ): [number, number][] {
-  const [latitude, longitude] = origin;
-  const sideMeters = Math.max(25, (Math.max(0, targetDistanceKm) * 1000) / 4);
-  const latitudeDelta = metersToLatitudeDelta(sideMeters);
-  const longitudeDelta = metersToLongitudeDelta(sideMeters, latitude);
-  const round = (value: number) => Number(value.toFixed(6));
-  const north: [number, number] = [round(latitude + latitudeDelta), longitude];
-  const northEast: [number, number] = [
-    round(latitude + latitudeDelta),
-    round(longitude + longitudeDelta),
-  ];
-  const east: [number, number] = [latitude, round(longitude + longitudeDelta)];
-  return [origin, north, northEast, east, origin];
+  return buildClosedLoopWaypointsForRotation(origin, targetDistanceKm, 0);
 }
 
-function buildLoopWaypoints(
+function buildLoopHypotheses(
   origin: [number, number],
-  midpoint?: [number, number] | null,
-  targetDistanceKm = 1,
-): [number, number][] {
-  return midpoint
-    ? [origin, midpoint, origin]
-    : buildClosedLoopWaypoints(origin, targetDistanceKm);
+  targetDistanceKm: number,
+): [number, number][][] {
+  return LOOP_HYPOTHESIS_ROTATIONS_DEGREES.map((rotation) =>
+    buildClosedLoopWaypointsForRotation(origin, targetDistanceKm, rotation),
+  );
+}
+
+function sameCoordinate(
+  left: [number, number] | undefined,
+  right: [number, number] | undefined,
+): boolean {
+  return Boolean(
+    left &&
+      right &&
+      Math.abs(left[0] - right[0]) < 1e-5 &&
+      Math.abs(left[1] - right[1]) < 1e-5,
+  );
+}
+
+function isValidNetworkLoop(routeGeometry: RouteGeometry): boolean {
+  return (
+    routeGeometry.mode === "network" &&
+    routeGeometry.provider !== "none" &&
+    routeGeometry.isLoop &&
+    routeGeometry.coordinates.length >= 2 &&
+    sameCoordinate(routeGeometry.coordinates[0], routeGeometry.coordinates.at(-1)) &&
+    routeGeometry.coordinates.every(isCoordinatePair) &&
+    Number.isFinite(routeGeometry.distanceKm) &&
+    routeGeometry.distanceKm >= 0
+  );
+}
+
+function isGeographicallyCoherentLoop(
+  routeGeometry: RouteGeometry,
+  targetDistanceKm: number,
+): boolean {
+  const maximumDistanceKm = Math.max(
+    targetDistanceKm * LOOP_MAX_TARGET_DISTANCE_FACTOR,
+    targetDistanceKm + LOOP_MAX_EXCESS_DISTANCE_KM,
+  );
+  return routeGeometry.distanceKm <= maximumDistanceKm;
+}
+
+function routeCoherencePenalty(routeGeometry: RouteGeometry): number {
+  if (routeGeometry.legs.length === 0 || routeGeometry.distanceKm <= 0) {
+    return 0;
+  }
+
+  const longestLeg = Math.max(...routeGeometry.legs.map((leg) => leg.distanceKm));
+  return longestLeg / routeGeometry.distanceKm;
+}
+
+function routeAxisContinuityPenalty(routeGeometry: RouteGeometry): number {
+  const steps = routeGeometry.legs.flatMap((leg) => leg.steps ?? []);
+  if (steps.length === 0) return 0;
+
+  const namedSteps = steps.filter((step) => step.name);
+  if (namedSteps.length === 0) return 0;
+
+  const nameChanges = namedSteps.reduce((changes, step, index) => {
+    const previous = namedSteps[index - 1];
+    return previous && previous.name !== step.name ? changes + 1 : changes;
+  }, 0);
+  return nameChanges / namedSteps.length;
+}
+
+function compareLoopCandidates(
+  left: { routeGeometry: RouteGeometry; index: number },
+  right: { routeGeometry: RouteGeometry; index: number },
+  targetDistanceKm: number,
+): number {
+  const distanceScale = Math.max(targetDistanceKm, LOOP_MIN_SIDE_METERS / 1000);
+  const leftDistanceError = Math.abs(left.routeGeometry.distanceKm - targetDistanceKm) / distanceScale;
+  const rightDistanceError = Math.abs(right.routeGeometry.distanceKm - targetDistanceKm) / distanceScale;
+  if (leftDistanceError !== rightDistanceError) {
+    return leftDistanceError - rightDistanceError;
+  }
+
+  const coherenceDifference =
+    routeCoherencePenalty(left.routeGeometry) - routeCoherencePenalty(right.routeGeometry);
+  if (coherenceDifference !== 0) return coherenceDifference;
+
+  const continuityDifference =
+    routeAxisContinuityPenalty(left.routeGeometry) - routeAxisContinuityPenalty(right.routeGeometry);
+  if (continuityDifference !== 0) return continuityDifference;
+
+  return left.index - right.index;
+}
+
+async function routeLoopHypotheses(
+  origin: [number, number],
+  targetDistanceKm: number,
+  midpoint: [number, number] | null,
+): Promise<RouteGeometry> {
+  const hypotheses = midpoint
+    ? [[origin, midpoint, origin]]
+    : buildLoopHypotheses(origin, targetDistanceKm);
+  let fallbackRoute: RouteGeometry | null = null;
+  const networkCandidates: Array<{ routeGeometry: RouteGeometry; index: number }> = [];
+
+  for (const [index, waypoints] of hypotheses.entries()) {
+    const routeGeometry = await routePolylineThroughFossgisFoot(waypoints);
+    if (routeGeometry.mode === "fallback") {
+      fallbackRoute ??= routeGeometry;
+      break;
+    }
+    if (
+      isValidNetworkLoop(routeGeometry) &&
+      isGeographicallyCoherentLoop(routeGeometry, targetDistanceKm)
+    ) {
+      networkCandidates.push({ routeGeometry, index });
+    }
+  }
+
+  if (networkCandidates.length > 0) {
+    return networkCandidates.reduce((best, candidate) =>
+      compareLoopCandidates(candidate, best, targetDistanceKm) < 0 ? candidate : best,
+    ).routeGeometry;
+  }
+
+  return fallbackRoute ?? routePolylineThroughFossgisFoot(hypotheses[0]!);
 }
 
 async function geocodeLabel(label: string): Promise<GeoPoint | null> {
@@ -163,7 +310,7 @@ function referenceRoute(
   };
 }
 
-export async function reconstructActionRoute(params: {
+type ReconstructActionRouteParams = {
   latitude?: number | null;
   longitude?: number | null;
   locationLabel: string;
@@ -177,16 +324,25 @@ export async function reconstructActionRoute(params: {
   durationMinutes: number | null | undefined;
   routeTargetDistanceKm?: number | null;
   routeTargetDistanceSource?: "derived" | "manual" | null;
-}): Promise<ReconstructedActionRoute | null> {
-  const topology = resolveActionRouteTopology({
+};
+
+type OriginResolution =
+  | { originPair: [number, number] }
+  | ReconstructedActionRoute
+  | null;
+
+function resolveTopology(params: ReconstructActionRouteParams): ActionRouteTopology {
+  return resolveActionRouteTopology({
     topology: params.topology,
     arrivalLocationLabel: params.arrivalLocationLabel,
     recordType: params.recordType,
   });
-  const departureLabel = params.departureLocationLabel?.trim() || params.locationLabel.trim();
-  const existingOrigin = toOrigin(params.latitude, params.longitude);
-  const geocodedOrigin = existingOrigin ? null : await geocodeLabel(departureLabel);
+}
 
+function requirePointToPointArrival(
+  params: ReconstructActionRouteParams,
+  topology: ActionRouteTopology,
+): void {
   if (topology === "point_to_point" && !params.arrivalLocationLabel?.trim()) {
     throw new ActionRouteReconstructionError({
       arrivalLocationLabel: [
@@ -194,8 +350,32 @@ export async function reconstructActionRoute(params: {
       ],
     });
   }
+}
 
-  if (topology === "point_to_point" && !existingOrigin && !geocodedOrigin) {
+async function resolveReconstructionOrigin(
+  params: ReconstructActionRouteParams,
+  topology: ActionRouteTopology,
+): Promise<OriginResolution> {
+  const departureLabel = params.departureLocationLabel?.trim() || params.locationLabel.trim();
+  const existingOrigin = toOrigin(params.latitude, params.longitude);
+  const geocodedOrigin = existingOrigin ? null : await geocodeLabel(departureLabel);
+
+  requirePointToPointArrival(params, topology);
+
+  const midpointIsDeclared = Boolean(
+    params.midpointLocationLabel?.trim() || params.midpointCoordinates,
+  );
+  if (topology === "loop" && !midpointIsDeclared) {
+    const reference = referenceRoute(params.locationLabel, departureLabel);
+    if (reference) return reference;
+  }
+
+  if (existingOrigin) return { originPair: existingOrigin };
+  if (geocodedOrigin) {
+    return { originPair: [geocodedOrigin.latitude, geocodedOrigin.longitude] };
+  }
+
+  if (topology === "point_to_point") {
     throw new ActionRouteReconstructionError({
       departureLocationLabel: [
         "Le départ ne peut pas être localisé. Vérifiez l’adresse indiquée.",
@@ -204,28 +384,13 @@ export async function reconstructActionRoute(params: {
   }
 
   // Keep the reference geometry fallback explicit and separate from routing.
-  if (!existingOrigin && !geocodedOrigin) {
-    if (topology === "point_to_point") {
-      throw new ActionRouteReconstructionError({
-        departureLocationLabel: [
-          "Le départ ne peut pas être localisé. Vérifiez l’adresse indiquée.",
-        ],
-      });
-    }
-    return referenceRoute(params.locationLabel, departureLabel);
-  }
+  return referenceRoute(params.locationLabel, departureLabel);
+}
 
-  const resolvedOrigin = existingOrigin
-    ? { latitude: existingOrigin[0], longitude: existingOrigin[1] }
-    : geocodedOrigin;
-  if (!resolvedOrigin) return referenceRoute(params.locationLabel, departureLabel);
-
-  const originPair: [number, number] = [resolvedOrigin.latitude, resolvedOrigin.longitude];
-  const targetDistanceKm = resolveRouteTargetDistance({
-    durationMinutes: params.durationMinutes,
-    routeTargetDistanceKm: params.routeTargetDistanceKm,
-    routeTargetDistanceSource: params.routeTargetDistanceSource,
-  }).distanceKm;
+async function resolveRouteStopPairs(
+  params: ReconstructActionRouteParams,
+  topology: ActionRouteTopology,
+): Promise<{ midpointPair: [number, number] | null; arrivalPair: [number, number] | null }> {
   const midpointLabel = params.midpointLocationLabel?.trim();
   const knownMidpoint = toGeoPoint(params.midpointCoordinates);
   const geocodedMidpoint = knownMidpoint ?? (midpointLabel ? await geocodeLabel(midpointLabel) : null);
@@ -249,16 +414,37 @@ export async function reconstructActionRoute(params: {
     });
   }
 
-  const midpointPair = geocodedMidpoint
-    ? [geocodedMidpoint.latitude, geocodedMidpoint.longitude] as [number, number]
-    : null;
-  const arrivalPair = geocodedArrival
-    ? [geocodedArrival.latitude, geocodedArrival.longitude] as [number, number]
-    : null;
-  const waypoints = topology === "point_to_point"
-    ? [originPair, ...(midpointPair ? [midpointPair] : []), arrivalPair!]
-    : buildLoopWaypoints(originPair, midpointPair, targetDistanceKm);
-  const routeGeometry = await routePolylineThroughFossgisFoot(waypoints);
+  return {
+    midpointPair: geocodedMidpoint
+      ? [geocodedMidpoint.latitude, geocodedMidpoint.longitude]
+      : null,
+    arrivalPair: geocodedArrival
+      ? [geocodedArrival.latitude, geocodedArrival.longitude]
+      : null,
+  };
+}
+
+export async function reconstructActionRoute(
+  params: ReconstructActionRouteParams,
+): Promise<ReconstructedActionRoute | null> {
+  const topology = resolveTopology(params);
+  const originResolution = await resolveReconstructionOrigin(params, topology);
+  if (!originResolution || "drawing" in originResolution) return originResolution;
+
+  const originPair = originResolution.originPair;
+  const targetDistanceKm = resolveRouteTargetDistance({
+    durationMinutes: params.durationMinutes,
+    routeTargetDistanceKm: params.routeTargetDistanceKm,
+    routeTargetDistanceSource: params.routeTargetDistanceSource,
+  }).distanceKm;
+  const { midpointPair, arrivalPair } = await resolveRouteStopPairs(params, topology);
+  const routeGeometry = topology === "point_to_point"
+    ? await routePolylineThroughFossgisFoot([
+        originPair,
+        ...(midpointPair ? [midpointPair] : []),
+        arrivalPair!,
+      ])
+    : await routeLoopHypotheses(originPair, targetDistanceKm, midpointPair);
   if (!routeGeometry.coordinates.every(isCoordinatePair) || routeGeometry.coordinates.length < 2) {
     return null;
   }

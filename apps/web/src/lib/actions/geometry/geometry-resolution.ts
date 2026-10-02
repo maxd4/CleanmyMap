@@ -6,9 +6,7 @@ import type {
 import { findMatchingGeometry } from "../../geo/geometry-reference.ts";
 import {
   GEOMETRY_CONFIDENCE,
-  buildEllipsePolygon,
   hasCoordinates,
-  hasPreciseLocationLabel,
   normalizeLabel,
   toPointCoordinates,
 } from "./geometry-core.ts";
@@ -129,35 +127,17 @@ function buildReferenceGeometryResolution(anchorLabel: string): GeometryResoluti
 function buildCoordinateGeometryResolution(params: {
   latitude?: number | null;
   longitude?: number | null;
-  anchorLabel: string;
 }): GeometryResolution | null {
   if (!hasCoordinates(params.latitude ?? null, params.longitude ?? null)) {
     return null;
   }
 
-  const center = {
-    latitude: Number(params.latitude),
-    longitude: Number(params.longitude),
-  };
-
-  if (hasPreciseLocationLabel(params.anchorLabel)) {
-    const drawing = buildEllipsePolygon(center, 85, 55);
-    return {
-      kind: drawing.kind,
-      coordinates: drawing.coordinates,
-      geojson: toGeoJsonString(drawing),
-      confidence: GEOMETRY_CONFIDENCE.LABEL_POLYGON,
-      geometrySource: "estimated_area",
-    };
-  }
-
-  const drawing = buildEllipsePolygon(center, 110, 72);
   return {
-    kind: drawing.kind,
-    coordinates: drawing.coordinates,
-    geojson: toGeoJsonString(drawing),
-    confidence: GEOMETRY_CONFIDENCE.COORDINATE_ELLIPSE,
-    geometrySource: "estimated_area",
+    kind: "point",
+    coordinates: toPointCoordinates(params.latitude ?? null, params.longitude ?? null),
+    geojson: null,
+    confidence: GEOMETRY_CONFIDENCE.POINT_FALLBACK,
+    geometrySource: "fallback_point",
   };
 }
 
@@ -223,7 +203,6 @@ function deriveFallbackResolution(params: {
     buildCoordinateGeometryResolution({
       latitude: params.latitude ?? null,
       longitude: params.longitude ?? null,
-      anchorLabel,
     }) ??
     buildFallbackPointResolution({
       latitude: params.latitude ?? null,
