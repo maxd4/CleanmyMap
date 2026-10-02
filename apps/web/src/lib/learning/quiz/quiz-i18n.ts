@@ -343,11 +343,11 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "school.gestes-du-quotidien.label": { fr: "Gestes du quotidien", en: "Daily habits" },
 };
 
-export function getQuizLocalizedText(locale: SupportedLocale, value: QuizLocalizedText): string {
+function getQuizLocalizedText(locale: SupportedLocale, value: QuizLocalizedText): string {
   return value[locale] ?? value.fr;
 }
 
-export function getQuizLocalizedTextList(locale: SupportedLocale, value: QuizLocalizedTextList): readonly string[] {
+function getQuizLocalizedTextList(locale: SupportedLocale, value: QuizLocalizedTextList): readonly string[] {
   return value[locale] ?? value.fr;
 }
 

@@ -1,7 +1,7 @@
 import type { ContentValidationRecord } from "@/lib/content/content-validation";
 import { claim, createPublishedLearningValidation } from "@/lib/learning/gestes-propres/gestes-propres-validation";
 
-export type IfopDepotsLocalizedText = {
+type IfopDepotsLocalizedText = {
   fr: string;
   en: string;
 };

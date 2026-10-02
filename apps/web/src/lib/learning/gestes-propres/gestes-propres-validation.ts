@@ -8,9 +8,9 @@ import type {
   ContentValidationRecord,
 } from "@/lib/content/content-validation";
 
-export const CONTENT_REVIEW_DATE = "2026-08-04";
-export const CONTENT_OWNER = "CleanMyMap — équipe éditoriale";
-export const CONTENT_REVIEWER = "CleanMyMap — revue éditoriale";
+const CONTENT_REVIEW_DATE = "2026-08-04";
+const CONTENT_OWNER = "CleanMyMap — équipe éditoriale";
+const CONTENT_REVIEWER = "CleanMyMap — revue éditoriale";
 
 export function createPublishedLearningValidation(params: {
   id: string;

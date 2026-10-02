@@ -91,7 +91,7 @@ const REVIEW_TARGET_FOLLOW_UP_BY_HREF: Record<
   },
 };
 
-export const REVIEW_TARGET_BY_CATEGORY: Record<QuizQuestionCategory, QuizReviewTarget> = {
+const REVIEW_TARGET_BY_CATEGORY: Record<QuizQuestionCategory, QuizReviewTarget> = {
   "tri-recyclage": QUIZ_REVIEW_TARGETS.bonnes_pratiques,
   "action-terrain": QUIZ_REVIEW_TARGETS.bonnes_pratiques,
   "climat-biodiversite": QUIZ_REVIEW_TARGETS.comprendre,

@@ -1,11 +1,11 @@
 import type { ContentValidationRecord } from "@/lib/content/content-validation";
 import { claim, createPublishedLearningValidation } from "@/lib/learning/gestes-propres/gestes-propres-validation";
 
-export type GestesPropresInsightTheme = "tri" | "reduction" | "collectif";
+type GestesPropresInsightTheme = "tri" | "reduction" | "collectif";
 
-export type GestesPropresPermissionStatus = "not_requested" | "pending" | "approved";
+type GestesPropresPermissionStatus = "not_requested" | "pending" | "approved";
 
-export type GestesPropresLocalizedText = {
+type GestesPropresLocalizedText = {
   fr: string;
   en: string;
 };

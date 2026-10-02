@@ -1,12 +1,12 @@
 import type { ContentValidationRecord } from "@/lib/content/content-validation";
 import { claim, createPublishedLearningValidation } from "@/lib/learning/gestes-propres/gestes-propres-validation";
 
-export type GestesPropresBarometerLocalizedText = {
+type GestesPropresBarometerLocalizedText = {
   fr: string;
   en: string;
 };
 
-export type GestesPropresBarometerCategory =
+type GestesPropresBarometerCategory =
   | "perception"
   | "declared_practices"
   | "false_beliefs"

@@ -1,12 +1,12 @@
 import type { ContentValidationRecord } from "@/lib/content/content-validation";
 import { claim, createPublishedLearningValidation } from "@/lib/learning/gestes-propres/gestes-propres-validation";
 
-export type GestesPropresCampaignLocalizedText = {
+type GestesPropresCampaignLocalizedText = {
   fr: string;
   en: string;
 };
 
-export type GestesPropresCampaignSituation = {
+type GestesPropresCampaignSituation = {
   id: string;
   object: GestesPropresCampaignLocalizedText;
   badReflex: GestesPropresCampaignLocalizedText;

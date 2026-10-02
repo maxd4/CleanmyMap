@@ -2,7 +2,7 @@ export type ContentStatus = "draft" | "in_review" | "published" | "rejected";
 
 export type ContentKind = "environmental" | "institutional";
 
-export type ContentClaimType = "fact" | "estimate" | "recommendation";
+type ContentClaimType = "fact" | "estimate" | "recommendation";
 
 export type ContentEvidenceLevel = "insufficient" | "limited" | "moderate" | "strong";
 
@@ -15,7 +15,7 @@ export type ContentLocalizedText = {
   en: string;
 };
 
-export type ContentSource = {
+type ContentSource = {
   name: string;
   url: string;
   date: string | null;
@@ -31,7 +31,7 @@ export type ContentClaim = {
   interpretationLimit?: ContentLocalizedText;
 };
 
-export type ContentClaims = Record<ContentClaimType, ContentClaim[]>;
+type ContentClaims = Record<ContentClaimType, ContentClaim[]>;
 
 export type ContentValidationRecord = {
   id: string;
@@ -45,9 +45,9 @@ export type ContentValidationRecord = {
   claims: ContentClaims;
 };
 
-export type ContentValidationIssueSeverity = "error" | "warning";
+type ContentValidationIssueSeverity = "error" | "warning";
 
-export type ContentValidationIssue = {
+type ContentValidationIssue = {
   code:
     | "missing_owner"
     | "missing_source_name"

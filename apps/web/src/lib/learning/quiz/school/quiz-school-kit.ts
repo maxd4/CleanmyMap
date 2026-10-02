@@ -2,7 +2,7 @@ import type { QuizSchoolTrackId } from "./quiz-school-types.ts";
 
 import { getWastePedagogicalProjection } from "@/lib/waste";
 
-export type QuizSchoolKitStatus =
+type QuizSchoolKitStatus =
   | {
       kind: "source";
       label: string;

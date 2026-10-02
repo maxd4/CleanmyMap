@@ -7,7 +7,7 @@ import type {
   QuizSourceType,
 } from "./quiz-source-metadata.ts";
 
-export type QuizQualityCriterionId =
+type QuizQualityCriterionId =
   | "interet-pedagogique"
   | "niveau-de-reflexion"
   | "caractere-piegeux-mais-juste"
@@ -17,9 +17,9 @@ export type QuizQualityCriterionId =
   | "absence-de-reponse-evidente"
   | "traçabilité-des-sources";
 
-export type QuizQualityCriterionState = "pass" | "warn" | "fail";
+type QuizQualityCriterionState = "pass" | "warn" | "fail";
 
-export type QuizQualityCriterion = {
+type QuizQualityCriterion = {
   id: QuizQualityCriterionId;
   label: string;
   state: QuizQualityCriterionState;

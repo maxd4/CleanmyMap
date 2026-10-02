@@ -1,22 +1,22 @@
 import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 
-export const CANONICAL_WASTE_BREAKDOWN_CATEGORIES = [
+const CANONICAL_WASTE_BREAKDOWN_CATEGORIES = [
   "recyclables",
   "glass",
   "household",
   "other",
 ] as const;
 
-export type WasteCategory = (typeof CANONICAL_WASTE_BREAKDOWN_CATEGORIES)[number];
+type WasteCategory = (typeof CANONICAL_WASTE_BREAKDOWN_CATEGORIES)[number];
 
-export type RecyclingBreakdownLine = {
+type RecyclingBreakdownLine = {
   category: WasteCategory;
   kg: number;
   sharePercent: number;
   entries: number;
 };
 
-export type RecyclingTriQuality = {
+type RecyclingTriQuality = {
   elevee: number;
   moyenne: number;
   faible: number;

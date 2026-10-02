@@ -74,7 +74,7 @@ function isLearnProgressState(value: unknown): value is LearnProgressState {
   return Boolean(normalized);
 }
 
-export function readLearnProgressState(): LearnProgressState | null {
+function readLearnProgressState(): LearnProgressState | null {
   const state = readLocalStorageJson(LEARN_PROGRESS_KEY, isLearnProgressState);
   if (!state) {
     return null;
@@ -98,7 +98,7 @@ export function readLearnProgressState(): LearnProgressState | null {
   };
 }
 
-export function persistLearnProgressState(state: LearnProgressState): void {
+function persistLearnProgressState(state: LearnProgressState): void {
   void writeLocalStorageJson(LEARN_PROGRESS_KEY, state);
 }
 

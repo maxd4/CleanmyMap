@@ -1,7 +1,7 @@
 import type { QuizQuestion } from "./quiz-question-contract";
 import type { QuizConfidenceLevel, QuizLocalScope, QuizSourceType } from "./quiz-source-metadata.ts";
 
-export type QuizSourceAuditFinding = {
+type QuizSourceAuditFinding = {
   questionId: string;
   question: string;
   answer: string;

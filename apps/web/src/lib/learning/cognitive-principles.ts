@@ -138,14 +138,6 @@ export const COGNITIVE_MICRO_RECALLS: CognitiveMicroRecallSpec[] = [
   },
 ];
 
-export function getCognitiveRubricById(id: CognitiveRubricId): CognitiveRubricSpec {
-  const rubric = COGNITIVE_RUBRICS.find((item) => item.id === id);
-  if (!rubric) {
-    return COGNITIVE_RUBRICS[0];
-  }
-  return rubric;
-}
-
 export function getQuizStateLabel(
   stateId: CognitiveQuizStateId,
   locale: SupportedLocale,

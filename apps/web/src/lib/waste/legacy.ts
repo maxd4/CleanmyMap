@@ -18,14 +18,6 @@ export const LEGACY_WASTE_CATEGORY_TO_SLUG: Readonly<Record<LegacyWasteCategory,
   encombrant: "bulky_furniture",
 };
 
-export const LEGACY_RECYCLING_CATEGORY_ORDER = [
-  "megots",
-  "plastique",
-  "verre",
-  "metal",
-  "mixte",
-] as const satisfies readonly LegacyWasteCategory[];
-
 function canonicalWasteSlugFromLegacy(value: LegacyWasteCategory): WasteCategorySlug {
   return LEGACY_WASTE_CATEGORY_TO_SLUG[value];
 }

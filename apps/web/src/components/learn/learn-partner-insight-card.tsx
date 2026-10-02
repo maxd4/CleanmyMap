@@ -12,7 +12,7 @@ type LocalizedText = {
   en: string;
 };
 
-export type LearnPartnerInsightImage = {
+type LearnPartnerInsightImage = {
   src: string;
   alt: string;
   credit?: string;

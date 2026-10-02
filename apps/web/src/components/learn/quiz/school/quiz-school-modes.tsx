@@ -6,7 +6,7 @@ import type { QuizUiCopyKey } from "@/lib/learning/quiz/quiz-i18n";
 import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
 import type { QuizSchoolTrackId } from "@/lib/learning/quiz/school/quiz-school-types";
 
-export type { QuizSchoolLevel, QuizSchoolTrackId } from "@/lib/learning/quiz/school/quiz-school-types";
+export type { QuizSchoolTrackId } from "@/lib/learning/quiz/school/quiz-school-types";
 
 export type QuizSchoolTrackDefinition = {
   id: QuizSchoolTrackId;
@@ -133,10 +133,6 @@ export const QUIZ_SCHOOL_TRACKS: readonly QuizSchoolTrackDefinition[] = [
 const QUIZ_SCHOOL_TRACK_BY_ID: Record<QuizSchoolTrackId, QuizSchoolTrackDefinition> = Object.fromEntries(
   QUIZ_SCHOOL_TRACKS.map((track) => [track.id, track]),
 ) as Record<QuizSchoolTrackId, QuizSchoolTrackDefinition>;
-
-export function getQuizSchoolTrack(trackId: QuizSchoolTrackId): QuizSchoolTrackDefinition {
-  return QUIZ_SCHOOL_TRACK_BY_ID[trackId];
-}
 
 export function getQuizSchoolTrackLabel(trackId: QuizSchoolTrackId, locale: SupportedLocale): string {
   return getQuizUiCopy(locale, QUIZ_SCHOOL_TRACK_BY_ID[trackId].labelKey);
