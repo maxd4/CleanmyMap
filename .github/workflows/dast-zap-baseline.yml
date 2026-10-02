@@ -1,0 +1,36 @@
+name: DAST — OWASP ZAP Baseline
+
+on:
+  schedule:
+    - cron: "30 2 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: dast-zap-baseline
+  cancel-in-progress: true
+
+jobs:
+  zap-baseline:
+    name: Public passive baseline scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout scan configuration
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: OWASP ZAP Baseline (passive)
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25
+        with:
+          target: https://cleanmymap.fr
+          cmd_options: -n scripts/security/zap-public.context -m 1 -s -I
+          token: ""
+          allow_issue_writing: false
+          fail_action: false
+          artifact_name: zap-baseline-report

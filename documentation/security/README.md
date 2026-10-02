@@ -39,6 +39,7 @@ les sources de vérité sans recopier leurs contrats détaillés.
 | Regex et ReDoS | [`regex-security.md`](./regex-security.md) |
 | Prévention XSS DOM | [`dom-xss-prevention.md`](./dom-xss-prevention.md) |
 | CSP initiale en Report-Only | [`csp.md`](./csp.md) |
+| DAST public passif OWASP ZAP Baseline | [`dast-zap-baseline.md`](./dast-zap-baseline.md) |
 
 Les autres audits présents dans ce dossier restent des preuves ou des contrats
 de leur propre périmètre. Ils ne remplacent pas les sources `CURRENT` ci-dessus.

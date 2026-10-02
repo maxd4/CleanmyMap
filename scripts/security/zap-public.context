@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configuration>
+  <context>
+    <name>cleanmymap-public-stable</name>
+    <desc>Bounded public read-only crawl scope for the weekly passive baseline.</desc>
+    <inscope>true</inscope>
+    <incregexes>^https://cleanmymap\.fr/(?:|robots\.txt|sitemap\.xml|en(?:/[^/?#]*)?|explorer(?:/[^/?#]*)?|actions/map(?:/[^/?#]*)?|learn(?:/[^/?#]*)?|methodologie(?:/[^/?#]*)?|open-data(?:/[^/?#]*)?|conditions-generales-utilisation(?:/[^/?#]*)?|mentions-legales(?:/[^/?#]*)?|politique-confidentialite(?:/[^/?#]*)?|politique-cookies(?:/[^/?#]*)?|contact(?:/[^/?#]*)?|sections/(?:rejoindre-une-action|recycling|compost)(?:/[^/?#]*)?)(?:[?#].*)?$</incregexes>
+    <excregexes>^https://cleanmymap\.fr/(?:admin(?:/.*)?|sign-in(?:/.*)?|sign-up(?:/.*)?|onboarding(?:/.*)?|profil(?:/.*)?|reglages(?:/.*)?|messagerie(?:/.*)?|dashboard(?:/.*)?|partners(?:/.*)?|pilotage(?:/.*)?|sponsor-portal(?:/.*)?)(?:[?#].*)?$&#10;^https://cleanmymap\.fr/api/(?:admin(?:/.*)?|actions(?:/.*)?|chat(?:/.*)?|account(?:/.*)?|auth(?:/.*)?|community(?:/.*)?|contact(?:/.*)?|funding(?:/.*)?|stripe(?:/.*)?|webhooks?(?:/.*)?|signalement(?:s)?(?:/.*)?|upload(?:s)?(?:/.*)?|send(?:/.*)?|cron(?:/.*)?|users(?:/.*)?|partners(?:/.*)?|gamification(?:/.*)?|geo(?:/.*)?|reports(?:/.*)?|route(?:/.*)?|recycling(?:/.*)?|newsletter(?:/.*)?|document(?:/.*)?)(?:[?#].*)?$</excregexes>
+  </context>
+</configuration>
