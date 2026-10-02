@@ -51,6 +51,8 @@ export type MissionActionInsert = Omit<MissionAction, 'id'>
 
 export type TrackingPhase = 'idle' | 'requesting' | 'tracking' | 'stopping' | 'error'
 
+export type MissionFinalizationStage = 'synchronizing' | 'finalizing'
+
 export type ServiceResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: string }

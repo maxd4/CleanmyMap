@@ -19,6 +19,7 @@ import type {
   MissionLocation,
   MissionAction,
   MissionActionInsert,
+  MissionFinalizationStage,
   ServiceResult,
 } from '../types/mission';
 
@@ -27,6 +28,36 @@ export const EXPO_GO_TRACKING_WARNING =
   "Le GPS en arrière-plan ne fonctionne pas dans Expo Go. Utilise un development build (npx expo run:android ou npx expo run:ios).";
 export const CLERK_SESSION_REQUIRED_ERROR =
   "Connexion Clerk requise pour accéder à cette mission.";
+
+function backgroundLocationOptions() {
+  return {
+    accuracy: Location.Accuracy.Balanced,
+    timeInterval: 5 * 60 * 1000,
+    distanceInterval: 50,
+    deferredUpdatesInterval: 5 * 60 * 1000,
+    showsBackgroundLocationIndicator: true,
+    foregroundService: {
+      notificationTitle: 'CleanMyMap — Mission en cours',
+      notificationBody: 'Suivi GPS actif. Vous pouvez éteindre l’écran.',
+      notificationColor: '#10b981',
+    },
+  };
+}
+
+async function restartBackgroundTracking(): Promise<ServiceResult> {
+  const trackingWarning = getBackgroundTrackingWarning();
+  if (trackingWarning) return { ok: false, error: trackingWarning };
+
+  try {
+    await Location.startLocationUpdatesAsync(GPS_TASK_NAME, backgroundLocationOptions());
+    return { ok: true, data: undefined };
+  } catch (error) {
+    return {
+      ok: false,
+      error: `Impossible de reprendre le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`,
+    };
+  }
+}
 
 export function getBackgroundTrackingWarning(): string | null {
   const appOwnership = (Constants as { appOwnership?: string }).appOwnership;
@@ -141,18 +172,7 @@ export async function startTracking(missionId: string): Promise<ServiceResult<Mi
   }
 
   try {
-    await Location.startLocationUpdatesAsync(GPS_TASK_NAME, {
-      accuracy: Location.Accuracy.Balanced,
-      timeInterval: 5 * 60 * 1000,
-      distanceInterval: 50,
-      deferredUpdatesInterval: 5 * 60 * 1000,
-      showsBackgroundLocationIndicator: true,
-      foregroundService: {
-        notificationTitle: 'CleanMyMap — Mission en cours',
-        notificationBody: 'Suivi GPS actif. Vous pouvez éteindre l\'écran.',
-        notificationColor: '#10b981',
-      },
-    });
+    await Location.startLocationUpdatesAsync(GPS_TASK_NAME, backgroundLocationOptions());
   } catch (error) {
     return {
       ok: false,
@@ -234,19 +254,38 @@ export async function createMission(volunteerId: string, label = 'Action bénév
   );
 }
 
-export async function stopTracking(missionId: string): Promise<ServiceResult<Mission>> {
+export async function stopTracking(
+  missionId: string,
+  onStageChange?: (stage: MissionFinalizationStage) => void,
+): Promise<ServiceResult<Mission>> {
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
-  const isRegistered = await TaskManager.isTaskRegisteredAsync(GPS_TASK_NAME);
-  if (isRegistered) {
-    await Location.stopLocationUpdatesAsync(GPS_TASK_NAME);
+  try {
+    const isRegistered = await TaskManager.isTaskRegisteredAsync(GPS_TASK_NAME);
+    if (isRegistered) {
+      await Location.stopLocationUpdatesAsync(GPS_TASK_NAME);
+    }
+  } catch (error) {
+    const resumeResult = await restartBackgroundTracking();
+    const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
+    return {
+      ok: false,
+      error: `Impossible de suspendre le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}.${resumeSuffix}`,
+    };
   }
 
-  await flushBuffer();
+  onStageChange?.('synchronizing');
+  const flushResult = await flushBuffer();
+  if (flushResult && !flushResult.ok) {
+    const resumeResult = await restartBackgroundTracking();
+    const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
+    return { ok: false, error: `${flushResult.error}.${resumeSuffix}` };
+  }
 
+  onStageChange?.('finalizing');
   const missionResult = await executeMissionQuery(
     async () => client
       .from('missions')
@@ -259,7 +298,11 @@ export async function stopTracking(missionId: string): Promise<ServiceResult<Mis
       .single<Mission>(),
     'Erreur lors de la finalisation',
   );
-  if (!missionResult.ok) return missionResult;
+  if (!missionResult.ok) {
+    const resumeResult = await restartBackgroundTracking();
+    const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
+    return { ok: false, error: `${missionResult.error}.${resumeSuffix}` };
+  }
 
   await clearStoredMissionId();
 

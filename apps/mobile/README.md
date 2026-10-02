@@ -157,6 +157,11 @@ ne peuvent pas atteindre cette mise à jour. Les grants mobiles restent limités
 jamais directement inscriptibles par le client. Le mobile ne calcule ni la
 distance ni la durée lui-même.
 
+Après une finalisation réussie, l'écran affiche directement la durée, la
+distance et l'état de synchronisation renvoyés par le serveur, puis propose de
+revenir à l'accueil. Un échec de synchronisation ou de finalisation conserve la
+mission active et son suivi.
+
 ## Variables d'environnement
 
 Créer :
