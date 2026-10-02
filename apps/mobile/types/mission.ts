@@ -28,6 +28,12 @@ export interface MissionLocation {
 
 export type MissionLocationInsert = Omit<MissionLocation, 'id'>
 
+export interface ForegroundTrackPoint {
+  latitude: number
+  longitude: number
+  recordedAt: string
+}
+
 export type MissionActionType = 'trash_found' | 'trash_collected' | 'photo' | 'note' | 'hazard'
 
 export interface MissionAction {

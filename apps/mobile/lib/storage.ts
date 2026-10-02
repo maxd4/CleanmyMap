@@ -2,13 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { getAuthenticatedSupabaseClient } from './supabase';
-import type { MissionLocationInsert, MissionActionInsert } from '../types/mission';
+import type { ForegroundTrackPoint, MissionLocationInsert, MissionActionInsert } from '../types/mission';
 
 const MISSION_KEY = 'cmm_current_mission_id';
 const GPS_BUFFER_INDEX_KEY = '@cmm_gps_buffer_index';
 const ACTION_BUFFER_INDEX_KEY = '@cmm_action_buffer_index';
 const GPS_BUFFER_RECORD_PREFIX = 'cmm_gps_buffer';
 const ACTION_BUFFER_RECORD_PREFIX = 'cmm_action_buffer';
+const FOREGROUND_TRACK_KEY_PREFIX = '@cmm_foreground_track:';
 const USE_SECURE_STORE = Platform.OS !== 'web';
 
 function normalizeSecureStoreKey(key: string): string {
@@ -129,6 +130,55 @@ export async function clearStoredMissionId(): Promise<void> {
   await removeStoredValue(MISSION_KEY);
 }
 
+// Tracé foreground UX uniquement. Il reste séparé du buffer GPS afin de ne
+// jamais être rejoué vers Supabase comme un second flux de persistance.
+function foregroundTrackKey(missionId: string): string {
+  return `${FOREGROUND_TRACK_KEY_PREFIX}${missionId}`;
+}
+
+function isForegroundTrackPoint(value: unknown): value is ForegroundTrackPoint {
+  if (!value || typeof value !== 'object') return false;
+  const point = value as Record<string, unknown>;
+  return (
+    typeof point.latitude === 'number' &&
+    Number.isFinite(point.latitude) &&
+    typeof point.longitude === 'number' &&
+    Number.isFinite(point.longitude) &&
+    typeof point.recordedAt === 'string' &&
+    !Number.isNaN(Date.parse(point.recordedAt))
+  );
+}
+
+export async function getStoredForegroundTrack(missionId: string): Promise<ForegroundTrackPoint[]> {
+  try {
+    const raw = await AsyncStorage.getItem(foregroundTrackKey(missionId));
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(isForegroundTrackPoint) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveStoredForegroundTrack(
+  missionId: string,
+  points: ReadonlyArray<ForegroundTrackPoint>,
+): Promise<void> {
+  try {
+    await AsyncStorage.setItem(foregroundTrackKey(missionId), JSON.stringify(points));
+  } catch (e) {
+    console.warn('[Storage] Tracé foreground local indisponible :', e);
+  }
+}
+
+export async function clearStoredForegroundTrack(missionId: string): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(foregroundTrackKey(missionId));
+  } catch (e) {
+    console.warn('[Storage] Nettoyage du tracé foreground local impossible :', e);
+  }
+}
+
 // Buffer GPS
 
 export async function bufferPoint(point: MissionLocationInsert): Promise<void> {
@@ -214,6 +264,14 @@ export async function getBufferCount(): Promise<number> {
     const gpsCount = gps.length;
     const actCount = acts.length;
     return gpsCount + actCount;
+  } catch {
+    return 0;
+  }
+}
+
+export async function getPendingGpsPointCount(): Promise<number> {
+  try {
+    return (await readIndex(GPS_BUFFER_INDEX_KEY)).length;
   } catch {
     return 0;
   }

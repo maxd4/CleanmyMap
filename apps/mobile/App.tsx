@@ -17,7 +17,7 @@ import {
   startMobileMission,
   stopTracking,
 } from './lib/tracking-service'
-import { getBufferCount } from './lib/storage'
+import { clearStoredForegroundTrack, getPendingGpsPointCount } from './lib/storage'
 import { MobileShell } from './screens/mobile-shell'
 import { MissionActiveMap } from './screens/mission-active-map'
 import type { Mission, TrackingPhase } from './types/mission'
@@ -42,7 +42,7 @@ function CompanionApp() {
   const [mission, setMission] = useState<Mission | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [duration, setDuration] = useState('')
-  const [bufferCount, setBufferCount] = useState(0)
+  const [pendingGpsPointCount, setPendingGpsPointCount] = useState(0)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bufferTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -73,10 +73,12 @@ function CompanionApp() {
   }, [isLoaded, isSignedIn])
 
   useEffect(() => {
-    bufferTimerRef.current = setInterval(async () => {
-      const count = await getBufferCount()
-      setBufferCount(count)
-    }, 5000)
+    async function refreshPendingGpsPointCount() {
+      setPendingGpsPointCount(await getPendingGpsPointCount())
+    }
+
+    void refreshPendingGpsPointCount()
+    bufferTimerRef.current = setInterval(() => void refreshPendingGpsPointCount(), 5000)
 
     return () => {
       if (bufferTimerRef.current) clearInterval(bufferTimerRef.current)
@@ -130,6 +132,7 @@ function CompanionApp() {
       return
     }
 
+    await clearStoredForegroundTrack(mission.id)
     setMission(null)
     setPhase('idle')
   }
@@ -160,7 +163,7 @@ function CompanionApp() {
     return <MissionActiveScreen
       mission={mission}
       duration={duration}
-      bufferCount={bufferCount}
+      pendingGpsPointCount={pendingGpsPointCount}
       errorMsg={errorMsg}
       onStop={handleStop}
     />
@@ -172,13 +175,13 @@ function CompanionApp() {
 function MissionActiveScreen({
   mission,
   duration,
-  bufferCount,
+  pendingGpsPointCount,
   errorMsg,
   onStop,
 }: {
   mission: Mission
   duration: string
-  bufferCount: number
+  pendingGpsPointCount: number
   errorMsg: string | null
   onStop: () => void
 }) {
@@ -209,12 +212,14 @@ function MissionActiveScreen({
           <Text style={styles.hudStatValue}>{duration}</Text>
         </View>
         <View style={styles.hudStatBox}>
-          <Text style={styles.hudStatLabel}>SYNC BUFFER</Text>
-          <Text style={[styles.hudStatValue, bufferCount > 0 && { color: '#fbbf24' }]}>{bufferCount}</Text>
+          <Text style={styles.hudStatLabel}>GPS EN ATTENTE</Text>
+          <Text style={[styles.hudStatValue, pendingGpsPointCount > 0 && { color: '#fbbf24' }]}>
+            {pendingGpsPointCount}
+          </Text>
         </View>
       </View>
 
-      <MissionActiveMap />
+      <MissionActiveMap missionId={mission.id} pendingGpsPointCount={pendingGpsPointCount} />
 
       <TouchableOpacity style={styles.hudBtnDanger} onPress={onStop}>
         <Text style={styles.hudBtnText}>TERMINER LA MISSION</Text>
