@@ -77,10 +77,10 @@
     {
       "path": "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
+      "status": "IMPROVED",
       "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 733,
-      "maxBytes": 32321
+      "maxLines": 27,
+      "maxBytes": 1059
     },
     {
       "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
@@ -109,10 +109,10 @@
     {
       "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
+      "status": "IMPROVED",
       "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 832,
-      "maxBytes": 33146
+      "maxLines": 23,
+      "maxBytes": 716
     },
     {
       "path": "apps/web/src/components/actions/actions-history-list.tsx",

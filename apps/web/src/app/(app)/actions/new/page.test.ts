@@ -183,28 +183,43 @@ describe("action creation entry point", () => {
   });
 
   it("does not block the authenticated complete form by viewport", () => {
-    const formSource = readFileSync(
+    const viewModelSource = readFileSync(
       new URL(
-        "../../../../components/actions/action-declaration/action-declaration-form.tsx",
+        "../../../../components/actions/action-declaration/hooks/use-action-declaration-form-view-model.ts",
         import.meta.url,
       ),
       "utf8",
     );
 
-    expect(formSource).toContain("const isCompletionBlocked = !props.isAuthenticated");
-    expect(formSource).not.toContain("isMobile");
-    expect(formSource).not.toContain("Saisie mobile indisponible");
-    expect(formSource).not.toContain("Aperçu mobile");
+    expect(viewModelSource).toContain("const isCompletionBlocked = !props.isAuthenticated");
+    expect(viewModelSource).not.toContain("isMobile");
+    expect(viewModelSource).not.toContain("Saisie mobile indisponible");
+    expect(viewModelSource).not.toContain("Aperçu mobile");
   });
 
   it("keeps the action entry focused on terrain results", () => {
-    const formSource = readFileSync(
+    const formContentSource = readFileSync(
       new URL(
-        "../../../../components/actions/action-declaration/action-declaration-form.tsx",
+        "../../../../components/actions/action-declaration/action-declaration-form-content.tsx",
         import.meta.url,
       ),
       "utf8",
     );
+    const sectionsSource = readFileSync(
+      new URL(
+        "../../../../components/actions/action-declaration/action-declaration-form-sections.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    const detailsSource = readFileSync(
+      new URL(
+        "../../../../components/actions/action-declaration/action-declaration-details.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    const formSource = `${formContentSource}\n${sectionsSource}\n${detailsSource}`;
     const identitySource = readFileSync(
       new URL(
         "../../../../components/actions/action-declaration/steps/ActionStepIdentity.tsx",

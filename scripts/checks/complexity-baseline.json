@@ -340,10 +340,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
-      "line": 83,
+      "line": 14,
       "category": "React/JSX",
-      "ceiling": 52,
-      "status": "LEGACY",
+      "ceiling": 3,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionDeclarationForm#1"
     },
     {
@@ -385,10 +385,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx",
-      "line": 404,
+      "line": 9,
       "category": "React/JSX",
-      "ceiling": 53,
-      "status": "LEGACY",
+      "ceiling": 3,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionStepLocation#1"
     },
     {
@@ -3013,9 +3013,9 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
-      "line": 82,
+      "line": 14,
       "category": "React/JSX",
-      "ceiling": 621,
+      "ceiling": 12,
       "status": "IMPROVED",
       "functionIdentity": "named:ActionDeclarationForm#1"
     },
@@ -3076,19 +3076,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx",
-      "line": 132,
+      "line": 9,
       "category": "React/JSX",
-      "ceiling": 243,
-      "status": "LEGACY",
-      "functionIdentity": "named:AddressAutocompleteInput#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx",
-      "line": 404,
-      "category": "React/JSX",
-      "ceiling": 403,
-      "status": "LEGACY",
+      "ceiling": 14,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionStepLocation#1"
     },
     {
