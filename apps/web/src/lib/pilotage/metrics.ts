@@ -5,9 +5,9 @@ import {
 import { computeActionImpactKpis } from "../actions/impact-calculators";
 import { evaluateActionQuality } from "../actions/quality/quality";
 import { auditActionContract } from "../actions/quality/data-quality";
+import { average, median } from "@/lib/reports/report-model/math";
+import { DAY_MS, parseInstantMs as parseDateMs } from "@/lib/time/utc-runtime";
 import { DIGITAL_IMPACT_CONSTANTS, PILOTAGE_FORMULA_VERSION, PILOTAGE_THRESHOLDS } from "./constants";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 type PilotageWindowMetrics = {
   approvedActions: number;
@@ -71,25 +71,6 @@ function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-function average(values: number[]): number {
-  if (values.length === 0) {
-    return 0;
-  }
-  return values.reduce((acc, value) => acc + value, 0) / values.length;
-}
-
-function median(values: number[]): number {
-  if (values.length === 0) {
-    return 0;
-  }
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 0) {
-    return (sorted[middle - 1] + sorted[middle]) / 2;
-  }
-  return sorted[middle];
-}
-
 function reliabilityLevelFromScore(
   score: number,
 ): "elevee" | "moyenne" | "faible" {
@@ -138,14 +119,6 @@ function buildReliability(input: {
     sampleSize: input.approvedActions,
     reason,
   };
-}
-
-function parseDateMs(raw: string | null | undefined): number | null {
-  if (!raw) {
-    return null;
-  }
-  const parsed = new Date(raw).getTime();
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 export function filterContractsToWindow(

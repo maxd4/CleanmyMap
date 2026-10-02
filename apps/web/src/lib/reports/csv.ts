@@ -1,5 +1,6 @@
 import type { ActionListItem, ActionStatus } from "@/lib/actions/types";
 import { parsePositiveInteger } from "@/lib/http/query-params";
+import { buildUtcDateFloor } from "@/lib/time/utc-runtime";
 import { buildDeliverableFilename } from "./deliverable-name";
 import type { ReportScope, ReportScopeKind } from "./scope";
 
@@ -126,12 +127,7 @@ export function resolveReportQuery(url: URL): ReportQuery {
   };
 }
 
-export function buildDateFloor(daysWindow: number): string {
-  const now = new Date();
-  now.setUTCHours(0, 0, 0, 0);
-  now.setUTCDate(now.getUTCDate() - (daysWindow - 1));
-  return now.toISOString().slice(0, 10);
-}
+export const buildDateFloor = buildUtcDateFloor;
 
 function shouldPrefixCsvCell(raw: string): boolean {
   const trimmed = raw.trimStart();

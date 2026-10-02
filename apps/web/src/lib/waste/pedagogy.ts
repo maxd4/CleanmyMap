@@ -5,6 +5,7 @@ import type {
   WasteHazardLevel,
   WastePickupPolicy,
 } from "./types";
+import { getWasteCategoryTextSources } from "./search";
 
 export type WastePedagogicalLocale = "fr" | "en";
 
@@ -97,13 +98,7 @@ function normalizeSearchText(value: string): string {
 }
 
 function getSearchTerms(category: WasteCategoryDefinition): string[] {
-  return [
-    category.labels.fr,
-    category.labels.en,
-    ...category.examples.flatMap((example) => [example.fr, example.en]),
-    ...(category.aliases ?? []).flatMap((alias) => [alias.fr, alias.en]),
-    ...category.pedagogicalTags,
-  ]
+  return getWasteCategoryTextSources(category)
     .map(normalizeSearchText)
     .filter((term) => term.length > 1);
 }

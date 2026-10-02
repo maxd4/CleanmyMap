@@ -1,20 +1,10 @@
 import type { ActionListItem } from "@/lib/actions/types";
 import type { CommunityEventItem } from "@/lib/community/http";
 import { computeCommunityEngagementMetrics } from "@/lib/reports/report-model/metrics";
+import { computeReportRsvpSummary } from "@/lib/reports/report-model/community";
 
 export function computeCommunityMetrics(actions: ActionListItem[], events: CommunityEventItem[]) {
-  const rsvp = events.reduce(
-    (acc, event) => {
-      acc.yes += event.rsvpCounts.yes;
-      acc.maybe += event.rsvpCounts.maybe;
-      acc.no += event.rsvpCounts.no;
-      return acc;
-    },
-    { yes: 0, maybe: 0, no: 0 },
-  );
-
-  const rsvpTotal = rsvp.yes + rsvp.maybe + rsvp.no;
-  const participationRate = rsvpTotal > 0 ? (rsvp.yes / rsvpTotal) * 100 : 0;
+  const { rsvp, participationRate } = computeReportRsvpSummary(events);
 
   const engagement = computeCommunityEngagementMetrics({
     leaderboardItems: actions,

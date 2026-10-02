@@ -1,3 +1,6 @@
+import { DAY_MS, parseInstantMs } from "@/lib/time/utc-runtime";
+import { median } from "@/lib/reports/report-model/math";
+
 export type ZoneCompareInput = {
   observedAt: string;
   locationLabel: string;
@@ -43,8 +46,6 @@ export type ZoneCompareOutput = {
   degradingZones: string[];
 };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 const AREA_SURFACE_KM2: Record<string, number> = {
   "1e": 1.83,
   "2e": 0.99,
@@ -82,23 +83,6 @@ function areaFromLabel(label: string): string {
   return `${matched[1]}e`;
 }
 
-function parseMs(raw: string): number | null {
-  const parsed = new Date(raw).getTime();
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function median(values: number[]): number {
-  if (values.length === 0) {
-    return 0;
-  }
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 0) {
-    return (sorted[middle - 1] + sorted[middle]) / 2;
-  }
-  return sorted[middle];
-}
-
 export function computeZoneCompare(params: {
   records: ZoneCompareInput[];
   periodDays: number;
@@ -132,7 +116,7 @@ export function computeZoneCompare(params: {
   >();
 
   for (const record of params.records) {
-    const observedMs = parseMs(record.observedAt);
+    const observedMs = parseInstantMs(record.observedAt);
     if (observedMs === null) {
       continue;
     }

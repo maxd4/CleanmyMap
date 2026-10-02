@@ -198,17 +198,25 @@ type EvidenceWithContributionFields = Pick<
   | "additionality"
 >;
 
-export function evidenceWithContribution<T extends object>(
-  evidence: T,
+export function routePlannerContributionFields(
   contribution: RoutePlannerContribution,
-): T & EvidenceWithContributionFields {
+): EvidenceWithContributionFields {
   return {
-    ...evidence,
     pollutionPriority: contribution.pollutionPriority,
     volunteerAdditionality: contribution.volunteerAdditionality,
     finalPlannerContribution: contribution.finalPlannerContribution,
     volunteerAdditionalityConfidence: contribution.volunteerAdditionalityConfidence,
     additionalityWeight: contribution.additionalityWeight,
     ...(contribution.additionality ? { additionality: contribution.additionality } : {}),
+  };
+}
+
+export function evidenceWithContribution<T extends object>(
+  evidence: T,
+  contribution: RoutePlannerContribution,
+): T & EvidenceWithContributionFields {
+  return {
+    ...evidence,
+    ...routePlannerContributionFields(contribution),
   } as T & EvidenceWithContributionFields;
 }

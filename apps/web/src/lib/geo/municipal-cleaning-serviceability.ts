@@ -14,6 +14,7 @@ import {
   type MunicipalCleaningZoneSeed,
   type ServiceabilityConfidence,
 } from "./municipal-cleaning-serviceability-contract.ts";
+import { clamp01, finiteOrNull } from "./normalization";
 
 const MUNICIPAL_CLEANING_SERVICEABILITY_MODEL_CONFIG = {
   predictionModelVersion: MUNICIPAL_CLEANING_SERVICEABILITY_MODEL_VERSION,
@@ -53,14 +54,6 @@ const MUNICIPAL_CLEANING_SERVICEABILITY_MODEL_CONFIG = {
 const SURFACE_CLASSES = Object.keys(
   MUNICIPAL_CLEANING_SERVICEABILITY_MODEL_CONFIG.surfaceAccessibility,
 ) as CleaningSurfaceClass[];
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
-
-function finiteOrNull(value: number | null | undefined): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
 
 function round(value: number): number {
   return Number(value.toFixed(3));

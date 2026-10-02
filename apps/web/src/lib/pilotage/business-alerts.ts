@@ -4,6 +4,7 @@ import { computeActionImpactKpis } from "../actions/impact-calculators";
 import type { ActionMapItem, ActionListItem } from "../actions/types";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { formatScorePercent } from "@/lib/formatters/score";
+import { DAY_MS, parseInstantMs as parseMs } from "@/lib/time/utc-runtime";
 
 export type AlertSeverity = "high" | "medium" | "low";
 
@@ -44,18 +45,8 @@ export type NeighborhoodCampaignPlan = {
   rationale: string;
 };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 function round1(value: number): number {
   return Math.round(value * 10) / 10;
-}
-
-function parseMs(raw: string | null | undefined): number | null {
-  if (!raw) {
-    return null;
-  }
-  const parsed = new Date(raw).getTime();
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function toIsoDate(value: Date): string {

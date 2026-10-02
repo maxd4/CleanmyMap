@@ -1,5 +1,6 @@
 import type { QuizQuestion } from "./quiz-question-contract";
 import type { QuizConfidenceLevel, QuizLocalScope, QuizSourceType } from "./quiz-source-metadata.ts";
+import { getQuizAnswerText } from "./quiz-answer-text";
 
 type QuizSourceAuditFinding = {
   questionId: string;
@@ -62,12 +63,8 @@ function normalizeText(value: string): string {
     .toLowerCase();
 }
 
-function getAnswerText(question: QuizQuestion): string {
-  return Array.isArray(question.answer) ? question.answer.join(" / ") : question.answer;
-}
-
 function getQuestionSummary(question: QuizQuestion): string {
-  return `${question.question} ${question.explanation} ${getAnswerText(question)}`;
+  return `${question.question} ${question.explanation} ${getQuizAnswerText(question)}`;
 }
 
 function hasSourceMetadata(question: QuizQuestion): boolean {
@@ -99,7 +96,7 @@ function toFinding(question: QuizQuestion, reason: string): QuizSourceAuditFindi
   return {
     questionId: question.id,
     question: question.question,
-    answer: getAnswerText(question),
+    answer: getQuizAnswerText(question),
     sourceLabel: question.sourceLabel ?? "",
     sourceType: question.sourceType ?? null,
     confidenceLevel: question.confidenceLevel ?? null,

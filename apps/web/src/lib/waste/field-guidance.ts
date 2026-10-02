@@ -4,6 +4,7 @@ import {
   WASTE_CATEGORY_DEFINITIONS,
 } from "./catalog";
 import type { WasteCategoryDefinition, WasteCategorySlug, WasteFamily, WastePickupPolicy } from "./types";
+import { getWasteCategoryTextSources } from "./search";
 
 const WASTE_CATEGORIES_MARKER = /\[cmm-waste:([^\]]*)\]/gi;
 
@@ -80,13 +81,7 @@ export function normalizeWasteCategorySlugs(
 
 export function getWasteCategorySearchText(slug: WasteCategorySlug): string {
   const category = getWasteCategory(slug);
-  return [
-    category.labels.fr,
-    category.labels.en,
-    ...category.examples.flatMap((example) => [example.fr, example.en]),
-    ...(category.aliases ?? []).flatMap((alias) => [alias.fr, alias.en]),
-    ...category.pedagogicalTags,
-  ]
+  return getWasteCategoryTextSources(category)
     .join(" ")
     .toLocaleLowerCase("fr-FR");
 }

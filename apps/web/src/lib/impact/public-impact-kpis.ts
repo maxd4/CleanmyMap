@@ -1,4 +1,5 @@
 import type { ActionImpactInput } from "@/lib/actions/impact-calculators";
+import { toFiniteNonNegativeInteger } from "@/lib/data/number-normalization";
 import {
   buildImpactTerrain2026PublicResultsFromAggregate,
   buildImpactTerrain2026PublicResultsFromActions,
@@ -171,11 +172,6 @@ export function isPublicImpactActionInputEligible(
   action: PublicImpactActionInput,
 ): boolean {
   return action.metadata.actionPhase !== "pre_action";
-}
-
-function toFiniteNonNegativeInteger(value: number | null | undefined): number {
-  const parsed = Number(value ?? 0);
-  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
 }
 
 /**

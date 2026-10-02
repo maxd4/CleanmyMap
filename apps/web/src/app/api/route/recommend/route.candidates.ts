@@ -5,6 +5,7 @@ import { applyParisPressureToCandidates } from "@/lib/route/paris-pressure-route
 import {
   evidenceWithContribution,
   observedCandidateContribution,
+  routePlannerContributionFields,
 } from "@/lib/route/route-additionality";
 import {
   defaultRouteRecommendationFloorDate,
@@ -113,13 +114,8 @@ export async function loadRouteCandidateData(
     });
     return {
       ...candidate,
+      ...routePlannerContributionFields(contribution),
       score: contribution.finalPlannerContribution,
-      pollutionPriority: contribution.pollutionPriority,
-      volunteerAdditionality: contribution.volunteerAdditionality,
-      finalPlannerContribution: contribution.finalPlannerContribution,
-      volunteerAdditionalityConfidence: contribution.volunteerAdditionalityConfidence,
-      additionalityWeight: contribution.additionalityWeight,
-      ...(contribution.additionality ? { additionality: contribution.additionality } : {}),
       volunteerSafety: contribution.volunteerSafety,
       ...(candidate.evidence
         ? { evidence: evidenceWithContribution(candidate.evidence, contribution) }

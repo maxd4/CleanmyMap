@@ -10,6 +10,7 @@ import {
   type VolunteerAdditionalityResult,
   type VolunteerSafetyAssessment,
 } from "./volunteer-additionality-contract";
+import { clamp01, finiteOrNull } from "./normalization";
 
 const VOLUNTEER_ADDITIONALITY_MODEL_CONFIG = {
   modelVersion: VOLUNTEER_ADDITIONALITY_MODEL_VERSION,
@@ -49,14 +50,6 @@ const VOLUNTEER_ADDITIONALITY_MODEL_CONFIG = {
     other_complex_public_space: 0.55,
   } satisfies Record<CleaningSurfaceClass, number>,
 } as const;
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
-
-function finiteOrNull(value: number | null | undefined): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
 
 function round(value: number, digits = 3): number {
   return Number(value.toFixed(digits));

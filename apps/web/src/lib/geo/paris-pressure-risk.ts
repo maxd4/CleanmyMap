@@ -244,6 +244,21 @@ function confidence(
   };
 }
 
+function collectAvailableContextFactors(
+  waste: ParisPressureRiskScore,
+  cigaretteButts: ParisPressureRiskScore,
+): Set<ParisPressureContextFactor> {
+  const contextFactors = new Set<ParisPressureContextFactor>();
+  for (const contribution of [...waste.contributions, ...cigaretteButts.contributions]) {
+    if (contribution.available) {
+      if (contribution.key === "eventPressure") contextFactors.add("eventPressure");
+      if (contribution.key === "validatedWastePressure") contextFactors.add("validatedWastePressure");
+      if (contribution.key === "validatedCigarettePressure") contextFactors.add("validatedCigarettePressure");
+    }
+  }
+  return contextFactors;
+}
+
 function relevantProvenance(
   snapshot: ParisPressureSnapshot,
   waste: ParisPressureRiskScore,
@@ -270,14 +285,7 @@ function relevantProvenance(
     ...snapshot.sources.filter((source) => families.has(source.family)),
     ...morphologySources,
   ];
-  const contextFactors = new Set<ParisPressureContextFactor>();
-  for (const contribution of [...waste.contributions, ...cigaretteButts.contributions]) {
-    if (contribution.available) {
-      if (contribution.key === "eventPressure") contextFactors.add("eventPressure");
-      if (contribution.key === "validatedWastePressure") contextFactors.add("validatedWastePressure");
-      if (contribution.key === "validatedCigarettePressure") contextFactors.add("validatedCigarettePressure");
-    }
-  }
+  const contextFactors = collectAvailableContextFactors(waste, cigaretteButts);
   const contextSources = [...contextFactors].flatMap((factor) =>
     contextSourcesForFactor(context, factor),
   );
@@ -308,14 +316,7 @@ function provenanceGaps(
     "validatedWastePressure",
     "validatedCigarettePressure",
   ];
-  const contextFactors = new Set<ParisPressureContextFactor>();
-  for (const contribution of [...waste.contributions, ...cigaretteButts.contributions]) {
-    if (contribution.available) {
-      if (contribution.key === "eventPressure") contextFactors.add("eventPressure");
-      if (contribution.key === "validatedWastePressure") contextFactors.add("validatedWastePressure");
-      if (contribution.key === "validatedCigarettePressure") contextFactors.add("validatedCigarettePressure");
-    }
-  }
+  const contextFactors = collectAvailableContextFactors(waste, cigaretteButts);
   return factorOrder
     .filter((factor) => contextFactors.has(factor))
     .flatMap((factor) => {

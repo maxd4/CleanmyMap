@@ -1,7 +1,5 @@
-import { createFallbackRouteGeometry } from "@/lib/geo/osrm-routing";
 import type { ParisPressureSnapshot } from "@/lib/geo/paris-pressure-contract";
 import type { MunicipalCleaningServiceabilitySnapshot } from "@/lib/geo/municipal-cleaning-serviceability-contract";
-import { routePolylineThroughFossgisFoot } from "@/lib/route/fossgis-foot-routing";
 import {
   applyRoutePredictionFinalRoutingBudgetAudit,
   applyRoutePredictionPlannerBudgetAudit,
@@ -10,12 +8,16 @@ import {
   buildRoutePlannerCandidatePool,
 } from "@/lib/route/route-predicted-targets";
 import {
-  fallbackRoutePrefixWithinBudget,
   planRoute,
   type RoutePlannerCandidate,
   type RoutePlannerOrigin,
   type RoutePlannerResult,
 } from "@/lib/route/route-planner";
+import {
+  fallbackGeometryForPrefix,
+  reconcileSingleRouteGeometry,
+  type RouteGeometryReconciliation,
+} from "@/lib/route/route-geometry-reconciliation";
 import type { RouteOperationalBudgetDependency } from "@/lib/route/route-operational-budget";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import type { TrashSpotterRouteCandidate } from "@/lib/route/trash-spotter-recommendation";
@@ -69,20 +71,37 @@ export type RoutePlanningResult = {
   streetCleaningCorridors?: StreetCleaningCorridorHandoff;
 };
 
-function fallbackGeometryForPrefix(
-  origin: RoutePlannerOrigin,
-  stops: Array<{ latitude: number; longitude: number }>,
-): ReturnType<typeof createFallbackRouteGeometry> {
-  return createFallbackRouteGeometry([
-    [origin.latitude, origin.longitude],
-    ...stops.map(
-      (stop) => [stop.latitude, stop.longitude] as [number, number],
-    ),
-    [origin.latitude, origin.longitude],
-  ]);
+function planRecommendationCandidates(
+  input: {
+    origin: RoutePlannerOrigin;
+    spatialCandidates?: TrashSpotterRouteCandidate[];
+    travelBudgetMinutes: number;
+    maxStops: number;
+    priorityVsTravel: number;
+    volunteers: number;
+    groupCount: number;
+    operationalBudget?: RouteOperationalBudgetDependency;
+    weatherContext?: PlannerWeatherContext;
+  },
+  candidates: RoutePlannerCandidate[],
+  effectiveRiskFocus: RouteRiskFocus,
+): RoutePlannerResult {
+  return planRoute({
+    ...input,
+    candidates,
+    effectiveRiskFocus,
+    ...(input.operationalBudget || input.weatherContext
+      ? {
+          operationalBudget: input.operationalBudget,
+          weatherContext: input.weatherContext,
+          volunteersExpected: input.volunteers,
+          groupCount: input.groupCount,
+        }
+      : {}),
+  });
 }
 
-export async function planRouteRecommendation(input: {
+type RouteRecommendationInput = {
   origin: RoutePlannerOrigin;
   spatialCandidates: TrashSpotterRouteCandidate[];
   parisPressureSnapshot: ParisPressureSnapshot | null;
@@ -98,7 +117,66 @@ export async function planRouteRecommendation(input: {
   eventSignalContext: RouteEventSignalContext;
   operationalBudget?: RouteOperationalBudgetDependency;
   weatherContext?: PlannerWeatherContext;
-}): Promise<RoutePlanningResult> {
+};
+
+function finalizeRouteRecommendationPreparation(
+  input: RouteRecommendationInput,
+  effectiveRiskFocus: RouteRiskFocus,
+  baselinePlannerResult: RoutePlannerResult,
+  predictionBuild: ReturnType<typeof buildPredictedRouteCandidates>,
+  eventCenteredBuild: ReturnType<typeof buildEventCenteredCandidates> | null,
+  candidatePool: ReturnType<typeof buildRoutePlannerCandidatePool>,
+) {
+  const plannerResult = planRecommendationCandidates(
+    input,
+    candidatePool.candidates,
+    effectiveRiskFocus,
+  );
+  const partitionInput = {
+    origin: input.origin,
+    candidates: candidatePool.candidates,
+    volunteers: input.volunteers,
+    groupCount: input.groupCount,
+    travelBudgetMinutes: input.travelBudgetMinutes,
+    maxStops: input.maxStops,
+    priorityVsTravel: input.priorityVsTravel,
+    planningMode: input.planningMode,
+    effectiveRiskFocus,
+    operationalBudget: input.operationalBudget,
+    weatherContext: input.weatherContext,
+  };
+  const groupPartition: RouteGroupPartitionResult | null =
+    input.groupCount === 1
+      ? null
+      : partitionRouteCandidates({
+          ...partitionInput,
+          plannerResult,
+        });
+  let predictionSummary = applyRoutePredictionPoolAudit(
+    predictionBuild.summary,
+    candidatePool.audit,
+  );
+  predictionSummary = applyRoutePredictionPlannerBudgetAudit(
+    predictionSummary,
+    {
+      passedCandidateIds: candidatePool.audit.passedToPlannerCandidateIds,
+      evaluations: plannerResult.audit?.evaluations ?? [],
+    },
+  );
+  return {
+    effectiveRiskFocus,
+    baselinePlannerResult,
+    predictionBuild,
+    eventCenteredBuild,
+    candidatePool,
+    plannerResult,
+    partitionInput,
+    groupPartition,
+    predictionSummary,
+  };
+}
+
+function prepareRouteRecommendation(input: RouteRecommendationInput) {
   const effectiveRiskFocus = input.effectiveRiskFocus;
   const baselinePlannerResult = planRoute({
     origin: input.origin,
@@ -164,172 +242,63 @@ export async function planRouteRecommendation(input: {
           Math.max(input.maxStops * input.groupCount * 2, 8),
         ),
   });
-  const plannerResult = planRoute({
-    origin: input.origin,
-    candidates: candidatePool.candidates,
-    travelBudgetMinutes: input.travelBudgetMinutes,
-    maxStops: input.maxStops,
-    priorityVsTravel: input.priorityVsTravel,
+  return finalizeRouteRecommendationPreparation(
+    input,
     effectiveRiskFocus,
-    ...(input.operationalBudget || input.weatherContext
-      ? {
-          operationalBudget: input.operationalBudget,
-          weatherContext: input.weatherContext,
-          volunteersExpected: input.volunteers,
-          groupCount: input.groupCount,
-        }
-      : {}),
-  });
-  const partitionInput = {
-    origin: input.origin,
-    candidates: candidatePool.candidates,
-    volunteers: input.volunteers,
-    groupCount: input.groupCount,
-    travelBudgetMinutes: input.travelBudgetMinutes,
-    maxStops: input.maxStops,
-    priorityVsTravel: input.priorityVsTravel,
-    planningMode: input.planningMode,
-    effectiveRiskFocus,
-    operationalBudget: input.operationalBudget,
-    weatherContext: input.weatherContext,
-  };
-  let groupPartition: RouteGroupPartitionResult | null =
-    input.groupCount === 1
-      ? null
-      : partitionRouteCandidates({
-          ...partitionInput,
-          plannerResult,
-        });
-  let predictionSummary = applyRoutePredictionPoolAudit(
-    predictionBuild.summary,
-    candidatePool.audit,
+    baselinePlannerResult,
+    predictionBuild,
+    eventCenteredBuild,
+    candidatePool,
   );
-  predictionSummary = applyRoutePredictionPlannerBudgetAudit(
-    predictionSummary,
-    {
-      passedCandidateIds: candidatePool.audit.passedToPlannerCandidateIds,
-      evaluations: plannerResult.audit?.evaluations ?? [],
+}
+
+type RouteRecommendationRoutingState = {
+  plannedStops: RoutePlannerResult["stops"];
+  routeGeometry: RouteGeometry;
+  budgetPrefixApplied: boolean;
+  providerCalls: number;
+  firstProviderMode: RouteGeometry["mode"] | null;
+  finalRoutingWarning: string | null;
+  finalRoutingDegraded: boolean;
+  stopsBeforeFinalRouting: number;
+  finalRoutingBudgetExcludedCandidateIds: string[];
+  groupPartition: RouteGroupPartitionResult;
+  groupRoutes: RouteGroupRoute[];
+  multiRouteMetrics: RouteMultiRouteMetrics | undefined;
+};
+
+function buildSingleGroupRoutingState(
+  input: RouteRecommendationInput,
+  preparation: ReturnType<typeof prepareRouteRecommendation>,
+  geometry: RouteGeometryReconciliation,
+): RouteRecommendationRoutingState {
+  const finalRoutingBudgetExcludedCandidateIds = preparation.plannerResult.stops
+    .slice(geometry.plannedStops.length)
+    .map(({ candidate }) => candidate.id);
+  const groupPartition = partitionRouteCandidates({
+    ...preparation.partitionInput,
+    plannerResult: {
+      ...preparation.plannerResult,
+      stops: geometry.plannedStops,
     },
-  );
-  let plannedStops = plannerResult.stops;
-  let routeGeometry = fallbackGeometryForPrefix(input.origin, []);
-  let budgetPrefixApplied = false;
-  let providerCalls = 0;
-  let firstProviderMode: RouteGeometry["mode"] | null = null;
-  let finalRoutingWarning: string | null = null;
-  let finalRoutingDegraded = false;
-  const stopsBeforeFinalRouting = plannedStops.length;
-  let finalRoutingBudgetExcludedCandidateIds: string[] = [];
-  let groupRoutes: RouteGroupRoute[] = [];
-  let multiRouteMetrics: RouteMultiRouteMetrics | undefined;
-
-  if (input.groupCount === 1 && plannedStops.length > 0) {
-    const routeCoordinates: [number, number][] = [
-      [input.origin.latitude, input.origin.longitude],
-      ...plannedStops.map(
-        ({ candidate }) =>
-          [candidate.latitude, candidate.longitude] as [number, number],
-      ),
-      [input.origin.latitude, input.origin.longitude],
-    ];
-    routeGeometry = await routePolylineThroughFossgisFoot(
-      routeCoordinates,
-      {},
-    );
-    providerCalls += 1;
-    firstProviderMode = routeGeometry.mode;
-
-    if (routeGeometry.durationMinutes > input.travelBudgetMinutes) {
-      budgetPrefixApplied = true;
-      let reconciled = false;
-      let retainedStops = [...plannedStops];
-
-      if (routeGeometry.mode === "network") {
-        while (retainedStops.length > 0) {
-          retainedStops = retainedStops.slice(0, -1);
-          if (retainedStops.length === 0) break;
-          const retainedCoordinates: [number, number][] = [
-            [input.origin.latitude, input.origin.longitude],
-            ...retainedStops.map(
-              ({ candidate }) =>
-                [candidate.latitude, candidate.longitude] as [number, number],
-            ),
-            [input.origin.latitude, input.origin.longitude],
-          ];
-          try {
-            providerCalls += 1;
-            const reconciledGeometry = await routePolylineThroughFossgisFoot(
-              retainedCoordinates,
-              {},
-            );
-            if (reconciledGeometry.durationMinutes <= input.travelBudgetMinutes) {
-              plannedStops = retainedStops;
-              routeGeometry = reconciledGeometry;
-              reconciled = true;
-              if (reconciledGeometry.mode === "fallback") {
-                finalRoutingDegraded = true;
-                finalRoutingWarning =
-                  "Le réseau n'a pas pu être recalculé dans le budget ; un fallback local fermé est utilisé.";
-              }
-              break;
-            }
-          } catch {
-            finalRoutingDegraded = true;
-            finalRoutingWarning =
-              "La mesure réseau de la boucle réduite a échoué ; un fallback local fermé est utilisé.";
-            break;
-          }
-        }
-      }
-
-      if (!reconciled) {
-        finalRoutingDegraded = true;
-        finalRoutingWarning =
-          finalRoutingWarning ??
-          "La géométrie réseau de la boucle dépasse le budget ; un fallback local fermé est utilisé.";
-        const fallbackPrefix = fallbackRoutePrefixWithinBudget(
-          input.origin,
-          (routeGeometry.mode === "network" ? retainedStops : plannedStops).map(
-            ({ candidate }) => candidate,
-          ),
-          input.travelBudgetMinutes,
-          (coordinates) => createFallbackRouteGeometry(coordinates),
-        );
-        plannedStops = (routeGeometry.mode === "network" ? retainedStops : plannedStops).slice(
-          0,
-          fallbackPrefix.length,
-        );
-        routeGeometry = fallbackGeometryForPrefix(
-          input.origin,
-          plannedStops.map(({ candidate }) => candidate),
-        );
-      }
-    }
-  }
-
-  if (input.groupCount === 1) {
-    finalRoutingBudgetExcludedCandidateIds = plannerResult.stops
-      .slice(plannedStops.length)
-      .map(({ candidate }) => candidate.id);
-    groupPartition = partitionRouteCandidates({
-      ...partitionInput,
-      plannerResult: {
-        ...plannerResult,
-        stops: plannedStops,
-      },
-      operationalBudget: input.operationalBudget,
-    });
-    groupRoutes = [buildSingleGroupRoute({
+    operationalBudget: input.operationalBudget,
+  });
+  return {
+    ...geometry,
+    stopsBeforeFinalRouting: preparation.plannerResult.stops.length,
+    finalRoutingBudgetExcludedCandidateIds,
+    groupPartition,
+    groupRoutes: [buildSingleGroupRoute({
       group: groupPartition.groups[0]!,
-      plannedStops,
-      routeGeometry,
+      plannedStops: geometry.plannedStops,
+      routeGeometry: geometry.routeGeometry,
       travelBudgetMinutes: input.travelBudgetMinutes,
-    })];
-    multiRouteMetrics = {
+    })],
+    multiRouteMetrics: {
       groupCount: 1,
       volunteers: input.volunteers,
-      totalDistanceKm: routeGeometry.distanceKm,
-      totalDurationMinutes: routeGeometry.durationMinutes,
+      totalDistanceKm: geometry.routeGeometry.distanceKm,
+      totalDurationMinutes: geometry.routeGeometry.durationMinutes,
       coverageGain: groupPartition.metrics.coverageGain,
       sharedTargetRatio: 0,
       sharedDistanceKm: null,
@@ -338,34 +307,77 @@ export async function planRouteRecommendation(input: {
       balanceDuration: 0,
       balanceTargetCount: 0,
       balanceVolunteerCount: 0,
-      fallbackGroupCount: routeGeometry.mode === "fallback" ? 1 : 0,
+      fallbackGroupCount: geometry.routeGeometry.mode === "fallback" ? 1 : 0,
       networkDistanceMeasured: false,
-    };
-  } else {
-    if (!groupPartition) {
-      throw new Error("La partition multi-groupe n'a pas été produite.");
-    }
-    const multiRouteResult: RouteMultiRouteResult = await routePartitionedGroups({
-      origin: input.origin,
-      candidates: candidatePool.candidates,
-      partition: groupPartition,
-      travelBudgetMinutes: input.travelBudgetMinutes,
-      effectiveRiskFocus,
-      operationalBudget: input.operationalBudget,
-      weatherContext: input.weatherContext,
-    });
-    groupPartition = multiRouteResult.partition;
-    groupRoutes = multiRouteResult.groupRoutes;
-    multiRouteMetrics = multiRouteResult.metrics;
-    plannedStops = multiRouteResult.plannedStops;
-    routeGeometry = groupRoutes[0]?.routeGeometry ?? fallbackGeometryForPrefix(input.origin, []);
-    budgetPrefixApplied = multiRouteResult.budgetPrefixApplied;
-    providerCalls = multiRouteResult.providerCalls;
-    firstProviderMode = multiRouteResult.firstProviderMode;
-    finalRoutingDegraded = multiRouteResult.degraded;
-    finalRoutingWarning = multiRouteResult.warning;
-    finalRoutingBudgetExcludedCandidateIds = multiRouteResult.excludedCandidateIds;
+    },
+  };
+}
+
+async function buildMultiGroupRoutingState(
+  input: RouteRecommendationInput,
+  preparation: ReturnType<typeof prepareRouteRecommendation>,
+): Promise<RouteRecommendationRoutingState> {
+  if (!preparation.groupPartition) {
+    throw new Error("La partition multi-groupe n'a pas été produite.");
   }
+  const multiRouteResult: RouteMultiRouteResult = await routePartitionedGroups({
+    origin: input.origin,
+    candidates: preparation.candidatePool.candidates,
+    partition: preparation.groupPartition,
+    travelBudgetMinutes: input.travelBudgetMinutes,
+    effectiveRiskFocus: preparation.effectiveRiskFocus,
+    operationalBudget: input.operationalBudget,
+    weatherContext: input.weatherContext,
+  });
+  return {
+    plannedStops: multiRouteResult.plannedStops,
+    routeGeometry: multiRouteResult.groupRoutes[0]?.routeGeometry ?? fallbackGeometryForPrefix(input.origin, []),
+    budgetPrefixApplied: multiRouteResult.budgetPrefixApplied,
+    providerCalls: multiRouteResult.providerCalls,
+    firstProviderMode: multiRouteResult.firstProviderMode,
+    finalRoutingWarning: multiRouteResult.warning,
+    finalRoutingDegraded: multiRouteResult.degraded,
+    stopsBeforeFinalRouting: multiRouteResult.plannedStops.length + multiRouteResult.excludedCandidateIds.length,
+    finalRoutingBudgetExcludedCandidateIds: multiRouteResult.excludedCandidateIds,
+    groupPartition: multiRouteResult.partition,
+    groupRoutes: multiRouteResult.groupRoutes,
+    multiRouteMetrics: multiRouteResult.metrics,
+  };
+}
+
+export async function planRouteRecommendation(input: RouteRecommendationInput): Promise<RoutePlanningResult> {
+  const preparation = prepareRouteRecommendation(input);
+  const {
+    effectiveRiskFocus,
+    eventCenteredBuild,
+    plannerResult,
+  } = preparation;
+  let predictionSummary = preparation.predictionSummary;
+  const routingState = input.groupCount === 1
+    ? buildSingleGroupRoutingState(
+        input,
+        preparation,
+        await reconcileSingleRouteGeometry(
+          input.origin,
+          input.travelBudgetMinutes,
+          plannerResult.stops,
+        ),
+      )
+    : await buildMultiGroupRoutingState(input, preparation);
+  const {
+    plannedStops,
+    routeGeometry,
+    budgetPrefixApplied,
+    providerCalls,
+    firstProviderMode,
+    finalRoutingWarning,
+    finalRoutingDegraded,
+    stopsBeforeFinalRouting,
+    finalRoutingBudgetExcludedCandidateIds,
+    groupPartition,
+    groupRoutes,
+    multiRouteMetrics,
+  } = routingState;
   predictionSummary = applyRoutePredictionFinalRoutingBudgetAudit(
     predictionSummary,
     finalRoutingBudgetExcludedCandidateIds,

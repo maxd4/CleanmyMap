@@ -8,6 +8,7 @@ import type { QuizConfidenceLevel, QuizLocalScope, QuizSourceType } from "@/lib/
 import { getQuizDifficulty, getQuizPedagogicalType, getQuizPedagogicalTypeLabel, type QuizDifficultyId, type QuizPedagogicalTypeId, type QuizSkillId } from "@/lib/learning/quiz/quiz-taxonomy";
 import { getQuizTrapLevel, type QuizTrapLevelId } from "./quiz-trap-levels";
 import type { QuizReasoningType } from "./quiz-reasoning-types";
+import { getQuizAnswerText } from "./quiz-answer-text";
 
 export type QuizBankSourceState = "missing" | "weak" | "sourced";
 
@@ -153,12 +154,8 @@ const REASONING_TYPE_LABELS: Record<QuizReasoningType, string> = {
   "mini-enquetes": "Mini enquête",
 };
 
-function getAnswerText(question: QuizQuestion): string {
-  return Array.isArray(question.answer) ? question.answer.join(" / ") : question.answer;
-}
-
 function getQuestionSummary(question: QuizQuestion): string {
-  return `${question.question} ${question.explanation} ${getAnswerText(question)}`;
+  return `${question.question} ${question.explanation} ${getQuizAnswerText(question)}`;
 }
 
 function containsPattern(text: string, patterns: RegExp[]): boolean {
@@ -389,7 +386,7 @@ export function buildQuizBankAdminSnapshot(questions: readonly QuizQuestion[]): 
       return {
         id: question.id,
         question: question.question,
-        answer: getAnswerText(question),
+        answer: getQuizAnswerText(question),
         explanation: question.explanation,
         category: question.category,
         categoryLabel: QUIZ_CATEGORY_LABELS[question.category],

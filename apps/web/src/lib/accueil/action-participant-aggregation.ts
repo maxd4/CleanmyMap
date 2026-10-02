@@ -10,6 +10,7 @@ import {
   isPublicImpactActionInputEligible,
 } from "@/lib/impact/public-impact-kpis";
 import type { ImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
+import { toFiniteNonNegativeInteger } from "@/lib/data/number-normalization";
 
 export type ActionAggregationAction = {
   metadata: Pick<
@@ -83,11 +84,6 @@ const SPONTANEOUS_GROUP_NAMES: Record<number, string> = {
   11: "Undécet",
   12: "Duodécet",
 };
-
-function toFiniteNonNegativeInteger(value: number | null | undefined): number {
-  const parsed = Number(value ?? 0);
-  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
-}
 
 export function getSpontaneousActionCategory(
   volunteersCount: number,
