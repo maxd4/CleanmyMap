@@ -37,3 +37,39 @@ regenerate the lockfile and rerun the security, mobile, and lockfile checks.
 CleanMyMap currently has no `codeSigningCertificate`, `codeSigningMetadata`, or
 `expo-updates` configuration. This mitigation protects the Expo tooling graph;
 it does not claim that the advisory was exposed through the public runtime.
+
+## CodeQL `js/polynomial-redos` — #935, #936, #937
+
+These three High alerts target the PEM parser regular expressions in
+`lib/pem.js`. They remain open and visible as `KEEP_VISIBLE_UPSTREAM`: the
+CodeQL ReDoS class is applicable to the expression shape, so vendoring alone
+is not a false-positive justification.
+
+The upstream state was checked against `digitalbazaar/forge` on 2026-10-02:
+
+- npm `node-forge@1.4.0` remains the published `latest` release and is the
+  compatible release currently resolved by the Expo graph;
+- upstream `v1.4.0` is `2ae172f7cda6831b358c3fc111f4f3e1781782b2` and current
+  `main` is `723240415b25120d47146f982809fa69344ab890`;
+- the `v1.4.0...main` comparison changes only `README.md`, `SECURITY.md`,
+  `package.json` and `tests/unit/jsbn.js`; `lib/pem.js` is unchanged;
+- no upstream commit, reviewed pull request, issue or advisory corresponding
+  to these PEM polynomial-ReDoS findings was identified.
+
+The relevant Expo APIs are `convertPrivateKeyPEMToPrivateKey`,
+`convertPublicKeyPEMToPublicKey`, `convertCertificatePEMToCertificate` and
+`convertCSRPEMToCSR` from `@expo/code-signing-certificates`; the Expo CLI uses
+them for configured local code-signing files or cached/provisioned development
+certificates. CleanMyMap currently has no `updates.codeSigningCertificate`, no
+`updates.codeSigningMetadata` and no valid EAS project identifier: the
+`extra.eas.projectId` value in `apps/mobile/app.json` is a placeholder. The
+current repository path reaching these APIs is the security smoke test, which
+generates its PEM values locally; no current mobile runtime or remote input
+path supplies a PEM string to this parser.
+
+Do not rewrite the cryptographic PEM parser or dismiss these alerts while this
+boundary remains true. Re-open this decision if a valid upstream fix becomes
+available, a new CleanMyMap consumer accepts untrusted or remote PEM input, or
+Expo signing/update code is enabled. Any future mitigation must then be based
+on the reviewed upstream change or a size limit justified by the actual Expo
+contract, not an arbitrary threshold.
