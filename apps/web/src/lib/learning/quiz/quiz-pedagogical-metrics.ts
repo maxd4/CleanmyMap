@@ -8,6 +8,7 @@ import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz/quiz-taxonomy";
 import { getQuizTrapLevel } from "./quiz-trap-levels";
 import type { QuizErrorTypeId } from "./quiz-error-grid";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getQuizAnswerText } from "./quiz-answer-text";
 
 type QuizPedagogicalMetricBucketType = "question" | "mode" | "skill" | "error_type";
 
@@ -128,10 +129,6 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function getAnswerText(question: QuizQuestion): string {
-  return Array.isArray(question.answer) ? question.answer.join(" / ") : question.answer;
-}
-
 function getAccuracy(correctCount: number, attempts: number): number {
   if (attempts <= 0) {
     return 0;
@@ -148,7 +145,7 @@ function normalizeQuestionLookup(question: QuizQuestion): QuizPedagogicalMetrics
   return {
     questionId: question.id,
     question: question.question,
-    answer: getAnswerText(question),
+    answer: getQuizAnswerText(question),
     category: question.category,
     categoryLabel: QUIZ_CATEGORY_LABELS[question.category],
     pedagogicalType,

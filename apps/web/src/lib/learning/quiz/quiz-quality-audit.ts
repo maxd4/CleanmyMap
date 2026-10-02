@@ -6,6 +6,7 @@ import type {
   QuizLocalScope,
   QuizSourceType,
 } from "./quiz-source-metadata.ts";
+import { getQuizAnswerText } from "./quiz-answer-text";
 
 type QuizQualityCriterionId =
   | "interet-pedagogique"
@@ -280,12 +281,8 @@ function containsPattern(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
 }
 
-function getAnswerText(question: QuizQuestion): string {
-  return Array.isArray(question.answer) ? question.answer.join(" / ") : question.answer;
-}
-
 function getQuestionSummary(question: QuizQuestion): string {
-  return `${question.question} ${question.explanation} ${getAnswerText(question)}`;
+  return `${question.question} ${question.explanation} ${getQuizAnswerText(question)}`;
 }
 
 function hasDomainLink(question: QuizQuestion): boolean {
@@ -331,7 +328,7 @@ function hasLocalRuleCue(question: QuizQuestion): boolean {
 function explanationTeaches(question: QuizQuestion): boolean {
   const explanation = question.explanation.trim();
   const normalizedExplanation = normalizeText(explanation);
-  const normalizedAnswer = normalizeText(getAnswerText(question));
+  const normalizedAnswer = normalizeText(getQuizAnswerText(question));
 
   if (explanation.length < 40) {
     return false;
@@ -365,7 +362,7 @@ function hasAbsurdDistractors(question: QuizQuestion): boolean {
     return false;
   }
 
-  const answerText = normalizeText(getAnswerText(question));
+  const answerText = normalizeText(getQuizAnswerText(question));
   const wrongOptions = question.options.filter((option) => normalizeText(option) !== answerText);
   const suspiciousWrongOptions = wrongOptions.filter((option) =>
     containsPattern(option, ABSURD_DISTRACTOR_PATTERNS),
@@ -544,7 +541,7 @@ export function auditQuizQuestion(question: QuizQuestion): QuizQualityFinding {
   return {
     questionId: question.id,
     question: question.question,
-    answer: getAnswerText(question),
+    answer: getQuizAnswerText(question),
     reviewTarget: reviewTarget.href,
     criteria,
     warnings,

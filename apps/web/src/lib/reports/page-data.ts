@@ -25,6 +25,12 @@ export type ReportsPublicSummary = {
   volunteers: number;
 };
 
+async function loadReportCommunityEventsWithAvailability(limit: number) {
+  return loadCachedReportCommunityEvents(limit)
+    .then((items) => ({ items, availability: "available" as const }))
+    .catch(() => ({ items: [], availability: "unavailable" as const }));
+}
+
 export async function loadReportsPublicSummary(): Promise<ReportsPublicSummary> {
   const summary = await loadLandingSummary();
   return {
@@ -42,9 +48,7 @@ export async function loadReportsAnalysisData(now = new Date()) {
       periodDays: REPORT_DATA_BUDGET.pilotage.periodDays,
       limit: REPORT_DATA_BUDGET.pilotage.contractLimit,
     }),
-    loadCachedReportCommunityEvents(REPORT_DATA_BUDGET.communityEvents.limit)
-      .then((items) => ({ items, availability: "available" as const }))
-      .catch(() => ({ items: [], availability: "unavailable" as const })),
+    loadReportCommunityEventsWithAvailability(REPORT_DATA_BUDGET.communityEvents.limit),
   ]);
   const communityEvents = communityEventsResult.items;
   const activeContracts = filterContractsToWindow(overview.contracts, overview.periodDays, now);
@@ -85,9 +89,7 @@ export async function loadReportsGenerationData() {
           types: null,
         }),
     ),
-    loadCachedReportCommunityEvents(REPORT_DATA_BUDGET.communityEvents.limit)
-      .then((items) => ({ items, availability: "available" as const }))
-      .catch(() => ({ items: [], availability: "unavailable" as const })),
+    loadReportCommunityEventsWithAvailability(REPORT_DATA_BUDGET.communityEvents.limit),
   ]);
   const communityEvents = communityEventsResult.items;
 

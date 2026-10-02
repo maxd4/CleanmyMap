@@ -1,6 +1,6 @@
 import type { ActionStatus } from "@/lib/actions/types";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { DAY_MS, parseInstantMs } from "@/lib/time/utc-runtime";
+import { median } from "@/lib/reports/report-model/math";
 
 export type PeriodComparisonRecord = {
   status: ActionStatus;
@@ -39,26 +39,6 @@ export type PeriodComparisonResult = {
     moderationDelayDays: MetricDelta;
   };
 };
-
-function isFiniteDateMs(raw: string | null | undefined): number | null {
-  if (!raw) {
-    return null;
-  }
-  const ms = new Date(raw).getTime();
-  return Number.isFinite(ms) ? ms : null;
-}
-
-function median(values: number[]): number {
-  if (values.length === 0) {
-    return 0;
-  }
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 0) {
-    return (sorted[middle - 1] + sorted[middle]) / 2;
-  }
-  return sorted[middle];
-}
 
 function round1(value: number): number {
   return Math.round(value * 10) / 10;
@@ -116,7 +96,7 @@ function computeWindowMetrics(
   const pendingItems = records.filter((item) => item.status === "pending");
   const pendingAges = pendingItems
     .map((item) => {
-      const createdMs = isFiniteDateMs(item.createdAt);
+      const createdMs = parseInstantMs(item.createdAt);
       if (createdMs === null || createdMs > windowEndMs) {
         return null;
       }
@@ -148,14 +128,14 @@ export function computePeriodComparison(
   const previousFloorMs = currentFloorMs - periodDays * DAY_MS;
 
   const currentRecords = records.filter((item) => {
-    const observedMs = isFiniteDateMs(item.observedAt);
+    const observedMs = parseInstantMs(item.observedAt);
     return (
       observedMs !== null && observedMs >= currentFloorMs && observedMs <= nowMs
     );
   });
 
   const previousRecords = records.filter((item) => {
-    const observedMs = isFiniteDateMs(item.observedAt);
+    const observedMs = parseInstantMs(item.observedAt);
     return (
       observedMs !== null &&
       observedMs >= previousFloorMs &&

@@ -15,6 +15,7 @@ import {
   calculateRouteAdditionality,
   contributionForAdditionality,
   evidenceWithContribution,
+  routePlannerContributionFields,
   serviceabilityByZone,
 } from "./route-additionality";
 import { routeDistanceKm, travelMinutesForDistance } from "./route-planner";
@@ -529,13 +530,8 @@ export function buildPredictedRouteCandidates(input: {
       label: "Zone prédite · " + zone.label,
       latitude: zone.centroid.latitude,
       longitude: zone.centroid.longitude,
+      ...routePlannerContributionFields(contribution),
       score: contribution.finalPlannerContribution,
-      pollutionPriority: contribution.pollutionPriority,
-      volunteerAdditionality: contribution.volunteerAdditionality,
-      finalPlannerContribution: contribution.finalPlannerContribution,
-      volunteerAdditionalityConfidence: contribution.volunteerAdditionalityConfidence,
-      additionalityWeight: contribution.additionalityWeight,
-      ...(contribution.additionality ? { additionality: contribution.additionality } : {}),
       volunteerSafety,
       reason: buildReason(
         estimate,

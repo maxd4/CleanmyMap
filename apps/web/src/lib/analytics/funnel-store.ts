@@ -86,6 +86,12 @@ async function writeStore(store: FunnelStore): Promise<void> {
   await writeFile(FILE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
 }
 
+function throwIfFunnelPersistenceCannotFallback(error: unknown): void {
+  if (!shouldFallbackToLocalStoreForFunnelEvents(error)) {
+    throw error;
+  }
+}
+
 export async function appendFunnelEvent(event: FunnelEvent): Promise<void> {
   assertPersistenceAvailable("funnel_events");
 
@@ -107,9 +113,7 @@ export async function appendFunnelEvent(event: FunnelEvent): Promise<void> {
         throw new Error(result.error.message);
       }
     } catch (error) {
-      if (!shouldFallbackToLocalStoreForFunnelEvents(error)) {
-        throw error;
-      }
+      throwIfFunnelPersistenceCannotFallback(error);
     }
   }
 
@@ -156,9 +160,7 @@ export async function listFunnelEvents(
         throw new Error(result.error.message);
       }
     } catch (error) {
-      if (!shouldFallbackToLocalStoreForFunnelEvents(error)) {
-        throw error;
-      }
+      throwIfFunnelPersistenceCannotFallback(error);
     }
   }
 

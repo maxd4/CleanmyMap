@@ -26,6 +26,7 @@ import {
   computeCommunityEngagementMetrics,
   computeMapCoverageMetrics,
 } from "./metrics";
+import { computeReportRsvpSummary } from "./community";
 import {
   buildReportProjections,
   toActionImpactInput,
@@ -189,17 +190,7 @@ type CommunityEvent = CommunityEventItem;
 function computeCommunityStats(allItems: ActionListItem[], approvedActions: ActionListItem[], events: CommunityEvent[], now: Date) {
   const eventUpcoming = events.filter((event) => event.eventDate >= now.toISOString().slice(0, 10));
   const eventPast = events.filter((event) => event.eventDate < now.toISOString().slice(0, 10));
-  const rsvp = events.reduce(
-    (acc, event) => {
-      acc.yes += event.rsvpCounts.yes;
-      acc.maybe += event.rsvpCounts.maybe;
-      acc.no += event.rsvpCounts.no;
-      return acc;
-    },
-    { yes: 0, maybe: 0, no: 0 },
-  );
-  const rsvpTotal = rsvp.yes + rsvp.maybe + rsvp.no;
-  const participationRate = rsvpTotal > 0 ? (rsvp.yes / rsvpTotal) * 100 : 0;
+  const { rsvp, participationRate } = computeReportRsvpSummary(events);
 
   const engagement = computeCommunityEngagementMetrics({
     leaderboardItems: approvedActions,

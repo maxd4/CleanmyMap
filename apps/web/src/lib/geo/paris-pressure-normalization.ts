@@ -7,6 +7,7 @@ import {
   type ParisPressureUrbanMorphology,
   type ParisPressureUrbanMorphologyFeature,
 } from "./paris-pressure-contract";
+import { clamp01, finiteOrNull } from "./normalization";
 
 const PARIS_PRESSURE_WEIGHTS = {
   residentPopulation: 0.35,
@@ -14,14 +15,6 @@ const PARIS_PRESSURE_WEIGHTS = {
   tourism: 0.25,
   publicActivity: 0.15,
 } as const;
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
-
-function finiteOrNull(value: number | null | undefined): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
 
 const URBAN_MORPHOLOGY_FEATURES: ParisPressureUrbanMorphologyFeature[] = [
   "lowTrafficLocalStreet",
