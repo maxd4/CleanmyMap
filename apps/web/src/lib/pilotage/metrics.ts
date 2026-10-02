@@ -9,7 +9,7 @@ import { DIGITAL_IMPACT_CONSTANTS, PILOTAGE_FORMULA_VERSION, PILOTAGE_THRESHOLDS
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export type PilotageWindowMetrics = {
+type PilotageWindowMetrics = {
   approvedActions: number;
   impactVolumeKg: number;
   wasteKnownActions: number;

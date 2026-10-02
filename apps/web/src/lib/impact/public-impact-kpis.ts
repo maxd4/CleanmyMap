@@ -10,10 +10,10 @@ import {
   type ImpactTerrain2026StreetCleaningSavings,
 } from "./impact-terrain-2026";
 
-export type PublicImpactKpiKey =
+type PublicImpactKpiKey =
   "wasteKg" | "butts" | "volunteers" | "co2" | "water" | "euro";
 
-export type PublicImpactKpiClassification = "terrain" | "proxy";
+type PublicImpactKpiClassification = "terrain" | "proxy";
 
 export type PublicImpactCounters = {
   wasteKg: number;

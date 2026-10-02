@@ -13,7 +13,7 @@ export type MethodDefinition = {
   limits: string;
 };
 
-export type DecisionSummaryKpi = {
+type DecisionSummaryKpi = {
   id: "impact" | "mobilization" | "quality";
   label: string;
   value: string;

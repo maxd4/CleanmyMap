@@ -11,7 +11,7 @@ import {
   type VolunteerSafetyAssessment,
 } from "./volunteer-additionality-contract";
 
-export const VOLUNTEER_ADDITIONALITY_MODEL_CONFIG = {
+const VOLUNTEER_ADDITIONALITY_MODEL_CONFIG = {
   modelVersion: VOLUNTEER_ADDITIONALITY_MODEL_VERSION,
   weights: {
     need: {

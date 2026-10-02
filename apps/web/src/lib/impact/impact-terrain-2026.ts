@@ -31,7 +31,7 @@ export const BUTT_LENGTH_METERS = 0.025;
 
 export const MEGOTS_CONDITIONS = ["propre", "humide", "mouille"] as const;
 
-export const CONDITION_WEIGHT_FACTORS: Record<
+const CONDITION_WEIGHT_FACTORS: Record<
   ActionMegotsCondition,
   number
 > = {
@@ -161,7 +161,7 @@ export function computeImpactTerrain2026StreetCleaningSavings(params: {
   };
 }
 
-export type ImpactTerrain2026KpiKey =
+type ImpactTerrain2026KpiKey =
   | "wasteKg"
   | "butts"
   | "volunteers"

@@ -21,7 +21,7 @@ import {
 export const PUBLIC_IMPACT_SNAPSHOT_KEY = "cleanmymap-impact-terrain-2026";
 export const PUBLIC_IMPACT_SNAPSHOT_VERSION =
   "impact-terrain-public-2026.09-v3-null-coverage";
-export const PUBLIC_IMPACT_SNAPSHOT_TITLE =
+const PUBLIC_IMPACT_SNAPSHOT_TITLE =
   "Snapshot public mensuel Impact terrain 2026";
 
 export type PublicImpactSnapshotPayload = {

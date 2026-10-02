@@ -1,11 +1,11 @@
-import type { ParisPressureRiskEstimate, ParisPressureRiskContribution } from "./paris-pressure-risk-contract";
+import type { ParisPressureRiskEstimate } from "./paris-pressure-risk-contract";
 import type { ParisPressureZone } from "./paris-pressure-contract";
 import type { MunicipalCleaningServiceabilityZone } from "./municipal-cleaning-serviceability-contract";
 
 export const VOLUNTEER_ADDITIONALITY_MODEL_VERSION =
   "volunteer-additionality-v1" as const;
 
-export type VolunteerSafetyExclusionReason =
+type VolunteerSafetyExclusionReason =
   | "active_roadway"
   | "fast_road"
   | "road_tunnel"
@@ -28,7 +28,7 @@ export type VolunteerSafetyAssessment = {
   evidenceIds?: string[];
 };
 
-export type MunicipalInterventionType =
+type MunicipalInterventionType =
   | "market_cleanup"
   | "event_cleanup"
   | "maintained_area"
@@ -51,7 +51,7 @@ export type VolunteerAdditionalityInput = {
   municipalInterventions?: readonly MunicipalInterventionSignal[];
 };
 
-export type VolunteerAdditionalityFactor = {
+type VolunteerAdditionalityFactor = {
   raw: number | null;
   effective: number;
   confidence: number;
@@ -117,5 +117,3 @@ export type SignalAudit = {
   evidenceKind: "prediction" | "recent_event" | "observed_report" | "documented" | "inference" | "unknown";
   available: boolean;
 };
-
-export type AdditionalityContribution = ParisPressureRiskContribution;

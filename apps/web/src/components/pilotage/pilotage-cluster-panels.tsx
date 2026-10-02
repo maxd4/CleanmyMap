@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 
-export type PilotageClusterMetric = {
+type PilotageClusterMetric = {
   id: string;
   label: string;
   value: string;
@@ -18,7 +18,7 @@ export type PilotageClusterMetric = {
   note?: string;
 };
 
-export type PilotageClusterInsight = {
+type PilotageClusterInsight = {
   eyebrow: string;
   title: string;
   detail: string;

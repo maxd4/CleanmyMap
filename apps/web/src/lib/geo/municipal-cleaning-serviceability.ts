@@ -15,7 +15,7 @@ import {
   type ServiceabilityConfidence,
 } from "./municipal-cleaning-serviceability-contract.ts";
 
-export const MUNICIPAL_CLEANING_SERVICEABILITY_MODEL_CONFIG = {
+const MUNICIPAL_CLEANING_SERVICEABILITY_MODEL_CONFIG = {
   predictionModelVersion: MUNICIPAL_CLEANING_SERVICEABILITY_MODEL_VERSION,
   weights: {
     surfaceAccessibility: 0.75,

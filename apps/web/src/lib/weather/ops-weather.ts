@@ -1,4 +1,4 @@
-export type OperationalZone = {
+type OperationalZone = {
   id: string;
   label: string;
   latitude: number;
@@ -11,7 +11,7 @@ export type WeatherRiskLevel = "vert" | "orange" | "rouge";
 export const WEATHER_OPERATIONAL_RULE_VERSION = "weather-operational-rules-v1" as const;
 export const WEATHER_OPERATIONAL_RULE_SOURCE = "apps/web/src/lib/weather/ops-weather" as const;
 
-export type WeatherOperationalRule = {
+type WeatherOperationalRule = {
   version: typeof WEATHER_OPERATIONAL_RULE_VERSION;
   source: typeof WEATHER_OPERATIONAL_RULE_SOURCE;
   maxInterventionMinutes: number | null;
@@ -92,7 +92,7 @@ function riskRank(level: WeatherRiskLevel): number {
   return level === "rouge" ? 2 : level === "orange" ? 1 : 0;
 }
 
-export function weatherOperationalRuleForLevel(
+function weatherOperationalRuleForLevel(
   level: WeatherRiskLevel,
 ): WeatherOperationalRule {
   return {
