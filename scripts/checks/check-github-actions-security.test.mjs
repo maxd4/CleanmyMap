@@ -65,14 +65,18 @@ const nonJavaScriptCodeqlJob = codeqlWorkflow.match(/  analyze:[\s\S]*?(?=\n  [a
 assert.match(firstPartyCodeqlJob, /languages:\s*javascript-typescript/);
 assert.match(firstPartyCodeqlJob, /queries:\s*security-extended,security-and-quality/);
 assert.match(firstPartyCodeqlJob, /paths-ignore:\s*\n\s+- apps\/mobile\/vendor\/\*\*/);
+assert.doesNotMatch(firstPartyCodeqlJob, /\n\s+paths:\s*\n/);
 assert.match(firstPartyCodeqlJob, /category:\s*"\/language:javascript-typescript\/first-party"/);
 assert.match(vendoredCodeqlJob, /languages:\s*javascript-typescript/);
 assert.match(vendoredCodeqlJob, /queries:\s*security-extended\s*$/m);
 assert.doesNotMatch(vendoredCodeqlJob, /security-and-quality/);
 assert.match(vendoredCodeqlJob, /paths:\s*\n\s+- apps\/mobile\/vendor\/\*\*/);
+assert.doesNotMatch(vendoredCodeqlJob, /paths-ignore/);
 assert.match(vendoredCodeqlJob, /category:\s*"\/language:javascript-typescript\/vendor"/);
 assert.match(nonJavaScriptCodeqlJob, /language:\s*\["python",\s*"actions"\]/);
 assert.match(nonJavaScriptCodeqlJob, /queries:\s*security-extended,security-and-quality/);
+assert.equal((codeqlWorkflow.match(/^\s+paths-ignore:\s*$/gm) ?? []).length, 1);
+assert.equal((codeqlWorkflow.match(/^\s+paths:\s*$/gm) ?? []).length, 1);
 assert.doesNotMatch(codeqlWorkflow, /^paths-ignore:/m);
 assert.doesNotMatch(codeqlWorkflow, /^paths:/m);
 assert.match(codeqlWorkflow, /runs-on:\s*"ubuntu-24\.04"/);
