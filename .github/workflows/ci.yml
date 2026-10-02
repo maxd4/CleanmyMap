@@ -28,6 +28,7 @@ jobs:
       web_code_relevant: ${{ steps.detect-scope.outputs.web_code_relevant }}
       mobile_code_relevant: ${{ steps.detect-scope.outputs.mobile_code_relevant }}
       build_relevant: ${{ steps.detect-scope.outputs.build_relevant }}
+      dependency_graph_relevant: ${{ steps.detect-scope.outputs.dependency_graph_relevant }}
 
     steps:
       - name: Checkout
@@ -65,6 +66,7 @@ jobs:
           docs_only=true
           web_code_relevant=false
           mobile_code_relevant=false
+          dependency_graph_relevant=false
           policy_args=(scripts/checks/validation-policy.mjs --scope changed --json)
 
           while IFS= read -r file; do
@@ -77,6 +79,12 @@ jobs:
                 ;;
               *)
                 docs_only=false
+                ;;
+            esac
+
+            case "$file" in
+              package.json|package-lock.json|*/package.json|*/package-lock.json)
+                dependency_graph_relevant=true
                 ;;
             esac
 
@@ -102,6 +110,36 @@ jobs:
           echo "web_code_relevant=$web_code_relevant" >> "$GITHUB_OUTPUT"
           echo "mobile_code_relevant=$mobile_code_relevant" >> "$GITHUB_OUTPUT"
           echo "build_relevant=$build_relevant" >> "$GITHUB_OUTPUT"
+          echo "dependency_graph_relevant=$dependency_graph_relevant" >> "$GITHUB_OUTPUT"
+
+  dependency-audit:
+    needs: scope
+    if: needs.scope.outputs.dependency_graph_relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Dependency advisory audit
+        run: npm run security:dependencies
 
   web-governance:
     needs: scope

@@ -290,6 +290,35 @@ test("both plans have unique checks and FULL has no global budget", () => {
   assert.equal(fullPlan.budgetSeconds, null);
 });
 
+test("dependency graph changes select one npm audit gate", () => {
+  const packagePlan = createModeValidationPlan({
+    mode: "FAST",
+    changedFiles: ["apps/mobile/vendor/stream-json/package.json"],
+  });
+  const lockfilePlan = createModeValidationPlan({
+    mode: "FAST",
+    changedFiles: ["package-lock.json"],
+  });
+
+  for (const plan of [packagePlan, lockfilePlan]) {
+    assert.equal(plan.domains.dependencyGraphRelevant, true);
+    assert.equal(ids(plan).filter((id) => id === "dependency-audit").length, 1);
+    assert.deepEqual(plan.checks.find((check) => check.id === "dependency-audit").command, {
+      executable: "npm",
+      args: ["run", "security:dependencies"],
+    });
+  }
+});
+
+test("unrelated source changes do not select the dependency audit", () => {
+  const plan = createModeValidationPlan({
+    mode: "FAST",
+    changedFiles: ["apps/web/src/lib/actions/example.ts"],
+  });
+  assert.equal(plan.domains.dependencyGraphRelevant, false);
+  assert.equal(ids(plan).includes("dependency-audit"), false);
+});
+
 test("candidate scopes select the matching diff and secret boundaries", () => {
   const worktreePlan = createModeValidationPlan({ mode: "FAST", candidateScope: "WORKTREE" });
   const stagedPlan = createModeValidationPlan({ mode: "FAST", candidateScope: "STAGED" });
