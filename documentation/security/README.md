@@ -62,6 +62,7 @@ de leur propre périmètre. Ils ne remplacent pas les sources `CURRENT` ci-dessu
 
 ```bash
 npm run security:secrets
+npm run security:dependencies  # lorsque package.json ou un lockfile est concerné
 npm run check:doc-governance
 npm run check:stack-doc-drift
 npm run test:security

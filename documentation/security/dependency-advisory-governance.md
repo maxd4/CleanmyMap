@@ -32,8 +32,20 @@ par l'application mobile :
 
 Cette mitigation remplace l'ancienne acceptation de risque. Il n'y a donc plus
 de date d'expiration ni de renouvellement périodique à maintenir
-pour cette décision locale. Dependabot, CodeQL et `npm audit` restent actifs ;
-aucun ignore global par package ou par niveau `High` n'est autorisé.
+pour cette décision locale. Dependabot et CodeQL restent actifs, et le dépôt
+exécute désormais le gate reproductible `npm run security:dependencies` lorsque
+le graphe npm ou un lockfile est modifié. Ce gate lance exactement
+`npm audit --json` puis refuse toute vulnérabilité `High` ou `Critical` qui ne
+correspond pas à une mitigation exacte. Il n'existe ni ignore global, ni
+exception par package, ni exception par niveau de sévérité.
+
+Les exceptions du gate sont limitées aux trois lignes du registre versionné dans
+`scripts/security/audit-dependencies.mjs`. Chaque ligne doit matcher exactement
+l'advisory, le package, la version et le chemin résolu, et référence cette
+documentation ainsi que le test de sécurité du backport. Une alerte qui ne
+correspond pas à ces quatre éléments reste bloquante, y compris lorsqu'elle
+concerne un package vendorisé. Le gate peut donc rester en échec si le graphe
+contient une alerte High/Critical non mitigée ; aucune baseline ne la ratifie.
 
 La mitigation ne rend pas fiable un asset spécialement forgé par lui-même :
 Aucun asset non fiable ne doit entrer dans un build Metro. Les assets d'un

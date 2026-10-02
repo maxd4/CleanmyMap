@@ -116,6 +116,14 @@ function isLockfileRelevantFile(file) {
   return normalized === "package-lock.json" || normalized.endsWith("/package-lock.json");
 }
 
+function isDependencyGraphRelevantFile(file) {
+  const normalized = normalizePath(file);
+  return normalized === "package.json"
+    || normalized.endsWith("/package.json")
+    || normalized === "package-lock.json"
+    || normalized.endsWith("/package-lock.json");
+}
+
 function isWebRuntimeRelevantFile(file) {
   const normalized = normalizePath(file);
   return isWebRelevantFile(normalized) && !normalized.startsWith("apps/web/supabase/");
@@ -179,6 +187,7 @@ export function createModeValidationPlan({
   const githubRelevant = files.some((file) => normalizePath(file).startsWith(".github/"));
   const mobileRelevant = files.some(isMobileRelevantFile);
   const lockfileRelevant = files.some(isLockfileRelevantFile);
+  const dependencyGraphRelevant = files.some(isDependencyGraphRelevantFile);
   const deadCodeRelevant =
     webRuntimeRelevant ||
     scriptsRelevant ||
@@ -266,6 +275,15 @@ export function createModeValidationPlan({
       estimatedSeconds: 4,
       critical: true,
       command: npmCommand("check:lockfile-policy"),
+    });
+  }
+  if (dependencyGraphRelevant) {
+    addCheck(checks, {
+      id: "dependency-audit",
+      label: "Audit des dépendances npm",
+      estimatedSeconds: 15,
+      critical: true,
+      command: npmCommand("security:dependencies"),
     });
   }
   if (full && files.length > 0) {
@@ -580,6 +598,7 @@ export function createModeValidationPlan({
       githubRelevant,
       mobileRelevant,
       lockfileRelevant,
+      dependencyGraphRelevant,
       deadCodeRelevant,
     }),
     budgetSeconds,
