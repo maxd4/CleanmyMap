@@ -58,9 +58,23 @@ assert.match(e2eWorkflow, /stage-public-e2e-artifact\.mjs/);
 assert.match(e2eWorkflow, /check-public-e2e-artifact\.mjs/);
 assert.match(e2eWorkflow, /path:\s*artifacts\/ci-public-evidence\b/);
 
-assert.match(codeqlWorkflow, /language:\s*\["javascript-typescript",\s*"python",\s*"actions"\]/);
-assert.match(codeqlWorkflow, /queries:\s*security-extended,security-and-quality/);
-assert.match(codeqlWorkflow, /if:\s*matrix\.language\s*==\s*'javascript-typescript'/);
+const firstPartyCodeqlJob = codeqlWorkflow.match(/  analyze-first-party-javascript:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";
+const vendoredCodeqlJob = codeqlWorkflow.match(/  analyze-vendored-javascript:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";
+const nonJavaScriptCodeqlJob = codeqlWorkflow.match(/  analyze:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";
+
+assert.match(firstPartyCodeqlJob, /languages:\s*javascript-typescript/);
+assert.match(firstPartyCodeqlJob, /queries:\s*security-extended,security-and-quality/);
+assert.match(firstPartyCodeqlJob, /paths-ignore:\s*\n\s+- apps\/mobile\/vendor\/\*\*/);
+assert.match(firstPartyCodeqlJob, /category:\s*"\/language:javascript-typescript\/first-party"/);
+assert.match(vendoredCodeqlJob, /languages:\s*javascript-typescript/);
+assert.match(vendoredCodeqlJob, /queries:\s*security-extended\s*$/m);
+assert.doesNotMatch(vendoredCodeqlJob, /security-and-quality/);
+assert.match(vendoredCodeqlJob, /paths:\s*\n\s+- apps\/mobile\/vendor\/\*\*/);
+assert.match(vendoredCodeqlJob, /category:\s*"\/language:javascript-typescript\/vendor"/);
+assert.match(nonJavaScriptCodeqlJob, /language:\s*\["python",\s*"actions"\]/);
+assert.match(nonJavaScriptCodeqlJob, /queries:\s*security-extended,security-and-quality/);
+assert.doesNotMatch(codeqlWorkflow, /^paths-ignore:/m);
+assert.doesNotMatch(codeqlWorkflow, /^paths:/m);
 assert.match(codeqlWorkflow, /runs-on:\s*"ubuntu-24\.04"/);
 assert.deepEqual(auditWorkflowContent(codeqlWorkflow, ".github/workflows/codeql.yml"), []);
 

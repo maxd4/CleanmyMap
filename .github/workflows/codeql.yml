@@ -17,8 +17,76 @@ on:
     - cron: "30 1 * * 0" # Tous les dimanches à 01:30
 
 jobs:
+  analyze-first-party-javascript:
+    name: Analyze first-party JavaScript/TypeScript
+    runs-on: "ubuntu-24.04"
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63
+        with:
+          languages: javascript-typescript
+          queries: security-extended,security-and-quality
+          config: |
+            name: codeql-first-party-javascript
+            paths-ignore:
+              - apps/mobile/vendor/**
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@b96794f015dfd88f77b49b1c93e0fa7110f94c63
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63
+        with:
+          category: "/language:javascript-typescript/first-party"
+
+  analyze-vendored-javascript:
+    name: Analyze vendored JavaScript/TypeScript
+    runs-on: "ubuntu-24.04"
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+          config: |
+            name: codeql-vendored-javascript
+            paths:
+              - apps/mobile/vendor/**
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@b96794f015dfd88f77b49b1c93e0fa7110f94c63
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63
+        with:
+          category: "/language:javascript-typescript/vendor"
+
   analyze:
-    name: Analyze
+    name: Analyze ${{ matrix.language }}
     runs-on: "ubuntu-24.04"
     timeout-minutes: 60
     permissions:
@@ -29,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ["javascript-typescript", "python", "actions"]
+        language: ["python", "actions"]
 
     steps:
       - name: Checkout repository
@@ -43,10 +111,6 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           queries: security-extended,security-and-quality
-
-      - name: Autobuild
-        if: matrix.language == 'javascript-typescript'
-        uses: github/codeql-action/autobuild@b96794f015dfd88f77b49b1c93e0fa7110f94c63
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63

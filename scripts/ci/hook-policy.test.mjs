@@ -84,7 +84,7 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   for (const command of ["npm run mobile:security", "npm run mobile:typecheck", "npm run mobile:test", "npm run quality:mobile-coverage", "npm run mobile:lint"]) {
     assert.match(mobileJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
-  assert.match(mobileJob, /npm run security:secrets/);
+  assert.doesNotMatch(mobileJob, /npm run security:secrets/);
   assert.match(mobileJob, /npm run check:semgrep/);
   assert.match(mobileJob, /web_code_relevant != 'true'/);
   assert.match(workflow, /build_relevant: \$\{\{ steps\.detect-scope\.outputs\.build_relevant \}\}/);
