@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createSupabaseMock, createTrackingStorageMock } from './support/tracking-mocks'
 
 const state = vi.hoisted(() => ({
   client: null as any,
@@ -14,18 +15,9 @@ vi.mock('expo-location', () => ({
 
 vi.mock('expo-task-manager', () => ({}))
 
-vi.mock('../lib/supabase', () => ({
-  getAuthenticatedSupabaseClient: vi.fn(async () => state.client),
-}))
+vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
 
-vi.mock('../lib/storage', () => ({
-  getStoredMissionId: vi.fn(async () => null),
-  setStoredMissionId: vi.fn(async () => undefined),
-  clearStoredMissionId: vi.fn(async () => undefined),
-  bufferPoint: vi.fn(async () => undefined),
-  bufferAction: vi.fn(async () => undefined),
-  flushBuffer: vi.fn(async () => undefined),
-}))
+vi.mock('../lib/storage', () => createTrackingStorageMock())
 
 import { getMissionTrack } from '../lib/tracking-service'
 

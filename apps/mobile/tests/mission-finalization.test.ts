@@ -1,4 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  createBalancedLocationMock,
+  createMissionIdStorageOptions,
+  createMissionClient,
+  createStandaloneExpoConstantsMock,
+  createSupabaseMock,
+  createTrackingStorageMock,
+} from './support/tracking-mocks'
 
 const state = vi.hoisted(() => ({
   client: null as any,
@@ -9,12 +17,10 @@ const state = vi.hoisted(() => ({
   sequence: [] as string[],
 }))
 
-vi.mock('expo-constants', () => ({
-  default: { appOwnership: 'standalone', executionEnvironment: 'standalone' },
-}))
+vi.mock('expo-constants', () => createStandaloneExpoConstantsMock())
 
 vi.mock('expo-location', () => ({
-  Accuracy: { Balanced: 'balanced' },
+  ...createBalancedLocationMock(),
   startLocationUpdatesAsync: vi.fn(async () => {
     state.sequence.push('restart')
   }),
@@ -27,21 +33,11 @@ vi.mock('expo-task-manager', () => ({
   isTaskRegisteredAsync: vi.fn(async () => state.taskRegistered),
 }))
 
-vi.mock('../lib/supabase', () => ({
-  getAuthenticatedSupabaseClient: vi.fn(async () => state.client),
-}))
+vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
 
-vi.mock('../lib/storage', () => ({
-  getStoredMissionId: vi.fn(async () => state.storedMissionId),
-  setStoredMissionId: vi.fn(async (id: string) => {
-    state.storedMissionId = id
-  }),
-  clearStoredMissionId: vi.fn(async () => {
-    state.storedMissionId = null
-  }),
-  bufferPoint: vi.fn(async () => undefined),
-  bufferAction: vi.fn(async () => undefined),
-  flushBuffer: vi.fn(async () => state.flushResult),
+vi.mock('../lib/storage', () => createTrackingStorageMock({
+  ...createMissionIdStorageOptions(state),
+  flushBuffer: () => state.flushResult,
 }))
 
 import * as Location from 'expo-location'
@@ -60,25 +56,13 @@ const completedMission = {
 }
 
 function missionClient() {
-  const updatePayloads: unknown[] = []
-  return {
-    updatePayloads,
-    from: vi.fn((table: string) => {
-      if (table !== 'missions') throw new Error(`Unexpected table: ${table}`)
-      return {
-        update: vi.fn((payload: unknown) => {
-          updatePayloads.push(payload)
-          return {
-            eq: vi.fn(() => ({
-              select: vi.fn(() => ({
-                single: vi.fn(async () => ({ data: state.missionError ? null : completedMission, error: state.missionError })),
-              })),
-            })),
-          }
-        }),
-      }
-    }),
-  }
+  return createMissionClient({
+    data: state.missionError ? null : completedMission,
+    error: state.missionError,
+    nextUpdateError: () => state.missionError,
+    recordMutationSequence: false,
+    sequence: state.sequence,
+  })
 }
 
 describe('mobile mission finalization', () => {

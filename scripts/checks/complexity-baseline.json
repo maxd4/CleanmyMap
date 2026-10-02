@@ -5874,366 +5874,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 50,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:beforeEach:0:#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 49,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:describe:1:'mobile GPS offline storage'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 69,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'does not discard the buffer when Supabase replay fails'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 56,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'keeps an offline point and replays it once Clerk/Supabase is available'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 14,
-      "category": "tests",
-      "ceiling": 2,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 71,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#10"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 72,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#11"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 15,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#2"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 18,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#3"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 25,
-      "category": "tests",
-      "ceiling": 2,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#4"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 26,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#5"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 29,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#6"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 35,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#7"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 60,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#8"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 61,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#9"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 3,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . hoisted:0:#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 34,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'../lib/supabase'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 12,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'@react-native-async-storage/async-storage'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 24,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'expo-secure-store'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 8,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'react-native'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 50,
-      "category": "tests",
-      "ceiling": 5,
-      "status": "LEGACY",
-      "functionIdentity": "callback:beforeEach:0:#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 49,
-      "category": "tests",
-      "ceiling": 24,
-      "status": "LEGACY",
-      "functionIdentity": "callback:describe:1:'mobile GPS offline storage'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 69,
-      "category": "tests",
-      "ceiling": 8,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'does not discard the buffer when Supabase replay fails'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 56,
-      "category": "tests",
-      "ceiling": 9,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'keeps an offline point and replays it once Clerk/Supabase is available'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 14,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 71,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#10"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 72,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#11"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 15,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#2"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 18,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#3"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 25,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#4"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 26,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#5"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 29,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#6"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 35,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#7"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 60,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#8"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 61,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#9"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 3,
-      "category": "tests",
-      "ceiling": 4,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . hoisted:0:#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 34,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'../lib/supabase'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 12,
-      "category": "tests",
-      "ceiling": 11,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'@react-native-async-storage/async-storage'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 24,
-      "category": "tests",
-      "ceiling": 9,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'expo-secure-store'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 8,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'react-native'#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 120,
       "category": "tests",
@@ -6969,6 +6609,186 @@
       "ceiling": 42,
       "status": "LEGACY",
       "functionIdentity": "named:missionClient#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 4,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . mock:1:'../lib/supabase'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 5,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 19,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:describe:1:'mobile GPS offline storage'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 20,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:beforeEach:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 26,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'keeps an offline point and replays it once Clerk/Supabase is available'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 30,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#2"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 31,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#3"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 39,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'does not discard the buffer when Supabase replay fails'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 41,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#4"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 42,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#5"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 4,
+      "category": "tests",
+      "ceiling": 3,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . mock:1:'../lib/supabase'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 5,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 19,
+      "category": "tests",
+      "ceiling": 24,
+      "status": "LEGACY",
+      "functionIdentity": "callback:describe:1:'mobile GPS offline storage'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 20,
+      "category": "tests",
+      "ceiling": 5,
+      "status": "LEGACY",
+      "functionIdentity": "callback:beforeEach:0:#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 26,
+      "category": "tests",
+      "ceiling": 9,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'keeps an offline point and replays it once Clerk/Supabase is available'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 30,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#2"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 31,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#3"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 39,
+      "category": "tests",
+      "ceiling": 8,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'does not discard the buffer when Supabase replay fails'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 41,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#4"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 42,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#5"
     }
   ]
 }

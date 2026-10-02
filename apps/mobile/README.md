@@ -85,6 +85,11 @@ expo-location
 expo-task-manager
 ```
 
+Les mises à jour OTA via EAS Update sont explicitement désactivées pour cette
+phase (`updates.enabled = false`). Leur activation devra faire l'objet d'une
+décision de déploiement dédiée, avec validation de la stratégie de version et
+de signature.
+
 ## Pourquoi une app native ?
 
 Le suivi GPS fiable en arrière-plan nécessite les APIs natives du système.
@@ -244,7 +249,6 @@ apps/mobile/
 ├── lib/
 │   ├── supabase.ts
 │   ├── storage.ts
-│   ├── storage-upload.ts
 │   └── tracking-service.ts
 ├── tasks/
 │   └── gps-task.ts

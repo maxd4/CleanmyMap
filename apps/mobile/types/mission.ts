@@ -34,7 +34,7 @@ export interface ForegroundTrackPoint {
   recordedAt: string
 }
 
-export type MissionActionType = 'trash_found' | 'trash_collected' | 'photo' | 'note' | 'hazard'
+type MissionActionType = 'trash_found' | 'trash_collected' | 'photo' | 'note' | 'hazard'
 
 export interface MissionAction {
   id: string
