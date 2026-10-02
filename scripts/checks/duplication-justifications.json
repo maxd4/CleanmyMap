@@ -40,6 +40,14 @@
       "reason": "Les deux panneaux partagent volontairement uniquement leur enveloppe de présentation admin, mais leurs workflows restent distincts : feedback qualité d'un côté, revue de promotion de rôle de l'autre. Une extraction paramétrée couplerait des contrats métier, des payloads et des décisions d'administration qui doivent rester explicites.",
       "evidence": "apps/web/src/components/admin/feedback-requests-panel.tsx:149-161 et apps/web/src/components/admin/promotion-requests-panel.tsx:141-153 ; les tests associés vérifient des payloads et des contrats différents dans feedback-requests-panel.test.tsx:28-49 et promotion-requests-panel.test.tsx:29-56.",
       "reviewedRef": "ed27967b18cc00de974522d20e0fa41ee4b39d72"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d16d85a6eabdd5b6",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les mocks communs couvrent deux frontières API Actions distinctes ; chaque fichier reste une preuve autonome de son contrat de route et ne doit pas être fusionné en façade de test partagée.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:25-31 et apps/web/src/app/api/actions/[actionId]/route-version/route.test.ts:15-21 ; les routes et suites valident des dépendances runtime différentes.",
+      "reviewedRef": "7e178914fe409ef5b6a0e2e8e966ba2a4c9e1014"
     }
   ]
 }
