@@ -8,6 +8,7 @@ import type {
   MissionActionInsert,
   ServiceResult,
 } from '../types/mission';
+import type { EmergencyContact } from '../types/emergency-contact';
 
 const MISSION_KEY = 'cmm_current_mission_id';
 const GPS_BUFFER_INDEX_KEY = '@cmm_gps_buffer_index';
@@ -15,6 +16,7 @@ const ACTION_BUFFER_INDEX_KEY = '@cmm_action_buffer_index';
 const GPS_BUFFER_RECORD_PREFIX = 'cmm_gps_buffer';
 const ACTION_BUFFER_RECORD_PREFIX = 'cmm_action_buffer';
 const FOREGROUND_TRACK_KEY_PREFIX = '@cmm_foreground_track:';
+const EMERGENCY_CONTACT_KEY = 'cmm_emergency_contact';
 const USE_SECURE_STORE = Platform.OS !== 'web';
 
 function normalizeSecureStoreKey(key: string): string {
@@ -182,6 +184,34 @@ export async function clearStoredForegroundTrack(missionId: string): Promise<voi
   } catch (e) {
     console.warn('[Storage] Nettoyage du tracé foreground local impossible :', e);
   }
+}
+
+export async function getStoredEmergencyContact(): Promise<EmergencyContact | null> {
+  try {
+    const raw = await readStoredValue(EMERGENCY_CONTACT_KEY);
+    if (!raw) return null;
+
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const contact = parsed as Record<string, unknown>;
+    if (
+      typeof contact.name !== 'string' ||
+      typeof contact.relation !== 'string' ||
+      typeof contact.phone !== 'string'
+    ) return null;
+
+    return { name: contact.name, relation: contact.relation, phone: contact.phone };
+  } catch {
+    return null;
+  }
+}
+
+export async function saveStoredEmergencyContact(contact: EmergencyContact): Promise<void> {
+  await writeStoredValue(EMERGENCY_CONTACT_KEY, JSON.stringify(contact));
+}
+
+export async function clearStoredEmergencyContact(): Promise<void> {
+  await removeStoredValue(EMERGENCY_CONTACT_KEY);
 }
 
 // Buffer GPS

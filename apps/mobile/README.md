@@ -66,7 +66,10 @@ Le shell expose cinq destinations simples : `Accueil`, `Carte`, `Agir`,
 La destination `Carte` ouvre `/actions/map` pour la consultation existante et
 `Messages` ouvre `/sections/messagerie`. Le mobile n'implémente pas de deuxième
 messagerie. `Profil` donne accès aux surfaces web `/profil` et `/reglages` et
-réserve seulement un emplacement non fonctionnel pour `Contact d'urgence`.
+permet d'enregistrer un unique contact d'urgence dans le SecureStore local.
+Pendant une mission active, le bénévole peut confirmer l'ouverture d'un appel
+vers ce contact ou vers le 112 via `tel:` ; aucune position n'est envoyée
+automatiquement.
 
 ## Stack
 
