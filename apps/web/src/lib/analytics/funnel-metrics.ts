@@ -147,7 +147,7 @@ function completionStats(
   return output;
 }
 
-export function computeFunnelMetrics(
+function computeFunnelMetrics(
   records: FunnelWindowEvent[],
 ): FunnelMetrics {
   const modes: FunnelMode[] = ["quick", "complete"];

@@ -15,7 +15,7 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-export function resolveCreatorInboxRecipients(extraRecipients: string[] = []): string[] {
+function resolveCreatorInboxRecipients(extraRecipients: string[] = []): string[] {
   const candidates = [
     env.CREATOR_INBOX_EMAIL,
     resolveContactEmail(),
@@ -27,7 +27,7 @@ export function resolveCreatorInboxRecipients(extraRecipients: string[] = []): s
   return Array.from(new Set(candidates));
 }
 
-export function resolveCreatorReplyTo(): string | undefined {
+function resolveCreatorReplyTo(): string | undefined {
   return resolveEmailReplyTo();
 }
 

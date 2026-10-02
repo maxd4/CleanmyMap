@@ -56,7 +56,7 @@ export function isCommunityAnnouncementTemplateKey(
   return COMMUNITY_ANNOUNCEMENT_TEMPLATES.some((template) => template.key === value);
 }
 
-export function getAnnouncementTemplate(
+function getAnnouncementTemplate(
   key: CommunityAnnouncementTemplateKey | null | undefined,
 ) {
   return COMMUNITY_ANNOUNCEMENT_TEMPLATES.find((template) => template.key === key) ?? null;

@@ -4,9 +4,6 @@ import type { ChatMessageKind, ChatRelatedEvent } from "@/lib/chat/announcements
 import type { ChatPollOption } from "@/lib/chat/polls";
 import type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
 import type { PublicActionReference } from "@/lib/chat/action-sharing";
-export type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
-export type { ChatSearchResponse, ChatSearchResult } from "@/lib/chat/chat-search";
-
 export type ChatMessage = {
   id: string;
   sender_id: string;

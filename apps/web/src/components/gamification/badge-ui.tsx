@@ -120,7 +120,7 @@ export function GamificationStatePill({ state }: { state: GamificationBadgeState
   );
 }
 
-export function GamificationMetricChip({
+function GamificationMetricChip({
   label,
   value,
   caption,
@@ -137,7 +137,7 @@ export function GamificationMetricChip({
   );
 }
 
-export function GamificationTooltipButton({
+function GamificationTooltipButton({
   id,
   label,
   content,
