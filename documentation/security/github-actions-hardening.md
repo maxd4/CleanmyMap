@@ -49,7 +49,10 @@ GitHub lus à distance. Il décrit le contrat courant sans exposer de secret.
 - [`zizmor.yml`](../../.github/workflows/zizmor.yml) s'exécute seulement lorsque
   les workflows changent, sur `main`, ou sur demande. L'action est épinglée,
   utilise la version `1.30.1`, désactive les audits en ligne et reste en mode
-  console informatif (`advanced-security: false`). Aucun finding n'est ignoré.
+  console informatif (`advanced-security: false`). L'étape zizmor porte seule
+  `continue-on-error: true` : ses findings restent visibles dans les logs sans
+  rendre le workflow rouge, tandis que le checkout et la configuration du
+  workflow restent bloquants. Aucun finding n'est ignoré ni filtré.
 - L'exécution ponctuelle de `zizmor 1.30.1` sur les workflows actuels a trouvé
   `adhoc-packages` sur l'installation globale `gitnexus@1.6.12` de `ci.yml`.
   Cette classe signale l'installation hors manifeste verrouillé et la résolution
