@@ -2,7 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { getAuthenticatedSupabaseClient } from './supabase';
-import type { ForegroundTrackPoint, MissionLocationInsert, MissionActionInsert } from '../types/mission';
+import type {
+  ForegroundTrackPoint,
+  MissionLocationInsert,
+  MissionActionInsert,
+  ServiceResult,
+} from '../types/mission';
 
 const MISSION_KEY = 'cmm_current_mission_id';
 const GPS_BUFFER_INDEX_KEY = '@cmm_gps_buffer_index';
@@ -211,11 +216,11 @@ export async function bufferAction(action: MissionActionInsert): Promise<void> {
 
 // Flush
 
-export async function flushBuffer(): Promise<void> {
+export async function flushBuffer(): Promise<ServiceResult> {
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
     // Sans session Clerk, les données restent persistées localement.
-    return;
+    return { ok: false, error: 'Connexion Clerk requise pour synchroniser les données.' };
   }
 
   // Flush GPS points
@@ -226,14 +231,20 @@ export async function flushBuffer(): Promise<void> {
     if (buffer.length > 0) {
       console.log(`[Storage] Flush GPS : ${buffer.length} points`);
       const { error } = await client.from('gps_points').insert(buffer);
-      if (!error) {
-        await clearSecureBufferRecords(keys);
-        await writeIndex(GPS_BUFFER_INDEX_KEY, []);
-        console.log('[Storage] Buffer GPS vidé');
+      if (error) {
+        return { ok: false, error: `Synchronisation GPS impossible : ${error.message}` };
       }
+
+      await clearSecureBufferRecords(keys);
+      await writeIndex(GPS_BUFFER_INDEX_KEY, []);
+      console.log('[Storage] Buffer GPS vidé');
     }
   } catch (e) {
     console.error('[Storage] flush GPS error', e);
+    return {
+      ok: false,
+      error: `Synchronisation GPS impossible : ${e instanceof Error ? e.message : 'erreur inconnue.'}`,
+    };
   }
 
   // Flush Actions
@@ -244,15 +255,23 @@ export async function flushBuffer(): Promise<void> {
     if (buffer.length > 0) {
       console.log(`[Storage] Flush Actions : ${buffer.length} actions`);
       const { error } = await client.from('mission_actions').insert(buffer);
-      if (!error) {
-        await clearSecureBufferRecords(keys);
-        await writeIndex(ACTION_BUFFER_INDEX_KEY, []);
-        console.log('[Storage] Buffer Actions vidé');
+      if (error) {
+        return { ok: false, error: `Synchronisation des actions impossible : ${error.message}` };
       }
+
+      await clearSecureBufferRecords(keys);
+      await writeIndex(ACTION_BUFFER_INDEX_KEY, []);
+      console.log('[Storage] Buffer Actions vidé');
     }
   } catch (e) {
     console.error('[Storage] flush actions error', e);
+    return {
+      ok: false,
+      error: `Synchronisation des actions impossible : ${e instanceof Error ? e.message : 'erreur inconnue.'}`,
+    };
   }
+
+  return { ok: true, data: undefined };
 }
 
 export async function getBufferCount(): Promise<number> {

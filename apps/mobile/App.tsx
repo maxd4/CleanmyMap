@@ -20,7 +20,8 @@ import {
 import { clearStoredForegroundTrack, getPendingGpsPointCount } from './lib/storage'
 import { MobileShell } from './screens/mobile-shell'
 import { MissionActiveMap } from './screens/mission-active-map'
-import type { Mission, TrackingPhase } from './types/mission'
+import { MissionCompletionScreen, MissionFinalizationScreen } from './screens/mission-finalization'
+import type { Mission, MissionFinalizationStage, TrackingPhase } from './types/mission'
 
 const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''
 
@@ -43,6 +44,8 @@ function CompanionApp() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [duration, setDuration] = useState('')
   const [pendingGpsPointCount, setPendingGpsPointCount] = useState(0)
+  const [finalizationStage, setFinalizationStage] = useState<MissionFinalizationStage | null>(null)
+  const [completionSummary, setCompletionSummary] = useState<Mission | null>(null)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bufferTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -50,6 +53,8 @@ function CompanionApp() {
   useEffect(() => {
     stopDurationTimer()
     setMission(null)
+    setCompletionSummary(null)
+    setFinalizationStage(null)
     setPhase('idle')
 
     if (!isLoaded || !isSignedIn) return
@@ -92,10 +97,12 @@ function CompanionApp() {
 
   function stopDurationTimer() {
     if (timerRef.current) clearInterval(timerRef.current)
+    timerRef.current = null
   }
 
   async function handleStartMobileMission() {
     setErrorMsg(null)
+    setCompletionSummary(null)
 
     if (!userId) {
       const error = 'Connexion Clerk requise pour démarrer une mission.'
@@ -119,20 +126,44 @@ function CompanionApp() {
     startDurationTimer(trackingResult.data.started_at ?? new Date().toISOString())
   }
 
-  async function handleStop() {
+  function handleStop() {
     if (!mission) return
 
+    Alert.alert(
+      'Terminer la mission ?',
+      'Les points GPS seront synchronisés avant la finalisation serveur.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Terminer', style: 'destructive', onPress: () => void finalizeMission(mission) },
+      ],
+    )
+  }
+
+  async function finalizeMission(activeMission: Mission) {
+    setErrorMsg(null)
+    setFinalizationStage('synchronizing')
     setPhase('stopping')
     stopDurationTimer()
 
-    const result = await stopTracking(mission.id)
+    const result = await stopTracking(activeMission.id, setFinalizationStage)
     if (!result.ok) {
       setErrorMsg(result.error)
+      setFinalizationStage(null)
       setPhase('tracking')
+      Alert.alert('Mission conservée', result.error)
       return
     }
 
-    await clearStoredForegroundTrack(mission.id)
+    await clearStoredForegroundTrack(activeMission.id)
+    setMission(null)
+    setCompletionSummary(result.data)
+    setFinalizationStage(null)
+    setPhase('idle')
+  }
+
+  function handleReturnHome() {
+    setCompletionSummary(null)
+    setErrorMsg(null)
     setMission(null)
     setPhase('idle')
   }
@@ -150,11 +181,19 @@ function CompanionApp() {
     return <SignedOutScreen />
   }
 
-  if (phase === 'requesting' || phase === 'stopping') {
+  if (phase === 'stopping' && finalizationStage) {
+    return <MissionFinalizationScreen stage={finalizationStage} />
+  }
+
+  if (completionSummary) {
+    return <MissionCompletionScreen mission={completionSummary} onReturnHome={handleReturnHome} />
+  }
+
+  if (phase === 'requesting') {
     return (
       <View style={styles.darkCenter}>
         <ActivityIndicator size="large" color="#10b981" />
-        <Text style={styles.hudLabel}>{phase === 'stopping' ? 'TRANSMISSION...' : 'INITIALISATION...'}</Text>
+        <Text style={styles.hudLabel}>INITIALISATION...</Text>
       </View>
     )
   }
