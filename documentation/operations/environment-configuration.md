@@ -111,6 +111,7 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `POSTGRES_URL_NON_POOLING` | Supabase CLI | SECRET | L | L | L | — | Supabase/CI | audits DB |
 | `CLERK_SECRET_KEY` | Clerk | SECRET | R test | R test | R selon preview | R live | Clerk Dashboard / Vercel | AuthN serveur |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk | PUBLIC | R test | R test | R selon preview | R live | Clerk Dashboard / Vercel | Clerk frontend |
+| `NEXT_PUBLIC_CLERK_JS_VERSION` | Clerk | PUBLIC | R `6.31.1` | R `6.31.1` | R `6.31.1` | R `6.31.1` | lockfile + Vercel | version exacte du loader ClerkJS |
 | `NEXT_PUBLIC_CLERK_PROXY_URL` | Clerk | PUBLIC | O | O | O | O | Vercel / template local | proxy Clerk |
 | `NEXT_PUBLIC_CLERK_SUPABASE_JWT_TEMPLATE` | Clerk/Supabase | PUBLIC | O | O | O | O | Clerk Dashboard / Vercel | JWT Supabase |
 | `CLERK_DOMAIN` | Clerk | PUBLIC | O | O | O | O | Clerk Dashboard / Vercel | domaine satellite |
@@ -217,6 +218,15 @@ au contrat.
 - Production utilise la paire Clerk Production : `pk_live_*` avec `sk_live_*`.
 - Une clé `live` ne doit jamais entrer dans `.env.local`, et une clé `test` ne
   doit pas être déployée en Production.
+- `NEXT_PUBLIC_CLERK_JS_VERSION` est le mécanisme public officiel de
+  `@clerk/nextjs` pour fixer la version npm hot-loadée de `@clerk/clerk-js`.
+  Le contrat courant l'épingle à `6.31.1`, égal à la version résolue dans le
+  `package-lock.json` avec `@clerk/nextjs@7.8.2`. Le contrôle
+  `npm run check:clerk-js-version` compare le template, le lockfile et toute
+  valeur injectée dans l'environnement d'exécution.
+- La valeur Production doit être créée ou vérifiée dans Vercel avec
+  `NEXT_PUBLIC_CLERK_JS_VERSION=6.31.1` ; cette valeur distante n'est pas
+  versionnable dans Git et ne doit pas être remplacée par une prop interne.
 - Les allowlists `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` sont des
   contrôles AuthZ opératoires; elles ne sont pas des personas UX.
 

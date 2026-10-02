@@ -80,6 +80,17 @@ describe("CSP report-only contract", () => {
     expect(directives.get("img-src")).toContain("https://project.supabase.co");
   });
 
+  it("keeps the production Clerk origin explicitly allowlisted", () => {
+    const policy = buildContentSecurityPolicyReportOnly({
+      CLERK_DOMAIN: "clerk.cleanmymap.fr",
+    });
+    const directives = parsePolicy(policy);
+
+    for (const directive of ["script-src", "connect-src", "frame-src"]) {
+      expect(directives.get(directive)).toContain("https://clerk.cleanmymap.fr");
+    }
+  });
+
   it("keeps the Next header in Report-Only mode and does not add enforcement", () => {
     const nextConfig = readFileSync(new URL("../../../next.config.ts", import.meta.url), "utf8");
 

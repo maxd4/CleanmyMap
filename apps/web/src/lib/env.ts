@@ -69,6 +69,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: optionalUrl,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
+  NEXT_PUBLIC_CLERK_JS_VERSION: z.string().optional(),
   NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
   NEXT_PUBLIC_POSTHOG_TOKEN: z.string().optional(),
   NEXT_PUBLIC_POSTHOG_HOST: optionalUrl,
