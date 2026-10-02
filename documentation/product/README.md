@@ -6,7 +6,8 @@ Point d'entrée de la documentation produit CleanMyMap.
 
 ### Vision et stratégie
 
-- `vision-et-objectifs.md` — vision globale ;
+- `vision-et-objectifs.md` — vision globale et positionnement du projet ;
+- `business-model.md` — hypothèses économiques et critères de validation (`PLAN`) ;
 - `roadmap-priorisee.md` — priorités produit ;
 - `dimension-communautaire.md` — continuité d'engagement ;
 - `chantiers-q2-q3.md` — chantiers structurants.
@@ -46,16 +47,25 @@ Pour une fonctionnalité :
 4. audit ou document produit spécialisé s'il existe ;
 5. documentation technique correspondante.
 
+Pour une question de modèle économique :
+
+1. `business-model.md` pour les hypothèses produit et la stratégie en cours ;
+2. `pages_site/routes/04-reseau-discussions/funding/` pour le comportement réel de la page et des moyens de contribution ;
+3. `legal/` pour l'état juridique et fiscal réellement établi.
+
 ## Source de vérité par type d'information
 
 | Information | Source |
 |---|---|
+| Vision et positionnement | `vision-et-objectifs.md` |
+| Modèle économique en construction | `business-model.md` |
 | Priorité globale | `roadmap-priorisee.md` ou backlog global canonique |
 | Rôle d'une page | `pages_site/` |
 | Décision technique | `architecture/adr/` |
 | Sécurité | `security/` |
 | UI | `design-system/` |
 | Contrat de données | code + `architecture/data-governance.md` |
+| État juridique | `legal/` |
 
 Ne pas utiliser un ancien audit comme source supérieure au code réel.
 
