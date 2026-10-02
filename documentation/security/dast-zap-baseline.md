@@ -61,9 +61,10 @@ contrat de test ou de sécurité propre.
 
 ## Qualification CURRENT des catégories observées
 
-Le run réel `36977345907` a produit les catégories `10017`, `10038-1`, `10098`,
-`90003` et `90004-2`. Elles restent visibles dans les rapports ZAP ; ces
-qualifications ne sont ni une allowlist générale ni une désactivation de règle.
+Le run réel `37010896869` sur le SHA `3684e780dcfcf2c2a93fa7bc983fe820551e6eef`
+a produit les catégories `10017`, `10038-1`, `10098`, `90003`, `90004-1` et
+`90004-2`. Elles restent visibles dans les rapports ZAP ; ces qualifications ne
+sont ni une allowlist générale ni une désactivation de règle.
 
 - `10017` — dépendance cross-origin Clerk de confiance : `KEEP_VISIBLE`. Le
   signal est conservé pour revue, car le loader Clerk reste une dépendance
@@ -87,6 +88,17 @@ qualifications ne sont ni une allowlist générale ni une désactivation de règ
   pas self-hosté sans support upstream. Le warning reste visible dans ZAP ;
   les compensations sont HTTPS, l'origine Clerk explicitement autorisée, le
   pinning SDK/ClerkJS, la CSP et le contrôle du domaine.
+- `90004-1` — `RESOLVED_SAME_ORIGIN_CORP`. L'audit du dépôt n'a démontré aucun
+  consumer cross-origin same-site d'une ressource servie par `cleanmymap.fr` :
+  les liens et navigations vers le domaine principal ne sont pas des
+  chargements de ressources CORP, `clerk.cleanmymap.fr` sert les ressources
+  Clerk et n'en charge pas depuis le domaine principal, les tuiles/cartes et
+  images externes sont servies par leurs propres origines, et aucun iframe,
+  embed ou `fetch` en mode `no-cors` vers une ressource CleanMyMap n'est
+  versionné. Le header des ressources `/:path*` est donc
+  `Cross-Origin-Resource-Policy: same-origin`, couvert par le test de contrat
+  de headers ; le passage à `same-origin` ne gouverne pas les ressources
+  externes que CleanMyMap charge lui-même.
 - `90004-2` — `KEEP_NOT_APPLICABLE_CROSS_ORIGIN_ISOLATION` tant qu’aucun
   consumer `SharedArrayBuffer`, `crossOriginIsolated` ou besoin équivalent
   n’existe dans CleanMyMap. Cette qualification devra être réévaluée à
