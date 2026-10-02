@@ -80,8 +80,6 @@ function extractBadgeIds(metadata: ClerkMetadata): string[] {
     .map((value) => value.trim().toLowerCase());
 }
 
-export { getRoleBadgeId, getProfileBadgeId, getRoleBadge, getProfileBadge, mapBadgeIdsToBadges } from "./authz-badges";
-
 export function buildActorNameOptions(
   firstName: string | null,
   username: string | null,
@@ -137,7 +135,7 @@ function describeBackgroundSyncError(error: unknown): string {
   }
 }
 
-export async function loadUserCurrentLevel(userId: string): Promise<number> {
+async function loadUserCurrentLevel(userId: string): Promise<number> {
   try {
     const supabase = getSupabaseServerClient(true);
     const result = await supabase.from("progression_profiles").select("current_level").eq("user_id", userId).maybeSingle();
@@ -157,7 +155,7 @@ type StoredProfileRow = {
   handle: string | null;
 };
 
-export async function loadStoredProfile(userId: string): Promise<StoredProfileRow | null> {
+async function loadStoredProfile(userId: string): Promise<StoredProfileRow | null> {
   try {
     const supabase = getSupabaseServerClient(true);
     const result = await supabase

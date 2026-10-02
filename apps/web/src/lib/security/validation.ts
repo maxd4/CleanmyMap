@@ -10,9 +10,9 @@ const PLACEHOLDER_HOSTS = new Set([
   "::1",
 ]);
 
-export const PUBLIC_FORM_ANTISPAM_DELAY_MS = 1500;
-export const PUBLIC_RATE_LIMIT_STATUS = "rate_limited" as const;
-export const PUBLIC_RATE_LIMIT_KIND = "validation" as const;
+const PUBLIC_FORM_ANTISPAM_DELAY_MS = 1500;
+const PUBLIC_RATE_LIMIT_STATUS = "rate_limited" as const;
+const PUBLIC_RATE_LIMIT_KIND = "validation" as const;
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 export type PublicRateLimitPayload = {

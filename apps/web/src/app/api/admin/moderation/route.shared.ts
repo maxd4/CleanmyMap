@@ -8,7 +8,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const MODERATION_CONFIRM_PHRASE = "CONFIRMER MODERATION";
 
-export const actionPayloadSchema = z.object({
+const actionPayloadSchema = z.object({
   entityType: z.literal("action"),
   id: z.string().trim().min(1),
   status: z.enum(["pending", "approved", "rejected"]),
@@ -18,7 +18,7 @@ export const actionPayloadSchema = z.object({
   edits: actionEditsSchema,
 });
 
-export const cleanPlacePayloadSchema = z.object({
+const cleanPlacePayloadSchema = z.object({
   entityType: z.literal("clean_place"),
   id: z.string().trim().min(1),
   status: z.enum(["new", "validated", "cleaned"]),

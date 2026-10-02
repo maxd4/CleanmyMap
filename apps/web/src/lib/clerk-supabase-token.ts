@@ -9,7 +9,7 @@ export type ClerkSupabaseTokenGetter = (
   options?: ClerkSupabaseTokenOptions,
 ) => Promise<string | null>;
 
-export class ClerkSupabaseTokenUnavailableError extends Error {
+class ClerkSupabaseTokenUnavailableError extends Error {
   constructor() {
     super("Clerk/Supabase JWT accessToken unavailable for a required browser RLS flow.");
     this.name = "ClerkSupabaseTokenUnavailableError";

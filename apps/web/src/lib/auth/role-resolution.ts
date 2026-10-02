@@ -12,7 +12,7 @@ export type ClerkUserForRole = ClerkRoleMetadata & {
   id: string;
 };
 
-export function parseUserIds(raw: string | undefined): Set<string> {
+function parseUserIds(raw: string | undefined): Set<string> {
   if (!raw) {
     return new Set<string>();
   }

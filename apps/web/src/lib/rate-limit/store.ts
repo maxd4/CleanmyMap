@@ -97,7 +97,7 @@ export function checkRateLimit(options: RateLimitOptions): RateLimitResult {
   };
 }
 
-export function cleanupOldBuckets(): void {
+function cleanupOldBuckets(): void {
   const now = Date.now();
   const maxAge = 5 * 60 * 1000; 
   

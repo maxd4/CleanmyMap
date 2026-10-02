@@ -164,11 +164,11 @@ function combinedCount(
   return sources.reduce((total, source) => total + source.data.count, 0);
 }
 
-export function getCreatorInboxNeedsAttention(items: CreatorInboxItem[]): CreatorInboxItem[] {
+function getCreatorInboxNeedsAttention(items: CreatorInboxItem[]): CreatorInboxItem[] {
   return items.filter((item) => item.status === "pending" || item.status === "new");
 }
 
-export function getPendingPublishedEntries(
+function getPendingPublishedEntries(
   entries: PublishedPartnerAnnuaireEntry[],
 ): PublishedPartnerAnnuaireEntry[] {
   return entries.filter((item) => item.publicationStatus === "pending_admin_review");
