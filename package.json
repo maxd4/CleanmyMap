@@ -192,7 +192,7 @@
       "image-size": "file:apps/mobile/vendor/image-size"
     },
     "@babel/core": "7.29.7",
-    "dompurify": "3.4.13",
+    "dompurify": "3.4.16",
     "fast-uri": "3.1.8",
     "ajv": {
       "fast-uri": "3.1.8"

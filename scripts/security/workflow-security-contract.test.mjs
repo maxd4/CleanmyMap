@@ -43,3 +43,9 @@ assert.match(zizmor, /version: 1\.30\.1/);
 assert.match(zizmor, /online-audits: false/);
 assert.match(zizmor, /advanced-security: false/);
 assert.match(zizmor, /inputs: \.github\/workflows/);
+assert.match(zizmor, /- name: Run zizmor[\s\S]*?continue-on-error: true/);
+assert.equal(
+  (zizmor.match(/continue-on-error:\s*true/g) ?? []).length,
+  1,
+  "zizmor must be the only non-blocking step",
+);

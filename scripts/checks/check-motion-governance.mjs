@@ -159,20 +159,6 @@ function listMotionSourceFiles(repositoryRoot) {
   return files;
 }
 
-function auditConsumer(source, filePath) {
-  const violations = [];
-  for (const marker of [
-    "useReducedMotion",
-    "useSitePreferences",
-    "displayMode",
-    "minimaliste",
-    "sobre",
-  ]) {
-    requireText(source, filePath, marker, violations);
-  }
-  return violations;
-}
-
 export function auditActionCard(source, filePath = MOTION_PATHS.pageStructure) {
   const violations = [];
   const actionCard = extractScope(source, "export function ActionCard", "export type CTAGroupProps");
