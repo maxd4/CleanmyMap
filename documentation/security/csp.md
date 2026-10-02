@@ -12,6 +12,21 @@ ni nonce par requête, ni lecture de requête dans le layout, ni `force-dynamic`
 La policy reste donc calculée au build/configuration et ne dégrade pas le
 cache par construction.
 
+## Collecte réelle des violations
+
+La policy contient aussi `report-uri` lorsque
+`NEXT_PUBLIC_SENTRY_DSN` contient un DSN public valide. L'endpoint est dérivé
+des composants publics du DSN vers le endpoint CSP-report officiel de Sentry,
+de la forme `/api/<project>/csp-report/?sentry_key=<public-key>` ([référence
+API Sentry](https://docs.sentry.io/api/organizations/list-an-organizations-client-keys/)).
+Le navigateur envoie donc directement les rapports à Sentry ; aucun endpoint
+CleanMyMap public n'est créé.
+
+La dérivation refuse un DSN qui contient un mot de passe. Aucun `SENTRY_DSN`,
+`SENTRY_AUTH_TOKEN`, secret Sentry ou token privé n'est lu pour cette collecte.
+Le DSN public existant reste l'unique configuration nécessaire. Aucun
+`report-sample` n'est ajouté.
+
 ## Contract actuel
 
 La policy contient au minimum `default-src`, `script-src`, `style-src`,
@@ -60,5 +75,25 @@ Toute nouvelle requête navigateur vers une origine externe doit d'abord être
 ajoutée dans l'owner `csp.ts`, avec un test ciblé et une justification dans ce
 document. Les tests prouvent la forme de la policy et ses dérivations
 build-time ; ils ne prouvent pas à eux seuls l'absence de violation dans tous
-les navigateurs ou toutes les configurations Vercel. Une étape ultérieure devra
-collecter les rapports réels avant toute décision d'enforcement.
+les navigateurs ou toutes les configurations Vercel.
+
+## EXIT CONDITION — sortie du Report-Only
+
+Le header ne doit pas être remplacé par `Content-Security-Policy` en dehors
+d'un lot séparé. L'enforcement ne pourra être proposé qu'après les conditions
+conjointes suivantes :
+
+1. une période d'observation réelle en Production d'au moins 14 jours
+   calendaires, avec les parcours principaux effectivement utilisés ;
+2. une revue des rapports reçus dans Sentry sur cette période ;
+3. l'absence de violation légitime bloquante sur les parcours principaux
+   (accueil, Clerk, carte/actions, contact et documentation), ou la correction
+   documentée de chaque violation avant la décision ;
+4. un lot ultérieur séparé, relu comme changement de mode de sécurité, qui
+   remplace explicitement `Content-Security-Policy-Report-Only` par
+   `Content-Security-Policy` et conserve les tests de non-régression.
+
+Une alerte ZAP ou une violation isolée ne doit pas être masquée par une
+allowlist globale ou par la suppression d'une source CSP. Toute exception
+restante doit être attribuée à une origine précise, justifiée dans l'owner
+`csp.ts` et couverte par un test.

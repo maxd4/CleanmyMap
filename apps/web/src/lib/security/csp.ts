@@ -92,6 +92,52 @@ function parseHttpOrigin(raw: string | undefined): string | undefined {
   }
 }
 
+/**
+ * Derive Sentry's public CSP report endpoint from a public DSN.
+ *
+ * Sentry exposes this endpoint as `/api/<project>/csp-report/` with the
+ * public key in `sentry_key`. A DSN containing a password is deliberately
+ * rejected so a private DSN can never be copied into a browser policy.
+ */
+export function buildSentryCspReportEndpoint(
+  raw: string | undefined,
+): string | undefined {
+  if (!raw || raw.trim().length === 0) {
+    return undefined;
+  }
+
+  try {
+    const dsn = new URL(raw.trim());
+    if (
+      (dsn.protocol !== "http:" && dsn.protocol !== "https:") ||
+      !dsn.username ||
+      dsn.password
+    ) {
+      return undefined;
+    }
+
+    const publicKey = decodeURIComponent(dsn.username);
+    if (!/^[A-Za-z0-9_]+$/.test(publicKey)) {
+      return undefined;
+    }
+
+    const pathSegments = dsn.pathname.split("/").filter(Boolean);
+    const projectId = pathSegments.pop();
+    if (!projectId || !/^\d+$/.test(projectId)) {
+      return undefined;
+    }
+
+    const basePath = pathSegments.length > 0 ? `/${pathSegments.join("/")}` : "";
+    const endpoint = new URL(
+      `${dsn.origin}${basePath}/api/${projectId}/csp-report/`,
+    );
+    endpoint.searchParams.set("sentry_key", publicKey);
+    return endpoint.toString();
+  } catch {
+    return undefined;
+  }
+}
+
 function parseHostOrigin(raw: string | undefined): string | undefined {
   if (!raw || raw.trim().length === 0) {
     return undefined;
@@ -153,6 +199,9 @@ function buildSources(environment: CspEnvironment): Record<string, string[]> {
   const configuredClerk = configuredClerkOrigins(environment);
   const supabaseOrigin = parseHttpOrigin(environment.NEXT_PUBLIC_SUPABASE_URL);
   const sentryOrigin = parseHttpOrigin(environment.NEXT_PUBLIC_SENTRY_DSN);
+  const sentryCspReportEndpoint = buildSentryCspReportEndpoint(
+    environment.NEXT_PUBLIC_SENTRY_DSN,
+  );
   const postHog = postHogOrigins(environment);
   const connectSources = [...STATIC_CONNECT_SOURCES, ...postHog];
   const imageSources = [...STATIC_IMAGE_SOURCES];
@@ -191,6 +240,7 @@ function buildSources(environment: CspEnvironment): Record<string, string[]> {
     "frame-ancestors": ["'none'"],
     "form-action": ["'self'"],
     "worker-src": ["'self'", "blob:"],
+    ...(sentryCspReportEndpoint ? { "report-uri": [sentryCspReportEndpoint] } : {}),
   };
 }
 
