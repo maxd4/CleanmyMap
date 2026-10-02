@@ -22,7 +22,7 @@ async function ensureParentDirectory(pathname: string): Promise<void> {
   await mkdir(dirname(pathname), { recursive: true });
 }
 
-export async function readLocalStore(
+async function readLocalStore(
   pathname: string,
 ): Promise<LocalDataStore> {
   try {
@@ -48,7 +48,7 @@ export async function readLocalStore(
   }
 }
 
-export async function writeLocalStore(
+async function writeLocalStore(
   pathname: string,
   store: LocalDataStore,
 ): Promise<void> {

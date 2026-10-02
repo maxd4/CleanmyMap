@@ -1,10 +1,7 @@
 "use client";
 
 import type { ChapterAudience } from "@/lib/reports/report-model/types";
-import { toFrNumber } from "@/lib/reports/report-model/formatters";
-import type { MonthRow } from "@/lib/reports/report-model/types";
 import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";
-import { SCORE_SCALE } from "@/lib/formatters/score";
 
 export function ReportPage(props: {
  id: string;
@@ -72,19 +69,6 @@ export function MetricCard(props: {
  );
 }
 
-export function InsightBox(props: { title: string; lines: string[] }) {
- return (
- <article className="print-break-inside-avoid rounded-2xl border border-slate-200 bg-[#f8fafc] p-4">
- <h3 className="cmm-text-small font-semibold cmm-text-primary">{props.title}</h3>
- <ul className="mt-2 space-y-1.5 cmm-text-small cmm-text-secondary">
- {props.lines.map((line) => (
- <li key={line}>• {line}</li>
- ))}
- </ul>
- </article>
- );
-}
-
 export function ReportTable(props: { headers: string[]; rows: string[][] }) {
  return (
  <div className="print-break-inside-avoid overflow-x-auto rounded-2xl border border-slate-200">
@@ -119,79 +103,5 @@ export function ReportTable(props: { headers: string[]; rows: string[][] }) {
  </tbody>
  </table>
  </div>
- );
-}
-
-export function MonthlyBars(props: { rows: MonthRow[] }) {
- const maxKg = Math.max(1, ...props.rows.map((row) => row.kg));
- return (
- <div className="print-break-inside-avoid rounded-2xl border border-slate-200 bg-white p-4">
- <h3 className="cmm-text-small font-semibold cmm-text-primary">Série mensuelle (kg collectés)</h3>
- <div className="mt-3 space-y-2">
- {props.rows.map((row) => (
- <div
- key={row.month}
- className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 cmm-text-caption cmm-text-secondary"
- >
- <span className="font-semibold uppercase tracking-wide cmm-text-muted">{row.month}</span>
- <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
- <div
- className="h-full rounded-full"
- style={{
- width: `${Math.max(4, Math.round((row.kg / maxKg) * 100))}%`,
- background: `linear-gradient(90deg, ${reportPdfColors.teal}, ${reportPdfColors.green})`,
- }}
- />
- </div>
- <span className="font-semibold">{toFrNumber(row.kg)} kg</span>
- </div>
- ))}
- </div>
- </div>
- );
-}
-
-export function GeoCoverageRing(props: { coveragePercent: number; tracePercent: number }) {
- const pct = Math.max(0, Math.min(100, props.coveragePercent));
- const circumference = 2 * Math.PI * 48;
- const dash = (pct / SCORE_SCALE) * circumference;
-
- return (
- <article className="print-break-inside-avoid rounded-2xl border border-slate-200 bg-white p-4">
- <h3 className="cmm-text-small font-semibold cmm-text-primary">Couverture spatiale</h3>
- <div className="mt-3 flex items-center gap-4">
- <svg width="116" height="116" viewBox="0 0 116 116" role="img" aria-label="Couverture géographique">
- <circle cx="58" cy="58" r="48" fill="none" stroke="#e2e8f0" strokeWidth="10" />
- <circle
- cx="58"
- cy="58"
- r="48"
- fill="none"
- stroke={reportPdfColors.teal}
- strokeWidth="10"
- strokeLinecap="round"
- strokeDasharray={`${dash} ${circumference}`}
- transform="rotate(-90 58 58)"
- />
- <text x="58" y="58" textAnchor="middle" dy="0.2em" className="fill-slate-900 text-[18px] font-semibold">
- {Math.round(pct)}%
- </text>
- </svg>
- <div className="space-y-2 cmm-text-small cmm-text-secondary">
- <p>
- Taux géolocalisation: <span className="font-semibold">{toFrNumber(pct, 0)}%</span>
- </p>
- <p>
- Taux de traces/polygones:{""}
- <span className="font-semibold">
- {toFrNumber(Math.max(0, Math.min(100, props.tracePercent)), 0)}%
- </span>
- </p>
- <p className="cmm-text-caption cmm-text-muted">
- Mesure clé pour piloter les zones de récurrence et la preuve d&apos;impact.
- </p>
- </div>
- </div>
- </article>
  );
 }

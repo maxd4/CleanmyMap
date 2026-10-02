@@ -5,7 +5,7 @@ import {
 } from "@/lib/periodic/maintenance-cron-contract";
 
 export const STORAGE_USAGE_CRON_SCHEDULE = MAINTENANCE_CRON_SCHEDULE;
-export const STORAGE_USAGE_CRON_TIMEZONE = MAINTENANCE_CRON_TIMEZONE;
+const STORAGE_USAGE_CRON_TIMEZONE = MAINTENANCE_CRON_TIMEZONE;
 
 export type StorageUsageCronStatus = {
   configured: boolean;

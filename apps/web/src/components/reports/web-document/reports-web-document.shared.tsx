@@ -10,7 +10,7 @@ import {
 } from "@/lib/reports/data-availability";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 
-export const DETAIL_LEVEL_OPTIONS = [
+const DETAIL_LEVEL_OPTIONS = [
   { id: "concis", label: "Concis" },
   { id: "default", label: "Par défaut" },
   { id: "exhaustif", label: "Exhaustif" },
@@ -25,7 +25,7 @@ export const DEFAULT_REPORT_DETAIL_LEVEL: DetailLevelId = "default";
 
 export type ReportGenerationUiState = "idle" | "pending" | "success" | "error";
 
-export type ReportExportStatusKind =
+type ReportExportStatusKind =
   | "loading"
   | "success"
   | "error"
@@ -188,11 +188,11 @@ const ALWAYS_INCLUDED_CHAPTER_IDS = [
   "recommandations-operationnelles",
 ] as const;
 
-export function getEnabledReportModules(modules: ModuleState) {
+function getEnabledReportModules(modules: ModuleState) {
   return REPORT_MODULE_DEFINITIONS.filter((definition) => modules[definition.id]);
 }
 
-export function getVisibleReportChapterIds(modules: ModuleState): Set<string> {
+function getVisibleReportChapterIds(modules: ModuleState): Set<string> {
   const chapterIds = new Set<string>(ALWAYS_INCLUDED_CHAPTER_IDS);
   for (const definition of getEnabledReportModules(modules)) {
     for (const chapterId of definition.chapterIds) {
@@ -226,7 +226,7 @@ type ReportsWebDocumentModelLike = {
   dataAvailability?: ReportDataAvailability;
 };
 
-export function formatDateLabel(value: Date): string {
+function formatDateLabel(value: Date): string {
   return new Intl.DateTimeFormat("fr-FR", {
     dateStyle: "medium",
   }).format(value);
@@ -273,7 +273,7 @@ export function detailLevelLabel(id: DetailLevelId): string {
   return option?.label ?? "";
 }
 
-export function detailLevelShortLabel(id: DetailLevelId): string {
+function detailLevelShortLabel(id: DetailLevelId): string {
   const option = DETAIL_LEVEL_OPTIONS.find((entry) => entry.id === id);
   return option?.label ?? "";
 }

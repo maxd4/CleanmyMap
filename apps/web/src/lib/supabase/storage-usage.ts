@@ -453,7 +453,7 @@ export function buildStorageUsageSnapshot(
   };
 }
 
-export function compareStorageBreakdowns(
+function compareStorageBreakdowns(
   current: StorageUsageBreakdownItem[],
   previous: StorageUsageBreakdownItem[] | null | undefined,
 ): StorageUsageDeltaItem[] {
@@ -536,7 +536,7 @@ export async function fetchAllStorageObjects<T>(
   return items;
 }
 
-export function toStorageUsageHistoryPoint(record: StorageUsageSnapshotRecord): StorageUsageHistoryPoint {
+function toStorageUsageHistoryPoint(record: StorageUsageSnapshotRecord): StorageUsageHistoryPoint {
   return {
     snapshotMonth: record.snapshot_month,
     monthLabel: formatMonthLabel(record.snapshot_month),

@@ -257,7 +257,7 @@ function matchesArrondissementScope(
   return arrondissement !== null && String(arrondissement) === target.trim();
 }
 
-export function matchesReportScope(
+function matchesReportScope(
   item: ReportScopeSource,
   scope: ReportScope,
 ): boolean {
@@ -333,7 +333,7 @@ export function filterCommunityEventsByScope(
   );
 }
 
-export function contractToScopeSource(
+function contractToScopeSource(
   contract: ActionDataContract,
 ): ReportScopeSource {
   return {

@@ -223,7 +223,7 @@ function buildCleanPlaceEditPayload(
  };
 }
 
-export function parseModerationErrorMessage(error: unknown): string {
+function parseModerationErrorMessage(error: unknown): string {
  if (error instanceof ModerationClientError) {
  if (error.code ==="permission_denied") {
  return `Acces admin requis (${error.message}).`;

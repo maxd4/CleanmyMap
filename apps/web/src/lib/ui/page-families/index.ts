@@ -1,23 +1,4 @@
-export type {
-  PageFamilyCardTokens,
-  PageFamilyDefinition,
-  PageFamilyHeroTokens,
-  PageFamilyId,
-  PageFamilyRouteException,
-  ResolvedPageFamily,
-} from "@/lib/ui/page-families/types";
-
-export {
-  ACCUEIL_PILOTAGE_FAMILY,
-  ACCUEIL_PILOTAGE_PAGE_HERO,
-} from "@/lib/ui/page-families/families/registry";
-
-export {
-  EXPLORER_SOMMAIRE_FAMILY,
-  METHODOLOGIE_FAMILY,
-  PAGE_FAMILIES,
-} from "@/lib/ui/page-families/families/registry";
-export { PAGE_FAMILY_ROUTE_EXCEPTIONS } from "@/lib/ui/page-families/exceptions";
+export type { ResolvedPageFamily } from "@/lib/ui/page-families/types";
 
 export {
   getPageFamilyById,

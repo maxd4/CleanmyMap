@@ -1,5 +1,6 @@
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import {
+  REPORT_EXPORT_DAILY_LIMIT,
   REPORT_EXPORT_TIME_ZONE,
   type ReportExportQuotaReservation,
 } from "./report-export-quota-contract";
@@ -80,5 +81,7 @@ export async function getReportExportAvailability(
     throw error;
   }
 
-  return data && Number(data.export_count) >= 1 ? "used" : "available";
+  return data && Number(data.export_count) >= REPORT_EXPORT_DAILY_LIMIT
+    ? "used"
+    : "available";
 }
