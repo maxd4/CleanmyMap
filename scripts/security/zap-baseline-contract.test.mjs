@@ -41,6 +41,7 @@ const include = new RegExp(includeMatch[1]);
 const excludes = excludeMatches.map(([, pattern]) => new RegExp(pattern));
 
 for (const publicUrl of [
+  "https://cleanmymap.fr",
   "https://cleanmymap.fr/",
   "https://cleanmymap.fr/explorer",
   "https://cleanmymap.fr/en?source=zap",
