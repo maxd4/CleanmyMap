@@ -79,6 +79,28 @@ ni `codeSigningMetadata`, ni `expo-updates` : cette mitigation protège le
 tooling Expo et ne constitue pas une affirmation d'exposition du runtime
 public.
 
+### CodeQL `js/missing-origin-check` : alertes #938 et #939
+
+Les alertes CodeQL #938 (`lib/prng.js`) et #939 (`lib/util.js`) sont classées
+`FALSE_POSITIVE` pour le contexte précis du vendor `node-forge` :
+
+- #938 est dans la branche `registerWorker` où `worker === self`. Le listener
+  signalé est le canal de protocole du worker ; la branche principale reçoit
+  les messages via l'objet `Worker`, pas via un listener `window` acceptant des
+  messages inter-fenêtres arbitraires.
+- #939 se trouve dans le script Blob exécuté par `new Worker(blobUrl)`. Son
+  `self.addEventListener('message', ...)` appartient donc à un
+  `DedicatedWorkerGlobalScope`. Le thread principal ne reçoit ensuite que via
+  les objets `Worker` créés pour ce calcul.
+
+Le listener `window` distinct utilisé par le polyfill `setImmediate` vérifie
+`event.source === window` et un token interne exact ; il n'est pas le sink des
+deux alertes. Le graphe local résout par ailleurs le package uniquement pour
+`@expo/cli` et `@expo/code-signing-certificates`, sans dépendance runtime ou
+browser de l'application mobile. Cette décision est spécifique au canal
+Dedicated Worker et au Node tooling Expo : elle ne crée aucune exclusion
+globale CodeQL et ne justifie aucune modification du code upstream vendorisé.
+
 ## Compatibilité `jayson` et CVE-2026-71429
 
 Le graphe mobile réel est :
