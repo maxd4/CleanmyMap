@@ -36,7 +36,7 @@ export async function loadCreatorInboxItems(): Promise<CreatorInboxItem[]> {
   );
 }
 
-export async function loadCreatorInboxEvents(): Promise<CreatorInboxItem[]> {
+async function loadCreatorInboxEvents(): Promise<CreatorInboxItem[]> {
   const supabase = getSupabaseServerClient(true);
   const eventsResult = await supabase
     .from("community_events")

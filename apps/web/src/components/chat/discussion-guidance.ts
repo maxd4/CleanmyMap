@@ -515,7 +515,3 @@ export function getDiscussionGuidance(
     channelGoal: topicLabel ?? localeData.channelGoal,
   };
 }
-
-export function getDiscussionChannelOrder(): ChatChannelType[] {
-  return ["community", "dm", "admin_elu", "territory", "bug_report"];
-}

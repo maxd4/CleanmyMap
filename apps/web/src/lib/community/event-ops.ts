@@ -254,7 +254,7 @@ export function formatCleanupSupportLabel(
   return "Soutien à préciser";
 }
 
-export function formatCleanupWasteTypeLabel(type: CleanupWasteType): string {
+function formatCleanupWasteTypeLabel(type: CleanupWasteType): string {
   if (type === "megots") return "Mégots";
   if (type === "plastique") return "Plastique";
   if (type === "verre") return "Verre";
