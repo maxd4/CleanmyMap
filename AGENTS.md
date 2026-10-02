@@ -394,6 +394,22 @@ Interdictions :
 La cible d’un lot dead-code est d’avoir zéro finding non qualifié dans son
 périmètre, puis de réduire Knip uniquement par des décisions sûres.
 
+## Limite mobile des lots dead-code et duplication
+
+Dans tout lot de qualification ou de correction `dead-code` ou `duplication`,
+ne pas modifier les fichiers issus de l’application mobile, notamment ceux
+sous `apps/mobile/**`. Ces fichiers peuvent être inspectés, mesurés et
+qualifiés pour expliquer un résultat global, mais ils ne doivent pas être
+supprimés, déplacés, internalisés, refactorés ou réécrits pour faire baisser un
+finding.
+
+Un finding mobile ne doit pas non plus entraîner la modification d’une
+baseline, d’une justification, d’une exclusion, d’un seuil ou d’une grâce dans
+un lot non mobile. Toute correction mobile `dead-code` ou `duplication` doit
+faire l’objet d’un lot séparé explicitement demandé et respecter
+`apps/mobile/AGENTS.md`. Dans le lot courant, le finding mobile reste donc
+audité et signalé comme hors périmètre, jamais masqué ni acquis par un ratchet.
+
 ## Amélioration opportuniste des ratchets
 
 Lorsqu’un lot touche déjà un fichier contenant un export inutile ou un clone
