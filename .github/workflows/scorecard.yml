@@ -1,0 +1,41 @@
+name: OpenSSF Scorecard
+
+on:
+  schedule:
+    - cron: "30 1 * * 6"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: openssf-scorecard
+  cancel-in-progress: true
+
+jobs:
+  analysis:
+    name: Informational Scorecard analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc
+        with:
+          results_file: scorecard-results.json
+          results_format: json
+          repo_token: ${{ github.token }}
+          publish_results: false
+
+      - name: Upload Scorecard result
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: openssf-scorecard-results
+          path: scorecard-results.json
+          retention-days: 7
