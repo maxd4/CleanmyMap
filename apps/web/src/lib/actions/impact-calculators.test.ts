@@ -89,6 +89,18 @@ describe("canonical action impact calculation", () => {
     expect(resolveActionWasteKgSource(nullContract)).toBe("none");
   });
 
+  it("keeps an explicitly declared zero waste value measured", () => {
+    const contract = { metadata: { wasteKg: 0 } };
+
+    expect(estimateActionWasteKg(contract)).toBe(0);
+    expect(resolveActionWasteKgSource(contract)).toBe("declared");
+    expect(computeActionImpactKpis(contract)).toMatchObject({
+      wasteKg: 0,
+      wasteKnown: true,
+      wasteKgSource: "declared",
+    });
+  });
+
   it("does not turn qualified cigarette-butt mass into waste", () => {
     const impact = computeActionImpactKpis(
       makeContract({
@@ -192,6 +204,15 @@ describe("canonical action impact calculation", () => {
       wasteKnownActions: 0,
       wasteActionCount: 0,
       wasteCoverageRate: 0,
+      streetCleaningSavings: {
+        wasteKg: 0,
+        durationMinutes: 0,
+        actionHours: 0,
+        massEstimateEuros: 0,
+        timeEstimateEuros: 0,
+        lowerBoundEuros: 0,
+        upperBoundEuros: 0,
+      },
     });
   });
 
