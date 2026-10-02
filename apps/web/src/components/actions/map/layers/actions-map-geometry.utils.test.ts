@@ -34,10 +34,42 @@ function buildMapItem(partial: Partial<ActionMapItem>): ActionMapItem {
 }
 
 describe("actions map geometry utils", () => {
+  function buildContractMapItem({
+    geometrySource,
+    kind = "polyline",
+    preparationData,
+  }: {
+    geometrySource: "manual" | "gpx_import" | "routed" | "estimated_route" | "reference" | "estimated_area";
+    kind?: "polyline" | "polygon";
+    preparationData?: Parameters<typeof buildActionDataContract>[0]["preparationData"];
+  }): ActionMapItem {
+    return toActionMapItem(
+      buildActionDataContract({
+        id: `${geometrySource}-${kind}`,
+        type: "action",
+        status: "approved",
+        source: "actions",
+        observedAt: "2026-04-08",
+        locationLabel: "Lieu test",
+        latitude: 48.85,
+        longitude: 2.35,
+        manualDrawing: {
+          kind,
+          coordinates:
+            kind === "polygon"
+              ? [[48.85, 2.35], [48.851, 2.351], [48.852, 2.35]]
+              : [[48.85, 2.35], [48.851, 2.351]],
+        },
+        geometrySource,
+        preparationData,
+      }),
+    );
+  }
+
   it.each([
     ["polyline", "manual", "Parcours déclaré"],
     ["polyline", "routed", "Parcours reconstruit"],
-    ["polygon", "manual", "Zone déclarée"],
+    ["polygon", "manual", "Zone d’action"],
     ["polygon", "reference", "Zone de référence"],
     ["polygon", "estimated_area", "Zone indicative"],
   ] as const)("maps %s/%s to %s", (kind, origin, expected) => {
@@ -54,10 +86,10 @@ describe("actions map geometry utils", () => {
   it("uses métier labels for action polyline and polygon tooltips", () => {
     expect(
       formatActionGeometryTooltipTitle("polyline", "Longueur ~ 1,2 km"),
-    ).toBe("Parcours d'action · Longueur ~ 1,2 km");
+    ).toBe("Longueur ~ 1,2 km");
     expect(
       formatActionGeometryTooltipTitle("polygon", "Surface ~ 850 m²"),
-    ).toBe("Zone d'action · Surface ~ 850 m²");
+    ).toBe("Surface ~ 850 m²");
     expect(formatActionGeometryTooltipTitle("polyline", null)).toBe(
       "Parcours d'action",
     );
@@ -115,7 +147,7 @@ describe("actions map geometry utils", () => {
         label: "Zone réelle · référence",
         strokeStyle: "solid",
       }),
-    ).toBe("Zone de référence");
+    ).toBe("Zone réelle · référence");
   });
 
   it("renders estimated_area as a transparent solid indicative zone", () => {
@@ -167,7 +199,7 @@ describe("actions map geometry utils", () => {
         label: "Zone indicative · emprise estimée",
         strokeStyle: "solid",
       }),
-    ).toBe("Zone indicative");
+    ).toBe("Zone indicative · emprise estimée");
   });
 
   it("creates endpoint markers for manual and routed polylines", () => {
@@ -258,7 +290,7 @@ describe("actions map geometry utils", () => {
         label: "Parcours reconstruit · estimation",
         strokeStyle: "dashed",
       }),
-    ).toBe("Parcours reconstruit");
+    ).toBe("Parcours reconstruit · estimation");
   });
 
   it("normalizes drawing coordinates and rejects incomplete tracés", () => {
@@ -383,7 +415,7 @@ describe("actions map geometry utils", () => {
     expect(formatGeometryConfidenceLabel(geometry.confidence)).toBe(
       "Confiance 100%",
     );
-    expect(geometry.metrics.label).toMatch(/^Longueur ~ /);
+    expect(geometry.metrics.label).toMatch(/^Parcours déclaré · /);
     expect(resolveGeometryRenderStyle(geometry).strokeWeight).toBe(4);
   });
 
@@ -414,8 +446,75 @@ describe("actions map geometry utils", () => {
     expect(geometry.renderMode).toBe("drawing");
     expect(geometry.kind).toBe("polygon");
     expect(geometry.metrics.kind).toBe("area");
-    expect(geometry.metrics.label).toMatch(/^Surface ~ /);
+    expect(geometry.metrics.label).toMatch(/^Zone d’action · /);
     expect(resolveGeometryRenderStyle(geometry).strokeWeight).toBe(2);
+  });
+
+  it("keeps distance labels tied to their geometry provenance", () => {
+    const observed = resolveActionMapGeometryViewModel(
+      buildContractMapItem({
+        geometrySource: "gpx_import",
+        preparationData: {
+          routeObservedDistanceKm: 2.4,
+          gpxImport: {
+            source: "gpx_import",
+            observedDistanceKm: 2.4,
+            pointCount: 2,
+            inferredTopology: "point_to_point",
+          },
+        },
+      }),
+    );
+    const reconstructed = resolveActionMapGeometryViewModel(
+      buildContractMapItem({
+        geometrySource: "routed",
+        preparationData: {
+          routeNetworkDistanceKm: 2.1,
+        },
+      }),
+    );
+    const estimated = resolveActionMapGeometryViewModel(
+      buildContractMapItem({
+        geometrySource: "estimated_route",
+        preparationData: {
+          routeGeometryMode: "network",
+          routeGeometryProvider: "osrm",
+          routeNetworkDistanceKm: 2.1,
+          routeTargetDistanceKm: 2,
+        },
+      }),
+    );
+    const fallback = resolveActionMapGeometryViewModel(
+      buildContractMapItem({
+        geometrySource: "estimated_route",
+        preparationData: {
+          routeGeometryMode: "fallback",
+          routeGeometryProvider: "none",
+        },
+      }),
+    );
+    const targetOnly = resolveActionMapGeometryViewModel(
+      buildContractMapItem({
+        geometrySource: "estimated_route",
+        preparationData: { routeTargetDistanceKm: 2 },
+      }),
+    );
+
+    expect(observed.metrics.label).toBe("Distance observée · 2,4 km");
+    expect(reconstructed.metrics.label).toBe(
+      "Distance du parcours reconstruit · 2,1 km",
+    );
+    expect(estimated.metrics.label).toBe(
+      "Parcours estimé · 2,1 km · Distance cible · 2,0 km",
+    );
+    expect(fallback.metrics.label).toMatch(
+      /^Distance indicative à vol d’oiseau · /,
+    );
+    expect(resolveGeometryRenderStyle(fallback).dashArray).toBe("4 8");
+    expect(resolveGeometryRenderStyle(fallback).strokeOpacity).toBe(0.62);
+    expect(targetOnly.metrics.label).toBe("Distance cible · 2,0 km");
+    expect(observed.metrics.label).not.toContain("Longueur");
+    expect(reconstructed.metrics.label).not.toContain("Longueur");
   });
 
   it("falls back to a point geometry when the drawing is invalid", () => {

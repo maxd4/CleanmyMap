@@ -1,4 +1,5 @@
 import type {
+  ActionGeometrySource,
   ActionImpactLevel,
   ActionMapItem,
   ActionMapResponse,
@@ -241,14 +242,7 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     derivedGeometryKind: row.derived_geometry_kind as "point" | "polyline" | "polygon" | null,
     derivedGeometryGeoJson: row.derived_geometry_geojson,
     geometryConfidence: toFiniteNumber(row.geometry_confidence),
-    geometrySource: row.geometry_source as
-      | "manual"
-      | "reference"
-      | "routed"
-      | "estimated_route"
-      | "estimated_area"
-      | "fallback_point"
-      | null,
+    geometrySource: row.geometry_source as ActionGeometrySource | null,
   });
 }
 
