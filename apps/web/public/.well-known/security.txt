@@ -1,0 +1,5 @@
+Contact: mailto:security@cleanmymap.fr
+Expires: 2027-04-01T00:00:00.000Z
+Preferred-Languages: fr, en
+Canonical: https://cleanmymap.fr/.well-known/security.txt
+Policy: https://github.com/maxd4/CleanmyMap/security/policy
