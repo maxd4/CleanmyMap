@@ -9,6 +9,8 @@ export type StorageBusinessDomainId =
   | "badges_gamification"
   | "autres";
 
+import { extractStorageFileExtension } from "./storage-size";
+
 export type StorageBusinessDomain = {
   id: StorageBusinessDomainId;
   label: string;
@@ -163,15 +165,6 @@ function normalizePath(value: string): string {
   return toAsciiLower(value).replace(/[^a-z0-9/_-]+/g, "");
 }
 
-function extractExtension(name: string): string {
-  const fileName = name.split("/").pop() ?? name;
-  const index = fileName.lastIndexOf(".");
-  if (index <= 0 || index === fileName.length - 1) {
-    return "";
-  }
-  return fileName.slice(index + 1).toLowerCase();
-}
-
 function isImageMimeOrExtension(mimeType: string | null, extension: string): boolean {
   const normalizedMime = mimeType?.trim().toLowerCase() ?? null;
   return (
@@ -265,7 +258,7 @@ export function classifyStorageBusinessDomain(input: {
     bucketId: input.bucketId,
     name: input.name,
     mimeType: input.mimeType ?? null,
-    extension: extractExtension(input.name),
+    extension: extractStorageFileExtension(input.name),
   };
 
   const normalizedBucket = normalizePath(context.bucketId);

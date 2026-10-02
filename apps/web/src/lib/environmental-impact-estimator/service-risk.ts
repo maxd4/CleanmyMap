@@ -4,6 +4,7 @@ import type {
   EnvironmentalImpactInfrastructureServiceKey,
 } from "./types";
 import { SERVICE_RISK_POLICY } from "./service-risk-policy";
+import { clamp, getGrowthPercent, round } from "./service-risk-metrics";
 export { buildServiceThresholdAlerts } from "./service-risk-alerts";
 export type { ServiceThresholdAlert } from "./service-risk-alerts";
 
@@ -78,14 +79,6 @@ export function isDevelopmentAiServiceKey(
   serviceKey: EnvironmentalImpactInfrastructureServiceKey,
 ): boolean {
   return DEVELOPMENT_AI_SERVICE_KEYS.has(serviceKey);
-}
-
-function round(value: number): number {
-  return Math.round(value);
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 function weightedScoreComponent(value: number | null, weight: number): number {
@@ -285,30 +278,6 @@ function getThresholdProximityPercent(
   }
 
   return round(clamp(sharePercent, 0, 100));
-}
-
-function getGrowthPercent(
-  currentKgCo2eProxy: number | null,
-  previousKgCo2eProxy: number | null | undefined,
-): number | null {
-  if (currentKgCo2eProxy === null || previousKgCo2eProxy === null || previousKgCo2eProxy === undefined) {
-    return null;
-  }
-  if (currentKgCo2eProxy <= 0) {
-    return 0;
-  }
-
-  if (previousKgCo2eProxy <= 0) {
-    return 100;
-  }
-
-  return round(
-    clamp(
-      ((currentKgCo2eProxy - previousKgCo2eProxy) / previousKgCo2eProxy) * 100,
-      0,
-      100,
-    ),
-  );
 }
 
 function computeServiceRiskScore(params: {

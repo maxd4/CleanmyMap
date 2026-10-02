@@ -2,10 +2,10 @@
 
 import { useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
-import { hasAnalyticsConsent } from "@/lib/analytics-consent";
 import {
-  COOKIE_CONSENT_CHANGE_EVENT,
-} from "@/lib/storage/ui-state-storage";
+  hasAnalyticsConsent,
+  subscribeAnalyticsConsent,
+} from "@/lib/analytics-consent";
 
 const DeferredProjectPageviewTracker = dynamic(
   () =>
@@ -26,24 +26,9 @@ const DeferredSpeedInsights = dynamic(
   { ssr: false, loading: () => null },
 );
 
-function subscribe(onStoreChange: () => void): () => void {
-  if (typeof window === "undefined") {
-    return () => undefined;
-  }
-
-  const handler = () => onStoreChange();
-  window.addEventListener("storage", handler);
-  window.addEventListener(COOKIE_CONSENT_CHANGE_EVENT, handler);
-
-  return () => {
-    window.removeEventListener("storage", handler);
-    window.removeEventListener(COOKIE_CONSENT_CHANGE_EVENT, handler);
-  };
-}
-
 export function ConditionalAnalytics() {
   const hasConsent = useSyncExternalStore(
-    subscribe,
+    subscribeAnalyticsConsent,
     hasAnalyticsConsent,
     () => false,
   );

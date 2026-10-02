@@ -1,6 +1,7 @@
 import type { EnvironmentalImpactSnapshotRecord } from "./types";
 import type { EnvironmentalImpactInfrastructureServiceKey } from "./types";
 import { SERVICE_RISK_POLICY } from "./service-risk-policy";
+import { clamp, getGrowthPercent } from "./service-risk-metrics";
 
 type ServiceThresholdAlertSeverity = "warning" | "critical";
 type ServiceThresholdAlertSignal = "quotaShare" | "growth" | "trend";
@@ -29,27 +30,6 @@ type ServiceRiskSource = {
     quantityPerMonth: number | null;
   }>;
 };
-
-function round(value: number): number {
-  return Math.round(value);
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function getGrowthPercent(currentKgCo2eProxy: number | null, previousKgCo2eProxy: number | null | undefined): number | null {
-  if (currentKgCo2eProxy === null || previousKgCo2eProxy === null || previousKgCo2eProxy === undefined) {
-    return null;
-  }
-  if (currentKgCo2eProxy <= 0) {
-    return 0;
-  }
-  if (previousKgCo2eProxy <= 0) {
-    return 100;
-  }
-  return round(clamp(((currentKgCo2eProxy - previousKgCo2eProxy) / previousKgCo2eProxy) * 100, 0, 100));
-}
 
 function formatMonthLabel(snapshotDate: string): string {
   const parsed = new Date(`${snapshotDate}T00:00:00.000Z`);

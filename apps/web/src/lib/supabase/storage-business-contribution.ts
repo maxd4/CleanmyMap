@@ -17,6 +17,11 @@ import {
 } from "./storage-usage";
 import { STORAGE_BUSINESS_CONTRIBUTION_POLICY } from "./storage-business-contribution-policy";
 import {
+  compareStorageUsageEntries,
+  extractStorageFileExtension,
+  parseStorageSizeBytes,
+} from "./storage-size";
+import {
   buildStorageBusinessContributionAlerts,
   buildStorageBusinessContributionAlertId,
   getAlertSeverityRank,
@@ -117,15 +122,6 @@ export type StorageBusinessContributionReport = {
   items: StorageBusinessContributionItem[];
 };
 
-function extractExtension(name: string): string {
-  const fileName = name.split("/").pop() ?? name;
-  const index = fileName.lastIndexOf(".");
-  if (index <= 0 || index === fileName.length - 1) {
-    return "";
-  }
-  return fileName.slice(index + 1).toLowerCase();
-}
-
 function toStringOrNull(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value : null;
 }
@@ -161,28 +157,13 @@ function getHistorySeries(
     .slice(0, 4);
 }
 
-function extractSizeBytes(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
-    return Math.trunc(value);
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed) && parsed >= 0) {
-      return Math.trunc(parsed);
-    }
-  }
-
-  return null;
-}
-
 function buildTopFilesByDomain(
   objects: StorageUsageObjectRow[],
 ): Map<StorageBusinessDomainId, StorageBusinessContributionTopFile[]> {
   const grouped = new Map<StorageBusinessDomainId, StorageBusinessContributionTopFile[]>();
 
   for (const object of objects) {
-    const size = extractSizeBytes(object.metadata?.["size"]);
+    const size = parseStorageSizeBytes(object.metadata?.["size"]);
     if (size === null) {
       continue;
     }
@@ -203,7 +184,7 @@ function buildTopFilesByDomain(
       sourceTable: classification.sourceTable,
       businessContext: classification.businessContext,
       name: object.name,
-      extension: extractExtension(object.name) || "sans-extension",
+      extension: extractStorageFileExtension(object.name) || "sans-extension",
       bytes: size,
       sizeLabel: formatStorageBytes(size),
       createdAt: toStringOrNull(object.created_at),
@@ -238,7 +219,7 @@ function buildMimeSubtypesByDomain(
   >();
 
   for (const object of objects) {
-    const size = extractSizeBytes(object.metadata?.["size"]);
+    const size = parseStorageSizeBytes(object.metadata?.["size"]);
     const classification = classifyStorageBusinessObject({
       bucketId: object.bucket_id,
       name: object.name,
@@ -246,7 +227,7 @@ function buildMimeSubtypesByDomain(
       metadata: object.metadata ?? null,
     });
     const mimeType = toStringOrNull(object.metadata?.["mimetype"]);
-    const extension = extractExtension(object.name);
+    const extension = extractStorageFileExtension(object.name);
     const key = mimeType ?? `file-type:${extension || "sans-extension"}`;
     const label = mimeType ?? inferStorageFileTypeLabel(extension, mimeType);
 
@@ -279,15 +260,7 @@ function buildMimeSubtypesByDomain(
         averageBytes: item.knownSizeCount > 0 ? item.bytes / item.knownSizeCount : null,
         knownSizeCount: item.knownSizeCount,
       }))
-      .sort((left, right) => {
-        if (right.bytes !== left.bytes) {
-          return right.bytes - left.bytes;
-        }
-        if (right.count !== left.count) {
-          return right.count - left.count;
-        }
-        return left.label.localeCompare(right.label, "fr");
-      });
+      .sort(compareStorageUsageEntries);
 
     const totalBytes = sortedEntries.reduce((sum, item) => sum + item.bytes, 0);
     const hasUnknownSizes = sortedEntries.some((item) => item.knownSizeCount < item.count);

@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { decodeClerkPublishableKeyPayload } from "./auth/clerk-publishable-key";
 
 function parseOrigin(raw: string | undefined): string | undefined {
   if (!raw || raw.trim().length === 0) {
@@ -34,15 +35,12 @@ function getClerkKeyMode(raw: string | undefined, prefix: "pk" | "sk"): ClerkKey
 }
 
 function decodePublishableKeyHost(raw: string): string | undefined {
-  const payload = raw.trim().replace(/^pk_(?:test|live)_/, "").replace(/\$$/, "");
-  if (!payload) {
+  const decoded = decodeClerkPublishableKeyPayload(raw);
+  if (!decoded) {
     return undefined;
   }
 
   try {
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-    const decoded = atob(padded).trim().replace(/\$$/, "");
     const parsed = new URL(
       decoded.includes("://") ? decoded : `https://${decoded}`,
     );

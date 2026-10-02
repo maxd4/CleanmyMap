@@ -141,21 +141,25 @@ describe("resolveDefaultActionOrganizerIds", () => {
 });
 
 describe("loadCanonicalActionOrganizerIdsForAction", () => {
-  it("returns only persisted organizer relations, even when an admin allowlist exists", async () => {
+  function createOrganizerRelationQuery(
+    data: Array<{ organizer_clerk_id: string }>,
+  ) {
     const relationQuery = {
       select: vi.fn(() => relationQuery),
       eq: vi.fn(() => relationQuery),
       order: vi
         .fn()
         .mockImplementationOnce(() => relationQuery)
-        .mockResolvedValueOnce({
-          data: [
-            { organizer_clerk_id: " organizer-1 " },
-            { organizer_clerk_id: "organizer-1" },
-          ],
-          error: null,
-        }),
+        .mockResolvedValueOnce({ data, error: null }),
     };
+    return relationQuery;
+  }
+
+  it("returns only persisted organizer relations, even when an admin allowlist exists", async () => {
+    const relationQuery = createOrganizerRelationQuery([
+      { organizer_clerk_id: " organizer-1 " },
+      { organizer_clerk_id: "organizer-1" },
+    ]);
     const supabase = {
       from: vi.fn((table: string) => {
         expect(table).toBe("action_organizers");
@@ -169,14 +173,7 @@ describe("loadCanonicalActionOrganizerIdsForAction", () => {
   });
 
   it("preserves an absent relation instead of inventing an admin or creator organizer", async () => {
-    const relationQuery = {
-      select: vi.fn(() => relationQuery),
-      eq: vi.fn(() => relationQuery),
-      order: vi
-        .fn()
-        .mockImplementationOnce(() => relationQuery)
-        .mockResolvedValueOnce({ data: [], error: null }),
-    };
+    const relationQuery = createOrganizerRelationQuery([]);
     const supabase = {
       from: vi.fn(() => relationQuery),
     } as unknown as SupabaseClient;

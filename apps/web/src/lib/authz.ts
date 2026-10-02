@@ -11,7 +11,7 @@ import {
   type EffectiveAccess,
   type SessionRole,
 } from "./domain-language";
-import { mapBadgeIdsToBadges } from "./authz-badges";
+import { extractBadgeIds, mapBadgeIdsToBadges } from "./authz-badges";
 import {
   buildActorNameOptions,
   getClerkUser,
@@ -24,7 +24,6 @@ import {
   parseAdminUserIds,
   parseMaxUserIds,
   resolveClerkRole,
-  type ClerkMetadata,
 } from "./auth/role-resolution";
 export { isAdminRole } from "./auth/role-resolution";
 export type { AccountBadge } from "./authz-badges";
@@ -48,19 +47,6 @@ export type CreatorAccessResult =
 export type AuthenticatedAccessResult =
   | { ok: true; userId: string }
   | { ok: false; status: 401; error: string };
-
-function extractBadgeIds(metadata: ClerkMetadata): string[] {
-  if (!metadata) {
-    return [];
-  }
-  const badges = metadata["badges"];
-  if (!Array.isArray(badges)) {
-    return [];
-  }
-  return badges
-    .filter((value): value is string => typeof value === "string")
-    .map((value) => value.trim().toLowerCase());
-}
 
 export async function requireAdminAccess(): Promise<AdminAccessResult> {
   const devBypass = await getDevAuthBypassSession();
