@@ -9,6 +9,7 @@ import {
   ReportsWebDocument,
   type ReportsWebDocumentProps,
 } from "../reports-web-document";
+import { collectDomElements } from "./__tests__/reports-web-document.test-support";
 
 const mocks = vi.hoisted(() => ({
   useReportsWebDocumentModel: vi.fn(),
@@ -113,30 +114,6 @@ const reportModel = {
   isLoading: false,
   hasError: false,
 };
-
-type TestElementProps = {
-  children?: React.ReactNode;
-  type?: string;
-  onChange?: (...args: unknown[]) => void;
-};
-
-function collectDomElements(node: React.ReactNode): React.ReactElement<TestElementProps>[] {
-  if (!React.isValidElement(node)) {
-    return [];
-  }
-
-  const element = node as React.ReactElement<TestElementProps>;
-
-  if (typeof element.type === "function") {
-    const component = element.type as (props: TestElementProps) => React.ReactNode;
-    return collectDomElements(component(element.props));
-  }
-
-  return [
-    element,
-    ...React.Children.toArray(element.props.children).flatMap(collectDomElements),
-  ];
-}
 
 describe("ReportsWebDocumentPreparation", () => {
   beforeEach(() => {
