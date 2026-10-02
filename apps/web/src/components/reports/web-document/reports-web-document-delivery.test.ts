@@ -8,12 +8,10 @@ import {
   type ReportsWebDocumentExportStatus,
   type ReportsWebDocumentHistoryRow,
 } from "./reports-web-document-delivery";
-
-type TestElementProps = {
-  children?: React.ReactNode;
-  onClick?: (...args: unknown[]) => void;
-  role?: string;
-};
+import {
+  collectDomElements,
+  type TestDomElementProps,
+} from "./__tests__/reports-web-document.test-support";
 
 const historyRows: ReportsWebDocumentHistoryRow[] = [
   {
@@ -25,23 +23,6 @@ const historyRows: ReportsWebDocumentHistoryRow[] = [
     generatedAt: "01/08/2026 12:00",
   },
 ];
-
-function collectDomElements(node: React.ReactNode): React.ReactElement<TestElementProps>[] {
-  if (!React.isValidElement(node)) {
-    return [];
-  }
-
-  const element = node as React.ReactElement<TestElementProps>;
-  if (typeof element.type === "function") {
-    const component = element.type as (props: TestElementProps) => React.ReactNode;
-    return collectDomElements(component(element.props));
-  }
-
-  return [
-    element,
-    ...React.Children.toArray(element.props.children).flatMap(collectDomElements),
-  ];
-}
 
 function createStatus(
   state: "idle" | "pending" | "success" | "error",
@@ -130,7 +111,9 @@ describe("ReportsWebDocumentDelivery", () => {
         onGenerate,
       }),
     );
-    const deliveryButton = deliveryElements.find((element) => element.type === "button");
+    const deliveryButton = deliveryElements.find(
+      (element: React.ReactElement<TestDomElementProps>) => element.type === "button",
+    );
     deliveryButton?.props.onClick?.();
 
     expect(onGenerate).toHaveBeenCalledTimes(1);
