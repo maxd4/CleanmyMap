@@ -3,7 +3,7 @@ import { MapPinned, Recycle, Sprout, Target, Trash2 } from "lucide-react";
 
 import type { LearnPracticeThemeId } from "@/lib/learning/practice/themes";
 
-export type LocalizedText = {
+type LocalizedText = {
   fr: string;
   en: string;
 };
@@ -16,7 +16,7 @@ export type ThemeGuide = {
   icon: LucideIcon;
 };
 
-export type ThemeAccordion = {
+type ThemeAccordion = {
   title: LocalizedText;
   lead: LocalizedText;
   bullets: LocalizedText[];

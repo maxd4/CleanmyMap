@@ -25,20 +25,20 @@ export type QuizSchoolActivityTheme =
   | "science-et-calcul"
   | "echelles-collectives";
 
-export type QuizSchoolActivityValidationStatus = "validated" | "needsReview";
+type QuizSchoolActivityValidationStatus = "validated" | "needsReview";
 
-export type QuizSchoolActivitySource = {
+type QuizSchoolActivitySource = {
   label: QuizSchoolLocalizedText;
   href: string;
   kind: "interne" | "institutionnelle" | "scientifique" | "donnees-exemple";
 };
 
-export type QuizSchoolActivityDataPoint = {
+type QuizSchoolActivityDataPoint = {
   label: QuizSchoolLocalizedText;
   value: number;
 };
 
-export type QuizSchoolActivityLevelProfile = {
+type QuizSchoolActivityLevelProfile = {
   difficulty: QuizDifficultyId;
   skills: readonly QuizSkillId[];
   adaptation: QuizSchoolLocalizedText;
@@ -274,7 +274,7 @@ export const QUIZ_SCHOOL_WORKSHOP_ACTIVITIES: readonly QuizSchoolActivity[] = [
   },
 ];
 
-export function resolveQuizSchoolActivity(
+function resolveQuizSchoolActivity(
   activity: QuizSchoolActivity,
   level: QuizSchoolLevel,
 ): ResolvedQuizSchoolActivity | null {

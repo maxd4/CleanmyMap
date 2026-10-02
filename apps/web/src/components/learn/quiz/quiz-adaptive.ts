@@ -53,9 +53,3 @@ export function insertAdaptiveReinforcement<T extends AdaptiveQuestionLike>(
 
   return nextDeck;
 }
-
-export function buildAdaptiveSessionDeck<T extends AdaptiveQuestionLike>(
-  deck: readonly T[],
-): T[] {
-  return [...deck];
-}

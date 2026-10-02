@@ -6,9 +6,9 @@ import { BookOpen, BellOff, BookmarkCheck, CalendarDays, CloudOff, Clock3, Downl
 import type { LearnEvent, LearnLocalizedText, LearnLocale } from "@/lib/learning/learn-rubric-data";
 import { LEARN_RESOURCE_EVENTS } from "@/lib/learning/learn-rubric-data";
 
-export type LearnText = LearnLocalizedText;
+type LearnText = LearnLocalizedText;
 
-export type ResourceTone = "amber" | "cyan" | "emerald";
+type ResourceTone = "amber" | "cyan" | "emerald";
 
 export type ResourceSpotlight = {
   key: string;

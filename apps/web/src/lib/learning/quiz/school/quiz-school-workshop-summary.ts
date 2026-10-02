@@ -135,7 +135,3 @@ export function buildQuizSchoolWorkshopSummary({
     territorialResources: selectedResources,
   };
 }
-
-export function getQuizSchoolWorkshopActivityThemes(activities: readonly ResolvedQuizSchoolActivity[]): string[] {
-  return [...new Set(activities.map((activity) => activity.theme))];
-}

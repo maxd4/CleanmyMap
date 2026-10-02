@@ -398,11 +398,3 @@ export const IMPACT_REFERENCE_QUIZ_QUESTIONS: QuizQuestion[] = [
     ...baseQuizSource(IMPACT_REFERENCE_CATALOG.hdiVsEmissions),
   },
 ];
-
-export function getImpactReferenceCatalog() {
-  return IMPACT_REFERENCE_CATALOG;
-}
-
-export function getImpactReferenceQuestionSet() {
-  return IMPACT_REFERENCE_QUIZ_QUESTIONS;
-}

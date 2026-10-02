@@ -19,7 +19,6 @@ import { GuideCard } from "./learn-practice-theme-tabs.content";
 import { THEME_LABELS, THEME_PANELS } from "./learn-practice-theme-tabs.data";
 import { ThemeVisualBlock } from "./learn-practice-theme-tabs.visuals";
 
-export { LEARN_PRACTICE_THEME_ORDER } from "@/lib/learning/practice/themes";
 export type { LearnPracticeThemeId } from "@/lib/learning/practice/themes";
 
 export function LearnPracticeThemeTabs({

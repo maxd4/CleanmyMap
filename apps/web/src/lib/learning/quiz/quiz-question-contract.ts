@@ -99,7 +99,7 @@ type QuizQuestionReviewBlock = {
   followUp: QuizQuestionFollowUp;
 };
 
-export type QuizQuestionStructure = {
+type QuizQuestionStructure = {
   content: QuizQuestionContentBlock;
   taxonomy: QuizQuestionTaxonomyBlock;
   source: QuizQuestionSourceBlock;

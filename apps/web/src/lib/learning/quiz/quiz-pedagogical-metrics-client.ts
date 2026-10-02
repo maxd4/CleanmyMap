@@ -2,7 +2,7 @@ import type { QuizAccessTypeId } from "./quiz-access-types";
 import type { QuizReasoningType } from "./quiz-reasoning-types";
 import type { QuizErrorTypeId } from "./quiz-error-grid";
 
-export type QuizPedagogicalMetricsClientQuestionResult = {
+type QuizPedagogicalMetricsClientQuestionResult = {
   questionId: string;
   correct: boolean;
   skill: QuizReasoningType;

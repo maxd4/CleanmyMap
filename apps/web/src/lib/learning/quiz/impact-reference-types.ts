@@ -4,11 +4,9 @@ export type ImpactScope = (typeof IMPACT_SCOPES)[number];
 
 export const IMPACT_VALUE_SCOPES = [...IMPACT_SCOPES, "human-development"] as const;
 
-export type ImpactValueScope = (typeof IMPACT_VALUE_SCOPES)[number];
+type ImpactValueScope = (typeof IMPACT_VALUE_SCOPES)[number];
 
-export const IMPACT_UNCERTAINTIES = ["faible", "moyenne", "élevée", "très élevée"] as const;
-
-export type ImpactUncertainty = (typeof IMPACT_UNCERTAINTIES)[number];
+type ImpactUncertainty = "faible" | "moyenne" | "élevée" | "très élevée";
 
 export type ImpactReferenceSource = {
   label: string;

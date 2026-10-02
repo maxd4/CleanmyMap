@@ -8,7 +8,7 @@ export type QuizReasoningType =
   | "cas-limites"
   | "mini-enquetes";
 
-export const REASONING_TYPE_ORDER: QuizReasoningType[] = [
+const REASONING_TYPE_ORDER: QuizReasoningType[] = [
   "idée reçue",
   "terrain",
   "estimation",

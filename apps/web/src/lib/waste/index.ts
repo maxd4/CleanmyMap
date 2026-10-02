@@ -5,7 +5,6 @@ export {
   isWasteCategorySlug,
 } from "./catalog";
 export {
-  LEGACY_RECYCLING_CATEGORY_ORDER,
   LEGACY_WASTE_CATEGORY_TO_SLUG,
   getCanonicalWasteQuantities,
 } from "./legacy";

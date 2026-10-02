@@ -3,17 +3,17 @@ import type { QuizSchoolLevel } from "./quiz-school-types";
 
 export type QuizSchoolWorkshopAssessmentPhase = "pre-quiz" | "post-quiz";
 
-export type QuizSchoolWorkshopAssessmentType = "qcm-raisonne" | "estimation" | "situation-probleme";
+type QuizSchoolWorkshopAssessmentType = "qcm-raisonne" | "estimation" | "situation-probleme";
 
 export type QuizSchoolAssessmentLocalizedText = { fr: string; en: string };
 
-export type QuizSchoolWorkshopAssessmentSource = {
+type QuizSchoolWorkshopAssessmentSource = {
   label: QuizSchoolAssessmentLocalizedText;
   href: string;
   kind: "interne";
 };
 
-export type QuizSchoolWorkshopAssessmentLevelProfile = {
+type QuizSchoolWorkshopAssessmentLevelProfile = {
   difficulty: QuizDifficultyId;
   skills: readonly QuizSkillId[];
 };
@@ -43,7 +43,6 @@ export type ResolvedQuizSchoolWorkshopAssessmentItem = QuizSchoolWorkshopAssessm
   skills: readonly QuizSkillId[];
 };
 
-export const QUIZ_SCHOOL_WORKSHOP_ASSESSMENT_CONCEPT_COUNT = 8;
 export const QUIZ_SCHOOL_WORKSHOP_PRE_ASSESSMENT_SIZE = 8;
 export const QUIZ_SCHOOL_WORKSHOP_POST_ASSESSMENT_SIZE = 10;
 

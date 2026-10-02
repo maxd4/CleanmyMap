@@ -5,8 +5,8 @@ export type LearnLocalizedText = {
   en: string;
 };
 
-export type LearnCardVisualTone = "amber" | "cyan" | "emerald" | "violet";
-export type LearnCardVisualMotif = "layers" | "path" | "quiz" | "calendar" | "guides" | "resources";
+type LearnCardVisualTone = "amber" | "cyan" | "emerald" | "violet";
+type LearnCardVisualMotif = "layers" | "path" | "quiz" | "calendar" | "guides" | "resources";
 
 export type LearnCardVisual = {
   tone: LearnCardVisualTone;

@@ -34,7 +34,7 @@ export type WastePickupPolicy =
   | "trained_only"
   | "no_pickup";
 
-export type WasteDisposalRoute =
+type WasteDisposalRoute =
   | "cigarette_waste"
   | "municipal_recycling"
   | "glass_container"
@@ -47,7 +47,7 @@ export type WasteDisposalRoute =
   | "sharps_collection"
   | "local_authority_route";
 
-export type WasteLocalizedText = {
+type WasteLocalizedText = {
   fr: string;
   en: string;
 };
