@@ -120,7 +120,7 @@ async function readSecureBufferRecords<T>(indexKey: string): Promise<{ keys: str
 }
 
 async function clearSecureBufferRecords(keys: string[]): Promise<void> {
-  await Promise.all(keys.map((key) => removeStoredValue(key).catch(() => undefined)));
+  await Promise.all(keys.map((key) => removeStoredValue(key)));
 }
 
 // Mission ID persistant
@@ -246,7 +246,9 @@ export async function bufferAction(action: MissionActionInsert): Promise<void> {
 
 // Flush
 
-export async function flushBuffer(): Promise<ServiceResult> {
+let flushInFlight: Promise<ServiceResult> | null = null;
+
+async function flushBufferOnce(): Promise<ServiceResult> {
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
     // Sans session Clerk, les données restent persistées localement.
@@ -302,6 +304,15 @@ export async function flushBuffer(): Promise<ServiceResult> {
   }
 
   return { ok: true, data: undefined };
+}
+
+export async function flushBuffer(): Promise<ServiceResult> {
+  if (flushInFlight) return flushInFlight;
+
+  flushInFlight = flushBufferOnce().finally(() => {
+    flushInFlight = null;
+  });
+  return flushInFlight;
 }
 
 export async function getBufferCount(): Promise<number> {
