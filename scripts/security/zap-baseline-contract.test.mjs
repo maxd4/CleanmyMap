@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,6 +7,7 @@ const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptsDirectory, "../..");
 const workflowPath = resolve(repositoryRoot, ".github/workflows/dast-zap-baseline.yml");
 const contextPath = resolve(scriptsDirectory, "zap-public.context");
+const apiRoutesPath = resolve(repositoryRoot, "apps/web/src/app/api");
 
 const workflow = readFileSync(workflowPath, "utf8");
 const context = readFileSync(contextPath, "utf8");
@@ -45,9 +46,19 @@ for (const publicUrl of [
   "https://cleanmymap.fr/",
   "https://cleanmymap.fr/explorer",
   "https://cleanmymap.fr/en?source=zap",
+  "https://cleanmymap.fr/learn/comprendre",
+  "https://cleanmymap.fr/learn/bonnes-pratiques",
+  "https://cleanmymap.fr/learn/ecole",
+  "https://cleanmymap.fr/learn/sentrainer",
 ]) {
   assert.match(publicUrl, include, `expected public URL in ZAP scope: ${publicUrl}`);
 }
+
+assert.doesNotMatch(
+  "https://cleanmymap.fr/learn",
+  include,
+  "the obsolete /learn root must not be treated as a stable public route",
+);
 
 for (const excludedUrl of [
   "https://cleanmymap.fr/admin",
@@ -64,3 +75,37 @@ for (const excludedUrl of [
 
 assert.doesNotMatch(context, /\*\s+OUTOFSCOPE/);
 assert.match(context, /(?:admin|sign-in|api\/|webhooks?|uploads?)/);
+
+function collectApiRouteFiles(directory) {
+  const files = [];
+
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = resolve(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectApiRouteFiles(entryPath));
+    } else if (/^route\.(?:m|c)?(?:js|ts|tsx)$/.test(entry.name)) {
+      files.push(entryPath);
+    }
+  }
+
+  return files;
+}
+
+assert.ok(existsSync(apiRoutesPath), "the API route tree must exist for the CORS guard");
+const privateApiRouteFiles = collectApiRouteFiles(apiRoutesPath);
+assert.ok(privateApiRouteFiles.length > 0, "the CORS guard must inspect private API handlers");
+
+for (const routePath of privateApiRouteFiles) {
+  const routeSource = readFileSync(routePath, "utf8");
+  const hasWildcardOrigin =
+    /Access-Control-Allow-Origin[\s\S]{0,240}(?:["'`]\*["'`]|:\s*\*)/i.test(routeSource) ||
+    /(?:["'`]\*["'`]|:\s*\*)[\s\S]{0,240}Access-Control-Allow-Origin/i.test(routeSource);
+  const hasCredentialedCors =
+    /Access-Control-Allow-Credentials[\s\S]{0,240}(?:true|["'`]true["'`])/i.test(routeSource) ||
+    /(?:true|["'`]true["'`])[\s\S]{0,240}Access-Control-Allow-Credentials/i.test(routeSource);
+
+  assert.ok(
+    !(hasWildcardOrigin && hasCredentialedCors),
+    `private API handler must not combine wildcard CORS with credentials: ${routePath}`,
+  );
+}
