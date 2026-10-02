@@ -17,8 +17,6 @@ import {
 } from "@/components/ui/page-structure";
 import type { PageStructureIconName } from "@/components/ui/page-structure";
 
-type AdminMetricState = "positive" | "neutral" | "negative";
-
 const ACTION_VARIANT_CLASSES = {
   soft:
     "border-amber-200/55 bg-[linear-gradient(180deg,rgba(255,243,228,0.98)_0%,rgba(249,236,219,0.94)_100%)] shadow-[0_16px_40px_-30px_rgba(180,83,9,0.24)]",
@@ -84,12 +82,6 @@ export type AdminActionItem = {
   iconWrapClassName?: string;
   badgeClassName?: string;
 };
-
-function resolveTrendLabel(interpretation: AdminMetricState): string {
-  if (interpretation === "positive") return "En hausse";
-  if (interpretation === "negative") return "À renforcer";
-  return "Stable";
-}
 
 export function AdminHeroStrip({
   icon,
@@ -213,86 +205,6 @@ export function AdminSectionHeader({
   );
 }
 
-export function AdminMetricCard({
-  label,
-  value,
-  deltaPercent,
-  previousValue,
-  interpretation,
-  forecastLabel,
-  className,
-}: {
-  label: string;
-  value: string;
-  deltaPercent: string;
-  previousValue: string;
-  interpretation: AdminMetricState;
-  forecastLabel?: string;
-  className?: string;
-}) {
-  const trendLabel = resolveTrendLabel(interpretation);
-  const trendTone = interpretation === "positive"
-    ? "emerald"
-    : interpretation === "negative"
-      ? "rose"
-      : "slate";
-
-  return (
-    <StatCard
-      label={label}
-      value={value}
-      badge={<SourceBadge tone={trendTone}>{trendLabel}</SourceBadge>}
-      period={
-        <span>
-          N-1 <span className="font-semibold text-stone-950">{previousValue}</span>
-        </span>
-      }
-      description={
-        <span className="inline-flex items-center gap-2">
-          <SourceBadge tone={trendTone}>{deltaPercent}</SourceBadge>
-          <span>vs dernière période</span>
-        </span>
-      }
-      footer={
-        forecastLabel ? (
-          <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-stone-500">
-            {forecastLabel}
-          </p>
-        ) : null
-      }
-      tone="amber"
-      className={cn(
-        "bg-[linear-gradient(145deg,rgba(76,61,48,0.94)_0%,rgba(112,94,78,0.90)_58%,rgba(198,177,154,0.24)_100%)]",
-        className,
-      )}
-    />
-  );
-}
-
-export function AdminMetricGrid({
-  items,
-  className,
-}: {
-  items: Array<{
-    id: string;
-    label: string;
-    value: string;
-    previousValue: string;
-    deltaPercent: string;
-    interpretation: AdminMetricState;
-    forecastLabel?: string;
-  }>;
-  className?: string;
-}) {
-  return (
-    <section className={cn("grid gap-5 lg:grid-cols-3", className)}>
-      {items.map((item) => (
-        <AdminMetricCard key={item.id} {...item} />
-      ))}
-    </section>
-  );
-}
-
 const OPERATIONAL_METRIC_STATUS: Record<
   AdminOperationalMetricAvailability,
   { label: string; tone: "emerald" | "amber" | "rose" }
@@ -329,7 +241,7 @@ export function AdminOperationalMetricGrid({
   );
 }
 
-export function AdminActionCard({
+function AdminActionCard({
   icon,
   title,
   description,

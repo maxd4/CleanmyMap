@@ -1,12 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AdminCleanPlaceEdits } from "@/lib/admin/moderation/action-moderation-edits";
 
-export const SIGNALEMENT_MODERATION_SOURCES = [
-  "trash_spotter_spots",
-] as const;
-
-export type SignalementModerationSource =
-  (typeof SIGNALEMENT_MODERATION_SOURCES)[number];
+export type SignalementModerationSource = "trash_spotter_spots";
 export type SignalementModerationStatus = "new" | "validated" | "cleaned";
 
 export type ModeratableSignalement = {

@@ -15,7 +15,7 @@ export type CreatorInboxMutationSource = Exclude<
   "event" | "legal_content_report"
 >;
 
-export const AUDIT_OPERATION = "creator_inbox_update";
+const AUDIT_OPERATION = "creator_inbox_update";
 
 export type InboxSnapshot = {
   source: CreatorInboxMutationSource;

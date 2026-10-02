@@ -1,4 +1,4 @@
-export interface BackpressureConfig {
+interface BackpressureConfig {
   maxConcurrent: number;
   queueSize: number;
   timeoutMs: number;
@@ -21,7 +21,7 @@ interface QueueItem {
 const activeOperations = new Map<string, number>();
 const queues = new Map<string, QueueItem[]>();
 
-export function getBackpressureConfig(operationType: string): BackpressureConfig {
+function getBackpressureConfig(operationType: string): BackpressureConfig {
   const configs: Record<string, BackpressureConfig> = {
     import: {
       maxConcurrent: 2,

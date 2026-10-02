@@ -5,7 +5,7 @@ const BOT_ID_CHECK_OPTIONS = {
   advancedOptions: { checkLevel: "basic" as const },
 };
 
-export const BOT_ID_REJECTION_BODY = {
+const BOT_ID_REJECTION_BODY = {
   error: "Access denied",
   code: "BOT_DETECTED",
 } as const;
