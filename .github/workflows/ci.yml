@@ -194,6 +194,9 @@ jobs:
       - name: Environment contract
         run: npm run check:env-contract
 
+      - name: ClerkJS loader version contract
+        run: npm run check:clerk-js-version
+
       - name: Root file hygiene
         run: npm run check:root-files
 

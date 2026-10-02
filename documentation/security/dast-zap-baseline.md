@@ -67,7 +67,10 @@ qualifications ne sont ni une allowlist générale ni une désactivation de règ
 
 - `10017` — dépendance cross-origin Clerk de confiance : `KEEP_VISIBLE`. Le
   signal est conservé pour revue, car le loader Clerk reste une dépendance
-  externe de l’application.
+  externe de l’application. Les compensations sont HTTPS, l'origine de
+  production explicitement contrôlée `https://clerk.cleanmymap.fr`, le
+  pinning exact de `@clerk/nextjs@7.8.2` et `@clerk/clerk-js@6.31.1`, ainsi que
+  la CSP existante.
 - `10038-1` — dette transitoire CSP en `Report-Only` : à corriger dans la
   gouvernance CSP ; ce n’est pas un faux positif permanent et aucune exclusion
   durable ne doit être ajoutée.
@@ -76,8 +79,14 @@ qualifications ne sont ni une allowlist générale ni une désactivation de règ
   `Access-Control-Allow-Credentials`. Le contrat ZAP garde les API privées hors
   périmètre et le test de contrat inspecte leurs handlers pour interdire la
   combinaison wildcard + credentials.
-- `90003` — risque SRI résiduel du loader Clerk : le finding reste visible et ne
-  doit pas être ignoré.
+- `90003` — risque SRI résiduel du loader Clerk :
+  `KEEP_UPSTREAM_SRI_LIMITATION`. La version installée du SDK fournit le
+  chargement dynamique avec `crossOrigin`, `nonce` et `beforeLoad`, mais pas de
+  mécanisme public stable `integrity` pour le script ClerkJS géré par Clerk.
+  Aucun hash fixe n'est donc ajouté à une ressource dynamique et ClerkJS n'est
+  pas self-hosté sans support upstream. Le warning reste visible dans ZAP ;
+  les compensations sont HTTPS, l'origine Clerk explicitement autorisée, le
+  pinning SDK/ClerkJS, la CSP et le contrôle du domaine.
 - `90004-2` — `KEEP_NOT_APPLICABLE_CROSS_ORIGIN_ISOLATION` tant qu’aucun
   consumer `SharedArrayBuffer`, `crossOriginIsolated` ou besoin équivalent
   n’existe dans CleanMyMap. Cette qualification devra être réévaluée à
