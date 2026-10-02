@@ -12,7 +12,16 @@ Pour un signalement responsable, contactez :
 security@cleanmymap.fr
 ```
 
-ou utilisez un canal privé explicitement prévu par le projet.
+Il s'agit du seul canal de signalement actuellement documenté comme disponible
+par le projet. Les issues GitHub publiques ne doivent pas être utilisées pour
+une vulnérabilité exploitable. La disponibilité de GitHub Private Vulnerability
+Reporting n'est pas affirmée ici sans vérification des réglages GitHub.
+
+La politique est également publiée à l'adresse :
+
+```txt
+https://github.com/maxd4/CleanmyMap/security/policy
+```
 
 Merci d'inclure si possible :
 
