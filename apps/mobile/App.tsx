@@ -2,31 +2,26 @@ import React, { useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import * as ImagePicker from 'expo-image-picker'
-import { Ionicons } from '@expo/vector-icons'
 import { ClerkProvider, useAuth, useClerk } from '@clerk/expo'
 import { useHostedAuth } from '@clerk/expo/hosted-auth'
 import { tokenCache } from '@clerk/expo/token-cache'
 import {
   getMission,
   restoreActiveTracking,
-  saveMissionAction,
   startMobileMission,
   stopTracking,
 } from './lib/tracking-service'
 import { getBufferCount } from './lib/storage'
-import { uploadMissionPhoto } from './lib/storage-upload'
 import { MobileShell } from './screens/mobile-shell'
-import type { Mission, MissionActionType, TrackingPhase } from './types/mission'
+import { MissionActiveMap } from './screens/mission-active-map'
+import type { Mission, TrackingPhase } from './types/mission'
 
-const { width } = Dimensions.get('window')
 const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''
 
 function formatDuration(startedAt: string): string {
@@ -48,7 +43,6 @@ function CompanionApp() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [duration, setDuration] = useState('')
   const [bufferCount, setBufferCount] = useState(0)
-  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bufferTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -140,30 +134,6 @@ function CompanionApp() {
     setPhase('idle')
   }
 
-  async function handleTakePhoto() {
-    if (!mission) return
-    await captureMissionPhoto(mission.id, setActionLoading)
-  }
-
-  async function handleRecordAction(type: MissionActionType, label: string) {
-    if (!mission) return
-
-    if (type === 'photo') {
-      handleTakePhoto()
-      return
-    }
-
-    setActionLoading(type)
-    const result = await saveMissionAction(mission.id, type)
-    setActionLoading(null)
-
-    if (result.ok) {
-      Alert.alert('Enregistré', `${label} enregistré avec succès.`)
-    } else {
-      Alert.alert('Action mise en tampon', "Hors ligne ? L'action sera synchronisée plus tard.")
-    }
-  }
-
   if (!isLoaded) {
     return (
       <View style={styles.darkCenter}>
@@ -192,42 +162,11 @@ function CompanionApp() {
       duration={duration}
       bufferCount={bufferCount}
       errorMsg={errorMsg}
-      actionLoading={actionLoading}
       onStop={handleStop}
-      onRecordAction={handleRecordAction}
     />
   }
 
   return <MobileShell onSignOut={() => void signOut()} onStartActivity={handleStartMobileMission} />
-}
-
-async function captureMissionPhoto(missionId: string, setLoading: (value: string | null) => void) {
-  const { status } = await ImagePicker.requestCameraPermissionsAsync()
-  if (status !== 'granted') {
-    Alert.alert('Permission refusée', "L'accès à la caméra est requis pour cette action.")
-    return
-  }
-
-  const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ['images'],
-    allowsEditing: true,
-    aspect: [4, 3],
-    quality: 0.7,
-  })
-
-  if (result.canceled || !result.assets || !result.assets[0]) return
-
-  setLoading('photo')
-  const { path, error } = await uploadMissionPhoto(missionId, result.assets[0].uri)
-  if (error || !path) {
-    Alert.alert('Erreur Upload', error ?? "Impossible d'envoyer la photo.")
-    setLoading(null)
-    return
-  }
-
-  const recordResult = await saveMissionAction(missionId, 'photo', undefined, 'Photo du terrain', path)
-  setLoading(null)
-  if (recordResult.ok) Alert.alert('Succès', 'Photo enregistrée et liée à la mission.')
 }
 
 function MissionActiveScreen({
@@ -235,17 +174,13 @@ function MissionActiveScreen({
   duration,
   bufferCount,
   errorMsg,
-  actionLoading,
   onStop,
-  onRecordAction,
 }: {
   mission: Mission
   duration: string
   bufferCount: number
   errorMsg: string | null
-  actionLoading: string | null
   onStop: () => void
-  onRecordAction: (type: MissionActionType, label: string) => void
 }) {
   return (
     <View style={styles.darkContainer}>
@@ -279,41 +214,7 @@ function MissionActiveScreen({
         </View>
       </View>
 
-      <View style={styles.actionGridContainer}>
-        <Text style={styles.hudLabelSection}>ENREGISTREMENT RAPIDE</Text>
-        <View style={styles.actionGrid}>
-          <ActionButton
-            icon="trash-outline"
-            label="DÉCHET TROUVÉ"
-            color="#fbbf24"
-            loading={actionLoading === 'trash_found'}
-            onPress={() => onRecordAction('trash_found', 'Déchet trouvé')}
-          />
-          <ActionButton
-            icon="checkmark-done-outline"
-            label="RAMASSÉ"
-            color="#10b981"
-            loading={actionLoading === 'trash_collected'}
-            onPress={() => onRecordAction('trash_collected', 'Déchet ramassé')}
-          />
-          <ActionButton
-            icon="camera-outline"
-            label="PHOTO"
-            color="#a78bfa"
-            loading={actionLoading === 'photo'}
-            onPress={() => onRecordAction('photo', 'Photo')}
-          />
-          <ActionButton
-            icon="warning-outline"
-            label="DANGER"
-            color="#f87171"
-            loading={actionLoading === 'hazard'}
-            onPress={() => onRecordAction('hazard', 'Danger signalé')}
-          />
-        </View>
-      </View>
-
-      <View style={{ flex: 1 }} />
+      <MissionActiveMap />
 
       <TouchableOpacity style={styles.hudBtnDanger} onPress={onStop}>
         <Text style={styles.hudBtnText}>TERMINER LA MISSION</Text>
@@ -382,27 +283,6 @@ export default function App() {
   )
 }
 
-function ActionButton({
-  icon,
-  label,
-  color,
-  onPress,
-  loading,
-}: {
-  icon: keyof typeof Ionicons.glyphMap
-  label: string
-  color: string
-  onPress: () => void
-  loading?: boolean
-}) {
-  return (
-    <TouchableOpacity style={[styles.actionBtn, { borderColor: `${color}40` }]} onPress={onPress} disabled={loading}>
-      {loading ? <ActivityIndicator size="small" color={color} /> : <Ionicons name={icon} size={28} color={color} />}
-      <Text style={[styles.actionBtnLabel, { color }]}>{label}</Text>
-    </TouchableOpacity>
-  )
-}
-
 const styles = StyleSheet.create({
   darkCenter: {
     flex: 1,
@@ -429,14 +309,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 2,
     marginBottom: 4,
-  },
-  hudLabelSection: {
-    color: '#64748b',
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 2,
-    marginBottom: 16,
-    textAlign: 'center',
   },
   hudTitle: {
     color: '#f8fafc',
@@ -502,29 +374,6 @@ const styles = StyleSheet.create({
     color: '#f8fafc',
     fontSize: 24,
     fontWeight: '900',
-  },
-  actionGridContainer: {
-    marginTop: 16,
-  },
-  actionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  actionBtn: {
-    width: (width - 48 - 12) / 2,
-    aspectRatio: 1,
-    backgroundColor: '#1e293b',
-    borderRadius: 24,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  actionBtnLabel: {
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
   },
   hudInputWrapper: {
     marginBottom: 24,
