@@ -93,7 +93,7 @@ const nextConfig: NextConfig = {
           { key: "X-Download-Options", value: "noopen" },
           { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-          { key: "Cross-Origin-Resource-Policy", value: "same-site" },
+          { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
           { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicyReportOnly },
         ],
       },
