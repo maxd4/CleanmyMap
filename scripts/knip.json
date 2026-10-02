@@ -41,7 +41,8 @@
       "ignoreIssues": {
         "app.json": ["unlisted"],
         "security/image-size-security.test.mjs": ["unlisted"],
-        "security/stream-json-jayson-security.test.mjs": ["unlisted"]
+        "security/stream-json-jayson-security.test.mjs": ["unlisted"],
+        "security/node-forge-security.test.mjs": ["unlisted"]
       },
       "ignoreDependencies": ["stream-json"]
     }
