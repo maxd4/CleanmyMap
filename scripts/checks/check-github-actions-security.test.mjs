@@ -51,6 +51,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const ciWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "ci.yml"), "utf8");
 const e2eWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "e2e-supabase.yml"), "utf8");
 const codeqlWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "codeql.yml"), "utf8");
+const pinnedCiCheckoutSha = ["3d3c42e5aac5ba805825", "da76410c181273ba90b1"].join("");
 
 assert.doesNotMatch(e2eWorkflow, /path:\s*artifacts\/playwright\b/);
 assert.match(e2eWorkflow, /stage-public-e2e-artifact\.mjs/);
@@ -64,6 +65,22 @@ assert.match(codeqlWorkflow, /runs-on:\s*"ubuntu-24\.04"/);
 assert.deepEqual(auditWorkflowContent(codeqlWorkflow, ".github/workflows/codeql.yml"), []);
 
 assert.match(ciWorkflow, /jobs:\n  scope:/);
+const secretAuditJob = ciWorkflow.match(/  secret-audit:[\s\S]*?\n\n  dependency-audit:/)?.[0] ?? "";
+assert.match(secretAuditJob, /runs-on: ubuntu-latest/);
+assert.doesNotMatch(secretAuditJob, /needs:\s*scope|\n\s+if:/);
+assert.match(secretAuditJob, /permissions:\n\s+contents: read/);
+assert.match(secretAuditJob, new RegExp(`actions/checkout@${pinnedCiCheckoutSha}`));
+assert.match(secretAuditJob, /ref: \$\{\{ github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}/);
+assert.match(secretAuditJob, /persist-credentials: false/);
+assert.match(secretAuditJob, /node-version-file: \$\{\{ env\.NODE_VERSION_FILE \}\}/);
+assert.match(secretAuditJob, /git rev-parse HEAD/);
+assert.match(secretAuditJob, /npm run security:secrets -- --ref=/);
+assert.doesNotMatch(secretAuditJob, /npm ci/);
+assert.equal((ciWorkflow.match(/security:secrets/g) ?? []).length, 1);
+assert.doesNotMatch(ciWorkflow.match(/  web-governance:[\s\S]*?\n\n  web-static:/)?.[0] ?? "", /security:secrets/);
+assert.doesNotMatch(ciWorkflow.match(/  mobile-validation:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "", /security:secrets/);
+// A Python-only maintenance change cannot skip this job because it has no scope dependency or condition.
+assert.match(secretAuditJob, /secret audit/i);
 assert.match(ciWorkflow, /web_code_relevant:/);
 assert.match(ciWorkflow, /mobile_code_relevant:/);
 assert.match(ciWorkflow, /web-governance:\n    needs: scope/);
@@ -90,8 +107,8 @@ assert.match(ciWorkflow, /fail-on-severity: high/);
 const dependencyReviewJob = ciWorkflow.match(/  dependency-review:[\s\S]*?\n\n  web-governance:/)?.[0] ?? "";
 assert.doesNotMatch(dependencyReviewJob, /secrets\./);
 assert.doesNotMatch(dependencyReviewJob, /actions\/checkout@/);
-assert.equal((ciWorkflow.match(/persist-credentials: false/g) ?? []).length, 10);
-assert.equal((ciWorkflow.match(/node-version-file: \$\{\{ env\.NODE_VERSION_FILE \}\}/g) ?? []).length, 9);
+assert.equal((ciWorkflow.match(/persist-credentials: false/g) ?? []).length, 11);
+assert.equal((ciWorkflow.match(/node-version-file: \$\{\{ env\.NODE_VERSION_FILE \}\}/g) ?? []).length, 10);
 assert.equal((ciWorkflow.match(/check-node-version-contract\.mjs/g) ?? []).length, 8);
 assert.doesNotMatch(ciWorkflow, /check:agent-skills/);
 assert.match(ciWorkflow, /check:doc-governance/);
@@ -99,6 +116,5 @@ assert.match(ciWorkflow, /Mobile security tests/);
 assert.match(ciWorkflow, /Mobile Vitest tests/);
 assert.match(ciWorkflow, /Mobile Vitest coverage ratchet/);
 assert.match(ciWorkflow, /Mobile lint/);
-assert.match(ciWorkflow, /Secret audit \(mobile-only\)/);
 assert.match(ciWorkflow, /Architectural Semgrep \(mobile-only\)/);
 assert.match(ciWorkflow, /web_code_relevant != 'true'/);
