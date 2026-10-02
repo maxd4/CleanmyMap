@@ -141,6 +141,20 @@ jobs:
       - name: Dependency advisory audit
         run: npm run security:dependencies
 
+  dependency-review:
+    needs: scope
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Dependency Review
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
+        with:
+          fail-on-severity: high
+
   web-governance:
     needs: scope
     if: needs.scope.outputs.docs_only == 'true' || needs.scope.outputs.web_code_relevant == 'true'
