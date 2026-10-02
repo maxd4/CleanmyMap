@@ -33,15 +33,12 @@ assert.doesNotMatch(workflow, /(?:zap-full-scan|--auto|\s-j(?:\s|$)|\bactive\b)/
 
 assert.match(context, /<configuration>[\s\S]*<context>[\s\S]*<inscope>true<\/inscope>/);
 const includeMatch = context.match(/<incregexes>([\s\S]*?)<\/incregexes>/);
-const excludeMatch = context.match(/<excregexes>([\s\S]*?)<\/excregexes>/);
 assert.ok(includeMatch, "the context must declare an inclusion regex");
-assert.ok(excludeMatch, "the context must declare explicit exclusion regexes");
+const excludeMatches = [...context.matchAll(/<excregexes>([^<]*)<\/excregexes>/g)];
+assert.equal(excludeMatches.length, 2, "the context must declare one XML entry per exclusion regex");
+assert.doesNotMatch(context, /&#10;/, "exclusions must not be concatenated with an XML newline entity");
 const include = new RegExp(includeMatch[1]);
-const excludes = excludeMatch[1]
-  .replaceAll("&#10;", "\n")
-  .split(/\r?\n/)
-  .filter(Boolean)
-  .map((pattern) => new RegExp(pattern));
+const excludes = excludeMatches.map(([, pattern]) => new RegExp(pattern));
 
 for (const publicUrl of [
   "https://cleanmymap.fr/",
