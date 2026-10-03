@@ -5,6 +5,7 @@ import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { normalizeClockTime } from "./time-contract";
 import { projectAdministrativeRequirementsForRead } from "./administrative-requirements";
 import { rebaseRouteTargetDistancePolicy } from "./route-target-policy-rebase";
+import { parseDrawingFromGeoJson } from "./geometry/derived-geometry";
 
 type ActionEditorMetadata = ReturnType<typeof extractActionMetadataFromNotes>;
 type ParsedActionDrawing = ReturnType<typeof parseDrawingFromNotes>;
@@ -79,7 +80,11 @@ function buildEditorMediaFields(
   return {
     photos: metadata.photos,
     visionEstimate: metadata.visionEstimate,
-    manualDrawing: parsedDrawing.manualDrawing,
+    manualDrawing:
+      parseDrawingFromGeoJson(
+        row.derived_geometry_geojson,
+        row.derived_geometry_kind,
+      ) ?? parsedDrawing.manualDrawing,
     geometrySource: row.geometry_source ?? null,
   };
 }

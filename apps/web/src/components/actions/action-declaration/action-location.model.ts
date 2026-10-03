@@ -22,6 +22,7 @@ export type ActionLocationViewModel = {
   activeSummary: ReturnType<typeof summarizeActionDrawingValidation>;
   isManual: boolean;
   isGpx: boolean;
+  isTracking: boolean;
   hasDrawing: boolean;
   statusTone: ActionLocationStatusTone;
 };
@@ -36,6 +37,9 @@ export function buildActionLocationViewModel({
 }: ActionLocationGeometryInput): ActionLocationViewModel {
   const previewSummary = summarizeActionDrawingValidation(routePreviewDrawing);
   const activeGeometry = resolveFinalActionGeometry({
+    trackingDrawing:
+      manualDrawingSource === "gps_tracking" ? manualDrawing : null,
+    trackingSource: manualDrawingSource === "gps_tracking" ? manualDrawingSource : null,
     gpxDrawing: gpxImport ? manualDrawing : null,
     gpxImport,
     manualDrawing,
@@ -57,6 +61,7 @@ export function buildActionLocationViewModel({
     activeSummary,
     isManual: activeGeometry?.source === "manual",
     isGpx: activeGeometry?.source === "gpx_import",
+    isTracking: activeGeometry?.source === "gps_tracking",
     hasDrawing,
     statusTone: activeGeometry?.drawing
       ? activeSummary.tone

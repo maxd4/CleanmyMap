@@ -38,7 +38,6 @@ import {
 import { polylineDistanceKm } from "@/lib/geo/geodesic-distance";
 import { actionFormalitiesFactsSchema } from "@/lib/actions/formalities-workflow";
 import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities-workflow";
-
 const coordinateSchema = z.tuple([
   z.number().finite().min(-90).max(90),
   z.number().finite().min(-180).max(180),
@@ -138,8 +137,7 @@ const wasteMeasurementMethodSchema = z
 
 const cigaretteButtsMeasurementsSchema = z
   .object({
-    // Ordinary HTTP payloads carry raw measurements only. Provenance and
-    // formula versions are assigned by the server and are not input fields.
+    // Server assigns provenance and formula versions.
     cigaretteButtsCount: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
     cigaretteButtsMassKg: z.number().min(0).max(100_000).nullable().optional(),
     cigaretteButtsVolumeLiters: z.number().min(0).max(100_000).nullable().optional(),
@@ -659,6 +657,7 @@ export const createActionSchema = z
 export const updateActionSchema = createActionLegacyBaseSchema
   .partial()
   .extend({
+  geometrySource: actionInputGeometrySourceSchema.or(z.literal("gps_tracking")).nullable().optional(),
   organizerId: organizerIdSchema,
   organizerName: organizerNameSchema.optional(),
   actionPhase: actionPhaseSchema.optional(),

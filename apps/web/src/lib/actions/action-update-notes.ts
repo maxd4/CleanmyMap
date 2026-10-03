@@ -150,7 +150,11 @@ export function buildActionUpdateNotes(params: {
 export function preserveManualDrawing(
   currentNotes: string | null,
   notes: string | null | undefined,
+  replacementDrawing?: PersistedNotesPayload["manualDrawing"],
 ): string | null | undefined {
+  if (replacementDrawing && typeof notes === "string") {
+    return buildPersistedNotes({ notes, manualDrawing: replacementDrawing });
+  }
   const currentDrawing = parseDrawingFromNotes(currentNotes).manualDrawing;
   if (!currentDrawing || typeof notes !== "string") return notes;
   return buildPersistedNotes({ notes, manualDrawing: currentDrawing });

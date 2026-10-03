@@ -26,4 +26,23 @@ describe('mission to action server contract', () => {
     expect(sql).toMatch(/derived_geometry_kind = 'polyline'/i)
     expect(sql).toMatch(/gpxImport/i)
   })
+
+  it('uses the same observed-geometry primitive for GPX replacement and mission promotion', () => {
+    const replacementMigration = readFileSync(
+      fileURLToPath(
+        new URL('../../web/supabase/migrations/20261003000002_observed_action_geometry_replacement.sql', import.meta.url),
+      ),
+      'utf8',
+    )
+
+    expect(replacementMigration).toMatch(/create or replace function public\.apply_observed_action_geometry/i)
+    expect(replacementMigration).toMatch(/new := public\.apply_observed_action_geometry/i)
+    expect(replacementMigration).toMatch(/next_action := public\.apply_observed_action_geometry/i)
+    expect(replacementMigration).toMatch(/old_source in \('gps_tracking', 'gpx_import'\)/i)
+    expect(replacementMigration).toMatch(/new_source in \('gps_tracking', 'gpx_import'\)/i)
+    expect(replacementMigration).toMatch(/current_action\.geometry_source::text in \('gps_tracking', 'gpx_import'\)/i)
+    expect(replacementMigration).toMatch(/A second observation is not a silent replacement/i)
+    expect(replacementMigration).toMatch(/routeObservedDistanceKm/i)
+    expect(replacementMigration).toMatch(/routeNetworkDistanceKm/i)
+  })
 })

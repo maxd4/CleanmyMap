@@ -687,6 +687,15 @@ par une mission terrain liée et promue côté serveur. Cette projection ne rend
 jamais la mission ni ses points publics. Cette provenance géométrique ne
 qualifie jamais une mesure d'impact et la confiance reste un champ séparé.
 
+La promotion d'une observation remplace la géométrie active hypothétique de
+l'action dans une mutation serveur cohérente : la LineString, sa provenance,
+`derived_geometry_kind`, `routeObservedDistanceKm` et, pour un GPX, `gpxImport`
+restent alignés. Une seule géométrie est active à un instant donné. La cible
+`routeTargetDistanceKm` reste une donnée de planification et ne devient jamais
+la distance observée. Après promotion, une reconstruction ou un recalcul
+ultérieur peut mettre à jour ses propres projections historiques, mais ne peut
+pas réactiver sa géométrie comme représentation courante.
+
 La distinction canonique est donc : `observé ≠ déclaré ≠ référence géographique
 ≠ reconstruit ≠ estimé`. `ActionGeometrySource` reste la source de vérité fine ;
 la provenance qualité n'en est qu'une projection sémantique. La provenance
