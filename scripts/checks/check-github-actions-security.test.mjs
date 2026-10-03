@@ -102,6 +102,14 @@ assert.match(secretAuditJob, /secret audit/i);
 assert.match(ciWorkflow, /web_code_relevant:/);
 assert.match(ciWorkflow, /mobile_code_relevant:/);
 assert.match(ciWorkflow, /web-governance:\n    needs: scope/);
+const webQualityJob = ciWorkflow.match(/  web-quality:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";
+assert.match(webQualityJob, /- name: Duplication ratchet/);
+assert.match(webQualityJob, /run: npm run quality:duplication/);
+assert.match(
+  webQualityJob,
+  /if: \$\{\{ !cancelled\(\) && steps\.checkout\.outcome == 'success' && steps\.setup_node\.outcome == 'success' && steps\.install_node_dependencies\.outcome == 'success' \}\}/,
+);
+assert.match(webQualityJob, /- name: Install Node dependencies\n\s+id: install_node_dependencies\n\s+run: npm ci/);
 for (const job of [
   "web-static",
   "web-quality",
