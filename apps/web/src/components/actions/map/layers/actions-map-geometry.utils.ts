@@ -319,7 +319,28 @@ function resolveObservedCoverage(item: ActionMapItem): {
   positions: CoordinatePair[][];
   traceCount: number;
 } {
-  const coverage = item.contract?.metadata.preparationData?.observedCoverage;
+  const storedCoverage = item.contract?.metadata.preparationData?.observedCoverage;
+  let coverage = storedCoverage;
+  if (!coverage && item.contract?.geometry.geojson) {
+    try {
+      const parsed = JSON.parse(item.contract.geometry.geojson) as {
+        type?: unknown;
+        coordinates?: unknown;
+      };
+      if (parsed.type === "MultiLineString" && Array.isArray(parsed.coordinates)) {
+        coverage = {
+          type: "MultiLineString",
+          coordinates: parsed.coordinates as [number, number][][],
+          traceCount: parsed.coordinates.length,
+          individualDistancesKm: [],
+          coverageDistanceKm: null,
+          coverageVersion: "observed-traces-v1",
+        };
+      }
+    } catch {
+      coverage = undefined;
+    }
+  }
   if (!coverage || coverage.type !== "MultiLineString" || !Array.isArray(coverage.coordinates)) {
     return { positions: [], traceCount: 0 };
   }

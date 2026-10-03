@@ -2,12 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(),
-  getCurrentUserIdentity: vi.fn(),
-  canManageAction: vi.fn(),
   loadActionById: vi.fn(),
-  loadCanonicalActionOrganizerIdsForAction: vi.fn(),
-  readParticipantRecord: vi.fn(),
-  readActionRegistrationRecord: vi.fn(),
+  isActionGeometryContributorEligible: vi.fn(),
   getSupabaseServerClient: vi.fn(),
   insert: vi.fn(),
 }));
@@ -15,24 +11,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: mocks.requireAuthenticatedAccess,
 }));
-vi.mock("@/lib/authz-identity", () => ({
-  getCurrentUserIdentity: mocks.getCurrentUserIdentity,
-}));
-vi.mock("@/lib/actions/permissions", () => ({
-  canManageAction: mocks.canManageAction,
-}));
 vi.mock("@/lib/actions/store", () => ({
   loadActionById: mocks.loadActionById,
 }));
-vi.mock("@/lib/actions/participation/organizers", () => ({
-  loadCanonicalActionOrganizerIdsForAction: mocks.loadCanonicalActionOrganizerIdsForAction,
-}));
-vi.mock("@/lib/actions/participation/group-participation.helpers", () => ({
-  ACTIVE_PARTICIPATION_STATUS: "confirmed",
-  readParticipantRecord: mocks.readParticipantRecord,
-}));
-vi.mock("@/lib/actions/participation/registration-records", () => ({
-  readActionRegistrationRecord: mocks.readActionRegistrationRecord,
+vi.mock("@/lib/actions/geometry/action-geometry-contributor-eligibility", () => ({
+  isActionGeometryContributorEligible: mocks.isActionGeometryContributorEligible,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: mocks.getSupabaseServerClient,
@@ -57,15 +40,8 @@ describe("POST /api/missions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "user-1" });
-    mocks.getCurrentUserIdentity.mockResolvedValue({
-      userId: "user-1",
-      activeRole: "benevole",
-    });
     mocks.loadActionById.mockResolvedValue(action);
-    mocks.loadCanonicalActionOrganizerIdsForAction.mockResolvedValue([]);
-    mocks.readParticipantRecord.mockResolvedValue({ participation_status: "confirmed" });
-    mocks.readActionRegistrationRecord.mockResolvedValue(null);
-    mocks.canManageAction.mockReturnValue(false);
+    mocks.isActionGeometryContributorEligible.mockResolvedValue(true);
     mocks.insert.mockReturnValue({
       select: () => ({
         single: async () => ({
@@ -97,13 +73,23 @@ describe("POST /api/missions", () => {
     });
   });
 
-  it("rejects a user who is neither organizer nor confirmed participant", async () => {
-    mocks.readParticipantRecord.mockResolvedValue(null);
-    mocks.readActionRegistrationRecord.mockResolvedValue(null);
+  it("rejects a user who is not eligible under the canonical geometry contract", async () => {
+    mocks.isActionGeometryContributorEligible.mockResolvedValue(false);
 
     const response = await POST(request({ actionId: action.id, label: "Terrain" }));
 
     expect(response.status).toBe(403);
     expect(mocks.insert).not.toHaveBeenCalled();
+  });
+
+  it("does not turn an administrative role into terrain eligibility", async () => {
+    mocks.isActionGeometryContributorEligible.mockResolvedValue(false);
+
+    const response = await POST(request({ actionId: action.id, label: "Terrain" }));
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.error).toContain("créateur");
+    expect(body.error).toContain("inscription confirmée");
   });
 });

@@ -27,6 +27,7 @@ import { buildActionDataContract } from "../contracts/contract-model";
 import { parseWasteCategoriesFromNotes } from "@/lib/waste";
 import { mapItemCoordinates } from "../contracts/contract-mappers";
 import { buildPublicMapItems } from "./public-map-items";
+import { parsePublicObservedCoverage } from "./public-observed-coverage";
 import {
   clampInteger,
   normalizeQualityMin,
@@ -37,7 +38,6 @@ import {
   toFiniteNumber,
   type ActionTypeFilter,
 } from "./map-http-utils";
-
 export type FetchMapActionsParams = {
   actionId?: string | null;
   status?: ActionStatus | "all";
@@ -52,7 +52,6 @@ export type FetchMapActionsParams = {
   qualityMin?: number;
   viewport?: MapViewportState | null;
 };
-
 type ActionsMapFeedRow = {
   source: string;
   entity_type: string;
@@ -77,7 +76,6 @@ type ActionsMapFeedRow = {
   geometry_confidence: number | string | null;
   geometry_source: string | null;
 };
-
 type ActionsMapRpcResult = {
   data: unknown[] | null;
   error: {
@@ -85,7 +83,6 @@ type ActionsMapRpcResult = {
     message?: string | null;
   } | null;
 };
-
 type MapFetchConfig = {
   limit: number;
   days: number;
@@ -104,7 +101,6 @@ type MapFetchConfig = {
   impact: ActionImpactLevel | null;
   qualityMin: number | null;
 };
-
 function normalizeMapTypes(raw: ActionTypeFilter | undefined): ActionEntityType[] | null {
   if (!raw || raw === "all") {
     return null;
@@ -118,7 +114,6 @@ function normalizeMapTypes(raw: ActionTypeFilter | undefined): ActionEntityType[
   );
   return deduped.length > 0 ? deduped : null;
 }
-
 function resolveMapScope(params: {
   association?: string | "all";
   scopeKind?: ReportScopeKind;
@@ -144,7 +139,6 @@ function resolveMapScope(params: {
 
   return DEFAULT_REPORT_SCOPE;
 }
-
 function normalizeMapViewport(
   viewport: MapViewportState | null | undefined,
 ): {
@@ -157,7 +151,6 @@ function normalizeMapViewport(
   if (!viewport) {
     return { south: null, west: null, north: null, east: null, zoom: null };
   }
-
   return {
     south: toFiniteNumber(viewport.bounds.south),
     west: toFiniteNumber(viewport.bounds.west),
@@ -166,14 +159,12 @@ function normalizeMapViewport(
     zoom: toFiniteNumber(viewport.zoom),
   };
 }
-
 function toActionEntityType(raw: string | null | undefined): ActionEntityType {
   if (raw === "clean_place" || raw === "spot") {
     return raw;
   }
   return "action";
 }
-
 function toActionStatusFromMapFeedRow(
   entityType: string | null | undefined,
   rawStatus: string,
@@ -184,7 +175,6 @@ function toActionStatusFromMapFeedRow(
 
   return rawStatus === "pending" || rawStatus === "rejected" ? rawStatus : "approved";
 }
-
 function isPublicMapFeedRow(row: ActionsMapFeedRow): boolean {
   if (row.source === "actions" && row.entity_type === "action") {
     return row.status === "approved";
@@ -196,7 +186,6 @@ function isPublicMapFeedRow(row: ActionsMapFeedRow): boolean {
     (row.status === "validated" || row.status === "cleaned")
   );
 }
-
 function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContract {
   const parsedDrawing = parseDrawingFromNotes(row.notes);
   const parsedMetadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
@@ -225,6 +214,7 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     actorName: null,
     associationName: parsedMetadata.associationName,
     groupJoinEnabled: parsedMetadata.groupJoinEnabled,
+    preparationData: parsePublicObservedCoverage(row),
     placeType: parsedMetadata.placeType,
     departureLocationLabel: parsedMetadata.departureLocationLabel,
     arrivalLocationLabel: parsedMetadata.arrivalLocationLabel,
@@ -245,7 +235,6 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     geometrySource: row.geometry_source as ActionGeometrySource | null,
   });
 }
-
 function filterContractsByTypes(
   items: ActionDataContract[],
   types: ActionEntityType[] | null,
@@ -253,11 +242,9 @@ function filterContractsByTypes(
   if (!types || types.length === 0) {
     return items;
   }
-
   const allowed = new Set(types);
   return items.filter((item) => allowed.has(item.type));
 }
-
 function dedupeContractsByIdAndType(items: ActionDataContract[]): ActionDataContract[] {
   const seen = new Set<string>();
   const output: ActionDataContract[] = [];
@@ -270,26 +257,21 @@ function dedupeContractsByIdAndType(items: ActionDataContract[]): ActionDataCont
     seen.add(key);
     output.push(item);
   }
-
   return output;
 }
-
 function compareMapContracts(left: ActionDataContract, right: ActionDataContract): number {
   const observedComparison = right.dates.observedAt.localeCompare(left.dates.observedAt);
   if (observedComparison !== 0) {
     return observedComparison;
   }
-
   const createdComparison = (
     right.dates.createdAt ?? right.dates.importedAt ?? right.dates.observedAt
   ).localeCompare(left.dates.createdAt ?? left.dates.importedAt ?? left.dates.observedAt);
   if (createdComparison !== 0) {
     return createdComparison;
   }
-
   return right.id.localeCompare(left.id);
 }
-
 function buildMapContracts(
   remoteContracts: ActionDataContract[],
   localContracts: ActionDataContract[],
@@ -303,7 +285,6 @@ function buildMapContracts(
     ),
   ).sort(compareMapContracts);
 }
-
 function filterMapItemsByViewport(
   items: ActionMapItem[],
   viewport: MapViewportState | null | undefined,
@@ -311,13 +292,11 @@ function filterMapItemsByViewport(
   if (!viewport) {
     return items;
   }
-
   return items.filter((item) => {
     const { latitude, longitude } = mapItemCoordinates(item);
     if (latitude === null || longitude === null) {
       return false;
     }
-
     return (
       latitude >= viewport.bounds.south &&
       latitude <= viewport.bounds.north &&
@@ -326,8 +305,7 @@ function filterMapItemsByViewport(
     );
   });
 }
-
-function buildMapSourceHealth(): NonNullable<ActionMapResponse["sourceHealth"]> {
+function buildMapSourceHealth() {
   return {
     partial: false,
     failedSources: [],
@@ -335,7 +313,6 @@ function buildMapSourceHealth(): NonNullable<ActionMapResponse["sourceHealth"]> 
     warnings: [],
   };
 }
-
 function resolveMapFetchConfig(params: FetchMapActionsParams): MapFetchConfig {
   const limit = clampInteger(params.limit, 1, 300, 80);
   const days = clampInteger(params.days, 1, 3650, 30);
@@ -359,7 +336,6 @@ function resolveMapFetchConfig(params: FetchMapActionsParams): MapFetchConfig {
     qualityMin: normalizeQualityMin(params.qualityMin),
   };
 }
-
 function normalizeMapActionError(rpcPayload: ActionsMapRpcResult): AppError {
   const errorMessage =
     typeof rpcPayload.error?.message === "string" && rpcPayload.error.message.trim().length > 0
@@ -373,7 +349,6 @@ function normalizeMapActionError(rpcPayload: ActionsMapRpcResult): AppError {
     cause: rpcPayload.error,
   });
 }
-
 async function loadMapActionSources(config: MapFetchConfig) {
   const supabase = getSupabaseBrowserClient();
 
@@ -486,7 +461,6 @@ export async function fetchMapActions(
       }
     }
   } catch {
-    // Fallback below.
   }
 
   const config = resolveMapFetchConfig(params);

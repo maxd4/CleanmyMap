@@ -44,6 +44,7 @@ function createSupabaseMock(): { from: (table: string) => Record<string, (...arg
     user_visited_places: [{ place_label: "Paris", created_at: "2026-01-10T09:00:00.000Z" }],
     quiz_type_progress: [],
     action_participants: [],
+    action_geometry_contributions: [],
     trash_spotter_spots: [],
     profiles: [],
   };
@@ -56,6 +57,7 @@ function createSupabaseMock(): { from: (table: string) => Record<string, (...arg
         eq: () => chain,
         in: () => chain,
         not: () => chain,
+        order: () => chain,
         limit: () => Promise.resolve(result),
       };
       return chain;

@@ -425,11 +425,11 @@ scientifique, ni l'état `clean_place`.
 
 La couleur ne doit pas porter l'information de fiabilité géométrique. Cette information utilise d'autres canaux.
 
-> **Évolution planifiée (`PLAN / TARGET`)** — La couverture GPS multi-groupes et
-> la contribution cartographique sont spécifiées dans
-> [`couverture-gps-multi-groupes.md`](./couverture-gps-multi-groupes.md). Cette
-> cible ne transforme pas `gps_tracking`, `MultiLineString`, les contributions
-> multi-traces ou une distance de couverture unique en capacités `CURRENT`.
+> **Socle `CURRENT` / évolution `TARGET`** — La couverture GPS multi-groupes,
+> les contributions cartographiques, le support `MultiLineString` et la
+> progression `cartography` sont implémentés et consommés par le runtime. La
+> déduplication spatiale scientifique et la distance de couverture unique restent
+> `PLAN / TARGET`.
 
 ### Réalité / déclaration / hypothèse
 
@@ -470,7 +470,7 @@ La hiérarchie de résolution canonique cible est :
 6. `estimated_route` ;
 7. `fallback_point`.
 
-Dans cette cible, `gps_tracking` et `gpx_import` sont les observations réelles
+Dans ce contrat `CURRENT`, `gps_tracking` et `gpx_import` sont les observations réelles
 prioritaires. Une action ne remplace jamais une observation valide par une
 reconstruction ultérieure. Chaque observation acceptée est conservée dans
 `action_geometry_contributions` avec son contributeur Clerk, sa source, sa
@@ -492,7 +492,7 @@ géométrie hypothétique initiale
 → couverture observée multi-traces
 ```
 
-Dans cette cible, un GPX validé est promu comme `gpx_import` sans routage ni
+Dans ce contrat `CURRENT`, un GPX validé est promu comme `gpx_import` sans routage ni
 snapping réseau ; une mission liée éligible est promue comme `gps_tracking`
 depuis ses `gps_points` validés et sa distance serveur. Une promotion conserve
 `routeTargetDistanceKm` comme cible historique distincte de

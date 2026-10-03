@@ -90,7 +90,9 @@ export function ShapeLayerItem({
   const operationalRouteSegments = getPublicOperationalRouteSegments(
     item.contract?.metadata.preparationData?.operationalRoute,
   );
-  if (geometry.renderMode !== "drawing" || geometry.positions.length === 0) {
+  const hasRenderableGeometry =
+    geometry.positions.length > 0 || geometry.multiLinePositions.some((line) => line.length > 1);
+  if (geometry.renderMode !== "drawing" || !hasRenderableGeometry) {
     return operationalRouteSegments.length > 0 ? (
       <OperationalRouteLayers item={item} />
     ) : null;

@@ -38,8 +38,11 @@ import {
 } from "@/lib/actions/action-update-post-processing";
 import { resolveActionUpdateOrganizer } from "@/lib/actions/action-update-organizer";
 import {
+  ensureGpxGeometryContributionEligible,
+  hasGpxGeometryContribution,
   recordGpxGeometryContributionIfPresent,
   reconcileGeometryContributionProgressionIfNeeded,
+  stripObservedGeometryProjectionFields,
 } from "@/lib/actions/geometry/action-geometry-contribution-workflow";
 
 export const runtime = "nodejs";
@@ -218,24 +221,36 @@ async function executePreparedActionUpdate({
   state: PatchExecutionState;
 }): Promise<Response | PreparedActionUpdate["body"]> {
   const { body, currentMetadata, updateData } = preparedUpdate;
-  const geometryContribution = await recordGpxGeometryContributionIfPresent({
+  state.auditSnapshots = shouldAuditModeration
+    ? buildActionAuditSnapshots(current, body, currentMetadata)
+    : null;
+  const hasGeometryContribution = hasGpxGeometryContribution(updateData);
+  const eligibilityResponse = await ensureGpxGeometryContributionEligible({
     supabase,
     actionId,
     userId,
     updateData,
   });
-  if (geometryContribution instanceof Response) return geometryContribution;
+  if (eligibilityResponse) return eligibilityResponse;
 
-  state.auditSnapshots = shouldAuditModeration
-    ? buildActionAuditSnapshots(current, body, currentMetadata)
-    : null;
-  const hasActionUpdates = Object.keys(updateData).length > 0;
+  const scalarUpdateData = hasGeometryContribution
+    ? stripObservedGeometryProjectionFields(updateData)
+    : updateData;
+
+  const hasActionUpdates = Object.keys(scalarUpdateData).length > 0;
   state.adminErrorStage = "action_update";
   const updateResult = hasActionUpdates
-    ? await supabase.from("actions").update(updateData).eq("id", actionId).select("id").single()
+    ? await supabase.from("actions").update(scalarUpdateData).eq("id", actionId).select("id").single()
     : { data: { id: actionId }, error: null };
   if (updateResult.error) throw new Error("Action update failed");
   state.actionWriteSucceeded = hasActionUpdates && Boolean(updateResult.data);
+
+  // Keep the contribution after the Action UPDATE: an update failure must not
+  // leave an accepted contribution or a refreshed projection behind a 500.
+  const geometryContribution = hasGeometryContribution
+    ? await recordGpxGeometryContributionIfPresent({ supabase, actionId, userId, updateData })
+    : false;
+  if (geometryContribution instanceof Response) return geometryContribution;
 
   await reconcileGeometryContributionProgressionIfNeeded({
     accepted: geometryContribution,
@@ -243,7 +258,7 @@ async function executePreparedActionUpdate({
     actionId,
     userId,
   });
-  await runActionUpdatePostProcessing({ supabase, actionId, updateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
+  await runActionUpdatePostProcessing({ supabase, actionId, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
   return body;
 }
 
@@ -378,6 +393,11 @@ async function executePatchRequest({
   let moderationReason: string | null = null;
   let adminErrorStage: AdminOverrideErrorStage = "action_update";
   const appendAdminAuditOnce = createAdminAuditOnceAppender();
+  const patchState: PatchExecutionState = {
+    auditSnapshots,
+    actionWriteSucceeded,
+    adminErrorStage,
+  };
 
   try {
     const supabase = getSupabaseServerClient(true);
@@ -411,11 +431,6 @@ async function executePatchRequest({
     moderationOperation = mutationOperation;
     moderationReason = mutationReason;
 
-    const patchState: PatchExecutionState = {
-      auditSnapshots,
-      actionWriteSucceeded,
-      adminErrorStage,
-    };
     const body = await executePreparedActionUpdate({
       supabase,
       actionId: trimmedActionId,
@@ -442,6 +457,9 @@ async function executePatchRequest({
       actionPhase: body.actionPhase ?? current["action_phase"],
     });
   } catch (error) {
+    auditSnapshots = patchState.auditSnapshots;
+    actionWriteSucceeded = patchState.actionWriteSucceeded;
+    adminErrorStage = patchState.adminErrorStage;
     return handlePatchError({
       error,
       shouldAuditModeration,
