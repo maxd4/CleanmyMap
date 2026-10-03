@@ -45,7 +45,6 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   const jobs = {
     "web-static": "web_code_relevant",
     "web-tests": "web_code_relevant",
-    "web-coverage": "web_code_relevant",
     "web-vercel-audit": "build_relevant",
     "web-build": "build_relevant",
     "mobile-validation": "mobile_code_relevant",
@@ -70,13 +69,17 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   }
   assert.match(qualityJob, /quality:top-heavy/);
   assert.match(qualityJob, /quality:complexity/);
-  assert.match(qualityJob, /gitnexus analyze --index-only/);
+  assert.match(qualityJob, /npm run audit:gitnexus/);
   const testsJob = extractJob(workflow, "web-tests");
   assert.match(testsJob, /validation-policy\.mjs --assert-full-suite/);
-  assert.match(testsJob, /npm run test/);
+  assert.match(testsJob, /npm run test:coverage/);
+  assert.match(testsJob, /actions\/upload-artifact@/);
+  assert.match(testsJob, /apps\/web\/coverage/);
   assert.doesNotMatch(testsJob, /quality:coverage/);
   const coverageJob = extractJob(workflow, "web-coverage");
   assert.match(coverageJob, /npm run quality:coverage/);
+  assert.match(coverageJob, /actions\/download-artifact@/);
+  assert.match(coverageJob, /--from-existing-summary/);
   assert.doesNotMatch(coverageJob, /npm run test\s/);
   assert.match(extractJob(workflow, "web-vercel-audit"), /npm run audit:vercel:ci/);
   assert.match(extractJob(workflow, "web-build"), /npm run build/);

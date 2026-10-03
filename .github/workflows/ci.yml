@@ -331,7 +331,7 @@ jobs:
       - name: Set up GitNexus cycle audit
         run: |
           npm install --global gitnexus@1.6.12
-          gitnexus analyze --index-only
+          npm run audit:gitnexus
 
       - name: GitNexus cycle ratchet
         run: npm run quality:cycles
@@ -368,12 +368,22 @@ jobs:
       - name: Web test policy
         run: node scripts/checks/validation-policy.mjs --assert-full-suite
 
-      - name: Web Vitest tests
-        run: npm run test
+      - name: Web Vitest tests, coverage, and evidence
+        run: npm run test:coverage
+
+      - name: Upload Web coverage evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: web-coverage-evidence-${{ github.sha }}
+          path: |
+            apps/web/coverage/coverage-summary.json
+            apps/web/coverage/coverage-evidence.json
+          if-no-files-found: error
+          retention-days: 1
 
   web-coverage:
-    needs: scope
-    if: needs.scope.outputs.web_code_relevant == 'true'
+    needs: [scope, web-tests]
+    if: needs.scope.outputs.web_code_relevant == 'true' && needs.web-tests.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -400,8 +410,14 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Web Vitest tests and coverage ratchet
-        run: npm run quality:coverage
+      - name: Download Web coverage evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: web-coverage-evidence-${{ github.sha }}
+          path: apps/web/coverage
+
+      - name: Web coverage ratchet from existing evidence
+        run: npm run quality:coverage -- --from-existing-summary
 
   web-vercel-audit:
     needs: scope

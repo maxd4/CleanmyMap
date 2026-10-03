@@ -106,12 +106,12 @@ for (const job of [
   "web-static",
   "web-quality",
   "web-tests",
-  "web-coverage",
   "web-vercel-audit",
   "web-build",
 ]) {
   assert.match(ciWorkflow, new RegExp(`${job}:\\n    needs: scope`));
 }
+assert.match(ciWorkflow, /web-coverage:\n    needs: \[scope, web-tests\]/);
 assert.doesNotMatch(ciWorkflow, /web-validation:/);
 assert.match(ciWorkflow, /Install Node dependencies/);
 assert.match(ciWorkflow, /TypeScript typecheck/);

@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-const VALIDATION_EVIDENCE_VERSION = 1;
+const VALIDATION_EVIDENCE_VERSION = 2;
 const WINDOWS_CLEANUP_RETRIES = 5;
 const WINDOWS_CLEANUP_RETRY_DELAY_MS = 50;
 const TRANSIENT_CLEANUP_ERRORS = new Set(["EBUSY", "ENOTEMPTY", "EPERM"]);
@@ -51,6 +51,29 @@ function readCandidateFile(repositoryRoot, relativePath, candidateScope) {
   }
 }
 
+function readGitLines(repositoryRoot, args) {
+  try {
+    return execFileSync("git", args, {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+export function getWorktreeCandidateFiles(repositoryRoot = process.cwd()) {
+  return [...new Set([
+    ...readGitLines(repositoryRoot, ["diff", "--name-only", "HEAD", "--"]),
+    ...readGitLines(repositoryRoot, ["diff", "--cached", "--name-only", "--"]),
+    ...readGitLines(repositoryRoot, ["ls-files", "--others", "--exclude-standard"]),
+  ].map(normalizePath))].sort();
+}
+
 export function createCandidateFingerprint({
   repositoryRoot = process.cwd(),
   candidateScope = "WORKTREE",
@@ -85,6 +108,7 @@ export function createValidationEvidenceKey({
   candidateFingerprint,
   check,
   candidateScope,
+  configuration = {},
 } = {}) {
   const payload = {
     version: VALIDATION_EVIDENCE_VERSION,
@@ -92,6 +116,17 @@ export function createValidationEvidenceKey({
     checkId: check.id,
     command: commandKey(check.command),
     candidateScope,
+    configuration,
+    runtime: {
+      node: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      environment: Object.fromEntries(
+        ["CI", "NODE_ENV", "TZ", "LANG", "LC_ALL", "NODE_OPTIONS", "VITEST_POOL_SIZE", "VITEST_MAX_THREADS", "VITEST_MIN_THREADS"]
+          .filter((key) => process.env[key] !== undefined)
+          .map((key) => [key, createHash("sha256").update(String(process.env[key])).digest("hex")]),
+      ),
+    },
     scheduler: {
       timeoutPolicy: "process-tree-v1",
     },

@@ -332,7 +332,11 @@ npm run test:coverage
 ```
 
 exécute la suite Vitest Web complète et produit le résumé JSON ignoré par Git
-dans `apps/web/coverage/coverage-summary.json`. Le périmètre instrumenté est
+dans `apps/web/coverage/coverage-summary.json`, ainsi qu'une preuve liée au
+candidat dans `apps/web/coverage/coverage-evidence.json`. Cette preuve contient
+l'empreinte du candidat Git, de la configuration Vitest/coverage et de
+l'environnement pertinent ; elle n'est réutilisable que si tous ces éléments
+convergent. Le périmètre instrumenté est
 le runtime testable sous `apps/web/src`. Les tests, déclarations `.d.ts`,
 fichiers générés, les fichiers de types purs explicitement référencés dans la
 configuration Vitest et les conventions d'entrée App Router Next (`page`,
@@ -374,9 +378,15 @@ Une amélioration de la baseline doit être ratifiée par une modification
 explicite de ce fichier et ne peut pas régresser silencieusement. Les métriques
 historiques ne sont jamais recalculées automatiquement.
 
-`checks:full` et la CI exécutent `quality:coverage` à la place du test Vitest
-seul. `checks:fast` ne relance pas cette suite complète instrumentée afin de
-respecter son budget et d'éviter une seconde exécution inutile des tests.
+`quality:coverage` réutilise automatiquement une preuve de couverture valide
+du même candidat ; `npm run quality:coverage -- --from-existing-summary`
+force explicitement le mode checker-only et échoue si la preuve manque ou ne
+correspond plus. Ainsi `checks:full` peut consommer une couverture déjà
+produite sans relancer Vitest, tandis qu'un candidat sans preuve recalcule la
+suite complète. Dans la CI, `web-tests` produit la suite couverte et publie
+l'artefact court terme ; `web-coverage` le télécharge puis exécute uniquement
+le ratchet. `checks:fast` ne relance pas cette suite complète instrumentée afin
+de respecter son budget et d'éviter une seconde exécution inutile des tests.
 
 Le même moteur V8 mesure séparément le mobile :
 
@@ -580,8 +590,11 @@ autoriser un nouveau fingerprint. Aucun seuil, ignore ou grace ne peut être
 relevé pour masquer une régression.
 
 Le contrôle de cycles réutilise l'analyseur GitNexus existant. La CI installe
-explicitement la version épinglée `1.6.12` puis initialise son index en mode
-`--index-only`, car `.gitnexus/` reste un état local ignoré :
+explicitement la version épinglée `1.6.12`, puis passe par l'audit observable
+qui initialise l'index en mode `--index-only` et enregistre une preuve de
+statut liée au même candidat. `quality:cycles` réutilise alors l'analyse et le
+statut valides avant d'exécuter son propre rapport de cycles ; `.gitnexus/`
+reste un état local ignoré :
 
 ```bash
 npm run quality:cycles
