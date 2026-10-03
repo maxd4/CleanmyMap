@@ -85,7 +85,7 @@ assert.deepEqual(auditWorkflowContent(codeqlWorkflow, ".github/workflows/codeql.
 assert.match(ciWorkflow, /jobs:\n  scope:/);
 const secretAuditJob = ciWorkflow.match(/  secret-audit:[\s\S]*?\n\n  dependency-audit:/)?.[0] ?? "";
 assert.match(secretAuditJob, /runs-on: ubuntu-latest/);
-assert.doesNotMatch(secretAuditJob, /needs:\s*scope|\n\s+if:/);
+assert.doesNotMatch(secretAuditJob, /^\s+needs:\s*scope/m);
 assert.match(secretAuditJob, /permissions:\n\s+contents: read/);
 assert.match(secretAuditJob, new RegExp(`actions/checkout@${pinnedCiCheckoutSha}`));
 assert.match(secretAuditJob, /ref: \$\{\{ github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}/);
@@ -94,7 +94,11 @@ assert.match(secretAuditJob, /node-version-file: \$\{\{ env\.NODE_VERSION_FILE \
 assert.match(secretAuditJob, /git rev-parse HEAD/);
 assert.match(secretAuditJob, /npm run security:secrets -- --ref=/);
 assert.doesNotMatch(secretAuditJob, /npm ci/);
+assert.match(secretAuditJob, /node scripts\/ci\/write-security-summary\.mjs --gates=secrets/);
+assert.match(secretAuditJob, /path: artifacts\/security-evidence\/secret-audit\.json/);
 assert.equal((ciWorkflow.match(/security:secrets/g) ?? []).length, 1);
+assert.equal((ciWorkflow.match(/npm run security:dependencies/g) ?? []).length, 1);
+assert.equal((ciWorkflow.match(/npm run check:semgrep/g) ?? []).length, 2);
 assert.doesNotMatch(ciWorkflow.match(/  web-governance:[\s\S]*?\n\n  web-static:/)?.[0] ?? "", /security:secrets/);
 assert.doesNotMatch(ciWorkflow.match(/  mobile-validation:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "", /security:secrets/);
 // A Python-only maintenance change cannot skip this job because it has no scope dependency or condition.
@@ -102,6 +106,10 @@ assert.match(secretAuditJob, /secret audit/i);
 assert.match(ciWorkflow, /web_code_relevant:/);
 assert.match(ciWorkflow, /mobile_code_relevant:/);
 assert.match(ciWorkflow, /web-governance:\n    needs: scope/);
+const dependencyAuditJob = ciWorkflow.match(/  dependency-audit:[\s\S]*?\n\n  dependency-review:/)?.[0] ?? "";
+assert.match(dependencyAuditJob, /node scripts\/ci\/write-security-summary\.mjs --gates=dependencies/);
+assert.match(ciWorkflow, /Record dependency scope evidence[\s\S]*?SKIPPED_BY_SCOPE/);
+assert.match(ciWorkflow, /Dependency security summary \(scope skipped\)[\s\S]*?--gates=dependencies/);
 const webQualityJob = ciWorkflow.match(/  web-quality:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";
 assert.match(webQualityJob, /- name: Duplication ratchet/);
 assert.match(webQualityJob, /run: npm run quality:duplication/);
@@ -134,6 +142,13 @@ assert.match(ciWorkflow, /Web lint/);
 assert.match(ciWorkflow, /Web Vitest tests/);
 assert.match(ciWorkflow, /Web production build/);
 assert.match(ciWorkflow, /mobile-validation:\n    needs: scope/);
+const webStaticJob = ciWorkflow.match(/  web-static:[\s\S]*?\n\n  web-quality:/)?.[0] ?? "";
+assert.match(webStaticJob, /node scripts\/ci\/write-security-summary\.mjs --gates=semgrep-architectural,semgrep-fixtures/);
+assert.match(webStaticJob, /path: artifacts\/security-evidence/);
+assert.doesNotMatch(ciWorkflow, /CodeQL/);
+for (const block of ciWorkflow.match(/- name: (?:Upload dependency scope|Upload compact (?:secrets|dependency|GitHub Actions security|Semgrep|mobile Semgrep))[\s\S]*?(?=\n      - name:|\n\n  [a-z-]+:)/g) ?? []) {
+  assert.match(block, /path:\s*(?:\|\n\s+)?artifacts\/security-evidence/);
+}
 assert.match(ciWorkflow, /dependency-review:\n    needs: scope\n    if: github\.event_name == 'pull_request'/);
 assert.match(ciWorkflow, /uses: actions\/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294/);
 assert.match(ciWorkflow, /fail-on-severity: high/);

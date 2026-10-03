@@ -4,10 +4,12 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveCandidateSha, writeQualityEvidence } from "../checks/quality-evidence.mjs";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(SCRIPT_PATH), "../..");
 const GOVERNANCE_DOCUMENT = "documentation/security/dependency-advisory-governance.md";
+const SECURITY_EVIDENCE_ROOT = "artifacts/security-evidence";
 
 export const AUDIT_SEVERITIES = Object.freeze(["high", "critical"]);
 
@@ -291,12 +293,58 @@ export function runDependencyAudit({ repositoryRoot = REPO_ROOT, spawn = spawnSy
   });
 }
 
+function severityCounts(findings) {
+  return findings.reduce((counts, finding) => {
+    const severity = finding.severity ?? "unknown";
+    counts[severity] = (counts[severity] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+function writeDependencyEvidence(result, status = result.passed ? "PASS" : "FAIL") {
+  writeQualityEvidence({
+    repositoryRoot: REPO_ROOT,
+    evidenceRoot: SECURITY_EVIDENCE_ROOT,
+    fileKey: "dependency-advisory",
+    gate: "dependencies",
+    candidateSha: resolveCandidateSha(REPO_ROOT),
+    candidateRef: process.env.CANDIDATE_SHA ?? "HEAD",
+    status,
+    findings: result.gatedFindings.length,
+    metrics: {
+      allFindings: result.findings.length,
+      highCriticalFindings: result.gatedFindings.length,
+      mitigatedHighCritical: result.mitigated.length,
+      unmitigatedHighCritical: result.unmitigated.length,
+      npmExitCode: result.npmExitCode,
+      severityCounts: severityCounts(result.findings),
+    },
+  });
+}
+
 function main() {
   try {
     const result = runDependencyAudit();
+    writeDependencyEvidence(result);
     console.log(formatAuditPolicyResult(result));
     process.exitCode = result.passed ? 0 : 1;
   } catch (error) {
+    try {
+      writeQualityEvidence({
+        repositoryRoot: REPO_ROOT,
+        evidenceRoot: SECURITY_EVIDENCE_ROOT,
+        fileKey: "dependency-advisory",
+        gate: "dependencies",
+        candidateSha: resolveCandidateSha(REPO_ROOT),
+        candidateRef: process.env.CANDIDATE_SHA ?? "HEAD",
+        status: "FAIL",
+        findings: null,
+        metrics: {},
+        details: { executionError: error?.constructor?.name ?? "Error" },
+      });
+    } catch {
+      // Preserve the blocking audit error if evidence cannot be written.
+    }
     console.error(`Dependency advisory policy: ERROR\n${error.message}`);
     process.exitCode = 1;
   }

@@ -4,6 +4,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
+import { resolveCandidateSha, resolveCandidateShaFromRef, writeQualityEvidence } from "./quality-evidence.mjs";
 
 const ACTION_SHA_PATTERN = /^[\w.-]+\/[\w.-]+(?:\/[\w.-]+)*@[0-9a-f]{40}$/i;
 const FORBIDDEN_SECRET_NAMES = [
@@ -97,15 +98,37 @@ function main() {
   const ref = parseRepositoryRef();
   const view = createRepositoryView({ root: repositoryRoot, ref });
   const issues = auditWorkflowDirectory(workflowDirectory, { view });
+  const workflowCount = view.listFiles(".github/workflows").filter((fileName) => fileName.endsWith(".yml") || fileName.endsWith(".yaml")).length;
+  const candidateRef = ref ?? process.env.CANDIDATE_SHA ?? "HEAD";
+  let evidenceError = null;
+  try {
+    writeQualityEvidence({
+      repositoryRoot,
+      evidenceRoot: "artifacts/security-evidence",
+      fileKey: "github-actions-security",
+      gate: "github-actions-security",
+      candidateSha: ref ? resolveCandidateShaFromRef(repositoryRoot, ref) : resolveCandidateSha(repositoryRoot),
+      candidateRef,
+      status: issues.length > 0 ? "FAIL" : "PASS",
+      findings: issues.length,
+      metrics: { workflowCount, issueCount: issues.length },
+    });
+  } catch (error) {
+    evidenceError = error;
+    console.error(`[github-actions-security] evidence unavailable: ${error instanceof Error ? error.constructor.name : "Error"}`);
+  }
 
   if (issues.length > 0) {
     console.error(`[github-actions-security] ${issues.length} issue(s) found:`);
     for (const issue of issues) console.error(`- ${issue}`);
-    process.exitCode = 1;
+    process.exitCode = evidenceError ? 2 : 1;
     return;
   }
 
-  const workflowCount = view.listFiles(".github/workflows").filter((fileName) => fileName.endsWith(".yml") || fileName.endsWith(".yaml")).length;
+  if (evidenceError) {
+    process.exitCode = 2;
+    return;
+  }
   console.log(`[github-actions-security] OK: ${workflowCount} workflow file(s) audited${ref ? ` for ref ${ref}` : ""}.`);
 }
 
