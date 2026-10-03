@@ -132,4 +132,31 @@ describe("GPX policy invariant", () => {
     expect(prepared.updateData).not.toHaveProperty("derived_geometry_geojson");
     expect(prepared.updateData).not.toHaveProperty("geometry_source");
   });
+
+  it("keeps a GPS tracking observation ahead of a later route-shaped update", async () => {
+    const current = {
+      ...buildCurrent(),
+      geometry_source: "gps_tracking" as const,
+      preparation_data: {
+        routeObservedDistanceKm: 2.345,
+      },
+    };
+
+    const prepared = await prepareActionUpdate({
+      current,
+      parsedBody: ({
+        durationMinutes: 60,
+        preparationData: {
+          routeNetworkDistanceKm: 4,
+          routeGeometryMode: "network",
+          routeGeometryProvider: "osrm",
+        },
+      } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject({
+      routeObservedDistanceKm: 2.345,
+    });
+    expect(prepared.updateData).not.toHaveProperty("geometry_source");
+  });
 });

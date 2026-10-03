@@ -57,6 +57,14 @@ function asPolylineDrawing(
   return drawing ? { kind: "polyline", coordinates: drawing.coordinates } : null;
 }
 
+function trackingGeometryInput(params: ActionRouteGpxInput) {
+  const isTracking = params.drawingSource === "gps_tracking";
+  return {
+    trackingDrawing: isTracking ? asPolylineDrawing(params.drawing) : null,
+    trackingSource: isTracking ? ("gps_tracking" as const) : null,
+  };
+}
+
 function sameCoordinate(left: GpxCoordinate, right: GpxCoordinate): boolean {
   return left[0] === right[0] && left[1] === right[1];
 }
@@ -154,6 +162,7 @@ export function buildActionRouteGpxInput(
   params: ActionRouteGpxInput,
 ): GpxSerializerInput | null {
   const finalGeometry = params.finalGeometry ?? resolveFinalActionGeometry({
+    ...trackingGeometryInput(params),
     gpxDrawing: params.gpxImport ? asPolylineDrawing(params.drawing) : null,
     gpxImport: params.gpxImport,
     manualDrawing: asPolylineDrawing(params.drawing),

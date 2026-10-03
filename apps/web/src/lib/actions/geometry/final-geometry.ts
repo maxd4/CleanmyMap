@@ -14,6 +14,9 @@ export type FinalActionGeometry = {
 };
 
 export type FinalActionGeometryInput = {
+  /** A persisted field observation from a completed GPS mission. */
+  trackingDrawing?: ActionDrawing | null;
+  trackingSource?: ActionGeometrySource | null;
   /** A valid GPX drawing and its provenance are a single candidate. */
   gpxDrawing?: ActionDrawing | null;
   gpxImport?: ActionGpxImportMetadata | null;
@@ -34,6 +37,8 @@ const PERSISTED_ROUTE_SOURCES = [
 type PersistedRouteSource = (typeof PERSISTED_ROUTE_SOURCES)[number];
 
 export type HydratedActionGeometry = {
+  trackingDrawing: ActionDrawing | null;
+  trackingSource: ActionGeometrySource | null;
   manualDrawing: ActionDrawing | null;
   manualDrawingSource: ActionGeometrySource | null;
   reconstructedDrawing: ActionDrawing | null;
@@ -57,6 +62,76 @@ function hasUsableGpxCandidate(input: FinalActionGeometryInput): boolean {
   );
 }
 
+function hasUsableTrackingCandidate(input: FinalActionGeometryInput): boolean {
+  return Boolean(
+    input.trackingSource === "gps_tracking" &&
+      input.trackingDrawing?.kind === "polyline" &&
+      isRenderableDrawing(input.trackingDrawing),
+  );
+}
+
+function resolveTrackingCandidate(
+  input: FinalActionGeometryInput,
+): FinalActionGeometry | null {
+  if (!hasUsableTrackingCandidate(input)) return null;
+  return {
+    drawing: input.trackingDrawing!,
+    source: "gps_tracking",
+    operationalRoute: null,
+  };
+}
+
+function resolveGpxCandidate(
+  input: FinalActionGeometryInput,
+): FinalActionGeometry | null {
+  if (!hasUsableGpxCandidate(input)) return null;
+  return {
+    drawing: input.gpxDrawing!,
+    source: "gpx_import",
+    operationalRoute: null,
+  };
+}
+
+function trackingHydrationInput(
+  source: ActionGeometrySource | null,
+  drawing: ActionDrawing | null,
+): Pick<FinalActionGeometryInput, "trackingDrawing" | "trackingSource"> {
+  return source === "gps_tracking"
+    ? { trackingDrawing: drawing, trackingSource: source }
+    : { trackingDrawing: null, trackingSource: null };
+}
+
+function canUseManualCandidate(
+  input: FinalActionGeometryInput,
+  gpxTagged: boolean,
+): input is FinalActionGeometryInput & { manualDrawing: ActionDrawing } {
+  const manualDrawing = input.manualDrawing;
+  return Boolean(
+    !gpxTagged &&
+      (!input.manualDrawingSource ||
+        input.manualDrawingSource === "manual" ||
+        (manualDrawing?.kind === "polygon" && !input.reconstructedDrawing)) &&
+      manualDrawing &&
+      isRenderableDrawing(manualDrawing),
+  );
+}
+
+function hasGpxTag(input: FinalActionGeometryInput): boolean {
+  return Boolean(
+    input.gpxImport?.source === "gpx_import" ||
+      input.manualDrawingSource === "gpx_import",
+  );
+}
+
+function hydratedTrackingState(
+  finalGeometry: FinalActionGeometry | null,
+  drawing: ActionDrawing | null,
+): Pick<HydratedActionGeometry, "trackingDrawing" | "trackingSource"> {
+  return finalGeometry?.source === "gps_tracking"
+    ? { trackingDrawing: drawing, trackingSource: "gps_tracking" }
+    : { trackingDrawing: null, trackingSource: null };
+}
+
 function routeDrawing(
   operationalRoute: OperationalRoute,
 ): Pick<FinalActionGeometry, "drawing" | "source"> | null {
@@ -75,43 +150,65 @@ function routeDrawing(
   };
 }
 
+function resolveOperationalCandidate(input: FinalActionGeometryInput): {
+  route: OperationalRoute | null;
+  candidate: Pick<FinalActionGeometry, "drawing" | "source"> | null;
+} {
+  const route =
+    input.operationalRoute && input.operationalRoute.routes.length > 0
+      ? input.operationalRoute
+      : null;
+  return {
+    route,
+    candidate: route ? routeDrawing(route) : null,
+  };
+}
+
+function resolvePersistedCandidate(
+  input: FinalActionGeometryInput,
+): FinalActionGeometry | null {
+  const persistedDrawing =
+    input.reconstructedDrawing ??
+    (isPersistedRouteSource(input.manualDrawingSource)
+      ? input.manualDrawing
+      : null);
+  const persistedSource =
+    input.reconstructedSource ??
+    (isPersistedRouteSource(input.manualDrawingSource)
+      ? input.manualDrawingSource
+      : null);
+
+  if (!persistedDrawing || !isRenderableDrawing(persistedDrawing)) {
+    return null;
+  }
+
+  return {
+    drawing: persistedDrawing,
+    source: persistedSource ?? "routed",
+    operationalRoute: null,
+  };
+}
+
 /**
  * Selects the one active geometry without routing, snapping, or reconstruction.
- * The order is GPX, manual drawing, operational route, persisted geometry, then
+ * The order is field tracking, GPX, manual drawing, operational route, persisted geometry, then
  * no active geometry. Persisted route/reference drawings are deliberately kept
  * out of the manual candidate slot.
  */
 export function resolveFinalActionGeometry(
   input: FinalActionGeometryInput,
 ): FinalActionGeometry | null {
-  const gpxTagged =
-    input.gpxImport?.source === "gpx_import" ||
-    input.manualDrawingSource === "gpx_import";
-  if (hasUsableGpxCandidate(input)) {
-    return {
-      drawing: input.gpxDrawing!,
-      source: "gpx_import",
-      operationalRoute: null,
-    };
-  }
+  const observedCandidate =
+    resolveTrackingCandidate(input) ?? resolveGpxCandidate(input);
+  if (observedCandidate) return observedCandidate;
 
-  const operationalRoute =
-    input.operationalRoute && input.operationalRoute.routes.length > 0
-      ? input.operationalRoute
-      : null;
-  const operationalCandidate = operationalRoute ? routeDrawing(operationalRoute) : null;
-  const manualDrawing = input.manualDrawing;
-  const canUseManualDrawing =
-    !gpxTagged &&
-    (!input.manualDrawingSource ||
-      input.manualDrawingSource === "manual" ||
-      (manualDrawing?.kind === "polygon" && !input.reconstructedDrawing)) &&
-    manualDrawing &&
-    isRenderableDrawing(manualDrawing);
+  const gpxTagged = hasGpxTag(input);
+  const { route: operationalRoute, candidate: operationalCandidate } =
+    resolveOperationalCandidate(input);
 
-  if (canUseManualDrawing) {
+  if (canUseManualCandidate(input, gpxTagged)) {
     return {
-      drawing: manualDrawing,
+      drawing: input.manualDrawing,
       source: "manual",
       operationalRoute: null,
     };
@@ -124,26 +221,7 @@ export function resolveFinalActionGeometry(
     };
   }
 
-  const persistedDrawing =
-    input.reconstructedDrawing ??
-    (isPersistedRouteSource(input.manualDrawingSource)
-      ? input.manualDrawing
-      : null);
-  const persistedSource =
-    input.reconstructedSource ??
-    (isPersistedRouteSource(input.manualDrawingSource)
-      ? input.manualDrawingSource
-      : null);
-
-  if (persistedDrawing && isRenderableDrawing(persistedDrawing)) {
-    return {
-      drawing: persistedDrawing,
-      source: persistedSource ?? "routed",
-      operationalRoute: null,
-    };
-  }
-
-  return null;
+  return resolvePersistedCandidate(input);
 }
 
 /**
@@ -167,8 +245,10 @@ export function hydrateActionEditorGeometry(input: {
         ? "manual"
         : null);
   const manualCandidate = source === "manual" || source === null ? drawing : null;
+  const trackingInput = trackingHydrationInput(source, drawing);
   const persistedCandidate = isPersistedRouteSource(source) ? drawing : null;
   const finalGeometry = resolveFinalActionGeometry({
+    ...trackingInput,
     gpxDrawing: source === "gpx_import" ? drawing : null,
     gpxImport: input.gpxImport,
     manualDrawing: manualCandidate,
@@ -179,6 +259,7 @@ export function hydrateActionEditorGeometry(input: {
   });
 
   return {
+    ...hydratedTrackingState(finalGeometry, drawing),
     manualDrawing:
       finalGeometry?.source === "gpx_import" || finalGeometry?.source === "manual"
         ? drawing

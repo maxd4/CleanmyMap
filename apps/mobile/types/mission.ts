@@ -7,6 +7,7 @@ type MissionStatus = 'pending' | 'tracking' | 'completed' | 'cancelled'
 export interface Mission {
   id: string
   volunteer_id?: string
+  action_id?: string | null
   label: string
   status: MissionStatus
   started_at?: string | null

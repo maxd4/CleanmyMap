@@ -75,6 +75,8 @@ function expectMapActionsFallbackResult(
       [48.857, 2.353],
     ],
   });
+  expect(action?.geometry_source).toBe("gps_tracking");
+  expect(action?.contract?.geometry.geometrySource).toBe("gps_tracking");
 }
 
 describe("createAction", () => {
@@ -280,7 +282,7 @@ describe("fetchMapActions", () => {
       derived_geometry_geojson:
         '{"type":"LineString","coordinates":[[2.3522,48.8566],[2.353,48.857]]}',
       geometry_confidence: "0.8",
-      geometry_source: "manual",
+      geometry_source: "gps_tracking",
     };
 
     const supabaseClient = {

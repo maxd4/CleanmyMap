@@ -32,6 +32,7 @@ export function createPermissionLocationMock(options: {
 export function createSupabaseMock(getClient: () => unknown) {
   return {
     getAuthenticatedSupabaseClient: vi.fn(async () => getClient()),
+    getClerkSupabaseAccessToken: vi.fn(async () => 'clerk-jwt'),
   }
 }
 

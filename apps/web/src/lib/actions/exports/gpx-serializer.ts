@@ -118,6 +118,9 @@ function sourceMarker(source: GpxGeometrySource): string | null {
   if (source === "gpx_import") {
     return "Tracé GPX importé";
   }
+  if (source === "gps_tracking") {
+    return "Trace GPS observée";
+  }
   return null;
 }
 

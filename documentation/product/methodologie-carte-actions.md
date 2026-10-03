@@ -430,8 +430,13 @@ La couleur ne doit pas porter l'information de fiabilité géométrique. Cette i
 La provenance géométrique est une information métier indépendante de la
 couleur de la carte :
 
+- `gps_tracking` = observation d'une trajectoire réellement enregistrée par le
+  compagnon mobile pendant une mission terrain liée à l'action ; ses
+  coordonnées proviennent exclusivement des `gps_points` persistés et sa
+  distance observée vient de la métrique serveur de mission ;
 - `gpx_import` = observation d'une trajectoire fournie par l'utilisateur ; sa
-  distance est mesurée depuis la trace GPX ;
+  distance est mesurée depuis la trace GPX ; `gpxImport` reste réservé à cet
+  import et ne décrit jamais une mission mobile ;
 - `manual` = parcours ou zone explicitement déclaré ou dessiné par
   l'utilisateur ; ce n'est pas une observation GPS ;
 - `reference` = géométrie connue d'une emprise identifiable, notamment un parc,
@@ -450,14 +455,24 @@ reconstruit, pas un niveau de pollution.
 
 La hiérarchie de résolution canonique est :
 
-1. `gpx_import` ;
-2. `manual` ;
-3. `reference` ;
-4. `routed` ;
-5. `estimated_route` ;
-6. `fallback_point`.
+1. `gps_tracking` ;
+2. `gpx_import` ;
+3. `manual` ;
+4. `reference` ;
+5. `routed` ;
+6. `estimated_route` ;
+7. `fallback_point`.
 
-Après les géométries réellement fournies (`gpx_import` et `manual`), le moteur
+`gps_tracking` et `gpx_import` sont les observations réelles prioritaires. Une
+action ne remplace jamais une observation valide par une reconstruction
+ultérieure. La relation `missions.action_id` est optionnelle : une mission sans
+action reste autonome, tandis que les missions liées restent privées et ne
+fournissent à la carte publique que leur projection géométrique dans le contrat
+Action. Si plusieurs missions terminées sont liées à la même action, le serveur
+retient déterministement celle dont `ended_at` est le plus ancien, puis le plus
+petit identifiant en cas d'égalité.
+
+Après les géométries réellement fournies (`gps_tracking`, `gpx_import` et `manual`), le moteur
 de reconstruction suit donc : `référence pertinente → réseau piéton →
 reconstruction réseau hypothétique → vol d'oiseau → point`. Une adresse seule
 ne prouve pas l'emprise d'une zone : le resolver générique ne fabrique plus

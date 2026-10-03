@@ -6,7 +6,6 @@ import {
 import { isOrganizerType, type OrganizerType } from "@/lib/actions/organizer-type";
 import { normalizeOrganizerName } from "@/lib/actions/organizer-directory-registry";
 import type { CreateActionPayload } from "@/lib/actions/types";
-import { ACTION_GEOMETRY_SOURCES } from "@/lib/actions/types";
 import { isWasteCategorySlug } from "@/lib/waste";
 import { isRouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
@@ -44,14 +43,21 @@ const coordinateSchema = z.tuple([
   z.number().finite().min(-90).max(90),
   z.number().finite().min(-180).max(180),
 ]);
-
+const actionInputGeometrySourceSchema = z.enum([
+  "manual",
+  "gpx_import",
+  "reference",
+  "routed",
+  "estimated_route",
+  "estimated_area",
+  "fallback_point",
+]);
 const locationCoordinatesSchema = z
   .object({
     latitude: z.number().finite().min(-90).max(90),
     longitude: z.number().finite().min(-180).max(180),
   })
   .strict();
-
 const gpxImportMetadataSchema = z
   .object({
     source: z.literal("gpx_import"),
@@ -65,7 +71,6 @@ const gpxImportMetadataSchema = z
       .optional(),
   })
   .strict();
-
 const manualDrawingSchema = z
   .object({
     kind: z.enum(["polyline", "polygon"]),
@@ -83,12 +88,11 @@ const manualDrawingSchema = z
       });
     }
   });
-
 const contractGeometrySchema = z
   .object({
     kind: z.enum(["polyline", "polygon"]),
     coordinates: z.array(coordinateSchema).max(400),
-    geometrySource: z.enum(ACTION_GEOMETRY_SOURCES).nullable().optional(),
+    geometrySource: actionInputGeometrySourceSchema.nullable().optional(),
   })
   .superRefine((value, ctx) => {
     const minimumPoints = value.kind === "polygon" ? 3 : 2;
@@ -102,7 +106,6 @@ const contractGeometrySchema = z
       });
     }
   });
-
 const wasteMassSchema = z
   .number()
   .min(0)
@@ -111,7 +114,6 @@ const wasteMassSchema = z
     (value) => isAlignedToWasteMassResolution(value, ACTION_WASTE_MASS_RESOLUTION_KG),
     "La masse doit respecter une résolution de 0,1 kg.",
   );
-
 const wasteBreakdownSchema = z.object({
   recyclablesKg: wasteMassSchema.nullable().optional(),
   glassKg: wasteMassSchema.nullable().optional(),
@@ -540,7 +542,7 @@ const createActionLegacyBaseSchema = z.object({
     .default(0),
   notes: z.string().max(1000).optional(),
   manualDrawing: manualDrawingSchema.optional(),
-  geometrySource: z.enum(ACTION_GEOMETRY_SOURCES).nullable().optional(),
+  geometrySource: actionInputGeometrySourceSchema.nullable().optional(),
   submissionMode: z.enum(["quick", "complete"]).optional(),
   wasteBreakdown: wasteBreakdownSchema.optional(),
   wasteMeasurementMethod: wasteMeasurementMethodSchema,

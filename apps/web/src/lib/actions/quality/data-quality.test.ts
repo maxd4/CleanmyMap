@@ -91,6 +91,7 @@ describe("action data quality contract", () => {
 
   it.each([
     ["gpx_import", "observed"],
+    ["gps_tracking", "observed"],
     ["manual", "declared"],
     ["reference", "reference"],
     ["routed", "reconstructed"],

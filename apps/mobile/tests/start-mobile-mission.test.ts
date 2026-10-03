@@ -75,6 +75,7 @@ function missionClient() {
 
 describe('mobile mission startup', () => {
   beforeEach(() => {
+    vi.unstubAllGlobals()
     state.client = missionClient()
     state.foreground = 'granted'
     state.background = 'granted'
@@ -82,6 +83,7 @@ describe('mobile mission startup', () => {
     state.updateErrors.length = 0
     state.storedMissionId = null
     state.sequence.length = 0
+    delete process.env.EXPO_PUBLIC_WEB_APP_URL
     vi.clearAllMocks()
   })
 
@@ -92,6 +94,24 @@ describe('mobile mission startup', () => {
     expect(Location.requestForegroundPermissionsAsync).toHaveBeenCalledOnce()
     expect(Location.requestBackgroundPermissionsAsync).toHaveBeenCalledOnce()
     expect(state.sequence).toEqual(['permission-foreground', 'permission-background', 'insert', 'gps-start', 'update'])
+  })
+
+  it('creates a linked mission through the authenticated web boundary', async () => {
+    process.env.EXPO_PUBLIC_WEB_APP_URL = 'https://cleanmymap.test/'
+    const linkedMission = { ...pendingMission, action_id: 'action-1' }
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ mission: linkedMission }), { status: 201 })))
+
+    const result = await startMobileMission('user_123', 'Terrain', 'action-1')
+
+    expect(result).toEqual({ ok: true, data: activeMission })
+    expect(fetch).toHaveBeenCalledWith(
+      'https://cleanmymap.test/api/missions',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ actionId: 'action-1', label: 'Terrain' }),
+      }),
+    )
+    expect(state.sequence).not.toContain('insert')
   })
 
   it('does not create a mission after permission refusal', async () => {
