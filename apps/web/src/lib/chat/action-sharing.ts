@@ -9,8 +9,7 @@ import {
 } from "@/lib/chat/channels";
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 
-export const SHARE_DESTINATION_CHANNELS = ["community", "territory", "dm"] as const;
-type ShareDestinationChannel = (typeof SHARE_DESTINATION_CHANNELS)[number];
+type ShareDestinationChannel = "community" | "territory" | "dm";
 
 export type ShareDestination = {
   id: string;
