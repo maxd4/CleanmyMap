@@ -15,6 +15,7 @@ import {
   validateDuplicationJustificationsRegistry,
   validateDuplicationMetricsBaseline,
 } from "./duplication-policy.mjs";
+import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const metricsBaselinePath = path.join(repositoryRoot, "scripts", "checks", "duplication-metrics-baseline.json");
@@ -118,6 +119,42 @@ export function formatDuplicationReport({ results }) {
 async function main() {
   try {
     const report = runDuplicationPolicy();
+    const candidateSha = resolveCandidateSha(repositoryRoot);
+    for (const result of report.results) {
+      const scopeBaseline = report.baseline.scopes[result.scopeName];
+      const comparison = result.comparison;
+      writeQualityEvidence({
+        gate: "duplication",
+        scope: result.scopeName,
+        fileKey: `duplication-${result.scopeName}`.replaceAll("/", "-"),
+        candidateSha,
+        status: comparison.status,
+        metrics: {
+          files: result.metrics.files,
+          lines: result.metrics.lines,
+          tokens: result.metrics.tokens,
+          clones: result.metrics.clones,
+          duplicatedLines: result.metrics.duplicatedLines,
+          duplicatedTokens: result.metrics.duplicatedTokens,
+          percentage: result.metrics.percentage,
+          percentageTokens: result.metrics.percentageTokens,
+          deltaDuplicatedLines: comparison.deltas.duplicatedLines,
+          deltaDuplicatedTokens: comparison.deltas.duplicatedTokens,
+          deltaLinePercentagePoints: comparison.deltas.linePercentagePoints,
+          deltaTokenPercentagePoints: comparison.deltas.tokenPercentagePoints,
+        },
+        newFindings: result.metrics.newClones,
+        resolvedFindings: null,
+        historicalFindings: scopeBaseline.fingerprints,
+        baseline: {
+          sourceCommit: report.baseline.sourceCommit,
+          tool: report.baseline.tool,
+          toolVersion: report.baseline.toolVersion,
+          policyFingerprint: report.baseline.policyFingerprint,
+        },
+        details: { failures: comparison.failures },
+      });
+    }
     console.log(formatDuplicationReport(report));
     console.log(`KEEP_INTENTIONAL_RUNTIME: ${report.justificationReport.counts.runtime}`);
     console.log(`KEEP_INTENTIONAL_TESTS: ${report.justificationReport.counts.tests}`);

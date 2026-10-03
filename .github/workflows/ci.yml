@@ -292,6 +292,9 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    env:
+      CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      QUALITY_EVIDENCE_ROOT: artifacts/quality-evidence
 
     steps:
       - name: Checkout
@@ -333,9 +336,13 @@ jobs:
         run: npm run quality:duplication
 
       - name: Install GitNexus
+        id: install_gitnexus
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' && steps.install_node_dependencies.outcome == 'success' }}
         run: npm install --global gitnexus@1.6.12
 
       - name: Initialize GitNexus candidate index
+        id: initialize_gitnexus
+        if: ${{ !cancelled() && steps.install_gitnexus.outcome == 'success' }}
         shell: bash
         env:
           CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -353,10 +360,27 @@ jobs:
           '
 
       - name: Audit GitNexus candidate
+        id: audit_gitnexus
+        if: ${{ !cancelled() && steps.initialize_gitnexus.outcome == 'success' }}
         run: npm run audit:gitnexus
 
       - name: GitNexus cycle ratchet
+        id: quality_cycles
+        if: ${{ !cancelled() && steps.audit_gitnexus.outcome == 'success' }}
         run: npm run quality:cycles
+
+      - name: Publish web-quality summary
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' && steps.install_node_dependencies.outcome == 'success' }}
+        run: node scripts/ci/write-quality-summary.mjs
+
+      - name: Upload compact web-quality evidence
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' && steps.install_node_dependencies.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: web-quality-evidence-${{ github.run_id }}
+          path: artifacts/quality-evidence
+          if-no-files-found: ignore
+          retention-days: 3
 
   web-tests:
     needs: scope
