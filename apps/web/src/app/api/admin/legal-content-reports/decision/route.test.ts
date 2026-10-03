@@ -85,6 +85,77 @@ function validBody(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function lastAuditDetails(): Record<string, unknown> {
+  const call = appendAdminOperationAuditMock.mock.calls.at(-1)?.[0];
+  return call?.details as Record<string, unknown>;
+}
+
+function expectInvariantAuditContext(
+  details: Record<string, unknown>,
+  overrides: Record<string, unknown> = {},
+) {
+  expect(details).toMatchObject({
+    action: "reviewing",
+    origin: "received_notification",
+    reason: "Examen administratif engagé.",
+    automatedMeansUsed: false,
+    legalBasis: null,
+    termsBasis: null,
+    contentUrl: baseReport.contentUrl,
+    contentId: baseReport.contentId,
+    ...overrides,
+  });
+}
+
+function expectLastAudit(
+  outcome: "success" | "error",
+  details: Record<string, unknown>,
+) {
+  expect(appendAdminOperationAuditMock).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      outcome,
+      details: expect.objectContaining(details),
+    }),
+  );
+}
+
+function expectContentMutationAudit(
+  outcome: "success" | "error",
+  details: Record<string, unknown>,
+  contextOverrides: Record<string, unknown>,
+) {
+  expectLastAudit(outcome, details);
+  expectInvariantAuditContext(lastAuditDetails(), contextOverrides);
+}
+
+function expectAppliedMutationAudit(outcome: "success" | "error", stage?: string) {
+  expectContentMutationAudit(
+    outcome,
+    {
+      ...(stage ? { stage } : {}),
+      beforeState: expect.objectContaining({ moderationVisibility: "visible" }),
+      afterState: expect.objectContaining({ moderationVisibility: "hidden" }),
+      executionStatus: "applied",
+      executionErrorCode: null,
+      partialMutation: true,
+    },
+    {
+      action: "content_restricted",
+      legalBasis: "Article 16 DSA",
+    },
+  );
+}
+
+function mockSuccessfulContentMutation(authorEmail: string | null) {
+  applyCanonicalLegalContentMutationMock.mockResolvedValueOnce({
+    supported: true,
+    found: true,
+    beforeState: { source: "actions", moderationVisibility: "visible" },
+    afterState: { source: "actions", moderationVisibility: "hidden" },
+    authorEmail,
+  });
+}
+
 describe("POST /api/admin/legal-content-reports/decision", () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -156,6 +227,18 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
     expect(response.status).toBe(409);
     expect(appendDecisionMock).not.toHaveBeenCalled();
     expect(applyCanonicalLegalContentMutationMock).not.toHaveBeenCalled();
+    expectLastAudit("error", {
+      stage: "capability_check",
+      beforeState: expect.objectContaining({ creatorState: "new" }),
+      afterState: expect.objectContaining({ creatorState: "new" }),
+      executionStatus: "not_applicable",
+      executionErrorCode: null,
+      partialMutation: false,
+    });
+    expectInvariantAuditContext(lastAuditDetails(), {
+      action: "content_removed",
+      legalBasis: "Article 16 DSA",
+    });
   });
 
   it("audits a non-mutative decision with the projected report state", async () => {
@@ -223,20 +306,14 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
         executionErrorCode: null,
       }),
     );
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        outcome: "error",
-        targetId: "report-1",
-        details: expect.objectContaining({
-          stage: "decision_projection",
-          beforeState: expect.objectContaining({ creatorState: "new" }),
-          afterState: expect.objectContaining({ creatorState: "reviewing" }),
-          executionStatus: "not_applicable",
-          executionErrorCode: null,
-          partialMutation: false,
-        }),
-      }),
-    );
+    expectLastAudit("error", {
+      stage: "decision_projection",
+      beforeState: expect.objectContaining({ creatorState: "new" }),
+      afterState: expect.objectContaining({ creatorState: "reviewing" }),
+      executionStatus: "not_applicable",
+      executionErrorCode: null,
+      partialMutation: false,
+    });
     expect(sendNotifierMock).toHaveBeenCalled();
     await expect(response.json()).resolves.toMatchObject({
       status: "partial",
@@ -255,6 +332,23 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
     await expect(response.json()).resolves.toMatchObject({
       error: "Decision recorded but audit is incomplete.",
     });
+  });
+
+  it("audits a decision persistence failure with the unchanged report state", async () => {
+    appendDecisionMock.mockRejectedValueOnce(new Error("decision persistence unavailable"));
+
+    const response = await POST(request(validBody()));
+
+    expect(response.status).toBe(500);
+    expectLastAudit("error", {
+      stage: "decision_persistence",
+      beforeState: expect.objectContaining({ creatorState: "new" }),
+      afterState: expect.objectContaining({ creatorState: "new" }),
+      executionStatus: "not_applicable",
+      executionErrorCode: null,
+      partialMutation: false,
+    });
+    expectInvariantAuditContext(lastAuditDetails());
   });
 
   it("marks a missing action as failed and keeps the report state unchanged", async () => {
@@ -277,6 +371,18 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
         executionErrorCode: "content_not_found",
       }),
     );
+    expectLastAudit("error", {
+      stage: "execution",
+      beforeState: {},
+      afterState: {},
+      executionStatus: "failed",
+      executionErrorCode: "content_not_found",
+      partialMutation: false,
+    });
+    expectInvariantAuditContext(lastAuditDetails(), {
+      action: "content_removed",
+      legalBasis: "Article 16 DSA",
+    });
     expect(updateLegalContentReportStateMock).not.toHaveBeenCalled();
     expect(sendAuthorMock).not.toHaveBeenCalled();
   });
@@ -295,18 +401,22 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
         executionErrorCode: "mutation_failed",
       }),
     );
+    expectLastAudit("error", {
+      stage: "execution",
+      executionStatus: "failed",
+      executionErrorCode: "mutation_failed",
+      partialMutation: false,
+    });
+    expectInvariantAuditContext(lastAuditDetails(), {
+      action: "content_restricted",
+      legalBasis: "Article 16 DSA",
+    });
     expect(sendAuthorMock).not.toHaveBeenCalled();
   });
 
   it("keeps the measure applied when report projection fails and returns a partial result", async () => {
     updateLegalContentReportStateMock.mockResolvedValueOnce(null);
-    applyCanonicalLegalContentMutationMock.mockResolvedValueOnce({
-      supported: true,
-      found: true,
-      beforeState: { source: "actions", moderationVisibility: "visible" },
-      afterState: { source: "actions", moderationVisibility: "hidden" },
-      authorEmail: "author@example.com",
-    });
+    mockSuccessfulContentMutation("author@example.com");
 
     const response = await POST(
       request(validBody({ action: "content_restricted", legalBasis: "Article 16 DSA" })),
@@ -329,16 +439,7 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
     expect(sendAuthorMock).toHaveBeenCalledWith(
       expect.objectContaining({ authorEmail: "author@example.com" }),
     );
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        outcome: "error",
-        details: expect.objectContaining({
-          stage: "report_projection",
-          executionStatus: "applied",
-          executionErrorCode: null,
-        }),
-      }),
-    );
+    expectAppliedMutationAudit("error", "report_projection");
     await expect(response.json()).resolves.toMatchObject({
       status: "partial",
       item: { status: "new", executionStatus: "applied" },
@@ -346,13 +447,7 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
   });
 
   it("marks successful mutation as applied and then notifies the author", async () => {
-    applyCanonicalLegalContentMutationMock.mockResolvedValueOnce({
-      supported: true,
-      found: true,
-      beforeState: { source: "actions", moderationVisibility: "visible" },
-      afterState: { source: "actions", moderationVisibility: "hidden" },
-      authorEmail: "author@example.com",
-    });
+    mockSuccessfulContentMutation("author@example.com");
 
     const response = await POST(
       request(validBody({ action: "content_restricted", legalBasis: "Article 16 DSA" })),
@@ -374,6 +469,31 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
     expect(sendAuthorMock).toHaveBeenCalledWith(
       expect.objectContaining({ authorEmail: "author@example.com" }),
     );
+    expectAppliedMutationAudit("success");
+  });
+
+  it("audits a notification failure with the applied decision state", async () => {
+    sendNotifierMock.mockRejectedValueOnce(new Error("notifier unavailable"));
+
+    const response = await POST(request(validBody()));
+
+    expect(response.status).toBe(207);
+    expect(updateDecisionNotificationsMock).toHaveBeenCalledWith({
+      decisionId: "decision-1",
+      notifierNotificationStatus: "failed",
+      authorNotificationStatus: "not_requested",
+      notificationError: "notifier",
+    });
+    expectLastAudit("error", {
+      stage: "notification",
+      beforeState: expect.objectContaining({ creatorState: "new" }),
+      afterState: expect.objectContaining({ creatorState: "reviewing" }),
+      executionStatus: "not_applicable",
+      executionErrorCode: null,
+      partialMutation: false,
+      notificationError: "notifier",
+    });
+    expectInvariantAuditContext(lastAuditDetails());
   });
 
   it("keeps the admin gate before every decision or mutation", async () => {
