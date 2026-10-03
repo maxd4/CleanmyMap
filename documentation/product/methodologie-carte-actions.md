@@ -425,13 +425,20 @@ scientifique, ni l'état `clean_place`.
 
 La couleur ne doit pas porter l'information de fiabilité géométrique. Cette information utilise d'autres canaux.
 
+> **Évolution planifiée (`PLAN / TARGET`)** — La couverture GPS multi-groupes et
+> la contribution cartographique sont spécifiées dans
+> [`couverture-gps-multi-groupes.md`](./couverture-gps-multi-groupes.md). Cette
+> cible ne transforme pas `gps_tracking`, `MultiLineString`, les contributions
+> multi-traces ou une distance de couverture unique en capacités `CURRENT`.
+
 ### Réalité / déclaration / hypothèse
 
 La provenance géométrique est une information métier indépendante de la
 couleur de la carte :
 
-- `gps_tracking` = observation d'une trajectoire réellement enregistrée par le
-  compagnon mobile pendant une mission terrain liée à l'action ; ses
+- Dans la cible, `gps_tracking` = observation d'une trajectoire réellement
+  enregistrée par le compagnon mobile pendant une mission terrain liée à
+  l'action ; ses
   coordonnées proviennent exclusivement des `gps_points` persistés et sa
   distance observée vient de la métrique serveur de mission ;
 - `gpx_import` = observation d'une trajectoire fournie par l'utilisateur ; sa
@@ -453,7 +460,7 @@ constituent jamais une preuve de trajet réel. Un trait plein peut donc être un
 déclaration ou une référence ; un trait pointillé signale un parcours
 reconstruit, pas un niveau de pollution.
 
-La hiérarchie de résolution canonique est :
+La hiérarchie de résolution canonique cible est :
 
 1. `gps_tracking` ;
 2. `gpx_import` ;
@@ -463,9 +470,9 @@ La hiérarchie de résolution canonique est :
 6. `estimated_route` ;
 7. `fallback_point`.
 
-`gps_tracking` et `gpx_import` sont les observations réelles prioritaires. Une
-action ne remplace jamais une observation valide par une reconstruction
-ultérieure. Chaque observation acceptée est conservée dans
+Dans cette cible, `gps_tracking` et `gpx_import` sont les observations réelles
+prioritaires. Une action ne remplace jamais une observation valide par une
+reconstruction ultérieure. Chaque observation acceptée est conservée dans
 `action_geometry_contributions` avec son contributeur Clerk, sa source, sa
 géométrie, sa distance individuelle, son empreinte technique et son état
 exploitable/refusé. La relation `missions.action_id` est optionnelle : une
@@ -475,7 +482,7 @@ Un contributeur n'est éligible que s'il est participant confirmé ou
 organisateur canonique ; la trace GPX prouve sa fourniture, pas qu'il a
 physiquement tenu le GPS.
 
-Le cycle de vie canonique d'une action peut donc être :
+Le cycle de vie cible d'une action peut donc être :
 
 ```text
 géométrie hypothétique initiale
@@ -485,16 +492,17 @@ géométrie hypothétique initiale
 → couverture observée multi-traces
 ```
 
-Un GPX validé est promu comme `gpx_import` sans routage ni snapping réseau ; une
-mission liée éligible est promue comme `gps_tracking` depuis ses `gps_points`
-validés et sa distance serveur. Une promotion conserve `routeTargetDistanceKm`
-comme cible historique distincte de `routeObservedDistanceKm`. Avec plusieurs
-observations, la projection utilise une `MultiLineString` de couverture : les
-traces ne sont jamais concaténées, les recouvrements ne sont pas dédoublonnés
-scientifiquement et aucune distance collective n'est annoncée. Les distances
-individuelles restent visibles quand elles sont utiles. Pour un parc ou une
-zone close, le polygone reste la géométrie primaire et la couverture observée
-est complémentaire. Une observation ajoutée est append-only et idempotente.
+Dans cette cible, un GPX validé est promu comme `gpx_import` sans routage ni
+snapping réseau ; une mission liée éligible est promue comme `gps_tracking`
+depuis ses `gps_points` validés et sa distance serveur. Une promotion conserve
+`routeTargetDistanceKm` comme cible historique distincte de
+`routeObservedDistanceKm`. Avec plusieurs observations, la projection utilise
+une `MultiLineString` de couverture : les traces ne sont jamais concaténées,
+les recouvrements ne sont pas dédoublonnés scientifiquement et aucune distance
+collective n'est annoncée. Les distances individuelles restent visibles quand
+elles sont utiles. Pour un parc ou une zone close, le polygone reste la
+géométrie primaire et la couverture observée est complémentaire. Une
+observation ajoutée est append-only et idempotente.
 
 ### Remédiation des géométries historiques
 
@@ -510,7 +518,7 @@ reclassification exige une évidence persistée et déterministe : source forte
 déjà déclarée, marqueur de dessin, metadata GPX, géométrie de route persistée
 avec son mode/provider correspondant, ou reproduction exacte d'une ellipse
 legacy par l'algorithme historique. Les sources valides `gps_tracking`,
-`gpx_import` et `manual` priment toujours. Le resolver de reconstruction
+`gpx_import` et `manual` prévues par cette cible priment toujours. Le resolver de reconstruction
 actuel n'est jamais rejoué pour réécrire l'histoire ; un polygone utilisateur
 ou de référence n'est jamais transformé automatiquement en point.
 
@@ -523,8 +531,9 @@ normale du resolver. Les signalements `trash_spotter_spots` sont audités
 séparément et restent ponctuels ; l'archive `spots` n'est pas une cible de ce
 backfill.
 
-Après les géométries réellement fournies (`gps_tracking`, `gpx_import` et `manual`), le moteur
-de reconstruction suit donc : `référence pertinente → réseau piéton →
+Dans la cible, après les géométries réellement fournies (`gps_tracking`,
+`gpx_import` et `manual`), le moteur de reconstruction suit donc : `référence
+pertinente → réseau piéton →
 reconstruction réseau hypothétique → vol d'oiseau → point`. Une adresse seule
 ne prouve pas l'emprise d'une zone : le resolver générique ne fabrique plus
 d'ellipse 85×55 m ou 110×72 m. `estimated_area` est conservé uniquement pour

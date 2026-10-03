@@ -115,7 +115,12 @@ L'identité Clerk, les RLS missions/GPS, la finalisation des métriques et le
 chargement Clerk headless avec le `tokenCache` SecureStore sont finalisés et
 restent invariants pendant le développement actif. Les sujets encore ouverts
 et non prêts pour la production sont `mission_actions`, la validation
-opérationnelle et l'évolution future du produit mobile.
+opérationnelle et l'évolution future du produit mobile. La cible
+`PLAN / TARGET` décrite dans
+[`../../documentation/product/couverture-gps-multi-groupes.md`](../../documentation/product/couverture-gps-multi-groupes.md)
+vise le modèle « une mission GPS par sous-groupe → plusieurs traces pour une
+action » ; elle ne modifie pas le statut `NOT_PRODUCTION_READY` de cette
+capacité.
 
 ### Proposition historique — non cible actuelle
 
