@@ -55,6 +55,16 @@ const allowlist = [
     reason: "environmental estimator detail typography preserves the historical visual contract",
   },
   {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart-details.tsx",
+    rule: "small-text",
+    reason: "environmental curve detail typography preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart-view.tsx",
+    rule: "small-text",
+    reason: "environmental curve SVG labels preserve the historical visual contract",
+  },
+  {
     file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details-audit.tsx",
     rule: "body-color",
     reason: "environmental estimator detail typography preserves the historical visual contract",

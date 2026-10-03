@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "92a9552a4bb06b4ba4f66ed5749578964309f5b4",
+  "sourceCommit": "6b55bca097f057c101dd120bf3590a48c4755aeb",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -804,24 +804,6 @@
       "ceiling": 28,
       "status": "LEGACY",
       "functionIdentity": "named:VisionTrainingPanel#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
-      "line": 90,
-      "category": "React/JSX",
-      "ceiling": 43,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildDriverBreakdown#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
-      "line": 183,
-      "category": "React/JSX",
-      "ceiling": 32,
-      "status": "LEGACY",
-      "functionIdentity": "named:EnvironmentalImpactCurveChart#1"
     },
     {
       "metric": "complexity",
@@ -3567,15 +3549,6 @@
       "ceiling": 37,
       "status": "IMPROVED",
       "functionIdentity": "named:SystemStatusPanel#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
-      "line": 183,
-      "category": "React/JSX",
-      "ceiling": 477,
-      "status": "LEGACY",
-      "functionIdentity": "named:EnvironmentalImpactCurveChart#1"
     },
     {
       "metric": "functionLength",
