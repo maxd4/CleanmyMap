@@ -2684,7 +2684,7 @@
       "category": "routes API",
       "ceiling": 132,
       "status": "LEGACY",
-      "functionIdentity": "named:GET#1"
+      "functionIdentity": "callback:actionsExportRoute . withActionsExportRequest:0:#1"
     },
     {
       "metric": "functionLength",
@@ -2693,7 +2693,7 @@
       "category": "routes API",
       "ceiling": 133,
       "status": "LEGACY",
-      "functionIdentity": "named:GET#1"
+      "functionIdentity": "callback:actionsExportRoute . withActionsExportRequest:0:#1"
     },
     {
       "metric": "functionLength",
