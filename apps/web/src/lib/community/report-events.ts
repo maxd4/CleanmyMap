@@ -1,12 +1,8 @@
 import { unstable_cache } from "next/cache";
-import {
-  defaultCommunityEventOps,
-  parseCommunityEventDescription,
-} from "./event-ops";
+import { toCommunityEventItem } from "./event-item";
 import {
   indexCommunityEventRsvpSummaries,
   loadCommunityEventRsvpSummaries,
-  type CommunityEventRsvpSummary,
 } from "./event-rsvp-summaries";
 import type { CommunityEventItem } from "./http";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -34,46 +30,6 @@ function clampLimit(limit: number): number {
 
 function buildReportCommunityEventsCacheKey(limit: number): string {
   return `limit:${clampLimit(limit)}`;
-}
-
-function toCommunityEventItem(
-  event: ReportCommunityEventRow,
-  summary: CommunityEventRsvpSummary | null,
-): CommunityEventItem {
-  const parsedDescription = parseCommunityEventDescription(event.description);
-  const ops = parsedDescription.ops ?? defaultCommunityEventOps();
-
-  return {
-    id: event.id,
-    createdAt: event.created_at,
-    organizerClerkId: event.organizer_clerk_id,
-    canEditOwnOps: false,
-    title: event.title,
-    eventDate: event.event_date,
-    locationLabel: event.location_label,
-    location: {
-      label: event.location_label,
-      latitude: event.latitude,
-      longitude: event.longitude,
-      source: event.location_source,
-    },
-    description: parsedDescription.plainDescription,
-    capacityTarget: ops.capacityTarget,
-    attendanceCount: ops.attendanceCount,
-    postMortem: ops.postMortem,
-    cleanupObjective: ops.cleanupObjective,
-    cleanupZone: ops.cleanupZone,
-    cleanupLogisticsNeeds: ops.cleanupLogisticsNeeds,
-    cleanupSupportLevel: ops.cleanupSupportLevel,
-    cleanupWasteTypesExpected: ops.cleanupWasteTypesExpected,
-    rsvpCounts: {
-      yes: summary?.yesCount ?? 0,
-      maybe: summary?.maybeCount ?? 0,
-      no: summary?.noCount ?? 0,
-      total: summary?.totalCount ?? 0,
-    },
-    myRsvpStatus: null,
-  };
 }
 
 export async function loadCachedReportCommunityEvents(
@@ -108,7 +64,11 @@ export async function loadCachedReportCommunityEvents(
       const summaryByEventId = indexCommunityEventRsvpSummaries(summaries);
 
       return events.map((event) =>
-        toCommunityEventItem(event, summaryByEventId.get(event.id) ?? null),
+        toCommunityEventItem(
+          event,
+          summaryByEventId.get(event.id) ?? null,
+          { canEditOwnOps: false, myRsvpStatus: null },
+        ),
       );
     },
     ["report-community-events", buildReportCommunityEventsCacheKey(normalizedLimit)],

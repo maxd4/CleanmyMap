@@ -11,6 +11,8 @@ import {
  parseCommunityEventDescription,
  serializeCommunityEventDescription,
 } from"@/lib/community/event-ops";
+import { toCommunityEventItem } from "@/lib/community/event-item";
+import type { CommunityEventItem } from "@/lib/community/http";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
@@ -264,7 +266,7 @@ async function trackCommunityEventOps(
   supabase: CommunityEventSupabase,
   userId: string | null,
   eventId: string,
-  item: ReturnType<typeof toEventResponseItem>,
+ item: CommunityEventItem,
 ) {
   if (!userId) return;
   try {
@@ -292,53 +294,6 @@ function toCommunityEventOpsAuditValue(
  attendanceCount: ops.attendanceCount,
  postMortemPresent: postMortem.length > 0,
  postMortemLength: postMortem.length,
- };
-}
-
-function toEventResponseItem(
- event: CommunityEventRow,
- summary: {
-  yesCount: number;
-  maybeCount: number;
-  noCount: number;
-  totalCount: number;
-  myRsvpStatus: "yes" | "maybe" | "no" | null;
- } | null,
- canEditOwnOps: boolean,
-) {
- const parsedDescription = parseCommunityEventDescription(event.description);
- const ops = parsedDescription.ops ?? defaultCommunityEventOps();
-
- return {
- id: event.id,
- createdAt: event.created_at,
- organizerClerkId: event.organizer_clerk_id,
- canEditOwnOps,
- title: event.title,
- eventDate: event.event_date,
- locationLabel: event.location_label,
- location: {
-  label: event.location_label,
-  latitude: event.latitude,
-  longitude: event.longitude,
-  source: event.location_source,
- },
- description: parsedDescription.plainDescription,
- capacityTarget: ops.capacityTarget,
- attendanceCount: ops.attendanceCount,
- postMortem: ops.postMortem,
- cleanupObjective: ops.cleanupObjective,
- cleanupZone: ops.cleanupZone,
- cleanupLogisticsNeeds: ops.cleanupLogisticsNeeds,
-  cleanupSupportLevel: ops.cleanupSupportLevel,
-  cleanupWasteTypesExpected: ops.cleanupWasteTypesExpected,
-  rsvpCounts: {
-  yes: summary?.yesCount ?? 0,
-  maybe: summary?.maybeCount ?? 0,
- no: summary?.noCount ?? 0,
- total: summary?.totalCount ?? 0,
-  },
-  myRsvpStatus: summary?.myRsvpStatus ?? null,
  };
 }
 
@@ -404,10 +359,10 @@ export async function POST(request: Request) {
   userId: userId ?? null,
  });
 
- const item = toEventResponseItem(
+ const item = toCommunityEventItem(
   updated,
   summaries[0] ?? null,
-  permission.isOrganizer,
+  { canEditOwnOps: permission.isOrganizer },
  );
 
   await trackCommunityEventOps(supabase, userId, parsed.data.eventId, item);
