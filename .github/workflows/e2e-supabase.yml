@@ -127,3 +127,4 @@ jobs:
           name: cleanmymap-public-e2e-evidence
           path: artifacts/ci-public-evidence
           if-no-files-found: error
+          retention-days: 3
