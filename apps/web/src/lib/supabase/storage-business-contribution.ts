@@ -1,26 +1,13 @@
 import {
   listStorageBusinessDomains,
-  type StorageBusinessDomainId,
 } from "./storage-business-taxonomy";
-import {
-  classifyStorageBusinessObject,
-  type StorageBusinessClassificationSignalType,
-} from "./storage-business-classification";
-import {
-  formatStorageBytes,
-  inferStorageFileTypeLabel,
-  type StorageUsageObjectRow,
-  type StorageUsageSnapshotRecord,
-  type StorageUsageSnapshot,
-  type StorageUsageBreakdownItem,
-  toStorageUsageSnapshot,
+import type {
+  StorageUsageObjectRow,
+  StorageUsageSnapshotRecord,
+  StorageUsageSnapshot,
+  StorageUsageBreakdownItem,
 } from "./storage-usage";
 import { STORAGE_BUSINESS_CONTRIBUTION_POLICY } from "./storage-business-contribution-policy";
-import {
-  compareStorageUsageEntries,
-  extractStorageFileExtension,
-  parseStorageSizeBytes,
-} from "./storage-size";
 import {
   buildStorageBusinessContributionAlerts,
   buildStorageBusinessContributionAlertId,
@@ -28,309 +15,26 @@ import {
   getAlertSignalRank,
   pushStorageBusinessContributionAlert,
 } from "./storage-business-contribution-alerts";
+import {
+  buildStorageBusinessContributionMimeSubtypesByDomain,
+  buildStorageBusinessContributionTopFilesByDomain,
+} from "./storage-business-contribution-analysis";
+import {
+  buildStorageBusinessContributionHistoryPoints,
+  selectStorageBusinessContributionHistory,
+} from "./storage-business-contribution-history";
+import type {
+  StorageBusinessContributionAlert,
+  StorageBusinessContributionItem,
+  StorageBusinessContributionReport,
+} from "./storage-business-contribution-contracts";
 
-export type StorageBusinessContributionTopFile = {
-  bucketId: string;
-  bucketLabel: string;
-  businessSignal?: StorageBusinessClassificationSignalType;
-  businessEvidence?: string;
-  businessDomain?: string | null;
-  sourceTable?: string | null;
-  businessContext?: string | null;
-  name: string;
-  extension: string;
-  bytes: number;
-  sizeLabel: string;
-  createdAt: string | null;
-  updatedAt: string | null;
-};
-
-type StorageBusinessContributionMimeSubtype = {
-  key: string;
-  label: string;
-  bytes: number;
-  count: number;
-  sharePercent: number | null;
-  averageBytes: number | null;
-  knownSizeCount?: number;
-};
-
-export type StorageBusinessContributionHistoryPoint = {
-  snapshotMonth: string;
-  monthLabel: string;
-  currentBytes: number;
-  currentCount: number;
-  sharePercent: number;
-  deltaBytes: number;
-  deltaCount: number;
-  deltaPercent: number | null;
-  cumulative3MonthBytes: number;
-  cumulative3MonthPercent: number | null;
-  accelerationBytes: number;
-  accelerationPercent: number | null;
-};
-
-export type StorageBusinessContributionAlertSeverity = "info" | "warning" | "critical";
-
-export type StorageBusinessContributionAlert = {
-  id: string;
-  domainId: StorageBusinessDomainId;
-  label: string;
-  title: string;
-  message: string;
-  severity: StorageBusinessContributionAlertSeverity;
-  signal:
-    | "quotaShare"
-    | "growth"
-    | "photoDominance"
-    | "heavyExports"
-    | "acceleration";
-  snapshotMonth: string;
-  currentBytes: number;
-  thresholdBytes: number | null;
-  currentSharePercent: number;
-  thresholdSharePercent: number | null;
-};
-
-export type StorageBusinessContributionItem = {
-  id: StorageBusinessDomainId;
-  label: string;
-  description: string;
-  currentBytes: number;
-  currentCount: number;
-  currentSharePercent: number;
-  currentAverageBytes: number;
-  previousBytes: number;
-  previousCount: number;
-  deltaBytes: number;
-  deltaPercent: number | null;
-  deltaCount: number;
-  cumulative3MonthBytes: number;
-  cumulative3MonthPercent: number | null;
-  accelerationBytes: number;
-  accelerationPercent: number | null;
-  history: StorageBusinessContributionHistoryPoint[];
-  topFiles: StorageBusinessContributionTopFile[];
-  mimeSubtypes: StorageBusinessContributionMimeSubtype[];
-  alerts: StorageBusinessContributionAlert[];
-};
-
-export type StorageBusinessContributionReport = {
-  previousSnapshotMonth: string | null;
-  historyMonths: string[];
-  alerts: StorageBusinessContributionAlert[];
-  items: StorageBusinessContributionItem[];
-};
-
-function toStringOrNull(value: unknown): string | null {
-  return typeof value === "string" && value.trim().length > 0 ? value : null;
-}
-
-function formatMonthLabel(snapshotMonth: string): string {
-  const parsed = new Date(`${snapshotMonth}T00:00:00.000Z`);
-  if (Number.isNaN(parsed.getTime())) {
-    return snapshotMonth;
-  }
-
-  return new Intl.DateTimeFormat("fr-FR", {
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(parsed);
-}
-
-function getHistorySeries(
-  historyRecords: StorageUsageSnapshotRecord[] | undefined,
-  currentSnapshot: StorageUsageSnapshot,
-): StorageUsageSnapshot[] {
-  const snapshots = [currentSnapshot];
-  for (const record of historyRecords ?? []) {
-    if (record.snapshot_month === currentSnapshot.snapshotMonth) {
-      continue;
-    }
-    snapshots.push(toStorageUsageSnapshot(record, currentSnapshot.source));
-  }
-
-  return snapshots
-    .slice()
-    .sort((left, right) => right.snapshotMonth.localeCompare(left.snapshotMonth))
-    .slice(0, 4);
-}
-
-function buildTopFilesByDomain(
-  objects: StorageUsageObjectRow[],
-): Map<StorageBusinessDomainId, StorageBusinessContributionTopFile[]> {
-  const grouped = new Map<StorageBusinessDomainId, StorageBusinessContributionTopFile[]>();
-
-  for (const object of objects) {
-    const size = parseStorageSizeBytes(object.metadata?.["size"]);
-    if (size === null) {
-      continue;
-    }
-    const classification = classifyStorageBusinessObject({
-      bucketId: object.bucket_id,
-      name: object.name,
-      mimeType: toStringOrNull(object.metadata?.["mimetype"]),
-      metadata: object.metadata ?? null,
-    });
-
-    const current = grouped.get(classification.id) ?? [];
-    current.push({
-      bucketId: object.bucket_id,
-      bucketLabel: object.bucket_id,
-      businessSignal: classification.signal,
-      businessEvidence: classification.evidence,
-      businessDomain: classification.businessDomain,
-      sourceTable: classification.sourceTable,
-      businessContext: classification.businessContext,
-      name: object.name,
-      extension: extractStorageFileExtension(object.name) || "sans-extension",
-      bytes: size,
-      sizeLabel: formatStorageBytes(size),
-      createdAt: toStringOrNull(object.created_at),
-      updatedAt: toStringOrNull(object.updated_at),
-    });
-    grouped.set(classification.id, current);
-  }
-
-  for (const domain of listStorageBusinessDomains()) {
-    const files = grouped.get(domain.id);
-    if (!files) {
-      continue;
-    }
-    files.sort((left, right) => {
-      if (right.bytes !== left.bytes) {
-        return right.bytes - left.bytes;
-      }
-      return left.name.localeCompare(right.name, "fr");
-    });
-    grouped.set(domain.id, files.slice(0, 3));
-  }
-
-  return grouped;
-}
-
-function buildMimeSubtypesByDomain(
-  objects: StorageUsageObjectRow[],
-): Map<StorageBusinessDomainId, StorageBusinessContributionMimeSubtype[]> {
-  const grouped = new Map<
-    StorageBusinessDomainId,
-    Map<string, { label: string; bytes: number; count: number; knownSizeCount: number }>
-  >();
-
-  for (const object of objects) {
-    const size = parseStorageSizeBytes(object.metadata?.["size"]);
-    const classification = classifyStorageBusinessObject({
-      bucketId: object.bucket_id,
-      name: object.name,
-      mimeType: toStringOrNull(object.metadata?.["mimetype"]),
-      metadata: object.metadata ?? null,
-    });
-    const mimeType = toStringOrNull(object.metadata?.["mimetype"]);
-    const extension = extractStorageFileExtension(object.name);
-    const key = mimeType ?? `file-type:${extension || "sans-extension"}`;
-    const label = mimeType ?? inferStorageFileTypeLabel(extension, mimeType);
-
-    const domain = grouped.get(classification.id) ?? new Map();
-    const current = domain.get(key) ?? {
-      label,
-      bytes: 0,
-      count: 0,
-      knownSizeCount: 0,
-    };
-    current.count += 1;
-    if (size !== null) {
-      current.bytes += size;
-      current.knownSizeCount += 1;
-    }
-    domain.set(key, current);
-    grouped.set(classification.id, domain);
-  }
-
-  const result = new Map<StorageBusinessDomainId, StorageBusinessContributionMimeSubtype[]>();
-
-  for (const [domainId, entries] of grouped.entries()) {
-    const sortedEntries = Array.from(entries.entries())
-      .map(([key, item]) => ({
-        key,
-        label: item.label,
-        bytes: item.bytes,
-        count: item.count,
-        sharePercent: null,
-        averageBytes: item.knownSizeCount > 0 ? item.bytes / item.knownSizeCount : null,
-        knownSizeCount: item.knownSizeCount,
-      }))
-      .sort(compareStorageUsageEntries);
-
-    const totalBytes = sortedEntries.reduce((sum, item) => sum + item.bytes, 0);
-    const hasUnknownSizes = sortedEntries.some((item) => item.knownSizeCount < item.count);
-    const topFive = sortedEntries.slice(0, 5);
-    result.set(
-      domainId,
-      topFive.map((item) => ({
-        ...item,
-        sharePercent: totalBytes > 0
-          ? (item.bytes / totalBytes) * 100
-          : hasUnknownSizes
-            ? null
-            : 0,
-      })),
-    );
-  }
-
-  return result;
-}
-
-function computeTrendPointSeries(
-  snapshots: StorageUsageSnapshot[],
-  domainId: StorageBusinessDomainId,
-): StorageBusinessContributionHistoryPoint[] {
-  const points = snapshots
-    .map((snapshot) => {
-      const item = snapshot.businessBreakdown.find((entry) => entry.key === domainId);
-      return {
-        snapshotMonth: snapshot.snapshotMonth,
-        monthLabel: formatMonthLabel(snapshot.snapshotMonth),
-        currentBytes: item?.bytes ?? 0,
-        currentCount: item?.count ?? 0,
-        sharePercent: item?.sharePercent ?? 0,
-      };
-    })
-    .sort((left, right) => right.snapshotMonth.localeCompare(left.snapshotMonth));
-
-  return points.map((point, index) => {
-    const previous = points[index + 1] ?? null;
-    const older = points[index + 2] ?? null;
-    const deltaBytes = point.currentBytes - (previous?.currentBytes ?? 0);
-    const deltaCount = point.currentCount - (previous?.currentCount ?? 0);
-    const deltaPercent =
-      previous && previous.currentBytes > 0
-        ? (deltaBytes / previous.currentBytes) * 100
-        : null;
-    const cumulative3MonthBytes = point.currentBytes - (older?.currentBytes ?? 0);
-    const cumulative3MonthPercent =
-      older && older.currentBytes > 0
-        ? (cumulative3MonthBytes / older.currentBytes) * 100
-        : null;
-    const previousDelta = previous
-      ? previous.currentBytes - (older?.currentBytes ?? 0)
-      : 0;
-    const accelerationBytes = deltaBytes - previousDelta;
-    const accelerationPercent =
-      previousDelta !== 0 ? (accelerationBytes / Math.abs(previousDelta)) * 100 : null;
-
-    return {
-      ...point,
-      deltaBytes,
-      deltaCount,
-      deltaPercent,
-      cumulative3MonthBytes,
-      cumulative3MonthPercent,
-      accelerationBytes,
-      accelerationPercent,
-    };
-  });
-}
+export type {
+  StorageBusinessContributionAlert,
+  StorageBusinessContributionHistoryPoint,
+  StorageBusinessContributionItem,
+  StorageBusinessContributionReport,
+} from "./storage-business-contribution-contracts";
 
 function getItemPriorityScore(item: {
   currentBytes: number;
@@ -356,67 +60,10 @@ function getItemPriorityScore(item: {
   return quotaPriority + criticalAlertScore + shareScore + growthScore;
 }
 
-export function buildStorageBusinessContributions(params: {
-  objects: StorageUsageObjectRow[];
-  currentSnapshot: StorageUsageSnapshot;
-  previousSnapshot: StorageUsageSnapshot | null;
-  historyRecords?: StorageUsageSnapshotRecord[];
-}): StorageBusinessContributionReport {
-  const previousById = new Map(
-    (params.previousSnapshot?.businessBreakdown ?? []).map(
-      (item: StorageUsageBreakdownItem) => [item.key, item] as const,
-    ),
-  );
-
-  const topFilesByDomain = buildTopFilesByDomain(params.objects);
-  const mimeSubtypesByDomain = buildMimeSubtypesByDomain(params.objects);
-  const historySnapshots = getHistorySeries(params.historyRecords, params.currentSnapshot);
-  const reportAlerts: StorageBusinessContributionAlert[] = [];
-
-  const items = listStorageBusinessDomains()
-    .map((domain) => {
-      const current = params.currentSnapshot.businessBreakdown.find((item) => item.key === domain.id);
-      const previous = previousById.get(domain.id);
-      const currentBytes = current?.bytes ?? 0;
-      const previousBytes = previous?.bytes ?? 0;
-      const currentCount = current?.count ?? 0;
-      const previousCount = previous?.count ?? 0;
-      const deltaBytes = currentBytes - previousBytes;
-      const deltaCount = currentCount - previousCount;
-      const history = computeTrendPointSeries(historySnapshots, domain.id);
-       const alerts = buildStorageBusinessContributionAlerts({
-        domainId: domain.id,
-        label: domain.label,
-        history,
-        currentBytes,
-        currentSharePercent: current?.sharePercent ?? 0,
-        topFiles: topFilesByDomain.get(domain.id) ?? [],
-      });
-      reportAlerts.push(...alerts);
-
-      return {
-        id: domain.id,
-        label: domain.label,
-        description: domain.description,
-        currentBytes,
-        currentCount,
-        currentSharePercent: current?.sharePercent ?? 0,
-        currentAverageBytes: current?.averageBytes ?? 0,
-        previousBytes,
-        previousCount,
-        deltaBytes,
-        deltaPercent: previousBytes > 0 ? (deltaBytes / previousBytes) * 100 : null,
-        deltaCount,
-        cumulative3MonthBytes: history[0]?.cumulative3MonthBytes ?? deltaBytes,
-        cumulative3MonthPercent: history[0]?.cumulative3MonthPercent ?? null,
-        accelerationBytes: history[0]?.accelerationBytes ?? 0,
-        accelerationPercent: history[0]?.accelerationPercent ?? null,
-        history,
-        topFiles: topFilesByDomain.get(domain.id) ?? [],
-        mimeSubtypes: mimeSubtypesByDomain.get(domain.id) ?? [],
-        alerts,
-      };
-    })
+function sortContributionItems(
+  items: StorageBusinessContributionItem[],
+): StorageBusinessContributionItem[] {
+  return items
     .filter((item) => item.currentBytes > 0 || item.previousBytes > 0)
     .sort((left, right) => {
       const leftPriority = getItemPriorityScore(left);
@@ -432,45 +79,184 @@ export function buildStorageBusinessContributions(params: {
       }
       return left.label.localeCompare(right.label, "fr");
     });
+}
 
+function sortContributionAlerts(
+  alerts: StorageBusinessContributionAlert[],
+): StorageBusinessContributionAlert[] {
+  return alerts.sort((left, right) => {
+    const leftRank = getAlertSeverityRank(left.severity);
+    const rightRank = getAlertSeverityRank(right.severity);
+    if (rightRank !== leftRank) {
+      return rightRank - leftRank;
+    }
+    const leftSignalRank = getAlertSignalRank(left.signal);
+    const rightSignalRank = getAlertSignalRank(right.signal);
+    if (rightSignalRank !== leftSignalRank) {
+      return rightSignalRank - leftSignalRank;
+    }
+    if (right.currentSharePercent !== left.currentSharePercent) {
+      return right.currentSharePercent - left.currentSharePercent;
+    }
+    return left.label.localeCompare(right.label, "fr");
+  });
+}
+
+function buildPhotoDominanceGlobalAlert(
+  items: StorageBusinessContributionItem[],
+): StorageBusinessContributionAlert | null {
   const topPhotoItem = items.find((item) => item.id === "pieces_jointes_photo") ?? null;
-  if (topPhotoItem && items[0]?.id === "pieces_jointes_photo") {
-    const currentHistory = topPhotoItem.history[0] ?? null;
-    pushStorageBusinessContributionAlert(reportAlerts, {
-      id: buildStorageBusinessContributionAlertId("pieces_jointes_photo", "photo-dominance-global", currentHistory?.snapshotMonth ?? "current"),
-      domainId: "pieces_jointes_photo",
-      label: topPhotoItem.label,
-      title: "Les pièces jointes photo dominent",
-      message: "Les pièces jointes photo sont la catégorie métier la plus coûteuse du mois.",
-      severity: topPhotoItem.currentSharePercent >= 40 ? "critical" : "warning",
-      signal: "photoDominance",
-      snapshotMonth: currentHistory?.snapshotMonth ?? "current",
-      currentBytes: topPhotoItem.currentBytes,
-      thresholdBytes: null,
-      currentSharePercent: topPhotoItem.currentSharePercent,
-      thresholdSharePercent: topPhotoItem.currentSharePercent >= 40 ? 40 : 30,
-    });
+  if (!topPhotoItem || items[0]?.id !== "pieces_jointes_photo") {
+    return null;
+  }
+
+  const currentHistory = topPhotoItem.history[0] ?? null;
+  return {
+    id: buildStorageBusinessContributionAlertId(
+      "pieces_jointes_photo",
+      "photo-dominance-global",
+      currentHistory?.snapshotMonth ?? "current",
+    ),
+    domainId: "pieces_jointes_photo",
+    label: topPhotoItem.label,
+    title: "Les pièces jointes photo dominent",
+    message: "Les pièces jointes photo sont la catégorie métier la plus coûteuse du mois.",
+    severity: topPhotoItem.currentSharePercent >= 40 ? "critical" : "warning",
+    signal: "photoDominance",
+    snapshotMonth: currentHistory?.snapshotMonth ?? "current",
+    currentBytes: topPhotoItem.currentBytes,
+    thresholdBytes: null,
+    currentSharePercent: topPhotoItem.currentSharePercent,
+    thresholdSharePercent: topPhotoItem.currentSharePercent >= 40 ? 40 : 30,
+  };
+}
+
+function getBreakdownNumber(
+  item: StorageUsageBreakdownItem | undefined,
+  key: "bytes" | "count" | "sharePercent" | "averageBytes",
+): number {
+  return item?.[key] ?? 0;
+}
+
+function getLatestHistoryNumber(
+  history: ReturnType<typeof buildStorageBusinessContributionHistoryPoints>,
+  key: "cumulative3MonthBytes" | "accelerationBytes",
+  fallback: number,
+): number {
+  return history[0]?.[key] ?? fallback;
+}
+
+function getLatestHistoryPercent(
+  history: ReturnType<typeof buildStorageBusinessContributionHistoryPoints>,
+  key: "cumulative3MonthPercent" | "accelerationPercent",
+): number | null {
+  return history[0]?.[key] ?? null;
+}
+
+function buildContributionItemMeasurements(
+  current: StorageUsageBreakdownItem | undefined,
+  previous: StorageUsageBreakdownItem | undefined,
+  history: ReturnType<typeof buildStorageBusinessContributionHistoryPoints>,
+) {
+  const currentBytes = getBreakdownNumber(current, "bytes");
+  const previousBytes = getBreakdownNumber(previous, "bytes");
+  const deltaBytes = currentBytes - previousBytes;
+
+  return {
+    currentBytes,
+    currentCount: getBreakdownNumber(current, "count"),
+    currentSharePercent: getBreakdownNumber(current, "sharePercent"),
+    currentAverageBytes: getBreakdownNumber(current, "averageBytes"),
+    previousBytes,
+    previousCount: getBreakdownNumber(previous, "count"),
+    deltaBytes,
+    deltaPercent: previousBytes > 0 ? (deltaBytes / previousBytes) * 100 : null,
+    deltaCount: getBreakdownNumber(current, "count") - getBreakdownNumber(previous, "count"),
+    cumulative3MonthBytes: getLatestHistoryNumber(history, "cumulative3MonthBytes", deltaBytes),
+    cumulative3MonthPercent: getLatestHistoryPercent(history, "cumulative3MonthPercent"),
+    accelerationBytes: getLatestHistoryNumber(history, "accelerationBytes", 0),
+    accelerationPercent: getLatestHistoryPercent(history, "accelerationPercent"),
+  };
+}
+
+function buildContributionItem(params: {
+  domain: ReturnType<typeof listStorageBusinessDomains>[number];
+  currentSnapshot: StorageUsageSnapshot;
+  previousById: Map<string, StorageUsageBreakdownItem>;
+  topFilesByDomain: ReturnType<typeof buildStorageBusinessContributionTopFilesByDomain>;
+  mimeSubtypesByDomain: ReturnType<typeof buildStorageBusinessContributionMimeSubtypesByDomain>;
+  historySnapshots: StorageUsageSnapshot[];
+  reportAlerts: StorageBusinessContributionAlert[];
+}): StorageBusinessContributionItem {
+  const { domain, currentSnapshot, previousById, topFilesByDomain, mimeSubtypesByDomain, historySnapshots, reportAlerts } = params;
+  const current = currentSnapshot.businessBreakdown.find((item) => item.key === domain.id);
+  const previous = previousById.get(domain.id);
+  const history = buildStorageBusinessContributionHistoryPoints(historySnapshots, domain.id);
+  const measurements = buildContributionItemMeasurements(current, previous, history);
+  const topFiles = topFilesByDomain.get(domain.id) ?? [];
+  const alerts = buildStorageBusinessContributionAlerts({
+    domainId: domain.id,
+    label: domain.label,
+    history,
+    currentBytes: measurements.currentBytes,
+    currentSharePercent: measurements.currentSharePercent,
+    topFiles,
+  });
+  reportAlerts.push(...alerts);
+
+  return {
+    id: domain.id,
+    label: domain.label,
+    description: domain.description,
+    ...measurements,
+    history,
+    topFiles,
+    mimeSubtypes: mimeSubtypesByDomain.get(domain.id) ?? [],
+    alerts,
+  };
+}
+
+export function buildStorageBusinessContributions(params: {
+  objects: StorageUsageObjectRow[];
+  currentSnapshot: StorageUsageSnapshot;
+  previousSnapshot: StorageUsageSnapshot | null;
+  historyRecords?: StorageUsageSnapshotRecord[];
+}): StorageBusinessContributionReport {
+  const previousById = new Map(
+    (params.previousSnapshot?.businessBreakdown ?? []).map(
+      (item: StorageUsageBreakdownItem) => [item.key, item] as const,
+    ),
+  );
+
+  const topFilesByDomain = buildStorageBusinessContributionTopFilesByDomain(params.objects);
+  const mimeSubtypesByDomain = buildStorageBusinessContributionMimeSubtypesByDomain(params.objects);
+  const historySnapshots = selectStorageBusinessContributionHistory(
+    params.historyRecords,
+    params.currentSnapshot,
+  );
+  const reportAlerts: StorageBusinessContributionAlert[] = [];
+
+  const items = sortContributionItems(
+    listStorageBusinessDomains().map((domain) => buildContributionItem({
+      domain,
+      currentSnapshot: params.currentSnapshot,
+      previousById,
+      topFilesByDomain,
+      mimeSubtypesByDomain,
+      historySnapshots,
+      reportAlerts,
+    })),
+  );
+
+  const photoDominanceAlert = buildPhotoDominanceGlobalAlert(items);
+  if (photoDominanceAlert) {
+    pushStorageBusinessContributionAlert(reportAlerts, photoDominanceAlert);
   }
 
   return {
     previousSnapshotMonth: params.previousSnapshot?.snapshotMonth ?? null,
     historyMonths: historySnapshots.map((snapshot) => snapshot.snapshotMonth),
-    alerts: reportAlerts.sort((left, right) => {
-      const leftRank = getAlertSeverityRank(left.severity);
-      const rightRank = getAlertSeverityRank(right.severity);
-      if (rightRank !== leftRank) {
-        return rightRank - leftRank;
-      }
-      const leftSignalRank = getAlertSignalRank(left.signal);
-      const rightSignalRank = getAlertSignalRank(right.signal);
-      if (rightSignalRank !== leftSignalRank) {
-        return rightSignalRank - leftSignalRank;
-      }
-      if (right.currentSharePercent !== left.currentSharePercent) {
-        return right.currentSharePercent - left.currentSharePercent;
-      }
-      return left.label.localeCompare(right.label, "fr");
-    }),
+    alerts: sortContributionAlerts(reportAlerts),
     items,
   };
 }

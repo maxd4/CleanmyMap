@@ -180,8 +180,52 @@ describe("storage business contributions", () => {
       previousSnapshot: null,
     });
 
-    expect(report.items.find((item) => item.id === "actions_terrain")?.deltaPercent).toBeNull();
+    const item = report.items.find((entry) => entry.id === "actions_terrain");
+    expect(item?.deltaPercent).toBeNull();
+    expect(item?.history[0]).toMatchObject({
+      deltaBytes: 135,
+      cumulative3MonthBytes: 135,
+      deltaPercent: null,
+      cumulative3MonthPercent: null,
+      accelerationBytes: 135,
+      accelerationPercent: null,
+    });
     expect(report.alerts.some((alert) => alert.signal === "growth")).toBe(false);
+  });
+
+  it("sorts photo dominance first by priority and emits the global photo alert", () => {
+    const snapshot = {
+      ...buildStorageUsageSnapshot([], quotaInfo, "2026-05-20T12:00:00.000Z"),
+      businessBreakdown: [
+        { key: "actions_terrain", label: "Actions terrain", bytes: 400, count: 4, sharePercent: 40, averageBytes: 100 },
+        { key: "pieces_jointes_photo", label: "Pièces jointes photo", bytes: 600, count: 3, sharePercent: 60, averageBytes: 200 },
+      ],
+    };
+
+    const report = buildStorageBusinessContributions({
+      objects: [],
+      currentSnapshot: snapshot,
+      previousSnapshot: null,
+    });
+
+    expect(report.items[0]?.id).toBe("pieces_jointes_photo");
+    expect(report.alerts).toContainEqual(expect.objectContaining({
+      signal: "photoDominance",
+      id: "pieces_jointes_photo:photo-dominance-global:2026-05-01",
+      severity: "critical",
+    }));
+  });
+
+  it("returns no active items or alerts when the current domain breakdown is empty", () => {
+    const report = buildStorageBusinessContributions({
+      objects: [],
+      currentSnapshot: buildStorageUsageSnapshot([], quotaInfo, "2026-05-20T12:00:00.000Z"),
+      previousSnapshot: null,
+    });
+
+    expect(report.items).toEqual([]);
+    expect(report.alerts).toEqual([]);
+    expect(report.historyMonths).toEqual(["2026-05-01"]);
   });
 });
 
