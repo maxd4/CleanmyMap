@@ -1,6 +1,10 @@
 import { expect, vi } from "vitest";
 import { toContractCreatePayload } from "@/lib/actions/data-contract";
 import {
+  buildCreateActionPayload,
+  createInitialFormState,
+} from "@/components/actions/action-declaration/payload";
+import {
   authenticatedRouteMocks,
   createAnalyticsConsentModule,
   createAuthenticatedRouteAuthzModule,
@@ -19,12 +23,68 @@ const hasAnalyticsConsentCookieMock = authenticatedRouteMocks.hasAnalyticsConsen
 const verifyRateLimitMock = rateLimitMocks.verifyRateLimit;
 const createServerRateLimitResponseMock = rateLimitMocks.createServerRateLimitResponse;
 
+export function mockAdminIdentity(options: { activeRole?: string } = {}) {
+  getCurrentUserIdentityMock.mockResolvedValueOnce({
+    userId: "user-test-1",
+    displayName: "Test User",
+    firstName: "Test",
+    username: "test@example.org",
+    currentLevel: 1,
+    actorNameOptions: ["Test User"],
+    role: "admin",
+    ...(options.activeRole ? { activeRole: options.activeRole } : {}),
+    badges: [],
+  });
+}
+
 export async function postSubmitPayload(payload: unknown) {
   const { POST } = await import("./route");
   return POST(
     new Request("http://localhost/api/actions", {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+  );
+}
+
+export function buildQuickPreActionPayload() {
+  const form = createInitialFormState("Test User");
+  form.organizerType = "spontaneous";
+  form.actionTitle = "Préparation terrain";
+  form.shortDescription = "Préparer une action de nettoyage.";
+  form.communeZoneLabel = "Paris 15";
+  form.departureLocationLabel = "Place de la Mairie";
+  form.actionDate = "2026-04-22";
+  form.meetingTime = "09:00";
+  form.departureTime = "09:30";
+  form.durationMinutes = "30";
+  form.plannedObjective = "nettoyage";
+  form.placeType = "parc";
+  form.estimatedDifficulty = "moderee";
+  form.accessibility = "Accessible en transport";
+  form.safetyInstructions = "Gants recommandés.";
+  form.recommendedMaterials = "Sacs, pinces, gants";
+  form.participantMessage = "Réponse souhaitée avant la veille.";
+  form.creatorRole = "organisateur";
+  form.preparationState = "pret_a_partager";
+  form.logisticsNotes = "Point de rendez-vous confirmé.";
+  form.checklistBeforeDeparture = "Eau, gants, sacs";
+  form.volunteersCount = "1";
+
+  return toContractCreatePayload(
+    buildCreateActionPayload({
+      form,
+      declarationMode: "quick",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      photos: [],
+      visionEstimate: null,
+      userMetadata: {
+        userId: "user-test-1",
+        displayName: "Test User",
+      },
     }),
   );
 }
