@@ -394,6 +394,61 @@ Interdictions :
 La cible d’un lot dead-code est d’avoir zéro finding non qualifié dans son
 périmètre, puis de réduire Knip uniquement par des décisions sûres.
 
+### Qualification obligatoire de la duplication
+
+Avant toute mutation motivée par jscpd, lire le rapport courant et identifier
+les deux occurrences réelles de chaque clone étudié. Regrouper les fingerprints
+qui relèvent d’une même responsabilité en familles, puis qualifier chaque
+famille avec exactement l’un des statuts suivants :
+
+```text
+MIGRATE_TO_CANONICAL
+CENTRALIZE_OWNER
+DELETE_PROVEN
+KEEP_INTENTIONAL
+TEST_SHARED_HARNESS
+NO_ACTION_NOISE
+```
+
+- `MIGRATE_TO_CANONICAL` : un owner CURRENT existe ; les consommateurs doivent
+  migrer vers lui avant de supprimer la copie ;
+- `CENTRALIZE_OWNER` : plusieurs implémentations portent la même connaissance
+  ou règle durable et aucun owner canonique suffisant n’existe ;
+- `DELETE_PROVEN` : la copie est devenue obsolète après vérification des
+  consommateurs statiques et dynamiques, contrats, tests et compatibilités ;
+- `KEEP_INTENTIONAL` : la répétition reste nécessaire pour l’autonomie, la
+  lisibilité, la sécurité, une preuve indépendante ou des sémantiques
+  distinctes ;
+- `TEST_SHARED_HARNESS` : l’élément est une infrastructure de test réellement
+  commune, sans y déplacer les assertions métier ou de sécurité ;
+- `NO_ACTION_NOISE` : la similarité est textuelle et aucune amélioration
+  architecturale démontrable ne résulte d’une extraction.
+
+Une extraction n’est jamais justifiée par le seul fait de faire disparaître un
+clone jscpd. Avant `CENTRALIZE_OWNER`, documenter l’invariant dont le module
+devient propriétaire, les consommateurs qui doivent évoluer ensemble et la
+divergence fonctionnelle que la centralisation empêchera. Si ces éléments ne
+sont pas démontrés, conserver les implémentations et qualifier
+`KEEP_INTENTIONAL` ou `NO_ACTION_NOISE`.
+
+La priorité de traitement est :
+
+```text
+P0 sécurité/AuthN/AuthZ/RLS/scope/ownership/règle sensible
+P1 plusieurs sources de vérité métier
+P2 duplication runtime domaine/persistance/API
+P3 infrastructure runtime réutilisable
+P4 infrastructure de harness de test
+P5 duplication intentionnelle
+P6 bruit textuel
+```
+
+Exécuter P0 → P1 → P2 → P3 avant P4, sauf lorsqu’un changement de test est
+nécessaire pour protéger une famille runtime. Pour une famille mixte runtime et
+tests, traiter d’abord l’owner runtime. P5 et P6 ne sont pas des objectifs de
+réduction et aucun quota arbitraire de clones ou de lignes ne justifie une
+mutation.
+
 ## Limite mobile des lots dead-code et duplication
 
 Dans tout lot de qualification ou de correction `dead-code` ou `duplication`,

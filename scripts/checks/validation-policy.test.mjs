@@ -64,6 +64,17 @@ test("runtime and configuration changes require the build, test-only changes do 
   assert.ok(testPlan.targetedVitestFiles.includes("src/lib/example.test.ts"));
 });
 
+test("API route changes retain the shared API boundary security validation", () => {
+  const plan = createValidationPlan({
+    scope: "changed",
+    changedFiles: ["apps/web/src/app/api/actions/route.ts"],
+  });
+
+  assert.equal(plan.testMode, "targeted");
+  assert.ok(plan.serialHeavy.includes("vitest"));
+  assert.ok(plan.targetedVitestFiles.includes("src/app/api/api-boundary.test.ts"));
+});
+
 test("Vercel configuration changes use the same build-relevant scope", () => {
   const vercelPlan = createValidationPlan({
     scope: "changed",

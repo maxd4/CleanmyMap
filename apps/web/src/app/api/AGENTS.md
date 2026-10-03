@@ -136,6 +136,42 @@ npm run test -w apps/web -- src/app/api
 Ajouter le test de la route modifiée lorsque le contrat ou la protection
 change ; ne pas remplacer les tests AuthZ par une vérification UI.
 
+## Déduplication et visibilité des frontières de sécurité
+
+Une déduplication ne doit jamais rendre moins visible pour `api-boundary` la
+preuve AuthN/AuthZ attendue. Pour toute méthode dont le
+`API_AUTHORIZATION_CONTRACT` déclare `requireAdminAccess`,
+`requireAuthenticatedAccess`, ownership, scope, authentification cron,
+signature, rate limiting, idempotence ou un contrôle équivalent, la preuve
+attendue doit rester visible dans la source inspectée par `api-boundary`.
+
+Ne pas introduire, uniquement pour satisfaire jscpd, une forme telle que :
+
+```ts
+export async function GET(request: Request) {
+  return prepareRequest(request);
+}
+```
+
+si elle dissimule dans `prepareRequest` un `requireAdminAccess` ou une autre
+décision d’accès. La forme préférée reste :
+
+```text
+handler HTTP → garde AuthN/AuthZ explicite → validation de frontière
+→ helper partagé/orchestration métier → réponse
+```
+
+Le parsing, la logique métier, le chargement des données, le formatage, les
+helpers d’erreur et les projections peuvent être partagés sous le garde. La
+décision d’accès doit rester explicitement auditable à la frontière ; répéter
+quelques lignes de garde peut donc être `KEEP_INTENTIONAL`.
+
+Ne jamais modifier `API_AUTHORIZATION_CONTRACT`, `evidence`, `evidenceScope`,
+`delegatesTo` ou `api-boundary.test.ts` uniquement pour rendre une abstraction
+acceptable à jscpd. Une délégation canonique existante peut rester si le
+contrat la reconnaît et si sa preuve demeure vérifiable. Si `api-boundary`
+échoue à cause d’une déduplication, corriger l’architecture et non le garde.
+
 ## Invariants des domaines Actions et Chat
 
 - les routes Actions réutilisent les propriétaires de

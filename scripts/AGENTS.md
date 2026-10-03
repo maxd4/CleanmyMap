@@ -169,6 +169,34 @@ mesurés ou des roots restent stale ; un fichier seulement repassé sous REVIEW
 reste dans la baseline pour conserver le ratchet. Ne pas ajouter d'exception
 pour contourner un garde-fou.
 
+### Condition d’arrêt des lots de duplication
+
+Un lot de duplication ne peut être clôturé qu’après, dans cet ordre :
+
+```text
+rapport jscpd courant lu
+→ familles touchées qualifiées
+→ priorité P0–P6 justifiée
+→ mutations cohérentes
+→ validations de contrats ciblées
+→ quality:duplication sur le candidat final exact
+→ aucun nouveau fingerprint
+→ métriques finales observées
+```
+
+La règle de qualification et de priorité est canonique dans `AGENTS.md` ; le
+protocole de mesure jscpd et ses ratchets restent dans
+`documentation/development/TESTING.md`. `SKIPPED` ou `NOT_RUN` pour jscpd ne
+constitue pas une validation. Le rapport final doit mesurer le même candidat
+que celui qui sera committé ; un message de commit, une baseline ou une
+justification ne remplace pas cette preuve. Lorsqu’un lot réduit réellement
+runtime ou tests, conserver les métriques avant/après par scope.
+
+Ne jamais relever seuil, grâce, baseline ou exclusion pour fermer le lot. Une
+mise à jour de baseline n’est recevable que pour ratifier une amélioration
+mesurée sous la politique existante. Si une validation de sécurité directement
+concernée échoue, la condition d’arrêt reste non satisfaite.
+
 ## Nettoyage et mutations
 
 - un cleanup destructif exige une provenance démontrée, une cible explicite et
