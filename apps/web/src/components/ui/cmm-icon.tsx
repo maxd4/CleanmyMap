@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type CmmIconSize = "xs" | "sm" | "md" | "lg" | "xl";
+type CmmIconSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 export interface CmmIconProps {
   icon: LucideIcon;

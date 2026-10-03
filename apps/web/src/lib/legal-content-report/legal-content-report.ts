@@ -2,7 +2,7 @@ import { isPlaceholderHost } from "@/lib/security/validation";
 
 export const LEGAL_CONTENT_REPORT_PATH = "/signaler-contenu-illicite";
 export const LEGAL_CONTENT_REPORT_SOURCE = "legal_content_report" as const;
-export const LEGAL_CONTENT_REPORT_MAX_URL_LENGTH = 2048;
+const LEGAL_CONTENT_REPORT_MAX_URL_LENGTH = 2048;
 export const LEGAL_CONTENT_REPORT_MAX_REASON_LENGTH = 5000;
 export const LEGAL_CONTENT_REPORT_MAX_IDENTITY_EXCEPTION_REASON_LENGTH = 1000;
 
@@ -37,7 +37,7 @@ export const LEGAL_CONTENT_REPORT_DECISION_ORIGINS = [
 export type LegalContentReportDecisionOrigin =
   (typeof LEGAL_CONTENT_REPORT_DECISION_ORIGINS)[number];
 
-export const LEGAL_CONTENT_REPORT_DECISION_EXECUTION_STATUSES = [
+const LEGAL_CONTENT_REPORT_DECISION_EXECUTION_STATUSES = [
   "not_applicable",
   "pending",
   "applied",
@@ -47,7 +47,7 @@ export const LEGAL_CONTENT_REPORT_DECISION_EXECUTION_STATUSES = [
 export type LegalContentReportDecisionExecutionStatus =
   (typeof LEGAL_CONTENT_REPORT_DECISION_EXECUTION_STATUSES)[number];
 
-export const LEGAL_CONTENT_REPORT_DECISION_EXECUTION_ERROR_CODES = [
+const LEGAL_CONTENT_REPORT_DECISION_EXECUTION_ERROR_CODES = [
   "capability_unavailable",
   "content_not_found",
   "mutation_failed",

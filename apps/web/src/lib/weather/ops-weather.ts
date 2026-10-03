@@ -40,7 +40,7 @@ export type InterventionWindow = {
   reason: string;
 };
 
-export const OPERATIONAL_ZONES: OperationalZone[] = [
+const OPERATIONAL_ZONES: OperationalZone[] = [
   {
     id: "centre",
     label: "Paris centre",

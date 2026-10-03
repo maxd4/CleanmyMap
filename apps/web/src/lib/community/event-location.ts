@@ -1,7 +1,5 @@
-export const COMMUNITY_EVENT_LOCATION_SOURCES = ["manual", "import"] as const;
-
 export type CommunityEventLocationSource =
-  (typeof COMMUNITY_EVENT_LOCATION_SOURCES)[number];
+  "manual" | "import";
 
 export type CommunityEventLocation = {
   label: string;

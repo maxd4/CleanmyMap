@@ -18,7 +18,7 @@ export type ActionAuditState = ActionImpactValues & {
   moderationVisibility: "visible" | "hidden" | "unknown";
 };
 
-export type ActionAuditSnapshot = {
+type ActionAuditSnapshot = {
   status: ActionAuditState["status"];
   moderationVisibility: ActionAuditState["moderationVisibility"];
   wasteKg: number | null;

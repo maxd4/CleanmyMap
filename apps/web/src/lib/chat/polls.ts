@@ -1,6 +1,6 @@
 export const CHAT_POLL_MIN_OPTIONS = 2;
 export const CHAT_POLL_MAX_OPTIONS = 6;
-export const CHAT_POLL_OPTION_LABEL_MAX_LENGTH = 200;
+const CHAT_POLL_OPTION_LABEL_MAX_LENGTH = 200;
 
 export type ChatPollOption = {
   id: string;

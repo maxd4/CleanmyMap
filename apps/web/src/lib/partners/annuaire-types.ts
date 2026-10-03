@@ -1,13 +1,13 @@
 export type EngagementType = "environnemental" | "social" | "humanitaire";
 
-export type EntityKind =
+type EntityKind =
   | "association"
   | "groupe_parole"
   | "evenement"
   | "commerce"
   | "entreprise";
 
-export type ContributionType =
+type ContributionType =
   | "materiel"
   | "logistique"
   | "accueil"

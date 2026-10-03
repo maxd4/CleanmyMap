@@ -97,21 +97,17 @@ export {
   appendActionModerationAuditMock,
   extractActionMetadataFromNotesMock,
   getCurrentUserIdentityMock,
-  getSupabaseServerClientMock,
-  handleApiErrorMock,
   loadActionByIdMock,
   loadActionOrganizerIdsForActionMock,
-  loadCanonicalActionOrganizerIdsForActionMock,
   loadManualRegistrationIdsForActionMock,
   recordRepollutionPredictionEvaluationForActionMock,
   requireAuthenticatedAccessMock,
   resolveActionDepartmentForPersistenceMock,
   syncActionManualParticipantsMock,
-  unauthorizedJsonResponseMock,
 };
 
 export let updateMock: ReturnType<typeof vi.fn>;
-export let fromMock: ReturnType<typeof vi.fn>;
+let fromMock: ReturnType<typeof vi.fn>;
 
 export function resetPatchRouteMocks() {
   vi.resetModules();

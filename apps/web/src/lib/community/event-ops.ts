@@ -1,4 +1,4 @@
-export const EVENT_OPS_NOTE_PREFIX = "[EVENT_OPS]";
+const EVENT_OPS_NOTE_PREFIX = "[EVENT_OPS]";
 
 export const CLEANUP_SUPPORT_LEVELS = ["faible", "moyen", "fort"] as const;
 export type CleanupSupportLevel = (typeof CLEANUP_SUPPORT_LEVELS)[number];

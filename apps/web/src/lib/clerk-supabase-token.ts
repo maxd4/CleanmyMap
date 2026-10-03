@@ -1,7 +1,7 @@
 import { env } from "@/lib/env";
 
 // Supabase est auth via JWT Clerk transmis en accessToken, pas via sessionId.
-export type ClerkSupabaseTokenOptions = {
+type ClerkSupabaseTokenOptions = {
   template?: string;
 };
 

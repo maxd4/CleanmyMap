@@ -6,7 +6,7 @@ import {
 } from "@/lib/environmental-impact-estimator/service-email-events-store";
 import { logFailure, logWarning } from "@/lib/logging/failure-log";
 
-export const SERVICE_EMAIL_DAILY_LIMIT = 2;
+const SERVICE_EMAIL_DAILY_LIMIT = 2;
 
 export class EmailQuotaExceededError extends Error {
   readonly code = "email_quota_exceeded";

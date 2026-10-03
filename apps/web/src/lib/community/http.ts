@@ -94,7 +94,7 @@ function mapClientErrorCodeToKind(code: CommunityClientErrorCode): AppErrorKind 
   }
 }
 
-export class CommunityClientError extends AppError {
+class CommunityClientError extends AppError {
   constructor(
     code: CommunityClientErrorCode,
     message: string,

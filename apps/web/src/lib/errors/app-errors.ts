@@ -248,7 +248,7 @@ export function defaultActionsForKind(kind: AppErrorKind): AppErrorAction[] {
   }
 }
 
-export function normalizeErrorKindFromMessage(message: string): AppErrorKind {
+function normalizeErrorKindFromMessage(message: string): AppErrorKind {
   const lower = message.toLowerCase();
 
   if (
@@ -289,7 +289,7 @@ export function normalizeErrorKindFromMessage(message: string): AppErrorKind {
   return "server";
 }
 
-export function normalizeErrorOptions(
+function normalizeErrorOptions(
   error: unknown,
   fallback: Omit<AppErrorOptions, "actions" | "retryable"> & {
     actions?: AppErrorAction[];
