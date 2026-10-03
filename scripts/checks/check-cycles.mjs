@@ -80,6 +80,9 @@ export function runCycleGate({ runAudit = () => spawnSync(process.execPath, [aud
   const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
   assertBaselineFresh(baseline);
   const result = runAudit();
+  const toolOutput = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
+  const hostEnvironmentFailure = toolOutput.match(/HOST_ENVIRONMENT:[^\r\n]*/);
+  if (hostEnvironmentFailure) throw new Error(hostEnvironmentFailure[0]);
   const report = parseCycleReport(result.stdout ?? "");
   if (result.status !== 0 && report.status !== "cycles_found") {
     throw new Error(`GitNexus cycle check failed with exit ${result.status}: ${result.stderr || result.stdout}`);

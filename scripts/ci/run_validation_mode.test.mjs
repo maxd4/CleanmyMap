@@ -6,6 +6,7 @@ import { test } from "node:test";
 
 import { runCheck, runValidationMode } from "./run_validation_mode.mjs";
 import {
+  removePathWithRetry,
   VALIDATION_EVIDENCE_RELATIVE_ROOT,
 } from "./validation-evidence.mjs";
 import {
@@ -95,6 +96,43 @@ function makeRepository() {
   return root;
 }
 
+function removeFixture(root) {
+  removePathWithRetry(root, { recursive: true });
+}
+
+test("retries transient Windows cleanup failures and rethrows persistent failures", () => {
+  let attempts = 0;
+  const delays = [];
+  removePathWithRetry("fixture", {
+    maxRetries: 2,
+    retryDelayMs: 10,
+    remove: () => {
+      attempts += 1;
+      if (attempts < 3) {
+        const error = new Error("fixture is still in use");
+        error.code = "EPERM";
+        throw error;
+      }
+    },
+    sleep: (milliseconds) => delays.push(milliseconds),
+  });
+  assert.equal(attempts, 3);
+  assert.deepEqual(delays, [10, 20]);
+
+  assert.throws(
+    () => removePathWithRetry("fixture", {
+      maxRetries: 1,
+      remove: () => {
+        const error = new Error("fixture remains locked");
+        error.code = "EPERM";
+        throw error;
+      },
+      sleep: () => {},
+    }),
+    /fixture remains locked/,
+  );
+});
+
 test("stores mode evidence below the canonical artifacts root", () => {
   assert.equal(
     VALIDATION_EVIDENCE_RELATIVE_ROOT,
@@ -161,7 +199,7 @@ test("FULL reuses FAST evidence only for the exact unchanged candidate", async (
     assert.ok(changedFullCalls.includes("diff-check"));
     assert.ok(changedFullCalls.includes("documentation-governance"));
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    removeFixture(root);
   }
 });
 
@@ -194,7 +232,7 @@ test("runner keeps unknown failures as FAIL and accepts only verified foreign pr
     });
     assert.equal(provenResult, 0);
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    removeFixture(root);
   }
 });
 
@@ -240,6 +278,6 @@ test("timeout terminates the parent and its child process", async () => {
     assert.equal(await waitForExit(parentPid), false);
     assert.equal(await waitForExit(childPid), false);
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    removeFixture(root);
   }
 });

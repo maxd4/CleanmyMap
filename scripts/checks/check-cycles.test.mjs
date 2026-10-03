@@ -42,3 +42,16 @@ test("a real tool error fails even without a report", () => {
     /no JSON report/,
   );
 });
+
+test("a GitNexus host timeout is classified explicitly", () => {
+  assert.throws(
+    () => runCycleGate({
+      runAudit: () => ({
+        status: 1,
+        stdout: "",
+        stderr: "HOST_ENVIRONMENT: GitNexus command timed out",
+      }),
+    }),
+    /HOST_ENVIRONMENT: GitNexus command timed out/,
+  );
+});
