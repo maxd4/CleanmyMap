@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "6b55bca097f057c101dd120bf3590a48c4755aeb",
+  "sourceCommit": "69c09abbf26044c14e4f096b6954f304b4321554",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -81,8 +81,8 @@
       "path": "apps/web/src/app/api/actions/[actionId]/route.ts",
       "line": 109,
       "category": "routes API",
-      "ceiling": 31,
-      "status": "LEGACY",
+      "ceiling": 3,
+      "status": "IMPROVED",
       "functionIdentity": "named:PATCH#1"
     },
     {
@@ -117,8 +117,8 @@
       "path": "apps/web/src/app/api/admin/moderation/route.action.ts",
       "line": 381,
       "category": "routes API",
-      "ceiling": 35,
-      "status": "LEGACY",
+      "ceiling": 13,
+      "status": "IMPROVED",
       "functionIdentity": "named:moderateAction#1"
     },
     {
@@ -198,8 +198,8 @@
       "path": "apps/web/src/app/api/route/recommend/route.planning.ts",
       "line": 85,
       "category": "routes API",
-      "ceiling": 37,
-      "status": "LEGACY",
+      "ceiling": 9,
+      "status": "IMPROVED",
       "functionIdentity": "named:planRouteRecommendation#1"
     },
     {
@@ -621,8 +621,8 @@
       "path": "apps/web/src/components/admin/free-plan-services-visual.model.ts",
       "line": 130,
       "category": "React/JSX",
-      "ceiling": 76,
-      "status": "LEGACY",
+      "ceiling": 75,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildFreePlanDashboardState#1"
     },
     {
@@ -648,8 +648,8 @@
       "path": "apps/web/src/components/admin/role-management-panel.tsx",
       "line": 55,
       "category": "React/JSX",
-      "ceiling": 27,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "named:RoleManagementPanel#1"
     },
     {
@@ -657,18 +657,9 @@
       "path": "apps/web/src/components/admin/role-management-panel.tsx",
       "line": 92,
       "category": "React/JSX",
-      "ceiling": 24,
-      "status": "LEGACY",
+      "ceiling": 15,
+      "status": "IMPROVED",
       "functionIdentity": "named:handleSearch#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/admin/role-management-panel.tsx",
-      "line": 191,
-      "category": "React/JSX",
-      "ceiling": 37,
-      "status": "LEGACY",
-      "functionIdentity": "named:renderRow#1"
     },
     {
       "metric": "complexity",
@@ -795,15 +786,6 @@
       "ceiling": 15,
       "status": "LEGACY",
       "functionIdentity": "named:SystemStatusPanel#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/dashboard/vision-training-panel.tsx",
-      "line": 14,
-      "category": "React/JSX",
-      "ceiling": 28,
-      "status": "LEGACY",
-      "functionIdentity": "named:VisionTrainingPanel#1"
     },
     {
       "metric": "complexity",
@@ -1350,8 +1332,8 @@
       "path": "apps/web/src/lib/actions/create-submission.ts",
       "line": 67,
       "category": "métier/domain pur",
-      "ceiling": 21,
-      "status": "LEGACY",
+      "ceiling": 3,
+      "status": "IMPROVED",
       "functionIdentity": "named:createActionSubmission#1"
     },
     {
@@ -1377,8 +1359,8 @@
       "path": "apps/web/src/lib/actions/geometry/final-geometry.ts",
       "line": 84,
       "category": "métier/domain pur",
-      "ceiling": 24,
-      "status": "LEGACY",
+      "ceiling": 6,
+      "status": "IMPROVED",
       "functionIdentity": "named:resolveFinalActionGeometry#1"
     },
     {
@@ -1404,8 +1386,8 @@
       "path": "apps/web/src/lib/actions/geometry/route-reconstruction.ts",
       "line": 167,
       "category": "métier/domain pur",
-      "ceiling": 31,
-      "status": "LEGACY",
+      "ceiling": 8,
+      "status": "IMPROVED",
       "functionIdentity": "named:reconstructActionRoute#1"
     },
     {
@@ -1557,7 +1539,7 @@
       "path": "apps/web/src/lib/actions/store-create.ts",
       "line": 157,
       "category": "runtime/services/orchestration",
-      "ceiling": 18,
+      "ceiling": 17,
       "status": "IMPROVED",
       "functionIdentity": "named:createAction#1"
     },
@@ -1836,8 +1818,8 @@
       "path": "apps/web/src/lib/governance/governance-monthly-report.model.ts",
       "line": 239,
       "category": "métier/domain pur",
-      "ceiling": 53,
-      "status": "LEGACY",
+      "ceiling": 51,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildGovernanceMonthlyReportPayload#1"
     },
     {
@@ -1992,15 +1974,6 @@
       "ceiling": 22,
       "status": "LEGACY",
       "functionIdentity": "named:buildSimplePdf#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/lib/pilotage/business-alerts.ts",
-      "line": 108,
-      "category": "métier/domain pur",
-      "ceiling": 27,
-      "status": "LEGACY",
-      "functionIdentity": "named:computeBusinessAlerts#1"
     },
     {
       "metric": "complexity",
@@ -2169,8 +2142,8 @@
       "path": "apps/web/src/lib/route/route-predicted-targets.ts",
       "line": 353,
       "category": "métier/domain pur",
-      "ceiling": 38,
-      "status": "LEGACY",
+      "ceiling": 37,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildPredictedRouteCandidates#1"
     },
     {
@@ -2205,8 +2178,8 @@
       "path": "apps/web/src/lib/supabase/storage-business-contribution.ts",
       "line": 618,
       "category": "runtime/services/orchestration",
-      "ceiling": 27,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "callback:listStorageBusinessDomains ( ) . map:0:#1"
     },
     {
@@ -2421,8 +2394,8 @@
       "path": "apps/web/src/app/api/actions/[actionId]/route.ts",
       "line": 109,
       "category": "routes API",
-      "ceiling": 205,
-      "status": "LEGACY",
+      "ceiling": 11,
+      "status": "IMPROVED",
       "functionIdentity": "named:PATCH#1"
     },
     {
@@ -2502,8 +2475,8 @@
       "path": "apps/web/src/app/api/admin/moderation/route.action.ts",
       "line": 381,
       "category": "routes API",
-      "ceiling": 192,
-      "status": "LEGACY",
+      "ceiling": 81,
+      "status": "IMPROVED",
       "functionIdentity": "named:moderateAction#1"
     },
     {
@@ -2511,8 +2484,8 @@
       "path": "apps/web/src/app/api/admin/moderation/route.clean-place.ts",
       "line": 31,
       "category": "routes API",
-      "ceiling": 135,
-      "status": "LEGACY",
+      "ceiling": 96,
+      "status": "IMPROVED",
       "functionIdentity": "named:moderateCleanPlace#1"
     },
     {
@@ -2574,8 +2547,8 @@
       "path": "apps/web/src/app/api/admin/moderation/route.test.clean-place-scenarios.ts",
       "line": 5,
       "category": "tests",
-      "ceiling": 235,
-      "status": "LEGACY",
+      "ceiling": 11,
+      "status": "IMPROVED",
       "functionIdentity": "named:registerCleanPlaceScenarios#1"
     },
     {
@@ -2754,8 +2727,8 @@
       "path": "apps/web/src/app/api/route/recommend/route.planning.ts",
       "line": 85,
       "category": "routes API",
-      "ceiling": 342,
-      "status": "LEGACY",
+      "ceiling": 96,
+      "status": "IMPROVED",
       "functionIdentity": "named:planRouteRecommendation#1"
     },
     {
@@ -3033,7 +3006,7 @@
       "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx",
       "line": 156,
       "category": "React/JSX",
-      "ceiling": 472,
+      "ceiling": 132,
       "status": "IMPROVED",
       "functionIdentity": "named:ActionStepIdentity#1"
     },
@@ -3312,8 +3285,8 @@
       "path": "apps/web/src/components/admin/free-plan-services-visual.model.ts",
       "line": 130,
       "category": "React/JSX",
-      "ceiling": 225,
-      "status": "LEGACY",
+      "ceiling": 224,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildFreePlanDashboardState#1"
     },
     {
@@ -3366,8 +3339,8 @@
       "path": "apps/web/src/components/admin/role-management-panel.tsx",
       "line": 55,
       "category": "React/JSX",
-      "ceiling": 386,
-      "status": "LEGACY",
+      "ceiling": 35,
+      "status": "IMPROVED",
       "functionIdentity": "named:RoleManagementPanel#1"
     },
     {
@@ -3519,8 +3492,8 @@
       "path": "apps/web/src/components/dashboard/storage-business-contribution-panel.tsx",
       "line": 109,
       "category": "React/JSX",
-      "ceiling": 254,
-      "status": "LEGACY",
+      "ceiling": 136,
+      "status": "IMPROVED",
       "functionIdentity": "named:StorageBusinessContributionPanel#1"
     },
     {
@@ -3528,8 +3501,8 @@
       "path": "apps/web/src/components/dashboard/storage-business-contribution-panel.tsx",
       "line": 184,
       "category": "React/JSX",
-      "ceiling": 179,
-      "status": "LEGACY",
+      "ceiling": 96,
+      "status": "IMPROVED",
       "functionIdentity": "callback:report . items . map:0:#1"
     },
     {
@@ -3576,15 +3549,6 @@
       "ceiling": 149,
       "status": "IMPROVED",
       "functionIdentity": "named:InfiniteBadgesPanel#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/gamification/referral-admin-tabs.tsx",
-      "line": 22,
-      "category": "React/JSX",
-      "ceiling": 218,
-      "status": "LEGACY",
-      "functionIdentity": "named:ReferralAdminTabs#1"
     },
     {
       "metric": "functionLength",
@@ -3783,15 +3747,6 @@
       "ceiling": 265,
       "status": "LEGACY",
       "functionIdentity": "named:NotificationBellSession#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/components/newsletter/newsletter-signup.tsx",
-      "line": 10,
-      "category": "React/JSX",
-      "ceiling": 183,
-      "status": "LEGACY",
-      "functionIdentity": "named:NewsletterSignup#1"
     },
     {
       "metric": "functionLength",
@@ -4086,8 +4041,8 @@
       "path": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.quotas.tsx",
       "line": 32,
       "category": "React/JSX",
-      "ceiling": 284,
-      "status": "LEGACY",
+      "ceiling": 281,
+      "status": "IMPROVED",
       "functionIdentity": "named:FreePlanServicesMethodologyVisualQuotas#1"
     },
     {
@@ -4356,8 +4311,8 @@
       "path": "apps/web/src/lib/actions/action-update-post-processing.ts",
       "line": 24,
       "category": "métier/domain pur",
-      "ceiling": 80,
-      "status": "LEGACY",
+      "ceiling": 77,
+      "status": "IMPROVED",
       "functionIdentity": "named:runActionUpdatePostProcessing#1"
     },
     {
@@ -4383,8 +4338,8 @@
       "path": "apps/web/src/lib/actions/create-submission.ts",
       "line": 67,
       "category": "métier/domain pur",
-      "ceiling": 143,
-      "status": "LEGACY",
+      "ceiling": 22,
+      "status": "IMPROVED",
       "functionIdentity": "named:createActionSubmission#1"
     },
     {
@@ -4428,8 +4383,8 @@
       "path": "apps/web/src/lib/actions/geometry/route-reconstruction.ts",
       "line": 167,
       "category": "métier/domain pur",
-      "ceiling": 98,
-      "status": "LEGACY",
+      "ceiling": 30,
+      "status": "IMPROVED",
       "functionIdentity": "named:reconstructActionRoute#1"
     },
     {
@@ -4599,8 +4554,8 @@
       "path": "apps/web/src/lib/actions/signalement/create-signalement.ts",
       "line": 58,
       "category": "métier/domain pur",
-      "ceiling": 89,
-      "status": "LEGACY",
+      "ceiling": 83,
+      "status": "IMPROVED",
       "functionIdentity": "named:createSignalement#1"
     },
     {
@@ -4626,7 +4581,7 @@
       "path": "apps/web/src/lib/actions/store-create.ts",
       "line": 159,
       "category": "runtime/services/orchestration",
-      "ceiling": 108,
+      "ceiling": 100,
       "status": "IMPROVED",
       "functionIdentity": "named:createAction#1"
     },
@@ -4743,7 +4698,7 @@
       "path": "apps/web/src/lib/community/engagement.quality.ts",
       "line": 11,
       "category": "métier/domain pur",
-      "ceiling": 68,
+      "ceiling": 27,
       "status": "IMPROVED",
       "functionIdentity": "named:computeQualityLeaderboard#1"
     },
@@ -5208,24 +5163,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/pilotage/business-alerts.ts",
-      "line": 108,
-      "category": "métier/domain pur",
-      "ceiling": 131,
-      "status": "LEGACY",
-      "functionIdentity": "named:computeBusinessAlerts#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/pilotage/business-alerts.ts",
-      "line": 248,
-      "category": "métier/domain pur",
-      "ceiling": 101,
-      "status": "LEGACY",
-      "functionIdentity": "named:computeCampaignGoalsByZone#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/lib/pilotage/metrics.ts",
       "line": 183,
       "category": "métier/domain pur",
@@ -5382,8 +5319,8 @@
       "path": "apps/web/src/lib/route/route-predicted-targets.ts",
       "line": 353,
       "category": "métier/domain pur",
-      "ceiling": 274,
-      "status": "LEGACY",
+      "ceiling": 269,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildPredictedRouteCandidates#1"
     },
     {
@@ -5418,8 +5355,8 @@
       "path": "apps/web/src/lib/supabase/storage-business-contribution.ts",
       "line": 600,
       "category": "runtime/services/orchestration",
-      "ceiling": 113,
-      "status": "LEGACY",
+      "ceiling": 40,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildStorageBusinessContributions#1"
     },
     {
@@ -5481,8 +5418,8 @@
       "path": "apps/mobile/App.tsx",
       "line": 45,
       "category": "React/JSX",
-      "ceiling": 234,
-      "status": "LEGACY",
+      "ceiling": 137,
+      "status": "IMPROVED",
       "functionIdentity": "named:CompanionApp#1"
     },
     {
