@@ -15,7 +15,7 @@
     "check": "npm run typecheck && npm run test"
   },
   "dependencies": {
-    "@clerk/expo": "^4.6.0",
+    "@clerk/expo": "^4.8.0",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "3.1.1",
     "@supabase/supabase-js": "^2.112.3",
