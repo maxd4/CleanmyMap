@@ -2,89 +2,31 @@ import { NextResponse } from "next/server";
 import { getPromotionRequestById, updatePromotionRequestCreatorState } from "@/lib/admin/promotion-requests-store";
 import { buildPromotionInboxItem } from "@/lib/community/creator-inbox";
 import {
-  buildAuditDetails,
+  appendCreatorInboxLookupError,
+  appendCreatorInboxSuccessAudit,
   buildSnapshot,
   canonicalTargetUserId,
+  createCreatorInboxAudit,
   mutationErrorResponse,
   type CreatorInboxAction,
-  type DecisionAuditAppender,
-  unknownSnapshot,
+  type CreatorInboxAudit,
+  type CreatorInboxHandlerParams,
 } from "./route.shared";
 
-export async function handleCreatorInboxPromotion(params: {
-  operationId: string;
-  actorUserId: string;
+type PromotionRecord = NonNullable<
+  Awaited<ReturnType<typeof getPromotionRequestById>>
+>;
+
+async function updatePromotionCreatorState(params: {
   itemId: string;
   action: CreatorInboxAction["action"];
+  current: PromotionRecord;
+  audit: CreatorInboxAudit;
   reason: string;
-  appendDecisionAudit: DecisionAuditAppender;
+  targetUserId?: string;
 }) {
-  const {
-    operationId,
-    actorUserId,
-    itemId,
-    action,
-    reason,
-    appendDecisionAudit,
-  } = params;
-
-  if (action === "delete") {
-    await appendDecisionAudit({
-      operationId,
-      actorUserId,
-      outcome: "error",
-      targetId: itemId,
-      details: buildAuditDetails({
-        reason,
-        previousValue: { source: "promotion" },
-        newValue: { source: "promotion" },
-        stage: "delete",
-        partialMutation: false,
-      }),
-    });
-    return NextResponse.json(
-      { error: "Promotion requests can only be archived from the inbox." },
-      { status: 409 },
-    );
-  }
-
-  let current;
-  try {
-    current = await getPromotionRequestById(itemId);
-  } catch {
-    await appendDecisionAudit({
-      operationId,
-      actorUserId,
-      outcome: "error",
-      targetId: itemId,
-      details: buildAuditDetails({
-        reason,
-        previousValue: unknownSnapshot("promotion"),
-        newValue: unknownSnapshot("promotion"),
-        stage: "lookup",
-        partialMutation: false,
-      }),
-    });
-    return mutationErrorResponse();
-  }
-  if (!current) {
-    await appendDecisionAudit({
-      operationId,
-      actorUserId,
-      outcome: "error",
-      targetId: itemId,
-      details: buildAuditDetails({
-        reason,
-        previousValue: unknownSnapshot("promotion"),
-        newValue: unknownSnapshot("promotion"),
-        stage: "lookup",
-        partialMutation: false,
-      }),
-    });
-    return NextResponse.json({ error: "Request not found" }, { status: 404 });
-  }
+  const { itemId, action, current, audit, reason, targetUserId } = params;
   const previousValue = buildSnapshot("promotion", current);
-  const targetUserId = canonicalTargetUserId(current.submittedByUserId);
   let updated;
   try {
     updated = await updatePromotionRequestCreatorState({
@@ -100,45 +42,92 @@ export async function handleCreatorInboxPromotion(params: {
       throw new Error("promotion creator state update did not persist");
     }
   } catch {
-    await appendDecisionAudit({
-      operationId,
-      actorUserId,
+    await audit({
       outcome: "error",
       targetId: itemId,
-      details: buildAuditDetails({
-        reason,
-        targetUserId,
-        previousValue,
-        newValue: buildSnapshot("promotion", {
-          status: current.status,
-          creatorState:
-            action === "responded"
-              ? "responded"
-              : action === "mark_treated"
-                ? "treated"
-                : "archived",
-        }),
-        stage: "update",
-        partialMutation: false,
+      reason,
+      targetUserId,
+      previousValue,
+      newValue: buildSnapshot("promotion", {
+        status: current.status,
+        creatorState:
+          action === "responded"
+            ? "responded"
+            : action === "mark_treated"
+              ? "treated"
+              : "archived",
       }),
+      stage: "update",
+      partialMutation: false,
     });
     return mutationErrorResponse();
   }
 
-  await appendDecisionAudit({
-    operationId,
-    actorUserId,
-    outcome: "success",
+  await appendCreatorInboxSuccessAudit({
+    audit,
     targetId: updated.id,
-    details: buildAuditDetails({
-      reason,
-      targetUserId,
-      previousValue,
-      newValue: buildSnapshot("promotion", updated),
-    }),
+    reason,
+    targetUserId,
+    previousValue,
+    newValue: buildSnapshot("promotion", updated),
   });
   return NextResponse.json({
     status: "ok",
     item: buildPromotionInboxItem(updated),
+  });
+}
+
+export async function handleCreatorInboxPromotion(
+  params: CreatorInboxHandlerParams,
+) {
+  const { itemId, action, reason } = params;
+
+  const audit = createCreatorInboxAudit(params);
+
+  if (action === "delete") {
+    await audit({
+      outcome: "error",
+      targetId: itemId,
+      reason,
+      previousValue: { source: "promotion" },
+      newValue: { source: "promotion" },
+      stage: "delete",
+      partialMutation: false,
+    });
+    return NextResponse.json(
+      { error: "Promotion requests can only be archived from the inbox." },
+      { status: 409 },
+    );
+  }
+
+  let current;
+  try {
+    current = await getPromotionRequestById(itemId);
+  } catch {
+    await appendCreatorInboxLookupError({
+      audit,
+      source: "promotion",
+      targetId: itemId,
+      reason,
+    });
+    return mutationErrorResponse();
+  }
+  if (!current) {
+    await appendCreatorInboxLookupError({
+      audit,
+      source: "promotion",
+      targetId: itemId,
+      reason,
+    });
+    return NextResponse.json({ error: "Request not found" }, { status: 404 });
+  }
+  const targetUserId = canonicalTargetUserId(current.submittedByUserId);
+  return updatePromotionCreatorState({
+    itemId,
+    action,
+    current,
+    audit,
+    reason,
+    targetUserId,
   });
 }

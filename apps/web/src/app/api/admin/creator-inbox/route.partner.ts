@@ -6,214 +6,178 @@ import {
 } from "@/lib/partners/onboarding-requests-store";
 import { buildPartnerInboxItem } from "@/lib/community/creator-inbox";
 import {
-  buildAuditDetails,
+  appendCreatorInboxErrorAudit,
+  appendCreatorInboxLookupError,
+  appendCreatorInboxSuccessAudit,
   buildSnapshot,
   canonicalTargetUserId,
+  createCreatorInboxAudit,
   mutationErrorResponse,
   type CreatorInboxAction,
-  type DecisionAuditAppender,
-  unknownSnapshot,
+  type CreatorInboxAudit,
+  type CreatorInboxHandlerParams,
 } from "./route.shared";
 
-export async function handleCreatorInboxPartner(params: {
-  operationId: string;
-  actorUserId: string;
-  itemId: string;
-  action: CreatorInboxAction["action"];
-  reason: string;
-  appendDecisionAudit: DecisionAuditAppender;
-}) {
-  const {
-    operationId,
-    actorUserId,
-    itemId,
-    action,
-    reason,
-    appendDecisionAudit,
-  } = params;
+type PartnerRecord = NonNullable<
+  Awaited<ReturnType<typeof getPartnerOnboardingRequestById>>
+>;
 
-  let current;
-  try {
-    current = await getPartnerOnboardingRequestById(itemId);
-  } catch {
-    await appendDecisionAudit({
-      operationId,
-      actorUserId,
+async function deletePartnerInboxItem(params: {
+  itemId: string;
+  current: PartnerRecord;
+  audit: CreatorInboxAudit;
+  reason: string;
+}) {
+  const { itemId, current, audit, reason } = params;
+  if (current.status === "accepted") {
+    await audit({
       outcome: "error",
       targetId: itemId,
-      details: buildAuditDetails({
-        reason,
-        previousValue: unknownSnapshot("partner"),
-        newValue: unknownSnapshot("partner"),
-        stage: "lookup",
-        partialMutation: false,
-      }),
+      reason,
+      targetUserId: canonicalTargetUserId(current.submittedByUserId),
+      previousValue: {
+        source: "partner",
+        status: current.status,
+        creatorState: current.creatorState,
+      },
+      newValue: {
+        source: "partner",
+        status: current.status,
+        creatorState: current.creatorState,
+      },
+      stage: "delete",
+      partialMutation: false,
     });
-    return mutationErrorResponse();
+    return NextResponse.json(
+      { error: "Accepted partner requests cannot be deleted." },
+      { status: 409 },
+    );
   }
-  if (!current) {
-    await appendDecisionAudit({
-      operationId,
-      actorUserId,
-      outcome: "error",
+
+  let deleted;
+  let deletionFailed = false;
+  try {
+    deleted = await deletePartnerOnboardingRequest(itemId);
+  } catch {
+    deletionFailed = true;
+  }
+  if (!deleted) {
+    await appendCreatorInboxErrorAudit({
+      audit,
       targetId: itemId,
-      details: buildAuditDetails({
-        reason,
-        previousValue: unknownSnapshot("partner"),
-        newValue: unknownSnapshot("partner"),
-        stage: "lookup",
-        partialMutation: false,
-      }),
+      reason,
+      targetUserId: canonicalTargetUserId(current.submittedByUserId),
+      previousValue: { source: "partner", creatorState: current.creatorState },
+      newValue: { source: "partner" },
+      stage: "delete",
+      partialMutation: false,
     });
+    if (deletionFailed) return mutationErrorResponse();
     return NextResponse.json({ error: "Request not found" }, { status: 404 });
   }
+  await appendCreatorInboxSuccessAudit({
+    audit,
+    targetId: itemId,
+    reason,
+    targetUserId: canonicalTargetUserId(current.submittedByUserId),
+    previousValue: { source: "partner", creatorState: current.creatorState },
+    newValue: { deleted: true },
+  });
+  return NextResponse.json({ status: "ok", deletedId: itemId });
+}
 
-  if (action === "delete") {
-    if (current.status === "accepted") {
-      await appendDecisionAudit({
-        operationId,
-        actorUserId,
-        outcome: "error",
-        targetId: itemId,
-        details: buildAuditDetails({
-          reason,
-          targetUserId: canonicalTargetUserId(current.submittedByUserId),
-          previousValue: {
-            source: "partner",
-            status: current.status,
-            creatorState: current.creatorState,
-          },
-          newValue: {
-            source: "partner",
-            status: current.status,
-            creatorState: current.creatorState,
-          },
-          stage: "delete",
-          partialMutation: false,
-        }),
-      });
-      return NextResponse.json(
-        { error: "Accepted partner requests cannot be deleted." },
-        { status: 409 },
-      );
-    }
-    let deleted;
-    try {
-      deleted = await deletePartnerOnboardingRequest(itemId);
-    } catch {
-      await appendDecisionAudit({
-        operationId,
-        actorUserId,
-        outcome: "error",
-        targetId: itemId,
-        details: buildAuditDetails({
-          reason,
-          targetUserId: canonicalTargetUserId(current.submittedByUserId),
-          previousValue: {
-            source: "partner",
-            creatorState: current.creatorState,
-          },
-          newValue: { source: "partner" },
-          stage: "delete",
-          partialMutation: false,
-        }),
-      });
-      return mutationErrorResponse();
-    }
-    if (!deleted) {
-      await appendDecisionAudit({
-        operationId,
-        actorUserId,
-        outcome: "error",
-        targetId: itemId,
-        details: buildAuditDetails({
-          reason,
-          targetUserId: canonicalTargetUserId(current.submittedByUserId),
-          previousValue: {
-            source: "partner",
-            creatorState: current.creatorState,
-          },
-          newValue: { source: "partner" },
-          stage: "delete",
-          partialMutation: false,
-        }),
-      });
-      return NextResponse.json({ error: "Request not found" }, { status: 404 });
-    }
-    await appendDecisionAudit({
-      operationId,
-      actorUserId,
-      outcome: "success",
-      targetId: itemId,
-      details: buildAuditDetails({
-        reason,
-        targetUserId: canonicalTargetUserId(current.submittedByUserId),
-        previousValue: {
-          source: "partner",
-          creatorState: current.creatorState,
-        },
-        newValue: { deleted: true },
-      }),
-    });
-    return NextResponse.json({ status: "ok", deletedId: itemId });
-  }
-
+async function updatePartnerCreatorState(params: {
+  itemId: string;
+  action: CreatorInboxAction["action"];
+  current: PartnerRecord;
+  audit: CreatorInboxAudit;
+  reason: string;
+  targetUserId?: string;
+}) {
+  const { itemId, action, current, audit, reason, targetUserId } = params;
   const previousValue = buildSnapshot("partner", current);
-  const targetUserId = canonicalTargetUserId(current.submittedByUserId);
+  const creatorState =
+    action === "responded"
+      ? "responded"
+      : action === "mark_treated"
+        ? "treated"
+        : "archived";
   let updated;
   try {
     updated = await updatePartnerOnboardingRequestCreatorState({
       requestId: itemId,
-      creatorState:
-        action === "responded"
-          ? "responded"
-          : action === "mark_treated"
-            ? "treated"
-            : "archived",
+      creatorState,
     });
     if (!updated) {
       throw new Error("partner creator state update did not persist");
     }
   } catch {
-    await appendDecisionAudit({
-      operationId,
-      actorUserId,
+    await audit({
       outcome: "error",
       targetId: itemId,
-      details: buildAuditDetails({
-        reason,
-        targetUserId,
-        previousValue,
-        newValue: buildSnapshot("partner", {
-          status: current.status,
-          creatorState:
-            action === "responded"
-              ? "responded"
-              : action === "mark_treated"
-                ? "treated"
-                : "archived",
-        }),
-        stage: "update",
-        partialMutation: false,
-      }),
-    });
-    return mutationErrorResponse();
-  }
-
-  await appendDecisionAudit({
-    operationId,
-    actorUserId,
-    outcome: "success",
-    targetId: updated.id,
-    details: buildAuditDetails({
       reason,
       targetUserId,
       previousValue,
-      newValue: buildSnapshot("partner", updated),
-    }),
+      newValue: buildSnapshot("partner", {
+        status: current.status,
+        creatorState,
+      }),
+      stage: "update",
+      partialMutation: false,
+    });
+    return mutationErrorResponse();
+  }
+  await appendCreatorInboxSuccessAudit({
+    audit,
+    targetId: updated.id,
+    reason,
+    targetUserId,
+    previousValue,
+    newValue: buildSnapshot("partner", updated),
   });
-  return NextResponse.json({
-    status: "ok",
-    item: buildPartnerInboxItem(updated),
+  return NextResponse.json({ status: "ok", item: buildPartnerInboxItem(updated) });
+}
+
+export async function handleCreatorInboxPartner(
+  params: CreatorInboxHandlerParams,
+) {
+  const { itemId, action, reason } = params;
+
+  const audit = createCreatorInboxAudit(params);
+
+  let current;
+  try {
+    current = await getPartnerOnboardingRequestById(itemId);
+  } catch {
+    await appendCreatorInboxLookupError({
+      audit,
+      source: "partner",
+      targetId: itemId,
+      reason,
+    });
+    return mutationErrorResponse();
+  }
+  if (!current) {
+    await appendCreatorInboxLookupError({
+      audit,
+      source: "partner",
+      targetId: itemId,
+      reason,
+    });
+    return NextResponse.json({ error: "Request not found" }, { status: 404 });
+  }
+
+  if (action === "delete") {
+    return deletePartnerInboxItem({ itemId, current, audit, reason });
+  }
+
+  const targetUserId = canonicalTargetUserId(current.submittedByUserId);
+  return updatePartnerCreatorState({
+    itemId,
+    action,
+    current,
+    audit,
+    reason,
+    targetUserId,
   });
 }
