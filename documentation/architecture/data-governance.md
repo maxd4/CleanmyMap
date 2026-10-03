@@ -689,8 +689,8 @@ qualifie jamais une mesure d'impact et la confiance reste un champ séparé.
 
 La promotion d'une observation remplace la géométrie active hypothétique de
 l'action dans une mutation serveur cohérente. La source canonique de preuve est
-`action_geometry_contributions` : chaque ligne garde `action_id`, contributeur
-Clerk, source `gpx_import` ou `gps_tracking`, LineString observée, distance
+`action_geometry_contributions` : chaque ligne garde `action_id`, `contributor_clerk_id`,
+source `gpx_import` ou `gps_tracking`, LineString observée, distance
 individuelle, empreinte/idempotence, état exploitable/refusé et provenance
 technique. Une première contribution produit une LineString observée ; des
 contributions supplémentaires produisent une `MultiLineString` de couverture,

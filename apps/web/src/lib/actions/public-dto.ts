@@ -9,6 +9,7 @@ import type {
   ActionMapItem,
   ActionMapResponse,
 } from "./types";
+import { sanitizePublicObservedPreparationData } from "./map/public-observed-coverage";
 
 type PublicActionContract = Omit<ActionDataContract, "createdByClerkId">;
 
@@ -84,7 +85,22 @@ export function toPublicActionListResponse(
 }
 
 export function projectPublicActionMapItem(item: ActionMapItem): PublicActionMapItem {
-  return stripPrivateIdentityKeys(item) as PublicActionMapItem;
+  const projected = stripPrivateIdentityKeys(item) as ActionMapItem;
+  if (!projected.contract || !projected.contract.metadata) {
+    return projected as PublicActionMapItem;
+  }
+  return {
+    ...projected,
+    contract: {
+      ...projected.contract,
+      metadata: {
+        ...projected.contract.metadata,
+        preparationData: sanitizePublicObservedPreparationData(
+          projected.contract.metadata.preparationData,
+        ),
+      },
+    },
+  } as PublicActionMapItem;
 }
 
 export function toPublicActionMapItem(
@@ -96,5 +112,8 @@ export function toPublicActionMapItem(
 export function toPublicActionMapResponse(
   response: ActionMapResponse,
 ): PublicActionMapResponse {
-  return stripPrivateIdentityKeys(response) as PublicActionMapResponse;
+  return {
+    ...response,
+    items: response.items.map(projectPublicActionMapItem),
+  };
 }

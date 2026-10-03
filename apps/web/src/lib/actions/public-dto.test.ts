@@ -7,6 +7,7 @@ import {
   toPublicActionListItem,
   toPublicActionListResponse,
   toPublicActionMapItem,
+  projectPublicActionMapItem,
   toPublicActionMapResponse,
 } from "./public-dto";
 import { buildActionDataContract } from "./contracts/contract-model";
@@ -121,5 +122,39 @@ describe("public action DTO boundary", () => {
     expect(findPrivateIdentityKeys(mapResponse)).toEqual([]);
     expect(listResponse.items[0]).toHaveProperty("actor_name", "Association publique");
     expect(mapResponse.items[0]).toHaveProperty("location_label", "Quai public");
+  });
+
+  it("projects only sanitized observed coverage from preparation data", () => {
+    const contract = buildActionDataContract({
+      id: "action-coverage",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-09-20",
+      locationLabel: "Parc public",
+      latitude: 48.85,
+      longitude: 2.35,
+      derivedGeometryKind: "polygon",
+      derivedGeometryGeoJson: '{"type":"Polygon","coordinates":[[[2.35,48.85],[2.36,48.85],[2.35,48.85]]]}',
+      preparationData: {
+        observedCoverage: {
+          type: "MultiLineString",
+          coordinates: [[[2.35, 48.85], [2.36, 48.86]]],
+          traceCount: 1,
+          individualDistancesKm: [1],
+          sources: ["gps_tracking"],
+          coverageDistanceKm: null,
+          coverageVersion: "observed-traces-v1",
+        },
+        gpxImport: { source: "gpx_import", observedDistanceKm: 1, pointCount: 2, inferredTopology: "loop" },
+        privateTechnical: { mission_id: "private-mission", technical_provenance: "private" },
+      } as never,
+    });
+    const publicMap = projectPublicActionMapItem(toActionMapItem(contract));
+    expect(publicMap.contract?.metadata.preparationData).toEqual({
+      observedCoverage: expect.objectContaining({ traceCount: 1 }),
+    });
+    expect(JSON.stringify(publicMap)).not.toContain("private-mission");
+    expect(JSON.stringify(publicMap)).not.toContain("technical_provenance");
   });
 });

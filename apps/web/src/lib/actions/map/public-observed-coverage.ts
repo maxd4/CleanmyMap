@@ -61,3 +61,11 @@ export function parsePublicObservedCoverage(
     },
   };
 }
+
+/** Public map contracts may expose observed coverage, never the full preparation payload. */
+export function sanitizePublicObservedPreparationData(
+  raw: unknown,
+): ActionPreparationData | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  return parsePublicObservedCoverage((raw as Record<string, unknown>).observedCoverage);
+}

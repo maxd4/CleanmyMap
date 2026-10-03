@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { getAuthenticatedSupabaseClient } from './supabase';
-import { createLinkedMission } from './linked-mission-service';
+import { createLinkedMission, reconcileLinkedMission } from './linked-mission-service';
 import {
   getStoredMissionId,
   setStoredMissionId,
@@ -317,6 +317,13 @@ export async function stopTracking(
   }
 
   await clearStoredMissionId();
+
+  if (missionResult.data.action_id) {
+    const handoff = await reconcileLinkedMission(missionResult.data.id);
+    if (!handoff.ok) {
+      console.warn('[GPS] Mission finalisée; réconciliation gamification différée.', handoff.error);
+    }
+  }
 
   return missionResult;
 }

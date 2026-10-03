@@ -431,17 +431,20 @@ La couleur ne doit pas porter l'information de fiabilité géométrique. Cette i
 > déduplication spatiale scientifique et la distance de couverture unique restent
 > `PLAN / TARGET`.
 
+La spécification produit détaillée de cette évolution est
+[`couverture-gps-multi-groupes.md`](./couverture-gps-multi-groupes.md) (`PLAN / TARGET`).
+
 ### Réalité / déclaration / hypothèse
 
 La provenance géométrique est une information métier indépendante de la
 couleur de la carte :
 
-- Dans la cible, `gps_tracking` = observation d'une trajectoire réellement
+- Dans le runtime `CURRENT`, `gps_tracking` = observation d'une trajectoire réellement
   enregistrée par le compagnon mobile pendant une mission terrain liée à
   l'action ; ses
   coordonnées proviennent exclusivement des `gps_points` persistés et sa
   distance observée vient de la métrique serveur de mission ;
-- `gpx_import` = observation d'une trajectoire fournie par l'utilisateur ; sa
+- `gpx_import` = observation `CURRENT` d'une trajectoire fournie par l'utilisateur ; sa
   distance est mesurée depuis la trace GPX ; `gpxImport` reste réservé à cet
   import et ne décrit jamais une mission mobile ;
 - `manual` = parcours ou zone explicitement déclaré ou dessiné par
@@ -478,8 +481,8 @@ géométrie, sa distance individuelle, son empreinte technique et son état
 exploitable/refusé. La relation `missions.action_id` est optionnelle : une
 mission sans action reste autonome, tandis que les missions liées restent
 privées et ne fournissent à la carte publique que leur projection géométrique.
-Un contributeur n'est éligible que s'il est participant confirmé ou
-organisateur canonique ; la trace GPX prouve sa fourniture, pas qu'il a
+Un contributeur est éligible s'il est créateur persistant, organisateur
+canonique, participant confirmé ou inscrit confirmé ; la trace GPX prouve sa fourniture, pas qu'il a
 physiquement tenu le GPS.
 
 Le cycle de vie cible d'une action peut donc être :
@@ -531,7 +534,7 @@ normale du resolver. Les signalements `trash_spotter_spots` sont audités
 séparément et restent ponctuels ; l'archive `spots` n'est pas une cible de ce
 backfill.
 
-Dans la cible, après les géométries réellement fournies (`gps_tracking`,
+Dans le runtime `CURRENT`, après les géométries réellement fournies (`gps_tracking`,
 `gpx_import` et `manual`), le moteur de reconstruction suit donc : `référence
 pertinente → réseau piéton →
 reconstruction réseau hypothétique → vol d'oiseau → point`. Une adresse seule

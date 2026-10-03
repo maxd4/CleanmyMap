@@ -3,6 +3,7 @@ import type {
   ActionImpactLevel,
   ActionMapItem,
   ActionMapResponse,
+  ActionSourceName,
   ActionStatus,
 } from "@/lib/actions/types";
 import { buildDateFloor } from "@/lib/pilotage/overview.utils";
@@ -19,9 +20,7 @@ import { AppError } from "@/lib/errors/app-errors";
 import { parseDrawingFromNotes } from "../geometry/drawing";
 import { extractActionMetadataFromNotes } from "../metadata";
 import { fetchActionPollutionScoreReferences } from "../pollution/pollution-score-references";
-import {
-  type PollutionScoreReferences,
-} from "../pollution/pollution-score";
+import type { PollutionScoreReferences } from "../pollution/pollution-score";
 import type { ActionDataContract, ActionEntityType } from "../contracts/contract-model";
 import { buildActionDataContract } from "../contracts/contract-model";
 import { parseWasteCategoriesFromNotes } from "@/lib/waste";
@@ -75,6 +74,7 @@ type ActionsMapFeedRow = {
   derived_geometry_geojson: string | null;
   geometry_confidence: number | string | null;
   geometry_source: string | null;
+  observed_coverage?: unknown;
 };
 type ActionsMapRpcResult = {
   data: unknown[] | null;
@@ -125,7 +125,6 @@ function resolveMapScope(params: {
       value: params.scopeValue ?? null,
     });
   }
-
   if (
     typeof params.association === "string" &&
     params.association !== "all" &&
@@ -136,7 +135,6 @@ function resolveMapScope(params: {
       value: params.association.trim(),
     };
   }
-
   return DEFAULT_REPORT_SCOPE;
 }
 function normalizeMapViewport(
@@ -172,14 +170,12 @@ function toActionStatusFromMapFeedRow(
   if (entityType === "spot") {
     return rawStatus === "validated" || rawStatus === "cleaned" ? "approved" : "pending";
   }
-
   return rawStatus === "pending" || rawStatus === "rejected" ? rawStatus : "approved";
 }
 function isPublicMapFeedRow(row: ActionsMapFeedRow): boolean {
   if (row.source === "actions" && row.entity_type === "action") {
     return row.status === "approved";
   }
-
   return (
     row.source === "trash_spotter_spots" &&
     row.entity_type !== "action" &&
@@ -190,7 +186,6 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
   const parsedDrawing = parseDrawingFromNotes(row.notes);
   const parsedMetadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
   const type = toActionEntityType(row.entity_type);
-
   return buildActionDataContract({
     id: row.id,
     type,
@@ -248,7 +243,6 @@ function filterContractsByTypes(
 function dedupeContractsByIdAndType(items: ActionDataContract[]): ActionDataContract[] {
   const seen = new Set<string>();
   const output: ActionDataContract[] = [];
-
   for (const item of items) {
     const key = `${item.id}::${item.type}`;
     if (seen.has(key)) {
@@ -309,7 +303,7 @@ function buildMapSourceHealth() {
   return {
     partial: false,
     failedSources: [],
-    availableSources: ["actions", "spots"],
+    availableSources: ["actions", "spots"] as ActionSourceName[],
     warnings: [],
   };
 }
@@ -322,7 +316,6 @@ function resolveMapFetchConfig(params: FetchMapActionsParams): MapFetchConfig {
       : params.floorDate === null
         ? null
         : buildDateFloor(days);
-
   return {
     limit,
     days,
@@ -341,7 +334,6 @@ function normalizeMapActionError(rpcPayload: ActionsMapRpcResult): AppError {
     typeof rpcPayload.error?.message === "string" && rpcPayload.error.message.trim().length > 0
       ? rpcPayload.error.message.trim()
       : "Impossible de charger les points cartographiques.";
-
   return new AppError({
     kind: "server",
     message: errorMessage,
@@ -351,7 +343,6 @@ function normalizeMapActionError(rpcPayload: ActionsMapRpcResult): AppError {
 }
 async function loadMapActionSources(config: MapFetchConfig) {
   const supabase = getSupabaseBrowserClient();
-
   return Promise.allSettled([
     supabase.rpc("actions_map_feed", {
       p_south: config.viewport.south,
@@ -368,7 +359,6 @@ async function loadMapActionSources(config: MapFetchConfig) {
     fetchActionPollutionScoreReferences(supabase),
   ] as const);
 }
-
 function unwrapMapRpcResult(
   rpcResult: PromiseSettledResult<ActionsMapRpcResult>,
 ): ActionsMapRpcResult {
@@ -379,11 +369,9 @@ function unwrapMapRpcResult(
       cause: rpcResult.reason,
     });
   }
-
   if (rpcResult.value.error) {
     throw normalizeMapActionError(rpcResult.value);
   }
-
   return rpcResult.value;
 }
 

@@ -30,7 +30,7 @@ Point d'entrée de la documentation produit CleanMyMap.
 
 - `SCIENTIFIC_PROTOCOL.md` ;
 - `methodologie-carte-actions.md` — lecture de la carte d'actions, score constaté, projection de re-pollution, couleurs, géométries et limites ;
-- [`couverture-gps-multi-groupes.md`](./couverture-gps-multi-groupes.md) — contrat mixte `CURRENT / TARGET` : le socle multi-traces et la progression cartographique sont `CURRENT`, tandis que la déduplication spatiale et la distance de couverture unique restent `TARGET` ;
+- [`couverture-gps-multi-groupes.md`](./couverture-gps-multi-groupes.md) — spécification `PLAN / TARGET` ; elle référence le socle `CURRENT` déjà livré et sépare les extensions scientifiques encore ciblées ;
 - documentation de méthodologie et impact dans les dossiers techniques ou les fiches de page concernées.
 
 ### Vocabulaire
