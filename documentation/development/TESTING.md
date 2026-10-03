@@ -572,6 +572,15 @@ une justification disparue produit `STALE_KEEP_INTENTIONAL` et bloque. Ce
 registre ne neutralise jamais `NEW_CLONE_FINGERPRINTS_BLOCKING` : un nouveau
 fingerprint reste bloquant même lorsqu'un registre de KEEP existe.
 
+Dans la CI, le step `quality:duplication` du job `web-quality` doit produire
+sa preuve sur tout candidat concerné dès que le checkout, Node et `npm ci` ont
+réussi et que le job n'est pas annulé. Il reste exécutable même lorsqu'un
+ratchet structurel précédent du même job a échoué ; son propre échec reste
+`FAIL` et doit faire échouer `web-quality`. Un environnement non préparé ou une
+annulation produit `SKIPPED`, jamais une validation implicite. Un jscpd non
+exécuté ne doit donc jamais être présenté comme `PASS` ou comme une preuve
+acquise.
+
 La stabilisation court terme de la CI quotidienne distingue trois résultats :
 `PASS`, `PASS_WITH_GRACE` et `FAIL`. `PASS_WITH_GRACE` accepte uniquement une
 hausse des métriques absolues calculée contre la même baseline historique et

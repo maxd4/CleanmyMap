@@ -295,6 +295,7 @@ jobs:
 
     steps:
       - name: Checkout
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -302,6 +303,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Node
+        id: setup_node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: ${{ env.NODE_VERSION_FILE }}
@@ -312,6 +314,7 @@ jobs:
         run: node scripts/checks/check-node-version-contract.mjs
 
       - name: Install Node dependencies
+        id: install_node_dependencies
         run: npm ci
 
       - name: Heavy files policy
@@ -326,6 +329,7 @@ jobs:
         run: npm run quality:complexity
 
       - name: Duplication ratchet
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' && steps.install_node_dependencies.outcome == 'success' }}
         run: npm run quality:duplication
 
       - name: Install GitNexus

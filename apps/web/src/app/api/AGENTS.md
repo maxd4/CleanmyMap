@@ -138,8 +138,9 @@ change ; ne pas remplacer les tests AuthZ par une vérification UI.
 
 ## Déduplication et visibilité des frontières de sécurité
 
-Une déduplication ne doit jamais rendre moins visible pour `api-boundary` la
-preuve AuthN/AuthZ attendue. Pour toute méthode dont le
+Une déduplication ne doit jamais déplacer ou abstraire une preuve AuthN/AuthZ
+de façon à la rendre invisible au contrat `api-boundary`, ni rendre moins
+visible pour ce guard la preuve attendue. Pour toute méthode dont le
 `API_AUTHORIZATION_CONTRACT` déclare `requireAdminAccess`,
 `requireAuthenticatedAccess`, ownership, scope, authentification cron,
 signature, rate limiting, idempotence ou un contrôle équivalent, la preuve
@@ -171,6 +172,10 @@ Ne jamais modifier `API_AUTHORIZATION_CONTRACT`, `evidence`, `evidenceScope`,
 acceptable à jscpd. Une délégation canonique existante peut rester si le
 contrat la reconnaît et si sa preuve demeure vérifiable. Si `api-boundary`
 échoue à cause d’une déduplication, corriger l’architecture et non le garde.
+Une frontière explicitement lisible, ou une duplication intentionnelle
+nécessaire à son auditabilité, est préférable à une abstraction motivée
+uniquement par jscpd. Ne jamais rendre `api-boundary` plus permissif pour
+accepter une abstraction moins auditable.
 
 ## Invariants des domaines Actions et Chat
 
