@@ -217,7 +217,24 @@ Les outils d'opérations suivent la même séparation :
   `legacy_spot_migrations` et `spots`, ce dernier étant explicitement marqué
   comme archive legacy dans le manifeste ;
 - `backfill-derived-geometry.mjs` cible par défaut `actions` et
-  `trash_spotter_spots` uniquement ; il ne modifie jamais `spots` ;
+  `trash_spotter_spots` uniquement ; il ne modifie jamais `spots`. Son mode par
+  défaut est un dry-run auditable : chaque ligne est classée `PRESERVE`,
+  `SAFE_UPDATE`, `AMBIGUOUS` ou `INVALID`, avec la provenance actuelle et une
+  correction proposée bornée ; `--apply` n'applique que les `SAFE_UPDATE` ;
+- ce backfill ne déduit jamais une provenance depuis
+  `geometry_confidence` seul. Une reclassification historique exige une
+  preuve persistée : source explicite valide, marqueur de dessin, metadata GPX,
+  route persistée dont le mode/provider correspond à la géométrie, ou ellipse
+  legacy reproduite exactement par l'algorithme historique. En l'absence de
+  preuve, la ligne reste `AMBIGUOUS` et inchangée ; une géométrie techniquement
+  inexploitable est `INVALID` ;
+- les géométries valides `gps_tracking`, `gpx_import` et `manual` ne sont jamais
+  remplacées automatiquement. Le moteur de reconstruction actuel ne sert pas
+  à réécrire rétroactivement l'histoire. Les ellipses historiques démontrées
+  peuvent seulement converger vers `estimated_area`, tandis qu'un vrai
+  polygone reste intact. `trash_spotter_spots` est audité séparément : un
+  signalement sans géométrie reçoit au plus son point persisté ; l'archive
+  `spots` reste hors périmètre ;
 - `db-cleanup-suspect-runtime-records.mjs` peut auditer les lignes `spots` pour
   le rapport, mais ses suppressions sont limitées à `actions` et
   `trash_spotter_spots` ; aucune option d'application ne peut supprimer

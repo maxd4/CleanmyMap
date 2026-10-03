@@ -11,7 +11,6 @@ import { isRenderableDrawing } from "@/lib/actions/geometry/derived-geometry";
 import {
   computeCoordinateDistanceMeters,
   resolveGeometryMetric,
-  type ActionMapGeometryMetric,
 } from "./actions-map-geometry-metrics";
 
 type CoordinatePair = [number, number];
@@ -23,7 +22,7 @@ export type ActionMapGeometryViewModel = {
   anchor: LatLngTuple | null;
   pointCount: number;
   confidence: number | null;
-  metrics: ActionMapGeometryMetric;
+  metrics: ReturnType<typeof resolveGeometryMetric>;
   label: string;
   presentation: GeometryPresentation;
   drawing: ActionDrawing | null;

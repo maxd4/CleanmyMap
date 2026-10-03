@@ -35,6 +35,29 @@ Standard exit codes for `ci_cleanup.py`:
 - `0`: success / no blocking error rules
 - `1`: check mode failed on blocking rules
 
+## Historical action geometry remediation
+
+The geometry backfill is a read-first remediation tool:
+
+```text
+npm run data:geometry:backfill -w apps/web
+npm run data:geometry:backfill -w apps/web -- --apply
+```
+
+The first command is a dry-run. It reports the inspected total, current
+provenance, bounded samples and the `PRESERVE` / `SAFE_UPDATE` / `AMBIGUOUS` /
+`INVALID` split. `--apply` is intentionally narrower: it applies only
+`SAFE_UPDATE` decisions and leaves every `AMBIGUOUS` row untouched. A second
+run after application must therefore be idempotent.
+
+The classifier uses persisted evidence rather than `geometry_confidence`:
+confidence is not provenance. Valid `gps_tracking`, `gpx_import` and `manual`
+geometries are preserved; route network/fallback and legacy ellipse
+reclassification require deterministic persisted metadata. The current route
+reconstruction engine is never used to rewrite historical rows. The archive
+table `spots` is never a target, and `trash_spotter_spots` remains a separate
+point-oriented audit surface.
+
 ## Recommended workflow
 
 - Local quick gate:

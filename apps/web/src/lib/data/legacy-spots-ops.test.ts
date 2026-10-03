@@ -8,7 +8,9 @@ import {
 import {
   BACKFILL_TARGETS,
   buildBackfillPlan,
+  classifyGeometryRow,
 } from "../../../scripts/backfill-derived-geometry.mjs";
+import { buildEllipsePolygon } from "../actions/geometry/geometry-core";
 import {
   assertDestructiveTableAllowed,
   buildCleanupReport,
@@ -61,7 +63,7 @@ describe("legacy spots maintenance boundaries", () => {
       "trash_spotter_spots",
     ]);
 
-    const { actionUpdates, signalementUpdates } = buildBackfillPlan({
+    const { actionUpdates, signalementUpdates, report } = buildBackfillPlan({
       actions: [
         {
           id: "action-1",
@@ -91,9 +93,181 @@ describe("legacy spots maintenance boundaries", () => {
       recomputeAll: false,
     });
 
-    expect(actionUpdates).toHaveLength(1);
+    expect(actionUpdates).toHaveLength(0);
     expect(signalementUpdates).toHaveLength(1);
-    expect(signalementUpdates[0]?.derived_geometry_kind).toBeTruthy();
+    expect(signalementUpdates[0]).toMatchObject({
+      derived_geometry_kind: "point",
+      geometry_source: "fallback_point",
+    });
+    expect(report).toMatchObject({
+      totalInspected: 2,
+      classifications: {
+        SAFE_UPDATE: 1,
+        AMBIGUOUS: 1,
+      },
+    });
+    expect(report.samples.SAFE_UPDATE[0]).toMatchObject({
+      table: "trash_spotter_spots",
+      id: "signalement-1",
+      correction: "restore_signalement_point",
+    });
+  });
+
+  it("does not infer an action provenance from confidence alone", () => {
+    const decision = classifyGeometryRow({
+      id: "confidence-only",
+      location_label: "Parc",
+      latitude: 48.85,
+      longitude: 2.35,
+      derived_geometry_kind: "polyline",
+      derived_geometry_geojson: JSON.stringify({
+        type: "LineString",
+        coordinates: [[2.35, 48.85], [2.36, 48.86]],
+      }),
+      geometry_confidence: 0.99,
+      geometry_source: null,
+    });
+
+    expect(decision).toMatchObject({
+      classification: "AMBIGUOUS",
+      currentSource: "missing",
+      correction: "none",
+    });
+  });
+
+  it("preserves valid strong sources and classifies demonstrated legacy ellipses", () => {
+    const line = JSON.stringify({
+      type: "LineString",
+      coordinates: [[2.35, 48.85], [2.36, 48.86]],
+    });
+    for (const source of ["gpx_import", "gps_tracking", "manual"] as const) {
+      expect(classifyGeometryRow({
+        id: source,
+        location_label: "Parc",
+        derived_geometry_kind: "polyline",
+        derived_geometry_geojson: line,
+        geometry_confidence: null,
+        geometry_source: source,
+      })).toMatchObject({ classification: "PRESERVE" });
+    }
+
+    const ellipse = buildEllipsePolygon(
+      { latitude: 48.85, longitude: 2.35 },
+      110,
+      72,
+    );
+    const ellipseGeoJson = JSON.stringify({
+      type: "Polygon",
+      coordinates: [ellipse.coordinates.map(([lat, lng]) => [lng, lat])],
+    });
+    expect(classifyGeometryRow({
+      id: "legacy-ellipse",
+      location_label: "Paris",
+      latitude: 48.85,
+      longitude: 2.35,
+      derived_geometry_kind: "polygon",
+      derived_geometry_geojson: ellipseGeoJson,
+      geometry_confidence: 0.44,
+      geometry_source: null,
+    })).toMatchObject({
+      classification: "SAFE_UPDATE",
+      correction: "classify_legacy_ellipse_110x72m_as_estimated_area",
+    });
+  });
+
+  it("uses persisted route metadata to distinguish network and geodesic fallback", () => {
+    const geometry = {
+      coordinates: [[48.85, 2.35], [48.86, 2.36]],
+      mode: "network",
+      provider: "fossgis-osrm",
+    };
+    const base = {
+      id: "legacy-route",
+      location_label: "Parc",
+      derived_geometry_kind: "polyline",
+      derived_geometry_geojson: JSON.stringify({
+        type: "LineString",
+        coordinates: [[2.35, 48.85], [2.36, 48.86]],
+      }),
+      geometry_confidence: 0.78,
+      geometry_source: null,
+    };
+    expect(classifyGeometryRow({
+      ...base,
+      preparation_data: JSON.stringify({
+        operationalRoute: { routes: [{ geometry }] },
+      }),
+    })).toMatchObject({
+      classification: "SAFE_UPDATE",
+      correction: "restore_network_route_provenance",
+    });
+
+    expect(classifyGeometryRow({
+      ...base,
+      preparation_data: JSON.stringify({
+        operationalRoute: {
+          routes: [{ geometry: { ...geometry, mode: "fallback", provider: "none" } }],
+        },
+      }),
+    })).toMatchObject({
+      classification: "SAFE_UPDATE",
+      correction: "restore_geodesic_fallback_provenance",
+    });
+
+    expect(classifyGeometryRow({
+      ...base,
+      preparation_data: JSON.stringify({
+        routeGeometryMode: "network",
+        routeGeometryProvider: "osrm",
+        operationalRoute: {
+          routes: [{ geometry: { ...geometry, estimated: true } }],
+        },
+      }),
+    })).toMatchObject({
+      classification: "SAFE_UPDATE",
+      correction: "classify_synthetic_legacy_route_as_estimated_route",
+    });
+  });
+
+  it("keeps real polygons, restores a signalement point and is idempotent", () => {
+    const polygon = {
+      type: "Polygon",
+      coordinates: [[[2.35, 48.85], [2.36, 48.85], [2.36, 48.86]]],
+    };
+    const realPolygon = {
+      id: "real-polygon",
+      location_label: "Parc de référence",
+      derived_geometry_kind: "polygon",
+      derived_geometry_geojson: JSON.stringify(polygon),
+      geometry_confidence: 0.72,
+      geometry_source: "reference",
+    };
+    expect(classifyGeometryRow(realPolygon)).toMatchObject({
+      classification: "PRESERVE",
+    });
+
+    const signalement = {
+      id: "spot-1",
+      label: "Rue",
+      spot_type: "spot",
+      latitude: 48.85,
+      longitude: 2.35,
+      derived_geometry_kind: null,
+      derived_geometry_geojson: null,
+      geometry_confidence: null,
+      geometry_source: null,
+    };
+    const first = classifyGeometryRow(signalement, "signalement");
+    expect(first).toMatchObject({
+      classification: "SAFE_UPDATE",
+      correction: "restore_signalement_point",
+    });
+    expect(first.update).toBeTruthy();
+    const second = classifyGeometryRow(
+      { ...signalement, ...(first.update ?? {}) },
+      "signalement",
+    );
+    expect(second).toMatchObject({ classification: "PRESERVE" });
   });
 
   it("audits canonical signalements and legacy rows with the same geographic rules", () => {
