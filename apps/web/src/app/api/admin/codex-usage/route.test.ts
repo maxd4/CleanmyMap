@@ -127,6 +127,25 @@ describe("admin codex usage route", () => {
     expect(listSnapshotsMock).not.toHaveBeenCalled();
   });
 
+  it("rejects non-admin POST access before construction, persistence, or audit", async () => {
+    requireAdminAccessMock.mockResolvedValueOnce({ ok: false, status: 403, error: "Forbidden" });
+
+    const response = await POST(
+      new Request("http://localhost/api/admin/codex-usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ weekStart: "2026-05-19", sessionCount: 5 }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(buildSnapshotMock).not.toHaveBeenCalled();
+    expect(getSnapshotMock).not.toHaveBeenCalled();
+    expect(listSnapshotsMock).not.toHaveBeenCalled();
+    expect(upsertSnapshotMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
+
   it("returns the current codex history for admins", async () => {
     requireAdminAccessMock.mockResolvedValueOnce({ ok: true, userId: "admin_1" });
 

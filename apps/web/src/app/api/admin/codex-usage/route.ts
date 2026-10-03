@@ -98,41 +98,17 @@ function deriveCodexTargetId(body: unknown): string {
 }
 
 const CODEX_AUDIT_OPERATION = "upsert_codex_usage_snapshot";
-type CodexAdminAccess = Extract<
-  Awaited<ReturnType<typeof requireAdminAccess>>,
-  { ok: true }
->;
-type PreparedCodexUsageRequest =
-  | { response: Response }
-  | { access: CodexAdminAccess; historyLimit: number };
-
-async function prepareCodexUsageRequest(
-  request: Request,
-): Promise<PreparedCodexUsageRequest> {
+export async function GET(request: Request) {
   const access = await requireAdminAccess();
   if (!access.ok) {
-    return {
-      response: adminAccessErrorJsonResponse(access, `codex-usage-${Date.now()}`),
-    };
+    return adminAccessErrorJsonResponse(access, `codex-usage-${Date.now()}`);
   }
-
-  const url = new URL(request.url);
-  return {
-    access,
-    historyLimit: parseEnvironmentalImpactHistoryLimit(
-      url.searchParams.get("historyLimit"),
-    ),
-  };
-}
-
-export async function GET(request: Request) {
-  const prepared = await prepareCodexUsageRequest(request);
-  if ("response" in prepared) {
-    return prepared.response;
-  }
+  const historyLimit = parseEnvironmentalImpactHistoryLimit(
+    new URL(request.url).searchParams.get("historyLimit"),
+  );
 
   try {
-    return NextResponse.json(await buildCodexAdminPayload(prepared.historyLimit));
+    return NextResponse.json(await buildCodexAdminPayload(historyLimit));
   } catch {
     return NextResponse.json(
       {
@@ -146,11 +122,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const prepared = await prepareCodexUsageRequest(request);
-  if ("response" in prepared) {
-    return prepared.response;
+  const access = await requireAdminAccess();
+  if (!access.ok) {
+    return adminAccessErrorJsonResponse(access, `codex-usage-${Date.now()}`);
   }
-  const { access, historyLimit } = prepared;
+  const historyLimit = parseEnvironmentalImpactHistoryLimit(
+    new URL(request.url).searchParams.get("historyLimit"),
+  );
 
   const operationId = `codex-usage-${randomUUID()}`;
   let targetId = "codex-unknown";
