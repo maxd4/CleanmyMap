@@ -49,7 +49,9 @@ export function auditClerkJsVersionContract({
 
   const nextjsManifestVersion = exactVersion(webClerkSpec, `${WEB_PACKAGE_PATH} @clerk/nextjs`, violations);
   const nextjsLockVersion = exactVersion(nextjsLock?.version, `${LOCKFILE_PATH} ${NEXTJS_PACKAGE_PATH}`, violations);
-  const clerkJsLockVersion = exactVersion(clerkJsLock?.version, `${LOCKFILE_PATH} ${CLERK_JS_PACKAGE_PATH}`, violations);
+  const transitivelyResolvedClerkJsVersion = VERSION_PATTERN.test(clerkJsLock?.version ?? "")
+    ? clerkJsLock.version
+    : null;
   const templateVersion = exactVersion(
     readEnvAssignment(envTemplateSource, "NEXT_PUBLIC_CLERK_JS_VERSION"),
     `${ENV_TEMPLATE_PATH} NEXT_PUBLIC_CLERK_JS_VERSION`,
@@ -59,20 +61,21 @@ export function auditClerkJsVersionContract({
   if (nextjsManifestVersion && nextjsLockVersion && nextjsManifestVersion !== nextjsLockVersion) {
     violations.push(`@clerk/nextjs manifest/lock mismatch: ${nextjsManifestVersion} !== ${nextjsLockVersion}`);
   }
-  if (templateVersion && clerkJsLockVersion && templateVersion !== clerkJsLockVersion) {
-    violations.push(`ClerkJS template/lock mismatch: ${templateVersion} !== ${clerkJsLockVersion}`);
-  }
   const configuredRuntimeVersion = runtimeVersion?.trim();
-  if (configuredRuntimeVersion && clerkJsLockVersion && configuredRuntimeVersion !== clerkJsLockVersion) {
-    violations.push(`ClerkJS runtime/lock mismatch: ${configuredRuntimeVersion} !== ${clerkJsLockVersion}`);
+  const observedRuntimeVersion = configuredRuntimeVersion
+    ? exactVersion(configuredRuntimeVersion, "NEXT_PUBLIC_CLERK_JS_VERSION runtime", violations)
+    : undefined;
+  if (templateVersion && observedRuntimeVersion && templateVersion !== observedRuntimeVersion) {
+    violations.push(`ClerkJS loader template/runtime mismatch: ${templateVersion} !== ${observedRuntimeVersion}`);
   }
 
   return {
     ok: violations.length === 0,
-    expectedClerkJsVersion: clerkJsLockVersion,
+    expectedClerkJsVersion: templateVersion,
     nextjsVersion: nextjsLockVersion,
     templateVersion,
-    runtimeVersion: configuredRuntimeVersion || null,
+    runtimeVersion: observedRuntimeVersion || null,
+    transitivelyResolvedClerkJsVersion,
     violations,
   };
 }

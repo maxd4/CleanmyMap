@@ -328,10 +328,28 @@ jobs:
       - name: Duplication ratchet
         run: npm run quality:duplication
 
-      - name: Set up GitNexus cycle audit
+      - name: Install GitNexus
+        run: npm install --global gitnexus@1.6.12
+
+      - name: Initialize GitNexus candidate index
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          npm install --global gitnexus@1.6.12
-          npm run audit:gitnexus
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          gitnexus analyze --index-only
+          test -f .gitnexus/run.cjs
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const metadata = JSON.parse(fs.readFileSync(".gitnexus/gitnexus.json", "utf8"));
+            if (metadata.lastCommit !== process.env.CANDIDATE_SHA) {
+              throw new Error(`GitNexus index candidate mismatch: ${metadata.lastCommit} !== ${process.env.CANDIDATE_SHA}`);
+            }
+          '
+
+      - name: Audit GitNexus candidate
+        run: npm run audit:gitnexus
 
       - name: GitNexus cycle ratchet
         run: npm run quality:cycles

@@ -68,16 +68,16 @@ export const platformAuthorizationContract = {
     GET: {
       expected: "Admin-like role for heavy action export",
       dimensions: ["admin/creator role"],
-      actual: "requireAdminAccess",
-      evidence: ["requireAdminAccess"],
+      actual: "withActionsExportRequest, whose shared preparation requires requireAdminAccess",
+      evidence: ["withActionsExportRequest"],
     },
   },
   "reports/actions.json": {
     GET: {
       expected: "Admin-like role for heavy action export",
       dimensions: ["admin/creator role"],
-      actual: "requireAdminAccess",
-      evidence: ["requireAdminAccess"],
+      actual: "withActionsExportRequest, whose shared preparation requires requireAdminAccess",
+      evidence: ["withActionsExportRequest"],
     },
   },
   "reports/generations": {

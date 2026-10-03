@@ -70,6 +70,10 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.match(qualityJob, /quality:top-heavy/);
   assert.match(qualityJob, /quality:complexity/);
   assert.match(qualityJob, /npm run audit:gitnexus/);
+  const gitNexusInitialization = qualityJob.indexOf("gitnexus analyze --index-only");
+  const gitNexusAudit = qualityJob.indexOf("npm run audit:gitnexus");
+  assert.ok(gitNexusInitialization >= 0, "web-quality initializes the GitNexus candidate index");
+  assert.ok(gitNexusInitialization < gitNexusAudit, "GitNexus initialization precedes the audit");
   const testsJob = extractJob(workflow, "web-tests");
   assert.match(testsJob, /validation-policy\.mjs --assert-full-suite/);
   assert.match(testsJob, /npm run test:coverage/);
