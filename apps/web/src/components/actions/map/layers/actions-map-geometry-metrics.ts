@@ -6,7 +6,7 @@ import type { GeometryPresentation } from "@/lib/actions/geometry/geometry-prese
 
 type CoordinatePair = [number, number];
 
-export type ActionMapGeometryMetric = {
+type ActionMapGeometryMetric = {
   kind: "length" | "area" | null;
   value: number | null;
   label: string | null;

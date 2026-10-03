@@ -148,7 +148,6 @@ type PolygonGeometryRenderInput = {
 type GeometryInteractionOverlaysProps = {
   item: ActionMapItem;
   geometryKind: "polygon" | "polyline";
-  geometryLabel: string | null;
   tooltipProps: PolygonGeometryRenderInput["tooltipProps"];
   commonPopupProps: PolygonGeometryRenderInput["commonPopupProps"];
 };
@@ -156,7 +155,6 @@ type GeometryInteractionOverlaysProps = {
 function GeometryInteractionOverlays({
   item,
   geometryKind,
-  geometryLabel,
   tooltipProps,
   commonPopupProps,
 }: GeometryInteractionOverlaysProps) {
@@ -164,7 +162,7 @@ function GeometryInteractionOverlays({
     <>
       <Tooltip className="glass-tooltip" direction="auto" sticky>
         <GeometryTooltipContent
-          title={formatActionGeometryTooltipTitle(geometryKind, geometryLabel)}
+          title={formatActionGeometryTooltipTitle(geometryKind)}
           {...tooltipProps}
         />
       </Tooltip>
@@ -214,7 +212,6 @@ function renderPolygonGeometry({
         <GeometryInteractionOverlays
           item={item}
           geometryKind="polygon"
-          geometryLabel={geometry.metrics.label}
           tooltipProps={tooltipProps}
           commonPopupProps={commonPopupProps}
         />
@@ -380,7 +377,6 @@ export function ShapeGeometryRenderer({
         <GeometryInteractionOverlays
           item={item}
           geometryKind="polyline"
-          geometryLabel={geometry.metrics.label}
           tooltipProps={tooltipProps}
           commonPopupProps={commonPopupProps}
         />

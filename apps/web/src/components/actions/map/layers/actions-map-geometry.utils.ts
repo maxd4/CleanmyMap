@@ -13,7 +13,6 @@ import {
   resolveGeometryMetric,
   type ActionMapGeometryMetric,
 } from "./actions-map-geometry-metrics";
-export type { ActionMapGeometryMetric } from "./actions-map-geometry-metrics";
 
 type CoordinatePair = [number, number];
 
@@ -58,7 +57,7 @@ type ActionDrawingValidationTone =
   | "warning"
   | "error";
 
-export type ActionDrawingValidationSummary = {
+type ActionDrawingValidationSummary = {
   normalized: ActionDrawing | null;
   rawPointCount: number;
   pointCount: number;
@@ -100,9 +99,7 @@ function toRadians(value: number): number {
 
 export function formatActionGeometryTooltipTitle(
   kind: "polyline" | "polygon",
-  metricLabel: string | null,
 ): string {
-  if (metricLabel) return metricLabel;
   return kind === "polygon" ? "Zone d'action" : "Parcours d'action";
 }
 
@@ -147,6 +144,9 @@ export function resolveGeometryRenderStyle(
   const isIndicativeRoute =
     geometry.presentation.variant === "indicative" &&
     geometry.presentation.strokeStyle === "dashed";
+  const isEstimatedRoute =
+    geometry.presentation.variant === "estimated" &&
+    geometry.presentation.strokeStyle === "dashed";
   return {
     pointRadius: null,
     pointWeight: null,
@@ -157,7 +157,7 @@ export function resolveGeometryRenderStyle(
     fillOpacity: null,
     dashArray: isNetworkRoute
       ? "8 8"
-      : isIndicativeRoute
+      : isIndicativeRoute || isEstimatedRoute
         ? "4 8"
         : undefined,
   };

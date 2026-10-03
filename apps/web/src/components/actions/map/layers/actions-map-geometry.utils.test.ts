@@ -84,15 +84,8 @@ describe("actions map geometry utils", () => {
   });
 
   it("uses métier labels for action polyline and polygon tooltips", () => {
-    expect(
-      formatActionGeometryTooltipTitle("polyline", "Longueur ~ 1,2 km"),
-    ).toBe("Longueur ~ 1,2 km");
-    expect(
-      formatActionGeometryTooltipTitle("polygon", "Surface ~ 850 m²"),
-    ).toBe("Surface ~ 850 m²");
-    expect(formatActionGeometryTooltipTitle("polyline", null)).toBe(
-      "Parcours d'action",
-    );
+    expect(formatActionGeometryTooltipTitle("polyline")).toBe("Parcours d'action");
+    expect(formatActionGeometryTooltipTitle("polygon")).toBe("Zone d'action");
   });
 
   it("shows confidence only for estimated geometry and preserves stroke semantics", () => {
@@ -113,6 +106,18 @@ describe("actions map geometry utils", () => {
         },
       }).dashArray,
     ).toBe("8 8");
+    expect(
+      resolveGeometryRenderStyle({
+        kind: "polyline",
+        presentation: {
+          origin: "estimated_route",
+          reality: "estimated",
+          label: "Parcours estimé",
+          strokeStyle: "dashed",
+          variant: "estimated",
+        },
+      }).dashArray,
+    ).toBe("4 8");
     expect(
       resolveGeometryRenderStyle({
         kind: "polyline",
