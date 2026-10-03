@@ -51,6 +51,7 @@ select jsonb_strip_nulls(jsonb_build_object(
       ), '[]'::jsonb)
     ) end
 ));
+$$;
 
 revoke all privileges on function public.public_action_map_preparation(jsonb)
   from public, anon, authenticated, service_role;
