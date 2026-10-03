@@ -32,7 +32,7 @@ const contractedApiFamilies = new Set([
 ]);
 const apiRoot = dirname(fileURLToPath(import.meta.url));
 const httpMethodPattern =
-  /export\s+async\s+function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\(/g;
+  /export\s+(?:async\s+function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\(|const\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*=)/g;
 
 function walk(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -45,7 +45,7 @@ function extractRouteMethods(source: string): Map<ApiHttpMethod, string> {
   const matches = Array.from(source.matchAll(httpMethodPattern));
   const methods = new Map<ApiHttpMethod, string>();
   matches.forEach((match, index) => {
-    const method = match[1] as ApiHttpMethod;
+    const method = (match[1] ?? match[2]) as ApiHttpMethod;
     const start = match.index ?? 0;
     const end = matches[index + 1]?.index ?? source.length;
     methods.set(method, source.slice(start, end));

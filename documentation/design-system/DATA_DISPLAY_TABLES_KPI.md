@@ -52,10 +52,14 @@ ne définissent pas un système visuel parallèle.
 
 ## Frontière Print / Export
 
-Les tables PDF/HTML/email spécialisées, `ReportPage` et `cmm-table-wrap` sont des
-contrats de Print / Export. Il n'existe plus de composant `ReportTable` dans le
-runtime ; ces owners restent hors du contrat runtime et ne doivent jamais être
-confondus avec `cmm-data-table-wrap`.
+Les surfaces PDF/HTML/email spécialisées sont des contrats de Print / Export.
+La page imprimable est portée par
+`apps/web/src/app/(app)/prints/report/page.tsx`; les exports interactifs et PDF
+du rapport sont portés par `apps/web/src/components/reports/reports-web-document.tsx`,
+ses modules `web-document/*` et les owners `apps/web/src/lib/pdf-export/*`.
+Il n'existe plus de composant `ReportPage` ni de composant `ReportTable` dans le
+runtime ; `cmm-table-wrap` reste l'owner de géométrie HTML/PDF générée et ne doit
+jamais être confondu avec `cmm-data-table-wrap`.
 
 ## État de migration
 

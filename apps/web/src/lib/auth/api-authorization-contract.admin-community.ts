@@ -7,12 +7,14 @@ export const adminCommunityAuthorizationContract = {
       dimensions: ["admin/creator role"],
       actual: "requireAdminAccess",
       evidence: ["requireAdminAccess"],
+      evidenceScope: "module",
     },
     POST: {
       expected: "Admin-like role",
       dimensions: ["admin/creator role"],
       actual: "requireAdminAccess",
       evidence: ["requireAdminAccess"],
+      evidenceScope: "module",
     },
   },
   "admin/creator-inbox": {
