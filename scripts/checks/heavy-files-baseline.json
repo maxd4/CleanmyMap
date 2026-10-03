@@ -189,10 +189,10 @@
     {
       "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 679,
-      "maxBytes": 25408
+      "status": "IMPROVED",
+      "reviewedRef": "6b55bca097f057c101dd120bf3590a48c4755aeb",
+      "maxLines": 123,
+      "maxBytes": 4967
     },
     {
       "path": "apps/web/src/components/learn/quiz/environmental-quiz.tsx",
