@@ -57,7 +57,16 @@ function extractFailureFiles(output) {
 }
 
 /** Run one check with a real process-tree timeout and deterministic cleanup. */
-export function runCommandWithTimeout({ command, cwd = process.cwd(), timeoutMs, env = process.env } = {}) {
+export function runCommandWithTimeout({
+  command,
+  cwd = process.cwd(),
+  timeoutMs,
+  heartbeatMs,
+  env = process.env,
+  onStdout,
+  onStderr,
+  onHeartbeat,
+} = {}) {
   const detached = process.platform !== "win32";
   const child = spawn(command.executable, command.args ?? [], {
     cwd,
@@ -67,36 +76,80 @@ export function runCommandWithTimeout({ command, cwd = process.cwd(), timeoutMs,
     stdio: ["ignore", "pipe", "pipe"],
   });
   let output = "";
+  let stdout = "";
+  let stderr = "";
   let timedOut = false;
+  let interrupted = false;
   let settled = false;
   let timeoutHandle;
+  let heartbeatHandle;
+  const startedAt = performance.now();
 
-  const collect = (chunk) => {
+  const collect = (stream, chunk) => {
     const text = chunk.toString();
     output += text;
-    process.stdout.write(text);
+    if (stream === "stdout") {
+      stdout += text;
+      if (onStdout) onStdout(text);
+      else process.stdout.write(text);
+    } else {
+      stderr += text;
+      if (onStderr) onStderr(text);
+      else process.stdout.write(text);
+    }
   };
-  child.stdout?.on("data", collect);
-  child.stderr?.on("data", collect);
+  child.stdout?.on("data", (chunk) => collect("stdout", chunk));
+  child.stderr?.on("data", (chunk) => collect("stderr", chunk));
 
   return new Promise((resolve) => {
+    const removeSignalHandlers = () => {
+      process.removeListener("SIGINT", handleInterrupt);
+      process.removeListener("SIGTERM", handleInterrupt);
+    };
     const finish = (result) => {
       if (settled) return;
       settled = true;
       clearTimeout(timeoutHandle);
-      resolve({ ...result, output, failureFiles: extractFailureFiles(output) });
+      clearInterval(heartbeatHandle);
+      removeSignalHandlers();
+      resolve({
+        ...result,
+        output,
+        stdout,
+        stderr,
+        elapsedSeconds: (performance.now() - startedAt) / 1000,
+        timedOut,
+        interrupted,
+        failureFiles: extractFailureFiles(output),
+      });
+    };
+    const handleInterrupt = () => {
+      if (settled) return;
+      interrupted = true;
+      terminateProcessTree(child.pid);
     };
 
     child.once("error", (error) => {
-      finish({ status: error.code === "ETIMEDOUT" ? "TIME_BUDGET_EXCEEDED" : "FAIL", exitCode: null, error });
+      finish({ status: interrupted ? "INTERRUPTED" : "FAIL", exitCode: null, error });
     });
     child.once("close", (exitCode, signal) => {
       if (timedOut) {
         finish({ status: "TIME_BUDGET_EXCEEDED", exitCode: null, signal });
+      } else if (interrupted) {
+        finish({ status: "INTERRUPTED", exitCode: null, signal });
       } else {
         finish({ status: exitCode === 0 ? "PASS" : "FAIL", exitCode: exitCode ?? 1, signal });
       }
     });
+
+    process.once("SIGINT", handleInterrupt);
+    process.once("SIGTERM", handleInterrupt);
+
+    if (Number.isFinite(heartbeatMs) && heartbeatMs > 0 && onHeartbeat) {
+      heartbeatHandle = setInterval(() => {
+        onHeartbeat((performance.now() - startedAt) / 1000);
+      }, heartbeatMs);
+    }
 
     if (Number.isFinite(timeoutMs)) {
       timeoutHandle = setTimeout(() => {
