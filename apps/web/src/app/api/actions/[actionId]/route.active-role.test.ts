@@ -75,6 +75,8 @@ vi.mock("@/lib/geo/action-department-resolver", () => ({
   resolveActionDepartmentForPersistence: resolveActionDepartmentForPersistenceMock,
 }));
 
+import { PATCH } from "./route";
+
 function buildUpdateClient() {
   const chain = {
     update: (...args: unknown[]) => {
@@ -105,7 +107,6 @@ function buildApprovedAction() {
 
 describe("PATCH /api/actions/:actionId ACTIVE_ROLE boundaries", () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "elu-1" });
     getCurrentUserIdentityMock.mockResolvedValue({
@@ -147,7 +148,6 @@ describe("PATCH /api/actions/:actionId ACTIVE_ROLE boundaries", () => {
       activeRole: "admin",
     });
 
-    const { PATCH } = await import("./route");
     const response = await PATCH(
       new Request("http://localhost/api/actions/action-test-1", {
         method: "PATCH",
@@ -172,7 +172,6 @@ describe("PATCH /api/actions/:actionId ACTIVE_ROLE boundaries", () => {
   });
 
   it("does not grant an elected active role the global impact override", async () => {
-    const { PATCH } = await import("./route");
     const response = await PATCH(
       new Request("http://localhost/api/actions/action-test-1", {
         method: "PATCH",

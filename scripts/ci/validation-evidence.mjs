@@ -4,6 +4,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 const VALIDATION_EVIDENCE_VERSION = 1;
+const WINDOWS_CLEANUP_RETRIES = 5;
+const WINDOWS_CLEANUP_RETRY_DELAY_MS = 50;
+const TRANSIENT_CLEANUP_ERRORS = new Set(["EBUSY", "ENOTEMPTY", "EPERM"]);
 export const VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
   "artifacts",
   "validation",
@@ -104,6 +107,34 @@ function evidencePath(repositoryRoot, candidateFingerprint) {
   return path.join(evidenceRoot(repositoryRoot), `${candidateFingerprint}.json`);
 }
 
+function sleepSync(milliseconds) {
+  const signal = new Int32Array(new SharedArrayBuffer(4));
+  Atomics.wait(signal, 0, 0, milliseconds);
+}
+
+export function removePathWithRetry(
+  target,
+  {
+    recursive = false,
+    force = true,
+    maxRetries = process.platform === "win32" ? WINDOWS_CLEANUP_RETRIES : 0,
+    retryDelayMs = WINDOWS_CLEANUP_RETRY_DELAY_MS,
+    remove = fs.rmSync,
+    sleep = sleepSync,
+  } = {},
+) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      remove(target, { recursive, force });
+      return;
+    } catch (error) {
+      const code = error && typeof error === "object" ? error.code : undefined;
+      if (!TRANSIENT_CLEANUP_ERRORS.has(code) || attempt >= maxRetries) throw error;
+      sleep(retryDelayMs * (2 ** attempt));
+    }
+  }
+}
+
 export function readFastValidationEvidence({
   repositoryRoot = process.cwd(),
   candidateFingerprint,
@@ -144,13 +175,13 @@ export function cleanupValidationEvidence({
 } = {}) {
   if (!candidateFingerprint) return;
   const target = evidencePath(repositoryRoot, candidateFingerprint);
-  fs.rmSync(target, { force: true });
+  removePathWithRetry(target);
   const root = evidenceRoot(repositoryRoot);
   if (fs.existsSync(root) && fs.readdirSync(root).length === 0) {
-    fs.rmdirSync(root);
+    removePathWithRetry(root, { recursive: true });
     const validationRoot = path.dirname(root);
     if (fs.existsSync(validationRoot) && fs.readdirSync(validationRoot).length === 0) {
-      fs.rmdirSync(validationRoot);
+      removePathWithRetry(validationRoot, { recursive: true });
     }
   }
 }

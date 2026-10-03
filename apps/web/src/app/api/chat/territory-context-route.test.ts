@@ -22,6 +22,8 @@ vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: serverMock })
 vi.mock("@/lib/chat/chat-notifications", () => ({ createChatNotificationsForMessage: notificationsMock }));
 vi.mock("@/lib/community/discussion-rate-limit", () => ({ reserveDiscussionMessageSlot: reserveMock, toDiscussionRateLimitErrorPayload: vi.fn() }));
 
+import { GET, POST } from "./route";
+
 describe("chat territory context", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -46,7 +48,6 @@ describe("chat territory context", () => {
     rlsMock.mockResolvedValue(supabaseMock.supabase);
     serverMock.mockReturnValue(supabaseMock.serviceSupabase);
 
-    const { GET, POST } = await import("./route");
     const readResponse = await GET(new Request("http://localhost/api/chat?channelType=territory&arrondissementId=15"));
     expect(readResponse.status).toBe(200);
 

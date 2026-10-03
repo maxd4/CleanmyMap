@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const runnerRelativePath = ".gitnexus/run.cjs";
+export const GITNEXUS_COMMAND_TIMEOUT_MS = 10_000;
 
 export function parseArgs(argv) {
   if (argv.length === 0) {
@@ -21,15 +22,20 @@ export function parseArgs(argv) {
   throw new Error("Usage: node scripts/audits/audit-gitnexus.mjs [--cycles]");
 }
 
-export function runGitNexusCommand(repoDirectory, args) {
+export function runGitNexusCommand(
+  repoDirectory,
+  args,
+  { timeoutMs = GITNEXUS_COMMAND_TIMEOUT_MS } = {},
+) {
   const result = spawnSync(process.execPath, [runnerRelativePath, ...args], {
     cwd: repoDirectory,
     encoding: "utf8",
     stdio: ["inherit", "pipe", "pipe"],
+    timeout: timeoutMs,
     windowsHide: true,
   });
 
-  if (result.error) {
+  if (result.error && result.error.code !== "ETIMEDOUT") {
     throw new Error(`GitNexus command failed: ${result.error.message}`);
   }
 
@@ -37,6 +43,7 @@ export function runGitNexusCommand(repoDirectory, args) {
     status: result.status ?? 1,
     stdout: result.stdout ?? "",
     stderr: result.stderr ?? "",
+    timedOut: result.error?.code === "ETIMEDOUT",
   };
 }
 
@@ -68,6 +75,12 @@ export function main(argv = process.argv.slice(2), repoDirectory = repoRoot) {
     const result = runGitNexusCommand(repoDirectory, args);
     process.stdout.write(result.stdout);
     process.stderr.write(result.stderr);
+    if (result.timedOut) {
+      console.error(
+        `HOST_ENVIRONMENT: GitNexus command "${args.join(" ")}" exceeded the bounded ${GITNEXUS_COMMAND_TIMEOUT_MS} ms timeout; the local runner or graph store is not responsive.`,
+      );
+      return 1;
+    }
     if (result.status !== 0) {
       return result.status;
     }

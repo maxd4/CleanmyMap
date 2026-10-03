@@ -33,3 +33,14 @@ test("GitNexus audit captures a non-zero report for its parent checker", (t) => 
   assert.equal(result.status, 1);
   assert.match(result.stdout, /cycles_found/);
 });
+
+test("GitNexus audit bounds a hung local runner", (t) => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-timeout-"));
+  const runnerPath = path.join(repoRoot, ".gitnexus", "run.cjs");
+  fs.mkdirSync(path.dirname(runnerPath), { recursive: true });
+  fs.writeFileSync(runnerPath, "setInterval(() => {}, 1000);\n");
+  t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
+
+  const result = runGitNexusCommand(repoRoot, ["status"], { timeoutMs: 50 });
+  assert.equal(result.timedOut, true);
+});
