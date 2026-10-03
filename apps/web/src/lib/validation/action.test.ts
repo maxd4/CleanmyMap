@@ -214,6 +214,19 @@ describe("createActionSchema", () => {
     expect(forgedDistance.success).toBe(false);
   });
 
+  it("does not allow clients to forge the server-promoted GPS tracking source", () => {
+    const result = createActionSchema.safeParse({
+      ...basePayload,
+      geometrySource: "gps_tracking",
+      manualDrawing: {
+        kind: "polyline",
+        coordinates: [[48.85, 2.35], [48.86, 2.36]],
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("uses the canonical five-million bound for every ordinary count alias", () => {
     for (const field of ["cigaretteButts", "cigaretteButtsCount"] as const) {
       expect(

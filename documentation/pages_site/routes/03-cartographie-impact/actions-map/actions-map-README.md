@@ -304,7 +304,8 @@ La couleur porte uniquement la lecture de pollution. Elle ne porte jamais la
 fiabilité géométrique. La présentation publique distingue les provenances
 suivantes, sur la carte, dans la légende, les tooltips et les popups :
 
-- `Trace GPS observée` : trace GPX fournie par l'utilisateur, trait plein ;
+- `Trace GPS observée` : trace terrain `gps_tracking` issue d'une mission mobile
+  liée, ou trace GPX `gpx_import` fournie par l'utilisateur, trait plein ;
 - `Parcours déclaré` : parcours dessiné ou déclaré, trait plein ;
 - `Parcours reconstruit` : parcours piéton retourné par le réseau, trait
   pointillé régulier et opacité réduite ;
@@ -319,6 +320,11 @@ suivantes, sur la carte, dans la légende, les tooltips et les popups :
 Un trait pointillé représente une hypothèse géographique, jamais une trace GPS
 observée. L'épaisseur sert uniquement à la sélection et à la lisibilité ; elle
 ne constitue pas un score.
+
+La mission mobile et ses `gps_points` restent privés et owner-scoped. `/actions/map`
+reçoit uniquement la projection `gps_tracking` via le contrat normal de l'action,
+sans lire les missions ni exécuter de requête GPS par action. Ainsi, le tracking
+GPS est une observation terrain et la reconstruction réseau une hypothèse.
 
 Une action sans tracé réel peut recevoir une géométrie reconstruite côté serveur.
 La topologie canonique est `loop` ou `point_to_point`, indépendamment de
@@ -337,7 +343,7 @@ indicative ; une ancienne donnée sans ces métadonnées reste rendue comme
 `Parcours estimé`, sans inventer un fournisseur.
 
 Les distances gardent leur provenance et ne sont pas recalculées sous un
-libellé générique : `Distance observée` pour un GPX, `Distance du parcours
+libellé générique : `Distance observée` pour un tracking GPS ou un GPX, `Distance du parcours
 reconstruit` pour un parcours réseau, `Parcours estimé` accompagné de
 `Distance cible` pour une estimation réseau, et `Distance indicative à vol
 d'oiseau` pour le repli. Une distance cible isolée reste libellée `Distance

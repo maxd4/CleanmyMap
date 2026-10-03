@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { getAuthenticatedSupabaseClient } from './supabase';
+import { createLinkedMission } from './linked-mission-service';
 import {
   getStoredMissionId,
   setStoredMissionId,
@@ -28,6 +29,8 @@ export const EXPO_GO_TRACKING_WARNING =
   "Le GPS en arrière-plan ne fonctionne pas dans Expo Go. Utilise un development build (npx expo run:android ou npx expo run:ios).";
 export const CLERK_SESSION_REQUIRED_ERROR =
   "Connexion Clerk requise pour accéder à cette mission.";
+
+export { createLinkedMission } from './linked-mission-service';
 
 function backgroundLocationOptions() {
   return {
@@ -213,11 +216,12 @@ export async function startTracking(missionId: string): Promise<ServiceResult<Mi
 export async function startMobileMission(
   volunteerId: string,
   label = 'Action bénévole mobile',
+  actionId?: string | null,
 ): Promise<ServiceResult<Mission>> {
   const permissionResult = await requestTrackingPermissions();
   if (!permissionResult.ok) return permissionResult;
 
-  const missionResult = await createMission(volunteerId, label);
+  const missionResult = await createMission(volunteerId, label, actionId);
   if (!missionResult.ok) return missionResult;
 
   const trackingResult = await startTracking(missionResult.data.id);
@@ -227,7 +231,11 @@ export async function startMobileMission(
   return trackingResult;
 }
 
-export async function createMission(volunteerId: string, label = 'Action bénévole mobile'): Promise<ServiceResult<Mission>> {
+export async function createMission(
+  volunteerId: string,
+  label = 'Action bénévole mobile',
+  actionId?: string | null,
+): Promise<ServiceResult<Mission>> {
   const normalizedVolunteerId = volunteerId.trim();
   const normalizedLabel = label.trim();
 
@@ -237,6 +245,10 @@ export async function createMission(volunteerId: string, label = 'Action bénév
 
   if (!normalizedLabel) {
     return { ok: false, error: 'Libellé de mission requis.' };
+  }
+
+  if (actionId?.trim()) {
+    return createLinkedMission(normalizedLabel, actionId.trim());
   }
 
   const client = await getAuthenticatedSupabaseClient();

@@ -57,6 +57,11 @@ describe("geometry presentation provenance", () => {
     expect(getGeometryPresentation(buildItem("gpx_import")).label).toBe(
       "Trace GPS observée",
     );
+    expect(getGeometryPresentation(buildItem("gps_tracking"))).toMatchObject({
+      label: "Trace GPS observée",
+      reality: "real",
+      variant: "observed",
+    });
     expect(getGeometryPresentation(buildItem("manual")).label).toBe(
       "Parcours déclaré",
     );

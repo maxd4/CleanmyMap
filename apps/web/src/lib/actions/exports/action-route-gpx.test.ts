@@ -93,6 +93,19 @@ describe("action-route-gpx export adapter", () => {
     expect(xml).not.toContain("Stop CleanMyMap");
   });
 
+  it("exports a promoted GPS tracking observation without routing it", () => {
+    const xml = buildActionRouteGpxDocument({
+      operationalRoute,
+      drawing: { coordinates: [[48.8, 2.3], [48.81, 2.31]] },
+      drawingSource: "gps_tracking",
+    });
+
+    expect(xml).toContain("Trace GPS observée");
+    expect(xml).toContain('lat="48.8" lon="2.3"');
+    expect(xml).not.toContain('lat="48.85" lon="2.35"');
+    expect(xml).not.toContain("Stop CleanMyMap");
+  });
+
   it("exports an exploitable persisted route geometry when no operational route exists", () => {
     const xml = buildActionRouteGpxDocument({
       drawing: { coordinates: [[48.82, 2.32], [48.83, 2.33]] },

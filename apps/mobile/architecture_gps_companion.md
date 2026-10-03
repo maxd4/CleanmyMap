@@ -64,6 +64,7 @@ L'application mobile utilise Clerk comme identité canonique, au même titre que
 |---|---|---|---|
 | `missions` | `volunteer_id` | `text` | Identifiant propriétaire correspondant au `sub` Clerk |
 | `missions` | `created_by` | `text` | Identifiant Clerk du créateur côté site |
+| `missions` | `action_id` | `uuid` nullable, FK | Relation serveur optionnelle vers l'action ; une mission autonome reste à `NULL` et plusieurs observations peuvent être arbitrées par le serveur |
 | `missions` | `status`, `started_at`, `ended_at` | états et timestamps | Seules ces colonnes sont directement modifiables par le mobile |
 | `missions` | `distance_m`, `duration_s` | `integer` | Métriques dérivées finalisées par le trigger serveur |
 | `gps_points` | `mission_id`, coordonnées et timestamps | schéma GPS | Accès autorisé seulement pour une mission appartenant au `sub` Clerk |
@@ -71,7 +72,10 @@ L'application mobile utilise Clerk comme identité canonique, au même titre que
 Les policies courantes ciblent le rôle `authenticated` et rapprochent le
 `sub` du JWT Clerk de `missions.volunteer_id`. Les policies de `gps_points`
 utilisent la même identité par l'intermédiaire de la mission liée. Le mobile
-ne reçoit pas de droit d'écriture sur `distance_m` ou `duration_s`.
+ne reçoit pas de droit d'écriture sur `distance_m` ou `duration_s`, ni sur
+`action_id`. Lorsqu'une mission doit être liée à une action, l'app appelle la
+route web authentifiée dédiée ; le site vérifie le créateur, l'organisateur ou
+la participation confirmée avant que le serveur n'écrive cette relation.
 
 ### Finalisation des métriques
 
@@ -82,6 +86,27 @@ Lorsqu'une mission passe à `completed`, ce trigger `BEFORE UPDATE` lit les
 `gps_points` visibles au propriétaire Clerk, calcule la distance Haversine et
 la durée, puis renseigne `NEW.distance_m` et `NEW.duration_s`. Il est
 `SECURITY INVOKER` et n'ajoute aucun droit d'écriture client sur ces colonnes.
+
+Après cette étape, le trigger serveur de la migration
+`apps/web/supabase/migrations/20261003000001_link_missions_to_actions.sql`
+peut promouvoir une mission liée, `completed`, disposant d'au moins deux
+coordonnées valides distinctes, vers la projection géométrique de l'action.
+La LineString est construite depuis les `gps_points` persistés, dans l'ordre
+`recorded_at, id`, avec seulement les doublons consécutifs manifestes retirés.
+La projection reçoit `geometry_source = "gps_tracking"` et
+`preparation_data.routeObservedDistanceKm` depuis `missions.distance_m` ; le
+mobile ne calcule ni ne persiste ces métriques. Une mission autonome n'alimente
+aucune action.
+
+Si plusieurs missions terminées sont liées à la même action, le serveur choisit
+déterministement celle dont `ended_at` est le plus ancien, puis le plus petit
+`id` en cas d'égalité. Une observation GPS déjà promue reste prioritaire sur
+toute reconstruction ultérieure.
+
+`missions` et `gps_points` restent des données privées owner-scoped. La carte
+publique ne lit jamais ces tables : elle reçoit seulement la géométrie
+`gps_tracking` via le contrat normal de l'action. Ici, le tracking GPS est une
+observation terrain ; une reconstruction réseau reste une hypothèse.
 
 L'identité Clerk, les RLS missions/GPS, la finalisation des métriques et le
 chargement Clerk headless avec le `tokenCache` SecureStore sont finalisés et
@@ -125,9 +150,10 @@ sequenceDiagram
     Vol->>Vol: Bouton "Fin"
     Vol->>DB: UPDATE mission status='completed', ended_at=now()
     DB->>DB: BEFORE UPDATE trigger<br/>calcule distance + durée
+    DB->>DB: AFTER UPDATE trigger<br/>projette la trace liée vers l'action
 
-    Admin->>DB: SELECT mission + gps_points
-    Admin->>Admin: Affiche tracé carte + durée + distance
+    Site->>DB: SELECT action via le contrat public
+    Site->>Site: Affiche la projection publique de la trace
 ```
 
 ### Détail des étapes
@@ -144,7 +170,10 @@ sequenceDiagram
    `status → completed` et `ended_at` sont envoyés. Le trigger serveur calcule
    les métriques dans la même mise à jour.
 
-6. **Consultation** : le site récupère les points, calcule le tracé (Leaflet/Mapbox), affiche durée et distance.
+6. **Consultation** : pour une mission liée, le site lit l'action et son contrat
+   géométrique `gps_tracking`. La mission et ses points restent consultables
+   uniquement dans leur surface privée autorisée ; la carte n'effectue aucune
+   requête GPS par action.
 
 ---
 

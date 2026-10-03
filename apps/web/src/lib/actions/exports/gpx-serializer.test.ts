@@ -118,6 +118,19 @@ describe("serializeActionGeometryToGpx", () => {
     expect(xml).not.toMatch(/routeTargetDistance|km\/h|duration/i);
   });
 
+  it("labels a promoted GPS tracking trace as observed without rewriting it", () => {
+    const xml = serializeActionGeometryToGpx({
+      tracks: [{
+        geometry: openGeometry,
+        geometrySource: "gps_tracking",
+      }],
+    });
+
+    expect(xml).toContain("Trace GPS observée");
+    expect(xml).toContain('lat="48.85" lon="2.35"');
+    expect(xml).toContain('lat="48.87" lon="2.37"');
+  });
+
   it("preserves waypoints without changing tracks and keeps multiple routes separate", () => {
     const xml = serializeActionGeometryToGpx({
       waypoints: [

@@ -63,6 +63,10 @@ export function buildCreateActionGeometry(
   finalDrawing: ActionDrawing | null,
   finalGeometrySource?: ActionGeometrySource | null,
 ) {
+  if (finalGeometrySource === "gps_tracking" || payload.geometrySource === "gps_tracking") {
+    throw new Error("La provenance gps_tracking est réservée à la promotion serveur d'une mission.");
+  }
+
   const geometrySource: ActionGeometrySource = finalDrawing
     ? finalGeometrySource ?? payload.geometrySource ?? (payload.manualDrawing
       ? "manual"

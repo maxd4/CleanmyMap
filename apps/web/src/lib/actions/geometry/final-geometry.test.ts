@@ -15,6 +15,11 @@ const manualDrawing = {
   coordinates: [[48.8, 2.3], [48.81, 2.31]] as [number, number][],
 };
 
+const trackingDrawing = {
+  kind: "polyline" as const,
+  coordinates: [[48.9, 2.4], [48.91, 2.41]] as [number, number][],
+};
+
 const operationalRoute: OperationalRoute = {
   version: "operational-route-v1",
   initializedAt: "2026-09-16T10:00:00.000Z",
@@ -48,6 +53,24 @@ const operationalRoute: OperationalRoute = {
 };
 
 describe("resolveFinalActionGeometry", () => {
+  it("keeps a persisted field tracking observation ahead of GPX, manual and reconstruction", () => {
+    const result = resolveFinalActionGeometry({
+      trackingDrawing,
+      trackingSource: "gps_tracking",
+      gpxDrawing,
+      gpxImport: {
+        source: "gpx_import",
+        observedDistanceKm: 1,
+        pointCount: 2,
+        inferredTopology: "point_to_point",
+      },
+      manualDrawing,
+      operationalRoute,
+    });
+
+    expect(result).toMatchObject({ source: "gps_tracking", operationalRoute: null });
+    expect(result?.drawing).toEqual(trackingDrawing);
+  });
   it("selects GPX over manual and operational geometry", () => {
     const result = resolveFinalActionGeometry({
       gpxDrawing,
@@ -145,5 +168,14 @@ describe("resolveFinalActionGeometry", () => {
     });
     expect(gpx.finalGeometry?.source).toBe("gpx_import");
     expect(gpx.manualDrawingSource).toBe("gpx_import");
+
+    const tracking = hydrateActionEditorGeometry({
+      drawing: trackingDrawing,
+      geometrySource: "gps_tracking",
+      operationalRoute,
+    });
+    expect(tracking.trackingDrawing).toEqual(trackingDrawing);
+    expect(tracking.trackingSource).toBe("gps_tracking");
+    expect(tracking.finalGeometry?.source).toBe("gps_tracking");
   });
 });

@@ -664,9 +664,17 @@ que `provenance.geometry` projette la source fine `ActionGeometrySource` vers
 `observed`, `declared`, `reference`, `reconstructed`, `estimated`, `fallback`,
 `missing` ou `unknown`. Ainsi, une trace `gpx_import` est observée, un tracé
 `manual` est déclaré, `reference` est une géométrie connue, `routed` est
-reconstruit, et `estimated_route`/`estimated_area` restent estimés. Cette
-provenance géométrique ne qualifie jamais une mesure d'impact et la confiance
-reste un champ séparé.
+reconstruit, et `estimated_route`/`estimated_area` restent estimés. Une trace
+`gps_tracking` est également observée : elle provient de `gps_points` persistés
+par une mission terrain liée et promue côté serveur. Cette projection ne rend
+jamais la mission ni ses points publics. Cette provenance géométrique ne
+qualifie jamais une mesure d'impact et la confiance reste un champ séparé.
+
+La distinction canonique est donc : `observé ≠ déclaré ≠ référence géographique
+≠ reconstruit ≠ estimé`. `ActionGeometrySource` reste la source de vérité fine ;
+la provenance qualité n'en est qu'une projection sémantique. La provenance
+`ActionDataProvenance` des mesures n'est pas réutilisée pour qualifier une
+géométrie.
 
 L'import administrateur est un `BUSINESS_IMPORT`, pas une preuve d'ownership :
 `importedBy`/l'acteur technique est conservé pour l'exécution et l'audit, mais

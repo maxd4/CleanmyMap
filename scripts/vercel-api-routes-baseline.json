@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-30T17:43:01.000Z",
-  "apiRouteCount": 110,
+  "apiRouteCount": 111,
   "apiRoutes": [
     "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
     "apps/web/src/app/api/account/active-profile/route.ts",
@@ -84,6 +84,7 @@
     "apps/web/src/app/api/homepage/activity/route.ts",
     "apps/web/src/app/api/legal-content-reports/route.ts",
     "apps/web/src/app/api/manifest/route.ts",
+    "apps/web/src/app/api/missions/route.ts",
     "apps/web/src/app/api/newsletter/subscribe/route.ts",
     "apps/web/src/app/api/partners/onboarding-requests/route.ts",
     "apps/web/src/app/api/partners/published-directory/route.ts",

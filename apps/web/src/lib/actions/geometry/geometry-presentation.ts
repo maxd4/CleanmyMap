@@ -99,6 +99,7 @@ export function getGeometryPresentation(
     case "reference":
       return buildPresentation(origin, "real", "Zone de référence", "solid", "reference");
     case "gpx_import":
+    case "gps_tracking":
       return buildPresentation(origin, "real", "Trace GPS observée", "solid", "observed");
     case "routed":
       return buildPresentation(origin, "estimated", "Parcours reconstruit", "dashed", "network");

@@ -85,4 +85,5 @@ describe('mobile identity and server contracts', () => {
     )
     expect(sql).not.toMatch(/grant insert\s*\([^)]*(distance_m|duration_s|created_by)/i)
   })
+
 })

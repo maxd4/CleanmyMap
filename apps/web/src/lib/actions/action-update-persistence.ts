@@ -12,7 +12,7 @@ import {
   buildActionUpdateNotes,
   preserveManualDrawing,
 } from "./action-update-notes";
-import { preserveGpxObservation } from "./action-update-geometry";
+import { preserveObservedRouteGeometry } from "./action-update-geometry";
 
 export class ActionUpdateValidationError extends Error {
   constructor(
@@ -91,6 +91,6 @@ export async function prepareActionUpdate(params: {
     updateData["notes"] = preserveManualDrawing(current.notes, notes);
   }
 
-  preserveGpxObservation(current, updateData);
+  preserveObservedRouteGeometry(current, updateData);
   return { body, currentMetadata, updateData };
 }

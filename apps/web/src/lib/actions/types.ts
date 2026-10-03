@@ -44,6 +44,7 @@ export type ActionGeometryKind = "point" | "polyline" | "polygon";
 export const ACTION_GEOMETRY_SOURCES = [
   "manual",
   "gpx_import",
+  "gps_tracking",
   "reference",
   "routed",
   "estimated_route",
@@ -126,7 +127,7 @@ export type ActionPreparationData = {
   /** Coordinates selected for route endpoints; avoids a second server geocode. */
   midRouteCoordinates?: ActionLocationCoordinates;
   arrivalCoordinates?: ActionLocationCoordinates;
-  /** Measured length of the user-provided GPX trace, kept separate from the target. */
+  /** Measured length of an observed route (GPS tracking or GPX), kept separate from the target. */
   routeObservedDistanceKm?: number;
   /** Canonical metadata for a validated user-provided GPX trace. */
   gpxImport?: ActionGpxImportMetadata;

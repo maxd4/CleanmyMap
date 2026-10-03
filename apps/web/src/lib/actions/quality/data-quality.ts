@@ -85,6 +85,7 @@ function geometryProvenance(
 
   switch (source) {
     case "gpx_import":
+    case "gps_tracking":
       return "observed";
     case "manual":
       return "declared";

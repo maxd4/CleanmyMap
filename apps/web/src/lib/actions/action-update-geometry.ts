@@ -1,17 +1,18 @@
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import type { ActionRow } from "@/types/database";
 
-export function preserveGpxObservation(
+export function preserveObservedRouteGeometry(
   current: ActionRow,
   updateData: Record<string, unknown>,
 ): void {
   const currentPreparationData = normalizeActionPreparationData(
     current.preparation_data ?? {},
   );
-  const hasGpxObservation =
+  const hasObservedRoute =
     current.geometry_source === "gpx_import" ||
+    current.geometry_source === "gps_tracking" ||
     currentPreparationData.gpxImport?.source === "gpx_import";
-  if (!hasGpxObservation || !updateData["preparation_data"]) return;
+  if (!hasObservedRoute || !updateData["preparation_data"]) return;
 
   const nextPreparationData = updateData["preparation_data"] as ActionRow["preparation_data"];
   updateData["preparation_data"] = {
@@ -24,3 +25,6 @@ export function preserveGpxObservation(
       : {}),
   };
 }
+
+/** @deprecated Use preserveObservedRouteGeometry for both GPX and tracking. */
+export const preserveGpxObservation = preserveObservedRouteGeometry;
