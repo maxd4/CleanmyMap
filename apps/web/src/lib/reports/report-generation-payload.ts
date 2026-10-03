@@ -1,14 +1,6 @@
 import { z } from "zod";
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 
-export type {
-  PdfReportChapter,
-  PdfReportColumn,
-  PdfReportData,
-  PdfReportPayload,
-  PdfReportStat,
-} from "@/lib/pdf-export/simple-pdf";
-
 const pdfReportColumnSchema = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
