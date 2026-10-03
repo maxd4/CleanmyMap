@@ -9,13 +9,15 @@ import { fileURLToPath } from "node:url";
 import { runCommandWithTimeout } from "../ci/validation-process.mjs";
 import {
   GITNEXUS_HEARTBEAT_MS,
-  GITNEXUS_STEP_TIMEOUT_MS,
+  GITNEXUS_STEP_TIMEOUTS_MS,
 } from "../audits/audit-gitnexus.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const baselinePath = path.join(repositoryRoot, "scripts", "checks", "cycles-baseline.json");
 const auditScriptPath = path.join(repositoryRoot, "scripts", "audits", "audit-gitnexus.mjs");
-export const GITNEXUS_AUDIT_TIMEOUT_MS = GITNEXUS_STEP_TIMEOUT_MS * 3 + 5_000;
+// The outer audit budget is the sum of the independently bounded phases plus
+// a small process-start/stream-drain allowance. It is not a second 10 s gate.
+export const GITNEXUS_AUDIT_TIMEOUT_MS = Object.values(GITNEXUS_STEP_TIMEOUTS_MS).reduce((sum, timeoutMs) => sum + timeoutMs, 30_000);
 
 export class CycleGateError extends Error {
   constructor(code, message) {
@@ -86,11 +88,16 @@ function cycleGateError(code, message) {
 }
 
 function classifyAuditResult(result) {
-  if (result.timedOut || result.interrupted) {
+  if (result.interrupted) {
+    throw cycleGateError("HOST_ENVIRONMENT", "GitNexus audit process was interrupted.");
+  }
+  if (result.timedOut) {
     throw cycleGateError("TIMEOUT", "GitNexus audit process timed out or was interrupted.");
   }
   const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
-  const timeout = output.match(/HOST_ENVIRONMENT: GitNexus step timed out[^\r\n]*/);
+  const runnerMissing = output.match(/GITNEXUS_STATUS: RUNNER_MISSING|HOST_ENVIRONMENT: GitNexus runner missing/);
+  if (runnerMissing) throw cycleGateError("RUNNER_MISSING", runnerMissing[0]);
+  const timeout = output.match(/HOST_ENVIRONMENT: GitNexus (?:step|command) timed out[^\r\n]*/);
   if (timeout) throw cycleGateError("TIMEOUT", timeout[0]);
   const hostEnvironment = output.match(/HOST_ENVIRONMENT:[^\r\n]*/);
   if (hostEnvironment) throw cycleGateError("HOST_ENVIRONMENT", hostEnvironment[0]);
@@ -162,7 +169,13 @@ export async function runCycleGate({ runAudit = runAuditProcess, baseline: suppl
 async function main() {
   try {
     const result = await runCycleGate();
-    console.log(`CYCLES_STATUS: ${result.gateStatus}`);
+    const status = result.gateStatus === "FAIL_NEW_CYCLE"
+      ? "NEW_CYCLE"
+      : result.gateStatus === "FAIL_STALE_BASELINE"
+        ? "STALE_BASELINE"
+        : result.gateStatus;
+    console.log(`CYCLES_STATUS: ${status}`);
+    console.log(`CYCLES_GATE_STATUS: ${result.gateStatus}`);
     console.log(`GitNexus cycles: ${result.cycles.length} current, ${result.comparison.added.length} new, ${result.comparison.stale.length} stale baseline entrie(s).`);
     if (result.comparison.added.length > 0 || result.comparison.stale.length > 0) {
       const cyclesByFingerprint = new Map(result.cycleObjects.map((cycle) => [cycleFingerprint(cycle), cycle]));

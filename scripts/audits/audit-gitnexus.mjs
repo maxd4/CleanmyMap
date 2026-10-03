@@ -12,10 +12,23 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 const runnerRelativePath = ".gitnexus/run.cjs";
 const indexMetadataRelativePath = ".gitnexus/gitnexus.json";
 export const GITNEXUS_EXPECTED_VERSION = "1.6.12";
-// The repository graph is large enough that a normal Windows index can exceed
-// a few seconds, but a broken native graph store must still terminate.
-export const GITNEXUS_STEP_TIMEOUT_MS = 180_000;
+// These limits are per GitNexus phase, based on observed runs of this
+// repository: analyze reached ~171 s, status ~53 s, and cycle enumeration
+// ~2 s.  They leave bounded headroom for a healthy runner without treating
+// the previous 10 s ceiling as an environment failure.
+export const GITNEXUS_STEP_TIMEOUTS_MS = Object.freeze({
+  analyze: 300_000,
+  status: 90_000,
+  cycles: 30_000,
+});
 export const GITNEXUS_HEARTBEAT_MS = 10_000;
+
+export function getGitNexusStepTimeoutMs(args) {
+  if (args[0] === "analyze") return GITNEXUS_STEP_TIMEOUTS_MS.analyze;
+  if (args[0] === "status") return GITNEXUS_STEP_TIMEOUTS_MS.status;
+  if (args[0] === "check" && args.includes("--cycles")) return GITNEXUS_STEP_TIMEOUTS_MS.cycles;
+  return GITNEXUS_STEP_TIMEOUTS_MS.status;
+}
 
 export function parseArgs(argv) {
   if (argv.length === 0) return { cycles: false };
@@ -94,8 +107,9 @@ export async function runGitNexusCommand(
   repoDirectory,
   args,
   {
-    timeoutMs = GITNEXUS_STEP_TIMEOUT_MS,
+    timeoutMs,
     heartbeatMs = GITNEXUS_HEARTBEAT_MS,
+    runCommand = runCommandWithTimeout,
     writeStdout = (text) => process.stdout.write(text),
     writeStderr = (text) => process.stderr.write(text),
     writeDiagnostic = (line) => process.stderr.write(`${line}\n`),
@@ -103,10 +117,10 @@ export async function runGitNexusCommand(
 ) {
   const label = stepLabel(args);
   writeDiagnostic(`GITNEXUS_STEP_START: ${label}`);
-  const result = await runCommandWithTimeout({
+  const result = await runCommand({
     command: { executable: process.execPath, args: [runnerRelativePath, ...args] },
     cwd: repoDirectory,
-    timeoutMs,
+    timeoutMs: timeoutMs ?? getGitNexusStepTimeoutMs(args),
     heartbeatMs,
     onStdout: writeStdout,
     onStderr: writeStderr,
@@ -131,6 +145,7 @@ function printPreflight(preflight, writeDiagnostic) {
   writeDiagnostic(`RUNNER_PATH: ${preflight.runnerPath}`);
   writeDiagnostic(`RUNNER_PRESENT: ${preflight.present ? "yes" : "no"}`);
   if (!preflight.present) {
+    writeDiagnostic("GITNEXUS_STATUS: RUNNER_MISSING");
     writeDiagnostic("HOST_ENVIRONMENT: GitNexus runner missing");
     writeDiagnostic("SETUP_CANONICAL: npm install --global gitnexus@1.6.12");
     writeDiagnostic("SETUP_CANONICAL: gitnexus analyze --index-only");
@@ -167,12 +182,14 @@ export async function main(
   for (const args of commands) {
     const result = await runGitNexusCommand(repoDirectory, args, { writeDiagnostic });
     if (result.timedOut) {
+      writeDiagnostic("GITNEXUS_STATUS: TIMEOUT");
       writeDiagnostic("HOST_ENVIRONMENT: GitNexus step timed out");
       writeDiagnostic(`STEP: ${stepLabel(args)}`);
       writeDiagnostic(`ELAPSED_SECONDS: ${Math.ceil(result.elapsedSeconds)}`);
       return 1;
     }
     if (result.interrupted) {
+      writeDiagnostic("GITNEXUS_STATUS: HOST_ENVIRONMENT");
       writeDiagnostic("HOST_ENVIRONMENT: GitNexus step interrupted");
       writeDiagnostic(`STEP: ${stepLabel(args)}`);
       writeDiagnostic(`ELAPSED_SECONDS: ${Math.ceil(result.elapsedSeconds)}`);

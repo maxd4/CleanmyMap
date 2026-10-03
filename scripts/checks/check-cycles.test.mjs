@@ -55,7 +55,7 @@ test("a GitNexus host timeout is classified explicitly", async () => {
         stderr: "HOST_ENVIRONMENT: GitNexus command timed out",
       }),
     }),
-    /HOST_ENVIRONMENT: GitNexus command timed out/,
+    (error) => error.code === "TIMEOUT" && /HOST_ENVIRONMENT: GitNexus command timed out/.test(error.message),
   );
 });
 
@@ -68,7 +68,7 @@ test("a GitNexus runner absence is classified before JSON parsing", async () => 
         stderr: "GITNEXUS_PREFLIGHT\nHOST_ENVIRONMENT: GitNexus runner missing",
       }),
     }),
-    /HOST_ENVIRONMENT: GitNexus runner missing/,
+    (error) => error.code === "RUNNER_MISSING" && /HOST_ENVIRONMENT: GitNexus runner missing/.test(error.message),
   );
 });
 
