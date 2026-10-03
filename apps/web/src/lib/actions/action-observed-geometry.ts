@@ -10,7 +10,7 @@ import { isRenderableDrawing, toGeoJsonString } from "./geometry/derived-geometr
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { polylineDistanceKm } from "@/lib/geo/geodesic-distance";
 
-export type ObservedActionGeometrySource = Extract<
+type ObservedActionGeometrySource = Extract<
   ActionGeometrySource,
   "gpx_import" | "gps_tracking"
 >;
