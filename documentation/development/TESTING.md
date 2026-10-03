@@ -614,6 +614,24 @@ identifiés et échoue sur tout nouveau cycle ou baseline obsolète. Les deux
 gates sont exécutés en `COMPLET` et dans la CI ; ils ne sont pas ajoutés à
 `RAPIDE` pour éviter une analyse globale à chaque changement ciblé.
 
+### Évidence compacte des gates de qualité
+
+Le job CI `web-quality` écrit une projection JSON compacte après chaque gate,
+dans `artifacts/quality-evidence/`. Cette projection est produite à partir du
+résultat déjà calculé par le processus `quality:dead-code`,
+`quality:complexity`, `quality:duplication` ou `quality:cycles` ; elle ne relance
+ni Knip, ni ESLint, ni jscpd, ni GitNexus. Chaque fichier porte le
+`candidateSha`, l'identité de baseline disponible, le statut `PASS`,
+`PASS_WITH_GRACE` ou `FAIL`, les métriques et les compteurs de findings. Une
+preuve manquante, invalide ou rattachée à un autre SHA est `NOT_RUN` dans le
+Job Summary et ne devient jamais implicitement `PASS`.
+
+Le dernier step de `web-quality` publie un tableau lisible dans le Job Summary
+et conserve uniquement ces JSON compacts pendant trois jours. Les rapports
+bruts temporaires de jscpd restent supprimés par leur owner et ne sont pas
+publiés systématiquement. Les gates restent indépendants : la production de
+l'évidence et du résumé ne neutralise jamais leur code de sortie bloquant.
+
 ## Regression gates
 
 La commande canonique est :

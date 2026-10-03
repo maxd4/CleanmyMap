@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
 
 export const DEAD_CODE_BASELINE_SCHEMA_VERSION = 1;
 export const DEAD_CODE_JUSTIFICATION_SCHEMA_VERSION = 1;
@@ -326,7 +327,34 @@ async function main() {
     const report = runKnipReport();
     const result = runDeadCodePolicy({ report });
     console.log(formatDeadCodeReport(result));
-    if (hasBlockingDeadCodeFindings(result.comparison)) {
+    const blocking = hasBlockingDeadCodeFindings(result.comparison);
+    writeQualityEvidence({
+      gate: "dead-code",
+      candidateSha: resolveCandidateSha(repositoryRoot),
+      status: blocking ? "FAIL" : "PASS",
+      metrics: {
+        currentFindings: result.comparison.currentCount,
+        baselineFindings: result.comparison.baselineCount,
+        historicalActionable: result.comparison.historicalActionableFindings.length,
+        keepJustified: result.comparison.keepJustifiedFindings.length,
+        staleKeepJustified: result.comparison.staleKeepJustifications.length,
+      },
+      newFindings: result.comparison.newFindings.length,
+      resolvedFindings: result.comparison.resolvedFindings.length,
+      historicalFindings: result.comparison.historicalActionableFindings.length,
+      baseline: {
+        sourceCommit: result.baseline.sourceCommit,
+        tool: result.baseline.tool,
+        toolVersion: result.baseline.toolVersion,
+        config: result.baseline.config,
+      },
+      details: {
+        newFindingIds: result.comparison.newFindings.map(findingId),
+        resolvedFindingIds: result.comparison.resolvedFindings.map(findingId),
+        staleKeepJustifiedIds: result.comparison.staleKeepJustifications.map((finding) => finding.id),
+      },
+    });
+    if (blocking) {
       console.error(
         `FAIL: ${result.comparison.newFindings.length} new dead-code finding(s); ` +
         `${result.comparison.staleKeepJustifications.length} stale KEEP_JUSTIFIED finding(s).`,

@@ -16,6 +16,7 @@ import {
   validateBaselineShape,
 } from "./complexity-policy.mjs";
 import { createGitRepositoryView } from "./repository-view.mjs";
+import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
 
 const repositoryRoot = process.cwd();
 const baselinePath = path.join(repositoryRoot, "scripts", "checks", "complexity-baseline.json");
@@ -311,6 +312,16 @@ async function main() {
     }
   }
   if (changedOnly && changedRanges.size === 0) {
+    writeQualityEvidence({
+      gate: "complexity",
+      candidateSha: resolveCandidateSha(repositoryRoot),
+      status: "PASS",
+      metrics: { measuredFunctions: 0, violations: 0, baselineStale: 0, improvementsDetected: 0, reviewSignals: 0 },
+      newFindings: 0,
+      resolvedFindings: null,
+      historicalFindings: null,
+      baseline: { sourceCommit: baseline.sourceCommit, policyFingerprint: baseline.policyFingerprint },
+    });
     console.log(`PASS: no changed files under ${sourceRoots.join(", ")} for targeted complexity policy.`);
     return;
   }
@@ -347,6 +358,28 @@ async function main() {
     changedHunks,
     sourceRoots,
     stalePaths: changedOnly ? changedPaths : null,
+  });
+  const blocking = result.failures.length > 0 || result.stale.length > 0;
+  writeQualityEvidence({
+    gate: "complexity",
+    candidateSha: resolveCandidateSha(repositoryRoot),
+    status: blocking ? "FAIL" : "PASS",
+    metrics: {
+      measuredFunctions: metrics.length,
+      violations: result.failures.length,
+      baselineStale: result.stale.length,
+      improvementsDetected: result.improvements.length,
+      reviewSignals: result.reviews.length,
+    },
+    newFindings: result.failures.length,
+    resolvedFindings: null,
+    historicalFindings: null,
+    baseline: { sourceCommit: baseline.sourceCommit, policyFingerprint: baseline.policyFingerprint },
+    details: {
+      failureKeys: result.failures.map((failure) => failure.key),
+      improvementKeys: result.improvements.map((improvement) => improvement.key),
+      staleKeys: result.stale.map((entry) => baselineKey(entry.metric, entry.path, entry.functionIdentity)),
+    },
   });
 
   console.log(`Complexity policy: ${metrics.length} function metrics measured.`);

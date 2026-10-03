@@ -105,6 +105,13 @@ assert.match(ciWorkflow, /web-governance:\n    needs: scope/);
 const webQualityJob = ciWorkflow.match(/  web-quality:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";
 assert.match(webQualityJob, /- name: Duplication ratchet/);
 assert.match(webQualityJob, /run: npm run quality:duplication/);
+for (const gate of ["dead-code", "complexity", "duplication", "cycles"]) {
+  assert.equal((webQualityJob.match(new RegExp(`npm run quality:${gate}`, "g")) ?? []).length, 1);
+}
+assert.match(webQualityJob, /- name: Publish web-quality summary[\s\S]*?run: node scripts\/ci\/write-quality-summary\.mjs/);
+assert.match(webQualityJob, /- name: Upload compact web-quality evidence[\s\S]*?path: artifacts\/quality-evidence[\s\S]*?retention-days: 3/);
+assert.match(webQualityJob, /- name: Install GitNexus[\s\S]*?if: \$\{\{ !cancelled\(\)/);
+assert.match(webQualityJob, /- name: GitNexus cycle ratchet[\s\S]*?if: \$\{\{ !cancelled\(\)/);
 assert.match(
   webQualityJob,
   /if: \$\{\{ !cancelled\(\) && steps\.checkout\.outcome == 'success' && steps\.setup_node\.outcome == 'success' && steps\.install_node_dependencies\.outcome == 'success' \}\}/,
@@ -144,3 +151,4 @@ assert.match(ciWorkflow, /Mobile Vitest coverage ratchet/);
 assert.match(ciWorkflow, /Mobile lint/);
 assert.match(ciWorkflow, /Architectural Semgrep \(mobile-only\)/);
 assert.match(ciWorkflow, /web_code_relevant != 'true'/);
+assert.match(e2eWorkflow, /retention-days:\s*3/);

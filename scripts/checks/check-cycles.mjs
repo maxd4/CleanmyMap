@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
 
 import { runCommandWithTimeout } from "../ci/validation-process.mjs";
 import {
@@ -163,12 +164,34 @@ export async function runCycleGate({ runAudit = runAuditProcess, baseline: suppl
     : comparison.stale.length > 0
       ? "FAIL_STALE_BASELINE"
       : "PASS";
-  return { report, cycles, comparison, cycleObjects: report.cycles, gateStatus };
+  return { baseline, report, cycles, comparison, cycleObjects: report.cycles, gateStatus };
 }
 
 async function main() {
   try {
     const result = await runCycleGate();
+    writeQualityEvidence({
+      gate: "cycles",
+      candidateSha: resolveCandidateSha(repositoryRoot),
+      status: result.gateStatus === "PASS" ? "PASS" : "FAIL",
+      metrics: {
+        currentCycles: result.cycles.length,
+        newCycles: result.comparison.added.length,
+        baselineStale: result.comparison.stale.length,
+      },
+      newFindings: result.comparison.added.length,
+      resolvedFindings: result.comparison.stale.length,
+      historicalFindings: result.baseline.cycles.length,
+      baseline: {
+        sourceCommit: result.baseline.sourceCommit,
+        tool: result.baseline.tool,
+        toolVersion: result.baseline.toolVersion,
+      },
+      details: {
+        newCycleFingerprints: result.comparison.added,
+        staleCycleFingerprints: result.comparison.stale,
+      },
+    });
     const status = result.gateStatus === "FAIL_NEW_CYCLE"
       ? "NEW_CYCLE"
       : result.gateStatus === "FAIL_STALE_BASELINE"
