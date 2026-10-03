@@ -24,17 +24,6 @@ export type TrainingExampleInsert = {
   status: TrainingExampleStatus;
 };
 
-export type VisionTrainingMetrics = {
-  count: number;
-  labelledCount: number;
-  mae: number | null;
-  rmse: number | null;
-  latestModelVersion: string | null;
-  lowDataWarning: boolean;
-  paused: boolean;
-  statusCounts: Record<TrainingExampleStatus, number>;
-};
-
 function isVisionTrainingEnabled(): boolean {
   return env.VISION_TRAINING_ENABLED === true;
 }

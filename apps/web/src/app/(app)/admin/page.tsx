@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
-import { AdminCreatorConsole } from "@/components/admin/admin-creator-console";
+import { AdminMaxTools } from "@/components/admin/admin-max-tools";
 import { AdminFeedbackAuditTabs } from "@/components/admin/admin-feedback-audit-tabs";
 import { AdminAccessState } from "@/components/ui/admin-access-state";
 import { PageHeader } from "@/components/ui/page-header";
@@ -237,9 +237,9 @@ export default async function AdminPage({
           ) : null}
 
           {role === "max" ? (
-            <AdminCreatorConsole
+            <AdminMaxTools
               displayName={creatorDisplayName}
-              embedded
+              identity={identity}
             />
           ) : null}
           </CmmSectionGroup>
