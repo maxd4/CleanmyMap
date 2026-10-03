@@ -1,12 +1,12 @@
 import { normalizeDeliverableRubrique } from "@/lib/reports/deliverable-name";
 import { formatPdfValue } from "./format-pdf-value";
 
-export type PdfReportColumn = {
+type PdfReportColumn = {
   key: string;
   label: string;
 };
 
-export type PdfReportStat = {
+type PdfReportStat = {
   label: string;
   value: string | number;
   detail?: string;
