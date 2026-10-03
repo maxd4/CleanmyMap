@@ -91,6 +91,7 @@ describe("progression event registry", () => {
       "moderation_first_participation",
       "moderation_multi_family",
       "moderation_tier_unlock",
+      "verified_geometry_contribution",
     ].sort());
 
     for (const eventType of runtimeEventTypes) {
@@ -98,7 +99,7 @@ describe("progression event registry", () => {
     }
   });
 
-  it("exposes exactly the eight CURRENT infinite progressions", () => {
+  it("exposes exactly the CURRENT infinite progressions", () => {
     expect(CURRENT_INFINITE_PROGRESSION_IDS).toEqual([
       "participation",
       "organisation",
@@ -108,8 +109,9 @@ describe("progression event registry", () => {
       "versatility",
       "learning",
       "moderation",
+      "cartography",
     ]);
-    expect(currentInfiniteProgressions()).toHaveLength(8);
+    expect(currentInfiniteProgressions()).toHaveLength(9);
     expect(currentInfiniteProgressions().map((progression) => progression.id)).toEqual(
       [...CURRENT_INFINITE_PROGRESSION_IDS],
     );
@@ -139,6 +141,7 @@ describe("progression event registry", () => {
       "action_traceable_measurement",
       "action_balance_cycle",
       "action_monthly_regularity",
+      "verified_geometry_contribution",
       "clean_zone_task",
       "collective_attendance_confirmed",
       "collective_rsvp_yes_pending",
@@ -179,6 +182,10 @@ describe("progression event registry", () => {
     expect(registry.action_balance_cycle).toEqual({
       classification: "progression",
       progressionId: "versatility",
+    });
+    expect(registry.verified_geometry_contribution).toEqual({
+      classification: "progression",
+      progressionId: "cartography",
     });
     expect(registry.action_declare_pending.classification).toBe("non_progression");
     expect(registry.collective_rsvp_yes_pending.classification).toBe("non_progression");
@@ -232,6 +239,7 @@ describe("progression event registry", () => {
       "versatility",
       "learning",
       "moderation",
+        "cartography",
       ]),
     );
     expect(CURRENT_INFINITE_PROGRESSION_IDS).toContain("versatility");

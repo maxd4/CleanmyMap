@@ -15,7 +15,7 @@ export type ActionPopupContentActionHeaderProps = {
   statusLabel: string;
   geometryLabel: string;
   geometryModeLabel: string;
-  geometryKind: "polyline" | "polygon" | "point" | null;
+  geometryKind: "polyline" | "polygon" | "point" | "multiline" | null;
   geometryPointLabel: string;
   geometryConfidenceLabel: string | null;
   geometryMetricLabel: string | null;

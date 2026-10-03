@@ -43,7 +43,7 @@ export type PublicActionReference = {
   durationMinutes: number;
   objective: string | null;
   route: {
-    kind: "point" | "polyline" | "polygon";
+    kind: "point" | "polyline" | "polygon" | "multiline";
     geojson: string;
   } | null;
   groupJoinEnabled: boolean;

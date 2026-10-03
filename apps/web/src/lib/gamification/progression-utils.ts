@@ -134,6 +134,10 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
     classification: "progression",
     progressionId: "versatility",
   },
+  verified_geometry_contribution: {
+    classification: "progression",
+    progressionId: "cartography",
+  },
   collective_rsvp_yes_pending: {
     classification: "non_progression",
     reason: "Une inscription future ne constitue pas une participation confirmée.",
@@ -160,7 +164,7 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   },
   route_recommend_use: {
     classification: "non_progression",
-    reason: "Usage utilitaire d'itinéraire, à traiter hors des huit progressions.",
+    reason: "Usage utilitaire d'itinéraire, à traiter hors des neuf progressions.",
   },
   infinite_waste_milestone: {
     classification: "impact_badge",
@@ -192,11 +196,11 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   },
   form_tier_unlock: {
     classification: "non_progression",
-    reason: "Événement Forms historique COMPATIBILITY, hors des huit progressions CURRENT.",
+    reason: "Événement Forms historique COMPATIBILITY, hors des neuf progressions CURRENT.",
   },
   form_bonus: {
     classification: "non_progression",
-    reason: "Bonus Forms historique COMPATIBILITY, hors des huit progressions CURRENT.",
+    reason: "Bonus Forms historique COMPATIBILITY, hors des neuf progressions CURRENT.",
   },
   participant_tier_unlock: {
     classification: "progression",

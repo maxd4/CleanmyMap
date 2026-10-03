@@ -88,22 +88,23 @@ la durée, puis renseigne `NEW.distance_m` et `NEW.duration_s`. Il est
 `SECURITY INVOKER` et n'ajoute aucun droit d'écriture client sur ces colonnes.
 
 Après cette étape, le trigger serveur de la migration
-`apps/web/supabase/migrations/20261003000002_observed_action_geometry_replacement.sql`
-peut promouvoir une mission liée, `completed`, disposant d'au moins deux
-coordonnées valides distinctes, vers la projection géométrique de l'action.
-La LineString est construite depuis les `gps_points` persistés, dans l'ordre
+`apps/web/supabase/migrations/20261003000004_action_geometry_contributions.sql`
+enregistre chaque mission liée, `completed`, disposant d'au moins deux
+coordonnées valides distinctes, dans `action_geometry_contributions`. La
+LineString est construite depuis les `gps_points` persistés, dans l'ordre
 `recorded_at, id`, avec seulement les doublons consécutifs manifestes retirés.
-La projection reçoit `geometry_source = "gps_tracking"` et
-`preparation_data.routeObservedDistanceKm` depuis `missions.distance_m` ; le
-mobile ne calcule ni ne persiste ces métriques. Une mission autonome n'alimente
-aucune action. Si l'action porte déjà une observation GPX ou GPS, la fin
-automatique d'une autre mission ne la remplace pas : une observation contre
-observation exige une action explicite autorisée dans le parcours serveur.
+Le serveur conserve la distance individuelle issue de `missions.distance_m` ;
+le mobile ne calcule ni ne persiste ces métriques. Une mission autonome
+n'alimente aucune action. Un contributeur non confirmé et non organisateur
+canonique produit une observation refusée, jamais une récompense.
 
-Si plusieurs missions terminées sont liées à la même action, le serveur choisit
-déterministement celle dont `ended_at` est le plus ancien, puis le plus petit
-`id` en cas d'égalité. Une observation GPS déjà promue reste prioritaire sur
-toute reconstruction ultérieure.
+Plusieurs missions terminées liées à la même action restent des observations
+distinctes : elles ne sont ni concaténées ni remplacées. La projection active
+devient une `MultiLineString` de couverture observée, avec le nombre de traces
+et leurs distances individuelles ; aucune distance collective n'est annoncée.
+Une zone polygonale conservée par l'action reste primaire et les traces sont
+complémentaires. La même action ne compte qu'une fois dans la progression
+cartographique d'un bénévole, même avec plusieurs missions ou un GPX en plus.
 
 `missions` et `gps_points` restent des données privées owner-scoped. La carte
 publique ne lit jamais ces tables : elle reçoit seulement la géométrie

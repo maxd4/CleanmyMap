@@ -42,6 +42,55 @@ function sourceFact(input: Omit<GamificationSourceFact, "statusPhase">): Gamific
   return { ...input, statusPhase: "validated" };
 }
 
+export function buildGeometryContributionFacts(
+  rows: readonly { action_id?: string; observed_at?: string | null }[],
+): GamificationSourceFact[] {
+  const firstAcceptedObservationByAction = new Map<string, string>();
+  for (const row of rows) {
+    if (!row.action_id || firstAcceptedObservationByAction.has(row.action_id)) continue;
+    firstAcceptedObservationByAction.set(
+      row.action_id,
+      occurredOnFrom(row.observed_at),
+    );
+  }
+
+  return [...firstAcceptedObservationByAction.entries()].map(([actionId, occurredOn]) =>
+    sourceFact({
+      mechanicId: "cartography",
+      eventType: "verified_geometry_contribution",
+      sourceTable: "action_geometry_contributions",
+      sourceId: actionId,
+      occurredOn,
+      xpAwarded: 1,
+      metadata: {
+        actionId,
+        recognition: "distinct_action_with_accepted_terrain_contribution",
+        noXpPerFile: true,
+        noXpPerKilometer: true,
+      },
+    }),
+  );
+}
+
+async function loadGeometryContributionFacts(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<GamificationSourceFact[]> {
+  const result = await supabase
+    .from("action_geometry_contributions")
+    .select("action_id, observed_at, id")
+    .eq("contributor_clerk_id", userId)
+    .eq("validation_state", "accepted")
+    .order("observed_at", { ascending: true })
+    .order("id", { ascending: true })
+    .limit(10000);
+  if (result.error) throw new Error(result.error.message);
+  return buildGeometryContributionFacts((result.data ?? []) as Array<{
+    action_id?: string;
+    observed_at?: string | null;
+  }>);
+}
+
 
 type QuizProgressFactRow = {
   question_type?: string;
@@ -392,12 +441,13 @@ async function loadCurrentGamificationFacts(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<GamificationFacts> {
-  const [actions, counters, visitedResult, quizResult, participantResult] = await Promise.all([
+  const [actions, counters, visitedResult, quizResult, participantResult, geometryContributionFacts] = await Promise.all([
     loadActionRowsForUser(supabase, userId),
     loadGamificationUserCounters(supabase, userId),
     supabase.from("user_visited_places").select("place_label, created_at").eq("user_id", userId).limit(10000),
     supabase.from("quiz_type_progress").select("question_type, correct_count, updated_at").eq("user_id", userId).limit(100),
     supabase.from("action_participants").select("action_id, joined_at, updated_at, participation_source").eq("user_id", userId).eq("participation_status", "confirmed").limit(10000),
+    loadGeometryContributionFacts(supabase, userId),
   ]);
   if (visitedResult.error) throw new Error(visitedResult.error.message);
   if (quizResult.error) throw new Error(quizResult.error.message);
@@ -406,6 +456,7 @@ async function loadCurrentGamificationFacts(
   const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, userId, { actionRows: actions });
   const actionState = await buildActionFacts(supabase, userId, actions, validatedActionIds);
   const facts = [...actionState.facts];
+  facts.push(...geometryContributionFacts);
   appendCounterFacts(facts, userId, counters, (visitedResult.data ?? []) as unknown[], (participantResult.data ?? []) as unknown[]);
   facts.push(...await loadCleanZoneFacts(supabase, userId));
   const quizState = buildQuizFacts(quizResult.data);
@@ -432,6 +483,7 @@ async function loadCurrentGamificationFacts(
       regularity: computeMonthlyRegularityAwards(actions).length,
       versatility: actionState.balance.balancedCycles,
       learning: quizState.totalCorrectAnswers,
+      cartography: geometryContributionFacts.length,
     },
     applicableMechanicIds,
   };

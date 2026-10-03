@@ -306,6 +306,11 @@ suivantes, sur la carte, dans la légende, les tooltips et les popups :
 
 - `Trace GPS observée` : trace terrain `gps_tracking` issue d'une mission mobile
   liée, ou trace GPX `gpx_import` fournie par l'utilisateur, trait plein ;
+- `Couverture observée par plusieurs bénévoles` : plusieurs traces attribuées
+  à une même action, rendues comme lignes indépendantes. Le libellé ne signifie
+  ni un trajet commun ni une liaison entre les bénévoles ; les distances
+  individuelles restent distinctes et la distance de couverture cumulée est
+  indisponible sans politique de dédoublonnage versionnée ;
 - `Parcours déclaré` : parcours dessiné ou déclaré, trait plein ;
 - `Parcours reconstruit` : parcours piéton retourné par le réseau, trait
   pointillé régulier et opacité réduite ;
@@ -321,10 +326,12 @@ Un trait pointillé représente une hypothèse géographique, jamais une trace G
 observée. L'épaisseur sert uniquement à la sélection et à la lisibilité ; elle
 ne constitue pas un score.
 
-La mission mobile et ses `gps_points` restent privés et owner-scoped. `/actions/map`
-reçoit uniquement la projection `gps_tracking` via le contrat normal de l'action,
-sans lire les missions ni exécuter de requête GPS par action. Ainsi, le tracking
-GPS est une observation terrain et la reconstruction réseau une hypothèse.
+La mission mobile, ses `gps_points` et les contributions sources restent privés
+et owner-scoped. `/actions/map` reçoit uniquement la projection bornée via le
+contrat normal de l'action, sans lire les missions ni exécuter de requête GPS
+par action. Ainsi, le tracking GPS est une observation terrain et la
+reconstruction réseau une hypothèse ; plusieurs observations ne deviennent
+jamais le « trajet réel de tous les bénévoles ».
 
 Une action sans tracé réel peut recevoir une géométrie reconstruite côté serveur.
 La topologie canonique est `loop` ou `point_to_point`, indépendamment de

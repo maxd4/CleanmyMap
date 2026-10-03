@@ -249,6 +249,20 @@ function resolvePolygonMetric(
   };
 }
 
+function resolveMultiLineMetric(
+  item: ActionMapItem,
+): ActionMapGeometryMetric {
+  const coverage = item.contract?.metadata.preparationData?.observedCoverage;
+  const traceCount = Math.max(0, Math.trunc(Number(coverage?.traceCount) || 0));
+  return {
+    kind: null,
+    value: null,
+    label: traceCount > 0
+      ? `Couverture observée · ${traceCount} traces · distances individuelles conservées`
+      : "Couverture observée · distance cumulée non calculée",
+  };
+}
+
 export function resolveGeometryMetric(
   kind: ActionGeometryKind | "point" | null,
   coordinates: CoordinatePair[],
@@ -257,6 +271,9 @@ export function resolveGeometryMetric(
 ): ActionMapGeometryMetric {
   if (kind === "polyline") {
     return resolvePolylineMetric(coordinates, item, presentation);
+  }
+  if (kind === "multiline") {
+    return resolveMultiLineMetric(item);
   }
   if (kind === "polygon") {
     return resolvePolygonMetric(coordinates, presentation);

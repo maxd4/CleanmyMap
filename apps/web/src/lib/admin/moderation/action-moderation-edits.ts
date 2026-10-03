@@ -134,7 +134,7 @@ type ExistingActionRow = {
   department_name?: string | null;
   latitude: number | null;
   longitude: number | null;
-  derived_geometry_kind?: "point" | "polyline" | "polygon" | null;
+  derived_geometry_kind?: "point" | "polyline" | "polygon" | "multiline" | null;
   derived_geometry_geojson?: string | null;
   waste_kg: number | null;
   cigarette_butts: number | null;

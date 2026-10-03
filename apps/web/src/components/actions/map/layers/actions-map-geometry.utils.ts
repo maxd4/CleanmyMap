@@ -19,6 +19,8 @@ export type ActionMapGeometryViewModel = {
   kind: ActionGeometryKind | "point" | null;
   renderMode: "point" | "drawing" | "empty";
   positions: CoordinatePair[];
+  multiLinePositions: CoordinatePair[][];
+  coverageTraceCount: number;
   anchor: LatLngTuple | null;
   pointCount: number;
   confidence: number | null;
@@ -313,6 +315,26 @@ export function formatGeometryPointCount(pointCount: number): string {
   return pointCount <= 1 ? "1 point" : `${pointCount} points`;
 }
 
+function resolveObservedCoverage(item: ActionMapItem): {
+  positions: CoordinatePair[][];
+  traceCount: number;
+} {
+  const coverage = item.contract?.metadata.preparationData?.observedCoverage;
+  if (!coverage || coverage.type !== "MultiLineString" || !Array.isArray(coverage.coordinates)) {
+    return { positions: [], traceCount: 0 };
+  }
+
+  const positions = coverage.coordinates
+    .map((line) => line
+      .map(([longitude, latitude]) => normalizeCoordinatePair([latitude, longitude]))
+      .filter((point): point is CoordinatePair => point !== null))
+    .filter((line) => line.length >= 2);
+  return {
+    positions,
+    traceCount: Math.max(0, Math.trunc(Number(coverage.traceCount) || positions.length)),
+  };
+}
+
 export function formatGeometryConfidenceLabel(
   confidence: number | null,
 ): string | null {
@@ -446,6 +468,7 @@ export function resolveActionMapGeometryViewModel(
 ): ActionMapGeometryViewModel {
   const presentation = getGeometryPresentation(item);
   const drawing = mapItemDrawing(item);
+  const coverage = resolveObservedCoverage(item);
   const coordinates = buildDrawingLeafletPositions(drawing);
   const confidence =
     item.contract?.geometry.confidence ?? item.geometry_confidence ?? null;
@@ -456,6 +479,8 @@ export function resolveActionMapGeometryViewModel(
       kind,
       renderMode: "drawing",
       positions: coordinates,
+      multiLinePositions: coverage.positions,
+      coverageTraceCount: coverage.traceCount,
       anchor: resolveAnchorFromCoordinates(coordinates),
       pointCount: coordinates.length,
       confidence,
@@ -463,6 +488,25 @@ export function resolveActionMapGeometryViewModel(
       label: formatGeometryModeLabel(kind, presentation),
       presentation,
       drawing,
+    };
+  }
+
+  if (coverage.positions.length > 0) {
+    const allCoordinates = coverage.positions.flat();
+    const kind = item.contract?.geometry.kind === "multiline" ? "multiline" : "polyline";
+    return {
+      kind,
+      renderMode: "drawing",
+      positions: kind === "multiline" ? [] : (coverage.positions[0] ?? []),
+      multiLinePositions: coverage.positions,
+      coverageTraceCount: coverage.traceCount,
+      anchor: resolveAnchorFromCoordinates(allCoordinates),
+      pointCount: allCoordinates.length,
+      confidence,
+      metrics: resolveGeometryMetric(kind, allCoordinates, item, presentation),
+      label: formatGeometryModeLabel(kind, presentation),
+      presentation,
+      drawing: null,
     };
   }
 
@@ -477,6 +521,8 @@ export function resolveActionMapGeometryViewModel(
       kind: "point",
       renderMode: "point",
       positions: [anchor],
+      multiLinePositions: [],
+      coverageTraceCount: 0,
       anchor: anchor as LatLngTuple,
       pointCount: 1,
       confidence,
@@ -491,6 +537,8 @@ export function resolveActionMapGeometryViewModel(
     kind: null,
     renderMode: "empty",
     positions: [],
+    multiLinePositions: [],
+    coverageTraceCount: 0,
     anchor: null,
     pointCount: 0,
     confidence,

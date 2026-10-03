@@ -688,11 +688,19 @@ jamais la mission ni ses points publics. Cette provenance géométrique ne
 qualifie jamais une mesure d'impact et la confiance reste un champ séparé.
 
 La promotion d'une observation remplace la géométrie active hypothétique de
-l'action dans une mutation serveur cohérente : la LineString, sa provenance,
-`derived_geometry_kind`, `routeObservedDistanceKm` et, pour un GPX, `gpxImport`
-restent alignés. Une seule géométrie est active à un instant donné. La cible
-`routeTargetDistanceKm` reste une donnée de planification et ne devient jamais
-la distance observée. Après promotion, une reconstruction ou un recalcul
+l'action dans une mutation serveur cohérente. La source canonique de preuve est
+`action_geometry_contributions` : chaque ligne garde `action_id`, contributeur
+Clerk, source `gpx_import` ou `gps_tracking`, LineString observée, distance
+individuelle, empreinte/idempotence, état exploitable/refusé et provenance
+technique. Une première contribution produit une LineString observée ; des
+contributions supplémentaires produisent une `MultiLineString` de couverture,
+jamais une route collective concaténée. `actions.preparation_data.observedCoverage`
+est une projection recalculable qui expose le nombre de traces et leurs
+distances individuelles, avec `coverageDistanceKm = null` tant qu'aucune
+politique de dédoublonnage versionnée n'existe. Un polygone de parc ou de zone
+close reste primaire et reçoit seulement cette couverture en complément.
+La cible `routeTargetDistanceKm` reste une donnée de planification et ne devient
+jamais la distance observée. Après promotion, une reconstruction ou un recalcul
 ultérieur peut mettre à jour ses propres projections historiques, mais ne peut
 pas réactiver sa géométrie comme représentation courante.
 

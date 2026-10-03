@@ -12,8 +12,8 @@ import type {
 
 export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
-export const CURRENT_GAMIFICATION_RULES_VERSION = "gamification-2026.09-v2" as const;
-export const CURRENT_GAMIFICATION_RULES_REVISION = 12 as const;
+export const CURRENT_GAMIFICATION_RULES_VERSION = "gamification-2026.10-v1" as const;
+export const CURRENT_GAMIFICATION_RULES_REVISION = 13 as const;
 
 export type GamificationCategory =
   | "XP_PROGRESSION"
@@ -50,6 +50,7 @@ export type GamificationBadgeScale =
   | "exploration"
   | "atmosphere"
   | "learning"
+  | "cartography"
   | "one_shot"
   | "mohs"
   | "legacy";
@@ -73,6 +74,7 @@ export type ProgressionEventType =
   | "action_formalities_prepared"
   | "action_monthly_regularity"
   | "action_balance_cycle"
+  | "verified_geometry_contribution"
   | "collective_rsvp_yes_pending"
   | "collective_attendance_confirmed"
   | "spot_create_pending"
@@ -109,6 +111,7 @@ export const CURRENT_INFINITE_PROGRESSION_IDS = [
   "versatility",
   "learning",
   "moderation",
+  "cartography",
 ] as const;
 
 export type CurrentInfiniteProgressionId =
