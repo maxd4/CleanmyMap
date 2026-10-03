@@ -465,29 +465,36 @@ La hiérarchie de résolution canonique est :
 
 `gps_tracking` et `gpx_import` sont les observations réelles prioritaires. Une
 action ne remplace jamais une observation valide par une reconstruction
-ultérieure. La relation `missions.action_id` est optionnelle : une mission sans
-action reste autonome, tandis que les missions liées restent privées et ne
-fournissent à la carte publique que leur projection géométrique dans le contrat
-Action. Si plusieurs missions terminées sont liées à la même action, le serveur
-retient déterministement celle dont `ended_at` est le plus ancien, puis le plus
-petit identifiant en cas d'égalité.
+ultérieure. Chaque observation acceptée est conservée dans
+`action_geometry_contributions` avec son contributeur Clerk, sa source, sa
+géométrie, sa distance individuelle, son empreinte technique et son état
+exploitable/refusé. La relation `missions.action_id` est optionnelle : une
+mission sans action reste autonome, tandis que les missions liées restent
+privées et ne fournissent à la carte publique que leur projection géométrique.
+Un contributeur n'est éligible que s'il est participant confirmé ou
+organisateur canonique ; la trace GPX prouve sa fourniture, pas qu'il a
+physiquement tenu le GPS.
 
 Le cycle de vie canonique d'une action peut donc être :
 
 ```text
 géométrie hypothétique initiale
-→ observation terrain disponible
-→ promotion serveur
-→ géométrie observée canonique unique
+→ première observation terrain acceptée
+→ géométrie observée simple
+→ nouvelles observations indépendantes
+→ couverture observée multi-traces
 ```
 
 Un GPX validé est promu comme `gpx_import` sans routage ni snapping réseau ; une
 mission liée éligible est promue comme `gps_tracking` depuis ses `gps_points`
 validés et sa distance serveur. Une promotion conserve `routeTargetDistanceKm`
-comme cible historique distincte de `routeObservedDistanceKm`. Une observation
-déjà canonique ne peut pas être remplacée silencieusement par une reconstruction
-ultérieure ; le remplacement par une autre observation doit être explicite et
-autorisé.
+comme cible historique distincte de `routeObservedDistanceKm`. Avec plusieurs
+observations, la projection utilise une `MultiLineString` de couverture : les
+traces ne sont jamais concaténées, les recouvrements ne sont pas dédoublonnés
+scientifiquement et aucune distance collective n'est annoncée. Les distances
+individuelles restent visibles quand elles sont utiles. Pour un parc ou une
+zone close, le polygone reste la géométrie primaire et la couverture observée
+est complémentaire. Une observation ajoutée est append-only et idempotente.
 
 ### Remédiation des géométries historiques
 

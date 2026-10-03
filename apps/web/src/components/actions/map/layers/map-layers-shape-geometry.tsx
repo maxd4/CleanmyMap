@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
-import { CircleMarker, Marker, Polygon, Polyline, Popup, Tooltip } from "react-leaflet";
+import { CircleMarker, Marker, Polygon, Polyline } from "react-leaflet";
 import { divIcon } from "leaflet";
 import type {
   ActionMapGeometryRenderStyle,
@@ -17,15 +17,17 @@ import type {
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import { ActionPopupContent } from "../popup/action-popup-content";
 import { isActionMapItem } from "../popup/action-popup-content.helpers";
+import type { GeometryTooltipReading } from "./map-geometry-tooltip-content";
 import {
-  GeometryTooltipContent,
-  type GeometryTooltipReading,
-} from "./map-geometry-tooltip-content";
-import {
-  formatActionGeometryTooltipTitle,
   formatGeometryModeLabel,
   formatGeometryPointCount,
 } from "./actions-map-geometry.utils";
+import {
+  GeometryInteractionOverlays,
+  renderCoveragePolylines,
+  renderMultilineGeometry,
+  resolveVisibleShapePathOptions,
+} from "./map-layers-coverage-geometry";
 import {
   ACTION_TRACE_HIT_AREA_WEIGHT,
   resolveShapeCasingStyle,
@@ -100,27 +102,6 @@ function setLayerRef(
   }
 }
 
-function resolveVisibleShapePathOptions({
-  geometryKind,
-  displayColor,
-  renderStyle,
-  visibleWeight,
-  isSelected,
-}: Pick<ShapeGeometryRendererProps, "displayColor" | "renderStyle" | "isSelected"> & {
-  geometryKind: "polygon" | "polyline";
-  visibleWeight: number;
-}) {
-  return {
-    color: displayColor,
-    weight: visibleWeight,
-    opacity: isSelected ? 1 : renderStyle.strokeOpacity ?? (geometryKind === "polygon" ? 0.95 : 0.92),
-    ...(geometryKind === "polygon"
-      ? { fillOpacity: (renderStyle.fillOpacity ?? 0.24) + (isSelected ? 0.08 : 0) }
-      : {}),
-    dashArray: renderStyle.dashArray,
-  };
-}
-
 type PolygonGeometryRenderInput = {
   item: ActionMapItem;
   geometry: ActionMapGeometryViewModel;
@@ -144,34 +125,6 @@ type PolygonGeometryRenderInput = {
   commonPopupProps: Parameters<typeof ActionPopupContent>[0];
   isSelected: boolean;
 };
-
-type GeometryInteractionOverlaysProps = {
-  item: ActionMapItem;
-  geometryKind: "polygon" | "polyline";
-  tooltipProps: PolygonGeometryRenderInput["tooltipProps"];
-  commonPopupProps: PolygonGeometryRenderInput["commonPopupProps"];
-};
-
-function GeometryInteractionOverlays({
-  item,
-  geometryKind,
-  tooltipProps,
-  commonPopupProps,
-}: GeometryInteractionOverlaysProps) {
-  return (
-    <>
-      <Tooltip className="glass-tooltip" direction="auto" sticky>
-        <GeometryTooltipContent
-          title={formatActionGeometryTooltipTitle(geometryKind)}
-          {...tooltipProps}
-        />
-      </Tooltip>
-      <Popup className="glass-popup custom-popup">
-        <ActionPopupContent {...commonPopupProps} key={item.id} />
-      </Popup>
-    </>
-  );
-}
 
 function renderPolygonGeometry({
   item,
@@ -216,6 +169,19 @@ function renderPolygonGeometry({
           commonPopupProps={commonPopupProps}
         />
       </Polygon>
+      {geometry.multiLinePositions.length > 0
+        ? renderCoveragePolylines({
+            item,
+            geometry,
+            renderStyle,
+            displayColor,
+            visibleWeight,
+            handlers,
+            tooltipProps,
+            commonPopupProps,
+            isSelected,
+          })
+        : null}
     </Fragment>
   );
 }
@@ -344,6 +310,20 @@ export function ShapeGeometryRenderer({
       visibleWeight,
       casingStyle,
       layerRefs,
+      handlers,
+      tooltipProps,
+      commonPopupProps,
+      isSelected,
+    });
+  }
+
+  if (geometry.kind === "multiline") {
+    return renderMultilineGeometry({
+      item,
+      geometry,
+      renderStyle,
+      displayColor,
+      visibleWeight,
       handlers,
       tooltipProps,
       commonPopupProps,

@@ -8,6 +8,7 @@ const VERIFIED_CONTRIBUTION_FAMILIES = [
   "clean_zones",
   "learning",
   "moderation",
+  "cartography",
 ] as const;
 
 export type VerifiedContributionFamily =

@@ -127,4 +127,16 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     visibility: "authorized_moderation",
     introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
   }),
+  defineCurrentProgression({
+    id: "cartography",
+    label: "Contribution cartographique",
+    description: "Actions distinctes documentées par une trace terrain attribuable et acceptée.",
+    metric: "verified_geometry_contributions",
+    metricLabel: "Contributions cartographiques vérifiées",
+    sourceDomain: "action_geometry_contributions.accepted.distinct(action_id)",
+    badgeFamily: "cartography",
+    scale: "cartography",
+    infinite: true,
+    introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+  }),
 ] as const satisfies readonly GamificationProgressionDefinition[];

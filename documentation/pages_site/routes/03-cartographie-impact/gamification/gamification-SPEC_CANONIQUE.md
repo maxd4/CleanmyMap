@@ -266,7 +266,7 @@ Une donnée disponible mais volontairement exclue est donc enregistrée comme
 `NON_GAMIFIED`, avec sa raison CURRENT. Elle ne constitue ni une proposition,
 ni un TODO, ni un signal « à traiter plus tard ».
 
-Les huit progressions infinies sont :
+Les neuf progressions infinies sont :
 
 | ID stable | Libellé | Métrique métier | Domaine source | Famille / échelle |
 | --- | --- | --- | --- | --- |
@@ -278,6 +278,7 @@ Les huit progressions infinies sont :
 | `versatility` | Polyvalence | `validated_context_cycles` | actions et contextes de contribution | `versatility` / `gem` |
 | `learning` | Apprentissage | `validated_learning_events` | quiz et contenus d'apprentissage | `learning` / `learning` |
 | `moderation` | Modération | `resolvedModerationCases` | `admin_operations_audit` (`moderation` / `success`) | `moderation` / `gem` |
+| `cartography` | Contribution cartographique | `verified_geometry_contributions` | `action_geometry_contributions.accepted`, distinct par `action_id` et utilisateur | `cartography` / `cartography` |
 
 Chaque progression suit le contrat commun `GamificationProgressionState` :
 `id`, `label`, `description`, `metric`, `sourceDomain`, `badgeFamily`,
@@ -307,9 +308,18 @@ Les anciens `classification = impact_badge`, `form_*` et
 données déjà écrites. Ils ne sont pas une cinquième catégorie CURRENT et ne
 créent aucune décision implicite pour de nouveaux signaux.
 
-Le total XP global est la somme des événements actifs des huit progressions et
+Le total XP global est la somme des événements actifs des neuf progressions et
 des jalons `XP_MILESTONE` autorisés par le registre. Aucun event type ne crée
 un second ledger ou une balance par famille.
+
+La progression `cartography` reconnaît une contribution terrain acceptée sur
+une action distincte. Plusieurs GPX ou missions du même utilisateur sur la
+même action valent une seule contribution ; GPX puis mobile restent une seule
+contribution ; les doublons, retries et reconstructions ne créent aucun nouvel
+événement. La preuve est l'existence idempotente dans
+`action_geometry_contributions`, puis la réconciliation écrit l'événement
+`verified_geometry_contribution` dans `progression_events`. Il n'y a ni XP par
+fichier, ni XP par kilomètre, ni XP fondée sur une simple distance cumulée.
 
 ## Données disponibles mais volontairement non gamifiées
 
@@ -828,7 +838,7 @@ Règles:
 
 ### Mohs — badge d'impact historique secondaire
 
-Mohs est une surface d'impact personnelle historique, distincte des huit axes
+Mohs est une surface d'impact personnelle historique, distincte des neuf axes
 comportementaux CURRENT. Elle conserve les noms minéraux et son échelle propre,
 mais ne devient pas une échelle gemme ni une nouvelle progression CURRENT.
 Les seuils déjà enregistrés restent lisibles pour compatibilité ; les signaux

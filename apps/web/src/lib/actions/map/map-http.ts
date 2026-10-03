@@ -239,7 +239,7 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     wasteMeasurementMethod: parsedMetadata.wasteMeasurementMethod,
     manualDrawing: parsedDrawing.manualDrawing,
     manualDrawingGeoJson: parsedDrawing.drawingJson,
-    derivedGeometryKind: row.derived_geometry_kind as "point" | "polyline" | "polygon" | null,
+    derivedGeometryKind: row.derived_geometry_kind as "point" | "polyline" | "polygon" | "multiline" | null,
     derivedGeometryGeoJson: row.derived_geometry_geojson,
     geometryConfidence: toFiniteNumber(row.geometry_confidence),
     geometrySource: row.geometry_source as ActionGeometrySource | null,

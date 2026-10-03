@@ -67,7 +67,7 @@ type QuizProgressionTierDefinition = {
 
 /**
  * Legacy nested learning milestone display kept for API compatibility.
- * It is not one of the eight top-level CURRENT infinite progressions.
+ * It is not one of the nine top-level CURRENT infinite progressions.
  */
 export type LearningMilestoneFamily = {
   id: string;

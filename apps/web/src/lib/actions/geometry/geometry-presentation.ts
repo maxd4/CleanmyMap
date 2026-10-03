@@ -85,6 +85,19 @@ function getEstimatedRoutePresentation(item: ActionMapItem): GeometryPresentatio
   );
 }
 
+function observedTraceCount(item: ActionMapItem): number {
+  return Math.max(
+    0,
+    Math.trunc(Number(item.contract?.metadata.preparationData?.observedCoverage?.traceCount) || 0),
+  );
+}
+
+function observedLabel(item: ActionMapItem): string {
+  return observedTraceCount(item) > 1
+    ? "Couverture observée par plusieurs bénévoles"
+    : "Trace GPS observée";
+}
+
 /**
  * Retourne les propriétés visuelles et textuelles pour représenter la géométrie d'une action.
  */
@@ -100,7 +113,7 @@ export function getGeometryPresentation(
       return buildPresentation(origin, "real", "Zone de référence", "solid", "reference");
     case "gpx_import":
     case "gps_tracking":
-      return buildPresentation(origin, "real", "Trace GPS observée", "solid", "observed");
+      return buildPresentation(origin, "real", observedLabel(item), "solid", "observed");
     case "routed":
       return buildPresentation(origin, "estimated", "Parcours reconstruit", "dashed", "network");
     case "estimated_route":

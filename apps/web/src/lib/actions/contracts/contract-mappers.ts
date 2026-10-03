@@ -275,7 +275,7 @@ export function mapItemDrawing(item: ActionMapItem): ActionDrawing | null {
   const contractGeometry = item.contract?.geometry;
   if (
     contractGeometry &&
-    contractGeometry.kind !== "point" &&
+    (contractGeometry.kind === "polyline" || contractGeometry.kind === "polygon") &&
     isRenderableDrawing({
       kind: contractGeometry.kind,
       coordinates: contractGeometry.coordinates,

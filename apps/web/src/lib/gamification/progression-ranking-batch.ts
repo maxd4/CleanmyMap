@@ -60,6 +60,11 @@ type FormRow = {
   is_test?: boolean | null;
 };
 type CleanPlaceRow = CleanZoneCanonicalRow & { user_id?: string | null; spot_type?: string | null };
+type GeometryContributionRow = {
+  contributor_clerk_id?: string | null;
+  action_id?: string | null;
+  validation_state?: string | null;
+};
 
 export type LeaderboardBatchData = {
   profiles: LeaderboardProfileRow[];
@@ -279,6 +284,7 @@ function buildBadgeCounts(
   cleanPlacesByUser: Map<string, CleanPlaceRow[]>,
   rowsByUser: Map<string, ActionRow[]>,
   forms: readonly FormRow[],
+  geometryContributionsByUser: Map<string, GeometryContributionRow[]>,
 ): Map<string, CurrentLeaderboardBadgeCounts> {
   const formsByAction = new Set(forms.filter(isValidatedForm).map((row) => row.action_id).filter((id): id is string => Boolean(id)));
   const result = new Map<string, CurrentLeaderboardBadgeCounts>();
@@ -295,6 +301,12 @@ function buildBadgeCounts(
     const learning = buildQuizLearningProgressionSummary(quizByUser.get(userId) ?? []);
     const regularity = computeMonthlyRegularitySummary(rows);
     const balance = computeActionBalanceSummary(rows, currentValidated);
+    const cartographyCount = new Set(
+      (geometryContributionsByUser.get(userId) ?? [])
+        .filter((row) => row.validation_state === "accepted")
+        .map((row) => row.action_id)
+        .filter((actionId): actionId is string => Boolean(actionId)),
+    ).size;
     const userActionIds = new Set(rows.map((row) => row.id));
     const counters: CatalogProgressionInputs["counters"] = {
       approvedActionsCount: rows.filter((row) => row.status === "approved").length,
@@ -314,9 +326,9 @@ function buildBadgeCounts(
       .filter((milestone) => milestone.visibility !== "authorized_moderation" && milestone.visibility !== "not_exposed")
       .map((milestone) => milestone.id);
     const catalog = buildGamificationCatalog({
-      progressions: buildProgressionFacts({ counters, cleanZoneSources: cleanSources, learning, regularity, balance }),
+      progressions: buildProgressionFacts({ counters, cleanZoneSources: cleanSources, learning, regularity, balance, cartographyCount }),
       milestones: milestoneFactsFromStates(milestones, { invitedUsersCount: 0 }),
-      applicableProgressionIds: ["participation", "organisation", "exploration", "clean_zones", "regularity", "versatility", "learning"],
+      applicableProgressionIds: ["participation", "organisation", "exploration", "clean_zones", "regularity", "versatility", "learning", "cartography"],
       applicableMilestoneIds,
     });
     result.set(userId, countCurrentLeaderboardBadges(catalog));
@@ -329,7 +341,7 @@ export async function loadLeaderboardBatchData(supabase: SupabaseClient): Promis
   const userIds = profiles.map((profile) => profile.user_id);
   if (userIds.length === 0) return { profiles, progressions: new Map(), badgeCounts: new Map() };
 
-  const [progressions, actionBatch, events, participants, visited, quiz, cleanPlaces] = await Promise.all([
+  const [progressions, actionBatch, events, participants, visited, quiz, cleanPlaces, geometryContributions] = await Promise.all([
     loadProgressions(supabase, userIds),
     loadActionBatch(supabase, userIds),
     loadRows<LeaderboardEventRow>(supabase, "progression_events", "user_id, event_type, source_table, source_id, status_phase, xp_awarded, occurred_on, metadata", "user_id", userIds, ["user_id", "id"]),
@@ -337,6 +349,7 @@ export async function loadLeaderboardBatchData(supabase: SupabaseClient): Promis
     loadRows<VisitedPlaceRow>(supabase, "user_visited_places", "user_id, place_label", "user_id", userIds, ["user_id", "id"]),
     loadRows<QuizLearningProgressRow & { user_id?: string | null }>(supabase, "quiz_type_progress", "user_id, question_type, correct_count", "user_id", userIds, ["user_id", "id"]),
     loadRows<CleanPlaceRow>(supabase, "trash_spotter_spots", "user_id, id, status, latitude, longitude, notes, validated_at, cleaned_at, spot_type", "user_id", userIds, ["user_id", "id"]),
+    loadRows<GeometryContributionRow>(supabase, "action_geometry_contributions", "contributor_clerk_id, action_id, validation_state", "contributor_clerk_id", userIds, ["contributor_clerk_id", "action_id"], [["validation_state", "accepted"]]),
   ]);
 
   const eventsByUser = groupByUser(events);
@@ -344,6 +357,14 @@ export async function loadLeaderboardBatchData(supabase: SupabaseClient): Promis
   const visitedByUser = groupByUser(visited);
   const quizByUser = groupByUser(quiz);
   const cleanPlacesByUser = groupByUser(cleanPlaces);
-  const badgeCounts = buildBadgeCounts(userIds, eventsByUser, participantsByUser, visitedByUser, quizByUser, cleanPlacesByUser, actionBatch.rowsByUser, actionBatch.forms);
+  const geometryContributionsByUser = new Map<string, GeometryContributionRow[]>();
+  for (const row of geometryContributions) {
+    const userId = row.contributor_clerk_id;
+    if (!userId) continue;
+    const current = geometryContributionsByUser.get(userId) ?? [];
+    current.push(row);
+    geometryContributionsByUser.set(userId, current);
+  }
+  const badgeCounts = buildBadgeCounts(userIds, eventsByUser, participantsByUser, visitedByUser, quizByUser, cleanPlacesByUser, actionBatch.rowsByUser, actionBatch.forms, geometryContributionsByUser);
   return { profiles, progressions, badgeCounts };
 }

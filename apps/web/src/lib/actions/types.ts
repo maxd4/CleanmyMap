@@ -40,16 +40,21 @@ import type { ActionRouteVersioning } from "@/lib/route/route-active-version";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
-export type ActionGeometryKind = "point" | "polyline" | "polygon";
-export type ActionGeometryOrigin =
-  | "manual"
-  | "gpx_import"
-  | "gps_tracking"
-  | "reference"
-  | "routed"
-  | "estimated_route"
-  | "estimated_area"
-  | "fallback_point";
+export type ActionGeometryKind = "point" | "polyline" | "polygon" | "multiline";
+const ACTION_GEOMETRY_SOURCES = [
+  "manual",
+  "gpx_import",
+  "gps_tracking",
+  "reference",
+  "routed",
+  "estimated_route",
+  "estimated_area",
+  "fallback_point",
+] as const;
+// The runtime literal remains the single source for this derived public type;
+// keep an explicit value reference because ESLint cannot see typeof usage.
+void ACTION_GEOMETRY_SOURCES;
+export type ActionGeometryOrigin = (typeof ACTION_GEOMETRY_SOURCES)[number];
 export type ActionGeometrySource = ActionGeometryOrigin;
 export type ActionRouteTopology = "loop" | "point_to_point";
 export type ActionLocationCoordinates = {
@@ -62,6 +67,15 @@ export type ActionGpxImportMetadata = {
   pointCount: number;
   inferredTopology: ActionRouteTopology;
   fileName?: string;
+};
+type ActionObservedCoverage = {
+  type: "MultiLineString";
+  coordinates: [number, number][][];
+  traceCount: number;
+  individualDistancesKm: number[];
+  sources?: ActionGeometrySource[];
+  coverageDistanceKm: null;
+  coverageVersion: string;
 };
 export type ActionSubmissionMode = "quick" | "complete";
 export type ActionPhase =
@@ -129,6 +143,8 @@ export type ActionPreparationData = {
   routeObservedDistanceKm?: number;
   /** Canonical metadata for a validated user-provided GPX trace. */
   gpxImport?: ActionGpxImportMetadata;
+  /** Recomputable multi-trace coverage; never an itinerary or summed distance. */
+  observedCoverage?: ActionObservedCoverage;
   /** Measured or estimated result of the server-side route provider. */
   routeNetworkDistanceKm?: number;
   routeGeometryMode?: RouteGeometryMode;

@@ -45,4 +45,21 @@ describe('mission to action server contract', () => {
     expect(replacementMigration).toMatch(/routeObservedDistanceKm/i)
     expect(replacementMigration).toMatch(/routeNetworkDistanceKm/i)
   })
+
+  it('records each eligible completed mission as an attributable contribution', () => {
+    const contributionsMigration = readFileSync(
+      fileURLToPath(
+        new URL('../../web/supabase/migrations/20261003000004_action_geometry_contributions.sql', import.meta.url),
+      ),
+      'utf8',
+    )
+
+    expect(contributionsMigration).toMatch(/action_geometry_contributions/i)
+    expect(contributionsMigration).toMatch(/new\.volunteer_id/i)
+    expect(contributionsMigration).toMatch(/record_action_geometry_contribution\(/i)
+    expect(contributionsMigration).toMatch(/validation_state.*accepted/i)
+    expect(contributionsMigration).toMatch(/MultiLineString/i)
+    expect(contributionsMigration).toMatch(/do update set updated_at/i)
+    expect(contributionsMigration).toMatch(/participation_status = 'confirmed'/i)
+  })
 })

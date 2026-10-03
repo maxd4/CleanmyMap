@@ -29,7 +29,7 @@ export type ActionCsvRowWithDrawing = ActionCsvRow & {
   record_type?: "action" | "clean_place" | "spot" | "other" | null;
   source?: string | null;
   observed_at?: string | null;
-  geometry_kind?: "point" | "polyline" | "polygon" | null;
+  geometry_kind?: "point" | "polyline" | "polygon" | "multiline" | null;
   geometry_geojson?: string | null;
   geometry_confidence?: number | null;
   manual_drawing_kind?: "polyline" | "polygon" | null;

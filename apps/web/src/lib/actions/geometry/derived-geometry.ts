@@ -19,6 +19,16 @@ export type PersistedDerivedGeometry = {
   origin: ActionGeometryOrigin;
 };
 
+function isMultiLineStringGeoJson(value: string | null | undefined): boolean {
+  if (!value) return false;
+  try {
+    const parsed = JSON.parse(value) as { type?: unknown };
+    return parsed?.type === "MultiLineString";
+  } catch {
+    return false;
+  }
+}
+
 export function resolveGeometryOriginFromConfidence(
   confidence: number | null | undefined,
 ): ActionGeometryOrigin {
@@ -236,6 +246,21 @@ export function buildPersistedGeometryFromStoredFields(params: {
   arrivalLocationLabel?: string | null;
   routeStyle?: "direct" | "souple" | null;
 }): PersistedDerivedGeometry {
+  if (
+    params.derivedGeometryGeoJson &&
+    (params.derivedGeometryKind === "multiline" ||
+      isMultiLineStringGeoJson(params.derivedGeometryGeoJson))
+  ) {
+    const geometrySource = params.geometrySource ?? "gps_tracking";
+    return {
+      kind: "multiline",
+      coordinates: [],
+      geojson: params.derivedGeometryGeoJson,
+      confidence: params.geometryConfidence ?? null,
+      geometrySource,
+      origin: geometrySource,
+    };
+  }
   const storedDrawing = resolveStoredDrawing(params);
   const geojson = resolveStoredGeoJson(params, storedDrawing);
 

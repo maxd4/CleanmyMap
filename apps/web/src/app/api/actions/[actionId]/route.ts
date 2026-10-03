@@ -37,6 +37,10 @@ import {
   type AdminOverrideErrorStage,
 } from "@/lib/actions/action-update-post-processing";
 import { resolveActionUpdateOrganizer } from "@/lib/actions/action-update-organizer";
+import {
+  recordGpxGeometryContributionIfPresent,
+  reconcileGeometryContributionProgressionIfNeeded,
+} from "@/lib/actions/geometry/action-geometry-contribution-workflow";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -53,6 +57,247 @@ async function loadActionPermissionContext(
     : null;
   const organizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, actionId);
   return { identity, permissionIdentity, organizerIds };
+}
+
+async function parsePatchRequest(
+  request: Request,
+  ctx: { params: Promise<{ actionId: string }> },
+  access: Awaited<ReturnType<typeof requireAuthenticatedAccess>>,
+): Promise<Response | { userId: string; trimmedActionId: string; parsedBody: ActionUpdateInput }> {
+  if (!access.ok) return unauthorizedJsonResponse();
+
+  const { actionId } = await ctx.params;
+  const trimmedActionId = actionId.trim();
+  if (!trimmedActionId) {
+    return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
+  }
+
+  let payload: unknown;
+  try {
+    payload = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
+  }
+
+  const parsed = updateActionSchema.safeParse(payload);
+  if (!parsed.success) {
+    return validationErrorResponse(parsed.error.flatten().fieldErrors);
+  }
+
+  return { userId: access.userId, trimmedActionId, parsedBody: parsed.data };
+}
+
+type EditableAction = NonNullable<Awaited<ReturnType<typeof loadActionById>>>;
+type PreparedActionUpdate = Exclude<Awaited<ReturnType<typeof prepareActionUpdate>>, Response>;
+
+async function loadAuthorizedPatchAction({
+  supabase,
+  userId,
+  actionId,
+}: {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  userId: string;
+  actionId: string;
+}): Promise<Response | { current: EditableAction; identity: Awaited<ReturnType<typeof getCurrentUserIdentity>> }> {
+  const current = await loadActionById(supabase, actionId);
+  if (!current) return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
+
+  const { identity, permissionIdentity, organizerIds } = await loadActionPermissionContext(
+    supabase,
+    userId,
+    actionId,
+  );
+  if (!canManageAction(permissionIdentity, { createdByClerkId: current.created_by_clerk_id }, organizerIds)) {
+    return NextResponse.json(
+      { error: "Vous n'êtes pas autorisé à modifier cette action." },
+      { status: 403 },
+    );
+  }
+  if (current.status === "cancelled") {
+    return NextResponse.json(
+      {
+        error: "Cette action annulée est un tombstone historique et ne peut plus être modifiée.",
+        code: "state_conflict",
+      },
+      { status: 409 },
+    );
+  }
+  return { current, identity };
+}
+
+async function preparePatchMutation({
+  supabase,
+  userId,
+  current,
+  identity,
+  parsed,
+}: {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  userId: string;
+  current: EditableAction;
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
+  parsed: ActionUpdateInput;
+}): Promise<Response | {
+  preparedUpdate: PreparedActionUpdate;
+  shouldAuditModeration: boolean;
+  adminAuditActorUserId: string;
+  adminAuditTargetUserId: string | null;
+  moderationOperation: string;
+  moderationReason: string | null;
+}> {
+  const parsedBody = await resolveActionUpdateOrganizer({ supabase, body: parsed, current });
+  const validatedImpactCorrection = current.status === "approved" && hasActionImpactUpdate(parsedBody);
+  if (validatedImpactCorrection && !canEditValidatedImpact(identity)) {
+    return NextResponse.json(
+      { error: "La correction d'un impact validé est réservée aux administrateurs autorisés." },
+      { status: 403 },
+    );
+  }
+  const moderationReason = validatedImpactCorrection
+    ? normalizeModerationReason(parsedBody.reason, { required: isModerationReasonRequired("correct_impact") })
+    : null;
+  if (validatedImpactCorrection && !moderationReason) {
+    return validationErrorResponse({ reason: ["Un motif d'au moins 5 caractères est requis pour corriger un impact validé."] });
+  }
+
+  const preparedUpdate = await prepareActionUpdate({ current, parsedBody }).catch((error: unknown) => {
+    if (error instanceof ActionUpdateValidationError) {
+      return validationErrorResponse({ [error.field]: [error.message] });
+    }
+    throw error;
+  });
+  if (preparedUpdate instanceof Response) return preparedUpdate;
+
+  return {
+    preparedUpdate,
+    shouldAuditModeration: validatedImpactCorrection || (
+      Boolean(identity) &&
+      userId !== current.created_by_clerk_id &&
+      canManageActionsGlobally(identity)
+    ),
+    adminAuditActorUserId: identity?.userId ?? userId,
+    adminAuditTargetUserId: current.created_by_clerk_id.trim() || null,
+    moderationOperation: validatedImpactCorrection ? "correct_impact" : "edit_action",
+    moderationReason,
+  };
+}
+
+type PatchExecutionState = {
+  auditSnapshots: ReturnType<typeof buildActionAuditSnapshots> | null;
+  actionWriteSucceeded: boolean;
+  adminErrorStage: AdminOverrideErrorStage;
+};
+
+async function executePreparedActionUpdate({
+  supabase,
+  actionId,
+  userId,
+  current,
+  identity,
+  preparedUpdate,
+  shouldAuditModeration,
+  adminAuditActorUserId,
+  adminAuditTargetUserId,
+  moderationOperation,
+  moderationReason,
+  appendAdminAuditOnce,
+  state,
+}: {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  actionId: string;
+  userId: string;
+  current: EditableAction;
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
+  preparedUpdate: PreparedActionUpdate;
+  shouldAuditModeration: boolean;
+  adminAuditActorUserId: string;
+  adminAuditTargetUserId: string | null;
+  moderationOperation: string;
+  moderationReason: string | null;
+  appendAdminAuditOnce: (params: Parameters<typeof appendActionModerationAudit>[0]) => Promise<void>;
+  state: PatchExecutionState;
+}): Promise<Response | PreparedActionUpdate["body"]> {
+  const { body, currentMetadata, updateData } = preparedUpdate;
+  const geometryContribution = await recordGpxGeometryContributionIfPresent({
+    supabase,
+    actionId,
+    userId,
+    updateData,
+  });
+  if (geometryContribution instanceof Response) return geometryContribution;
+
+  state.auditSnapshots = shouldAuditModeration
+    ? buildActionAuditSnapshots(current, body, currentMetadata)
+    : null;
+  const hasActionUpdates = Object.keys(updateData).length > 0;
+  state.adminErrorStage = "action_update";
+  const updateResult = hasActionUpdates
+    ? await supabase.from("actions").update(updateData).eq("id", actionId).select("id").single()
+    : { data: { id: actionId }, error: null };
+  if (updateResult.error) throw new Error("Action update failed");
+  state.actionWriteSucceeded = hasActionUpdates && Boolean(updateResult.data);
+
+  await reconcileGeometryContributionProgressionIfNeeded({
+    accepted: geometryContribution,
+    supabase,
+    actionId,
+    userId,
+  });
+  await runActionUpdatePostProcessing({ supabase, actionId, updateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
+  return body;
+}
+
+async function handlePatchError({
+  error,
+  shouldAuditModeration,
+  auditSnapshots,
+  appendAdminAuditOnce,
+  adminAuditActorUserId,
+  adminAuditTargetUserId,
+  moderationOperation,
+  moderationReason,
+  adminErrorStage,
+  actionWriteSucceeded,
+  actionId,
+}: {
+  error: unknown;
+  shouldAuditModeration: boolean;
+  auditSnapshots: ReturnType<typeof buildActionAuditSnapshots> | null;
+  appendAdminAuditOnce: (params: Parameters<typeof appendActionModerationAudit>[0]) => Promise<void>;
+  adminAuditActorUserId: string;
+  adminAuditTargetUserId: string | null;
+  moderationOperation: string;
+  moderationReason: string | null;
+  adminErrorStage: AdminOverrideErrorStage;
+  actionWriteSucceeded: boolean;
+  actionId: string;
+}): Promise<Response> {
+  if (shouldAuditModeration && auditSnapshots) {
+    await appendAdminAuditOnce({
+      operationId: `action-edit-${actionId}-${Date.now()}`,
+      actorUserId: adminAuditActorUserId,
+      targetActionId: actionId,
+      operation: moderationOperation,
+      outcome: "error",
+      reason: moderationReason,
+      targetUserId: adminAuditTargetUserId,
+      previousValue: auditSnapshots.previousValue,
+      newValue: auditSnapshots.newValue,
+      details: { stage: adminErrorStage, partialMutation: actionWriteSucceeded },
+    });
+  }
+  return handleApiError(error, "PATCH /api/actions/:actionId");
+}
+
+function createAdminAuditOnceAppender(): (
+  params: Parameters<typeof appendActionModerationAudit>[0],
+) => Promise<void> {
+  let recorded = false;
+  return async (params) => {
+    if (recorded) return;
+    recorded = true;
+    await appendActionModerationAudit(params);
+  };
 }
 
 export async function GET(
@@ -115,188 +360,81 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: Request,
-  ctx: { params: Promise<{ actionId: string }> },
-) {
-  const access = await requireAuthenticatedAccess();
-  if (!access.ok) {
-    return unauthorizedJsonResponse();
-  }
-  const { userId } = access;
-
-  const { actionId } = await ctx.params;
-  const trimmedActionId = actionId.trim();
-  if (!trimmedActionId) {
-    return validationErrorResponse({
-      actionId: ["Identifiant d'action manquant."],
-    });
-  }
-
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON payload" },
-      { status: 400 },
-    );
-  }
-
-  const parsed = updateActionSchema.safeParse(payload);
-  if (!parsed.success) {
-    return validationErrorResponse(parsed.error.flatten().fieldErrors);
-  }
-
+async function executePatchRequest({
+  userId,
+  trimmedActionId,
+  parsed,
+}: {
+  userId: string;
+  trimmedActionId: string;
+  parsed: ActionUpdateInput;
+}): Promise<Response> {
   let shouldAuditModeration = false;
   let adminAuditActorUserId = userId;
   let adminAuditTargetUserId: string | null = null;
   let auditSnapshots: ReturnType<typeof buildActionAuditSnapshots> | null = null;
   let actionWriteSucceeded = false;
-  let adminAuditRecorded = false;
   let moderationOperation = "edit_action";
   let moderationReason: string | null = null;
   let adminErrorStage: AdminOverrideErrorStage = "action_update";
-  const appendAdminAuditOnce = async (
-    params: Parameters<typeof appendActionModerationAudit>[0],
-  ): Promise<void> => {
-    if (adminAuditRecorded) {
-      return;
-    }
-    adminAuditRecorded = true;
-    await appendActionModerationAudit(params);
-  };
+  const appendAdminAuditOnce = createAdminAuditOnceAppender();
 
   try {
     const supabase = getSupabaseServerClient(true);
-    const current = await loadActionById(supabase, trimmedActionId);
-    if (!current) {
-      return NextResponse.json(
-        { error: "Action introuvable." },
-        { status: 404 },
-      );
-    }
-
-    const { identity, permissionIdentity, organizerIds } = await loadActionPermissionContext(
+    const actionContext = await loadAuthorizedPatchAction({
       supabase,
       userId,
-      trimmedActionId,
-    );
-    if (
-      !canManageAction(
-        permissionIdentity,
-        { createdByClerkId: current.created_by_clerk_id },
-        organizerIds,
-      )
-    ) {
-      return NextResponse.json(
-        { error: "Vous n'êtes pas autorisé à modifier cette action." },
-        { status: 403 },
-      );
-    }
-
-    if (current.status === "cancelled") {
-      return NextResponse.json(
-        {
-          error:
-            "Cette action annulée est un tombstone historique et ne peut plus être modifiée.",
-          code: "state_conflict",
-        },
-        { status: 409 },
-      );
-    }
-
-    const parsedBody: ActionUpdateInput = await resolveActionUpdateOrganizer({ supabase, body: parsed.data, current });
-    const validatedImpactCorrection =
-      current.status === "approved" && hasActionImpactUpdate(parsedBody);
-    if (validatedImpactCorrection && !canEditValidatedImpact(identity)) {
-      return NextResponse.json(
-        {
-          error:
-            "La correction d'un impact validé est réservée aux administrateurs autorisés.",
-        },
-        { status: 403 },
-      );
-    }
-    moderationReason = validatedImpactCorrection
-      ? normalizeModerationReason(parsedBody.reason, {
-          required: isModerationReasonRequired("correct_impact"),
-        })
-      : null;
-    if (validatedImpactCorrection && !moderationReason) {
-      return validationErrorResponse({
-        reason: [
-          "Un motif d'au moins 5 caractères est requis pour corriger un impact validé.",
-        ],
-      });
-    }
-    moderationOperation = validatedImpactCorrection
-      ? "correct_impact"
-      : "edit_action";
-    adminAuditActorUserId = identity?.userId ?? userId;
-    adminAuditTargetUserId = current.created_by_clerk_id.trim() || null;
-    shouldAuditModeration =
-      validatedImpactCorrection ||
-      (Boolean(identity) &&
-        userId !== current.created_by_clerk_id &&
-        canManageActionsGlobally(identity));
-    const preparedUpdate = await prepareActionUpdate({
-      current,
-      parsedBody,
-    }).catch((error: unknown) => {
-      if (error instanceof ActionUpdateValidationError) {
-        return validationErrorResponse({
-          [error.field]: [error.message],
-        });
-      }
-      throw error;
+      actionId: trimmedActionId,
     });
-    if (preparedUpdate instanceof Response) {
-      return preparedUpdate;
-    }
+    if (actionContext instanceof Response) return actionContext;
+    const { current, identity } = actionContext;
 
-    const { body, currentMetadata, updateData } = preparedUpdate;
-    auditSnapshots = shouldAuditModeration
-      ? buildActionAuditSnapshots(
-          current,
-          body,
-          currentMetadata,
-        )
-      : null;
-    const hasActionUpdates = Object.keys(updateData).length > 0;
-    adminErrorStage = "action_update";
-    const updateResult = hasActionUpdates
-      ? await supabase
-          .from("actions")
-          .update(updateData)
-          .eq("id", trimmedActionId)
-          .select("id")
-          .single()
-      : { data: { id: trimmedActionId }, error: null };
+    const mutation = await preparePatchMutation({
+      supabase,
+      userId,
+      current,
+      identity,
+      parsed,
+    });
+    if (mutation instanceof Response) return mutation;
+    const {
+      preparedUpdate,
+      shouldAuditModeration: mutationShouldAuditModeration,
+      adminAuditActorUserId: mutationAuditActorUserId,
+      adminAuditTargetUserId: mutationAuditTargetUserId,
+      moderationOperation: mutationOperation,
+      moderationReason: mutationReason,
+    } = mutation;
+    shouldAuditModeration = mutationShouldAuditModeration;
+    adminAuditActorUserId = mutationAuditActorUserId;
+    adminAuditTargetUserId = mutationAuditTargetUserId;
+    moderationOperation = mutationOperation;
+    moderationReason = mutationReason;
 
-    if (updateResult.error) {
-      throw new Error("Action update failed");
-    }
-    actionWriteSucceeded = hasActionUpdates && Boolean(updateResult.data);
-
-    await runActionUpdatePostProcessing({
+    const patchState: PatchExecutionState = {
+      auditSnapshots,
+      actionWriteSucceeded,
+      adminErrorStage,
+    };
+    const body = await executePreparedActionUpdate({
       supabase,
       actionId: trimmedActionId,
-      updateData,
-      body,
       userId,
+      current,
       identity,
+      preparedUpdate,
       shouldAuditModeration,
-      auditSnapshots,
       adminAuditActorUserId,
       adminAuditTargetUserId,
       moderationOperation,
       moderationReason,
       appendAdminAuditOnce,
-      setErrorStage: (stage) => {
-        adminErrorStage = stage;
-      },
+      state: patchState,
     });
+    if (body instanceof Response) return body;
+    auditSnapshots = patchState.auditSnapshots;
+    actionWriteSucceeded = patchState.actionWriteSucceeded;
+    adminErrorStage = patchState.adminErrorStage;
 
     return NextResponse.json({
       status: "ok",
@@ -304,26 +442,35 @@ export async function PATCH(
       actionPhase: body.actionPhase ?? current["action_phase"],
     });
   } catch (error) {
-    if (
-      shouldAuditModeration &&
-      auditSnapshots
-    ) {
-      await appendAdminAuditOnce({
-        operationId: `action-edit-${trimmedActionId}-${Date.now()}`,
-        actorUserId: adminAuditActorUserId,
-        targetActionId: trimmedActionId,
-        operation: moderationOperation,
-        outcome: "error",
-        reason: moderationReason,
-        targetUserId: adminAuditTargetUserId,
-        previousValue: auditSnapshots.previousValue,
-        newValue: auditSnapshots.newValue,
-        details: {
-          stage: adminErrorStage,
-          partialMutation: actionWriteSucceeded,
-        },
-      });
-    }
-    return handleApiError(error, "PATCH /api/actions/:actionId");
+    return handlePatchError({
+      error,
+      shouldAuditModeration,
+      auditSnapshots,
+      appendAdminAuditOnce,
+      adminAuditActorUserId,
+      adminAuditTargetUserId,
+      moderationOperation,
+      moderationReason,
+      adminErrorStage,
+      actionWriteSucceeded,
+      actionId: trimmedActionId,
+    });
   }
+}
+
+export async function PATCH(
+  request: Request,
+  ctx: { params: Promise<{ actionId: string }> },
+) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) return unauthorizedJsonResponse();
+
+  // Authorization is enforced by loadAuthorizedPatchAction via canManageAction;
+  // preparePatchMutation applies canEditValidatedImpact and
+  // canManageActionsGlobally to their respective privileged paths, while
+  // executePatchRequest records privileged failures with appendActionModerationAudit.
+  const parsedRequest = await parsePatchRequest(request, ctx, access);
+  if (parsedRequest instanceof Response) return parsedRequest;
+  const { userId, trimmedActionId, parsedBody: parsed } = parsedRequest;
+  return executePatchRequest({ userId, trimmedActionId, parsed });
 }

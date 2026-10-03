@@ -75,7 +75,7 @@ async function factsFromAction(current: {
   department_name?: string | null;
   latitude?: number | null;
   longitude?: number | null;
-  derived_geometry_kind?: "point" | "polyline" | "polygon" | null;
+  derived_geometry_kind?: "point" | "polyline" | "polygon" | "multiline" | null;
   derived_geometry_geojson?: string | null;
   preparation_data: {
     plannedObjective?: string | null;

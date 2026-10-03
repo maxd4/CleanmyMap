@@ -51,7 +51,12 @@ Le code et les tests priment si une divergence apparaît.
   CURRENT ne les appelle ; leur retrait relève d'une décision de compatibilité
   séparée et le script reste un outil de réparation historique.
 - les sources métier restent propriétaires de leurs données ; le journal XP ne remplace jamais la source métier.
-- la métrique `Zone sensible apaisée` reste hors des huit progressions infinies :
+- `action_geometry_contributions` est la source canonique des preuves terrain
+  de `cartography`. La réconciliation déduplique sur `(user, action)` et
+  produit `verified_geometry_contribution` dans `progression_events` ; ni un
+  fichier, ni une distance, ni une reconstruction ne crée directement une
+  unité XP supplémentaire.
+- la métrique `Zone sensible apaisée` reste hors des neuf progressions infinies :
   sa qualification est figée à la validation dans `progression_events`, puis
   ses seuils gemme canoniques `1, 3, 5, 8, 10, 15, 20, puis +5` sont projetés
   par des événements idempotents `sensitive_zone_milestone` à `+1 XP` ; l'état
@@ -72,9 +77,10 @@ Le code et les tests priment si une divergence apparaît.
   `introducedInRulesRevision`.
   Une donnée disponible mais non récompensée est donc une décision
   `NON_GAMIFIED` explicite, jamais un backlog implicite.
-- Les huit progressions infinies sont `participation`, `organisation`,
-  `exploration`, `clean_zones`, `regularity`, `versatility`, `learning` et
-  `moderation` (cette dernière étant limitée aux comptes autorisés par AuthZ).
+- Les neuf progressions infinies sont `participation`, `organisation`,
+  `exploration`, `clean_zones`, `regularity`, `versatility`, `learning`,
+  `moderation` et `cartography` (la modération restant limitée aux comptes
+  autorisés par AuthZ).
 - Les jalons CURRENT avec XP sont `Première trace utile`, `Parrainage utile`,
   `Boucle bouclée`, `Mobilisateur`, `Donnée exemplaire` et `Modérateur
   polyvalent`. Les autres jalons CURRENT sont `BADGE_ONLY`.
@@ -93,7 +99,7 @@ Le code et les tests priment si une divergence apparaît.
   un solde séparé.
 - `/api/gamification/me` expose `progression.summary`, la lecture
   utilisateur canonique consommée par les surfaces Gamification et profil.
-  Elle est construite depuis le registre CURRENT et distingue les huit
+  Elle est construite depuis le registre CURRENT et distingue les neuf
   progressions infinies des jalons one-shot `XP_MILESTONE` ou `BADGE_ONLY` ;
   les entrées `NON_GAMIFIED` en sont exclues. `summary.xpTotal` est la somme
   du ledger `progression_events`, et chaque progression/jalon porte sa
@@ -130,7 +136,7 @@ Le code et les tests priment si une divergence apparaît.
   `clean_zones`; elles partagent ce contrat sans partager leur compteur ni
   leur famille de badges.
 - L'XP globale est calculée à partir de la somme des événements actifs des
-  huit progressions, des événements one-shot et des récompenses historiques
+  neuf progressions, des événements one-shot et des récompenses historiques
   explicitement conservées en compatibilité, comme `sensitive_zone_milestone`. Aucun
   `progression_id` SQL supplémentaire n'est requis : la classification est
   dérivée de manière déterministe du registre des `event_type`.

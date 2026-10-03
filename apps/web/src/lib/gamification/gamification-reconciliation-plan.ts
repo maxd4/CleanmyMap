@@ -89,6 +89,7 @@ const CURRENT_SOURCE_TABLES = new Set([
   "trash_spotter_spots",
   "admin_operations_audit",
   "referral_contributions",
+  "action_geometry_contributions",
 ]);
 
 export function asGamificationMetadata(value: unknown): Record<string, unknown> {

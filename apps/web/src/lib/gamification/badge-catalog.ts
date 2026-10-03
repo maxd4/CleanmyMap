@@ -159,7 +159,7 @@ const LEGACY_BADGE_DEFINITIONS = [
     sourceDomain: "sensitive_zone_progression proofs",
     visibility: "current_user",
     progressionId: null,
-    rule: { kind: "legacy_compatibility", description: "Reconnaissance historique de qualification de zone, hors des huit progressions CURRENT." },
+    rule: { kind: "legacy_compatibility", description: "Reconnaissance historique de qualification de zone, hors des neuf progressions CURRENT." },
     xpPolicy: { kind: "none", reason: "La qualification ne crée pas de solde XP indépendant." },
     aliases: ["sensitive_zone_action", "sensitive_zone_milestone"],
   },

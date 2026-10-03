@@ -54,6 +54,7 @@ export type CatalogProgressionInputs = {
   learning: Awaited<ReturnType<typeof loadQuizLearningProgression>>;
   regularity: ReturnType<typeof computeMonthlyRegularitySummary>;
   balance: Awaited<ReturnType<typeof loadActionBalanceSummary>>;
+  cartographyCount: number;
 };
 
 type GamificationCatalogOptions = {
@@ -82,6 +83,14 @@ const BASE_CURRENT_PROGRESSION_IDS = [
   "regularity",
   "versatility",
   "learning",
+  "cartography",
+] as const;
+
+const CARTOGRAPHY_TIERS = [
+  { id: "premiere-contribution", label: "Première contribution", threshold: 1 },
+  { id: "cartographe-5", label: "Cartographe 5", threshold: 5 },
+  { id: "cartographe-10", label: "Cartographe 10", threshold: 10 },
+  { id: "cartographe-25", label: "Cartographe 25", threshold: 25 },
 ] as const;
 
 function progressionTiersFromGemConfig(
@@ -146,6 +155,7 @@ function actionRowsAsBalanceRows(rows: readonly ActionRow[]): ActionBalanceRow[]
 function buildPrimaryProgressionFacts({
   counters,
   cleanZoneSources,
+  cartographyCount,
 }: CatalogProgressionInputs): Record<string, GamificationCatalogProgressionFact> {
   return {
     participation: {
@@ -170,6 +180,12 @@ function buildPrimaryProgressionFacts({
       started: cleanZoneSources.length > 0,
       tiers: progressionTiersFromLabeled(CLEAN_ZONES_TIERS),
       continuationTitle: continuationTitleFromTiers(CLEAN_ZONES_TIERS),
+    },
+    cartography: {
+      currentValue: cartographyCount,
+      started: cartographyCount > 0,
+      tiers: progressionTiersFromLabeled(CARTOGRAPHY_TIERS),
+      continuationTitle: (threshold: number) => `Cartographe ${threshold}`,
     },
   };
 }
@@ -215,7 +231,7 @@ async function loadCatalogDependencies(
   const actionRowsPromise = options?.actionRows
     ? Promise.resolve(options.actionRows)
     : loadActionRowsForUser(supabase, userId);
-  const [counters, cleanZoneSources, learning, regularity, balance, referral, eventsResult, identity, rulesMigrationState] =
+  const [counters, cleanZoneSources, learning, regularity, balance, cartographyResult, referral, eventsResult, identity, rulesMigrationState] =
     await Promise.all([
       loadGamificationUserCounters(supabase, userId),
       loadCleanZoneSourcesForUser(supabase, userId),
@@ -226,6 +242,12 @@ async function loadCatalogDependencies(
           actionRows: actionRowsAsBalanceRows(rows),
         }),
       ),
+      supabase
+        .from("action_geometry_contributions")
+        .select("action_id")
+        .eq("contributor_clerk_id", userId)
+        .eq("validation_state", "accepted")
+        .limit(10000),
       loadReferralSummary(supabase, userId),
       options?.progressionEvents ?? loadGamificationLedgerEvents(supabase, userId),
       getCurrentUserIdentity({ userId }).catch(() => null),
@@ -233,17 +255,42 @@ async function loadCatalogDependencies(
         ? Promise.resolve(options.rulesMigrationState)
         : loadGamificationRulesMigrationState(supabase, userId),
     ]);
+  if (cartographyResult.error) {
+    throw new Error(cartographyResult.error.message);
+  }
   return {
     counters,
     cleanZoneSources,
     learning,
     regularity,
     balance,
+    cartographyCount: new Set(
+      (cartographyResult.data ?? [])
+        .map((row) => (row as { action_id?: string | null }).action_id)
+        .filter((actionId): actionId is string => Boolean(actionId)),
+    ).size,
     referral,
     eventsResult,
     identity,
     rulesMigrationState,
   };
+}
+
+function buildCatalogBaseState(data: CatalogLoadedData) {
+  const events = asMilestoneEvents(data.eventsResult).map((event) => ({
+    event_type: event.event_type as ProgressionEventType,
+    status_phase: event.status_phase as ProgressionStatusPhase,
+    source_id: event.source_id,
+    xp_awarded: Number(event.xp_awarded) || 0,
+    occurred_on: event.occurred_on ?? null,
+    metadata: event.metadata ?? null,
+  }));
+  const milestones = buildCurrentMilestones({
+    completeActionsCount: data.counters.completeActionsCount,
+    events,
+  });
+  const progressionFacts = buildProgressionFacts(data);
+  return { milestones, progressionFacts };
 }
 
 export async function loadGamificationRulesMigrationState(
@@ -284,31 +331,24 @@ export async function loadGamificationCatalog(
     learning,
     regularity,
     balance,
+    cartographyCount,
     referral,
     eventsResult,
     identity,
     rulesMigrationState,
   } = await loadCatalogDependencies(supabase, userId, options);
 
-  const events = asMilestoneEvents(eventsResult).map((event) => ({
-    event_type: event.event_type as ProgressionEventType,
-    status_phase: event.status_phase as ProgressionStatusPhase,
-    source_id: event.source_id,
-    xp_awarded: Number(event.xp_awarded) || 0,
-    occurred_on: event.occurred_on ?? null,
-    metadata: event.metadata ?? null,
-  }));
-  const milestones = buildCurrentMilestones({
-    completeActionsCount: counters.completeActionsCount,
-    events,
-  });
-
-  const progressionFacts = buildProgressionFacts({
+  const { milestones, progressionFacts } = buildCatalogBaseState({
     counters,
     cleanZoneSources,
     learning,
     regularity,
     balance,
+    cartographyCount,
+    referral,
+    eventsResult,
+    identity,
+    rulesMigrationState,
   });
 
   const moderationApplicable = canViewModerationProgression(identity, userId);

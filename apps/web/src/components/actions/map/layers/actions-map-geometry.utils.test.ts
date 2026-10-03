@@ -88,6 +88,51 @@ describe("actions map geometry utils", () => {
     expect(formatActionGeometryTooltipTitle("polygon")).toBe("Zone d'action");
   });
 
+  it("renders independent accepted observations as separate coverage lines", () => {
+    const item = toActionMapItem(
+      buildActionDataContract({
+        id: "multi-trace-action",
+        type: "action",
+        status: "approved",
+        source: "actions",
+        observedAt: "2026-04-08",
+        locationLabel: "Parc test",
+        latitude: 48.85,
+        longitude: 2.35,
+        derivedGeometryKind: "multiline",
+        derivedGeometryGeoJson: JSON.stringify({
+          type: "MultiLineString",
+          coordinates: [
+            [[2.35, 48.85], [2.351, 48.851]],
+            [[2.36, 48.86], [2.361, 48.861]],
+          ],
+        }),
+        geometrySource: "gps_tracking",
+        preparationData: {
+          observedCoverage: {
+            type: "MultiLineString",
+            coordinates: [
+              [[2.35, 48.85], [2.351, 48.851]],
+              [[2.36, 48.86], [2.361, 48.861]],
+            ],
+            traceCount: 2,
+            individualDistancesKm: [0.2, 0.3],
+            coverageDistanceKm: null,
+            coverageVersion: "observed-traces-v1",
+          },
+        },
+      }),
+    );
+
+    const geometry = resolveActionMapGeometryViewModel(item);
+    expect(geometry.kind).toBe("multiline");
+    expect(geometry.multiLinePositions).toHaveLength(2);
+    expect(geometry.positions).toEqual([]);
+    expect(geometry.coverageTraceCount).toBe(2);
+    expect(geometry.presentation.label).toBe("Couverture observée par plusieurs bénévoles");
+    expect(geometry.metrics.label).toContain("distances individuelles conservées");
+  });
+
   it("shows confidence only for estimated geometry and preserves stroke semantics", () => {
     expect(
       resolveGeometryConfidenceLabel({ reality: "real" }, 0.95),

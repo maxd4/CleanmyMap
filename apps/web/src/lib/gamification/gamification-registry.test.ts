@@ -74,7 +74,7 @@ describe("CURRENT gamification registry", () => {
     expect(GAMIFICATION_REGISTRY.every((entry) => entry.sourceDomain)).toBe(true);
     expect(GAMIFICATION_REGISTRY.every((entry) => entry.description)).toBe(true);
 
-    expect(CURRENT_INFINITE_PROGRESSIONS).toHaveLength(8);
+    expect(CURRENT_INFINITE_PROGRESSIONS).toHaveLength(9);
     expect(CURRENT_INFINITE_PROGRESSIONS.every((entry) =>
       entry.category === "XP_PROGRESSION" &&
       entry.progressionId === entry.id &&
@@ -82,6 +82,8 @@ describe("CURRENT gamification registry", () => {
     )).toBe(true);
     expect(CURRENT_INFINITE_PROGRESSIONS.find((entry) => entry.id === "moderation"))
       .toMatchObject({ visibility: "authorized_moderation" });
+    expect(CURRENT_INFINITE_PROGRESSIONS.find((entry) => entry.id === "cartography"))
+      .toMatchObject({ label: "Contribution cartographique", metric: "verified_geometry_contributions" });
 
     expect(CURRENT_MILESTONES).toHaveLength(15);
     expect(CURRENT_MILESTONES.every((entry) =>

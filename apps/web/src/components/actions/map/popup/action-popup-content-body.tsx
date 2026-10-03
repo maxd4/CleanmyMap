@@ -34,7 +34,7 @@ type ActionPopupContentBodyProps = {
   isAction: boolean;
   signalementId?: string | null;
   onViewGeometry?: () => void;
-  geometryKind?: "polyline" | "polygon" | "point" | null;
+  geometryKind?: "polyline" | "polygon" | "point" | "multiline" | null;
   compact?: boolean;
 };
 
