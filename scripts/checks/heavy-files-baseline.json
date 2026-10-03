@@ -21,10 +21,10 @@
     {
       "path": "apps/web/src/app/api/admin/moderation/route.action.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 551,
-      "maxBytes": 16019
+      "status": "IMPROVED",
+      "reviewedRef": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
+      "maxLines": 398,
+      "maxBytes": 12043
     },
     {
       "path": "apps/web/src/app/api/chat/route.post.ts",
@@ -101,10 +101,10 @@
     {
       "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 794,
-      "maxBytes": 35880
+      "status": "IMPROVED",
+      "reviewedRef": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
+      "maxLines": 176,
+      "maxBytes": 4672
     },
     {
       "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx",
@@ -157,10 +157,10 @@
     {
       "path": "apps/web/src/components/admin/admin-dashboard-ui.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 578,
-      "maxBytes": 15714
+      "status": "IMPROVED",
+      "reviewedRef": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
+      "maxLines": 490,
+      "maxBytes": 13561
     },
     {
       "path": "apps/web/src/components/chat/chat-shell.tsx",
@@ -293,10 +293,10 @@
     {
       "path": "apps/web/src/lib/actions/map/map-http.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 534,
-      "maxBytes": 15610
+      "status": "IMPROVED",
+      "reviewedRef": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
+      "maxLines": 490,
+      "maxBytes": 15616
     },
     {
       "path": "apps/web/src/lib/actions/metadata.ts",
@@ -317,10 +317,10 @@
     {
       "path": "apps/web/src/lib/actions/participation/organizers.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 541,
-      "maxBytes": 14213
+      "status": "IMPROVED",
+      "reviewedRef": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
+      "maxLines": 499,
+      "maxBytes": 13090
     },
     {
       "path": "apps/web/src/lib/actions/pollution/corridor-history.ts",
@@ -381,10 +381,10 @@
     {
       "path": "apps/web/src/components/account/greater-paris-select.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 768,
-      "maxBytes": 27711
+      "status": "IMPROVED",
+      "reviewedRef": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
+      "maxLines": 173,
+      "maxBytes": 5680
     },
     {
       "path": "apps/web/src/lib/geo/greater-paris.ts",
@@ -405,10 +405,10 @@
     {
       "path": "apps/web/src/lib/governance/governance-monthly-report-store.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 537,
-      "maxBytes": 17363
+      "status": "IMPROVED",
+      "reviewedRef": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
+      "maxLines": 500,
+      "maxBytes": 16042
     },
     {
       "path": "apps/web/src/lib/impact/impact-terrain-2026.ts",
@@ -421,10 +421,10 @@
     {
       "path": "apps/web/src/lib/learning/quiz/quiz-personal-progress.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 759,
-      "maxBytes": 25419
+      "status": "IMPROVED",
+      "reviewedRef": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
+      "maxLines": 13,
+      "maxBytes": 430
     },
     {
       "path": "apps/web/src/lib/learning/quiz/quiz-quality-audit.ts",
@@ -485,10 +485,10 @@
     {
       "path": "apps/web/src/lib/supabase/storage-business-contribution.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 718,
-      "maxBytes": 24975
+      "status": "IMPROVED",
+      "reviewedRef": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
+      "maxLines": 263,
+      "maxBytes": 9839
     },
     {
       "path": "apps/web/src/lib/supabase/storage-usage.ts",
