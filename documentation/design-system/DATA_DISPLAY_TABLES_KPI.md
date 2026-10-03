@@ -52,9 +52,10 @@ ne définissent pas un système visuel parallèle.
 
 ## Frontière Print / Export
 
-`ReportTable`, les tables PDF/HTML/email et `cmm-table-wrap` sont des contrats
-spécialisés de Print / Export. Ils restent hors du contrat runtime et ne
-doivent jamais être confondus avec `cmm-data-table-wrap`.
+Les tables PDF/HTML/email spécialisées, `ReportPage` et `cmm-table-wrap` sont des
+contrats de Print / Export. Il n'existe plus de composant `ReportTable` dans le
+runtime ; ces owners restent hors du contrat runtime et ne doivent jamais être
+confondus avec `cmm-data-table-wrap`.
 
 ## État de migration
 
