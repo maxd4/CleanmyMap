@@ -11,6 +11,8 @@ import {
   getStoredMissionId,
   setStoredMissionId,
   clearStoredMissionId,
+  enqueuePendingLinkedMissionReconciliation,
+  removePendingLinkedMissionReconciliation,
   bufferPoint,
   bufferAction,
   flushBuffer,
@@ -319,8 +321,11 @@ export async function stopTracking(
   await clearStoredMissionId();
 
   if (missionResult.data.action_id) {
+    await enqueuePendingLinkedMissionReconciliation(missionResult.data.id);
     const handoff = await reconcileLinkedMission(missionResult.data.id);
-    if (!handoff.ok) {
+    if (handoff.ok || handoff.terminal) {
+      await removePendingLinkedMissionReconciliation(missionResult.data.id);
+    } else {
       console.warn('[GPS] Mission finalisée; réconciliation gamification différée.', handoff.error);
     }
   }

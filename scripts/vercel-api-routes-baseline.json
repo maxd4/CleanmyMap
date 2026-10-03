@@ -84,6 +84,7 @@
     "apps/web/src/app/api/homepage/activity/route.ts",
     "apps/web/src/app/api/legal-content-reports/route.ts",
     "apps/web/src/app/api/manifest/route.ts",
+    "apps/web/src/app/api/missions/[missionId]/reconcile/route.ts",
     "apps/web/src/app/api/missions/route.ts",
     "apps/web/src/app/api/newsletter/subscribe/route.ts",
     "apps/web/src/app/api/partners/onboarding-requests/route.ts",

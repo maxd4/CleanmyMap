@@ -52,6 +52,14 @@ export type OperationalRoute = {
   zones: Record<OperationalRouteZoneKey, OperationalRouteZone>;
 };
 
+export type PublicOperationalRoute = {
+  routes: Array<{
+    routeId: string;
+    groupIndex: number;
+    coordinates: [number, number][];
+  }>;
+};
+
 export type PlannerActionHandoff = {
   /** Existing pre-action to enrich; absent means create a new one. */
   actionId?: string;
@@ -191,18 +199,40 @@ export function getOperationalRouteLoopCount(
 
 /** Public map segments intentionally omit planner technical stops. */
 export function getPublicOperationalRouteSegments(
-  operationalRoute: OperationalRoute | null | undefined,
+  operationalRoute: OperationalRoute | PublicOperationalRoute | null | undefined,
 ): Array<{ routeId: string; groupIndex: number; coordinates: [number, number][] }> {
   return (operationalRoute?.routes ?? [])
-    .filter((route) => route.geometry.coordinates.length >= 2)
-    .map((route) => ({
-      routeId: route.routeId,
-      groupIndex: route.groupIndex,
-      coordinates: route.geometry.coordinates.map(([latitude, longitude]) => [
-        latitude,
-        longitude,
-      ] as [number, number]),
-    }));
+    .map((route) => {
+      const candidate = route as {
+        routeId?: unknown;
+        groupIndex?: unknown;
+        coordinates?: unknown;
+        geometry?: { coordinates?: unknown };
+      };
+      const coordinates = Array.isArray(candidate.coordinates)
+        ? candidate.coordinates
+        : candidate.geometry?.coordinates;
+      if (
+        typeof candidate.routeId !== "string" ||
+        !Number.isInteger(candidate.groupIndex) ||
+        !Array.isArray(coordinates)
+      ) {
+        return null;
+      }
+      const normalized = coordinates.filter(
+        (coordinate): coordinate is [number, number] =>
+          Array.isArray(coordinate) &&
+          coordinate.length >= 2 &&
+          typeof coordinate[0] === "number" &&
+          Number.isFinite(coordinate[0]) &&
+          typeof coordinate[1] === "number" &&
+          Number.isFinite(coordinate[1]),
+      ).map(([latitude, longitude]) => [latitude, longitude] as [number, number]);
+      return normalized.length >= 2
+        ? { routeId: candidate.routeId, groupIndex: candidate.groupIndex, coordinates: normalized }
+        : null;
+    })
+    .filter((segment): segment is { routeId: string; groupIndex: number; coordinates: [number, number][] } => segment !== null);
 }
 
 export function isOperationalRoute(value: unknown): value is OperationalRoute {

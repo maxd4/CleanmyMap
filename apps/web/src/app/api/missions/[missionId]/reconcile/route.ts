@@ -4,7 +4,6 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { reconcileUserGamification } from "@/lib/gamification/gamification-reconciliation";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 /**
  * PURPOSE: reconcile a completed linked mission from canonical contribution facts.
