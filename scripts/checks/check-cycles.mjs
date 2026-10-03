@@ -3,12 +3,27 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+
+import { runCommandWithTimeout } from "../ci/validation-process.mjs";
+import {
+  GITNEXUS_HEARTBEAT_MS,
+  GITNEXUS_STEP_TIMEOUT_MS,
+} from "../audits/audit-gitnexus.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const baselinePath = path.join(repositoryRoot, "scripts", "checks", "cycles-baseline.json");
 const auditScriptPath = path.join(repositoryRoot, "scripts", "audits", "audit-gitnexus.mjs");
+export const GITNEXUS_AUDIT_TIMEOUT_MS = GITNEXUS_STEP_TIMEOUT_MS * 3 + 5_000;
+
+export class CycleGateError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = "CycleGateError";
+    this.code = code;
+  }
+}
 
 function git(args) {
   return execFileSync("git", args, { cwd: repositoryRoot, encoding: "utf8" }).trim();
@@ -66,35 +81,88 @@ function parseCycleReport(stdout) {
   }
 }
 
+function cycleGateError(code, message) {
+  return new CycleGateError(code, message);
+}
+
+function classifyAuditResult(result) {
+  if (result.timedOut || result.interrupted) {
+    throw cycleGateError("TIMEOUT", "GitNexus audit process timed out or was interrupted.");
+  }
+  const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
+  const timeout = output.match(/HOST_ENVIRONMENT: GitNexus step timed out[^\r\n]*/);
+  if (timeout) throw cycleGateError("TIMEOUT", timeout[0]);
+  const hostEnvironment = output.match(/HOST_ENVIRONMENT:[^\r\n]*/);
+  if (hostEnvironment) throw cycleGateError("HOST_ENVIRONMENT", hostEnvironment[0]);
+}
+
+async function runAuditProcess() {
+  const result = await runCommandWithTimeout({
+    command: { executable: process.execPath, args: [auditScriptPath, "--cycles"] },
+    cwd: repositoryRoot,
+    timeoutMs: GITNEXUS_AUDIT_TIMEOUT_MS,
+    heartbeatMs: GITNEXUS_HEARTBEAT_MS,
+    onStdout: (text) => process.stdout.write(text),
+    onStderr: (text) => process.stderr.write(text),
+    onHeartbeat: (elapsedSeconds) => {
+      process.stderr.write(`GITNEXUS_AUDIT_STILL_RUNNING: elapsed=${Math.floor(elapsedSeconds)}s\n`);
+    },
+  });
+  return {
+    status: result.exitCode ?? 1,
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+    timedOut: result.timedOut,
+    interrupted: result.interrupted,
+  };
+}
+
 export function formatCycleDiagnostic(cycle) {
   const files = Array.isArray(cycle?.files) ? cycle.files.join(" -> ") : "unknown files";
   return `files=${files}`;
 }
 
-export function runCycleGate({ runAudit = () => spawnSync(process.execPath, [auditScriptPath, "--cycles"], {
-  cwd: repositoryRoot,
-  encoding: "utf8",
-  windowsHide: true,
-}) } = {}) {
-  if (!fs.existsSync(auditScriptPath)) throw new Error(`HOST_ENVIRONMENT: GitNexus audit script missing: ${auditScriptPath}.`);
-  const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
-  assertBaselineFresh(baseline);
-  const result = runAudit();
-  const toolOutput = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
-  const hostEnvironmentFailure = toolOutput.match(/HOST_ENVIRONMENT:[^\r\n]*/);
-  if (hostEnvironmentFailure) throw new Error(hostEnvironmentFailure[0]);
-  const report = parseCycleReport(result.stdout ?? "");
-  if (result.status !== 0 && report.status !== "cycles_found") {
-    throw new Error(`GitNexus cycle check failed with exit ${result.status}: ${result.stderr || result.stdout}`);
+export async function runCycleGate({ runAudit = runAuditProcess, baseline: suppliedBaseline } = {}) {
+  if (!fs.existsSync(auditScriptPath)) throw cycleGateError("HOST_ENVIRONMENT", `HOST_ENVIRONMENT: GitNexus audit script missing: ${auditScriptPath}.`);
+  let baseline;
+  try {
+    baseline = suppliedBaseline ?? JSON.parse(fs.readFileSync(baselinePath, "utf8"));
+    assertBaselineFresh(baseline);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("cycle baseline stale")) throw cycleGateError("FAIL_STALE_BASELINE", message);
+    throw cycleGateError("MALFORMED_REPORT", message);
   }
-  const cycles = normalizeCycleReport(report);
+  const result = await runAudit();
+  classifyAuditResult(result);
+  let report;
+  try {
+    report = parseCycleReport(result.stdout ?? "");
+  } catch (error) {
+    throw cycleGateError("MALFORMED_REPORT", error instanceof Error ? error.message : String(error));
+  }
+  if (result.status !== 0 && report.status !== "cycles_found") {
+    throw cycleGateError("MALFORMED_REPORT", `GitNexus cycle check failed with exit ${result.status}: ${result.stderr || result.stdout}`);
+  }
+  let cycles;
+  try {
+    cycles = normalizeCycleReport(report);
+  } catch (error) {
+    throw cycleGateError("MALFORMED_REPORT", error instanceof Error ? error.message : String(error));
+  }
   const comparison = compareCycleBaseline(cycles, baseline.cycles);
-  return { report, cycles, comparison, cycleObjects: report.cycles };
+  const gateStatus = comparison.added.length > 0
+    ? "FAIL_NEW_CYCLE"
+    : comparison.stale.length > 0
+      ? "FAIL_STALE_BASELINE"
+      : "PASS";
+  return { report, cycles, comparison, cycleObjects: report.cycles, gateStatus };
 }
 
 async function main() {
   try {
-    const result = runCycleGate();
+    const result = await runCycleGate();
+    console.log(`CYCLES_STATUS: ${result.gateStatus}`);
     console.log(`GitNexus cycles: ${result.cycles.length} current, ${result.comparison.added.length} new, ${result.comparison.stale.length} stale baseline entrie(s).`);
     if (result.comparison.added.length > 0 || result.comparison.stale.length > 0) {
       const cyclesByFingerprint = new Map(result.cycleObjects.map((cycle) => [cycleFingerprint(cycle), cycle]));
@@ -105,6 +173,7 @@ async function main() {
     }
     console.log("PASS: no new runtime cycle and historical cycle baseline is stable.");
   } catch (error) {
+    console.error(`CYCLES_STATUS: ${error instanceof CycleGateError ? error.code : "MALFORMED_REPORT"}`);
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
   }
