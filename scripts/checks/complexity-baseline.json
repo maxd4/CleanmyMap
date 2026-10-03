@@ -1905,24 +1905,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/learning/quiz/quiz-personal-progress.ts",
-      "line": 193,
-      "category": "métier/domain pur",
-      "ceiling": 49,
-      "status": "LEGACY",
-      "functionIdentity": "named:normalizeQuizPersonalProgressState#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/lib/learning/quiz/quiz-personal-progress.ts",
-      "line": 635,
-      "category": "métier/domain pur",
-      "ceiling": 17,
-      "status": "LEGACY",
-      "functionIdentity": "named:mergeQuizPersonalProgress#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/lib/learning/quiz/quiz-quality-audit.ts",
       "line": 396,
       "category": "métier/domain pur",
@@ -5133,24 +5115,6 @@
       "ceiling": 75,
       "status": "LEGACY",
       "functionIdentity": "named:syncQuizPedagogicalMetrics#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/learning/quiz/quiz-personal-progress.ts",
-      "line": 193,
-      "category": "métier/domain pur",
-      "ceiling": 89,
-      "status": "LEGACY",
-      "functionIdentity": "named:normalizeQuizPersonalProgressState#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/learning/quiz/quiz-personal-progress.ts",
-      "line": 635,
-      "category": "métier/domain pur",
-      "ceiling": 75,
-      "status": "LEGACY",
-      "functionIdentity": "named:mergeQuizPersonalProgress#1"
     },
     {
       "metric": "functionLength",
