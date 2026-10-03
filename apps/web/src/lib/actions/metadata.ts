@@ -37,6 +37,15 @@ type ActionNotesMeta = {
   visionEstimate?: ActionVisionEstimate;
 };
 
+type ActionInputMetadata = Omit<
+  ActionNotesMeta,
+  "cigaretteButtsMeasurements" | "volunteerParticipation" | "visionEstimate"
+> & {
+  cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+  volunteerParticipation?: ActionVolunteerParticipation | null;
+  visionEstimate?: ActionVisionEstimate | null;
+};
+
 function safeParseMeta(raw: string): ActionNotesMeta | null {
   try {
     const parsed = JSON.parse(raw) as ActionNotesMeta;
@@ -68,22 +77,15 @@ type ActionNotesExtractionState = {
   cleanLines: string[];
 };
 
+type ActionNotesExtractionResult = Omit<ActionNotesExtractionState, "cleanLines"> & {
+  cleanNotes: string | null;
+};
+
 function hasNonEmptyText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function hasStructuredActionMetadata(metadata: {
-  wasteBreakdown?: ActionWasteBreakdown;
-  wasteMeasurementMethod?: ActionWasteMeasurementMethod;
-  cigaretteButtsKg?: number | null;
-  cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
-  volunteerParticipation?: ActionVolunteerParticipation | null;
-  associationName?: string;
-  groupJoinEnabled?: boolean;
-  placeType?: string;
-  departureLocationLabel?: string;
-  arrivalLocationLabel?: string;
-}): boolean {
+function hasStructuredActionMetadata(metadata: ActionInputMetadata): boolean {
   const associationName = metadata.associationName?.trim();
   const hasWasteBreakdown =
     metadata.wasteBreakdown &&
@@ -104,13 +106,7 @@ function hasStructuredActionMetadata(metadata: {
   );
 }
 
-function hasContentActionMetadata(metadata: {
-  submissionMode?: ActionSubmissionMode;
-  routeStyle?: "direct" | "souple";
-  routeAdjustmentMessage?: string;
-  photos?: ActionNotesMeta["photos"];
-  visionEstimate?: ActionVisionEstimate | null;
-}): boolean {
+function hasContentActionMetadata(metadata: ActionInputMetadata): boolean {
   return Boolean(
     metadata.submissionMode ||
       metadata.routeStyle ||
@@ -120,44 +116,14 @@ function hasContentActionMetadata(metadata: {
   );
 }
 
-function hasActionMetadata(
-  metadata: {
-    submissionMode?: ActionSubmissionMode;
-    wasteBreakdown?: ActionWasteBreakdown;
-    wasteMeasurementMethod?: ActionWasteMeasurementMethod;
-    cigaretteButtsKg?: number | null;
-    cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
-    volunteerParticipation?: ActionVolunteerParticipation | null;
-    associationName?: string;
-    groupJoinEnabled?: boolean;
-    placeType?: string;
-    departureLocationLabel?: string;
-    arrivalLocationLabel?: string;
-    routeStyle?: "direct" | "souple";
-    routeAdjustmentMessage?: string;
-    photos?: ActionNotesMeta["photos"];
-    visionEstimate?: ActionVisionEstimate | null;
-  },
-): boolean {
+function hasActionMetadata(metadata: ActionInputMetadata): boolean {
   return (
     hasStructuredActionMetadata(metadata) || hasContentActionMetadata(metadata)
   );
 }
 
 function buildStructuredMetadataPayload(
-  metadata: {
-    submissionMode?: ActionSubmissionMode;
-    wasteBreakdown?: ActionWasteBreakdown;
-    wasteMeasurementMethod?: ActionWasteMeasurementMethod;
-    cigaretteButtsKg?: number | null;
-    cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
-    volunteerParticipation?: ActionVolunteerParticipation | null;
-    associationName?: string;
-    groupJoinEnabled?: boolean;
-    placeType?: string;
-    departureLocationLabel?: string;
-    arrivalLocationLabel?: string;
-  },
+  metadata: ActionInputMetadata,
 ): ActionNotesMeta {
   const metaPayload: ActionNotesMeta = {};
   if (metadata.submissionMode) {
@@ -204,12 +170,7 @@ function buildStructuredMetadataPayload(
 }
 
 function buildContentMetadataPayload(
-  metadata: {
-    routeStyle?: "direct" | "souple";
-    routeAdjustmentMessage?: string;
-    photos?: ActionNotesMeta["photos"];
-    visionEstimate?: ActionVisionEstimate | null;
-  },
+  metadata: ActionInputMetadata,
 ): Pick<
   ActionNotesMeta,
   "routeStyle" | "routeAdjustmentMessage" | "photos" | "visionEstimate"
@@ -280,6 +241,33 @@ function initializeActionNotesExtractionState(): ActionNotesExtractionState {
     photos: null,
     visionEstimate: null,
     cleanLines: [],
+  };
+}
+
+function toActionNotesExtractionResult(
+  state: ActionNotesExtractionState,
+  cleanNotes: string | null,
+): ActionNotesExtractionResult {
+  return {
+    cleanNotes,
+    submissionMode: state.submissionMode,
+    wasteBreakdown: state.wasteBreakdown,
+    wasteMeasurementMethod: state.wasteMeasurementMethod,
+    cigaretteButtsKg:
+      state.cigaretteButtsKg ??
+      state.cigaretteButtsMeasurements?.cigaretteButtsMassKg ??
+      null,
+    cigaretteButtsMeasurements: state.cigaretteButtsMeasurements,
+    volunteerParticipation: state.volunteerParticipation,
+    associationName: state.associationName,
+    groupJoinEnabled: state.groupJoinEnabled,
+    placeType: state.placeType,
+    departureLocationLabel: state.departureLocationLabel,
+    arrivalLocationLabel: state.arrivalLocationLabel,
+    routeStyle: state.routeStyle,
+    routeAdjustmentMessage: state.routeAdjustmentMessage,
+    photos: state.photos,
+    visionEstimate: state.visionEstimate,
   };
 }
 
@@ -387,23 +375,7 @@ function applyParsedContentActionNotesMeta(
 
 export function appendActionMetadataToNotes(
   baseNotes: string | undefined,
-  metadata: {
-    submissionMode?: ActionSubmissionMode;
-    wasteBreakdown?: ActionWasteBreakdown;
-    wasteMeasurementMethod?: ActionWasteMeasurementMethod;
-    cigaretteButtsKg?: number | null;
-    cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
-    volunteerParticipation?: ActionVolunteerParticipation | null;
-    associationName?: string;
-    groupJoinEnabled?: boolean;
-    placeType?: string;
-    departureLocationLabel?: string;
-    arrivalLocationLabel?: string;
-    routeStyle?: "direct" | "souple";
-    routeAdjustmentMessage?: string;
-    photos?: ActionNotesMeta["photos"];
-    visionEstimate?: ActionVisionEstimate | null;
-  },
+  metadata: ActionInputMetadata,
 ): string | null {
   const trimmedBase = (baseNotes ?? "").trim();
   if (!hasActionMetadata(metadata)) {
@@ -420,43 +392,9 @@ export function appendActionMetadataToNotes(
 
 export function extractActionMetadataFromNotes(
   notes: string | null | undefined,
-): {
-  cleanNotes: string | null;
-  submissionMode: ActionSubmissionMode | null;
-  wasteBreakdown: ActionWasteBreakdown | null;
-  wasteMeasurementMethod: ActionWasteMeasurementMethod | null;
-  cigaretteButtsKg: number | null;
-  cigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
-  volunteerParticipation: ActionVolunteerParticipation | null;
-  associationName: string | null;
-  groupJoinEnabled: boolean;
-  placeType: string | null;
-  departureLocationLabel: string | null;
-  arrivalLocationLabel: string | null;
-  routeStyle: "direct" | "souple" | null;
-  routeAdjustmentMessage: string | null;
-  photos: ActionNotesMeta["photos"] | null;
-  visionEstimate: ActionVisionEstimate | null;
-} {
+): ActionNotesExtractionResult {
   if (!notes) {
-    return {
-      cleanNotes: null,
-      submissionMode: null,
-      wasteBreakdown: null,
-      wasteMeasurementMethod: null,
-      cigaretteButtsKg: null,
-      cigaretteButtsMeasurements: null,
-      volunteerParticipation: null,
-      associationName: null,
-      groupJoinEnabled: false,
-      placeType: null,
-      departureLocationLabel: null,
-      arrivalLocationLabel: null,
-      routeStyle: null,
-      routeAdjustmentMessage: null,
-      photos: null,
-      visionEstimate: null,
-    };
+    return toActionNotesExtractionResult(initializeActionNotesExtractionState(), null);
   }
 
   const lines = notes.split(/\r?\n/);
@@ -488,27 +426,10 @@ export function extractActionMetadataFromNotes(
     .filter((line) => line.trim().length > 0)
     .join("\n")
     .trim();
-  return {
-    cleanNotes: cleanNotes.length > 0 ? cleanNotes : null,
-    submissionMode: state.submissionMode,
-    wasteBreakdown: state.wasteBreakdown,
-    wasteMeasurementMethod: state.wasteMeasurementMethod,
-    cigaretteButtsKg:
-      state.cigaretteButtsKg ??
-      state.cigaretteButtsMeasurements?.cigaretteButtsMassKg ??
-      null,
-    cigaretteButtsMeasurements: state.cigaretteButtsMeasurements,
-    volunteerParticipation: state.volunteerParticipation,
-    associationName: state.associationName,
-    groupJoinEnabled: state.groupJoinEnabled,
-    placeType: state.placeType,
-    departureLocationLabel: state.departureLocationLabel,
-    arrivalLocationLabel: state.arrivalLocationLabel,
-    routeStyle: state.routeStyle,
-    routeAdjustmentMessage: state.routeAdjustmentMessage,
-    photos: state.photos,
-    visionEstimate: state.visionEstimate,
-  };
+  return toActionNotesExtractionResult(
+    state,
+    cleanNotes.length > 0 ? cleanNotes : null,
+  );
 }
 
 export function setActionGroupJoinEnabledInNotes(

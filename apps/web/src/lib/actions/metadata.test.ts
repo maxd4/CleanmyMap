@@ -48,6 +48,14 @@ describe("action metadata notes", () => {
     expect(parsed.groupJoinEnabled).toBe(false);
   });
 
+  it("preserves the legacy routeStyle normalization when extracting metadata", () => {
+    const parsed = extractActionMetadataFromNotes(
+      `[cmm-meta]${JSON.stringify({ routeStyle: "direct" })}`,
+    );
+
+    expect(parsed.routeStyle).toBe("souple");
+  });
+
   it("persists an open group form flag in metadata", () => {
     const notes = appendActionMetadataToNotes("Simple note", {
       groupJoinEnabled: true,
