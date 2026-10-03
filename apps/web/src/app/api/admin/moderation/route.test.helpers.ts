@@ -1,9 +1,9 @@
 import { vi } from "vitest";
 
-export function createActionSupabaseHarness() {
+export function createActionSupabaseHarness(initialStatus: "pending" | "approved" | "rejected" = "pending") {
   let row: Record<string, unknown> = {
     id: "action-1",
-    status: "pending",
+    status: initialStatus,
     moderation_visibility: "visible",
     created_by_clerk_id: "creator-1",
     action_date: "2026-08-20",

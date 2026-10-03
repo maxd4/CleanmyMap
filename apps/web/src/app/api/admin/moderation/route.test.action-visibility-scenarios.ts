@@ -12,7 +12,7 @@ export function registerActionVisibilityScenarios({
     getSupabaseAdminClientMock,
     appendAdminOperationAuditMock,
     copyValidatedActionToLocalStoreMock,
-    emitActionValidatedMock,
+    trackActionValidationBonusMock,
   } = mocks;
 
   it("hides an action through moderation visibility with reason and audit", async () => {
@@ -394,7 +394,7 @@ export function registerActionVisibilityScenarios({
       }),
     );
     expect(copyValidatedActionToLocalStoreMock).not.toHaveBeenCalled();
-    expect(emitActionValidatedMock).not.toHaveBeenCalled();
+    expect(trackActionValidationBonusMock).not.toHaveBeenCalled();
     expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
         outcome: "success",

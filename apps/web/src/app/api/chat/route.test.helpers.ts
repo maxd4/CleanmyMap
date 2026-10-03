@@ -41,6 +41,17 @@ export type ChatMessageRow = {
   };
 };
 
+export async function postChatPayload(payload: Record<string, unknown>) {
+  const { POST } = await import("./route");
+  return POST(
+    new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  );
+}
+
 type ChatMessageFilter =
   | { kind: "eq" | "in"; field: string; value: unknown }
   | { kind: "keyset"; expression: string };

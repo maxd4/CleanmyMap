@@ -1,0 +1,65 @@
+import { runSingleActionQuery } from "@/lib/actions/query";
+import { type ModerationSupabaseClient } from "@/app/api/admin/moderation/route.shared";
+import {
+  trackActionRejection,
+  trackActionValidationBonus,
+} from "@/lib/gamification/progression";
+import { notifyActionValidation } from "@/lib/admin/moderation/moderation-notifications";
+import { logFailure } from "@/lib/logging/failure-log";
+
+export async function runActionTransitionSideEffects(
+  supabase: ModerationSupabaseClient,
+  params: {
+    actionId: string;
+    actorUserId: string;
+    approvalTransition: boolean;
+    rejectionTransition: boolean;
+  },
+): Promise<void> {
+  if (params.approvalTransition) {
+    const actionDetails = await runSingleActionQuery<{
+      created_by_clerk_id: string | null;
+    }>(supabase, (query) =>
+      query.select("created_by_clerk_id").eq("id", params.actionId).maybeSingle(),
+    );
+
+    try {
+      await trackActionValidationBonus(supabase, { actionId: params.actionId });
+    } catch (error) {
+      logFailure(
+        "Moderation/Action",
+        "Action validation progression failed",
+        error,
+        { actionId: params.actionId, actorUserId: params.actorUserId },
+      );
+    }
+
+    try {
+      await notifyActionValidation(supabase, {
+        actionId: params.actionId,
+        userId: actionDetails?.created_by_clerk_id ?? null,
+      });
+    } catch (error) {
+      logFailure(
+        "Moderation/Action",
+        "Action validation notification failed",
+        error,
+        { actionId: params.actionId },
+      );
+    }
+    return;
+  }
+
+  if (params.rejectionTransition) {
+    try {
+      await trackActionRejection(supabase, { actionId: params.actionId });
+    } catch (error) {
+      logFailure(
+        "Moderation/Action",
+        "Action rejection progression failed",
+        error,
+        { actionId: params.actionId, actorUserId: params.actorUserId },
+      );
+    }
+  }
+}

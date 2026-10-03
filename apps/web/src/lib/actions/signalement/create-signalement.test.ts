@@ -1,15 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const revalidateTagMock = vi.hoisted(() => vi.fn());
-const emitSpotCreatedMock = vi.hoisted(() => vi.fn());
 const invalidateSnapshotsMock = vi.hoisted(() => vi.fn());
 const trackServerEventMock = vi.hoisted(() => vi.fn());
 const trackSpotCreatedMock = vi.hoisted(() => vi.fn());
 
 vi.mock("next/cache", () => ({ revalidateTag: revalidateTagMock }));
-vi.mock("@/lib/events/emit", () => ({
-  emitSpotCreated: emitSpotCreatedMock,
-}));
 vi.mock("@/lib/public-surface-snapshots", () => ({
   invalidatePublicSurfaceSnapshotsByRoute: invalidateSnapshotsMock,
 }));
@@ -28,7 +24,6 @@ describe("createSignalement", () => {
     invalidateSnapshotsMock.mockResolvedValue(undefined);
     trackSpotCreatedMock.mockResolvedValue(undefined);
     trackServerEventMock.mockResolvedValue(undefined);
-    emitSpotCreatedMock.mockResolvedValue({ delivered: 1, failed: 0 });
   });
 
   it("writes only the canonical source and invalidates the unified feeds", async () => {

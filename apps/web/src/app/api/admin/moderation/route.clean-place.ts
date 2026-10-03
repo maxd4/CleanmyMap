@@ -1,10 +1,12 @@
 import { copyValidatedSpotToLocalStore } from "@/lib/data/local-sync";
-import { emitSpotValidated } from "@/lib/events/emit";
 import {
   adminErrorResponse,
   adminSuccessResponse,
 } from "@/lib/admin/response";
 import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-snapshots";
+import { trackSpotValidationBonus } from "@/lib/gamification/progression";
+import { logFailure } from "@/lib/logging/failure-log";
+import { notifySignalementValidation } from "@/lib/admin/moderation/moderation-notifications";
 import {
   moderateSignalement,
   readSignalementForModeration,
@@ -27,6 +29,124 @@ type CleanPlaceHandlerParams = {
   appendAuditOnce: AppendModerationAuditOnce;
   setErrorStage: (stage: ModerationErrorStage) => void;
 };
+
+type CleanPlaceUpdateResult = Awaited<ReturnType<typeof moderateSignalement>>;
+
+async function runSignalementValidationSideEffects(
+  supabase: ModerationSupabaseClient,
+  params: { spotId: string; userId: string | null; actorUserId: string },
+): Promise<void> {
+  try {
+    await trackSpotValidationBonus(supabase, { spotId: params.spotId });
+  } catch (error) {
+    logFailure(
+      "Moderation/Signalement",
+      "Signalement validation progression failed",
+      error,
+      { spotId: params.spotId, actorUserId: params.actorUserId },
+    );
+  }
+
+  try {
+    await notifySignalementValidation(supabase, {
+      spotId: params.spotId,
+      userId: params.userId,
+    });
+  } catch (error) {
+    logFailure(
+      "Moderation/Signalement",
+      "Signalement validation notification failed",
+      error,
+      { spotId: params.spotId },
+    );
+  }
+}
+
+async function updateAndSyncCleanPlace(params: {
+  supabase: ModerationSupabaseClient;
+  payload: CleanPlaceModerationPayload;
+  previousSignalement: NonNullable<Awaited<ReturnType<typeof readSignalementForModeration>>>;
+  operationId: string;
+  actorUserId: string;
+  reason: string | null;
+  appendAuditOnce: AppendModerationAuditOnce;
+  setErrorStage: (stage: ModerationErrorStage) => void;
+}): Promise<
+  | { errorResponse: Response }
+  | { signalementUpdate: CleanPlaceUpdateResult; copied: boolean }
+> {
+  const {
+    supabase,
+    payload,
+    previousSignalement,
+    operationId,
+    actorUserId,
+    reason,
+    appendAuditOnce,
+    setErrorStage,
+  } = params;
+  setErrorStage("update");
+  const signalementUpdate = await moderateSignalement(supabase, {
+    id: payload.id,
+    status: payload.status,
+    edits: payload.edits,
+  });
+  if (!signalementUpdate.found || !signalementUpdate.signalement) {
+    const previousValue = toCleanPlaceAuditSnapshot(
+      previousSignalement,
+      previousSignalement,
+    );
+    const newValue = toCleanPlaceAuditSnapshot(null, previousSignalement);
+    await appendAuditOnce({
+      operationId,
+      at: new Date().toISOString(),
+      actorUserId,
+      operationType: "moderation",
+      outcome: "error",
+      targetId: payload.id,
+      details: {
+        code: "not_found",
+        entityType: payload.entityType,
+        stage: "update",
+        ...(reason ? { reason } : {}),
+        previousValue,
+        newValue,
+      },
+    });
+
+    return {
+      errorResponse: adminErrorResponse({
+        status: 404,
+        code: "not_found",
+        message: "Clean place not found",
+        hint: "Verifier l'identifiant spot avant de relancer la moderation.",
+        operationId,
+      }),
+    };
+  }
+
+  let copied = false;
+  const isValidationTransition =
+    (payload.status === "validated" || payload.status === "cleaned") &&
+    previousSignalement.status !== payload.status;
+  if (isValidationTransition) {
+    setErrorStage("local_sync");
+    copied = await copyValidatedSpotToLocalStore(
+      supabase,
+      payload.id,
+      actorUserId,
+    );
+
+    setErrorStage("post_update");
+    await runSignalementValidationSideEffects(supabase, {
+      spotId: payload.id,
+      userId: signalementUpdate.signalement.created_by_clerk_id,
+      actorUserId,
+    });
+  }
+
+  return { signalementUpdate, copied };
+}
 
 export async function moderateCleanPlace({
   supabase,
@@ -70,60 +190,19 @@ export async function moderateCleanPlace({
     });
   }
 
-  setErrorStage("update");
-  const signalementUpdate = await moderateSignalement(supabase, {
-    id: payload.id,
-    status: payload.status,
-    edits: payload.edits,
+  const updateResult = await updateAndSyncCleanPlace({
+    supabase,
+    payload,
+    previousSignalement,
+    operationId,
+    actorUserId,
+    reason,
+    appendAuditOnce,
+    setErrorStage,
   });
-  if (!signalementUpdate.found || !signalementUpdate.signalement) {
-    const previousValue = toCleanPlaceAuditSnapshot(
-      previousSignalement,
-      previousSignalement,
-    );
-    const newValue = toCleanPlaceAuditSnapshot(null, previousSignalement);
-    await appendAuditOnce({
-      operationId,
-      at: new Date().toISOString(),
-      actorUserId,
-      operationType: "moderation",
-      outcome: "error",
-      targetId: payload.id,
-      details: {
-        code: "not_found",
-        entityType: payload.entityType,
-        stage: "update",
-        ...(reason ? { reason } : {}),
-        previousValue,
-        newValue,
-      },
-    });
+  if ("errorResponse" in updateResult) return updateResult.errorResponse;
 
-    return adminErrorResponse({
-      status: 404,
-      code: "not_found",
-      message: "Clean place not found",
-      hint: "Verifier l'identifiant spot avant de relancer la moderation.",
-      operationId,
-    });
-  }
-
-  let copied = false;
-  if (payload.status === "validated" || payload.status === "cleaned") {
-    setErrorStage("local_sync");
-    copied = await copyValidatedSpotToLocalStore(
-      supabase,
-      payload.id,
-      actorUserId,
-    );
-
-    setErrorStage("post_update");
-    emitSpotValidated({
-      spotId: payload.id,
-      userId: signalementUpdate.signalement.created_by_clerk_id || "",
-      moderatorId: actorUserId,
-    });
-  }
+  const { signalementUpdate, copied } = updateResult;
 
   setErrorStage("post_update");
   await invalidatePublicSurfaceSnapshotsByRoute([
@@ -131,7 +210,7 @@ export async function moderateCleanPlace({
     "api/actions/map",
   ]);
 
-  const updatedSignalement = signalementUpdate.signalement;
+  const updatedSignalement = signalementUpdate.signalement!;
   const targetUserId = canonicalTargetUserId(
     previousSignalement.created_by_clerk_id ??
       updatedSignalement.created_by_clerk_id,

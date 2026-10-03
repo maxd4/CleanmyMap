@@ -7,14 +7,24 @@ export function registerCleanPlaceScenarios({
 }: {
   mocks: ModerationScenarioMocks;
 }) {
+  registerCanonicalSignalementScenario({ mocks });
+  registerCleanPlaceAuditScenario({ mocks });
+  registerCleanPlaceNotFoundScenario({ mocks });
+  registerCleanPlaceUpdateFailureScenario({ mocks });
+  registerCleanPlacePostUpdateFailureScenario({ mocks });
+}
+
+function registerCanonicalSignalementScenario({
+  mocks,
+}: {
+  mocks: ModerationScenarioMocks;
+}) {
   const {
     getSupabaseAdminClientMock,
-    appendAdminOperationAuditMock,
-    invalidatePublicSurfaceSnapshotsByRouteMock,
     copyValidatedSpotToLocalStoreMock,
     moderateSignalementMock,
-    readSignalementForModerationMock,
-    emitSpotValidatedMock,
+    trackSpotValidationBonusMock,
+    notifySignalementValidationMock,
   } = mocks;
 
   it("moderates a canonical signalement and returns its source", async () => {
@@ -58,11 +68,27 @@ export function registerCleanPlaceScenarios({
       "spot-1",
       "admin-1",
     );
-    expect(emitSpotValidatedMock).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "creator-1" }),
+    expect(trackSpotValidationBonusMock).toHaveBeenCalledWith(
+      expect.anything(),
+      { spotId: "spot-1" },
+    );
+    expect(notifySignalementValidationMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ userId: "creator-1", spotId: "spot-1" }),
     );
   });
+}
 
+function registerCleanPlaceAuditScenario({
+  mocks,
+}: {
+  mocks: ModerationScenarioMocks;
+}) {
+  const {
+    getSupabaseAdminClientMock,
+    appendAdminOperationAuditMock,
+    moderateSignalementMock,
+  } = mocks;
 
   it("audits clean_place before and after from the canonical signalement", async () => {
     getSupabaseAdminClientMock.mockReturnValue({});
@@ -143,7 +169,19 @@ export function registerCleanPlaceScenarios({
     expect(audit.details).not.toHaveProperty("longitude");
     expect(audit.details).not.toHaveProperty("notes");
   });
+}
 
+function registerCleanPlaceNotFoundScenario({
+  mocks,
+}: {
+  mocks: ModerationScenarioMocks;
+}) {
+  const {
+    getSupabaseAdminClientMock,
+    appendAdminOperationAuditMock,
+    moderateSignalementMock,
+    readSignalementForModerationMock,
+  } = mocks;
 
   it("audits a clean_place not found during canonical lookup once", async () => {
     getSupabaseAdminClientMock.mockReturnValue({});
@@ -177,7 +215,18 @@ export function registerCleanPlaceScenarios({
       }),
     );
   });
+}
 
+function registerCleanPlaceUpdateFailureScenario({
+  mocks,
+}: {
+  mocks: ModerationScenarioMocks;
+}) {
+  const {
+    getSupabaseAdminClientMock,
+    appendAdminOperationAuditMock,
+    moderateSignalementMock,
+  } = mocks;
 
   it("audits clean_place update failures with bounded context", async () => {
     getSupabaseAdminClientMock.mockReturnValue({});
@@ -217,7 +266,18 @@ export function registerCleanPlaceScenarios({
       "database update detail must not be audited",
     );
   });
+}
 
+function registerCleanPlacePostUpdateFailureScenario({
+  mocks,
+}: {
+  mocks: ModerationScenarioMocks;
+}) {
+  const {
+    getSupabaseAdminClientMock,
+    appendAdminOperationAuditMock,
+    invalidatePublicSurfaceSnapshotsByRouteMock,
+  } = mocks;
 
   it("audits clean_place post-update failures without a second audit", async () => {
     getSupabaseAdminClientMock.mockReturnValue({});

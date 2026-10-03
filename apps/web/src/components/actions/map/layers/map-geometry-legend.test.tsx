@@ -12,11 +12,17 @@ describe("MapGeometryLegend", () => {
   it("explains the final geometry interaction grammar and indicative opacity", () => {
     const markup = renderToStaticMarkup(<MapGeometryLegend />);
 
-    expect(markup).toContain("Trait plein : parcours déclaré ou connu");
-    expect(markup).toContain("Trait pointillé : parcours reconstruit");
+    expect(markup).toContain(
+      "Trait plein : trace GPS observée, parcours déclaré ou zone connue",
+    );
+    expect(markup).toContain(
+      "Pointillé régulier : parcours reconstruit par le réseau",
+    );
     expect(markup).toMatch(/Surface remplie : zone d(?:'|&#x27;)action/);
     expect(markup).toContain("Point : localisation seule");
-    expect(markup).toContain("Zone indicative : opacité réduite");
+    expect(markup).toMatch(
+      /L(?:'|&#x27;)opacité et le libellé précisent les zones indicatives\./,
+    );
     expect(markup).toContain("bg-slate-700");
     expect(markup).toContain("border-dashed border-slate-700");
     expect(markup).toContain("border-slate-700 bg-slate-500/25");
@@ -59,8 +65,12 @@ describe("MapGeometryLegend", () => {
     expect(markup).toContain(
       "Les couleurs comparent le score réel de chaque action à la référence de son département.",
     );
-    expect(markup).toContain("Trait plein : parcours déclaré ou connu");
-    expect(markup).toContain("Trait pointillé : parcours reconstruit");
+    expect(markup).toContain(
+      "Trait plein : trace GPS observée, parcours déclaré ou zone connue",
+    );
+    expect(markup).toContain(
+      "Pointillé régulier : parcours reconstruit par le réseau",
+    );
     expect(markup).not.toContain("pollution projetée depuis la dernière action");
   });
 

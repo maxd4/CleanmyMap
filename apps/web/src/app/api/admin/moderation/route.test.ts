@@ -1,8 +1,10 @@
 import { afterAll, beforeEach, describe, vi } from "vitest";
 import { registerActionFormScenario } from "./route.test.action-form-scenario";
 import { registerActionLifecycleScenarios } from "./route.test.action-lifecycle-scenarios";
+import { registerActionTransitionScenarios } from "./route.test.action-transition-scenarios";
 import { registerActionVisibilityScenarios } from "./route.test.action-visibility-scenarios";
 import { registerCleanPlaceScenarios } from "./route.test.clean-place-scenarios";
+import { registerSignalementTransitionScenarios } from "./route.test.signalement-transition-scenarios";
 import { registerSanitizedErrorScenario } from "./route.test.sanitized-error-scenario";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
@@ -17,8 +19,11 @@ const copyValidatedActionToLocalStoreMock = vi.hoisted(() => vi.fn());
 const copyValidatedSpotToLocalStoreMock = vi.hoisted(() => vi.fn());
 const moderateSignalementMock = vi.hoisted(() => vi.fn());
 const readSignalementForModerationMock = vi.hoisted(() => vi.fn());
-const emitActionValidatedMock = vi.hoisted(() => vi.fn());
-const emitSpotValidatedMock = vi.hoisted(() => vi.fn());
+const trackActionValidationBonusMock = vi.hoisted(() => vi.fn());
+const trackActionRejectionMock = vi.hoisted(() => vi.fn());
+const trackSpotValidationBonusMock = vi.hoisted(() => vi.fn());
+const notifyActionValidationMock = vi.hoisted(() => vi.fn());
+const notifySignalementValidationMock = vi.hoisted(() => vi.fn());
 const recordRepollutionPredictionEvaluationForActionMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
@@ -44,10 +49,15 @@ vi.mock("@/lib/admin/moderation/signalement-moderation", () => ({
   readSignalementForModeration: readSignalementForModerationMock,
 }));
 
-vi.mock("@/lib/events/emit", () => ({
-  emitActionRejected: vi.fn(),
-  emitActionValidated: emitActionValidatedMock,
-  emitSpotValidated: emitSpotValidatedMock,
+vi.mock("@/lib/gamification/progression", () => ({
+  trackActionValidationBonus: trackActionValidationBonusMock,
+  trackActionRejection: trackActionRejectionMock,
+  trackSpotValidationBonus: trackSpotValidationBonusMock,
+}));
+
+vi.mock("@/lib/admin/moderation/moderation-notifications", () => ({
+  notifyActionValidation: notifyActionValidationMock,
+  notifySignalementValidation: notifySignalementValidationMock,
 }));
 
 vi.mock("@/lib/actions/participation/organizers", () => ({
@@ -84,6 +94,11 @@ describe("POST /api/admin/moderation", () => {
     refreshProgressionProfileMock.mockResolvedValue(undefined);
     syncUserActionProgressionMock.mockResolvedValue(1);
     rebuildUserGamificationBadgesMock.mockResolvedValue({ inserted: 0 });
+    trackActionValidationBonusMock.mockResolvedValue(undefined);
+    trackActionRejectionMock.mockResolvedValue(undefined);
+    trackSpotValidationBonusMock.mockResolvedValue(undefined);
+    notifyActionValidationMock.mockResolvedValue(undefined);
+    notifySignalementValidationMock.mockResolvedValue(undefined);
     recordRepollutionPredictionEvaluationForActionMock.mockResolvedValue(undefined);
     invalidatePublicSurfaceSnapshotsByRouteMock.mockResolvedValue(undefined);
     copyValidatedActionToLocalStoreMock.mockResolvedValue({
@@ -143,14 +158,19 @@ describe("POST /api/admin/moderation", () => {
       copyValidatedSpotToLocalStoreMock,
       moderateSignalementMock,
       readSignalementForModerationMock,
-      emitActionValidatedMock,
-      emitSpotValidatedMock,
+      trackActionValidationBonusMock,
+      trackActionRejectionMock,
+      trackSpotValidationBonusMock,
+      notifyActionValidationMock,
+      notifySignalementValidationMock,
     },
   };
 
   registerActionFormScenario(scenarioContext);
   registerCleanPlaceScenarios(scenarioContext);
+  registerSignalementTransitionScenarios(scenarioContext);
   registerActionLifecycleScenarios(scenarioContext);
+  registerActionTransitionScenarios(scenarioContext);
   registerActionVisibilityScenarios(scenarioContext);
   registerSanitizedErrorScenario(scenarioContext);
 });
