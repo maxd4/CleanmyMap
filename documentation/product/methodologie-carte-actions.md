@@ -472,6 +472,33 @@ Action. Si plusieurs missions terminées sont liées à la même action, le serv
 retient déterministement celle dont `ended_at` est le plus ancien, puis le plus
 petit identifiant en cas d'égalité.
 
+### Remédiation des géométries historiques
+
+La convergence des anciennes lignes vers cette grammaire est une remédiation
+auditable, pas une nouvelle résolution cartographique. Le script
+`apps/web/scripts/backfill-derived-geometry.mjs` fonctionne en dry-run par
+défaut et classe chaque ligne `PRESERVE`, `SAFE_UPDATE`, `AMBIGUOUS` ou
+`INVALID`. `--apply` n'applique que les corrections `SAFE_UPDATE` ; une ligne
+`AMBIGUOUS` reste inchangée.
+
+La confiance (`geometry_confidence`) n'est jamais une preuve d'origine. Une
+reclassification exige une évidence persistée et déterministe : source forte
+déjà déclarée, marqueur de dessin, metadata GPX, géométrie de route persistée
+avec son mode/provider correspondant, ou reproduction exacte d'une ellipse
+legacy par l'algorithme historique. Les sources valides `gps_tracking`,
+`gpx_import` et `manual` priment toujours. Le resolver de reconstruction
+actuel n'est jamais rejoué pour réécrire l'histoire ; un polygone utilisateur
+ou de référence n'est jamais transformé automatiquement en point.
+
+Les routes historiques sont distinguées, lorsque les données le permettent,
+entre réseau (`routed`), fallback géodésique ou reconstruction synthétique
+dégradée (`estimated_route`). Sans preuve suffisante, la provenance reste
+inconnue. Les ellipses synthétiques démontrées convergent vers
+`estimated_area`, qui reste une compatibilité historique et non une sortie
+normale du resolver. Les signalements `trash_spotter_spots` sont audités
+séparément et restent ponctuels ; l'archive `spots` n'est pas une cible de ce
+backfill.
+
 Après les géométries réellement fournies (`gps_tracking`, `gpx_import` et `manual`), le moteur
 de reconstruction suit donc : `référence pertinente → réseau piéton →
 reconstruction réseau hypothétique → vol d'oiseau → point`. Une adresse seule
