@@ -2,10 +2,11 @@ import { formatStorageBytes } from "./storage-usage";
 import { STORAGE_BUSINESS_CONTRIBUTION_POLICY } from "./storage-business-contribution-policy";
 import type {
   StorageBusinessContributionAlert,
+  StorageBusinessContributionAlertSignal,
   StorageBusinessContributionAlertSeverity,
   StorageBusinessContributionHistoryPoint,
   StorageBusinessContributionTopFile,
-} from "./storage-business-contribution";
+} from "./storage-business-contribution-contracts";
 import type { StorageBusinessDomainId } from "./storage-business-taxonomy";
 
 export function getAlertSeverityRank(severity: StorageBusinessContributionAlertSeverity): number {
@@ -18,7 +19,7 @@ export function getAlertSeverityRank(severity: StorageBusinessContributionAlertS
   return 1;
 }
 
-export function getAlertSignalRank(signal: StorageBusinessContributionAlert["signal"]): number {
+export function getAlertSignalRank(signal: StorageBusinessContributionAlertSignal): number {
   switch (signal) {
     case "growth":
       return 5;
