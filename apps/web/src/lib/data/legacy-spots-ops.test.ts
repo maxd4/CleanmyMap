@@ -229,6 +229,29 @@ describe("legacy spots maintenance boundaries", () => {
     });
   });
 
+  it("does not infer route provenance from mode/provider metadata alone", () => {
+    const decision = classifyGeometryRow({
+      id: "metadata-only-route",
+      location_label: "Parc",
+      derived_geometry_kind: "polyline",
+      derived_geometry_geojson: JSON.stringify({
+        type: "LineString",
+        coordinates: [[2.35, 48.85], [2.36, 48.86]],
+      }),
+      geometry_confidence: 0.78,
+      geometry_source: null,
+      preparation_data: JSON.stringify({
+        routeGeometryMode: "network",
+        routeGeometryProvider: "osrm",
+      }),
+    });
+
+    expect(decision).toMatchObject({
+      classification: "AMBIGUOUS",
+      correction: "none",
+    });
+  });
+
   it("keeps real polygons, restores a signalement point and is idempotent", () => {
     const polygon = {
       type: "Polygon",

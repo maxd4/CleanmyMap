@@ -41,17 +41,15 @@ import type { ActionRouteVersioning } from "@/lib/route/route-active-version";
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
 export type ActionGeometryKind = "point" | "polyline" | "polygon";
-export const ACTION_GEOMETRY_SOURCES = [
-  "manual",
-  "gpx_import",
-  "gps_tracking",
-  "reference",
-  "routed",
-  "estimated_route",
-  "estimated_area",
-  "fallback_point",
-] as const;
-export type ActionGeometryOrigin = (typeof ACTION_GEOMETRY_SOURCES)[number];
+export type ActionGeometryOrigin =
+  | "manual"
+  | "gpx_import"
+  | "gps_tracking"
+  | "reference"
+  | "routed"
+  | "estimated_route"
+  | "estimated_area"
+  | "fallback_point";
 export type ActionGeometrySource = ActionGeometryOrigin;
 export type ActionRouteTopology = "loop" | "point_to_point";
 export type ActionLocationCoordinates = {

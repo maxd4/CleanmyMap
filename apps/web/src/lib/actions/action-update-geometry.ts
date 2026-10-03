@@ -27,6 +27,3 @@ export function preserveObservedRouteGeometry(
       : {}),
   };
 }
-
-/** @deprecated Use preserveObservedRouteGeometry for both GPX and tracking. */
-export const preserveGpxObservation = preserveObservedRouteGeometry;

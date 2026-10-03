@@ -253,16 +253,6 @@ function geometryMatchesRoute(drawing, preparationData) {
     if (!geometry || !Array.isArray(geometry.coordinates)) continue;
     if (coordinatesEqual(drawing.coordinates, geometry.coordinates)) return geometry;
   }
-  if (
-    preparationData.routeGeometryMode &&
-    preparationData.routeGeometryProvider
-  ) {
-    return {
-      mode: preparationData.routeGeometryMode,
-      provider: preparationData.routeGeometryProvider,
-      estimated: preparationData.routeGeometryMode === "fallback",
-    };
-  }
   return null;
 }
 
