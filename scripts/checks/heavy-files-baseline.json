@@ -213,10 +213,10 @@
     {
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 513,
-      "maxBytes": 28325
+      "status": "IMPROVED",
+      "reviewedRef": "a776c90304eafcd0ad281f12d80d6aeaefefd5d4",
+      "maxLines": 72,
+      "maxBytes": 3016
     },
     {
       "path": "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
