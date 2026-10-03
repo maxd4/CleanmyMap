@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process";
 
 export const QUALITY_EVIDENCE_SCHEMA_VERSION = 1;
 export const QUALITY_EVIDENCE_RELATIVE_ROOT = "artifacts/quality-evidence";
-export const QUALITY_EVIDENCE_STATUSES = Object.freeze(["PASS", "PASS_WITH_GRACE", "FAIL", "NOT_RUN"]);
+export const QUALITY_EVIDENCE_STATUSES = Object.freeze(["PASS", "PASS_WITH_GRACE", "FAIL", "SKIPPED_BY_SCOPE", "NOT_RUN"]);
 
 function assertCandidateSha(candidateSha) {
   if (!/^[0-9a-f]{40}$/i.test(candidateSha ?? "")) {
@@ -33,12 +33,22 @@ export function resolveCandidateSha(repositoryRoot = process.cwd(), environment 
   return head;
 }
 
+export function resolveCandidateShaFromRef(repositoryRoot = process.cwd(), candidateRef = null, environment = process.env) {
+  const configured = candidateRef?.trim();
+  if (!configured) return resolveCandidateSha(repositoryRoot, environment);
+  const resolved = execFileSync("git", ["rev-parse", configured], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  assertCandidateSha(resolved);
+  return resolved;
+}
+
 function createQualityEvidence({
   gate,
   scope = null,
   candidateSha,
+  candidateRef = null,
   status,
   metrics = {},
+  findings = null,
   newFindings = null,
   resolvedFindings = null,
   historicalFindings = null,
@@ -48,7 +58,7 @@ function createQualityEvidence({
   if (!gate || typeof gate !== "string") throw new Error("Quality evidence requires a gate name.");
   if (!QUALITY_EVIDENCE_STATUSES.includes(status)) throw new Error(`Quality evidence status is invalid: ${status}.`);
   assertCandidateSha(candidateSha);
-  for (const [name, value] of Object.entries({ newFindings, resolvedFindings, historicalFindings })) {
+  for (const [name, value] of Object.entries({ findings, newFindings, resolvedFindings, historicalFindings })) {
     if (value !== null && (!Number.isInteger(value) || value < 0)) throw new Error(`Quality evidence ${name} must be a non-negative integer or null.`);
   }
   return {
@@ -56,9 +66,11 @@ function createQualityEvidence({
     gate,
     ...(scope ? { scope } : {}),
     candidateSha,
-    executed: status !== "NOT_RUN",
+    ...(candidateRef ? { candidateRef } : {}),
+    executed: status !== "NOT_RUN" && status !== "SKIPPED_BY_SCOPE",
     status,
     metrics,
+    findings,
     newFindings,
     resolvedFindings,
     historicalFindings,

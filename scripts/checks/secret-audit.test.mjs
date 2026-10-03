@@ -7,6 +7,7 @@ import test from "node:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const AUDIT_SOURCE = readFileSync(join(REPO_ROOT, "scripts", "checks", "secret-audit.mjs"), "utf8");
+const QUALITY_EVIDENCE_SOURCE = readFileSync(join(REPO_ROOT, "scripts", "checks", "quality-evidence.mjs"), "utf8");
 
 function runGit(cwd, args) {
   return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
@@ -30,6 +31,7 @@ function runAudit({
   const scriptsRoot = join(testRoot, "scripts", "checks");
   mkdirSync(scriptsRoot, { recursive: true });
   writeFileSync(join(scriptsRoot, "secret-audit.mjs"), AUDIT_SOURCE);
+  writeFileSync(join(scriptsRoot, "quality-evidence.mjs"), QUALITY_EVIDENCE_SOURCE);
 
   try {
     runGit(testRoot, ["init", "--quiet"]);

@@ -112,14 +112,41 @@ jobs:
           echo "build_relevant=$build_relevant" >> "$GITHUB_OUTPUT"
           echo "dependency_graph_relevant=$dependency_graph_relevant" >> "$GITHUB_OUTPUT"
 
+      - name: Record dependency scope evidence
+        if: steps.detect-scope.outputs.dependency_graph_relevant != 'true'
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          SECURITY_EVIDENCE_ROOT: artifacts/security-evidence
+        run: node scripts/ci/write-security-evidence.mjs --gate=dependencies --status=SKIPPED_BY_SCOPE --candidate-ref="$CANDIDATE_SHA"
+
+      - name: Dependency security summary (scope skipped)
+        if: ${{ always() && steps.detect-scope.outcome == 'success' && steps.detect-scope.outputs.dependency_graph_relevant != 'true' }}
+        env:
+          CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          SECURITY_EVIDENCE_ROOT: artifacts/security-evidence
+        run: node scripts/ci/write-security-summary.mjs --gates=dependencies
+
+      - name: Upload dependency scope evidence
+        if: ${{ always() && steps.detect-scope.outcome == 'success' && steps.detect-scope.outputs.dependency_graph_relevant != 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: security-dependency-scope-${{ github.run_id }}
+          path: artifacts/security-evidence/dependency-advisory.json
+          if-no-files-found: ignore
+          retention-days: 3
+
   secret-audit:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
+    env:
+      SECURITY_EVIDENCE_ROOT: artifacts/security-evidence
 
     steps:
       - name: Checkout candidate tree
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -127,11 +154,13 @@ jobs:
           persist-credentials: false
 
       - name: Set up Node
+        id: setup_node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: ${{ env.NODE_VERSION_FILE }}
 
       - name: Verify candidate tree and run secret audit
+        id: secret_audit
         shell: bash
         env:
           CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -140,6 +169,19 @@ jobs:
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           npm run security:secrets -- --ref="$CANDIDATE_SHA"
 
+      - name: Secrets security summary
+        if: ${{ always() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' }}
+        run: node scripts/ci/write-security-summary.mjs --gates=secrets
+
+      - name: Upload compact secrets evidence
+        if: ${{ always() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: security-secrets-evidence-${{ github.run_id }}
+          path: artifacts/security-evidence/secret-audit.json
+          if-no-files-found: ignore
+          retention-days: 3
+
   dependency-audit:
     needs: scope
     if: needs.scope.outputs.dependency_graph_relevant == 'true'
@@ -147,9 +189,13 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+    env:
+      CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      SECURITY_EVIDENCE_ROOT: artifacts/security-evidence
 
     steps:
       - name: Checkout
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -157,6 +203,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Node
+        id: setup_node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: ${{ env.NODE_VERSION_FILE }}
@@ -164,10 +211,25 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install Node dependencies
+        id: install_node_dependencies
         run: npm ci
 
       - name: Dependency advisory audit
+        id: dependency_audit
         run: npm run security:dependencies
+
+      - name: Dependency security summary
+        if: ${{ always() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' }}
+        run: node scripts/ci/write-security-summary.mjs --gates=dependencies
+
+      - name: Upload compact dependency evidence
+        if: ${{ always() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: security-dependency-evidence-${{ github.run_id }}
+          path: artifacts/security-evidence/dependency-advisory.json
+          if-no-files-found: ignore
+          retention-days: 3
 
   dependency-review:
     needs: scope
@@ -190,9 +252,13 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    env:
+      CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      SECURITY_EVIDENCE_ROOT: artifacts/security-evidence
 
     steps:
       - name: Checkout
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -200,6 +266,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Node
+        id: setup_node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: ${{ env.NODE_VERSION_FILE }}
@@ -210,6 +277,7 @@ jobs:
         run: node scripts/checks/check-node-version-contract.mjs
 
       - name: Install Node dependencies
+        id: install_node_dependencies
         run: npm ci
 
       - name: Security deception contract
@@ -234,7 +302,21 @@ jobs:
         run: npm run check:stack-doc-drift
 
       - name: GitHub Actions security policy
+        id: github_actions_security
         run: npm run check:github-actions
+
+      - name: GitHub Actions security summary
+        if: ${{ always() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' }}
+        run: node scripts/ci/write-security-summary.mjs --gates=github-actions-security
+
+      - name: Upload compact GitHub Actions security evidence
+        if: ${{ always() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: security-github-actions-evidence-${{ github.run_id }}
+          path: artifacts/security-evidence/github-actions-security.json
+          if-no-files-found: ignore
+          retention-days: 3
 
   web-static:
     needs: scope
@@ -243,9 +325,13 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    env:
+      CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      SECURITY_EVIDENCE_ROOT: artifacts/security-evidence
 
     steps:
       - name: Checkout
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -271,6 +357,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check --no-input semgrep==1.177.0
 
       - name: Architectural Semgrep
+        id: semgrep
         run: npm run check:semgrep
 
       - name: Lockfile policy
@@ -284,6 +371,19 @@ jobs:
 
       - name: Web lint
         run: npm run lint
+
+      - name: Semgrep security summary
+        if: ${{ always() && steps.checkout.outcome == 'success' && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success' }}
+        run: node scripts/ci/write-security-summary.mjs --gates=semgrep-architectural,semgrep-fixtures
+
+      - name: Upload compact Semgrep evidence
+        if: ${{ always() && steps.checkout.outcome == 'success' && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: security-semgrep-evidence-${{ github.run_id }}
+          path: artifacts/security-evidence
+          if-no-files-found: ignore
+          retention-days: 3
 
   web-quality:
     needs: scope
@@ -540,9 +640,13 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+    env:
+      CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      SECURITY_EVIDENCE_ROOT: artifacts/security-evidence
 
     steps:
       - name: Checkout
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -550,6 +654,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Node
+        id: setup_node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: ${{ env.NODE_VERSION_FILE }}
@@ -560,6 +665,7 @@ jobs:
         run: node scripts/checks/check-node-version-contract.mjs
 
       - name: Install mobile dependencies
+        id: install_node_dependencies
         run: npm ci
 
       - name: Install architectural Semgrep (mobile-only)
@@ -567,6 +673,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check --no-input semgrep==1.177.0
 
       - name: Architectural Semgrep (mobile-only)
+        id: semgrep_mobile
         if: needs.scope.outputs.web_code_relevant != 'true'
         run: npm run check:semgrep
 
@@ -584,3 +691,16 @@ jobs:
 
       - name: Mobile lint
         run: npm run mobile:lint
+
+      - name: Semgrep security summary (mobile-only)
+        if: ${{ always() && needs.scope.outputs.web_code_relevant != 'true' && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' && steps.install_node_dependencies.outcome == 'success' }}
+        run: node scripts/ci/write-security-summary.mjs --gates=semgrep-architectural,semgrep-fixtures
+
+      - name: Upload compact mobile Semgrep evidence
+        if: ${{ always() && needs.scope.outputs.web_code_relevant != 'true' && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' && steps.install_node_dependencies.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: security-semgrep-mobile-evidence-${{ github.run_id }}
+          path: artifacts/security-evidence
+          if-no-files-found: ignore
+          retention-days: 3

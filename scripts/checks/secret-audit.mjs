@@ -3,9 +3,11 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveCandidateShaFromRef, writeQualityEvidence } from "./quality-evidence.mjs";
 
 const ROOT = resolve(".");
 const DEFAULT_ALLOWLIST = "scripts/checks/secret-audit.allowlist.json";
+const SECURITY_EVIDENCE_ROOT = "artifacts/security-evidence";
 const SCANNED_EXTENSIONS = new Set([
   ".ts",
   ".tsx",
@@ -523,6 +525,22 @@ function printSummary(findings, scannedCount, allowlistPath) {
   console.error("[secret-audit] Values are masked. Rotate any real exposed secret before removing it from the repo history.");
 }
 
+function writeSecretEvidence({ options, findings, scannedCount }) {
+  const candidateRef = options.ref ?? options.candidateRefs[0] ?? "HEAD";
+  writeQualityEvidence({
+    repositoryRoot: ROOT,
+    evidenceRoot: SECURITY_EVIDENCE_ROOT,
+    fileKey: "secret-audit",
+    gate: "secrets",
+    candidateSha: resolveCandidateShaFromRef(ROOT, candidateRef),
+    candidateRef,
+    status: findings.length > 0 ? "FAIL" : "PASS",
+    findings: findings.length,
+    metrics: { scannedFiles: scannedCount },
+    details: { scope: options.scope },
+  });
+}
+
 function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.showHelp) {
@@ -531,40 +549,62 @@ function main() {
   }
 
   const allowlist = loadAllowlist(options.allowlistPath);
-  let files;
-  let findings;
-  if (options.scope === "staged") {
-    files = listStagedFiles().filter(shouldScan);
-    findings = scanGitFiles(files, ":");
-  } else if (options.scope === "ref") {
-    files = listRefFiles(options.ref).filter(shouldScan);
-    findings = scanGitFiles(files, options.ref);
-  } else if (options.scope === "candidate") {
-    const candidates = options.candidateRefs.map((ref, index) => ({
-      ref,
-      range: options.candidateRanges[index],
-    }));
-    const filesByCandidate = candidates.map(({ ref, range }) => ({
-      ref,
-      files: listCandidateFiles([{ range }]).filter(shouldScan),
-    }));
-    files = [...new Set(filesByCandidate.flatMap(({ files: candidateFiles }) => candidateFiles))];
-    findings = filesByCandidate.flatMap(({ ref, files: candidateFiles }) =>
-      scanGitFiles(candidateFiles, ref),
-    );
-  } else {
-    files = listRepoFiles().filter(shouldScan);
-    findings = files.flatMap(scanFile);
-  }
-  findings = findings.filter((finding) => !isAllowed(finding, allowlist));
+  try {
+    let files;
+    let findings;
+    if (options.scope === "staged") {
+      files = listStagedFiles().filter(shouldScan);
+      findings = scanGitFiles(files, ":");
+    } else if (options.scope === "ref") {
+      files = listRefFiles(options.ref).filter(shouldScan);
+      findings = scanGitFiles(files, options.ref);
+    } else if (options.scope === "candidate") {
+      const candidates = options.candidateRefs.map((ref, index) => ({
+        ref,
+        range: options.candidateRanges[index],
+      }));
+      const filesByCandidate = candidates.map(({ ref, range }) => ({
+        ref,
+        files: listCandidateFiles([{ range }]).filter(shouldScan),
+      }));
+      files = [...new Set(filesByCandidate.flatMap(({ files: candidateFiles }) => candidateFiles))];
+      findings = filesByCandidate.flatMap(({ ref, files: candidateFiles }) =>
+        scanGitFiles(candidateFiles, ref),
+      );
+    } else {
+      files = listRepoFiles().filter(shouldScan);
+      findings = files.flatMap(scanFile);
+    }
+    findings = findings.filter((finding) => !isAllowed(finding, allowlist));
+    writeSecretEvidence({ options, findings, scannedCount: files.length });
 
-  if (options.scope === "candidate") {
-    console.log(`[secret-audit] scope: PUSH_CANDIDATE (${options.candidateRefs.length} candidate ref(s))`);
-  }
+    if (options.scope === "candidate") {
+      console.log(`[secret-audit] scope: PUSH_CANDIDATE (${options.candidateRefs.length} candidate ref(s))`);
+    }
 
-  printSummary(findings, files.length, options.allowlistPath);
-  if (findings.length > 0) {
-    process.exit(1);
+    printSummary(findings, files.length, options.allowlistPath);
+    if (findings.length > 0) {
+      process.exit(1);
+    }
+  } catch (error) {
+    try {
+      const candidateRef = options.ref ?? options.candidateRefs[0] ?? "HEAD";
+      writeQualityEvidence({
+        repositoryRoot: ROOT,
+        evidenceRoot: SECURITY_EVIDENCE_ROOT,
+        fileKey: "secret-audit",
+        gate: "secrets",
+        candidateSha: resolveCandidateShaFromRef(ROOT, candidateRef),
+        candidateRef,
+        status: "FAIL",
+        findings: null,
+        metrics: {},
+        details: { scope: options.scope, executionError: error?.constructor?.name ?? "Error" },
+      });
+    } catch {
+      // Preserve the scanner error and its blocking exit code if evidence cannot be written.
+    }
+    throw error;
   }
 }
 

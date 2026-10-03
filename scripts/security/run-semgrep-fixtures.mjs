@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { parseSemgrepJson, REPOSITORY_ROOT, runSemgrep } from "./semgrep/run-semgrep.mjs";
+import { resolveCandidateSha, writeQualityEvidence } from "../checks/quality-evidence.mjs";
 
 const fixtureRoot = path.join(REPOSITORY_ROOT, "scripts", "security", "semgrep", "fixtures");
 
@@ -21,6 +22,8 @@ const cases = [
 ];
 
 const targets = [];
+let result = null;
+let failure = null;
 try {
   for (const testCase of cases) {
     const target = path.join(REPOSITORY_ROOT, testCase.target);
@@ -29,7 +32,7 @@ try {
     targets.push(testCase.target);
   }
 
-  const result = runSemgrep(targets);
+  result = runSemgrep(targets);
   assert.equal(result.error, null, result.stderr);
   assert.equal(result.status, 0, `Semgrep a échoué (${result.status})\n${result.stderr}`);
   const report = parseSemgrepJson(result.stdout);
@@ -40,10 +43,37 @@ try {
     );
     assert.equal(found, testCase.expected, `${testCase.fixture}: règle ${testCase.rule}`);
   }
+} catch (error) {
+  failure = error;
 } finally {
   for (const target of targets) {
     fs.rmSync(path.join(REPOSITORY_ROOT, target), { force: true });
   }
 }
+
+try {
+  const status = result?.error === "HOST_ENVIRONMENT" ? "NOT_RUN" : failure ? "FAIL" : "PASS";
+  writeQualityEvidence({
+    repositoryRoot: REPOSITORY_ROOT,
+    evidenceRoot: "artifacts/security-evidence",
+    fileKey: "semgrep-fixtures",
+    gate: "semgrep-fixtures",
+    candidateSha: resolveCandidateSha(REPOSITORY_ROOT),
+    candidateRef: process.env.CANDIDATE_SHA ?? "HEAD",
+    status,
+    findings: null,
+    metrics: {
+      fixturesTotal: cases.length,
+      fixturesPassed: failure ? 0 : cases.length,
+      fixtureFailures: failure ? 1 : 0,
+    },
+    details: failure ? { executionError: failure.constructor?.name ?? "Error" } : null,
+  });
+} catch (error) {
+  console.error(`Semgrep fixture evidence unavailable: ${error instanceof Error ? error.constructor.name : "Error"}`);
+  process.exit(2);
+}
+
+if (failure) throw failure;
 
 console.log(`PASS: ${cases.length} fixtures Semgrep architectural testées.`);

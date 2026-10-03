@@ -278,6 +278,33 @@ powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks.ps1 -Scope full
 
 Les E2E ne sont pas lancés automatiquement par défaut.
 
+## Preuves des contrôles de sécurité CI
+
+Les contrôles de sécurité existants conservent chacun leur propre sémantique et
+leur propre niveau de preuve. Ils peuvent produire `PASS`, `FAIL`,
+`SKIPPED_BY_SCOPE` ou `NOT_RUN` ; aucun de ces états n'est converti en score
+global de cybersécurité. Les tests AuthN/AuthZ/API restent des tests
+comportementaux et ne sont pas transformés en scanners.
+
+`security:secrets`, `security:dependencies`, `check:github-actions` et
+`check:semgrep` écrivent, à partir de leur exécution courante, une evidence JSON
+compacte sous `artifacts/security-evidence/`, liée au `candidateSha`. L'audit
+des secrets n'écrit que le nombre de findings et des métriques non sensibles ;
+il ne téléverse aucun rapport brut. Les messages utiles d'une policy restent
+dans les logs et les contrôles restent bloquants en cas d'échec.
+
+Semgrep conserve deux preuves séparées : l'analyse architecturale et les tests
+de fixtures. Un manque d'outil est `NOT_RUN`, une analyse exécutée avec des
+findings est `FAIL`, et une fixture en échec ne devient pas un finding
+architectural. CodeQL n'est pas dupliqué dans `ci.yml` : son workflow et son
+SARIF natifs restent la source de preuve CodeQL.
+
+Lorsque le graphe de dépendances ne change pas, le job d'audit advisory n'est
+pas lancé et la preuve de scope porte `SKIPPED_BY_SCOPE`, jamais `PASS`. Les
+Job Summaries sont produits dans les jobs qui exécutent réellement ces
+contrôles et les JSON compacts sont conservés à court terme ; aucun job final
+ne télécharge des rapports bruts uniquement pour agréger un résultat.
+
 ## Triage des échecs CI
 
 Avant d'attribuer un échec au lot courant, comparer le workflow, le job, le
