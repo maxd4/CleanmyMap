@@ -6,6 +6,7 @@ import type { PilotageLocale } from "../access-screen-constants";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import { DecisionClusterSection } from "@/components/pilotage/decision-cluster-section";
 import {
+  buildPilotageClusterMetrics,
   PilotageInsightCard,
   PilotageMetricGrid,
 } from "@/components/pilotage/pilotage-cluster-panels";
@@ -19,15 +20,7 @@ export function PilotageOverviewSurfaceTabs({
   locale,
   overview,
 }: PilotageOverviewSurfaceTabsProps) {
-  const decisionMetrics = overview.summary.kpis.map((kpi) => ({
-    id: kpi.label,
-    label: kpi.label,
-    value: kpi.value,
-    previousValue: kpi.previousValue,
-    deltaAbsolute: kpi.deltaAbsolute,
-    deltaPercent: kpi.deltaPercent,
-    interpretation: kpi.interpretation,
-  }));
+  const decisionMetrics = buildPilotageClusterMetrics(overview.summary.kpis);
 
   const decisionInsight = {
     eyebrow: locale === "fr" ? "Lecture rapide" : "Quick reading",

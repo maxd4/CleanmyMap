@@ -53,6 +53,30 @@ export type ActionModerationOperation =
   | "restore_after_sanction"
   | "correct_impact";
 
+export type ActionImpactValues = {
+  createdByClerkId: string | null;
+  wasteKg: number | null;
+  cigaretteButts: number | null;
+  volunteersCount: number | null;
+  durationMinutes: number | null;
+  wasteBreakdown: unknown;
+};
+
+export type ActionAuditState = ActionImpactValues & {
+  status: "pending" | "approved" | "rejected" | "unknown";
+  moderationVisibility: "visible" | "hidden" | "unknown";
+};
+
+export type ActionAuditSnapshot = {
+  status: ActionAuditState["status"];
+  moderationVisibility: ActionAuditState["moderationVisibility"];
+  wasteKg: number | null;
+  cigaretteButts: number | null;
+  volunteersCount: number | null;
+  durationMinutes: number | null;
+  wasteBreakdownPresent: boolean;
+};
+
 export type AppendModerationAuditOnce = (
   entry: Parameters<typeof appendAdminOperationAudit>[0],
 ) => Promise<void>;

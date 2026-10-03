@@ -5,6 +5,7 @@ import type {
   RouteNetworkGeometryProvider,
   RouteGeometryProfile,
 } from "@/lib/route/route-contract";
+import { areCoordinatesClose } from "@/lib/geo/coordinate-comparison";
 
 const OSRM_PROVIDER = "osrm" as const;
 const OSRM_PROFILE = "foot" as const;
@@ -123,20 +124,8 @@ function distanceKm(
   return 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 }
 
-function sameCoordinate(
-  left: [number, number] | undefined,
-  right: [number, number] | undefined,
-): boolean {
-  return Boolean(
-    left &&
-      right &&
-      Math.abs(left[0] - right[0]) < 1e-6 &&
-      Math.abs(left[1] - right[1]) < 1e-6,
-  );
-}
-
 function isClosedCoordinates(coordinates: [number, number][]): boolean {
-  return coordinates.length >= 2 && sameCoordinate(coordinates[0], coordinates.at(-1));
+  return coordinates.length >= 2 && areCoordinatesClose(coordinates[0], coordinates.at(-1), 1e-6);
 }
 
 export function buildOsrmRouteUrl(

@@ -87,6 +87,18 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/lib/http/api-errors", () => ({
   handleApiError: handleApiErrorMock,
   validationErrorResponse: validationErrorResponseMock,
+  parseJsonBodyWithValidation: async (request: Request, schema: { safeParse: (value: unknown) => { success: boolean; data?: unknown; error?: { flatten: () => { fieldErrors: Record<string, string[]> } } } }) => {
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return { ok: false, response: Response.json({ error: "Invalid JSON payload" }, { status: 400 }) };
+    }
+    const parsed = schema.safeParse(body);
+    return parsed.success
+      ? { ok: true, data: parsed.data }
+      : { ok: false, response: validationErrorResponseMock(parsed.error?.flatten().fieldErrors ?? {}) };
+  },
 }));
 
 vi.mock("@/lib/http/auth-responses", () => ({

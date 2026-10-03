@@ -22,6 +22,13 @@ const migration00007 = readFileSync(
   ),
   "utf8",
 );
+const migration00009 = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20261003000009_harden_public_action_map_projection.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("canonical observed geometry contributor contract STATIC_CONTRACT", () => {
   it("uses one eligibility owner without role-based terrain elevation", () => {
@@ -62,5 +69,25 @@ describe("canonical observed geometry contributor contract STATIC_CONTRACT", () 
     expect(migration00007).toMatch(/'coverageDistanceKm', null/i);
     expect(migration00007).toMatch(/'coverageVersion', 'observed-traces-v1'/i);
     expect(migration00007).not.toMatch(/contributor_clerk_id|mission_id|technical_provenance|gps_points|missions/i);
+  });
+
+  it("keeps the current public feed invoker-bound and backed by the action projection", () => {
+    const publicFeed = migration00009.slice(
+      migration00009.indexOf("create function public.actions_map_feed"),
+    );
+    expect(migration00009).toMatch(/create function public\.actions_map_feed\([\s\S]*?language sql stable security invoker/i);
+    expect(migration00009).toMatch(/a\.preparation_data -> 'observedCoverage'/i);
+    expect(publicFeed).not.toMatch(/security definer/i);
+    expect(publicFeed).not.toMatch(/from public\.action_geometry_contributions c/i);
+    expect(publicFeed).toMatch(/grant execute on function public\.actions_map_feed\([\s\S]*?\) to anon, authenticated, service_role/i);
+    expect(migration00009).toMatch(/grant execute on function public\.public_action_map_preparation\(jsonb\)[\s\S]*?to anon, authenticated, service_role/i);
+  });
+
+  it("removes unsupported coverage before rebuilding and repairs empty updates", () => {
+    expect(migration00009).toMatch(/'observedCoverage'\]\:\:text\[\]/i);
+    expect(migration00009).toMatch(/if accepted_count = 0 then[\s\S]*?set preparation_data = next_preparation/i);
+    expect(migration00009).toMatch(/perform public\.refresh_action_geometry_coverage\(new\.id\)/i);
+    expect(migration00009).toMatch(/after insert on public\.actions/i);
+    expect(migration00009).toMatch(/after update of derived_geometry_kind, derived_geometry_geojson,[\s\S]*?preparation_data on public\.actions/i);
   });
 });

@@ -20,29 +20,7 @@ import {
   isAlignedToWasteMassResolution,
 } from "@/lib/waste/measurement";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
-
-const coordinateSchema = z.tuple([
-  z.number().min(-90).max(90),
-  z.number().min(-180).max(180),
-]);
-
-const manualDrawingSchema = z
-  .object({
-    kind: z.enum(["polyline", "polygon"]),
-    coordinates: z.array(coordinateSchema).max(400),
-  })
-  .superRefine((value, ctx) => {
-    const minimumPoints = value.kind === "polygon" ? 3 : 2;
-    if (value.coordinates.length < minimumPoints) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          value.kind === "polygon"
-            ? "Le polygone doit contenir au moins 3 points."
-            : "Le trace doit contenir au moins 2 points.",
-      });
-    }
-  });
+import { manualDrawingSchema } from "@/lib/validation/action";
 
 const adminWasteBreakdownSchema = z.object({
   recyclablesKg: z.number().min(0).max(100000).nullable().optional().refine(

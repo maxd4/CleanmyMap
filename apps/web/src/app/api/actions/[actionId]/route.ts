@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { loadActionById } from "@/lib/actions/store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import {
+  handleApiError,
+  parseJsonBodyWithValidation,
+  validationErrorResponse,
+} from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import {
   getCurrentUserIdentity,
@@ -75,17 +79,8 @@ async function parsePatchRequest(
     return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
   }
 
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
-  }
-
-  const parsed = updateActionSchema.safeParse(payload);
-  if (!parsed.success) {
-    return validationErrorResponse(parsed.error.flatten().fieldErrors);
-  }
+  const parsed = await parseJsonBodyWithValidation(request, updateActionSchema);
+  if (!parsed.ok) return parsed.response;
 
   return { userId: access.userId, trimmedActionId, parsedBody: parsed.data };
 }

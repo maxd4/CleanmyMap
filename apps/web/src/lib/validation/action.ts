@@ -57,6 +57,22 @@ const locationCoordinatesSchema = z
     longitude: z.number().finite().min(-180).max(180),
   })
   .strict();
+
+function validateMinimumGeometryPoints(
+  value: { kind: "polyline" | "polygon"; coordinates: unknown[] },
+  ctx: z.RefinementCtx,
+) {
+  const minimumPoints = value.kind === "polygon" ? 3 : 2;
+  if (value.coordinates.length < minimumPoints) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        value.kind === "polygon"
+          ? "Le polygone doit contenir au moins 3 points."
+          : "Le trace doit contenir au moins 2 points.",
+    });
+  }
+}
 const gpxImportMetadataSchema = z
   .object({
     source: z.literal("gpx_import"),
@@ -70,41 +86,19 @@ const gpxImportMetadataSchema = z
       .optional(),
   })
   .strict();
-const manualDrawingSchema = z
+export const manualDrawingSchema = z
   .object({
     kind: z.enum(["polyline", "polygon"]),
     coordinates: z.array(coordinateSchema).max(400),
   })
-  .superRefine((value, ctx) => {
-    const minimumPoints = value.kind === "polygon" ? 3 : 2;
-    if (value.coordinates.length < minimumPoints) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          value.kind === "polygon"
-            ? "Le polygone doit contenir au moins 3 points."
-            : "Le trace doit contenir au moins 2 points.",
-      });
-    }
-  });
+  .superRefine(validateMinimumGeometryPoints);
 const contractGeometrySchema = z
   .object({
     kind: z.enum(["polyline", "polygon"]),
     coordinates: z.array(coordinateSchema).max(400),
     geometrySource: actionInputGeometrySourceSchema.nullable().optional(),
   })
-  .superRefine((value, ctx) => {
-    const minimumPoints = value.kind === "polygon" ? 3 : 2;
-    if (value.coordinates.length < minimumPoints) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          value.kind === "polygon"
-            ? "Le polygone doit contenir au moins 3 points."
-            : "Le trace doit contenir au moins 2 points.",
-      });
-    }
-  });
+  .superRefine(validateMinimumGeometryPoints);
 const wasteMassSchema = z
   .number()
   .min(0)

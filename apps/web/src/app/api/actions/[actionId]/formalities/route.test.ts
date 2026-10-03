@@ -34,10 +34,16 @@ vi.mock("@/lib/geo/action-territory-resolver", () => ({
   resolveActionTerritory: resolveActionTerritoryMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: supabaseMock }));
-vi.mock("@/lib/http/api-errors", () => ({
-  handleApiError: handleApiErrorMock,
-  validationErrorResponse: validationErrorMock,
-}));
+vi.mock("@/lib/http/api-errors", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/http/api-errors")>(
+    "@/lib/http/api-errors",
+  );
+  return {
+    ...actual,
+    handleApiError: handleApiErrorMock,
+    validationErrorResponse: validationErrorMock,
+  };
+});
 vi.mock("@/lib/http/auth-responses", () => ({
   unauthorizedJsonResponse: unauthorizedMock,
 }));

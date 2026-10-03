@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUserIdentity, requireAuthenticatedAccess } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import {
+  handleApiError,
+  parseJsonBodyWithValidation,
+  validationErrorResponse,
+} from "@/lib/http/api-errors";
+import { normalizeActionId } from "@/lib/actions/action-id";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { resolveActionTerritory } from "@/lib/geo/action-territory-resolver";
 import { loadActionById } from "@/lib/actions/store";
@@ -43,6 +48,34 @@ const formalitiesPatchSchema = z
   .refine((value) => value.facts || value.transition, {
     message: "Une qualification ou une mise à jour d'état est requise.",
   });
+
+function resolveFormalitiesActionId(actionId: string): string | NextResponse {
+  const normalized = normalizeActionId(actionId);
+  return normalized ?? validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
+}
+
+async function resolveFormalitiesRequestContext(
+  ctx: { params: Promise<{ actionId: string }> },
+) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) return unauthorizedJsonResponse();
+  const actionId = resolveFormalitiesActionId((await ctx.params).actionId);
+  if (actionId instanceof Response) return actionId;
+  return { userId: access.userId, actionId };
+}
+
+function resolveAuthorizedFormalitiesAction(
+  result: Awaited<ReturnType<typeof loadAuthorizedAction>>,
+  message: string,
+) {
+  if (result.kind === "not_found") {
+    return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
+  }
+  if (result.kind === "forbidden") {
+    return NextResponse.json({ error: message }, { status: 403 });
+  }
+  return result;
+}
 
 async function loadAuthorizedAction(actionId: string, userId: string) {
   const supabase = getSupabaseServerClient(true);
@@ -133,45 +166,37 @@ export async function GET(
   _request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const access = await requireAuthenticatedAccess();
-  if (!access.ok) return unauthorizedJsonResponse();
-
-  const { actionId } = await ctx.params;
-  const trimmedActionId = actionId.trim();
-  if (!trimmedActionId) {
-    return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
-  }
+  const requestContext = await resolveFormalitiesRequestContext(ctx);
+  if (requestContext instanceof Response) return requestContext;
+  const { userId, actionId: trimmedActionId } = requestContext;
 
   try {
-    const result = await loadAuthorizedAction(trimmedActionId, access.userId);
-    if (result.kind === "not_found") {
-      return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
-    }
-    if (result.kind === "forbidden") {
-      return NextResponse.json(
-        { error: "Vous n'êtes pas autorisé à consulter les formalités de cette action." },
-        { status: 403 },
-      );
-    }
-    if (result.current.action_phase !== "pre_action") {
+    const result = await loadAuthorizedAction(trimmedActionId, userId);
+    const authorized = resolveAuthorizedFormalitiesAction(
+      result,
+      "Vous n'êtes pas autorisé à consulter les formalités de cette action.",
+    );
+    if (authorized instanceof Response) return authorized;
+    const current = authorized.current;
+    if (current.action_phase !== "pre_action") {
       return NextResponse.json(
         { error: "Les formalités locales concernent uniquement une pré-action." },
         { status: 409 },
       );
     }
 
-    const facts = await factsFromAction(result.current);
+    const facts = await factsFromAction(current);
     const qualification = qualifyActionFormalities(facts);
     const workflow = buildFormalitiesWorkflowState({
       facts,
       qualification,
       actionDependencies: {
-        locationLabel: result.current.location_label,
-        actionDate: result.current.action_date,
+        locationLabel: current.location_label,
+        actionDate: current.action_date,
         territoryFingerprint: buildFormalitiesTerritoryFingerprint(facts.territory),
       },
       previous: normalizeActionFormalitiesWorkflow(
-        result.current.preparation_data?.formalitiesWorkflow,
+        current.preparation_data?.formalitiesWorkflow,
       ),
     });
     return responseFor({
@@ -189,65 +214,49 @@ export async function PATCH(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const access = await requireAuthenticatedAccess();
-  if (!access.ok) return unauthorizedJsonResponse();
-
-  const { actionId } = await ctx.params;
-  const trimmedActionId = actionId.trim();
-  if (!trimmedActionId) {
-    return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
-  }
-
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
-  }
-  const parsed = formalitiesPatchSchema.safeParse(payload);
-  if (!parsed.success) {
-    return validationErrorResponse(parsed.error.flatten().fieldErrors);
-  }
+  const requestContext = await resolveFormalitiesRequestContext(ctx);
+  if (requestContext instanceof Response) return requestContext;
+  const { userId, actionId: trimmedActionId } = requestContext;
+  const parsedBody = await parseJsonBodyWithValidation(request, formalitiesPatchSchema);
+  if (!parsedBody.ok) return parsedBody.response;
+  const parsed = parsedBody.data;
 
   try {
-    const result = await loadAuthorizedAction(trimmedActionId, access.userId);
-    if (result.kind === "not_found") {
-      return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
-    }
-    if (result.kind === "forbidden") {
-      return NextResponse.json(
-        { error: "Vous n'êtes pas autorisé à modifier les formalités de cette action." },
-        { status: 403 },
-      );
-    }
-    if (result.current.action_phase !== "pre_action") {
+    const result = await loadAuthorizedAction(trimmedActionId, userId);
+    const authorized = resolveAuthorizedFormalitiesAction(
+      result,
+      "Vous n'êtes pas autorisé à modifier les formalités de cette action.",
+    );
+    if (authorized instanceof Response) return authorized;
+    const current = authorized.current;
+    if (current.action_phase !== "pre_action") {
       return NextResponse.json(
         { error: "Les formalités locales concernent uniquement une pré-action." },
         { status: 409 },
       );
     }
 
-    const currentFacts = await factsFromAction(result.current);
-    const facts = parsed.data.facts
-      ? { ...parsed.data.facts, territory: currentFacts.territory }
+    const currentFacts = await factsFromAction(current);
+    const facts = parsed.facts
+      ? { ...parsed.facts, territory: currentFacts.territory }
       : currentFacts;
     const qualification = qualifyActionFormalities(facts);
     const previous = normalizeActionFormalitiesWorkflow(
-      result.current.preparation_data?.formalitiesWorkflow,
+      current.preparation_data?.formalitiesWorkflow,
     );
     let workflow = buildFormalitiesWorkflowState({
       facts,
       qualification,
       actionDependencies: {
-        locationLabel: result.current.location_label,
-        actionDate: result.current.action_date,
+        locationLabel: current.location_label,
+        actionDate: current.action_date,
         territoryFingerprint: buildFormalitiesTerritoryFingerprint(facts.territory),
       },
       previous,
     });
-    if (parsed.data.transition) {
+    if (parsed.transition) {
       const isKnownFormality = qualification.formalities.some(
-        (formality) => formality.id === parsed.data.transition?.formalityId,
+        (formality) => formality.id === parsed.transition?.formalityId,
       );
       if (!isKnownFormality) {
         return validationErrorResponse({
@@ -256,16 +265,16 @@ export async function PATCH(
       }
       workflow = applyFormalitiesWorkflowTransition({
         workflow,
-        transition: parsed.data.transition as FormalitiesWorkflowTransition,
+        transition: parsed.transition as FormalitiesWorkflowTransition,
       });
     }
 
     const preparationData = {
-      ...(result.current.preparation_data ?? {}),
+      ...(current.preparation_data ?? {}),
       formalitiesContext: facts,
       formalitiesWorkflow: workflow,
     };
-    const updated = await result.supabase
+    const updated = await authorized.supabase
       .from("actions")
       .update({ preparation_data: preparationData })
       .eq("id", trimmedActionId)

@@ -3,7 +3,11 @@
 import { Activity, ChevronRight, Layers, TrendingDown, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { DecisionClusterSection } from "@/components/pilotage/decision-cluster-section";
-import { PilotageInsightCard, PilotageMetricGrid } from "@/components/pilotage/pilotage-cluster-panels";
+import {
+  buildPilotageClusterMetrics,
+  PilotageInsightCard,
+  PilotageMetricGrid,
+} from "@/components/pilotage/pilotage-cluster-panels";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import type { PilotageOverview } from "@/lib/pilotage/overview.types";
 import type { Locale } from "@/lib/ui/preferences";
@@ -37,15 +41,7 @@ export function ElusSectionOverviewPanel({ data, locale }: ElusSectionOverviewPa
 
       <PilotageMetricGrid
         variant="governance"
-        metrics={data.summary.kpis.map((kpi) => ({
-          id: kpi.label,
-          label: kpi.label,
-          value: kpi.value,
-          previousValue: kpi.previousValue,
-          deltaAbsolute: kpi.deltaAbsolute,
-          deltaPercent: kpi.deltaPercent,
-          interpretation: kpi.interpretation,
-        }))}
+        metrics={buildPilotageClusterMetrics(data.summary.kpis)}
       />
 
       <DecisionClusterSection locale={locale} surfaceId="governance" />

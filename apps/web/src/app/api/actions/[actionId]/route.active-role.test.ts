@@ -56,12 +56,18 @@ vi.mock("@/lib/actions/permissions", async () => {
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
-vi.mock("@/lib/http/api-errors", () => ({
-  handleApiError: vi.fn(() => new Response("error", { status: 500 })),
-  validationErrorResponse: vi.fn((errors: Record<string, string[]>) =>
-    Response.json({ error: errors }, { status: 400 }),
-  ),
-}));
+vi.mock("@/lib/http/api-errors", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/http/api-errors")>(
+    "@/lib/http/api-errors",
+  );
+  return {
+    ...actual,
+    handleApiError: vi.fn(() => new Response("error", { status: 500 })),
+    validationErrorResponse: vi.fn((errors: Record<string, string[]>) =>
+      Response.json({ error: errors }, { status: 400 }),
+    ),
+  };
+});
 vi.mock("@/lib/http/auth-responses", () => ({
   unauthorizedJsonResponse: vi.fn(() => new Response("Unauthorized", { status: 401 })),
 }));
