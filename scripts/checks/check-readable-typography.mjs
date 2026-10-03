@@ -96,6 +96,41 @@ const allowlist = [
     rule: "small-text",
     reason: "extracted admin metadata preserves the existing compact visual contract",
   },
+  {
+    file: "apps/web/src/components/sections/rubriques/elus-section-navigation.tsx",
+    rule: "small-text",
+    reason: "extracted Pilotage navigation preserves the existing visual contract",
+  },
+  {
+    file: "apps/web/src/components/sections/rubriques/elus-section-overview-panel.tsx",
+    rule: "small-text",
+    reason: "extracted Pilotage overview metadata preserves the existing visual contract",
+  },
+  {
+    file: "apps/web/src/components/sections/rubriques/elus-section-security-footer.tsx",
+    rule: "small-text",
+    reason: "extracted Pilotage security metadata preserves the existing visual contract",
+  },
+  {
+    file: "apps/web/src/components/sections/rubriques/elus-section-states.tsx",
+    rule: "small-text",
+    reason: "extracted Pilotage state controls preserve the existing visual contract",
+  },
+  {
+    file: "apps/web/src/components/sections/rubriques/elus-section-zones-panel.tsx",
+    rule: "small-text",
+    reason: "extracted Pilotage zone metadata preserves the existing visual contract",
+  },
+  {
+    file: "apps/web/src/components/sections/rubriques/elus-section-states.tsx",
+    rule: "body-color",
+    reason: "extracted Pilotage error copy preserves the existing visual contract",
+  },
+  {
+    file: "apps/web/src/components/sections/rubriques/elus-section-zones-panel.tsx",
+    rule: "body-color",
+    reason: "extracted Pilotage zone explanations preserve the existing visual contract",
+  },
 ];
 
 const smallTextPattern = /text-\[((?:\d+(?:\.\d+)?|\.\d+))(px|rem)\]/g;
