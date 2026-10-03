@@ -275,6 +275,10 @@ describe("/admin data availability contract", () => {
       new URL("../../app/(app)/admin/page.tsx", import.meta.url),
       "utf8",
     );
+    const maxToolsSource = readFileSync(
+      new URL("../../components/admin/admin-max-tools.tsx", import.meta.url),
+      "utf8",
+    );
 
     expect(source).not.toContain("loadPilotageOverview");
     expect(source).not.toContain("Prévision prochaine");
@@ -293,8 +297,11 @@ describe("/admin data availability contract", () => {
     expect(source).not.toContain("Renforcer traçabilité");
     expect(source).toContain('id="workflow-administration"');
     expect(source).toContain("<ActionsReportPanel");
+    expect(source).toContain("<AdminMaxTools");
     expect(source).toContain('role === "max"');
-    expect(source).toContain("AdminCreatorConsole");
+    expect(source).not.toContain("AdminCreatorConsole");
+    expect(maxToolsSource).toContain("AdminCreatorConsole");
+    expect(maxToolsSource).toContain("embedded");
   });
 
   it("keeps the workflow title singular and uses the warm admin shell", () => {
