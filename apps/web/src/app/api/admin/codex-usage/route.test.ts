@@ -110,6 +110,20 @@ vi.mock("@/lib/environmental-impact-estimator", () => ({
 
 import { GET, POST } from "./route";
 
+function postCodexUsage(
+  body: string,
+  query = "",
+): Promise<Response> {
+  const suffix = query ? `?${query}` : "";
+  return POST(
+    new Request(`http://localhost/api/admin/codex-usage${suffix}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+    }),
+  );
+}
+
 describe("admin codex usage route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -130,12 +144,8 @@ describe("admin codex usage route", () => {
   it("rejects non-admin POST access before construction, persistence, or audit", async () => {
     requireAdminAccessMock.mockResolvedValueOnce({ ok: false, status: 403, error: "Forbidden" });
 
-    const response = await POST(
-      new Request("http://localhost/api/admin/codex-usage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ weekStart: "2026-05-19", sessionCount: 5 }),
-      }),
+    const response = await postCodexUsage(
+      JSON.stringify({ weekStart: "2026-05-19", sessionCount: 5 }),
     );
 
     expect(response.status).toBe(403);
@@ -168,26 +178,9 @@ describe("admin codex usage route", () => {
   it("stores a manual weekly codex snapshot", async () => {
     requireAdminAccessMock.mockResolvedValueOnce({ ok: true, userId: "admin_1" });
 
-    const response = await POST(
-      new Request("http://localhost/api/admin/codex-usage?historyLimit=6", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          weekStart: "2026-05-19",
-          weekEnd: "2026-05-25",
-          sessionCount: 5,
-          conversationCount: 9,
-          turnCount: 36,
-          toolCallCount: 12,
-          shellCommandCount: 14,
-          fileTouchCount: 20,
-          testRunCount: 5,
-          changedLineCount: 520,
-          activeMinutes: 240,
-          source: "manual",
-          notes: ["Semaine enregistrée"],
-        }),
-      }),
+    const response = await postCodexUsage(
+      JSON.stringify(buildSnapshotMock()),
+      "historyLimit=6",
     );
     const payload = (await response.json()) as {
       status: string;
@@ -269,12 +262,8 @@ describe("admin codex usage route", () => {
     });
     requireAdminAccessMock.mockResolvedValueOnce({ ok: true, userId: "admin_1" });
 
-    const response = await POST(
-      new Request("http://localhost/api/admin/codex-usage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ weekStart: "2026-05-19", sessionCount: 5 }),
-      }),
+    const response = await postCodexUsage(
+      JSON.stringify({ weekStart: "2026-05-19", sessionCount: 5 }),
     );
 
     expect(response.status).toBe(200);
@@ -295,12 +284,8 @@ describe("admin codex usage route", () => {
     upsertSnapshotMock.mockRejectedValueOnce(new Error("external persistence detail"));
     requireAdminAccessMock.mockResolvedValueOnce({ ok: true, userId: "admin_1" });
 
-    const response = await POST(
-      new Request("http://localhost/api/admin/codex-usage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ weekStart: "2026-05-19", sessionCount: 5 }),
-      }),
+    const response = await postCodexUsage(
+      JSON.stringify({ weekStart: "2026-05-19", sessionCount: 5 }),
     );
 
     expect(response.status).toBe(503);
@@ -327,12 +312,8 @@ describe("admin codex usage route", () => {
     });
     requireAdminAccessMock.mockResolvedValueOnce({ ok: true, userId: "admin_1" });
 
-    const response = await POST(
-      new Request("http://localhost/api/admin/codex-usage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ weekStart: "2026-05-19" }),
-      }),
+    const response = await postCodexUsage(
+      JSON.stringify({ weekStart: "2026-05-19" }),
     );
 
     expect(response.status).toBe(503);

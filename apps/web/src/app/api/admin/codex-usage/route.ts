@@ -98,14 +98,19 @@ function deriveCodexTargetId(body: unknown): string {
 }
 
 const CODEX_AUDIT_OPERATION = "upsert_codex_usage_snapshot";
+
+function parseCodexUsageHistoryLimit(request: Request): number {
+  return parseEnvironmentalImpactHistoryLimit(
+    new URL(request.url).searchParams.get("historyLimit"),
+  );
+}
+
 export async function GET(request: Request) {
   const access = await requireAdminAccess();
   if (!access.ok) {
     return adminAccessErrorJsonResponse(access, `codex-usage-${Date.now()}`);
   }
-  const historyLimit = parseEnvironmentalImpactHistoryLimit(
-    new URL(request.url).searchParams.get("historyLimit"),
-  );
+  const historyLimit = parseCodexUsageHistoryLimit(request);
 
   try {
     return NextResponse.json(await buildCodexAdminPayload(historyLimit));
@@ -126,9 +131,7 @@ export async function POST(request: Request) {
   if (!access.ok) {
     return adminAccessErrorJsonResponse(access, `codex-usage-${Date.now()}`);
   }
-  const historyLimit = parseEnvironmentalImpactHistoryLimit(
-    new URL(request.url).searchParams.get("historyLimit"),
-  );
+  const historyLimit = parseCodexUsageHistoryLimit(request);
 
   const operationId = `codex-usage-${randomUUID()}`;
   let targetId = "codex-unknown";

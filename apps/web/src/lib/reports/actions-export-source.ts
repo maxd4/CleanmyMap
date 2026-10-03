@@ -1,7 +1,5 @@
 import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
-import { requireAdminAccess } from "@/lib/authz";
 import type { ActionEntityType } from "@/lib/actions/contracts/contract-model";
 import {
   fetchUnifiedActionContracts,
@@ -49,18 +47,9 @@ export type ActionsExportRequestContext = {
   supabase: SupabaseClient;
 };
 
-type PreparedActionsExportRequest =
-  | { response: Response }
-  | ActionsExportRequestContext;
-
-async function prepareActionsExportRequest(
+export function prepareActionsExportContext(
   request: Request,
-): Promise<PreparedActionsExportRequest> {
-  const access = await requireAdminAccess();
-  if (!access.ok) {
-    return { response: adminAccessErrorJsonResponse(access) };
-  }
-
+): ActionsExportRequestContext {
   const url = new URL(request.url);
   const exportDate = new Date();
   return {
@@ -69,18 +58,6 @@ async function prepareActionsExportRequest(
     exportDate,
     cacheDay: exportDate.toISOString().slice(0, 10),
     supabase: getSupabaseServerClient(true),
-  };
-}
-
-export function withActionsExportRequest(
-  handler: (context: ActionsExportRequestContext) => Promise<Response>,
-) {
-  return async function handleActionsExportRequest(request: Request): Promise<Response> {
-    const prepared = await prepareActionsExportRequest(request);
-    if ("response" in prepared) {
-      return prepared.response;
-    }
-    return handler(prepared);
   };
 }
 
@@ -134,4 +111,10 @@ export async function loadActionsExportContracts(
     isTruncated,
     sourceHealth,
   };
+}
+
+export function loadActionsExportContractsForContext(
+  context: ActionsExportRequestContext,
+) {
+  return loadActionsExportContracts(context.supabase, context.query, context.types);
 }
