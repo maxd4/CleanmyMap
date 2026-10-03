@@ -1,6 +1,10 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { allowLocalFileStoreFallback, canUseSupabaseServerPersistence } from "@/lib/persistence/runtime-store";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+  type LocalRecordStorePayload,
+} from "@/lib/persistence/local-record-store";
 import type { ServiceThresholdAlert } from "@/lib/environmental-impact-estimator/service-risk";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { StorageBusinessContributionReport } from "@/lib/supabase/storage-business-contribution";
@@ -107,10 +111,7 @@ export type GovernanceMonthlyReportRecord = {
   payload: GovernanceMonthlyReportPayload;
 };
 
-type GovernanceMonthlyReportStore = {
-  updatedAt: string;
-  records: GovernanceMonthlyReportRecord[];
-};
+type GovernanceMonthlyReportStore = LocalRecordStorePayload<GovernanceMonthlyReportRecord>;
 
 type GovernanceMonthlyReportRow = {
   id: number | string;
@@ -303,40 +304,39 @@ function normalizePayload(
 const FILE_PATH = join(process.cwd(), "data", "local-db", "governance_monthly_reports.json");
 export const GOVERNANCE_MONTHLY_REPORT_KEY = "cleanmymap-governance";
 
-function emptyStore(): GovernanceMonthlyReportStore {
-  return { updatedAt: new Date().toISOString(), records: [] };
-}
-
 async function readStore(): Promise<GovernanceMonthlyReportStore> {
-  try {
-    const raw = await readFile(FILE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as GovernanceMonthlyReportStore;
-    if (!parsed || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-
-    return {
-      updatedAt:
-        typeof parsed.updatedAt === "string" ? parsed.updatedAt : new Date().toISOString(),
-      records: parsed.records,
-    };
-  } catch {
-    return emptyStore();
-  }
+  return readLocalRecordStore(FILE_PATH, normalizeStoredReport);
 }
 
 async function writeStore(store: GovernanceMonthlyReportStore): Promise<void> {
-  await mkdir(dirname(FILE_PATH), { recursive: true });
-  await writeFile(FILE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+  await writeLocalRecordStore(FILE_PATH, store.records);
 }
 
 function normalizeReportMonth(value: string): string {
   const parsed = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(parsed.getTime())) {
-    return new Date().toISOString().slice(0, 10);
+  return Number.isNaN(parsed.getTime())
+    ? new Date().toISOString().slice(0, 10)
+    : parsed.toISOString().slice(0, 10);
+}
+function normalizeStoredReport(
+  record: Record<string, unknown>,
+): GovernanceMonthlyReportRecord | null {
+  const stringFields = ["id", "reportKey", "reportMonth", "generatedAt", "version", "title"] as const;
+  if (stringFields.some((field) => typeof record[field] !== "string")) {
+    return null;
   }
-
-  return parsed.toISOString().slice(0, 10);
+  if (!record.payload || typeof record.payload !== "object" || Array.isArray(record.payload)) {
+    return null;
+  }
+  return {
+    id: record.id as string,
+    reportKey: record.reportKey as string,
+    reportMonth: normalizeReportMonth(record.reportMonth as string),
+    generatedAt: record.generatedAt as string,
+    version: record.version as string,
+    title: record.title as string,
+    payload: normalizePayload(record.payload as GovernanceMonthlyReportPayload),
+  };
 }
 
 function getReportMonthRange(value: string): { start: string; end: string } {

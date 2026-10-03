@@ -1,10 +1,14 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   allowLocalFileStoreFallback,
   canUseSupabaseServerPersistence,
   prependBoundedRecord,
 } from "@/lib/persistence/runtime-store";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+  type LocalRecordStorePayload,
+} from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ServiceEmailEventStatus =
@@ -73,33 +77,46 @@ async function countServiceEmailRecords(
   return fromLocal(store.records, { ...params, statuses });
 }
 
-type ServiceEmailStore = {
-  updatedAt: string;
-  records: ServiceEmailEvent[];
-};
+type ServiceEmailStore = LocalRecordStorePayload<ServiceEmailEvent>;
 
 const FILE_PATH = join(process.cwd(), "data", "local-db", "service_email_events.json");
 
-function emptyStore(): ServiceEmailStore {
-  return { updatedAt: new Date().toISOString(), records: [] };
-}
-
 async function readStore(): Promise<ServiceEmailStore> {
-  try {
-    const raw = await readFile(FILE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as ServiceEmailStore;
-    if (!parsed || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-    return parsed;
-  } catch {
-    return emptyStore();
-  }
+  return readLocalRecordStore(FILE_PATH, normalizeServiceEmailEvent);
 }
 
 async function writeStore(store: ServiceEmailStore): Promise<void> {
-  await mkdir(dirname(FILE_PATH), { recursive: true });
-  await writeFile(FILE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+  await writeLocalRecordStore(FILE_PATH, store.records);
+}
+
+function normalizeServiceEmailEvent(
+  record: Record<string, unknown>,
+): ServiceEmailEvent | null {
+  const provider = record.provider;
+  const status = record.status;
+  const actorUserId = record.actorUserId;
+  const messageId = record.messageId;
+  if (
+    typeof record.at !== "string" ||
+    (provider !== "resend" && provider !== "mock") ||
+    (actorUserId !== null && typeof actorUserId !== "string") ||
+    typeof record.recipientCount !== "number" ||
+    !Number.isFinite(record.recipientCount) ||
+    typeof record.subject !== "string" ||
+    (status !== "sent" && status !== "mocked" && status !== "missing_config" && status !== "error") ||
+    (messageId !== null && typeof messageId !== "string")
+  ) {
+    return null;
+  }
+
+  if (
+    record.meta !== undefined &&
+    (!record.meta || typeof record.meta !== "object" || Array.isArray(record.meta))
+  ) {
+    return null;
+  }
+
+  return record as unknown as ServiceEmailEvent;
 }
 
 export async function appendServiceEmailEvent(event: ServiceEmailEvent): Promise<void> {

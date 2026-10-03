@@ -3,13 +3,17 @@
  * PERMANENCE : Ces données doivent figurer dans Supabase (table `admin_operations_audit`) en production.
  * FALLBACK : Le fallback sur fichier local est toléré en développement mais éphémère sur Vercel.
  */
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   allowLocalFileStoreFallback,
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
 } from "@/lib/persistence/runtime-store";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+  type LocalRecordStorePayload,
+} from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const AUDIT_FILE = join(
@@ -41,52 +45,63 @@ export type AdminOperationAuditEntry = {
   details: Record<string, unknown>;
 };
 
-type AuditStore = {
-  updatedAt: string;
-  records: AdminOperationAuditEntry[];
-};
+type AuditStore = LocalRecordStorePayload<AdminOperationAuditEntry>;
 
-function emptyStore(): AuditStore {
-  return {
-    updatedAt: new Date().toISOString(),
-    records: [],
-  };
+const AUDIT_OPERATION_TYPES = [
+  "moderation",
+  "import_dry_run",
+  "import_confirm",
+  "role_management",
+  "admin_operation",
+] as const;
+
+function isAuditOperationType(
+  value: unknown,
+): value is AdminOperationAuditEntry["operationType"] {
+  return (
+    typeof value === "string" &&
+    AUDIT_OPERATION_TYPES.includes(value as AdminOperationAuditEntry["operationType"])
+  );
 }
 
-async function ensureDirectory(pathname: string): Promise<void> {
-  await mkdir(dirname(pathname), { recursive: true });
+function isAuditOutcome(value: unknown): value is AdminOperationAuditEntry["outcome"] {
+  return value === "success" || value === "error";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 async function readStore(): Promise<AuditStore> {
-  try {
-    const raw = await readFile(AUDIT_FILE, "utf8");
-    const parsed = JSON.parse(raw) as AuditStore;
-    if (
-      !parsed ||
-      typeof parsed !== "object" ||
-      !Array.isArray(parsed.records)
-    ) {
-      return emptyStore();
-    }
-    return {
-      updatedAt:
-        typeof parsed.updatedAt === "string"
-          ? parsed.updatedAt
-          : new Date().toISOString(),
-      records: parsed.records,
-    };
-  } catch {
-    return emptyStore();
-  }
+  return readLocalRecordStore(AUDIT_FILE, normalizeAuditEntry);
 }
 
 async function writeStore(store: AuditStore): Promise<void> {
-  await ensureDirectory(AUDIT_FILE);
-  await writeFile(
-    AUDIT_FILE,
-    `${JSON.stringify({ updatedAt: new Date().toISOString(), records: store.records }, null, 2)}\n`,
-    "utf8",
-  );
+  await writeLocalRecordStore(AUDIT_FILE, store.records);
+}
+
+function normalizeAuditEntry(
+  record: Record<string, unknown>,
+): AdminOperationAuditEntry | null {
+  const operationType = record.operationType;
+  const outcome = record.outcome;
+  if (
+    typeof record.operationId !== "string" ||
+    typeof record.at !== "string" ||
+    typeof record.actorUserId !== "string" ||
+    !isAuditOperationType(operationType) ||
+    !isAuditOutcome(outcome) ||
+    (record.targetId !== undefined && typeof record.targetId !== "string") ||
+    !isRecord(record.details)
+  ) {
+    return null;
+  }
+
+  if (record.actorLabel !== undefined && typeof record.actorLabel !== "string") {
+    return null;
+  }
+
+  return record as unknown as AdminOperationAuditEntry;
 }
 
 function buildActorLabel(
