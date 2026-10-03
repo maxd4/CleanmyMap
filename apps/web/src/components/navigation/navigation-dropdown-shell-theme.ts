@@ -23,5 +23,3 @@ export function getNavigationDropdownShellTokens(spaceId: NavigationBlockId | nu
 export function getNavigationDropdownPanelStyle(spaceId: NavigationBlockId | null) {
   return getNavigationDropdownShellTokens(spaceId).style;
 }
-
-export type { NavigationDropdownShellTokens };

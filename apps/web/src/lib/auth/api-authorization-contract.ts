@@ -7,7 +7,6 @@ import { chatAuthorizationContract } from "./api-authorization-contract.chat";
 import { platformAuthorizationContract } from "./api-authorization-contract.platform";
 
 export type {
-  ApiAuthorizationDimension,
   ApiAuthorizationContractEntry,
   ApiHttpMethod,
 } from "./api-authorization-contract.types";

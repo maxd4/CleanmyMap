@@ -212,19 +212,6 @@ async function resolveDepartmentForModeration(params: {
   });
 }
 
-export function buildAdminCleanPlaceUpdates(
-  status: "new" | "validated" | "cleaned",
-  edits?: z.infer<typeof cleanPlaceEditsSchema>,
-) {
-  return {
-    status,
-    ...(edits?.label !== undefined ? { label: edits.label } : {}),
-    ...(edits?.spotType !== undefined ? { spot_type: edits.spotType } : {}),
-    ...(edits?.latitude !== undefined ? { latitude: edits.latitude } : {}),
-    ...(edits?.longitude !== undefined ? { longitude: edits.longitude } : {}),
-    ...(edits?.notes !== undefined ? { notes: edits.notes } : {}),
-  };
-}
 
 function buildAdminActionPayload(params: {
   existing: ExistingActionRow;

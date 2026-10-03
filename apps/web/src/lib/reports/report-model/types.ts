@@ -5,7 +5,7 @@ import type { PersonalImpactMethodology } from "@/lib/gamification/progression-t
 import type { ImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
 import type { EventConversionSummary } from "@/lib/community/engagement";
 
-export type ChapterAudience = "terrain" | "strategie" | "mixte";
+type ChapterAudience = "terrain" | "strategie" | "mixte";
 
 export type ChapterDef = {
   id: string;

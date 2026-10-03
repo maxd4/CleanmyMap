@@ -207,19 +207,6 @@ export async function parseAuthenticatedJsonRequest(
 /**
  * Handle unauthorized access attempts
  */
-export function unauthorizedResponse(message?: string) {
-  const referenceCode = `AUTH-${Date.now().toString(36).toUpperCase()}`;
-  
-  return NextResponse.json(
-    {
-      error: message || USER_ERROR_MESSAGES.auth,
-      kind: "permission",
-      referenceCode,
-      status: "unauthorized",
-    },
-    { status: 401 }
-  );
-}
 
 /**
  * Handle forbidden access attempts

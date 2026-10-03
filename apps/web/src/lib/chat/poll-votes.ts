@@ -1,6 +1,6 @@
 import type { ChatPollOption } from "./polls";
 
-export type ChatPollVoteSummaryRow = {
+type ChatPollVoteSummaryRow = {
   message_id: string;
   option_id: string;
   vote_count: number | string;
@@ -18,7 +18,7 @@ export type ChatPollVoteSummary = {
   selectedOptionId: string | null;
 };
 
-export type ChatPollVoteResponse = {
+type ChatPollVoteResponse = {
   messageId: string;
   options: Array<{ optionId: string; voteCount: number }>;
   totalVotes: number;

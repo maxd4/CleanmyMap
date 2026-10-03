@@ -11,7 +11,7 @@ export type StorageBusinessClassificationSignalType =
   | "sourceTable"
   | "businessContext";
 
-export type StorageBusinessClassificationSignal = {
+type StorageBusinessClassificationSignal = {
   signal: StorageBusinessClassificationSignalType;
   evidence: string;
 };

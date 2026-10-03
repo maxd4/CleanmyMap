@@ -48,11 +48,9 @@ const SUPABASE_CONTACT_REQUEST_COLUMNS =
 function emptyStore(): StorePayload {
   return { updatedAt: new Date().toISOString(), records: [] };
 }
-
 function normalizeTextField(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
-
 function normalizeOptionalTextField(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value : null;
 }
@@ -257,29 +255,4 @@ export async function updateContactRequestStatus(params: {
   if (!replacement) return null;
   await writeStore({ updatedAt: new Date().toISOString(), records: replacement.records });
   return replacement.record;
-}
-
-export async function deleteContactRequest(requestId: string): Promise<boolean> {
-  assertPersistenceAvailable("contact_requests");
-
-  if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("contact_requests")
-      .delete()
-      .eq("id", requestId)
-      .select("id");
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return (result.data ?? []).length > 0;
-  }
-
-  const store = await readStore();
-  const nextRecords = store.records.filter((record) => record.id !== requestId);
-  if (nextRecords.length === store.records.length) {
-    return false;
-  }
-
-  await writeStore({ updatedAt: new Date().toISOString(), records: nextRecords });
-  return true;
 }

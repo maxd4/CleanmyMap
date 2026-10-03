@@ -294,6 +294,27 @@
       "reason": "capacité sécurité/opérationnelle — l’opérateur peut exécuter ce contrôle manuel sans écriture pour vérifier les frontières d’accès des endpoints sensibles ; le script porte lui-même le contrat de statuts attendus.",
       "evidence": "apps/web/scripts/smoke-tests.mjs:ENDPOINTS_TO_CHECK et fetch GET sans token ; documentation/operations/runbook-deploiement.md:smoke ciblé ; apps/web/src/app/api/analytics/funnel/route.ts et apps/web/src/app/api/reports/elus-dossier/route.ts",
       "reviewedRef": "a5e506e5042f8b442da0a3da0da019e94d4f87f0"
+    },
+    {
+      "id": "e8298d6b55a00139f2d3dc3a",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "contrat public CURRENT — le Report Model est la façade publique documentée du module et ses types doivent rester importables depuis report-model.",
+      "evidence": "scripts/checks/check-report-model-boundary.mjs:expectedPublicIndex ; apps/web/src/lib/reports/report-model/README.md:API publique",
+      "reviewedRef": "beff9f1970ea058e3425534af8c0700ee30ff7db"
+    },
+    {
+      "id": "3060279824a971e647b0e992",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "contrat public CURRENT — ReportModelInput appartient à la façade explicitement verrouillée par le contrôle de frontière du Report Model.",
+      "evidence": "scripts/checks/check-report-model-boundary.mjs:expectedPublicIndex ; apps/web/src/lib/reports/report-model/README.md:ReportModelInput",
+      "reviewedRef": "beff9f1970ea058e3425534af8c0700ee30ff7db"
+    },
+    {
+      "id": "28c83b279eaca352f6c176a9",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "contrat public CURRENT — ReportModerationAvailability est exposé avec le modèle et protégé par le contrôle de frontière du Report Model.",
+      "evidence": "scripts/checks/check-report-model-boundary.mjs:expectedPublicIndex ; apps/web/src/lib/reports/report-model/types.ts:ReportModerationAvailability",
+      "reviewedRef": "beff9f1970ea058e3425534af8c0700ee30ff7db"
     }
   ]
 }

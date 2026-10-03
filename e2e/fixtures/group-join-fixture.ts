@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 export const GROUP_JOIN_FIXTURE_ID = "6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71";
-export const GROUP_JOIN_FIXTURE_MARKER = "E2E_FIXTURE:group-join:v1";
+const GROUP_JOIN_FIXTURE_MARKER = "E2E_FIXTURE:group-join:v1";
 
 function requireLocalEnvironment(): { url: string; serviceRoleKey: string } {
   const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;

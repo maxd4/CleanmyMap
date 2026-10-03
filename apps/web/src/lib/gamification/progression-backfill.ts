@@ -6,14 +6,7 @@ import {
   extractCommunityOpsFromDescription,
   refreshProgressionProfile,
 } from "./progression-tracking";
-import { runActionQuery } from "@/lib/actions/query";
 import { rebuildUserGamificationBadges } from "./badges/rebuild";
-
-type ClerkIdRow = {
-  created_by_clerk_id?: string | null;
-  participant_clerk_id?: string | null;
-  organizer_clerk_id?: string | null;
-};
 
 async function backfillUserActions(
   supabase: SupabaseClient,
@@ -21,7 +14,6 @@ async function backfillUserActions(
 ): Promise<void> {
   await syncUserActionProgression(supabase, userId);
 }
-
 async function backfillUserSpots(
   supabase: SupabaseClient,
   userId: string,
@@ -67,7 +59,6 @@ async function backfillUserSpots(
     }
   }
 }
-
 async function backfillUserRsvps(
   supabase: SupabaseClient,
   userId: string,
@@ -153,28 +144,6 @@ async function backfillUserCommunityOps(
   }
 }
 
-function throwIfQueryError(error: { message: string } | null): void {
-  if (error) {
-    throw new Error(error.message);
-  }
-}
-
-function addUserId(userIds: Set<string>, userId: string | null | undefined): void {
-  if (typeof userId === "string" && userId.trim().length > 0) {
-    userIds.add(userId);
-  }
-}
-
-function collectUserIds<T extends ClerkIdRow>(
-  rows: T[],
-  selectUserId: (row: T) => string | null | undefined,
-  userIds: Set<string>,
-): void {
-  for (const row of rows) {
-    addUserId(userIds, selectUserId(row));
-  }
-}
-
 export async function backfillUserProgression(
   supabase: SupabaseClient,
   userId: string,
@@ -185,31 +154,4 @@ export async function backfillUserProgression(
   await backfillUserCommunityOps(supabase, userId);
   await rebuildUserGamificationBadges(supabase, userId);
   await refreshProgressionProfile(supabase, userId);
-}
-
-export async function backfillAllProgression(
-  supabase: SupabaseClient,
-): Promise<void> {
-  const [actionsUsers, spotsUsers, rsvpUsers, eventUsers] = await Promise.all([
-    runActionQuery<{ created_by_clerk_id: string }>(supabase, (query) =>
-      query.select("created_by_clerk_id").limit(10000),
-    ),
-    supabase.from("trash_spotter_spots").select("created_by_clerk_id").limit(10000),
-    supabase.from("event_rsvps").select("participant_clerk_id").limit(10000),
-    supabase.from("community_events").select("organizer_clerk_id").limit(10000),
-  ]);
-
-  throwIfQueryError(spotsUsers.error);
-  throwIfQueryError(rsvpUsers.error);
-  throwIfQueryError(eventUsers.error);
-
-  const userIds = new Set<string>();
-  collectUserIds(actionsUsers, (row) => row.created_by_clerk_id, userIds);
-  collectUserIds((spotsUsers.data ?? []) as Array<{ created_by_clerk_id?: string | null }>, (row) => row.created_by_clerk_id, userIds);
-  collectUserIds((rsvpUsers.data ?? []) as Array<{ participant_clerk_id?: string | null }>, (row) => row.participant_clerk_id, userIds);
-  collectUserIds((eventUsers.data ?? []) as Array<{ organizer_clerk_id?: string | null }>, (row) => row.organizer_clerk_id, userIds);
-
-  for (const userId of userIds) {
-    await backfillUserProgression(supabase, userId);
-  }
 }

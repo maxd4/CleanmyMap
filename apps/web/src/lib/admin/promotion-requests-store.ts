@@ -58,7 +58,6 @@ function emptyStore(): StorePayload {
     records: [],
   };
 }
-
 function normalizeRecord(record: Record<string, unknown>): PromotionRequestRecord | null {
   const id = typeof record["id"] === "string" ? record["id"] : "";
   const createdAt = typeof record["createdAt"] === "string" ? record["createdAt"] : "";
@@ -141,7 +140,6 @@ function normalizeRecord(record: Record<string, unknown>): PromotionRequestRecor
     creatorState,
   };
 }
-
 function fromSupabaseRow(row: Record<string, unknown>): PromotionRequestRecord | null {
   return normalizeRecord({
     id: row.id,
@@ -413,30 +411,4 @@ export async function getPromotionRequestById(
 
   const store = await readStore();
   return findRecordInList(store.records, (record) => record.id === requestId);
-}
-
-export async function deletePromotionRequest(
-  requestId: string,
-): Promise<boolean> {
-  assertPersistenceAvailable("promotion_requests");
-
-  if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("promotion_requests")
-      .delete()
-      .eq("id", requestId)
-      .select("id");
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return (result.data ?? []).length > 0;
-  }
-
-  const store = await readStore();
-  const records = store.records.filter((record) => record.id !== requestId);
-  if (records.length === store.records.length) {
-    return false;
-  }
-  await writeStore({ updatedAt: new Date().toISOString(), records });
-  return true;
 }

@@ -2,8 +2,6 @@ export type {
   EventConversionSummary,
   EventReminder,
   EventStaffingSummary,
-  ActorActivityCard,
-  QualityLeaderboardRow,
 } from "./engagement.types";
 
 export {

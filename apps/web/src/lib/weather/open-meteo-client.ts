@@ -64,7 +64,6 @@ export class OpenMeteoError extends Error {
     this.reason = reason;
   }
 }
-
 const OPEN_METEO_ENDPOINT = "https://api.open-meteo.com/v1/forecast";
 const DEFAULT_TIMEOUT_MS = 8_000;
 const DEFAULT_CACHE_TTL_MS = 5 * 60_000;
@@ -80,7 +79,6 @@ const forecastCache = new Map<string, CacheEntry>();
 function finiteCoordinate(value: number, minimum: number, maximum: number): boolean {
   return Number.isFinite(value) && value >= minimum && value <= maximum;
 }
-
 function numericArray(value: unknown): Array<number | null> | undefined {
   if (!Array.isArray(value)) return undefined;
   return value.map((item) =>
@@ -221,7 +219,6 @@ async function requestForecast(
     clearTimeout(timeout);
   }
 }
-
 export function clearOpenMeteoForecastCache(): void {
   forecastCache.clear();
 }
@@ -262,9 +259,3 @@ export async function fetchOpenMeteoForecast(
     throw error;
   }
 }
-
-export const OPEN_METEO_DEFAULTS = {
-  timeoutMs: DEFAULT_TIMEOUT_MS,
-  cacheTtlMs: DEFAULT_CACHE_TTL_MS,
-  maxCacheEntries: MAX_CACHE_ENTRIES,
-} as const;

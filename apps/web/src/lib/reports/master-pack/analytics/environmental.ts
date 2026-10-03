@@ -22,36 +22,3 @@ export function computeEnvironmentalProxies(totalButts: number, totalKg: number,
     }
   };
 }
-
-export function computeWeatherOperationalAdvice(params: {
-  temperature: number;
-  rain: number;
-  wind: number;
-}) {
-  if (params.rain >= 3 || params.wind >= 40) {
-    return {
-      status: "caution",
-      advice: "Niveau météo prudent : renforcer EPI, réduire durée et sécuriser les points d'appui.",
-      color: "amber"
-    };
-  }
-  if (params.temperature >= 28) {
-    return {
-      status: "hot",
-      advice: "Niveau météo chaud : prévoir eau, pauses et roulement de l'équipe.",
-      color: "orange"
-    };
-  }
-  if (params.temperature <= 3) {
-    return {
-      status: "cold",
-      advice: "Niveau météo froid : cycles courts et protection renforcée des mains.",
-      color: "blue"
-    };
-  }
-  return {
-    status: "optimal",
-    advice: "Niveau météo favorable : fenêtre opérationnelle standard.",
-    color: "emerald"
-  };
-}

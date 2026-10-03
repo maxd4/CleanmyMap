@@ -54,7 +54,6 @@ export function describeUnknownError(error: unknown): string {
     return String(error);
   }
 }
-
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 const SUPPORT_FORM_PATH = "/sections/feedback";
@@ -68,7 +67,6 @@ function sanitizeSupportValue(value: string, maxLength = 220): string {
   }
   return `${compact.slice(0, maxLength - 1).trimEnd()}…`;
 }
-
 function formatSupportTimestamp(timestamp: string | Date): string {
   const date = typeof timestamp === "string" ? new Date(timestamp) : timestamp;
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
@@ -424,22 +422,4 @@ export async function readAppErrorResponse(
     })(),
     cause: payload?.["cause"],
   });
-}
-
-export function appErrorMessageFromKind(kind: AppErrorKind, locale: "fr" | "en" = "fr"): string {
-  if (locale === "en") {
-    switch (kind) {
-      case "validation":
-        return "Some fields need to be corrected before you can continue.";
-      case "network":
-        return "Connection lost. Retrying in 5 seconds.";
-      case "permission":
-        return "You don't have access to this page.";
-      case "server":
-      default:
-        return "A server-side problem occurred. Please try again.";
-    }
-  }
-
-  return defaultMessageForKind(kind);
 }
