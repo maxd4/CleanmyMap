@@ -9,10 +9,10 @@
 - **Famille / bloc fonctionnel** : Admin & Super-admin (hors bloc)
 - **Statut** : technique
 - **Contexte nécessaire** : Compte connecté avec accès administrateur effectif ; les autres comptes voient un état d'accès refusé.
-- **Objectif utilisateur principal** : Superviser les intégrations, quotas, stockage et rapports internes de gouvernance.
-- **Action principale attendue** : Lire l'état des services, les métriques de stockage et le dernier rapport mensuel disponible.
+- **Objectif utilisateur principal** : Superviser les intégrations, quotas, stockage, entraînement vision et rapports internes de gouvernance.
+- **Action principale attendue** : Lire l'état des services, les métriques de stockage, les métriques descriptives vision et le dernier rapport mensuel disponible.
 - **Palette attendue** : amber / brun sombre
-- **Scope** : cockpit de santé des services avec intégrations Codex, impact, plans gratuits, stockage Supabase et archive de gouvernance mensuelle.
+- **Scope** : cockpit de santé des services avec intégrations Codex, impact, plans gratuits, stockage Supabase, métriques bornées de `training_examples` et archive de gouvernance mensuelle. La vue vision expose le volume, les états, les erreurs comparables et la dernière version observée ; elle n'invente pas de seuil de suffisance scientifique.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : admin — canvas #15111d, halo rgba(245, 158, 11, 0.20)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

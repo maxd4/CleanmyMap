@@ -2,11 +2,13 @@ import { AdminAccessState } from"@/components/ui/admin-access-state";
 import { CodexUsagePanel } from"@/components/admin/codex-usage-panel";
 import { EnvironmentalImpactCapturePanel } from"@/components/admin/environmental-impact-capture-panel";
 import { FreePlanServicesPanel } from"@/components/admin/free-plan-services-panel";
+import { VisionTrainingPanel } from"@/components/admin/vision-training-panel";
 import { StorageUsagePanel } from"@/components/dashboard/storage-usage-panel";
 import { SystemStatusPanel } from"@/components/dashboard/system-status-panel";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentUserEffectiveAccess } from "@/lib/authz";
+import { loadVisionTrainingMetrics } from"@/lib/admin/vision-training-service";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { listGovernanceMonthlyReports } from"@/lib/governance/governance-monthly-report-store";
 import { formatStorageBytes } from"@/lib/supabase/storage-usage";
@@ -56,6 +58,8 @@ export default async function AdminServicesPage() {
  <div id="environmental-impact">
  <EnvironmentalImpactCapturePanel />
  </div>
+
+ <VisionTrainingPanel metrics={await loadVisionTrainingMetrics()} />
 
  <div id="free-plans">
  <FreePlanServicesPanel />
@@ -239,8 +243,7 @@ export default async function AdminServicesPage() {
  ) : null}
  </section>
 
- <SystemStatusPanel />
- </CmmSectionGroup>
+ <SystemStatusPanel /></CmmSectionGroup>
  </CmmPageLayout>
  );
 }
