@@ -12,7 +12,7 @@ import type { EmergencyContact } from '../types/emergency-contact';
 
 const MISSION_KEY = 'cmm_current_mission_id';
 const PENDING_LINKED_MISSION_RECONCILIATIONS_KEY = 'cmm_pending_linked_mission_reconciliations';
-export const MAX_PENDING_LINKED_MISSION_RECONCILIATIONS = 50;
+const MAX_PENDING_LINKED_MISSION_RECONCILIATIONS = 50;
 const GPS_BUFFER_INDEX_KEY = '@cmm_gps_buffer_index';
 const ACTION_BUFFER_INDEX_KEY = '@cmm_action_buffer_index';
 const GPS_BUFFER_RECORD_PREFIX = 'cmm_gps_buffer';
