@@ -1,4 +1,3 @@
-import { buildDeliverableHeaders } from "@/lib/reports/http";
 import { formatScorePercent } from "@/lib/formatters/score";
 import { formatStorageBytes } from "@/lib/supabase/storage-usage";
 import { buildGovernanceMethodologyLinks } from "./governance-links";
@@ -322,13 +321,4 @@ export function buildGovernanceMonthlyReportLines(
 
 export function buildGovernanceMonthlyReportFilename(reportMonth: string): string {
   return `rapport_gouvernance_mensuel_${reportMonth.slice(0, 7)}.pdf`;
-}
-
-export function buildGovernanceMonthlyReportDownloadHeaders(record: GovernanceMonthlyReportRecord) {
-  return buildDeliverableHeaders({
-    rubrique: "rapport_gouvernance_mensuel",
-    extension: "pdf",
-    contentType: "application/pdf",
-    date: new Date(record.reportMonth),
-  });
 }

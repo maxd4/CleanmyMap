@@ -11,8 +11,8 @@ export type CmmBadgeTone =
   | "rose"
   | "muted";
 
-export type CmmBadgeSize = "sm" | "md";
-export type CmmBadgeShape = "rounded" | "pill";
+type CmmBadgeSize = "sm" | "md";
+type CmmBadgeShape = "rounded" | "pill";
 
 export interface CmmBadgeProps {
   children: ReactNode;

@@ -15,9 +15,9 @@ export const getCurrentUserIdentityMock = authenticatedRouteMocks.getCurrentUser
 export const pickTraceableActorNameMock = authenticatedRouteMocks.pickTraceableActorName;
 export const getSupabaseServerClientMock = authenticatedRouteMocks.getSupabaseServerClient;
 export const createSignalementMock = authenticatedRouteMocks.createSignalement;
-export const hasAnalyticsConsentCookieMock = authenticatedRouteMocks.hasAnalyticsConsentCookie;
-export const verifyRateLimitMock = rateLimitMocks.verifyRateLimit;
-export const createServerRateLimitResponseMock = rateLimitMocks.createServerRateLimitResponse;
+const hasAnalyticsConsentCookieMock = authenticatedRouteMocks.hasAnalyticsConsentCookie;
+const verifyRateLimitMock = rateLimitMocks.verifyRateLimit;
+const createServerRateLimitResponseMock = rateLimitMocks.createServerRateLimitResponse;
 
 export async function postSubmitPayload(payload: unknown) {
   const { POST } = await import("./route");
@@ -109,7 +109,6 @@ export {
   createActionMock,
   trackActionCreatedMock,
   invalidateSnapshotsMock,
-  resolveActionOrganizerMock,
   resolveActionOrganizersMock,
   resolveActionParticipantsMock,
   resolveDefaultActionOrganizerIdsMock,

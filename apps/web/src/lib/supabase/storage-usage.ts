@@ -83,7 +83,7 @@ export type StorageUsageBreakdownItem = {
   averageBytes: number;
 };
 
-export type StorageUsageLargestFile = {
+type StorageUsageLargestFile = {
   bucketId: string;
   bucketLabel: string;
   businessDomainId?: StorageBusinessDomainId;
@@ -139,7 +139,7 @@ export type StorageUsageSnapshot = {
   warnings: string[];
 };
 
-export type StorageUsageDeltaItem = {
+type StorageUsageDeltaItem = {
   key: string;
   label: string;
   currentBytes: number;

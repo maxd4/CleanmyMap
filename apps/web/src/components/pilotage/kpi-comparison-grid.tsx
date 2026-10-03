@@ -3,7 +3,7 @@ import type { PilotageComparisonResult } from"@/lib/pilotage/metrics";
 import { KpiComparisonCard } from"./kpi-comparison-card";
 import { formatScorePercent } from "@/lib/formatters/score";
 
-export type KpiCardKey =
+type KpiCardKey =
  |"actions"
  |"volume"
  |"coverage"

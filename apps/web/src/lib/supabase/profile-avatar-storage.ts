@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
 
-export const PROFILE_AVATAR_BUCKET = "avatars";
+const PROFILE_AVATAR_BUCKET = "avatars";
 const CLERK_AVATAR_HOSTS = new Set(["img.clerk.com", "images.clerk.dev"]);
 const PROFILE_AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 const PROFILE_AVATAR_TIMEOUT_MS = 4_000;

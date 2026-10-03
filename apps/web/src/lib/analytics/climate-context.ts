@@ -3,9 +3,9 @@ import {
   type ActionVolunteerParticipation,
 } from "@/lib/actions/volunteer-participation";
 
-export const CLIMATE_PROXY_MODEL_VERSION = "v1.2";
+const CLIMATE_PROXY_MODEL_VERSION = "v1.2";
 
-export const CLIMATE_PROXY_FACTORS = {
+const CLIMATE_PROXY_FACTORS = {
   co2PerKgWaste: 1.2,
   plasticLeakagePerKgPlastic: 0.18,
   estimatedPlasticShare: 0.35,

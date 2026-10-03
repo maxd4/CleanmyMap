@@ -44,7 +44,6 @@ export function ReportPage(props: {
  </section>
  );
 }
-
 export function MetricCard(props: {
  label: string;
  value: string;
@@ -66,42 +65,5 @@ export function MetricCard(props: {
  <p className="mt-2 text-2xl font-semibold cmm-text-primary">{props.value}</p>
  {props.hint ? <p className="mt-1 cmm-text-caption cmm-text-secondary">{props.hint}</p> : null}
  </article>
- );
-}
-
-export function ReportTable(props: { headers: string[]; rows: string[][] }) {
- return (
- <div className="print-break-inside-avoid overflow-x-auto rounded-2xl border border-slate-200">
- <table className="min-w-full text-left cmm-text-small">
- <thead style={{ backgroundColor: reportPdfColors.navy, color: "#FFFFFF" }}>
- <tr>
- {props.headers.map((header) => (
- <th key={header} className="px-3 py-2 font-semibold">
- {header}
- </th>
- ))}
- </tr>
- </thead>
- <tbody>
- {props.rows.map((row, index) => (
- <tr
- key={`${row[0]}-${index}`}
- className={`border-t border-slate-200 cmm-text-secondary ${
- index % 2 === 0 ?"bg-[#f8fbfe]" :"bg-white"
- }`}
- >
- {row.map((cell, cellIndex) => (
- <td
- key={`${cellIndex}-${cell}`}
- className={`px-3 py-2 ${cellIndex === 0 ?"font-semibold" :""}`}
- >
- {cell}
- </td>
- ))}
- </tr>
- ))}
- </tbody>
- </table>
- </div>
  );
 }

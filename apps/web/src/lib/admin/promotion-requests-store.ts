@@ -12,7 +12,7 @@ import {
 import type { AppProfile } from "@/lib/profiles";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-export type PromotionRequestTargetRole = "elu" | "admin";
+type PromotionRequestTargetRole = "elu" | "admin";
 
 export type PromotionRequestRecord = {
   id: string;

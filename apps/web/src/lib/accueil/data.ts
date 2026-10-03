@@ -16,7 +16,7 @@ import {
   type PublicLandingActionAggregation,
 } from "./action-participant-aggregation";
 
-export type HomeCommunityActivityImage =
+type HomeCommunityActivityImage =
   | {
       source: "userProvidedImage";
       url: string;
@@ -38,7 +38,7 @@ export type HomeCommunityActivityImage =
       isFallback: false;
     };
 
-export type HomeCommunityActivityItem = {
+type HomeCommunityActivityItem = {
   id: string;
   actor: string;
   initials: string;
@@ -62,7 +62,7 @@ export type HomeCommunityActivitySummary = {
   items: HomeCommunityActivityItem[];
 };
 
-export type LandingDataAvailability = {
+type LandingDataAvailability = {
   status: "available" | "partial";
   sourceHealth: UnifiedSourceHealth;
 };

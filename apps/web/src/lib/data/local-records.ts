@@ -1,15 +1,14 @@
 export const LOCAL_DATA_STORE_VERSION = 1 as const;
 
-export const RECORD_TYPES = ["action", "clean_place", "other"] as const;
-export type LocalRecordType = (typeof RECORD_TYPES)[number];
+export type LocalRecordType = "action" | "clean_place" | "other";
 
-export const RECORD_STATUSES = [
+const RECORD_STATUSES = [
   "test",
   "pending",
   "validated",
   "rejected",
 ] as const;
-export type LocalRecordStatus = (typeof RECORD_STATUSES)[number];
+export type LocalRecordStatus = "test" | "pending" | "validated" | "rejected";
 
 export type LocalRecordSource =
   | "test_seed"

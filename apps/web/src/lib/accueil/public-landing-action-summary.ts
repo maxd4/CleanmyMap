@@ -18,24 +18,6 @@ export function buildLandingFloorDate(now = new Date()): string {
   return floor.toISOString().slice(0, 10);
 }
 
-export async function loadPublicLandingActionSummary(
-  floorDate: string,
-): Promise<PublicLandingActionSummaryRow> {
-  const result = await getSupabaseServerClient(true).rpc(
-    "load_public_landing_action_summary",
-    { p_floor_date: floorDate },
-  );
-  if (result.error) {
-    throw result.error;
-  }
-
-  const row = Array.isArray(result.data) ? result.data[0] : result.data;
-  if (!row) {
-    throw new Error("Landing action summary returned no row.");
-  }
-  return row as PublicLandingActionSummaryRow;
-}
-
 async function callImpactStateRpc(
   functionName:
   | "advance_public_impact_action_state"

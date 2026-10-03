@@ -26,14 +26,11 @@ import {
   resolveClerkRole,
 } from "./auth/role-resolution";
 export { isAdminRole } from "./auth/role-resolution";
-export type { AccountBadge } from "./authz-badges";
 export type { UserIdentity } from "./authz-identity";
 export { getCurrentUserIdentity, pickTraceableActorName } from "./authz-identity";
 export {
   getProfileBadge,
-  getProfileBadgeId,
   getRoleBadge,
-  getRoleBadgeId,
 } from "./authz-badges";
 
 export type AdminAccessResult =

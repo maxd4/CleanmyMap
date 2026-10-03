@@ -11,7 +11,7 @@ export type PeriodComparisonRecord = {
   wasteKg: number | null;
 };
 
-export type WindowMetrics = {
+type WindowMetrics = {
   actionsCount: number;
   volumeKg: number;
   wasteKnownActions: number;
@@ -21,7 +21,7 @@ export type WindowMetrics = {
   pendingCount: number;
 };
 
-export type MetricDelta = {
+type MetricDelta = {
   absolute: number;
   percent: number;
   direction: "up" | "down" | "flat";
