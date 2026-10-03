@@ -97,7 +97,7 @@ export function downloadImpactCardPng(png: ImpactCardPng): void {
   URL.revokeObjectURL(url);
 }
 
-export function canShareImpactCardFile(file: File): boolean {
+function canShareImpactCardFile(file: File): boolean {
   const shareNavigator = getShareNavigator();
   if (
     !shareNavigator ||
@@ -114,7 +114,7 @@ export function canShareImpactCardFile(file: File): boolean {
   }
 }
 
-export async function shareImpactCardFile(file: File): Promise<void> {
+async function shareImpactCardFile(file: File): Promise<void> {
   const shareNavigator = getShareNavigator();
   if (!shareNavigator?.share) {
     throw new Error("Le partage de fichier n’est pas disponible.");

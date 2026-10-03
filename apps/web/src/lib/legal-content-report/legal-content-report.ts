@@ -1,7 +1,5 @@
 import { isPlaceholderHost } from "@/lib/security/validation";
 
-export const LEGAL_CONTENT_REPORT_PATH = "/signaler-contenu-illicite";
-export const LEGAL_CONTENT_REPORT_SOURCE = "legal_content_report" as const;
 const LEGAL_CONTENT_REPORT_MAX_URL_LENGTH = 2048;
 export const LEGAL_CONTENT_REPORT_MAX_REASON_LENGTH = 5000;
 export const LEGAL_CONTENT_REPORT_MAX_IDENTITY_EXCEPTION_REASON_LENGTH = 1000;

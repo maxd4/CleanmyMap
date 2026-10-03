@@ -128,9 +128,6 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
 }
 
 /** Returns GRANTED_ROLE, kept explicit for code that needs the obtained level. */
-export async function getCurrentUserGrantedRoleLabel(): Promise<AppRoleLabel> {
-  return getCurrentUserRoleLabel();
-}
 
 /** Returns ACTIVE_ROLE, the only role allowed to drive effective capabilities. */
 export async function getCurrentUserActiveRole(): Promise<AppRoleLabel> {

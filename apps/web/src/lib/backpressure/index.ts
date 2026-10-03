@@ -4,14 +4,12 @@ interface BackpressureConfig {
   timeoutMs: number;
   dropPolicy: "delay" | "drop-newest" | "drop-oldest";
 }
-
 export interface BackpressureResult {
   allowed: boolean;
   position?: number;
   retryAfter?: number;
   reason?: string;
 }
-
 interface QueueItem {
   id: string;
   timestamp: number;
@@ -126,31 +124,5 @@ export function releaseBackpressure(operationType: string): void {
         console.log(`[Backpressure] Processing queued operation: ${nextItem.id}`);
       }
     }, 100);
-  }
-}
-
-export function getBackpressureStatus(operationType: string): {
-  active: number;
-  queued: number;
-  available: boolean;
-} {
-  const config = getBackpressureConfig(operationType);
-  const active = activeOperations.get(operationType) || 0;
-  const queue = queues.get(operationType) || [];
-  
-  return {
-    active,
-    queued: queue.length,
-    available: active < config.maxConcurrent && queue.length < config.queueSize,
-  };
-}
-
-export function resetBackpressure(operationType?: string): void {
-  if (operationType) {
-    activeOperations.delete(operationType);
-    queues.delete(operationType);
-  } else {
-    activeOperations.clear();
-    queues.clear();
   }
 }

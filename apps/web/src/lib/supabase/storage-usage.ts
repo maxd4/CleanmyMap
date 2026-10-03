@@ -156,12 +156,6 @@ export type StorageUsageMonthComparison = {
   extensionGrowth: StorageUsageDeltaItem[];
 };
 
-export type StorageUsageReport = {
-  current: StorageUsageSnapshot;
-  history: StorageUsageHistoryPoint[];
-  comparison: StorageUsageMonthComparison;
-};
-
 export type StorageUsageSnapshotRecord = {
   snapshot_month: string;
   generated_at: string;

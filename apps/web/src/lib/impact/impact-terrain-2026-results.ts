@@ -2,7 +2,6 @@ import type { ActionMegotsCondition, ActionWasteBreakdown } from "@/lib/actions/
 import { estimateActionWasteKg } from "@/lib/actions/impact-calculators";
 import {
   BUTT_LENGTH_METERS,
-  BUTTS_PER_KG_REFERENCE,
   computeImpactTerrain2026Co2Conversions,
   computeImpactTerrain2026WaterConversions,
   MEGOTS_CONDITIONS,
@@ -210,6 +209,3 @@ export function buildImpactTerrain2026PublicResultsFromAggregate(params: {
 
 export const IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION =
   "impact-terrain-results-2026.09-v1";
-
-export const IMPACT_TERRAIN_2026_RESULTS_FORMULA_REFERENCE =
-  `masse_qualifiee = somme(mégots_etat / (${BUTTS_PER_KG_REFERENCE} × facteur_etat))`;

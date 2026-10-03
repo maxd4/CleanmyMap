@@ -104,18 +104,3 @@ export async function rateLimitMiddleware(
 }
 
 type RouteHandlerOptions = Pick<RateLimitMiddlewareOptions, "skipPaths" | "customLimit" | "customWindow">;
-
-export function withRateLimit(
-  handler: (request: NextRequest) => Promise<NextResponse>,
-  options?: RouteHandlerOptions
-) {
-  return async function (request: NextRequest): Promise<NextResponse> {
-    const { allowed, response } = await rateLimitMiddleware(request, request.method, options);
-    
-    if (!allowed && response) {
-      return response;
-    }
-    
-    return handler(request);
-  };
-}

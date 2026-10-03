@@ -131,15 +131,6 @@ export function getChatChannelDefinition(
   return CHAT_CHANNEL_DEFINITIONS[channelType];
 }
 
-export function getDefaultChatChannelType(
-  context: ChatChannelAccessContext,
-): ChatChannelType {
-  return (
-    getVisibleChatChannelTypes(context)[0] ??
-    "community"
-  );
-}
-
 function buildDistrictTerritoryFilter(districtNumber: number): {
   arrondissementIds: number[] | null;
   zoneNames: string[] | null;
@@ -200,13 +191,6 @@ export function getTerritoryFilter(
   }
 
   return { arrondissementIds: null, zoneNames: null };
-}
-
-export function hasTerritoryFilter(
-  zoneContext: ZoneContext | null,
-): boolean {
-  const filter = getTerritoryFilter(zoneContext);
-  return Boolean(filter.arrondissementIds?.length || filter.zoneNames?.length);
 }
 
 export function getSupportedChatTerritoryOptions(): ChatTerritoryOption[] {

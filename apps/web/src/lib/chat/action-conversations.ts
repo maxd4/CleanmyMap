@@ -9,23 +9,6 @@ import type { ActionRow } from "@/types/database";
 
 /** Compatibility wrapper for the technical notification audience only. It is
  * intentionally not used to authorize reading or writing action discussions. */
-export async function ensureActionConversationMember(
-  supabase: SupabaseClient,
-  actionId: string,
-  userId: string,
-): Promise<string> {
-  const { data, error } = await supabase.rpc("ensure_action_conversation_member", {
-    p_action_id: actionId,
-    p_user_id: userId,
-  });
-  if (error) {
-    throw error;
-  }
-  if (typeof data !== "string" || data.length === 0) {
-    throw new Error("La discussion canonique de l'action n'a pas pu être ouverte.");
-  }
-  return data;
-}
 
 export type ActionDiscussionAccess =
   | { state: "unavailable"; conversationId: null }

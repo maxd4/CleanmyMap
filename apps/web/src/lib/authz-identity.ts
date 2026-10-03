@@ -304,9 +304,6 @@ export function resolveIdentityActiveRole(user: User, role: Role): ActiveRole {
 }
 
 /** @deprecated Navigation now follows ACTIVE_ROLE. */
-export function resolveIdentityActiveProfile(user: User, role: Role): AppProfile {
-  return resolveIdentityActiveRole(user, role);
-}
 
 function resolveIdentityLocationPreference(user: User) {
   return (

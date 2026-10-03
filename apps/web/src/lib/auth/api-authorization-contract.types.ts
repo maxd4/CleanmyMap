@@ -7,7 +7,7 @@ export type ApiHttpMethod =
   | "HEAD"
   | "OPTIONS";
 
-export type ApiAuthorizationDimension =
+type ApiAuthorizationDimension =
   | "public-safe"
   | "authentication"
   | "admin/creator role"

@@ -17,18 +17,6 @@ export function clearRateLimitStore(): void {
   LOCKED_KEYS.clear();
 }
 
-export function lockRateLimitKey(key: string): void {
-  LOCKED_KEYS.add(key);
-}
-
-export function unlockRateLimitKey(key: string): void {
-  LOCKED_KEYS.delete(key);
-}
-
-export function isRateLimitKeyLocked(key: string): boolean {
-  return LOCKED_KEYS.has(key);
-}
-
 function refillTokenBucket(
   bucket: TokenBucket,
   limit: number,

@@ -24,7 +24,7 @@
       ],
       "ignore": ["scripts/security/semgrep/fixtures/**"],
       "ignoreBinaries": ["pwsh"],
-      "ignoreDependencies": ["next", "image-size", "jscpd"]
+      "ignoreDependencies": ["next", "image-size", "jscpd", "stream-json"]
     },
     "apps/mobile": {
       "entry": [

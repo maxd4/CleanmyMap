@@ -210,44 +210,6 @@ export async function readLatestPublicSurfaceSnapshot<TPayload>(
   return (snapshot as PublicSurfaceSnapshotRecord<TPayload> | undefined) ?? null;
 }
 
-export async function listPublicSurfaceSnapshots<TPayload>(
-  limit = 12,
-): Promise<PublicSurfaceSnapshotRecord<TPayload>[]> {
-  if (!canUseSupabaseServerPersistence() && !allowLocalFileStoreFallback()) {
-    return [];
-  }
-
-  if (canUseSupabaseServerPersistence()) {
-    try {
-      const supabase = getSupabaseServerClient(true);
-      const result = await supabase
-        .from("public_surface_snapshots")
-        .select("id, snapshot_key, snapshot_date, generated_at, version, title, payload, meta")
-        .order("generated_at", { ascending: false })
-        .limit(limit);
-
-      if (!result.error) {
-        return (result.data ?? []).map((row) =>
-          normalizeSnapshotRow<TPayload>(row as PublicSurfaceSnapshotRow),
-        );
-      }
-
-      if (!allowLocalFileStoreFallback()) {
-        return [];
-      }
-    } catch {
-      if (!allowLocalFileStoreFallback()) {
-        return [];
-      }
-    }
-  }
-
-  const store = await readStore();
-  return store.records
-    .slice()
-    .sort((left, right) => right.generatedAt.localeCompare(left.generatedAt))
-    .slice(0, limit) as PublicSurfaceSnapshotRecord<TPayload>[];
-}
 
 function snapshotKeyMatchesRoute(snapshotKey: string, routes: readonly string[]): boolean {
   try {

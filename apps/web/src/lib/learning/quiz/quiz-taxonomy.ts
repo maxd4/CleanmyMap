@@ -1,7 +1,5 @@
 import { QUIZ_QUESTION_FORMATS, type QuizQuestionFormatId } from "./quiz-question-formats.ts";
 import type { QuizReasoningType } from "./quiz-reasoning-types";
-import type { QuizReviewTarget } from "./quiz-review-targets";
-import type { QuizTrapLevelId } from "./quiz-trap-levels";
 
 export type QuizPedagogicalTypeId =
   | QuizQuestionFormatId
@@ -12,14 +10,6 @@ export type QuizPedagogicalTypeId =
 export type QuizSkillId = QuizReasoningType;
 
 export type QuizDifficultyId = "low" | "medium" | "high";
-
-export type QuizQuestionTaxonomy = {
-  pedagogicalType?: QuizPedagogicalTypeId;
-  skill?: QuizSkillId;
-  difficulty?: QuizDifficultyId;
-  trapLevel?: QuizTrapLevelId;
-  review?: QuizReviewTarget;
-};
 
 export type QuizQuestionTaxonomySource = {
   type: "multiple-choice" | "multiple-select" | "true-false" | "flashcard";

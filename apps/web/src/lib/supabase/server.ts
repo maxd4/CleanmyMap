@@ -21,17 +21,6 @@ function hasAllowedProtocol(url: string | undefined, allowLocalHttp: boolean): b
 }
 
 /**
- * Returns true if the core Supabase environment variables are present and look valid.
- */
-export function isSupabaseConfigured(): boolean {
-  return (
-    hasAllowedProtocol(env.NEXT_PUBLIC_SUPABASE_URL, process.env.NODE_ENV !== "production") &&
-    !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 20
-  );
-}
-
-/**
  * Returns a Supabase client for server-side usage.
  * @param useServiceRole If true, uses the SUPABASE_SERVICE_ROLE_KEY (bypasses RLS).
  *

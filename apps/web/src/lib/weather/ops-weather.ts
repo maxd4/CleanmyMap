@@ -1,11 +1,3 @@
-type OperationalZone = {
-  id: string;
-  label: string;
-  latitude: number;
-  longitude: number;
-  coveredAreas: string[];
-};
-
 export type WeatherRiskLevel = "vert" | "orange" | "rouge";
 
 export const WEATHER_OPERATIONAL_RULE_VERSION = "weather-operational-rules-v1" as const;
@@ -40,44 +32,6 @@ export type InterventionWindow = {
   reason: string;
 };
 
-const OPERATIONAL_ZONES: OperationalZone[] = [
-  {
-    id: "centre",
-    label: "Paris centre",
-    latitude: 48.8593,
-    longitude: 2.347,
-    coveredAreas: ["1e", "2e", "3e", "4e"],
-  },
-  {
-    id: "nord",
-    label: "Paris nord",
-    latitude: 48.8897,
-    longitude: 2.356,
-    coveredAreas: ["9e", "10e", "18e", "19e"],
-  },
-  {
-    id: "est",
-    label: "Paris est",
-    latitude: 48.8536,
-    longitude: 2.409,
-    coveredAreas: ["11e", "12e", "20e"],
-  },
-  {
-    id: "sud",
-    label: "Paris sud",
-    latitude: 48.8327,
-    longitude: 2.343,
-    coveredAreas: ["5e", "6e", "13e", "14e"],
-  },
-  {
-    id: "ouest",
-    label: "Paris ouest",
-    latitude: 48.8705,
-    longitude: 2.286,
-    coveredAreas: ["7e", "8e", "15e", "16e", "17e"],
-  },
-];
-
 function maxLevel(levels: WeatherRiskLevel[]): WeatherRiskLevel {
   if (levels.includes("rouge")) {
     return "rouge";
@@ -87,11 +41,9 @@ function maxLevel(levels: WeatherRiskLevel[]): WeatherRiskLevel {
   }
   return "vert";
 }
-
 function riskRank(level: WeatherRiskLevel): number {
   return level === "rouge" ? 2 : level === "orange" ? 1 : 0;
 }
-
 function weatherOperationalRuleForLevel(
   level: WeatherRiskLevel,
 ): WeatherOperationalRule {
@@ -103,7 +55,6 @@ function weatherOperationalRuleForLevel(
     maxInterventionMinutes: level === "rouge" ? 45 : level === "orange" ? 90 : null,
   };
 }
-
 export function evaluateWeatherRisk(input: {
   temperature: number;
   rain: number;
@@ -275,10 +226,4 @@ export function buildInterventionWindows(hourly: HourlyPoint[]): {
     recommended: recommended.slice(0, 5),
     avoid: avoid.slice(0, 5),
   };
-}
-
-export function zoneForArea(area: string): OperationalZone | null {
-  return (
-    OPERATIONAL_ZONES.find((zone) => zone.coveredAreas.includes(area)) ?? null
-  );
 }
