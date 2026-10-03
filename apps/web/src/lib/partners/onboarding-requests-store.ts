@@ -1,5 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import {
   assertPersistenceAvailable,
@@ -11,6 +10,10 @@ import {
   readSupabaseRecords,
   replaceAndPersistRecord,
 } from "@/lib/persistence/runtime-store";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+} from "@/lib/persistence/local-record-store";
 import {
   normalizePartnerAvailability,
   normalizePartnerCoverage,
@@ -43,13 +46,6 @@ type StorePayload = {
   updatedAt: string;
   records: PartnerOnboardingRequestRecord[];
 };
-
-function emptyStore(): StorePayload {
-  return {
-    updatedAt: new Date().toISOString(),
-    records: [],
-  };
-}
 
 function readStringField(record: Record<string, unknown>, key: string): string {
   return typeof record[key] === "string" ? record[key] : "";
@@ -187,42 +183,12 @@ function fromSupabaseRow(
   });
 }
 
-async function ensureDirectory(filePath: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-}
-
 async function readStore(): Promise<StorePayload> {
-  try {
-    const raw = await readFile(STORE_FILE, "utf8");
-    const parsed = JSON.parse(raw) as StorePayload;
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-    return {
-      updatedAt:
-        typeof parsed.updatedAt === "string"
-          ? parsed.updatedAt
-          : new Date().toISOString(),
-      records: parsed.records
-        .map((record) => normalizeStoredPartnerOnboardingRequest(record as Record<string, unknown>))
-        .filter((record): record is PartnerOnboardingRequestRecord => Boolean(record)),
-    };
-  } catch {
-    return emptyStore();
-  }
+  return readLocalRecordStore(STORE_FILE, normalizeStoredPartnerOnboardingRequest);
 }
 
 async function writeStore(store: StorePayload): Promise<void> {
-  await ensureDirectory(STORE_FILE);
-  await writeFile(
-    STORE_FILE,
-    `${JSON.stringify(
-      { updatedAt: new Date().toISOString(), records: store.records },
-      null,
-      2,
-    )}\n`,
-    "utf8",
-  );
+  await writeLocalRecordStore(STORE_FILE, store.records);
 }
 
 function toSupabaseRow(record: PartnerOnboardingRequestRecord): Record<string, unknown> {

@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
@@ -10,6 +9,14 @@ import {
   readSupabaseRecords,
   replaceAndPersistRecord,
 } from "@/lib/persistence/runtime-store";
+import {
+  normalizeOptionalTextField,
+  normalizeTextField,
+} from "@/lib/persistence/record-normalizers";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+} from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const STORE_FILE = join(
@@ -58,14 +65,6 @@ function isBugReportType(
     value === "improvement" ||
     value === "collaboration"
   );
-}
-
-function normalizeTextField(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
-function normalizeOptionalTextField(value: unknown): string | null {
-  return typeof value === "string" && value.trim().length > 0 ? value : null;
 }
 
 function normalizeBugReportSource(
@@ -165,52 +164,12 @@ function fromSupabaseRow(row: Record<string, unknown>): BugReportRecord | null {
   });
 }
 
-function emptyStore(): StorePayload {
-  return {
-    updatedAt: new Date().toISOString(),
-    records: [],
-  };
-}
-
-async function ensureDirectory(filePath: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-}
-
 async function readStore(): Promise<StorePayload> {
-  try {
-    const raw = await readFile(STORE_FILE, "utf8");
-    const parsed = JSON.parse(raw) as StorePayload;
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-    return {
-      updatedAt:
-        typeof parsed.updatedAt === "string"
-          ? parsed.updatedAt
-          : new Date().toISOString(),
-      records: parsed.records
-        .map((record) => normalizeBugReportRecord(record))
-        .filter((record): record is BugReportRecord => Boolean(record)),
-    };
-  } catch {
-    return emptyStore();
-  }
+  return readLocalRecordStore(STORE_FILE, (record) => normalizeBugReportRecord(record));
 }
 
 async function writeStore(store: StorePayload): Promise<void> {
-  await ensureDirectory(STORE_FILE);
-  await writeFile(
-    STORE_FILE,
-    `${JSON.stringify(
-      {
-        updatedAt: new Date().toISOString(),
-        records: store.records,
-      },
-      null,
-      2,
-    )}\n`,
-    "utf8",
-  );
+  await writeLocalRecordStore(STORE_FILE, store.records);
 }
 
 function toSupabaseRow(record: BugReportRecord): Record<string, unknown> {

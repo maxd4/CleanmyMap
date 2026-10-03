@@ -1,11 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
   persistSupabaseRecord,
 } from "@/lib/persistence/runtime-store";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+} from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   LEGAL_CONTENT_REPORT_MAX_IDENTITY_EXCEPTION_REASON_LENGTH,
@@ -30,14 +33,6 @@ type StorePayload = {
   updatedAt: string;
   records: LegalContentReportRecord[];
 };
-
-function emptyStore(): StorePayload {
-  return { updatedAt: new Date().toISOString(), records: [] };
-}
-
-async function ensureDirectory(filePath: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-}
 
 function normalizeRecord(value: unknown): LegalContentReportRecord | null {
   if (!value || typeof value !== "object") {
@@ -96,36 +91,11 @@ function normalizeRecord(value: unknown): LegalContentReportRecord | null {
 }
 
 async function readStore(): Promise<StorePayload> {
-  try {
-    const parsed = JSON.parse(await readFile(STORE_FILE, "utf8")) as StorePayload;
-    if (!parsed || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-    return {
-      updatedAt:
-        typeof parsed.updatedAt === "string"
-          ? parsed.updatedAt
-          : new Date().toISOString(),
-      records: parsed.records
-        .map((record) => normalizeRecord(record))
-        .filter((record): record is LegalContentReportRecord => Boolean(record)),
-    };
-  } catch {
-    return emptyStore();
-  }
+  return readLocalRecordStore(STORE_FILE, (record) => normalizeRecord(record));
 }
 
 async function writeStore(store: StorePayload): Promise<void> {
-  await ensureDirectory(STORE_FILE);
-  await writeFile(
-    STORE_FILE,
-    `${JSON.stringify(
-      { updatedAt: new Date().toISOString(), records: store.records },
-      null,
-      2,
-    )}\n`,
-    "utf8",
-  );
+  await writeLocalRecordStore(STORE_FILE, store.records);
 }
 
 function toSupabaseRow(record: LegalContentReportRecord): Record<string, unknown> {

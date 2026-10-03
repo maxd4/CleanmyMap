@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
@@ -9,6 +8,10 @@ import {
   readSupabaseRecord,
   requirePersistedRecord,
 } from "@/lib/persistence/runtime-store";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+} from "@/lib/persistence/local-record-store";
 import type { AppProfile } from "@/lib/profiles";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -52,12 +55,6 @@ const STORE_FILE = join(
 const SUPABASE_PROMOTION_REQUEST_COLUMNS =
   "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, requested_role, motivation, status, reviewed_at, reviewed_by_user_id, reviewed_by_role, creator_state";
 
-function emptyStore(): StorePayload {
-  return {
-    updatedAt: new Date().toISOString(),
-    records: [],
-  };
-}
 function normalizeRecord(record: Record<string, unknown>): PromotionRequestRecord | null {
   const id = typeof record["id"] === "string" ? record["id"] : "";
   const createdAt = typeof record["createdAt"] === "string" ? record["createdAt"] : "";
@@ -158,45 +155,12 @@ function fromSupabaseRow(row: Record<string, unknown>): PromotionRequestRecord |
   });
 }
 
-async function ensureDirectory(filePath: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-}
-
 async function readStore(): Promise<StorePayload> {
-  try {
-    const raw = await readFile(STORE_FILE, "utf8");
-    const parsed = JSON.parse(raw) as StorePayload;
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-    return {
-      updatedAt:
-        typeof parsed.updatedAt === "string"
-          ? parsed.updatedAt
-          : new Date().toISOString(),
-      records: parsed.records
-        .map((record) => normalizeRecord(record as Record<string, unknown>))
-        .filter((record): record is PromotionRequestRecord => Boolean(record)),
-    };
-  } catch {
-    return emptyStore();
-  }
+  return readLocalRecordStore(STORE_FILE, normalizeRecord);
 }
 
 async function writeStore(store: StorePayload): Promise<void> {
-  await ensureDirectory(STORE_FILE);
-  await writeFile(
-    STORE_FILE,
-    `${JSON.stringify(
-      {
-        updatedAt: new Date().toISOString(),
-        records: store.records,
-      },
-      null,
-      2,
-    )}\n`,
-    "utf8",
-  );
+  await writeLocalRecordStore(STORE_FILE, store.records);
 }
 
 function toSupabaseRow(record: PromotionRequestRecord): Record<string, unknown> {

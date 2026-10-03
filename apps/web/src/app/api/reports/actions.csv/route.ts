@@ -1,188 +1,58 @@
-import { createHash } from "node:crypto";
 import {
   buildActionsCsv,
+  buildActionsCsvRows,
   buildActionsCsvFilename,
-  buildDateFloor,
-  resolveReportQuery,
 } from "@/lib/reports/csv";
-import { buildDeliverableHeaders } from "@/lib/reports/http";
-import { filterActionContractsByScope } from "@/lib/reports/scope";
-import { requireAdminAccess } from "@/lib/authz";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import {
-  fetchUnifiedActionContracts,
-  parseEntityTypesParam,
-} from "@/lib/actions/unified-source";
-import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
+import * as actionsExportRoute from "@/lib/reports/actions-export-route";
 
 export const runtime = "nodejs";
 
-const ACTIONS_CSV_BUCKET = "reports";
-const ACTIONS_CSV_SIGNED_URL_TTL_SECONDS = 60 * 60 * 24;
-const ACTIONS_CSV_RESPONSE_CACHE_CONTROL =
-  "private, max-age=300, stale-while-revalidate=86400";
-
-function buildActionsCsvCachePath(params: {
-  cacheDay: string;
-  query: ReturnType<typeof resolveReportQuery>;
-  types: string[] | null;
-}): string {
-  const cacheKey = createHash("sha1")
-    .update(
-      JSON.stringify({
-        cacheDay: params.cacheDay,
-        days: params.query.days,
-        limit: params.query.limit,
-        status: params.query.status,
-        scopeKind: params.query.scopeKind,
-        scopeValue: params.query.scopeValue,
-        association: params.query.association,
-        types: params.types ? [...params.types].sort() : null,
-      }),
-    )
-    .digest("hex")
-    .slice(0, 16);
-
-  return `actions-csv/${params.cacheDay}/${cacheKey}.csv`;
-}
-
-async function createCsvRedirect(params: {
-  supabase: ReturnType<typeof getSupabaseServerClient>;
-  path: string;
-  filename: string;
-}): Promise<Response | null> {
-  const { data, error } = await params.supabase.storage
-    .from(ACTIONS_CSV_BUCKET)
-    .createSignedUrl(params.path, ACTIONS_CSV_SIGNED_URL_TTL_SECONDS, {
-      download: params.filename,
-    });
-
-  if (error || !data?.signedUrl) {
-    return null;
-  }
-
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: data.signedUrl,
-      "Cache-Control": ACTIONS_CSV_RESPONSE_CACHE_CONTROL,
-    },
-  });
-}
-
-export async function GET(request: Request) {
-  const access = await requireAdminAccess();
-  if (!access.ok) {
-    return adminAccessErrorJsonResponse(access);
-  }
-
-  const url = new URL(request.url);
-  const query = resolveReportQuery(url);
-  const floorDate = buildDateFloor(query.days);
-  const types = parseEntityTypesParam(url.searchParams.get("types"));
-  const exportDate = new Date();
-  const cacheDay = exportDate.toISOString().slice(0, 10);
+export const GET = actionsExportRoute.withActionsExportRequest(async ({
+  query,
+  types,
+  exportDate,
+  cacheDay,
+  supabase,
+}) => {
   const csvFilename = buildActionsCsvFilename(exportDate);
-  const cachedCsvPath = buildActionsCsvCachePath({
+  const cachedCsvPath = actionsExportRoute.buildActionsExportCachePath({
+    format: "csv",
     cacheDay,
     query,
     types,
   });
-  const supabase = getSupabaseServerClient(true);
-
   try {
-    const cachedRedirect = await createCsvRedirect({
+    const cachedRedirect = await actionsExportRoute.createActionsExportRedirect({
       supabase,
       path: cachedCsvPath,
       filename: csvFilename,
+      cacheControl: actionsExportRoute.ACTIONS_EXPORT_RESPONSE_CACHE_CONTROL,
     });
 
     if (cachedRedirect) {
       return cachedRedirect;
     }
 
-    const { items: contracts, isTruncated, sourceHealth } =
-      await fetchUnifiedActionContracts(supabase, {
-        limit: Math.min(Math.max(query.limit * 2, query.limit), 1000),
-        status: query.status,
-        floorDate,
-        requireCoordinates: false,
-        types,
-      });
+    const { contracts: filteredContracts, isTruncated, sourceHealth } =
+      await actionsExportRoute.loadActionsExportContracts(supabase, query, types);
 
-    const filteredContracts = filterActionContractsByScope(contracts, {
-      kind: query.scopeKind,
-      value:
-        query.scopeKind === "association"
-          ? query.scopeValue ?? query.association
-          : query.scopeValue,
-    });
-
-    const rows = filteredContracts.map((contract) => ({
-      id: contract.id,
-      created_at: contract.dates.createdAt ?? "",
-      action_date: contract.dates.observedAt,
-      actor_name: contract.metadata.actorName,
-      association_name: contract.metadata.associationName,
-      location_label: contract.location.label,
-      latitude: contract.location.latitude,
-      longitude: contract.location.longitude,
-      waste_kg: contract.metadata.wasteKg,
-      cigarette_butts: contract.metadata.cigaretteButts,
-      volunteers_count: contract.metadata.volunteersCount,
-      duration_minutes: contract.metadata.durationMinutes,
-      status: contract.status,
-      notes: contract.metadata.notes,
-      notes_plain: contract.metadata.notesPlain,
-      record_type: contract.type,
-      source: contract.source,
-      observed_at: contract.dates.observedAt,
-      geometry_kind: contract.geometry.kind,
-      geometry_geojson: contract.geometry.geojson,
-      geometry_confidence: contract.geometry.confidence,
-      manual_drawing_kind: contract.metadata.manualDrawing?.kind ?? null,
-      manual_drawing_points: contract.metadata.manualDrawing?.coordinates.length ?? null,
-      manual_drawing_coordinates_json: contract.metadata.manualDrawing
-        ? JSON.stringify(contract.metadata.manualDrawing)
-        : null,
-      manual_drawing_geojson: contract.metadata.manualDrawing
-        ? JSON.stringify(
-            contract.metadata.manualDrawing.kind === "polyline"
-              ? {
-                  type: "LineString",
-                  coordinates: contract.metadata.manualDrawing.coordinates.map(
-                    ([lat, lng]) => [lng, lat],
-                  ),
-                }
-              : {
-                  type: "Polygon",
-                  coordinates: [
-                    contract.metadata.manualDrawing.coordinates.map(([lat, lng]) => [lng, lat]),
-                  ],
-                },
-          )
-        : null,
-      data_quality_status: contract.dataQuality?.status ?? null,
-      data_quality_anomalies: contract.dataQuality?.anomalies.map((anomaly) => anomaly.code).join("|") ?? null,
-      measures_provenance: contract.dataQuality?.provenance.measures ?? null,
-      geometry_provenance: contract.dataQuality?.provenance.geometry ?? null,
-      impact_provenance: contract.dataQuality?.provenance.impact ?? null,
-    }));
+    const rows = buildActionsCsvRows(filteredContracts, actionsExportRoute.manualDrawingToGeoJson);
 
     const csv = buildActionsCsv(rows);
     const withBom = `\uFEFF${csv}`;
     const uploadResult = await supabase.storage
-      .from(ACTIONS_CSV_BUCKET)
+      .from(actionsExportRoute.ACTIONS_EXPORT_BUCKET)
       .upload(cachedCsvPath, new Blob([withBom], { type: "text/csv;charset=utf-8" }), {
         upsert: true,
         cacheControl: "3600",
       });
 
     if (!uploadResult.error) {
-      const signedRedirect = await createCsvRedirect({
+      const signedRedirect = await actionsExportRoute.createActionsExportRedirect({
         supabase,
         path: cachedCsvPath,
         filename: csvFilename,
+        cacheControl: actionsExportRoute.ACTIONS_EXPORT_RESPONSE_CACHE_CONTROL,
       });
 
       if (signedRedirect) {
@@ -190,12 +60,12 @@ export async function GET(request: Request) {
       }
     }
 
-    const { headers: responseHeaders } = buildDeliverableHeaders({
+    const { headers: responseHeaders } = actionsExportRoute.buildDeliverableHeaders({
       rubrique: "export_actions",
       extension: "csv",
       contentType: "text/csv; charset=utf-8",
       date: exportDate,
-      cacheControl: ACTIONS_CSV_RESPONSE_CACHE_CONTROL,
+      cacheControl: actionsExportRoute.ACTIONS_EXPORT_RESPONSE_CACHE_CONTROL,
     });
     const headers: Record<string, string> = { ...responseHeaders };
     if (isTruncated) {
@@ -212,4 +82,4 @@ export async function GET(request: Request) {
   } catch {
     return new Response("Export unavailable", { status: 500 });
   }
-}
+});

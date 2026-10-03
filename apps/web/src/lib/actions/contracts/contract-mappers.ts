@@ -27,6 +27,22 @@ type ContractMetadataWithProvided = {
   provided?: string[];
 };
 
+export function buildActionLocationAndMeasuresFields(contract: ActionDataContract) {
+  return {
+    id: contract.id,
+    action_date: contract.dates.observedAt,
+    location_label: contract.location.label,
+    latitude: contract.location.latitude,
+    longitude: contract.location.longitude,
+    waste_kg: contract.metadata.wasteKg,
+    cigarette_butts: contract.metadata.cigaretteButts,
+    volunteers_count: contract.metadata.volunteersCount,
+    duration_minutes: contract.metadata.durationMinutes,
+    status: contract.status,
+    geometry_confidence: contract.geometry.confidence,
+  };
+}
+
 function toLegacyRecordType(type: ActionEntityType): LegacyActionRecordType {
   if (type === "spot") {
     return "other";
@@ -89,19 +105,10 @@ export function toActionMapItem(
   );
 
   return {
-    id: contract.id,
-    action_date: contract.dates.observedAt,
-    location_label: contract.location.label,
-    latitude: contract.location.latitude,
-    longitude: contract.location.longitude,
-    waste_kg: contract.metadata.wasteKg,
-    cigarette_butts: contract.metadata.cigaretteButts,
-    volunteers_count: contract.metadata.volunteersCount,
-    duration_minutes: contract.metadata.durationMinutes,
+    ...buildActionLocationAndMeasuresFields(contract),
     waste_pollution_score: pollutionScores?.wasteScore,
     cigarette_butts_pollution_score: pollutionScores?.buttsScore,
     post_action_pollution_score: contract.metadata.postActionPollutionScore ?? null,
-    status: contract.status,
     record_type: toLegacyRecordType(contract.type),
     source: contract.source,
     organizer_type: contract.metadata.organizerType,
@@ -111,7 +118,6 @@ export function toActionMapItem(
     manual_drawing_geojson: getActionManualDrawingGeoJson(
       contract.metadata.manualDrawing,
     ),
-    geometry_confidence: contract.geometry.confidence,
     geometry_source: contract.geometry.geometrySource,
     submission_mode: contract.metadata.submissionMode,
     waste_breakdown: contract.metadata.wasteBreakdown,
