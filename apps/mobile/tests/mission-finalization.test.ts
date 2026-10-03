@@ -13,9 +13,13 @@ const state = vi.hoisted(() => ({
   taskRegistered: true,
   flushResult: { ok: true, data: undefined } as { ok: true; data: undefined } | { ok: false; error: string },
   missionError: null as Error | null,
+  actionId: null as string | null,
   storedMissionId: 'mission-1' as string | null,
+  pendingMissionIds: [] as string[],
   sequence: [] as string[],
 }))
+
+const reconcileLinkedMission = vi.hoisted(() => vi.fn())
 
 vi.mock('expo-constants', () => createStandaloneExpoConstantsMock())
 
@@ -35,8 +39,19 @@ vi.mock('expo-task-manager', () => ({
 
 vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
 
+vi.mock('../lib/linked-mission-service', () => ({
+  createLinkedMission: vi.fn(),
+  reconcileLinkedMission,
+}))
+
 vi.mock('../lib/storage', () => createTrackingStorageMock({
   ...createMissionIdStorageOptions(state),
+  enqueuePendingLinkedMissionReconciliation: (id) => {
+    if (!state.pendingMissionIds.includes(id)) state.pendingMissionIds.push(id)
+  },
+  removePendingLinkedMissionReconciliation: (id) => {
+    state.pendingMissionIds = state.pendingMissionIds.filter((pendingId) => pendingId !== id)
+  },
   flushBuffer: () => state.flushResult,
 }))
 
@@ -57,7 +72,9 @@ const completedMission = {
 
 function missionClient() {
   return createMissionClient({
-    data: state.missionError ? null : completedMission,
+    data: state.missionError ? null : state.actionId
+      ? { ...completedMission, action_id: state.actionId }
+      : completedMission,
     error: state.missionError,
     nextUpdateError: () => state.missionError,
     recordMutationSequence: false,
@@ -71,8 +88,11 @@ describe('mobile mission finalization', () => {
     state.taskRegistered = true
     state.flushResult = { ok: true, data: undefined }
     state.missionError = null
+    state.actionId = null
     state.storedMissionId = 'mission-1'
+    state.pendingMissionIds = []
     state.sequence.length = 0
+    reconcileLinkedMission.mockReset()
     vi.clearAllMocks()
   })
 
@@ -113,5 +133,31 @@ describe('mobile mission finalization', () => {
     expect(client.updatePayloads).toEqual([{ status: 'completed', ended_at: expect.any(String) }])
     expect(state.storedMissionId).toBe('mission-1')
     expect(state.sequence).toEqual(['stop', 'restart'])
+  })
+
+  it('persists a linked mission handoff before retrying and removes it after success', async () => {
+    state.actionId = 'action-1'
+    state.client = missionClient()
+    reconcileLinkedMission.mockResolvedValue({
+      ok: true,
+      data: { missionId: 'mission-1', actionId: 'action-1' },
+    })
+
+    const result = await stopTracking('mission-1')
+
+    expect(result.ok).toBe(true)
+    expect(reconcileLinkedMission).toHaveBeenCalledWith('mission-1')
+    expect(state.pendingMissionIds).toEqual([])
+  })
+
+  it('keeps the completed contribution retryable when the handoff is unavailable', async () => {
+    state.actionId = 'action-1'
+    state.client = missionClient()
+    reconcileLinkedMission.mockResolvedValue({ ok: false, error: 'offline', terminal: false })
+
+    const result = await stopTracking('mission-1')
+
+    expect(result.ok).toBe(true)
+    expect(state.pendingMissionIds).toEqual(['mission-1'])
   })
 })

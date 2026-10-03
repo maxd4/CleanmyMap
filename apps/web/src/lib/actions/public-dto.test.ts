@@ -124,7 +124,7 @@ describe("public action DTO boundary", () => {
     expect(mapResponse.items[0]).toHaveProperty("location_label", "Quai public");
   });
 
-  it("projects only sanitized observed coverage from preparation data", () => {
+  it("projects the bounded cartographic preparation allowlist", () => {
     const contract = buildActionDataContract({
       id: "action-coverage",
       type: "action",
@@ -146,6 +146,30 @@ describe("public action DTO boundary", () => {
           coverageDistanceKm: null,
           coverageVersion: "observed-traces-v1",
         },
+        routeTargetDistanceKm: 3,
+        routeNetworkDistanceKm: 2.4,
+        routeObservedDistanceKm: 2.1,
+        routeGeometryMode: "network",
+        routeGeometryProvider: "osrm",
+        operationalRoute: {
+          version: "operational-route-v1",
+          initializedAt: "2026-09-20T10:00:00.000Z",
+          updatedAt: "2026-09-20T10:00:00.000Z",
+          source: "planner",
+          state: "planner_copy",
+          plannerGroupCount: 1,
+          routes: [{
+            routeId: "planner-group-1",
+            groupIndex: 1,
+            geometry: { type: "LineString", coordinates: [[48.85, 2.35], [48.86, 2.36]] },
+            plannerTechnicalStops: [{ id: "stop-1", label: "Privé", latitude: 48.855, longitude: 2.355 }],
+          }],
+          zones: {
+            departure: { label: null, coordinate: [48.85, 2.35] },
+            midpoint: { label: null, coordinate: [48.855, 2.355] },
+            arrival: { label: null, coordinate: [48.86, 2.36] },
+          },
+        },
         gpxImport: { source: "gpx_import", observedDistanceKm: 1, pointCount: 2, inferredTopology: "loop" },
         privateTechnical: { mission_id: "private-mission", technical_provenance: "private" },
       } as never,
@@ -153,7 +177,21 @@ describe("public action DTO boundary", () => {
     const publicMap = projectPublicActionMapItem(toActionMapItem(contract));
     expect(publicMap.contract?.metadata.preparationData).toEqual({
       observedCoverage: expect.objectContaining({ traceCount: 1 }),
+      routeTargetDistanceKm: 3,
+      routeNetworkDistanceKm: 2.4,
+      routeObservedDistanceKm: 2.1,
+      routeGeometryMode: "network",
+      routeGeometryProvider: "osrm",
+      operationalRoute: {
+        routes: [{
+          routeId: "planner-group-1",
+          groupIndex: 1,
+          coordinates: [[48.85, 2.35], [48.86, 2.36]],
+        }],
+      },
     });
+    expect(JSON.stringify(publicMap)).not.toContain("plannerTechnicalStops");
+    expect(JSON.stringify(publicMap)).not.toContain("gpxImport");
     expect(JSON.stringify(publicMap)).not.toContain("private-mission");
     expect(JSON.stringify(publicMap)).not.toContain("technical_provenance");
   });

@@ -19,6 +19,7 @@ import {
   stopTracking,
 } from './lib/tracking-service'
 import { clearStoredForegroundTrack, getPendingGpsPointCount } from './lib/storage'
+import { reconcilePendingLinkedMissions } from './lib/linked-mission-service'
 import { MobileShell } from './screens/mobile-shell'
 import { MissionActiveMap } from './screens/mission-active-map'
 import { MissionCompletionScreen, MissionFinalizationScreen } from './screens/mission-finalization'
@@ -60,6 +61,7 @@ function useRestoreActiveMission({
 
     let cancelled = false
     async function restoreMission() {
+      void reconcilePendingLinkedMissions()
       const id = await restoreActiveTracking()
       if (!id || cancelled) return
 

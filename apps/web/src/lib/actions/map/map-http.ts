@@ -26,7 +26,7 @@ import { buildActionDataContract } from "../contracts/contract-model";
 import { parseWasteCategoriesFromNotes } from "@/lib/waste";
 import { mapItemCoordinates } from "../contracts/contract-mappers";
 import { buildPublicMapItems } from "./public-map-items";
-import { parsePublicObservedCoverage } from "./public-observed-coverage";
+import { parsePublicObservedPreparationData } from "./public-observed-coverage";
 import {
   clampInteger,
   normalizeQualityMin,
@@ -57,7 +57,6 @@ type ActionsMapFeedRow = {
   id: string;
   created_at: string;
   updated_at: string | null;
-  created_by_clerk_id: string | null;
   status: string;
   observed_at: string;
   location_label: string;
@@ -75,6 +74,7 @@ type ActionsMapFeedRow = {
   geometry_confidence: number | string | null;
   geometry_source: string | null;
   observed_coverage?: unknown;
+  public_preparation_data?: unknown;
 };
 type ActionsMapRpcResult = {
   data: unknown[] | null;
@@ -192,7 +192,7 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     status: toActionStatusFromMapFeedRow(row.entity_type, row.status),
     source: row.source,
     sourceStatus: row.status,
-    createdByClerkId: row.created_by_clerk_id,
+    createdByClerkId: null,
     observedAt: row.observed_at,
     createdAt: row.created_at,
     importedAt: row.updated_at,
@@ -209,7 +209,7 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     actorName: null,
     associationName: parsedMetadata.associationName,
     groupJoinEnabled: parsedMetadata.groupJoinEnabled,
-    preparationData: parsePublicObservedCoverage(row),
+    preparationData: parsePublicObservedPreparationData(row),
     placeType: parsedMetadata.placeType,
     departureLocationLabel: parsedMetadata.departureLocationLabel,
     arrivalLocationLabel: parsedMetadata.arrivalLocationLabel,

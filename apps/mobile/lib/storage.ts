@@ -11,6 +11,8 @@ import type {
 import type { EmergencyContact } from '../types/emergency-contact';
 
 const MISSION_KEY = 'cmm_current_mission_id';
+const PENDING_LINKED_MISSION_RECONCILIATIONS_KEY = 'cmm_pending_linked_mission_reconciliations';
+export const MAX_PENDING_LINKED_MISSION_RECONCILIATIONS = 50;
 const GPS_BUFFER_INDEX_KEY = '@cmm_gps_buffer_index';
 const ACTION_BUFFER_INDEX_KEY = '@cmm_action_buffer_index';
 const GPS_BUFFER_RECORD_PREFIX = 'cmm_gps_buffer';
@@ -135,6 +137,27 @@ export async function getStoredMissionId(): Promise<string | null> {
 
 export async function clearStoredMissionId(): Promise<void> {
   await removeStoredValue(MISSION_KEY);
+}
+
+export async function getPendingLinkedMissionReconciliationIds(): Promise<string[]> {
+  const values = await readIndex(PENDING_LINKED_MISSION_RECONCILIATIONS_KEY);
+  return [...new Set(values)].slice(0, MAX_PENDING_LINKED_MISSION_RECONCILIATIONS);
+}
+
+export async function enqueuePendingLinkedMissionReconciliation(missionId: string): Promise<void> {
+  const normalized = missionId.trim();
+  if (!normalized) return;
+  const existing = await getPendingLinkedMissionReconciliationIds();
+  if (existing.includes(normalized)) return;
+  await writeIndex(
+    PENDING_LINKED_MISSION_RECONCILIATIONS_KEY,
+    [...existing, normalized].slice(0, MAX_PENDING_LINKED_MISSION_RECONCILIATIONS),
+  );
+}
+
+export async function removePendingLinkedMissionReconciliation(missionId: string): Promise<void> {
+  const remaining = (await getPendingLinkedMissionReconciliationIds()).filter((id) => id !== missionId);
+  await writeIndex(PENDING_LINKED_MISSION_RECONCILIATIONS_KEY, remaining);
 }
 
 // Tracé foreground UX uniquement. Il reste séparé du buffer GPS afin de ne

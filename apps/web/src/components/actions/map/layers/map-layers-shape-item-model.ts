@@ -204,6 +204,14 @@ type GeometryModelInput = {
   now: Date;
 };
 
+export function resolveShapeLayerFitPositions(
+  geometry: Pick<ActionMapGeometryViewModel, "positions" | "multiLinePositions">,
+): [number, number][] {
+  return geometry.positions.length > 1
+    ? geometry.positions
+    : geometry.multiLinePositions.flat();
+}
+
 export function resolveShapeLayerGeometryModel(input: GeometryModelInput) {
   const {
     item,
@@ -226,12 +234,14 @@ export function resolveShapeLayerGeometryModel(input: GeometryModelInput) {
   const corridorItems = corridorHistory && corridorHistory.actions.length >= 2
     ? corridorHistory.actions.map((action) => actionItemsById.get(action.id)).filter((candidate): candidate is ActionMapItem => Boolean(candidate))
     : undefined;
-  const onViewGeometry = isActionMapItem(item) && geometry.positions.length > 1
-    ? () => fitActionGeometryBounds(map, geometry.positions)
+  const fitPositions = resolveShapeLayerFitPositions(geometry);
+  const onViewGeometry = isActionMapItem(item) && fitPositions.length > 1
+    ? () => fitActionGeometryBounds(map, fitPositions)
     : undefined;
   const onViewGeometryForItem = (targetItem: ActionMapItem) => {
     const targetGeometry = resolveActionMapGeometryViewModel(targetItem);
-    if (targetGeometry.positions.length > 1) fitActionGeometryBounds(map, targetGeometry.positions);
+    const targetPositions = resolveShapeLayerFitPositions(targetGeometry);
+    if (targetPositions.length > 1) fitActionGeometryBounds(map, targetPositions);
   };
   const resolveCurrentPlaceStateForItem = (targetItem: ActionMapItem) => resolveMapPlaceStateForItem(currentPlaceStateViews, targetItem, displayMode);
   const resolveColorForItem = (targetItem: ActionMapItem) => resolvePointColor(targetItem, references, now, displayMode, resolveCurrentPlaceStateForItem(targetItem), scoreScope, referencesLoading && !references);

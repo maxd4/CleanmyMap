@@ -1,4 +1,8 @@
 import type { ActionGeometrySource, ActionPreparationData } from "@/lib/actions/types";
+import { getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
+
+const PUBLIC_ROUTE_GEOMETRY_MODES = new Set(["network", "fallback"]);
+const PUBLIC_ROUTE_GEOMETRY_PROVIDERS = new Set(["osrm", "fossgis-osrm", "none"]);
 
 function parseCoverageCoordinates(raw: unknown): [number, number][][] | undefined {
   if (!Array.isArray(raw)) return undefined;
@@ -62,10 +66,52 @@ export function parsePublicObservedCoverage(
   };
 }
 
-/** Public map contracts may expose observed coverage, never the full preparation payload. */
+function finiteNonNegativeNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
+/** Public map contracts expose only the bounded cartographic preparation allowlist. */
 export function sanitizePublicObservedPreparationData(
   raw: unknown,
 ): ActionPreparationData | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
-  return parsePublicObservedCoverage((raw as Record<string, unknown>).observedCoverage);
+  const input = raw as Record<string, unknown>;
+  const output: Record<string, unknown> = {};
+  const observedCoverage = parsePublicObservedCoverage(input.observedCoverage)?.observedCoverage;
+  if (observedCoverage) output.observedCoverage = observedCoverage;
+
+  for (const key of [
+    "routeTargetDistanceKm",
+    "routeNetworkDistanceKm",
+    "routeObservedDistanceKm",
+  ] as const) {
+    const value = finiteNonNegativeNumber(input[key]);
+    if (value !== undefined) output[key] = value;
+  }
+
+  if (typeof input.routeGeometryMode === "string" && PUBLIC_ROUTE_GEOMETRY_MODES.has(input.routeGeometryMode)) {
+    output.routeGeometryMode = input.routeGeometryMode;
+  }
+  if (typeof input.routeGeometryProvider === "string" && PUBLIC_ROUTE_GEOMETRY_PROVIDERS.has(input.routeGeometryProvider)) {
+    output.routeGeometryProvider = input.routeGeometryProvider;
+  }
+
+  const operationalRoute = getPublicOperationalRouteSegments(
+    input.operationalRoute as Parameters<typeof getPublicOperationalRouteSegments>[0],
+  );
+  if (operationalRoute.length > 0) {
+    output.operationalRoute = { routes: operationalRoute };
+  }
+
+  return Object.keys(output).length > 0 ? output as ActionPreparationData : undefined;
+}
+
+export function parsePublicObservedPreparationData(raw: unknown): ActionPreparationData | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const input = raw as Record<string, unknown>;
+  const preparation = input.public_preparation_data ?? input.publicPreparationData ?? input;
+  const projected = sanitizePublicObservedPreparationData(preparation) ?? {};
+  const observedCoverage = parsePublicObservedCoverage(input.observed_coverage)?.observedCoverage;
+  if (observedCoverage) projected.observedCoverage = observedCoverage;
+  return Object.keys(projected).length > 0 ? projected : undefined;
 }
