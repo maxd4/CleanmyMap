@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "69c09abbf26044c14e4f096b6954f304b4321554",
+  "sourceCommit": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -990,8 +990,8 @@
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
       "line": 122,
       "category": "React/JSX",
-      "ceiling": 30,
-      "status": "LEGACY",
+    "ceiling": 12,
+    "status": "IMPROVED",
       "functionIdentity": "named:ElusSection#1"
     },
     {
@@ -1737,8 +1737,8 @@
       "path": "apps/web/src/components/account/greater-paris-select.tsx",
       "line": 366,
       "category": "React/JSX",
-      "ceiling": 65,
-      "status": "LEGACY",
+    "ceiling": 18,
+    "status": "IMPROVED",
       "functionIdentity": "named:TerritoryLocationSelector#1"
     },
     {
@@ -3996,8 +3996,8 @@
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
       "line": 122,
       "category": "React/JSX",
-      "ceiling": 373,
-      "status": "LEGACY",
+    "ceiling": 51,
+    "status": "IMPROVED",
       "functionIdentity": "named:ElusSection#1"
     },
     {
@@ -4878,8 +4878,8 @@
       "path": "apps/web/src/components/account/greater-paris-select.tsx",
       "line": 366,
       "category": "React/JSX",
-      "ceiling": 358,
-      "status": "LEGACY",
+    "ceiling": 126,
+    "status": "IMPROVED",
       "functionIdentity": "named:TerritoryLocationSelector#1"
     },
     {
