@@ -5,8 +5,14 @@ import {
   resolveRouteTargetDistance,
 } from "@/lib/actions/route-target-distance";
 import type { ActionRow } from "@/types/database";
+import type { ActionPreparationData } from "./types";
 import type { ActionUpdateInput } from "./action-update-audit";
 import { resolveNextActionStatus } from "./action-update-status";
+import {
+  buildManualActionGeometryUpdate,
+  buildObservedActionGeometryUpdate,
+  geometryRepresentativeCoordinates,
+} from "./action-observed-geometry";
 
 function buildPhaseAndPreparationFields(
   current: ActionRow,
@@ -47,16 +53,29 @@ function buildScalarFields(body: ActionUpdateInput): Record<string, unknown> {
   return updateData;
 }
 
+function explicitDrawing(body: ActionUpdateInput) {
+  return body.manualDrawing &&
+    (body.geometrySource === "manual" || body.geometrySource === "gpx_import")
+    ? body.manualDrawing
+    : null;
+}
+
+function geometryCoordinates(body: ActionUpdateInput) {
+  return geometryRepresentativeCoordinates(explicitDrawing(body));
+}
+
 async function buildDepartmentFields(
   current: ActionRow,
   body: ActionUpdateInput,
 ): Promise<Record<string, unknown>> {
+  const representative = geometryCoordinates(body);
+  const nextLatitude = representative?.latitude ?? body.latitude ?? current.latitude;
+  const nextLongitude = representative?.longitude ?? body.longitude ?? current.longitude;
   const coordinatesChanged =
-    (body.latitude !== undefined && body.latitude !== current.latitude) ||
-    (body.longitude !== undefined && body.longitude !== current.longitude);
+    nextLatitude !== current.latitude || nextLongitude !== current.longitude;
   const department = await resolveActionDepartmentForPersistence({
-    latitude: body.latitude ?? current.latitude,
-    longitude: body.longitude ?? current.longitude,
+    latitude: nextLatitude,
+    longitude: nextLongitude,
     geometry: coordinatesChanged
       ? null
       : {
@@ -114,6 +133,30 @@ export async function buildActionUpdateFields(params: {
   Object.assign(updateData, buildScalarFields(body));
   Object.assign(updateData, await buildDepartmentFields(current, body));
   Object.assign(updateData, buildTimingFields(current, body));
+
+  const drawing = explicitDrawing(body);
+  if (drawing) {
+    const geometryUpdate =
+      body.geometrySource === "gpx_import"
+        ? buildObservedActionGeometryUpdate({
+            current,
+            drawing,
+            source: "gpx_import",
+            preparationData: updateData.preparation_data as ActionPreparationData | undefined,
+            gpxImport: body.preparationData?.gpxImport,
+          })
+        : buildManualActionGeometryUpdate({
+            current,
+            drawing,
+            preparationData: updateData.preparation_data as ActionPreparationData | undefined,
+          });
+    Object.assign(updateData, geometryUpdate);
+    const representative = geometryRepresentativeCoordinates(drawing);
+    if (representative) {
+      updateData["latitude"] = representative.latitude;
+      updateData["longitude"] = representative.longitude;
+    }
+  }
 
   return updateData;
 }

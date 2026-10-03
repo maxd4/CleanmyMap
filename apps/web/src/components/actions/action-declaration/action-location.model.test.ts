@@ -53,4 +53,20 @@ describe("action location view model", () => {
     expect(result.isManual).toBe(false);
     expect(result.statusTone).not.toBe("neutral");
   });
+
+  it("keeps a linked mission trace observable when an action is reopened", () => {
+    const form = createInitialFormState("Alice");
+    const result = buildActionLocationViewModel({
+      form,
+      manualDrawing,
+      manualDrawingSource: "gps_tracking",
+      routePreviewDrawing: previewDrawing,
+      routePreviewSource: "routed",
+      gpxImport: null,
+    });
+
+    expect(result.activeGeometry?.source).toBe("gps_tracking");
+    expect(result.isTracking).toBe(true);
+    expect(result.displayedDrawing).toEqual(manualDrawing);
+  });
 });

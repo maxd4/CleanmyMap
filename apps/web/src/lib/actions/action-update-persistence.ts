@@ -88,7 +88,16 @@ export async function prepareActionUpdate(params: {
     nextVolunteerParticipation: measurements.nextVolunteerParticipation,
   });
   if (notes !== undefined) {
-    updateData["notes"] = preserveManualDrawing(current.notes, notes);
+    const replacementDrawing =
+      body.manualDrawing &&
+      (body.geometrySource === "manual" || body.geometrySource === "gpx_import")
+        ? body.manualDrawing
+        : undefined;
+    updateData["notes"] = preserveManualDrawing(
+      current.notes,
+      notes,
+      replacementDrawing,
+    );
   }
 
   preserveObservedRouteGeometry(current, updateData);

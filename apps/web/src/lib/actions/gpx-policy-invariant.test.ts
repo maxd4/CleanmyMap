@@ -4,6 +4,7 @@ import type { ActionUpdateInput } from "./action-update-audit";
 import { parseDrawingFromNotes } from "./geometry/drawing";
 import type { RouteDistancePolicy } from "./route-target-distance";
 import { rebaseRouteTargetDistancePolicy } from "./route-target-policy-rebase";
+import { polylineDistanceKm } from "@/lib/geo/geodesic-distance";
 
 const resolveActionDepartmentForPersistenceMock = vi.hoisted(() => vi.fn());
 
@@ -133,11 +134,74 @@ describe("GPX policy invariant", () => {
     expect(prepared.updateData).not.toHaveProperty("geometry_source");
   });
 
+  it("replaces a reconstructed action with the submitted GPX in one update payload", async () => {
+    const canonicalObservedDistanceKm = Number(
+      polylineDistanceKm(gpxCoordinates).toFixed(3),
+    );
+    const current = {
+      ...buildCurrent(),
+      geometry_source: "routed" as const,
+      geometry_confidence: 0.78,
+      derived_geometry_geojson:
+        '{"type":"LineString","coordinates":[[2.35,48.85],[2.36,48.86]]}',
+      preparation_data: {
+        routeTargetDistanceKm: 2.5,
+        routeTargetDistanceSource: "manual" as const,
+        routeNetworkDistanceKm: 2.1,
+        routeGeometryMode: "network" as const,
+        routeGeometryProvider: "osrm" as const,
+      },
+    };
+    const prepared = await prepareActionUpdate({
+      current,
+      parsedBody: ({
+        geometrySource: "gpx_import",
+        manualDrawing: { kind: "polyline", coordinates: gpxCoordinates },
+        preparationData: {
+          routeTargetDistanceKm: 2.5,
+          routeTargetDistanceSource: "manual",
+          gpxImport,
+        },
+        notes: "Nouvelle trace terrain",
+      } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData).toMatchObject({
+      derived_geometry_kind: "polyline",
+      geometry_source: "gpx_import",
+      geometry_confidence: 1,
+      preparation_data: {
+        routeTargetDistanceKm: 2.5,
+        routeTargetDistanceSource: "manual",
+        routeObservedDistanceKm: canonicalObservedDistanceKm,
+        gpxImport: {
+          ...gpxImport,
+          observedDistanceKm: canonicalObservedDistanceKm,
+        },
+      },
+    });
+    expect(prepared.updateData.preparation_data).not.toHaveProperty(
+      "routeNetworkDistanceKm",
+    );
+    expect(prepared.updateData.derived_geometry_geojson).toBe(
+      JSON.stringify({
+        type: "LineString",
+        coordinates: gpxCoordinates.map(([latitude, longitude]) => [longitude, latitude]),
+      }),
+    );
+    expect(parseDrawingFromNotes(String(prepared.updateData.notes)).manualDrawing).toEqual({
+      kind: "polyline",
+      coordinates: gpxCoordinates,
+    });
+  });
+
   it("keeps a GPS tracking observation ahead of a later route-shaped update", async () => {
     const current = {
       ...buildCurrent(),
       geometry_source: "gps_tracking" as const,
       preparation_data: {
+        routeTargetDistanceKm: 2.5,
+        routeTargetDistanceSource: "derived" as const,
         routeObservedDistanceKm: 2.345,
       },
     };
@@ -145,7 +209,8 @@ describe("GPX policy invariant", () => {
     const prepared = await prepareActionUpdate({
       current,
       parsedBody: ({
-        durationMinutes: 60,
+        durationMinutes: 90,
+        eventEndTime: "10:30",
         preparationData: {
           routeNetworkDistanceKm: 4,
           routeGeometryMode: "network",
@@ -155,6 +220,8 @@ describe("GPX policy invariant", () => {
     });
 
     expect(prepared.updateData.preparation_data).toMatchObject({
+      routeTargetDistanceKm: 1.5,
+      routeTargetDistanceSource: "derived",
       routeObservedDistanceKm: 2.345,
     });
     expect(prepared.updateData).not.toHaveProperty("geometry_source");

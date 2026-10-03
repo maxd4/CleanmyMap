@@ -37,26 +37,61 @@ export function ActionLocationGpxImport({ form, gpxImport, gpxError, onImportGpx
 
 type MapPanelProps = Pick<ActionLocationGeometryPanelProps, "form" | "setManualDrawing" | "onResetManualDrawing" | "gpxImport"> & { viewModel: ActionLocationViewModel };
 
+const statusStyles = {
+  success: "border-emerald-200/70 bg-[#ECF8EF] text-emerald-700",
+  warning: "border-amber-200 bg-[#FFF8E8] text-amber-700",
+  error: "border-rose-200 bg-[#FFF7F8] text-rose-700",
+  neutral: "border-emerald-200/70 bg-[#F3FBF6] text-emerald-800/70",
+} as const;
+
+function ActionLocationMapCanvas({
+  isMapVisible,
+  setManualDrawing,
+  gpxImport,
+  viewModel,
+}: Pick<MapPanelProps, "setManualDrawing" | "gpxImport" | "viewModel"> & {
+  isMapVisible: boolean;
+}) {
+  return isMapVisible ? <>
+        <ActionDrawingMap drawing={viewModel.displayedDrawing} onDrawingChange={setManualDrawing} readOnly={Boolean(gpxImport) || (viewModel.activeGeometry?.source != null && viewModel.activeGeometry.source !== "manual")} />
+        {!viewModel.hasDrawing ? <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F3FBF6]/72 backdrop-blur-[2px]"><div className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-5 py-4 text-center shadow-sm"><Pencil size={20} className="mx-auto mb-2 text-emerald-700/45" /><p className="text-sm font-semibold text-emerald-950">Aucun repère</p><p className="mt-1 text-xs text-emerald-900/45">Saisissez une adresse ou utilisez le GPS pour placer le lieu</p></div></div> : null}
+        {viewModel.isGpx && viewModel.hasDrawing ? <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-lg border border-violet-200 bg-white/95 px-3 py-2 text-xs font-semibold text-violet-900 shadow-sm">Tracé GPX importé · aucune reconstruction réseau</div> : null}
+        {viewModel.isTracking && viewModel.hasDrawing ? <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-lg border border-emerald-200 bg-white/95 px-3 py-2 text-xs font-semibold text-emerald-900 shadow-sm">Trace GPS observée · aucune reconstruction réseau</div> : null}
+      </> : <div className="flex h-full items-center justify-center bg-[#F3FBF6]"><div className="space-y-3 text-center"><div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500" /><p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-emerald-900/45">Chargement de la carte...</p></div></div>;
+}
+
+function ActionLocationStatus({
+  viewModel,
+  onResetManualDrawing,
+}: Pick<MapPanelProps, "viewModel" | "onResetManualDrawing">) {
+  const label = viewModel.isGpx
+    ? "Tracé GPX importé"
+    : viewModel.isTracking
+      ? "Trace GPS observée"
+      : viewModel.isManual
+        ? "Repère manuel"
+        : viewModel.hasDrawing
+          ? "Aperçu automatique"
+          : "Aucun repère";
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200/60 bg-[#ECF8EF] px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2"><span className={cn("inline-flex items-center rounded-full border px-2.5 py-1 cmm-text-caption font-semibold", statusStyles[viewModel.statusTone])}>{label}</span>{viewModel.hasDrawing ? <span className="text-xs text-emerald-900/55">{formatGeometryPointCount(viewModel.activeSummary.pointCount)}</span> : null}</div>
+      {viewModel.isManual && !viewModel.isGpx && !viewModel.isTracking && onResetManualDrawing ? <button type="button" onClick={onResetManualDrawing} aria-label="Effacer le repère manuel" className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-[#FFF7F8] px-3 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-[#FFEFF2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"><X size={13} />Effacer</button> : null}
+      {!viewModel.hasDrawing ? <span className="text-xs text-emerald-900/45">Saisissez un lieu, utilisez le GPS ou placez un repère sur la carte</span> : null}
+    </div>
+  );
+}
+
 export function ActionLocationMapPanel({ form, setManualDrawing, onResetManualDrawing, gpxImport, viewModel }: MapPanelProps) {
   const isCleanPlaceMode = form.recordType === "clean_place";
   const { ref: mapShellRef, isInView: isMapVisible } = useInViewOnce<HTMLDivElement>({ rootMargin: "260px 0px" });
-  const statusStyles = {
-    success: "border-emerald-200/70 bg-[#ECF8EF] text-emerald-700",
-    warning: "border-amber-200 bg-[#FFF8E8] text-amber-700",
-    error: "border-rose-200 bg-[#FFF7F8] text-rose-700",
-    neutral: "border-emerald-200/70 bg-[#F3FBF6] text-emerald-800/70",
-  } as const;
   return (
     <div className="hidden space-y-3 rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] md:block">
       <div className="flex items-center justify-between gap-3"><SectionTitle color="bg-slate-700">{isCleanPlaceMode ? "Point géographique" : "Aperçu de localisation"}</SectionTitle><p className="cmm-text-small text-emerald-900/45">{isCleanPlaceMode ? "Situez le lieu sur la carte" : "Situez le lieu sur la carte ou renseignez une adresse"}</p></div>
       <div ref={mapShellRef} className="relative h-[420px] overflow-hidden rounded-xl border border-emerald-200/70 bg-[#EFFAF3]">
-        {isMapVisible ? <>
-          <ActionDrawingMap drawing={viewModel.displayedDrawing} onDrawingChange={setManualDrawing} readOnly={Boolean(gpxImport) || (viewModel.activeGeometry?.source != null && viewModel.activeGeometry.source !== "manual")} />
-          {!viewModel.hasDrawing ? <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F3FBF6]/72 backdrop-blur-[2px]"><div className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-5 py-4 text-center shadow-sm"><Pencil size={20} className="mx-auto mb-2 text-emerald-700/45" /><p className="text-sm font-semibold text-emerald-950">Aucun repère</p><p className="mt-1 text-xs text-emerald-900/45">Saisissez une adresse ou utilisez le GPS pour placer le lieu</p></div></div> : null}
-          {viewModel.isGpx && viewModel.hasDrawing ? <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-lg border border-violet-200 bg-white/95 px-3 py-2 text-xs font-semibold text-violet-900 shadow-sm">Tracé GPX importé · aucune reconstruction réseau</div> : null}
-        </> : <div className="flex h-full items-center justify-center bg-[#F3FBF6]"><div className="space-y-3 text-center"><div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500" /><p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-emerald-900/45">Chargement de la carte...</p></div></div>}
+        <ActionLocationMapCanvas isMapVisible={isMapVisible} setManualDrawing={setManualDrawing} gpxImport={gpxImport} viewModel={viewModel} />
       </div>
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200/60 bg-[#ECF8EF] px-4 py-3"><div className="flex flex-wrap items-center gap-2"><span className={cn("inline-flex items-center rounded-full border px-2.5 py-1 cmm-text-caption font-semibold", statusStyles[viewModel.statusTone])}>{viewModel.isGpx ? "Tracé GPX importé" : viewModel.isManual ? "Repère manuel" : viewModel.hasDrawing ? "Aperçu automatique" : "Aucun repère"}</span>{viewModel.hasDrawing ? <span className="text-xs text-emerald-900/55">{formatGeometryPointCount(viewModel.activeSummary.pointCount)}</span> : null}</div>{viewModel.isManual && !viewModel.isGpx && onResetManualDrawing ? <button type="button" onClick={onResetManualDrawing} aria-label="Effacer le repère manuel" className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-[#FFF7F8] px-3 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-[#FFEFF2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"><X size={13} />Effacer</button> : null}{!viewModel.hasDrawing ? <span className="text-xs text-emerald-900/45">Saisissez un lieu, utilisez le GPS ou placez un repère sur la carte</span> : null}</div>
+      <ActionLocationStatus viewModel={viewModel} onResetManualDrawing={onResetManualDrawing} />
     </div>
   );
 }

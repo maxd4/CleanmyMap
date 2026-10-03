@@ -225,6 +225,15 @@ describe("createActionSchema", () => {
     });
 
     expect(result.success).toBe(false);
+    expect(
+      updateActionSchema.safeParse({
+        geometrySource: "gps_tracking",
+        manualDrawing: {
+          kind: "polyline",
+          coordinates: [[48.85, 2.35], [48.86, 2.36]],
+        },
+      }).success,
+    ).toBe(true);
   });
 
   it("uses the canonical five-million bound for every ordinary count alias", () => {

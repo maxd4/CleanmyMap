@@ -88,7 +88,7 @@ la durée, puis renseigne `NEW.distance_m` et `NEW.duration_s`. Il est
 `SECURITY INVOKER` et n'ajoute aucun droit d'écriture client sur ces colonnes.
 
 Après cette étape, le trigger serveur de la migration
-`apps/web/supabase/migrations/20261003000001_link_missions_to_actions.sql`
+`apps/web/supabase/migrations/20261003000002_observed_action_geometry_replacement.sql`
 peut promouvoir une mission liée, `completed`, disposant d'au moins deux
 coordonnées valides distinctes, vers la projection géométrique de l'action.
 La LineString est construite depuis les `gps_points` persistés, dans l'ordre
@@ -96,7 +96,9 @@ La LineString est construite depuis les `gps_points` persistés, dans l'ordre
 La projection reçoit `geometry_source = "gps_tracking"` et
 `preparation_data.routeObservedDistanceKm` depuis `missions.distance_m` ; le
 mobile ne calcule ni ne persiste ces métriques. Une mission autonome n'alimente
-aucune action.
+aucune action. Si l'action porte déjà une observation GPX ou GPS, la fin
+automatique d'une autre mission ne la remplace pas : une observation contre
+observation exige une action explicite autorisée dans le parcours serveur.
 
 Si plusieurs missions terminées sont liées à la même action, le serveur choisit
 déterministement celle dont `ended_at` est le plus ancien, puis le plus petit

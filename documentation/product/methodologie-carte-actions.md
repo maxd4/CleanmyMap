@@ -472,6 +472,23 @@ Action. Si plusieurs missions terminées sont liées à la même action, le serv
 retient déterministement celle dont `ended_at` est le plus ancien, puis le plus
 petit identifiant en cas d'égalité.
 
+Le cycle de vie canonique d'une action peut donc être :
+
+```text
+géométrie hypothétique initiale
+→ observation terrain disponible
+→ promotion serveur
+→ géométrie observée canonique unique
+```
+
+Un GPX validé est promu comme `gpx_import` sans routage ni snapping réseau ; une
+mission liée éligible est promue comme `gps_tracking` depuis ses `gps_points`
+validés et sa distance serveur. Une promotion conserve `routeTargetDistanceKm`
+comme cible historique distincte de `routeObservedDistanceKm`. Une observation
+déjà canonique ne peut pas être remplacée silencieusement par une reconstruction
+ultérieure ; le remplacement par une autre observation doit être explicite et
+autorisé.
+
 ### Remédiation des géométries historiques
 
 La convergence des anciennes lignes vers cette grammaire est une remédiation
