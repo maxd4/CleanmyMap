@@ -7,7 +7,7 @@ import type { ReportScope, ReportScopeKind } from "./scope";
 
 export { parsePositiveInteger } from "@/lib/http/query-params";
 
-export type ActionCsvRow = Pick<
+type ActionCsvRow = Pick<
   ActionListItem,
   | "id"
   | "created_at"
