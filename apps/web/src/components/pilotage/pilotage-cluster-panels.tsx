@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 
-type PilotageClusterMetric = {
+export type PilotageClusterMetric = {
   id: string;
   label: string;
   value: string;
@@ -17,6 +17,15 @@ type PilotageClusterMetric = {
   icon?: ReactNode;
   note?: string;
 };
+
+export function buildPilotageClusterMetrics(
+  kpis: readonly Omit<PilotageClusterMetric, "id">[],
+): PilotageClusterMetric[] {
+  return kpis.map((kpi) => ({
+    id: kpi.label,
+    ...kpi,
+  }));
+}
 
 type PilotageClusterInsight = {
   eyebrow: string;

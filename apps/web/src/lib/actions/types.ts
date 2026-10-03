@@ -68,7 +68,7 @@ export type ActionGpxImportMetadata = {
   inferredTopology: ActionRouteTopology;
   fileName?: string;
 };
-type ActionObservedCoverage = {
+export type ActionObservedCoverage = {
   type: "MultiLineString";
   coordinates: [number, number][][];
   traceCount: number;

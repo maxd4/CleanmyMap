@@ -38,7 +38,7 @@ function readCoverageCandidate(raw: unknown): Record<string, unknown> | undefine
   return candidate.type === "MultiLineString" ? candidate : undefined;
 }
 
-export function parsePublicObservedCoverage(
+function parsePublicObservedCoverage(
   raw: unknown,
 ): ActionPreparationData | undefined {
   const candidate = readCoverageCandidate(raw);

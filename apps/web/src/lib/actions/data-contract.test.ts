@@ -11,6 +11,14 @@ import {
 import type { ActionPhotoAsset, ActionVisionEstimate, CreateActionPayload } from "./types";
 import { getActionOperationalContext } from "./operational-context";
 
+function expectFallbackPoint(mapItem: ReturnType<typeof toActionMapItem>, coordinates: number[][]) {
+  expect(mapItem.contract?.geometry.kind).toBe("point");
+  expect(mapItem.contract?.geometry.coordinates).toEqual(coordinates);
+  expect(mapItemShouldRenderPoint(mapItem)).toBe(true);
+  expect(mapItem.contract?.geometry.geometrySource).toBe("fallback_point");
+  expect(mapItem.contract?.geometry.origin).toBe("fallback_point");
+}
+
 it("maps polygon geometry to map payload without breaking point fields", () => {
   const contract = buildActionDataContract({
     id: "action-1",
@@ -251,11 +259,7 @@ it("does not synthesize a route or area from endpoint labels in the generic reso
 
   const mapItem = toActionMapItem(contract);
 
-  expect(mapItem.contract?.geometry.kind).toBe("point");
-  expect(mapItem.contract?.geometry.coordinates).toEqual([[48.871, 2.381]]);
-  expect(mapItemShouldRenderPoint(mapItem)).toBe(true);
-  expect(mapItem.contract?.geometry.geometrySource).toBe("fallback_point");
-  expect(mapItem.contract?.geometry.origin).toBe("fallback_point");
+  expectFallbackPoint(mapItem, [[48.871, 2.381]]);
 });
 
 it("keeps a simple coordinate as a point when no reference geometry exists", () => {
@@ -272,11 +276,7 @@ it("keeps a simple coordinate as a point when no reference geometry exists", () 
 
   const mapItem = toActionMapItem(contract);
 
-  expect(mapItem.contract?.geometry.kind).toBe("point");
-  expect(mapItem.contract?.geometry.coordinates).toEqual([[48.866769, 2.409144]]);
-  expect(mapItemShouldRenderPoint(mapItem)).toBe(true);
-  expect(mapItem.contract?.geometry.geometrySource).toBe("fallback_point");
-  expect(mapItem.contract?.geometry.origin).toBe("fallback_point");
+  expectFallbackPoint(mapItem, [[48.866769, 2.409144]]);
 });
 
 it("exposes operational context fields for dashboards and exports", () => {

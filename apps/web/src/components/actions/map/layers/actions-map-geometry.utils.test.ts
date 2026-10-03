@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
-import type { ActionMapItem } from "@/lib/actions/types";
+import type { ActionMapItem, ActionObservedCoverage } from "@/lib/actions/types";
 import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import {
   buildDrawingLeafletPositions,
@@ -31,6 +31,42 @@ function buildMapItem(partial: Partial<ActionMapItem>): ActionMapItem {
     created_by_clerk_id: null,
     ...partial,
   };
+}
+
+function buildObservedCoverage(): ActionObservedCoverage {
+  return {
+    type: "MultiLineString" as const,
+    coordinates: [
+      [[2.35, 48.85], [2.351, 48.851]],
+      [[2.36, 48.86], [2.361, 48.861]],
+    ],
+    traceCount: 2,
+    individualDistancesKm: [0.2, 0.3],
+    coverageDistanceKm: null,
+    coverageVersion: "observed-traces-v1",
+  };
+}
+
+function buildMultiTraceMapItem(id: string, locationLabel: string, preparationData?: Parameters<typeof buildActionDataContract>[0]["preparationData"]) {
+  return toActionMapItem(
+    buildActionDataContract({
+      id,
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-08",
+      locationLabel,
+      latitude: 48.85,
+      longitude: 2.35,
+      derivedGeometryKind: "multiline",
+      derivedGeometryGeoJson: JSON.stringify({
+        type: "MultiLineString",
+        coordinates: buildObservedCoverage().coordinates,
+      }),
+      geometrySource: "gps_tracking",
+      preparationData,
+    }),
+  );
 }
 
 describe("actions map geometry utils", () => {
@@ -89,40 +125,9 @@ describe("actions map geometry utils", () => {
   });
 
   it("renders independent accepted observations as separate coverage lines", () => {
-    const item = toActionMapItem(
-      buildActionDataContract({
-        id: "multi-trace-action",
-        type: "action",
-        status: "approved",
-        source: "actions",
-        observedAt: "2026-04-08",
-        locationLabel: "Parc test",
-        latitude: 48.85,
-        longitude: 2.35,
-        derivedGeometryKind: "multiline",
-        derivedGeometryGeoJson: JSON.stringify({
-          type: "MultiLineString",
-          coordinates: [
-            [[2.35, 48.85], [2.351, 48.851]],
-            [[2.36, 48.86], [2.361, 48.861]],
-          ],
-        }),
-        geometrySource: "gps_tracking",
-        preparationData: {
-          observedCoverage: {
-            type: "MultiLineString",
-            coordinates: [
-              [[2.35, 48.85], [2.351, 48.851]],
-              [[2.36, 48.86], [2.361, 48.861]],
-            ],
-            traceCount: 2,
-            individualDistancesKm: [0.2, 0.3],
-            coverageDistanceKm: null,
-            coverageVersion: "observed-traces-v1",
-          },
-        },
-      }),
-    );
+    const item = buildMultiTraceMapItem("multi-trace-action", "Parc test", {
+      observedCoverage: buildObservedCoverage(),
+    });
 
     const geometry = resolveActionMapGeometryViewModel(item);
     expect(geometry.kind).toBe("multiline");
@@ -134,27 +139,7 @@ describe("actions map geometry utils", () => {
   });
 
   it("recovers public MultiLineString coverage when metadata is absent", () => {
-    const item = toActionMapItem(
-      buildActionDataContract({
-        id: "public-multi-trace-action",
-        type: "action",
-        status: "approved",
-        source: "actions",
-        observedAt: "2026-04-08",
-        locationLabel: "Parc public",
-        latitude: 48.85,
-        longitude: 2.35,
-        derivedGeometryKind: "multiline",
-        derivedGeometryGeoJson: JSON.stringify({
-          type: "MultiLineString",
-          coordinates: [
-            [[2.35, 48.85], [2.351, 48.851]],
-            [[2.36, 48.86], [2.361, 48.861]],
-          ],
-        }),
-        geometrySource: "gps_tracking",
-      }),
-    );
+    const item = buildMultiTraceMapItem("public-multi-trace-action", "Parc public");
 
     const geometry = resolveActionMapGeometryViewModel(item);
     expect(geometry.multiLinePositions).toHaveLength(2);
@@ -167,17 +152,7 @@ describe("actions map geometry utils", () => {
       geometrySource: "manual",
       kind: "polygon",
       preparationData: {
-        observedCoverage: {
-          type: "MultiLineString",
-          coordinates: [
-            [[2.35, 48.85], [2.351, 48.851]],
-            [[2.36, 48.86], [2.361, 48.861]],
-          ],
-          traceCount: 2,
-          individualDistancesKm: [0.2, 0.3],
-          coverageDistanceKm: null,
-          coverageVersion: "observed-traces-v1",
-        },
+        observedCoverage: buildObservedCoverage(),
       },
     });
 

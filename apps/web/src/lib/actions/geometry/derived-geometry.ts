@@ -197,18 +197,21 @@ function resolveStoredGeoJson(params: {
   );
 }
 
-export function buildPersistedGeometry(params: {
-  drawing?: ActionDrawing | null;
-  geojson?: string | null;
-  confidence?: number | null;
-  geometrySourceHint?: ActionGeometryOrigin | null;
-  originHint?: ActionGeometryOrigin | null;
+type GeometryLocationContext = {
   latitude?: number | null;
   longitude?: number | null;
   locationLabel?: string | null;
   departureLocationLabel?: string | null;
   arrivalLocationLabel?: string | null;
   routeStyle?: "direct" | "souple" | null;
+};
+
+export function buildPersistedGeometry(params: GeometryLocationContext & {
+  drawing?: ActionDrawing | null;
+  geojson?: string | null;
+  confidence?: number | null;
+  geometrySourceHint?: ActionGeometryOrigin | null;
+  originHint?: ActionGeometryOrigin | null;
 }): PersistedDerivedGeometry {
   const resolved = resolveBestGeometryResolution({
     drawing: params.drawing ?? null,
@@ -232,19 +235,13 @@ export function buildPersistedGeometry(params: {
   };
 }
 
-export function buildPersistedGeometryFromStoredFields(params: {
+export function buildPersistedGeometryFromStoredFields(params: GeometryLocationContext & {
   derivedGeometryKind?: ActionGeometryKind | null;
   derivedGeometryGeoJson?: string | null;
   geometrySource?: ActionGeometryOrigin | null;
   geometryConfidence?: number | null;
   manualDrawing?: ActionDrawing | null;
   manualDrawingGeoJson?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  locationLabel?: string | null;
-  departureLocationLabel?: string | null;
-  arrivalLocationLabel?: string | null;
-  routeStyle?: "direct" | "souple" | null;
 }): PersistedDerivedGeometry {
   if (
     params.derivedGeometryGeoJson &&

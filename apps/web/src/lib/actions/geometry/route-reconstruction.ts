@@ -17,6 +17,7 @@ import {
   parseTerritoryCoordinates,
 } from "@/lib/geo/territory";
 import { findMatchingGeometry } from "@/lib/geo/geometry-reference";
+import { areCoordinatesClose } from "@/lib/geo/coordinate-comparison";
 import { routePolylineThroughFossgisFoot } from "@/lib/route/fossgis-foot-routing";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import { resolveRouteTargetDistance } from "../route-target-distance";
@@ -134,25 +135,13 @@ function buildLoopHypotheses(
   );
 }
 
-function sameCoordinate(
-  left: [number, number] | undefined,
-  right: [number, number] | undefined,
-): boolean {
-  return Boolean(
-    left &&
-      right &&
-      Math.abs(left[0] - right[0]) < 1e-5 &&
-      Math.abs(left[1] - right[1]) < 1e-5,
-  );
-}
-
 function isValidNetworkLoop(routeGeometry: RouteGeometry): boolean {
   return (
     routeGeometry.mode === "network" &&
     routeGeometry.provider !== "none" &&
     routeGeometry.isLoop &&
     routeGeometry.coordinates.length >= 2 &&
-    sameCoordinate(routeGeometry.coordinates[0], routeGeometry.coordinates.at(-1)) &&
+    areCoordinatesClose(routeGeometry.coordinates[0], routeGeometry.coordinates.at(-1), 1e-5) &&
     routeGeometry.coordinates.every(isCoordinatePair) &&
     Number.isFinite(routeGeometry.distanceKm) &&
     routeGeometry.distanceKm >= 0

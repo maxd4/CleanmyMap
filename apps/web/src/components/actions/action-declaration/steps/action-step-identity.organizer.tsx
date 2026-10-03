@@ -87,6 +87,43 @@ function OrganizerSelection({
   );
 }
 
+function OrganizerTypeSelect({
+  form,
+  isActionMode,
+  missingOrganizerType,
+  organizerTypeErrorId,
+  className,
+  placeholder,
+  onChange,
+}: {
+  form: FormState;
+  isActionMode: boolean;
+  missingOrganizerType: boolean | undefined;
+  organizerTypeErrorId: string;
+  className: string;
+  placeholder: string;
+  onChange: (nextType: FormState["organizerType"]) => void;
+}) {
+  return (
+    <select
+      id="action-organizer-type"
+      className={`${className} appearance-none cursor-pointer ${missingOrganizerType ? inputErrCls : ""}`}
+      value={form.organizerType}
+      onChange={(event) => onChange(event.target.value as FormState["organizerType"])}
+      required={isActionMode}
+      aria-invalid={missingOrganizerType}
+      aria-describedby={missingOrganizerType ? organizerTypeErrorId : undefined}
+    >
+      <option value="">{placeholder}</option>
+      {ORGANIZER_TYPE_OPTIONS.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function CompactOrganizerSection({
   form,
   updateField,
@@ -138,28 +175,15 @@ function CompactOrganizerSection({
             Obligatoire
           </span>
         </label>
-        <select
-          id="action-organizer-type"
-          className={`${compactInputCls} appearance-none cursor-pointer ${missingOrganizerType ? inputErrCls : ""}`}
-          value={form.organizerType}
-          onChange={(event) =>
-            onOrganizerTypeChange(
-              event.target.value as FormState["organizerType"],
-            )
-          }
-          required={isActionMode}
-          aria-invalid={missingOrganizerType}
-          aria-describedby={
-            missingOrganizerType ? organizerTypeErrorId : undefined
-          }
-        >
-          <option value="">Sélectionnez un type</option>
-          {ORGANIZER_TYPE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <OrganizerTypeSelect
+          form={form}
+          isActionMode={isActionMode}
+          missingOrganizerType={missingOrganizerType}
+          organizerTypeErrorId={organizerTypeErrorId}
+          className={compactInputCls}
+          placeholder="Sélectionnez un type"
+          onChange={onOrganizerTypeChange}
+        />
         {missingOrganizerType ? (
           <p
             id={organizerTypeErrorId}
@@ -209,28 +233,15 @@ function FullOrganizerSection({
             Type de structure <span aria-hidden="true">*</span>
           </label>
           <Field icon={Building}>
-            <select
-              id="action-organizer-type"
-              className={`${inputCls} appearance-none cursor-pointer ${missingOrganizerType ? inputErrCls : ""}`}
-              value={form.organizerType}
-              onChange={(event) =>
-                onOrganizerTypeChange(
-                  event.target.value as FormState["organizerType"],
-                )
-              }
-              required={isActionMode}
-              aria-invalid={missingOrganizerType}
-              aria-describedby={
-                missingOrganizerType ? organizerTypeErrorId : undefined
-              }
-            >
-              <option value="">Sélectionnez un type de structure</option>
-              {ORGANIZER_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <OrganizerTypeSelect
+              form={form}
+              isActionMode={isActionMode}
+              missingOrganizerType={missingOrganizerType}
+              organizerTypeErrorId={organizerTypeErrorId}
+              className={inputCls}
+              placeholder="Sélectionnez un type de structure"
+              onChange={onOrganizerTypeChange}
+            />
           </Field>
           {missingOrganizerType ? (
             <p

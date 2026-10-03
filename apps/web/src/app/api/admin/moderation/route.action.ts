@@ -8,6 +8,9 @@ import {
 } from "./route.action-effects";
 import {
   type ActionEdits,
+  type ActionAuditSnapshot,
+  type ActionAuditState,
+  type ActionImpactValues,
   type ActionModerationOperation,
   type ActionModerationPayload,
   type AppendModerationAuditOnce,
@@ -16,27 +19,6 @@ import {
   hasSensitiveImpactEdit,
 } from "./route.shared";
 
-type ActionImpactValues = {
-  createdByClerkId: string | null;
-  wasteKg: number | null;
-  cigaretteButts: number | null;
-  volunteersCount: number | null;
-  durationMinutes: number | null;
-  wasteBreakdown: unknown;
-};
-type ActionAuditState = ActionImpactValues & {
-  status: "pending" | "approved" | "rejected" | "unknown";
-  moderationVisibility: "visible" | "hidden" | "unknown";
-};
-type ActionAuditSnapshot = {
-  status: ActionAuditState["status"];
-  moderationVisibility: ActionAuditState["moderationVisibility"];
-  wasteKg: number | null;
-  cigaretteButts: number | null;
-  volunteersCount: number | null;
-  durationMinutes: number | null;
-  wasteBreakdownPresent: boolean;
-};
 type ActionHandlerParams = {
   supabase: ModerationSupabaseClient;
   payload: ActionModerationPayload;

@@ -5,6 +5,9 @@ import { reconcileUserGamification } from "@/lib/gamification/gamification-recon
 
 export const runtime = "nodejs";
 
+// Vercel justification: this authenticated reconciliation route must read fresh mission and gamification state and must not be cached.
+export const dynamic = "force-dynamic";
+
 /**
  * PURPOSE: reconcile a completed linked mission from canonical contribution facts.
  * CALLER: the authenticated mobile mission owner, with a Clerk bearer context.

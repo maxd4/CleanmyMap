@@ -2,31 +2,17 @@ import { copyValidatedActionToLocalStore } from "@/lib/data/local-sync";
 import { refreshActionImpactProgressionDependents } from "./route.action-progression";
 import { runActionTransitionSideEffects } from "@/lib/admin/moderation/transition";
 import { adminErrorResponse, adminSuccessResponse } from "@/lib/admin/response";
-import { canonicalTargetUserId, type ActionModerationOperation, type ActionModerationPayload, type AppendModerationAuditOnce, type ModerationErrorStage, type ModerationSupabaseClient } from "./route.shared";
-
-export type ActionImpactValues = {
-  createdByClerkId: string | null;
-  wasteKg: number | null;
-  cigaretteButts: number | null;
-  volunteersCount: number | null;
-  durationMinutes: number | null;
-  wasteBreakdown: unknown;
-};
-
-export type ActionAuditState = ActionImpactValues & {
-  status: "pending" | "approved" | "rejected" | "unknown";
-  moderationVisibility: "visible" | "hidden" | "unknown";
-};
-
-type ActionAuditSnapshot = {
-  status: ActionAuditState["status"];
-  moderationVisibility: ActionAuditState["moderationVisibility"];
-  wasteKg: number | null;
-  cigaretteButts: number | null;
-  volunteersCount: number | null;
-  durationMinutes: number | null;
-  wasteBreakdownPresent: boolean;
-};
+import {
+  canonicalTargetUserId,
+  type ActionAuditSnapshot,
+  type ActionAuditState,
+  type ActionImpactValues,
+  type ActionModerationOperation,
+  type ActionModerationPayload,
+  type AppendModerationAuditOnce,
+  type ModerationErrorStage,
+  type ModerationSupabaseClient,
+} from "./route.shared";
 
 export type ActionStatusUpdateResult = {
   source: "actions" | "submissions";
