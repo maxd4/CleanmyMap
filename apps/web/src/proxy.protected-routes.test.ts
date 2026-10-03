@@ -1,13 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
+const clerkContextRequestMock = vi.hoisted(() => vi.fn());
+
 vi.mock("@clerk/nextjs/server", () => {
   process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = `pk_test_${Buffer.from("local-dev.clerk.accounts.dev$").toString("base64")}`;
   process.env.CLERK_SECRET_KEY = "sk_test_local_dev_secret";
   return {
     clerkMiddleware: (handler: (auth: unknown, req: NextRequest, evt: unknown) => unknown) =>
-      async (req: NextRequest, evt: unknown) => handler({ protect: vi.fn() }, req, evt),
+      async (req: NextRequest, evt: unknown) => {
+        clerkContextRequestMock(req.nextUrl.pathname, req.headers.get("authorization"));
+        return handler({ protect: vi.fn() }, req, evt);
+      },
   };
 });
 
@@ -146,6 +151,25 @@ describe("proxy route context", () => {
 
     expect(PROXY_MATCHER_PATTERNS).toContain(expectedMatcher);
     expect(config.matcher).toContain(expectedMatcher);
+  });
+
+  it("sends a bearer-authenticated mission request through Clerk context", async () => {
+    clerkContextRequestMock.mockClear();
+
+    const response = await proxy(
+      new NextRequest("http://localhost/api/missions", {
+        method: "POST",
+        headers: { authorization: "Bearer clerk-session-token" },
+      }),
+      {} as never,
+    );
+
+    if (!response) throw new Error("Clerk context response is missing");
+    expect(response.status).toBe(200);
+    expect(clerkContextRequestMock).toHaveBeenCalledWith(
+      "/api/missions",
+      "Bearer clerk-session-token",
+    );
   });
 
   it("skips Clerk for anonymous community event reads but not mutations", () => {

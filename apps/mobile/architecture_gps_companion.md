@@ -113,14 +113,16 @@ observation terrain ; une reconstruction réseau reste une hypothèse.
 
 L'identité Clerk, les RLS missions/GPS, la finalisation des métriques et le
 chargement Clerk headless avec le `tokenCache` SecureStore sont finalisés et
-restent invariants pendant le développement actif. Les sujets encore ouverts
-et non prêts pour la production sont `mission_actions`, la validation
-opérationnelle et l'évolution future du produit mobile. La cible
+restent invariants pendant le développement actif. Le socle serveur de
+contributions multi-traces et de projection `MultiLineString` est `CURRENT`.
+Les sujets encore ouverts et non prêts pour la production sont `mission_actions`,
+la validation opérationnelle de l'application mobile et l'évolution future du
+produit mobile. La cible
 `PLAN / TARGET` décrite dans
 [`../../documentation/product/couverture-gps-multi-groupes.md`](../../documentation/product/couverture-gps-multi-groupes.md)
 vise le modèle « une mission GPS par sous-groupe → plusieurs traces pour une
-action » ; elle ne modifie pas le statut `NOT_PRODUCTION_READY` de cette
-capacité.
+action » ; elle ne modifie pas le statut `NOT_PRODUCTION_READY` de l'application
+mobile ni la nécessité d'une validation opérationnelle séparée.
 
 ### Proposition historique — non cible actuelle
 

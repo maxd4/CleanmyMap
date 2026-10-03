@@ -1,17 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { getCurrentUserIdentity } from "@/lib/authz-identity";
-import { canManageAction } from "@/lib/actions/permissions";
 import { loadActionById } from "@/lib/actions/store";
-import {
-  loadCanonicalActionOrganizerIdsForAction,
-} from "@/lib/actions/participation/organizers";
-import {
-  readParticipantRecord,
-  ACTIVE_PARTICIPATION_STATUS,
-} from "@/lib/actions/participation/group-participation.helpers";
-import { readActionRegistrationRecord } from "@/lib/actions/participation/registration-records";
+import { isActionGeometryContributorEligible } from "@/lib/actions/geometry/action-geometry-contributor-eligibility";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -28,8 +19,8 @@ const createMissionSchema = z
 
 /**
  * Creates a mission already linked to an Action. The client supplies only the
- * requested Action id; the server checks creator/organizer/participant access
- * and writes action_id through the privileged server boundary.
+ * requested Action id; the server checks the canonical observed-geometry
+ * eligibility owner and writes action_id through the privileged boundary.
  */
 export async function POST(request: Request) {
   const access = await requireAuthenticatedAccess();
@@ -51,29 +42,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
   }
 
-  const identity = await getCurrentUserIdentity({ userId: access.userId });
-  if (!identity) {
-    return NextResponse.json({ error: "Utilisateur non authentifié." }, { status: 401 });
-  }
-
-  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
-    supabase,
-    action.id,
-  );
-  const [participant, registration] = await Promise.all([
-    readParticipantRecord(supabase, { actionId: action.id, userId: access.userId }),
-    readActionRegistrationRecord(supabase, {
-      actionId: action.id,
-      userId: access.userId,
-    }),
-  ]);
-  const canManage = canManageAction(identity, action, organizerIds);
-  const isConfirmedParticipant =
-    participant?.participation_status === ACTIVE_PARTICIPATION_STATUS ||
-    registration?.registration_status === ACTIVE_PARTICIPATION_STATUS;
-  if (!canManage && !isConfirmedParticipant) {
+  const isEligible = await isActionGeometryContributorEligible(supabase, {
+    actionId: action.id,
+    contributorClerkId: access.userId,
+  });
+  if (!isEligible) {
     return NextResponse.json(
-      { error: "Vous devez être organisateur ou participant confirmé de cette action." },
+      {
+        error:
+          "Vous devez être le créateur, l'organisateur, un participant confirmé ou une inscription confirmée de cette action.",
+      },
       { status: 403 },
     );
   }

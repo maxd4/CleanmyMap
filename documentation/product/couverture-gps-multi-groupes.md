@@ -1,14 +1,15 @@
 # Couverture GPS multi-groupes des actions
 
-> **Statut : `PLAN / TARGET` — décision produit et contrat d’intégration**
+> **Statut : `CURRENT / TARGET` — socle multi-traces livré, évolutions scientifiques bornées**
 >
 > Ce document décrit la cible CleanMyMap pour les actions réalisées par plusieurs
 > sous-groupes disposant chacun d’une trace GPS, ainsi que la reconnaissance
 > gamifiée des bénévoles qui améliorent la précision cartographique.
 >
-> Il ne décrit pas encore un comportement `CURRENT`. Le runtime et les contrats
-> effectivement déployés restent gouvernés par le code, les migrations, les
-> tests et les sources `CURRENT` du dépôt.
+> Le runtime `CURRENT` conserve les contributions unitaires, projette les traces
+> acceptées en `MultiLineString`, expose une couverture action-level sanitizée et
+> déduplique la progression `cartography` par utilisateur/action. La
+> déduplication spatiale et la distance de couverture unique restent `TARGET`.
 
 ## 1. Problème à résoudre
 
@@ -145,9 +146,8 @@ géographiques`, portée par une source de données dédiée, par exemple :
 action_geometry_contributions
 ```
 
-Le nom physique final doit être confirmé contre le schéma au moment de
-l’intégration, mais la responsabilité est durable : cette source conserve les
-**preuves terrain unitaires**.
+Le nom physique est `action_geometry_contributions` dans le schéma `CURRENT` ;
+cette source conserve les **preuves terrain unitaires**.
 
 Contrat logique minimal :
 
@@ -221,9 +221,8 @@ Trace C ─┘
 La représentation géométrique privilégiée est un ensemble de LineStrings,
 typiquement un `MultiLineString` GeoJSON ou un type métier équivalent.
 
-Le contrat `ActionGeometryKind` CURRENT ne supporte pas encore cette forme :
-son évolution fait partie du chantier d’intégration. Il ne faut pas encoder un
-`MultiLineString` dans une fausse `polyline`.
+Le contrat `ActionGeometryKind` `CURRENT` supporte cette forme via `multiline`.
+Il ne faut pas encoder un `MultiLineString` dans une fausse `polyline`.
 
 ### 5.3. Tronc commun et branches
 
@@ -388,21 +387,21 @@ CleanMyMap.
 Cette contribution doit être reconnue personnellement, sans récompenser le spam,
 le nombre de fichiers ou le nombre de kilomètres.
 
-### 10.2. Progression cible
+### 10.2. Progression `CURRENT`
 
-La cible produit est une progression personnelle dédiée :
+Le produit expose une progression personnelle dédiée :
 
 ```text
 Contribution cartographique
 ```
 
-Identité technique candidate :
+Identité technique `CURRENT` :
 
 ```text
 cartography
 ```
 
-Métrique candidate :
+Métrique `CURRENT` :
 
 ```text
 verified_geometry_contributions
@@ -463,7 +462,7 @@ physiquement le GPS pendant toute la trace.
 
 ### 10.5. Intégration au moteur CURRENT
 
-Cette cible doit utiliser le moteur de gamification existant :
+Cette progression utilise le moteur de gamification `CURRENT` existant :
 
 ```text
 progression_events
@@ -482,9 +481,9 @@ Ne créer :
 Le registre de gamification et le catalogue de badges restent les owners
 canoniques.
 
-L’introduction de cette progression ferait évoluer le nombre de progressions
-CURRENT ; cette évolution doit être explicite dans la révision de règles et la
-spécification canonique lors de son implémentation.
+La progression est déjà enregistrée dans le registre `CURRENT` et dans la
+spécification canonique. Toute évolution de ses règles doit rester explicite
+dans une nouvelle révision versionnée.
 
 Les seuils de grade et montants XP ne sont pas fixés par ce document. Ils
 doivent réutiliser une policy canonique existante ou faire l’objet d’une
@@ -706,11 +705,10 @@ chaque enregistreur éligible
 
 ### Questions à résoudre pendant l’intégration
 
-- format exact du contrat `MultiLineString` dans le domaine Actions ;
-- persistance physique exacte de la contribution géographique ;
 - nécessité ou non d’une entité `action_subgroups` pour un workflow futur ;
 - méthode versionnée permettant un jour une distance de couverture unique ;
-- seuils et politique XP exacts de la progression cartographique.
+- évolution éventuelle des seuils et de la policy XP de la progression
+  cartographique.
 
 Ces questions ne doivent pas être résolues par des valeurs arbitraires.
 
@@ -726,5 +724,6 @@ réellement affectées :
 - la fiche `CURRENT` de `/actions/map` ;
 - [`../../apps/mobile/architecture_gps_companion.md`](../../apps/mobile/architecture_gps_companion.md) lorsque le tracking mobile est intégré.
 
-Ce document reste une spécification `PLAN / TARGET` jusqu’à ce que ces contrats
-soient réellement implémentés et validés.
+Le socle décrit dans ce document est `CURRENT` et validé par les migrations,
+les consommateurs, les tests et la projection publique. Les évolutions listées
+ci-dessus restent explicitement `PLAN / TARGET`.
