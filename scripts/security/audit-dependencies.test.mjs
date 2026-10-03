@@ -5,6 +5,7 @@ import {
   buildNpmAuditInvocation,
   evaluateAuditPolicy,
   extractAuditFindings,
+  formatAuditPolicyResult,
   parseAuditOutput,
 } from "./audit-dependencies.mjs";
 
@@ -50,7 +51,58 @@ test("extractAuditFindings resolves a vendor link to its canonical package path"
     title: "npm audit finding for stream-json",
     url: "https://github.com/advisories/GHSA-528h-pc64-c93x",
     source: 1164823,
+    rootAdvisories: ["GHSA-528H-PC64-C93X"],
+    rootPaths: [{ advisory: "GHSA-528H-PC64-C93X", path: ["stream-json"] }],
+    parentPackages: [],
+    runtimeScope: "UNCLASSIFIED",
+    mitigationStatus: "MITIGATED_EXACT",
   }]);
+});
+
+test("root advisories, transitive paths, parents, scope and blocker status remain visible", () => {
+  const report = {
+    vulnerabilities: {
+      "@expo/cli": { severity: "high", via: ["@expo/metro"] },
+      "@expo/metro": { severity: "high", via: ["metro"] },
+      metro: { severity: "high", via: ["micromatch"] },
+      micromatch: { severity: "high", via: ["braces"] },
+      braces: {
+        name: "braces",
+        severity: "high",
+        via: [{
+          url: "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          severity: "high",
+        }],
+        nodes: ["node_modules/braces"],
+      },
+    },
+  };
+  const fixtureLockfile = {
+    packages: {
+      "node_modules/@expo/cli": { version: "57.0.24", dependencies: { "@expo/metro": "~56.0.2" } },
+      "node_modules/@expo/metro": { version: "56.0.2", dependencies: { metro: "0.84.5" } },
+      "node_modules/metro": { version: "0.84.5", dependencies: { micromatch: "^4.0.4" } },
+      "node_modules/micromatch": { version: "4.0.8", dependencies: { braces: "^3.0.3" } },
+      "node_modules/braces": { version: "3.0.3" },
+    },
+  };
+
+  const result = evaluateAuditPolicy({ auditReport: report, lockfile: fixtureLockfile });
+  assert.equal(result.passed, false);
+  const cliFinding = result.unmitigated.find((finding) => finding.packageName === "@expo/cli");
+  assert.deepEqual(cliFinding.rootAdvisories, ["GHSA-VFJ7-8CJW-P6XM"]);
+  assert.equal(
+    cliFinding.rootPaths[0].path.join(" -> "),
+    "@expo/cli -> @expo/metro -> metro -> micromatch -> braces",
+  );
+  assert.equal(cliFinding.runtimeScope, "DEV_BUILD_ONLY");
+  assert.equal(cliFinding.mitigationStatus, "BLOCKED_BY_UPSTREAM");
+  assert.deepEqual(result.unmitigated.find((finding) => finding.packageName === "braces").parentPackages, [
+    "micromatch@4.0.8",
+  ]);
+  const formatted = formatAuditPolicyResult(result);
+  assert.match(formatted, /ROOT_ADVISORY: GHSA-VFJ7-8CJW-P6XM/);
+  assert.match(formatted, /MITIGATION_STATUS: BLOCKED_BY_UPSTREAM/);
 });
 
 test("the exact vendor mitigation is accepted but a changed version is not", () => {
