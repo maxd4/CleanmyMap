@@ -3,7 +3,7 @@ const path = require('path');
 const sharp = require('sharp');
 
 const inputPath = 'C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/liberte-UX-UI/01-HOMEPAGE/homepage-backup.png';
-const outputPath = 'C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/artifacts/screenshots/legacy/homepage sonnet 4.5.png';
+const outputPath = path.resolve('artifacts/screenshots/pages-site/legacy/homepage-sonnet-4-5/desktop.png');
 
 async function resizeImage() {
   try {

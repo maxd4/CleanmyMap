@@ -73,4 +73,4 @@ En navigation normale, sans ce paramètre, le ruban global conserve son
 comportement `sticky`. Le même attribut permet d'intégrer d'autres surfaces
 sticky au pipeline sans leur imposer un comportement statique en production.
 - le format de sortie est PNG uniquement
-- les captures legacy sont écrites dans `artifacts/screenshots/legacy/`; les éventuels fichiers historiques de `documentation/liberte-UX-UI/` ne sont pas réécrits
+- l'ancien producteur `capture-pages2.mjs` n'alimente plus `artifacts/screenshots/legacy/`; les fichiers historiques de `documentation/liberte-UX-UI/` ne sont pas réécrits

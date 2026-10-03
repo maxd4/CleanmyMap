@@ -39,7 +39,7 @@ exemple `documentation/design-system/navigation-dropdowns-snapshots/`.
   de leur page canonique, avec leur format et leur nom existants.
 - Les anciens dossiers `photo/` ont été migrés vers les pages propriétaires ;
   aucune nouvelle capture ne doit y être déposée.
-- Les captures legacy générées sont enregistrées dans `artifacts/screenshots/legacy/...`; les fichiers historiques de `documentation/liberte-UX-UI/...` restent inchangés.
+- L'ancien producteur `capture-pages2.mjs` n'enregistre plus de nouvelles sorties sous `artifacts/screenshots/legacy/`; les fichiers historiques de `documentation/liberte-UX-UI/...` restent inchangés.
 - Ne pas déposer de sortie générée en dehors de `artifacts/screenshots/` et ne
   pas déposer de snapshot de page hors de son dossier canonique.
 - Les fichiers de contexte, alias temporaires ou exports intermédiaires doivent rester séparés des captures officielles.
