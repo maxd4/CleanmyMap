@@ -20,6 +20,7 @@ import {
   createAction,
   fetchMapActions,
 } from "./http";
+import { resolveActionMapGeometryViewModel } from "@/components/actions/map/layers/actions-map-geometry.utils";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -46,7 +47,7 @@ function expectMapActionsFallbackResult(
   result: Awaited<ReturnType<typeof fetchMapActions>>,
 ): void {
   expect(result.status).toBe("ok");
-  expect(result.count).toBe(2);
+  expect(result.count).toBe(3);
   expect(result.daysWindow).toBe(15);
   expect(result.partialSource).toBe(false);
   expect(result.sourceHealth?.availableSources).toEqual([
@@ -68,13 +69,6 @@ function expectMapActionsFallbackResult(
   expect(action?.contract?.metadata.wasteKg).toBe(10);
   expect(action?.contract?.metadata.cigaretteButts).toBe(300);
   expect(action?.contract?.metadata.volunteersCount).toBe(5);
-  expect(action?.contract?.metadata.manualDrawing).toEqual({
-    kind: "polyline",
-    coordinates: [
-      [48.8566, 2.3522],
-      [48.857, 2.353],
-    ],
-  });
   expect(action?.geometry_source).toBe("gps_tracking");
   expect(action?.contract?.geometry.geometrySource).toBe("gps_tracking");
 }
@@ -277,18 +271,45 @@ describe("fetchMapActions", () => {
       volunteers_count: "5",
       duration_minutes: "45",
       notes:
-        "association: Collectif Demo\n[cmm-meta]{\"associationName\":\"Collectif Demo\"}\n[DRAWING_GEOJSON]{\"kind\":\"polyline\",\"coordinates\":[[48.8566,2.3522],[48.857,2.353]]}",
-      derived_geometry_kind: "polyline",
+        "association: Collectif Demo\n[cmm-meta]{\"associationName\":\"Collectif Demo\"}",
+      derived_geometry_kind: "multiline",
       derived_geometry_geojson:
-        '{"type":"LineString","coordinates":[[2.3522,48.8566],[2.353,48.857]]}',
+        '{"type":"MultiLineString","coordinates":[[[2.3522,48.8566],[2.353,48.857]],[[2.354,48.858],[2.355,48.859]]]}',
       geometry_confidence: "0.8",
       geometry_source: "gps_tracking",
+      observed_coverage: {
+        type: "MultiLineString",
+        coordinates: [
+          [[2.3522, 48.8566], [2.353, 48.857]],
+          [[2.354, 48.858], [2.355, 48.859]],
+        ],
+        traceCount: 2,
+        individualDistancesKm: [1.2, 0.8],
+        sources: ["gps_tracking", "gpx_import"],
+        coverageDistanceKm: null,
+        coverageVersion: "observed-traces-v1",
+      },
     };
 
     const supabaseClient = {
       rpc: mocks.rpcMock.mockResolvedValue({
         data: [
           rpcRow,
+          {
+            ...rpcRow,
+            id: "polygon-action",
+            derived_geometry_kind: "polygon",
+            derived_geometry_geojson: '{"type":"Polygon","coordinates":[[[2.35,48.85],[2.36,48.85],[2.36,48.86],[2.35,48.85]]]}',
+            observed_coverage: {
+              type: "MultiLineString",
+              coordinates: [[[2.352, 48.852], [2.353, 48.853]], [[2.354, 48.854], [2.355, 48.855]]],
+              traceCount: 2,
+              individualDistancesKm: [0.4, 0.5],
+              sources: ["gps_tracking", "gpx_import"],
+              coverageDistanceKm: null,
+              coverageVersion: "observed-traces-v1",
+            },
+          },
           { ...rpcRow, id: "pending-action", status: "pending" },
           { ...rpcRow, id: "rejected-action", status: "rejected" },
           {
@@ -366,5 +387,19 @@ describe("fetchMapActions", () => {
       }),
     );
     expectMapActionsFallbackResult(result);
+    const multiline = result.items.find((item) => item.id === "map-1");
+    const multilineView = resolveActionMapGeometryViewModel(multiline!);
+    expect(multilineView.kind).toBe("multiline");
+    expect(multilineView.multiLinePositions).toHaveLength(2);
+    expect(multilineView.kind).not.toBe("point");
+    const polygon = result.items.find((item) => item.id === "polygon-action");
+    const polygonView = resolveActionMapGeometryViewModel(polygon!);
+    expect(polygonView.kind).toBe("polygon");
+    expect(polygonView.positions.length).toBeGreaterThan(2);
+    expect(polygonView.multiLinePositions).toHaveLength(2);
+    const serializedPublic = JSON.stringify(polygon?.contract?.metadata.preparationData);
+    expect(serializedPublic).not.toContain("contributor_clerk_id");
+    expect(serializedPublic).not.toContain("mission_id");
+    expect(serializedPublic).not.toContain("technical_provenance");
   });
 });

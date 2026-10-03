@@ -19,6 +19,10 @@ const validationErrorResponseMock = vi.hoisted(() =>
   ),
 );
 const resolveActionDepartmentForPersistenceMock = vi.hoisted(() => vi.fn());
+const ensureGpxGeometryContributionEligibleMock = vi.hoisted(() => vi.fn());
+const recordGpxGeometryContributionIfPresentMock = vi.hoisted(() => vi.fn());
+const hasGpxGeometryContributionMock = vi.hoisted(() => vi.fn());
+const reconcileGeometryContributionProgressionIfNeededMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
@@ -93,6 +97,14 @@ vi.mock("@/lib/geo/action-department-resolver", () => ({
   resolveActionDepartmentForPersistence: resolveActionDepartmentForPersistenceMock,
 }));
 
+vi.mock("@/lib/actions/geometry/action-geometry-contribution-workflow", () => ({
+  ensureGpxGeometryContributionEligible: ensureGpxGeometryContributionEligibleMock,
+  hasGpxGeometryContribution: hasGpxGeometryContributionMock,
+  recordGpxGeometryContributionIfPresent: recordGpxGeometryContributionIfPresentMock,
+  reconcileGeometryContributionProgressionIfNeeded: reconcileGeometryContributionProgressionIfNeededMock,
+  stripObservedGeometryProjectionFields: vi.fn((value) => value),
+}));
+
 export {
   appendActionModerationAuditMock,
   extractActionMetadataFromNotesMock,
@@ -104,6 +116,9 @@ export {
   requireAuthenticatedAccessMock,
   resolveActionDepartmentForPersistenceMock,
   syncActionManualParticipantsMock,
+  recordGpxGeometryContributionIfPresentMock,
+  hasGpxGeometryContributionMock,
+  reconcileGeometryContributionProgressionIfNeededMock,
 };
 
 export let updateMock: ReturnType<typeof vi.fn>;
@@ -174,6 +189,10 @@ export function resetPatchRouteMocks() {
     departmentCode: null,
     departmentName: null,
   });
+  ensureGpxGeometryContributionEligibleMock.mockResolvedValue(null);
+  hasGpxGeometryContributionMock.mockReturnValue(false);
+  recordGpxGeometryContributionIfPresentMock.mockResolvedValue(null);
+  reconcileGeometryContributionProgressionIfNeededMock.mockResolvedValue(undefined);
   unauthorizedJsonResponseMock.mockReturnValue({ status: 401 });
   handleApiErrorMock.mockResolvedValue(new Response("error", { status: 500 }));
 }

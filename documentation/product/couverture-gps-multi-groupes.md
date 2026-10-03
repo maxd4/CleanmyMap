@@ -101,7 +101,8 @@ conserver et les dédupliquer au niveau de la récompense.
 
 ### 4.1. Unité canonique
 
-La cible introduit le concept métier de **contribution géographique terrain**.
+Le runtime `CURRENT` possède le concept métier de **contribution géographique terrain** ;
+la cible produit en précise l'extension aux sous-groupes.
 
 Une contribution correspond à une trace observée associée à :
 
@@ -139,7 +140,7 @@ fallback_point  → localisation seule
 Le stockage de plusieurs traces ne doit pas être comprimé dans
 `actions.preparation_data` ni dans une unique géométrie de `actions`.
 
-La cible privilégiée est une relation `1 action → N contributions
+Le contrat `CURRENT` est une relation `1 action → N contributions
 géographiques`, portée par une source de données dédiée, par exemple :
 
 ```text

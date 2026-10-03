@@ -188,8 +188,11 @@ async function preparePatchMutation({
 type PatchExecutionState = {
   auditSnapshots: ReturnType<typeof buildActionAuditSnapshots> | null;
   actionWriteSucceeded: boolean;
+  contributionPersisted: boolean;
   adminErrorStage: AdminOverrideErrorStage;
 };
+
+const PATCH_ATOMICITY = "PARTIAL_ALLOWED" as const;
 
 async function executePreparedActionUpdate({
   supabase,
@@ -245,15 +248,19 @@ async function executePreparedActionUpdate({
   if (updateResult.error) throw new Error("Action update failed");
   state.actionWriteSucceeded = hasActionUpdates && Boolean(updateResult.data);
 
-  // Keep the contribution after the Action UPDATE: an update failure must not
-  // leave an accepted contribution or a refreshed projection behind a 500.
+  state.adminErrorStage = hasGeometryContribution
+    ? "geometry_contribution"
+    : state.adminErrorStage;
   const geometryContribution = hasGeometryContribution
     ? await recordGpxGeometryContributionIfPresent({ supabase, actionId, userId, updateData })
-    : false;
+    : null;
   if (geometryContribution instanceof Response) return geometryContribution;
+  if (geometryContribution) {
+    state.contributionPersisted ||= geometryContribution.persisted;
+  }
 
   await reconcileGeometryContributionProgressionIfNeeded({
-    accepted: geometryContribution,
+    accepted: geometryContribution?.accepted ?? false,
     supabase,
     actionId,
     userId,
@@ -273,6 +280,7 @@ async function handlePatchError({
   moderationReason,
   adminErrorStage,
   actionWriteSucceeded,
+  contributionPersisted,
   actionId,
 }: {
   error: unknown;
@@ -285,6 +293,7 @@ async function handlePatchError({
   moderationReason: string | null;
   adminErrorStage: AdminOverrideErrorStage;
   actionWriteSucceeded: boolean;
+  contributionPersisted: boolean;
   actionId: string;
 }): Promise<Response> {
   if (shouldAuditModeration && auditSnapshots) {
@@ -298,7 +307,11 @@ async function handlePatchError({
       targetUserId: adminAuditTargetUserId,
       previousValue: auditSnapshots.previousValue,
       newValue: auditSnapshots.newValue,
-      details: { stage: adminErrorStage, partialMutation: actionWriteSucceeded },
+      details: {
+        stage: adminErrorStage,
+        atomicity: PATCH_ATOMICITY,
+        partialMutation: actionWriteSucceeded || contributionPersisted,
+      },
     });
   }
   return handleApiError(error, "PATCH /api/actions/:actionId");
@@ -387,18 +400,15 @@ async function executePatchRequest({
   let shouldAuditModeration = false;
   let adminAuditActorUserId = userId;
   let adminAuditTargetUserId: string | null = null;
-  let auditSnapshots: ReturnType<typeof buildActionAuditSnapshots> | null = null;
-  let actionWriteSucceeded = false;
   let moderationOperation = "edit_action";
   let moderationReason: string | null = null;
-  let adminErrorStage: AdminOverrideErrorStage = "action_update";
   const appendAdminAuditOnce = createAdminAuditOnceAppender();
   const patchState: PatchExecutionState = {
-    auditSnapshots,
-    actionWriteSucceeded,
-    adminErrorStage,
+    auditSnapshots: null,
+    actionWriteSucceeded: false,
+    contributionPersisted: false,
+    adminErrorStage: "action_update",
   };
-
   try {
     const supabase = getSupabaseServerClient(true);
     const actionContext = await loadAuthorizedPatchAction({
@@ -447,9 +457,6 @@ async function executePatchRequest({
       state: patchState,
     });
     if (body instanceof Response) return body;
-    auditSnapshots = patchState.auditSnapshots;
-    actionWriteSucceeded = patchState.actionWriteSucceeded;
-    adminErrorStage = patchState.adminErrorStage;
 
     return NextResponse.json({
       status: "ok",
@@ -457,20 +464,18 @@ async function executePatchRequest({
       actionPhase: body.actionPhase ?? current["action_phase"],
     });
   } catch (error) {
-    auditSnapshots = patchState.auditSnapshots;
-    actionWriteSucceeded = patchState.actionWriteSucceeded;
-    adminErrorStage = patchState.adminErrorStage;
     return handlePatchError({
       error,
       shouldAuditModeration,
-      auditSnapshots,
+      auditSnapshots: patchState.auditSnapshots,
       appendAdminAuditOnce,
       adminAuditActorUserId,
       adminAuditTargetUserId,
       moderationOperation,
       moderationReason,
-      adminErrorStage,
-      actionWriteSucceeded,
+      adminErrorStage: patchState.adminErrorStage,
+      actionWriteSucceeded: patchState.actionWriteSucceeded,
+      contributionPersisted: patchState.contributionPersisted,
       actionId: trimmedActionId,
     });
   }

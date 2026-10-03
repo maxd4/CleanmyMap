@@ -114,7 +114,11 @@ observation terrain ; une reconstruction réseau reste une hypothèse.
 L'identité Clerk, les RLS missions/GPS, la finalisation des métriques et le
 chargement Clerk headless avec le `tokenCache` SecureStore sont finalisés et
 restent invariants pendant le développement actif. Le socle serveur de
-contributions multi-traces et de projection `MultiLineString` est `CURRENT`.
+contributions multi-traces, de projection `MultiLineString`, de contribution
+attribuable/idempotente et de progression par action est `CURRENT`. Le handoff
+serveur de réconciliation après finalisation est idempotent ; son échec ne
+retire jamais une contribution GPS valide et peut être rejoué depuis les faits
+canoniques.
 Les sujets encore ouverts et non prêts pour la production sont `mission_actions`,
 la validation opérationnelle de l'application mobile et l'évolution future du
 produit mobile. La cible

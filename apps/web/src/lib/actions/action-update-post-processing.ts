@@ -13,6 +13,7 @@ import type {
 
 export type AdminOverrideErrorStage =
   | "action_update"
+  | "geometry_contribution"
   | "post_update"
   | "participant_sync";
 

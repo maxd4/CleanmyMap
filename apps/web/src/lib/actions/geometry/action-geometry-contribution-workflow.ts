@@ -106,10 +106,10 @@ export async function recordGpxGeometryContributionIfPresent({
   actionId: string;
   userId: string;
   updateData: Record<string, unknown>;
-}): Promise<boolean | Response> {
+}): Promise<{ accepted: boolean; persisted: boolean } | Response | null> {
   const payload = getGpxContributionPayload(updateData);
   if (!payload) {
-    return false;
+    return null;
   }
   const contribution = await recordActionGeometryContribution({
     supabase,
@@ -120,7 +120,9 @@ export async function recordGpxGeometryContributionIfPresent({
     observedDistanceKm: payload.observedDistanceKm,
     technicalProvenance: payload.technicalProvenance,
   });
-  if (contribution.accepted) return true;
+  if (contribution.accepted) {
+    return { accepted: true, persisted: Boolean(contribution.contributionId) };
+  }
 
   return NextResponse.json(
     {

@@ -15,6 +15,13 @@ const migration00006 = readFileSync(
   ),
   "utf8",
 );
+const migration00007 = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20261003000007_sanitize_actions_map_feed_coverage.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("canonical observed geometry contributor contract STATIC_CONTRACT", () => {
   it("uses one eligibility owner without role-based terrain elevation", () => {
@@ -50,5 +57,10 @@ describe("canonical observed geometry contributor contract STATIC_CONTRACT", () 
     expect(migration00006).toMatch(/a\.preparation_data -> 'observedCoverage'/i);
     expect(migration00006).not.toMatch(/action_geometry_contributions[\s\S]*contributor_clerk_id/i);
     expect(migration00006).not.toMatch(/gps_points|missions/i);
+    expect(migration00007).toMatch(/from public\.action_geometry_contributions c/i);
+    expect(migration00007).toMatch(/c\.validation_state = 'accepted'/i);
+    expect(migration00007).toMatch(/'coverageDistanceKm', null/i);
+    expect(migration00007).toMatch(/'coverageVersion', 'observed-traces-v1'/i);
+    expect(migration00007).not.toMatch(/contributor_clerk_id|mission_id|technical_provenance|gps_points|missions/i);
   });
 });
