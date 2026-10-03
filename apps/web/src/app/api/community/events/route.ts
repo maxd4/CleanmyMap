@@ -6,14 +6,17 @@ import {
  defaultCommunityEventOps,
  CLEANUP_SUPPORT_LEVELS,
  CLEANUP_WASTE_TYPES,
- parseCommunityEventDescription,
  serializeCommunityEventDescription,
 } from"@/lib/community/event-ops";
+import {
+ toCommunityEventItem,
+ type CommunityEventOrganizer,
+} from "@/lib/community/event-item";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import type { CommunityEventRow } from"@/types/database";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
-import { getCurrentUserIdentity, getRoleBadge, getProfileBadge } from"@/lib/authz";
+import { getCurrentUserIdentity } from"@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
  reserveDiscussionMessageSlot,
@@ -29,7 +32,7 @@ import {
  loadCommunityEventRsvpSummaries,
 } from"@/lib/community/event-rsvp-summaries";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
-import { getClerkService, type ClerkUserIdentity as OrganizerIdentity } from"@/lib/services/clerk";
+import { getClerkService } from"@/lib/services/clerk";
 import { enforceServerRateLimit } from"@/lib/rate-limit/server";
 import { isIsoDateString } from"@/lib/security/validation";
 import {
@@ -52,60 +55,6 @@ const COMMUNITY_EVENTS_USER_CACHE_HEADERS = {
  "Cache-Control": "private, max-age=20, stale-while-revalidate=60",
  "Vary": "Cookie",
 };
-function toEventResponseItem(
- event: CommunityEventRow,
- summary: {
-  yesCount: number;
-  maybeCount: number;
-  noCount: number;
-  totalCount: number;
-  myRsvpStatus: "yes" | "maybe" | "no" | null;
- } | null,
- organizerIdentity: OrganizerIdentity,
- currentUserId: string | null,
-) {
- const parsedDescription = parseCommunityEventDescription(event.description);
- const ops = parsedDescription.ops ?? defaultCommunityEventOps();
-
- return {
- id: event.id,
- createdAt: event.created_at,
- organizerClerkId: null,
- canEditOwnOps: Boolean(
-  currentUserId && event.organizer_clerk_id === currentUserId,
- ),
- title: event.title,
- eventDate: event.event_date,
- locationLabel: event.location_label,
- location: {
-  label: event.location_label,
-  latitude: event.latitude,
-  longitude: event.longitude,
-  source: event.location_source,
- },
- description: parsedDescription.plainDescription,
- capacityTarget: ops.capacityTarget,
- attendanceCount: ops.attendanceCount,
- postMortem: ops.postMortem,
- cleanupObjective: ops.cleanupObjective,
- cleanupZone: ops.cleanupZone,
- cleanupLogisticsNeeds: ops.cleanupLogisticsNeeds,
-  cleanupSupportLevel: ops.cleanupSupportLevel,
-  cleanupWasteTypesExpected: ops.cleanupWasteTypesExpected,
-  rsvpCounts: {
-  yes: summary?.yesCount ?? 0,
-  maybe: summary?.maybeCount ?? 0,
- no: summary?.noCount ?? 0,
- total: summary?.totalCount ?? 0,
-  },
-  myRsvpStatus: summary?.myRsvpStatus ?? null,
-  organizer: {
-   ...organizerIdentity,
-   userId: null,
-  },
-  };
-}
-
 function buildCommunityEventsCacheKey(
  limit: number,
 ): string {
@@ -114,7 +63,7 @@ function buildCommunityEventsCacheKey(
 
 type CachedCommunityEventItem = {
  event: CommunityEventRow;
- organizer: OrganizerIdentity;
+ organizer?: CommunityEventOrganizer;
  rsvpCounts: {
   yes: number;
   maybe: number;
@@ -130,8 +79,28 @@ type CachedCommunityEventsPayload = {
 type CommunityEventsSuccessPayload = {
  status: "ok";
  count: number;
- items: Array<ReturnType<typeof toEventResponseItem>>;
+ items: ReturnType<typeof toCommunityEventItem>[];
 };
+
+function toCachedCommunityEventItem(
+ event: CommunityEventRow,
+ summary: { yesCount: number; maybeCount: number; noCount: number; totalCount: number } | undefined,
+ organizerIdentity: import("@/lib/services/clerk").ClerkUserIdentity | undefined,
+): CachedCommunityEventItem {
+ const organizer = organizerIdentity
+  ? { ...organizerIdentity, userId: null }
+  : undefined;
+ return {
+  event,
+  organizer,
+  rsvpCounts: {
+   yes: summary?.yesCount ?? 0,
+   maybe: summary?.maybeCount ?? 0,
+   no: summary?.noCount ?? 0,
+   total: summary?.totalCount ?? 0,
+  },
+ } satisfies CachedCommunityEventItem;
+}
 
 async function loadCachedCommunityEvents(
  userId: string | null,
@@ -178,26 +147,13 @@ async function loadCachedCommunityEvents(
    const clerk = await getClerkService();
    const organizerById = await clerk.resolveUsers(organizerIds);
 
-   const items = events.map((event) => {
-    const organizer =
-     organizerById.get(event.organizer_clerk_id) ?? {
-      userId: null,
-      displayName:"Membre",
-      roleBadge: getRoleBadge("benevole"),
-      profileBadge: getProfileBadge("benevole"),
-     };
-    const summary = summaryByEventId.get(event.id);
-    return {
+   const items = events.map((event) =>
+    toCachedCommunityEventItem(
      event,
-     organizer,
-     rsvpCounts: {
-      yes: summary?.yesCount ?? 0,
-      maybe: summary?.maybeCount ?? 0,
-      no: summary?.noCount ?? 0,
-      total: summary?.totalCount ?? 0,
-     },
-    } satisfies CachedCommunityEventItem;
-   });
+     summaryByEventId.get(event.id),
+     organizerById.get(event.organizer_clerk_id),
+    ),
+   );
    return { items } satisfies CachedCommunityEventsPayload;
  };
  const cached = eventId
@@ -227,17 +183,21 @@ async function loadCachedCommunityEvents(
  }
 
  const items = cachedPayload.items.map(({ event, organizer, rsvpCounts }) =>
-  toEventResponseItem(
+  toCommunityEventItem(
    event,
    {
+    eventId: event.id,
     yesCount: rsvpCounts.yes,
     maybeCount: rsvpCounts.maybe,
     noCount: rsvpCounts.no,
     totalCount: rsvpCounts.total,
     myRsvpStatus: personalStatuses.get(event.id) ?? null,
    },
-   organizer,
-   userId,
+   {
+    canEditOwnOps: Boolean(userId && event.organizer_clerk_id === userId),
+    organizer,
+    organizerClerkId: null,
+   },
   ),
  );
  return { status: "ok", count: items.length, items };

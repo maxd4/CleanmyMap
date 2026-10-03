@@ -1,10 +1,8 @@
 import { requireAdminAccess } from"@/lib/authz";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 import { computeEventConversions } from"@/lib/community/engagement";
-import {
- formatCleanupWasteTypesLabel,
- parseCommunityEventDescription,
-} from"@/lib/community/event-ops";
+import { formatCleanupWasteTypesLabel } from"@/lib/community/event-ops";
+import { toCommunityEventItem } from"@/lib/community/event-item";
 import { loadCommunityEventRsvpSummaries } from"@/lib/community/event-rsvp-summaries";
 import { escapeCsvCell } from"@/lib/reports/csv";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
@@ -16,6 +14,8 @@ import { parsePositiveInteger } from "@/lib/http/query-params";
 
 export const runtime ="nodejs";
 
+type CommunityEventSupabase = ReturnType<typeof getSupabaseServerClient>;
+type CommunityEventConversion = ReturnType<typeof computeEventConversions>;
 
 function formatParisDate(date: Date): string {
  return new Intl.DateTimeFormat("en-CA", {
@@ -24,6 +24,102 @@ function formatParisDate(date: Date): string {
  month:"2-digit",
  day:"2-digit",
  }).format(date);
+}
+
+async function loadCommunityEventFunnelData(
+ supabase: CommunityEventSupabase,
+ eventId: string | null,
+ floorDate: string,
+ limit: number,
+) {
+ const eventsResult = eventId && eventId.trim() !==""
+  ? await supabase
+   .from("community_events")
+   .select(
+  "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
+   )
+   .eq("id", eventId.trim())
+   .limit(1)
+  : await supabase
+   .from("community_events")
+   .select(
+  "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
+   )
+   .gte("event_date", floorDate)
+   .order("event_date", { ascending: false })
+   .limit(limit);
+
+ if (eventsResult.error) {
+  throw new Error(eventsResult.error.message);
+ }
+
+ const events = (eventsResult.data ?? []) as CommunityEventRow[];
+ const summaries = await loadCommunityEventRsvpSummaries(supabase, {
+  eventIds: events.map((item) => item.id),
+  userId: null,
+ });
+ const summaryByEventId = new Map(summaries.map((row) => [row.eventId, row] as const));
+ const items = events.map((event) =>
+  toCommunityEventItem(
+   event,
+   summaryByEventId.get(event.id) ?? null,
+   { canEditOwnOps: false, myRsvpStatus: null },
+  ),
+ );
+ return { events, items };
+}
+
+function buildCommunityFunnelLines(conversion: CommunityEventConversion): string[] {
+ const header = [
+  "event_id",
+  "title",
+  "event_date",
+  "location_label",
+  "capacity_target",
+  "rsvp_yes",
+  "rsvp_maybe",
+  "rsvp_no",
+  "attendance_count",
+  "cleanup_objective",
+  "cleanup_zone",
+  "cleanup_logistics_needs",
+  "cleanup_support_level",
+  "cleanup_waste_types_expected",
+  "linked_actions",
+  "fill_rate_pct",
+  "rsvp_to_attendance_pct",
+  "attendance_to_action_pct",
+  "rsvp_to_action_pct",
+ ];
+ const lines = [header.join(",")];
+ for (const row of conversion.rows) {
+  lines.push(
+   [
+    row.eventId,
+    row.title,
+    row.eventDate,
+    row.locationLabel,
+    row.capacityTarget,
+    row.rsvpYes,
+    row.rsvpMaybe,
+    row.rsvpNo,
+    row.attendanceCount,
+    row.cleanupObjective,
+    row.cleanupZone,
+    row.cleanupLogisticsNeeds,
+    row.cleanupSupportLevel,
+    formatCleanupWasteTypesLabel(row.cleanupWasteTypesExpected),
+    row.linkedActions,
+    row.fillRate,
+    row.rsvpToAttendanceRate,
+    row.attendanceToActionRate,
+    row.rsvpToActionRate,
+   ]
+    .map((cell) => escapeCsvCell(cell as string | number | null))
+    .join(","),
+  );
+ }
+ return lines;
 }
 
 export async function GET(request: Request) {
@@ -46,74 +142,12 @@ export async function GET(request: Request) {
 
  try {
  const supabase = getSupabaseServerClient(true);
- const eventsResult = eventId && eventId.trim() !==""
- ? await supabase
- .from("community_events")
- .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
- )
- .eq("id", eventId.trim())
- .limit(1)
- : await supabase
- .from("community_events")
- .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
- )
- .gte("event_date", floorDate)
- .order("event_date", { ascending: false })
- .limit(limit);
-
- if (eventsResult.error) {
- return new Response("Export unavailable", {
-  status: 500,
- });
- }
-
- const events = (eventsResult.data ?? []) as CommunityEventRow[];
- const eventIds = events.map((item) => item.id);
-
- const summaries = await loadCommunityEventRsvpSummaries(supabase, {
-  eventIds,
-  userId: null,
- });
- const summaryByEventId = new Map(summaries.map((row) => [row.eventId, row] as const));
-
- const items = events.map((event) => {
- const ops = parseCommunityEventDescription(event.description).ops;
- const summary = summaryByEventId.get(event.id) ?? null;
- return {
- id: event.id,
- createdAt: event.created_at,
- organizerClerkId: event.organizer_clerk_id,
- canEditOwnOps: false,
- title: event.title,
- eventDate: event.event_date,
- locationLabel: event.location_label,
- location: {
-  label: event.location_label,
-  latitude: event.latitude,
-  longitude: event.longitude,
-  source: event.location_source,
- },
- description: parseCommunityEventDescription(event.description)
- .plainDescription,
- capacityTarget: ops.capacityTarget,
- attendanceCount: ops.attendanceCount,
- postMortem: ops.postMortem,
- cleanupObjective: ops.cleanupObjective,
- cleanupZone: ops.cleanupZone,
- cleanupLogisticsNeeds: ops.cleanupLogisticsNeeds,
- cleanupSupportLevel: ops.cleanupSupportLevel,
- cleanupWasteTypesExpected: ops.cleanupWasteTypesExpected,
- rsvpCounts: {
-  yes: summary?.yesCount ?? 0,
-  maybe: summary?.maybeCount ?? 0,
-  no: summary?.noCount ?? 0,
-  total: summary?.totalCount ?? 0,
- },
- myRsvpStatus: null,
- };
-});
+ const { events, items } = await loadCommunityEventFunnelData(
+  supabase,
+  eventId,
+  floorDate,
+  limit,
+ );
 
  const now = new Date();
  const filteredEvents = items;
@@ -129,55 +163,7 @@ export async function GET(request: Request) {
  const actions = contracts.map((contract) => toActionListItem(contract));
  const conversion = computeEventConversions(filteredEvents, actions);
 
- const header = [
-"event_id",
-"title",
-"event_date",
-"location_label",
-"capacity_target",
-"rsvp_yes",
-"rsvp_maybe",
-"rsvp_no",
-"attendance_count",
-"cleanup_objective",
-"cleanup_zone",
-"cleanup_logistics_needs",
-"cleanup_support_level",
-"cleanup_waste_types_expected",
-"linked_actions",
-"fill_rate_pct",
-"rsvp_to_attendance_pct",
-"attendance_to_action_pct",
-"rsvp_to_action_pct",
- ];
- const lines = [header.join(",")];
- for (const row of conversion.rows) {
- lines.push(
- [
- row.eventId,
- row.title,
- row.eventDate,
- row.locationLabel,
- row.capacityTarget,
- row.rsvpYes,
- row.rsvpMaybe,
- row.rsvpNo,
- row.attendanceCount,
- row.cleanupObjective,
- row.cleanupZone,
- row.cleanupLogisticsNeeds,
- row.cleanupSupportLevel,
- formatCleanupWasteTypesLabel(row.cleanupWasteTypesExpected),
- row.linkedActions,
- row.fillRate,
- row.rsvpToAttendanceRate,
- row.attendanceToActionRate,
- row.rsvpToActionRate,
- ]
- .map((cell) => escapeCsvCell(cell as string | number | null))
- .join(","),
- );
- }
+ const lines = buildCommunityFunnelLines(conversion);
 
  const filename = buildDeliverableFilename({
  rubrique:"analytics_funnel_community",
