@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   formatAvailabilitySummary,
   formatCoverageSummary,
@@ -20,6 +19,10 @@ import type {
   PublishedAnnuaireEntry,
 } from "./annuaire-types";
 import { assertPersistenceAvailable } from "@/lib/persistence/runtime-store";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+} from "@/lib/persistence/local-record-store";
 
 const STORE_FILE = join(
   process.cwd(),
@@ -41,13 +44,6 @@ type StorePayload = {
   updatedAt: string;
   records: PublishedPartnerAnnuaireEntry[];
 };
-
-function emptyStore(): StorePayload {
-  return {
-    updatedAt: new Date().toISOString(),
-    records: [],
-  };
-}
 
 function normalizePublicationStatus(
   value: unknown,
@@ -108,43 +104,12 @@ function normalizePublishedRecord(
   } as PublishedPartnerAnnuaireEntry;
 }
 
-async function ensureDirectory(filePath: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-}
-
 async function readStore(): Promise<StorePayload> {
-  try {
-    const raw = await readFile(STORE_FILE, "utf8");
-    const parsed = JSON.parse(raw) as StorePayload;
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-    return {
-      updatedAt:
-        typeof parsed.updatedAt === "string"
-          ? parsed.updatedAt
-          : new Date().toISOString(),
-      records: parsed.records.map((record) => normalizePublishedRecord(record)),
-    };
-  } catch {
-    return emptyStore();
-  }
+  return readLocalRecordStore(STORE_FILE, normalizePublishedRecord);
 }
 
 async function writeStore(store: StorePayload): Promise<void> {
-  await ensureDirectory(STORE_FILE);
-  await writeFile(
-    STORE_FILE,
-    `${JSON.stringify(
-      {
-        updatedAt: new Date().toISOString(),
-        records: store.records,
-      },
-      null,
-      2,
-    )}\n`,
-    "utf8",
-  );
+  await writeLocalRecordStore(STORE_FILE, store.records);
 }
 
 function averageParisCoordinates(arrondissements: number[]): {

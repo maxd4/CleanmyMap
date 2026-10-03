@@ -1,12 +1,15 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
   mapSupabaseRecords,
   readSupabaseRecord,
 } from "@/lib/persistence/runtime-store";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+} from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   isLegalContentReportDecisionAction,
@@ -39,14 +42,6 @@ type StorePayload = {
   updatedAt: string;
   records: LegalContentReportDecisionRecord[];
 };
-
-function emptyStore(): StorePayload {
-  return { updatedAt: new Date().toISOString(), records: [] };
-}
-
-async function ensureDirectory(filePath: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-}
 
 function normalizeSnapshot(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -172,31 +167,12 @@ function fromSupabaseRow(row: Record<string, unknown>): LegalContentReportDecisi
   });
 }
 
-async function readStore(): Promise<StorePayload> {
-  try {
-    const parsed = JSON.parse(await readFile(STORE_FILE, "utf8")) as StorePayload;
-    if (!parsed || !Array.isArray(parsed.records)) return emptyStore();
-    return {
-      updatedAt:
-        typeof parsed.updatedAt === "string"
-          ? parsed.updatedAt
-          : new Date().toISOString(),
-      records: parsed.records
-        .map((record) => normalizeRecord(record))
-        .filter((record): record is LegalContentReportDecisionRecord => Boolean(record)),
-    };
-  } catch {
-    return emptyStore();
-  }
+async function readDecisionStore(): Promise<StorePayload> {
+  return readLocalRecordStore(STORE_FILE, (record) => normalizeRecord(record));
 }
 
-async function writeStore(store: StorePayload): Promise<void> {
-  await ensureDirectory(STORE_FILE);
-  await writeFile(
-    STORE_FILE,
-    `${JSON.stringify({ updatedAt: new Date().toISOString(), records: store.records }, null, 2)}\n`,
-    "utf8",
-  );
+async function writeDecisionStore(store: StorePayload): Promise<void> {
+  await writeLocalRecordStore(STORE_FILE, store.records);
 }
 
 function toSupabaseRow(record: LegalContentReportDecisionRecord): Record<string, unknown> {
@@ -259,7 +235,7 @@ export async function listLegalContentReportDecisions(
     return mapSupabaseRecords(result.data, fromSupabaseRow);
   }
 
-  const store = await readStore();
+  const store = await readDecisionStore();
   return store.records
     .filter((record) => !reportId || record.reportId === reportId)
     .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
@@ -300,8 +276,8 @@ export async function appendLegalContentReportDecision(
     return persisted;
   }
 
-  const store = await readStore();
-  await writeStore({
+  const store = await readDecisionStore();
+  await writeDecisionStore({
     updatedAt: new Date().toISOString(),
     records: [record, ...store.records].slice(0, 8000),
   });
@@ -331,7 +307,7 @@ async function updateDecisionRecord(
     );
   }
 
-  const store = await readStore();
+  const store = await readDecisionStore();
   const index = store.records.findIndex((record) => record.id === decisionId);
   if (index < 0) return null;
   const current = store.records[index];
@@ -339,7 +315,7 @@ async function updateDecisionRecord(
   const updated = buildUpdated(current);
   const records = [...store.records];
   records[index] = updated;
-  await writeStore({ updatedAt: new Date().toISOString(), records });
+  await writeDecisionStore({ updatedAt: new Date().toISOString(), records });
   return updated;
 }
 

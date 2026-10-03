@@ -2,7 +2,6 @@ import type {
   ActionImpactLevel,
   ActionListResponse,
   ActionPhase,
-  ActionRecordType,
   ActionQualityGrade,
   ActionStatus,
   ActionPreparationData,
@@ -28,14 +27,18 @@ import type {
   ActionFormalitiesQualification,
 } from "./formalities-qualification";
 import {
+  clampInteger,
+  serializeTypes,
+  setScopeQueryParams,
+  type ActionTypeFilter,
+} from "./map/map-http-utils";
+import {
   createActionError,
   parseErrorMessage,
   parseJsonSafely,
 } from "./http-errors";
 
 export { buildMapActionsQueryString, fetchMapActions } from "./map/map-http";
-
-type ActionTypeFilter = ActionRecordType | "all" | ActionRecordType[];
 
 type FetchActionsParams = {
   status?: ActionStatus | "all";
@@ -50,61 +53,6 @@ type FetchActionsParams = {
   impact?: ActionImpactLevel;
   futureOnly?: boolean;
 };
-
-function setScopeQueryParams(
-  query: URLSearchParams,
-  params: {
-    association?: string | "all";
-    scopeKind?: string;
-    scopeValue?: string | null;
-  },
-): void {
-  if (params.scopeKind && params.scopeKind !== "global") {
-    query.set("scopeKind", params.scopeKind);
-    if (typeof params.scopeValue === "string" && params.scopeValue.trim()) {
-      query.set("scopeValue", params.scopeValue.trim());
-    }
-    return;
-  }
-
-  if (
-    typeof params.association === "string" &&
-    params.association !== "all" &&
-    params.association.trim().length > 0
-  ) {
-    query.set("association", params.association.trim());
-  }
-}
-
-function clampInteger(
-  value: number | undefined,
-  min: number,
-  max: number,
-  fallback: number,
-): number {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return fallback;
-  }
-  return Math.min(max, Math.max(min, Math.trunc(value)));
-}
-
-function serializeTypes(
-  raw: ActionTypeFilter | undefined,
-  fallback: ActionTypeFilter,
-): string {
-  const value = raw ?? fallback;
-  if (value === "all") {
-    return "all";
-  }
-  if (typeof value === "string") {
-    return value;
-  }
-  const deduped = [...new Set(value)];
-  if (deduped.length === 0) {
-    return "all";
-  }
-  return deduped.join(",");
-}
 
 type ActionCreationResponse = {
   id: string;

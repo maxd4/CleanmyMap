@@ -1,8 +1,10 @@
 import type { ActionListItem, ActionStatus } from "@/lib/actions/types";
+import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import type { ActionGeometryProvenance } from "@/lib/actions/quality/data-quality-types";
 import { parsePositiveInteger } from "@/lib/http/query-params";
 import { buildUtcDateFloor } from "@/lib/time/utc-runtime";
 import { buildDeliverableFilename } from "./deliverable-name";
+import { buildActionsExportBaseFields } from "./actions-export";
 import type { ReportScope, ReportScopeKind } from "./scope";
 
 export { parsePositiveInteger } from "@/lib/http/query-params";
@@ -42,6 +44,74 @@ export type ActionCsvRowWithDrawing = ActionCsvRow & {
   geometry_provenance?: ActionGeometryProvenance | null;
   impact_provenance?: "derived" | null;
 };
+
+type ManualDrawingToGeoJson = (
+  drawing: ActionDataContract["metadata"]["manualDrawing"],
+) => string | null;
+
+function buildManualDrawingCsvFields(
+  drawing: ActionDataContract["metadata"]["manualDrawing"],
+  manualDrawingToGeoJson: ManualDrawingToGeoJson,
+) {
+  if (!drawing) {
+    return {
+      manual_drawing_kind: null,
+      manual_drawing_points: null,
+      manual_drawing_coordinates_json: null,
+      manual_drawing_geojson: null,
+    };
+  }
+
+  return {
+    manual_drawing_kind: drawing.kind,
+    manual_drawing_points: drawing.coordinates.length,
+    manual_drawing_coordinates_json: JSON.stringify(drawing),
+    manual_drawing_geojson: manualDrawingToGeoJson(drawing),
+  };
+}
+
+function buildDataQualityCsvFields(contract: ActionDataContract) {
+  const quality = contract.dataQuality;
+  if (!quality) {
+    return {
+      data_quality_status: null,
+      data_quality_anomalies: null,
+      measures_provenance: null,
+      geometry_provenance: null,
+      impact_provenance: null,
+    };
+  }
+
+  return {
+    data_quality_status: quality.status,
+    data_quality_anomalies: quality.anomalies.map((anomaly) => anomaly.code).join("|"),
+    measures_provenance: quality.provenance.measures,
+    geometry_provenance: quality.provenance.geometry,
+    impact_provenance: quality.provenance.impact,
+  };
+}
+
+function buildActionCsvRowProjection(
+  contract: ActionDataContract,
+  manualDrawingToGeoJson: ManualDrawingToGeoJson,
+): ActionCsvRowWithDrawing {
+  return {
+    ...buildActionsExportBaseFields(contract),
+    created_at: contract.dates.createdAt ?? "",
+    record_type: contract.type,
+    source: contract.source,
+    observed_at: contract.dates.observedAt,
+    ...buildManualDrawingCsvFields(contract.metadata.manualDrawing, manualDrawingToGeoJson),
+    ...buildDataQualityCsvFields(contract),
+  };
+}
+
+export function buildActionsCsvRows(
+  contracts: ActionDataContract[],
+  manualDrawingToGeoJson: ManualDrawingToGeoJson,
+): ActionCsvRowWithDrawing[] {
+  return contracts.map((contract) => buildActionCsvRowProjection(contract, manualDrawingToGeoJson));
+}
 
 export type ReportQuery = {
   status: ActionStatus | null;

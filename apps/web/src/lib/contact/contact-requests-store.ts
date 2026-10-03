@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
@@ -9,6 +8,14 @@ import {
   readSupabaseRecord,
   replaceRecordInList,
 } from "@/lib/persistence/runtime-store";
+import {
+  normalizeOptionalTextField,
+  normalizeTextField,
+} from "@/lib/persistence/record-normalizers";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+} from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type ContactRequestType = "access" | "rectification" | "erasure" | "portability" | "other";
@@ -44,16 +51,6 @@ type StorePayload = {
 const STORE_FILE = join(process.cwd(), "data", "local-db", "contact_requests.json");
 const SUPABASE_CONTACT_REQUEST_COLUMNS =
   "id, created_at, submitted_by_user_id, submitted_by_email, request_type, subject, message, page_path, source, status, notification_error";
-
-function emptyStore(): StorePayload {
-  return { updatedAt: new Date().toISOString(), records: [] };
-}
-function normalizeTextField(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-function normalizeOptionalTextField(value: unknown): string | null {
-  return typeof value === "string" && value.trim().length > 0 ? value : null;
-}
 
 function isContactRequestType(value: unknown): value is ContactRequestType {
   return (
@@ -127,42 +124,12 @@ function fromSupabaseRow(row: Record<string, unknown>): ContactRequestRecord | n
   });
 }
 
-async function ensureDirectory(filePath: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-}
-
 async function readStore(): Promise<StorePayload> {
-  try {
-    const raw = await readFile(STORE_FILE, "utf8");
-    const parsed = JSON.parse(raw) as StorePayload;
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-    return {
-      updatedAt:
-        typeof parsed.updatedAt === "string"
-          ? parsed.updatedAt
-          : new Date().toISOString(),
-      records: parsed.records
-        .map((record) => normalizeContactRequest(record as Record<string, unknown>))
-        .filter((record): record is ContactRequestRecord => Boolean(record)),
-    };
-  } catch {
-    return emptyStore();
-  }
+  return readLocalRecordStore(STORE_FILE, normalizeContactRequest);
 }
 
 async function writeStore(store: StorePayload): Promise<void> {
-  await ensureDirectory(STORE_FILE);
-  await writeFile(
-    STORE_FILE,
-    `${JSON.stringify(
-      { updatedAt: new Date().toISOString(), records: store.records },
-      null,
-      2,
-    )}\n`,
-    "utf8",
-  );
+  await writeLocalRecordStore(STORE_FILE, store.records);
 }
 
 function toSupabaseRow(record: ContactRequestRecord): Record<string, unknown> {

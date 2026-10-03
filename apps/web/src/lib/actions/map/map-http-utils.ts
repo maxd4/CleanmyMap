@@ -1,5 +1,4 @@
 import type { ActionRecordType, ActionStatus } from "@/lib/actions/types";
-import type { ReportScopeKind } from "@/lib/reports/scope";
 
 export type ActionTypeFilter = ActionRecordType | "all" | ActionRecordType[];
 
@@ -34,7 +33,7 @@ export function setScopeQueryParams(
   query: URLSearchParams,
   params: {
     association?: string | "all";
-    scopeKind?: ReportScopeKind;
+    scopeKind?: string;
     scopeValue?: string | null;
   },
 ): void {
