@@ -50,6 +50,15 @@ export const EXPLICIT_MITIGATIONS = Object.freeze([
   }),
 ]);
 
+// Diagnostic classification only: this advisory remains blocking because no
+// patched upstream braces release exists. It is never treated as a mitigation.
+export const BLOCKED_UPSTREAM_ADVISORIES = Object.freeze({
+  "GHSA-VFJ7-8CJW-P6XM": Object.freeze({
+    packageName: "braces",
+    vulnerableVersion: "3.0.3",
+  }),
+});
+
 function normalizePath(value) {
   return String(value).replaceAll("\\", "/").replace(/^\.\//, "");
 }
@@ -92,6 +101,143 @@ function findingNodes(packageKey, vulnerability) {
     return vulnerability.nodes;
   }
   return [`node_modules/${packageKey}`];
+}
+
+function dependencyNames(packageEntry) {
+  return new Set([
+    ...Object.keys(packageEntry?.dependencies ?? {}),
+    ...Object.keys(packageEntry?.optionalDependencies ?? {}),
+    ...Object.keys(packageEntry?.peerDependencies ?? {}),
+  ]);
+}
+
+function rootAdvisoryPaths(packageKey, vulnerability, vulnerabilities, seen = new Set()) {
+  if (seen.has(packageKey)) return [];
+  const nextSeen = new Set(seen).add(packageKey);
+  const paths = [];
+
+  for (const detail of auditDetails(vulnerability)) {
+    const advisory = advisoryIdFromDetail(detail);
+    if (advisory) paths.push({ advisory, path: [packageKey] });
+  }
+
+  for (const dependencyName of (vulnerability?.via ?? []).filter((entry) => typeof entry === "string")) {
+    const dependency = vulnerabilities[dependencyName];
+    if (!dependency) continue;
+    for (const childPath of rootAdvisoryPaths(dependencyName, dependency, vulnerabilities, nextSeen)) {
+      paths.push({ advisory: childPath.advisory, path: [packageKey, ...childPath.path] });
+    }
+  }
+
+  const unique = new Map();
+  for (const advisoryPath of paths) {
+    unique.set(`${advisoryPath.advisory}|${advisoryPath.path.join("|")}`, advisoryPath);
+  }
+  return [...unique.values()];
+}
+
+function resolveInstalledDependencyPath(parentPath, dependencyName, packages) {
+  let currentPath = normalizePath(parentPath);
+  while (true) {
+    const candidate = currentPath
+      ? `${currentPath}/node_modules/${dependencyName}`
+      : `node_modules/${dependencyName}`;
+    if (packages[candidate]) return candidate;
+
+    const nestedMarker = currentPath.lastIndexOf("/node_modules/");
+    if (nestedMarker >= 0) {
+      currentPath = currentPath.slice(0, nestedMarker);
+      continue;
+    }
+    if (currentPath.startsWith("node_modules/")) {
+      currentPath = "";
+      continue;
+    }
+    return null;
+  }
+}
+
+function packageNameFromLockfilePath(packagePath) {
+  const normalized = normalizePath(packagePath);
+  const marker = normalized.lastIndexOf("/node_modules/");
+  if (marker >= 0) return normalized.slice(marker + "/node_modules/".length);
+  if (normalized.startsWith("node_modules/")) return normalized.slice("node_modules/".length);
+  return normalized.split("/").at(-1) ?? normalized;
+}
+
+function lockfilePackageLabel(packagePath, packages) {
+  const resolved = resolveLockfilePackage(packagePath, packages);
+  const entry = packages[resolved.path] ?? packages[packagePath] ?? {};
+  const name = entry.name ?? packageNameFromLockfilePath(resolved.path);
+  return resolved.version ? `${name}@${resolved.version}` : name;
+}
+
+function directParentPackages(nodePath, packages) {
+  const resolvedTarget = resolveLockfilePackage(nodePath, packages).path;
+  const parentPackages = new Set();
+  for (const [parentPath, packageEntry] of Object.entries(packages)) {
+    for (const dependencyName of dependencyNames(packageEntry)) {
+      const installedPath = resolveInstalledDependencyPath(parentPath, dependencyName, packages);
+      if (!installedPath) continue;
+      const resolvedDependency = resolveLockfilePackage(installedPath, packages).path;
+      if (resolvedDependency === resolvedTarget) {
+        parentPackages.add(lockfilePackageLabel(parentPath, packages));
+      }
+    }
+  }
+  return [...parentPackages].sort();
+}
+
+const MOBILE_RUNTIME_PACKAGES = new Set([
+  "@clerk/expo",
+  "expo",
+  "react-native",
+  "react-native-maps",
+  "@react-native/virtualized-lists",
+]);
+
+const BUILD_ONLY_PACKAGES = new Set([
+  "@expo/cli",
+  "@expo/code-signing-certificates",
+  "@expo/metro",
+  "@expo/metro-config",
+  "@expo/metro-file-map",
+  "@next/eslint-plugin-next",
+  "braces",
+  "eslint-config-next",
+  "fast-glob",
+  "metro",
+  "metro-config",
+  "metro-file-map",
+  "metro-transform-worker",
+  "micromatch",
+  "node-forge",
+]);
+
+function runtimeScopeForFinding({ packageKey, vulnerability, path, rootPaths, packages }) {
+  const scopes = new Set();
+  const namesInRootPaths = new Set(rootPaths.flatMap((rootPath) => rootPath.path));
+  const rootPackage = packages[""] ?? {};
+
+  if (MOBILE_RUNTIME_PACKAGES.has(packageKey)) scopes.add("MOBILE_RUNTIME");
+  if (BUILD_ONLY_PACKAGES.has(packageKey)
+    || [...namesInRootPaths].some((name) => BUILD_ONLY_PACKAGES.has(name))
+    || vulnerability?.dev === true
+    || Object.hasOwn(rootPackage.devDependencies ?? {}, packageKey)) {
+    scopes.add("DEV_BUILD_ONLY");
+  }
+  if (packageKey === "web" || path === "apps/web") scopes.add("WEB_RUNTIME");
+  return scopes.size > 0 ? [...scopes].sort().join(" + ") : "UNCLASSIFIED";
+}
+
+function mitigationStatusForFinding(finding) {
+  if (EXPLICIT_MITIGATIONS.some((mitigation) => mitigationMatches(finding, mitigation))) {
+    return "MITIGATED_EXACT";
+  }
+  if (finding.rootAdvisories.some((advisory) => Object.hasOwn(BLOCKED_UPSTREAM_ADVISORIES, advisory))) {
+    return "BLOCKED_BY_UPSTREAM";
+  }
+  return "UNMITIGATED";
 }
 
 function exactMitigationCoversPackage(packageKey, vulnerability, vulnerabilities, packages, seen = new Set()) {
@@ -140,10 +286,24 @@ export function extractAuditFindings(auditReport, lockfile = {}) {
       && exactMitigationCoversPackage(packageKey, vulnerability, vulnerabilities, packages)) {
       continue;
     }
+    const rootPaths = rootAdvisoryPaths(packageKey, vulnerability, vulnerabilities);
+    const rootAdvisories = [...new Set(rootPaths.map((rootPath) => rootPath.advisory))];
     for (const node of findingNodes(packageKey, vulnerability)) {
       const resolved = resolveLockfilePackage(node, packages);
+      const findingContext = {
+        rootAdvisories,
+        rootPaths,
+        parentPackages: directParentPackages(node, packages),
+        runtimeScope: runtimeScopeForFinding({
+          packageKey,
+          vulnerability,
+          path: resolved.path,
+          rootPaths,
+          packages,
+        }),
+      };
       for (const detail of auditDetails(vulnerability)) {
-        findings.push({
+        const finding = {
           advisory: advisoryIdFromDetail(detail),
           packageName: vulnerability.name ?? packageKey,
           version: resolved.version,
@@ -152,7 +312,10 @@ export function extractAuditFindings(auditReport, lockfile = {}) {
           title: detail?.title ?? `npm audit finding for ${packageKey}`,
           url: detail?.url ?? null,
           source: detail?.source ?? null,
-        });
+          ...findingContext,
+        };
+        finding.mitigationStatus = mitigationStatusForFinding(finding);
+        findings.push(finding);
       }
     }
   }
@@ -253,11 +416,34 @@ function formatFinding(finding) {
   ].join(" | ");
 }
 
+function formatFindingDiagnostics(finding) {
+  const rootAdvisories = finding.rootAdvisories.length > 0
+    ? finding.rootAdvisories.join(", ")
+    : "UNKNOWN_ADVISORY";
+  const transitivePaths = finding.rootPaths.length > 0
+    ? finding.rootPaths
+      .map((rootPath) => `${rootPath.path.join(" -> ")} -> ${rootPath.advisory}`)
+      .join(" || ")
+    : "UNKNOWN_ADVISORY";
+  return [
+    `ROOT_ADVISORY: ${rootAdvisories}`,
+    `AFFECTED_PACKAGE: ${finding.packageName}@${finding.version ?? "unknown"}`,
+    `TRANSITIVE_PATH: ${transitivePaths}`,
+    `PARENT_PACKAGES: ${finding.parentPackages.length > 0 ? finding.parentPackages.join(", ") : "none"}`,
+    `RUNTIME_SCOPE: ${finding.runtimeScope}`,
+    `MITIGATION_STATUS: ${finding.mitigationStatus}`,
+  ].join("\n");
+}
+
 export function formatAuditPolicyResult(result) {
   const lines = [
     `npm audit High/Critical findings: ${result.gatedFindings.length}`,
     `Mitigated exact exceptions: ${result.mitigated.length}`,
+    "High/Critical advisory diagnostics:",
   ];
+  for (const finding of result.gatedFindings) {
+    lines.push(formatFindingDiagnostics(finding));
+  }
   if (result.unmitigated.length > 0) {
     lines.push("Unmitigated High/Critical findings:");
     lines.push(...result.unmitigated.map(formatFinding));

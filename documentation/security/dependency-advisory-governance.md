@@ -48,6 +48,25 @@ correspond pas à ces quatre éléments reste bloquante, y compris lorsqu'elle
 concerne un package vendorisé. Le gate peut donc rester en échec si le graphe
 contient une alerte High/Critical non mitigée ; aucune baseline ne la ratifie.
 
+## Advisory racine bloquée upstream — `braces`
+
+Le diagnostic courant peut relayer plusieurs parents (`@clerk/expo`, Expo,
+Metro, React Native et `eslint-config-next`) alors que l'advisory racine est
+`[GHSA-VFJ7-8CJW-P6XM](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)` /
+`CVE-2026-93687` sur `braces@3.0.3`. La chaîne effective passe notamment par
+`micromatch@4.0.8` puis `braces@3.0.3` dans Metro et `fast-glob` dans l'outillage
+ESLint Web.
+
+L'advisory upstream indique que les versions `braces <= 3.0.3` sont affectées
+et qu'aucune version corrigée n'est publiée. Le suivi mainteneur est conservé
+dans [micromatch/braces#70](https://github.com/micromatch/braces/issues/70).
+Le scope actuel de cette racine est `DEV_BUILD_ONLY` : elle n'est pas une
+dépendance du runtime Web ou du runtime mobile publié, mais elle reste un
+finding High bloquant pour la politique de dépendances. Cette classification
+ne constitue ni une mitigation, ni une exception, ni une exclusion : aucune
+ligne de mitigation ne couvre `braces`, et le gate doit continuer à échouer
+jusqu'à une release corrigée ou un remplacement compatible démontré.
+
 La mitigation ne rend pas fiable un asset spécialement forgé par lui-même :
 Aucun asset non fiable ne doit entrer dans un build Metro. Les assets d'un
 build doivent provenir du dépôt contrôlé ou d'une source vérifiée avant
