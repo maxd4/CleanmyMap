@@ -7,6 +7,7 @@ import test from "node:test";
 
 import {
   canReuseGitNexusIndex,
+  getGitNexusStepTimeoutMs,
   isReusableGitNexusIndex,
   main,
   parseArgs,
@@ -31,6 +32,7 @@ test("GitNexus preflight fails immediately when the local runner is missing", as
     "RUNNER_PRESENT: no",
   ]);
   assert.ok(diagnostics.includes("HOST_ENVIRONMENT: GitNexus runner missing"));
+  assert.ok(diagnostics.includes("GITNEXUS_STATUS: RUNNER_MISSING"));
   assert.ok(diagnostics.includes("SETUP_CANONICAL: npm install --global gitnexus@1.6.12"));
 });
 
@@ -66,6 +68,33 @@ test("GitNexus audit captures a non-zero report for its parent checker", async (
   const result = await runGitNexusCommand(repoRoot, ["check", "--cycles", "--json"]);
   assert.equal(result.status, 1);
   assert.match(result.stdout, /cycles_found/);
+});
+
+test("a healthy GitNexus phase is not bounded by the former ten-second ceiling", async (t) => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-healthy-"));
+  const diagnostics = [];
+  t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
+
+  const result = await runGitNexusCommand(repoRoot, ["analyze", "--index-only"], {
+    runCommand: async ({ timeoutMs }) => ({
+      status: "PASS",
+      exitCode: 0,
+      stdout: "healthy analysis\n",
+      stderr: "",
+      elapsedSeconds: 21.8,
+      timedOut: false,
+      interrupted: false,
+      timeoutMs,
+    }),
+    writeDiagnostic: (line) => diagnostics.push(line),
+    writeStdout: () => {},
+    writeStderr: () => {},
+  });
+
+  assert.equal(result.status, 0);
+  assert.equal(result.timedOut, false);
+  assert.ok(getGitNexusStepTimeoutMs(["analyze", "--index-only"]) > 10_000);
+  assert.ok(diagnostics.includes("GITNEXUS_STEP_START: analyze --index-only"));
 });
 
 test("GitNexus audit emits a heartbeat and bounds a silent local runner", async (t) => {

@@ -42,14 +42,17 @@ npm run check:gitnexus-hygiene
 
 Les audits GitNexus affichent leur préflight et chaque étape sur `stderr`,
 conservent le JSON GitNexus sur `stdout`, et émettent un heartbeat toutes les
-10 secondes lorsqu'une étape ne produit rien. Chaque sous-processus est borné
-à 180 secondes : la mesure Windows locale montre qu'une reconstruction normale
-du graphe du dépôt (~4 000 fichiers) peut atteindre environ 120 secondes ; ce
-plafond laisse donc une analyse normale dépasser les quelques secondes d'un
-contrôle local tout en terminant un runner ou un stockage natif bloqué. L'index `.gitnexus` est
-réutilisé seulement si son commit, sa version GitNexus et ses métadonnées de
-configuration correspondent au candidat courant et que le worktree est propre ;
-sinon `analyze --index-only` est relancé.
+10 secondes lorsqu'une étape ne produit rien. Les plafonds sont bornés par
+étape : `analyze` 300 secondes, `status` 90 secondes et `check --cycles`
+30 secondes. Ces valeurs sont fondées sur les mesures du dépôt (~171 secondes
+pour une analyse initiale, ~53 secondes pour `status`, ~2 secondes pour les
+cycles), avec une marge explicite ; une durée supérieure à 10 secondes n'est
+donc pas un échec d'environnement. Les statuts publics distinguent
+`RUNNER_MISSING`, `HOST_ENVIRONMENT`, `TIMEOUT`, `MALFORMED_REPORT`,
+`NEW_CYCLE` et `PASS`. L'index `.gitnexus` est réutilisé seulement si son
+commit, sa version GitNexus et ses métadonnées de configuration correspondent
+au candidat courant et que le worktree est propre ; sinon
+`analyze --index-only` est relancé.
 
 Les tests Node des scripts se lancent avec :
 
