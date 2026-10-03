@@ -7,7 +7,7 @@ describe("geometry tooltip action reading", () => {
   it("renders the public geometry capsules without technical confidence", () => {
     const markup = renderToStaticMarkup(
       React.createElement(GeometryTooltipContent, {
-        title: "Parcours d'action · Longueur ~ 1 km",
+        title: "Parcours d'action",
         geometryModeLabel: "Parcours connu",
         geometryPointsLabel: "2 points",
         geometryMetricLabel: "Longueur ~ 1 km",
@@ -19,6 +19,7 @@ describe("geometry tooltip action reading", () => {
     expect(markup.match(/data-badge-shape="pill"/g)).toHaveLength(2);
     expect(markup).toContain("2 points");
     expect(markup).toContain("Longueur ~ 1 km");
+    expect(markup.match(/Longueur ~ 1 km/g)).toHaveLength(1);
     expect(markup).not.toContain("Confiance élevée");
     expect(markup).toContain("hsl(35, 90%, 50%)");
     expect(markup).not.toContain("inline-flex items-center gap-1 rounded-full border");
@@ -28,7 +29,7 @@ describe("geometry tooltip action reading", () => {
   it("distinguishes observed pollution, last action and revisit priority", () => {
     const markup = renderToStaticMarkup(
       React.createElement(GeometryTooltipContent, {
-        title: "Parcours d'action · Longueur ~ 1 km",
+        title: "Parcours d'action",
         geometryModeLabel: "Parcours connu",
         geometryPointsLabel: "2 points",
         geometryMetricLabel: "Longueur ~ 1 km",
@@ -55,7 +56,7 @@ describe("geometry tooltip action reading", () => {
   it("uses observed provenance without presenting the model baseline as an observation", () => {
     const markup = renderToStaticMarkup(
       React.createElement(GeometryTooltipContent, {
-        title: "Parcours d'action · Longueur ~ 1 km",
+        title: "Parcours d'action",
         geometryModeLabel: "Parcours connu",
         geometryPointsLabel: "2 points",
         geometryMetricLabel: "Longueur ~ 1 km",

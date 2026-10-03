@@ -1,7 +1,7 @@
 import type { ActionGeometryKind, ActionGeometryOrigin, ActionMapItem } from "../types";
 import { resolveGeometryOriginFromConfidence } from "./derived-geometry";
 
-export type GeometryPresentationVariant =
+type GeometryPresentationVariant =
   | "observed"
   | "declared"
   | "reference"

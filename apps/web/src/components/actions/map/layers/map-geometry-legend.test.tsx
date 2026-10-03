@@ -18,6 +18,9 @@ describe("MapGeometryLegend", () => {
     expect(markup).toContain(
       "Pointillé régulier : parcours reconstruit par le réseau",
     );
+    expect(markup).toContain(
+      "Pointillé léger : parcours estimé ou liaison indicative",
+    );
     expect(markup).toMatch(/Surface remplie : zone d(?:'|&#x27;)action/);
     expect(markup).toContain("Point : localisation seule");
     expect(markup).toMatch(
@@ -70,6 +73,9 @@ describe("MapGeometryLegend", () => {
     );
     expect(markup).toContain(
       "Pointillé régulier : parcours reconstruit par le réseau",
+    );
+    expect(markup).toContain(
+      "Pointillé léger : parcours estimé ou liaison indicative",
     );
     expect(markup).not.toContain("pollution projetée depuis la dernière action");
   });

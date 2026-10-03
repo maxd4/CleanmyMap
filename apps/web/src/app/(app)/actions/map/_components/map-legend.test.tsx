@@ -20,6 +20,9 @@ describe("MapLegend", () => {
     expect(markup).toContain("Lieu propre");
     expect(markup).toContain("Trash Spotter");
     expect(markup).toContain("Infrastructure");
+    expect(markup).toContain(
+      "Pointillé léger : parcours estimé ou liaison indicative",
+    );
     expect(markup).toContain("clean_place");
     expect(markup).toContain(`background-image:${expectedGradient}`);
   });
