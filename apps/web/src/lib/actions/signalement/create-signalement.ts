@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidateTag } from "next/cache";
-import { emitSpotCreated } from "@/lib/events/emit";
 import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-snapshots";
 import { trackServerEvent } from "@/lib/analytics.server";
 import { trackSpotCreated } from "@/lib/gamification/progression";
@@ -131,13 +130,6 @@ export async function createSignalement(
       { signalementId: signalement.id, userId: params.userId },
     );
   }
-
-  void emitSpotCreated({
-    spotId: String(signalement.id),
-    userId: params.userId,
-    label: signalement.label,
-    wasteType: signalement.spot_type,
-  });
 
   if (params.consentGranted) {
     await trackServerEvent(

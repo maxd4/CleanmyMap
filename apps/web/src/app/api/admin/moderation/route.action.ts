@@ -1,14 +1,11 @@
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { runSingleActionQuery } from "@/lib/actions/query";
+import { buildAdminActionUpdates } from "@/lib/admin/moderation/action-moderation-edits";
 import {
-  buildAdminActionUpdates,
-} from "@/lib/admin/moderation/action-moderation-edits";
-import { copyValidatedActionToLocalStore } from "@/lib/data/local-sync";
-import { emitActionRejected, emitActionValidated } from "@/lib/events/emit";
-import {
-  adminErrorResponse,
-  adminSuccessResponse,
-} from "@/lib/admin/response";
+  actionNotFoundResponse,
+  completeActionModeration,
+  type ActionModerationEffectDependencies,
+} from "./route.action-effects";
 import {
   type ActionEdits,
   type ActionModerationOperation,
@@ -16,10 +13,8 @@ import {
   type AppendModerationAuditOnce,
   type ModerationErrorStage,
   type ModerationSupabaseClient,
-  canonicalTargetUserId,
   hasSensitiveImpactEdit,
 } from "./route.shared";
-import { refreshActionImpactProgressionDependents } from "./route.action-progression";
 
 type ActionImpactValues = {
   createdByClerkId: string | null;
@@ -29,12 +24,10 @@ type ActionImpactValues = {
   durationMinutes: number | null;
   wasteBreakdown: unknown;
 };
-
 type ActionAuditState = ActionImpactValues & {
   status: "pending" | "approved" | "rejected" | "unknown";
   moderationVisibility: "visible" | "hidden" | "unknown";
 };
-
 type ActionAuditSnapshot = {
   status: ActionAuditState["status"];
   moderationVisibility: ActionAuditState["moderationVisibility"];
@@ -44,7 +37,6 @@ type ActionAuditSnapshot = {
   durationMinutes: number | null;
   wasteBreakdownPresent: boolean;
 };
-
 type ActionHandlerParams = {
   supabase: ModerationSupabaseClient;
   payload: ActionModerationPayload;
@@ -64,9 +56,7 @@ function isMissingActionsTableError(errorMessage: string): boolean {
 }
 
 function toNullableNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
+  if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim().length > 0) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
@@ -115,7 +105,6 @@ function normalizeActionAuditState(row: {
     row.moderation_visibility === "visible"
       ? row.moderation_visibility
       : "unknown";
-
   return {
     status,
     moderationVisibility,
@@ -150,7 +139,6 @@ async function tryLoadActionAuditState(
         .eq("id", id)
         .maybeSingle(),
     );
-
     return row ? normalizeActionAuditState(row) : null;
   } catch {
     return null;
@@ -185,18 +173,14 @@ function applyExpectedActionAuditChanges(
     edits?: ActionEdits;
   },
 ): ActionAuditState | null {
-  if (!state) {
-    return null;
-  }
-
+  if (!state) return null;
   const edits = params.edits;
   return {
     ...state,
     status: params.status,
     moderationVisibility:
       params.moderationVisibility ?? state.moderationVisibility,
-    wasteKg:
-      edits?.wasteKg !== undefined ? edits.wasteKg : state.wasteKg,
+    wasteKg: edits?.wasteKg !== undefined ? edits.wasteKg : state.wasteKg,
     cigaretteButts:
       edits?.cigaretteButts !== undefined
         ? edits.cigaretteButts
@@ -229,7 +213,6 @@ async function loadActionImpactValues(
       .eq("id", id)
       .maybeSingle(),
   );
-
   return row ? normalizeImpactValues(row) : null;
 }
 
@@ -251,13 +234,8 @@ async function updateActionModerationVisibility(
     .select("moderation_visibility, hidden_at, hidden_by_clerk_id, hidden_reason")
     .eq("id", params.id)
     .maybeSingle();
-
-  if (current.error) {
-    throw new Error("Database visibility read failed");
-  }
-  if (!current.data) {
-    return { found: false, previousValue: null, newValue: null };
-  }
+  if (current.error) throw new Error("Database visibility read failed");
+  if (!current.data) return { found: false, previousValue: null, newValue: null };
 
   const now = new Date().toISOString();
   const updates =
@@ -274,26 +252,20 @@ async function updateActionModerationVisibility(
           hidden_by_clerk_id: null,
           hidden_reason: null,
         };
-
   const updated = await supabase
     .from("actions")
     .update(updates)
     .eq("id", params.id)
     .select("moderation_visibility, hidden_at, hidden_by_clerk_id, hidden_reason")
     .maybeSingle();
-  if (updated.error) {
-    throw new Error("Database visibility update failed");
-  }
-
+  if (updated.error) throw new Error("Database visibility update failed");
   return {
     found: Boolean(updated.data),
     previousValue: {
       moderationVisibility: current.data.moderation_visibility ?? "visible",
     },
     newValue: updated.data
-      ? {
-          moderationVisibility: updated.data.moderation_visibility ?? "visible",
-        }
+      ? { moderationVisibility: updated.data.moderation_visibility ?? "visible" }
       : null,
   };
 }
@@ -313,10 +285,7 @@ async function updateActionStatus(
     .eq("id", id)
     .select("id")
     .maybeSingle();
-
-  if (!primary.error && primary.data) {
-    return { source: "actions", found: true };
-  }
+  if (!primary.error && primary.data) return { source: "actions", found: true };
   if (primary.error && !isMissingActionsTableError(primary.error.message)) {
     console.error("[Admin Moderation] Action update failed", {
       id,
@@ -362,6 +331,16 @@ export async function moderateAction({
   const previousImpactValue = shouldRefreshImpact
     ? await loadActionImpactValues(supabase, payload.id)
     : null;
+  const isApprovalTransition =
+    payload.status === "approved" &&
+    previousActionAuditState?.status !== undefined &&
+    previousActionAuditState.status !== "unknown" &&
+    previousActionAuditState.status !== "approved";
+  const isRejectionTransition =
+    payload.status === "rejected" &&
+    previousActionAuditState?.status !== undefined &&
+    previousActionAuditState.status !== "unknown" &&
+    previousActionAuditState.status !== "rejected";
 
   setErrorStage("update");
   const statusUpdate = await updateActionStatus(
@@ -378,173 +357,41 @@ export async function moderateAction({
         reason: reason ?? "",
       })
     : null;
-
   if (!statusUpdate.found) {
-    await appendAuditOnce({
+    return actionNotFoundResponse({
       operationId,
-      at: new Date().toISOString(),
       actorUserId,
-      operationType: "moderation",
-      outcome: "error",
       targetId: payload.id,
-      details: {
-        code: "not_found",
-        entityType: payload.entityType,
-        stage: "lookup",
-        ...(requiredReasonOperation
-          ? { operation: requiredReasonOperation }
-          : {}),
-        ...(reason ? { reason } : {}),
-      },
-    });
-
-    return adminErrorResponse({
-      status: 404,
-      code: "not_found",
-      message: "Action not found",
-      hint: "Verifier l'identifiant avant de relancer la moderation.",
-      operationId,
-    });
-  }
-
-  setErrorStage("post_update");
-  if (payload.status === "approved" && statusUpdate.source === "actions") {
-    const { recordRepollutionPredictionEvaluationForAction } =
-      await import("@/lib/actions/store");
-    await recordRepollutionPredictionEvaluationForAction(supabase, payload.id);
-  }
-  if (visibilityUpdate && !visibilityUpdate.found) {
-    await appendAuditOnce({
-      operationId,
-      at: new Date().toISOString(),
-      actorUserId,
-      operationType: "moderation",
-      outcome: "error",
-      targetId: payload.id,
-      details: {
-        code: "not_found",
-        entityType: payload.entityType,
-        stage: "post_update",
-        operation: requiredReasonOperation,
-        ...(reason ? { reason } : {}),
-      },
-    });
-
-    return adminErrorResponse({
-      status: 404,
-      code: "not_found",
-      message: "Action not found",
-      hint: "Verifier l'identifiant avant de relancer la moderation.",
-      operationId,
-    });
-  }
-
-  let copied = false;
-  let newImpactValue: ActionImpactValues | null = null;
-  let refreshedProgressionUserIds: string[] = [];
-  if (shouldRefreshImpact) {
-    newImpactValue = await loadActionImpactValues(supabase, payload.id);
-    refreshedProgressionUserIds = await refreshActionImpactProgressionDependents(supabase, {
-      actionId: payload.id,
-      creatorUserId:
-        newImpactValue?.createdByClerkId ??
-        previousImpactValue?.createdByClerkId ??
-        null,
-    });
-  }
-  if (
-    payload.status === "approved" &&
-    requiredReasonOperation !== "restore_after_sanction"
-  ) {
-    setErrorStage("local_sync");
-    const syncResult = await copyValidatedActionToLocalStore(
-      supabase,
-      payload.id,
-      actorUserId,
-    );
-    copied = syncResult.copied;
-
-    setErrorStage("post_update");
-    const actionDetails = await runSingleActionQuery<{
-      created_by_clerk_id: string | null;
-    }>(supabase, (query) =>
-      query.select("created_by_clerk_id").eq("id", payload.id).maybeSingle(),
-    );
-
-    emitActionValidated({
-      actionId: payload.id,
-      userId: actionDetails?.created_by_clerk_id || "",
-      moderatorId: actorUserId,
-    });
-  } else if (payload.status === "rejected") {
-    setErrorStage("post_update");
-    const actionDetails = await runSingleActionQuery<{
-      created_by_clerk_id: string | null;
-    }>(supabase, (query) =>
-      query.select("created_by_clerk_id").eq("id", payload.id).maybeSingle(),
-    );
-
-    emitActionRejected({
-      actionId: payload.id,
-      userId: actionDetails?.created_by_clerk_id || "",
-      moderatorId: actorUserId,
-    });
-  }
-
-  const loadedNewActionAuditState = await tryLoadActionAuditState(
-    supabase,
-    payload.id,
-  );
-  const newActionAuditState =
-    loadedNewActionAuditState ??
-    applyExpectedActionAuditChanges(previousActionAuditState, {
-      status: payload.status,
-      moderationVisibility: payload.moderationVisibility,
-      edits: payload.edits,
-    });
-
-  const targetUserId = canonicalTargetUserId(
-    previousActionAuditState?.createdByClerkId ??
-      previousImpactValue?.createdByClerkId ??
-      newActionAuditState?.createdByClerkId,
-  );
-
-  await appendAuditOnce({
-    operationId,
-    at: new Date().toISOString(),
-    actorUserId,
-    operationType: "moderation",
-    outcome: "success",
-    targetId: payload.id,
-    details: {
       entityType: payload.entityType,
-      targetStatus: payload.status,
-      ...(requiredReasonOperation
-        ? { operation: requiredReasonOperation }
-        : {}),
-      ...(reason ? { reason } : {}),
-      ...(targetUserId ? { targetUserId } : {}),
-      previousValue: toActionAuditSnapshot(previousActionAuditState),
-      newValue: toActionAuditSnapshot(newActionAuditState),
-      ...(refreshedProgressionUserIds.length > 0
-        ? { refreshedProgressionUserIds }
-        : {}),
-      ...(shouldRefreshImpact
-        ? { publicSurfaceSnapshotsInvalidated: true }
-        : {}),
-      sourceTable: statusUpdate.source,
-      copiedToLocalValidatedStore: copied,
-    },
-  });
+      stage: "lookup",
+      requiredReasonOperation,
+      reason,
+      appendAuditOnce,
+    });
+  }
 
-  return adminSuccessResponse({
+  const dependencies: ActionModerationEffectDependencies = {
+    tryLoadActionAuditState,
+    applyExpectedActionAuditChanges,
+    toActionAuditSnapshot,
+    loadActionImpactValues,
+  };
+  return completeActionModeration({
+    supabase,
+    payload,
     operationId,
-    payload: {
-      status: "ok",
-      entityType: "action",
-      id: payload.id,
-      sourceTable: statusUpdate.source,
-      copiedToLocalValidatedStore: copied,
-    },
+    actorUserId,
+    requiredReasonOperation,
+    reason,
+    appendAuditOnce,
+    setErrorStage,
+    previousActionAuditState,
+    previousImpactValue,
+    shouldRefreshImpact,
+    isApprovalTransition,
+    isRejectionTransition,
+    statusUpdate,
+    visibilityUpdate,
+    dependencies,
   });
 }

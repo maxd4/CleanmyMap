@@ -19,6 +19,7 @@ function renderIdentity(
   userMetadata: ComponentProps<typeof ActionStepIdentity>["userMetadata"] = {
     userId: "preview-local",
   },
+  mode: ComponentProps<typeof ActionStepIdentity>["mode"] = "all",
 ): string {
   return readableMarkup(renderToStaticMarkup(
     React.createElement(ActionStepIdentity, {
@@ -28,6 +29,7 @@ function renderIdentity(
       userMetadata,
       recordType: "action",
       hasAttemptedSubmit: false,
+      mode,
     } as ComponentProps<typeof ActionStepIdentity>),
   ));
 }
@@ -140,5 +142,45 @@ describe("ActionStepIdentity", () => {
     expect(html).not.toContain("Duo");
     expect(html).not.toContain("Trio");
     expect(html).not.toContain("Quintet");
+  });
+
+  it("keeps each compact mode limited to its responsibility", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+
+    const actionHtml = renderIdentity(form, undefined, "action");
+    expect(actionHtml).toContain("Date de l’action");
+    expect(actionHtml).toContain("Type de structure");
+    expect(actionHtml).not.toContain("Enfants");
+
+    const participantsHtml = renderIdentity(form, undefined, "participants");
+    expect(participantsHtml).toContain("Enfants");
+    expect(participantsHtml).toContain("Total calculé");
+    expect(participantsHtml).not.toContain("Date de l’action");
+
+    const durationHtml = renderIdentity(form, undefined, "duration");
+    expect(durationHtml).toContain("Durée d’action (min)");
+    expect(durationHtml).not.toContain("Rendez-vous · début");
+
+    const timeHtml = renderIdentity(form, undefined, "time");
+    expect(timeHtml).toContain("Rendez-vous · début");
+    expect(timeHtml).not.toContain("Durée d’action (min)");
+  });
+
+  it("composes organizer, participants and collection modes without cross-rendering", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+
+    const organizationHtml = renderIdentity(form, undefined, "organization");
+    expect(organizationHtml).toContain("Organisateurs associés");
+    expect(organizationHtml).toContain("Ajoutez les participants connus");
+    expect(organizationHtml).not.toContain("Environnement de collecte");
+
+    const collectionHtml = renderIdentity(form, undefined, "collection");
+    expect(collectionHtml).toContain("Environnement de collecte");
+    expect(collectionHtml).not.toContain("Organisateurs associés");
+    expect(collectionHtml).not.toContain("Ajoutez les participants connus");
+
+    const detailsHtml = renderIdentity(form, undefined, "details");
+    expect(detailsHtml).toContain("Organisateurs associés");
+    expect(detailsHtml).toContain("Environnement de collecte");
   });
 });

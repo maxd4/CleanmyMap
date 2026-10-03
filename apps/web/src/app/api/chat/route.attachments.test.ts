@@ -1,21 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { buildSupabaseMock, type ChatMessageRow } from "./route.test.helpers";
+import { buildSupabaseMock, postChatPayload, type ChatMessageRow } from "./route.test.helpers";
 import {
   getSupabaseClerkRlsClientMock,
   getSupabaseServerClientMock,
   resetChatRouteMocks,
 } from "./route.test.mocks";
-
-async function postChatPayload(payload: Record<string, unknown>) {
-  const { POST } = await import("./route");
-  return POST(
-    new Request("http://localhost/api/chat", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
-    }),
-  );
-}
 
 function configureDmSupabase(insertedMessage: ChatMessageRow) {
   const supabaseMock = buildSupabaseMock({
@@ -40,6 +29,59 @@ describe("POST /api/chat — pièces jointes DM", () => {
   beforeEach(() => {
     resetChatRouteMocks();
   });
+
+  it("rejects video attachments explicitly before any message write", async () => {
+    const response = await postChatPayload({
+      channelType: "community",
+      content: "Photo uniquement",
+      attachmentUrl: "https://cdn.example.test/clip.mp4",
+      attachmentType: "video/mp4",
+    });
+
+    expect(response.status).toBe(422);
+    const body = await response.json();
+    expect(body.details.attachmentType).toContain(
+      "Les vidéos ne sont pas prises en charge. Partagez plutôt une photo ou un lien vers la vidéo.",
+    );
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects SVG attachments explicitly before any message write", async () => {
+    const response = await postChatPayload({
+      channelType: "community",
+      content: "Image uniquement",
+      attachmentUrl: "https://cdn.example.test/payload.svg",
+      attachmentType: "image/svg+xml",
+    });
+
+    expect(response.status).toBe(422);
+    expect((await response.json()).details.attachmentType).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Ce format de pièce jointe n'est pas autorisé"),
+      ]),
+    );
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
+
+  it.each(["image/heic", "image/heif", "image/tiff"])(
+    "rejects a non-Storage image MIME %s before any message write",
+    async (attachmentType) => {
+      const response = await postChatPayload({
+        channelType: "community",
+        content: "Image à convertir",
+        attachmentUrl: "https://cdn.example.test/photo.jpg",
+        attachmentType,
+      });
+
+      expect(response.status).toBe(422);
+      expect((await response.json()).details.attachmentType).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("Ce format de pièce jointe n'est pas autorisé"),
+        ]),
+      );
+      expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     {
