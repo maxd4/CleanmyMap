@@ -3,7 +3,7 @@
   "tool": "knip",
   "toolVersion": "6.37.0",
   "config": "scripts/knip.json",
-  "sourceCommit": "e7197c81c8496ad01d089abe871c9e69f6f9f948",
+  "sourceCommit": "51bb0f55b12b6770866ec5fa8f75c8db693f13db",
   "source": "provided Knip audit snapshot",
   "findings": [
     {
@@ -34,26 +34,6 @@
       "kind": null,
       "specifier": null,
       "id": "dbfc8895419dff8a707ec91d",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/components/reports/web-document/ui.tsx",
-      "name": "ReportTable",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "ec65e2ae26692037be2f5e39",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/accueil/public-landing-action-summary.ts",
-      "name": "loadPublicLandingActionSummary",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "2f6a45a7731e379256847a29",
       "classification": "historical-debt"
     },
     {
@@ -188,26 +168,6 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/analytics/climate-context.ts",
-      "name": "CLIMATE_PROXY_FACTORS",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "6ea90fb7fd4a26727f770b35",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/analytics/climate-context.ts",
-      "name": "CLIMATE_PROXY_MODEL_VERSION",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "e09a502fff83ccc177f1205e",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
       "file": "apps/web/src/lib/authz-identity.ts",
       "name": "resolveIdentityActiveProfile",
       "namespace": null,
@@ -224,26 +184,6 @@
       "kind": null,
       "specifier": null,
       "id": "c9e88cc4d85b2a58e43ab063",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/authz.ts",
-      "name": "getProfileBadgeId",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "21f9c53320ce72bfd0e89da5",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/authz.ts",
-      "name": "getRoleBadgeId",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "890a6610a611ddccdbf01801",
       "classification": "historical-debt"
     },
     {
@@ -278,16 +218,6 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/chat/action-sharing.ts",
-      "name": "SHARE_DESTINATION_CHANNELS",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "72d0dd250be4edc94d6b7682",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
       "file": "apps/web/src/lib/chat/channels.ts",
       "name": "getDefaultChatChannelType",
       "namespace": null,
@@ -308,72 +238,12 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/chat/polls.ts",
-      "name": "CHAT_POLL_OPTION_LABEL_MAX_LENGTH",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "94cdd84f824fbb47a534455c",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/community/event-location.ts",
-      "name": "COMMUNITY_EVENT_LOCATION_SOURCES",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "05186f319972c58feb8491f2",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/community/event-ops.ts",
-      "name": "EVENT_OPS_NOTE_PREFIX",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "28bcdc88d3cb3856ed0e5730",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/community/http.ts",
-      "name": "CommunityClientError",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "8e8ae96d49c8c82224364288",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
       "file": "apps/web/src/lib/contact/contact-requests-store.ts",
       "name": "deleteContactRequest",
       "namespace": null,
       "kind": null,
       "specifier": null,
       "id": "417d8430689c71de802f73a8",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/data/local-records.ts",
-      "name": "RECORD_STATUSES",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "e649c57fb20be4a9946f9617",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/data/local-records.ts",
-      "name": "RECORD_TYPES",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "2f0171437d4a8cbeadf1b215",
       "classification": "historical-debt"
     },
     {
@@ -388,222 +258,12 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/errors/app-errors.ts",
-      "name": "normalizeErrorKindFromMessage",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "fbb36315506be29a0e1f159c",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/errors/app-errors.ts",
-      "name": "normalizeErrorOptions",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "00eae9087d26ecd489243673",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/events/bus.ts",
-      "name": "clearSubscriptions",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "8a5360568b1a6143593bec1b",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/events/bus.ts",
-      "name": "getSubscriptionCount",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "bd087dedd9a9cd316f3e8a1e",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/events/bus.ts",
-      "name": "listEventTypes",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "2f718e46af1515ea1e677fc3",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/events/bus.ts",
-      "name": "subscribe",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "1bee478827f817a2384f916a",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/events/emit.ts",
-      "name": "emitCommunityRsvpYes",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "cdb98d88352a9e298cc4ecae",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/events/emit.ts",
-      "name": "emitNewsletterSubscribed",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "7c9d7582cb38f115d9662906",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/events/emit.ts",
-      "name": "publishEvent",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "37f38723b24a4bfa0c234cce",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
       "file": "apps/web/src/lib/gamification/progression-backfill.ts",
       "name": "backfillAllProgression",
       "namespace": null,
       "kind": null,
       "specifier": null,
       "id": "9713177a19d72991c651b9b0",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/gamification/progression-tracking.ts",
-      "name": "trackActionCreated",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "16a420bffa95993fab26acae",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/gamification/progression-tracking.ts",
-      "name": "trackActionRejection",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "50046022bfad1ad8040c62de",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/gamification/progression-tracking.ts",
-      "name": "trackActionValidationBonus",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "ae52e15cafe9c6eb6f6f8d2f",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/gamification/progression.ts",
-      "name": "trackActionCreated",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "d8bee8ddfc73a2418d4d7f1c",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/gamification/progression.ts",
-      "name": "trackActionRejection",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "3d3245d09860b1fa2a8dc123",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/gamification/progression.ts",
-      "name": "trackActionValidationBonus",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "1b26891a39b7f21517ed77e9",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/gamification/progression.ts",
-      "name": "trackSpotValidationBonus",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "d544f8493c9dafea4c86e161",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/governance/governance-monthly-report.render.ts",
-      "name": "buildGovernanceMonthlyReportDownloadHeaders",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "41c7faf4eac6ae02e99785b1",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/governance/governance-monthly-report.ts",
-      "name": "buildGovernanceMonthlyReportDownloadHeaders",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "eab5c375ef8ffc0977d031dd",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/governance/governance-monthly-report.ts",
-      "name": "buildGovernanceMonthlyReportFilename",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "5c5afa83db5a6cf93884d123",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/governance/governance-monthly-report.ts",
-      "name": "GOVERNANCE_MONTHLY_REPORT_VERSION",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "ffd2db26959ba29798adf0ee",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/governance/governance-monthly-report.ts",
-      "name": "listGovernanceMonthlyReports",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "b3df18b319b1d495ebdc7501",
       "classification": "historical-debt"
     },
     {
@@ -624,36 +284,6 @@
       "kind": null,
       "specifier": null,
       "id": "ab62625f8cd183924badf231",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/legal-content-report/legal-content-report.ts",
-      "name": "LEGAL_CONTENT_REPORT_DECISION_EXECUTION_ERROR_CODES",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "cb330a7f14c3fb7575d64352",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/legal-content-report/legal-content-report.ts",
-      "name": "LEGAL_CONTENT_REPORT_DECISION_EXECUTION_STATUSES",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "2472b0fbf8d118cfecd20727",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/legal-content-report/legal-content-report.ts",
-      "name": "LEGAL_CONTENT_REPORT_MAX_URL_LENGTH",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "50596c1e6806fab38dbda175",
       "classification": "historical-debt"
     },
     {
@@ -798,32 +428,12 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/services/email.ts",
-      "name": "SERVICE_EMAIL_DAILY_LIMIT",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "64883581cf0b0387ae8d53c9",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
       "file": "apps/web/src/lib/services/upstash.ts",
       "name": "getQStashClient",
       "namespace": null,
       "kind": null,
       "specifier": null,
       "id": "e03d90e354037bcc2bfd9ae5",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/supabase/profile-avatar-storage.ts",
-      "name": "PROFILE_AVATAR_BUCKET",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "88e0923b9b6c5facfc37b818",
       "classification": "historical-debt"
     },
     {
@@ -844,16 +454,6 @@
       "kind": null,
       "specifier": null,
       "id": "cd76084a6ddbf5a348d5a5a2",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/weather/ops-weather.ts",
-      "name": "OPERATIONAL_ZONES",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "305d9cfc9e7e12c937c9dc1f",
       "classification": "historical-debt"
     },
     {
@@ -897,106 +497,6 @@
       "classification": "historical-debt"
     },
     {
-      "type": "files",
-      "file": "apps/web/src/components/admin/role-management-panel.tsx",
-      "name": "apps/web/src/components/admin/role-management-panel.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "ca53fd7dc6113df166b0c2e9",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/components/dashboard/business-alerts-panel.tsx",
-      "name": "apps/web/src/components/dashboard/business-alerts-panel.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "f8b57e5ff635f416e266f893",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/components/dashboard/funnel-conversion-panel.tsx",
-      "name": "apps/web/src/components/dashboard/funnel-conversion-panel.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "cbd8e77e82078cc332f12528",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/components/dashboard/vision-training-panel.tsx",
-      "name": "apps/web/src/components/dashboard/vision-training-panel.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "3121841a18eb050356debc26",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/components/gamification/referral-admin-tabs.tsx",
-      "name": "apps/web/src/components/gamification/referral-admin-tabs.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "b0799458a7bd52754d0303d2",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/components/newsletter/newsletter-signup.tsx",
-      "name": "apps/web/src/components/newsletter/newsletter-signup.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "a7ff2e85f8457c04147d2bc1",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/components/pilotage/kpi-windows-panel.tsx",
-      "name": "apps/web/src/components/pilotage/kpi-windows-panel.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "83f9201b7e6ae2942c73eada",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/components/pilotage/period-comparison-panel.tsx",
-      "name": "apps/web/src/components/pilotage/period-comparison-panel.tsx",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "bcd3f6b41134ebe5b0b35be3",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/lib/events/handlers.ts",
-      "name": "apps/web/src/lib/events/handlers.ts",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "ecc19971727e66900709854a",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "files",
-      "file": "apps/web/src/lib/events/init.ts",
-      "name": "apps/web/src/lib/events/init.ts",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "591f6f9b012a158acd5b8d65",
-      "classification": "historical-debt"
-    },
-    {
       "type": "types",
       "file": "apps/web/src/components/navigation/navigation-dropdown-shell-theme.ts",
       "name": "NavigationDropdownShellTokens",
@@ -1004,86 +504,6 @@
       "kind": null,
       "specifier": null,
       "id": "86ddda55709e2cfbdf3622ac",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/components/pilotage/kpi-comparison-grid.tsx",
-      "name": "KpiCardKey",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "2b70824a764d4a1202f4b80b",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/components/ui/cmm-badge.tsx",
-      "name": "CmmBadgeShape",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "36fb12bfd2160ea3b14bd8c3",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/components/ui/cmm-badge.tsx",
-      "name": "CmmBadgeSize",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "acecb49bb13d986d1a22c5b3",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/components/ui/cmm-icon.tsx",
-      "name": "CmmIconSize",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "2c8207b398a3fdd0576a017f",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/accueil/data.ts",
-      "name": "HomeCommunityActivityImage",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "8e6ff8c3eed7aa3222523961",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/accueil/data.ts",
-      "name": "HomeCommunityActivityItem",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "70d00ab2a4321c1db0ba1275",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/accueil/data.ts",
-      "name": "LandingDataAvailability",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "2bd69ef21b7814ac80192d77",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/actions/training.ts",
-      "name": "VisionTrainingMetrics",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "4fae4a25111fb87ab2e0e1ac",
       "classification": "historical-debt"
     },
     {
@@ -1168,36 +588,6 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/admin/promotion-requests-store.ts",
-      "name": "PromotionRequestTargetRole",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "ba90df9250c47f2b08834f19",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/analytics/period-comparison.ts",
-      "name": "MetricDelta",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "86f9f2194ef71a9ff44e3928",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/analytics/period-comparison.ts",
-      "name": "WindowMetrics",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "7077fec1f0d55f62dee267c9",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
       "file": "apps/web/src/lib/auth/api-authorization-contract.ts",
       "name": "ApiAuthorizationDimension",
       "namespace": null,
@@ -1218,16 +608,6 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/authz.ts",
-      "name": "AccountBadge",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "9d4ae3ef596eb03459cad095",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
       "file": "apps/web/src/lib/chat/poll-votes.ts",
       "name": "ChatPollVoteResponse",
       "namespace": null,
@@ -1244,16 +624,6 @@
       "kind": null,
       "specifier": null,
       "id": "9c17f1e078cce2e4a92bdb8a",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/clerk-supabase-token.ts",
-      "name": "ClerkSupabaseTokenOptions",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "ce7183e23554b57a10fc15d5",
       "classification": "historical-debt"
     },
     {
@@ -1284,86 +654,6 @@
       "kind": null,
       "specifier": null,
       "id": "00a89621979a443833ce45de",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/partners/annuaire-types.ts",
-      "name": "ContributionType",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "f1dd6cfab61c1d7c8416c23c",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/partners/annuaire-types.ts",
-      "name": "EntityKind",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "ec456891a0e8487c6d4ef0c6",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/pilotage/business-alerts.ts",
-      "name": "AlertSeverity",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "bb661c49b027e9f8e2ddb9e8",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/reports/csv.ts",
-      "name": "ActionCsvRow",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "076b2bd1d438fd8b3eb55a6c",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/reports/report-generation-payload.ts",
-      "name": "PdfReportChapter",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "ba9b1f144cc4f6cbf8b4389e",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/reports/report-generation-payload.ts",
-      "name": "PdfReportColumn",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "811b9b45c51cc7c8fd6971d7",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/reports/report-generation-payload.ts",
-      "name": "PdfReportData",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "e7170c66ff3e07769ff8dbe4",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/reports/report-generation-payload.ts",
-      "name": "PdfReportStat",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "003861dd42288d5ada9173e3",
       "classification": "historical-debt"
     },
     {
@@ -1554,26 +844,6 @@
       "kind": null,
       "specifier": null,
       "id": "ed315223709d3bbbb4de2ada",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/supabase/storage-usage.ts",
-      "name": "StorageUsageDeltaItem",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "b3dd92d98305dea43d81889c",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/supabase/storage-usage.ts",
-      "name": "StorageUsageLargestFile",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "e244c7d1b4cb28742eea73ea",
       "classification": "historical-debt"
     },
     {

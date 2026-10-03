@@ -2,13 +2,6 @@
   "schemaVersion": 1,
   "justifications": [
     {
-      "id": "4fae4a25111fb87ab2e0e1ac",
-      "classification": "KEEP_JUSTIFIED",
-      "reason": "capacité produit à reconnecter — la collecte d'exemples vision est active côté actions ; le type de métriques attend un owner dashboard CURRENT.",
-      "evidence": "apps/web/src/lib/actions/training.ts:VisionTrainingMetrics et recordTrainingExample ; apps/web/src/lib/env.ts:VISION_TRAINING_ENABLED ; apps/web/src/components/dashboard/vision-training-panel.tsx",
-      "reviewedRef": "02e8605a749dcf23f4cec36b417cbbf5b80a9b72"
-    },
-    {
       "id": "c61f931a449d5147e12bba86",
       "classification": "KEEP_JUSTIFIED",
       "reason": "data-contract.ts est la façade publique étroite canonique Actions et apps/web/src/lib/actions/README.md documente explicitement l’exposition de ACTION_ENTITY_TYPES.",
@@ -147,6 +140,13 @@
       "reason": "contrat public volontaire — RubriqueAvailability décrit le contrat CURRENT des rubriques et est exposé par la façade sections-registry.",
       "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueAvailability",
       "reviewedRef": "3eb9dfe8cc5258f6c60a2cde1273d73b2f465b23"
+    },
+    {
+      "id": "95cb09005e7ea775515e1359",
+      "classification": "KEEP_JUSTIFIED",
+      "reason": "contrat public volontaire — RubriqueAvailability reste un type CURRENT exposé par la façade sections-registry.",
+      "evidence": "scripts/checks/check-9c-public-facades.mjs:sectionsRegistryApi ; apps/web/src/lib/sections-registry/index.ts:RubriqueAvailability",
+      "reviewedRef": "51bb0f55b12b6770866ec5fa8f75c8db693f13db"
     },
     {
       "id": "ee5cb8ab1829fd4a821b4799",
