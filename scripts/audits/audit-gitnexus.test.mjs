@@ -153,7 +153,7 @@ test("GitNexus index reuse requires the same candidate, version, and index confi
 test("GitNexus audit reuses a valid index instead of rerunning analyze", async (t) => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-reuse-"));
   fs.writeFileSync(path.join(repoRoot, "README.md"), "fixture\n");
-  fs.writeFileSync(path.join(repoRoot, ".gitignore"), ".gitnexus/\n");
+  fs.writeFileSync(path.join(repoRoot, ".gitignore"), ".gitnexus/\n/artifacts/\n");
   execFileSync("git", ["init", "-q"], { cwd: repoRoot });
   execFileSync("git", ["add", "README.md", ".gitignore"], { cwd: repoRoot });
   execFileSync("git", ["-c", "user.name=fixture", "-c", "user.email=fixture", "commit", "-qm", "fixture"], { cwd: repoRoot });
@@ -174,6 +174,13 @@ test("GitNexus audit reuses a valid index instead of rerunning analyze", async (
   assert.equal(await main([], repoRoot, { writeDiagnostic: (line) => diagnostics.push(line) }), 0);
   assert.ok(diagnostics.includes("GITNEXUS_STEP_REUSED: analyze --index-only"));
   assert.ok(!diagnostics.includes("GITNEXUS_STEP_START: analyze --index-only"));
+  assert.ok(diagnostics.includes("GITNEXUS_STEP_START: status"));
+
+  const reusedDiagnostics = [];
+  assert.equal(await main([], repoRoot, { writeDiagnostic: (line) => reusedDiagnostics.push(line) }), 0);
+  assert.ok(reusedDiagnostics.includes("GITNEXUS_STEP_REUSED: analyze --index-only"));
+  assert.ok(reusedDiagnostics.includes("GITNEXUS_STEP_REUSED: status"));
+  assert.ok(!reusedDiagnostics.includes("GITNEXUS_STEP_START: status"));
 
   fs.appendFileSync(path.join(repoRoot, "README.md"), "dirty candidate\n");
   assert.equal(isReusableGitNexusIndex(repoRoot), false);

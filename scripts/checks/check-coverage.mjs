@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import process from "node:process";
+import { validateCoverageEvidence } from "./coverage-evidence.mjs";
 import {
   aggregateCoverage,
   assertBaselineFresh,
@@ -13,8 +14,14 @@ import {
 
 const scope = process.argv.find((argument) => argument.startsWith("--scope="))?.slice("--scope=".length) ?? "web";
 const paths = getDefaultCoveragePaths(undefined, scope);
+const fromExistingSummary = process.argv.includes("--from-existing-summary");
 
 try {
+  if (fromExistingSummary) {
+    validateCoverageEvidence();
+    console.log("ALREADY_PROVEN: web coverage summary");
+    console.log("REUSED_EVIDENCE_SOURCE: apps/web/coverage/coverage-evidence.json");
+  }
   const baseline = loadCoverageBaseline(paths.baseline);
   assertBaselineFresh(baseline, { scope });
   const current = aggregateCoverage(loadCoverageSummary(paths.summary), { scope });

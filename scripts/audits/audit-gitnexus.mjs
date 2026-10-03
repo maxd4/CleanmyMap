@@ -7,6 +7,13 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { runCommandWithTimeout } from "../ci/validation-process.mjs";
+import {
+  createCandidateFingerprint,
+  createValidationEvidenceKey,
+  getWorktreeCandidateFiles,
+  readFastValidationEvidence,
+  writeFastValidationEvidence,
+} from "../ci/validation-evidence.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const runnerRelativePath = ".gitnexus/run.cjs";
@@ -22,6 +29,83 @@ export const GITNEXUS_STEP_TIMEOUTS_MS = Object.freeze({
   cycles: 30_000,
 });
 export const GITNEXUS_HEARTBEAT_MS = 10_000;
+const GITNEXUS_ANALYZE_CHECK = Object.freeze({
+  id: "audit:gitnexus:analyze",
+  command: { executable: "node", args: [".gitnexus/run.cjs", "analyze", "--index-only"] },
+});
+const GITNEXUS_STATUS_CHECK = Object.freeze({
+  id: "audit:gitnexus:status",
+  command: { executable: "node", args: [".gitnexus/run.cjs", "status"] },
+});
+
+function gitNexusCandidateFingerprint(repoDirectory) {
+  return createCandidateFingerprint({
+    repositoryRoot: repoDirectory,
+    candidateScope: "WORKTREE",
+    changedFiles: getWorktreeCandidateFiles(repoDirectory),
+  });
+}
+
+function gitNexusEvidenceKey(repoDirectory, metadata, check) {
+  return createValidationEvidenceKey({
+    candidateFingerprint: gitNexusCandidateFingerprint(repoDirectory),
+    candidateScope: "WORKTREE",
+    check,
+    configuration: {
+      expectedVersion: GITNEXUS_EXPECTED_VERSION,
+      indexCommit: metadata?.lastCommit ?? null,
+      schemaFingerprint: metadata?.schemaFingerprint ?? null,
+      contentRetention: metadata?.contentRetention ?? null,
+      ftsProfile: metadata?.ftsProfile ?? null,
+    },
+  });
+}
+
+function hasReusableGitNexusAnalyzeEvidence(repoDirectory, metadata) {
+  if (!metadata?.lastCommit) return false;
+  const candidateFingerprint = gitNexusCandidateFingerprint(repoDirectory);
+  const entries = readFastValidationEvidence({ repositoryRoot: repoDirectory, candidateFingerprint });
+  const entry = entries.get(gitNexusEvidenceKey(repoDirectory, metadata, GITNEXUS_ANALYZE_CHECK));
+  return Boolean(
+    entry
+      && entry.checkId === GITNEXUS_ANALYZE_CHECK.id
+      && entry.indexCommit === metadata.lastCommit
+      && entry.runnerVersion === GITNEXUS_EXPECTED_VERSION,
+  );
+}
+
+function hasReusableGitNexusStatusEvidence(repoDirectory, metadata) {
+  if (!metadata?.lastCommit) return false;
+  const candidateFingerprint = gitNexusCandidateFingerprint(repoDirectory);
+  const entries = readFastValidationEvidence({ repositoryRoot: repoDirectory, candidateFingerprint });
+  const entry = entries.get(gitNexusEvidenceKey(repoDirectory, metadata, GITNEXUS_STATUS_CHECK));
+  return Boolean(
+    entry
+      && entry.checkId === GITNEXUS_STATUS_CHECK.id
+      && entry.indexCommit === metadata.lastCommit
+      && entry.runnerVersion === GITNEXUS_EXPECTED_VERSION,
+  );
+}
+
+function writeGitNexusEvidence(repoDirectory, metadata, check) {
+  if (!metadata?.lastCommit) return;
+  const candidateFingerprint = gitNexusCandidateFingerprint(repoDirectory);
+  const entries = readFastValidationEvidence({ repositoryRoot: repoDirectory, candidateFingerprint });
+  entries.set(gitNexusEvidenceKey(repoDirectory, metadata, check), {
+    checkId: check.id,
+    command: check.command,
+    indexCommit: metadata.lastCommit,
+    runnerVersion: metadata.runnerIdentity?.cliVersion ?? null,
+    passedAt: new Date().toISOString(),
+  });
+  writeFastValidationEvidence({
+    repositoryRoot: repoDirectory,
+    candidateFingerprint,
+    entries,
+  });
+}
+
+export { hasReusableGitNexusStatusEvidence };
 
 export function getGitNexusStepTimeoutMs(args) {
   if (args[0] === "analyze") return GITNEXUS_STEP_TIMEOUTS_MS.analyze;
@@ -171,12 +255,22 @@ export async function main(
 
   const startedAt = performance.now();
   const commands = [];
-  if (isReusableGitNexusIndex(repoDirectory)) {
+  const metadataBeforeAnalysis = readGitNexusIndexMetadata(repoDirectory);
+  const reusableIndex = isReusableGitNexusIndex(repoDirectory)
+    || hasReusableGitNexusAnalyzeEvidence(repoDirectory, metadataBeforeAnalysis);
+  if (reusableIndex) {
     writeDiagnostic("GITNEXUS_STEP_REUSED: analyze --index-only");
+    writeDiagnostic(`REUSED_EVIDENCE_SOURCE: validation-evidence/${gitNexusCandidateFingerprint(repoDirectory)}`);
   } else {
     commands.push(["analyze", "--index-only"]);
   }
-  commands.push(["status"]);
+  const metadataBeforeStatus = readGitNexusIndexMetadata(repoDirectory);
+  if (reusableIndex && hasReusableGitNexusStatusEvidence(repoDirectory, metadataBeforeStatus)) {
+    writeDiagnostic("GITNEXUS_STEP_REUSED: status");
+    writeDiagnostic(`REUSED_EVIDENCE_SOURCE: validation-evidence/${gitNexusCandidateFingerprint(repoDirectory)}`);
+  } else {
+    commands.push(["status"]);
+  }
   if (options.cycles) commands.push(["check", "--cycles", "--json"]);
 
   for (const args of commands) {
@@ -196,6 +290,8 @@ export async function main(
       return 130;
     }
     if (result.status !== 0) return result.status;
+    if (args[0] === "analyze") writeGitNexusEvidence(repoDirectory, readGitNexusIndexMetadata(repoDirectory), GITNEXUS_ANALYZE_CHECK);
+    if (args[0] === "status") writeGitNexusEvidence(repoDirectory, readGitNexusIndexMetadata(repoDirectory), GITNEXUS_STATUS_CHECK);
   }
 
   writeDiagnostic(`GITNEXUS_TOTAL_ELAPSED_SECONDS: ${((performance.now() - startedAt) / 1000).toFixed(1)}`);

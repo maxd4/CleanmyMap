@@ -82,6 +82,7 @@ export function runCheck(check, remainingSeconds, cwd = process.cwd()) {
 function printReport({
   plan,
   elapsedSeconds,
+  candidateFingerprint,
   passed,
   failed,
   notRun,
@@ -97,7 +98,10 @@ function printReport({
   console.log("CHECKS_PASSED:");
   for (const value of passed) console.log(`- ${value}`);
   console.log("CHECKS_REUSED:");
-  for (const value of reused) console.log(`- ${value.id}: ALREADY_PROVEN (${value.reason})`);
+  for (const value of reused) {
+    console.log(`- ${value.id}: ALREADY_PROVEN (${value.reason})`);
+    console.log(`  REUSED_EVIDENCE_SOURCE: validation-evidence/${candidateFingerprint}`);
+  }
   console.log("CHECKS_PREEXISTING_PARALLEL_FAILURE:");
   for (const value of preexisting) console.log(`- ${value}`);
   console.log("CHECKS_FAILED:");
@@ -152,7 +156,7 @@ export async function runValidationMode(
         candidateFingerprint,
         check,
         candidateScope: plan.candidateScope,
-        budgetSeconds: plan.budgetSeconds,
+        configuration: check.evidenceConfiguration,
       });
       if (plan.mode === "FULL" && fastEvidence.has(evidenceKey)) {
         reused.push({ id: check.id, reason: "preuve FAST du même candidat et de la même commande" });
@@ -215,6 +219,7 @@ export async function runValidationMode(
   const verdict = printReport({
     plan,
     elapsedSeconds,
+    candidateFingerprint,
     passed,
     failed,
     notRun,
