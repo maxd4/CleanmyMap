@@ -1,35 +1,18 @@
 import { NextResponse } from "next/server";
 import { hasValidCronAuth, isCronSecretConfigured } from "@/lib/http/cron-auth";
+import { cronUnauthorizedResponse } from "@/lib/http/cron-auth-response";
 import { captureEnvironmentalImpactDashboard } from "@/lib/environmental-impact-estimator/dashboard-capture";
+import { parseEnvironmentalImpactHistoryLimit } from "@/lib/environmental-impact-estimator/history-limit";
 
 export const runtime = "nodejs";
 
-function parseHistoryLimit(raw: string | null): number {
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) {
-    return 12;
-  }
-  return Math.min(24, Math.max(4, Math.trunc(parsed)));
-}
-
-function unauthorizedResponse() {
-  return NextResponse.json(
-    {
-      status: "error",
-      error: "Unauthorized",
-      hint: "Configure CRON_SECRET in Vercel and keep the cron route private.",
-    },
-    { status: 401 },
-  );
-}
-
 export async function GET(request: Request) {
   if (!isCronSecretConfigured() || !hasValidCronAuth(request)) {
-    return unauthorizedResponse();
+    return cronUnauthorizedResponse();
   }
 
   const url = new URL(request.url);
-  const historyLimit = parseHistoryLimit(url.searchParams.get("historyLimit"));
+  const historyLimit = parseEnvironmentalImpactHistoryLimit(url.searchParams.get("historyLimit"));
 
   try {
     const result = await captureEnvironmentalImpactDashboard({

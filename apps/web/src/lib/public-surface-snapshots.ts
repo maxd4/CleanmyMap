@@ -1,10 +1,13 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   allowLocalFileStoreFallback,
   canUseSupabaseServerPersistence,
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+} from "@/lib/persistence/local-record-store";
 import { revalidateUnifiedActionContractsCache } from "@/lib/actions/unified-source/cache-contract";
 
 export type PublicSurfaceSnapshotRecord<TPayload = unknown> = {
@@ -29,33 +32,16 @@ type PublicSurfaceSnapshotRow = {
   meta: unknown;
 };
 
-type SnapshotStore = {
-  updatedAt: string;
-  records: PublicSurfaceSnapshotRecord[];
-};
-
 const FILE_PATH = join(process.cwd(), "data", "local-db", "public_surface_snapshots.json");
 
-function emptyStore(): SnapshotStore {
-  return { updatedAt: new Date().toISOString(), records: [] };
+async function readStore<TPayload>() {
+  return readLocalRecordStore(FILE_PATH, (record) =>
+    record as unknown as PublicSurfaceSnapshotRecord<TPayload>,
+  );
 }
 
-async function readStore(): Promise<SnapshotStore> {
-  try {
-    const raw = await readFile(FILE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as SnapshotStore;
-    if (!parsed || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-    return parsed;
-  } catch {
-    return emptyStore();
-  }
-}
-
-async function writeStore(store: SnapshotStore): Promise<void> {
-  await mkdir(dirname(FILE_PATH), { recursive: true });
-  await writeFile(FILE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+async function writeStore<TPayload>(records: PublicSurfaceSnapshotRecord<TPayload>[]): Promise<void> {
+  await writeLocalRecordStore(FILE_PATH, records);
 }
 
 export function getPublicSurfaceSnapshotDate(generatedAt: string): string {
@@ -157,10 +143,7 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
     ...snapshot,
   });
 
-  await writeStore({
-    updatedAt: new Date().toISOString(),
-    records: nextRecords.slice(0, 365),
-  });
+  await writeStore(nextRecords.slice(0, 365));
 }
 
 export async function readLatestPublicSurfaceSnapshot<TPayload>(
@@ -267,5 +250,5 @@ export async function invalidatePublicSurfaceSnapshotsByRoute(
   if (records.length === store.records.length) {
     return;
   }
-  await writeStore({ updatedAt: new Date().toISOString(), records });
+  await writeStore(records);
 }

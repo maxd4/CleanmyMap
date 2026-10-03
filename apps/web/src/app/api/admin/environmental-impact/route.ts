@@ -8,16 +8,9 @@ import {
   captureEnvironmentalImpactDashboard,
   EnvironmentalImpactCaptureError,
 } from "@/lib/environmental-impact-estimator/dashboard-capture";
+import { parseEnvironmentalImpactHistoryLimit } from "@/lib/environmental-impact-estimator/history-limit";
 
 export const runtime = "nodejs";
-
-function parseHistoryLimit(raw: string | null): number {
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) {
-    return 12;
-  }
-  return Math.min(24, Math.max(4, Math.trunc(parsed)));
-}
 
 export async function POST(request: Request) {
   const access = await requireAdminAccess();
@@ -27,7 +20,7 @@ export async function POST(request: Request) {
   }
 
   const url = new URL(request.url);
-  const historyLimit = parseHistoryLimit(url.searchParams.get("historyLimit"));
+  const historyLimit = parseEnvironmentalImpactHistoryLimit(url.searchParams.get("historyLimit"));
 
   let targetId: string | undefined;
   let result: Awaited<ReturnType<typeof captureEnvironmentalImpactDashboard>>;

@@ -1,10 +1,21 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { toContractCreatePayload } from "@/lib/actions/data-contract";
 import {
-  buildCreateActionPayload,
   createInitialFormState,
 } from "@/components/actions/action-declaration/payload";
-import { buildPostActionRetentionLoopMock, createActionMock, getCurrentUserIdentityMock, invalidateSnapshotsMock, resolveActionOrganizersMock, resolveActionParticipantsMock, trackActionCreatedMock, trackServerEventMock, resetSubmitRouteMocks } from "./route.submit.test.harness";
+import {
+  buildPostActionRetentionLoopMock,
+  buildQuickPreActionPayload,
+  createActionMock,
+  invalidateSnapshotsMock,
+  mockAdminIdentity,
+  postSubmitPayload,
+  resolveActionOrganizersMock,
+  resolveActionParticipantsMock,
+  trackActionCreatedMock,
+  trackServerEventMock,
+  resetSubmitRouteMocks,
+} from "./route.submit.test.harness";
 
 describe("POST /api/actions — création standard et pré-action", () => {
   beforeEach(() => {
@@ -84,17 +95,7 @@ describe("POST /api/actions — création standard et pré-action", () => {
   }, 15000);
 
   it("keeps an admin complete action in the normal moderation flow", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({
-      userId: "user-test-1",
-      displayName: "Test User",
-      firstName: "Test",
-      username: "test@example.org",
-      currentLevel: 1,
-      actorNameOptions: ["Test User"],
-      role: "admin",
-      activeRole: "admin",
-      badges: [],
-    });
+    mockAdminIdentity({ activeRole: "admin" });
     const { POST } = await import("./route");
 
     const payload = toContractCreatePayload({
@@ -167,54 +168,8 @@ describe("POST /api/actions — création standard et pré-action", () => {
   }, 15000);
 
   it("accepts quick pre-action submissions without waste and keeps them pending", async () => {
-    const { POST } = await import("./route");
-
-    const form = createInitialFormState("Test User");
-    form.organizerType = "spontaneous";
-    form.actionTitle = "Préparation terrain";
-    form.shortDescription = "Préparer une action de nettoyage.";
-    form.communeZoneLabel = "Paris 15";
-    form.departureLocationLabel = "Place de la Mairie";
-    form.actionDate = "2026-04-22";
-    form.meetingTime = "09:00";
-    form.departureTime = "09:30";
-    form.durationMinutes = "30";
-    form.plannedObjective = "nettoyage";
-    form.placeType = "parc";
-    form.estimatedDifficulty = "moderee";
-    form.accessibility = "Accessible en transport";
-    form.safetyInstructions = "Gants recommandés.";
-    form.recommendedMaterials = "Sacs, pinces, gants";
-    form.participantMessage = "Réponse souhaitée avant la veille.";
-    form.creatorRole = "organisateur";
-    form.preparationState = "pret_a_partager";
-    form.logisticsNotes = "Point de rendez-vous confirmé.";
-    form.checklistBeforeDeparture = "Eau, gants, sacs";
-    form.volunteersCount = "1";
-
-    const payload = toContractCreatePayload(
-      buildCreateActionPayload({
-        form,
-        declarationMode: "quick",
-        effectiveManualDrawingEnabled: false,
-        drawingIsValid: false,
-        manualDrawing: null,
-        isEntrepriseMode: false,
-        photos: [],
-        visionEstimate: null,
-        userMetadata: {
-          userId: "user-test-1",
-          displayName: "Test User",
-        },
-      }),
-    );
-
-    const response = await POST(
-      new Request("http://localhost/api/actions", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
-    );
+    const payload = buildQuickPreActionPayload();
+    const response = await postSubmitPayload(payload);
 
     const body = (await response.json()) as { id?: string; error?: string };
     expect(response.status).toBe(201);
@@ -228,66 +183,10 @@ describe("POST /api/actions — création standard et pré-action", () => {
   }, 15000);
 
   it("keeps an admin pre-action in the normal moderation flow", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({
-      userId: "user-test-1",
-      displayName: "Test User",
-      firstName: "Test",
-      username: "test@example.org",
-      currentLevel: 1,
-      actorNameOptions: ["Test User"],
-      role: "admin",
-      activeRole: "admin",
-      badges: [],
-    });
+    mockAdminIdentity({ activeRole: "admin" });
 
-    const { POST } = await import("./route");
-
-    const form = createInitialFormState("Test User");
-    form.organizerType = "spontaneous";
-    form.actionTitle = "Préparation terrain";
-    form.shortDescription = "Préparer une action de nettoyage.";
-    form.communeZoneLabel = "Paris 15";
-    form.departureLocationLabel = "Place de la Mairie";
-    form.actionDate = "2026-04-22";
-    form.meetingTime = "09:00";
-    form.departureTime = "09:30";
-    form.durationMinutes = "30";
-    form.plannedObjective = "nettoyage";
-    form.placeType = "parc";
-    form.estimatedDifficulty = "moderee";
-    form.accessibility = "Accessible en transport";
-    form.safetyInstructions = "Gants recommandés.";
-    form.recommendedMaterials = "Sacs, pinces, gants";
-    form.participantMessage = "Réponse souhaitée avant la veille.";
-    form.creatorRole = "organisateur";
-    form.preparationState = "pret_a_partager";
-    form.logisticsNotes = "Point de rendez-vous confirmé.";
-    form.checklistBeforeDeparture = "Eau, gants, sacs";
-    form.volunteersCount = "1";
-
-    const payload = toContractCreatePayload(
-      buildCreateActionPayload({
-        form,
-        declarationMode: "quick",
-        effectiveManualDrawingEnabled: false,
-        drawingIsValid: false,
-        manualDrawing: null,
-        isEntrepriseMode: false,
-        photos: [],
-        visionEstimate: null,
-        userMetadata: {
-          userId: "user-test-1",
-          displayName: "Test User",
-        },
-      }),
-    );
-
-    const response = await POST(
-      new Request("http://localhost/api/actions", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
-    );
+    const payload = buildQuickPreActionPayload();
+    const response = await postSubmitPayload(payload);
 
     expect(response.status).toBe(201);
     expect(createActionMock).toHaveBeenCalledWith(
@@ -299,16 +198,7 @@ describe("POST /api/actions — création standard et pré-action", () => {
   }, 15000);
 
   it("keeps an admin-like draft action pending instead of submitting it for validation", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({
-      userId: "user-test-1",
-      displayName: "Test User",
-      firstName: "Test",
-      username: "test@example.org",
-      currentLevel: 1,
-      actorNameOptions: ["Test User"],
-      role: "admin",
-      badges: [],
-    });
+    mockAdminIdentity();
     const { POST } = await import("./route");
 
     const payload = toContractCreatePayload({

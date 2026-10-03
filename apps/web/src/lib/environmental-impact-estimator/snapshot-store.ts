@@ -1,16 +1,14 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   allowLocalFileStoreFallback,
   canUseSupabaseServerPersistence,
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+} from "@/lib/persistence/local-record-store";
 import type { EnvironmentalImpactSnapshotRecord } from "./types";
-
-type SnapshotStore = {
-  updatedAt: string;
-  records: EnvironmentalImpactSnapshotRecord[];
-};
 
 type EnvironmentalImpactSnapshotRow = {
   id: number | string;
@@ -34,26 +32,14 @@ type EnvironmentalImpactSnapshotRow = {
 const FILE_PATH = join(process.cwd(), "data", "local-db", "environmental_impact_snapshots.json");
 const SNAPSHOT_KEY = "cleanmymap-project";
 
-function emptyStore(): SnapshotStore {
-  return { updatedAt: new Date().toISOString(), records: [] };
+async function readStore() {
+  return readLocalRecordStore(FILE_PATH, (record) =>
+    record as unknown as EnvironmentalImpactSnapshotRecord,
+  );
 }
 
-async function readStore(): Promise<SnapshotStore> {
-  try {
-    const raw = await readFile(FILE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as SnapshotStore;
-    if (!parsed || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-    return parsed;
-  } catch {
-    return emptyStore();
-  }
-}
-
-async function writeStore(store: SnapshotStore): Promise<void> {
-  await mkdir(dirname(FILE_PATH), { recursive: true });
-  await writeFile(FILE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+async function writeStore(records: EnvironmentalImpactSnapshotRecord[]): Promise<void> {
+  await writeLocalRecordStore(FILE_PATH, records);
 }
 
 export function getEnvironmentalImpactSnapshotDate(generatedAt: string): string {
@@ -152,10 +138,7 @@ export async function upsertEnvironmentalImpactSnapshot(
       ),
   );
   nextRecords.unshift(snapshot);
-  await writeStore({
-    updatedAt: new Date().toISOString(),
-    records: nextRecords.slice(0, 365),
-  });
+  await writeStore(nextRecords.slice(0, 365));
 }
 
 export async function listEnvironmentalImpactSnapshots(

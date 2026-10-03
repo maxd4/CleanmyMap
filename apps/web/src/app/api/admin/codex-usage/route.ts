@@ -13,6 +13,7 @@ import {
 } from "@/lib/environmental-impact-estimator";
 import { ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION } from "@/lib/environmental-impact-estimator/constants";
 import type { EnvironmentalImpactCodexUsageWeeklySnapshotRecord } from "@/lib/environmental-impact-estimator";
+import { parseEnvironmentalImpactHistoryLimit } from "@/lib/environmental-impact-estimator/history-limit";
 
 export const runtime = "nodejs";
 
@@ -32,15 +33,6 @@ const codexUsageWeeklyInputSchema = z.object({
   notes: z.array(z.string().trim()).optional().nullable(),
   meta: z.record(z.string(), z.unknown()).optional().nullable(),
 });
-
-function parseHistoryLimit(raw: string | null): number {
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) {
-    return 12;
-  }
-
-  return Math.min(24, Math.max(4, Math.trunc(parsed)));
-}
 
 async function readRequestBody(request: Request) {
   try {
@@ -106,18 +98,41 @@ function deriveCodexTargetId(body: unknown): string {
 }
 
 const CODEX_AUDIT_OPERATION = "upsert_codex_usage_snapshot";
+type CodexAdminAccess = Extract<
+  Awaited<ReturnType<typeof requireAdminAccess>>,
+  { ok: true }
+>;
+type PreparedCodexUsageRequest =
+  | { response: Response }
+  | { access: CodexAdminAccess; historyLimit: number };
 
-export async function GET(request: Request) {
+async function prepareCodexUsageRequest(
+  request: Request,
+): Promise<PreparedCodexUsageRequest> {
   const access = await requireAdminAccess();
   if (!access.ok) {
-    return adminAccessErrorJsonResponse(access, `codex-usage-${Date.now()}`);
+    return {
+      response: adminAccessErrorJsonResponse(access, `codex-usage-${Date.now()}`),
+    };
   }
 
   const url = new URL(request.url);
-  const historyLimit = parseHistoryLimit(url.searchParams.get("historyLimit"));
+  return {
+    access,
+    historyLimit: parseEnvironmentalImpactHistoryLimit(
+      url.searchParams.get("historyLimit"),
+    ),
+  };
+}
+
+export async function GET(request: Request) {
+  const prepared = await prepareCodexUsageRequest(request);
+  if ("response" in prepared) {
+    return prepared.response;
+  }
 
   try {
-    return NextResponse.json(await buildCodexAdminPayload(historyLimit));
+    return NextResponse.json(await buildCodexAdminPayload(prepared.historyLimit));
   } catch {
     return NextResponse.json(
       {
@@ -131,13 +146,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const access = await requireAdminAccess();
-  if (!access.ok) {
-    return adminAccessErrorJsonResponse(access, `codex-usage-${Date.now()}`);
+  const prepared = await prepareCodexUsageRequest(request);
+  if ("response" in prepared) {
+    return prepared.response;
   }
-
-  const url = new URL(request.url);
-  const historyLimit = parseHistoryLimit(url.searchParams.get("historyLimit"));
+  const { access, historyLimit } = prepared;
 
   const operationId = `codex-usage-${randomUUID()}`;
   let targetId = "codex-unknown";

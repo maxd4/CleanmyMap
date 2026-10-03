@@ -1,4 +1,4 @@
-import { resolveNumber, round6 } from "./utils";
+import { getTrafficSignalDetail, resolveNumber, round6 } from "./utils";
 import type {
   EnvironmentalImpactInfrastructureInput,
   EnvironmentalImpactScopeInput,
@@ -12,10 +12,6 @@ interface UsageProfileContext {
   userInput: EnvironmentalImpactScopeInput | null | undefined;
   usageInput: EnvironmentalImpactInfrastructureInput["usage"] | null;
   pushProvenance: (item: EnvironmentalImpactUsageProvenanceItem) => void;
-}
-
-function getTrafficSignalDetail(label: string): string {
-  return `Dérivé du signal site ${label}`;
 }
 
 function getStorageDetail(hasSignals: boolean): string {

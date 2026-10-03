@@ -63,6 +63,10 @@ export function resolveNumber(value: number | null | undefined, fallback: number
   return hasNumericInput(value) ? value : fallback;
 }
 
+export function getTrafficSignalDetail(label: string): string {
+  return `Dérivé du signal site ${label}`;
+}
+
 export function clampUsageMultiplier(value: number): number {
   return Math.max(0.1, value);
 }

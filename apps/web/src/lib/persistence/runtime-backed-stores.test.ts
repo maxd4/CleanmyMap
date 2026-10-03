@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createRuntimeStoreModule } from "./__tests__/runtime-store-mock";
+import {
+  configureSupabaseTestClient,
+  type SupabaseTestResult,
+} from "./__tests__/supabase-test-harness";
 
 const canUseSupabaseServerPersistenceMock = vi.hoisted(() => vi.fn());
 const assertPersistenceAvailableMock = vi.hoisted(() => vi.fn());
@@ -28,41 +32,8 @@ vi.mock("@/lib/partners/published-annuaire-entries-store", () => ({
   appendPublishedPartnerAnnuaireEntry: appendPublishedPartnerAnnuaireEntryMock,
 }));
 
-type SupabaseResult = {
-  data: unknown;
-  error: { message: string } | null;
-  count?: number | null;
-};
-
-function makeQuery(result: SupabaseResult) {
-  const query: Record<string, unknown> & {
-    then: (resolve: (value: SupabaseResult) => unknown, reject?: (reason: unknown) => unknown) => Promise<unknown>;
-  } = {
-    insert: vi.fn(() => query),
-    update: vi.fn(() => query),
-    delete: vi.fn(() => query),
-    select: vi.fn(() => query),
-    order: vi.fn(() => query),
-    limit: vi.fn(() => query),
-    eq: vi.fn(() => query),
-    single: vi.fn(async () => result),
-    maybeSingle: vi.fn(async () => result),
-    then: (resolve, reject) => Promise.resolve(result).then(resolve, reject),
-  };
-  return query;
-}
-
-function configureSupabase(responses: Record<string, SupabaseResult[]>) {
-  getSupabaseServerClientMock.mockReturnValue({
-    from: vi.fn((table: string) => {
-      const result = responses[table]?.shift();
-      if (!result) {
-        throw new Error(`Unexpected Supabase table access: ${table}`);
-      }
-      return makeQuery(result);
-    }),
-  });
-}
+const configureSupabase = (responses: Record<string, SupabaseTestResult[]>) =>
+  configureSupabaseTestClient(getSupabaseServerClientMock, responses);
 
 const contactRow = {
   id: "contact-1",

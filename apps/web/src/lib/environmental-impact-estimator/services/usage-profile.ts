@@ -11,6 +11,7 @@ import {
   hasScopeSignalInput,
   hasNumericInput,
   hasUsageInput,
+  getTrafficSignalDetail,
   resolveNumber,
   round6,
 } from "./utils";
@@ -33,9 +34,6 @@ function getTrafficPageViewsDetail(hasSignals: boolean): string {
 }
 function getTrafficPageViewsSource(hasSignals: boolean): EnvironmentalImpactUsageProvenanceSource {
   return hasSignals ? "derived" : "reference";
-}
-function getTrafficSignalDetail(label: string): string {
-  return `Dérivé du signal site ${label}`;
 }
 function getTrafficFallbackDetail(): string {
   return "Dérivé des pages vues du site";

@@ -1,23 +1,13 @@
 import { NextResponse } from "next/server";
 import { generateAndPersistPublicImpactSnapshot } from "@/lib/impact/public-impact-snapshot";
 import { hasValidCronAuth, isCronSecretConfigured } from "@/lib/http/cron-auth";
+import { cronUnauthorizedResponse } from "@/lib/http/cron-auth-response";
 
 export const runtime = "nodejs";
 
-function unauthorizedResponse() {
-  return NextResponse.json(
-    {
-      status: "error",
-      error: "Unauthorized",
-      hint: "Configure CRON_SECRET in Vercel and keep the cron route private.",
-    },
-    { status: 401 },
-  );
-}
-
 export async function GET(request: Request) {
   if (!isCronSecretConfigured() || !hasValidCronAuth(request)) {
-    return unauthorizedResponse();
+    return cronUnauthorizedResponse();
   }
 
   const force = new URL(request.url).searchParams.get("force") === "true";
