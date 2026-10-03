@@ -98,6 +98,23 @@ function resolveViews(
   });
 }
 
+function expectActionStateBase(
+  state: CurrentPlaceState | null | undefined,
+  action: ReturnType<typeof buildRecord>,
+) {
+  expect(state).toMatchObject({
+    derivedPlaceKey: `derived-place:${action.id}`,
+    date: action.dates.observedAt,
+    lastActionDate: action.dates.observedAt,
+    recordId: action.id,
+    recordSource: "actions",
+    record: action,
+    historicalActions: [action],
+    historicalAction: action,
+    label: action.location.label,
+  });
+}
+
 describe("current place state resolver", () => {
   it("resolves observed and projected-today views from the same action", () => {
     const action = buildRecord({ id: "action-history", day: 0 });
@@ -105,6 +122,8 @@ describe("current place state resolver", () => {
 
     expect(views).toHaveLength(1);
     expect(views[0].observed?.source).toBe("observed");
+    expectActionStateBase(views[0].observed, action);
+    expectActionStateBase(views[0].projectedToday, action);
     expect(views[0].observed?.score).toBe(70);
     expect(views[0].observed?.scoreKind).toBe("measured");
     expect(views[0].projectedToday?.source).toBe("projected");
