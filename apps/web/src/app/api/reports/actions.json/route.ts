@@ -1,31 +1,32 @@
 import * as actionsExportRoute from "@/lib/reports/actions-export-route";
+import { requireAdminAccess } from "@/lib/authz";
+import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
 
-export const GET = actionsExportRoute.withActionsExportRequest(async ({
-  query,
-  types,
-  exportDate,
-  cacheDay,
-  supabase,
-}) => {
+export async function GET(request: Request) {
+  const access = await requireAdminAccess();
+  if (!access.ok) return adminAccessErrorJsonResponse(access);
+
+  const exportContext = actionsExportRoute.prepareActionsExportContext(request);
+
   const { filename: jsonFilename, headers: responseHeaders } =
     actionsExportRoute.buildDeliverableHeaders({
       rubrique: "export_actions",
       extension: "json",
       contentType: "application/json; charset=utf-8",
-      date: exportDate,
+      date: exportContext.exportDate,
       cacheControl: actionsExportRoute.ACTIONS_EXPORT_RESPONSE_CACHE_CONTROL,
     });
   const cachedJsonPath = actionsExportRoute.buildActionsExportCachePath({
     format: "json",
-    cacheDay,
-    query,
-    types,
+    cacheDay: exportContext.cacheDay,
+    query: exportContext.query,
+    types: exportContext.types,
   });
   try {
     const cachedRedirect = await actionsExportRoute.createActionsExportRedirect({
-      supabase,
+      supabase: exportContext.supabase,
       path: cachedJsonPath,
       filename: jsonFilename,
       cacheControl: actionsExportRoute.ACTIONS_EXPORT_RESPONSE_CACHE_CONTROL,
@@ -36,7 +37,7 @@ export const GET = actionsExportRoute.withActionsExportRequest(async ({
     }
 
     const { contracts: filteredContracts, isTruncated, sourceHealth } =
-      await actionsExportRoute.loadActionsExportContracts(supabase, query, types);
+      await actionsExportRoute.loadActionsExportContractsForContext(exportContext);
 
     const enrichedItems = filteredContracts.map((contract) => ({
       ...actionsExportRoute.buildActionsExportBaseFields(contract),
@@ -49,15 +50,15 @@ export const GET = actionsExportRoute.withActionsExportRequest(async ({
     }));
 
     const payload = {
-      exportedAt: exportDate.toISOString(),
-      query,
+      exportedAt: exportContext.exportDate.toISOString(),
+      query: exportContext.query,
       count: enrichedItems.length,
       isTruncated,
       sourceHealth,
       items: enrichedItems,
     };
     const json = `${JSON.stringify(payload, null, 2)}\n`;
-    const uploadResult = await supabase.storage
+    const uploadResult = await exportContext.supabase.storage
       .from(actionsExportRoute.ACTIONS_EXPORT_BUCKET)
       .upload(cachedJsonPath, new Blob([json], { type: "application/json;charset=utf-8" }), {
         upsert: true,
@@ -66,7 +67,7 @@ export const GET = actionsExportRoute.withActionsExportRequest(async ({
 
     if (!uploadResult.error) {
       const signedRedirect = await actionsExportRoute.createActionsExportRedirect({
-        supabase,
+        supabase: exportContext.supabase,
         path: cachedJsonPath,
         filename: jsonFilename,
         cacheControl: actionsExportRoute.ACTIONS_EXPORT_RESPONSE_CACHE_CONTROL,
@@ -92,4 +93,4 @@ export const GET = actionsExportRoute.withActionsExportRequest(async ({
   } catch {
     return new Response("Export unavailable", { status: 500 });
   }
-});
+}
