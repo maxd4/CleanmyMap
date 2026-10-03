@@ -30,6 +30,7 @@ Point d'entrée de la documentation produit CleanMyMap.
 
 - `SCIENTIFIC_PROTOCOL.md` ;
 - `methodologie-carte-actions.md` — lecture de la carte d'actions, score constaté, projection de re-pollution, couleurs, géométries et limites ;
+- [`couverture-gps-multi-groupes.md`](./couverture-gps-multi-groupes.md) — spécification produit `PLAN / TARGET` de la couverture GPS multi-groupes et des contributions cartographiques ; elle ne décrit pas un contrat `CURRENT` ;
 - documentation de méthodologie et impact dans les dossiers techniques ou les fiches de page concernées.
 
 ### Vocabulaire
