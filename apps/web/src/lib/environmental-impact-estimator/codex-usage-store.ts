@@ -1,10 +1,14 @@
 import { addDays, startOfWeek } from "date-fns";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   allowLocalFileStoreFallback,
   canUseSupabaseServerPersistence,
 } from "@/lib/persistence/runtime-store";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+  type LocalRecordStorePayload,
+} from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION } from "./constants";
 import { parseCivilDateAsUtc } from "@/lib/time/civil-date";
@@ -15,10 +19,9 @@ import type {
   EnvironmentalImpactCodexUsageWeeklySnapshotRecord,
 } from "./types";
 
-type CodexUsageStore = {
-  updatedAt: string;
-  records: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[];
-};
+type CodexUsageStore = LocalRecordStorePayload<
+  EnvironmentalImpactCodexUsageWeeklySnapshotRecord
+>;
 
 const FILE_PATH = join(process.cwd(), "data", "local-db", "codex_usage_weekly_snapshots.json");
 const SNAPSHOT_KEY = "cleanmymap-codex-usage";
@@ -56,26 +59,12 @@ function toIsoDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function emptyStore(): CodexUsageStore {
-  return { updatedAt: new Date().toISOString(), records: [] };
-}
-
 async function readStore(): Promise<CodexUsageStore> {
-  try {
-    const raw = await readFile(FILE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as CodexUsageStore;
-    if (!parsed || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-    return parsed;
-  } catch {
-    return emptyStore();
-  }
+  return readLocalRecordStore(FILE_PATH, normalizeCodexUsageSnapshotRecord);
 }
 
 async function writeStore(store: CodexUsageStore): Promise<void> {
-  await mkdir(dirname(FILE_PATH), { recursive: true });
-  await writeFile(FILE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+  await writeLocalRecordStore(FILE_PATH, store.records);
 }
 
 function toNonNegativeNumber(value: number | null | undefined): number {
@@ -254,6 +243,36 @@ function normalizeCodexUsageSnapshotRow(
       : [],
     meta: (row.meta ?? {}) as Record<string, unknown>,
   };
+}
+
+function normalizeCodexUsageSnapshotRecord(
+  record: Record<string, unknown>,
+): EnvironmentalImpactCodexUsageWeeklySnapshotRecord | null {
+  const stringFields = ["id", "snapshotKey", "weekStart", "weekEnd", "generatedAt", "version"] as const;
+  if (stringFields.some((field) => typeof record[field] !== "string")) {
+    return null;
+  }
+
+  const source = record.source;
+  if (!["manual", "imported", "reconstructed"].includes(source as string)) {
+    return null;
+  }
+
+  const numericFields = ["sessionCount", "conversationCount", "turnCount", "toolCallCount", "shellCommandCount", "fileTouchCount", "testRunCount", "changedLineCount", "activeMinutes", "confidencePercent", "uncertaintyPercent"] as const;
+  if (numericFields.some((field) => typeof record[field] !== "number" || !Number.isFinite(record[field]))) {
+    return null;
+  }
+
+  const estimatedKgCo2eProxy = record.estimatedKgCo2eProxy;
+  if (estimatedKgCo2eProxy !== null && (typeof estimatedKgCo2eProxy !== "number" || !Number.isFinite(estimatedKgCo2eProxy))) {
+    return null;
+  }
+
+  if (!Array.isArray(record.notes) || !record.notes.every((note) => typeof note === "string") || !record.meta || typeof record.meta !== "object" || Array.isArray(record.meta)) {
+    return null;
+  }
+
+  return record as unknown as EnvironmentalImpactCodexUsageWeeklySnapshotRecord;
 }
 
 export async function getCodexUsageWeeklySnapshot(

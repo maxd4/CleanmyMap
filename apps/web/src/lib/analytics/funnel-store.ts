@@ -3,8 +3,7 @@
  * PERMANENCE : Ces données sont stockées dans Supabase (table `funnel_events`) en production.
  * FALLBACK : Fichier JSON local en développement uniquement.
  */
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   allowLocalFileStoreFallback,
   assertPersistenceAvailable,
@@ -12,6 +11,11 @@ import {
   getRecentTimeWindow,
   prependBoundedRecord,
 } from "@/lib/persistence/runtime-store";
+import {
+  readLocalRecordStore,
+  writeLocalRecordStore,
+  type LocalRecordStorePayload,
+} from "@/lib/persistence/local-record-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type FunnelStep = "view_new" | "page_view" | "start_form" | "submit_success";
@@ -26,10 +30,7 @@ export type FunnelEvent = {
   meta?: Record<string, unknown>;
 };
 
-type FunnelStore = {
-  updatedAt: string;
-  records: FunnelEvent[];
-};
+type FunnelStore = LocalRecordStorePayload<FunnelEvent>;
 
 const FILE_PATH = join(process.cwd(), "data", "local-db", "funnel_events.json");
 
@@ -64,26 +65,36 @@ function shouldFallbackToLocalStoreForFunnelEvents(error: unknown): boolean {
   return allowLocalFileStoreFallback();
 }
 
-function emptyStore(): FunnelStore {
-  return { updatedAt: new Date().toISOString(), records: [] };
-}
-
 async function readStore(): Promise<FunnelStore> {
-  try {
-    const raw = await readFile(FILE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as FunnelStore;
-    if (!parsed || !Array.isArray(parsed.records)) {
-      return emptyStore();
-    }
-    return parsed;
-  } catch {
-    return emptyStore();
-  }
+  return readLocalRecordStore(FILE_PATH, normalizeFunnelEvent);
 }
 
 async function writeStore(store: FunnelStore): Promise<void> {
-  await mkdir(dirname(FILE_PATH), { recursive: true });
-  await writeFile(FILE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+  await writeLocalRecordStore(FILE_PATH, store.records);
+}
+
+function normalizeFunnelEvent(record: Record<string, unknown>): FunnelEvent | null {
+  const step = record.step;
+  const mode = record.mode;
+  const userId = record.userId;
+  if (
+    typeof record.at !== "string" ||
+    typeof record.sessionId !== "string" ||
+    (userId !== null && typeof userId !== "string") ||
+    (step !== "view_new" && step !== "page_view" && step !== "start_form" && step !== "submit_success") ||
+    (mode !== "quick" && mode !== "complete")
+  ) {
+    return null;
+  }
+
+  if (
+    record.meta !== undefined &&
+    (!record.meta || typeof record.meta !== "object" || Array.isArray(record.meta))
+  ) {
+    return null;
+  }
+
+  return record as unknown as FunnelEvent;
 }
 
 function throwIfFunnelPersistenceCannotFallback(error: unknown): void {
