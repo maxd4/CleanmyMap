@@ -46,14 +46,16 @@ function toNullableNumber(value: unknown): number | null {
   return null;
 }
 
-function normalizeImpactValues(row: {
+type ActionImpactRow = {
   created_by_clerk_id?: string | null;
   waste_kg?: unknown;
   cigarette_butts?: unknown;
   volunteers_count?: unknown;
   duration_minutes?: unknown;
   notes?: string | null;
-}): ActionImpactValues {
+};
+
+function toActionImpactValues(row: ActionImpactRow): ActionImpactValues {
   const metadata = extractActionMetadataFromNotes(row.notes ?? null);
   return {
     createdByClerkId: row.created_by_clerk_id ?? null,
@@ -65,17 +67,14 @@ function normalizeImpactValues(row: {
   };
 }
 
-function normalizeActionAuditState(row: {
+function normalizeImpactValues(row: ActionImpactRow): ActionImpactValues {
+  return toActionImpactValues(row);
+}
+
+function normalizeActionAuditState(row: ActionImpactRow & {
   status?: unknown;
   moderation_visibility?: unknown;
-  created_by_clerk_id?: string | null;
-  waste_kg?: unknown;
-  cigarette_butts?: unknown;
-  volunteers_count?: unknown;
-  duration_minutes?: unknown;
-  notes?: string | null;
 }): ActionAuditState {
-  const metadata = extractActionMetadataFromNotes(row.notes ?? null);
   const status =
     row.status === "pending" ||
     row.status === "approved" ||
@@ -90,12 +89,7 @@ function normalizeActionAuditState(row: {
   return {
     status,
     moderationVisibility,
-    createdByClerkId: row.created_by_clerk_id ?? null,
-    wasteKg: toNullableNumber(row.waste_kg),
-    cigaretteButts: toNullableNumber(row.cigarette_butts),
-    volunteersCount: toNullableNumber(row.volunteers_count),
-    durationMinutes: toNullableNumber(row.duration_minutes),
-    wasteBreakdown: metadata.wasteBreakdown,
+    ...toActionImpactValues(row),
   };
 }
 

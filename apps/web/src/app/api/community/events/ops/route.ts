@@ -18,9 +18,8 @@ import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
 import { loadCommunityEventRsvpSummaries } from"@/lib/community/event-rsvp-summaries";
 import {
+ communityEventLocationSchema,
  communityEventLocationToDatabase,
- isValidCommunityEventCoordinatePair,
- type CommunityEventLocationInput,
 } from "@/lib/community/event-location";
 import { revalidateCommunityEventCaches } from "@/lib/community/event-cache-invalidation";
 
@@ -31,14 +30,7 @@ const updateEventOpsSchema = z
  capacityTarget: z.number().int().min(1).max(200000).nullable().optional(),
  attendanceCount: z.number().int().min(0).max(200000).nullable().optional(),
  postMortem: z.string().trim().max(6000).nullable().optional(),
- location: z
-  .object({
-   latitude: z.number().finite().min(-90).max(90),
-   longitude: z.number().finite().min(-180).max(180),
-   source: z.enum(["manual", "import"]),
-  })
-  .nullable()
-  .optional(),
+ location: communityEventLocationSchema.nullable().optional(),
  reason: z.string().trim().max(500).optional(),
  })
  .strict();
@@ -78,17 +70,6 @@ function parseUpdateEventOpsPayload(payload: unknown):
         { error: "Invalid payload", details: parsed.error.flatten().fieldErrors },
         { status: 400 },
       ),
-    };
-  }
-  if (
-    parsed.data.location &&
-    !isValidCommunityEventCoordinatePair(
-      parsed.data.location.latitude,
-      parsed.data.location.longitude,
-    )
-  ) {
-    return {
-      response: NextResponse.json({ error: "Invalid event coordinates" }, { status: 400 }),
     };
   }
   return { data: parsed.data };
@@ -173,7 +154,7 @@ function buildCommunityEventUpdate(
       ? {}
       : payload.location === null
         ? communityEventLocationToDatabase(null)
-        : communityEventLocationToDatabase(payload.location as CommunityEventLocationInput),
+        : communityEventLocationToDatabase(payload.location),
   };
 }
 

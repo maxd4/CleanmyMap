@@ -3,6 +3,8 @@ import { join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
+  deleteAndPersistRecord,
+  deleteSupabaseRecordById,
   findRecordInList,
   persistSupabaseRecord,
   readSupabaseRecord,
@@ -329,24 +331,11 @@ export async function deleteCommunityBugReport(
   assertPersistenceAvailable("community_bug_reports");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("community_bug_reports")
-      .delete()
-      .eq("id", reportId)
-      .select("id");
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return (result.data ?? []).length > 0;
+    return deleteSupabaseRecordById(getSupabaseServerClient(true), "community_bug_reports", reportId);
   }
 
   const store = await readStore();
-  const nextRecords = store.records.filter((record) => record.id !== reportId);
-  if (nextRecords.length === store.records.length) {
-    return false;
-  }
-  await writeStore({ updatedAt: new Date().toISOString(), records: nextRecords });
-  return true;
+  return deleteAndPersistRecord(store.records, (record) => record.id === reportId, (records) => writeStore({ updatedAt: new Date().toISOString(), records }));
 }
 
 export async function updateCommunityBugReportCreatorState(params: {

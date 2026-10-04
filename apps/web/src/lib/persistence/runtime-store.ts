@@ -52,6 +52,40 @@ export async function readSupabaseRecord<T>(
   return result.data ? parse(result.data as Record<string, unknown>) : null;
 }
 
+async function deleteSupabaseRecord(
+  query: PromiseLike<{
+    data: readonly unknown[] | null;
+    error: { message: string } | null;
+  }>,
+): Promise<boolean> {
+  const result = await query;
+  if (result.error) throw new Error(result.error.message);
+  return (result.data ?? []).length > 0;
+}
+
+type SupabaseDeleteClient = {
+  from: (tableName: string) => {
+    delete: () => {
+      eq: (column: string, value: string) => {
+        select: (columns: string) => PromiseLike<{
+          data: readonly unknown[] | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
+  };
+};
+
+export function deleteSupabaseRecordById(
+  client: SupabaseDeleteClient,
+  tableName: string,
+  id: string,
+): Promise<boolean> {
+  return deleteSupabaseRecord(
+    client.from(tableName).delete().eq("id", id).select("id"),
+  );
+}
+
 export async function persistSupabaseRecord<T>(
   query: PromiseLike<{
     data: unknown;
@@ -99,6 +133,17 @@ export async function replaceAndPersistRecord<T>(
   if (!replacement) return null;
   await persist(replacement.records);
   return replacement.record;
+}
+
+export async function deleteAndPersistRecord<T>(
+  records: readonly T[],
+  matches: (record: T) => boolean,
+  persist: (records: T[]) => Promise<void>,
+): Promise<boolean> {
+  const nextRecords = records.filter((record) => !matches(record));
+  if (nextRecords.length === records.length) return false;
+  await persist(nextRecords);
+  return true;
 }
 
 export function getRecentTimeWindow(periodDays: number): {

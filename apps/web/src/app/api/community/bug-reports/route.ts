@@ -222,23 +222,8 @@ export async function PATCH(request: Request) {
  return unauthorizedJsonResponse();
  }
 
- let payload: unknown;
- try {
- payload = await request.json();
- } catch {
- return NextResponse.json({ error:"Invalid JSON payload" }, { status: 400 });
- }
-
- const parsed = statusUpdateSchema.safeParse(payload);
- if (!parsed.success) {
- return NextResponse.json(
- {
- error:"Invalid payload",
- details: parsed.error.flatten().fieldErrors,
- },
- { status: 400 },
- );
- }
+ const parsed = await parseJsonBodyWithSchema(request, statusUpdateSchema);
+ if (!parsed.ok) return parsed.response;
 
  const reason = parsed.data.reason;
  const operationId = `feedback-${parsed.data.reportId}-${Date.now()}`;

@@ -45,7 +45,8 @@ vi.mock("@/lib/rate-limit/server", () => ({
   verifyRateLimit: vi.fn(),
 }));
 
-vi.mock("@/lib/security/validation", () => ({
+vi.mock("@/lib/security/validation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/security/validation")>()),
   createPublicRateLimitResponse: vi.fn(),
   hasHoneypotSignal: vi.fn(),
   hasRecentSubmission: vi.fn(),

@@ -88,6 +88,38 @@
       "reason": "Les entrées admin/codex-usage et admin/storage-usage restent répétées dans le contrat canonique pour conserver une couverture et une lecture auditables endpoint par endpoint. Une table ou un alias partagé supprimerait la séparation sémantique entre surfaces protégées et rendrait moins explicite la preuve de leur autorisation propre.",
       "evidence": "apps/web/src/lib/auth/api-authorization-contract.admin-community.ts:4-17 et apps/web/src/lib/auth/api-authorization-contract.admin-community.ts:128-141 ; chaque bloc porte le contrat d'une surface API distincte.",
       "reviewedRef": "52c750ce0c1a126c542356a341f40fe1b262f7ac"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e2671f933582546c",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La proximité textuelle entre les routes codex-usage et environmental-impact ne révèle pas de pipeline métier commun : leurs contrats de données, métriques et réponses restent distincts. Une extraction ne produirait pas de propriétaire architectural démontrable.",
+      "evidence": "apps/web/src/app/api/admin/codex-usage/route.ts:169-184 et apps/web/src/app/api/admin/environmental-impact/route.ts:58-73 ; les deux blocs appartiennent à des surfaces admin différentes avec des payloads distincts.",
+      "reviewedRef": "e3fafab2bb999225e3f447d1c6f09476bfc7bcc5"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "46c19a6b1885820c",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité est limitée à des garde-fous d'accès explicitement auditables sur une route admin partenaire et une route sandbox ; les conserver localement évite de masquer des frontières de privilège différentes sous une abstraction artificielle.",
+      "evidence": "apps/web/src/app/api/admin/partners/published-directory/route.ts:343-353 et apps/web/src/app/api/sandbox/runbook-checks/route.ts:77-88 ; les handlers portent des ressources et des politiques de surface distinctes.",
+      "reviewedRef": "e3fafab2bb999225e3f447d1c6f09476bfc7bcc5"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "d0e18a6e24f0895c",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les champs Zod anti-spam répétés restent reliés aux primitives anti-abus canoniques de chaque formulaire ; leur proximité syntaxique ne justifie pas une abstraction qui mélangerait les contrats de soumission community et newsletter.",
+      "evidence": "apps/web/src/app/api/community/promotion-requests/route.ts:22-27 et apps/web/src/app/api/newsletter/subscribe/route.ts:15-20 ; les schémas alimentent deux flux anti-abus distincts.",
+      "reviewedRef": "e3fafab2bb999225e3f447d1c6f09476bfc7bcc5"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "a54fde3f5fd3a3d0",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les champs Zod anti-spam sont volontairement proches mais restent attachés aux primitives anti-abus et aux contrats métier propres aux signalements légaux et aux demandes partenaires ; aucune centralisation sûre n'est démontrée.",
+      "evidence": "apps/web/src/app/api/legal-content-reports/route.ts:35-40 et apps/web/src/app/api/partners/onboarding-requests/route.ts:72-76 ; les deux schémas protègent des parcours et propriétaires métier distincts.",
+      "reviewedRef": "e3fafab2bb999225e3f447d1c6f09476bfc7bcc5"
     }
   ]
 }
