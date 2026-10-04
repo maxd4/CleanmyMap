@@ -138,9 +138,10 @@ Le détail de provenance et des APIs Expo est conservé dans
 
 La frontière CURRENT ne fournit pas d'entrée non fiable à `pem.decode` : les
 APIs PEM d'Expo sont présentes pour le tooling, mais CleanMyMap n'active ni
-`updates.codeSigningCertificate` ni `updates.codeSigningMetadata`, et le
-`extra.eas.projectId` mobile reste un placeholder. Le seul consumer versionné
-actuel est le smoke test de sécurité avec des PEM générés localement. Cette
+`updates.codeSigningCertificate` ni `updates.codeSigningMetadata`, et aucun
+`extra.eas.projectId` n'est versionné dans le mobile tant que le rattachement
+à un projet Expo réel n'a pas été effectué. Le seul consumer versionné actuel
+est le smoke test de sécurité avec des PEM générés localement. Cette
 classification ne constitue ni un dismissal ni une exclusion CodeQL.
 
 Réouvrir l'analyse lorsqu'une correction upstream revue est publiée, qu'un
