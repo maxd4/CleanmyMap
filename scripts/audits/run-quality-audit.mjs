@@ -212,7 +212,7 @@ function makeSummary({ audit, manifest, result, paths }) {
     `- Attention required: **${manifest.attentionRequired ? "yes" : "no"}**`,
     `- Raw report: \`${path.relative(path.dirname(paths.summary), paths.report).replaceAll("\\", "/")}\``,
     "",
-    "This summary is a generated projection of the raw gate result. `attentionRequired: false` means that no new delta requiring analysis was observed; it does not mean that historical debt is absent.",
+    "This summary is a generated projection of the raw gate result. `attentionRequired: false` means that no new top-heavy delta or unqualified REVIEW requiring a new analysis was observed; it does not mean that historical large-file debt is absent.",
   ];
   if (audit === "dead-code" && result?.comparison) {
     lines.splice(6, 0,
