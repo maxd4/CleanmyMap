@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { Marker, Popup } from "react-leaflet";
 import { divIcon } from "leaflet";
 import { Info } from "lucide-react";
@@ -15,6 +14,7 @@ import {
   getInfrastructureReading,
 } from "./map-layers.helpers";
 import { resolveInfrastructureAnchor } from "./actions-map-geometry.utils";
+import { useMapSelectableLayerRefs } from "./map-layers-selection";
 import type { InfrastructureLayerProps } from "./map-layers.shared";
 
 export function InfrastructureMarkers({
@@ -24,16 +24,7 @@ export function InfrastructureMarkers({
   onSelectAction,
 }: InfrastructureLayerProps) {
   const { references } = useActionPollutionScoreReferences();
-  const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
-
-  useEffect(() => {
-    if (!selectedActionId) {
-      return;
-    }
-
-    const layer = layerRefs.current[selectedActionId];
-    layer?.openPopup?.();
-  }, [selectedActionId]);
+  const { registerLayerRef } = useMapSelectableLayerRefs(selectedActionId);
 
   if (!visible) {
     return null;
@@ -58,11 +49,7 @@ export function InfrastructureMarkers({
           <Marker
             key={`infrastructure-${item.id}`}
             ref={(layer) => {
-              if (layer) {
-                layerRefs.current[item.id] = layer;
-              } else {
-                delete layerRefs.current[item.id];
-              }
+              registerLayerRef(item.id, layer);
             }}
             position={anchor}
             interactive={true}

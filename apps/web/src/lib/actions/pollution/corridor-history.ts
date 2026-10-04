@@ -1,5 +1,6 @@
 import type { PollutionScoreReferences } from "./pollution-score";
 import { computePollutionScoresRelativeToReferences } from "./pollution-score";
+import { toPollutionScoreInput } from "./action-pollution-score-input";
 import type { ActionDataContract } from "../contracts/contract-model";
 import { auditActionContract } from "../quality/data-quality";
 import { presentActionPollutionProjection } from "./revisit-priority";
@@ -434,15 +435,7 @@ function resolveActionObservedScore(
   references?: PollutionScoreReferences,
 ): number | null {
   return computePollutionScoresRelativeToReferences(
-    {
-      wasteKg: action.metadata.wasteKg,
-      cigaretteButts: action.metadata.cigaretteButts,
-      volunteersCount: action.metadata.volunteersCount,
-      durationMinutes: action.metadata.durationMinutes,
-      actionType: action.type,
-      status: action.status,
-      actionPhase: action.metadata.actionPhase,
-    },
+    toPollutionScoreInput(action),
     references?.global,
   ).severityScore;
 }

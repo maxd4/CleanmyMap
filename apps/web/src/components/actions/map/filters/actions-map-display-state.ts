@@ -10,6 +10,7 @@ import {
   computePollutionScoresRelativeToReferences,
   type PollutionScoreReferences,
 } from "@/lib/actions/pollution/pollution-score";
+import { toPollutionScoreInput } from "@/lib/actions/pollution/action-pollution-score-input";
 import type {
   LocalRepollutionScoreResolver,
   RepollutionDatasetCompleteness,
@@ -47,15 +48,7 @@ export function resolveMapPlaceStateViews(
     (references
       ? (action: ActionDataContract) =>
           computePollutionScoresRelativeToReferences(
-              {
-                wasteKg: action.metadata.wasteKg,
-                cigaretteButts: action.metadata.cigaretteButts,
-                volunteersCount: action.metadata.volunteersCount,
-                durationMinutes: action.metadata.durationMinutes,
-                actionType: action.type,
-                status: action.status,
-                actionPhase: action.metadata.actionPhase,
-              },
+            toPollutionScoreInput(action),
               references.global,
             ).severityScore
       : undefined);
