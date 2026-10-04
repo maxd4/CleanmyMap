@@ -238,10 +238,12 @@ export async function clearStoredEmergencyContact(): Promise<void> {
 
 export async function bufferPoint(point: MissionLocationInsert): Promise<void> {
   try {
-    const total = await appendSecureBufferRecord(
-      GPS_BUFFER_INDEX_KEY,
-      GPS_BUFFER_RECORD_PREFIX,
-      point,
+    const total = await withGpsBufferMutation(() =>
+      appendSecureBufferRecord(
+        GPS_BUFFER_INDEX_KEY,
+        GPS_BUFFER_RECORD_PREFIX,
+        point,
+      ),
     );
     console.log(`[Storage] Point bufferisé. Total buffer : ${total}`);
   } catch (e) {
@@ -252,6 +254,13 @@ export async function bufferPoint(point: MissionLocationInsert): Promise<void> {
 // Flush
 
 let flushInFlight: Promise<ServiceResult> | null = null;
+let gpsBufferMutationInFlight = Promise.resolve();
+
+function withGpsBufferMutation<T>(operation: () => Promise<T>): Promise<T> {
+  const mutation = gpsBufferMutationInFlight.then(operation, operation);
+  gpsBufferMutationInFlight = mutation.then(() => undefined, () => undefined);
+  return mutation;
+}
 
 async function flushBufferOnce(): Promise<ServiceResult> {
   const client = await getAuthenticatedSupabaseClient();
@@ -262,8 +271,8 @@ async function flushBufferOnce(): Promise<ServiceResult> {
 
   // Flush GPS points
   try {
-    const { keys, records: buffer } = await readSecureBufferRecords<MissionLocationInsert>(
-      GPS_BUFFER_INDEX_KEY,
+    const { keys, records: buffer } = await withGpsBufferMutation(() =>
+      readSecureBufferRecords<MissionLocationInsert>(GPS_BUFFER_INDEX_KEY),
     );
     if (buffer.length > 0) {
       console.log(`[Storage] Flush GPS : ${buffer.length} points`);
@@ -272,8 +281,15 @@ async function flushBufferOnce(): Promise<ServiceResult> {
         return { ok: false, error: `Synchronisation GPS impossible : ${error.message}` };
       }
 
-      await clearSecureBufferRecords(keys);
-      await writeIndex(GPS_BUFFER_INDEX_KEY, []);
+      await withGpsBufferMutation(async () => {
+        const currentKeys = await readIndex(GPS_BUFFER_INDEX_KEY);
+        const flushedKeys = new Set(keys);
+        await clearSecureBufferRecords(keys);
+        await writeIndex(
+          GPS_BUFFER_INDEX_KEY,
+          currentKeys.filter((key) => !flushedKeys.has(key)),
+        );
+      });
       console.log('[Storage] Buffer GPS vidé');
     }
   } catch (e) {

@@ -16,12 +16,13 @@ const point = {
   recorded_at: '2026-09-28T10:00:00.000Z',
 }
 
+beforeEach(() => {
+  state.client = null
+  state.values.clear()
+  vi.clearAllMocks()
+})
+
 describe('mobile GPS offline storage', () => {
-  beforeEach(() => {
-    state.client = null
-    state.values.clear()
-    vi.clearAllMocks()
-  })
 
   it('keeps an offline point and replays it once Clerk/Supabase is available', async () => {
     await bufferPoint(point)
@@ -47,4 +48,36 @@ describe('mobile GPS offline storage', () => {
     expect(await getPendingGpsPointCount()).toBe(1)
   })
 
+})
+
+it('keeps a point buffered while an earlier replay is in flight', async () => {
+  const pointB = { ...point, latitude: 48.857, recorded_at: '2026-09-28T10:00:05.000Z' }
+  await bufferPoint(point)
+
+  let releaseFirstInsert!: () => void
+  const insert = vi.fn()
+    .mockImplementationOnce(
+      () => new Promise<{ error: null }>((resolve) => {
+        releaseFirstInsert = () => resolve({ error: null })
+      }),
+    )
+    .mockResolvedValue({ error: null })
+  state.client = { from: vi.fn(() => ({ insert })) }
+
+  const firstFlush = flushBuffer()
+  await vi.waitFor(() => expect(insert).toHaveBeenCalledOnce())
+  const concurrentFlush = flushBuffer()
+
+  await bufferPoint(pointB)
+  releaseFirstInsert()
+  await Promise.all([firstFlush, concurrentFlush])
+
+  expect(insert).toHaveBeenLastCalledWith([point])
+  expect(await getPendingGpsPointCount()).toBe(1)
+
+  await flushBuffer()
+
+  expect(insert).toHaveBeenCalledTimes(2)
+  expect(insert).toHaveBeenLastCalledWith([pointB])
+  expect(await getPendingGpsPointCount()).toBe(0)
 })

@@ -242,7 +242,7 @@ export function MissionActiveMap({
         </View>
         <Text style={styles.statusText}>
           {pendingGpsPointCount > 0
-            ? `Hors ligne · ${pendingGpsPointCount} point(s) à envoyer`
+            ? `${pendingGpsPointCount} point(s) à synchroniser`
             : 'Synchronisation à jour'}
         </Text>
         {syncMessage ? <Text style={styles.syncText}>{syncMessage}</Text> : null}

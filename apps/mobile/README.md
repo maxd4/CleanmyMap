@@ -112,6 +112,8 @@ Le versioning de départ est explicite et local : `version` `1.0.0`,
 `android.versionCode` `1` et `ios.buildNumber` `1`. Toute nouvelle release doit
 incrémenter les compteurs natifs selon les règles des stores ; aucun compteur
 n'est auto-incrémenté ou stocké dans un service distant par cette configuration.
+`eas.json` fixe explicitement `cli.appVersionSource` à `local` ; aucun
+`projectId` EAS n'est requis ou inventé dans le dépôt.
 
 Les identifiants durables restent inchangés : slug
 `cleanmymap-companion`, scheme `companion`, package Android et bundle iOS
