@@ -74,4 +74,6 @@ Traiter uniquement les violations, stale baselines ou deltas réellement signal�
 - ne pas relancer le même moteur hors runner pour fabriquer un second rapport ;
 - ne pas modifier baseline, seuil, grâce, exclusion ou justification pendant un audit read-only ;
 - ne pas transformer les artefacts en nouvelle source de vérité ;
-- ne pas lancer `checks:full` pour un audit read-only sauf changement de code séparé qui le justifie.
+- ne pas lancer `checks:full` pour un audit read-only ni pour clôturer un lot ;
+  l'utiliser uniquement avant un déploiement Vercel ou dans un prompt
+  explicitement dédié à `checks:full`.

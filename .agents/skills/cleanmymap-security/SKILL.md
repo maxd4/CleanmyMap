@@ -62,4 +62,4 @@ entrée
 
 ## Validation
 
-Ajouter les tests positifs et négatifs au bon seam : anonyme/authentifié, owner/non-owner, rôle minimal/insuffisant, payload invalide, chemin privilégié. Ajouter les tests de sécurité canoniques lorsqu'ils sont concernés et utiliser `checks:full` quand la gouvernance classe le changement comme sensible.
+Ajouter les tests positifs et négatifs au bon seam : anonyme/authentifié, owner/non-owner, rôle minimal/insuffisant, payload invalide, chemin privilégié. Ajouter les tests de sécurité canoniques lorsqu'ils sont concernés. `checks:full` n'est lancé que dans une préparation immédiate de déploiement Vercel ou dans un prompt explicitement dédié à cette commande ; les lots sensibles utilisent sinon les validations ciblées et `checks:fast` selon leur blast radius.
