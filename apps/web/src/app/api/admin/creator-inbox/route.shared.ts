@@ -56,17 +56,15 @@ function buildAuditDetails(params: {
   stage?: ErrorStage;
   partialMutation?: boolean;
 }) {
-  return {
-    operation: AUDIT_OPERATION,
-    reason: params.reason,
-    ...(params.targetUserId ? { targetUserId: params.targetUserId } : {}),
-    previousValue: params.previousValue,
-    newValue: params.newValue,
-    ...(params.stage ? { stage: params.stage } : {}),
-    ...(params.partialMutation === undefined
+  return Object.assign(
+    { operation: AUDIT_OPERATION, reason: params.reason },
+    params.targetUserId ? { targetUserId: params.targetUserId } : {},
+    { previousValue: params.previousValue, newValue: params.newValue },
+    params.stage ? { stage: params.stage } : {},
+    params.partialMutation === undefined
       ? {}
-      : { partialMutation: params.partialMutation }),
-  };
+      : { partialMutation: params.partialMutation },
+  );
 }
 
 function unknownSnapshot(
