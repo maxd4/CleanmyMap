@@ -6,11 +6,11 @@ import {
   PROJECT_SIGNAL_ROW_LIMIT,
 } from "./project-signals";
 import {
-  buildProjectSignalsHighlights,
-  buildScopeInputFromRows,
   normalizeCanonicalSpotRows,
 } from "./project-signals.calculations";
+import { buildProjectSignalsHighlights } from "./project-signals-highlights";
 import { summarizeFunnelRows } from "./project-signals-funnel";
+import { buildScopeInputFromRows } from "./project-signals-timeline";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 vi.mock("./codex-usage-store", async () => {

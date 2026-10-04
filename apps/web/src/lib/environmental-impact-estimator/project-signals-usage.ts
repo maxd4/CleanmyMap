@@ -1,7 +1,7 @@
 import { subDays } from "date-fns";
 import { buildCodexMonthlyUsageEstimate } from "./codex-usage-store";
+import { buildScopeInputFromRows } from "./project-signals-timeline";
 import {
-  buildScopeInputFromRows,
   clamp,
   getFunnelEventCount,
   round6,

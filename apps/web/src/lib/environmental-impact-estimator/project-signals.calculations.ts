@@ -21,8 +21,6 @@ export {
   totalRowsForApiRequests,
 } from "./project-signals-helpers";
 export { clamp, parseDateOrNull, round6 } from "./services/utils";
-export { buildProjectSignalsHighlights } from "./project-signals-highlights";
-export { buildScopeInputFromRows } from "./project-signals-timeline";
 
 export type BaseTimelineRow = {
   created_at: string;
