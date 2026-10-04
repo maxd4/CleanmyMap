@@ -113,7 +113,11 @@ observation terrain ; une reconstruction réseau reste une hypothèse.
 
 L'identité Clerk, les RLS missions/GPS, la finalisation des métriques et le
 chargement Clerk headless avec le `tokenCache` SecureStore sont finalisés et
-restent invariants pendant le développement actif. Le socle serveur de
+restent invariants pendant le développement actif. Au retour au premier plan,
+le mobile tente le replay du buffer avec la session Clerk courante ; les flush
+concurrents sont sérialisés, et un échec conserve la mission et les points
+locaux pour reprise. Le tracé foreground reste une projection UX locale : il
+n'écrit ni `gps_points`, ni `distance_m`, ni `duration_s`. Le socle serveur de
 contributions multi-traces, de projection `MultiLineString`, de contribution
 attribuable/idempotente et de progression par action est `CURRENT`. Le handoff
 serveur de réconciliation après finalisation est idempotent ; son échec ne

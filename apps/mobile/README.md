@@ -57,7 +57,8 @@ Le shell expose cinq destinations simples : `Accueil`, `Carte`, `Agir`,
   `startTracking` pour afficher la mission active. Si le démarrage GPS échoue,
   la mission créée est annulée et l'écran actif n'est pas affiché. La mission
   active restaure les `gps_points` owner-scoped, fusionne son tracé UX local et
-  reprend le suivi foreground au retour au premier plan. Ce suivi ne réécrit pas
+  reprend le suivi foreground au retour au premier plan et relance le replay du
+  buffer local dès que la session Clerk est disponible. Ce suivi ne réécrit pas
   les points ni les métriques dans Supabase. Aucun formulaire d'action natif ni
   upload/photo mobile n'est requis pour cette V1 ; `mission_actions` reste une
   évolution future du produit ;
@@ -338,9 +339,11 @@ Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 ☑ `mission_actions` hors runtime V1 ; contrat serveur conservé pour les autres parcours
 ☑ Finalisation distance côté serveur ou RPC sûre (LOT 2B)
 ☑ Erreur de calcul de distance traitée
-☑ Buffer offline conservé sans token Clerk
-  ☑ Restauration mission active et du tracé testée
+☑ Buffer offline conservé sans token Clerk et rejoué sans flush concurrent doublé
+  ☑ Restauration mission active et du tracé après reprise/relaunch testée
   ☑ Fusion serveur/local sans doublons visibles testée
+  ☑ Échec de flush/finalisation conservant la mission récupérable testé
+  ☑ Écran mission terrain-first : carte dominante, état GPS/sync, métriques live indicatives
 ☑ Refus de permissions testé
 ☑ Cohérence identité Clerk → Supabase testée
 ☑ Cache de token Clerk dans SecureStore configuré (LOT 1)
@@ -362,9 +365,9 @@ La baseline M0 couvre désormais par tests unitaires et contractuels :
 
 - restauration d'une mission active ;
 - stockage offline ;
-- replay du buffer GPS ;
+- replay du buffer GPS, y compris le flush concurrent sérialisé ;
 - refus des permissions GPS ;
-- finalisation d'une mission ;
+- finalisation d'une mission et conservation après erreur ;
 - erreurs Supabase ;
 - propriété de mission via RLS ;
 - cohérence identité Clerk → Supabase ;

@@ -18,12 +18,11 @@ import {
   startMobileMission,
   stopTracking,
 } from './lib/tracking-service'
-import { clearStoredForegroundTrack, getPendingGpsPointCount } from './lib/storage'
+import { clearStoredForegroundTrack, flushBuffer, getPendingGpsPointCount } from './lib/storage'
 import { reconcilePendingLinkedMissions } from './lib/linked-mission-service'
 import { MobileShell } from './screens/mobile-shell'
 import { MissionActiveMap } from './screens/mission-active-map'
 import { MissionCompletionScreen, MissionFinalizationScreen } from './screens/mission-finalization'
-import { EmergencyCallActions } from './screens/emergency-call-actions'
 import type { Mission, MissionFinalizationStage, TrackingPhase } from './types/mission'
 
 const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''
@@ -62,6 +61,9 @@ function useRestoreActiveMission({
     let cancelled = false
     async function restoreMission() {
       void reconcilePendingLinkedMissions()
+      // Un retour au premier plan est aussi un point de reprise réseau. Le
+      // buffer reste Clerk-only et le storage sérialise les flush concurrents.
+      void flushBuffer()
       const id = await restoreActiveTracking()
       if (!id || cancelled) return
 
@@ -211,7 +213,7 @@ function CompanionApp() {
     return (
       <View style={styles.darkCenter}>
         <ActivityIndicator size="large" color="#10b981" />
-        <Text style={styles.hudLabel}>CHARGEMENT CLERK...</Text>
+        <Text style={styles.hudLabel}>CHARGEMENT...</Text>
       </View>
     )
   }
@@ -232,7 +234,7 @@ function CompanionApp() {
     return (
       <View style={styles.darkCenter}>
         <ActivityIndicator size="large" color="#10b981" />
-        <Text style={styles.hudLabel}>INITIALISATION...</Text>
+        <Text style={styles.hudLabel}>PRÉPARATION DU SUIVI...</Text>
       </View>
     )
   }
@@ -264,46 +266,16 @@ function MissionActiveScreen({
   onStop: () => void
 }) {
   return (
-    <View style={styles.darkContainer}>
+    <View style={styles.activityRoot}>
       <StatusBar style="light" />
-
-      <View style={styles.hudHeader}>
-        <View>
-          <Text style={styles.hudLabel}>MISSION ACTIVE</Text>
-          <Text style={styles.hudTitleSmall}>{mission.label}</Text>
-        </View>
-        <View style={styles.hudStatus}>
-          <View style={styles.hudStatusDot} />
-          <Text style={styles.hudStatusText}>LIVE</Text>
-        </View>
-      </View>
-
-      {errorMsg ? (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{errorMsg}</Text>
-        </View>
-      ) : null}
-
-      <View style={styles.hudStatsRow}>
-        <View style={styles.hudStatBox}>
-          <Text style={styles.hudStatLabel}>DURÉE</Text>
-          <Text style={styles.hudStatValue}>{duration}</Text>
-        </View>
-        <View style={styles.hudStatBox}>
-          <Text style={styles.hudStatLabel}>GPS EN ATTENTE</Text>
-          <Text style={[styles.hudStatValue, pendingGpsPointCount > 0 && { color: '#fbbf24' }]}>
-            {pendingGpsPointCount}
-          </Text>
-        </View>
-      </View>
-
-      <MissionActiveMap missionId={mission.id} pendingGpsPointCount={pendingGpsPointCount} />
-
-      <EmergencyCallActions />
-
-      <TouchableOpacity style={styles.hudBtnDanger} onPress={onStop}>
-        <Text style={styles.hudBtnText}>TERMINER LA MISSION</Text>
-      </TouchableOpacity>
+      <MissionActiveMap
+        missionId={mission.id}
+        missionLabel={mission.label}
+        duration={duration}
+        pendingGpsPointCount={pendingGpsPointCount}
+        errorMsg={errorMsg}
+        onStop={onStop}
+      />
     </View>
   )
 }
@@ -376,17 +348,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
-  darkContainer: {
+  activityRoot: {
     flex: 1,
     backgroundColor: '#020617',
-    padding: 24,
-    paddingTop: 64,
-  },
-  hudHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 32,
   },
   hudLabel: {
     color: '#64748b',
@@ -401,64 +365,12 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: -1,
   },
-  hudTitleSmall: {
-    color: '#f8fafc',
-    fontSize: 18,
-    fontWeight: '800',
-  },
   hudSubtitle: {
     color: '#10b981',
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 4,
     marginBottom: 40,
-  },
-  hudStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#10b98120',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#10b98140',
-  },
-  hudStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10b981',
-    marginRight: 6,
-  },
-  hudStatusText: {
-    color: '#10b981',
-    fontSize: 10,
-    fontWeight: '900',
-  },
-  hudStatsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 32,
-  },
-  hudStatBox: {
-    flex: 1,
-    backgroundColor: '#1e293b',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  hudStatLabel: {
-    color: '#94a3b8',
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  hudStatValue: {
-    color: '#f8fafc',
-    fontSize: 24,
-    fontWeight: '900',
   },
   hudInputWrapper: {
     marginBottom: 24,

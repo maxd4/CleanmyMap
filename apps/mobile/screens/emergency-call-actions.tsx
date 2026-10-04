@@ -5,7 +5,7 @@ import { getDialablePhone, hasEmergencyContact } from '../lib/emergency-contact'
 import { getStoredEmergencyContact } from '../lib/storage'
 import type { EmergencyContact } from '../types/emergency-contact'
 
-export function EmergencyCallActions() {
+export function EmergencyCallActions({ compact = false }: { compact?: boolean }) {
   const [contact, setContact] = useState<EmergencyContact | null>(null)
 
   useEffect(() => {
@@ -39,7 +39,35 @@ export function EmergencyCallActions() {
   }
 
   return (
-    <View style={styles.panel}>
+    <View style={[styles.panel, compact && styles.compactPanel]}>
+      {compact ? (
+        <View style={styles.compactRow}>
+          <View style={styles.compactLabel}>
+            <Ionicons name="call-outline" size={20} color="#fbbf24" />
+            <Text style={styles.compactTitle}>Urgence</Text>
+          </View>
+          {contact ? (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Appeler le contact d’urgence"
+              style={styles.compactButton}
+              onPress={() => confirmCall('mon contact d’urgence', contact.phone)}
+            >
+              <Text style={styles.compactButtonText}>Contact</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Appeler le 112"
+            style={[styles.compactButton, styles.compactEmergencyButton]}
+            onPress={() => confirmCall('le 112', '112')}
+          >
+            <Text style={styles.compactEmergencyText}>112</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+      {!compact ? (
+      <>
       <View style={styles.header}>
         <Ionicons name="call-outline" size={22} color="#fbbf24" />
         <View style={styles.copy}>
@@ -57,6 +85,8 @@ export function EmergencyCallActions() {
         <Ionicons name="call" size={20} color="#ffffff" />
         <Text style={styles.emergencyButtonText}>APPELER LE 112</Text>
       </TouchableOpacity>
+      </>
+      ) : null}
     </View>
   )
 }
@@ -70,6 +100,23 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 14,
   },
+  compactPanel: { backgroundColor: '#020617e8', borderColor: '#475569', marginBottom: 0, padding: 8 },
+  compactRow: { alignItems: 'center', flexDirection: 'row', minHeight: 48 },
+  compactLabel: { alignItems: 'center', flex: 1, flexDirection: 'row' },
+  compactTitle: { color: '#fef3c7', fontSize: 13, fontWeight: '800', marginLeft: 8 },
+  compactButton: {
+    alignItems: 'center',
+    backgroundColor: '#78350f',
+    borderRadius: 10,
+    justifyContent: 'center',
+    marginLeft: 8,
+    minHeight: 44,
+    minWidth: 74,
+    paddingHorizontal: 10,
+  },
+  compactButtonText: { color: '#fef3c7', fontSize: 12, fontWeight: '900' },
+  compactEmergencyButton: { backgroundColor: '#991b1b' },
+  compactEmergencyText: { color: '#ffffff', fontSize: 13, fontWeight: '900' },
   header: { alignItems: 'flex-start', flexDirection: 'row', marginBottom: 14 },
   copy: { flex: 1, marginLeft: 10 },
   title: { color: '#f8fafc', fontSize: 14, fontWeight: '900', marginBottom: 4 },
