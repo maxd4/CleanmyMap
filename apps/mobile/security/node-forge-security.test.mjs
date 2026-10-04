@@ -132,6 +132,9 @@ test("rejects malformed PEM markers without regex backtracking", { timeout: 1000
 test("restricts node-forge worker messages to the current origin", () => {
   for (const relativePath of ["lib/prng.js", "lib/util.js"]) {
     const source = fs.readFileSync(path.join(vendorRoot, relativePath), "utf8");
-    assert.match(source, /e\.origin && e\.origin !== self\.location\.origin/);
+    assert.ok(
+      (source.match(/e\.origin && e\.origin !== self\.location\.origin/g) ?? []).length >= 2,
+      `${relativePath} must guard every worker message listener`,
+    );
   }
 });
