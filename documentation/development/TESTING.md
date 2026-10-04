@@ -312,9 +312,13 @@ conservés à court terme ; aucun job final ne télécharge des rapports bruts
 uniquement pour agréger un résultat.
 
 Le même planner expose `securityToolingRelevant`. Un changement sous
-`scripts/security/` sélectionne le job `web-static` qui exécute les outils de
-sécurité concernés, sans transformer ce signal en `web_code_relevant` ni
-déclencher un build Web sans contrat applicatif modifié.
+`scripts/security/` sélectionne le job `web-static`, qui exécute alors
+`node --test scripts/security/workflow-security-contract.test.mjs
+scripts/security/zap-baseline-contract.test.mjs`. Le test
+`audit-dependencies.test.mjs` reste exécuté par le job `dependency-audit`, et
+les fixtures/règles Semgrep restent couvertes par `npm run check:semgrep`.
+Ce signal ne devient pas `web_code_relevant` et ne déclenche pas de build Web
+sans contrat applicatif modifié.
 
 ## Triage des échecs CI
 
