@@ -15,6 +15,7 @@ import {
   DUPLICATION_TOOL_VERSION,
   readJscpdFingerprints,
   readJscpdMetrics,
+  readJscpdOccurrences,
   validateDuplicationJustificationsRegistry,
   validateDuplicationMetricsBaseline,
 } from "./duplication-policy.mjs";
@@ -225,6 +226,31 @@ test("SARIF fingerprints use the native jscpd partial fingerprint", () => {
     }),
     new Set(["a1b2c3d4e5f60718"]),
   );
+});
+
+test("jscpd JSON and SARIF project CURRENT clone occurrences with scope and fingerprint", () => {
+  assert.deepEqual(
+    readJscpdOccurrences({
+      duplicates: [{
+        firstFile: { name: "apps\\web\\src\\first.ts", start: 10, end: 14 },
+        secondFile: { name: "apps/web/src/second.ts", start: 31, end: 35 },
+      }],
+    }, {
+      runs: [{ results: [{
+        partialFingerprints: { "jscpdCloneHash/v1": "a1b2c3d4e5f60718" },
+      }] }],
+    }, "runtime"),
+    [{
+      scope: "runtime",
+      fingerprint: "a1b2c3d4e5f60718",
+      occurrenceA: { path: "apps/web/src/first.ts", startLine: 10, endLine: 14 },
+      occurrenceB: { path: "apps/web/src/second.ts", startLine: 31, endLine: 35 },
+    }],
+  );
+});
+
+test("occurrence projection rejects JSON/SARIF clone count drift", () => {
+  assert.throws(() => readJscpdOccurrences({ duplicates: [] }, { runs: [{ results: [{ partialFingerprints: { "jscpdCloneHash/v1": "a1b2c3d4e5f60718" } }] }] }, "runtime"), /occurrence projection mismatch/);
 });
 
 test("a valid KEEP_INTENTIONAL registry entry targets a current native fingerprint", () => {
