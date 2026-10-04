@@ -1,18 +1,12 @@
 import { getTrafficSignalDetail, resolveNumber, round6 } from "./utils";
 import type {
-  EnvironmentalImpactInfrastructureInput,
   EnvironmentalImpactScopeInput,
-  EnvironmentalImpactUsageProvenanceItem,
   EnvironmentalImpactUsageProvenanceSource,
 } from "../types";
-
-interface UsageProfileContext {
-  infrastructureInput: EnvironmentalImpactInfrastructureInput | null | undefined;
-  siteInput: EnvironmentalImpactScopeInput | null | undefined;
-  userInput: EnvironmentalImpactScopeInput | null | undefined;
-  usageInput: EnvironmentalImpactInfrastructureInput["usage"] | null;
-  pushProvenance: (item: EnvironmentalImpactUsageProvenanceItem) => void;
-}
+import {
+  resolveUsageField,
+  type UsageProfileContext,
+} from "./usage-profile-context";
 
 function getStorageDetail(hasSignals: boolean): string {
   return hasSignals
@@ -30,28 +24,6 @@ function appendDerivedSource(target: string[], hasSource: boolean, source: strin
   }
 }
 
-function resolveUsageField(
-  ctx: UsageProfileContext,
-  key: string,
-  label: string,
-  inputValue: number | null | undefined,
-  fallbackValue: number,
-  detail: string,
-  source: EnvironmentalImpactUsageProvenanceSource,
-): number {
-  const hasInput = inputValue !== null && inputValue !== undefined;
-  const value = resolveNumber(inputValue, fallbackValue);
-
-  ctx.pushProvenance({
-    key,
-    label,
-    value,
-    source: hasInput ? "input" : source,
-    detail,
-  });
-
-  return value;
-}
 
 function resolveMonthlyStorageGbMonthsMetric(ctx: UsageProfileContext): number {
   const hasStorageSignals =

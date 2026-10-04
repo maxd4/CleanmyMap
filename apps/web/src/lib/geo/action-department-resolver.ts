@@ -339,16 +339,21 @@ export async function resolveActionDepartmentForPersistence(
     return resolved;
   }
 
-  if (input.spatiallyChanged === false) {
-    return (
-      readCompleteDepartment(
-        input.existingDepartmentCode,
-        input.existingDepartmentName,
-      ) ?? emptyDepartment()
-    );
-  }
+  return resolveExistingDepartmentOrEmpty(input);
+}
 
-  return emptyDepartment();
+function resolveExistingDepartmentOrEmpty(
+  input: DepartmentPersistenceInput,
+): { departmentCode: string | null; departmentName: string | null } {
+  if (input.spatiallyChanged !== false) {
+    return emptyDepartment();
+  }
+  return (
+    readCompleteDepartment(
+      input.existingDepartmentCode,
+      input.existingDepartmentName,
+    ) ?? emptyDepartment()
+  );
 }
 
 /**
@@ -372,14 +377,5 @@ export async function resolveTrustedActionDepartmentForPersistence(
     return resolved;
   }
 
-  if (input.spatiallyChanged === false) {
-    return (
-      readCompleteDepartment(
-        input.existingDepartmentCode,
-        input.existingDepartmentName,
-      ) ?? emptyDepartment()
-    );
-  }
-
-  return emptyDepartment();
+  return resolveExistingDepartmentOrEmpty(input);
 }

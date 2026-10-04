@@ -1,5 +1,9 @@
 import { env } from "@/lib/env";
-import { formatStorageBytes, type StorageQuotaInfo } from "@/lib/supabase/storage-usage";
+import {
+  formatStorageBytes,
+  formatStorageNumber,
+  type StorageQuotaInfo,
+} from "@/lib/supabase/storage-usage";
 
 const BYTES_PER_GB = 1024 * 1024 * 1024;
 
@@ -12,13 +16,6 @@ function toPositiveInteger(raw: string | undefined): number | null {
     return null;
   }
   return Math.trunc(parsed);
-}
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("fr-FR", {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: value >= 10 && value % 1 !== 0 ? 2 : 0,
-  }).format(value);
 }
 
 export function resolveSupabaseStorageQuotaInfo(): StorageQuotaInfo {
@@ -39,7 +36,7 @@ export function resolveSupabaseStorageQuotaInfo(): StorageQuotaInfo {
       const bytes = Math.round(parsed * BYTES_PER_GB);
       return {
         bytes,
-        label: `${formatNumber(parsed)} GB`,
+        label: `${formatStorageNumber(parsed)} GB`,
         source: "configured_gb",
         configuredValue: quotaGbRaw,
       };

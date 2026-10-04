@@ -68,13 +68,11 @@ export async function GET(request: Request) {
       date: exportContext.exportDate,
       cacheControl: actionsExportRoute.ACTIONS_EXPORT_RESPONSE_CACHE_CONTROL,
     });
-    const headers: Record<string, string> = { ...responseHeaders };
-    if (isTruncated) {
-      headers["X-Export-Warning"] = "Dataset truncated to limit";
-    }
-    if (sourceHealth.partial) {
-      headers["X-Data-Warning"] = sourceHealth.warnings.join(" |");
-    }
+    const headers = actionsExportRoute.buildActionsExportWarningHeaders(
+      responseHeaders,
+      isTruncated,
+      sourceHealth,
+    );
 
     return new Response(withBom, {
       status: 200,

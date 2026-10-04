@@ -55,7 +55,7 @@ Par défaut :
 ```text
 validation ciblée utile
 → checks:fast si le blast radius le justifie
-→ checks:full uniquement lorsque la gouvernance ou le risque l'exige
+→ checks:full uniquement avant un déploiement Vercel ou dans un prompt dédié
 ```
 
 Ne pas relancer une preuve déjà suffisante sur le même candidat sans raison.

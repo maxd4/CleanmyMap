@@ -3,7 +3,6 @@ import {
   countDistinct,
   countTrainingPhotos,
   isWithinWindow,
-  round6,
   sumTrainingPhotoBytes,
 } from "./project-signals-helpers";
 import { summarizeFunnelRows } from "./project-signals-funnel";
@@ -12,6 +11,7 @@ import type {
   FunnelSignalAggregate,
   ProjectSignalRows,
 } from "./project-signals.calculations";
+import { round6 } from "./project-signals.calculations";
 
 function selectScopeFunnelAggregate(
   rows: ProjectSignalRows,

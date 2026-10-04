@@ -169,43 +169,41 @@ function compareQuotaMetrics(
   return left.label.localeCompare(right.label, "fr");
 }
 
+function buildQuotaMetricSummary(
+  metric: EnvironmentalImpactInfrastructureMetricEstimate,
+  key: string,
+): ServiceQuotaMetricSummary {
+  const consumedPercent = getMetricConsumedPercent(metric);
+  return {
+    key,
+    label: metric.label,
+    unitLabel: metric.unitLabel,
+    quantityPerMonth: metric.quantityPerMonth,
+    referenceMonthlyQuantity: metric.referenceMonthlyQuantity,
+    consumedPercent,
+    estimatedKgCo2eProxy: metric.estimatedKgCo2eProxy,
+    source: metric.source,
+    state: getServiceQuotaState(consumedPercent),
+    isPrimary: false,
+  };
+}
+
+function buildQuotaSummary(metrics: ServiceQuotaMetricSummary[]): ServiceQuotaSummary {
+  const sortedMetrics = metrics.sort(compareQuotaMetrics);
+  const primaryMetric = sortedMetrics[0] ?? null;
+  return {
+    state: primaryMetric?.state ?? "NA",
+    primaryMetric: primaryMetric === null ? null : { ...primaryMetric, isPrimary: true },
+    metrics: sortedMetrics.map((metric, index) => ({ ...metric, isPrimary: index === 0 })),
+  };
+}
+
 export function buildServiceQuotaSummary(
   service: EnvironmentalImpactInfrastructureServiceEstimate,
 ): ServiceQuotaSummary {
-  const metrics = service.metricEstimates
-    .map<ServiceQuotaMetricSummary>((metric) => {
-      const consumedPercent = getMetricConsumedPercent(metric);
-      return {
-        key: metric.key,
-        label: metric.label,
-        unitLabel: metric.unitLabel,
-        quantityPerMonth: metric.quantityPerMonth,
-        referenceMonthlyQuantity: metric.referenceMonthlyQuantity,
-        consumedPercent,
-        estimatedKgCo2eProxy: metric.estimatedKgCo2eProxy,
-        source: metric.source,
-        state: getServiceQuotaState(consumedPercent),
-        isPrimary: false,
-      };
-    })
-    .sort(compareQuotaMetrics);
-
-  const primaryMetric = metrics[0] ?? null;
-
-  return {
-    state: primaryMetric?.state ?? "NA",
-    primaryMetric:
-      primaryMetric === null
-        ? null
-        : {
-            ...primaryMetric,
-            isPrimary: true,
-          },
-    metrics: metrics.map((metric, index) => ({
-      ...metric,
-      isPrimary: index === 0,
-    })),
-  };
+  return buildQuotaSummary(
+    service.metricEstimates.map((metric) => buildQuotaMetricSummary(metric, metric.key)),
+  );
 }
 
 export function buildPortfolioQuotaSummary(
@@ -213,42 +211,13 @@ export function buildPortfolioQuotaSummary(
 ): ServiceQuotaSummary {
   const webQuotaServices = services.filter((service) => !isDevelopmentAiServiceKey(service.key));
 
-  const metrics = webQuotaServices
-    .flatMap((service) =>
-      service.metricEstimates.map<ServiceQuotaMetricSummary>((metric) => {
-        const consumedPercent = getMetricConsumedPercent(metric);
-        return {
-          key: `${service.key}:${metric.key}`,
-          label: metric.label,
-          unitLabel: metric.unitLabel,
-          quantityPerMonth: metric.quantityPerMonth,
-          referenceMonthlyQuantity: metric.referenceMonthlyQuantity,
-          consumedPercent,
-          estimatedKgCo2eProxy: metric.estimatedKgCo2eProxy,
-          source: metric.source,
-          state: getServiceQuotaState(consumedPercent),
-          isPrimary: false,
-        };
-      }),
-    )
-    .sort(compareQuotaMetrics);
-
-  const primaryMetric = metrics[0] ?? null;
-
-  return {
-    state: primaryMetric?.state ?? "NA",
-    primaryMetric:
-      primaryMetric === null
-        ? null
-        : {
-            ...primaryMetric,
-            isPrimary: true,
-          },
-    metrics: metrics.map((metric, index) => ({
-      ...metric,
-      isPrimary: index === 0,
-    })),
-  };
+  return buildQuotaSummary(
+    webQuotaServices.flatMap((service) =>
+      service.metricEstimates.map((metric) =>
+        buildQuotaMetricSummary(metric, `${service.key}:${metric.key}`),
+      ),
+    ),
+  );
 }
 
 function getServiceCriticalityPercent(

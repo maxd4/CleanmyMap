@@ -122,3 +122,7 @@ export function hasRepeatedKeyWithDifferentValue<T>(
 export function finiteNonNegativeNullable(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
+
+export function sameStringSet(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value) => right.includes(value));
+}

@@ -6,6 +6,7 @@ import type { RouteRecommendationResponse } from "./route-response-contract";
 import { MAX_ROUTE_GROUP_COUNT } from "./route-group-partition";
 import {
   buildActionRouteVersionCalculation,
+  buildVersionedStopFromSnapshot,
   type ActionRouteVersionCalculation,
 } from "./route-active-version";
 import {
@@ -103,23 +104,6 @@ export function buildRouteRefreshSubmission(
   );
 }
 
-function versionedStopFromSnapshot(stop: RoutePlannerSnapshot["selectedStops"][number]) {
-  return {
-    id: stop.id,
-    label: stop.label,
-    score: stop.score,
-    priorityReason: stop.priorityReason,
-    ...(stop.evidence?.family
-      ? {
-          sourceFamily: stop.evidence.family,
-          ...(stop.evidence.family === "observed"
-            ? { sourceObservedAt: stop.evidence.observedAt }
-            : {}),
-        }
-      : {}),
-  };
-}
-
 function proposalExplanation(response: RouteRecommendationResponse): string | null {
   return response.tradeoffs[0] ?? response.trace.warnings[0] ?? response.trace.approximations[0] ?? null;
 }
@@ -139,7 +123,7 @@ export function buildRouteRefreshProposal(
       totalMinutes:
         response.totalMinutesEstimate ?? response.operationalBudget?.totalMinutes ?? null,
     },
-    stops: response.stops.map(versionedStopFromSnapshot),
+    stops: response.stops.map(buildVersionedStopFromSnapshot),
     explanation: proposalExplanation(response),
   });
   return {

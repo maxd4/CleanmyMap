@@ -21,6 +21,20 @@ export type PublicSurfaceSnapshotRecord<TPayload = unknown> = {
   meta: Record<string, unknown>;
 };
 
+export function toPersistedPublicSurfaceSnapshot<TPayload>(
+  snapshot: PublicSurfaceSnapshotRecord<TPayload>,
+): Omit<PublicSurfaceSnapshotRecord<TPayload>, "id"> {
+  return {
+    snapshotKey: snapshot.snapshotKey,
+    snapshotDate: snapshot.snapshotDate,
+    generatedAt: snapshot.generatedAt,
+    version: snapshot.version,
+    title: snapshot.title,
+    payload: snapshot.payload,
+    meta: snapshot.meta,
+  };
+}
+
 type PublicSurfaceSnapshotRow = {
   id: number | string;
   snapshot_key: string;

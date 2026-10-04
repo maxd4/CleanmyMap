@@ -3,11 +3,13 @@ import type {
 } from "./types";
 import {
   countDistinct,
-  countProjectUnreadNotifications,
   countTrainingPhotos,
 } from "./project-signals-helpers";
 import { summarizeFunnelRows } from "./project-signals-funnel";
-import type { ProjectSignalRows } from "./project-signals.calculations";
+import {
+  buildProjectSignalActivityCounts,
+  type ProjectSignalRows,
+} from "./project-signals.calculations";
 
 type HighlightContext = {
   funnelAggregate: ReturnType<typeof summarizeFunnelRows>;
@@ -30,17 +32,8 @@ function buildHighlightContext(rows: ProjectSignalRows): HighlightContext {
     (acc, row) => acc + countTrainingPhotos(row.photos),
     0,
   );
-  const recentEmailCount = rows.serviceEmails.reduce((acc, row) => {
-    if (row.status !== "sent") {
-      return acc;
-    }
-
-    return acc + Math.max(0, Number(row.recipient_count ?? 0));
-  }, 0);
-  const communityEventCount = rows.communityEvents.length;
-  const rsvpCount = rows.eventRsvps.length;
-  const notificationCount = rows.appNotifications.length;
-  const unreadNotificationCount = countProjectUnreadNotifications(rows.appNotifications);
+  const activity = buildProjectSignalActivityCounts(rows);
+  const recentEmailCount = activity.sentEmailCount;
   const routeCount = funnelAggregate.distinctRouteCount;
   const activeUserCount = countDistinct([
     ...funnelAggregate.userIds,
@@ -56,10 +49,10 @@ function buildHighlightContext(rows: ProjectSignalRows): HighlightContext {
     funnelAggregate,
     allTrainingPhotos,
     recentEmailCount,
-    communityEventCount,
-    rsvpCount,
-    notificationCount,
-    unreadNotificationCount,
+    communityEventCount: activity.communityEventCount,
+    rsvpCount: activity.rsvpCount,
+    notificationCount: activity.notificationCount,
+    unreadNotificationCount: activity.unreadNotificationCount,
     routeCount,
     activeUserCount,
   };

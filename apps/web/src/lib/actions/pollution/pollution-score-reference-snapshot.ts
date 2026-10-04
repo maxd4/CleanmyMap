@@ -7,6 +7,7 @@ import type {
 import {
   getPublicSurfaceSnapshotDate,
   readLatestPublicSurfaceSnapshot,
+  toPersistedPublicSurfaceSnapshot,
   upsertPublicSurfaceSnapshot,
   type PublicSurfaceSnapshotRecord,
 } from "@/lib/public-surface-snapshots";
@@ -183,15 +184,7 @@ export async function runPollutionScoreReferencesJob(params: {
   const snapshot = buildPollutionScoreReferenceSnapshot({ now, references });
   const writeSnapshot =
     params.writeSnapshot ?? ((value) => upsertPublicSurfaceSnapshot(value));
-  const persistedSnapshot = {
-    snapshotKey: snapshot.snapshotKey,
-    snapshotDate: snapshot.snapshotDate,
-    generatedAt: snapshot.generatedAt,
-    version: snapshot.version,
-    title: snapshot.title,
-    payload: snapshot.payload,
-    meta: snapshot.meta,
-  };
+  const persistedSnapshot = toPersistedPublicSurfaceSnapshot(snapshot);
   await writeSnapshot(persistedSnapshot);
   return { status: "captured", snapshot };
 }
