@@ -269,6 +269,33 @@ test("a valid KEEP_INTENTIONAL registry entry targets a current native fingerpri
     currentFingerprintsByScope: { tests: new Set(["b1c2d3e4f5061728"]) },
   });
   assert.deepEqual(result.counts, { runtime: 0, tests: 1, "fixtures/data": 0 });
+  assert.equal(result.keepIntentional, 1);
+  assert.equal(result.noActionNoise, 0);
+});
+
+test("a valid NO_ACTION_NOISE registry entry is durable and classified separately", () => {
+  const result = validateDuplicationJustificationsRegistry({
+    schemaVersion: 1,
+    justifications: [{
+      scope: "runtime",
+      fingerprint: "a1b2c3d4e5f60718",
+      classification: "NO_ACTION_NOISE",
+      reason: "The detector matches a short textual pattern without a shared architectural invariant.",
+      evidence: "apps/web/src/first.ts:10-14 and apps/web/src/second.ts:31-35",
+      reviewedRef: "21c83ff399cb812c1dba18b1f19411b5fc7833e4",
+    }],
+  }, {
+    nativeBaselines: NATIVE_BASELINES,
+    currentFingerprintsByScope: { runtime: new Set(["a1b2c3d4e5f60718"]) },
+    currentOccurrencesByScope: { runtime: [{
+      fingerprint: "a1b2c3d4e5f60718",
+      occurrenceA: { path: "apps/web/src/first.ts", startLine: 10, endLine: 14 },
+      occurrenceB: { path: "apps/web/src/second.ts", startLine: 31, endLine: 35 },
+    }] },
+  });
+  assert.equal(result.keepIntentional, 0);
+  assert.equal(result.noActionNoise, 1);
+  assert.deepEqual(result.stale, []);
 });
 
 test("an unknown native fingerprint cannot be justified", () => {
@@ -296,11 +323,11 @@ test("malformed justification fields fail explicitly", () => {
       evidence: "",
       reviewedRef: "short",
     }],
-  }, { nativeBaselines: NATIVE_BASELINES }), /must use KEEP_INTENTIONAL/);
+  }, { nativeBaselines: NATIVE_BASELINES }), /must use KEEP_INTENTIONAL or NO_ACTION_NOISE/);
 });
 
 test("a disappeared justified clone is reported as STALE_KEEP_INTENTIONAL", () => {
-  assert.throws(() => validateDuplicationJustificationsRegistry({
+  const result = validateDuplicationJustificationsRegistry({
     schemaVersion: 1,
     justifications: [{
       scope: "tests",
@@ -313,7 +340,32 @@ test("a disappeared justified clone is reported as STALE_KEEP_INTENTIONAL", () =
   }, {
     nativeBaselines: NATIVE_BASELINES,
     currentFingerprintsByScope: { tests: new Set() },
-  }), /STALE_KEEP_INTENTIONAL/);
+  });
+  assert.deepEqual(result.staleKeepIntentional, ["tests:c1d2e3f405162738"]);
+  assert.deepEqual(result.staleNoActionNoise, []);
+  assert.deepEqual(result.stale, ["tests:c1d2e3f405162738"]);
+});
+
+test("current occurrence evidence is required to be verifiable", () => {
+  assert.throws(() => validateDuplicationJustificationsRegistry({
+    schemaVersion: 1,
+    justifications: [{
+      scope: "runtime",
+      fingerprint: "a1b2c3d4e5f60718",
+      classification: "KEEP_INTENTIONAL",
+      reason: "Independent proof.",
+      evidence: "apps/web/src/other.ts:10-13 and apps/web/src/second.ts:31-35",
+      reviewedRef: "21c83ff399cb812c1dba18b1f19411b5fc7833e4",
+    }],
+  }, {
+    nativeBaselines: NATIVE_BASELINES,
+    currentFingerprintsByScope: { runtime: new Set(["a1b2c3d4e5f60718"]) },
+    currentOccurrencesByScope: { runtime: [{
+      fingerprint: "a1b2c3d4e5f60718",
+      occurrenceA: { path: "apps/web/src/first.ts", startLine: 10, endLine: 14 },
+      occurrenceB: { path: "apps/web/src/second.ts", startLine: 31, endLine: 35 },
+    }] },
+  }), /CURRENT occurrence pair/);
 });
 
 test("a new fingerprint remains blocking independently of the KEEP registry", () => {

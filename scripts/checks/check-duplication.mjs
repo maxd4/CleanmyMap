@@ -98,15 +98,17 @@ export function runDuplicationPolicy() {
     return [scopeName, JSON.parse(fs.readFileSync(path.join(nativeBaselineDirectory, fileName), "utf8"))];
   }));
   const currentFingerprintsByScope = Object.fromEntries(results.map((result) => [result.scopeName, result.fingerprints]));
+  const currentOccurrencesByScope = Object.fromEntries(results.map((result) => [result.scopeName, result.occurrences]));
   const justifications = JSON.parse(fs.readFileSync(justificationsPath, "utf8"));
   const justificationReport = validateDuplicationJustificationsRegistry(justifications, {
     nativeBaselines,
     currentFingerprintsByScope,
+    currentOccurrencesByScope,
   });
   return { baseline, results, justificationReport };
 }
 
-export function formatDuplicationReport({ results }) {
+export function formatDuplicationReport({ results, justificationReport = null }) {
   const lines = [];
   for (const { scopeName, metrics, comparison } of results) {
     lines.push(`${scopeName}: ${metrics.clones} clones, ${metrics.duplicatedLines}/${metrics.lines} lines (${metrics.percentage.toFixed(2)}%), ${metrics.duplicatedTokens}/${metrics.tokens} tokens.`);
@@ -117,6 +119,14 @@ export function formatDuplicationReport({ results }) {
     lines.push(`  LINE_PERCENTAGE_POINT_DELTA: ${comparison.deltas.linePercentagePoints.toFixed(6)}`);
     lines.push(`  TOKEN_PERCENTAGE_POINT_DELTA: ${comparison.deltas.tokenPercentagePoints.toFixed(6)}`);
     for (const failure of comparison.failures) lines.push(`  FAIL_REASON: ${failure}`);
+  }
+  if (justificationReport) {
+    lines.push(`KEEP_INTENTIONAL: ${justificationReport.keepIntentional}`);
+    lines.push(`NO_ACTION_NOISE: ${justificationReport.noActionNoise}`);
+    lines.push(`STALE_KEEP_INTENTIONAL: ${justificationReport.staleKeepIntentional.length}`);
+    lines.push(`STALE_NO_ACTION_NOISE: ${justificationReport.staleNoActionNoise.length}`);
+    for (const identity of justificationReport.staleKeepIntentional) lines.push(`STALE_KEEP_INTENTIONAL: ${identity}`);
+    for (const identity of justificationReport.staleNoActionNoise) lines.push(`STALE_NO_ACTION_NOISE: ${identity}`);
   }
   return lines.join("\n");
 }
@@ -161,19 +171,18 @@ async function main() {
       });
     }
     console.log(formatDuplicationReport(report));
-    console.log(`KEEP_INTENTIONAL_RUNTIME: ${report.justificationReport.counts.runtime}`);
-    console.log(`KEEP_INTENTIONAL_TESTS: ${report.justificationReport.counts.tests}`);
-    console.log(`KEEP_INTENTIONAL_DATA: ${report.justificationReport.counts["fixtures/data"]}`);
-    console.log("STALE_KEEP_INTENTIONAL: 0");
     const statuses = report.results.map((result) => result.comparison.status);
-    const status = statuses.includes("FAIL")
+    const status = statuses.includes("FAIL") || report.justificationReport.stale.length > 0
       ? "FAIL"
       : statuses.includes("PASS_WITH_GRACE")
         ? "PASS_WITH_GRACE"
         : "PASS";
     console.log(`DUPLICATION_STATUS: ${status}`);
     if (status === "FAIL") {
-      const failures = report.results.flatMap((result) => result.comparison.failures);
+      const failures = [
+        ...report.results.flatMap((result) => result.comparison.failures),
+        ...report.justificationReport.stale.map((identity) => `stale durable justification (${identity})`),
+      ];
       console.error(`FAIL: ${failures.length} duplication ratchet violation(s).`);
       process.exitCode = 1;
       return;

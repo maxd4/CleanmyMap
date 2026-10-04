@@ -431,6 +431,12 @@ divergence fonctionnelle que la centralisation empêchera. Si ces éléments ne
 sont pas démontrés, conserver les implémentations et qualifier
 `KEEP_INTENTIONAL` ou `NO_ACTION_NOISE`.
 
+Toute qualification CURRENT `KEEP_INTENTIONAL` ou `NO_ACTION_NOISE` décidée
+dans un lot de duplication doit être ajoutée ou mise à jour dans
+`scripts/checks/duplication-justifications.json` dans le même lot, avec raison,
+preuve des deux occurrences réelles et SHA complet de revue. Une décision
+durable ne doit pas rester uniquement dans un compte-rendu de prompt.
+
 La priorité de traitement est :
 
 ```text
