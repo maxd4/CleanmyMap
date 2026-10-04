@@ -36,9 +36,8 @@ import { getClerkService } from"@/lib/services/clerk";
 import { enforceServerRateLimit } from"@/lib/rate-limit/server";
 import { isIsoDateString } from"@/lib/security/validation";
 import {
+ communityEventLocationSchema,
  communityEventLocationToDatabase,
- isValidCommunityEventCoordinatePair,
- type CommunityEventLocationInput,
 } from "@/lib/community/event-location";
 import {
  COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
@@ -209,13 +208,7 @@ const createCommunityEventSchema = z.object({
  .string()
  .refine(isIsoDateString,"Date attendue au format YYYY-MM-DD"),
  locationLabel: z.string().trim().min(2).max(255),
- location: z
-  .object({
-   latitude: z.number().finite().min(-90).max(90),
-   longitude: z.number().finite().min(-180).max(180),
-   source: z.enum(["manual", "import"]),
-  })
-  .optional(),
+ location: communityEventLocationSchema.optional(),
  description: z.string().trim().max(2000).optional(),
  capacityTarget: z.number().int().min(1).max(200000).optional(),
  cleanupObjective: z.string().trim().min(2).max(240),
@@ -224,6 +217,77 @@ const createCommunityEventSchema = z.object({
  cleanupSupportLevel: z.enum(CLEANUP_SUPPORT_LEVELS),
  cleanupWasteTypesExpected: z.array(z.enum(CLEANUP_WASTE_TYPES)).min(1).max(5),
 });
+
+type CommunityEventsSupabase = ReturnType<typeof getSupabaseServerClient>;
+type CommunityEventIdentity = Awaited<ReturnType<typeof getCurrentUserIdentity>>;
+
+async function notifyCommunityEventCreatorInbox(params: {
+ identity: CommunityEventIdentity;
+ userId: string;
+ payload: z.infer<typeof createCommunityEventSchema>;
+}): Promise<void> {
+ try {
+  const { identity, userId, payload } = params;
+  await sendCreatorInboxEmail({
+   subject: `[CleanMyMap] Nouvel événement - ${payload.title}`,
+   actorUserId: userId,
+   title: "Nouvel événement communautaire",
+   intro: "Un événement vient d'être créé dans la file créateur.",
+   lines: [
+    { label:"Organisateur", value: identity?.displayName ?? userId },
+    { label:"Email", value: identity?.email ?? "non communiqué" },
+    { label:"Source", value: "Création d'événement communautaire" },
+    { label:"Titre", value: payload.title },
+    { label:"Date", value: payload.eventDate },
+    { label:"Lieu", value: payload.locationLabel },
+    { label:"Description", value: payload.description ?? "non communiquée" },
+    { label:"Objectif cleanup", value: payload.cleanupObjective },
+    { label:"Zone cleanup", value: payload.cleanupZone },
+    { label:"Soutien souhaité", value: payload.cleanupSupportLevel },
+    { label:"Déchets attendus", value: payload.cleanupWasteTypesExpected.join(", ") },
+    { label:"Capacité cible", value: String(payload.capacityTarget ?? "non communiquée") },
+   ],
+   footer:"L'événement est également visible dans le flux communautaire.",
+  });
+ } catch (notifError) {
+  console.warn("[Event Notif] Creator inbox failure:", notifError);
+ }
+}
+
+async function notifyNearbyCommunityEventProfiles(
+ supabase: CommunityEventsSupabase,
+ params: {
+  userId: string;
+  eventId: string;
+  title: string;
+  locationLabel: string;
+ },
+): Promise<void> {
+ try {
+  const notificationTargets = getCommunityEventNotificationTargets(params.locationLabel);
+  if (!notificationTargets) return;
+
+  const nearbyProfiles = await loadCommunityEventNotificationProfiles(supabase, {
+   excludedProfileId: params.userId,
+   targets: notificationTargets,
+  });
+  const targetProfiles = nearbyProfiles.filter((profile) =>
+   isProfileEligibleForCommunityEvent(profile, notificationTargets),
+  );
+  if (targetProfiles.length === 0) return;
+
+  const notifications = targetProfiles.map((profile) => ({
+   user_id: profile.id,
+   type:"community",
+   title:"Appel au collectif ! 📣",
+   content: `Un nouvel événement est organisé près de chez vous :"${params.title}" (${params.locationLabel}).`,
+   payload: { entityType:"event", id: params.eventId },
+  }));
+  await supabase.from("app_notifications").insert(notifications);
+ } catch (notifError) {
+  console.error("[Event Notif] Silent failure:", notifError);
+ }
+}
 
 
 
@@ -286,16 +350,6 @@ export async function POST(request: Request) {
  return validationErrorResponse(parsed.error.flatten().fieldErrors);
  }
 
- if (
-  parsed.data.location &&
-  !isValidCommunityEventCoordinatePair(
-   parsed.data.location.latitude,
-   parsed.data.location.longitude,
-  )
- ) {
-  return validationErrorResponse({ location: ["Coordonnées invalides."] });
- }
-
  const supabase = getSupabaseServerClient(true);
 
  try {
@@ -314,9 +368,7 @@ export async function POST(request: Request) {
  title: parsed.data.title,
   event_date: parsed.data.eventDate,
   location_label: parsed.data.locationLabel,
-  ...communityEventLocationToDatabase(
-   parsed.data.location as CommunityEventLocationInput | undefined,
-  ),
+  ...communityEventLocationToDatabase(parsed.data.location),
  description: serializeCommunityEventDescription(
   parsed.data.description ?? null,
   {
@@ -347,61 +399,18 @@ export async function POST(request: Request) {
 
  revalidateCommunityEventCaches();
 
- try {
- await sendCreatorInboxEmail({
- subject: `[CleanMyMap] Nouvel événement - ${parsed.data.title}`,
- actorUserId: userId,
- title: "Nouvel événement communautaire",
- intro: "Un événement vient d'être créé dans la file créateur.",
- lines: [
- { label:"Organisateur", value: identity?.displayName ?? userId },
- { label:"Email", value: identity?.email ?? "non communiqué" },
- { label:"Source", value: "Création d'événement communautaire" },
- { label:"Titre", value: parsed.data.title },
- { label:"Date", value: parsed.data.eventDate },
- { label:"Lieu", value: parsed.data.locationLabel },
- { label:"Description", value: parsed.data.description ?? "non communiquée" },
- { label:"Objectif cleanup", value: parsed.data.cleanupObjective },
- { label:"Zone cleanup", value: parsed.data.cleanupZone },
- { label:"Soutien souhaité", value: parsed.data.cleanupSupportLevel },
- { label:"Déchets attendus", value: parsed.data.cleanupWasteTypesExpected.join(", ") },
- { label:"Capacité cible", value: String(parsed.data.capacityTarget ?? "non communiquée") },
- ],
- footer:"L'événement est également visible dans le flux communautaire.",
- });
- } catch (notifError) {
- console.warn("[Event Notif] Creator inbox failure:", notifError);
- }
-
- // --- Start: In-App Notifications for Local Community ---
- try {
- const notificationTargets = getCommunityEventNotificationTargets(parsed.data.locationLabel);
- if (notificationTargets) {
- const nearbyProfiles = await loadCommunityEventNotificationProfiles(supabase, {
- excludedProfileId: userId,
- targets: notificationTargets,
+ await notifyCommunityEventCreatorInbox({
+  identity,
+  userId,
+  payload: parsed.data,
  });
 
- const targetProfiles = nearbyProfiles.filter((profile) =>
- isProfileEligibleForCommunityEvent(profile, notificationTargets),
- );
-
- if (targetProfiles.length > 0) {
- const notifications = targetProfiles.map((profile) => ({
- user_id: profile.id,
- type:"community",
- title:"Appel au collectif ! 📣",
- content: `Un nouvel événement est organisé près de chez vous :"${parsed.data.title}" (${parsed.data.locationLabel}).`,
- payload: { entityType:"event", id: createdResult.data.id },
- }));
-
- await supabase.from("app_notifications").insert(notifications);
- }
- }
- } catch (notifError) {
- console.error("[Event Notif] Silent failure:", notifError);
- }
- // --- End: In-App Notifications ---
+ await notifyNearbyCommunityEventProfiles(supabase, {
+  userId,
+  eventId: createdResult.data.id,
+  title: parsed.data.title,
+  locationLabel: parsed.data.locationLabel,
+ });
 
  return NextResponse.json({ status:"created", item: createdResult.data }, { status: 201 });
  } catch (error) {

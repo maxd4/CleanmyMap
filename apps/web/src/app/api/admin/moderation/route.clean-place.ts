@@ -32,6 +32,23 @@ type CleanPlaceHandlerParams = {
 
 type CleanPlaceUpdateResult = Awaited<ReturnType<typeof moderateSignalement>>;
 
+function buildCleanPlaceNotFoundAuditDetails(params: {
+  entityType: CleanPlaceModerationPayload["entityType"];
+  stage: "lookup" | "update";
+  reason: string | null;
+  previousValue: ReturnType<typeof toCleanPlaceAuditSnapshot>;
+  newValue: ReturnType<typeof toCleanPlaceAuditSnapshot>;
+}): Record<string, unknown> {
+  return {
+    code: "not_found",
+    entityType: params.entityType,
+    stage: params.stage,
+    ...(params.reason ? { reason: params.reason } : {}),
+    previousValue: params.previousValue,
+    newValue: params.newValue,
+  };
+}
+
 async function runSignalementValidationSideEffects(
   supabase: ModerationSupabaseClient,
   params: { spotId: string; userId: string | null; actorUserId: string },
@@ -104,14 +121,13 @@ async function updateAndSyncCleanPlace(params: {
       operationType: "moderation",
       outcome: "error",
       targetId: payload.id,
-      details: {
-        code: "not_found",
+      details: buildCleanPlaceNotFoundAuditDetails({
         entityType: payload.entityType,
         stage: "update",
-        ...(reason ? { reason } : {}),
+        reason,
         previousValue,
         newValue,
-      },
+      }),
     });
 
     return {
@@ -171,14 +187,13 @@ export async function moderateCleanPlace({
       operationType: "moderation",
       outcome: "error",
       targetId: payload.id,
-      details: {
-        code: "not_found",
+      details: buildCleanPlaceNotFoundAuditDetails({
         entityType: payload.entityType,
         stage: "lookup",
-        ...(reason ? { reason } : {}),
+        reason,
         previousValue: emptySnapshot,
         newValue: emptySnapshot,
-      },
+      }),
     });
 
     return adminErrorResponse({

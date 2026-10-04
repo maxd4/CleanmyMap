@@ -3,6 +3,8 @@ import { join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
+  deleteAndPersistRecord,
+  deleteSupabaseRecordById,
   persistSupabaseRecord,
 } from "@/lib/persistence/runtime-store";
 import {
@@ -293,21 +295,10 @@ export async function updateLegalContentReportState(params: {
 export async function deleteLegalContentReport(reportId: string): Promise<boolean> {
   assertPersistenceAvailable("legal_content_reports");
 
-  if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("legal_content_reports")
-      .delete()
-      .eq("id", reportId)
-      .select("id");
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return (result.data ?? []).length > 0;
+  if (!canUseSupabaseServerPersistence()) {
+    const store = await readStore();
+    return deleteAndPersistRecord(store.records, (record) => record.id === reportId, (records) => writeStore({ updatedAt: new Date().toISOString(), records }));
   }
 
-  const store = await readStore();
-  const records = store.records.filter((record) => record.id !== reportId);
-  if (records.length === store.records.length) return false;
-  await writeStore({ updatedAt: new Date().toISOString(), records });
-  return true;
+  return deleteSupabaseRecordById(getSupabaseServerClient(true), "legal_content_reports", reportId);
 }

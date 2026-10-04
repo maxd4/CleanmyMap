@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
+  deleteAndPersistRecord,
+  deleteSupabaseRecordById,
   findRecordInList,
   isVercelRuntime,
   persistSupabaseRecord,
@@ -406,22 +408,9 @@ export async function deletePartnerOnboardingRequest(
   assertPersistenceAvailable("partner_onboarding_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("partner_onboarding_requests")
-      .delete()
-      .eq("id", requestId)
-      .select("id");
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return (result.data ?? []).length > 0;
+    return deleteSupabaseRecordById(getSupabaseServerClient(true), "partner_onboarding_requests", requestId);
   }
 
   const store = await readStore();
-  const records = store.records.filter((record) => record.id !== requestId);
-  if (records.length === store.records.length) {
-    return false;
-  }
-  await writeStore({ updatedAt: new Date().toISOString(), records });
-  return true;
+  return deleteAndPersistRecord(store.records, (record) => record.id === requestId, (records) => writeStore({ updatedAt: new Date().toISOString(), records }));
 }

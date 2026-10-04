@@ -150,6 +150,57 @@ function normalizeClientError(
   return new CommunityClientError("server_error", message, responseStatus);
 }
 
+async function postCommunityMutation<T>(
+  path: string,
+  payload: unknown,
+  options: {
+    expectedStatus: string;
+    httpErrorMessage: string;
+    invalidResponseMessage: string;
+    incompleteResponseMessage?: string;
+    parseItem: (item: Record<string, unknown>) => T;
+  },
+): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new CommunityClientError(
+      "network_error",
+      defaultMessageForKind("network"),
+    );
+  }
+
+  const body = await parseJsonSafely(response);
+  if (!response.ok) {
+    throw normalizeClientError(
+      response.status,
+      parseApiErrorMessage(body, options.httpErrorMessage),
+    );
+  }
+
+  if (
+    !body ||
+    typeof body !== "object" ||
+    (body as { status?: unknown }).status !== options.expectedStatus
+  ) {
+    throw new CommunityClientError("server_error", options.invalidResponseMessage);
+  }
+
+  const item = (body as { item?: unknown }).item;
+  if (!item || typeof item !== "object") {
+    throw new CommunityClientError(
+      "server_error",
+      options.incompleteResponseMessage ?? defaultMessageForKind("server"),
+    );
+  }
+  return options.parseItem(item as Record<string, unknown>);
+}
+
 function parsePositiveInteger(
   raw: number | undefined,
   min: number,
@@ -272,47 +323,13 @@ export async function fetchCommunityEvents(
 export async function createCommunityEvent(
   payload: CommunityCreateEventPayload,
 ): Promise<CommunityEventItem> {
-  let response: Response;
-  try {
-    response = await fetch("/api/community/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    throw new CommunityClientError(
-      "network_error",
-      defaultMessageForKind("network"),
-    );
-  }
-
-  const body = await parseJsonSafely(response);
-  if (!response.ok) {
-    throw normalizeClientError(
-      response.status,
-      parseApiErrorMessage(body, "Creation d'evenement impossible."),
-    );
-  }
-
-  if (
-    !body ||
-    typeof body !== "object" ||
-    (body as { status?: unknown }).status !== "created"
-  ) {
-    throw new CommunityClientError(
-      "server_error",
-      "Reponse creation evenement invalide.",
-    );
-  }
-
-  const item = (body as { item?: unknown }).item;
-  if (!item || typeof item !== "object") {
-    throw new CommunityClientError(
-      "server_error",
-      "Reponse creation evenement incomplete.",
-    );
-  }
-  return item as CommunityEventItem;
+  return postCommunityMutation("/api/community/events", payload, {
+    expectedStatus: "created",
+    httpErrorMessage: "Creation d'evenement impossible.",
+    invalidResponseMessage: "Reponse creation evenement invalide.",
+    incompleteResponseMessage: "Reponse creation evenement incomplete.",
+    parseItem: (item) => item as CommunityEventItem,
+  });
 }
 
 export async function updateCommunityEventOps(payload: {
@@ -322,47 +339,13 @@ export async function updateCommunityEventOps(payload: {
   postMortem?: string | null;
   location?: CommunityEventLocationInput | null;
 }): Promise<CommunityEventItem> {
-  let response: Response;
-  try {
-    response = await fetch("/api/community/events/ops", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    throw new CommunityClientError(
-      "network_error",
-      defaultMessageForKind("network"),
-    );
-  }
-
-  const body = await parseJsonSafely(response);
-  if (!response.ok) {
-    throw normalizeClientError(
-      response.status,
-      parseApiErrorMessage(body, "Mise a jour evenement impossible."),
-    );
-  }
-
-  if (
-    !body ||
-    typeof body !== "object" ||
-    (body as { status?: unknown }).status !== "ok"
-  ) {
-    throw new CommunityClientError(
-      "server_error",
-      "Reponse update evenement invalide.",
-    );
-  }
-
-  const item = (body as { item?: unknown }).item;
-  if (!item || typeof item !== "object") {
-    throw new CommunityClientError(
-      "server_error",
-      "Reponse update evenement incomplete.",
-    );
-  }
-  return item as CommunityEventItem;
+  return postCommunityMutation("/api/community/events/ops", payload, {
+    expectedStatus: "ok",
+    httpErrorMessage: "Mise a jour evenement impossible.",
+    invalidResponseMessage: "Reponse update evenement invalide.",
+    incompleteResponseMessage: "Reponse update evenement incomplete.",
+    parseItem: (item) => item as CommunityEventItem,
+  });
 }
 
 export async function upsertCommunityRsvp(payload: {
@@ -374,36 +357,10 @@ export async function upsertCommunityRsvp(payload: {
   rsvpStatus: CommunityRsvpStatus;
   updatedAt: string;
 }> {
-  let response: Response;
-  try {
-    response = await fetch("/api/community/rsvps", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    throw new CommunityClientError(
-      "network_error",
-      defaultMessageForKind("network"),
-    );
-  }
-
-  const body = await parseJsonSafely(response);
-  if (!response.ok) {
-    throw normalizeClientError(
-      response.status,
-      parseApiErrorMessage(body, "RSVP impossible."),
-    );
-  }
-
-  if (
-    !body ||
-    typeof body !== "object" ||
-    (body as { status?: unknown }).status !== "ok"
-  ) {
-    throw new CommunityClientError("server_error", defaultMessageForKind("server"));
-  }
-
-  const item = (body as { item?: unknown }).item;
-  return parseCommunityRsvpPayload(item);
+  return postCommunityMutation("/api/community/rsvps", payload, {
+    expectedStatus: "ok",
+    httpErrorMessage: "RSVP impossible.",
+    invalidResponseMessage: defaultMessageForKind("server"),
+    parseItem: parseCommunityRsvpPayload,
+  });
 }

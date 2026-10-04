@@ -2,6 +2,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { parseJsonBodyWithSchema } from "@/lib/security/validation";
 import { env } from "@/lib/env";
 import {
   parseAdminUserIds,
@@ -376,23 +377,8 @@ export async function POST(request: Request) {
     return unauthorizedJsonResponse();
   }
 
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
-  }
-
-  const parsed = reviewSchema.safeParse(payload);
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "Invalid payload",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBodyWithSchema(request, reviewSchema);
+  if (!parsed.ok) return parsed.response;
 
   const requestRecord = await getPromotionRequestById(parsed.data.requestId);
   if (!requestRecord) {

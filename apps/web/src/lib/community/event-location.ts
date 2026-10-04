@@ -1,5 +1,13 @@
+import { z } from "zod";
+
 export type CommunityEventLocationSource =
   "manual" | "import";
+
+export const communityEventLocationSchema = z.object({
+  latitude: z.number().finite().min(-90).max(90),
+  longitude: z.number().finite().min(-180).max(180),
+  source: z.enum(["manual", "import"]),
+});
 
 export type CommunityEventLocation = {
   label: string;
@@ -8,11 +16,9 @@ export type CommunityEventLocation = {
   source: CommunityEventLocationSource | null;
 };
 
-export type CommunityEventLocationInput = {
-  latitude: number;
-  longitude: number;
-  source: CommunityEventLocationSource;
-};
+export type CommunityEventLocationInput = z.infer<
+  typeof communityEventLocationSchema
+>;
 
 export function isValidCommunityEventCoordinatePair(
   latitude: number,

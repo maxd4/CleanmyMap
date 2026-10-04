@@ -2,6 +2,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { parseJsonBodyWithSchema } from "@/lib/security/validation";
 import { env } from "@/lib/env";
 import { getCurrentUserIdentity, requireCreatorAccess } from "@/lib/authz";
 import {
@@ -30,6 +31,124 @@ const mutationSchema = z.object({
 
 function isAdminLikeRole(role: RoleAccountRecord["roleLabel"]) {
   return role === "admin" || role === "elu";
+}
+
+type RoleManagementAuditParams = {
+  operationId: string;
+  actorUserId: string;
+  operation: "assign_role" | "revoke_role";
+  reason: string;
+  targetUserId: string;
+  previousRole: RoleAccountRecord["roleLabel"] | "unknown";
+  expectedRole: string;
+  stage: "clerk_lookup" | "clerk_update" | "supabase_sync";
+};
+
+function buildRoleManagementAuditDetails(
+  params: RoleManagementAuditParams,
+  includeStage: boolean,
+): Record<string, unknown> {
+  return {
+    operation: params.operation,
+    reason: params.reason,
+    targetUserId: params.targetUserId,
+    previousValue: { role: params.previousRole },
+    newValue: { role: params.expectedRole },
+    ...(includeStage ? { stage: params.stage } : {}),
+  };
+}
+
+async function appendRoleManagementErrorAudit(
+  params: RoleManagementAuditParams,
+): Promise<void> {
+  await appendAdminOperationAudit({
+    operationId: params.operationId,
+    at: new Date().toISOString(),
+    actorUserId: params.actorUserId,
+    operationType: "role_management",
+    outcome: "error",
+    targetId: params.targetUserId,
+    details: buildRoleManagementAuditDetails(params, true),
+  });
+}
+
+type RoleMutationData = z.infer<typeof mutationSchema>;
+
+async function applyRoleAccountMutation(params: {
+  data: RoleMutationData;
+  actorUserId: string;
+  targetRole: RoleAccountRecord["roleLabel"] | undefined;
+  appendAudit: typeof appendAdminOperationAudit;
+}): Promise<Response> {
+  const { data, actorUserId, targetRole, appendAudit } = params;
+  const operationId = randomUUID();
+  const operation: RoleManagementAuditParams["operation"] =
+    data.action === "assign" ? "assign_role" : "revoke_role";
+  const expectedRole = targetRole ?? "benevole";
+  let previousRole: RoleAccountRecord["roleLabel"] | "unknown" = "unknown";
+  let stage: RoleManagementAuditParams["stage"] = "clerk_lookup";
+  const auditParams = () => ({
+    operationId,
+    actorUserId,
+    operation,
+    reason: data.reason,
+    targetUserId: data.userId,
+    previousRole,
+    expectedRole,
+    stage,
+  });
+
+  try {
+    const client = await clerkClient();
+    const currentUser = await client.users.getUser(data.userId);
+    previousRole = resolveCanonicalTargetRole(currentUser);
+
+    if (previousRole === "max") {
+      await appendRoleManagementErrorAudit(auditParams());
+      return NextResponse.json(
+        { error: "Le compte IMU owner ne peut pas être modifié ici." },
+        { status: 403 },
+      );
+    }
+
+    stage = "clerk_update";
+    const updatedUser = await client.users.updateUser(data.userId, {
+      publicMetadata: {
+        ...(currentUser.publicMetadata as Record<string, unknown>),
+        role: targetRole,
+        profile: targetRole,
+      },
+      privateMetadata: {
+        ...(currentUser.privateMetadata as Record<string, unknown>),
+        role: targetRole,
+        profile: targetRole,
+      },
+    });
+
+    stage = "supabase_sync";
+    const syncedProfile = await syncClerkUserToSupabase(updatedUser);
+    if (!syncedProfile) {
+      throw new Error("Supabase role synchronization did not persist a profile.");
+    }
+  } catch {
+    await appendRoleManagementErrorAudit(auditParams());
+    return NextResponse.json(
+      { error: "Impossible de mettre à jour ce compte." },
+      { status: 500 },
+    );
+  }
+
+  await appendAudit({
+    operationId,
+    at: new Date().toISOString(),
+    actorUserId,
+    operationType: "role_management",
+    outcome: "success",
+    targetId: data.userId,
+    details: buildRoleManagementAuditDetails(auditParams(), false),
+  });
+  const account = await getManagedRoleAccountById(data.userId);
+  return NextResponse.json({ status: "ok", account });
 }
 
 function resolveCanonicalTargetRole(user: {
@@ -73,23 +192,8 @@ export async function POST(request: Request) {
     return unauthorizedJsonResponse();
   }
 
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
-  }
-
-  const parsed = mutationSchema.safeParse(payload);
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "Invalid payload",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBodyWithSchema(request, mutationSchema);
+  if (!parsed.ok) return parsed.response;
 
   if (parsed.data.userId === identity.userId) {
     return NextResponse.json(
@@ -114,88 +218,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Rôle cible interdit." }, { status: 400 });
   }
 
-  const operationId = randomUUID();
-  const operation = parsed.data.action === "assign" ? "assign_role" : "revoke_role";
-  const expectedRole = targetRole ?? "benevole";
-  let previousRole: RoleAccountRecord["roleLabel"] | "unknown" = "unknown";
-  let stage: "clerk_lookup" | "clerk_update" | "supabase_sync" = "clerk_lookup";
-
-  const buildAuditDetails = (includeStage = false): Record<string, unknown> => ({
-    operation,
-    reason: parsed.data.reason,
-    targetUserId: parsed.data.userId,
-    previousValue: { role: previousRole },
-    newValue: { role: expectedRole },
-    ...(includeStage ? { stage } : {}),
-  });
-
-  const appendRoleManagementErrorAudit = async (): Promise<void> => {
-    await appendAdminOperationAudit({
-      operationId,
-      at: new Date().toISOString(),
-      actorUserId: identity.userId,
-      operationType: "role_management",
-      outcome: "error",
-      targetId: parsed.data.userId,
-      details: buildAuditDetails(true),
-    });
-  };
-
-  try {
-    stage = "clerk_lookup";
-    const client = await clerkClient();
-    const currentUser = await client.users.getUser(parsed.data.userId);
-    previousRole = resolveCanonicalTargetRole(currentUser);
-
-    if (previousRole === "max") {
-      await appendRoleManagementErrorAudit();
-      return NextResponse.json(
-        { error: "Le compte IMU owner ne peut pas être modifié ici." },
-        { status: 403 },
-      );
-    }
-
-    stage = "clerk_update";
-    const updatedUser = await client.users.updateUser(parsed.data.userId, {
-      publicMetadata: {
-        ...(currentUser.publicMetadata as Record<string, unknown>),
-        role: targetRole,
-        profile: targetRole,
-      },
-      privateMetadata: {
-        ...(currentUser.privateMetadata as Record<string, unknown>),
-        role: targetRole,
-        profile: targetRole,
-      },
-    });
-
-    stage = "supabase_sync";
-    const syncedProfile = await syncClerkUserToSupabase(updatedUser);
-    if (!syncedProfile) {
-      throw new Error("Supabase role synchronization did not persist a profile.");
-    }
-  } catch {
-    await appendRoleManagementErrorAudit();
-    return NextResponse.json(
-      { error: "Impossible de mettre à jour ce compte." },
-      { status: 500 },
-    );
-  }
-
-  await appendAdminOperationAudit({
-    operationId,
-    at: new Date().toISOString(),
+  return applyRoleAccountMutation({
+    data: parsed.data,
     actorUserId: identity.userId,
-    operationType: "role_management",
-    outcome: "success",
-    targetId: parsed.data.userId,
-    details: buildAuditDetails(),
-  });
-
-  const account = await getManagedRoleAccountById(parsed.data.userId);
-
-  return NextResponse.json({
-    status: "ok",
-    account,
+    targetRole,
+    appendAudit: appendAdminOperationAudit,
   });
 }
