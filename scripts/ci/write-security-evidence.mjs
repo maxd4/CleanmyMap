@@ -33,6 +33,9 @@ writeQualityEvidence({
   candidateRef,
   status,
   findings: null,
-  metrics: { dependencyGraphChanged: false },
-  details: { reason: "dependency graph unchanged" },
+  metrics: {
+    dependencyGraphRelevant: false,
+    dependencyAuditRelevant: false,
+  },
+  details: { reason: "dependency graph and dependency-audit control unchanged" },
 });

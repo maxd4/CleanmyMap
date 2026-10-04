@@ -22,8 +22,11 @@ test("SKIPPED_BY_SCOPE is distinct from PASS and keeps dependency scope explicit
     gate: "dependencies",
     candidateSha: CANDIDATE_SHA,
     status: "SKIPPED_BY_SCOPE",
-    metrics: { dependencyGraphChanged: false },
-    details: { reason: "dependency graph unchanged" },
+    metrics: {
+      dependencyGraphRelevant: false,
+      dependencyAuditRelevant: false,
+    },
+    details: { reason: "dependency graph and dependency-audit control unchanged" },
   });
   writeQualityEvidence({
     repositoryRoot: root,
@@ -41,7 +44,7 @@ test("SKIPPED_BY_SCOPE is distinct from PASS and keeps dependency scope explicit
   });
   const summary = buildSecuritySummary({ candidateSha: CANDIDATE_SHA, evidenceByKey: evidence });
   assert.match(summary, /\| Secrets \| PASS \| 0 finding\(s\) \|/);
-  assert.match(summary, /\| Dependencies \| SKIPPED_BY_SCOPE \| dependency graph unchanged \|/);
+  assert.match(summary, /\| Dependencies \| SKIPPED_BY_SCOPE \| dependency graph and dependency-audit control unchanged \|/);
   assert.notEqual(readQualityEvidence({ repositoryRoot: root, evidenceRoot: "security-evidence", fileKey: "dependency-advisory" }).executed, true);
 });
 

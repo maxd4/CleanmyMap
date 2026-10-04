@@ -34,11 +34,24 @@ par l'application mobile :
 Cette mitigation remplace l'ancienne acceptation de risque. Il n'y a donc plus
 de date d'expiration ni de renouvellement périodique à maintenir
 pour cette décision locale. Dependabot et CodeQL restent actifs, et le dépôt
-exécute désormais le gate reproductible `npm run security:dependencies` lorsque
-le graphe npm ou un lockfile est modifié. Ce gate lance exactement
-`npm audit --json` puis refuse toute vulnérabilité `High` ou `Critical` qui ne
-correspond pas à une mitigation exacte. Il n'existe ni ignore global, ni
-exception par package, ni exception par niveau de sévérité.
+exécute désormais le contrôle de dépendances lorsqu'un changement touche le
+graphe npm, le contrôleur d'audit, sa politique ou sa preuve. Le job exécute
+d'abord `node --test scripts/security/audit-dependencies.test.mjs`, puis le
+gate reproductible `npm run security:dependencies`, qui lance exactement
+`npm audit --json` et refuse toute vulnérabilité `High` ou `Critical` qui ne
+correspond pas à une mitigation exacte. Un contrôle non pertinent produit
+`SKIPPED_BY_SCOPE` avec la raison `dependency graph and dependency-audit
+control unchanged`, jamais `PASS`. Il n'existe ni ignore global, ni exception
+par package, ni exception par niveau de sévérité.
+
+Le champ diagnostique `RUNTIME_SCOPE` est dérivé du graphe `packages` du
+`package-lock.json`. Il suit les `dependencies` et `optionalDependencies` des
+workspaces réels `apps/web` et `apps/mobile`, puis distingue
+`WEB_RUNTIME`, `MOBILE_RUNTIME`, leur combinaison, `DEV_BUILD_ONLY` lorsqu'une
+chaîne n'est atteignable que depuis les devDependencies connues, et
+`UNCLASSIFIED` lorsqu'aucune reachability n'est démontrée. Cette classification
+ne modifie jamais l'enforcement : tout High/Critical non couvert par une
+mitigation exacte reste bloquant.
 
 Les exceptions du gate sont limitées aux quatre lignes du registre versionné dans
 `scripts/security/audit-dependencies.mjs`. Chaque ligne doit matcher exactement
@@ -60,12 +73,13 @@ ESLint Web.
 L'advisory upstream indique que les versions `braces <= 3.0.3` sont affectées
 et qu'aucune version corrigée n'est publiée. Le suivi mainteneur est conservé
 dans [micromatch/braces#70](https://github.com/micromatch/braces/issues/70).
-Le scope actuel de cette racine est `DEV_BUILD_ONLY` : elle n'est pas une
-dépendance du runtime Web ou du runtime mobile publié, mais elle reste un
-finding High bloquant pour la politique de dépendances. Cette classification
-ne constitue ni une mitigation, ni une exception, ni une exclusion : aucune
-ligne de mitigation ne couvre `braces`, et le gate doit continuer à échouer
-jusqu'à une release corrigée ou un remplacement compatible démontré.
+Le graphe installé actuel atteint cette racine depuis `apps/mobile` via les
+dépendances Expo/Metro ; son diagnostic `RUNTIME_SCOPE` est donc
+`MOBILE_RUNTIME`. Elle reste un finding High bloquant pour la politique de
+dépendances. Cette classification ne constitue ni une mitigation, ni une
+exception, ni une exclusion : aucune ligne de mitigation ne couvre `braces`,
+et le gate doit continuer à échouer jusqu'à une release corrigée ou un
+remplacement compatible démontré.
 
 La mitigation ne rend pas fiable un asset spécialement forgé par lui-même :
 Aucun asset non fiable ne doit entrer dans un build Metro. Les assets d'un

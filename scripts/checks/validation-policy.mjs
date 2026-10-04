@@ -56,6 +56,18 @@ const HEAVY_SERIAL_LABELS = Object.freeze([
   "test:e2e",
 ]);
 
+const DEPENDENCY_AUDIT_CONTROL_FILES = new Set([
+  "scripts/security/audit-dependencies.mjs",
+  "scripts/security/audit-dependencies.test.mjs",
+  "scripts/checks/validation-policy.mjs",
+  "scripts/checks/validation-policy.test.mjs",
+  "documentation/security/dependency-advisory-governance.md",
+  "scripts/checks/quality-evidence.mjs",
+  "scripts/ci/write-security-evidence.mjs",
+  "scripts/ci/write-security-summary.mjs",
+  ".github/workflows/ci.yml",
+]);
+
 function normalizePath(file) {
   return String(file).replaceAll("\\", "/").replace(/^\.\//, "");
 }
@@ -116,6 +128,18 @@ export function isBuildRelevantFile(file) {
 function isScriptRelevantFile(file) {
   const normalized = normalizePath(file);
   return normalized.startsWith("scripts/") && !isDocumentationFile(normalized);
+}
+
+export function isDependencyGraphRelevantFile(file) {
+  return /(^|\/)package(?:-lock)?\.json$/.test(normalizePath(file));
+}
+
+export function isDependencyAuditRelevantFile(file) {
+  return DEPENDENCY_AUDIT_CONTROL_FILES.has(normalizePath(file));
+}
+
+export function isSecurityToolingRelevantFile(file) {
+  return normalizePath(file).startsWith("scripts/security/");
 }
 
 function isPythonRelevantFile(file) {
@@ -204,6 +228,9 @@ export function createValidationPlan({ scope = "changed", changedFiles = [] } = 
   const buildRelevant = normalizedFiles.some(isBuildRelevantFile);
   const scriptsRelevant = normalizedFiles.some(isScriptRelevantFile);
   const pythonRelevant = normalizedFiles.some(isPythonRelevantFile);
+  const dependencyGraphRelevant = normalizedFiles.some(isDependencyGraphRelevantFile);
+  const dependencyAuditRelevant = dependencyGraphRelevant || normalizedFiles.some(isDependencyAuditRelevantFile);
+  const securityToolingRelevant = normalizedFiles.some(isSecurityToolingRelevantFile);
   const fullVitest = (full && webRuntimeRelevant) || normalizedFiles.includes("apps/web/vitest.config.ts");
   const changedWebTestFiles = getChangedWebTestFiles(normalizedFiles);
 
@@ -214,6 +241,9 @@ export function createValidationPlan({ scope = "changed", changedFiles = [] } = 
     buildRelevant,
     scriptsRelevant,
     pythonRelevant,
+    dependencyGraphRelevant,
+    dependencyAuditRelevant,
+    securityToolingRelevant,
     testMode: webRelevant ? (fullVitest ? "full" : "targeted") : "skipped",
     targetedVitestFiles: getVitestFiles({
       groups: ["security", "regression"],
