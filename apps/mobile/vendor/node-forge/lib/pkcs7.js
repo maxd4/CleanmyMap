@@ -936,10 +936,6 @@ function _signerFromAsn1(obj) {
     unauthenticatedAttributes: []
   };
 
-  // TODO: convert attributes
-  var authenticatedAttributes = capture.authenticatedAttributes || [];
-  var unauthenticatedAttributes = capture.unauthenticatedAttributes || [];
-
   return rval;
 }
 

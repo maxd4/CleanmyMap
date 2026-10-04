@@ -45,7 +45,8 @@
     "typescript": "~7.0.2",
     "typescript-eslint": "^8.46.0",
     "@vitest/coverage-v8": "4.1.11",
-    "vitest": "4.1.11"
+    "vitest": "4.1.11",
+    "braces": "file:vendor/braces"
   },
   "private": true
 }

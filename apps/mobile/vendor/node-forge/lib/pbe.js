@@ -30,10 +30,6 @@ require('./rc2');
 require('./rsa');
 require('./util');
 
-if(typeof BigInteger === 'undefined') {
-  var BigInteger = forge.jsbn.BigInteger;
-}
-
 // shortcut for asn.1 API
 var asn1 = forge.asn1;
 

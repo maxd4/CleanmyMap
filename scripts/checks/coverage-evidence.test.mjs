@@ -6,7 +6,6 @@ import path from "node:path";
 import test from "node:test";
 
 import {
-  COVERAGE_EVIDENCE_RELATIVE_PATH,
   COVERAGE_SUMMARY_RELATIVE_PATH,
   validateCoverageEvidence,
   writeCoverageEvidence,

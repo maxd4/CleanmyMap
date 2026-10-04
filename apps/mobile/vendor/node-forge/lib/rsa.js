@@ -70,9 +70,7 @@ require('./prime');
 require('./random');
 require('./util');
 
-if(typeof BigInteger === 'undefined') {
-  var BigInteger = forge.jsbn.BigInteger;
-}
+var BigInteger = forge.jsbn.BigInteger;
 
 var _crypto = forge.util.isNodejs ? require('crypto') : null;
 

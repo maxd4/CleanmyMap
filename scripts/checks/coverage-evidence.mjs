@@ -13,7 +13,7 @@ import {
 
 const COVERAGE_EVIDENCE_VERSION = 1;
 export const COVERAGE_SUMMARY_RELATIVE_PATH = path.join("apps", "web", "coverage", "coverage-summary.json");
-export const COVERAGE_EVIDENCE_RELATIVE_PATH = path.join("apps", "web", "coverage", "coverage-evidence.json");
+const COVERAGE_EVIDENCE_RELATIVE_PATH = path.join("apps", "web", "coverage", "coverage-evidence.json");
 
 const CONFIGURATION_FILES = Object.freeze([
   "apps/web/vitest.config.ts",

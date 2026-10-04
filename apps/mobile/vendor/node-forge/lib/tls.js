@@ -357,10 +357,6 @@ var prf_TLS1 = function(secret, label, seed, length) {
  *
  * @return the pseudo random bytes in a byte buffer.
  */
-var prf_sha256 = function(secret, label, seed, length) {
-   // FIXME: implement me for TLS 1.2
-};
-
 /**
  * Gets a MAC for a record using the SHA-1 hash algorithm.
  *
@@ -2199,8 +2195,6 @@ var CCV = 3; // rcv certificate verify
 var CCC = 4; // rcv change cipher spec
 var CFI = 5; // rcv finished
 var CAD = 6; // rcv application data
-var CER = 7; // not expecting any messages at this point
-
 // map client current expect state and content type to function
 var __ = tls.handleUnexpected;
 var R0 = tls.handleChangeCipherSpec;
@@ -3043,16 +3037,7 @@ tls.createServerKeyExchange = function(c) {
   // this implementation only supports RSA, no Diffie-Hellman support,
   // so this record is empty
 
-  // determine length of the handshake message
-  var length = 0;
-
-  // build record fragment
-  var rval = forge.util.createBuffer();
-  if(length > 0) {
-    rval.putByte(tls.HandshakeType.server_key_exchange);
-    rval.putInt24(length);
-  }
-  return rval;
+  return forge.util.createBuffer();
 };
 
 /**
@@ -3536,9 +3521,6 @@ tls.verifyCertificateChain = function(c, chain) {
     }
 
     options.verify = function(vfd, depth, chain) {
-      // convert pki.certificateError to tls alert description
-      var desc = _certErrorToAlertDesc(vfd);
-
       // call application callback
       var ret = c.verify(c, vfd, depth, chain);
       if(ret !== true) {

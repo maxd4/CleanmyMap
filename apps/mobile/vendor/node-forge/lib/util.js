@@ -1493,7 +1493,7 @@ util.hexToBytes = function(hex) {
   // TODO: deprecate: "Deprecated. Use util.binary.hex.decode instead."
   var rval = '';
   var i = 0;
-  if(hex.length & 1 == 1) {
+  if((hex.length & 1) === 1) {
     // odd number of characters, convert first character alone
     i = 1;
     rval += String.fromCharCode(parseInt(hex[0], 16));
@@ -2107,12 +2107,7 @@ var _removeItem = function(api, id, key) {
     delete obj[key];
 
     // see if entry has no keys remaining
-    var empty = true;
-    for(var prop in obj) {
-      empty = false;
-      break;
-    }
-    if(empty) {
+    if(Object.keys(obj).length === 0) {
       // remove entry entirely if no keys are left
       obj = null;
     }
