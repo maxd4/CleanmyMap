@@ -71,14 +71,14 @@ function HomeScreen({ onStart, onMap }: { onStart: () => void; onMap: () => void
   return (
     <ScreenFrame eyebrow="BÉNÉVOLE TERRAIN" title="Agir simplement sur le terrain.">
       <Text style={styles.bodyText}>
-        Une base mobile légère pour retrouver les actions utiles sans reproduire tout le site CleanMyMap.
+        Retrouvez vos accès terrain, démarrez un suivi GPS et gardez le contact en cas d'urgence.
       </Text>
       <PrimaryButton icon="navigate-outline" label="Démarrer une action" onPress={onStart} />
       <SecondaryButton icon="map-outline" label="Consulter la carte" onPress={onMap} />
       <InfoCard
         icon="leaf-outline"
-        title="Même backend, mêmes contrats"
-        description="Les données et effets métier restent partagés avec le web."
+        title="Vos outils terrain"
+        description="La carte, le suivi GPS et les contacts utiles sont accessibles depuis l'application."
       />
     </ScreenFrame>
   )
@@ -93,8 +93,8 @@ function MapScreen() {
       <WebButton path={MOBILE_WEB_BRIDGE_PATHS.map} icon="open-outline" label="Ouvrir la carte CleanMyMap" />
       <InfoCard
         icon="map-outline"
-        title="Future évolution"
-        description="Le mode activité GPS live avec carte et tracé temps réel fera l'objet d'un lot dédié."
+        title="Suivi GPS disponible"
+        description="Démarrez une action pour afficher votre position et votre tracé en direct."
       />
     </ScreenFrame>
   )
@@ -103,11 +103,11 @@ function MapScreen() {
 function ActScreen({ onStart }: { onStart: () => void }) {
   return (
     <ScreenFrame eyebrow="ACTIONS TERRAIN" title="Agir">
-      <Text style={styles.bodyText}>Choisissez une action. Les parcours complexes restent portés par le web.</Text>
+      <Text style={styles.bodyText}>Choisissez ce que vous voulez faire sur le terrain.</Text>
       <ActionChoice
         icon="navigate-outline"
         title="Démarrer une action"
-        description="Futur mode activité GPS"
+        description="Démarrer le suivi GPS"
         onPress={onStart}
       />
       <ActionChoice
@@ -136,7 +136,7 @@ function MessagesScreen() {
   return (
     <ScreenFrame eyebrow="COMMUNAUTÉ" title="Messages">
       <Text style={styles.bodyText}>
-        La messagerie reste celle de CleanMyMap. L'application mobile n'introduit pas de second système de messages.
+        Retrouvez les échanges de votre équipe dans la messagerie CleanMyMap.
       </Text>
       <WebButton path={MOBILE_WEB_BRIDGE_PATHS.messages} icon="chatbubble-ellipses-outline" label="Ouvrir la messagerie" />
     </ScreenFrame>
@@ -146,7 +146,7 @@ function MessagesScreen() {
 function ProfileScreen({ onSignOut }: { onSignOut: () => void }) {
   return (
     <ScreenFrame eyebrow="COMPTE" title="Profil">
-      <Text style={styles.bodyText}>Les réglages essentiels restent accessibles avec votre compte Clerk.</Text>
+      <Text style={styles.bodyText}>Gérez votre compte et votre contact d'urgence.</Text>
       <WebButton path={MOBILE_WEB_BRIDGE_PATHS.profile} icon="person-outline" label="Ouvrir mon profil web" />
       <WebButton path={MOBILE_WEB_BRIDGE_PATHS.settings} icon="settings-outline" label="Ouvrir mes réglages" />
       <EmergencyContactPanel />

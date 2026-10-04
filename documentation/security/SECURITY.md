@@ -219,8 +219,10 @@ Vérifier :
 - suppression.
 
 L'application mobile utilise le même contrat d'identité Clerk que le web. Son
-renouvellement en background headless, `mission_actions` et sa validation
-opérationnelle restent ouverts avant toute production mobile.
+renouvellement en background headless et sa validation opérationnelle restent
+ouverts avant toute production mobile. `mission_actions` et la photo native sont
+hors V1 et constituent une évolution mobile future ; leurs contrats serveur
+restent gouvernés séparément.
 
 ## Dépendances et CodeQL
 

@@ -5,7 +5,6 @@ import { getAuthenticatedSupabaseClient } from './supabase';
 import type {
   ForegroundTrackPoint,
   MissionLocationInsert,
-  MissionActionInsert,
   ServiceResult,
 } from '../types/mission';
 import type { EmergencyContact } from '../types/emergency-contact';
@@ -14,9 +13,7 @@ const MISSION_KEY = 'cmm_current_mission_id';
 const PENDING_LINKED_MISSION_RECONCILIATIONS_KEY = 'cmm_pending_linked_mission_reconciliations';
 const MAX_PENDING_LINKED_MISSION_RECONCILIATIONS = 50;
 const GPS_BUFFER_INDEX_KEY = '@cmm_gps_buffer_index';
-const ACTION_BUFFER_INDEX_KEY = '@cmm_action_buffer_index';
 const GPS_BUFFER_RECORD_PREFIX = 'cmm_gps_buffer';
-const ACTION_BUFFER_RECORD_PREFIX = 'cmm_action_buffer';
 const FOREGROUND_TRACK_KEY_PREFIX = '@cmm_foreground_track:';
 const EMERGENCY_CONTACT_KEY = 'cmm_emergency_contact';
 const USE_SECURE_STORE = Platform.OS !== 'web';
@@ -252,21 +249,6 @@ export async function bufferPoint(point: MissionLocationInsert): Promise<void> {
   }
 }
 
-// Buffer Actions
-
-export async function bufferAction(action: MissionActionInsert): Promise<void> {
-  try {
-    const total = await appendSecureBufferRecord(
-      ACTION_BUFFER_INDEX_KEY,
-      ACTION_BUFFER_RECORD_PREFIX,
-      action,
-    );
-    console.log(`[Storage] Action bufferisée. Total actions : ${total}`);
-  } catch (e) {
-    console.error('[Storage] bufferAction error', e);
-  }
-}
-
 // Flush
 
 let flushInFlight: Promise<ServiceResult> | null = null;
@@ -302,30 +284,6 @@ async function flushBufferOnce(): Promise<ServiceResult> {
     };
   }
 
-  // Flush Actions
-  try {
-    const { keys, records: buffer } = await readSecureBufferRecords<MissionActionInsert>(
-      ACTION_BUFFER_INDEX_KEY,
-    );
-    if (buffer.length > 0) {
-      console.log(`[Storage] Flush Actions : ${buffer.length} actions`);
-      const { error } = await client.from('mission_actions').insert(buffer);
-      if (error) {
-        return { ok: false, error: `Synchronisation des actions impossible : ${error.message}` };
-      }
-
-      await clearSecureBufferRecords(keys);
-      await writeIndex(ACTION_BUFFER_INDEX_KEY, []);
-      console.log('[Storage] Buffer Actions vidé');
-    }
-  } catch (e) {
-    console.error('[Storage] flush actions error', e);
-    return {
-      ok: false,
-      error: `Synchronisation des actions impossible : ${e instanceof Error ? e.message : 'erreur inconnue.'}`,
-    };
-  }
-
   return { ok: true, data: undefined };
 }
 
@@ -336,20 +294,6 @@ export async function flushBuffer(): Promise<ServiceResult> {
     flushInFlight = null;
   });
   return flushInFlight;
-}
-
-export async function getBufferCount(): Promise<number> {
-  try {
-    const [gps, acts] = await Promise.all([
-      readIndex(GPS_BUFFER_INDEX_KEY),
-      readIndex(ACTION_BUFFER_INDEX_KEY),
-    ]);
-    const gpsCount = gps.length;
-    const actCount = acts.length;
-    return gpsCount + actCount;
-  } catch {
-    return 0;
-  }
 }
 
 export async function getPendingGpsPointCount(): Promise<number> {

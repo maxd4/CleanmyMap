@@ -5,7 +5,7 @@ vi.mock('../lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => state.client),
 }))
 
-import { bufferPoint, flushBuffer, getBufferCount } from '../lib/storage'
+import { bufferPoint, flushBuffer, getPendingGpsPointCount } from '../lib/storage'
 
 const point = {
   mission_id: 'mission-1',
@@ -25,7 +25,7 @@ describe('mobile GPS offline storage', () => {
 
   it('keeps an offline point and replays it once Clerk/Supabase is available', async () => {
     await bufferPoint(point)
-    expect(await getBufferCount()).toBe(1)
+    expect(await getPendingGpsPointCount()).toBe(1)
 
     const insert = vi.fn(async () => ({ error: null }))
     state.client = { from: vi.fn(() => ({ insert })) }
@@ -33,7 +33,7 @@ describe('mobile GPS offline storage', () => {
     await flushBuffer()
 
     expect(insert).toHaveBeenCalledWith([point])
-    expect(await getBufferCount()).toBe(0)
+    expect(await getPendingGpsPointCount()).toBe(0)
   })
 
   it('does not discard the buffer when Supabase replay fails', async () => {
@@ -44,7 +44,7 @@ describe('mobile GPS offline storage', () => {
     await flushBuffer()
 
     expect(insert).toHaveBeenCalledWith([point])
-    expect(await getBufferCount()).toBe(1)
+    expect(await getPendingGpsPointCount()).toBe(1)
   })
 
 })

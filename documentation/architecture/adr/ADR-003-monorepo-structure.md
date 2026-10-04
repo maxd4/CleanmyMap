@@ -47,9 +47,11 @@ apps/
 ADR-006 ; sa relocalisation éventuelle relève d'un autre chantier.
 
 L'identité Clerk et le contrat de finalisation des métriques par trigger
-`SECURITY INVOKER` sont finalisés et invariants. Les limites encore ouvertes
-sont le traitement background headless, `mission_actions`, la validation
-opérationnelle et la future évolution produit de l'application mobile.
+`SECURITY INVOKER` sont finalisés et invariants. La V1 mobile couvre le GPS avec
+carte et tracé, la reprise/offline, la finalisation serveur et les contacts
+d'urgence. Les limites encore ouvertes sont le traitement background headless,
+la validation opérationnelle, ainsi que `mission_actions` et la photo native
+comme évolutions futures.
 
 ## Conséquences
 

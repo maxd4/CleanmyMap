@@ -10,9 +10,9 @@ fonctionnalité métier profonde ni de parité avec le web.
 
 La V1 mobile est destinée aux bénévoles terrain et reste volontairement petite.
 Le site web demeure la surface complète du produit et évolue indépendamment.
-Le frontend mobile ne cherche pas à reproduire le site ; les développements
-mobiles approfondis sont réservés au mode activité GPS live avec carte et tracé
-temps réel, ainsi qu'aux contacts d'urgence.
+Le frontend mobile ne cherche pas à reproduire le site ; la V1 couvre le mode
+activité GPS live avec carte et tracé temps réel, la reprise/offline, la
+finalisation serveur et les contacts d'urgence.
 
 Les autres capacités mobiles doivent réutiliser les contrats, données et
 services communs existants. Aucun package partagé générique, second modèle
@@ -64,11 +64,12 @@ l'écriture directe de ces métriques.
 
 ## Capacités encore ouvertes et limites de production
 
-Les sujets suivants restent hors production et nécessitent une validation
+Les sujets suivants restent hors périmètre V1 et nécessitent une validation
 explicite avant toute évolution :
 
 - background headless ;
-- `mission_actions` ;
+- `mission_actions` et la photo native : évolution future, sans dépendance du
+  runtime V1 ;
 - validation opérationnelle ;
 - évolution future du produit mobile, après validation de chaque lot.
 
