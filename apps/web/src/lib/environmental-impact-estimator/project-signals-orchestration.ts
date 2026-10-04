@@ -1,4 +1,5 @@
-import { buildProjectSignalBreakdown, buildProjectSignalsHighlights, parseDateOrNull, PROJECT_SIGNAL_VOLUME_NOTE, type ProjectSignalRows } from "./project-signals.calculations";
+import { buildProjectSignalBreakdown, parseDateOrNull, PROJECT_SIGNAL_VOLUME_NOTE, type ProjectSignalRows } from "./project-signals.calculations";
+import { buildProjectSignalsHighlights } from "./project-signals-highlights";
 import { calculateCodexMonthlyUsageInput, calculateMonthlyUsageInput } from "./project-signals-usage";
 import { calculateAllTimeScopeInput, findAccountCreatedAt, findEarliestDate } from "./project-signals-scope";
 import type {
