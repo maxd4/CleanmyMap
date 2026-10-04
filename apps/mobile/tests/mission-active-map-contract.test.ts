@@ -35,4 +35,14 @@ describe('active mobile mission live map contract', () => {
     expect(mapSource).toMatch(/Distance live indicative/)
     expect(mapSource).not.toMatch(/distance_m|duration_s/)
   })
+
+  it('keeps the field surface map-first with compact status and primary stop action', () => {
+    expect(mapSource).toContain('style={styles.map}')
+    expect(mapSource).toContain('duration')
+    expect(mapSource).toContain('EmergencyCallActions compact')
+    expect(mapSource).toContain('accessibilityLabel="Terminer la mission"')
+    expect(mapSource).toContain('style={styles.stopButton}')
+    expect(appSource).toContain('style={styles.activityRoot}')
+    expect(appSource).not.toContain('styles.hudStatsRow')
+  })
 })

@@ -78,7 +78,7 @@ function HomeScreen({ onStart, onMap }: { onStart: () => void; onMap: () => void
       <InfoCard
         icon="leaf-outline"
         title="Vos outils terrain"
-        description="La carte, le suivi GPS et les contacts utiles sont accessibles depuis l'application."
+        description="La carte, le suivi GPS et les contacts utiles sont à portée de main."
       />
     </ScreenFrame>
   )
@@ -88,7 +88,7 @@ function MapScreen() {
   return (
     <ScreenFrame eyebrow="CONSULTATION TERRAIN" title="Carte">
       <Text style={styles.bodyText}>
-        La consultation mobile reste volontairement minimale. Les couches avancées et la supervision restent sur le web.
+        Consultez la carte CleanMyMap ou démarrez un suivi GPS sur le terrain.
       </Text>
       <WebButton path={MOBILE_WEB_BRIDGE_PATHS.map} icon="open-outline" label="Ouvrir la carte CleanMyMap" />
       <InfoCard
@@ -103,7 +103,7 @@ function MapScreen() {
 function ActScreen({ onStart }: { onStart: () => void }) {
   return (
     <ScreenFrame eyebrow="ACTIONS TERRAIN" title="Agir">
-      <Text style={styles.bodyText}>Choisissez ce que vous voulez faire sur le terrain.</Text>
+      <Text style={styles.bodyText}>Choisissez une action.</Text>
       <ActionChoice
         icon="navigate-outline"
         title="Démarrer une action"

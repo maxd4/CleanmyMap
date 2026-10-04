@@ -12,14 +12,14 @@ describe('mobile mission finalization UI contract', () => {
     expect(appSource).toContain("'Terminer la mission ?'")
     expect(appSource).toContain("setFinalizationStage('synchronizing')")
     expect(appSource).toContain('MissionFinalizationScreen')
-    expect(screenSource).toContain('SYNCHRONISATION...')
-    expect(screenSource).toContain('FINALISATION SERVEUR...')
+    expect(screenSource).toContain('ENVOI DES POINTS...')
+    expect(screenSource).toContain('ENREGISTREMENT...')
   })
 
   it('shows server metrics and a home CTA without client metric writes', () => {
     expect(screenSource).toContain('mission.duration_s')
     expect(screenSource).toContain('mission.distance_m')
-    expect(screenSource).toContain('Synchronisée avec le serveur')
+    expect(screenSource).not.toContain('Synchronisée avec le serveur')
     expect(screenSource).toContain('REVENIR À L’ACCUEIL')
     expect(serviceSource).toContain("{\n        status: 'completed',\n        ended_at: new Date().toISOString(),\n      }")
     expect(serviceSource).not.toContain('distance_m:')

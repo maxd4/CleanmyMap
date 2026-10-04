@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, AppState, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, AppState, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import * as Location from 'expo-location'
 import MapView, { Marker, Polyline, type Region } from 'react-native-maps'
 import { getMissionTrack } from '../lib/tracking-service'
 import { getStoredForegroundTrack, saveStoredForegroundTrack } from '../lib/storage'
 import { calculateTrackDistanceMeters, mergeTrackPoints } from '../lib/track-geometry'
+import { EmergencyCallActions } from './emergency-call-actions'
 import type { ForegroundTrackPoint, MissionLocation } from '../types/mission'
 
 type Coordinate = {
@@ -61,14 +62,7 @@ function formatDistance(distanceMeters: number): string {
   return `${(distanceMeters / 1000).toFixed(2)} km`
 }
 
-export function MissionActiveMap({
-  missionId,
-  pendingGpsPointCount,
-}: {
-  missionId: string
-  pendingGpsPointCount: number
-}) {
-  const mapRef = useRef<MapView | null>(null)
+function useMissionForegroundTrack(missionId: string, mapRef: React.MutableRefObject<MapView | null>) {
   const foregroundSubscriptionRef = useRef<Location.LocationSubscription | null>(null)
   const localTrackRef = useRef<ForegroundTrackPoint[]>([])
   const runIdRef = useRef(0)
@@ -187,7 +181,28 @@ export function MissionActiveMap({
       appStateSubscription.remove()
       stopForegroundSubscription()
     }
-  }, [missionId])
+  }, [missionId, mapRef])
+
+  return { currentPosition, track, gpsStatus, syncMessage }
+}
+
+export function MissionActiveMap({
+  missionId,
+  missionLabel,
+  duration,
+  pendingGpsPointCount,
+  errorMsg,
+  onStop,
+}: {
+  missionId: string
+  missionLabel: string
+  duration: string
+  pendingGpsPointCount: number
+  errorMsg: string | null
+  onStop: () => void
+}) {
+  const mapRef = useRef<MapView | null>(null)
+  const { currentPosition, track, gpsStatus, syncMessage } = useMissionForegroundTrack(missionId, mapRef)
 
   const polylineCoordinates = track.map(({ latitude, longitude }) => ({ latitude, longitude }))
   const liveDistance = calculateTrackDistanceMeters(track)
@@ -211,15 +226,39 @@ export function MissionActiveMap({
       </MapView>
 
       <View pointerEvents="none" style={styles.statusOverlay}>
-        <Text style={styles.statusTitle}>{GPS_STATUS_LABEL[gpsStatus]}</Text>
-        <Text style={styles.statusText}>{track.length} position(s) affichée(s)</Text>
-        <Text style={styles.statusText}>Distance live indicative : {formatDistance(liveDistance)}</Text>
+        <View style={styles.statusHeader}>
+          <View style={styles.statusTitleGroup}>
+            <Text style={styles.statusTitle}>{GPS_STATUS_LABEL[gpsStatus]}</Text>
+            <Text numberOfLines={1} style={styles.missionLabel}>{missionLabel}</Text>
+          </View>
+          <View style={styles.livePill}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>EN COURS</Text>
+          </View>
+        </View>
+        <View style={styles.metricsRow}>
+          <Metric label="Durée" value={duration} />
+          <Metric label="Distance live indicative" value={formatDistance(liveDistance)} />
+        </View>
         <Text style={styles.statusText}>
           {pendingGpsPointCount > 0
-            ? `${pendingGpsPointCount} point(s) en attente de synchronisation`
-            : 'Aucun point GPS en attente'}
+            ? `Hors ligne · ${pendingGpsPointCount} point(s) à envoyer`
+            : 'Synchronisation à jour'}
         </Text>
         {syncMessage ? <Text style={styles.syncText}>{syncMessage}</Text> : null}
+        {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+      </View>
+
+      <View style={styles.actionOverlay}>
+        <EmergencyCallActions compact />
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Terminer la mission"
+          style={styles.stopButton}
+          onPress={onStop}
+        >
+          <Text style={styles.stopButtonText}>TERMINER</Text>
+        </TouchableOpacity>
       </View>
 
       {gpsStatus === 'restoring' && track.length === 0 ? (
@@ -232,29 +271,60 @@ export function MissionActiveMap({
   )
 }
 
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metric}>
+      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={styles.metricValue}>{value}</Text>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    minHeight: 240,
     overflow: 'hidden',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#334155',
     backgroundColor: '#0f172a',
-    marginBottom: 20,
   },
   map: {
     flex: 1,
   },
   statusOverlay: {
     position: 'absolute',
-    top: 16,
-    left: 16,
-    right: 16,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#020617dd',
+    top: 56,
+    left: 12,
+    right: 12,
+    borderRadius: 14,
+    padding: 12,
+    backgroundColor: '#020617e8',
+  },
+  statusHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statusTitleGroup: { flex: 1, marginRight: 8 },
+  missionLabel: { color: '#f8fafc', fontSize: 15, fontWeight: '800', marginTop: 3 },
+  livePill: {
+    alignItems: 'center',
+    backgroundColor: '#064e3b',
+    borderRadius: 8,
+    flexDirection: 'row',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  liveDot: { backgroundColor: '#34d399', borderRadius: 4, height: 8, marginRight: 5, width: 8 },
+  liveText: { color: '#d1fae5', fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
+  metricsRow: { flexDirection: 'row', marginTop: 12 },
+  metric: { flex: 1 },
+  metricLabel: { color: '#94a3b8', fontSize: 10, fontWeight: '700' },
+  metricValue: { color: '#ffffff', fontSize: 18, fontWeight: '900', marginTop: 2 },
+  actionOverlay: {
+    alignItems: 'stretch',
+    bottom: 16,
+    left: 12,
+    position: 'absolute',
+    right: 12,
   },
   statusTitle: {
     color: '#10b981',
@@ -274,6 +344,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '700',
   },
+  errorText: { color: '#fecaca', fontSize: 11, lineHeight: 15, marginTop: 5 },
+  stopButton: {
+    alignItems: 'center',
+    backgroundColor: '#dc2626',
+    borderColor: '#fecaca',
+    borderRadius: 14,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 54,
+    marginTop: 10,
+  },
+  stopButtonText: { color: '#ffffff', fontSize: 15, fontWeight: '900', letterSpacing: 1.2 },
   loadingOverlay: {
     position: 'absolute',
     inset: 0,

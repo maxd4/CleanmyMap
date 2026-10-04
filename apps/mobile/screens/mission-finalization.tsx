@@ -11,11 +11,11 @@ export function MissionFinalizationScreen({ stage }: { stage: MissionFinalizatio
     <View style={styles.container}>
       <StatusBar style="light" />
       <ActivityIndicator size="large" color="#10b981" />
-      <Text style={styles.eyebrow}>MISSION EN COURS DE FINALISATION</Text>
-      <Text style={styles.title}>{isSynchronizing ? 'SYNCHRONISATION...' : 'FINALISATION SERVEUR...'}</Text>
+      <Text style={styles.eyebrow}>MISSION EN COURS</Text>
+      <Text style={styles.title}>{isSynchronizing ? 'ENVOI DES POINTS...' : 'ENREGISTREMENT...'}</Text>
       <View style={styles.steps}>
-        <FinalizationStep label="Synchronisation GPS" complete={!isSynchronizing} active={isSynchronizing} />
-        <FinalizationStep label="Finalisation serveur" complete={false} active={!isSynchronizing} />
+        <FinalizationStep label="Points GPS" complete={!isSynchronizing} active={isSynchronizing} />
+        <FinalizationStep label="Mission" complete={false} active={!isSynchronizing} />
       </View>
     </View>
   )
@@ -43,12 +43,10 @@ export function MissionCompletionScreen({
       <StatusBar style="light" />
       <Text style={styles.eyebrow}>MISSION TERMINÉE</Text>
       <Text style={styles.title}>{mission.label}</Text>
-      <Text style={styles.subtitle}>Le serveur a confirmé la finalisation de votre mission.</Text>
 
       <View style={styles.summary}>
         <SummaryRow label="DURÉE" value={formatServerDuration(mission.duration_s)} />
         <SummaryRow label="DISTANCE" value={formatServerDistance(mission.distance_m)} />
-        <SummaryRow label="SYNCHRONISATION" value="Synchronisée avec le serveur" />
       </View>
 
       <TouchableOpacity style={styles.homeButton} onPress={onReturnHome}>

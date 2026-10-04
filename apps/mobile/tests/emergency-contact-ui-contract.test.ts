@@ -6,6 +6,7 @@ const shellSource = readFileSync(resolve(__dirname, '../screens/mobile-shell.tsx
 const profileSource = readFileSync(resolve(__dirname, '../screens/emergency-contact.tsx'), 'utf8')
 const callSource = readFileSync(resolve(__dirname, '../screens/emergency-call-actions.tsx'), 'utf8')
 const appSource = readFileSync(resolve(__dirname, '../App.tsx'), 'utf8')
+const mapSource = readFileSync(resolve(__dirname, '../screens/mission-active-map.tsx'), 'utf8')
 const storageSource = readFileSync(resolve(__dirname, '../lib/storage.ts'), 'utf8')
 
 describe('mobile emergency contact UI contract', () => {
@@ -21,7 +22,8 @@ describe('mobile emergency contact UI contract', () => {
   })
 
   it('only opens emergency calls after confirmation through tel URLs', () => {
-    expect(appSource).toContain('<EmergencyCallActions />')
+    expect(mapSource).toContain('<EmergencyCallActions compact />')
+    expect(appSource).not.toContain('<EmergencyCallActions />')
     expect(callSource).toContain("'Confirmer l’appel'")
     expect(callSource).toContain('tel:')
     expect(callSource).toContain('APPELER MON CONTACT D’URGENCE')
