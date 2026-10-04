@@ -437,6 +437,20 @@ dans un lot de duplication doit être ajoutée ou mise à jour dans
 preuve des deux occurrences réelles et SHA complet de revue. Une décision
 durable ne doit pas rester uniquement dans un compte-rendu de prompt.
 
+Règles de clôture et de requalification :
+
+- une entrée persistée est indexée par `scope:fingerprint` ; une
+  requalification met à jour cette entrée au lieu d'en créer une seconde ;
+- chaque entrée conserve les six champs `scope`, `fingerprint`,
+  `classification`, `reason`, `evidence` et `reviewedRef` ; `reason` décrit la
+  décision propre à la famille étudiée, `evidence` cite les deux occurrences
+  CURRENT et `reviewedRef` est le SHA complet effectivement inspecté ;
+- le lot ne peut pas être clôturé avec une décision durable présente seulement
+  dans un rapport, une conversation ou un commentaire de revue ;
+- avant le commit, exécuter le contrôle duplication sur le candidat final et
+  vérifier que la décision est présente dans le registre, que son fingerprint
+  est CURRENT et qu'aucun stale durable n'est introduit.
+
 La priorité de traitement est :
 
 ```text
