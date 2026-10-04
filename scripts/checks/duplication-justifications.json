@@ -48,6 +48,30 @@
       "reason": "Les mocks communs couvrent deux frontières API Actions distinctes ; chaque fichier reste une preuve autonome de son contrat de route et ne doit pas être fusionné en façade de test partagée.",
       "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:25-31 et apps/web/src/app/api/actions/[actionId]/route-version/route.test.ts:15-21 ; les routes et suites valident des dépendances runtime différentes.",
       "reviewedRef": "7e178914fe409ef5b6a0e2e8e966ba2a4c9e1014"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4a88f1e0b8301086",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les gardes d'accès restent explicitement répétés aux deux frontières API afin de conserver une preuve lisible et indépendante des décisions AuthN/AuthZ de chaque route.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.ts:87-99 et apps/web/src/app/api/actions/[actionId]/publish/route.ts:34-46 ; les deux routes portent des décisions d'accès distinctes.",
+      "reviewedRef": "5da57eb43c421c5153efe33ee1ded8c224fd035c"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "c630718a07ec151f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La répétition conserve la lisibilité des contrôles d'accès à deux surfaces API différentes ; une abstraction commune réduirait l'auditabilité des contrats AuthN/AuthZ propres à chaque ressource.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.ts:55-62 et apps/web/src/app/api/spots/route.ts:78-87 ; les frontières et ressources protégées restent distinctes.",
+      "reviewedRef": "5da57eb43c421c5153efe33ee1ded8c224fd035c"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "65e4850ea310062a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les gardes d'accès restent autonomes aux frontières d'administration et de publication ; leur répétition explicite facilite la revue des politiques AuthN/AuthZ sans moteur générique opaque.",
+      "evidence": "apps/web/src/app/api/admin/moderation/route.ts:21-36 et apps/web/src/app/api/admin/partners/published-directory/route.ts:336-351 ; les deux routes appliquent des contrats d'accès et des ressources différents.",
+      "reviewedRef": "5da57eb43c421c5153efe33ee1ded8c224fd035c"
     }
   ]
 }
