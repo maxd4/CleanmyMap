@@ -356,13 +356,13 @@ async function startTracking() {
 
 ## 8. Deep Link / QR Code
 
-### Format du lien
+### Format déclaré par la configuration actuelle
 
 ```
-https://monsite.fr/mission/start?id={mission_id}
+https://cleanmymap.fr/mission/start?id={mission_id}
 ```
 
-### Expo deep link (app.json)
+### Déclaration Expo (app.json)
 
 ```json
 {
@@ -371,17 +371,22 @@ https://monsite.fr/mission/start?id={mission_id}
     "android": {
       "intentFilters": [{
         "action": "VIEW",
-        "data": { "scheme": "https", "host": "monsite.fr", "pathPrefix": "/mission/start" }
+        "autoVerify": true,
+        "data": { "scheme": "https", "host": "cleanmymap.fr", "pathPrefix": "/mission/start" }
       }]
     },
     "ios": {
-      "associatedDomains": ["applinks:monsite.fr"]
+      "associatedDomains": ["applinks:cleanmymap.fr"]
     }
   }
 }
 ```
 
-Si l'app est installée → elle s'ouvre directement. Sinon → le lien redirige vers le store.
+Cette déclaration prépare les liens entrants. Le shell V1 implémente actuellement
+les ponts sortants vers le web et ne contient pas encore de routeur entrant qui
+extrait `mission_id` et démarre une mission. L'association Android/iOS du domaine
+(`assetlinks.json` et `apple-app-site-association`) ainsi que le parcours entrant
+restent donc à vérifier sur les services et appareils réels.
 
 ### QR Code côté site
 
@@ -390,7 +395,7 @@ Si l'app est installée → elle s'ouvre directement. Sinon → le lien redirige
 import QRCode from 'qrcode.react';
 
 function MissionQR({ missionId }: { missionId: string }) {
-  const url = `https://monsite.fr/mission/start?id=${missionId}`;
+  const url = `https://cleanmymap.fr/mission/start?id=${missionId}`;
   return <QRCode value={url} size={200} />;
 }
 ```

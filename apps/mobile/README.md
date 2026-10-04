@@ -77,8 +77,10 @@ automatiquement.
 
 ```txt
 Expo 57
-React Native 0.87
+React Native 0.87.1
 TypeScript 7
+expo-dev-client (development build)
+expo-splash-screen
 Clerk Expo SDK
 Supabase client (data plane)
 SecureStore
@@ -91,6 +93,51 @@ Les mises à jour OTA via EAS Update sont explicitement désactivées pour cette
 phase (`updates.enabled = false`). Leur activation devra faire l'objet d'une
 décision de déploiement dédiée, avec validation de la stratégie de version et
 de signature.
+
+Le SDK Expo 57 cible officiellement React Native 0.86.x. Le dépôt conserve
+volontairement le pin React Native 0.87.1 déjà établi ; `expo-doctor` signale
+donc cet écart ainsi que les écarts de versions TypeScript/AsyncStorage
+existants. Ce lot ne les masque pas et ne les rétrograde pas arbitrairement.
+
+## Candidate de build EAS
+
+`eas.json` porte trois profils bornés :
+
+- `development` : development client et distribution interne ;
+- `preview` : distribution interne, avec APK Android pour le partage d'équipe ;
+- `production` : artefact destiné aux stores (AAB Android par défaut).
+
+Le versioning de départ est explicite et local : `version` `1.0.0`,
+`android.versionCode` `1` et `ios.buildNumber` `1`. Toute nouvelle release doit
+incrémenter les compteurs natifs selon les règles des stores ; aucun compteur
+n'est auto-incrémenté ou stocké dans un service distant par cette configuration.
+
+Les identifiants durables restent inchangés : slug
+`cleanmymap-companion`, scheme `companion`, package Android et bundle iOS
+`fr.cleanmymap.companion`, et domaine `cleanmymap.fr`. Le placeholder
+`extra.eas.projectId` a été retiré : le rattachement à un projet Expo réel doit
+être effectué par le propriétaire EAS au premier build, sans inventer d'ID.
+
+Les profils EAS doivent recevoir les valeurs réelles de
+`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` et
+`EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` via l'environnement de build. La clé
+`GOOGLE_MAPS_API_KEY` est également requise pour les tuiles Google Maps Android
+d'un binaire standalone ; elle est volontairement absente du dépôt. Ces valeurs
+ne sont pas des secrets serveur : aucune `service_role` ne doit être fournie à
+l'application mobile.
+
+La configuration native conserve les liens entrants `https://cleanmymap.fr/mission/start`
+et `applinks:cleanmymap.fr`, ainsi que le scheme `companion`. Le shell mobile
+utilise actuellement les ponts web sortants ; l'association Android/iOS du
+domaine et le parcours entrant complet restent à vérifier sur les services et
+appareils réels avant de les qualifier.
+
+La configuration de localisation est portée par le plugin `expo-location` :
+foreground et background iOS, `ACCESS_BACKGROUND_LOCATION`,
+`FOREGROUND_SERVICE` et `FOREGROUND_SERVICE_LOCATION` Android. Le mode
+`fetch` iOS inutile au suivi GPS a été retiré. Les options Expo SDK 57 devenues
+invalides (`newArchEnabled`, `android.edgeToEdgeEnabled` et la clé `splash`
+legacy) ont été supprimées ou migrées vers `expo-splash-screen`.
 
 ## Pourquoi une app native ?
 
@@ -197,8 +244,10 @@ Variables publiques attendues :
 EXPO_PUBLIC_SUPABASE_URL
 EXPO_PUBLIC_SUPABASE_ANON_KEY
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
-# Optionnelle : base du site utilisée par les ponts web du shell mobile
+# Base du site utilisée par les ponts web du shell mobile
 EXPO_PUBLIC_WEB_URL
+EXPO_PUBLIC_WEB_APP_URL
+GOOGLE_MAPS_API_KEY
 ```
 
 Ne jamais ajouter :

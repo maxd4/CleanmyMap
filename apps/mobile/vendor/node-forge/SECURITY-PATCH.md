@@ -61,8 +61,9 @@ The relevant Expo APIs are `convertPrivateKeyPEMToPrivateKey`,
 `convertCSRPEMToCSR` from `@expo/code-signing-certificates`; the Expo CLI uses
 them for configured local code-signing files or cached/provisioned development
 certificates. CleanMyMap currently has no `updates.codeSigningCertificate`, no
-`updates.codeSigningMetadata` and no valid EAS project identifier: the
-`extra.eas.projectId` value in `apps/mobile/app.json` is a placeholder. The
+`updates.codeSigningMetadata` and no EAS project identifier is currently
+versioned: the `extra.eas.projectId` entry was removed from
+`apps/mobile/app.json` until the project is linked to a real Expo account. The
 current repository path reaching these APIs is the security smoke test, which
 generates its PEM values locally; no current mobile runtime or remote input
 path supplies a PEM string to this parser.

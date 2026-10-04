@@ -6,42 +6,25 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "updates": {
       "enabled": false
-    },
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#f8fafc"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "fr.cleanmymap.companion",
+      "buildNumber": "1",
       "associatedDomains": [
         "applinks:cleanmymap.fr"
-      ],
-      "infoPlist": {
-        "UIBackgroundModes": ["location", "fetch"],
-        "NSLocationWhenInUseUsageDescription": "CleanMyMap utilise votre position pour enregistrer votre parcours de nettoyage.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "CleanMyMap suit votre parcours même écran éteint pour enregistrer toute la mission."
-      }
+      ]
     },
     "android": {
       "package": "fr.cleanmymap.companion",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#f8fafc"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION"
-      ],
       "intentFilters": [
         {
           "action": "VIEW",
@@ -62,23 +45,26 @@
     },
     "plugins": [
       "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#f8fafc"
+        }
+      ],
       "@clerk/expo",
       [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "CleanMyMap suit votre parcours de nettoyage, même écran éteint.",
-          "locationAlwaysPermission": "CleanMyMap suit votre parcours de nettoyage en arrière-plan.",
           "locationWhenInUsePermission": "CleanMyMap utilise votre position pour enregistrer le parcours.",
+          "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
       ]
     ],
-    "scheme": "companion",
-    "extra": {
-      "eas": {
-        "projectId": "TODO_REMPLACER_PAR_EAS_PROJECT_ID"
-      }
-    }
+    "scheme": "companion"
   }
 }
