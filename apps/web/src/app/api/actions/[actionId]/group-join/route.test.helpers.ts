@@ -273,6 +273,7 @@ function normalizeGroupJoinStoreRow(
   table: GroupJoinStoreTable,
 ) {
   const base = {
+    ...row,
     id: row.id,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -282,14 +283,18 @@ function normalizeGroupJoinStoreRow(
     participation_status: row.participation_status ?? "pending",
     participation_source: row.participation_source ?? "group_form",
   };
-  return table === "registrations"
-    ? {
-        ...base,
-        registered_at: row.registered_at ?? row.joined_at ?? row.created_at,
-        registration_status: row.registration_status ?? row.participation_status ?? "pending",
-        registration_source: toRegistrationSource(row.registration_source ?? row.participation_source),
-      }
-    : base;
+  if (table === "participants") {
+    delete base.registered_at;
+    delete base.registration_status;
+    delete base.registration_source;
+    return base;
+  }
+  return {
+    ...base,
+    registered_at: row.registered_at ?? row.joined_at ?? row.created_at,
+    registration_status: row.registration_status ?? row.participation_status ?? "pending",
+    registration_source: toRegistrationSource(row.registration_source ?? row.participation_source),
+  };
 }
 
 function applyGroupJoinStoreUpdate(
