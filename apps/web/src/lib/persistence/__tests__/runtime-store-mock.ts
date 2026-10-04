@@ -10,12 +10,6 @@ type SupabaseListResult = {
 
 type RowParser<T> = (row: Record<string, unknown>) => T | null;
 
-async function deleteRecord(query: PromiseLike<SupabaseListResult>): Promise<boolean> {
-  const result = await query;
-  if (result.error) throw new Error(result.error.message);
-  return (result.data ?? []).length > 0;
-}
-
 async function readRecord<T>(
   query: PromiseLike<SupabaseResult>,
   parse: RowParser<T>,
@@ -44,7 +38,6 @@ export function createRuntimeStoreModule() {
         .map((row) => parse(row as Record<string, unknown>))
         .filter((record): record is T => Boolean(record));
     },
-    deleteSupabaseRecord: deleteRecord,
     deleteSupabaseRecordById: (client: {
       from: (tableName: string) => {
         delete: () => {
@@ -53,9 +46,10 @@ export function createRuntimeStoreModule() {
           };
         };
       };
-    }, tableName: string, id: string) => deleteRecord(
-      client.from(tableName).delete().eq("id", id).select("id"),
-    ),
+    }, tableName: string, id: string) => client.from(tableName).delete().eq("id", id).select("id").then((result) => {
+      if (result.error) throw new Error(result.error.message);
+      return (result.data ?? []).length > 0;
+    }),
     deleteAndPersistRecord: async <T>(
       records: readonly T[],
       matches: (record: T) => boolean,

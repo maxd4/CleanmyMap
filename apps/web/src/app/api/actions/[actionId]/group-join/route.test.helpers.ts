@@ -265,10 +265,74 @@ function createActionsChain(
   };
   return chain;
 }
+
+type GroupJoinStoreTable = "participants" | "registrations";
+
+function normalizeGroupJoinStoreRow(
+  row: GroupJoinParticipantRow,
+  table: GroupJoinStoreTable,
+) {
+  const base = {
+    id: row.id,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    action_id: row.action_id,
+    user_id: row.user_id,
+    joined_at: row.joined_at ?? row.created_at,
+    participation_status: row.participation_status ?? "pending",
+    participation_source: row.participation_source ?? "group_form",
+  };
+  return table === "registrations"
+    ? {
+        ...base,
+        registered_at: row.registered_at ?? row.joined_at ?? row.created_at,
+        registration_status: row.registration_status ?? row.participation_status ?? "pending",
+        registration_source: toRegistrationSource(row.registration_source ?? row.participation_source),
+      }
+    : base;
+}
+
+function applyGroupJoinStoreUpdate(
+  original: GroupJoinParticipantRow,
+  pendingUpdate: Record<string, unknown>,
+  table: GroupJoinStoreTable,
+) {
+  const isRegistration = table === "registrations";
+  const joinedAt = isRegistration ? original.registered_at : original.joined_at;
+  const nextJoinedAt = pendingUpdate[isRegistration ? "registered_at" : "joined_at"];
+  Object.assign(original, pendingUpdate, {
+    updated_at: "2026-06-04T12:00:00Z",
+    ...(isRegistration
+      ? { registered_at: typeof nextJoinedAt === "string" ? nextJoinedAt : joinedAt ?? original.created_at }
+      : { joined_at: typeof nextJoinedAt === "string" ? nextJoinedAt : joinedAt ?? original.created_at }),
+  });
+  if (isRegistration) {
+    if ("registration_status" in pendingUpdate) {
+      original.registration_status = pendingUpdate["registration_status"] as GroupJoinParticipantRow["registration_status"];
+      original.participation_status = original.registration_status;
+    }
+    if ("registration_source" in pendingUpdate) {
+      original.registration_source = pendingUpdate["registration_source"] as GroupJoinParticipantRow["registration_source"];
+      original.participation_source = original.registration_source;
+    }
+    original.joined_at = original.registered_at;
+  } else {
+    if ("participation_status" in pendingUpdate) {
+      original.participation_status = pendingUpdate["participation_status"] as GroupJoinParticipantRow["participation_status"];
+      original.registration_status = original.participation_status;
+    }
+    if ("participation_source" in pendingUpdate) {
+      original.participation_source = pendingUpdate["participation_source"] as GroupJoinParticipantRow["participation_source"];
+      original.registration_source = toRegistrationSource(original.participation_source);
+    }
+    original.registered_at = original.joined_at;
+  }
+}
+
 function createParticipantsChain(
   participants: GroupJoinParticipantRow[],
   errors?: GroupJoinSupabaseErrors,
-  table: "participants" | "registrations" = "participants",
+  table: GroupJoinStoreTable = "participants",
 ) {
   const state: {
     filters: Record<string, string>;
@@ -284,15 +348,8 @@ function createParticipantsChain(
     countRequested: false,
     limitValue: null,
   };
-  const normalizeRow = (row: GroupJoinParticipantRow) => ({
-    ...row,
-    joined_at: row.joined_at ?? row.created_at,
-    participation_status: row.participation_status ?? "pending",
-    participation_source: row.participation_source ?? "group_form",
-    registered_at: row.registered_at ?? row.joined_at ?? row.created_at,
-    registration_status: row.registration_status ?? row.participation_status ?? "pending",
-    registration_source: toRegistrationSource(row.registration_source ?? row.participation_source),
-  });
+  const normalizeRow = (row: GroupJoinParticipantRow) =>
+    normalizeGroupJoinStoreRow(row, table);
   const statusField = table === "registrations" ? "registration_status" : "participation_status";
   const buildFiltered = () =>
     participants.filter((row) => {
@@ -309,11 +366,14 @@ function createParticipantsChain(
       if (state.filters["user_id"] && normalized["user_id"] !== state.filters["user_id"]) {
         return false;
       }
-      if (state.filters[statusField] && normalized[statusField] !== state.filters[statusField]) {
+      const normalizedStatus = table === "registrations"
+        ? (normalized as { registration_status?: string }).registration_status
+        : normalized.participation_status;
+      if (state.filters[statusField] && normalizedStatus !== state.filters[statusField]) {
         return false;
       }
       const allowedStatuses = state.inFilters[statusField];
-      if (allowedStatuses && !allowedStatuses.includes(normalized[statusField])) {
+      if (allowedStatuses && (!normalizedStatus || !allowedStatuses.includes(normalizedStatus))) {
         return false;
       }
       const allowedActionIds = state.inFilters["action_id"];
@@ -413,28 +473,7 @@ function createParticipantsChain(
               return true;
             }) ?? null;
         if (original) {
-          Object.assign(original, state.pendingUpdate, {
-            updated_at: "2026-06-04T12:00:00Z",
-            joined_at:
-              typeof state.pendingUpdate["joined_at"] === "string"
-                ? state.pendingUpdate["joined_at"]
-                : original["joined_at"] ?? original["created_at"],
-          });
-          if ("registration_status" in state.pendingUpdate) {
-            original.participation_status = state.pendingUpdate["registration_status"] as GroupJoinParticipantRow["participation_status"];
-          }
-          if ("registration_source" in state.pendingUpdate) {
-            original.participation_source = state.pendingUpdate["registration_source"] as GroupJoinParticipantRow["participation_source"];
-          }
-          if ("registered_at" in state.pendingUpdate) {
-            original.joined_at = state.pendingUpdate["registered_at"] as string;
-          }
-          if ("participation_status" in state.pendingUpdate) {
-            original.registration_status = state.pendingUpdate["participation_status"] as GroupJoinParticipantRow["registration_status"];
-          }
-          if ("participation_source" in state.pendingUpdate) {
-            original.registration_source = state.pendingUpdate["participation_source"] as GroupJoinParticipantRow["registration_source"];
-          }
+          applyGroupJoinStoreUpdate(original, state.pendingUpdate, table);
         }
         state.pendingUpdate = undefined;
         return {

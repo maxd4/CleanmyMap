@@ -212,13 +212,16 @@ ciblés, typecheck, lint, sécurité/AuthZ, qualité, gouvernance documentaire,
 pages_site, scripts ou migrations. Les suites lourdes non nécessaires sont
 `NOT_RUN` avec leur raison ; elles ne sont pas relancées par redondance.
 
-Clôture complète d'un changement transversal ou sensible :
+Validation complète réservée à une préparation immédiate de déploiement Vercel
+ou à un prompt explicitement dédié à `checks:full` :
 
 ```bash
 npm run checks:full
 ```
 
-Le mode `COMPLET` n'a plus de budget global fixe et réutilise la même détection
+`checks:full` ne fait pas partie de la clôture normale d'un lot. Si la commande
+est demandée uniquement en fin d'un autre lot, elle est `NOT_RUN_POLICY` et ne
+doit pas être exécutée. Le mode `COMPLET` n'a plus de budget global fixe et réutilise la même détection
 des domaines concernés que `RAPIDE` : il ne rend pas automatiquement tous les
 domaines pertinents. Il renforce les preuves à l'intérieur du scope détecté
 (gouvernance, sécurité, typecheck, lint, Vitest Web, quality, migrations, tests
@@ -234,7 +237,8 @@ Chaque exécution produit un rapport avec `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
 `NOT_RUN_TIME_BUDGET` restent des résultats explicites pour les modes qui ont
 un budget, jamais des succès.
 
-Les alias historiques suivants restent disponibles pour compatibilité :
+Les alias historiques suivants restent disponibles pour compatibilité ; ils ne
+constituent pas une autorisation implicite de lancer `checks:full` :
 
 ```bash
 npm run checks:changed

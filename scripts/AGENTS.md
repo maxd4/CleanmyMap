@@ -128,9 +128,14 @@ guards CURRENT.
 Le workflow CURRENT destiné à Codex possède exactement deux modes :
 
 - `npm run checks:fast` — mode `RAPIDE`, budget dur de 180 secondes ;
-- `npm run checks:full` — mode `COMPLET`, sans budget global.
+- `npm run checks:full` — mode `COMPLET`, sans budget global, réservé à une
+  préparation immédiate de déploiement Vercel ou à un prompt explicitement
+  dédié à `checks:full` ; il n'est pas une étape de clôture de lot.
 
-Le planificateur sélectionne les contrôles selon le blast radius du candidat.
+Le planificateur sélectionne les contrôles selon le blast radius du candidat,
+mais ne déclenche jamais `checks:full` implicitement. Hors préparation Vercel ou
+prompt dédié, une demande de `checks:full` ajoutée en fin de lot est
+`NOT_RUN_POLICY`.
 Le rapport doit indiquer `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
 `ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS`, les contrôles `PASSED`, `FAILED` et
 `NOT_RUN`, ainsi que `VERDICT`. Un dépassement est explicitement
