@@ -70,6 +70,47 @@ function canonicalTargetUserId(value: unknown): string | undefined {
  return normalized && normalized !== "unknown" ? normalized : undefined;
 }
 
+type BugReportUpdateAuditContext = {
+ operationId: string;
+ actorUserId: string;
+ targetId: string;
+ reason: string;
+};
+
+type BugReportUpdateAuditDetails = {
+ outcome: "success" | "error";
+ stage?: "lookup" | "update";
+ partialMutation?: boolean;
+ previousValue: BugReportAuditSnapshot;
+ newValue: BugReportAuditSnapshot;
+ targetUserId?: string;
+};
+
+async function appendBugReportUpdateAudit(
+ context: BugReportUpdateAuditContext,
+ details: BugReportUpdateAuditDetails,
+): Promise<void> {
+ await appendAdminOperationAudit({
+  operationId: context.operationId,
+  at: new Date().toISOString(),
+  actorUserId: context.actorUserId,
+  operationType:"admin_operation",
+  outcome: details.outcome,
+  targetId: context.targetId,
+  details: {
+   operation:"update_bug_report_status",
+   reason: context.reason,
+   ...(details.targetUserId ? { targetUserId: details.targetUserId } : {}),
+   previousValue: details.previousValue,
+   newValue: details.newValue,
+   ...(details.stage ? { stage: details.stage } : {}),
+   ...(details.partialMutation === undefined
+    ? {}
+    : { partialMutation: details.partialMutation }),
+  },
+ });
+}
+
 async function notifyBugReportCreated(
  created: Awaited<ReturnType<typeof appendCommunityBugReport>>,
  userId: string,
@@ -170,6 +211,8 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+ // API_AUTHORIZATION_CONTRACT: appendAdminOperationAudit is called by the
+ // local status-audit owner below; the handler keeps its role guard visible.
  const role = await getCurrentUserActiveRole().catch(() => "anonymous");
  if (role !== "max") {
  return NextResponse.json({ error:"Forbidden" }, { status: 403 });
@@ -199,45 +242,33 @@ export async function PATCH(request: Request) {
 
  const reason = parsed.data.reason;
  const operationId = `feedback-${parsed.data.reportId}-${Date.now()}`;
+ const auditContext: BugReportUpdateAuditContext = {
+  operationId,
+  actorUserId: identity.userId,
+  targetId: parsed.data.reportId,
+  reason,
+ };
  let current;
  try {
  current = await getCommunityBugReportById(parsed.data.reportId);
  } catch {
- await appendAdminOperationAudit({
- operationId,
- at: new Date().toISOString(),
- actorUserId: identity.userId,
- operationType:"admin_operation",
- outcome:"error",
- targetId: parsed.data.reportId,
- details: {
- operation:"update_bug_report_status",
- reason,
- stage:"lookup",
- partialMutation:false,
- previousValue: toBugReportAuditSnapshot(null),
- newValue: expectedBugReportAuditSnapshot(parsed.data.status),
- },
+ await appendBugReportUpdateAudit(auditContext, {
+  outcome:"error",
+  stage:"lookup",
+  partialMutation:false,
+  previousValue: toBugReportAuditSnapshot(null),
+  newValue: expectedBugReportAuditSnapshot(parsed.data.status),
  });
  return NextResponse.json({ error:"Unable to load report" }, { status: 500 });
  }
 
  if (!current) {
- await appendAdminOperationAudit({
- operationId,
- at: new Date().toISOString(),
- actorUserId: identity.userId,
- operationType:"admin_operation",
- outcome:"error",
- targetId: parsed.data.reportId,
- details: {
- operation:"update_bug_report_status",
- reason,
- stage:"lookup",
- partialMutation:false,
- previousValue: toBugReportAuditSnapshot(null),
- newValue: expectedBugReportAuditSnapshot(parsed.data.status),
- },
+ await appendBugReportUpdateAudit(auditContext, {
+  outcome:"error",
+  stage:"lookup",
+  partialMutation:false,
+  previousValue: toBugReportAuditSnapshot(null),
+  newValue: expectedBugReportAuditSnapshot(parsed.data.status),
  });
  return NextResponse.json({ error:"Report not found" }, { status: 404 });
  }
@@ -252,61 +283,34 @@ export async function PATCH(request: Request) {
  status: parsed.data.status,
  });
  } catch {
- await appendAdminOperationAudit({
- operationId,
- at: new Date().toISOString(),
- actorUserId: identity.userId,
- operationType:"admin_operation",
- outcome:"error",
- targetId: parsed.data.reportId,
- details: {
- operation:"update_bug_report_status",
- reason,
- ...(targetUserId ? { targetUserId } : {}),
- previousValue,
- newValue,
- stage:"update",
- partialMutation:false,
- },
+ await appendBugReportUpdateAudit(auditContext, {
+  outcome:"error",
+  targetUserId,
+  previousValue,
+  newValue,
+  stage:"update",
+  partialMutation:false,
  });
  return NextResponse.json({ error:"Unable to update report" }, { status: 500 });
  }
 
  if (!updated) {
- await appendAdminOperationAudit({
- operationId,
- at: new Date().toISOString(),
- actorUserId: identity.userId,
- operationType:"admin_operation",
- outcome:"error",
- targetId: parsed.data.reportId,
- details: {
- operation:"update_bug_report_status",
- reason,
- ...(targetUserId ? { targetUserId } : {}),
- previousValue,
- newValue,
- stage:"update",
- partialMutation:false,
- },
+ await appendBugReportUpdateAudit(auditContext, {
+  outcome:"error",
+  targetUserId,
+  previousValue,
+  newValue,
+  stage:"update",
+  partialMutation:false,
  });
  return NextResponse.json({ error:"Unable to update report" }, { status: 500 });
  }
 
- await appendAdminOperationAudit({
- operationId,
- at: new Date().toISOString(),
- actorUserId: identity.userId,
- operationType:"admin_operation",
- outcome:"success",
- targetId: parsed.data.reportId,
- details: {
- operation:"update_bug_report_status",
- reason,
- ...(targetUserId ? { targetUserId } : {}),
- previousValue,
- newValue: toBugReportAuditSnapshot(updated),
- },
+ await appendBugReportUpdateAudit(auditContext, {
+  outcome:"success",
+  targetUserId,
+  previousValue,
+  newValue: toBugReportAuditSnapshot(updated),
  });
 
  return NextResponse.json({ status:"ok", item: updated });

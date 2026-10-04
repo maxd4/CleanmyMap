@@ -2679,24 +2679,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/app/api/reports/actions.csv/route.ts",
-      "line": 73,
-      "category": "routes API",
-      "ceiling": 132,
-      "status": "LEGACY",
-      "functionIdentity": "callback:actionsExportRoute . withActionsExportRequest:0:#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/app/api/reports/actions.json/route.ts",
-      "line": 71,
-      "category": "routes API",
-      "ceiling": 133,
-      "status": "LEGACY",
-      "functionIdentity": "callback:actionsExportRoute . withActionsExportRequest:0:#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
       "line": 163,
       "category": "routes API",
