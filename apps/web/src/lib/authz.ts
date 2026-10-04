@@ -45,6 +45,14 @@ export type AuthenticatedAccessResult =
   | { ok: true; userId: string }
   | { ok: false; status: 401; error: string };
 
+function resolveDevAuthBypassRole(role: string): AppRoleLabel {
+  return resolveProfile({
+    metadataRole: role,
+    isAdmin: role === "admin",
+    isMax: role === "max",
+  });
+}
+
 export async function requireAdminAccess(): Promise<AdminAccessResult> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
@@ -101,11 +109,7 @@ export async function requireAuthenticatedAccess(): Promise<AuthenticatedAccessR
 export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
-    return resolveProfile({
-      metadataRole: devBypass.role,
-      isAdmin: devBypass.role === "admin",
-      isMax: devBypass.role === "max",
-    });
+    return resolveDevAuthBypassRole(devBypass.role);
   }
 
   const { userId } = await auth();
@@ -133,11 +137,7 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
 export async function getCurrentUserActiveRole(): Promise<AppRoleLabel> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
-    return resolveProfile({
-      metadataRole: devBypass.role,
-      isAdmin: devBypass.role === "admin",
-      isMax: devBypass.role === "max",
-    });
+    return resolveDevAuthBypassRole(devBypass.role);
   }
 
   const identity = await getCurrentUserIdentity();
@@ -151,6 +151,7 @@ export async function getCurrentUserEffectiveAccess(): Promise<EffectiveAccess> 
 
 export const __authz_testables = {
   extractRole,
+  resolveDevAuthBypassRole,
   extractBadgeIds,
   mapBadgeIdsToBadges,
   resolveClerkRole,
