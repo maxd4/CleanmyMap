@@ -72,6 +72,22 @@
       "reason": "Les gardes d'accès restent autonomes aux frontières d'administration et de publication ; leur répétition explicite facilite la revue des politiques AuthN/AuthZ sans moteur générique opaque.",
       "evidence": "apps/web/src/app/api/admin/moderation/route.ts:21-36 et apps/web/src/app/api/admin/partners/published-directory/route.ts:336-351 ; les deux routes appliquent des contrats d'accès et des ressources différents.",
       "reviewedRef": "5da57eb43c421c5153efe33ee1ded8c224fd035c"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "275c1597b13ff264",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La répétition dans requireAdminAccess et requireCreatorAccess protège deux frontières de privilège différentes : l'accès admin dépend de l'accès effectif à la page, tandis que l'accès creator exige ACTIVE_ROLE=max. Une extraction de la garde commune couplerait ces décisions et pourrait masquer leur comportement fail-closed lors d'une revue AuthN/AuthZ.",
+      "evidence": "apps/web/src/lib/authz.ts:60-69 et apps/web/src/lib/authz.ts:79-88 ; les deux blocs vérifient l'identité mais appliquent des politiques d'accès et des rôles effectifs distincts.",
+      "reviewedRef": "52c750ce0c1a126c542356a341f40fe1b262f7ac"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "3187def9cce3cff1",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les entrées admin/codex-usage et admin/storage-usage restent répétées dans le contrat canonique pour conserver une couverture et une lecture auditables endpoint par endpoint. Une table ou un alias partagé supprimerait la séparation sémantique entre surfaces protégées et rendrait moins explicite la preuve de leur autorisation propre.",
+      "evidence": "apps/web/src/lib/auth/api-authorization-contract.admin-community.ts:4-17 et apps/web/src/lib/auth/api-authorization-contract.admin-community.ts:128-141 ; chaque bloc porte le contrat d'une surface API distincte.",
+      "reviewedRef": "52c750ce0c1a126c542356a341f40fe1b262f7ac"
     }
   ]
 }

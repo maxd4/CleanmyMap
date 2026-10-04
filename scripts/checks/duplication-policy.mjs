@@ -7,6 +7,10 @@ export const DUPLICATION_MIN_LINES = 5;
 export const DUPLICATION_MIN_TOKENS = 50;
 export const DUPLICATION_NEW_CLONE_FINGERPRINTS_BLOCKING = true;
 const DUPLICATION_JUSTIFICATIONS_SCHEMA_VERSION = 1;
+export const DUPLICATION_DURABLE_CLASSIFICATIONS = Object.freeze([
+  "KEEP_INTENTIONAL",
+  "NO_ACTION_NOISE",
+]);
 
 export const DUPLICATION_GRACE = Object.freeze({
   runtime: Object.freeze({
@@ -310,9 +314,26 @@ function justificationError(message) {
   throw new Error(`duplication justifications malformed: ${message}`);
 }
 
+function evidenceCoversOccurrence(evidence, occurrence) {
+  const normalizedEvidence = evidence.replaceAll("\\", "/");
+  const normalizedPath = normalizeOccurrencePath(occurrence.path);
+  const pathMatches = normalizedEvidence.includes(normalizedPath)
+    || normalizedEvidence.includes(`apps/web/src/${normalizedPath}`)
+    || normalizedEvidence.includes(`apps/mobile/${normalizedPath}`)
+    || normalizedEvidence.includes(`scripts/${normalizedPath}`);
+  return pathMatches;
+}
+
+function evidenceCoversCurrentPair(evidence, occurrences) {
+  return occurrences.some((occurrence) => (
+    evidenceCoversOccurrence(evidence, occurrence.occurrenceA)
+    && evidenceCoversOccurrence(evidence, occurrence.occurrenceB)
+  ));
+}
+
 export function validateDuplicationJustificationsRegistry(
   registry,
-  { nativeBaselines = {}, currentFingerprintsByScope = null } = {},
+  { nativeBaselines = {}, currentFingerprintsByScope = null, currentOccurrencesByScope = null } = {},
 ) {
   if (!registry || registry.schemaVersion !== DUPLICATION_JUSTIFICATIONS_SCHEMA_VERSION) {
     justificationError(`schemaVersion ${DUPLICATION_JUSTIFICATIONS_SCHEMA_VERSION} required.`);
@@ -323,7 +344,10 @@ export function validateDuplicationJustificationsRegistry(
 
   const seen = new Set();
   const counts = Object.fromEntries(Object.keys(DUPLICATION_SCOPES).map((scopeName) => [scopeName, 0]));
+  const classificationCounts = Object.fromEntries(DUPLICATION_DURABLE_CLASSIFICATIONS.map((classification) => [classification, 0]));
+  const classifications = Object.fromEntries(DUPLICATION_DURABLE_CLASSIFICATIONS.map((classification) => [classification, []]));
   const stale = [];
+  const staleByClassification = Object.fromEntries(DUPLICATION_DURABLE_CLASSIFICATIONS.map((classification) => [classification, []]));
   for (const [index, justification] of registry.justifications.entries()) {
     if (!justification || typeof justification !== "object") {
       justificationError(`entry ${index} must be an object.`);
@@ -340,8 +364,8 @@ export function validateDuplicationJustificationsRegistry(
       justificationError(`duplicate entry for ${identity}.`);
     }
     seen.add(identity);
-    if (classification !== "KEEP_INTENTIONAL") {
-      justificationError(`entry ${index} must use KEEP_INTENTIONAL.`);
+    if (!DUPLICATION_DURABLE_CLASSIFICATIONS.includes(classification)) {
+      justificationError(`entry ${index} must use KEEP_INTENTIONAL or NO_ACTION_NOISE.`);
     }
     if (typeof reason !== "string" || reason.trim().length === 0) {
       justificationError(`entry ${index} requires a non-empty reason.`);
@@ -362,12 +386,28 @@ export function validateDuplicationJustificationsRegistry(
     const currentFingerprints = currentFingerprintsByScope?.[scope];
     if (currentFingerprints && !currentFingerprints.has(fingerprint)) {
       stale.push(identity);
+      staleByClassification[classification].push(identity);
+    }
+    const currentOccurrences = currentOccurrencesByScope?.[scope];
+    if (currentOccurrences && currentFingerprints?.has(fingerprint)) {
+      const matchingOccurrences = currentOccurrences.filter((occurrence) => occurrence.fingerprint === fingerprint);
+      if (!evidenceCoversCurrentPair(evidence, matchingOccurrences)) {
+        justificationError(`entry ${index} evidence does not cover the CURRENT occurrence pair.`);
+      }
     }
     counts[scope] += 1;
+    classificationCounts[classification] += 1;
+    classifications[classification].push(identity);
   }
 
-  if (stale.length > 0) {
-    throw new Error(`STALE_KEEP_INTENTIONAL: ${stale.join(", ")}`);
-  }
-  return { counts, stale };
+  return {
+    counts,
+    classificationCounts,
+    classifications,
+    keepIntentional: classificationCounts.KEEP_INTENTIONAL,
+    noActionNoise: classificationCounts.NO_ACTION_NOISE,
+    stale,
+    staleKeepIntentional: staleByClassification.KEEP_INTENTIONAL,
+    staleNoActionNoise: staleByClassification.NO_ACTION_NOISE,
+  };
 }

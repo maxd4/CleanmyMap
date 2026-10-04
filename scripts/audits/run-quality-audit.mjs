@@ -107,7 +107,9 @@ function statusForAudit(audit, result) {
   if (audit === "dead-code") return hasBlockingDeadCodeFindings(result.comparison) ? "FAIL" : "PASS";
   if (audit === "duplication") {
     const statuses = (result.results ?? []).map((entry) => entry.comparison?.status);
-    return statuses.includes("FAIL") ? "FAIL" : statuses.includes("PASS_WITH_GRACE") ? "PASS_WITH_GRACE" : "PASS";
+    return statuses.includes("FAIL") || (result.justificationReport?.stale?.length ?? 0) > 0
+      ? "FAIL"
+      : statuses.includes("PASS_WITH_GRACE") ? "PASS_WITH_GRACE" : "PASS";
   }
   if (audit === "cycles") return result.gateStatus === "PASS" ? "PASS" : "FAIL";
   return result.status ?? "PASS";
@@ -129,7 +131,8 @@ export function attentionRequired(audit, result) {
       (entry.metrics?.newClones ?? 0) > 0
       || entry.comparison?.failures?.length > 0
       || entry.comparison?.status === "PASS_WITH_GRACE"
-    ) || (result.justificationReport?.stale?.length ?? 0) > 0;
+    ) || (result.justificationReport?.staleKeepIntentional?.length ?? 0) > 0
+      || (result.justificationReport?.staleNoActionNoise?.length ?? 0) > 0;
   }
   if (audit === "top-heavy") {
     const evaluation = result.evaluation;
@@ -225,6 +228,12 @@ function makeSummary({ audit, manifest, result, paths }) {
   }
   if (audit === "duplication" && result?.results) {
     for (const entry of result.results) lines.splice(6, 0, `- ${entry.scopeName}: ${entry.metrics.clones} clones, ${entry.metrics.duplicatedLines} duplicated lines, ${entry.metrics.duplicatedTokens} duplicated tokens, ${entry.occurrences?.length ?? 0} occurrence pairs projected`);
+    lines.splice(6, 0,
+      `- KEEP_INTENTIONAL: ${result.justificationReport?.keepIntentional ?? 0}`,
+      `- NO_ACTION_NOISE: ${result.justificationReport?.noActionNoise ?? 0}`,
+      `- STALE_KEEP_INTENTIONAL: ${result.justificationReport?.staleKeepIntentional?.length ?? 0}`,
+      `- STALE_NO_ACTION_NOISE: ${result.justificationReport?.staleNoActionNoise?.length ?? 0}`,
+    );
   }
   if (audit === "top-heavy" && result?.rows) {
     lines.splice(6, 0,
