@@ -14,14 +14,11 @@ import {
   enqueuePendingLinkedMissionReconciliation,
   removePendingLinkedMissionReconciliation,
   bufferPoint,
-  bufferAction,
   flushBuffer,
 } from './storage';
 import type {
   Mission,
   MissionLocation,
-  MissionAction,
-  MissionActionInsert,
   MissionFinalizationStage,
   ServiceResult,
 } from '../types/mission';
@@ -367,66 +364,6 @@ export async function saveLocationPoint(
   }
 
   return { ok: true, data: undefined };
-}
-
-export async function saveMissionAction(
-  missionId: string,
-  actionType: MissionActionInsert['type'],
-  location?: { latitude: number; longitude: number },
-  content?: string,
-  imageUrl?: string
-): Promise<ServiceResult<MissionAction>> {
-  const client = await getAuthenticatedSupabaseClient();
-  if (!client) {
-    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
-  }
-
-  let finalLocation = location;
-
-  if (!finalLocation) {
-    try {
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      finalLocation = {
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-      };
-    } catch {
-      return { ok: false, error: 'Impossible de récupérer la position GPS pour cette action.' };
-    }
-  }
-
-  const action: MissionActionInsert = {
-    mission_id: missionId,
-    type: actionType,
-    content,
-    image_url: imageUrl,
-    latitude: finalLocation.latitude,
-    longitude: finalLocation.longitude,
-    recorded_at: new Date().toISOString(),
-  };
-
-  let data: MissionAction | null = null;
-  let error: Error | null = null;
-  try {
-    const result = await client
-      .from('mission_actions')
-      .insert(action)
-      .select()
-      .single<MissionAction>();
-    data = result.data;
-    error = result.error;
-  } catch (requestError) {
-    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
-  }
-
-  if (error || !data) {
-    const message = error?.message ?? 'Réponse action invalide.';
-    console.warn('[TrackingService] Action échouée, mise en buffer :', message);
-    await bufferAction(action);
-    return { ok: false, error: message };
-  }
-
-  return { ok: true, data };
 }
 
 export async function getMission(missionId: string): Promise<ServiceResult<Mission>> {

@@ -95,9 +95,11 @@ L'application mobile est issue de l'ancien `companion-app` ; cette mention est
 historique et ne désigne pas un projet séparé. Elle est `CURRENT / ACTIVE
 DEVELOPMENT` depuis le lot M0, tout en restant `NOT_PRODUCTION_READY`.
 L'identité Clerk, les RLS missions/GPS et la finalisation des métriques par
-trigger `SECURITY INVOKER` sont finalisées et invariantes. Les sujets encore
-ouverts sont le background headless, `mission_actions`, la validation
-opérationnelle et l'évolution future du produit mobile.
+trigger `SECURITY INVOKER` sont finalisées et invariantes. La V1 mobile couvre
+le GPS avec carte et tracé, la reprise/offline, la finalisation serveur et les
+contacts d'urgence. Les sujets encore ouverts sont le background headless, la
+validation opérationnelle, ainsi que `mission_actions` et la photo native comme
+évolutions mobiles futures.
 
 ## Application web
 
@@ -215,14 +217,14 @@ Statut architectural courant :
 
 Le statut courant du mobile est `CURRENT / ACTIVE DEVELOPMENT`,
 `NOT_PRODUCTION_READY`. L'identité Clerk, les RLS et la finalisation des
-métriques sont finalisées et invariantes. Les sujets ouverts sont le background
-headless, `mission_actions`, la validation opérationnelle et l'évolution future
-du produit mobile.
+métriques sont finalisées et invariantes. La V1 couvre le GPS avec carte et
+tracé, la reprise/offline, la finalisation serveur et les contacts d'urgence.
+Les sujets ouverts sont le background headless, la validation opérationnelle,
+ainsi que `mission_actions` et la photo native comme évolutions futures.
 
 La V1 est destinée aux bénévoles terrain et reste volontairement réduite ; le
-web demeure la surface complète et indépendante. Les développements mobiles
-approfondis sont réservés au GPS live avec carte et tracé temps réel et aux
-contacts d'urgence. Les autres capacités réutilisent le backend, les données et
+web demeure la surface complète et indépendante. La V1 inclut le GPS live avec
+carte et tracé temps réel et les contacts d'urgence. Les autres capacités réutilisent le backend, les données et
 les projections communes, sans gamification parallèle ni second modèle métier.
 
 Voir ADR-004 et ADR-006.

@@ -35,21 +35,6 @@ export interface ForegroundTrackPoint {
   recordedAt: string
 }
 
-type MissionActionType = 'trash_found' | 'trash_collected' | 'photo' | 'note' | 'hazard'
-
-export interface MissionAction {
-  id: string
-  mission_id: string
-  type: MissionActionType
-  content?: string
-  image_url?: string
-  latitude: number
-  longitude: number
-  recorded_at: string
-}
-
-export type MissionActionInsert = Omit<MissionAction, 'id'>
-
 export type TrackingPhase = 'idle' | 'requesting' | 'tracking' | 'stopping' | 'error'
 
 export type MissionFinalizationStage = 'synchronizing' | 'finalizing'

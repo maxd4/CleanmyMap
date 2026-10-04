@@ -99,13 +99,15 @@ sous-projet indépendant.
 
 Le mobile est `CURRENT / ACTIVE DEVELOPMENT` depuis le lot M0, tout en restant
 `NOT_PRODUCTION_READY`. L'identité Clerk et la finalisation des métriques par
-trigger invoker sont finalisées et invariantes. Les limites encore ouvertes
-sont le background headless, `mission_actions`, la validation opérationnelle et
-la future évolution produit mobile.
+trigger invoker sont finalisées et invariantes. La V1 couvre le GPS avec carte
+et tracé, la reprise/offline, la finalisation serveur et les contacts d'urgence.
+Les limites encore ouvertes sont le background headless, la validation
+opérationnelle, ainsi que `mission_actions` et la photo native comme évolutions
+futures.
 
 La V1 mobile est destinée aux bénévoles terrain et reste volontairement réduite
-par rapport à la surface web complète. Les développements approfondis sont
-réservés au GPS live avec carte et tracé temps réel et aux contacts d'urgence ;
+par rapport à la surface web complète. La V1 inclut le GPS live avec carte et
+tracé temps réel et les contacts d'urgence ;
 les autres capacités réutilisent les contrats, données et services communs sans
 gamification parallèle ni second modèle métier mobile.
 

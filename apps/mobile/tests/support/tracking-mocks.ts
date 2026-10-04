@@ -43,7 +43,6 @@ type TrackingStorageOptions = {
   enqueuePendingLinkedMissionReconciliation?: (id: string) => unknown
   removePendingLinkedMissionReconciliation?: (id: string) => unknown
   bufferPoint?: (point: unknown) => unknown
-  bufferAction?: (action: unknown) => unknown
   flushBuffer?: () => unknown
 }
 
@@ -55,7 +54,6 @@ export function createTrackingStorageMock(options: TrackingStorageOptions = {}) 
     enqueuePendingLinkedMissionReconciliation: vi.fn(async (id: string) => options.enqueuePendingLinkedMissionReconciliation?.(id)),
     removePendingLinkedMissionReconciliation: vi.fn(async (id: string) => options.removePendingLinkedMissionReconciliation?.(id)),
     bufferPoint: vi.fn(async (point: unknown) => options.bufferPoint?.(point)),
-    bufferAction: vi.fn(async (action: unknown) => options.bufferAction?.(action)),
     flushBuffer: vi.fn(async () => options.flushBuffer?.()),
   }
 }

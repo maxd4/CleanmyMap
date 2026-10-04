@@ -58,7 +58,6 @@ flowchart LR
   AUTH --> SB[(Supabase)]
   APP --> M[missions]
   APP --> GPS[gps_points]
-  APP --> ACT[mission_actions]
 ```
 
 ### État actuel et limites
@@ -70,13 +69,12 @@ Supabase et les contrats métier nécessaires. Le mobile est
 L'identité Clerk et la finalisation des métriques par trigger invoker sont
 finalisées et invariantes ; elles ne constituent plus des lots de conception.
 
-Les limites encore ouvertes sont :
+La V1 couvre le GPS avec carte et tracé, la reprise/offline, la finalisation
+serveur et les contacts d'urgence. Les limites encore ouvertes sont :
 
 - le traitement background headless ;
-- la gestion complète de `mission_actions` ;
 - la validation opérationnelle ;
-- le mode activité GPS live avec carte et tracé temps réel ;
-- les contacts d'urgence ;
+- `mission_actions` et la photo native, conservés comme évolution mobile future ;
 - la future évolution produit de l'application mobile.
 
 La V1 mobile est destinée aux bénévoles terrain et reste volontairement réduite

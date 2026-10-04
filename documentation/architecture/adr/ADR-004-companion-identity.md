@@ -84,8 +84,9 @@ Les invariants suivants sont désormais portés par le code :
 
 Cette implémentation ne constitue pas une validation opérationnelle de
 production. Le contrat Clerk, les RLS et la finalisation de distance sont
-réalisés et restent invariants ; le comportement background headless,
-`mission_actions` et l'usage opérationnel réel restent ouverts.
+réalisés et restent invariants ; le comportement background headless et
+l'usage opérationnel réel restent ouverts. `mission_actions` et la photo native
+sont hors V1 et relèvent d'une évolution mobile future.
 
 ## Contrat RLS Clerk — LOT 2A réalisé
 
@@ -112,8 +113,9 @@ Le contrat effectif est le suivant :
   mobile.
 
 L'application mobile n'est toujours pas prête pour la production : la
-synchronisation headless, `mission_actions` et l'usage opérationnel réel restent
-non validés.
+synchronisation headless et l'usage opérationnel réel restent non validés.
+`mission_actions` et la photo native sont hors V1 et ne bloquent pas ce
+périmètre fonctionnel.
 
 ## Finalisation propriétaire — LOT 2B historique, corrigé par SEC-01
 
@@ -161,9 +163,10 @@ Le lot M0 rouvre officiellement `apps/mobile` en `CURRENT / ACTIVE DEVELOPMENT`.
 Cette reprise porte d'abord sur la baseline de tests et la cohérence de la
 gouvernance ; elle n'ajoute aucune nouvelle fonctionnalité produit et ne refait
 pas l'UI. L'application reste `NOT_PRODUCTION_READY` tant que le background
-headless, `mission_actions`, l'usage opérationnel réel et la validation de
-production ne sont pas établis. Toute évolution ultérieure doit préserver les
-contrats Clerk, RLS et métriques serveur ci-dessus.
+headless, l'usage opérationnel réel et la validation de production ne sont pas
+établis. `mission_actions` et la photo native restent une évolution future hors
+V1. Toute évolution ultérieure doit préserver les contrats Clerk, RLS et
+métriques serveur ci-dessus.
 
 Les identifiants techniques historiques `cleanmymap-companion` et
 `fr.cleanmymap.companion` restent inchangés ; leur renommage est hors périmètre.
@@ -249,8 +252,8 @@ Le lot mobile de création de mission ajoute uniquement la policy et le grant
 INSERT owner-scoped de
 `20260928000003_mobile_mission_insert_owner_rls.sql`. Le mobile vérifie les
 permissions GPS, crée cette mission propriétaire, puis réutilise le tracker
-existant ; aucun lien `mission_actions`, formulaire natif ou moteur GPS live
-n'est introduit.
+existant. Le moteur GPS live est désormais inclus dans la V1 ; aucun formulaire
+`mission_actions` ni upload/photo natif n'est introduit.
 
 Le LOT 2B a ajouté la migration additive de finalisation propriétaire et le
 contrôle d'erreur RPC dans le tracking service. SEC-01 remplace ce chemin par
@@ -278,6 +281,6 @@ service_role absente du bundle
 
 La décision d'identité, de RLS et de finalisation est formalisée, mais
 l'application mobile ne doit pas être qualifiée de prête pour la production.
-Elle est `CURRENT / ACTIVE DEVELOPMENT` depuis M0 ; le background headless,
-`mission_actions`, la validation opérationnelle et la future évolution produit
-restent ouverts.
+Elle est `CURRENT / ACTIVE DEVELOPMENT` depuis M0 ; le background headless et
+la validation opérationnelle restent ouverts. `mission_actions` et la photo
+native sont une évolution future hors V1.

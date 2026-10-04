@@ -15,9 +15,10 @@ Les lots 1, 2A et 2B de l'ADR-004 ont raccordé l'identité Clerk, les RLS
 `missions`/`gps_points` et la finalisation propriétaire de distance. L'application
 mobile est officiellement rouverte par le lot M0 pour reprendre son
 développement. La baseline conserve un frontend volontairement réduit et
-réutilise les surfaces web existantes lorsque cela suffit. L'application reste
-non prête pour la production : le background headless, l'usage opérationnel réel
-et plusieurs capacités restent à valider.
+réutilise les surfaces web existantes lorsque cela suffit. La V1 fonctionnelle
+couvre le GPS avec carte et tracé, la reprise/offline, la finalisation serveur
+et le contact d'urgence. L'application reste non prête pour la production tant
+que le background headless et l'usage opérationnel réel ne sont pas validés.
 
 Références :
 
@@ -35,7 +36,7 @@ pour être stabilisée et publiée rapidement. Le site web reste la surface
 complète du produit et continue d'évoluer indépendamment ; l'application mobile
 ne cherche pas à reproduire toutes ses pages ou capacités.
 
-Les deux axes de développement mobile approfondi sont :
+La V1 fonctionnelle inclut :
 
 - le mode activité GPS live avec carte, restauration du tracé et suivi temps réel ;
 - les contacts d'urgence.
@@ -57,8 +58,9 @@ Le shell expose cinq destinations simples : `Accueil`, `Carte`, `Agir`,
   la mission créée est annulée et l'écran actif n'est pas affiché. La mission
   active restaure les `gps_points` owner-scoped, fusionne son tracé UX local et
   reprend le suivi foreground au retour au premier plan. Ce suivi ne réécrit pas
-  les points ni les métriques dans Supabase ; aucun formulaire d'action natif ni
-  lien `mission_actions` n'est ajouté ici ;
+  les points ni les métriques dans Supabase. Aucun formulaire d'action natif ni
+  upload/photo mobile n'est requis pour cette V1 ; `mission_actions` reste une
+  évolution future du produit ;
 - `Rejoindre une action` ouvre `/sections/rejoindre-une-action` sur le web ;
 - `Organiser une action` ouvre `/actions/new` sur le web ;
 - `Signaler un déchet` ouvre `/signalement` sur le web.
@@ -113,11 +115,14 @@ flowchart LR
   CLERK --> SB
   APP --> MISSIONS[missions]
   APP --> GPS[gps_points]
-  APP --> ACTIONS[mission_actions]
 ```
 
 Le site et l'application mobile partagent le même produit, le même projet
 Supabase, Clerk et les contrats métier nécessaires.
+
+Le runtime mobile V1 n'utilise pas `mission_actions` et ne porte pas de
+stockage photo terrain. Le contrat serveur et la table restent conservés pour
+les parcours web et une évolution mobile ultérieure.
 
 Les effets métier restent produits par le backend commun : les missions mobiles
 réutilisent les projections web existantes pour la gamification, l'impact, les
@@ -144,8 +149,9 @@ copié dans l'app et aucune clé `service_role` n'est embarquée.
 
 Le contrat RLS lit le `sub` Clerk et le rapproche de `missions.volunteer_id`.
 Il est porté par la migration additive du LOT 2A. L'application mobile ne doit
-toujours pas être qualifiée de prête pour la production : les capacités
-`mission_actions` et l'usage opérationnel réel restent non validés. Le
+toujours pas être qualifiée de prête pour la production : le background headless
+et l'usage opérationnel réel restent à valider. `mission_actions` et la photo
+native sont volontairement hors V1 et deviennent des évolutions futures. Le
 renouvellement Clerk headless est maintenant câblé et couvert par des tests
 automatisés ; il doit encore être confirmé sur development build.
 
@@ -234,7 +240,8 @@ SecureStore, puis chargé avant la demande du token. Si aucun token valide n'est
 disponible, aucune authentification alternative n'est tentée : les points sont
 conservés dans le buffer local sécurisé et seront rejoués lors d'un réveil
 ultérieur avec une session valide. Cette résilience automatisée ne remplace pas
-la validation terrain et `mission_actions` demeure hors production.
+la validation terrain ; `mission_actions` demeure hors runtime V1 et pourra être
+réintroduit dans une évolution dédiée.
 
 ## Structure
 
@@ -279,7 +286,7 @@ Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 ☑ Ownership des missions protégé par contrat
 ☑ RLS missions protégée par contrat
 ☑ RLS gps_points protégée par contrat
-□ RLS mission_actions testée
+☑ `mission_actions` hors runtime V1 ; contrat serveur conservé pour les autres parcours
 ☑ Finalisation distance côté serveur ou RPC sûre (LOT 2B)
 ☑ Erreur de calcul de distance traitée
 ☑ Buffer offline conservé sans token Clerk

@@ -11,10 +11,10 @@ reste la surface complète et indépendante ; le mobile réutilise le backend,
 les données, l'identité et les projections métier existantes, sans gamification
 parallèle ni second modèle métier.
 
-Les deux axes réservés à un développement mobile approfondi sont le mode
-activité GPS live avec carte et tracé temps réel, puis les contacts d'urgence.
-Cette fiche décrit les contrats GPS existants ; elle ne constitue pas une
-autorisation d'ajouter une nouvelle UI ou une nouvelle table dans le lot M0.
+La V1 couvre le mode activité GPS live avec carte et tracé temps réel, la
+reprise/offline, la finalisation serveur et les contacts d'urgence. Les actions
+terrain détaillées et la photo native ne font pas partie de cette V1 ;
+`mission_actions` reste une évolution future sans dépendance du runtime mobile.
 
 ## 1. Vue d'ensemble
 
@@ -119,9 +119,9 @@ attribuable/idempotente et de progression par action est `CURRENT`. Le handoff
 serveur de réconciliation après finalisation est idempotent ; son échec ne
 retire jamais une contribution GPS valide et peut être rejoué depuis les faits
 canoniques.
-Les sujets encore ouverts et non prêts pour la production sont `mission_actions`,
-la validation opérationnelle de l'application mobile et l'évolution future du
-produit mobile. La cible
+Les sujets encore ouverts et non prêts pour la production sont le background
+headless et la validation opérationnelle de l'application mobile. `mission_actions`
+et la photo native sont hors V1 et relèvent d'une évolution future. La cible
 `PLAN / TARGET` décrite dans
 [`../../documentation/product/couverture-gps-multi-groupes.md`](../../documentation/product/couverture-gps-multi-groupes.md)
 vise le modèle « une mission GPS par sous-groupe → plusieurs traces pour une
@@ -255,9 +255,9 @@ sequenceDiagram
 
 Cette section conserve la recommandation technique initiale pour référence. Elle
 ne constitue pas une nouvelle cible : l'identité Clerk, les RLS missions/GPS et
-la finalisation des métriques sont déjà finalisées et invariantes. Les seuls
-sujets ouverts restent le background headless, `mission_actions`, la validation
-opérationnelle et l'évolution future du produit mobile.
+la finalisation des métriques sont déjà finalisées et invariantes. Les sujets
+encore ouverts sont le background headless et la validation opérationnelle ;
+`mission_actions` reste une évolution future hors V1.
 
 > [!TIP]
 > **Expo (React Native) avec `expo-location` + `expo-task-manager`**
