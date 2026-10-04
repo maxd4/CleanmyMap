@@ -375,6 +375,10 @@ jobs:
       - name: Web lint
         run: npm run lint
 
+      - name: Security tooling contract tests
+        if: needs.scope.outputs.security_tooling_relevant == 'true'
+        run: node --test scripts/security/workflow-security-contract.test.mjs scripts/security/zap-baseline-contract.test.mjs
+
       - name: Semgrep security summary
         if: ${{ always() && steps.checkout.outcome == 'success' && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success' }}
         run: node scripts/ci/write-security-summary.mjs --gates=semgrep-architectural,semgrep-fixtures

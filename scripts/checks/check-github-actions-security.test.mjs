@@ -157,6 +157,12 @@ assert.match(ciWorkflow, /Web Vitest tests/);
 assert.match(ciWorkflow, /Web production build/);
 assert.match(ciWorkflow, /mobile-validation:\n    needs: scope/);
 const webStaticJob = ciWorkflow.match(/  web-static:[\s\S]*?\n\n  web-quality:/)?.[0] ?? "";
+assert.match(
+  webStaticJob,
+  /- name: Security tooling contract tests\n\s+if: needs\.scope\.outputs\.security_tooling_relevant == 'true'\n\s+run: node --test scripts\/security\/workflow-security-contract\.test\.mjs scripts\/security\/zap-baseline-contract\.test\.mjs/,
+);
+assert.doesNotMatch(webStaticJob, /audit-dependencies\.test\.mjs/);
+assert.doesNotMatch(webStaticJob, /test:scripts/);
 assert.match(webStaticJob, /node scripts\/ci\/write-security-summary\.mjs --gates=semgrep-architectural,semgrep-fixtures/);
 assert.match(webStaticJob, /path: artifacts\/security-evidence/);
 assert.doesNotMatch(ciWorkflow, /CodeQL/);
