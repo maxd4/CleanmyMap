@@ -1,181 +1,65 @@
 ---
 name: cleanmymap-repo
-description: "Use this skill for any task targeting the CleanMyMap repository. It enforces GitHub source-of-truth checks, repository boundaries, security rules, documentation routing, and validation."
+description: "Socle de travail pour toute tâche visant le dépôt CleanMyMap. Active la lecture du main réel, des AGENTS scoped, des contrats concernés et des validations proportionnées, sans recopier la gouvernance du dépôt."
 category: repository
 risk: safe
 source: local
-tags: "[nextjs, typescript, tailwind, supabase, clerk, vercel, testing]"
-date_added: "2026-05-24"
+tags: "[cleanmymap, repository, governance, scope, validation]"
 ---
 
-# CleanMyMap Repository Skill
+# CleanMyMap — socle dépôt
 
-## Purpose
+## But
 
-Use this skill for any task touching CleanMyMap code, documentation, UI, backend routes, tests, data, security, deployment or repository conventions.
+Orienter toute tâche CleanMyMap vers les **sources canoniques actuelles** sans transformer ce skill en seconde gouvernance.
 
-`AGENTS.md` remains the canonical detailed rule source.
+## Utiliser quand
 
-## Source of truth
+- une tâche touche le code, les tests, la documentation, les données ou l'infrastructure CleanMyMap ;
+- une modification doit être intégrée, validée ou publiée ;
+- plusieurs sources historiques ou anciennes conversations pourraient entrer en conflit.
 
-Before changing a specific file:
+## Sources canoniques à lire d'abord
 
-1. inspect the current file on GitHub `maxd4/CleanmyMap`;
-2. inspect the directly relevant dependencies;
-3. do not trust an old plan, conversation or local copy over the current repository;
-4. report conflicts between code, docs and configuration.
+1. état réel de `main` et du checkout ;
+2. `AGENTS.md` racine ;
+3. `AGENTS.md` scoped le plus proche des fichiers concernés ;
+4. documentation canonique du domaine ;
+5. code, callers, consommateurs et tests directement concernés.
 
-## Current stack
+Une ancienne conversation, un ancien SHA, un audit passé, QMD ou un snapshot ne remplace jamais l'état courant du dépôt.
 
-Read exact versions from `apps/web/package.json`.
+## Règles de travail
 
-Current major baselines:
+- Travailler en `MAIN-ONLY / SINGLE-WRITER` selon la gouvernance actuelle.
+- Préserver tout changement local ou fichier utilisateur préexistant ; ne jamais le restaurer ou l'écraser par commodité.
+- Stager uniquement le candidat du lot ; ne jamais utiliser `git add -A`, `reset`, `clean`, `stash` ou `force-push` pour masquer un conflit.
+- Traiter une **responsabilité cohérente** : ne pas créer de micro-lots par finding ou fichier quand les conséquences appartiennent au même contrat.
+- Avant une nouvelle abstraction, table, helper, service, source de données ou document, rechercher l'owner existant et préférer la convergence.
+- Les symboles sont privés par défaut ; un export, barrel ou alias doit correspondre à un consommateur ou contrat réel.
+- La taille seule ne justifie jamais une modularisation.
+- Une preuve ne justifie que ce qu'elle mesure : code présent ≠ test exécuté ≠ état distant ≠ preuve de production.
 
-- Next.js 16 App Router;
-- React 19;
-- TypeScript 7;
-- Tailwind CSS 4;
-- Clerk;
-- Supabase/PostgreSQL;
-- Vercel;
-- Expo/React Native for `apps/mobile`.
+## Routage vers les skills spécialisés
 
-## Non-negotiable rules
+N'activer un skill spécialisé que si son domaine est réellement concerné : sécurité, Supabase, UI/browser, formulaires, accessibilité, SEO, i18n, audits qualité, Next.js, React performance, TypeScript, diagnostic, TDD ou revue.
 
-- Do not change the homepage or its associated components unless explicitly requested.
-- Do not change the global header or footer unless explicitly requested.
-- Preserve the distinction between `Role`, `SessionRole`, and `Parcours`.
-- Never expose Supabase `service_role` to web or mobile clients.
-- Never disable RLS to unblock a feature.
-- Avoid raw SQL in application runtime code; use versioned migrations for SQL changes.
-- Keep Client Components thin.
-- Keep server/client boundaries explicit.
-- Load Leaflet through dynamic import with `ssr: false`.
-- Keep public-facing text in French unless explicitly localized.
-- Do not create root-level files without justification.
-- Do not create worktrees, sibling copies or parallel repositories without explicit user approval.
-- Do not modify `documentation/pepite/` without explicit user approval.
-
-### Safe cleanup of untracked artifacts
-
-Never mass-delete `untracked`, non-canonical, or generated files only because
-Git does not track them or no runtime import is visible. Before deleting a
-significant set, establish its provenance, creating command/tool, role
-(runtime, development, documentation, or configuration), regenerability, and
-expected location.
-
-Be especially cautious with `.agents`, `.codex`, `skills-lock.json`, Vercel
-integrations, and development-tool artifacts. When uncertain, keep the files
-and record a proof-backed verdict `KEEP / MOVE / REINSTALL_ELSEWHERE / DELETE`.
-Never perform destructive cleanup on a parallel chantier. The detailed rule is
-canonical in `AGENTS.md`.
-
-## Supabase
-
-The active workspace CLI configuration is under:
-
-```txt
-apps/web/supabase/
-```
-
-The only editable and canonical migration tree is:
-
-```txt
-apps/web/supabase/migrations/
-```
-
-Inspect and modify only this tree. Do not maintain or synchronize a second
-root-level migration tree.
-
-## Documentation routing
-
-Use:
-
-- `documentation/pages_site/` for page-level functional/UX context;
-- `documentation/architecture/` for system decisions and boundaries;
-- `documentation/security/` for security doctrine and audits;
-- `documentation/development/` for engineering workflow and tests;
-- `documentation/product/` for product vision and priorities.
-
-Do not duplicate the same rule across multiple documents. Link to the canonical source.
-
-## Preferred workflow
-
-1. Inspect the real target.
-2. Read the relevant canonical docs.
-3. Identify the smallest safe scope.
-4. Apply the change.
-5. Run targeted validation.
-6. Run broader checks when shared core, configuration, routes, security or release behavior changed.
-7. Report exact files and exact checks.
+Éviter d'empiler plusieurs skills génériques qui donnent la même méthode de travail.
 
 ## Validation
 
-Targeted:
+Utiliser les commandes canoniques actuelles définies dans `scripts/AGENTS.md` et `documentation/development/TESTING.md`.
 
-```bash
-npm run checks:changed
+Par défaut :
+
+```text
+validation ciblée utile
+→ checks:fast si le blast radius le justifie
+→ checks:full uniquement lorsque la gouvernance ou le risque l'exige
 ```
 
-Complete:
+Ne pas relancer une preuve déjà suffisante sur le même candidat sans raison.
 
-```bash
-npm run checks
-```
+## Clôture
 
-Useful focused commands:
-
-```bash
-npm run typecheck
-npm run lint
-npm run test
-npm run test:security
-npm run test:regression-gates
-npm run build
-npm run security:secrets
-```
-
-E2E remains explicit:
-
-```bash
-npm run test:e2e
-```
-
-Never claim a check was executed when it was not.
-
-## Mirror governance
-
-`.agents/skills/` is the canonical repository skill catalogue consumed by the
-Agents runtime. `.codex/skills/` is the governed Codex mirror for the
-`cleanmymap-*` subset; the two runtimes need both paths, but only the canonical
-tree is edited directly.
-
-The recursive mirror check covers every skill directory under `.codex/skills/`
-and compares all files, not only `SKILL.md`:
-
-```bash
-npm run check:agent-skills
-node scripts/checks/check-agent-skill-mirrors.mjs --sync
-```
-
-Use `--sync` only after reviewing the canonical `.agents/skills/` tree. Do not
-maintain a second hand-edited copy in `.codex/skills/`.
-
-### Third-party skill installations
-
-CleanMyMap-owned, intentionally versioned skills stay only in the repository
-roots `.agents/skills/` (canonical source) and `.codex/skills/` (governed Codex
-mirror). Never install a third-party skill from Vercel, Upstash, or another
-provider with the repository or one of its subdirectories as the destination.
-
-The installed `skills` CLI officially supports
-`npx skills add <package> --global`; on this machine its global listing places
-third-party skills under `%USERPROFILE%\.agents\skills` and marks them
-`scope: global` for Codex. Use that user-level location after checking the
-destination of any Vercel or integration command that could invoke
-`npx skills add` automatically.
-
-Only an explicit user decision to version a third-party skill as project
-documentation may place it in the repository's root `.agents/skills/`. Never
-hide accidental nested installations with `.gitignore`; the repository guard
-must detect them, including untracked paths.
+Ne jamais annoncer un test, build, migration, push ou état distant comme validé sans preuve observée. Après publication, vérifier la convergence lorsque la gouvernance du lot le demande.
