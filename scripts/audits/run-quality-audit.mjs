@@ -17,11 +17,23 @@ import { runCycleGate } from "../checks/check-cycles.mjs";
 import { runComplexityPolicy } from "../checks/check-complexity-policy.mjs";
 import { runTopHeavyPolicy } from "../checks/check-top-heavy-files.mjs";
 import { createRepositoryView } from "../checks/repository-view.mjs";
-import { createRadarRows, loadCorrelationSignals } from "../reports/generate-modularity-radar.mjs";
+import {
+  createRadarRows,
+  extractHumanDecisions,
+  loadCorrelationSignals,
+  parseHumanDecisions,
+} from "../reports/generate-modularity-radar.mjs";
 
 export const AUDIT_MODES = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles", "all"]);
 export const QUALITY_AUDIT_ROOT = "artifacts/quality-audits";
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const HUMAN_DECISIONS_PATH = "documentation/architecture/monolith-split-plan.md";
+const ACQUIRED_ARCHITECTURE_DECISIONS = new Set([
+  "PROACTIVE_SPLIT",
+  "COHESIVE_SINGLE_FILE",
+  "ALREADY_MODULARIZED",
+  "DEFERRED_SPLIT",
+]);
 
 export class QualityAuditError extends Error {
   constructor(message, code = "QUALITY_AUDIT_FAILED") {
@@ -123,7 +135,7 @@ export function attentionRequired(audit, result) {
     const evaluation = result.evaluation;
     return !evaluation
       || evaluation.blockingFindings.length > 0
-      || evaluation.reviewWarnings.length > 0
+      || (evaluation.reviewWarningsRequiringDecision ?? []).length > 0
       || evaluation.reviewImprovements.length > 0
       || evaluation.staleReviewBaselineEntries.length > 0
       || evaluation.staleBaselineEntries.length > 0;
@@ -142,6 +154,52 @@ export function attentionRequired(audit, result) {
       || result.comparison?.stale?.length > 0;
   }
   return false;
+}
+
+export function buildHumanDecisionsByFile(markdown = "") {
+  return Object.fromEntries(parseHumanDecisions(extractHumanDecisions(markdown)).map((entry) => {
+    const architectureDecision = entry.ARCHITECTURE_DECISION || null;
+    return [entry.file, {
+      file: entry.file,
+      architectureDecision,
+      priority: entry.PRIORITY || null,
+      dependencyOrBlocker: entry.DEPENDENCY_OR_BLOCKER || null,
+      nextTrigger: entry.NEXT_TRIGGER || null,
+      decisionAcquired: architectureDecision !== null && ACQUIRED_ARCHITECTURE_DECISIONS.has(architectureDecision),
+    }];
+  }));
+}
+
+export function enrichTopHeavyEvaluation(evaluation, humanDecisionsByFile) {
+  const reviewWarningsWithDecision = evaluation.reviewWarnings.map((row) => ({
+    ...row,
+    ...(humanDecisionsByFile[row.file] ?? {
+      file: row.file,
+      architectureDecision: null,
+      priority: null,
+      dependencyOrBlocker: null,
+      nextTrigger: null,
+      decisionAcquired: false,
+    }),
+  })).filter((row) => row.architectureDecision !== null);
+  const reviewWarningsRequiringDecision = evaluation.reviewWarnings.map((row) => ({
+    ...row,
+    ...(humanDecisionsByFile[row.file] ?? {
+      file: row.file,
+      architectureDecision: null,
+      priority: null,
+      dependencyOrBlocker: null,
+      nextTrigger: null,
+      decisionAcquired: false,
+    }),
+  })).filter((row) => !row.decisionAcquired);
+  return {
+    ...evaluation,
+    humanDecisions: Object.values(humanDecisionsByFile),
+    humanDecisionsByFile,
+    reviewWarningsWithDecision,
+    reviewWarningsRequiringDecision,
+  };
 }
 
 function makeSummary({ audit, manifest, result, paths }) {
@@ -169,7 +227,15 @@ function makeSummary({ audit, manifest, result, paths }) {
     for (const entry of result.results) lines.splice(6, 0, `- ${entry.scopeName}: ${entry.metrics.clones} clones, ${entry.metrics.duplicatedLines} duplicated lines, ${entry.metrics.duplicatedTokens} duplicated tokens`);
   }
   if (audit === "top-heavy" && result?.rows) {
-    lines.splice(6, 0, `- Measured files: ${result.rows.length}`, `- Proximity list: ${result.proximityRows.length} entries`, `- Radar projection: ${result.radarProjection?.rows?.length ?? 0} rows`);
+    lines.splice(6, 0,
+      `- Current REVIEW: ${result.evaluation?.reviewWarnings?.length ?? 0}`,
+      `- REVIEW with acquired decision: ${result.evaluation?.reviewWarningsWithDecision?.filter((row) => row.decisionAcquired).length ?? 0}`,
+      `- REVIEW requiring decision: ${result.evaluation?.reviewWarningsRequiringDecision?.length ?? 0}`,
+      `- Review improvements: ${result.evaluation?.reviewImprovements?.length ?? 0}`,
+      `- Proximity candidates below REVIEW: ${result.proximityRows.length}`,
+      `- Measured files: ${result.rows.length}`,
+      `- Radar projection: ${result.radarProjection?.rows?.length ?? 0} rows`,
+    );
   }
   if (audit === "complexity" && result?.result) {
     lines.splice(6, 0, `- Measured functions: ${result.metrics.length}`, `- Violations: ${result.result.failures.length}`, `- Improvements: ${result.result.improvements.length}`, `- Review signals: ${result.result.reviews.length}`);
@@ -193,8 +259,13 @@ async function executeAudit(audit, root) {
   if (audit === "top-heavy") {
     const result = runTopHeavyPolicy({ root, args: ["--ref=HEAD", "--enforce"] });
     const view = createRepositoryView({ root, ref: "HEAD" });
+    const humanDecisionsByFile = view.isFile(HUMAN_DECISIONS_PATH)
+      ? buildHumanDecisionsByFile(view.readText(HUMAN_DECISIONS_PATH))
+      : {};
+    const evaluation = enrichTopHeavyEvaluation(result.evaluation, humanDecisionsByFile);
     const radarRows = createRadarRows(result.rows, loadCorrelationSignals(view));
-    return { ...result, radarProjection: { rows: radarRows }, status: statusForAudit(audit, result) };
+    const enrichedResult = { ...result, evaluation, radarProjection: { rows: radarRows } };
+    return { ...enrichedResult, status: statusForAudit(audit, enrichedResult) };
   }
   if (audit === "complexity") return runComplexityPolicy();
   if (audit === "cycles") return runCycleGate();

@@ -5,6 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+import { runTopHeavyPolicy } from "./check-top-heavy-files.mjs";
+
 const repoRoot = process.cwd();
 const checkerPath = path.join(repoRoot, "scripts", "checks", "check-top-heavy-files.mjs");
 const fixtureParent = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-top-heavy-checker-tests-"));
@@ -74,6 +76,25 @@ test("un fichier REVIEW historique inchangé passe", () => {
     assert.equal(result.status, 0, result.output);
     assert.match(result.output, /REVIEW_REQUIRED/);
     assert.match(result.output, /PASS/);
+  });
+});
+
+test("la proximité ne contient que les fichiers encore sous REVIEW", () => {
+  withFixture({
+    source: makeContent(450),
+    extraFiles: {
+      "apps/web/src/seventy-percent.ts": makeContent(350),
+      "apps/web/src/already-review.ts": makeContent(501),
+      "apps/web/src/already-hard.ts": makeContent(1001),
+    },
+  }, (root) => {
+    const report = runTopHeavyPolicy({ root, args: ["--ref=HEAD"] });
+    assert.deepEqual(report.proximityRows.slice(0, 2).map((row) => row.file), [
+      "apps/web/src/fixture.ts",
+      "apps/web/src/seventy-percent.ts",
+    ]);
+    assert.equal(report.proximityRows.some((row) => row.file.endsWith("already-review.ts")), false);
+    assert.equal(report.proximityRows.some((row) => row.file.endsWith("already-hard.ts")), false);
   });
 });
 
