@@ -241,6 +241,71 @@ export function readJscpdFingerprints(sarifReport) {
   return fingerprints;
 }
 
+function firstString(...values) {
+  return values.find((value) => typeof value === "string" && value.length > 0) ?? null;
+}
+
+function firstInteger(...values) {
+  return values.find((value) => Number.isInteger(value)) ?? null;
+}
+
+function normalizeOccurrencePath(value) {
+  return value.replaceAll("\\", "/").replace(/^\.\//, "");
+}
+
+function readJscpdOccurrence(location) {
+  if (!location || typeof location !== "object") return null;
+  const sourcePath = firstString(location.name, location.path, location.file, location.fileName, location.uri);
+  const startLine = firstInteger(location.start, location.startLine, location.startLoc?.line, location.region?.startLine);
+  const endLine = firstInteger(location.end, location.endLine, location.endLoc?.line, location.region?.endLine);
+  if (!sourcePath || startLine === null || endLine === null) return null;
+  return { path: normalizeOccurrencePath(sourcePath), startLine, endLine };
+}
+
+function readSarifOccurrence(result, index) {
+  const location = result?.locations?.[index]?.physicalLocation;
+  if (!location) return null;
+  return readJscpdOccurrence({
+    uri: location.artifactLocation?.uri,
+    region: location.region,
+  });
+}
+
+export function readJscpdOccurrences(report, sarifReport, scopeName) {
+  if (typeof scopeName !== "string" || scopeName.length === 0) {
+    throw new Error("jscpd occurrence projection requires a scope name.");
+  }
+  const duplicates = report?.duplicates;
+  const results = sarifReport?.runs?.[0]?.results;
+  if (!Array.isArray(duplicates)) {
+    throw new Error("jscpd report malformed: duplicates is required for occurrence projection.");
+  }
+  if (!Array.isArray(results)) {
+    throw new Error("jscpd SARIF report malformed: runs[0].results is required for occurrence projection.");
+  }
+  if (duplicates.length !== results.length) {
+    throw new Error(`jscpd occurrence projection mismatch: ${duplicates.length} JSON clones versus ${results.length} SARIF results.`);
+  }
+
+  return duplicates.map((duplicate, index) => {
+    const fingerprint = results[index]?.partialFingerprints?.["jscpdCloneHash/v1"];
+    if (typeof fingerprint !== "string" || fingerprint.length === 0) {
+      throw new Error("jscpd SARIF report malformed: jscpdCloneHash/v1 is required for occurrence projection.");
+    }
+    const occurrenceA = readJscpdOccurrence(duplicate?.firstFile) ?? readSarifOccurrence(results[index], 0);
+    const occurrenceB = readJscpdOccurrence(duplicate?.secondFile) ?? readSarifOccurrence(results[index], 1);
+    if (!occurrenceA || !occurrenceB) {
+      throw new Error(`jscpd occurrence projection malformed at clone ${index + 1}: two source locations are required.`);
+    }
+    return {
+      scope: scopeName,
+      fingerprint,
+      occurrenceA,
+      occurrenceB,
+    };
+  });
+}
+
 function justificationError(message) {
   throw new Error(`duplication justifications malformed: ${message}`);
 }

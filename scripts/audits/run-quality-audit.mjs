@@ -224,7 +224,7 @@ function makeSummary({ audit, manifest, result, paths }) {
     );
   }
   if (audit === "duplication" && result?.results) {
-    for (const entry of result.results) lines.splice(6, 0, `- ${entry.scopeName}: ${entry.metrics.clones} clones, ${entry.metrics.duplicatedLines} duplicated lines, ${entry.metrics.duplicatedTokens} duplicated tokens`);
+    for (const entry of result.results) lines.splice(6, 0, `- ${entry.scopeName}: ${entry.metrics.clones} clones, ${entry.metrics.duplicatedLines} duplicated lines, ${entry.metrics.duplicatedTokens} duplicated tokens, ${entry.occurrences?.length ?? 0} occurrence pairs projected`);
   }
   if (audit === "top-heavy" && result?.rows) {
     lines.splice(6, 0,

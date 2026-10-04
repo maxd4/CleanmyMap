@@ -12,6 +12,7 @@ import {
   nativeBaselineFingerprintCount,
   readJscpdFingerprints,
   readJscpdMetrics,
+  readJscpdOccurrences,
   validateDuplicationJustificationsRegistry,
   validateDuplicationMetricsBaseline,
 } from "./duplication-policy.mjs";
@@ -57,12 +58,15 @@ function runScope(scopeName, baseline) {
     if (!fs.existsSync(reportPath)) {
       throw new Error(`jscpd report missing for ${scopeName}: ${result.stderr || result.stdout || "no output"}`);
     }
-    const metrics = readJscpdMetrics(JSON.parse(fs.readFileSync(reportPath, "utf8")));
+    const jscpdReport = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+    const metrics = readJscpdMetrics(jscpdReport);
     const sarifPath = path.join(outputDirectory, "jscpd-report.sarif");
     if (!fs.existsSync(sarifPath)) {
       throw new Error(`jscpd SARIF report missing for ${scopeName}.`);
     }
-    const fingerprints = readJscpdFingerprints(JSON.parse(fs.readFileSync(sarifPath, "utf8")));
+    const sarifReport = JSON.parse(fs.readFileSync(sarifPath, "utf8"));
+    const fingerprints = readJscpdFingerprints(sarifReport);
+    const occurrences = readJscpdOccurrences(jscpdReport, sarifReport, scopeName);
     const comparison = compareDuplicationMetrics(metrics, baseline.scopes[scopeName], scopeName);
     const failures = [...comparison.failures];
     if (result.status !== 0) failures.push(`jscpd execution failed (exit ${result.status})`);
@@ -70,6 +74,7 @@ function runScope(scopeName, baseline) {
       scopeName,
       metrics,
       fingerprints,
+      occurrences,
       comparison: {
         ...comparison,
         status: failures.length > 0 ? "FAIL" : comparison.status,
