@@ -86,7 +86,7 @@ export async function createActionsExportRedirect(params: {
   });
 }
 
-export async function loadActionsExportContracts(
+async function loadActionsExportContracts(
   supabase: SupabaseClient,
   query: ReportQuery,
   types: ActionEntityType[] | null,

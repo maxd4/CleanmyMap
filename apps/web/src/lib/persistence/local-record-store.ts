@@ -6,6 +6,15 @@ export type LocalRecordStorePayload<T> = {
   records: T[];
 };
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 export async function readLocalRecordStore<T>(
   filePath: string,
   normalizeRecord: (record: Record<string, unknown>) => T | null,
@@ -25,7 +34,14 @@ export async function readLocalRecordStore<T>(
           ? parsed.updatedAt
           : new Date().toISOString(),
       records: parsed.records
-        .map((record) => normalizeRecord(record as Record<string, unknown>))
+        .filter(isPlainRecord)
+        .map((record) => {
+          try {
+            return normalizeRecord(record);
+          } catch {
+            return null;
+          }
+        })
         .filter((record): record is T => record !== null),
     };
   } catch {

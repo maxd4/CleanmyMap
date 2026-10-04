@@ -80,6 +80,54 @@ describe("local record store", () => {
     expect(fallback.updatedAt).not.toBe("42");
   });
 
+  it("skips invalid record values and preserves valid records with a valid updatedAt", async () => {
+    const filePath = await createTemporaryPath("heterogeneous.json");
+    await writeFile(
+      filePath,
+      JSON.stringify({
+        updatedAt: "2026-09-02T00:00:00.000Z",
+        records: [
+          { value: "before" },
+          null,
+          42,
+          [{ value: "array" }],
+          { value: 7 },
+          { value: "after" },
+        ],
+      }),
+      "utf8",
+    );
+
+    await expect(readLocalRecordStore(filePath, normalizeRecord)).resolves.toEqual({
+      updatedAt: "2026-09-02T00:00:00.000Z",
+      records: ["before", "after"],
+    });
+  });
+
+  it("skips a record whose normalizer throws without losing neighboring records", async () => {
+    const filePath = await createTemporaryPath("throwing-normalizer.json");
+    await writeFile(
+      filePath,
+      JSON.stringify({
+        updatedAt: "2026-09-03T00:00:00.000Z",
+        records: [{ value: "before" }, { value: "throw" }, { value: "after" }],
+      }),
+      "utf8",
+    );
+
+    const normalizeWithThrow = (record: Record<string, unknown>): string | null => {
+      if (record.value === "throw") {
+        throw new Error("invalid record");
+      }
+      return normalizeRecord(record);
+    };
+
+    await expect(readLocalRecordStore(filePath, normalizeWithThrow)).resolves.toEqual({
+      updatedAt: "2026-09-03T00:00:00.000Z",
+      records: ["before", "after"],
+    });
+  });
+
   it("creates parent directories and writes the canonical envelope", async () => {
     const filePath = await createTemporaryPath("deep/nested/store.json");
 
