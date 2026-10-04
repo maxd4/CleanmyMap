@@ -266,7 +266,7 @@ const baselineSourceCommit = (() => {
   }
 })();
 
-async function main() {
+export async function runComplexityPolicy() {
   let view = null;
   let stagedTree = null;
   if (stagedOnly) {
@@ -279,9 +279,7 @@ async function main() {
     baseline = JSON.parse(view ? view.readText("scripts/checks/complexity-baseline.json") : fs.readFileSync(baselinePath, "utf8"));
     assertBaselineFresh(baseline);
   } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exitCode = 1;
-    return;
+    throw error;
   }
 
   let headParent;
@@ -312,18 +310,14 @@ async function main() {
     }
   }
   if (changedOnly && changedRanges.size === 0) {
-    writeQualityEvidence({
-      gate: "complexity",
-      candidateSha: resolveCandidateSha(repositoryRoot),
+    return {
+      baseline,
+      metrics: [],
+      result: { failures: [], reviews: [], improvements: [], stale: [] },
+      changedPaths,
+      sourceFiles: [],
       status: "PASS",
-      metrics: { measuredFunctions: 0, violations: 0, baselineStale: 0, improvementsDetected: 0, reviewSignals: 0 },
-      newFindings: 0,
-      resolvedFindings: null,
-      historicalFindings: null,
-      baseline: { sourceCommit: baseline.sourceCommit, policyFingerprint: baseline.policyFingerprint },
-    });
-    console.log(`PASS: no changed files under ${sourceRoots.join(", ")} for targeted complexity policy.`);
-    return;
+    };
   }
 
   const eslint = new ESLint({
@@ -360,48 +354,59 @@ async function main() {
     stalePaths: changedOnly ? changedPaths : null,
   });
   const blocking = result.failures.length > 0 || result.stale.length > 0;
-  writeQualityEvidence({
-    gate: "complexity",
-    candidateSha: resolveCandidateSha(repositoryRoot),
+  return {
+    baseline,
+    metrics,
+    result,
+    changedPaths,
+    sourceFiles,
     status: blocking ? "FAIL" : "PASS",
-    metrics: {
-      measuredFunctions: metrics.length,
-      violations: result.failures.length,
-      baselineStale: result.stale.length,
-      improvementsDetected: result.improvements.length,
-      reviewSignals: result.reviews.length,
-    },
-    newFindings: result.failures.length,
-    resolvedFindings: null,
-    historicalFindings: null,
-    baseline: { sourceCommit: baseline.sourceCommit, policyFingerprint: baseline.policyFingerprint },
-    details: {
-      failureKeys: result.failures.map((failure) => failure.key),
-      improvementKeys: result.improvements.map((improvement) => improvement.key),
-      staleKeys: result.stale.map((entry) => baselineKey(entry.metric, entry.path, entry.functionIdentity)),
-    },
-  });
-
-  console.log(`Complexity policy: ${metrics.length} function metrics measured.`);
-  if (result.reviews.length > 0) console.log(`REVIEW_REQUIRED: ${result.reviews.length} review signals.`);
-  if (result.improvements.length > 0) console.log(`IMPROVEMENT_AVAILABLE: ${result.improvements.length} lower measurements; update the baseline explicitly to acquire them.`);
-  if (result.stale.length > 0) {
-    console.error(`BASELINE_STALE: ${result.stale.length} entries no longer match measured functions.`);
-    for (const entry of result.stale.slice(0, 20)) console.error(` - ${entry.metric}:${entry.path}:${entry.line ?? ""}`);
-  }
-  if (result.failures.length > 0) {
-    console.error(`FAIL: ${result.failures.length} complexity/length ratchet violations.`);
-    for (const failure of result.failures.slice(0, 40)) console.error(` - ${failure.metric}:${failure.path}:${failure.line ?? ""} value=${failure.value ?? failure.lines} reason=${failure.reason}`);
-    process.exitCode = 1;
-    return;
-  }
-  if (result.stale.length > 0) {
-    process.exitCode = 1;
-    return;
-  }
-  console.log("PASS: new-code thresholds and legacy ceilings respected.");
+  };
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
-  await main();
+  try {
+    const report = await runComplexityPolicy();
+    const result = report.result;
+    writeQualityEvidence({
+      gate: "complexity",
+      candidateSha: resolveCandidateSha(repositoryRoot),
+      status: report.status,
+      metrics: {
+        measuredFunctions: report.metrics.length,
+        violations: result.failures.length,
+        baselineStale: result.stale.length,
+        improvementsDetected: result.improvements.length,
+        reviewSignals: result.reviews.length,
+      },
+      newFindings: result.failures.length,
+      resolvedFindings: null,
+      historicalFindings: null,
+      baseline: { sourceCommit: report.baseline.sourceCommit, policyFingerprint: report.baseline.policyFingerprint },
+      details: {
+        failureKeys: result.failures.map((failure) => failure.key),
+        improvementKeys: result.improvements.map((improvement) => improvement.key),
+        staleKeys: result.stale.map((entry) => baselineKey(entry.metric, entry.path, entry.functionIdentity)),
+      },
+    });
+    console.log(`Complexity policy: ${report.metrics.length} function metrics measured.`);
+    if (result.reviews.length > 0) console.log(`REVIEW_REQUIRED: ${result.reviews.length} review signals.`);
+    if (result.improvements.length > 0) console.log(`IMPROVEMENT_AVAILABLE: ${result.improvements.length} lower measurements; update the baseline explicitly to acquire them.`);
+    if (result.stale.length > 0) {
+      console.error(`BASELINE_STALE: ${result.stale.length} entries no longer match measured functions.`);
+      for (const entry of result.stale.slice(0, 20)) console.error(` - ${entry.metric}:${entry.path}:${entry.line ?? ""}`);
+    }
+    if (result.failures.length > 0) {
+      console.error(`FAIL: ${result.failures.length} complexity/length ratchet violations.`);
+      for (const failure of result.failures.slice(0, 40)) console.error(` - ${failure.metric}:${failure.path}:${failure.line ?? ""} value=${failure.value ?? failure.lines} reason=${failure.reason}`);
+      process.exitCode = 1;
+    } else if (result.stale.length > 0) {
+      process.exitCode = 1;
+    } else {
+      console.log("PASS: new-code thresholds and legacy ceilings respected.");
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  }
 }
