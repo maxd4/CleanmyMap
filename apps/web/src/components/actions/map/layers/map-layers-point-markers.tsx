@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import {
   CircleMarker,
   Popup,
@@ -25,12 +24,55 @@ import {
   resolveGeometryRenderStyle,
 } from "./actions-map-geometry.utils";
 import { resolveMapPlaceStateForItem } from "../filters/actions-map-display-state";
+import { useMapSelectableLayerRefs } from "./map-layers-selection";
 import {
   isTrashSpotterItem,
   resolvePointColor,
   type ActionPointLayerProps,
   type LeafletClusterLike,
 } from "./map-layers.shared";
+
+const ACTION_MARKER_CLUSTER_PROPS = {
+  chunkedLoading: true,
+  maxClusterRadius: resolveClusterRadius,
+  disableClusteringAtZoom: 18,
+  spiderfyOnMaxZoom: true,
+  spiderfyDistanceMultiplier: 1.6,
+  showCoverageOnHover: false,
+} as const;
+
+function createActionMarkerClusterIcon(
+  cluster: LeafletClusterLike,
+  className: string,
+  label: string,
+) {
+  const childCount = cluster.getChildCount();
+  const tier = resolveClusterDensityTier(childCount);
+  const size = resolveClusterIconSize(childCount);
+  const ariaLabel = resolveClusterAriaLabel(childCount);
+  const densityClass =
+    tier === "dense"
+      ? "dense"
+      : tier === "high"
+        ? "high"
+        : tier === "medium"
+          ? "medium"
+          : "low";
+
+  return divIcon({
+    className: `${className} ${className}--${densityClass}`,
+    html: `
+      <div class="${className}__body" aria-label="${ariaLabel}">
+        <span class="${className}__count">${formatClusterCount(childCount)}</span>
+        <span class="${className}__label">${label}</span>
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -(size / 2)],
+    tooltipAnchor: [0, -(size / 2)],
+  });
+}
 
 export function SignalementMarkers({
   items,
@@ -43,16 +85,7 @@ export function SignalementMarkers({
 }: ActionPointLayerProps) {
   const { references, isLoading: referencesLoading } = useActionPollutionScoreReferences();
   const now = new Date();
-  const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
-
-  useEffect(() => {
-    if (!selectedActionId) {
-      return;
-    }
-
-    const layer = layerRefs.current[selectedActionId];
-    layer?.openPopup?.();
-  }, [selectedActionId]);
+  const registerLayerRef = useMapSelectableLayerRefs(selectedActionId).registerLayerRef;
 
   if (!visible) {
     return null;
@@ -60,40 +93,10 @@ export function SignalementMarkers({
 
   return (
     <MarkerClusterGroup
-      chunkedLoading
-      maxClusterRadius={resolveClusterRadius}
-      disableClusteringAtZoom={18}
-      spiderfyOnMaxZoom={true}
-      spiderfyDistanceMultiplier={1.6}
-      showCoverageOnHover={false}
-      iconCreateFunction={(cluster: LeafletClusterLike) => {
-        const childCount = cluster.getChildCount();
-        const tier = resolveClusterDensityTier(childCount);
-        const size = resolveClusterIconSize(childCount);
-        const ariaLabel = resolveClusterAriaLabel(childCount);
-
-        return divIcon({
-          className: `cmm-action-cluster ${
-            tier === "dense"
-              ? "cmm-action-cluster--dense"
-              : tier === "high"
-                ? "cmm-action-cluster--high"
-                : tier === "medium"
-                  ? "cmm-action-cluster--medium"
-                  : "cmm-action-cluster--low"
-          }`,
-          html: `
-            <div class="cmm-action-cluster__body" aria-label="${ariaLabel}">
-              <span class="cmm-action-cluster__count">${formatClusterCount(childCount)}</span>
-              <span class="cmm-action-cluster__label">actions</span>
-            </div>
-          `,
-          iconSize: [size, size],
-          iconAnchor: [size / 2, size / 2],
-          popupAnchor: [0, -(size / 2)],
-          tooltipAnchor: [0, -(size / 2)],
-        });
-      }}
+      {...ACTION_MARKER_CLUSTER_PROPS}
+      iconCreateFunction={(cluster: LeafletClusterLike) =>
+        createActionMarkerClusterIcon(cluster, "cmm-action-cluster", "actions")
+      }
     >
       {items.map((item) => {
         const coords = mapItemCoordinates(item);
@@ -128,11 +131,7 @@ export function SignalementMarkers({
           <CircleMarker
             key={`point-${item.id}`}
             ref={(layer) => {
-              if (layer) {
-                layerRefs.current[item.id] = layer;
-              } else {
-                delete layerRefs.current[item.id];
-              }
+              registerLayerRef(item.id, layer);
             }}
             center={geometry.anchor ?? [coords.latitude, coords.longitude]}
             radius={renderStyle.pointRadius ?? (isFallbackPoint ? 4.5 : 6) + (isSelected ? 2 : 0)}
@@ -180,17 +179,8 @@ export function TrashSpotterMarkers({
   scoreScope = "global",
 }: ActionPointLayerProps) {
   const spotItems = items.filter(isTrashSpotterItem);
-  const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
   const now = new Date();
-
-  useEffect(() => {
-    if (!selectedActionId) {
-      return;
-    }
-
-    const layer = layerRefs.current[selectedActionId];
-    layer?.openPopup?.();
-  }, [selectedActionId]);
+  const { registerLayerRef } = useMapSelectableLayerRefs(selectedActionId);
 
   if (!visible) {
     return null;
@@ -198,40 +188,14 @@ export function TrashSpotterMarkers({
 
   return (
     <MarkerClusterGroup
-      chunkedLoading
-      maxClusterRadius={resolveClusterRadius}
-      disableClusteringAtZoom={18}
-      spiderfyOnMaxZoom={true}
-      spiderfyDistanceMultiplier={1.6}
-      showCoverageOnHover={false}
-      iconCreateFunction={(cluster: LeafletClusterLike) => {
-        const childCount = cluster.getChildCount();
-        const tier = resolveClusterDensityTier(childCount);
-        const size = resolveClusterIconSize(childCount);
-        const ariaLabel = resolveClusterAriaLabel(childCount);
-
-        return divIcon({
-          className: `cmm-trash-spotter-cluster ${
-            tier === "dense"
-              ? "cmm-trash-spotter-cluster--dense"
-              : tier === "high"
-                ? "cmm-trash-spotter-cluster--high"
-                : tier === "medium"
-                  ? "cmm-trash-spotter-cluster--medium"
-                  : "cmm-trash-spotter-cluster--low"
-          }`,
-          html: `
-            <div class="cmm-trash-spotter-cluster__body" aria-label="${ariaLabel}">
-              <span class="cmm-trash-spotter-cluster__count">${formatClusterCount(childCount)}</span>
-              <span class="cmm-trash-spotter-cluster__label">trash spotter</span>
-            </div>
-          `,
-          iconSize: [size, size],
-          iconAnchor: [size / 2, size / 2],
-          popupAnchor: [0, -(size / 2)],
-          tooltipAnchor: [0, -(size / 2)],
-        });
-      }}
+      {...ACTION_MARKER_CLUSTER_PROPS}
+      iconCreateFunction={(cluster: LeafletClusterLike) =>
+        createActionMarkerClusterIcon(
+          cluster,
+          "cmm-trash-spotter-cluster",
+          "trash spotter",
+        )
+      }
     >
       {spotItems.map((item) => {
         const coords = mapItemCoordinates(item);
@@ -262,11 +226,7 @@ export function TrashSpotterMarkers({
           <CircleMarker
             key={`trash-spotter-${item.id}`}
             ref={(layer) => {
-              if (layer) {
-                layerRefs.current[item.id] = layer;
-              } else {
-                delete layerRefs.current[item.id];
-              }
+              registerLayerRef(item.id, layer);
             }}
             center={[coords.latitude, coords.longitude]}
             radius={7 + (isSelected ? 2 : 0)}
