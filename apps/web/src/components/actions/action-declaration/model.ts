@@ -88,6 +88,21 @@ export type FormState = {
  plannerProof?: RoutePlannerProof | null;
 };
 
+export const EMPTY_ACTION_MEASUREMENT_FIELDS = {
+ wasteKg: "",
+ wasteMeasurementMethod: "",
+ wasteRecyclablesKg: "",
+ wasteGlassKg: "",
+ wasteHouseholdKg: "",
+ wasteOtherKg: "",
+ wasteUnusualObjects: "",
+ wasteSpecialHandlingWaste: "",
+ cigaretteButts: "",
+ cigaretteButtsCount: "",
+ cigaretteButtsCondition: "propre",
+ cigaretteButtsVolumeLiters: "",
+} as const;
+
 export const initialState: FormState = {
  actorName:"",
  associationName: "Action spontanée",
@@ -124,18 +139,7 @@ export const initialState: FormState = {
  recordType:"action",
  latitude:"",
  longitude:"",
- wasteKg:"",
- wasteMeasurementMethod:"",
- wasteRecyclablesKg:"",
- wasteGlassKg:"",
- wasteHouseholdKg:"",
- wasteOtherKg:"",
- wasteUnusualObjects:"",
- wasteSpecialHandlingWaste:"",
-  cigaretteButts:"",
- cigaretteButtsCount:"", // Optionnel par défaut
- cigaretteButtsCondition:"propre", // État par défaut
- cigaretteButtsVolumeLiters:"",
+  ...EMPTY_ACTION_MEASUREMENT_FIELDS,
  volunteersCount:"1",
  childrenCount:"0",
  adultCount:"1",

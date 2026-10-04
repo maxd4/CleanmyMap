@@ -91,6 +91,30 @@ function getActionManualDrawingGeoJson(
   return manualDrawing ? toGeoJsonString(manualDrawing) : null;
 }
 
+function buildActionQualityFields(
+  contract: ActionDataContract,
+  insights?: ActionInsightsLike,
+) {
+  return {
+    geometry_source: contract.geometry.geometrySource,
+    manual_drawing: contract.metadata.manualDrawing,
+    manual_drawing_geojson: getActionManualDrawingGeoJson(
+      contract.metadata.manualDrawing,
+    ),
+    submission_mode: contract.metadata.submissionMode,
+    waste_breakdown: contract.metadata.wasteBreakdown,
+    waste_categories: contract.metadata.wasteCategories ?? null,
+    data_quality: contract.dataQuality,
+    quality_score: insights?.qualityScore,
+    quality_grade: insights?.qualityGrade,
+    quality_flags: insights?.qualityFlags,
+    quality_breakdown: insights?.qualityBreakdown,
+    to_fix_priority: insights?.toFixPriority,
+    impact_level: insights?.impactLevel,
+    contract,
+  };
+}
+
 /**
  * Transforme un contrat en ActionMapItem (format pour la carte).
  */
@@ -114,22 +138,7 @@ export function toActionMapItem(
     organizer_type: contract.metadata.organizerType,
     source_status: contract.sourceStatus ?? contract.status,
     created_by_clerk_id: contract.createdByClerkId ?? null,
-    manual_drawing: contract.metadata.manualDrawing,
-    manual_drawing_geojson: getActionManualDrawingGeoJson(
-      contract.metadata.manualDrawing,
-    ),
-    geometry_source: contract.geometry.geometrySource,
-    submission_mode: contract.metadata.submissionMode,
-    waste_breakdown: contract.metadata.wasteBreakdown,
-    waste_categories: contract.metadata.wasteCategories ?? null,
-    data_quality: contract.dataQuality,
-    quality_score: insights?.qualityScore,
-    quality_grade: insights?.qualityGrade,
-    quality_flags: insights?.qualityFlags,
-    quality_breakdown: insights?.qualityBreakdown,
-    to_fix_priority: insights?.toFixPriority,
-    impact_level: insights?.impactLevel,
-    contract,
+    ...buildActionQualityFields(contract, insights),
   };
 }
 
@@ -175,22 +184,7 @@ export function toActionListItem(
     geometry_kind: contract.geometry.kind,
     geometry_geojson: contract.geometry.geojson,
     geometry_confidence: contract.geometry.confidence,
-    geometry_source: contract.geometry.geometrySource,
-    manual_drawing: contract.metadata.manualDrawing,
-    manual_drawing_geojson: getActionManualDrawingGeoJson(
-      contract.metadata.manualDrawing,
-    ),
-    submission_mode: contract.metadata.submissionMode,
-    waste_breakdown: contract.metadata.wasteBreakdown,
-    waste_categories: contract.metadata.wasteCategories ?? null,
-    data_quality: contract.dataQuality,
-    quality_score: insights?.qualityScore,
-    quality_grade: insights?.qualityGrade,
-    quality_flags: insights?.qualityFlags,
-    quality_breakdown: insights?.qualityBreakdown,
-    to_fix_priority: insights?.toFixPriority,
-    impact_level: insights?.impactLevel,
-    contract,
+    ...buildActionQualityFields(contract, insights),
   };
 }
 

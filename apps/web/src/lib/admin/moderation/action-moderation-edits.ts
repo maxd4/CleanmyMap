@@ -20,7 +20,10 @@ import {
   isAlignedToWasteMassResolution,
 } from "@/lib/waste/measurement";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
-import { manualDrawingSchema } from "@/lib/validation/action";
+import {
+  commonActionCigaretteButtSchemaFields,
+  manualDrawingSchema,
+} from "@/lib/validation/action";
 
 const adminWasteBreakdownSchema = z.object({
   recyclablesKg: z.number().min(0).max(100000).nullable().optional().refine(
@@ -74,11 +77,7 @@ export const actionEditsSchema = z
       })
       .nullable()
       .optional(),
-    cigaretteButtsMassKg: z.number().min(0).max(100000).nullable().optional(),
-    cigaretteButtsVolumeLiters: z.number().min(0).max(100000).nullable().optional(),
-    cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
-    cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
-    cigaretteButts: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
+    ...commonActionCigaretteButtSchemaFields,
     volunteersCount: z.number().int().min(1).max(500).optional(),
     durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
     notes: z.string().trim().max(1000).nullable().optional(),

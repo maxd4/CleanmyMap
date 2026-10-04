@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionParticipantRow, ActionRow } from "@/types/database";
 import type { ActionParticipantSummary } from "./participant-summaries";
-import type { ActionPhase, ActionPreparationData } from "@/lib/actions/types";
+import type { ActionPreparationData } from "@/lib/actions/types";
+import type { JoinableActionItem } from "./group-participation-contract";
 
 export const PENDING_PARTICIPATION_STATUS = "pending" as const;
 export const ACTIVE_PARTICIPATION_STATUS = "confirmed" as const;
@@ -128,26 +129,7 @@ export function buildJoinableItem(
   metadata: JoinableActionMetadata,
   participantsCount: number,
   participantSummary: ActionParticipantSummary | null,
-): {
-  id: string;
-  created_at: string;
-  action_date: string;
-  location_label: string;
-  actionTitle?: string | null;
-  volunteers_count: number;
-  duration_minutes: number;
-  status: ActionRow["status"];
-  actionPhase: ActionPhase;
-  participantsCount: number;
-  joined: boolean;
-  awaitingApproval: boolean;
-  joinedAt: string | null;
-  participationStatus: ParticipationStatus | null;
-  participationSource: ParticipationSource | null;
-  participationUpdatedAt: string | null;
-  groupJoinEnabled: boolean;
-  pendingRequestsCount: number;
-} {
+): JoinableActionItem {
   const publicAction = { ...action };
   delete publicAction.preparation_data;
   return {

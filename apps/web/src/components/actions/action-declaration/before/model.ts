@@ -1,4 +1,7 @@
-import type { FormState } from "../model";
+import {
+  EMPTY_ACTION_MEASUREMENT_FIELDS,
+  type FormState,
+} from "../model";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import type { ActionPreparationData, ActionStatus } from "@/lib/actions/types";
 import { normalizeParticipantAccounts } from "../payload";
@@ -227,18 +230,7 @@ export function sanitizePreActionForm(form: FormState): FormState {
     routeStyle: "souple",
     routeAdjustmentMessage: "",
     notes: "",
-    wasteKg: "",
-    wasteMeasurementMethod: "",
-    wasteRecyclablesKg: "",
-    wasteGlassKg: "",
-    wasteHouseholdKg: "",
-    wasteOtherKg: "",
-    wasteUnusualObjects: "",
-    wasteSpecialHandlingWaste: "",
-    cigaretteButts: "",
-    cigaretteButtsCount: "",
-    cigaretteButtsCondition: "propre",
-    cigaretteButtsVolumeLiters: "",
+    ...EMPTY_ACTION_MEASUREMENT_FIELDS,
     wasteMegotsKg: "",
     wasteMegotsCondition: "propre",
     wastePlastiqueKg: "",

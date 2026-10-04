@@ -7,9 +7,13 @@ import { findMatchingGeometry } from "../../geo/geometry-reference.ts";
 import {
   GEOMETRY_CONFIDENCE,
   hasCoordinates,
+  isRenderableDrawing,
   normalizeLabel,
+  toGeoJsonString,
   toPointCoordinates,
 } from "./geometry-core.ts";
+
+export { isRenderableDrawing, toGeoJsonString } from "./geometry-core.ts";
 
 export type GeometryResolution = {
   kind: ActionGeometryKind;
@@ -61,32 +65,6 @@ export function resolveGeometrySourceFromConfidence(
     return "estimated_area";
   }
   return "fallback_point";
-}
-
-export function isRenderableDrawing(
-  drawing: Pick<ActionDrawing, "kind" | "coordinates"> | null | undefined,
-): drawing is ActionDrawing {
-  if (!drawing) {
-    return false;
-  }
-  const minimumPoints = drawing.kind === "polygon" ? 3 : 2;
-  return drawing.coordinates.length >= minimumPoints;
-}
-
-function toGeoJsonString(drawing: ActionDrawing | null): string | null {
-  if (!drawing) {
-    return null;
-  }
-  if (drawing.kind === "polyline") {
-    return JSON.stringify({
-      type: "LineString",
-      coordinates: drawing.coordinates.map(([lat, lng]) => [lng, lat]),
-    });
-  }
-  return JSON.stringify({
-    type: "Polygon",
-    coordinates: [drawing.coordinates.map(([lat, lng]) => [lng, lat])],
-  });
 }
 
 function confidenceFromSource(source: ActionGeometrySource): number {

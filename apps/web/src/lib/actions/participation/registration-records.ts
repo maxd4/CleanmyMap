@@ -31,6 +31,16 @@ const REGISTRATION_STATUS_COLUMNS =
 const REGISTRATION_REVIEW_COLUMNS =
   "id, action_id, created_at, registered_at, updated_at, user_id, registration_status, registration_source";
 
+function normalizeRegistrationUserIds(rows: readonly { user_id?: string | null }[]): string[] {
+  return Array.from(
+    new Set(
+      rows
+        .map((row) => String(row.user_id ?? "").trim())
+        .filter((value) => value.length > 0),
+    ),
+  );
+}
+
 export function resolveRegisteredAt(
   row: Pick<ActionRegistrationRow, "created_at" | "registered_at">,
 ): string {
@@ -172,13 +182,7 @@ export async function loadActionRegistrationIdsForAction(
     throw new Error(result.error.message);
   }
 
-  return Array.from(
-    new Set(
-      (result.data ?? [])
-        .map((row) => String((row as { user_id?: string }).user_id ?? "").trim())
-        .filter((value) => value.length > 0),
-    ),
-  );
+  return normalizeRegistrationUserIds(result.data ?? []);
 }
 
 export async function loadManualRegistrationIdsForAction(
@@ -196,11 +200,5 @@ export async function loadManualRegistrationIdsForAction(
     throw new Error(result.error.message);
   }
 
-  return Array.from(
-    new Set(
-      (result.data ?? [])
-        .map((row) => String((row as { user_id?: string }).user_id ?? "").trim())
-        .filter((value) => value.length > 0),
-    ),
-  );
+  return normalizeRegistrationUserIds(result.data ?? []);
 }

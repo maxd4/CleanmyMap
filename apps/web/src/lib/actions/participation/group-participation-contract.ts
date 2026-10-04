@@ -15,6 +15,47 @@ export type ParticipationAuditValue = {
   updatedAt: string | null;
 };
 
+export function createParticipationAuditValue(params: {
+  participationStatus: ParticipationStatus;
+  participationSource: ParticipationSource;
+  joinedAt: string;
+  updatedAt: string | null;
+}): ParticipationAuditValue {
+  return params;
+}
+
+export type ActionParticipationRecord = {
+  id: string;
+  action_id: string;
+  created_at: string;
+  updated_at: string | null;
+  user_id: string;
+  status: ParticipationStatus;
+  source: ParticipationSource;
+  joined_at: string;
+};
+
+export function createActionParticipationRecord(
+  params: ActionParticipationRecord,
+): ActionParticipationRecord {
+  return params;
+}
+
+export type ActionParticipationMutationResult = {
+  alreadyJoined: boolean;
+  joinedAt: string;
+  participationStatus: ParticipationStatus;
+  participationSource: ParticipationSource;
+  participationUpdatedAt: string | null;
+  participantsCount: number;
+};
+
+export function createActionParticipationMutationResult(
+  params: ActionParticipationMutationResult,
+): ActionParticipationMutationResult {
+  return params;
+}
+
 type ActionParticipationErrorStage =
   | "lookup"
   | "participation_update"

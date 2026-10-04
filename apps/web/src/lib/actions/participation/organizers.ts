@@ -49,6 +49,8 @@ export type ActionOrganizerResolution = {
   unresolvedTokens: string[];
 };
 
+type ActionAccountResolutionParams = { supabase: SupabaseClient; creator: { userId: string; displayName: string; handle?: string | null; username?: string | null; email?: string | null } };
+
 function normalizeToken(value: string): string {
   return value.trim().replace(/^@+/, "");
 }
@@ -241,6 +243,36 @@ async function lookupClerkUserByToken(
   };
 }
 
+async function resolveAndTrackActionAccount(params: {
+  supabase: SupabaseClient;
+  token: string;
+  seen: Set<string>;
+  unresolvedTokens: string[];
+}): Promise<ResolvedActionAccount | null> {
+  const fromProfiles = await lookupProfileByToken(params.supabase, params.token);
+  const resolved = fromProfiles ?? (await lookupClerkUserByToken(params.token));
+  if (!resolved) {
+    params.unresolvedTokens.push(params.token);
+    return null;
+  }
+  if (params.seen.has(resolved.userId)) {
+    return null;
+  }
+  params.seen.add(resolved.userId);
+  return resolved;
+}
+
+async function loadCurrentRegistrationIds(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<{ currentRegistrationIds: string[]; currentManualRegistrationIds: string[] }> {
+  const [currentRegistrationIds, currentManualRegistrationIds] = await Promise.all([
+    loadActionRegistrationIdsForAction(supabase, actionId),
+    loadManualRegistrationIdsForAction(supabase, actionId),
+  ]);
+  return { currentRegistrationIds, currentManualRegistrationIds };
+}
+
 export async function resolveActionOrganizers(params: {
   supabase: SupabaseClient;
   creator: {
@@ -269,19 +301,14 @@ export async function resolveActionOrganizers(params: {
       continue;
     }
 
-    const fromProfiles = await lookupProfileByToken(params.supabase, token);
-    const resolved = fromProfiles ?? (await lookupClerkUserByToken(token));
+    const resolved = await resolveAndTrackActionAccount({
+      supabase: params.supabase,
+      token,
+      seen,
+      unresolvedTokens,
+    });
+    if (!resolved) continue;
 
-    if (!resolved) {
-      unresolvedTokens.push(token);
-      continue;
-    }
-
-    if (seen.has(resolved.userId)) {
-      continue;
-    }
-
-    seen.add(resolved.userId);
     organizers.push({
       ...resolved,
       isPrimary: organizers.length === 0,
@@ -294,15 +321,7 @@ export async function resolveActionOrganizers(params: {
   };
 }
 
-export async function resolveActionParticipants(params: {
-  supabase: SupabaseClient;
-  creator: {
-    userId: string;
-    displayName: string;
-    handle?: string | null;
-    username?: string | null;
-    email?: string | null;
-  };
+export async function resolveActionParticipants(params: ActionAccountResolutionParams & {
   participantAccounts?: string[] | null;
   organizerIds?: string[] | null;
   existingParticipantIds?: string[] | null;
@@ -330,19 +349,14 @@ export async function resolveActionParticipants(params: {
       continue;
     }
 
-    const fromProfiles = await lookupProfileByToken(params.supabase, token);
-    const resolved = fromProfiles ?? (await lookupClerkUserByToken(token));
+    const resolved = await resolveAndTrackActionAccount({
+      supabase: params.supabase,
+      token,
+      seen,
+      unresolvedTokens,
+    });
+    if (!resolved) continue;
 
-    if (!resolved) {
-      unresolvedTokens.push(token);
-      continue;
-    }
-
-    if (seen.has(resolved.userId)) {
-      continue;
-    }
-
-    seen.add(resolved.userId);
     participants.push(resolved);
   }
 
@@ -352,30 +366,16 @@ export async function resolveActionParticipants(params: {
   };
 }
 
-export async function syncActionManualParticipants(params: {
-  supabase: SupabaseClient;
+export async function syncActionManualParticipants(params: ActionAccountResolutionParams & {
   actionId: string;
-  creator: {
-    userId: string;
-    displayName: string;
-    handle?: string | null;
-    username?: string | null;
-    email?: string | null;
-  };
   participantAccounts?: string[] | null;
   organizerIds?: string[] | null;
 }): Promise<{
   participants: ResolvedActionParticipant[];
   unresolvedTokens: string[];
 }> {
-  const currentRegistrationIds = await loadActionRegistrationIdsForAction(
-    params.supabase,
-    params.actionId,
-  );
-  const currentManualRegistrationIds = await loadManualRegistrationIdsForAction(
-    params.supabase,
-    params.actionId,
-  );
+  const { currentRegistrationIds, currentManualRegistrationIds } =
+    await loadCurrentRegistrationIds(params.supabase, params.actionId);
 
   const resolution = await resolveActionParticipants({
     supabase: params.supabase,

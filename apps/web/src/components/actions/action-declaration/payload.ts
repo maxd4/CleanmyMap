@@ -2,6 +2,7 @@ import { appendEventRefToNotes } from"../../../lib/actions/event-link";
 import type {
  ActionDrawing,
  ActionGeometrySource,
+ ActionMegotsCondition,
  ActionPhotoAsset,
  ActionPreparationData,
  ActionRouteTopology,
@@ -27,6 +28,179 @@ import {
 } from "@/lib/actions/route-target-distance";
 
 export const OTHER_VOLUNTEER_ASSOCIATION_VALUE = "__autre_benevole__";
+
+type CreateActionPayloadParams = {
+ form: FormState;
+ declarationMode: DeclarationMode;
+ effectiveManualDrawingEnabled: boolean;
+ drawingIsValid: boolean;
+ manualDrawing: ActionDrawing | null;
+ manualDrawingSource?: ActionGeometrySource | null;
+ routePreviewDrawing?: ActionDrawing | null;
+ routePreviewSource?: ActionGeometrySource | null;
+ isEntrepriseMode: boolean;
+ linkedEventId?: string;
+ photos?: ActionPhotoAsset[];
+ visionEstimate?: ActionVisionEstimate | null;
+ userMetadata?: {
+  userId: string;
+  handle?: string;
+  username?: string;
+  displayName?: string;
+  email?: string;
+ };
+};
+
+function buildVolunteerParticipationFromForm(
+ form: FormState,
+): VolunteerParticipationInput {
+ return {
+  childrenCount: toOptionalNumber(form.childrenCount) ?? null,
+  adultCount: toOptionalNumber(form.adultCount) ?? null,
+  retiredCount: toOptionalNumber(form.retiredCount) ?? null,
+ };
+}
+
+type CreateActionPayloadParts = {
+ departureLocationLabel: string;
+ arrivalLocationLabel: string;
+ routeTopology: ActionRouteTopology;
+ routeLocationLabel: string;
+ latitude: number | null;
+ longitude: number | null;
+ finalGeometry: FinalActionGeometry | null;
+ normalizedDrawing: ActionDrawing | null;
+ resolvedManualDrawingSource: ActionGeometrySource | null;
+ isSpontaneousAction: boolean;
+ organizerName: string;
+ associationName: string;
+ enteredMegotsKg: number | null;
+ enteredButtsCount: number | null;
+ enteredVolumeLiters: number | null;
+ cigaretteButtsCondition: ActionMegotsCondition;
+ rawCigaretteButtsMeasurements: {
+  cigaretteButtsCount: number | null;
+  cigaretteButtsMassKg: number | null;
+  cigaretteButtsVolumeLiters: number | null;
+  cigaretteButtsCondition: ActionMegotsCondition;
+ };
+ volunteerParticipationInput: VolunteerParticipationInput;
+ volunteerParticipation: ReturnType<typeof normalizeVolunteerParticipation>;
+};
+
+function resolveCreateActionRouteParts(
+ params: CreateActionPayloadParams,
+): Pick<
+ CreateActionPayloadParts,
+ | "departureLocationLabel"
+ | "arrivalLocationLabel"
+ | "routeTopology"
+ | "routeLocationLabel"
+ | "latitude"
+ | "longitude"
+ | "finalGeometry"
+ | "normalizedDrawing"
+ | "resolvedManualDrawingSource"
+> {
+ const { form, effectiveManualDrawingEnabled, manualDrawing, manualDrawingSource, routePreviewDrawing, routePreviewSource } = params;
+ const departureLocationLabel = form.departureLocationLabel.trim();
+ const arrivalLocationLabel = form.arrivalLocationLabel.trim();
+ const routeTopology: ActionRouteTopology = resolveActionRouteTopology({
+  topology: form.routeTopology,
+  arrivalLocationLabel,
+  recordType: form.recordType,
+ });
+ const routeLocationLabel =
+  routeTopology === "point_to_point" && departureLocationLabel && arrivalLocationLabel
+   ? `${departureLocationLabel} → ${arrivalLocationLabel}`
+   : departureLocationLabel || form.locationLabel.trim();
+ const fallbackLatitude = toOptionalNumber(form.latitude) ?? null;
+ const fallbackLongitude = toOptionalNumber(form.longitude) ?? null;
+ let latitude = fallbackLatitude;
+ let longitude = fallbackLongitude;
+ const normalizedManualDrawing = normalizeActionDrawing(manualDrawing);
+ const finalGeometry = resolveFinalActionGeometry({
+  gpxDrawing: form.gpxImport ? normalizedManualDrawing : null,
+  gpxImport: form.gpxImport,
+  manualDrawing: normalizedManualDrawing,
+  manualDrawingSource,
+  operationalRoute: form.operationalRoute,
+  reconstructedDrawing: normalizeActionDrawing(routePreviewDrawing),
+  reconstructedSource: routePreviewSource,
+ });
+ const normalizedDrawing = finalGeometry?.drawing ?? null;
+ const resolvedManualDrawingSource = finalGeometry?.source ?? null;
+ if (normalizedDrawing && (effectiveManualDrawingEnabled || finalGeometry?.operationalRoute || routePreviewDrawing)) {
+  const centroid = getDrawingCentroid(normalizedDrawing);
+  latitude = centroid.latitude;
+  longitude = centroid.longitude;
+ }
+ return {
+  departureLocationLabel,
+  arrivalLocationLabel,
+  routeTopology,
+  routeLocationLabel,
+  latitude,
+  longitude,
+  finalGeometry,
+  normalizedDrawing,
+  resolvedManualDrawingSource,
+ };
+}
+
+function resolveCreateActionMeasurementParts(
+ form: FormState,
+ isEntrepriseMode: boolean,
+): Pick<
+ CreateActionPayloadParts,
+ | "isSpontaneousAction"
+ | "organizerName"
+ | "associationName"
+ | "enteredMegotsKg"
+ | "enteredButtsCount"
+ | "enteredVolumeLiters"
+ | "cigaretteButtsCondition"
+ | "rawCigaretteButtsMeasurements"
+ | "volunteerParticipationInput"
+ | "volunteerParticipation"
+> {
+ const { isSpontaneousAction, organizerName, associationName } = resolveOrganizerPayload(form, isEntrepriseMode);
+ const enteredMegotsKg = toOptionalNumber(form.wasteMegotsKg) ?? null;
+ const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount) ?? null;
+ const enteredVolumeLiters = toOptionalNumber(form.cigaretteButtsVolumeLiters) ?? null;
+ const cigaretteButtsCondition = form.wasteMegotsCondition === "propre"
+  ? form.cigaretteButtsCondition
+  : form.wasteMegotsCondition;
+ const rawCigaretteButtsMeasurements = {
+  cigaretteButtsCount: enteredButtsCount,
+  cigaretteButtsMassKg: enteredMegotsKg,
+  cigaretteButtsVolumeLiters: enteredVolumeLiters,
+  cigaretteButtsCondition,
+ };
+ const volunteerParticipationInput = buildVolunteerParticipationFromForm(form);
+ const volunteerParticipation = normalizeVolunteerParticipation(volunteerParticipationInput);
+ return {
+  isSpontaneousAction,
+  organizerName,
+  associationName,
+  enteredMegotsKg,
+  enteredButtsCount,
+  enteredVolumeLiters,
+  cigaretteButtsCondition,
+  rawCigaretteButtsMeasurements,
+  volunteerParticipationInput,
+  volunteerParticipation,
+ };
+}
+
+function resolveCreateActionPayloadParts(
+ params: CreateActionPayloadParams,
+): CreateActionPayloadParts {
+ return {
+  ...resolveCreateActionRouteParts(params),
+  ...resolveCreateActionMeasurementParts(params.form, params.isEntrepriseMode),
+ };
+}
 
 export function parseOrganizerAccounts(input: string): string[] {
  return [...new Set(
@@ -71,11 +245,7 @@ export function buildPreparationDataFromForm(
   arrivalLocationLabel: form.arrivalLocationLabel,
   recordType: form.recordType,
  });
- const volunteerParticipationInput: VolunteerParticipationInput = {
-  childrenCount: toOptionalNumber(form.childrenCount) ?? null,
-  adultCount: toOptionalNumber(form.adultCount) ?? null,
-  retiredCount: toOptionalNumber(form.retiredCount) ?? null,
- };
+ const volunteerParticipationInput = buildVolunteerParticipationFromForm(form);
  const volunteerParticipation = normalizeVolunteerParticipation(volunteerParticipationInput);
  const guidance = formatWasteGuidanceLines(wasteCategories);
  const targetSource: "derived" | "manual" = form.routeTargetDistanceKmManuallySet
@@ -135,7 +305,6 @@ export function buildPreparationDataFromForm(
   checklistBeforeDeparture: form.checklistBeforeDeparture.trim() || undefined,
   volunteersExpected:
    volunteerParticipation.participantsCount ?? toOptionalNumber(form.volunteersCount),
-  // The browser sends source categories only; the API schema recalculates derived fields.
   volunteerParticipation: volunteerParticipationInput as ActionPreparationData["volunteerParticipation"],
   groupJoinEnabled: form.groupJoinEnabled,
   expectedWasteCategories: wasteCategories.length > 0 ? [...wasteCategories] : undefined,
@@ -291,192 +460,117 @@ export function isLocationLikelyPark(value: string): boolean {
  ].some((keyword) => lower.includes(keyword));
 }
 
-export function buildCreateActionPayload(params: {
- form: FormState;
- declarationMode: DeclarationMode;
- effectiveManualDrawingEnabled: boolean;
- drawingIsValid: boolean;
- manualDrawing: ActionDrawing | null;
- manualDrawingSource?: ActionGeometrySource | null;
- routePreviewDrawing?: ActionDrawing | null;
- routePreviewSource?: ActionGeometrySource | null;
- isEntrepriseMode: boolean;
- linkedEventId?: string;
- photos?: ActionPhotoAsset[];
- visionEstimate?: ActionVisionEstimate | null;
-  userMetadata?: {
-    userId: string;
-    handle?: string;
-    username?: string;
- displayName?: string;
- email?: string;
- };
-}): CreateActionPayload {
- const {
- form,
- declarationMode,
- effectiveManualDrawingEnabled,
- manualDrawing,
- manualDrawingSource,
- routePreviewDrawing,
- routePreviewSource,
- isEntrepriseMode,
- linkedEventId,
- } = params;
- const departureLocationLabel = form.departureLocationLabel.trim();
- const arrivalLocationLabel = form.arrivalLocationLabel.trim();
- const routeTopology: ActionRouteTopology = resolveActionRouteTopology({
-  topology: form.routeTopology,
-  arrivalLocationLabel,
-  recordType: form.recordType,
- });
- const routeLocationLabel =
- routeTopology === "point_to_point" && departureLocationLabel && arrivalLocationLabel
- ? `${departureLocationLabel} → ${arrivalLocationLabel}`
- : departureLocationLabel || form.locationLabel.trim();
+export function buildCreateActionPayload(
+ params: CreateActionPayloadParams,
+): CreateActionPayload {
+ return buildCreateActionPayloadResult(
+  params,
+  resolveCreateActionPayloadParts(params),
+ );
+}
 
- const fallbackLatitude = toOptionalNumber(form.latitude);
- const fallbackLongitude = toOptionalNumber(form.longitude);
-
- let latitude = fallbackLatitude;
- let longitude = fallbackLongitude;
-
- const normalizedManualDrawing = normalizeActionDrawing(manualDrawing);
- const finalGeometry = resolveFinalActionGeometry({
-  gpxDrawing: form.gpxImport ? normalizedManualDrawing : null,
-  gpxImport: form.gpxImport,
-  manualDrawing: normalizedManualDrawing,
-  manualDrawingSource,
-  operationalRoute: form.operationalRoute,
-  reconstructedDrawing: normalizeActionDrawing(routePreviewDrawing),
-  reconstructedSource: routePreviewSource,
- });
- const normalizedDrawing = finalGeometry?.drawing ?? null;
- const resolvedManualDrawingSource = finalGeometry?.source ?? null;
-
- if (normalizedDrawing && (effectiveManualDrawingEnabled || finalGeometry?.operationalRoute || routePreviewDrawing)) {
- const centroid = getDrawingCentroid(normalizedDrawing);
- latitude = centroid.latitude;
- longitude = centroid.longitude;
- }
-
- const { isSpontaneousAction, organizerName, associationName } = resolveOrganizerPayload(form, isEntrepriseMode);
-  const enteredMegotsKg = toOptionalNumber(form.wasteMegotsKg) ?? null;
-  const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount) ?? null;
-  const enteredVolumeLiters =
-    toOptionalNumber(form.cigaretteButtsVolumeLiters) ?? null;
-  const cigaretteButtsCondition =
-    form.wasteMegotsCondition === "propre"
-      ? form.cigaretteButtsCondition
-      : form.wasteMegotsCondition;
-  const rawCigaretteButtsMeasurements = {
-    cigaretteButtsCount: enteredButtsCount,
-    cigaretteButtsMassKg: enteredMegotsKg,
-    cigaretteButtsVolumeLiters: enteredVolumeLiters,
-    cigaretteButtsCondition,
-  };
-  const volunteerParticipationInput: VolunteerParticipationInput = {
-    childrenCount: toOptionalNumber(form.childrenCount) ?? null,
-    adultCount: toOptionalNumber(form.adultCount) ?? null,
-    retiredCount: toOptionalNumber(form.retiredCount) ?? null,
-  };
-  const volunteerParticipation = normalizeVolunteerParticipation(volunteerParticipationInput);
+function buildCreateActionPayloadIdentityFields(
+ params: CreateActionPayloadParams,
+ parts: CreateActionPayloadParts,
+): Partial<CreateActionPayload> {
+ const { form, declarationMode, linkedEventId } = params;
+ const { departureLocationLabel, arrivalLocationLabel, routeTopology, routeLocationLabel } = parts;
+ const organizerAccounts = parts.isSpontaneousAction
+  ? undefined
+  : parseOrganizerAccounts(form.organizerAccounts);
 
  return {
-    actorName: form.actorName.trim() || undefined,
-    associationName,
-    ...buildOrganizerPayloadFields(form, organizerName),
-    groupJoinEnabled: form.groupJoinEnabled,
-    actionPhase: declarationMode === "quick" ? "pre_action" : "post_action_complete",
-    preparationData: buildPreparationDataFromForm(form, finalGeometry),
-    plannerSnapshotProof: form.plannerProof ?? null,
-    organizerAccounts: isSpontaneousAction
-   ? undefined
-   : (() => {
-     const tokens = parseOrganizerAccounts(form.organizerAccounts);
-     return tokens.length > 0 ? tokens : undefined;
-   })(),
- actionDate: form.actionDate,
- locationLabel: routeLocationLabel,
- departureLocationLabel: departureLocationLabel || undefined,
- arrivalLocationLabel:
-  form.recordType !== "action" || routeTopology === "point_to_point"
-   ? arrivalLocationLabel || undefined
-   : undefined,
- routeTopology,
- routeStyle: "souple",
- routeAdjustmentMessage: form.routeAdjustmentMessage.trim() || undefined,
- recordType: form.recordType,
- latitude,
- longitude,
+  actorName: form.actorName.trim() || undefined,
+  associationName: parts.associationName,
+  ...buildOrganizerPayloadFields(form, parts.organizerName),
+  groupJoinEnabled: form.groupJoinEnabled,
+  actionPhase: declarationMode === "quick" ? "pre_action" : "post_action_complete",
+  actionDate: form.actionDate,
+  locationLabel: routeLocationLabel,
+  departureLocationLabel: departureLocationLabel || undefined,
+  arrivalLocationLabel:
+   form.recordType !== "action" || routeTopology === "point_to_point"
+    ? arrivalLocationLabel || undefined
+    : undefined,
+  routeTopology,
+  routeStyle: "souple",
+  routeAdjustmentMessage: form.routeAdjustmentMessage.trim() || undefined,
+  recordType: form.recordType,
+  notes: appendEventRefToNotes(form.notes.trim() || undefined, linkedEventId),
+  organizerAccounts: organizerAccounts?.length ? organizerAccounts : undefined,
+  placeType: form.placeType,
+  submissionMode: declarationMode,
+ };
+}
+
+function buildCreateActionPayloadMeasurementFields(
+ form: FormState,
+ parts: CreateActionPayloadParts,
+): Partial<CreateActionPayload> {
+ const { enteredMegotsKg, enteredButtsCount, enteredVolumeLiters, cigaretteButtsCondition } = parts;
+ return {
   wasteKg: toOptionalNumber(form.wasteKg) ?? null,
-   cigaretteButtsMeasurements: rawCigaretteButtsMeasurements,
-   cigaretteButtsMassKg: enteredMegotsKg,
-   cigaretteButtsVolumeLiters: enteredVolumeLiters,
-   cigaretteButtsCondition,
-   cigaretteButtsKg: enteredMegotsKg,
-   cigaretteButts: enteredButtsCount,
-   cigaretteButtsCount: enteredButtsCount,
-  // The browser sends source categories only; the API schema recalculates derived fields.
-  volunteerParticipation: volunteerParticipationInput as CreateActionPayload["volunteerParticipation"],
+  cigaretteButtsMeasurements: parts.rawCigaretteButtsMeasurements,
+  cigaretteButtsMassKg: enteredMegotsKg,
+  cigaretteButtsVolumeLiters: enteredVolumeLiters,
+  cigaretteButtsCondition,
+  cigaretteButtsKg: enteredMegotsKg,
+  cigaretteButts: enteredButtsCount,
+  cigaretteButtsCount: enteredButtsCount,
+  volunteerParticipation: parts.volunteerParticipationInput as CreateActionPayload["volunteerParticipation"],
   volunteersCount:
-    volunteerParticipation.participantsCount ??
-    Math.trunc(toRequiredNumber(form.volunteersCount, 0)),
- durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
- eventStartTime: form.eventStartTime.trim() || null,
- eventEndTime: form.eventEndTime.trim() || null,
- notes: appendEventRefToNotes(
- form.notes.trim() || undefined,
- linkedEventId,
- ),
- manualDrawing:
- finalGeometry?.drawing &&
- (effectiveManualDrawingEnabled || finalGeometry.operationalRoute || routePreviewDrawing)
- ? normalizedDrawing!
- : undefined,
- geometrySource:
- (finalGeometry?.drawing &&
-   (effectiveManualDrawingEnabled || finalGeometry.operationalRoute || routePreviewDrawing))
-  ? resolvedManualDrawingSource
-  : undefined,
- placeType: form.placeType,
- submissionMode: declarationMode,
- wasteMeasurementMethod: form.wasteMeasurementMethod || undefined,
- wasteBreakdown: {
+   parts.volunteerParticipation.participantsCount ??
+   Math.trunc(toRequiredNumber(form.volunteersCount, 0)),
+  durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
+  eventStartTime: form.eventStartTime.trim() || null,
+  eventEndTime: form.eventEndTime.trim() || null,
+  wasteMeasurementMethod: form.wasteMeasurementMethod || undefined,
+  wasteBreakdown: {
    recyclablesKg: toOptionalNumber(form.wasteRecyclablesKg) ?? null,
    glassKg: toOptionalNumber(form.wasteGlassKg) ?? null,
    householdWasteKg: toOptionalNumber(form.wasteHouseholdKg) ?? null,
    otherWasteKg: toOptionalNumber(form.wasteOtherKg) ?? null,
    unusualObjects: form.wasteUnusualObjects.trim() || null,
    specialHandlingWaste: form.wasteSpecialHandlingWaste.trim() || null,
- },
- photos: params.photos ?? [],
- visionEstimate: params.visionEstimate ?? null,
- userMetadata: params.userMetadata,
+  },
  };
 }
 
-export async function prepareCreateActionPayload(params: {
- form: FormState;
- declarationMode: DeclarationMode;
- effectiveManualDrawingEnabled: boolean;
- drawingIsValid: boolean;
- manualDrawing: ActionDrawing | null;
- manualDrawingSource?: ActionGeometrySource | null;
- routePreviewDrawing?: ActionDrawing | null;
- routePreviewSource?: ActionGeometrySource | null;
- isEntrepriseMode: boolean;
- linkedEventId?: string;
- photos?: ActionPhotoAsset[];
- visionEstimate?: ActionVisionEstimate | null;
-  userMetadata?: {
-    userId: string;
-    handle?: string;
-    username?: string;
- displayName?: string;
- email?: string;
+function buildCreateActionPayloadGeometryFields(
+ params: CreateActionPayloadParams,
+ parts: CreateActionPayloadParts,
+): Partial<CreateActionPayload> {
+ const hasManualGeometry = Boolean(
+  parts.finalGeometry?.drawing &&
+   (params.effectiveManualDrawingEnabled || parts.finalGeometry.operationalRoute || params.routePreviewDrawing),
+ );
+ return {
+  latitude: parts.latitude ?? undefined,
+  longitude: parts.longitude ?? undefined,
+  preparationData: buildPreparationDataFromForm(params.form, parts.finalGeometry),
+  plannerSnapshotProof: params.form.plannerProof ?? null,
+  manualDrawing: hasManualGeometry ? parts.normalizedDrawing! : undefined,
+  geometrySource: hasManualGeometry ? parts.resolvedManualDrawingSource : undefined,
  };
-}): Promise<CreateActionPayload> {
+}
+
+function buildCreateActionPayloadResult(
+ params: CreateActionPayloadParams,
+ parts: CreateActionPayloadParts,
+): CreateActionPayload {
+ return {
+  ...buildCreateActionPayloadIdentityFields(params, parts),
+  ...buildCreateActionPayloadMeasurementFields(params.form, parts),
+  ...buildCreateActionPayloadGeometryFields(params, parts),
+  photos: params.photos ?? [],
+  visionEstimate: params.visionEstimate ?? null,
+  userMetadata: params.userMetadata,
+ } as CreateActionPayload;
+}
+
+export async function prepareCreateActionPayload(
+ params: CreateActionPayloadParams,
+): Promise<CreateActionPayload> {
  const payload = buildCreateActionPayload(params);
  const normalizedRoutePreview = normalizeActionDrawing(params.routePreviewDrawing);
  const finalGeometry = resolveFinalActionGeometry({
@@ -499,8 +593,6 @@ export async function prepareCreateActionPayload(params: {
  };
  }
 
- // Location-only drafts are routed by the server. Keeping this payload free
- // of derived coordinates prevents browser-side provider calls and preserves
- // the manual/operational geometry priority.
+ // Location-only drafts stay free of derived coordinates; the server preserves geometry priority.
  return payload;
 }

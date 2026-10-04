@@ -56,9 +56,7 @@ function hasValidCoordinates(item: ActionListItem): boolean {
   if (latitude === null || longitude === null) {
     return false;
   }
-  return (
-    latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
-  );
+  return isWithinRange(latitude, -90, 90) && isWithinRange(longitude, -180, 180);
 }
 
 // Historical drawing fields prove that a geometry exists, not that its final
@@ -74,17 +72,6 @@ function hasDrawingEvidence(item: ActionListItem): boolean {
     return true;
   }
   return false;
-}
-
-function hasValidCoherenceCoordinates(item: ActionListItem): boolean {
-  const latitude = item.contract?.location.latitude ?? item.latitude;
-  const longitude = item.contract?.location.longitude ?? item.longitude;
-  if (latitude === null || longitude === null) {
-    return false;
-  }
-  return (
-    isWithinRange(latitude, -90, 90) && isWithinRange(longitude, -180, 180)
-  );
 }
 
 function computeCompleteness(item: ActionListItem): {
@@ -125,7 +112,7 @@ function computeCoherence(item: ActionListItem): {
     isWithinRange(butts, 0, 200000),
     isWithinRange(volunteers, 1, 500),
     isWithinRange(minutes, 0, 1440),
-    hasValidCoherenceCoordinates(item),
+    hasValidCoordinates(item),
   ];
 
   const flags: string[] = [];

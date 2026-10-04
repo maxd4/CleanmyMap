@@ -493,6 +493,28 @@ const commonActionIdentitySchemaFields = {
   groupJoinEnabled: z.boolean().optional(),
 };
 
+export const commonActionRouteSchemaFields = {
+  departureLocationLabel: z.string().min(2).max(200).optional(),
+  arrivalLocationLabel: z.string().min(2).max(200).optional(),
+  routeTopology: z.enum(["loop", "point_to_point"]).optional(),
+  routeStyle: z.enum(["direct", "souple"]).optional(),
+  routeAdjustmentMessage: z.string().max(500).optional(),
+};
+
+export const commonActionCigaretteButtSchemaFields = {
+  cigaretteButtsMassKg: z.number().min(0).max(100000).nullable().optional(),
+  cigaretteButtsVolumeLiters: z.number().min(0).max(100000).nullable().optional(),
+  cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
+  cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
+  cigaretteButts: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
+};
+
+const commonActionMeasurementSchemaFields = {
+  wasteKg: wasteMassSchema.nullable().optional(),
+  cigaretteButtsMeasurements: cigaretteButtsMeasurementsSchema,
+  ...commonActionCigaretteButtSchemaFields,
+};
+
 const createActionLegacyBaseSchema = z.object({
   ...commonActionIdentitySchemaFields,
   recordType: z.enum(["action", "clean_place", "spot"]).optional(),
@@ -503,11 +525,7 @@ const createActionLegacyBaseSchema = z.object({
   locationLabel: z.string().min(2).max(200),
   departmentCode: z.string().trim().max(20).nullable().optional(),
   departmentName: z.string().trim().max(120).nullable().optional(),
-  departureLocationLabel: z.string().min(2).max(200).optional(),
-  arrivalLocationLabel: z.string().min(2).max(200).optional(),
-  routeTopology: z.enum(["loop", "point_to_point"]).optional(),
-  routeStyle: z.enum(["direct", "souple"]).optional(),
-  routeAdjustmentMessage: z.string().max(500).optional(),
+  ...commonActionRouteSchemaFields,
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   actionPhase: actionPhaseSchema.optional(),
@@ -516,13 +534,7 @@ const createActionLegacyBaseSchema = z.object({
     isRouteCalibrationContext,
     "Contexte historique de calibration invalide.",
   ).nullable().optional(),
-  wasteKg: wasteMassSchema.nullable().optional(),
-  cigaretteButtsMeasurements: cigaretteButtsMeasurementsSchema,
-  cigaretteButtsMassKg: z.number().min(0).max(100000).nullable().optional(),
-  cigaretteButtsVolumeLiters: z.number().min(0).max(100000).nullable().optional(),
-  cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
-  cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
-  cigaretteButts: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
+  ...commonActionMeasurementSchemaFields,
   cigaretteButtsCount: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
   volunteerParticipation: volunteerParticipationSchema,
   volunteersCount: z.number().int().min(1).max(500).default(1),
@@ -561,11 +573,7 @@ const createActionContractSchema = z.object({
     departmentCode: z.string().trim().max(20).nullable().optional(),
     departmentName: z.string().trim().max(120).nullable().optional(),
   }),
-  departureLocationLabel: z.string().min(2).max(200).optional(),
-  arrivalLocationLabel: z.string().min(2).max(200).optional(),
-  routeTopology: z.enum(["loop", "point_to_point"]).optional(),
-  routeStyle: z.enum(["direct", "souple"]).optional(),
-  routeAdjustmentMessage: z.string().max(500).optional(),
+  ...commonActionRouteSchemaFields,
   geometry: contractGeometrySchema.optional(),
   dates: z.object({
     observedAt: z.string().date(),
@@ -575,13 +583,7 @@ const createActionContractSchema = z.object({
     metadata: z.object({
       ...commonActionIdentitySchemaFields,
     placeType: z.string().max(80).optional(),
-      wasteKg: wasteMassSchema.nullable().optional(),
-      cigaretteButtsMeasurements: cigaretteButtsMeasurementsSchema,
-      cigaretteButtsMassKg: z.number().min(0).max(100000).nullable().optional(),
-      cigaretteButtsVolumeLiters: z.number().min(0).max(100000).nullable().optional(),
-      cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
-      cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
-      cigaretteButts: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
+      ...commonActionMeasurementSchemaFields,
       volunteerParticipation: volunteerParticipationSchema,
     volunteersCount: z.number().int().min(1).max(500).optional(),
     durationMinutes: z
