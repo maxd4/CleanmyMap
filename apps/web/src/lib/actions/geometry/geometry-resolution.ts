@@ -13,7 +13,7 @@ import {
   toPointCoordinates,
 } from "./geometry-core.ts";
 
-export { isRenderableDrawing, toGeoJsonString } from "./geometry-core.ts";
+export { isRenderableDrawing } from "./geometry-core.ts";
 
 export type GeometryResolution = {
   kind: ActionGeometryKind;

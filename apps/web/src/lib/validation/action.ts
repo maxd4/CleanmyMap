@@ -493,7 +493,7 @@ const commonActionIdentitySchemaFields = {
   groupJoinEnabled: z.boolean().optional(),
 };
 
-export const commonActionRouteSchemaFields = {
+const commonActionRouteSchemaFields = {
   departureLocationLabel: z.string().min(2).max(200).optional(),
   arrivalLocationLabel: z.string().min(2).max(200).optional(),
   routeTopology: z.enum(["loop", "point_to_point"]).optional(),
