@@ -48,7 +48,7 @@ export function buildSnapshot(
   };
 }
 
-export function buildAuditDetails(params: {
+function buildAuditDetails(params: {
   reason: string;
   targetUserId?: string;
   previousValue: Record<string, unknown>;
@@ -69,7 +69,7 @@ export function buildAuditDetails(params: {
   };
 }
 
-export function unknownSnapshot(
+function unknownSnapshot(
   source: CreatorInboxMutationSource,
 ): InboxSnapshot {
   return { source, status: "unknown", creatorState: "unknown" };
@@ -83,7 +83,7 @@ export type DecisionAuditAppender = (params: {
   details: ReturnType<typeof buildAuditDetails>;
 }) => Promise<void>;
 
-export type CreatorInboxAuditParams = {
+type CreatorInboxAuditParams = {
   operationId: string;
   actorUserId: string;
   outcome: "success" | "error";
@@ -96,7 +96,7 @@ export type CreatorInboxAuditParams = {
   partialMutation?: boolean;
 };
 
-export async function appendCreatorInboxAudit(
+async function appendCreatorInboxAudit(
   appendDecisionAudit: DecisionAuditAppender,
   params: CreatorInboxAuditParams,
 ) {
