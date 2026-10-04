@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -221,8 +221,6 @@ async function main() {
   let rows = csvText ? parseCsv(csvText) : [];
 
   if (csvText) {
-    await mkdir(dirname(RAW_PATH), { recursive: true });
-    await writeFile(RAW_PATH, csvText, "utf8");
     if (fetched.sourceUrl && fetched.sourceUrl !== sheetUrl) {
       console.warn(`Google Sheet import used fallback URL: ${fetched.sourceUrl}`);
     }
@@ -233,7 +231,6 @@ async function main() {
       const localRaw = await readFile(RAW_PATH, "utf8");
       const localRows = parseCsv(localRaw);
       if (localRows.length >= 2) {
-        csvText = localRaw;
         rows = localRows;
         console.warn(
           "Google Sheet unreachable/empty in this environment. Using local snapshot:",

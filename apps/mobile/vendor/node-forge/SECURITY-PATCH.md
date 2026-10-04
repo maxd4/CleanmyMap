@@ -76,3 +76,8 @@ the vendor is a shipped dependency graph and the scanner identifies a real
 algorithmic risk if a future consumer supplies untrusted PEM input. The
 malformed-marker regression is covered by
 `apps/mobile/security/node-forge-security.test.mjs`.
+
+The browser worker message listeners in `lib/prng.js` and `lib/util.js` also
+reject messages carrying an origin different from the current worker/page
+origin. This keeps entropy and worker-result handlers from accepting a
+cross-origin message while preserving the browser worker contract.
