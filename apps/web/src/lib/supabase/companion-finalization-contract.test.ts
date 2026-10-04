@@ -14,6 +14,6 @@ it("returns the mission row finalized by the completion UPDATE", () => {
   );
   expect(source).toMatch(/\.select\(\)[\s\S]+?\.single<Mission>\(\)/i);
   expect(source).not.toMatch(/compute_mission_distance|client\.rpc\(/i);
-  expect(source).toMatch(/await clearStoredMissionId\(\)[\s\S]+?return \{ ok: true, data \}/i);
+  expect(source).toMatch(/await clearStoredMissionId\(\)[\s\S]+?return missionResult;/i);
   expect(source).not.toMatch(/distance_m|duration_s|computeDistance|haversine/i);
 });
