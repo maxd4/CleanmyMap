@@ -2605,6 +2605,9 @@ util.estimateCores = function(options, callback) {
     for(var i = 0; i < numWorkers; ++i) {
       var worker = new Worker(blobUrl);
       worker.addEventListener('message', function(e) {
+        if(e.origin && e.origin !== self.location.origin) {
+          return;
+        }
         results.push(e.data);
         if(results.length === numWorkers) {
           for(var i = 0; i < numWorkers; ++i) {
