@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
+  "sourceCommit": "b1db6243005362b4f2449228dbba8121107be385",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -108,8 +108,8 @@
       "path": "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
       "line": 190,
       "category": "routes API",
-      "ceiling": 74,
-      "status": "LEGACY",
+      "ceiling": 10,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -990,8 +990,8 @@
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
       "line": 122,
       "category": "React/JSX",
-    "ceiling": 12,
-    "status": "IMPROVED",
+      "ceiling": 12,
+      "status": "IMPROVED",
       "functionIdentity": "named:ElusSection#1"
     },
     {
@@ -1737,8 +1737,8 @@
       "path": "apps/web/src/components/account/greater-paris-select.tsx",
       "line": 366,
       "category": "React/JSX",
-    "ceiling": 18,
-    "status": "IMPROVED",
+      "ceiling": 18,
+      "status": "IMPROVED",
       "functionIdentity": "named:TerritoryLocationSelector#1"
     },
     {
@@ -2439,8 +2439,8 @@
       "path": "apps/web/src/app/api/admin/creator-inbox/route.feedback.ts",
       "line": 19,
       "category": "routes API",
-      "ceiling": 259,
-      "status": "LEGACY",
+      "ceiling": 69,
+      "status": "IMPROVED",
       "functionIdentity": "named:handleCreatorInboxFeedback#1"
     },
     {
@@ -2448,8 +2448,8 @@
       "path": "apps/web/src/app/api/admin/creator-inbox/route.partner.ts",
       "line": 18,
       "category": "routes API",
-      "ceiling": 198,
-      "status": "LEGACY",
+      "ceiling": 39,
+      "status": "IMPROVED",
       "functionIdentity": "named:handleCreatorInboxPartner#1"
     },
     {
@@ -2457,8 +2457,8 @@
       "path": "apps/web/src/app/api/admin/creator-inbox/route.promotion.ts",
       "line": 14,
       "category": "routes API",
-      "ceiling": 128,
-      "status": "LEGACY",
+      "ceiling": 51,
+      "status": "IMPROVED",
       "functionIdentity": "named:handleCreatorInboxPromotion#1"
     },
     {
@@ -2466,8 +2466,8 @@
       "path": "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
       "line": 190,
       "category": "routes API",
-      "ceiling": 394,
-      "status": "LEGACY",
+      "ceiling": 47,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2565,8 +2565,8 @@
       "path": "apps/web/src/app/api/admin/partners/published-directory/route.ts",
       "line": 75,
       "category": "routes API",
-      "ceiling": 243,
-      "status": "LEGACY",
+      "ceiling": 80,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2574,8 +2574,8 @@
       "path": "apps/web/src/app/api/admin/promotion-requests/route.ts",
       "line": 57,
       "category": "routes API",
-      "ceiling": 258,
-      "status": "LEGACY",
+      "ceiling": 98,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2637,8 +2637,8 @@
       "path": "apps/web/src/app/api/community/bug-reports/route.ts",
       "line": 186,
       "category": "routes API",
-      "ceiling": 134,
-      "status": "LEGACY",
+      "ceiling": 95,
+      "status": "IMPROVED",
       "functionIdentity": "named:PATCH#1"
     },
     {
@@ -2664,8 +2664,8 @@
       "path": "apps/web/src/app/api/community/funnel.csv/route.ts",
       "line": 44,
       "category": "routes API",
-      "ceiling": 169,
-      "status": "LEGACY",
+      "ceiling": 63,
+      "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
     {
@@ -3978,8 +3978,8 @@
       "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
       "line": 122,
       "category": "React/JSX",
-    "ceiling": 51,
-    "status": "IMPROVED",
+      "ceiling": 51,
+      "status": "IMPROVED",
       "functionIdentity": "named:ElusSection#1"
     },
     {
@@ -4392,8 +4392,8 @@
       "path": "apps/web/src/lib/actions/metadata.ts",
       "line": 424,
       "category": "métier/domain pur",
-      "ceiling": 89,
-      "status": "LEGACY",
+      "ceiling": 38,
+      "status": "IMPROVED",
       "functionIdentity": "named:extractActionMetadataFromNotes#1"
     },
     {
@@ -4482,8 +4482,8 @@
       "path": "apps/web/src/lib/actions/pollution/current-place-state.ts",
       "line": 339,
       "category": "métier/domain pur",
-      "ceiling": 62,
-      "status": "LEGACY",
+      "ceiling": 46,
+      "status": "IMPROVED",
       "functionIdentity": "named:resolveProjectedTodayState#1"
     },
     {
@@ -4491,8 +4491,8 @@
       "path": "apps/web/src/lib/actions/pollution/current-place-state.ts",
       "line": 451,
       "category": "métier/domain pur",
-      "ceiling": 105,
-      "status": "LEGACY",
+      "ceiling": 30,
+      "status": "IMPROVED",
       "functionIdentity": "named:resolveBucketState#1"
     },
     {
@@ -4860,8 +4860,8 @@
       "path": "apps/web/src/components/account/greater-paris-select.tsx",
       "line": 366,
       "category": "React/JSX",
-    "ceiling": 126,
-    "status": "IMPROVED",
+      "ceiling": 126,
+      "status": "IMPROVED",
       "functionIdentity": "named:TerritoryLocationSelector#1"
     },
     {
@@ -6579,8 +6579,8 @@
       "path": "apps/mobile/tests/storage.test.ts",
       "line": 19,
       "category": "tests",
-      "ceiling": 24,
-      "status": "LEGACY",
+      "ceiling": 19,
+      "status": "IMPROVED",
       "functionIdentity": "callback:describe:1:'mobile GPS offline storage'#1"
     },
     {
