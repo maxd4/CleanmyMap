@@ -278,7 +278,7 @@ function nbits(x) {
   if((t=x>>8) != 0) { x = t; r += 8; }
   if((t=x>>4) != 0) { x = t; r += 4; }
   if((t=x>>2) != 0) { x = t; r += 2; }
-  if((t=x>>1) != 0) { x = t; r += 1; }
+  if((t=x>>1) != 0) { r += 1; }
   return r;
 }
 

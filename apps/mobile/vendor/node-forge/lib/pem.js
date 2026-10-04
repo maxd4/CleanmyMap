@@ -95,20 +95,84 @@ pem.encode = function(msg, options) {
 pem.decode = function(str) {
   var rval = [];
 
-  // split string into PEM messages (be lenient w/EOF on BEGIN line)
-  var rMessage = /\s*-----BEGIN ([A-Z0-9- ]+)-----\r?\n?([\x21-\x7e\s]+?(?:\r?\n\r?\n))?([:A-Za-z0-9+\/=\s]+?)-----END \1-----/g;
   var rHeader = /([\x21-\x7e]+):\s*([\x21-\x7e\s^:]+)/;
   var rCRLF = /\r?\n/;
-  var match;
+  var searchOffset = 0;
+
+  // Find message boundaries without nested quantifiers or a backreference.
+  // PEM bodies are base64 text, so the end marker cannot be part of a body.
+  var findMessage = function() {
+    while(true) {
+      var begin = str.indexOf('-----BEGIN ', searchOffset);
+      if(begin === -1) {
+        return null;
+      }
+
+      var typeStart = begin + 11;
+      var typeEnd = str.indexOf('-----', typeStart);
+      if(typeEnd === -1) {
+        return null;
+      }
+      var type = str.slice(typeStart, typeEnd);
+      if(!/^[A-Z0-9- ]+$/.test(type)) {
+        searchOffset = typeEnd + 5;
+        continue;
+      }
+
+      var contentStart = typeEnd + 5;
+      if(str.substr(contentStart, 2) === '\r\n') {
+        contentStart += 2;
+      } else if(str.charAt(contentStart) === '\n') {
+        ++contentStart;
+      }
+
+      var endMarker = '-----END ' + type + '-----';
+      var end = str.indexOf(endMarker, contentStart);
+      if(end === -1) {
+        return null;
+      }
+
+      var content = str.slice(contentStart, end);
+      var separator = content.indexOf('\r\n\r\n');
+      var separatorLength = 4;
+      var lfSeparator = content.indexOf('\n\n');
+      if(lfSeparator !== -1 &&
+        (separator === -1 || lfSeparator < separator)) {
+        separator = lfSeparator;
+        separatorLength = 2;
+      }
+
+      var headers = null;
+      var body = content;
+      if(separator !== -1) {
+        headers = content.slice(0, separator);
+        body = content.slice(separator + separatorLength);
+      }
+
+      if(headers !== null && !/^[\x21-\x7e\s]+$/.test(headers)) {
+        searchOffset = end + endMarker.length;
+        continue;
+      }
+      if(!/^[:A-Za-z0-9+\/=\s]+$/.test(body)) {
+        searchOffset = end + endMarker.length;
+        continue;
+      }
+
+      searchOffset = end + endMarker.length;
+      return {type: type, headers: headers, body: body};
+    }
+  };
+
+  var message;
   while(true) {
-    match = rMessage.exec(str);
-    if(!match) {
+    message = findMessage();
+    if(!message) {
       break;
     }
 
     // accept "NEW CERTIFICATE REQUEST" as "CERTIFICATE REQUEST"
     // https://datatracker.ietf.org/doc/html/rfc7468#section-7
-    var type = match[1];
+    var type = message.type;
     if(type === 'NEW CERTIFICATE REQUEST') {
       type = 'CERTIFICATE REQUEST';
     }
@@ -119,19 +183,19 @@ pem.decode = function(str) {
       contentDomain: null,
       dekInfo: null,
       headers: [],
-      body: forge.util.decode64(match[3])
+      body: forge.util.decode64(message.body)
     };
     rval.push(msg);
 
     // no headers
-    if(!match[2]) {
+    if(!message.headers) {
       continue;
     }
 
     // parse headers
-    var lines = match[2].split(rCRLF);
+    var lines = message.headers.split(rCRLF);
     var li = 0;
-    while(match && li < lines.length) {
+    while(li < lines.length) {
       // get line, trim any rhs whitespace
       var line = lines[li].replace(/\s+$/, '');
 
@@ -146,10 +210,10 @@ pem.decode = function(str) {
       }
 
       // parse header
-      match = line.match(rHeader);
-      if(match) {
-        var header = {name: match[1], values: []};
-        var values = match[2].split(',');
+      var headerMatch = line.match(rHeader);
+      if(headerMatch) {
+        var header = {name: headerMatch[1], values: []};
+        var values = headerMatch[2].split(',');
         for(var vi = 0; vi < values.length; ++vi) {
           header.values.push(ltrim(values[vi]));
         }

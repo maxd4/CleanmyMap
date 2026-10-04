@@ -12,6 +12,7 @@ package, de niveau de sévérité ou de scanner.
 | [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) | CVE-2025-71329 | `apps/mobile/vendor/image-size` `2.0.3` | `react-native` → `@react-native/community-cli-plugin` → `metro` → `image-size` | Conservation de la garde de progression des boîtes JXL/HEIF de taille nulle |
 | [GHSA-528h-pc64-c93x](https://github.com/advisories/GHSA-528h-pc64-c93x) | CVE-2026-71429 | `apps/mobile/vendor/stream-json` `1.9.1` | `@clerk/expo` → `@clerk/clerk-js` → `@solana/wallet-adapter-base` → `@solana/web3.js@1.99.0` → `jayson@4.3.0` → `stream-json` | Backport CommonJS borné à `StreamValues` et `Verifier`, sans surface de filtres JSON |
 | [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) | CVE-2026-85393 | `apps/mobile/vendor/node-forge` `1.4.0` | `expo@57.0.22` → `@expo/cli@57.0.24` → `node-forge`, et `@expo/code-signing-certificates@0.0.6` → `node-forge` | Backport du contrôle du nombre d'enfants de `DigestAlgorithm` depuis `forge#1152` (`ceba344...`) |
+| [GHSA-VFJ7-8CJW-P6XM](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | CVE-2026-93687 | `apps/mobile/vendor/braces` `3.0.4` | `micromatch@4.0.8` → `braces` dans Metro et l'outillage ESLint | Backport borné de profondeur de parsing ; voir `apps/mobile/vendor/braces/SECURITY-PATCH.md` |
 
 ## Mitigation effectivement versionnée
 
@@ -61,25 +62,25 @@ correspond pas à ces quatre éléments reste bloquante, y compris lorsqu'elle
 concerne un package vendorisé. Le gate peut donc rester en échec si le graphe
 contient une alerte High/Critical non mitigée ; aucune baseline ne la ratifie.
 
-## Advisory racine bloquée upstream — `braces`
+## Mitigation `braces` sans release upstream
 
-Le diagnostic courant peut relayer plusieurs parents (`@clerk/expo`, Expo,
-Metro, React Native et `eslint-config-next`) alors que l'advisory racine est
+Le diagnostic peut relayer plusieurs parents (`@clerk/expo`, Expo, Metro,
+React Native et `eslint-config-next`) alors que l'advisory racine est
 `[GHSA-VFJ7-8CJW-P6XM](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)` /
-`CVE-2026-93687` sur `braces@3.0.3`. La chaîne effective passe notamment par
-`micromatch@4.0.8` puis `braces@3.0.3` dans Metro et `fast-glob` dans l'outillage
+`CVE-2026-93687` sur `braces@3.0.3`. La chaîne historique passe notamment par
+`micromatch@4.0.8` puis `braces@3.0.4` dans Metro et `fast-glob` dans l'outillage
 ESLint Web.
 
 L'advisory upstream indique que les versions `braces <= 3.0.3` sont affectées
 et qu'aucune version corrigée n'est publiée. Le suivi mainteneur est conservé
 dans [micromatch/braces#70](https://github.com/micromatch/braces/issues/70).
-Le graphe installé actuel atteint cette racine depuis `apps/mobile` via les
-dépendances Expo/Metro ; son diagnostic `RUNTIME_SCOPE` est donc
-`MOBILE_RUNTIME`. Elle reste un finding High bloquant pour la politique de
-dépendances. Cette classification ne constitue ni une mitigation, ni une
-exception, ni une exclusion : aucune ligne de mitigation ne couvre `braces`,
-et le gate doit continuer à échouer jusqu'à une release corrigée ou un
-remplacement compatible démontré.
+Le graphe actuel atteint le backport local depuis `apps/mobile` via
+Expo/Metro et depuis l'outillage Web via `fast-glob`. Le package local `3.0.4`
+conserve l'API upstream et ajoute uniquement une garde de profondeur de parsing
+à 1000 niveaux ; sa provenance, sa justification et sa preuve sont versionnées
+dans `apps/mobile/vendor/braces/SECURITY-PATCH.md`. La mitigation est couverte exactement
+par le registre de `scripts/security/audit-dependencies.mjs` et ne constitue
+ni un ignore ni une réduction de l'audit.
 
 La mitigation ne rend pas fiable un asset spécialement forgé par lui-même :
 Aucun asset non fiable ne doit entrer dans un build Metro. Les assets d'un
@@ -134,12 +135,14 @@ browser de l'application mobile. Cette décision est spécifique au canal
 Dedicated Worker et au Node tooling Expo : elle ne crée aucune exclusion
 globale CodeQL et ne justifie aucune modification du code upstream vendorisé.
 
-### CodeQL `js/polynomial-redos` : alertes #935, #936 et #937
+### CodeQL `js/polynomial-redos` : correctif du parseur PEM
 
-Ces trois alertes High dans `lib/pem.js` restent `OPEN` et sont classées
-`KEEP_VISIBLE_UPSTREAM`. `js/polynomial-redos` décrit une classe de risque
-ReDoS réelle ; le seul fait que le package soit vendorisé ne permet pas de les
-classer faux positifs.
+Les trois alertes High de `lib/pem.js` sont traitées par un backport local :
+les bornes BEGIN/END sont maintenant recherchées par parcours de marqueurs et
+le type, les headers et le body sont validés séparément. La regex à
+quantificateurs imbriqués et backreference a été supprimée ; le test de
+marqueur malformé de grande taille est dans
+`apps/mobile/security/node-forge-security.test.mjs`.
 
 La vérification upstream du 2026-10-02 n'a trouvé ni release npm corrigée, ni
 commit/PR revu, ni issue/advisory upstream correspondant à ces regex PEM.
@@ -154,15 +157,9 @@ La frontière CURRENT ne fournit pas d'entrée non fiable à `pem.decode` : les
 APIs PEM d'Expo sont présentes pour le tooling, mais CleanMyMap n'active ni
 `updates.codeSigningCertificate` ni `updates.codeSigningMetadata`, et aucun
 `extra.eas.projectId` n'est versionné dans le mobile tant que le rattachement
-à un projet Expo réel n'a pas été effectué. Le seul consumer versionné actuel
-est le smoke test de sécurité avec des PEM générés localement. Cette
-classification ne constitue ni un dismissal ni une exclusion CodeQL.
-
-Réouvrir l'analyse lorsqu'une correction upstream revue est publiée, qu'un
-consumer CleanMyMap accepte un PEM non fiable ou distant, ou que la
-configuration Expo signing/update devient active. Une mitigation future devra
-être le correctif upstream minimal ou une limite de taille justifiée par le
-contrat réel, jamais un seuil arbitraire.
+à un projet Expo réel n'a pas été effectué. Cette absence de consumer ne sert
+pas de justification de conservation de l'alerte : le correctif local est
+versionné et testé.
 
 ## Compatibilité `jayson` et CVE-2026-71429
 

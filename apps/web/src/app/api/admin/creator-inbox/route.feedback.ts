@@ -140,7 +140,7 @@ async function archiveFeedbackInboxItem(params: FeedbackStateMutationParams) {
     return mutationErrorResponse();
   }
 
-  let finalRecord: FeedbackRecord = creatorStateUpdated;
+  let finalRecord: FeedbackRecord;
   try {
     const archivedRecord = await updateCommunityBugReportStatus({
       reportId: itemId,

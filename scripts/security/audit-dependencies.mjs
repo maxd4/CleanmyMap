@@ -48,6 +48,14 @@ export const EXPLICIT_MITIGATIONS = Object.freeze([
     documentation: GOVERNANCE_DOCUMENT,
     verification: "apps/mobile/security/node-forge-security.test.mjs",
   }),
+  Object.freeze({
+    advisory: "GHSA-VFJ7-8CJW-P6XM",
+    packageName: "braces",
+    version: "3.0.4",
+    path: "apps/mobile/vendor/braces",
+    documentation: GOVERNANCE_DOCUMENT,
+    verification: "apps/mobile/security/node-forge-security.test.mjs",
+  }),
 ]);
 
 // Diagnostic classification only: this advisory remains blocking because no

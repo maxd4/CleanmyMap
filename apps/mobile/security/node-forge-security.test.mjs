@@ -117,3 +117,14 @@ test("smokes the node-forge functions consumed by Expo code signing", () => {
     /^[A-Za-z0-9+/]+=*$/,
   );
 });
+
+test("rejects malformed PEM markers without regex backtracking", { timeout: 1000 }, () => {
+  const localForge = require(vendorRoot);
+  const malformed = [
+    "-----BEGIN CERTIFICATE-----",
+    `${" ".repeat(20_000)}!`,
+    "-----END CERTIFICATE-----",
+  ].join("\n");
+
+  assert.throws(() => localForge.pem.decode(malformed), /Invalid PEM formatted message/);
+});

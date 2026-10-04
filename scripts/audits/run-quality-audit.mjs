@@ -6,7 +6,6 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
-  findingId,
   formatDeadCodeReport,
   hasBlockingDeadCodeFindings,
   runDeadCodePolicy,

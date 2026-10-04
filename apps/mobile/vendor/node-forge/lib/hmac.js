@@ -61,7 +61,6 @@ hmac.create = function() {
 
     if(key === null) {
       // reuse previous key
-      key = _key;
     } else {
       if(typeof key === 'string') {
         // convert string into byte buffer
