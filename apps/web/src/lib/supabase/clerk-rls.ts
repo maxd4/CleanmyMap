@@ -2,16 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { buildClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
 import { env } from "@/lib/env";
-
-function hasHttpsProtocol(url: string | undefined): boolean {
-  if (!url || typeof url !== "string") return false;
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+import { hasHttpsProtocol } from "@/lib/security/validation";
 
 export async function getSupabaseClerkRlsClient(): Promise<SupabaseClient | null> {
   const { getToken } = await auth();

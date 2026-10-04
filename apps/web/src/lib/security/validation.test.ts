@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildPublicRateLimitPayload,
   createPublicRateLimitResponse,
+  hasHttpsProtocol,
   hasHoneypotSignal,
   hasRecentSubmission,
   is24HourTimeString,
@@ -24,6 +25,13 @@ describe("security validation helpers", () => {
     expect(isPlaceholderHost("cleanmymap.fr")).toBe(false);
     expect(isPlaceholderUrl("https://example.com/demo")).toBe(true);
     expect(isPlaceholderUrl("https://cleanmymap.fr/demo")).toBe(false);
+  });
+
+  it("accepts only absolute HTTPS URLs for security boundaries", () => {
+    expect(hasHttpsProtocol("https://cleanmymap.fr")).toBe(true);
+    expect(hasHttpsProtocol("http://cleanmymap.fr")).toBe(false);
+    expect(hasHttpsProtocol("https-not-an-url")).toBe(false);
+    expect(hasHttpsProtocol(undefined)).toBe(false);
   });
 
   it("normalizes allowed public channel URLs and rejects unsafe values", () => {

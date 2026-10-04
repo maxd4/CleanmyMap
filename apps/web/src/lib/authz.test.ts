@@ -3,6 +3,12 @@ import { __authz_testables, isAdminRole } from "./authz";
 import { resolveIdentityActiveRole } from "./authz-identity";
 
 describe("authz helpers", () => {
+  it("projects dev-auth bypass roles through the canonical profile resolver", () => {
+    expect(__authz_testables.resolveDevAuthBypassRole("max")).toBe("max");
+    expect(__authz_testables.resolveDevAuthBypassRole("admin")).toBe("admin");
+    expect(__authz_testables.resolveDevAuthBypassRole("invalid")).toBe("benevole");
+  });
+
   it.each([
     ["benevole", "admin", "benevole"],
     ["benevole", "max", "benevole"],

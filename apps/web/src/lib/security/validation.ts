@@ -15,6 +15,16 @@ const PUBLIC_RATE_LIMIT_STATUS = "rate_limited" as const;
 const PUBLIC_RATE_LIMIT_KIND = "validation" as const;
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
+export function hasHttpsProtocol(url: string | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export type PublicRateLimitPayload = {
   error: string;
   kind: typeof PUBLIC_RATE_LIMIT_KIND;

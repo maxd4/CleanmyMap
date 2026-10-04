@@ -29,6 +29,19 @@ function extractSetupCompletionFlag(metadata: ClerkMetadata): boolean {
   return metadata["profileSetupCompleted"] === true;
 }
 
+function normalizeNonNegativeInteger(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.trunc(value));
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
+  }
+
+  return null;
+}
+
 function extractSetupVersion(metadata: ClerkMetadata): number | null {
   if (!metadata) {
     return null;
@@ -39,16 +52,7 @@ function extractSetupVersion(metadata: ClerkMetadata): number | null {
     metadata["profile_setup_version"] ??
     metadata["profileSetupSchemaVersion"];
 
-  if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
-    return Math.max(0, Math.trunc(rawValue));
-  }
-
-  if (typeof rawValue === "string" && rawValue.trim().length > 0) {
-    const parsed = Number.parseInt(rawValue, 10);
-    return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
-  }
-
-  return null;
+  return normalizeNonNegativeInteger(rawValue);
 }
 
 export function extractAccountSetupDeferredVersion(
@@ -59,16 +63,7 @@ export function extractAccountSetupDeferredVersion(
   }
 
   const rawValue = metadata["profileSetupDeferredVersion"];
-  if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
-    return Math.max(0, Math.trunc(rawValue));
-  }
-
-  if (typeof rawValue === "string" && rawValue.trim().length > 0) {
-    const parsed = Number.parseInt(rawValue, 10);
-    return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
-  }
-
-  return null;
+  return normalizeNonNegativeInteger(rawValue);
 }
 
 export function hasCurrentAccountSetupDeferral(

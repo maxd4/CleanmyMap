@@ -86,6 +86,21 @@ describe("account setup deferral", () => {
       }),
     ).toBe(false);
   });
+
+  it("normalizes numeric and string metadata versions with the same non-negative rule", () => {
+    expect(
+      extractAccountSetupDeferredVersion({
+        profileSetupDeferred: true,
+        profileSetupDeferredVersion: " 4-extra",
+      }),
+    ).toBe(4);
+    expect(
+      extractAccountSetupDeferredVersion({
+        profileSetupDeferred: true,
+        profileSetupDeferredVersion: -2.8,
+      }),
+    ).toBe(0);
+  });
 });
 
 describe("current account setup requirement", () => {

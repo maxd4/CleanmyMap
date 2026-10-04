@@ -1,18 +1,5 @@
 import { env } from "@/lib/env";
-
-/**
- * Validates URL has https protocol (CodeQL-safe alternative to startsWith checks)
- * See: documentation/security/regex-security.md
- */
-function hasHttpsProtocol(url: string | undefined): boolean {
-  if (!url || typeof url !== "string") return false;
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+import { hasHttpsProtocol } from "@/lib/security/validation";
 
 export function canUseSupabaseServerPersistence(): boolean {
   const url = env.NEXT_PUBLIC_SUPABASE_URL;
