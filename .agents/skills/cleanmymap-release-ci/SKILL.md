@@ -1,44 +1,48 @@
 ---
 name: cleanmymap-release-ci
-description: "Use this skill when a task touches GitHub Actions, PR workflows, checks, Vercel previews, deployment safety, or release guardrails."
+description: "Utiliser quand une tâche touche GitHub Actions, hooks, validations, publication sur main, Vercel, scopes STAGED/PUSH_CANDIDATE/DYNAMIC_CANDIDATE ou contrats de CI CleanMyMap."
 category: repository
 risk: medium
 source: local
-tags: "[github, ci, cd, vercel, pull-request, release]"
-date_added: "2026-05-24"
+tags: "[ci, github-actions, release, vercel, hooks, validation]"
 ---
 
-# CleanMyMap Release and CI Skill
+# CleanMyMap — livraison et CI
 
-## Purpose
+## But
 
-Keep delivery safe by validating the code path, CI path, and deployment path together.
+Modifier ou diagnostiquer la chaîne de livraison sans affaiblir ses garde-fous ni confondre les scopes de validation.
 
-## Use When
+## Utiliser quand
 
-- Updating GitHub Actions or release scripts
-- Debugging failing checks or flaky pipelines
-- Preparing a PR for review
-- Verifying a Vercel preview or deployment-related behavior
+- `.github/**`, hooks ou scripts CI changent ;
+- un job GitHub Actions échoue ou est skippé de manière inattendue ;
+- la logique `checks:fast` / `checks:full` est concernée ;
+- un commit/push sur `main` doit être préparé ou vérifié ;
+- Vercel ou la portée de publication fait partie du problème.
 
-## Core Rules
+## Sources canoniques
 
-- Keep the smallest possible release surface.
-- Do not weaken checks unless there is a documented reason.
-- Prefer explicit guardrails over hidden assumptions.
-- Verify the deployment impact of config changes.
+Lire d'abord :
+
+- `AGENTS.md` ;
+- `scripts/AGENTS.md` ;
+- `.github/AGENTS.md` si applicable ;
+- `documentation/development/TESTING.md` ;
+- la workflow ou le script exact concerné.
+
+## Invariants
+
+- Distinguer `WORKTREE`, `STAGED`, `PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE`.
+- Ne jamais remplacer le protocole Git courant par un workflow générique de « stage all + push ».
+- Stager une allowlist du candidat ; ne jamais utiliser `git add -A` par commodité.
+- Une modification de garde-fou doit préserver son intention et tester au moins un cas positif et un cas négatif quand pertinent.
+- Un job `skipped` n'est pas un `PASS` de la fonctionnalité qu'il aurait testée.
+- Ne pas affaiblir une policy, un seuil, une condition ou un timeout seulement pour obtenir du vert.
+- Une erreur étrangère au candidat est rapportée séparément ; elle n'autorise pas à modifier un autre domaine.
 
 ## Validation
 
-- Run the relevant checks locally first.
-- Confirm the PR diff is scoped correctly.
-- Verify the preview or build output when deployment behavior changed.
+Choisir la preuve selon le blast radius. Une modification CI/gouvernance transversale exige généralement les tests ciblés du script/workflow, puis les validations prévues par la gouvernance actuelle, souvent jusqu'à `checks:full` sur le candidat final.
 
-## References
-
-- `references/release-safety.md`
-- `references/ci-patterns.md`
-
-## Examples
-
-- `examples/pr-release-checklist.md`
+Après push, vérifier la convergence et le statut réel du SHA publié ; ne pas inférer la CI depuis une exécution locale.

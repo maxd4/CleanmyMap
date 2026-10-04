@@ -1,45 +1,65 @@
 ---
 name: cleanmymap-security
-description: "Use this skill when a task touches XSS, URL validation, secrets, auth boundaries, or hardening rules in CleanMyMap."
+description: "Utiliser lorsqu'une tâche touche AuthN/AuthZ, ownership, rôles, RLS, secrets, XSS, URL/HTML utilisateur, webhook, privilèges serveur ou autre frontière sensible CleanMyMap."
 category: repository
 risk: high
 source: local
-tags: "[security, xss, secrets, validation, hardening, auth]"
-date_added: "2026-05-24"
+tags: "[security, authn, authz, rls, secrets, xss, ownership]"
 ---
 
-# CleanMyMap Security Skill
+# CleanMyMap — sécurité applicative
 
-## Purpose
+## But
 
-Apply defensive checks that keep user input, secrets, and privileged paths safe.
+Préserver les frontières de confiance réelles du produit, sans introduire de restriction produit non justifiée.
 
-## Use When
+## Utiliser quand
 
-- Validating URLs, markdown, or user-provided text
-- Reviewing auth, role checks, or server-only code
-- Handling secrets, tokens, or environment variables
-- Auditing dangerous patterns or potential injection vectors
+- identité Clerk, rôles, ownership ou permissions changent ;
+- une route, action serveur, RPC, webhook ou service privilégié est modifié ;
+- du contenu utilisateur peut atteindre HTML, URL, markdown ou redirection ;
+- un secret, token, `service_role` ou variable d'environnement est concerné ;
+- une policy RLS ou une capacité admin/modération est touchée.
 
-## Core Rules
+## Sources canoniques
 
-- Prefer `new URL()`-based validation over string prefix checks.
-- Do not render unsafe HTML from user input.
-- Keep secrets out of client code and committed files.
-- Reuse the repo security helpers and validation patterns.
-- Treat privilege and data-access changes as high risk.
+Lire le `AGENTS.md` racine, le scoped `AGENTS.md`, puis les documents de `documentation/security/` et les helpers AuthZ existants du domaine.
+
+## Modèle de frontière
+
+Toujours distinguer :
+
+```text
+AuthN = qui agit ?
+AuthZ = a-t-il ce droit ?
+Ownership = cette ressource lui appartient-elle ?
+Override = agit-il explicitement avec un pouvoir supérieur ?
+Audit = l'opération sensible est-elle traçable ?
+```
+
+Pour une route sensible, préserver l'ordre conceptuel pertinent :
+
+```text
+entrée
+→ AuthN/AuthZ
+→ parsing/validation
+→ règle métier
+→ persistence
+→ audit/effets
+→ réponse
+```
+
+## Règles
+
+- Ne jamais faire confiance à un rôle ou scope déclaré par le client.
+- Ne jamais exposer `service_role`, secret serveur ou décision AuthZ dans un Client Component.
+- Ne jamais désactiver RLS pour contourner un bug.
+- Réutiliser l'owner d'autorisation existant au lieu de créer une permission parallèle.
+- Valider les URLs avec une primitive structurée (`URL`) et une allowlist de protocoles/hosts quand le contrat l'exige.
+- N'injecter du HTML utilisateur que via un contrat explicitement sanitisé et testé.
+- Ne pas journaliser secrets, PII inutiles, payload brut sensible ou stack trace externe.
+- Appliquer le moindre privilège aux pouvoirs et données sensibles, pas comme prétexte pour fermer arbitrairement une surface communautaire.
 
 ## Validation
 
-- Search for the risky pattern before editing.
-- Fix the root cause, not the symptom.
-- Re-test the affected flow and error path.
-
-## References
-
-- `references/hardening-checklist.md`
-- `references/input-validation.md`
-
-## Examples
-
-- `examples/url-and-secret-check.md`
+Ajouter les tests positifs et négatifs au bon seam : anonyme/authentifié, owner/non-owner, rôle minimal/insuffisant, payload invalide, chemin privilégié. Ajouter les tests de sécurité canoniques lorsqu'ils sont concernés et utiliser `checks:full` quand la gouvernance classe le changement comme sensible.

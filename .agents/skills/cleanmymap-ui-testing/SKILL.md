@@ -1,92 +1,71 @@
 ---
 name: cleanmymap-ui-testing
-description: "Use this skill when a task requires Playwright checks, UI regression testing, screenshots, or local browser verification in CleanMyMap."
+description: "Utiliser quand une tâche CleanMyMap exige une vérification navigateur, Playwright, capture, comparaison visuelle, parcours protégé ou reproduction UI locale."
 category: repository
 risk: safe
 source: local
-tags: "[playwright, browser-testing, screenshots, regression, ui]"
-date_added: "2026-05-24"
+tags: "[ui, browser, playwright, screenshots, clerk, regression]"
 ---
 
-# CleanMyMap UI Testing Skill
+# CleanMyMap — validation UI et navigateur
 
-## Purpose
+## But
 
-Verify visible behavior locally before a change is considered done.
+Choisir le bon harness d'authentification et produire une preuve visuelle/comportementale correspondant réellement à la surface testée.
 
-## Use When
-
-- Checking a new or edited page in the browser
-- Capturing screenshots for comparison
-- Reproducing or preventing a UI regression
-- Validating responsive behavior or interaction flows
-
-## Core Rules
-
-- Test the exact route that changed.
-- Verify the happy path and at least one edge case.
-- For visual validation of a PAGE or a page-level BEFORE/AFTER comparison,
-  require one deterministic PNG with `fullPage: true`; viewport or element
-  screenshots are complementary evidence only.
-- Prefer deterministic selectors and avoid fragile timing hacks.
-
-## Mandatory auth and browser preflight
-
-Before any browser validation, classify the surface:
-
-- `PUBLIC`: no AuthN; use the integrated browser or public Playwright as
-  needed, without a bypass.
-- `PROTECTED_SERVER_ONLY`: AuthN/AuthZ is server-only; use the canonical local
-  launcher with `CMM_DEV_AUTH_BYPASS=1` and the minimum role. Port 3000 is
-  preferred, but fallback is allowed; use the URL actually announced by the
-  launcher.
-- `PROTECTED_CLERK_CLIENT`: the route or consumer uses `useUser`, `useAuth`,
-  Clerk UI, `SignedIn`/`SignedOut`, or requires a real browser Clerk session.
-  A server bypass is not sufficient: use the official Clerk Development
-  Playwright harness with strict `localhost:3000`,
-  `CMM_DISABLE_DEV_AUTH_BYPASS=1`, and the `storageState`/session from global
-  setup. `/onboarding` is an explicit example.
-- `PROD_SMOKE`: use a real Clerk Production session according to the playbook;
-  never use a local bypass.
-
-Mutable-Supabase E2E belongs only to a dedicated ephemeral CI lane; never
-start Docker or local Supabase on the workstation. Never use Clerk Production
-keys on localhost.
-
-Announce these fields before the test:
+## Classifier la surface avant le test
 
 ```text
-AUTH_SURFACE: PUBLIC | PROTECTED_SERVER_ONLY | PROTECTED_CLERK_CLIENT
-BROWSER_HARNESS: INTEGRATED_BROWSER | PLAYWRIGHT_CLERK
+PUBLIC
+PROTECTED_SERVER_ONLY
+PROTECTED_CLERK_CLIENT
+PROD_SMOKE
+E2E_MUTABLE_SUPABASE
+```
+
+### PUBLIC
+
+Aucune AuthN. Utiliser le navigateur ou Playwright sans bypass.
+
+### PROTECTED_SERVER_ONLY
+
+AuthN/AuthZ côté serveur uniquement. Utiliser le lanceur local canonique avec le bypass de développement et le **rôle minimal** requis.
+
+### PROTECTED_CLERK_CLIENT
+
+La surface dépend de `useUser`, `useAuth`, `SignedIn/SignedOut`, UI Clerk ou d'une vraie session navigateur. Le bypass serveur ne suffit pas. Utiliser le harness Clerk Development prévu par le dépôt, sur `localhost:3000` lorsque le contrat l'impose.
+
+### PROD_SMOKE
+
+Utiliser uniquement le protocole production documenté ; aucun bypass local.
+
+### E2E_MUTABLE_SUPABASE
+
+Uniquement dans la lane CI éphémère prévue. Ne pas installer ni démarrer un Supabase local/Docker pour contourner cette frontière.
+
+## Annonce minimale
+
+Avant une validation navigateur, expliciter :
+
+```text
+AUTH_SURFACE: PUBLIC | PROTECTED_SERVER_ONLY | PROTECTED_CLERK_CLIENT | PROD_SMOKE | E2E_MUTABLE_SUPABASE
+BROWSER_HARNESS: integrated browser | Playwright | Clerk Development
 AUTH_MODE: NONE | DEV_BYPASS | CLERK_DEVELOPMENT
 HOST_URL: actual URL used
-ROLE: actual/simulated role
+ROLE: actual or simulated role
 PERSISTENCE: NONE | REMOTE_READONLY | CI_EPHEMERAL
 ```
 
-The canonical bypass roles are `benevole`, `coordinateur`, `scientifique`,
-`entreprise`, `elu`, `admin`, and `max`. Playwright Clerk must use port 3000
-strictly, with the old server stopped if necessary; it must never target a
-bypass server or assume `localhost:3000` after a fallback.
+## Règles
 
-## Validation
+- Ne jamais injecter de clés Clerk Production dans localhost.
+- Pour la lane Clerk officielle, utiliser `CMM_DISABLE_DEV_AUTH_BYPASS=1`.
+- Le bypass ne doit modifier ni les permissions métier ni les contrôles centraux AuthN/AuthZ.
+- Distinguer problème de session, boot Clerk, AuthZ, permission navigateur et environnement hôte.
+- Tester les états pertinents : chargement, vide, erreur, accès refusé, succès et responsive selon le changement.
+- Pour une cible UI fournie, comparer réellement le rendu aux largeurs pertinentes ; ne pas substituer une interprétation libre à la référence visuelle.
+- Une capture est une preuve visuelle, pas une preuve d'AuthZ ou de persistence.
 
-- Open the local app in the browser.
-- Confirm the UI loads without console errors.
-- Verify the main interaction path.
-- For page-level visual evidence, follow
-  `references/screenshot-patterns.md`: wait for data/fonts, auto-scroll to the
-  bottom to trigger lazy content, return to the top, wait for stabilization,
-  then capture a single full-page PNG from a deterministic desktop context
-  (typically 1440x1200, `deviceScaleFactor=1`). Record and verify the document
-  height against the PNG height for every page.
-- Re-test after fixes.
+## Validation finale
 
-## References
-
-- `references/browser-verification.md`
-- `references/screenshot-patterns.md`
-
-## Examples
-
-- `examples/local-smoke-check.md`
+Rapporter ce qui a été réellement vérifié, l'URL/harness utilisé et les éventuels écarts restants. Ne jamais présenter un bypass serveur comme preuve d'une session Clerk client réelle.

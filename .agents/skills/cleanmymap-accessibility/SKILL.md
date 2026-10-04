@@ -1,35 +1,31 @@
 ---
 name: cleanmymap-accessibility
-description: "Use this skill when a task affects keyboard navigation, semantics, contrast, focus, or assistive technology behavior in CleanMyMap."
+description: "Utiliser quand une modification CleanMyMap affecte navigation clavier, focus, sémantique, contraste, formulaires, dialogues, médias ou comportement d'assistance."
 category: repository
 risk: medium
 source: local
-tags: "[accessibility, a11y, wcag, keyboard, contrast]"
-date_added: "2026-05-24"
+tags: "[accessibility, a11y, keyboard, focus, semantics, contrast]"
 ---
 
-# CleanMyMap Accessibility Skill
+# CleanMyMap — accessibilité
 
-## Purpose
+## But
 
-Prevent regressions in keyboard support, semantics, readability, and contrast.
+Préserver une interface utilisable au clavier, compréhensible sémantiquement et robuste avec les technologies d'assistance.
 
-## Use When
+## Règles
 
-- Changing interactive UI
-- Editing forms, dialogs, menus, or cards
-- Reviewing contrast, labels, or focus states
-
-## Core Rules
-
-- Preserve semantic HTML where possible.
-- Ensure focus remains visible and usable.
-- Avoid color-only meaning.
-- Keep labels, hints, and errors understandable.
+- Préférer les éléments HTML natifs avant d'ajouter ARIA.
+- Tout contrôle interactif doit avoir un nom accessible et être utilisable au clavier.
+- Préserver un ordre de tabulation logique ; ne pas utiliser `tabIndex` positif pour réparer artificiellement le focus.
+- Un focus visible ne doit pas être supprimé sans remplacement équivalent ou supérieur.
+- Les dialogues, menus et popovers doivent gérer entrée/sortie de focus et fermeture attendue.
+- Associer labels, descriptions et erreurs aux champs de formulaire ; ne pas dépendre uniquement de la couleur.
+- Respecter la hiérarchie des titres et la sémantique structurelle de la page.
+- Les icônes décoratives restent cachées aux technologies d'assistance ; les icônes porteuses de sens ont un label.
+- Vérifier contraste et lisibilité dans le contexte réel du design system.
+- Respecter `prefers-reduced-motion` lorsque l'animation est non essentielle.
 
 ## Validation
 
-- Test keyboard-only navigation.
-- Check focus order and visible focus.
-- Verify contrast on the modified surface.
-
+Pour une UI interactive, tester au minimum clavier + focus visible + nom accessible. Utiliser les checks automatisés disponibles comme filet de sécurité, mais ne pas les considérer comme preuve exhaustive d'accessibilité.

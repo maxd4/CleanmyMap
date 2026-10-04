@@ -1,45 +1,45 @@
 ---
 name: cleanmymap-supabase
-description: "Use this skill when a task touches Supabase schema, RLS, storage, edge functions, server clients, or database migrations in CleanMyMap."
+description: "Utiliser pour toute tâche CleanMyMap impliquant Supabase, PostgreSQL, migrations, RLS, RPC, Storage, clients serveur, schéma distant, advisors ou diagnostic d'accès aux données."
 category: repository
-risk: medium
+risk: high
 source: local
-tags: "[supabase, database, rls, storage, edge-functions, nextjs]"
-date_added: "2026-05-24"
+tags: "[supabase, postgres, database, migration, rls, rpc, storage]"
 ---
 
-# CleanMyMap Supabase Skill
+# CleanMyMap — Supabase et données
 
-## Purpose
+## But
 
-Keep Supabase changes safe, scoped, and aligned with the repo architecture.
+Faire évoluer les données sans créer une seconde source de vérité ni confondre architecture prévue, migration versionnée et état réellement observé du service distant.
 
-## Use When
+## Sources canoniques
 
-- Editing migrations or schema-related code
-- Touching RLS, storage buckets, or Edge Functions
-- Changing server-side Supabase clients or admin helpers
-- Investigating data access, drift, or permission issues
+Lire en priorité :
 
-## Core Rules
+- `AGENTS.md` ;
+- `apps/web/AGENTS.md` ;
+- `apps/web/supabase/AGENTS.md` ;
+- documentation `database/` directement concernée ;
+- migrations, callers, types et tests du domaine.
 
-- Prefer the existing Supabase client helpers in `apps/web/src/lib/supabase/`.
-- Avoid raw SQL in application code.
-- Keep server-only keys and logic on the server.
-- Preserve RLS and role boundaries unless the task explicitly changes them.
-- Validate any schema or policy change against the affected routes and tests.
+## Invariants
+
+- L'unique arbre de migrations éditable est `apps/web/supabase/migrations/`.
+- Une modification SQL durable passe par une migration versionnée ; ne pas créer un second arbre.
+- Les migrations publiées sont append-only sauf exception explicitement gouvernée.
+- Vérifier ensemble schéma, types, routes/RPC, UI et tests quand le contrat change.
+- Auditer RLS, grants, ownership, rôles appelants, `search_path`, `SECURITY DEFINER/INVOKER`, triggers et vues concernés.
+- `service_role` reste serveur uniquement.
+- Un test statique SQL ne prouve pas les sémantiques d'une base réellement exécutée.
+- Ne jamais inventer l'état de Supabase : distinguer source Git, observation distante et preuve d'application.
+
+## Mutations distantes
+
+Une lecture structurée peut être utilisée pour observer le projet. Une migration distante, un `db push`, un repair ou toute DDL mutative nécessite le contrat et l'autorisation prévus par la gouvernance. Un dry-run ne prouve pas une application réelle.
+
+Les logs Supabase sont une ressource coûteuse : n'y recourir que si une autre preuve ne suffit pas, avec fenêtre et requête minimales selon `apps/web/supabase/AGENTS.md`.
 
 ## Validation
 
-- Check the related migration or SQL file.
-- Run the relevant tests.
-- Verify the impacted page or API route if behavior changed.
-
-## References
-
-- `references/data-governance.md`
-- `references/server-client-patterns.md`
-
-## Examples
-
-- `examples/server-route-pattern.md`
+Utiliser les checks Supabase/security/typecheck et tests de contrat directement concernés définis par le scoped `AGENTS.md`. Ne pas déclarer une migration appliquée sans preuve distante correspondante.
