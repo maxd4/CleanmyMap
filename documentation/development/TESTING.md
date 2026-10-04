@@ -656,6 +656,36 @@ identifiés et échoue sur tout nouveau cycle ou baseline obsolète. Les deux
 gates sont exécutés en `COMPLET` et dans la CI ; ils ne sont pas ajoutés à
 `RAPIDE` pour éviter une analyse globale à chaque changement ciblé.
 
+### Audits qualité et artefacts locaux
+
+Le runner borné `scripts/audits/run-quality-audit.mjs` orchestre les engines
+existants sans recopier leurs algorithmes :
+
+```bash
+npm run audit:quality -- dead-code
+npm run audit:quality -- duplication
+npm run audit:quality -- top-heavy
+npm run audit:quality -- complexity
+npm run audit:quality -- cycles
+npm run audit:quality -- all
+```
+
+Chaque audit exige au début et à la fin un worktree propre avec `HEAD ==
+origin/main`. Une instabilité de cette baseline arrête l’audit et ne produit
+pas de résultat canonique. Les audits sont exécutés séquentiellement ; `all`
+exécute chaque engine une seule fois et conserve les autres résultats lorsqu’un
+engine échoue.
+
+Les artefacts locaux régénérables sont écrits sous
+`artifacts/quality-audits/<auditedHead>/<audit>/` : `manifest.json` contient la
+baseline et le statut, `report.json` conserve le résultat brut de la gate et
+`summary.md` en est la projection lisible. Le mode `all` ajoute les mêmes
+fichiers au niveau `<auditedHead>/`. Ces artefacts ne sont pas versionnés et ne
+sont pas une source de vérité ; les baselines, justifications et seuils des
+engines restent les seules sources normatives. `attentionRequired: false`
+signifie qu’aucun delta nécessitant une nouvelle analyse n’a été observé, pas
+que la dette historique est absente.
+
 ### Évidence compacte des gates de qualité
 
 Le job CI `web-quality` écrit une projection JSON compacte après chaque gate,

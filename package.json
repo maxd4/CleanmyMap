@@ -73,6 +73,7 @@
     "quality:complexity": "node scripts/checks/check-complexity-policy.mjs",
     "quality:duplication": "node scripts/checks/check-duplication.mjs",
     "quality:cycles": "node scripts/checks/check-cycles.mjs",
+    "audit:quality": "node scripts/audits/run-quality-audit.mjs",
     "audit:modularity": "node scripts/reports/generate-modularity-radar.mjs --ref=HEAD",
     "audit:modularity:write": "node scripts/reports/generate-modularity-radar.mjs --ref=HEAD --write",
     "audit:product-surface": "node scripts/audits/generate-product-surface-audit.mjs --ref=HEAD",
