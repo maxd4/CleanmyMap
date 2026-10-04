@@ -50,14 +50,14 @@ function proximityScore(row) {
   return Math.max(row.lines / policy.review.lines, row.bytes / policy.review.bytes);
 }
 
-function createProximityRows(rows, limit) {
+export function createProximityRows(rows, limit) {
   return rows
     .map((row) => ({
       ...row,
       review: isAboveReview(row) ? (isAboveHard(row) ? "HARD" : "REVIEW") : "NONE",
       proximity: proximityScore(row),
     }))
-    .filter((row) => row.proximity !== null)
+    .filter((row) => row.proximity !== null && !isAboveReview(row))
     .sort((left, right) => right.proximity - left.proximity || right.lines - left.lines || left.file.localeCompare(right.file))
     .slice(0, limit);
 }

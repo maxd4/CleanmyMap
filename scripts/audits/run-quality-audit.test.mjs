@@ -7,6 +7,8 @@ import test from "node:test";
 import {
   AUDIT_MODES,
   attentionRequired,
+  buildHumanDecisionsByFile,
+  enrichTopHeavyEvaluation,
   createAuditPaths,
   parseAuditMode,
   runQualityAudit,
@@ -85,6 +87,7 @@ test("attention rules cover dead-code, duplication, top-heavy, complexity and cy
 
   const topHeavy = fixtureResult("top-heavy");
   topHeavy.evaluation.reviewWarnings.push({ file: "src/large.ts" });
+  topHeavy.evaluation.reviewWarningsRequiringDecision = [{ file: "src/large.ts" }];
   assert.equal(attentionRequired("top-heavy", topHeavy), true);
 
   const complexity = fixtureResult("complexity");
@@ -94,6 +97,53 @@ test("attention rules cover dead-code, duplication, top-heavy, complexity and cy
   const cycles = fixtureResult("cycles");
   cycles.comparison.added.push("cycle");
   assert.equal(attentionRequired("cycles", cycles), true);
+});
+
+test("top-heavy distingue les décisions acquises, REVIEW_REQUIRED et les deltas", () => {
+  const acquired = {
+    "src/decided.ts": {
+      file: "src/decided.ts",
+      architectureDecision: "PROACTIVE_SPLIT",
+      priority: "LATER",
+      dependencyOrBlocker: "aucun",
+      nextTrigger: "prochain changement",
+      decisionAcquired: true,
+    },
+  };
+  const baseEvaluation = {
+    blockingFindings: [],
+    reviewWarnings: [{ file: "src/decided.ts", lines: 501, bytes: 100, kind: "runtime" }],
+    reviewImprovements: [],
+    staleReviewBaselineEntries: [],
+    staleBaselineEntries: [],
+  };
+  const decided = enrichTopHeavyEvaluation(baseEvaluation, acquired);
+  assert.equal(decided.reviewWarningsWithDecision.length, 1);
+  assert.equal(decided.reviewWarningsRequiringDecision.length, 0);
+  assert.equal(attentionRequired("top-heavy", { evaluation: decided }), false);
+
+  const undecided = enrichTopHeavyEvaluation({ ...baseEvaluation, reviewWarnings: [{ ...baseEvaluation.reviewWarnings[0], file: "src/unknown.ts" }] }, acquired);
+  assert.equal(undecided.reviewWarningsWithDecision.length, 0);
+  assert.equal(undecided.reviewWarningsRequiringDecision.length, 1);
+  assert.equal(attentionRequired("top-heavy", { evaluation: undecided }), true);
+
+  const reviewRequired = enrichTopHeavyEvaluation(baseEvaluation, {
+    "src/decided.ts": { ...acquired["src/decided.ts"], architectureDecision: "REVIEW_REQUIRED", decisionAcquired: false },
+  });
+  assert.equal(reviewRequired.reviewWarningsWithDecision[0].architectureDecision, "REVIEW_REQUIRED");
+  assert.equal(reviewRequired.reviewWarningsRequiringDecision.length, 1);
+  assert.equal(attentionRequired("top-heavy", { evaluation: reviewRequired }), true);
+
+  const improvement = enrichTopHeavyEvaluation({ ...baseEvaluation, reviewImprovements: [{ file: "src/decided.ts" }] }, acquired);
+  assert.equal(attentionRequired("top-heavy", { evaluation: improvement }), true);
+});
+
+test("la projection humaine associe les décisions du bloc canonique aux chemins", () => {
+  const markdown = fs.readFileSync(path.join(process.cwd(), "documentation", "architecture", "monolith-split-plan.md"), "utf8");
+  const decisions = buildHumanDecisionsByFile(markdown);
+  assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].architectureDecision, "PROACTIVE_SPLIT");
+  assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].decisionAcquired, true);
+  assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].priority, "AFTER_ACTIVE_CHANGES");
 });
 
 test("all runs each engine once, aggregates statuses and retains other results after failure", async () => {

@@ -683,8 +683,9 @@ baseline et le statut, `report.json` conserve le résultat brut de la gate et
 fichiers au niveau `<auditedHead>/`. Ces artefacts ne sont pas versionnés et ne
 sont pas une source de vérité ; les baselines, justifications et seuils des
 engines restent les seules sources normatives. `attentionRequired: false`
-signifie qu’aucun delta nécessitant une nouvelle analyse n’a été observé, pas
-que la dette historique est absente.
+signifie qu’aucun delta top-heavy ni REVIEW non qualifié nécessitant une
+nouvelle analyse n’a été observé, pas que la dette historique de fichiers
+volumineux est absente.
 
 ### Évidence compacte des gates de qualité
 
