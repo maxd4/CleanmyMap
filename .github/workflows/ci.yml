@@ -29,6 +29,8 @@ jobs:
       mobile_code_relevant: ${{ steps.detect-scope.outputs.mobile_code_relevant }}
       build_relevant: ${{ steps.detect-scope.outputs.build_relevant }}
       dependency_graph_relevant: ${{ steps.detect-scope.outputs.dependency_graph_relevant }}
+      dependency_audit_relevant: ${{ steps.detect-scope.outputs.dependency_audit_relevant }}
+      security_tooling_relevant: ${{ steps.detect-scope.outputs.security_tooling_relevant }}
 
     steps:
       - name: Checkout
@@ -66,7 +68,6 @@ jobs:
           docs_only=true
           web_code_relevant=false
           mobile_code_relevant=false
-          dependency_graph_relevant=false
           policy_args=(scripts/checks/validation-policy.mjs --scope changed --json)
 
           while IFS= read -r file; do
@@ -79,12 +80,6 @@ jobs:
                 ;;
               *)
                 docs_only=false
-                ;;
-            esac
-
-            case "$file" in
-              package.json|package-lock.json|*/package.json|*/package-lock.json)
-                dependency_graph_relevant=true
                 ;;
             esac
 
@@ -105,15 +100,20 @@ jobs:
 
           policy_json="$(node "${policy_args[@]}")"
           build_relevant="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).buildRelevant))' "$policy_json")"
+          dependency_graph_relevant="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).dependencyGraphRelevant))' "$policy_json")"
+          dependency_audit_relevant="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).dependencyAuditRelevant))' "$policy_json")"
+          security_tooling_relevant="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).securityToolingRelevant))' "$policy_json")"
 
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
           echo "web_code_relevant=$web_code_relevant" >> "$GITHUB_OUTPUT"
           echo "mobile_code_relevant=$mobile_code_relevant" >> "$GITHUB_OUTPUT"
           echo "build_relevant=$build_relevant" >> "$GITHUB_OUTPUT"
           echo "dependency_graph_relevant=$dependency_graph_relevant" >> "$GITHUB_OUTPUT"
+          echo "dependency_audit_relevant=$dependency_audit_relevant" >> "$GITHUB_OUTPUT"
+          echo "security_tooling_relevant=$security_tooling_relevant" >> "$GITHUB_OUTPUT"
 
       - name: Record dependency scope evidence
-        if: steps.detect-scope.outputs.dependency_graph_relevant != 'true'
+        if: steps.detect-scope.outputs.dependency_audit_relevant != 'true'
         shell: bash
         env:
           CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -121,14 +121,14 @@ jobs:
         run: node scripts/ci/write-security-evidence.mjs --gate=dependencies --status=SKIPPED_BY_SCOPE --candidate-ref="$CANDIDATE_SHA"
 
       - name: Dependency security summary (scope skipped)
-        if: ${{ always() && steps.detect-scope.outcome == 'success' && steps.detect-scope.outputs.dependency_graph_relevant != 'true' }}
+        if: ${{ always() && steps.detect-scope.outcome == 'success' && steps.detect-scope.outputs.dependency_audit_relevant != 'true' }}
         env:
           CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           SECURITY_EVIDENCE_ROOT: artifacts/security-evidence
         run: node scripts/ci/write-security-summary.mjs --gates=dependencies
 
       - name: Upload dependency scope evidence
-        if: ${{ always() && steps.detect-scope.outcome == 'success' && steps.detect-scope.outputs.dependency_graph_relevant != 'true' }}
+        if: ${{ always() && steps.detect-scope.outcome == 'success' && steps.detect-scope.outputs.dependency_audit_relevant != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: security-dependency-scope-${{ github.run_id }}
@@ -184,7 +184,7 @@ jobs:
 
   dependency-audit:
     needs: scope
-    if: needs.scope.outputs.dependency_graph_relevant == 'true'
+    if: needs.scope.outputs.dependency_audit_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -213,6 +213,9 @@ jobs:
       - name: Install Node dependencies
         id: install_node_dependencies
         run: npm ci
+
+      - name: Test dependency audit controller
+        run: node --test scripts/security/audit-dependencies.test.mjs
 
       - name: Dependency advisory audit
         id: dependency_audit
@@ -320,7 +323,7 @@ jobs:
 
   web-static:
     needs: scope
-    if: needs.scope.outputs.web_code_relevant == 'true'
+    if: needs.scope.outputs.web_code_relevant == 'true' || needs.scope.outputs.security_tooling_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

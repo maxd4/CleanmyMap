@@ -89,6 +89,40 @@ test("Vercel configuration changes use the same build-relevant scope", () => {
   assert.equal(testPlan.buildRelevant, false);
 });
 
+test("dependency graph and audit-control relevance are distinct", () => {
+  const lockfilePlan = createValidationPlan({
+    scope: "changed",
+    changedFiles: ["package-lock.json"],
+  });
+  const auditControllerPlan = createValidationPlan({
+    scope: "changed",
+    changedFiles: ["scripts/security/audit-dependencies.mjs"],
+  });
+  const governancePlan = createValidationPlan({
+    scope: "changed",
+    changedFiles: ["documentation/security/dependency-advisory-governance.md"],
+  });
+  const semgrepToolPlan = createValidationPlan({
+    scope: "changed",
+    changedFiles: ["scripts/security/run-semgrep-fixtures.mjs"],
+  });
+  const webSourcePlan = createValidationPlan({
+    scope: "changed",
+    changedFiles: ["apps/web/src/app/page.tsx"],
+  });
+
+  assert.equal(lockfilePlan.dependencyGraphRelevant, true);
+  assert.equal(lockfilePlan.dependencyAuditRelevant, true);
+  assert.equal(auditControllerPlan.dependencyGraphRelevant, false);
+  assert.equal(auditControllerPlan.dependencyAuditRelevant, true);
+  assert.equal(auditControllerPlan.securityToolingRelevant, true);
+  assert.equal(governancePlan.dependencyAuditRelevant, true);
+  assert.equal(semgrepToolPlan.dependencyAuditRelevant, false);
+  assert.equal(semgrepToolPlan.securityToolingRelevant, true);
+  assert.equal(webSourcePlan.dependencyAuditRelevant, false);
+  assert.equal(webSourcePlan.securityToolingRelevant, false);
+});
+
 test("heavy commands are excluded from parallel static phases", () => {
   const plan = createValidationPlan({ scope: "full" });
   const parallel = new Set(plan.parallelStatic.labels);

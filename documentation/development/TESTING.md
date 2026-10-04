@@ -299,11 +299,22 @@ findings est `FAIL`, et une fixture en échec ne devient pas un finding
 architectural. CodeQL n'est pas dupliqué dans `ci.yml` : son workflow et son
 SARIF natifs restent la source de preuve CodeQL.
 
-Lorsque le graphe de dépendances ne change pas, le job d'audit advisory n'est
-pas lancé et la preuve de scope porte `SKIPPED_BY_SCOPE`, jamais `PASS`. Les
-Job Summaries sont produits dans les jobs qui exécutent réellement ces
-contrôles et les JSON compacts sont conservés à court terme ; aucun job final
-ne télécharge des rapports bruts uniquement pour agréger un résultat.
+Le planner distingue `dependencyGraphRelevant` et
+`dependencyAuditRelevant`. Le job d'audit advisory s'exécute si le graphe
+npm, le contrôleur, sa politique ou sa preuve changent ; sinon la preuve de
+scope porte `SKIPPED_BY_SCOPE`, jamais `PASS`, avec la raison factuelle
+`dependency graph and dependency-audit control unchanged`. Lorsqu'il
+s'exécute, le job lance d'abord `node --test
+scripts/security/audit-dependencies.test.mjs`, puis le véritable
+`npm run security:dependencies`. Les Job Summaries sont produits dans les
+jobs qui exécutent réellement ces contrôles et les JSON compacts sont
+conservés à court terme ; aucun job final ne télécharge des rapports bruts
+uniquement pour agréger un résultat.
+
+Le même planner expose `securityToolingRelevant`. Un changement sous
+`scripts/security/` sélectionne le job `web-static` qui exécute les outils de
+sécurité concernés, sans transformer ce signal en `web_code_relevant` ni
+déclencher un build Web sans contrat applicatif modifié.
 
 ## Triage des échecs CI
 

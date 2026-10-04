@@ -79,6 +79,7 @@ test("root advisories, transitive paths, parents, scope and blocker status remai
   };
   const fixtureLockfile = {
     packages: {
+      "": { devDependencies: { "@expo/cli": "57.0.24" } },
       "node_modules/@expo/cli": { version: "57.0.24", dependencies: { "@expo/metro": "~56.0.2" } },
       "node_modules/@expo/metro": { version: "56.0.2", dependencies: { metro: "0.84.5" } },
       "node_modules/metro": { version: "0.84.5", dependencies: { micromatch: "^4.0.4" } },
@@ -103,6 +104,96 @@ test("root advisories, transitive paths, parents, scope and blocker status remai
   const formatted = formatAuditPolicyResult(result);
   assert.match(formatted, /ROOT_ADVISORY: GHSA-VFJ7-8CJW-P6XM/);
   assert.match(formatted, /MITIGATION_STATUS: BLOCKED_BY_UPSTREAM/);
+});
+
+function highFinding(packageName) {
+  return {
+    name: packageName,
+    severity: "high",
+    via: [{
+      url: "https://github.com/advisories/GHSA-1111-1111-1111",
+      severity: "high",
+    }],
+  };
+}
+
+test("classifies a transitive Web runtime package from workspace reachability", () => {
+  const result = evaluateAuditPolicy({
+    auditReport: { vulnerabilities: { "web-vulnerable": highFinding("web-vulnerable") } },
+    lockfile: {
+      packages: {
+        "apps/web": { dependencies: { "web-parent": "1.0.0" } },
+        "node_modules/web-parent": { version: "1.0.0", dependencies: { "web-vulnerable": "1.0.0" } },
+        "node_modules/web-vulnerable": { version: "1.0.0" },
+      },
+    },
+  });
+
+  assert.equal(result.unmitigated[0].runtimeScope, "WEB_RUNTIME");
+  assert.equal(result.passed, false);
+});
+
+test("classifies a transitive Mobile runtime package from workspace reachability", () => {
+  const result = evaluateAuditPolicy({
+    auditReport: { vulnerabilities: { "mobile-vulnerable": highFinding("mobile-vulnerable") } },
+    lockfile: {
+      packages: {
+        "apps/mobile": { dependencies: { "expo-like": "1.0.0" } },
+        "node_modules/expo-like": { version: "1.0.0", dependencies: { "mobile-vulnerable": "1.0.0" } },
+        "node_modules/mobile-vulnerable": { version: "1.0.0" },
+      },
+    },
+  });
+
+  assert.equal(result.unmitigated[0].runtimeScope, "MOBILE_RUNTIME");
+  assert.equal(result.passed, false);
+});
+
+test("classifies a package shared by both runtime workspaces deterministically", () => {
+  const result = evaluateAuditPolicy({
+    auditReport: { vulnerabilities: { "shared-vulnerable": highFinding("shared-vulnerable") } },
+    lockfile: {
+      packages: {
+        "apps/web": { dependencies: { "shared-parent": "1.0.0" } },
+        "apps/mobile": { dependencies: { "shared-parent": "1.0.0" } },
+        "node_modules/shared-parent": { version: "1.0.0", dependencies: { "shared-vulnerable": "1.0.0" } },
+        "node_modules/shared-vulnerable": { version: "1.0.0" },
+      },
+    },
+  });
+
+  assert.equal(result.unmitigated[0].runtimeScope, "WEB_RUNTIME + MOBILE_RUNTIME");
+  assert.equal(result.passed, false);
+});
+
+test("classifies a development-only package without treating it as runtime", () => {
+  const result = evaluateAuditPolicy({
+    auditReport: { vulnerabilities: { "build-vulnerable": highFinding("build-vulnerable") } },
+    lockfile: {
+      packages: {
+        "": { devDependencies: { "build-parent": "1.0.0" } },
+        "node_modules/build-parent": { version: "1.0.0", dependencies: { "build-vulnerable": "1.0.0" } },
+        "node_modules/build-vulnerable": { version: "1.0.0" },
+      },
+    },
+  });
+
+  assert.equal(result.unmitigated[0].runtimeScope, "DEV_BUILD_ONLY");
+  assert.equal(result.passed, false);
+});
+
+test("keeps an installed package unclassified when no known root reaches it", () => {
+  const result = evaluateAuditPolicy({
+    auditReport: { vulnerabilities: { isolated: highFinding("isolated") } },
+    lockfile: {
+      packages: {
+        "node_modules/isolated": { version: "1.0.0" },
+      },
+    },
+  });
+
+  assert.equal(result.unmitigated[0].runtimeScope, "UNCLASSIFIED");
+  assert.equal(result.passed, false);
 });
 
 test("the exact vendor mitigation is accepted but a changed version is not", () => {

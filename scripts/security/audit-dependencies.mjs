@@ -144,6 +144,8 @@ function resolveInstalledDependencyPath(parentPath, dependencyName, packages) {
       : `node_modules/${dependencyName}`;
     if (packages[candidate]) return candidate;
 
+    if (!currentPath) return null;
+
     const nestedMarker = currentPath.lastIndexOf("/node_modules/");
     if (nestedMarker >= 0) {
       currentPath = currentPath.slice(0, nestedMarker);
@@ -153,7 +155,9 @@ function resolveInstalledDependencyPath(parentPath, dependencyName, packages) {
       currentPath = "";
       continue;
     }
-    return null;
+
+    const parentMarker = currentPath.lastIndexOf("/");
+    currentPath = parentMarker >= 0 ? currentPath.slice(0, parentMarker) : "";
   }
 }
 
@@ -188,46 +192,74 @@ function directParentPackages(nodePath, packages) {
   return [...parentPackages].sort();
 }
 
-const MOBILE_RUNTIME_PACKAGES = new Set([
-  "@clerk/expo",
-  "expo",
-  "react-native",
-  "react-native-maps",
-  "@react-native/virtualized-lists",
-]);
+function traversedDependencyNames(packageEntry) {
+  return new Set([
+    ...Object.keys(packageEntry?.dependencies ?? {}),
+    ...Object.keys(packageEntry?.optionalDependencies ?? {}),
+  ]);
+}
 
-const BUILD_ONLY_PACKAGES = new Set([
-  "@expo/cli",
-  "@expo/code-signing-certificates",
-  "@expo/metro",
-  "@expo/metro-config",
-  "@expo/metro-file-map",
-  "@next/eslint-plugin-next",
-  "braces",
-  "eslint-config-next",
-  "fast-glob",
-  "metro",
-  "metro-config",
-  "metro-file-map",
-  "metro-transform-worker",
-  "micromatch",
-  "node-forge",
-]);
+function collectReachablePackages(packages, roots) {
+  const reachable = new Set();
+  const pending = [...roots];
 
-function runtimeScopeForFinding({ packageKey, vulnerability, path, rootPaths, packages }) {
-  const scopes = new Set();
-  const namesInRootPaths = new Set(rootPaths.flatMap((rootPath) => rootPath.path));
-  const rootPackage = packages[""] ?? {};
+  while (pending.length > 0) {
+    const { parentPath, dependencyName } = pending.shift();
+    const installedPath = resolveInstalledDependencyPath(parentPath, dependencyName, packages);
+    if (!installedPath) continue;
 
-  if (MOBILE_RUNTIME_PACKAGES.has(packageKey)) scopes.add("MOBILE_RUNTIME");
-  if (BUILD_ONLY_PACKAGES.has(packageKey)
-    || [...namesInRootPaths].some((name) => BUILD_ONLY_PACKAGES.has(name))
-    || vulnerability?.dev === true
-    || Object.hasOwn(rootPackage.devDependencies ?? {}, packageKey)) {
-    scopes.add("DEV_BUILD_ONLY");
+    const resolvedPath = resolveLockfilePackage(installedPath, packages).path;
+    if (reachable.has(resolvedPath)) continue;
+    reachable.add(resolvedPath);
+
+    const packageEntry = packages[resolvedPath];
+    for (const childDependencyName of traversedDependencyNames(packageEntry)) {
+      pending.push({ parentPath: resolvedPath, dependencyName: childDependencyName });
+    }
   }
-  if (packageKey === "web" || path === "apps/web") scopes.add("WEB_RUNTIME");
-  return scopes.size > 0 ? [...scopes].sort().join(" + ") : "UNCLASSIFIED";
+
+  return reachable;
+}
+
+function dependencyRoots(packages, packagePath, fieldName) {
+  const packageEntry = packages[packagePath] ?? {};
+  return Object.keys(packageEntry[fieldName] ?? {}).map((dependencyName) => ({
+    parentPath: packagePath,
+    dependencyName,
+  }));
+}
+
+function buildReachability(packages) {
+  const runtime = {
+    web: collectReachablePackages(packages, [
+      ...dependencyRoots(packages, "apps/web", "dependencies"),
+      ...dependencyRoots(packages, "apps/web", "optionalDependencies"),
+    ]),
+    mobile: collectReachablePackages(packages, [
+      ...dependencyRoots(packages, "apps/mobile", "dependencies"),
+      ...dependencyRoots(packages, "apps/mobile", "optionalDependencies"),
+    ]),
+  };
+  const developmentRoots = [
+    ...dependencyRoots(packages, "", "devDependencies"),
+    ...dependencyRoots(packages, "apps/web", "devDependencies"),
+    ...dependencyRoots(packages, "apps/mobile", "devDependencies"),
+  ];
+
+  return {
+    ...runtime,
+    dev: collectReachablePackages(packages, developmentRoots),
+  };
+}
+
+function runtimeScopeForFinding({ path: packagePath, packages, reachability: providedReachability }) {
+  const reachability = providedReachability ?? buildReachability(packages);
+  const scopes = [];
+  if (reachability.web.has(packagePath)) scopes.push("WEB_RUNTIME");
+  if (reachability.mobile.has(packagePath)) scopes.push("MOBILE_RUNTIME");
+  if (scopes.length > 0) return scopes.join(" + ");
+  if (reachability.dev.has(packagePath)) return "DEV_BUILD_ONLY";
+  return "UNCLASSIFIED";
 }
 
 function mitigationStatusForFinding(finding) {
@@ -278,6 +310,7 @@ export function extractAuditFindings(auditReport, lockfile = {}) {
   const packages = lockfile?.packages && typeof lockfile.packages === "object"
     ? lockfile.packages
     : {};
+  const reachability = buildReachability(packages);
   const findings = [];
 
   for (const [packageKey, vulnerability] of Object.entries(vulnerabilities)) {
@@ -295,11 +328,9 @@ export function extractAuditFindings(auditReport, lockfile = {}) {
         rootPaths,
         parentPackages: directParentPackages(node, packages),
         runtimeScope: runtimeScopeForFinding({
-          packageKey,
-          vulnerability,
           path: resolved.path,
-          rootPaths,
           packages,
+          reachability,
         }),
       };
       for (const detail of auditDetails(vulnerability)) {
