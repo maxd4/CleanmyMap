@@ -46,18 +46,14 @@ export function buildProjectSignalRows(
   windowFromMs?: number,
   windowUntilMs?: number,
 ): ProjectSignalRows {
-  const filterByWindow = <T extends BaseTimelineRow>(rows: T[]) =>
-    rows.filter((row) =>
-      windowFromMs === undefined || windowUntilMs === undefined
-        ? true
-        : isWithinWindow(row.created_at, windowFromMs, windowUntilMs),
-    );
   const filterByTimestamp = <T>(rows: T[], toTimestamp: (row: T) => string | null | undefined) =>
     rows.filter((row) =>
       windowFromMs === undefined || windowUntilMs === undefined
         ? true
         : isWithinWindow(toTimestamp(row), windowFromMs, windowUntilMs),
     );
+  const filterByWindow = <T extends BaseTimelineRow>(rows: T[]) =>
+    filterByTimestamp(rows, (row) => row.created_at);
 
   const funnelAggregate = selectFunnelAggregate(
     params.funnelSignalSummary,
@@ -69,11 +65,7 @@ export function buildProjectSignalRows(
     profiles: filterByWindow(params.profiles as BaseTimelineRow[]) as ProfileRow[],
     actions: filterByWindow(params.actions),
     spots: filterByWindow(params.spots),
-    funnelEvents: params.funnelEvents.filter((row) =>
-      windowFromMs === undefined || windowUntilMs === undefined
-        ? true
-        : isWithinWindow(row.at, windowFromMs, windowUntilMs),
-    ),
+    funnelEvents: filterByTimestamp(params.funnelEvents, (row) => row.at),
     funnelAggregate,
     funnelSignalSummary: params.funnelSignalSummary,
     progressionEvents: filterByWindow(params.progressionEvents),

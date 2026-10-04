@@ -32,32 +32,14 @@ export type LoadedProjectSignalData = {
   codexSnapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[];
 };
 
-async function loadOldestProfileCreatedAt(
+async function loadProfileCreatedAt(
   supabase: SupabaseClient,
+  userId?: string,
 ): Promise<string | null> {
-  const result = await supabase
-    .from("profiles")
-    .select("created_at")
-    .order("created_at", { ascending: true })
-    .limit(1);
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  const row = (result.data ?? [])[0] as ProfileCreatedAtRow | undefined;
-  return row?.created_at ?? null;
-}
-
-async function loadProfileCreatedAtById(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<string | null> {
-  const result = await supabase
-    .from("profiles")
-    .select("created_at")
-    .eq("id", userId)
-    .limit(1);
+  const query = userId
+    ? supabase.from("profiles").select("created_at").eq("id", userId)
+    : supabase.from("profiles").select("created_at").order("created_at", { ascending: true });
+  const result = await query.limit(1);
 
   if (result.error) {
     throw new Error(result.error.message);
@@ -86,8 +68,8 @@ export async function loadProjectSignalData(
     eventRsvps,
     appNotifications,
   ] = await Promise.all([
-    loadOldestProfileCreatedAt(supabase),
-    params.userId ? loadProfileCreatedAtById(supabase, params.userId) : Promise.resolve(null),
+    loadProfileCreatedAt(supabase),
+    params.userId ? loadProfileCreatedAt(supabase, params.userId) : Promise.resolve(null),
     orderProjectSignalRows<ActionRow>(
       supabase
         .from("actions")

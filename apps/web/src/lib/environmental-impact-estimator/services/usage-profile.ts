@@ -20,13 +20,7 @@ import {
   buildUsageOperationsMetrics,
   buildUsageTrendMetrics,
 } from "./usage-profile-operations";
-interface UsageProfileContext {
-  infrastructureInput: EnvironmentalImpactInfrastructureInput | null | undefined;
-  siteInput: EnvironmentalImpactScopeInput | null | undefined;
-  userInput: EnvironmentalImpactScopeInput | null | undefined;
-  usageInput: EnvironmentalImpactInfrastructureInput["usage"] | null;
-  pushProvenance: (item: EnvironmentalImpactUsageProvenanceItem) => void;
-}
+import { resolveUsageField, type UsageProfileContext } from "./usage-profile-context";
 function getTrafficPageViewsDetail(hasSignals: boolean): string {
   return hasSignals
     ? "Dérivé des signaux site/utilisateur"
@@ -144,26 +138,6 @@ function resolveMonthlyChatgptConversationHoursMetric(ctx: UsageProfileContext):
     "Mesure fournie explicitement; sans mesure, l'usage ChatGPT exact reste NA.",
     "input",
   );
-}
-function resolveUsageField(
-  ctx: UsageProfileContext,
-  key: string,
-  label: string,
-  inputValue: number | null | undefined,
-  fallbackValue: number,
-  detail: string,
-  source: EnvironmentalImpactUsageProvenanceSource,
-): number {
-  const hasInput = inputValue !== null && inputValue !== undefined;
-  const value = resolveNumber(inputValue, fallbackValue);
-  ctx.pushProvenance({
-    key,
-    label,
-    value,
-    source: hasInput ? "input" : source,
-    detail,
-  });
-  return value;
 }
 function buildUsageTrafficMetrics(ctx: UsageProfileContext, sitePageViews: number, userPageViews: number) {
   const monthlyPageViews = resolveMonthlyPageViewsMetric(ctx, sitePageViews, userPageViews);

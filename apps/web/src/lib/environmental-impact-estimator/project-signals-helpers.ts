@@ -2,6 +2,7 @@ import type {
   AppNotificationRow,
   ProjectSignalRows,
 } from "./project-signals.calculations";
+import { parseDateOrNull } from "./services/utils";
 
 export function countDistinct(values: Array<string | null | undefined>): number {
   return new Set(
@@ -33,27 +34,6 @@ export function sumTrainingPhotoBytes(raw: unknown): number {
     const maybeSize = (item as { size?: unknown }).size;
     return acc + (typeof maybeSize === "number" && Number.isFinite(maybeSize) ? maybeSize : 0);
   }, 0);
-}
-
-export function round6(value: number): number {
-  return Math.round(value * 1_000_000) / 1_000_000;
-}
-
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-export function parseDateOrNull(value: string | null | undefined): Date | null {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date;
 }
 
 export function toMs(value: string | null | undefined): number | null {

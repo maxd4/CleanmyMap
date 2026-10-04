@@ -178,6 +178,12 @@ function weightedAvailable(values: Array<[number | null, number]>): number | nul
   );
 }
 
+function countKnownServiceabilityZones(zones: MunicipalCleaningServiceabilityZone[]): number {
+  return zones.filter(
+    (zone) => zone.geometryServiceabilityProxy !== null || zone.municipalCleaningServiceLevel !== null,
+  ).length;
+}
+
 function validFrequency(
   raw: MunicipalCleaningRawZone,
   evidence: CleaningSourceEvidence[],
@@ -480,9 +486,7 @@ export function buildMunicipalCleaningServiceabilitySnapshot(input: {
   const zones = input.baseZones
     .map((seed) => deriveMunicipalCleaningServiceability(seed, rawById.get(seed.id), input.refreshedAt))
     .sort((left, right) => left.id.localeCompare(right.id));
-  const known = zones.filter(
-    (zone) => zone.geometryServiceabilityProxy !== null || zone.municipalCleaningServiceLevel !== null,
-  ).length;
+  const known = countKnownServiceabilityZones(zones);
   const status = known === 0 ? "unavailable" : known === zones.length ? "available" : "partial";
   return {
     schemaVersion: MUNICIPAL_CLEANING_SERVICEABILITY_SCHEMA_VERSION,
@@ -513,9 +517,7 @@ export function materializeMunicipalCleaningZones(
   const zones = baseZones
     .map((seed) => knownById.get(seed.id) ?? buildUnknownZone(seed, snapshot.refreshedAt))
     .sort((left, right) => left.id.localeCompare(right.id));
-  const known = zones.filter(
-    (zone) => zone.geometryServiceabilityProxy !== null || zone.municipalCleaningServiceLevel !== null,
-  ).length;
+  const known = countKnownServiceabilityZones(zones);
   return {
     ...snapshot,
     geographicLevel: zones.every((zone) => zone.geographicLevel === "iris") ? "iris" : "grid",

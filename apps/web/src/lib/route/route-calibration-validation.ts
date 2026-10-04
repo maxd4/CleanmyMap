@@ -12,6 +12,7 @@ import type {
 import { isRoutePlannerSnapshot as validateRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
 import { hashRoutePlannerSnapshot } from "./route-planner-snapshot-hash";
 import { ROUTE_PLANNER_PROOF_VERSION } from "./route-planner-proof-contract";
+import { sameStringSet } from "./route-calibration-helpers";
 
 export function isRouteCalibrationContext(value: unknown): value is RouteCalibrationContext {
   if (!value || typeof value !== "object") return false;
@@ -109,10 +110,6 @@ function isRouteCalibrationSnapshotConsistent(
         (candidate.family === "predicted"),
     )
   );
-}
-
-function sameStringSet(left: readonly string[], right: readonly string[]): boolean {
-  return left.length === right.length && left.every((value) => right.includes(value));
 }
 
 function isRouteCalibrationCandidate(

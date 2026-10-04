@@ -50,6 +50,25 @@ export type ActionRouteVersionCalculationOverrides = Partial<
   Pick<ActionRouteVersionCalculation, "snapshotHash" | "metrics" | "stops" | "explanation">
 >;
 
+export function buildVersionedStopFromSnapshot(
+  stop: import("./route-calibration-types").RoutePlannerSnapshot["selectedStops"][number],
+) {
+  return {
+    id: stop.id,
+    label: stop.label,
+    score: stop.score,
+    priorityReason: stop.priorityReason,
+    ...(stop.evidence?.family
+      ? {
+          sourceFamily: stop.evidence.family,
+          ...(stop.evidence.family === "observed"
+            ? { sourceObservedAt: stop.evidence.observedAt }
+            : {}),
+        }
+      : {}),
+  };
+}
+
 export function buildActionRouteVersionCalculation(
   snapshot: import("./route-calibration-types").RoutePlannerSnapshot,
   overrides: ActionRouteVersionCalculationOverrides = {},
@@ -79,20 +98,7 @@ export function buildActionRouteVersionCalculation(
       collectionMinutes: sumNullable(budgets.map((budget) => budget.actionMinutes)),
       totalMinutes: sumNullable(budgets.map((budget) => budget.totalMinutes)),
     },
-    stops: overrides.stops ?? snapshot.selectedStops.map((stop) => ({
-      id: stop.id,
-      label: stop.label,
-      score: stop.score,
-      priorityReason: stop.priorityReason,
-      ...(stop.evidence?.family
-        ? {
-            sourceFamily: stop.evidence.family,
-            ...(stop.evidence.family === "observed"
-              ? { sourceObservedAt: stop.evidence.observedAt }
-              : {}),
-          }
-        : {}),
-    })),
+    stops: overrides.stops ?? snapshot.selectedStops.map(buildVersionedStopFromSnapshot),
     explanation: overrides.explanation ?? null,
   };
 }

@@ -44,6 +44,27 @@ export type StorageUsageReport = {
   cron: StorageUsageCronStatus;
 };
 
+function addStorageHistoryBreakdowns(
+  history: StorageUsageHistoryPoint[],
+  recordsByMonth: Map<string, StorageUsageSnapshotRecord>,
+): StorageUsageReport["history"] {
+  return history.map((point) => {
+    const record = recordsByMonth.get(point.snapshotMonth);
+    return {
+      ...point,
+      bucketBreakdown: Array.isArray(record?.bucket_breakdown)
+        ? (record.bucket_breakdown as unknown[])
+        : [],
+      extensionBreakdown: Array.isArray(record?.extension_breakdown)
+        ? (record.extension_breakdown as unknown[])
+        : [],
+      businessBreakdown: Array.isArray(record?.business_breakdown)
+        ? (record.business_breakdown as unknown[])
+        : [],
+    };
+  });
+}
+
 export type StorageUsageCaptureStage = "capture" | "post_write";
 
 export class StorageUsageCaptureError extends Error {
@@ -212,21 +233,7 @@ async function buildStorageUsageReport(params: {
     return {
       current: currentSnapshot,
       businessContributions: businessContributionsReport,
-      history: history.map((point) => {
-        const record = historyRecordsByMonth.get(point.snapshotMonth);
-        return {
-          ...point,
-          bucketBreakdown: Array.isArray(record?.bucket_breakdown)
-            ? (record.bucket_breakdown as unknown[])
-            : [],
-          extensionBreakdown: Array.isArray(record?.extension_breakdown)
-            ? (record.extension_breakdown as unknown[])
-            : [],
-          businessBreakdown: Array.isArray(record?.business_breakdown)
-            ? (record.business_breakdown as unknown[])
-            : [],
-        };
-      }),
+      history: addStorageHistoryBreakdowns(history, historyRecordsByMonth),
       comparison,
       warnings: [
         ...currentSnapshot.warnings,
@@ -307,21 +314,7 @@ async function buildStoredStorageUsageReport(): Promise<StorageUsageReport> {
   return {
     current: currentSnapshot,
     businessContributions,
-    history: history.map((point) => {
-      const record = historyRecordsByMonth.get(point.snapshotMonth);
-      return {
-        ...point,
-        bucketBreakdown: Array.isArray(record?.bucket_breakdown)
-          ? (record.bucket_breakdown as unknown[])
-          : [],
-        extensionBreakdown: Array.isArray(record?.extension_breakdown)
-          ? (record.extension_breakdown as unknown[])
-          : [],
-        businessBreakdown: Array.isArray(record?.business_breakdown)
-          ? (record.business_breakdown as unknown[])
-          : [],
-      };
-    }),
+    history: addStorageHistoryBreakdowns(history, historyRecordsByMonth),
     comparison: buildStorageUsageComparison(currentSnapshot, previousSnapshot),
     warnings: [...currentSnapshot.warnings],
     timestamp: currentSnapshot.generatedAt,

@@ -11,6 +11,7 @@ import type {
 import { isCoordinate, isRouteGeometry } from "./route-geometry-validation";
 import { isRouteOperationalBudget } from "./route-operational-budget-contract";
 import { isPlannerWeatherContext } from "@/lib/weather/planner-weather";
+import { sameStringSet } from "./route-calibration-helpers";
 
 export function isRoutePlannerSnapshot(
   value: unknown,
@@ -283,10 +284,6 @@ function hasUniqueValues(values: readonly string[]): boolean {
 function areDisjoint(left: readonly string[], right: readonly string[]): boolean {
   const rightSet = new Set(right);
   return left.every((value) => !rightSet.has(value));
-}
-
-function sameStringSet(left: readonly string[], right: readonly string[]): boolean {
-  return left.length === right.length && left.every((value) => right.includes(value));
 }
 
 function sameNumberSet(left: readonly number[], right: readonly number[]): boolean {

@@ -43,6 +43,6 @@ Lire d'abord :
 
 ## Validation
 
-Choisir la preuve selon le blast radius. Une modification CI/gouvernance transversale exige généralement les tests ciblés du script/workflow, puis les validations prévues par la gouvernance actuelle, souvent jusqu'à `checks:full` sur le candidat final.
+Choisir la preuve selon le blast radius. Une modification CI/gouvernance transversale exige les tests ciblés du script/workflow et les validations prévues par la gouvernance actuelle. `checks:full` est réservé à une préparation immédiate de déploiement Vercel ou à un prompt explicitement dédié ; il ne doit pas être lancé automatiquement sur le candidat final d'un lot.
 
 Après push, vérifier la convergence et le statut réel du SHA publié ; ne pas inférer la CI depuis une exécution locale.

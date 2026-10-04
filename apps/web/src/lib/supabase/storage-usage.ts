@@ -178,21 +178,21 @@ export function formatStorageBytes(bytes: number): string {
   }
 
   if (bytes >= BYTES_PER_GB) {
-    return `${formatNumber(bytes / BYTES_PER_GB)} GB`;
+    return `${formatStorageNumber(bytes / BYTES_PER_GB)} GB`;
   }
 
   if (bytes >= BYTES_PER_MB) {
-    return `${formatNumber(bytes / BYTES_PER_MB)} MB`;
+    return `${formatStorageNumber(bytes / BYTES_PER_MB)} MB`;
   }
 
   if (bytes >= BYTES_PER_KB) {
-    return `${formatNumber(bytes / BYTES_PER_KB)} KB`;
+    return `${formatStorageNumber(bytes / BYTES_PER_KB)} KB`;
   }
 
   return `${Math.round(bytes)} B`;
 }
 
-function formatNumber(value: number): string {
+export function formatStorageNumber(value: number): string {
   return new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits: 2,
     minimumFractionDigits: value >= 10 && value % 1 !== 0 ? 2 : 0,

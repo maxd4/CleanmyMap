@@ -13,16 +13,14 @@ export {
   countProjectPageViews,
 } from "./project-signals-funnel";
 export {
-  clamp,
   countTrainingPhotos,
   getFunnelEventCount,
   isWithinWindow,
-  parseDateOrNull,
-  round6,
   sumTrainingPhotoBytes,
   toMs,
   totalRowsForApiRequests,
 } from "./project-signals-helpers";
+export { clamp, parseDateOrNull, round6 } from "./services/utils";
 export { buildProjectSignalsHighlights } from "./project-signals-highlights";
 export { buildScopeInputFromRows } from "./project-signals-timeline";
 
@@ -184,17 +182,8 @@ export async function orderProjectSignalRows<T>(
 export function buildProjectSignalBreakdown(rows: ProjectSignalRows) {
   const funnelAggregate =
     rows.funnelAggregate ?? rows.funnelSignalSummary?.allTime ?? summarizeFunnelRows(rows.funnelEvents);
-  const communityEventCount = rows.communityEvents.length;
-  const rsvpCount = rows.eventRsvps.length;
-  const notificationCount = rows.appNotifications.length;
-  const unreadNotificationCount = countProjectUnreadNotifications(rows.appNotifications);
-  const sentEmailsCount = rows.serviceEmails.reduce((acc, row) => {
-    if (row.status !== "sent") {
-      return acc;
-    }
-
-    return acc + Math.max(0, Number(row.recipient_count ?? 0));
-  }, 0);
+  const activity = buildProjectSignalActivityCounts(rows);
+  const sentEmailsCount = activity.sentEmailCount;
   const pdfExportsCount = rows.reports.filter((row) => row.file_kind === "pdf").length;
 
   return {
@@ -205,14 +194,27 @@ export function buildProjectSignalBreakdown(rows: ProjectSignalRows) {
       topRoutes: buildTopPageViewRouteCounts(funnelAggregate.routeCounts),
     },
     community: {
-      events: communityEventCount,
-      rsvps: rsvpCount,
-      notifications: notificationCount,
-      unreadNotifications: unreadNotificationCount,
+      events: activity.communityEventCount,
+      rsvps: activity.rsvpCount,
+      notifications: activity.notificationCount,
+      unreadNotifications: activity.unreadNotificationCount,
     },
     communication: {
       emailsSent: sentEmailsCount,
       pdfExports: pdfExportsCount,
     },
+  };
+}
+
+export function buildProjectSignalActivityCounts(rows: ProjectSignalRows) {
+  return {
+    communityEventCount: rows.communityEvents.length,
+    rsvpCount: rows.eventRsvps.length,
+    notificationCount: rows.appNotifications.length,
+    unreadNotificationCount: countProjectUnreadNotifications(rows.appNotifications),
+    sentEmailCount: rows.serviceEmails.reduce((acc, row) => {
+      if (row.status !== "sent") return acc;
+      return acc + Math.max(0, Number(row.recipient_count ?? 0));
+    }, 0),
   };
 }

@@ -120,6 +120,118 @@
       "reason": "Les champs Zod anti-spam sont volontairement proches mais restent attachés aux primitives anti-abus et aux contrats métier propres aux signalements légaux et aux demandes partenaires ; aucune centralisation sûre n'est démontrée.",
       "evidence": "apps/web/src/app/api/legal-content-reports/route.ts:35-40 et apps/web/src/app/api/partners/onboarding-requests/route.ts:72-76 ; les deux schémas protègent des parcours et propriétaires métier distincts.",
       "reviewedRef": "e3fafab2bb999225e3f447d1c6f09476bfc7bcc5"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "31957f807349c194",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les lectures Supabase et fallbacks ressemblent à un patron commun, mais les snapshots Codex hebdomadaires et les snapshots d'impact environnemental ont des tables, identifiants, projections et politiques de rétention distincts.",
+      "evidence": "apps/web/src/lib/environmental-impact-estimator/codex-usage-store.ts:329-345 et apps/web/src/lib/environmental-impact-estimator/snapshot-store.ts:161-177 ; les contrats de données et owners de persistance diffèrent.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "257e17297beafede",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La répétition est limitée à la forme de types de lignes de signaux dans deux contrats distincts ; extraire ces propriétés ne créerait pas un owner métier et mélangerait les entrées brutes avec le modèle calculé.",
+      "evidence": "apps/web/src/lib/environmental-impact-estimator/project-signals-scope.ts:33-44 et apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts:151-162 ; les deux types encadrent des frontières d'entrée et de calcul différentes.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "78d81f911b5daf5c",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La persistance environnementale et la persistance public-surface partagent une forme Supabase/fichier, mais leurs tables, payloads, normalisations et contrats de lecture ne sont pas identiques ; aucune migration sûre vers public-surface-snapshots.ts n'est démontrée.",
+      "evidence": "apps/web/src/lib/environmental-impact-estimator/snapshot-store.ts:127-140 et apps/web/src/lib/public-surface-snapshots.ts:134-148 ; l'un stocke les colonnes d'impact et l'autre un payload public générique borné par son contrat.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "d2d5b18d4caaf2a7",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La moyenne pondérée est la même opération mathématique, mais elle appartient à deux modèles géographiques différents avec des sources, pondérations et sémantiques de serviceabilité/pression distinctes.",
+      "evidence": "apps/web/src/lib/geo/municipal-cleaning-serviceability.ts:171-179 et apps/web/src/lib/geo/paris-pressure-normalization.ts:74-82 ; les fonctions consomment des contrats et configurations de modèles différents.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "7494dd40970c6add",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les enveloppes de snapshot géographique se ressemblent, mais les statuts de couverture, les niveaux géographiques et les sources ne portent pas le même invariant métier.",
+      "evidence": "apps/web/src/lib/geo/municipal-cleaning-serviceability.ts:493-503 et apps/web/src/lib/geo/paris-pressure-normalization.ts:190-202 ; les champs complete/status et le tri des sources diffèrent intentionnellement.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "fedab8e1fbfa369a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux narratifs calculent un score de readiness comparable, mais ils restent des projections éditoriales distinctes avec libellés, résumés, preuves et usages budgétaires propres à leur surface de rapport.",
+      "evidence": "apps/web/src/lib/reports/master-pack/analytics/executive.ts:14-26 et apps/web/src/lib/reports/report-model/builders.ts:167-179 ; les sorties et leurs messages métier divergent au-delà du calcul partagé.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "f7b7809816879ebc",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les validateurs opérationnel et legacy portent des versions, états et boucles de route distincts ; fusionner leur garde commune masquerait une compatibilité historique et changerait la lisibilité du contrat.",
+      "evidence": "apps/web/src/lib/route/route-operational.ts:246-252 et apps/web/src/lib/route/route-operational.ts:263-269 ; les predicates valident des contrats versionnés différents.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "72de5fb9a3473181",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les blocs de fallback appartiennent aux chemins append et list du même audit, avec des opérations et effets de lecture/écriture différents ; une primitive générique ne réduirait pas une connaissance métier durable.",
+      "evidence": "apps/web/src/lib/admin/audit/operation-audit.ts:187-201 et apps/web/src/lib/admin/audit/operation-audit.ts:245-259 ; l'un persiste une entrée normalisée, l'autre reconstruit une réponse filtrée.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "30f9952b73da8990",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Le fallback Supabase/local est partagé comme politique d'exécution, mais les mappings admin audit et checklist portent des identifiants, payloads et owners de table différents ; la primitive cross-domain est différée à un lot infrastructure dédié.",
+      "evidence": "apps/web/src/lib/admin/audit/operation-audit.ts:187-200 et apps/web/src/lib/sections/checklist-progress-store.ts:71-84 ; les deux stores conservent des contrats et politiques de données distincts.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "8115d52ed4522051",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité concerne seulement le fallback d'un audit admin et l'upsert d'une progression checklist ; leurs mutations, identifiants et garanties de persistance ne sont pas interchangeables.",
+      "evidence": "apps/web/src/lib/admin/audit/operation-audit.ts:188-201 et apps/web/src/lib/sections/checklist-progress-store.ts:129-142 ; l'insert d'audit et l'upsert de progression ont des contrats différents.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "020cfe79eb329882",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux stores importent les mêmes primitives de persistence par convention de domaine ; l'import partagé ne constitue pas une duplication de connaissance à extraire.",
+      "evidence": "apps/web/src/lib/sections/checklist-progress-store.ts:1-13 et apps/web/src/lib/sections/runbook-checks-store.ts:6-18 ; les tables, fichiers locaux et contrats restent distincts.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "bb83395503cb4234",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les branches de lecture et d'upsert du store checklist ont des effets et contrats distincts ; les réunir dans un helper ne ferait que déplacer la différence de mutation et de fallback.",
+      "evidence": "apps/web/src/lib/sections/checklist-progress-store.ts:66-84 et apps/web/src/lib/sections/checklist-progress-store.ts:123-141 ; get retourne une entrée ou null, tandis que l'upsert persiste une nouvelle valeur.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "dc58be24affbeea4",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux payloads Route partagent une enveloppe de réponse, mais l’absence de stops et la réponse planifiée portent des invariants opérationnels différents ; une extraction plus large couplerait les branches de projection.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.response.ts:440-452 et apps/web/src/app/api/route/recommend/route.response.ts:526-538 ; les distances, le budget et la sélection restent propres à chaque branche.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "67b96c6753296975",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les audits Route single-group et multi-group partagent des métadonnées de contexte, mais leurs bornes d’exclusion et leurs assignments sont propres à chaque stratégie de partition ; une abstraction réduirait la lisibilité de la preuve opérationnelle.",
+      "evidence": "apps/web/src/lib/route/route-group-partition.ts:260-267 et apps/web/src/lib/route/route-group-partition.ts:574-581 ; les modes et listes excludedByPartitionBoundCandidateIds diffèrent.",
+      "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
     }
   ]
 }
