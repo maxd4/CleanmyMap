@@ -13,13 +13,10 @@ import {
   type ParticipationSource,
   type ParticipationStatus,
 } from "./group-participation.helpers";
-
-type ClaimAuditValue = {
-  participationStatus: ParticipationStatus;
-  participationSource: ParticipationSource;
-  joinedAt: string;
-  updatedAt: string | null;
-};
+import {
+  createParticipationAuditValue,
+  type ParticipationAuditValue,
+} from "./group-participation-contract";
 
 export type PostActionClaimResult = {
   alreadyRequested: boolean;
@@ -29,16 +26,36 @@ export type PostActionClaimResult = {
   participationSource: ParticipationSource;
   joinedAt: string;
   updatedAt: string | null;
-  previousValue: ClaimAuditValue | null;
-  newValue: ClaimAuditValue;
+  previousValue: ParticipationAuditValue | null;
+  newValue: ParticipationAuditValue;
 };
 
-function toAuditValue(row: ActionParticipantStatusRow): ClaimAuditValue {
-  return {
+function toAuditValue(row: ActionParticipantStatusRow): ParticipationAuditValue {
+  return createParticipationAuditValue({
     participationStatus: row.participation_status,
     participationSource: row.participation_source,
     joinedAt: resolveJoinedAt(row),
     updatedAt: resolveParticipationUpdatedAt(row),
+  });
+}
+
+function buildClaimResult(params: {
+  alreadyRequested: boolean;
+  actionId: string;
+  participantUserId: string;
+  value: ParticipationAuditValue;
+  previousValue: ParticipationAuditValue | null;
+}): PostActionClaimResult {
+  return {
+    alreadyRequested: params.alreadyRequested,
+    actionId: params.actionId,
+    participantUserId: params.participantUserId,
+    participationStatus: params.value.participationStatus,
+    participationSource: params.value.participationSource,
+    joinedAt: params.value.joinedAt,
+    updatedAt: params.value.updatedAt,
+    previousValue: params.previousValue,
+    newValue: params.value,
   };
 }
 
@@ -62,9 +79,76 @@ function isDuplicateError(error: unknown): boolean {
   );
 }
 
+type ClaimParams = { actionId: string; userId: string; now?: Date };
+
+function buildExistingClaimResult(
+  existing: ActionParticipantStatusRow,
+  params: ClaimParams,
+): PostActionClaimResult | null {
+  const alreadyRequested =
+    existing.participation_status === ACTIVE_PARTICIPATION_STATUS ||
+    (existing.participation_status === "pending" &&
+      existing.participation_source === POST_ACTION_CLAIM_PARTICIPATION_SOURCE);
+  if (alreadyRequested) {
+    const value = toAuditValue(existing);
+    return buildClaimResult({
+      alreadyRequested: true,
+      actionId: params.actionId,
+      participantUserId: params.userId,
+      value,
+      previousValue: value,
+    });
+  }
+  throw createValidationError(
+    existing.participation_status === "cancelled"
+      ? "Cette demande a déjà été refusée ou annulée."
+      : "Une demande de participation active existe déjà.",
+  );
+}
+
+async function insertClaimWithRecovery(
+  supabase: SupabaseClient,
+  params: ClaimParams,
+): Promise<PostActionClaimResult> {
+  const joinedAt = new Date().toISOString();
+  try {
+    const inserted = await insertParticipantRecord(supabase, {
+      actionId: params.actionId,
+      userId: params.userId,
+      joinedAt,
+      participationStatus: "pending",
+      participationSource: POST_ACTION_CLAIM_PARTICIPATION_SOURCE,
+    });
+    const value = toAuditValue(inserted);
+    return buildClaimResult({
+      alreadyRequested: false,
+      actionId: params.actionId,
+      participantUserId: params.userId,
+      value,
+      previousValue: null,
+    });
+  } catch (error) {
+    if (!isDuplicateError(error)) throw error;
+    const concurrent = await readParticipantRecord(supabase, params);
+    if (concurrent) {
+      return buildExistingClaimResult(concurrent, params) ??
+        buildClaimResult({
+          alreadyRequested: true,
+          actionId: params.actionId,
+          participantUserId: params.userId,
+          value: toAuditValue(concurrent),
+          previousValue: toAuditValue(concurrent),
+        });
+    }
+    throw createValidationError(
+      "Une demande de participation existe déjà pour cette action.",
+    );
+  }
+}
+
 export async function claimFinishedActionParticipation(
   supabase: SupabaseClient,
-  params: { actionId: string; userId: string; now?: Date },
+  params: ClaimParams,
 ): Promise<PostActionClaimResult> {
   const action = await runSingleActionQuery<{
     status: "pending" | "approved" | "rejected";
@@ -93,97 +177,7 @@ export async function claimFinishedActionParticipation(
   }
 
   const existing = await readParticipantRecord(supabase, params);
-  if (existing) {
-    if (existing.participation_status === ACTIVE_PARTICIPATION_STATUS) {
-      const value = toAuditValue(existing);
-      return {
-        alreadyRequested: true,
-        actionId: params.actionId,
-        participantUserId: params.userId,
-        participationStatus: existing.participation_status,
-        participationSource: existing.participation_source,
-        joinedAt: value.joinedAt,
-        updatedAt: value.updatedAt,
-        previousValue: value,
-        newValue: value,
-      };
-    }
-
-    if (
-      existing.participation_status === "pending" &&
-      existing.participation_source === POST_ACTION_CLAIM_PARTICIPATION_SOURCE
-    ) {
-      const value = toAuditValue(existing);
-      return {
-        alreadyRequested: true,
-        actionId: params.actionId,
-        participantUserId: params.userId,
-        participationStatus: existing.participation_status,
-        participationSource: existing.participation_source,
-        joinedAt: value.joinedAt,
-        updatedAt: value.updatedAt,
-        previousValue: value,
-        newValue: value,
-      };
-    }
-
-    throw createValidationError(
-      existing.participation_status === "cancelled"
-        ? "Cette demande a déjà été refusée ou annulée."
-        : "Une demande de participation active existe déjà.",
-    );
-  }
-
-  const joinedAt = new Date().toISOString();
-  try {
-    const inserted = await insertParticipantRecord(supabase, {
-      actionId: params.actionId,
-      userId: params.userId,
-      joinedAt,
-      participationStatus: "pending",
-      participationSource: POST_ACTION_CLAIM_PARTICIPATION_SOURCE,
-    });
-    const value = toAuditValue(inserted);
-    return {
-      alreadyRequested: false,
-      actionId: params.actionId,
-      participantUserId: params.userId,
-      participationStatus: inserted.participation_status,
-      participationSource: inserted.participation_source,
-      joinedAt: value.joinedAt,
-      updatedAt: value.updatedAt,
-      previousValue: null,
-      newValue: value,
-    };
-  } catch (error) {
-    if (!isDuplicateError(error)) {
-      throw error;
-    }
-
-    const concurrent = await readParticipantRecord(supabase, params);
-    if (
-      concurrent &&
-      (concurrent.participation_status === ACTIVE_PARTICIPATION_STATUS ||
-        (concurrent.participation_status === "pending" &&
-          concurrent.participation_source ===
-            POST_ACTION_CLAIM_PARTICIPATION_SOURCE))
-    ) {
-      const value = toAuditValue(concurrent);
-      return {
-        alreadyRequested: true,
-        actionId: params.actionId,
-        participantUserId: params.userId,
-        participationStatus: concurrent.participation_status,
-        participationSource: concurrent.participation_source,
-        joinedAt: value.joinedAt,
-        updatedAt: value.updatedAt,
-        previousValue: value,
-        newValue: value,
-      };
-    }
-
-    throw createValidationError(
-      "Une demande de participation existe déjà pour cette action.",
-    );
-  }
+  return existing
+    ? buildExistingClaimResult(existing, params) as PostActionClaimResult
+    : insertClaimWithRecovery(supabase, params);
 }

@@ -282,6 +282,27 @@ export type ActionFormalitiesResponse = {
   workflow: ActionFormalitiesWorkflowState;
 };
 
+function parseActionFormalitiesResponse(
+  body: unknown,
+  incompleteMessage: string,
+): ActionFormalitiesResponse {
+  if (
+    !body ||
+    typeof body !== "object" ||
+    (body as { status?: unknown }).status !== "ok" ||
+    typeof (body as { actionId?: unknown }).actionId !== "string" ||
+    !(body as { facts?: unknown }).facts ||
+    !(body as { qualification?: unknown }).qualification ||
+    !(body as { workflow?: unknown }).workflow
+  ) {
+    throw new AppError({
+      kind: "server",
+      message: incompleteMessage,
+    });
+  }
+  return body as ActionFormalitiesResponse;
+}
+
 export async function fetchActionFormalities(
   actionId: string,
 ): Promise<ActionFormalitiesResponse> {
@@ -297,21 +318,10 @@ export async function fetchActionFormalities(
       parseErrorMessage(body, "Impossible de charger les formalités de l'action."),
     );
   }
-  if (
-    !body ||
-    typeof body !== "object" ||
-    (body as { status?: unknown }).status !== "ok" ||
-    typeof (body as { actionId?: unknown }).actionId !== "string" ||
-    !(body as { facts?: unknown }).facts ||
-    !(body as { qualification?: unknown }).qualification ||
-    !(body as { workflow?: unknown }).workflow
-  ) {
-    throw new AppError({
-      kind: "server",
-      message: "La réponse du service est incomplète pour les formalités.",
-    });
-  }
-  return body as ActionFormalitiesResponse;
+  return parseActionFormalitiesResponse(
+    body,
+    "La réponse du service est incomplète pour les formalités.",
+  );
 }
 
 export async function updateActionFormalities(
@@ -337,21 +347,10 @@ export async function updateActionFormalities(
       parseErrorMessage(body, "Impossible d'enregistrer les formalités de l'action."),
     );
   }
-  if (
-    !body ||
-    typeof body !== "object" ||
-    (body as { status?: unknown }).status !== "ok" ||
-    typeof (body as { actionId?: unknown }).actionId !== "string" ||
-    !(body as { facts?: unknown }).facts ||
-    !(body as { qualification?: unknown }).qualification ||
-    !(body as { workflow?: unknown }).workflow
-  ) {
-    throw new AppError({
-      kind: "server",
-      message: "La réponse du service est incomplète après la mise à jour des formalités.",
-    });
-  }
-  return body as ActionFormalitiesResponse;
+  return parseActionFormalitiesResponse(
+    body,
+    "La réponse du service est incomplète après la mise à jour des formalités.",
+  );
 }
 
 export async function fetchActionAdministrativeRequirements(

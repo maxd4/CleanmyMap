@@ -4,7 +4,11 @@ import type {
   ActionGeometryOrigin,
 } from "@/lib/actions/types";
 export type { ActionGeometryOrigin } from "@/lib/actions/types";
-export { GEOMETRY_CONFIDENCE } from "./geometry-core.ts";
+import {
+  isRenderableDrawing,
+  toGeoJsonString,
+} from "./geometry-core.ts";
+export { GEOMETRY_CONFIDENCE, isRenderableDrawing, toGeoJsonString } from "./geometry-core.ts";
 import {
   resolveBestGeometry as resolveBestGeometryResolution,
   resolveGeometrySourceFromConfidence as resolveGeometrySourceFromConfidenceResolution,
@@ -33,32 +37,6 @@ export function resolveGeometryOriginFromConfidence(
   confidence: number | null | undefined,
 ): ActionGeometryOrigin {
   return resolveGeometrySourceFromConfidenceResolution(confidence);
-}
-
-export function isRenderableDrawing(
-  drawing: Pick<ActionDrawing, "kind" | "coordinates"> | null | undefined,
-): drawing is ActionDrawing {
-  if (!drawing) {
-    return false;
-  }
-  const minimumPoints = drawing.kind === "polygon" ? 3 : 2;
-  return drawing.coordinates.length >= minimumPoints;
-}
-
-export function toGeoJsonString(drawing: ActionDrawing | null): string | null {
-  if (!drawing) {
-    return null;
-  }
-  if (drawing.kind === "polyline") {
-    return JSON.stringify({
-      type: "LineString",
-      coordinates: drawing.coordinates.map(([lat, lng]) => [lng, lat]),
-    });
-  }
-  return JSON.stringify({
-    type: "Polygon",
-    coordinates: [drawing.coordinates.map(([lat, lng]) => [lng, lat])],
-  });
 }
 
 type GeoJsonLike = {
