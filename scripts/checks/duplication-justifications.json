@@ -1221,9 +1221,9 @@
       "scope": "runtime",
       "fingerprint": "6af458b67c7bfd57",
       "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre app/docs/[...segments]/route.ts:49-62 ; symboles: replace, renderTable, lines, rows et lib/pdf-export/official-report-html.ts:24-37 ; symboles: items, item, renderInlineMarkdown, join reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/app/docs/[...segments]/route.ts:49-62 et apps/web/src/lib/pdf-export/official-report-html.ts:24-37 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
+      "reason": "La similarité CURRENT entre app/docs/[...segments]/route.ts:49-62 ; symboles: replace, renderTable, lines, rows et lib/pdf-export/official-report-markdown.ts:12-25 ; symboles: items, item, renderInlineMarkdown, join reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
+      "evidence": "apps/web/src/app/docs/[...segments]/route.ts:49-62 et apps/web/src/lib/pdf-export/official-report-markdown.ts:12-25 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
+      "reviewedRef": "3996addc2bcad7055b752da281a636f97379894a"
     },
     {
       "scope": "runtime",
@@ -1461,9 +1461,9 @@
       "scope": "runtime",
       "fingerprint": "b6b42c2909ca464d",
       "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/navigation/navigation-dropdown-accent-theme.ts:37-42 ; symboles: Number, parseInt, normalized, slice et lib/pdf-export/simple-pdf.ts:463-468 ; symboles: Number, parseInt, normalized, slice reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/navigation/navigation-dropdown-accent-theme.ts:37-42 et apps/web/src/lib/pdf-export/simple-pdf.ts:463-468 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
+      "reason": "La similarité CURRENT entre components/navigation/navigation-dropdown-accent-theme.ts:37-42 ; symboles: Number, parseInt, normalized, slice et lib/pdf-export/simple-pdf-primitives.ts:194-199 ; symboles: Number, parseInt, normalized, slice reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
+      "evidence": "apps/web/src/components/navigation/navigation-dropdown-accent-theme.ts:37-42 et apps/web/src/lib/pdf-export/simple-pdf-primitives.ts:194-199 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
+      "reviewedRef": "3996addc2bcad7055b752da281a636f97379894a"
     },
     {
       "scope": "runtime",
