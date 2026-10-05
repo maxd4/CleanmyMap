@@ -357,33 +357,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/actions/action-declaration/payload.ts",
-      "line": 143,
-      "category": "React/JSX",
-      "ceiling": 41,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildPreparationDataFromForm#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/actions/action-declaration/payload.ts",
-      "line": 229,
-      "category": "React/JSX",
-      "ceiling": 46,
-      "status": "LEGACY",
-      "functionIdentity": "named:applyPreparationDataToForm#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/actions/action-declaration/payload.ts",
-      "line": 388,
-      "category": "React/JSX",
-      "ceiling": 55,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildCreateActionPayload#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx",
       "line": 9,
       "category": "React/JSX",
@@ -2949,15 +2922,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/actions/action-declaration/payload.ts",
-      "line": 294,
-      "category": "React/JSX",
-      "ceiling": 157,
-      "status": "IMPROVED",
-      "functionIdentity": "named:buildCreateActionPayload#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/sections/harvest-megots-section.tsx",
       "line": 34,
       "category": "React/JSX",
@@ -5358,15 +5322,6 @@
       "ceiling": 90,
       "status": "IMPROVED",
       "functionIdentity": "named:resolveBasePageFamilyId#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/validation/action.ts",
-      "line": 409,
-      "category": "métier/domain pur",
-      "ceiling": 76,
-      "status": "LEGACY",
-      "functionIdentity": "named:addGpxImportIssue#1"
     },
     {
       "metric": "functionLength",
