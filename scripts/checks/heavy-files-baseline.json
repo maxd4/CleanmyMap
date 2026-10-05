@@ -5,17 +5,17 @@
     {
       "path": "apps/mobile/App.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "f0f39bdbdd8e0d30077768a9bc2b271ae22432a8",
-      "maxLines": 618,
-      "maxBytes": 16156
+      "status": "IMPROVED",
+      "reviewedRef": "ffb9128699c4ef16c714eca1e7c270b026240074",
+      "maxLines": 464,
+      "maxBytes": 12436
     },
     {
       "path": "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 603,
+      "status": "IMPROVED",
+      "reviewedRef": "ffb9128699c4ef16c714eca1e7c270b026240074",
+      "maxLines": 496,
       "maxBytes": 20230
     },
     {
@@ -301,10 +301,10 @@
     {
       "path": "apps/web/src/lib/actions/metadata.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 565,
-      "maxBytes": 17827
+      "status": "IMPROVED",
+      "reviewedRef": "ffb9128699c4ef16c714eca1e7c270b026240074",
+      "maxLines": 483,
+      "maxBytes": 14897
     },
     {
       "path": "apps/web/src/lib/actions/participation/group-participation-review.ts",
@@ -437,10 +437,10 @@
     {
       "path": "apps/web/src/lib/partners/published-annuaire-entries-store.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 512,
-      "maxBytes": 16419
+      "status": "IMPROVED",
+      "reviewedRef": "ffb9128699c4ef16c714eca1e7c270b026240074",
+      "maxLines": 477,
+      "maxBytes": 15603
     },
     {
       "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
