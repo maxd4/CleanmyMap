@@ -2,6 +2,7 @@ import { escapeHtml } from "@/lib/security/html-escape";
 import { buildOfficialReportCss } from "./report-pdf-theme";
 import { renderInlineMarkdown } from "./official-report-markdown";
 import {
+  formatGeneratedAt,
   renderChapter,
   renderRows,
   renderStats,
@@ -11,15 +12,6 @@ import { formatPdfValue } from "./format-pdf-value";
 import type { PdfReportPayload } from "./simple-pdf";
 
 export { renderOfficialMarkdown } from "./official-report-markdown";
-
-function formatGeneratedAt(value: string | undefined): string {
-  const date = value ? new Date(value) : new Date();
-  if (Number.isNaN(date.getTime())) return value ?? "";
-  return new Intl.DateTimeFormat("fr-FR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
 
 function renderList(items: string[]): string {
   return `<ul>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul>`;

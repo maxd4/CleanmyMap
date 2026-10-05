@@ -3,7 +3,7 @@ import { formatPdfValue } from "./format-pdf-value";
 import { renderInlineMarkdown } from "./official-report-markdown";
 import type { PdfReportChapter, PdfReportPayload } from "./simple-pdf";
 
-function formatGeneratedAt(value: string | undefined): string {
+export function formatGeneratedAt(value: string | undefined): string {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) return value ?? "";
   return new Intl.DateTimeFormat("fr-FR", {
