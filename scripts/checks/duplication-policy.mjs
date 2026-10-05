@@ -333,7 +333,12 @@ function evidenceCoversCurrentPair(evidence, occurrences) {
 
 export function validateDuplicationJustificationsRegistry(
   registry,
-  { nativeBaselines = {}, currentFingerprintsByScope = null, currentOccurrencesByScope = null } = {},
+  {
+    nativeBaselines = {},
+    currentFingerprintsByScope = null,
+    currentOccurrencesByScope = null,
+    reviewedRefValidation = null,
+  } = {},
 ) {
   if (!registry || registry.schemaVersion !== DUPLICATION_JUSTIFICATIONS_SCHEMA_VERSION) {
     justificationError(`schemaVersion ${DUPLICATION_JUSTIFICATIONS_SCHEMA_VERSION} required.`);
@@ -375,6 +380,25 @@ export function validateDuplicationJustificationsRegistry(
     }
     if (typeof reviewedRef !== "string" || !/^[0-9a-f]{40}$/i.test(reviewedRef)) {
       justificationError(`entry ${index} requires a full reviewedRef SHA.`);
+    }
+    if (reviewedRefValidation) {
+      const { auditedSha, gitRunner } = reviewedRefValidation;
+      if (typeof auditedSha !== "string" || !/^[0-9a-f]{40}$/i.test(auditedSha)) {
+        justificationError("reviewedRef validation requires a full audited SHA.");
+      }
+      if (typeof gitRunner !== "function") {
+        justificationError("reviewedRef validation requires a Git runner.");
+      }
+      try {
+        gitRunner(["cat-file", "-e", `${reviewedRef}^{commit}`]);
+      } catch {
+        justificationError(`entry ${index} reviewedRef does not resolve to a Git commit.`);
+      }
+      try {
+        gitRunner(["merge-base", "--is-ancestor", reviewedRef, auditedSha]);
+      } catch {
+        justificationError(`entry ${index} reviewedRef ${reviewedRef} is not an ancestor of audited SHA ${auditedSha}.`);
+      }
     }
 
     const baseline = nativeBaselines[scope];
