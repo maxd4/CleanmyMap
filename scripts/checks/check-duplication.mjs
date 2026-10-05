@@ -89,6 +89,7 @@ function runScope(scopeName, baseline) {
 export function runDuplicationPolicy() {
   const baseline = JSON.parse(fs.readFileSync(metricsBaselinePath, "utf8"));
   assertBaselineFresh(baseline);
+  const auditedSha = git(["rev-parse", "HEAD"]);
   const results = Object.keys(DUPLICATION_SCOPES).map((scopeName) => runScope(scopeName, baseline));
   if (!fs.existsSync(justificationsPath)) {
     throw new Error(`duplication justifications missing: ${justificationsPath}`);
@@ -104,6 +105,10 @@ export function runDuplicationPolicy() {
     nativeBaselines,
     currentFingerprintsByScope,
     currentOccurrencesByScope,
+    reviewedRefValidation: {
+      auditedSha,
+      gitRunner: (args) => execFileSync("git", args, { cwd: repositoryRoot, stdio: "ignore" }),
+    },
   });
   return { baseline, results, justificationReport };
 }

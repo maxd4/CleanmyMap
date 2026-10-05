@@ -298,6 +298,54 @@ test("a valid NO_ACTION_NOISE registry entry is durable and classified separatel
   assert.deepEqual(result.stale, []);
 });
 
+test("reviewedRef provenance must resolve to a commit and be ancestral to the audited SHA", () => {
+  const reviewedRef = "21c83ff399cb812c1dba18b1f19411b5fc7833e4";
+  const auditedSha = "fedcba98765432100123456789abcdef01234567";
+  const registry = {
+    schemaVersion: 1,
+    justifications: [{
+      scope: "tests",
+      fingerprint: "b1c2d3e4f5061728",
+      classification: "KEEP_INTENTIONAL",
+      reason: "Independent security boundary suites.",
+      evidence: "app/server-boundary.test.ts and lib/client-boundary.test.ts",
+      reviewedRef,
+    }],
+  };
+  const validGitRunner = (args) => {
+    if (args[0] === "cat-file") {
+      assert.deepEqual(args, ["cat-file", "-e", `${reviewedRef}^{commit}`]);
+      return;
+    }
+    assert.deepEqual(args, ["merge-base", "--is-ancestor", reviewedRef, auditedSha]);
+  };
+
+  assert.doesNotThrow(() => validateDuplicationJustificationsRegistry(registry, {
+    nativeBaselines: NATIVE_BASELINES,
+    reviewedRefValidation: { auditedSha, gitRunner: validGitRunner },
+  }));
+
+  assert.throws(() => validateDuplicationJustificationsRegistry(registry, {
+    nativeBaselines: NATIVE_BASELINES,
+    reviewedRefValidation: {
+      auditedSha,
+      gitRunner(args) {
+        if (args[0] === "cat-file") throw new Error("missing commit");
+      },
+    },
+  }), /does not resolve to a Git commit/);
+
+  assert.throws(() => validateDuplicationJustificationsRegistry(registry, {
+    nativeBaselines: NATIVE_BASELINES,
+    reviewedRefValidation: {
+      auditedSha,
+      gitRunner(args) {
+        if (args[0] === "merge-base") throw new Error("not ancestral");
+      },
+    },
+  }), /is not an ancestor of audited SHA/);
+});
+
 test("an unknown native fingerprint cannot be justified", () => {
   assert.throws(() => validateDuplicationJustificationsRegistry({
     schemaVersion: 1,
