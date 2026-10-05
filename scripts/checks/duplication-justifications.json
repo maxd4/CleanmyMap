@@ -1227,22 +1227,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "ea16f46b734216bb",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre app/docs/[...segments]/route.ts:140-149 ; symboles: allowedKind, kind, important, limite et lib/pdf-export/official-report-html.ts:72-79 ; symboles: allowedKind, CalloutKind, kind, important reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/app/docs/[...segments]/route.ts:140-149 et apps/web/src/lib/pdf-export/official-report-html.ts:72-79 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "e9449796a57863d4",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre app/docs/[...segments]/route.ts:166-177 ; symboles: tableLines, while, index, lines et lib/pdf-export/official-report-html.ts:85-94 ; symboles: tableLines, while, index, lines reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/app/docs/[...segments]/route.ts:166-177 et apps/web/src/lib/pdf-export/official-report-html.ts:85-94 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "8dd538ef9446ffaa",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/docs/[...segments]/route.ts:612-618 ; symboles: content, readFile, filePath, utf8 et app/docs/[...segments]/route.ts:630-636 ; symboles: content, readFile, filePath, utf8 restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
