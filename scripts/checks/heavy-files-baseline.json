@@ -37,10 +37,10 @@
     {
       "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 514,
-      "maxBytes": 16549
+      "status": "IMPROVED",
+      "reviewedRef": "ac18cddcff680e21188f92da59a7f594fa659760",
+      "maxLines": 36,
+      "maxBytes": 1187
     },
     {
       "path": "apps/web/src/app/api/route/recommend/route.response.ts",
@@ -445,18 +445,18 @@
     {
       "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 527,
-      "maxBytes": 19914
+      "status": "IMPROVED",
+      "reviewedRef": "ac18cddcff680e21188f92da59a7f594fa659760",
+      "maxLines": 238,
+      "maxBytes": 9215
     },
     {
       "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 668,
-      "maxBytes": 19095
+      "status": "IMPROVED",
+      "reviewedRef": "ac18cddcff680e21188f92da59a7f594fa659760",
+      "maxLines": 9,
+      "maxBytes": 242
     },
     {
       "path": "apps/web/src/lib/route/route-group-partition.ts",
