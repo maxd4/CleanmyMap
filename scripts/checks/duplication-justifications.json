@@ -1215,7 +1215,7 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre app/docs/[...segments]/route-markdown.ts:16-29 ; symboles: renderInlineMarkdown, escaped, withCode, withLinks et lib/pdf-export/official-report-markdown.ts:12-25 ; symboles: items, item, renderInlineMarkdown, join reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
       "evidence": "apps/web/src/app/docs/[...segments]/route-markdown.ts:16-29 et apps/web/src/lib/pdf-export/official-report-markdown.ts:12-25 ; pair CURRENT relu avec les symboles et le consumer distingué dans la raison.",
-      "reviewedRef": "bea00fb3144477a28a52ed16cf7de801f53788ef"
+      "reviewedRef": "bea00fb318a122636e00487a234b803942e675ef"
     },
     {
       "scope": "runtime",

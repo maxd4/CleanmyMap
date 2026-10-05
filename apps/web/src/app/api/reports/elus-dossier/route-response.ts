@@ -16,7 +16,7 @@ function formatOptionalSigned(value: number | null, suffix = ""): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}${suffix}`;
 }
 
-export function buildMarkdownPack(payload: ElusDossierPayload): string {
+function buildMarkdownPack(payload: ElusDossierPayload): string {
   const priorities = payload.decisionPriorities
     .map(
       (row, index) =>
