@@ -7,6 +7,47 @@ import { QUIZ_REVIEW_TARGETS } from "@/lib/learning/quiz/quiz-review-targets";
 import type { QuizQuestion } from "@/lib/learning/quiz/quiz-question-contract";
 import type { QuizSessionSummary } from "@/lib/learning/quiz/quiz-session-types";
 
+type QuizPanelProps = React.ComponentProps<typeof QuizSessionPanel>;
+
+const noop = () => undefined;
+
+const defaultQuizPanelProps = (
+  overrides: Partial<QuizPanelProps> & Pick<QuizPanelProps, "question">,
+): QuizPanelProps => {
+  const { question, ...rest } = overrides;
+  return {
+    locale: "fr",
+    question,
+    questionIndex: 0,
+    totalQuestions: 1,
+    currentQuestionState: null,
+    currentQuestionReviewDate: "Aujourd'hui",
+    currentQuestionStreak: 0,
+    currentQuestionMasteryLevel: 0,
+    selectedOption: "",
+    selectedOptions: [],
+    showAnswer: false,
+    showChoices: true,
+    lastCheckResult: null,
+    score: 0,
+    shouldOfferMiniChallenge: false,
+    nextReasoningType: null,
+    hasReviewedToday: false,
+    onSelectOption: noop,
+    onToggleOption: noop,
+    onCheckAnswer: noop,
+    onRevealChoices: noop,
+    onRevealAnswer: noop,
+    onPreviousQuestion: noop,
+    onNextQuestion: noop,
+    onResetQuiz: noop,
+    onStartMiniChallenge: noop,
+    onReplayRecommendedMode: noop,
+    onHandleSRSUpdate: noop,
+    ...rest,
+  };
+};
+
 describe("QuizSessionPanel", () => {
   it("renders an explanation and a review destination for the correction", () => {
     const question: QuizQuestion = {
@@ -35,34 +76,15 @@ describe("QuizSessionPanel", () => {
     };
 
     const markup = renderToStaticMarkup(
-      React.createElement(QuizSessionPanel, {
-        locale: "fr",
-        question,
-        questionIndex: 0,
-        totalQuestions: 1,
-        currentQuestionState: null,
-        currentQuestionReviewDate: "Aujourd'hui",
-        currentQuestionStreak: 0,
-        currentQuestionMasteryLevel: 0,
-        selectedOption: "Le jeter au compost",
-        selectedOptions: [],
-        showAnswer: true,
-        showChoices: true,
-        lastCheckResult: false,
-        score: 0,
-        shouldOfferMiniChallenge: false,
-        nextReasoningType: null,
-        hasReviewedToday: false,
-        onSelectOption: () => undefined,
-        onToggleOption: () => undefined,
-        onCheckAnswer: () => undefined,
-        onPreviousQuestion: () => undefined,
-        onNextQuestion: () => undefined,
-        onResetQuiz: () => undefined,
-        onStartMiniChallenge: () => undefined,
-        onReplayRecommendedMode: () => undefined,
-        onHandleSRSUpdate: () => undefined,
-      }),
+      React.createElement(
+        QuizSessionPanel,
+        defaultQuizPanelProps({
+          question,
+          selectedOption: "Le jeter au compost",
+          showAnswer: true,
+          lastCheckResult: false,
+        }),
+      ),
     );
 
     expect(markup).toContain("Réponse incorrecte");
@@ -100,34 +122,10 @@ describe("QuizSessionPanel", () => {
     };
 
     const markup = renderToStaticMarkup(
-      React.createElement(QuizSessionPanel, {
-        locale: "fr",
-        question,
-        questionIndex: 0,
-        totalQuestions: 1,
-        currentQuestionState: null,
-        currentQuestionReviewDate: "Aujourd'hui",
-        currentQuestionStreak: 0,
-        currentQuestionMasteryLevel: 0,
-        selectedOption: "Vrai",
-        selectedOptions: [],
-        showAnswer: false,
-        showChoices: true,
-        lastCheckResult: null,
-        score: 0,
-        shouldOfferMiniChallenge: false,
-        nextReasoningType: null,
-        hasReviewedToday: false,
-        onSelectOption: () => undefined,
-        onToggleOption: () => undefined,
-        onCheckAnswer: () => undefined,
-        onPreviousQuestion: () => undefined,
-        onNextQuestion: () => undefined,
-        onResetQuiz: () => undefined,
-        onStartMiniChallenge: () => undefined,
-        onReplayRecommendedMode: () => undefined,
-        onHandleSRSUpdate: () => undefined,
-      }),
+      React.createElement(
+        QuizSessionPanel,
+        defaultQuizPanelProps({ question, selectedOption: "Vrai" }),
+      ),
     );
 
     expect(markup).toContain("Vrai / Faux");
@@ -197,35 +195,16 @@ describe("QuizSessionPanel", () => {
     };
 
     const markup = renderToStaticMarkup(
-      React.createElement(QuizSessionPanel, {
-        locale: "fr",
-        question,
-        questionIndex: 5,
-        totalQuestions: 6,
-        currentQuestionState: null,
-        currentQuestionReviewDate: "Aujourd'hui",
-        currentQuestionStreak: 0,
-        currentQuestionMasteryLevel: 0,
-        selectedOption: "",
-        selectedOptions: [],
-        showAnswer: false,
-        showChoices: true,
-        lastCheckResult: null,
-        score: 5,
-        shouldOfferMiniChallenge: false,
-        nextReasoningType: null,
-        hasReviewedToday: false,
-        sessionSummary,
-        onSelectOption: () => undefined,
-        onToggleOption: () => undefined,
-        onCheckAnswer: () => undefined,
-        onPreviousQuestion: () => undefined,
-        onNextQuestion: () => undefined,
-        onResetQuiz: () => undefined,
-        onStartMiniChallenge: () => undefined,
-        onReplayRecommendedMode: () => undefined,
-        onHandleSRSUpdate: () => undefined,
-      }),
+      React.createElement(
+        QuizSessionPanel,
+        defaultQuizPanelProps({
+          question,
+          questionIndex: 5,
+          totalQuestions: 6,
+          score: 5,
+          sessionSummary,
+        }),
+      ),
     );
 
     expect(markup).toContain("Bilan de session");
@@ -258,37 +237,17 @@ describe("QuizSessionPanel", () => {
     };
 
     const markup = renderToStaticMarkup(
-      React.createElement(QuizSessionPanel, {
-        locale: "fr",
-        isDemoMode: true,
-        question,
-        questionIndex: 0,
-        totalQuestions: 5,
-        currentQuestionState: null,
-        currentQuestionReviewDate: "Aujourd'hui",
-        currentQuestionStreak: 0,
-        currentQuestionMasteryLevel: 0,
-        selectedOption: "",
-        selectedOptions: [],
-        showAnswer: false,
-        showChoices: true,
-        lastCheckResult: null,
-        score: 0,
-        shouldOfferMiniChallenge: false,
-        nextReasoningType: null,
-        hasReviewedToday: true,
-        sessionSummary: null,
-        personalProgress: null,
-        onSelectOption: () => undefined,
-        onToggleOption: () => undefined,
-        onCheckAnswer: () => undefined,
-        onPreviousQuestion: () => undefined,
-        onNextQuestion: () => undefined,
-        onResetQuiz: () => undefined,
-        onStartMiniChallenge: () => undefined,
-        onReplayRecommendedMode: () => undefined,
-        onHandleSRSUpdate: () => undefined,
-      }),
+      React.createElement(
+        QuizSessionPanel,
+        defaultQuizPanelProps({
+          question,
+          isDemoMode: true,
+          totalQuestions: 5,
+          hasReviewedToday: true,
+          sessionSummary: null,
+          personalProgress: null,
+        }),
+      ),
     );
 
     expect(markup).toContain("Mode démo");
@@ -327,41 +286,22 @@ describe("QuizSessionPanel", () => {
     };
 
     const markup = renderToStaticMarkup(
-      React.createElement(QuizSessionPanel, {
-        locale: "fr",
-        isSchoolMode: true,
-        isCollectiveMode: true,
-        schoolTrackLabel: "Débat en classe",
-        schoolKeyMessages: ["On vote, on discute, puis on révèle."],
-        question,
-        questionIndex: 3,
-        totalQuestions: 4,
-        currentQuestionState: null,
-        currentQuestionReviewDate: "Aujourd'hui",
-        currentQuestionStreak: 0,
-        currentQuestionMasteryLevel: 0,
-        selectedOption: "",
-        selectedOptions: [],
-        showAnswer: false,
-        showChoices: false,
-        lastCheckResult: null,
-        score: 3,
-        shouldOfferMiniChallenge: false,
-        nextReasoningType: null,
-        hasReviewedToday: true,
-        sessionSummary,
-        onSelectOption: () => undefined,
-        onToggleOption: () => undefined,
-        onCheckAnswer: () => undefined,
-        onRevealChoices: () => undefined,
-        onRevealAnswer: () => undefined,
-        onPreviousQuestion: () => undefined,
-        onNextQuestion: () => undefined,
-        onResetQuiz: () => undefined,
-        onStartMiniChallenge: () => undefined,
-        onReplayRecommendedMode: () => undefined,
-        onHandleSRSUpdate: () => undefined,
-      }),
+      React.createElement(
+        QuizSessionPanel,
+        defaultQuizPanelProps({
+          question,
+          isSchoolMode: true,
+          isCollectiveMode: true,
+          schoolTrackLabel: "Débat en classe",
+          schoolKeyMessages: ["On vote, on discute, puis on révèle."],
+          questionIndex: 3,
+          totalQuestions: 4,
+          showChoices: false,
+          score: 3,
+          hasReviewedToday: true,
+          sessionSummary,
+        }),
+      ),
     );
 
     expect(markup).toContain("Mode École");
@@ -390,38 +330,17 @@ describe("QuizSessionPanel", () => {
     };
 
     const markup = renderToStaticMarkup(
-      React.createElement(QuizSessionPanel, {
-        locale: "fr",
-        isSchoolMode: true,
-        isCollectiveMode: true,
-        showChoices: false,
-        question,
-        questionIndex: 1,
-        totalQuestions: 4,
-        currentQuestionState: null,
-        currentQuestionReviewDate: "Aujourd'hui",
-        currentQuestionStreak: 0,
-        currentQuestionMasteryLevel: 0,
-        selectedOption: "",
-        selectedOptions: [],
-        showAnswer: false,
-        lastCheckResult: null,
-        score: 0,
-        shouldOfferMiniChallenge: false,
-        nextReasoningType: null,
-        hasReviewedToday: false,
-        onSelectOption: () => undefined,
-        onToggleOption: () => undefined,
-        onCheckAnswer: () => undefined,
-        onRevealChoices: () => undefined,
-        onRevealAnswer: () => undefined,
-        onPreviousQuestion: () => undefined,
-        onNextQuestion: () => undefined,
-        onResetQuiz: () => undefined,
-        onStartMiniChallenge: () => undefined,
-        onReplayRecommendedMode: () => undefined,
-        onHandleSRSUpdate: () => undefined,
-      }),
+      React.createElement(
+        QuizSessionPanel,
+        defaultQuizPanelProps({
+          question,
+          isSchoolMode: true,
+          isCollectiveMode: true,
+          showChoices: false,
+          questionIndex: 1,
+          totalQuestions: 4,
+        }),
+      ),
     );
 
     expect(markup).toContain("Réponses masquées");
@@ -447,38 +366,20 @@ describe("QuizSessionPanel", () => {
     };
 
     const markup = renderToStaticMarkup(
-      React.createElement(QuizSessionPanel, {
-        locale: "fr",
-        isSchoolMode: true,
-        isCollectiveMode: true,
-        showChoices: true,
-        question,
-        questionIndex: 2,
-        totalQuestions: 4,
-        currentQuestionState: null,
-        currentQuestionReviewDate: "Aujourd'hui",
-        currentQuestionStreak: 0,
-        currentQuestionMasteryLevel: 0,
-        selectedOption: "Vrai",
-        selectedOptions: [],
-        showAnswer: true,
-        lastCheckResult: true,
-        score: 1,
-        shouldOfferMiniChallenge: false,
-        nextReasoningType: null,
-        hasReviewedToday: false,
-        onSelectOption: () => undefined,
-        onToggleOption: () => undefined,
-        onCheckAnswer: () => undefined,
-        onRevealChoices: () => undefined,
-        onRevealAnswer: () => undefined,
-        onPreviousQuestion: () => undefined,
-        onNextQuestion: () => undefined,
-        onResetQuiz: () => undefined,
-        onStartMiniChallenge: () => undefined,
-        onReplayRecommendedMode: () => undefined,
-        onHandleSRSUpdate: () => undefined,
-      }),
+      React.createElement(
+        QuizSessionPanel,
+        defaultQuizPanelProps({
+          question,
+          isSchoolMode: true,
+          isCollectiveMode: true,
+          questionIndex: 2,
+          totalQuestions: 4,
+          selectedOption: "Vrai",
+          showAnswer: true,
+          lastCheckResult: true,
+          score: 1,
+        }),
+      ),
     );
 
     expect(markup).toContain("Question précédente");
@@ -520,34 +421,13 @@ describe("QuizSessionPanel", () => {
     };
 
     const markup = renderToStaticMarkup(
-      React.createElement(QuizSessionPanel, {
-        locale: "fr",
-        question,
-        questionIndex: 0,
-        totalQuestions: 1,
-        currentQuestionState: null,
-        currentQuestionReviewDate: "Aujourd'hui",
-        currentQuestionStreak: 0,
-        currentQuestionMasteryLevel: 0,
-        selectedOption: "",
-        selectedOptions: ["Une seringue usagée", "Un verre cassé"],
-        showAnswer: false,
-        showChoices: true,
-        lastCheckResult: null,
-        score: 0,
-        shouldOfferMiniChallenge: false,
-        nextReasoningType: null,
-        hasReviewedToday: false,
-        onSelectOption: () => undefined,
-        onToggleOption: () => undefined,
-        onCheckAnswer: () => undefined,
-        onPreviousQuestion: () => undefined,
-        onNextQuestion: () => undefined,
-        onResetQuiz: () => undefined,
-        onStartMiniChallenge: () => undefined,
-        onReplayRecommendedMode: () => undefined,
-        onHandleSRSUpdate: () => undefined,
-      }),
+      React.createElement(
+        QuizSessionPanel,
+        defaultQuizPanelProps({
+          question,
+          selectedOptions: ["Une seringue usagée", "Un verre cassé"],
+        }),
+      ),
     );
 
     expect(markup).toContain("Cases à cocher");

@@ -24,6 +24,12 @@ vi.mock("@/lib/http/auth-responses", () => ({
 vi.mock("@/lib/services/email", () => createEmailServiceModule(sendEmailMock));
 vi.mock("@/lib/env", () => createEnvironmentModule(envMock));
 
+const emailTestRequest = (body: unknown) =>
+  new Request("http://localhost/api/email/test", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: typeof body === "string" ? body : JSON.stringify(body),
+  });
 
 describe("POST /api/email/test", () => {
   beforeEach(() => {
@@ -51,13 +57,7 @@ describe("POST /api/email/test", () => {
     const { POST } = await import("./route");
 
     const response = await POST(
-      new Request("http://localhost/api/email/test", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({}),
-      }),
+      emailTestRequest({}),
     );
 
     expect(response.status).toBe(403);
@@ -69,16 +69,10 @@ describe("POST /api/email/test", () => {
     const { POST } = await import("./route");
 
     const response = await POST(
-      new Request("http://localhost/api/email/test", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
+      emailTestRequest({
           to: "contact@cleanmymap.fr",
           subject: "Hello World",
           html: "<p>Test OK</p>",
-        }),
       }),
     );
 
@@ -122,13 +116,7 @@ describe("POST /api/email/test", () => {
     const { POST } = await import("./route");
 
     const response = await POST(
-      new Request("http://localhost/api/email/test", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({}),
-      }),
+      emailTestRequest({}),
     );
 
     expect(response.status).toBe(502);
@@ -157,13 +145,7 @@ describe("POST /api/email/test", () => {
     const { POST } = await import("./route");
 
     const response = await POST(
-      new Request("http://localhost/api/email/test", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({}),
-      }),
+      emailTestRequest({}),
     );
 
     expect(response.status).toBe(429);
@@ -183,13 +165,7 @@ describe("POST /api/email/test", () => {
     const { POST } = await import("./route");
 
     const response = await POST(
-      new Request("http://localhost/api/email/test", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: "{",
-      }),
+      emailTestRequest("{"),
     );
 
     const body = (await response.json()) as { error?: string };
@@ -216,13 +192,7 @@ describe("POST /api/email/test", () => {
     const { POST } = await import("./route");
 
     const response = await POST(
-      new Request("http://localhost/api/email/test", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({}),
-      }),
+      emailTestRequest({}),
     );
 
     const body = (await response.json()) as { error?: string };
@@ -246,13 +216,7 @@ describe("POST /api/email/test", () => {
     const { POST } = await import("./route");
 
     const response = await POST(
-      new Request("http://localhost/api/email/test", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ to: "not-an-email" }),
-      }),
+      emailTestRequest({ to: "not-an-email" }),
     );
 
     expect(response.status).toBe(400);

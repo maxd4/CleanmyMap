@@ -24,21 +24,24 @@ afterEach(() => {
   useMapFeedDataMock.mockReset();
 });
 
+const mapFeedData = (overrides: Record<string, unknown> = {}) => ({
+  data: null,
+  allItems: [],
+  items: [],
+  summary: { totalKg: 0, totalButts: 0, wasteKnownActions: 0, wasteCoverageRate: 0 },
+  error: null,
+  isLoading: false,
+  isValidating: false,
+  reload: vi.fn(),
+  freshnessLabel: null,
+  partialSourcesLabel: "inconnues",
+  hasPartialSource: false,
+  ...overrides,
+});
+
 describe("ActionsMapFeed", () => {
   it("keeps every feed surface inside the pollution references boundary", () => {
-    useMapFeedDataMock.mockReturnValue({
-      data: null,
-      allItems: [],
-      items: [],
-      summary: { totalKg: 0, totalButts: 0, wasteKnownActions: 0, wasteCoverageRate: 0 },
-      error: null,
-      isLoading: false,
-      isValidating: false,
-      reload: vi.fn(),
-      freshnessLabel: null,
-      partialSourcesLabel: "inconnues",
-      hasPartialSource: false,
-    });
+    useMapFeedDataMock.mockReturnValue(mapFeedData());
 
     const markup = renderToStaticMarkup(
       React.createElement(ActionsMapFeed, {
@@ -55,19 +58,7 @@ describe("ActionsMapFeed", () => {
   });
 
   it("waits for the public city viewport before loading the map feed", () => {
-    useMapFeedDataMock.mockReturnValue({
-      data: null,
-      allItems: [],
-      items: [],
-      summary: { totalKg: 0, totalButts: 0, wasteKnownActions: 0, wasteCoverageRate: 0 },
-      error: null,
-      isLoading: false,
-      isValidating: false,
-      reload: vi.fn(),
-      freshnessLabel: null,
-      partialSourcesLabel: "inconnues",
-      hasPartialSource: false,
-    });
+    useMapFeedDataMock.mockReturnValue(mapFeedData());
 
     renderToStaticMarkup(
       React.createElement(ActionsMapFeed, {
@@ -88,19 +79,7 @@ describe("ActionsMapFeed", () => {
   });
 
   it("starts the homepage preview in Paris and keeps its viewport bounded to the active view", () => {
-    useMapFeedDataMock.mockReturnValue({
-      data: null,
-      allItems: [],
-      items: [],
-      summary: { totalKg: 0, totalButts: 0, wasteKnownActions: 0, wasteCoverageRate: 0 },
-      error: null,
-      isLoading: false,
-      isValidating: false,
-      reload: vi.fn(),
-      freshnessLabel: null,
-      partialSourcesLabel: "inconnues",
-      hasPartialSource: false,
-    });
+    useMapFeedDataMock.mockReturnValue(mapFeedData());
 
     renderToStaticMarkup(
       React.createElement(ActionsMapFeed, {
@@ -150,19 +129,9 @@ describe("ActionsMapFeed", () => {
   });
 
   it("uses the canonical feedback and skeleton primitives for feed states", () => {
-    useMapFeedDataMock.mockReturnValue({
-      data: null,
-      allItems: [],
-      items: [],
-      summary: { totalKg: 0, totalButts: 0, wasteKnownActions: 0, wasteCoverageRate: 0 },
-      error: new Error("Carte indisponible"),
-      isLoading: true,
-      isValidating: false,
-      reload: vi.fn(),
-      freshnessLabel: null,
-      partialSourcesLabel: "inconnues",
-      hasPartialSource: false,
-    });
+    useMapFeedDataMock.mockReturnValue(
+      mapFeedData({ error: new Error("Carte indisponible"), isLoading: true }),
+    );
 
     const markup = renderToStaticMarkup(
       React.createElement(ActionsMapFeed, {

@@ -32,6 +32,9 @@ vi.mock("@/lib/http/auth-responses", () => ({
   unauthorizedJsonResponse: vi.fn(() => new Response("Unauthorized", { status: 401 })),
 }));
 
+const auditRequest = (query = "") =>
+  new Request(`http://localhost/api/actions/action-1/audit${query}`);
+
 describe("GET /api/actions/:actionId/audit", () => {
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
@@ -67,7 +70,7 @@ describe("GET /api/actions/:actionId/audit", () => {
 
     const { GET } = await import("./route");
     const response = await GET(
-      new Request("http://localhost/api/actions/action-1/audit?limit=8"),
+      auditRequest("?limit=8"),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
 
@@ -88,7 +91,7 @@ describe("GET /api/actions/:actionId/audit", () => {
 
     const { GET } = await import("./route");
     const response = await GET(
-      new Request("http://localhost/api/actions/action-1/audit"),
+      auditRequest(),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
 
@@ -104,7 +107,7 @@ describe("GET /api/actions/:actionId/audit", () => {
 
     const { GET } = await import("./route");
     const response = await GET(
-      new Request("http://localhost/api/actions/action-1/audit"),
+      auditRequest(),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
 
@@ -124,7 +127,7 @@ describe("GET /api/actions/:actionId/audit", () => {
 
     const { GET } = await import("./route");
     const response = await GET(
-      new Request("http://localhost/api/actions/action-1/audit"),
+      auditRequest(),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
 
@@ -150,7 +153,7 @@ describe("GET /api/actions/:actionId/audit", () => {
 
     const { GET } = await import("./route");
     const response = await GET(
-      new Request("http://localhost/api/actions/action-1/audit"),
+      auditRequest(),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
 
@@ -188,7 +191,7 @@ describe("GET /api/actions/:actionId/audit", () => {
 
     const { GET } = await import("./route");
     const response = await GET(
-      new Request("http://localhost/api/actions/action-1/audit"),
+      auditRequest(),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
 
@@ -212,7 +215,7 @@ describe("GET /api/actions/:actionId/audit", () => {
 
     const { GET } = await import("./route");
     const response = await GET(
-      new Request("http://localhost/api/actions/action-1/audit"),
+      auditRequest(),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
     const body = (await response.json()) as { items?: unknown[] };
@@ -255,11 +258,11 @@ describe("GET /api/actions/:actionId/audit", () => {
 
     const { GET } = await import("./route");
     const firstResponse = await GET(
-      new Request("http://localhost/api/actions/action-1/audit"),
+      auditRequest(),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
     const secondResponse = await GET(
-      new Request("http://localhost/api/actions/action-1/audit"),
+      auditRequest(),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
 
@@ -273,7 +276,7 @@ describe("GET /api/actions/:actionId/audit", () => {
 
     const { GET } = await import("./route");
     const response = await GET(
-      new Request("http://localhost/api/actions/action-1/audit"),
+      auditRequest(),
       { params: Promise.resolve({ actionId: "action-1" }) },
     );
 

@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import type { ComponentProps } from "react";
 import { InboxItemCard } from "./inbox-item-card";
 import { getCreatorInboxCopy } from "./creator-inbox-copy";
 
@@ -26,29 +27,38 @@ const feedbackItem = {
   privateReplyTargetUserId: "user-1",
 };
 
+type InboxCardProps = ComponentProps<typeof InboxItemCard>;
+
+const renderCard = (
+  item: InboxCardProps["item"],
+  overrides: Partial<InboxCardProps> = {},
+) =>
+  renderToStaticMarkup(
+    <InboxItemCard
+      item={item}
+      locale="fr"
+      copy={getCreatorInboxCopy("fr")}
+      copiedKey={null}
+      promotionReason=""
+      onPromotionReasonChange={vi.fn()}
+      partnerReason=""
+      onPartnerReasonChange={vi.fn()}
+      actionReason="motif valide"
+      onActionReasonChange={vi.fn()}
+      actionBusy={() => false}
+      onCopySummary={vi.fn()}
+      onAcceptPromotion={vi.fn()}
+      onRejectPromotion={vi.fn()}
+      onAcceptPartner={vi.fn()}
+      onRejectPartner={vi.fn()}
+      onApplyInboxAction={vi.fn()}
+      {...overrides}
+    />,
+  );
+
 describe("InboxItemCard state actions", () => {
   it("offers a private DM link to the canonical feedback author", () => {
-    const markup = renderToStaticMarkup(
-      <InboxItemCard
-        item={feedbackItem}
-        locale="fr"
-        copy={getCreatorInboxCopy("fr")}
-        copiedKey={null}
-        promotionReason=""
-        onPromotionReasonChange={vi.fn()}
-        partnerReason=""
-        onPartnerReasonChange={vi.fn()}
-        actionReason="motif valide"
-        onActionReasonChange={vi.fn()}
-        actionBusy={() => false}
-        onCopySummary={vi.fn()}
-        onAcceptPromotion={vi.fn()}
-        onRejectPromotion={vi.fn()}
-        onAcceptPartner={vi.fn()}
-        onRejectPartner={vi.fn()}
-        onApplyInboxAction={vi.fn()}
-      />,
-    );
+    const markup = renderCard(feedbackItem);
 
     expect(markup).toContain("Répondre en privé");
     expect(markup).toContain("recipientId=user-1");
@@ -57,27 +67,7 @@ describe("InboxItemCard state actions", () => {
   });
 
   it("disables private reply when the canonical author is unavailable", () => {
-    const markup = renderToStaticMarkup(
-      <InboxItemCard
-        item={{ ...feedbackItem, privateReplyTargetUserId: null }}
-        locale="fr"
-        copy={getCreatorInboxCopy("fr")}
-        copiedKey={null}
-        promotionReason=""
-        onPromotionReasonChange={vi.fn()}
-        partnerReason=""
-        onPartnerReasonChange={vi.fn()}
-        actionReason="motif valide"
-        onActionReasonChange={vi.fn()}
-        actionBusy={() => false}
-        onCopySummary={vi.fn()}
-        onAcceptPromotion={vi.fn()}
-        onRejectPromotion={vi.fn()}
-        onAcceptPartner={vi.fn()}
-        onRejectPartner={vi.fn()}
-        onApplyInboxAction={vi.fn()}
-      />,
-    );
+    const markup = renderCard({ ...feedbackItem, privateReplyTargetUserId: null });
 
     expect(markup).toContain("Répondre en privé");
     expect(markup).toContain('disabled=""');
@@ -85,26 +75,9 @@ describe("InboxItemCard state actions", () => {
   });
 
   it("renders a bounded reason field and disables state actions for a short reason", () => {
-    const markup = renderToStaticMarkup(
-      <InboxItemCard
-        item={{ ...feedbackItem, privateReplyTargetUserId: null }}
-        locale="fr"
-        copy={getCreatorInboxCopy("fr")}
-        copiedKey={null}
-        promotionReason=""
-        onPromotionReasonChange={vi.fn()}
-        partnerReason=""
-        onPartnerReasonChange={vi.fn()}
-        actionReason="non"
-        onActionReasonChange={vi.fn()}
-        actionBusy={() => false}
-        onCopySummary={vi.fn()}
-        onAcceptPromotion={vi.fn()}
-        onRejectPromotion={vi.fn()}
-        onAcceptPartner={vi.fn()}
-        onRejectPartner={vi.fn()}
-        onApplyInboxAction={vi.fn()}
-      />,
+    const markup = renderCard(
+      { ...feedbackItem, privateReplyTargetUserId: null },
+      { actionReason: "non" },
     );
 
     expect(markup).toContain("Motif de traitement");
@@ -114,9 +87,7 @@ describe("InboxItemCard state actions", () => {
   });
 
   it("keeps generic inbox mutations out of legal content notifications", () => {
-    const markup = renderToStaticMarkup(
-      <InboxItemCard
-        item={{
+    const markup = renderCard({
           ...feedbackItem,
           id: "legal-report-1",
           source: "legal_content_report",
@@ -124,24 +95,8 @@ describe("InboxItemCard state actions", () => {
           title: "Notification de contenu potentiellement illicite",
           context: "Motif circonstancié",
           canDelete: false,
-        }}
-        locale="fr"
-        copy={getCreatorInboxCopy("fr")}
-        copiedKey={null}
-        promotionReason=""
-        onPromotionReasonChange={vi.fn()}
-        partnerReason=""
-        onPartnerReasonChange={vi.fn()}
-        actionReason=""
-        onActionReasonChange={vi.fn()}
-        actionBusy={() => false}
-        onCopySummary={vi.fn()}
-        onAcceptPromotion={vi.fn()}
-        onRejectPromotion={vi.fn()}
-        onAcceptPartner={vi.fn()}
-        onRejectPartner={vi.fn()}
-        onApplyInboxAction={vi.fn()}
-      />,
+        },
+      { actionReason: "" },
     );
 
     expect(markup).not.toContain("Motif de traitement");
@@ -149,9 +104,7 @@ describe("InboxItemCard state actions", () => {
   });
 
   it("renders the traceable legal decision controls in the shared inbox", () => {
-    const markup = renderToStaticMarkup(
-      <InboxItemCard
-        item={{
+    const markup = renderCard({
           ...feedbackItem,
           id: "legal-report-2",
           source: "legal_content_report",
@@ -160,25 +113,8 @@ describe("InboxItemCard state actions", () => {
           context: "Motif circonstancié",
           canDelete: false,
           canReview: true,
-        }}
-        locale="fr"
-        copy={getCreatorInboxCopy("fr")}
-        copiedKey={null}
-        promotionReason=""
-        onPromotionReasonChange={vi.fn()}
-        partnerReason=""
-        onPartnerReasonChange={vi.fn()}
-        actionReason=""
-        onActionReasonChange={vi.fn()}
-        actionBusy={() => false}
-        onCopySummary={vi.fn()}
-        onAcceptPromotion={vi.fn()}
-        onRejectPromotion={vi.fn()}
-        onAcceptPartner={vi.fn()}
-        onRejectPartner={vi.fn()}
-        onApplyInboxAction={vi.fn()}
-        onLegalDecision={vi.fn()}
-      />,
+        },
+      { actionReason: "", onLegalDecision: vi.fn() },
     );
 
     expect(markup).toContain("Décision administrative tracée");

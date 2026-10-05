@@ -59,6 +59,24 @@ const action = () => ({
   },
 });
 
+const formalitiesRequest = (init?: RequestInit) =>
+  new Request("http://localhost/api/actions/action-42/formalities", init);
+
+const formalitiesFacts = (overrides: Record<string, unknown> = {}) => ({
+  territory: { countryCode: "FR", code: "FR-75", label: "Paris (75)" },
+  publicSpace: "public_domain",
+  manager: { kind: "paris_city", label: null },
+  isCleanwalk: true,
+  isPublicRoadwayActivity: false,
+  isItinerant: false,
+  isClaiming: false,
+  hasInstallations: true,
+  requiresPhysicalOccupation: true,
+  localCustomaryUse: false,
+  largeCrowdOrComplexInstallations: false,
+  ...overrides,
+});
+
 describe("/api/actions/:actionId/formalities", () => {
   let update: ReturnType<typeof vi.fn>;
   let from: ReturnType<typeof vi.fn>;
@@ -91,7 +109,7 @@ describe("/api/actions/:actionId/formalities", () => {
     authMock.mockResolvedValueOnce({ ok: false, status: 401 });
     const { GET } = await import("./route");
 
-    const response = await GET(new Request("http://localhost/api/actions/action-42/formalities"), {
+    const response = await GET(formalitiesRequest(), {
       params: Promise.resolve({ actionId: "action-42" }),
     });
 
@@ -102,7 +120,7 @@ describe("/api/actions/:actionId/formalities", () => {
 
   it("returns an explainable unknown qualification when the manager is not known", async () => {
     const { GET } = await import("./route");
-    const response = await GET(new Request("http://localhost/api/actions/action-42/formalities"), {
+    const response = await GET(formalitiesRequest(), {
       params: Promise.resolve({ actionId: "action-42" }),
     });
     const body = await response.json();
@@ -123,22 +141,10 @@ describe("/api/actions/:actionId/formalities", () => {
   it("qualifies and persists the user-owned context without accepting a forged sent state", async () => {
     const { PATCH } = await import("./route");
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-42/formalities", {
+      formalitiesRequest({
         method: "PATCH",
         body: JSON.stringify({
-          facts: {
-            territory: { countryCode: "FR", code: "FR-75", label: "Paris (75)" },
-            publicSpace: "public_domain",
-            manager: { kind: "paris_city", label: null },
-            isCleanwalk: true,
-            isPublicRoadwayActivity: false,
-            isItinerant: false,
-            isClaiming: false,
-            hasInstallations: true,
-            requiresPhysicalOccupation: true,
-            localCustomaryUse: false,
-            largeCrowdOrComplexInstallations: false,
-          },
+          facts: formalitiesFacts(),
         }),
       }),
       { params: Promise.resolve({ actionId: "action-42" }) },
@@ -172,27 +178,17 @@ describe("/api/actions/:actionId/formalities", () => {
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-42/formalities", {
+      formalitiesRequest({
         method: "PATCH",
         body: JSON.stringify({
-          facts: {
+          facts: formalitiesFacts({
             territory: {
               countryCode: "FR",
               code: "FR-75",
               label: "Paris (75)",
               specialTerritory: { code: "FR-PARIS", label: "Paris" },
             },
-            publicSpace: "public_domain",
-            manager: { kind: "paris_city", label: null },
-            isCleanwalk: true,
-            isPublicRoadwayActivity: false,
-            isItinerant: false,
-            isClaiming: false,
-            hasInstallations: true,
-            requiresPhysicalOccupation: true,
-            localCustomaryUse: false,
-            largeCrowdOrComplexInstallations: false,
-          },
+          }),
         }),
       }),
       { params: Promise.resolve({ actionId: "action-42" }) },
@@ -233,22 +229,15 @@ describe("/api/actions/:actionId/formalities", () => {
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-42/formalities", {
+      formalitiesRequest({
         method: "PATCH",
         body: JSON.stringify({
-          facts: {
-            territory: { countryCode: "FR", code: "FR-75", label: "Paris (75)" },
+          facts: formalitiesFacts({
             publicSpace: "private_domain",
             manager: { kind: "private", label: "Propriétaire" },
-            isCleanwalk: true,
-            isPublicRoadwayActivity: false,
-            isItinerant: false,
-            isClaiming: false,
             hasInstallations: false,
             requiresPhysicalOccupation: false,
-            localCustomaryUse: false,
-            largeCrowdOrComplexInstallations: false,
-          },
+          }),
         }),
       }),
       { params: Promise.resolve({ actionId: "action-42" }) },
@@ -301,22 +290,19 @@ describe("/api/actions/:actionId/formalities", () => {
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-42/formalities", {
+      formalitiesRequest({
         method: "PATCH",
         body: JSON.stringify({
-          facts: {
+          facts: formalitiesFacts({
             territory: { countryCode: "FR", code: "FR-75", label: "Paris (75)" },
-            publicSpace: "public_domain",
             manager: { kind: "unknown", label: null },
-            isCleanwalk: true,
+            publicSpace: "public_domain",
             isPublicRoadwayActivity: false,
             isItinerant: false,
             isClaiming: false,
             hasInstallations: false,
             requiresPhysicalOccupation: false,
-            localCustomaryUse: false,
-            largeCrowdOrComplexInstallations: false,
-          },
+          }),
         }),
       }),
       { params: Promise.resolve({ actionId: "action-42" }) },
@@ -361,14 +347,13 @@ describe("/api/actions/:actionId/formalities", () => {
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-42/formalities", {
+      formalitiesRequest({
         method: "PATCH",
         body: JSON.stringify({
-          facts: {
+          facts: formalitiesFacts({
             territory: { countryCode: "FR", code: "FR-75", label: "Paris (75)" },
             publicSpace: "unknown",
             manager: { kind: "unknown", label: null },
-            isCleanwalk: true,
             isPublicRoadwayActivity: "unknown",
             isItinerant: "unknown",
             isClaiming: "unknown",
@@ -376,7 +361,7 @@ describe("/api/actions/:actionId/formalities", () => {
             requiresPhysicalOccupation: "unknown",
             localCustomaryUse: "unknown",
             largeCrowdOrComplexInstallations: "unknown",
-          },
+          }),
         }),
       }),
       { params: Promise.resolve({ actionId: "action-42" }) },
@@ -411,7 +396,7 @@ describe("/api/actions/:actionId/formalities", () => {
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-42/formalities", {
+      formalitiesRequest({
         method: "PATCH",
         body: JSON.stringify({ transition: { formalityId: "x", kind: "declare_sent" } }),
       }),

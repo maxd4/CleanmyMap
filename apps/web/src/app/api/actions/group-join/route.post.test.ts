@@ -139,13 +139,7 @@ describe("POST /api/actions/group-join", () => {
     ];
     seedGroupJoinAction({ actionId: "action-1", locationLabel: "Parc Nord", status: "approved", participants });
 
-    const { POST } = await import("./route");
-    const response = await POST(
-      new Request("http://localhost/api/actions/group-join", {
-        method: "POST",
-        body: JSON.stringify({ actionId: "action-1" }),
-      }),
-    );
+    const response = await postGroupJoin("action-1");
     const body = (await response.json()) as {
       alreadyJoined?: boolean;
       participationStatus?: string;
@@ -187,13 +181,7 @@ describe("POST /api/actions/group-join", () => {
     });
     getSupabaseServerClientMock.mockReturnValue(supabase);
 
-    const { POST } = await import("./route");
-    const response = await POST(
-      new Request("http://localhost/api/actions/group-join", {
-        method: "POST",
-        body: JSON.stringify({ actionId: "action-4" }),
-      }),
-    );
+    const response = await postGroupJoin("action-4");
 
     const body = (await response.json()) as {
       participationStatus?: string;

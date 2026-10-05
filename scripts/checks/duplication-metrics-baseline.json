@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "e4db412b8eb7392bd4382ca9291033500940e4a5",
+  "sourceCommit": "c65b3e5c66eab6e30ecde2c256ca277dc0851e1e",
   "tool": "jscpd",
   "toolVersion": "5.3.0",
   "minLines": 5,
@@ -20,14 +20,14 @@
     },
     "tests": {
       "files": 1033,
-      "lines": 119723,
-      "tokens": 725421,
-      "clones": 308,
-      "fingerprints": 308,
-      "duplicatedLines": 3665,
-      "duplicatedTokens": 20239,
-      "percentage": 3.061233012871378,
-      "percentageTokens": 2.7899661024425813
+      "lines": 119349,
+      "tokens": 723276,
+      "clones": 271,
+      "fingerprints": 270,
+      "duplicatedLines": 3163,
+      "duplicatedTokens": 17504,
+      "percentage": 2.650210267225293,
+      "percentageTokens": 2.4200996296856675
     },
     "fixtures/data": {
       "files": 12,

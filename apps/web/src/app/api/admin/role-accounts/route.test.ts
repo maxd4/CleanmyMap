@@ -39,6 +39,14 @@ vi.mock("@/lib/admin/audit/operation-audit", () => ({
 }));
 
 describe("GET/POST /api/admin/role-accounts", () => {
+  const roleAccountsGetRequest = (query = "") =>
+    new Request(`http://localhost/api/admin/role-accounts${query}`);
+  const roleAccountsPostRequest = (body: unknown) =>
+    new Request("http://localhost/api/admin/role-accounts", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+
   beforeEach(() => {
     requireCreatorAccessMock.mockResolvedValue({ ok: true, userId: "owner-1" });
     getCurrentUserIdentityMock.mockResolvedValue({
@@ -103,7 +111,7 @@ describe("GET/POST /api/admin/role-accounts", () => {
 
   it("lists the managed admin/elected accounts", async () => {
     const { GET } = await import("./route");
-    const response = await GET(new Request("http://localhost/api/admin/role-accounts"));
+    const response = await GET(roleAccountsGetRequest());
     const body = (await response.json()) as { count?: number; accounts?: unknown[] };
 
     expect(response.status).toBe(200);
@@ -120,14 +128,11 @@ describe("GET/POST /api/admin/role-accounts", () => {
     });
     const { POST } = await import("./route");
     const response = await POST(
-      new Request("http://localhost/api/admin/role-accounts", {
-        method: "POST",
-        body: JSON.stringify({
+      roleAccountsPostRequest({
           userId: "user-2",
           action: "assign",
           role: "admin",
           reason: "Admin manages an assigned role",
-        }),
       }),
     );
 
@@ -144,14 +149,11 @@ describe("GET/POST /api/admin/role-accounts", () => {
     });
     const { POST } = await import("./route");
     const response = await POST(
-      new Request("http://localhost/api/admin/role-accounts", {
-        method: "POST",
-        body: JSON.stringify({
+      roleAccountsPostRequest({
           userId: "user-2",
           action: "assign",
           role: "admin",
           reason: "Elected role denial",
-        }),
       }),
     );
 
@@ -163,14 +165,11 @@ describe("GET/POST /api/admin/role-accounts", () => {
   it("allows only an active IMU to reach direct role management", async () => {
     const { POST } = await import("./route");
     const response = await POST(
-      new Request("http://localhost/api/admin/role-accounts", {
-        method: "POST",
-        body: JSON.stringify({
+      roleAccountsPostRequest({
           userId: "user-2",
           action: "assign",
           role: "admin",
           reason: "IMU direct assignment",
-        }),
       }),
     );
 
@@ -181,7 +180,7 @@ describe("GET/POST /api/admin/role-accounts", () => {
   it("searches accounts by query", async () => {
     const { GET } = await import("./route");
     const response = await GET(
-      new Request("http://localhost/api/admin/role-accounts?q=bob"),
+      roleAccountsGetRequest("?q=bob"),
     );
     const body = (await response.json()) as { count?: number; accounts?: unknown[] };
 
@@ -194,14 +193,11 @@ describe("GET/POST /api/admin/role-accounts", () => {
   it("assigns a role and syncs Clerk and Supabase", async () => {
     const { POST } = await import("./route");
     const response = await POST(
-      new Request("http://localhost/api/admin/role-accounts", {
-        method: "POST",
-        body: JSON.stringify({
+      roleAccountsPostRequest({
           userId: "user-2",
           action: "assign",
           role: "admin",
           reason: "Validated admin assignment",
-        }),
       }),
     );
     const body = (await response.json()) as { status?: string; account?: Record<string, unknown> };
@@ -245,14 +241,11 @@ describe("GET/POST /api/admin/role-accounts", () => {
   ])("audits %s role changes with one success entry", async (action, role) => {
     const { POST } = await import("./route");
     const response = await POST(
-      new Request("http://localhost/api/admin/role-accounts", {
-        method: "POST",
-        body: JSON.stringify({
+      roleAccountsPostRequest({
           userId: "user-2",
           action,
           ...(role ? { role } : {}),
           reason: "Reviewed role change",
-        }),
       }),
     );
 
@@ -293,15 +286,12 @@ describe("GET/POST /api/admin/role-accounts", () => {
     async (reason) => {
       const { POST } = await import("./route");
       const response = await POST(
-        new Request("http://localhost/api/admin/role-accounts", {
-          method: "POST",
-          body: JSON.stringify({
+        roleAccountsPostRequest({
             userId: "user-2",
             action: "assign",
             role: "admin",
             ...(reason === undefined ? {} : { reason }),
           }),
-        }),
       );
 
       expect(response.status).toBe(400);
@@ -325,14 +315,11 @@ describe("GET/POST /api/admin/role-accounts", () => {
     const { POST } = await import("./route");
 
     const response = await POST(
-      new Request("http://localhost/api/admin/role-accounts", {
-        method: "POST",
-        body: JSON.stringify({
+      roleAccountsPostRequest({
           userId: "user-2",
           action: "assign",
           role: "admin",
           reason: "Clerk failure test",
-        }),
       }),
     );
 
@@ -359,14 +346,11 @@ describe("GET/POST /api/admin/role-accounts", () => {
     const { POST } = await import("./route");
 
     const response = await POST(
-      new Request("http://localhost/api/admin/role-accounts", {
-        method: "POST",
-        body: JSON.stringify({
+      roleAccountsPostRequest({
           userId: "user-2",
           action: "assign",
           role: "elu",
           reason: "Sync failure test",
-        }),
       }),
     );
 
