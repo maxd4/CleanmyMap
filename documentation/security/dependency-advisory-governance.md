@@ -54,7 +54,7 @@ chaîne n'est atteignable que depuis les devDependencies connues, et
 ne modifie jamais l'enforcement : tout High/Critical non couvert par une
 mitigation exacte reste bloquant.
 
-Les exceptions du gate sont limitées aux quatre lignes du registre versionné dans
+Les exceptions du gate sont limitées aux cinq lignes du registre versionné dans
 `scripts/security/audit-dependencies.mjs`. Chaque ligne doit matcher exactement
 l'advisory, le package, la version et le chemin résolu, et référence cette
 documentation ainsi que le test de sécurité du backport. Une alerte qui ne
@@ -78,9 +78,19 @@ Le graphe actuel atteint le backport local depuis `apps/mobile` via
 Expo/Metro et depuis l'outillage Web via `fast-glob`. Le package local `3.0.4`
 conserve l'API upstream et ajoute uniquement une garde de profondeur de parsing
 à 1000 niveaux ; sa provenance, sa justification et sa preuve sont versionnées
-dans `apps/mobile/vendor/braces/SECURITY-PATCH.md`. La mitigation est couverte exactement
-par le registre de `scripts/security/audit-dependencies.mjs` et ne constitue
-ni un ignore ni une réduction de l'audit.
+dans `apps/mobile/vendor/braces/SECURITY-PATCH.md` et
+`apps/mobile/security/braces-security.test.mjs`. Le registre de
+`scripts/security/audit-dependencies.mjs` couvre exactement l'advisory
+`GHSA-VFJ7-8CJW-P6XM`, le package `braces`, la version `3.0.4` et le chemin
+`apps/mobile/vendor/braces` ; une autre version ou un autre chemin reste
+bloquant. Cette mitigation locale ne constitue ni un ignore ni une réduction
+de l'audit.
+
+`BLOCKED_UPSTREAM_ADVISORIES` désigne uniquement la résolution upstream
+vulnérable `braces@3.0.3`, qui reste bloquante faute de release upstream
+corrigée. Le backport local exact `braces@3.0.4` est couvert par la mitigation
+ci-dessus ; il ne transforme donc pas `3.0.3` en version acceptable et ne
+justifie aucune exemption plus large.
 
 La mitigation ne rend pas fiable un asset spécialement forgé par lui-même :
 Aucun asset non fiable ne doit entrer dans un build Metro. Les assets d'un
@@ -113,27 +123,23 @@ ni `codeSigningMetadata`, ni `expo-updates` : cette mitigation protège le
 tooling Expo et ne constitue pas une affirmation d'exposition du runtime
 public.
 
-### CodeQL `js/missing-origin-check` : alertes #938 et #939
+### CodeQL `js/missing-origin-check` : contrôles d'origine locaux pour #938 et #939
 
-Les alertes CodeQL #938 (`lib/prng.js`) et #939 (`lib/util.js`) sont classées
-`FALSE_POSITIVE` pour le contexte précis du vendor `node-forge` :
+Les alertes CodeQL #938 (`lib/prng.js`) et #939 (`lib/util.js`) ne sont plus
+présentées comme de simples `FALSE_POSITIVE`. Le vendor local contient
+désormais la mitigation réellement appliquée : les listeners de messages des
+workers vérifient `e.origin` contre `self.location.origin` avant de traiter
+`e.data`.
 
-- #938 est dans la branche `registerWorker` où `worker === self`. Le listener
-  signalé est le canal de protocole du worker ; la branche principale reçoit
-  les messages via l'objet `Worker`, pas via un listener `window` acceptant des
-  messages inter-fenêtres arbitraires.
-- #939 se trouve dans le script Blob exécuté par `new Worker(blobUrl)`. Son
-  `self.addEventListener('message', ...)` appartient donc à un
-  `DedicatedWorkerGlobalScope`. Le thread principal ne reçoit ensuite que via
-  les objets `Worker` créés pour ce calcul.
+- #938 est couvert dans `lib/prng.js`, y compris le listener du worker et celui
+  du thread principal ;
+- #939 est couvert dans `lib/util.js`, y compris le listener du worker créé par
+  `estimateCores`.
 
-Le listener `window` distinct utilisé par le polyfill `setImmediate` vérifie
-`event.source === window` et un token interne exact ; il n'est pas le sink des
-deux alertes. Le graphe local résout par ailleurs le package uniquement pour
-`@expo/cli` et `@expo/code-signing-certificates`, sans dépendance runtime ou
-browser de l'application mobile. Cette décision est spécifique au canal
-Dedicated Worker et au Node tooling Expo : elle ne crée aucune exclusion
-globale CodeQL et ne justifie aucune modification du code upstream vendorisé.
+`apps/mobile/security/node-forge-security.test.mjs` vérifie la présence de ces
+contrôles pour `prng.js` et `util.js`, avec un contrôle par listener. Cette
+preuve est versionnée avec le backport local ; elle ne crée aucune exclusion
+globale CodeQL et les alertes doivent rester revalidables par le scanner.
 
 ### CodeQL `js/polynomial-redos` : correctif du parseur PEM
 
