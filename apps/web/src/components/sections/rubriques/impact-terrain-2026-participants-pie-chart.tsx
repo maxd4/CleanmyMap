@@ -1,5 +1,5 @@
-import type { CSSProperties } from "react";
 import type { ActionDistributionEntry } from "@/lib/accueil/action-participant-aggregation";
+import { ImpactTerrain2026PieChart, type ImpactTerrainPieChartEntry } from "./impact-terrain-2026-pie-chart";
 
 const CATEGORY_COLORS = [
   "#fca5a5",
@@ -20,79 +20,22 @@ export function ImpactTerrain2026ParticipantsPieChart({
   participantsTotal: number;
   isFrench: boolean;
 }) {
-  const entries = distribution
+  const entries: ImpactTerrainPieChartEntry[] = distribution
     .filter((entry) => entry.count > 0)
     .map((entry, index) => ({
-      ...entry,
+      key: entry.key,
+      label: entry.category,
+      count: entry.count,
       color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
     }));
-  const total = entries.reduce((sum, entry) => sum + entry.count, 0);
-  let cursor = 0;
-  const gradientStops = entries.map((entry) => {
-    const start = cursor;
-    cursor += (entry.count / (total || 1)) * 100;
-    return `${entry.color} ${start}% ${cursor}%`;
-  });
-  const chartStyle = {
-    background:
-      total > 0
-        ? `conic-gradient(${gradientStops.join(", ")})`
-        : "conic-gradient(#334155 0 100%)",
-  } satisfies CSSProperties;
-
   return (
-    <div className="rounded-2xl border border-rose-100 bg-white p-4">
-      <div className="flex flex-wrap items-center gap-5">
-        <div
-          aria-label={
-            isFrench
-              ? "Répartition des actions par catégorie"
-              : "Action distribution by category"
-          }
-          className="relative h-32 w-32 shrink-0 rounded-full p-3"
-          role="img"
-          style={chartStyle}
-        >
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-rose-50 text-center">
-            <span className="text-xs font-black text-rose-950">
-              {participantsTotal.toLocaleString("fr-FR")}
-              <span className="block cmm-text-caption font-semibold uppercase tracking-[0.12em] text-rose-700">
-                {isFrench ? "participants" : "participants"}
-              </span>
-            </span>
-          </div>
-        </div>
-
-        <div className="min-w-[12rem] flex-1 space-y-2">
-          {entries.length > 0 ? (
-            entries.map((entry) => (
-              <div key={entry.key} className="flex items-center justify-between gap-3 text-xs">
-                <span className="flex items-center gap-2 cmm-text-body">
-                  <span
-                    aria-hidden="true"
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: entry.color }}
-                  />
-                  {entry.category}
-                </span>
-                <span className="font-black text-rose-800">{entry.count.toLocaleString("fr-FR")}</span>
-              </div>
-            ))
-          ) : (
-            <p className="text-xs leading-relaxed cmm-text-small">
-              {isFrench
-                ? "Aucune action classée n’est disponible dans l’agrégat public chargé."
-                : "No classified action is available in the loaded public aggregate."}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <p className="mt-4 cmm-text-caption leading-relaxed cmm-text-small">
-        {isFrench
-          ? "Chaque action éligible apparaît une seule fois. Les actions spontanées sont classées selon le nombre de participants ; les structures sont classées selon leur type canonique."
-          : "Each eligible action appears once. Spontaneous actions are classified by participant count; structured actions use their canonical organizer type."}
-      </p>
-    </div>
+    <ImpactTerrain2026PieChart
+      entries={entries}
+      displayTotal={participantsTotal}
+      totalLabel="participants"
+      ariaLabel={isFrench ? "Répartition des actions par catégorie" : "Action distribution by category"}
+      emptyMessage={isFrench ? "Aucune action classée n’est disponible dans l’agrégat public chargé." : "No classified action is available in the loaded public aggregate."}
+      footerMessage={isFrench ? "Chaque action éligible apparaît une seule fois. Les actions spontanées sont classées selon le nombre de participants ; les structures sont classées selon leur type canonique." : "Each eligible action appears once. Spontaneous actions are classified by participant count; structured actions use their canonical organizer type."}
+    />
   );
 }

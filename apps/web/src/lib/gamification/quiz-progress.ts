@@ -3,9 +3,7 @@ import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz/quiz-taxonomy";
 import { insertProgressionEvent } from "./progression-data";
 import { refreshProgressionProfile } from "./progression-tracking";
 import { broadcastGamificationAnnouncement } from "./announcements";
-import { QUIZ_PROGRESS_MILESTONES } from "./quiz-milestones";
-
-type QuizProgressMilestoneThreshold = (typeof QUIZ_PROGRESS_MILESTONES)[number]["threshold"];
+import { computeQuizMilestoneAwards, QUIZ_PROGRESS_MILESTONES, type QuizMilestoneAward } from "./quiz-milestones";
 
 type QuizTypeProgressRow = {
   user_id: string;
@@ -14,14 +12,7 @@ type QuizTypeProgressRow = {
   updated_at?: string;
 };
 
-export type QuizProgressAward = {
-  step: QuizProgressMilestoneThreshold;
-  threshold: QuizProgressMilestoneThreshold;
-  milestone: number;
-  xp: number;
-  badgeId: string;
-  sourceId: string;
-};
+export type QuizProgressAward = QuizMilestoneAward<(typeof QUIZ_PROGRESS_MILESTONES)[number]>;
 
 export type SyncQuizQuestionTypeProgressParams = {
   userId: string;
@@ -63,21 +54,12 @@ export function computeQuizProgressAwards(params: {
   nextCount: number;
   questionType: string;
 }): QuizProgressAward[] {
-  const awards: QuizProgressAward[] = [];
-  for (const milestone of QUIZ_PROGRESS_MILESTONES) {
-    if (params.previousCount < milestone.threshold && params.nextCount >= milestone.threshold) {
-      awards.push({
-        step: milestone.threshold,
-        threshold: milestone.threshold,
-        milestone: milestone.threshold,
-        xp: milestone.xp,
-        badgeId: milestone.badgeId,
-        sourceId: `quiz:${params.questionType}:${milestone.threshold}`,
-      });
-    }
-  }
-
-  return awards.sort((left, right) => left.milestone - right.milestone || left.threshold - right.threshold);
+  return computeQuizMilestoneAwards({
+    milestones: QUIZ_PROGRESS_MILESTONES,
+    previousCount: params.previousCount,
+    nextCount: params.nextCount,
+    sourceIdPrefix: `quiz:${params.questionType}`,
+  });
 }
 
 export async function syncQuizQuestionTypeProgress(

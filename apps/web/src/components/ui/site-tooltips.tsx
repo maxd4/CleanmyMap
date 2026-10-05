@@ -255,6 +255,9 @@ export function SiteTooltips() {
       return target.closest<HTMLElement>("[data-tooltip-content], [title]");
     };
 
+    const isLeavingTrigger = (trigger: HTMLElement, relatedTarget: EventTarget | null) =>
+      !(relatedTarget instanceof Node && trigger.contains(relatedTarget));
+
     const onPointerOver = (event: PointerEvent | MouseEvent) => {
       if ("pointerType" in event && event.pointerType === "touch") {
         return;
@@ -265,8 +268,7 @@ export function SiteTooltips() {
         return;
       }
 
-      const relatedTarget = event.relatedTarget;
-      if (relatedTarget instanceof Node && trigger.contains(relatedTarget)) {
+      if (!isLeavingTrigger(trigger, event.relatedTarget)) {
         return;
       }
 
@@ -284,8 +286,7 @@ export function SiteTooltips() {
         return;
       }
 
-      const relatedTarget = event.relatedTarget;
-      if (relatedTarget instanceof Node && trigger.contains(relatedTarget)) {
+      if (!isLeavingTrigger(trigger, event.relatedTarget)) {
         return;
       }
 

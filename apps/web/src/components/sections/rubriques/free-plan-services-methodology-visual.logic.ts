@@ -58,6 +58,12 @@ export type DisplayService = {
   linkLabel: string | null;
 };
 
+type ImpactPost = {
+  label: string;
+  description: string;
+  metricKey?: EnvironmentalImpactInfrastructureServiceEstimate["metricEstimates"][number]["key"];
+};
+
 function formatImpactQuantityLabel(
   quantity: number | null | undefined,
   unitLabel: string,
@@ -217,128 +223,54 @@ function getImpactVisual(serviceKey: EnvironmentalImpactInfrastructureServiceKey
   return IMPACT_VISUALS[serviceKey];
 }
 
+function buildImpactPostRows(
+  posts: readonly ImpactPost[],
+  service: EnvironmentalImpactInfrastructureServiceEstimate,
+  isFrench: boolean,
+): ImpactDetailMetric[] {
+  const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
+
+  return posts.map((post) => {
+    const metric = post.metricKey ? metricByKey.get(post.metricKey) ?? null : null;
+    return {
+      label: post.label,
+      descriptionLabel: post.description,
+      valueLabel: metric
+        ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
+        : isFrench
+          ? "non mesuré"
+          : "not measured",
+      statusLabel: getImpactRowStatusLabel(metric?.source),
+    };
+  });
+}
+
 export function buildImpactDetailRows(
   service: EnvironmentalImpactInfrastructureServiceEstimate,
   isFrench: boolean,
 ): ImpactDetailMetric[] {
   if (service.key === "supabase") {
-    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
-
-    return SUPABASE_IMPACT_POSTS.map((post) => {
-      const metricKey = "metricKey" in post ? post.metricKey : undefined;
-      const metric = metricKey ? metricByKey.get(metricKey) ?? null : null;
-
-      return {
-        label: post.label,
-        descriptionLabel: post.description,
-        valueLabel: metric
-          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
-          : isFrench
-            ? "non mesuré"
-            : "not measured",
-        statusLabel: getImpactRowStatusLabel(metric?.source),
-      };
-    });
+    return buildImpactPostRows(SUPABASE_IMPACT_POSTS, service, isFrench);
   }
 
   if (service.key === "vercel") {
-    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
-
-    return VERCEL_IMPACT_POSTS.map((post) => {
-      const metricKey = "metricKey" in post ? post.metricKey : undefined;
-      const metric = metricKey ? metricByKey.get(metricKey) ?? null : null;
-
-      return {
-        label: post.label,
-        descriptionLabel: post.description,
-        valueLabel: metric
-          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
-          : isFrench
-            ? "non mesuré"
-            : "not measured",
-        statusLabel: getImpactRowStatusLabel(metric?.source),
-      };
-    });
+    return buildImpactPostRows(VERCEL_IMPACT_POSTS, service, isFrench);
   }
 
   if (service.key === "github") {
-    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
-
-    return GITHUB_IMPACT_POSTS.map((post) => {
-      const metricKey = "metricKey" in post ? post.metricKey : undefined;
-      const metric = metricKey ? metricByKey.get(metricKey) ?? null : null;
-
-      return {
-        label: post.label,
-        descriptionLabel: post.description,
-        valueLabel: metric
-          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
-          : isFrench
-            ? "non mesuré"
-            : "not measured",
-        statusLabel: getImpactRowStatusLabel(metric?.source),
-      };
-    });
+    return buildImpactPostRows(GITHUB_IMPACT_POSTS, service, isFrench);
   }
 
   if (service.key === "resend") {
-    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
-
-    return RESEND_IMPACT_POSTS.map((post) => {
-      const metricKey = "metricKey" in post ? post.metricKey : undefined;
-      const metric = metricKey ? metricByKey.get(metricKey) ?? null : null;
-
-      return {
-        label: post.label,
-        descriptionLabel: post.description,
-        valueLabel: metric
-          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
-          : isFrench
-            ? "non mesuré"
-            : "not measured",
-        statusLabel: getImpactRowStatusLabel(metric?.source),
-      };
-    });
+    return buildImpactPostRows(RESEND_IMPACT_POSTS, service, isFrench);
   }
 
   if (service.key === "posthog") {
-    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
-
-    return POSTHOG_IMPACT_POSTS.map((post) => {
-      const metricKey = "metricKey" in post ? post.metricKey : undefined;
-      const metric = metricKey ? metricByKey.get(metricKey) ?? null : null;
-
-      return {
-        label: post.label,
-        descriptionLabel: post.description,
-        valueLabel: metric
-          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
-          : isFrench
-            ? "non mesuré"
-            : "not measured",
-        statusLabel: getImpactRowStatusLabel(metric?.source),
-      };
-    });
+    return buildImpactPostRows(POSTHOG_IMPACT_POSTS, service, isFrench);
   }
 
   if (service.key === "lwsDomain") {
-    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
-
-    return LWS_IMPACT_POSTS.map((post) => {
-      const metricKey = "metricKey" in post ? post.metricKey : undefined;
-      const metric = metricKey ? metricByKey.get(metricKey) ?? null : null;
-
-      return {
-        label: post.label,
-        descriptionLabel: post.description,
-        valueLabel: metric
-          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
-          : isFrench
-            ? "non mesuré"
-            : "not measured",
-        statusLabel: getImpactRowStatusLabel(metric?.source),
-      };
-    });
+    return buildImpactPostRows(LWS_IMPACT_POSTS, service, isFrench);
   }
 
   return service.metricEstimates.map((metric) => ({
