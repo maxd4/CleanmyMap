@@ -1,7 +1,8 @@
 import path from "node:path";
 import { readFile } from "node:fs/promises";
+import { escapeHtml } from "@/lib/security/html-escape";
 import { getDocumentationContentType } from "./route-seo";
-import { renderMarkdown, escapeHtml } from "./route-markdown";
+import { renderMarkdown } from "./route-markdown";
 import { buildViewerHtml } from "./route-viewer";
 
 function cleanTitle(title: string) {
@@ -10,6 +11,30 @@ function cleanTitle(title: string) {
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+async function buildTextResponse(
+  filePath: string,
+  filename: string,
+  documentationRoot: string,
+  extra: string,
+) {
+  const content = await readFile(filePath, "utf8");
+  const html = buildViewerHtml({
+    title: cleanTitle(filename),
+    kind: "text",
+    body: `<pre class="cmm-doc-code"><code>${escapeHtml(content)}</code></pre>`,
+    subtitle: `Fichier source: ${path.relative(documentationRoot, filePath).replace(/\\/g, "/")}`,
+    extra,
+  });
+
+  return new Response(html, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "public, max-age=0, must-revalidate",
+    },
+  });
 }
 
 export async function buildResponseForFile(
@@ -67,38 +92,8 @@ export async function buildResponseForFile(
   }
 
   if (ext === ".json") {
-    const content = await readFile(filePath, "utf8");
-    const html = buildViewerHtml({
-      title: cleanTitle(filename),
-      kind: "text",
-      body: `<pre class="cmm-doc-code"><code>${escapeHtml(content)}</code></pre>`,
-      subtitle: `Fichier source: ${path.relative(documentationRoot, filePath).replace(/\\/g, "/")}`,
-      extra: "JSON",
-    });
-
-    return new Response(html, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=0, must-revalidate",
-      },
-    });
+    return buildTextResponse(filePath, filename, documentationRoot, "JSON");
   }
 
-  const content = await readFile(filePath, "utf8");
-  const html = buildViewerHtml({
-    title: cleanTitle(filename),
-    kind: "text",
-    body: `<pre class="cmm-doc-code"><code>${escapeHtml(content)}</code></pre>`,
-    subtitle: `Fichier source: ${path.relative(documentationRoot, filePath).replace(/\\/g, "/")}`,
-    extra: "Texte",
-  });
-
-  return new Response(html, {
-    status: 200,
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, max-age=0, must-revalidate",
-    },
-  });
+  return buildTextResponse(filePath, filename, documentationRoot, "Texte");
 }
