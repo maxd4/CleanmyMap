@@ -39,6 +39,17 @@ describe("/docs/[...segments] GET", () => {
     },
   );
 
+  it("preserves the viewer headers and rendered HTML contract", async () => {
+    const response = await requestFor(["legal", "charte-benevole.md"]);
+    const body = await response.text();
+
+    expect(response.headers.get("Content-Type")).toBe("text/html; charset=utf-8");
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=0, must-revalidate");
+    expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow, noarchive");
+    expect(body).toContain("<!doctype html>");
+    expect(body).toContain("CleanMyMap documentation viewer");
+  });
+
   it("returns 404 for an existing documentation file that is not public", async () => {
     const response = await requestFor(["operations", "platform-cost-governance.md"]);
 
