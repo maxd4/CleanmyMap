@@ -27,6 +27,79 @@ Un fichier long et linéaire avec une responsabilité claire peut rester
 acceptable. Un fichier plus court mais dense, multi-responsabilités ou très
 couplé peut justifier une extraction plus tôt.
 
+## Modularisation à deux niveaux
+
+Une revue structurelle examine toujours le module et les unités de logique
+qu'il contient. Réduire le nombre de lignes d'un fichier ou déplacer son
+contenu dans un autre fichier ne suffit pas : la modularisation doit améliorer
+la cohésion, la localité, la testabilité ou la lisibilité des contrats.
+
+### Niveau 1 — module
+
+Pour chaque module ou fichier, identifier :
+
+- son owner et sa responsabilité principale ;
+- son API et ses invariants ;
+- ses dépendances et sa direction de dépendance ;
+- ses effets de bord ;
+- ses consommateurs ;
+- ses tests et leur frontière de preuve.
+
+### Niveau 2 — fonctions
+
+Pour chaque fonction, méthode, composant ou handler significatif, relire la
+chaîne :
+
+```text
+entrée
+→ transformations
+→ décisions
+→ effets
+→ sortie
+```
+
+Vérifier que cette unité conserve une responsabilité cohésive et rechercher
+en particulier les mélanges suivants :
+
+- parsing + métier + effet ;
+- chargement + projection + assemblage ;
+- orchestration + calcul détaillé ;
+- rendu + parsing + état ;
+- mutation + audit + mapping de réponse.
+
+Une fonction touchée ne doit pas devenir plus longue ou plus complexe sans
+nécessité contractuelle démontrée. Une fonction longue peut rester dans son
+module lorsqu'elle constitue réellement un algorithme ou un pipeline cohésif
+et qu'une extraction dégraderait la compréhension de ses étapes. Lorsqu'elle
+contient plusieurs responsabilités autonomes, créer des fonctions nommées et
+des contrats propres au lieu de seulement la déplacer.
+
+### Anti-pattern : déplacer le monolithe
+
+```text
+MAUVAIS
+gros fichier → nouveau petit fichier contenant toujours buildEverything()
+très long et multi-responsabilités
+
+BON
+point d'entrée court → étapes nommées avec responsabilités et contrats propres
+```
+
+### Write with growth in mind
+
+Ne pas attendre 500 lignes pour modulariser. Dès qu'une nouvelle fonctionnalité
+introduit une responsabilité autonome, créer sa frontière au moment où elle
+apparaît, si cette frontière améliore réellement la cohésion et ne crée pas de
+façade ou de micro-fichier sans owner.
+
+Après un déplacement :
+
+- relire la fonction dans son nouveau contexte ;
+- internaliser les exports inutiles ;
+- supprimer les anciennes façades seulement si aucun contrat ne les exige ;
+- vérifier `quality:complexity`, `quality:dead-code`, `quality:duplication` et
+  `quality:cycles` selon les outils applicables.
+
 ## Politique des fichiers volumineux
 
 Les contrôles déterminent deux seuils par KIND via `classifyFileKind()` :
