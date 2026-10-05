@@ -27,6 +27,23 @@ function buildPayload(overrides: Partial<CreateActionPayload> = {}): CreateActio
   };
 }
 
+const polylineDrawing = () => ({
+  kind: "polyline" as const,
+  coordinates: [
+    [48.85, 2.35] as [number, number],
+    [48.851, 2.351] as [number, number],
+  ],
+});
+
+const closedPolylineDrawing = () => ({
+  kind: "polyline" as const,
+  coordinates: [
+    [48.85, 2.35] as [number, number],
+    [48.851, 2.351] as [number, number],
+    [48.85, 2.35] as [number, number],
+  ],
+});
+
 describe("resolvePersistedCigaretteButts", () => {
   it("keeps the explicit count when a raw mass is also present", () => {
     const payload = buildPayload({
@@ -294,13 +311,7 @@ describe("route topology persistence", () => {
 
 describe("buildCreateActionGeometry", () => {
   it("persists a routed final drawing as estimated geometry", () => {
-    const drawing = {
-      kind: "polyline" as const,
-      coordinates: [
-        [48.85, 2.35] as [number, number],
-        [48.851, 2.351] as [number, number],
-      ],
-    };
+    const drawing = polylineDrawing();
 
     const geometry = buildCreateActionGeometry(
       buildPayload({
@@ -315,13 +326,7 @@ describe("buildCreateActionGeometry", () => {
   });
 
   it("persists a manual final drawing as real geometry", () => {
-    const drawing = {
-      kind: "polyline" as const,
-      coordinates: [
-        [48.85, 2.35] as [number, number],
-        [48.851, 2.351] as [number, number],
-      ],
-    };
+    const drawing = polylineDrawing();
 
     const geometry = buildCreateActionGeometry(
       buildPayload({ manualDrawing: drawing, geometrySource: "manual" }),
@@ -353,13 +358,7 @@ describe("buildCreateActionGeometry", () => {
   });
 
   it("marks a final automatically constructed route as routed", () => {
-    const drawing = {
-      kind: "polyline" as const,
-      coordinates: [
-        [48.85, 2.35] as [number, number],
-        [48.851, 2.351] as [number, number],
-      ],
-    };
+    const drawing = polylineDrawing();
 
     const geometry = buildCreateActionGeometry(buildPayload(), drawing);
 
@@ -367,14 +366,7 @@ describe("buildCreateActionGeometry", () => {
   });
 
   it("keeps a local route-provider fallback explicitly estimated", () => {
-    const drawing = {
-      kind: "polyline" as const,
-      coordinates: [
-        [48.85, 2.35] as [number, number],
-        [48.851, 2.351] as [number, number],
-        [48.85, 2.35] as [number, number],
-      ],
-    };
+    const drawing = closedPolylineDrawing();
 
     const geometry = buildCreateActionGeometry(buildPayload(), drawing, "estimated_route");
 

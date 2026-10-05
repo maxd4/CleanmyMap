@@ -31,6 +31,11 @@ const clerkUser = (overrides: Record<string, unknown>) => ({
   ...overrides,
 });
 
+const silenceSyncLogs = () => ({
+  consoleErrorSpy: vi.spyOn(console, "error").mockImplementation(() => {}),
+  consoleWarnSpy: vi.spyOn(console, "warn").mockImplementation(() => {}),
+});
+
 function createSupabaseMock(options: {
   existingProfile?: {
     id: string;
@@ -130,8 +135,7 @@ describe("syncClerkUserToSupabase", () => {
     });
     getSupabaseAdminClientMock.mockReturnValue(supabase);
 
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { consoleErrorSpy, consoleWarnSpy } = silenceSyncLogs();
 
     await syncClerkUserToSupabase(
       clerkUser({ id: "user_1", username: "custom_handle", firstName: "Maxence", lastName: "Demo" }) as never,
@@ -158,8 +162,7 @@ describe("syncClerkUserToSupabase", () => {
     });
     getSupabaseAdminClientMock.mockReturnValue(supabase);
 
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { consoleErrorSpy, consoleWarnSpy } = silenceSyncLogs();
 
     await syncClerkUserToSupabase(
       clerkUser({ id: "user_abcdef123456", username: "max", firstName: "Max", lastName: "" }) as never,
@@ -183,8 +186,7 @@ describe("syncClerkUserToSupabase", () => {
     });
     getSupabaseAdminClientMock.mockReturnValue(supabase);
 
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { consoleErrorSpy, consoleWarnSpy } = silenceSyncLogs();
 
     await syncClerkUserToSupabase(
       clerkUser({
@@ -214,8 +216,7 @@ describe("syncClerkUserToSupabase", () => {
     });
     getSupabaseAdminClientMock.mockReturnValue(supabase);
 
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { consoleErrorSpy, consoleWarnSpy } = silenceSyncLogs();
 
     await syncClerkUserToSupabase(
       clerkUser({
@@ -325,8 +326,7 @@ describe("syncClerkUserToSupabase", () => {
     });
     getSupabaseAdminClientMock.mockReturnValue(supabase);
 
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { consoleErrorSpy, consoleWarnSpy } = silenceSyncLogs();
 
     await syncClerkUserToSupabase(
       clerkUser({
@@ -360,8 +360,7 @@ describe("syncClerkUserToSupabase", () => {
     });
     getSupabaseAdminClientMock.mockReturnValue(supabase);
 
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { consoleErrorSpy, consoleWarnSpy } = silenceSyncLogs();
 
     await syncClerkUserToSupabase(
       clerkUser({
@@ -402,8 +401,7 @@ describe("syncClerkUserToSupabase", () => {
     });
     getSupabaseAdminClientMock.mockReturnValue(supabase);
 
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { consoleErrorSpy, consoleWarnSpy } = silenceSyncLogs();
 
     await syncClerkUserToSupabase(
       clerkUser({
@@ -470,8 +468,7 @@ describe("syncClerkUserToSupabase", () => {
       ),
     );
 
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { consoleErrorSpy, consoleWarnSpy } = silenceSyncLogs();
 
     await syncClerkUserToSupabase(
       clerkUser({
