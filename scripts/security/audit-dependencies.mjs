@@ -58,8 +58,10 @@ export const EXPLICIT_MITIGATIONS = Object.freeze([
   }),
 ]);
 
-// Diagnostic classification only: this advisory remains blocking because no
-// patched upstream braces release exists. It is never treated as a mitigation.
+// Diagnostic classification only: this entry covers the still-blocking
+// upstream vulnerable `braces@3.0.3` path. The exact local `braces@3.0.4`
+// backport is accepted only through EXPLICIT_MITIGATIONS and is not an upstream
+// release or a broader exemption.
 export const BLOCKED_UPSTREAM_ADVISORIES = Object.freeze({
   "GHSA-VFJ7-8CJW-P6XM": Object.freeze({
     packageName: "braces",

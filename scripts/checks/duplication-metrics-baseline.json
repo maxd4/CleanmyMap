@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "c65b3e5c66eab6e30ecde2c256ca277dc0851e1e",
+  "sourceCommit": "452e136b00dfe94aaeffe82ba42ccf94510b91d1",
   "tool": "jscpd",
   "toolVersion": "5.3.0",
   "minLines": 5,
