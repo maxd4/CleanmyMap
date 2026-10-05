@@ -4,9 +4,11 @@ import { insertProgressionEvent } from "./progression-data";
 import { refreshProgressionProfile } from "./progression-tracking";
 import { broadcastGamificationAnnouncement } from "./announcements";
 import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz/quiz-taxonomy";
-import { QUIZ_BALANCE_MILESTONES } from "./quiz-milestones";
-
-type QuizBalanceMilestoneThreshold = (typeof QUIZ_BALANCE_MILESTONES)[number]["threshold"];
+import {
+  computeQuizMilestoneAwards,
+  QUIZ_BALANCE_MILESTONES,
+  type QuizMilestoneAward,
+} from "./quiz-milestones";
 
 type QuizBalanceProgressRow = {
   user_id: string;
@@ -15,14 +17,7 @@ type QuizBalanceProgressRow = {
   updated_at?: string;
 };
 
-export type QuizBalanceAward = {
-  step: QuizBalanceMilestoneThreshold;
-  threshold: QuizBalanceMilestoneThreshold;
-  milestone: number;
-  xp: number;
-  badgeId: string;
-  sourceId: string;
-};
+export type QuizBalanceAward = QuizMilestoneAward<(typeof QUIZ_BALANCE_MILESTONES)[number]>;
 
 export type SyncQuizQuestionTypeBalanceProgressParams = {
   userId: string;
@@ -54,22 +49,12 @@ export function computeQuizBalanceAwards(params: {
   previousBalancedCount: number;
   nextBalancedCount: number;
 }): QuizBalanceAward[] {
-  const awards: QuizBalanceAward[] = [];
-
-  for (const milestone of QUIZ_BALANCE_MILESTONES) {
-    if (params.previousBalancedCount < milestone.threshold && params.nextBalancedCount >= milestone.threshold) {
-      awards.push({
-        step: milestone.threshold,
-        threshold: milestone.threshold,
-        milestone: milestone.threshold,
-        xp: milestone.xp,
-        badgeId: milestone.badgeId,
-        sourceId: `quiz:balanced:${milestone.threshold}`,
-      });
-    }
-  }
-
-  return awards.sort((left, right) => left.milestone - right.milestone || left.threshold - right.threshold);
+  return computeQuizMilestoneAwards({
+    milestones: QUIZ_BALANCE_MILESTONES,
+    previousCount: params.previousBalancedCount,
+    nextCount: params.nextBalancedCount,
+    sourceIdPrefix: "quiz:balanced",
+  });
 }
 
 export async function syncQuizQuestionTypeBalanceProgress(

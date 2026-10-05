@@ -232,6 +232,238 @@
       "reason": "Les audits Route single-group et multi-group partagent des métadonnées de contexte, mais leurs bornes d’exclusion et leurs assignments sont propres à chaque stratégie de partition ; une abstraction réduirait la lisibilité de la preuve opérationnelle.",
       "evidence": "apps/web/src/lib/route/route-group-partition.ts:260-267 et apps/web/src/lib/route/route-group-partition.ts:574-581 ; les modes et listes excludedByPartitionBoundCandidateIds diffèrent.",
       "reviewedRef": "1bcf515751a8babcc96f60aa3b167db257b231b3"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "556272811d2c14f7",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les sélecteurs de la barre de filtres partagent une enveloppe JSX, mais chaque champ possède son vocabulaire, sa valeur et sa transition contrôlée propres ; une abstraction générique ne porterait aucune connaissance métier commune.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-filter-bar.tsx:83-90 et apps/web/src/components/admin/creator-inbox/inbox-filter-bar.tsx:97-104 ; priorité, tri et statut consomment des options et handlers distincts.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "99eabdae708dcf29",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les boutons d’acceptation restent explicites pour les sources promotion et partner : leurs handlers, validations et transitions d’administration sont distincts même si le rendu d’action est proche.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-item-card.tsx:309-319 et apps/web/src/components/admin/creator-inbox/inbox-item-card.tsx:361-371 ; les callbacks onAcceptPromotion et onAcceptPartner portent deux workflows source distincts.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "a141080c04eeef07",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les boutons de rejet restent répétés afin de conserver la preuve lisible des deux décisions admin ; promotion et partner ont des contrats et des raisons de rejet indépendants.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-item-card.tsx:322-332 et apps/web/src/components/admin/creator-inbox/inbox-item-card.tsx:374-384 ; les branches sélectionnent des callbacks et des états source différents.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "2506618950d2f553",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La longueur minimale du motif est une garde répétée dans deux décisions promotion accept/reject qui doivent rester auditables séparément ; extraire cette garde masquerait la décision et ses messages propres.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts:174-184 et apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts:196-206 ; les deux branches persistent des décisions opposées.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "91b4fcde75a1a88a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La confirmation PARTNER et la validation du motif restent explicitement dans les branches accept/reject partner afin de préserver la preuve de l’opération sensible et son fail-closed local.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts:218-233 et apps/web/src/components/admin/creator-inbox/use-creator-inbox.ts:249-264 ; les deux branches déclenchent des mutations partner opposées.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4a7545c2709f2238",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Le sous-ensemble de props du composer est répété par propagation entre deux composants, mais ChatComposer et ChatThreadPane restent des frontières de composition différentes ; aucun contrat métier autonome ne justifie une nouvelle façade de props.",
+      "evidence": "apps/web/src/components/chat/chat-composer.tsx:31-37 et apps/web/src/components/chat/chat-thread-pane.tsx:90-96 ; le premier consomme le contrat et le second orchestre plusieurs sous-composants.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "5f920b6695314067",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les props d’en-tête sont propagées du panneau vers ChatHeader, mais les composants ont des responsabilités de composition différentes et les options de contrôle du header restent locales.",
+      "evidence": "apps/web/src/components/chat/chat-header.tsx:16-25 et apps/web/src/components/chat/chat-thread-pane.tsx:32-41 ; le panneau ajoute la navigation et les branches de contenu autour du header.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "72f1b4192e2c56cc",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les props de flux sont partagées entre l’orchestrateur et le composant de feed, mais cette répétition de transmission ne constitue pas une règle de présentation ou de domaine à extraire.",
+      "evidence": "apps/web/src/components/chat/chat-thread-pane.tsx:61-69 et apps/web/src/components/chat/ui/chat-message-feed.tsx:20-28 ; le parent gère la vue et le feed rend son propre contrat.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "467a2502fa7f53a6",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux objets de contexte dans le hook de soumission décrivent des étapes différentes du flux d’envoi ; leurs champs voisins servent à des callbacks distincts et non à une primitive de rendu commune.",
+      "evidence": "apps/web/src/components/chat/hooks/use-chat-submit.ts:30-39 et apps/web/src/components/chat/hooks/use-chat-submit.ts:108-117 ; les deux signatures appartiennent à des handlers distincts.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "9f052791627dd147",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Le verrou de requête est commun au domaine notification, mais le dashboard pagine et recharge manuellement tandis que la cloche sonde selon sa visibilité ; une extraction mélangerait deux politiques de cycle de vie.",
+      "evidence": "apps/web/src/components/dashboard/dashboard-notifications-section.tsx:48-63 et apps/web/src/components/navigation/notification-bell.tsx:65-81 ; les usages de fetchNotifications divergent par pagination et polling.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "ac2e23df6b0324ca",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Le nettoyage d’une requête notification est textuellement proche, mais les surfaces ont des erreurs, des états et des effets d’affichage propres ; aucun owner commun sûr n’est démontré.",
+      "evidence": "apps/web/src/components/dashboard/dashboard-notifications-section.tsx:78-87 et apps/web/src/components/navigation/notification-bell.tsx:92-101 ; les messages de log et les workflows de consommation diffèrent.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "052b2fe8f0f50417",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les réponses d’erreur restent localement explicites pour la décision de demande et l’ajout de compte ; les payloads et messages métier ne sont pas interchangeables.",
+      "evidence": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.controller.queue.ts:182-190 et apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.controller.queue.ts:225-233 ; les unions de réponse exposent des identités différentes.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "6ee559e948f55e19",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Le rafraîchissement de file et la notification restent répétés dans deux opérations de queue distinctes ; leurs messages et transitions métier doivent rester lisibles séparément.",
+      "evidence": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.controller.queue.ts:191-205 et apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.controller.queue.ts:234-248 ; acceptation/refus et ajout de compte ont des effets propres.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "cccddf216ecce787",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux formatages de date partagent l’amorce de normalisation, mais l’un sert l’affichage principal et l’autre la recherche avec une précision de jour différente.",
+      "evidence": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.format.ts:1-8 et apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.utils.ts:92-99 ; les contrats d’affichage et de recherche ne sont pas identiques.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "c711ac6805040ada",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "CmmSection conserve deux branches de rendu explicites : surface simple sans accent et CmmBlockCard avec accent de bloc. Les réunir sous une projection commune masquerait cette sémantique de design system.",
+      "evidence": "apps/web/src/components/ui/cmm-section.tsx:61-71 et apps/web/src/components/ui/cmm-section.tsx:80-91 ; accentType=none et CmmBlockCard ont des contrats visuels distincts.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4c48a0153af4b6c7",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "L’algorithme commun de franchissement des paliers est désormais dans quiz-milestones.ts ; la répétition restante persiste des événements aux tables, types et métadonnées propres à chaque moteur.",
+      "evidence": "apps/web/src/lib/gamification/quiz-balance-progress.ts:98-111 et apps/web/src/lib/gamification/quiz-progress.ts:95-108 ; sourceTable, eventType et metadata diffèrent intentionnellement.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "ebd063b7d8a73fbe",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les annonces de progression quiz et de progression équilibrée partagent une enveloppe de broadcast, mais leurs types, libellés, icônes et clés de déduplication portent deux contrats métier distincts.",
+      "evidence": "apps/web/src/lib/gamification/quiz-balance-progress.ts:129-134 et apps/web/src/lib/gamification/quiz-progress.ts:125-130 ; la distinction équilibré/type est conservée dans le payload.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "2036337c86222ef3",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les cartes d’apprentissage fr/en répètent volontairement une structure éditoriale traduite ; les contenus, libellés et messages de locale restent des données lisibles et indépendantes.",
+      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:38-55 et apps/web/src/lib/learning/learn-rubric-data.ts:94-111 ; les mêmes cartes portent des titres et détails de langue distincts.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4fb34f55a5ce0018",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les blocs de cartes fr/en gardent une structure de présentation volontairement parallèle, sans seconde connaissance calculée à extraire des contenus éditoriaux.",
+      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:56-73 et apps/web/src/lib/learning/learn-rubric-data.ts:112-129 ; les valeurs traduites restent explicites.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "abb56bf92414a096",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La répétition fr/en correspond au catalogue de contenus Learn et non à une règle métier partagée ; rendre ces données opaques supprimerait leur lisibilité éditoriale.",
+      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:74-89 et apps/web/src/lib/learning/learn-rubric-data.ts:130-145 ; chaque locale conserve ses textes et valeurs visibles.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "d451521c4f57d24d",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les liens Learn fr/en partagent la structure de catalogue, mais leurs titres et détails sont des contenus éditoriaux traduits ; aucune métadonnée canonique commune supplémentaire n’est répétée.",
+      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:153-166 et apps/web/src/lib/learning/learn-rubric-data.ts:225-238 ; les deux tableaux restent lisibles par locale.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "1387585c30780719",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les cartes de pratique fr/en réutilisent intentionnellement la forme de donnée tout en conservant des libellés traduits ; centraliser les objets rendrait le contenu moins explicite sans supprimer une connaissance.",
+      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:167-180 et apps/web/src/lib/learning/learn-rubric-data.ts:239-252 ; les valeurs éditoriales sont portées séparément.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "abbb8134e71e81a4",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La structure de carte traduite est intentionnelle et ne constitue pas un invariant de présentation à partager au-delà du type LearnLinkCard déjà canonique.",
+      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:181-194 et apps/web/src/lib/learning/learn-rubric-data.ts:253-266 ; les contenus et destinations restent explicites dans chaque locale.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "57530fa0e5864beb",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les entrées de pratique fr/en sont des blocs éditoriaux parallèles, pas des calculs ou métadonnées propriétaires ; leur conservation lisible protège la maintenance des contenus.",
+      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:195-208 et apps/web/src/lib/learning/learn-rubric-data.ts:267-280 ; chaque bloc conserve ses formulations de locale.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "c73746dc6cf5a4ed",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La dernière paire de cartes Learn répète une structure de données traduite déjà portée par le contrat LearnLinkCard ; aucune extraction de contenu opaque ne serait bénéfique.",
+      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:209-220 et apps/web/src/lib/learning/learn-rubric-data.ts:281-292 ; les détails fr/en restent des contenus indépendants.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4c125945d94d76ae",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les tokens pink répétés appartiennent à des variantes de thème distinctes ; les valeurs proches sont des choix de palette et non une primitive de produit à centraliser.",
+      "evidence": "apps/web/src/lib/ui/button-theme.ts:218-244 et apps/web/src/lib/ui/button-theme.ts:250-276 ; les objets de thème restent séparés par leur contexte d’usage.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "758014e00b166d11",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les tokens indigo répétés sont des variantes de palette locales ; un alias partagé ne réduirait pas une connaissance métier ou un contrat visuel unique.",
+      "evidence": "apps/web/src/lib/ui/button-theme.ts:318-340 et apps/web/src/lib/ui/button-theme.ts:382-404 ; les thèmes conservent leurs contextes et accents propres.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4eb3bce3d36b1111",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La proximité des tokens slate/cyan dans deux thèmes ne démontre pas un owner de présentation commun ; les palettes sont intentionnellement définies au niveau du thème.",
+      "evidence": "apps/web/src/lib/ui/button-theme.ts:348-372 et apps/web/src/lib/ui/button-theme.ts:412-436 ; chaque thème conserve son identité d’accent.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "8a5b404769320ecd",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les tokens de boutons neutres sont répétés entre deux thèmes dont les hover et accents divergent ; les fusionner créerait une abstraction de palette sans contrat produit partagé.",
+      "evidence": "apps/web/src/lib/ui/button-theme.ts:410-427 et apps/web/src/lib/ui/button-theme.ts:538-555 ; les valeurs voisines servent des thèmes distincts.",
+      "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
     }
   ]
 }

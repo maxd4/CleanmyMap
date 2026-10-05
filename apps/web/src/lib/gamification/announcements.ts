@@ -8,6 +8,33 @@ export type GamificationAnnouncementPayload = GamificationCelebrationPayload;
 
 type RawGamificationEvent = Record<string, unknown>;
 
+type GamificationAnnouncementBase = {
+  title?: string;
+  message?: string;
+  icon?: string;
+  source: string;
+  dedupeKey?: string;
+};
+
+function buildAnnouncement(
+  base: GamificationAnnouncementBase,
+  defaults: {
+    title: string;
+    message: string;
+    tone: GamificationAnnouncementPayload["tone"];
+    icon: string;
+  },
+): GamificationAnnouncementPayload {
+  return {
+    title: base.title ?? defaults.title,
+    message: base.message ?? defaults.message,
+    tone: defaults.tone,
+    icon: base.icon ?? defaults.icon,
+    source: base.source,
+    dedupeKey: base.dedupeKey,
+  };
+}
+
 function readString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
@@ -97,77 +124,41 @@ function buildDedupedKey(type: string, payload: RawGamificationEvent): string | 
 
 function buildTierUnlockedAnnouncement(
   payload: RawGamificationEvent,
-  base: {
-    title?: string;
-    message?: string;
-    icon?: string;
-    source: string;
-    dedupeKey?: string;
-  },
+  base: GamificationAnnouncementBase,
 ): GamificationAnnouncementPayload {
   const xpText = formatGenericAmount(readNumber(payload["xp"]) ?? readNumber(payload["xpAwarded"]), "XP");
-  return {
-    title: base.title ?? "Palier débloqué",
-    message:
-      base.message ??
-      `Le palier ${readString(payload["title"]) ?? readString(payload["tierId"]) ?? "suivant"} est débloqué.${
-        xpText ? ` ${xpText}.` : ""
-      }`,
+  return buildAnnouncement(base, {
+    title: "Palier débloqué",
+    message: `Le palier ${readString(payload["title"]) ?? readString(payload["tierId"]) ?? "suivant"} est débloqué.${xpText ? ` ${xpText}.` : ""}`,
     tone: "explorer",
-    icon: base.icon ?? "✨",
-    source: base.source,
-    dedupeKey: base.dedupeKey,
-  };
+    icon: "✨",
+  });
 }
 
 function buildParticipantTierAnnouncement(
   payload: RawGamificationEvent,
-  base: {
-    title?: string;
-    message?: string;
-    icon?: string;
-    source: string;
-    dedupeKey?: string;
-  },
+  base: GamificationAnnouncementBase,
 ): GamificationAnnouncementPayload {
   const xpText = formatGenericAmount(readNumber(payload["xp"]) ?? readNumber(payload["xpAwarded"]), "XP");
-  return {
-    title: base.title ?? "Palier de participation débloqué",
-    message:
-      base.message ??
-      `${readString(payload["tierId"]) ?? "Votre palier"} est débloqué côté participation.${
-        xpText ? ` ${xpText}.` : ""
-      }`,
+  return buildAnnouncement(base, {
+    title: "Palier de participation débloqué",
+    message: `${readString(payload["tierId"]) ?? "Votre palier"} est débloqué côté participation.${xpText ? ` ${xpText}.` : ""}`,
     tone: "actions",
-    icon: base.icon ?? "🤝",
-    source: base.source,
-    dedupeKey: base.dedupeKey,
-  };
+    icon: "🤝",
+  });
 }
 
 function buildFormTierAnnouncement(
   payload: RawGamificationEvent,
-  base: {
-    title?: string;
-    message?: string;
-    icon?: string;
-    source: string;
-    dedupeKey?: string;
-  },
+  base: GamificationAnnouncementBase,
 ): GamificationAnnouncementPayload {
   const xpText = formatGenericAmount(readNumber(payload["xp"]) ?? readNumber(payload["xpAwarded"]), "XP");
-  return {
-    title: base.title ?? "Palier de formulaires débloqué",
-    message:
-      base.message ??
-      `${readString(payload["tierId"]) ?? "Votre palier"} est débloqué pour les formulaires.${
-        xpText ? ` ${xpText}.` : ""
-      }`,
+  return buildAnnouncement(base, {
+    title: "Palier de formulaires débloqué",
+    message: `${readString(payload["tierId"]) ?? "Votre palier"} est débloqué pour les formulaires.${xpText ? ` ${xpText}.` : ""}`,
     tone: "forms",
-    icon: base.icon ?? "🌱",
-    source: base.source,
-    dedupeKey: base.dedupeKey,
-  };
+    icon: "🌱",
+  });
 }
 
 function buildFormBonusAnnouncement(

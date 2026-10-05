@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
@@ -12,6 +11,11 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { LearnLinkCard, LearnLocale } from "@/lib/learning/learn-rubric-data";
+import {
+  LearnVisualIntroFrame,
+  LearnVisualIntroLead,
+  LEARN_VISUAL_INTRO_TONES,
+} from "./learn-visual-intro-shared";
 
 type LearnComprendreVisualIntroProps = {
   locale: LearnLocale;
@@ -23,44 +27,6 @@ type LearnComprendreVisualIntroProps = {
     label: string;
   };
   className?: string;
-};
-
-const TONE_CLASSES: Record<
-  LearnLinkCard["visual"]["tone"],
-  { shell: string; badge: string; accent: string; border: string; glow: string; chip: string }
-> = {
-  amber: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,248,231,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-amber-200 bg-amber-50 text-amber-900",
-    accent: "text-amber-700",
-    border: "border-amber-200",
-    glow: "from-amber-300/18 via-orange-200/12 to-transparent",
-    chip: "border-amber-200 bg-amber-50 text-amber-800",
-  },
-  cyan: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,250,238,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-orange-200 bg-orange-50 text-orange-900",
-    accent: "text-orange-700",
-    border: "border-orange-200",
-    glow: "from-orange-300/18 via-amber-200/12 to-transparent",
-    chip: "border-orange-200 bg-orange-50 text-orange-800",
-  },
-  emerald: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,248,232,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-amber-200 bg-amber-50 text-amber-900",
-    accent: "text-amber-700",
-    border: "border-amber-200",
-    glow: "from-amber-300/18 via-orange-200/12 to-transparent",
-    chip: "border-amber-200 bg-amber-50 text-amber-800",
-  },
-  violet: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,248,232,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-orange-200 bg-amber-100 text-orange-900",
-    accent: "text-orange-700",
-    border: "border-orange-200",
-    glow: "from-orange-300/18 via-amber-200/12 to-transparent",
-    chip: "border-orange-200 bg-amber-50 text-orange-800",
-  },
 };
 
 const MOTIF_ICONS: Record<LearnLinkCard["visual"]["motif"], LucideIcon> = {
@@ -131,7 +97,7 @@ function RightCard({
 }
 
 function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
-  const tone = TONE_CLASSES[card.visual.tone];
+  const tone = LEARN_VISUAL_INTRO_TONES[card.visual.tone];
   const Icon = MOTIF_ICONS[card.visual.motif];
 
   if (card.visual.motif === "layers") {
@@ -243,74 +209,34 @@ export function LearnComprendreVisualIntro({
   action,
   className,
 }: LearnComprendreVisualIntroProps) {
-  const tone = TONE_CLASSES[card.visual.tone];
-
   return (
-    <section
-      className={cn(
-        "relative overflow-hidden rounded-[2rem] border bg-white p-5 shadow-sm md:p-6",
-        tone.border,
-        className,
-      )}
-    >
-      <div className={cn("absolute inset-0 -z-10 bg-gradient-to-br", tone.glow)} aria-hidden="true" />
-      <div className={cn("grid gap-6 lg:grid-cols-[1.05fr_0.95fr]", tone.shell)}>
-        <div className="space-y-5 rounded-[1.6rem] border border-slate-200/80 bg-white/85 p-5 shadow-sm md:p-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em]", tone.badge)}>
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              {locale === "fr" ? "Aperçu visuel" : "Visual overview"}
-            </span>
-            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
-              {card.visual.badge[locale]}
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
-              {question}
-            </h2>
-            <p className="cmm-text-body max-w-2xl">
-              {clue}
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            {(card.visual.stats ?? []).slice(0, 3).map((stat) => (
-              <StatBadge
-                key={`${card.title}-${stat.value}-${stat.label[locale]}`}
-                locale={locale}
-                value={stat.value}
-                label={stat.label}
-                accent={tone.accent}
-              />
-            ))}
-          </div>
-
+    <LearnVisualIntroFrame card={card} className={className}>
+      <LearnVisualIntroLead
+        locale={locale}
+        card={card}
+        question={question}
+        clue={clue}
+        eyebrow={locale === "fr" ? "Aperçu visuel" : "Visual overview"}
+        action={action}
+        actionClassName="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+        chips={
           <div className="flex flex-wrap gap-2">
             {card.visual.chips.map((chip) => (
               <span
                 key={`${card.title}-${chip[locale]}`}
                 className={cn(
                   "inline-flex min-h-8 items-center rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em]",
-                  tone.chip,
+                  LEARN_VISUAL_INTRO_TONES[card.visual.tone].chip,
                 )}
               >
                 {chip[locale]}
               </span>
             ))}
           </div>
+        }
+      />
 
-          <Link
-            href={action.href}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
-          >
-            {action.label}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        </div>
-
-        <div className="space-y-3 rounded-[1.6rem] border border-slate-200/80 bg-white/85 p-5 shadow-sm md:p-6">
+      <div className="space-y-3 rounded-[1.6rem] border border-slate-200/80 bg-white/85 p-5 shadow-sm md:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
@@ -320,7 +246,7 @@ export function LearnComprendreVisualIntro({
                 {card.title}
               </h3>
             </div>
-            <span className={cn("inline-flex h-11 w-11 items-center justify-center rounded-2xl border", tone.badge)}>
+            <span className={cn("inline-flex h-11 w-11 items-center justify-center rounded-2xl border", LEARN_VISUAL_INTRO_TONES[card.visual.tone].badge)}>
               <Layers3 className="h-5 w-5" aria-hidden="true" />
             </span>
           </div>
@@ -360,7 +286,6 @@ export function LearnComprendreVisualIntro({
             </div>
           </div>
         </div>
-      </div>
-    </section>
+    </LearnVisualIntroFrame>
   );
 }
