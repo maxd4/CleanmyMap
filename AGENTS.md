@@ -316,6 +316,22 @@ Les seuils, statuts et politiques quantitatives sont définis dans
 `documentation/development/conventions-modularisation.md` et les contrôles
 sous `scripts/`.
 
+La réduction de la taille d'un fichier n'est jamais une preuve suffisante de
+modularisation. Toute création, modification substantielle, extraction ou
+déplacement de code est relu à deux niveaux : le module ou fichier, puis les
+fonctions, méthodes, composants et handlers internes concernés.
+
+Après toute écriture ou tout déplacement, relire les fonctions créées,
+déplacées ou substantiellement modifiées et vérifier leur responsabilité,
+leurs étapes logiques, leurs effets de bord et leurs frontières extractibles.
+Ne jamais transformer un monolithe de fichier en monolithe de fonction. Ne
+jamais déplacer intacte une grosse fonction uniquement pour passer un seuil
+top-heavy. Décomposer lorsqu'une fonction contient plusieurs responsabilités
+autonomes. Conserver une fonction longue uniquement lorsqu'elle constitue
+réellement un algorithme ou un pipeline cohésif et que l'extraction dégraderait
+sa cohésion. Toute fonction touchée ne doit pas devenir plus longue ou plus
+complexe sans nécessité contractuelle démontrée.
+
 Avant de supprimer ou remplacer un élément, vérifier qu’il ne porte pas encore :
 
 - une connaissance métier ou de sécurité unique ;
@@ -628,6 +644,28 @@ identique sur le même candidat sans raison.
   2. dans une préparation immédiate et explicitement demandée de déploiement Vercel.
 - `checks:full` ne peut jamais être une STOP CONDITION ou un critère de clôture générique d’un lot ordinaire.
 - Si un prompt demande `checks:full` hors de ces deux cas, ne pas l’exécuter : retourner `NOT_RUN_POLICY` et poursuivre avec les validations proportionnées.
+
+Pour toute mutation de code source, exécuter lorsque les outils s'appliquent :
+
+```text
+npm run quality:complexity
+npm run quality:dead-code
+```
+
+Pour toute extraction ou tout déplacement inter-modules, exécuter également :
+
+```text
+npm run quality:duplication
+npm run quality:cycles
+```
+
+Ces contrôles spécialisés sont obligatoires avant la clôture du lot et ne
+déclenchent jamais `checks:full`.
+
+Un lot ne peut pas être déclaré terminé avec une conséquence imputable non
+qualifiée : `BASELINE_STALE` complexity, nouveau dead-code, nouveau cycle,
+nouvelle duplication actionnable, export ou façade devenue inutile, ou
+fonction déplacée qui reste inutilement multi-responsabilités.
 
 Les modes, commandes, budgets, scopes Git, E2E et politiques de qualité sont
 canoniques dans :
