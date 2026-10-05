@@ -8,47 +8,7 @@ import {
   resolveActionTerritoryDestination,
   resolveShareTerritoryDestination,
 } from "./action-sharing";
-import type { ActionRow } from "@/types/database";
-
-const baseAction = {
-  id: "11111111-1111-4111-8111-111111111111",
-  created_at: "2098-12-01T10:00:00.000Z",
-  updated_at: "2098-12-01T10:00:00.000Z",
-  created_by_clerk_id: "owner-1",
-  actor_name: "Alex",
-  action_date: "2099-01-01",
-  location_label: "Berges de Seine",
-  latitude: 48.85,
-  longitude: 2.35,
-  derived_geometry_kind: "polyline" as const,
-  derived_geometry_geojson: '{"type":"LineString","coordinates":[[2.35,48.85],[2.36,48.86]]}',
-  geometry_confidence: 0.9,
-  geometry_source: "routed" as const,
-  waste_kg: null,
-  cigarette_butts: null,
-  volunteers_count: 12,
-  duration_minutes: 75,
-  event_start_time: "10:00",
-  event_end_time: "11:15",
-  notes: null,
-  status: "approved" as const,
-  published_at: "2098-12-01T10:00:00.000Z",
-  moderation_visibility: "visible" as const,
-  action_phase: "pre_action" as const,
-  preparation_data: {
-    actionTitle: "Nettoyage des berges",
-    plannedObjective: "nettoyage" as const,
-    volunteerParticipation: {
-      childrenCount: 2,
-      adultCount: 8,
-      retiredCount: 2,
-      participantsCount: 12,
-      effectiveVolunteerUnits: 10,
-      effectiveVolunteerUnitsFormulaVersion: "effective-volunteer-units-v1",
-    },
-    groupJoinEnabled: true,
-  },
-} satisfies ActionRow;
+import { publicAction as baseAction } from "@/lib/actions/public-action.test-fixture";
 
 describe("action sharing contract", () => {
   it("requires a published, visible future pre-action", () => {

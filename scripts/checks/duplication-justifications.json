@@ -464,6 +464,1094 @@
       "reason": "Les tokens de boutons neutres sont répétés entre deux thèmes dont les hover et accents divergent ; les fusionner créerait une abstraction de palette sans contrat produit partagé.",
       "evidence": "apps/web/src/lib/ui/button-theme.ts:410-427 et apps/web/src/lib/ui/button-theme.ts:538-555 ; les valeurs voisines servent des thèmes distincts.",
       "reviewedRef": "7f5e64f0a329fd43064679a8c8b5c4299221c8ce"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4b0a206b5f9f4486",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.test.ts:1-6 et apps/web/src/app/api/actions/[actionId]/publish/route.test.ts:1-6 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c2f9b7d83490c28d",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.test.ts:8-14 et apps/web/src/app/api/actions/[actionId]/route.active-role.test.ts:12-19 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "cde52543095965d6",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.test.ts:83-91 et apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.test.ts:97-105 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "e5c6bc7c52298382",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.test.ts:158-167 et apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.test.ts:179-188 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "16f5cd5bbe81e027",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:45-57 et apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:161-173 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f97e74a55865ba97",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:85-99 et apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:185-199 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "eae07c0daa9412e7",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:86-95 et apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:148-157 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "7d1b0b6b3ca12550",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:87-95 et apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:103-111 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "7d03e36c6be25d3f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:87-95 et apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:123-131 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "11898f65095a53ba",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:87-95 et apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:272-280 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "a712baeda1ac5a90",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:105-112 et apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:125-132 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "074dbd039346c57f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:125-135 et apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:151-161 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4a952a62b6eaa1e7",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:160-172 et apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:220-232 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "e56facfec4f48bfa",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:183-193 et apps/web/src/app/api/actions/[actionId]/audit/route.test.ts:207-217 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "291b7478716b20e4",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:7-12 et apps/web/src/app/api/actions/[actionId]/route-version/route.test.ts:5-10 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "e02ef5a6934f531d",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:7-12 et apps/web/src/app/api/chat/action-exclusions/route.test.ts:1-6 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c7c08fc587725583",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:124-130 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:172-182 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "fff01199fba044c1",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:124-131 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:233-241 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "8c5fbccc9939878e",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:124-132 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:301-310 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f721b2f25f389e33",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:124-131 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:361-369 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "14989f3c8cb5c56a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:130-149 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:184-203 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "23d6b99f4854880f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:138-149 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:248-259 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c7f842a1ab831ae5",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:140-149 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:378-387 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3f34ec6a53496b73",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:170-182 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:231-240 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c6373e2e13423307",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:170-182 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:359-368 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f598e371704c593c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:171-182 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:300-308 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "78dc1fd9453b0cc5",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:196-203 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:252-259 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "a1a40c48231bec58",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:196-203 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:380-387 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "97b05916b3f99675",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:198-205 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:322-329 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "40ff1c06592e0419",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:242-259 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:310-327 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "b5ecbf829114f5a9",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:286-298 et apps/web/src/app/api/actions/[actionId]/formalities/route.test.ts:368-380 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "b9d01a87bad4d70c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/group-join/route.get.test.ts:84-103 et apps/web/src/app/api/actions/[actionId]/group-join/route.get.test.ts:150-169 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4bb0aa4127da0d98",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/group-join/route.get.test.ts:263-277 et apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts:556-570 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "34e49349eb177b19",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/group-join/route.patch.test.ts:127-138 et apps/web/src/app/api/actions/[actionId]/group-join/route.patch.test.ts:192-203 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ed56ef42b6166409",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts:290-299 et apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts:385-394 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "e6e9698a534aa51d",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/participation-claim/route.test.ts:117-130 et apps/web/src/app/api/actions/[actionId]/participation-claim/route.test.ts:150-163 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ba36b16b04fffd62",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/participation-claim/route.test.ts:120-130 et apps/web/src/app/api/actions/[actionId]/participation-claim/route.test.ts:170-179 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "21691b8ee9690fe0",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/publish/route.test.ts:56-61 et apps/web/src/app/api/actions/[actionId]/publish/route.test.ts:80-85 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c28f9480bfd11f24",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.active-role.test.ts:154-160 et apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:62-69 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4b92e172fbb22bf4",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.active-role.test.ts:154-163 et apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:112-121 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1d569789cdf28d3a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.active-role.test.ts:178-186 et apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:24-32 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "b2a02c2f6e7c1fbe",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:18-29 et apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:151-162 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "923d472dcfe0335e",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:34-50 et apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:132-148 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "85fb47355fcf96bb",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:42-62 et apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:92-112 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "419e264d44e401e2",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:53-62 et apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:148-157 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d771525a35eca642",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:169-187 et apps/web/src/app/api/actions/[actionId]/route.participants-organizers.test.ts:58-76 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "96e79bd8efbea64f",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.impact-override.test.ts:178-193 et apps/web/src/app/api/actions/[actionId]/route.participants-organizers.test.ts:109-124 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c2b251dbb7aab096",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.participants-organizers.test.ts:32-52 et apps/web/src/app/api/actions/[actionId]/route.participants-organizers.test.ts:68-88 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "713ed6c71f8b2c34",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.participants-organizers.test.ts:35-51 et apps/web/src/app/api/actions/[actionId]/route.test.ts:47-63 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3e68543a081fa43f",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/route.participants-organizers.test.ts:106-118 et apps/web/src/app/api/actions/[actionId]/route.test.ts:78-89 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5630f7836462a08f",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/group-join/route.post.test.ts:86-97 et apps/web/src/lib/actions/participation/group-participation.test.ts:323-334 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "09a0630c324d6e31",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/group-join/route.post.test.ts:157-162 et apps/web/src/app/api/actions/group-join/route.post.test.ts:204-209 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f69d6ecba60df8c6",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/group-join/route.post.test.ts:225-236 et apps/web/src/app/api/actions/group-join/route.post.test.ts:256-267 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "7b59187c1e8bc14a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/group-join/route.post.test.ts:236-245 et apps/web/src/app/api/actions/group-join/route.post.test.ts:267-276 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1a29d5dd2b4fa772",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/group-join/route.post.test.ts:276-292 et apps/web/src/app/api/actions/group-join/route.post.test.ts:294-310 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ca156a50628d8bac",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/group-join/route.test.ts:55-64 et apps/web/src/app/api/actions/group-join/route.test.ts:92-101 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "388a577cfa1de6db",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/group-join/route.test.ts:90-98 et apps/web/src/app/api/actions/group-join/route.test.ts:131-139 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "750e486525b03101",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/group-join/route.test.ts:138-145 et apps/web/src/app/api/actions/group-join/route.test.ts:224-231 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3229d00bbacf15d9",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/route.submit.test.ts:112-126 et apps/web/src/app/api/actions/route.submit.test.ts:146-160 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4548b96a44752c31",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/route.submit.test.ts:112-126 et apps/web/src/app/api/actions/route.submit.test.ts:217-231 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3ab2959311f3f38b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/route.submit.test.ts:151-161 et apps/web/src/app/api/actions/route.submit.test.ts:222-232 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "964fabe0a5a0c7ec",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/route.test.ts:162-175 et apps/web/src/lib/actions/map/map-route.test.ts:24-37 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "8f0fa0ef63b414fa",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/actions/route.test.ts:351-364 et apps/web/src/app/api/actions/route.test.ts:369-382 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5f7a59d5ffb671e0",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/creator-inbox/route.test.ts:281-294 et apps/web/src/app/api/admin/creator-inbox/route.test.ts:308-321 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "21858b1db2517870",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/creator-inbox/route.test.ts:290-299 et apps/web/src/app/api/admin/creator-inbox/route.test.ts:570-578 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "17d48049e2d7da89",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/creator-inbox/route.test.ts:345-351 et apps/web/src/app/api/admin/creator-inbox/route.test.ts:383-389 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "03cb0f0e1b5b5cd8",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/creator-inbox/route.test.ts:345-351 et apps/web/src/app/api/admin/creator-inbox/route.test.ts:456-462 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "caa28ddbe706d917",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/creator-inbox/route.test.ts:436-446 et apps/web/src/app/api/admin/creator-inbox/route.test.ts:477-487 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "57e863786ea1552b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/creator-inbox/route.test.ts:596-606 et apps/web/src/app/api/admin/creator-inbox/route.test.ts:636-646 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "b6520d4dbd7036c0",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/admin/creator-inbox/route.test.ts:635-644 et apps/web/src/app/api/admin/partners/published-directory/route.test.ts:240-249 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ea394f4b5006ec43",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/environmental-impact/route.test.ts:26-41 et apps/web/src/app/api/admin/environmental-impact/route.test.ts:55-70 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0f7e4c0a5e4622ae",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/partners/published-directory/route.test.ts:141-152 et apps/web/src/app/api/admin/partners/published-directory/route.test.ts:214-226 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ef1592ef22aff625",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/partners/published-directory/route.test.ts:213-225 et apps/web/src/app/api/admin/partners/published-directory/route.test.ts:232-244 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "b0fd071ea20a27bb",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/role-accounts/route.test.ts:106-112 et apps/web/src/app/api/admin/role-accounts/route.test.ts:185-191 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "85a6b08c1ebd2d0d",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/role-accounts/route.test.ts:115-129 et apps/web/src/app/api/admin/role-accounts/route.test.ts:139-153 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "49015e003bc0df3b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/role-accounts/route.test.ts:119-129 et apps/web/src/app/api/admin/role-accounts/route.test.ts:323-334 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "dcd116364631750a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/role-accounts/route.test.ts:163-172 et apps/web/src/app/api/admin/role-accounts/route.test.ts:194-203 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "a91308aba8a4de43",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/role-accounts/route.test.ts:163-171 et apps/web/src/app/api/admin/role-accounts/route.test.ts:272-280 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "13515b6de4f2c82c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/admin/storage-usage/route.test.ts:145-157 et apps/web/src/app/api/admin/storage-usage/route.test.ts:167-179 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "28c316bc98807e47",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/admin/storage-usage/route.test.ts:148-156 et apps/web/src/app/api/reports/generations/route.test.ts:230-238 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4eec39e489c59603",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/admin/storage-usage/route.test.ts:148-156 et apps/web/src/app/api/sandbox/runbook-checks/route.test.ts:194-202 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "736894bd23dd8005",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/community/bug-reports/route.patch.test.ts:17-25 et apps/web/src/app/api/community/bug-reports/route.test.ts:26-34 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "9c6f2d070da05f42",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/community/bug-reports/route.test.ts:9-14 et apps/web/src/app/api/legal-content-reports/route.test.ts:10-15 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "db039bdb52aabc6e",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/community/bug-reports/route.test.ts:74-81 et apps/web/src/app/api/contact/route.test.ts:36-43 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1d7f98f3400dc843",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/community/bug-reports/route.test.ts:88-95 et apps/web/src/app/api/contact/route.test.ts:43-50 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2abcf2d22136995c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/community/events/route.test.ts:178-187 et apps/web/src/app/api/community/events/route.test.ts:211-220 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "529036b838b38f8c",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.response.test.ts:9-14 et apps/web/src/app/api/route/recommend/route.test.ts:20-24 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2e0086a860f7d201",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.response.test.ts:61-78 et apps/web/src/app/api/route/recommend/route.test.ts:303-320 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f970fbafcb5b66cf",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.response.test.ts:385-406 et apps/web/src/app/api/route/recommend/route.response.test.ts:462-483 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "e5448bdcbf9cb779",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.response.test.ts:385-395 et apps/web/src/app/api/route/recommend/route.response.test.ts:690-700 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "6acbdeaee9e5f6ea",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.response.test.ts:489-503 et apps/web/src/app/api/route/recommend/route.response.test.ts:654-668 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "7e4065499cc12ee9",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.response.test.ts:567-580 et apps/web/src/lib/route/route-planner.test.ts:74-87 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c30aa606d321a17b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.routing.test.ts:233-242 et apps/web/src/app/api/route/recommend/route.routing.test.ts:302-311 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1ed308c80996a9f5",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.routing.test.ts:233-241 et apps/web/src/app/api/route/recommend/route.routing.test.ts:465-473 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "cc36fc8e7ac7dfd5",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.routing.test.ts:263-276 et apps/web/src/app/api/route/recommend/route.routing.test.ts:326-339 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "307b0991afff6fe1",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.routing.test.ts:265-275 et apps/web/src/app/api/route/recommend/route.routing.test.ts:477-487 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "59c0ef7bd33de01b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.routing.test.ts:266-275 et apps/web/src/app/api/route/recommend/route.routing.test.ts:367-376 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d11c9d224244e692",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.routing.test.ts:354-366 et apps/web/src/app/api/route/recommend/route.routing.test.ts:422-435 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c8ea43f84e3e2bc1",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.routing.test.ts:366-376 et apps/web/src/app/api/route/recommend/route.routing.test.ts:447-457 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "dd06827e4044406d",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.test.ts:289-295 et apps/web/src/app/api/route/recommend/route.test.ts:385-391 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2cb532d403c737b8",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/app/api/route/recommend/route.test.ts:365-372 et apps/web/src/app/api/route/recommend/route.test.ts:383-390 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "172b856e83b9bf23",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/action-update-persistence.test.ts:89-103 et apps/web/src/lib/actions/action-update-persistence.test.ts:125-139 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d22221334f8c3459",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/lib/actions/exports/action-route-gpx.test.ts:13-28 et apps/web/src/lib/actions/geometry/final-geometry.test.ts:21-35 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "651c4714a0d2f5f9",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/formalities-qualification.test.ts:455-468 et apps/web/src/lib/actions/formalities-qualification.test.ts:514-527 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "05fe0fc9741daddc",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/lib/actions/geometry/route-reconstruction.test.ts:2-11 et apps/web/src/lib/actions/store-create-gpx.test.ts:1-10 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "6864cfebd810b051",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/lib/actions/participation/group-participation.test.ts:31-36 et apps/web/src/lib/gamification/badges/listing.test.ts:38-43 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0a3652e5978ebe9c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/participation/group-participation.test.ts:39-51 et apps/web/src/lib/actions/participation/group-participation.test.ts:74-86 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "99032d3e8d80906a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/lib/actions/participation/group-participation.test.ts:94-99 et apps/web/src/lib/gamification/progression-data.complete-actions.test.ts:35-39 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "cea148023236f1ec",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/participation/group-participation.test.ts:250-262 et apps/web/src/lib/actions/participation/group-participation.test.ts:283-295 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1bd5519fe7da7384",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/participation/group-participation.test.ts:304-317 et apps/web/src/lib/actions/participation/group-participation.test.ts:343-356 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0fc666357c56f1d2",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/participation/group-participation.test.ts:306-317 et apps/web/src/lib/actions/participation/group-participation.test.ts:416-427 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "dbf62631dbfc6fe9",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/lib/actions/participation/organizers.test.ts:30-37 et apps/web/src/lib/gamification/progression-data.organizers.test.ts:66-72 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c800d2d5d38da42e",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/participation/participant-summaries.test.ts:63-68 et apps/web/src/lib/actions/participation/participant-summaries.test.ts:185-190 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d2923c66ac549021",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/lib/actions/pollution/current-place-state.test.ts:9-23 et apps/web/src/lib/actions/pollution/local-repollution-calibration.test.ts:21-35 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d616a18290aa3313",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/lib/actions/pollution/initial-nearest-pollution-source.test.ts:5-10 et apps/web/src/lib/route/route-recommendation-loader.test.ts:5-10 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "aa8cc5e20f891bee",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/signalement/create-signalement.test.ts:40-45 et apps/web/src/lib/actions/signalement/create-signalement.test.ts:104-109 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5fa872274f5ee91c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/store.test.ts:167-182 et apps/web/src/lib/actions/store.test.ts:194-209 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1bda67d1476d257f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/store.test.ts:296-308 et apps/web/src/lib/actions/store.test.ts:317-327 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "fc7374c51e2e8787",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/store.test.ts:296-306 et apps/web/src/lib/actions/store.test.ts:355-364 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "fc6b7e1717b0d143",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/store.test.ts:397-407 et apps/web/src/lib/actions/store.test.ts:468-478 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f2b7fec2929872e4",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La similarité restante est un motif de setup, payload ou projection de test entre contrats distincts ; aucune primitive technique stable ne peut être extraite sans coupler les suites ou masquer leurs assertions métier.",
+      "evidence": "apps/web/src/lib/actions/trash-spotter-actionable-candidates.test.ts:15-27 et apps/web/src/lib/route/trash-spotter-recommendation.test.ts:16-28 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "17ef55683aedb777",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/unified-source.test.ts:232-243 et apps/web/src/lib/actions/unified-source.test.ts:255-266 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4e1bf7689c103bab",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/unified-source.test.ts:232-244 et apps/web/src/lib/actions/unified-source.test.ts:271-283 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1a81b6a3921e9625",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/unified-source.test.ts:257-267 et apps/web/src/lib/actions/unified-source.test.ts:294-304 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "00d27595349d54fb",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/actions/unified-source.test.ts:271-282 et apps/web/src/lib/actions/unified-source.test.ts:292-303 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "670c006e9c5f00f1",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/auth/local-dev-auth-state.server.test.ts:40-50 et apps/web/src/lib/auth/local-dev-auth-state.server.test.ts:50-60 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "20fcee0ecd434af4",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/auth/sync.test.ts:117-125 et apps/web/src/lib/auth/sync.test.ts:152-160 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "954d25060f0ba6b9",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/auth/sync.test.ts:117-125 et apps/web/src/lib/auth/sync.test.ts:184-192 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "fc4fc21b3c52b4d1",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/auth/sync.test.ts:119-125 et apps/web/src/lib/auth/sync.test.ts:485-491 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c4798bd67ba53c67",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/auth/sync.test.ts:151-160 et apps/web/src/lib/auth/sync.test.ts:368-377 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "28eb3140e503ca60",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/auth/sync.test.ts:151-160 et apps/web/src/lib/auth/sync.test.ts:412-421 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1d995835a33e4777",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/auth/sync.test.ts:182-192 et apps/web/src/lib/auth/sync.test.ts:214-224 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f6e5d1e3bfd7461f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/auth/sync.test.ts:182-192 et apps/web/src/lib/auth/sync.test.ts:329-339 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "7f9aac61ce200ecb",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/authz.creator-email.test.ts:82-95 et apps/web/src/lib/authz.creator-email.test.ts:104-117 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4820caf1cc3f6b73",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/supabase/clerk-rls.test.ts:4-17 et apps/web/src/lib/supabase/client.test.ts:14-27 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0419a62e5bf358ee",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
+      "evidence": "apps/web/src/lib/supabase/migration-contracts/landing-summary-migration.test.ts:15-27 et apps/web/src/lib/supabase/migration-contracts/public-landing-action-aggregation-migration.test.ts:30-42 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
+      "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
     }
   ]
 }
