@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "bcdf4dce6f5f15fe898fafee689b015e9f4760bc",
+  "sourceCommit": "e4db412b8eb7392bd4382ca9291033500940e4a5",
   "tool": "jscpd",
   "toolVersion": "5.3.0",
   "minLines": 5,
@@ -8,15 +8,15 @@
   "policyFingerprint": "93c9f907e5320ec229f6df6e7aad86b37b0f4ef5273530b2875a49c3b8945783",
   "scopes": {
     "runtime": {
-      "files": 1717,
-      "lines": 276775,
-      "tokens": 1459715,
+      "files": 1716,
+      "lines": 276734,
+      "tokens": 1459544,
       "clones": 121,
       "fingerprints": 121,
       "duplicatedLines": 1484,
       "duplicatedTokens": 8007,
-      "percentage": 0.5361755938939572,
-      "percentageTokens": 0.5485317339343639
+      "percentage": 0.5362554175075106,
+      "percentageTokens": 0.5485955136441684
     },
     "tests": {
       "files": 1033,

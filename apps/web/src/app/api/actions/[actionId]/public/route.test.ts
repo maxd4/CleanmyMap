@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { publicAction } from "@/lib/actions/public-action.test-fixture";
+import { publicAction } from "@/fixtures/public-action";
 
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
