@@ -53,10 +53,10 @@
     {
       "path": "apps/web/src/app/docs/[...segments]/route.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 677,
-      "maxBytes": 18727
+      "status": "IMPROVED",
+      "reviewedRef": "cdd976bfae4cb429a35faddc97ef5c9c3c7d79b7",
+      "maxLines": 49,
+      "maxBytes": 1553
     },
     {
       "path": "apps/web/src/components/accueil/accueil-community-credibility.tsx",
