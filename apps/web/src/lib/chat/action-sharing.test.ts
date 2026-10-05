@@ -8,7 +8,7 @@ import {
   resolveActionTerritoryDestination,
   resolveShareTerritoryDestination,
 } from "./action-sharing";
-import { publicAction as baseAction } from "@/lib/actions/public-action.test-fixture";
+import { publicAction as baseAction } from "@/fixtures/public-action";
 
 describe("action sharing contract", () => {
   it("requires a published, visible future pre-action", () => {
