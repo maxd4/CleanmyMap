@@ -620,13 +620,14 @@ preuve ciblée
 Commencer par la preuve la plus ciblée utile. Ne pas relancer une suite lourde
 identique sur le même candidat sans raison.
 
-`npm run checks:full` est réservé à deux situations : une préparation
-immédiate de déploiement Vercel, ou un prompt explicitement dédié à
-`checks:full`. Il ne fait pas partie de la clôture normale d’un lot. Si la
-commande est ajoutée à la fin d’un autre lot sans que ce lot soit un prompt
-dédié ou une préparation Vercel, ne pas l’exécuter et signaler `NOT_RUN_POLICY`;
-utiliser les validations ciblées et `checks:fast` lorsque le blast radius le
-justifie. Un déploiement Vercel reste lui-même soumis à une demande explicite.
+- Un prompt de correction, refactor, audit, duplication, dead-code, documentation ou maintenance ordinaire ne doit pas inclure `npm run checks:full` par défaut.
+- L’absence de `checks:full` dans un lot normal n’est pas une validation manquante.
+- La validation normale est : preuves ciblées → contrats concernés → sécurité/régression concernée → `checks:fast` uniquement si le blast radius le justifie.
+- `checks:full` est autorisé uniquement :
+  1. dans un prompt explicitement dédié à `checks:full` ;
+  2. dans une préparation immédiate et explicitement demandée de déploiement Vercel.
+- `checks:full` ne peut jamais être une STOP CONDITION ou un critère de clôture générique d’un lot ordinaire.
+- Si un prompt demande `checks:full` hors de ces deux cas, ne pas l’exécuter : retourner `NOT_RUN_POLICY` et poursuivre avec les validations proportionnées.
 
 Les modes, commandes, budgets, scopes Git, E2E et politiques de qualité sont
 canoniques dans :

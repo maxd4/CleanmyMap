@@ -734,6 +734,18 @@ avec le mode explicitement activé.
 Ne pas déclencher d'audit GitHub, de navigateur, de build complet ou de suite
 lourde sans nécessité démontrée par le périmètre.
 
+ChatGPT ne doit pas inclure `npm run checks:full` dans les prompts ordinaires.
+Il doit demander les validations les plus ciblées capables de prouver le lot,
+puis `checks:fast` uniquement lorsque le blast radius le justifie.
+
+`checks:full` est réservé exclusivement :
+- à un prompt explicitement consacré à cette commande ;
+- à une préparation immédiate de déploiement Vercel explicitement demandée.
+
+L’absence de `checks:full` n’est jamais, à elle seule, un motif pour considérer
+un lot incomplet. ChatGPT ne doit pas utiliser `checks:full` comme STOP CONDITION
+générique ni le rajouter « par sécurité » à la fin d’un prompt.
+
 Le workflow normal ne propose ni branche de chantier, ni worktree, ni claims,
 ni mutex. Le lifecycle est :
 
@@ -823,7 +835,9 @@ Le hook `.githooks/pre-push` doit exécuter le garde rapide sur le
 `PUSH_CANDIDATE` exact transmis par Git. Il ne doit jamais contourner un
 contrôle ni pousser un candidat invalide. Les validations larges sont
 exécutées par la CI ou avant une release lorsqu'elles sont explicitement
-requises, notamment via `checks:full`, `pre-release:check` et les builds.
+requises, sans que ChatGPT ajoute `checks:full` à un prompt ordinaire ; les
+contrôles restent ciblés et `checks:fast` n'est utilisé que si le blast radius
+le justifie.
 `npm run checks:changed` est un contrôle de développement `WORKTREE`, et non
 une preuve de publication. Un échec démontré comme étranger peut être signalé
 `SKIPPED_PARALLEL_CHANTIER` lorsque `STAGED` et `PUSH_CANDIDATE` sont verts ;
@@ -899,6 +913,11 @@ tests directement affectés
 → typecheck / lint pertinent
 → checks plus larges si nécessaires
 ```
+
+Les checks plus larges restent proportionnés au blast radius. `checks:full`
+n’est jamais une validation standard de fin de lot : son usage est réservé aux
+deux cas explicitement définis dans la section 17. Son absence ne rend pas un
+lot incomplet et ne constitue pas une STOP CONDITION générique.
 
 Pour un bug réel :
 
