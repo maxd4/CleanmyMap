@@ -1,11 +1,4 @@
-export function escapeHtml(value: unknown): string {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+import { escapeHtml } from "@/lib/security/html-escape";
 
 function renderInlineMarkdown(value: string): string {
   const escaped = escapeHtml(value);
@@ -79,59 +72,50 @@ function renderCodeBlock(lines: string[], startIndex: number) {
   return { html, nextIndex: index < lines.length ? index + 1 : index };
 }
 
+function collectBlockLines(
+  lines: string[],
+  startIndex: number,
+  shouldContinue: (line: string) => boolean,
+) {
+  const endIndex = lines.findIndex((line, index) => index >= startIndex && !shouldContinue(line));
+  const nextIndex = endIndex === -1 ? lines.length : endIndex;
+  return { lines: lines.slice(startIndex, nextIndex), nextIndex };
+}
+
 function renderCallout(lines: string[], startIndex: number) {
   const kind = (lines[startIndex] ?? "").trim().replace(/^:::\s*/, "").trim();
   const allowedKind = kind === "important" || kind === "limite" ? kind : "note";
-  const body: string[] = [];
-  let index = startIndex + 1;
-
-  while (index < lines.length && (lines[index] ?? "").trim() !== ":::") {
-    body.push(lines[index] ?? "");
-    index += 1;
-  }
+  const block = collectBlockLines(lines, startIndex + 1, (line) => line.trim() !== ":::");
 
   const html = `
         <aside class="cmm-doc-callout cmm-doc-callout-${allowedKind}">
           <div class="cmm-doc-callout-title">${
             allowedKind === "limite" ? "Limite" : allowedKind === "important" ? "Important" : "Note"
           }</div>
-          ${renderMarkdown(body.join("\n"))}
+          ${renderMarkdown(block.lines.join("\n"))}
         </aside>
       `;
 
-  return { html, nextIndex: index < lines.length ? index + 1 : index };
+  return { html, nextIndex: block.nextIndex < lines.length ? block.nextIndex + 1 : block.nextIndex };
 }
 
 function renderTableBlock(lines: string[], startIndex: number) {
-  const tableLines: string[] = [];
-  let index = startIndex;
-
-  while (index < lines.length && (lines[index] ?? "").trim().startsWith("|")) {
-    tableLines.push(lines[index] ?? "");
-    index += 1;
-  }
-
-  return { html: renderTable(tableLines), nextIndex: index };
+  const block = collectBlockLines(lines, startIndex, (line) => line.trim().startsWith("|"));
+  return { html: renderTable(block.lines), nextIndex: block.nextIndex };
 }
 
 function renderListBlock(lines: string[], startIndex: number, ordered: boolean) {
   const items: string[] = [];
-  let index = startIndex;
   const isListItem = (line: string) => ordered ? /^\d+\.\s/.test(line) : line.startsWith("- ") || line.startsWith("* ");
-
-  while (index < lines.length) {
-    const current = (lines[index] ?? "").trim();
-    if (!isListItem(current)) {
-      break;
-    }
+  const block = collectBlockLines(lines, startIndex, (line) => isListItem(line.trim()));
+  for (const current of block.lines.map((line) => line.trim())) {
     items.push(ordered ? current.replace(/^\d+\.\s/, "") : current.slice(2));
-    index += 1;
   }
 
   const tag = ordered ? "ol" : "ul";
   return {
     html: `<${tag}>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</${tag}>`,
-    nextIndex: index,
+    nextIndex: block.nextIndex,
   };
 }
 
@@ -180,17 +164,9 @@ export function renderMarkdown(markdown: string): string {
       continue;
     }
 
-    if (trimmed.startsWith(":::")) {
+    if (trimmed.startsWith(":::") || (trimmed.startsWith("|") && (lines[index + 1] ?? "").includes("---"))) {
       flushParagraph();
-      const block = renderCallout(lines, index);
-      html.push(block.html);
-      index = block.nextIndex;
-      continue;
-    }
-
-    if (trimmed.startsWith("|") && (lines[index + 1] ?? "").includes("---")) {
-      flushParagraph();
-      const block = renderTableBlock(lines, index);
+      const block = trimmed.startsWith(":::") ? renderCallout(lines, index) : renderTableBlock(lines, index);
       html.push(block.html);
       index = block.nextIndex;
       continue;

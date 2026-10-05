@@ -1,4 +1,4 @@
-import { escapeHtml } from "./route-markdown";
+import { escapeHtml } from "@/lib/security/html-escape";
 
 export type DocumentationViewerKind = "markdown" | "image" | "text";
 
