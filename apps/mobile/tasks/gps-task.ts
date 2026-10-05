@@ -25,6 +25,20 @@ import { getStoredMissionId, bufferPoint, flushBuffer } from '../lib/storage';
 import { GPS_TASK_NAME } from '../lib/tracking-service';
 import type { MissionLocationInsert } from '../types/mission';
 
+function toMissionLocationInsert(
+  missionId: string,
+  location: Location.LocationObject,
+): MissionLocationInsert {
+  return {
+    mission_id: missionId,
+    latitude: location.coords.latitude,
+    longitude: location.coords.longitude,
+    accuracy_m: location.coords.accuracy,
+    altitude_m: location.coords.altitude,
+    recorded_at: new Date(location.timestamp).toISOString(),
+  };
+}
+
 // Enregistrement de la tâche — doit être au top-level du module
 TaskManager.defineTask(GPS_TASK_NAME, async ({ data, error }) => {
   if (error) {
@@ -45,27 +59,13 @@ TaskManager.defineTask(GPS_TASK_NAME, async ({ data, error }) => {
     // Un réveil headless sans session Clerk valide ne doit jamais basculer vers
     // Supabase Auth anonyme. Les points restent dans le buffer local.
     for (const loc of locations) {
-      await bufferPoint({
-        mission_id: missionId,
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-        accuracy_m: loc.coords.accuracy,
-        altitude_m: loc.coords.altitude,
-        recorded_at: new Date(loc.timestamp).toISOString(),
-      });
+      await bufferPoint(toMissionLocationInsert(missionId, loc));
     }
     return;
   }
 
   for (const loc of locations) {
-    const point: MissionLocationInsert = {
-      mission_id: missionId,
-      latitude: loc.coords.latitude,
-      longitude: loc.coords.longitude,
-      accuracy_m: loc.coords.accuracy,
-      altitude_m: loc.coords.altitude,
-      recorded_at: new Date(loc.timestamp).toISOString(),
-    };
+    const point = toMissionLocationInsert(missionId, loc);
 
     let insertError: Error | null = null;
     try {
