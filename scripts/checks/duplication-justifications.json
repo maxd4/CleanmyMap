@@ -1552,6 +1552,1870 @@
       "reason": "Les blocs portent des scénarios indépendants dans une même suite ou une preuve de frontière AuthN/AuthZ/RLS ; conserver la répétition rend chaque assertion lisible et diagnostiquable sans déplacer une preuve de sécurité.",
       "evidence": "apps/web/src/lib/supabase/migration-contracts/landing-summary-migration.test.ts:15-27 et apps/web/src/lib/supabase/migration-contracts/public-landing-action-aggregation-migration.test.ts:30-42 ; les assertions et le contrat de la suite restent propres à chaque occurrence.",
       "reviewedRef": "d30fc9b000d68bcdefa805baae7d4d55d816c37f"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "d9dbdaded097c7f8",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/app/(app)/partners/dashboard/page.tsx:163-177 et apps/web/src/app/(app)/sponsor-portal/page.tsx:245-259 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "654dd08df7fd9b51",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/app/(app)/prints/report/page.tsx:190-198 et apps/web/src/app/(app)/prints/report/page.tsx:221-229 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e591554f60991554",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/app/api/chat/polls/[messageId]/vote/route.ts:127-146 et apps/web/src/app/api/chat/polls/[messageId]/vote/route.ts:196-215 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "ef2c4a06c2b97a69",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/app/api/email/test/route.ts:1-14 et apps/web/src/app/api/send/route.ts:2-15 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "1447f3e667f4c2fe",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/app/api/email/test/route.ts:17-22 et apps/web/src/app/api/send/route.ts:24-30 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "dab8a3b9d4bc4b3d",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/app/api/users/profile/display-name-mode/route.ts:51-61 et apps/web/src/app/api/users/profile/handle/route.ts:16-26 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "b31307c0ec750b97",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/app/docs/[...segments]/route.ts:19-25 et apps/web/src/components/sections/rubriques/route/route-pdf-export.ts:26-32 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "6af458b67c7bfd57",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/app/docs/[...segments]/route.ts:49-62 et apps/web/src/lib/pdf-export/official-report-html.ts:24-37 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "ea16f46b734216bb",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/app/docs/[...segments]/route.ts:140-149 et apps/web/src/lib/pdf-export/official-report-html.ts:72-79 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e9449796a57863d4",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/app/docs/[...segments]/route.ts:166-177 et apps/web/src/lib/pdf-export/official-report-html.ts:85-94 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "8dd538ef9446ffaa",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/app/docs/[...segments]/route.ts:612-618 et apps/web/src/app/docs/[...segments]/route.ts:630-636 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "a784756b24939026",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/app/learn/ressources/learn-ressources-calendar.tsx:15-35 et apps/web/src/app/learn/ressources/learn-ressources-overview.tsx:81-101 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "6634be2e168eb0f6",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/app/learn/ressources/learn-ressources-calendar.tsx:44-55 et apps/web/src/app/learn/ressources/learn-ressources-overview.tsx:104-115 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e867e303a26b5e18",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/app/learn/ressources/learn-ressources-digital-cleanup.tsx:37-60 et apps/web/src/app/learn/ressources/learn-ressources-digital-cleanup.tsx:116-139 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "a5d68fb3d2c39586",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/account/account-evolution-status-link.tsx:31-43 et apps/web/src/components/account/account-identity-chip.tsx:55-67 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "dc7bf8fd8f0c8c78",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/account/account-identity-chip.tsx:176-194 et apps/web/src/components/account/account-identity-chip.tsx:230-248 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "d2ba81b427142cb2",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/actions/action-declaration/sections/harvest-megots-section.tsx:198-208 et apps/web/src/components/actions/action-declaration/sections/harvest-waste-section.tsx:161-171 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "39666edd929e0413",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/actions/map-feed/_layouts/default-layout.tsx:90-104 et apps/web/src/components/actions/map-feed/_layouts/immersive-layout.tsx:118-132 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "2d67436fdff61b4c",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/actions/map-feed/_layouts/default-layout.tsx:120-131 et apps/web/src/components/actions/map-feed/_layouts/immersive-layout.tsx:151-162 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "f223f8a99dcdba54",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/actions/map-marker-categories.ts:122-134 et apps/web/src/components/actions/map/layers/map-layers.shared.ts:153-166 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "a4e4193dc4b383b9",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/actions/map/layers/map-layers-point-markers.tsx:151-170 et apps/web/src/components/actions/map/layers/map-layers-point-markers.tsx:243-262 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "70dc1bab1f74fdce",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/actions/map/popup/action-popup-content.helpers.ts:40-52 et apps/web/src/components/actions/map/selection/actions-map-selected-card.utils.ts:66-78 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "af26699ced6f2316",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/actions/map/scores/pollution-score-scope.ts:93-103 et apps/web/src/components/actions/map/scores/pollution-score-scope.ts:164-174 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "18967fcc10b60146",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-filter-bar.tsx:67-74 et apps/web/src/components/partners/onboarding/sections/GeneralInfoSection.tsx:53-60 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4fd9bbe62674fe9b",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/admin/feedback-requests-panel.tsx:106-113 et apps/web/src/components/admin/promotion-requests-panel.tsx:89-96 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "a6600717b6e39a6a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/admin/feedback-requests-panel.tsx:185-194 et apps/web/src/components/admin/promotion-requests-panel.tsx:165-174 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "29c0a410b82c86eb",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/admin/feedback-requests-panel.tsx:226-245 et apps/web/src/components/admin/promotion-requests-panel.tsx:179-198 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "256a376f33407cf5",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/admin/feedback-requests-panel.tsx:293-304 et apps/web/src/components/admin/promotion-requests-panel.tsx:223-235 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e58f9be3649b1f28",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/admin/promotion-requests-panel.tsx:277-285 et apps/web/src/components/admin/promotion-requests-panel.tsx:296-304 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "9afb308807950310",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/dashboard/storage-usage-panel.data.tsx:318-344 et apps/web/src/components/dashboard/storage-usage-panel.data.tsx:351-377 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "9d2b7f11d7aa4f16",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/learn/learn-behavior-awareness-section.tsx:3-15 et apps/web/src/components/learn/learn-tri-context-section.tsx:4-16 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "f49f14a358fe80da",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/learn/learn-gestes-propres-barometer.tsx:170-183 et apps/web/src/components/learn/learn-gestes-propres-myths-section.tsx:21-34 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "310c2d3755784a1d",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/learn/quiz/quiz-personal-progress-overview.tsx:288-295 et apps/web/src/components/learn/quiz/quiz-personal-progress-overview.tsx:310-317 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "8f252f3e6b10169a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel-summary.tsx:61-78 et apps/web/src/components/learn/quiz/quiz-session-panel.tsx:152-169 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e3b976e0b3da04bb",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel-summary.tsx:337-347 et apps/web/src/components/learn/quiz/quiz-session-panel-summary.tsx:385-395 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "365684e7a4979738",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/missions/deferred-mission-panels.tsx:24-41 et apps/web/src/components/missions/mission-map.tsx:12-29 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "71e2ec3385a1e868",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/navigation/app-navigation-ribbon-theme.ts:99-104 et apps/web/src/components/navigation/app-navigation-ribbon-theme.ts:107-112 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "b6b42c2909ca464d",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/navigation/navigation-dropdown-accent-theme.ts:37-42 et apps/web/src/lib/pdf-export/simple-pdf.ts:463-468 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "a58acbbce4fc0df2",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/partners/published-annuaire-review-panel.tsx:207-215 et apps/web/src/components/partners/published-annuaire-review-panel.tsx:219-227 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "1059696c55b72902",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/reports/admin-workflow/actions.ts:268-273 et apps/web/src/components/reports/admin-workflow/types.ts:177-182 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "b3605d07d86703b5",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/reports/web-document/reports-web-document.shared.tsx:392-399 et apps/web/src/components/reports/web-document/reports-web-document.shared.tsx:540-547 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "89d4828cde9ad1d8",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/reports/web-document/use-reports-web-document-model.ts:250-265 et apps/web/src/lib/reports/page-data-export.ts:15-31 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "17151fdcfcc6268c",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx:134-140 et apps/web/src/components/sections/rubriques/climate/climate-components.tsx:239-245 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4ab5595c7cde0dc4",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx:207-221 et apps/web/src/components/sections/rubriques/annuaire/annuaire-sidebar.tsx:51-65 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "80caf67fb743c0ca",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/sections/rubriques/annuaire/annuaire-helpers.ts:81-90 et apps/web/src/lib/partners/onboarding-types.ts:280-289 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "35adea759908a303",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/sections/rubriques/community/community-events-components.tsx:287-300 et apps/web/src/components/sections/rubriques/community/community-events-components.tsx:351-364 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "eac6acc559751fb7",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/sections/rubriques/community/community-events-types.ts:18-23 et apps/web/src/components/sections/rubriques/community/types.ts:66-71 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "99d15ee098c52a9a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx:257-264 et apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.quotas.tsx:100-107 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "2659d527de7cf128",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.quotas.tsx:208-220 et apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.quotas.tsx:222-234 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "2ca594e7d591f6b3",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.explorer.tsx:51-58 et apps/web/src/components/sections/rubriques/rejoindre-une-action.past-actions.tsx:226-233 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "fc112168a1e6a875",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/components/sections/rubriques/route/components/route-event-selector.model.ts:26-33 et apps/web/src/components/sections/rubriques/route/components/route-explanation.model.ts:45-52 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "727478c614d71631",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/components/sections/rubriques/use-weather-data.ts:299-309 et apps/web/src/components/sections/rubriques/use-weather-data.ts:343-352 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "6e5cde97fee97258",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/lib/accueil/data.ts:113-118 et apps/web/src/lib/accueil/public-landing-action-summary.ts:14-19 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4005b0f621ac9437",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/lib/actions/contracts/contract-model.ts:173-180 et apps/web/src/lib/public-surface-snapshots.ts:62-69 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4d40ac320934718c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/lib/actions/formalities-workflow.ts:349-354 et apps/web/src/lib/actions/formalities-workflow.ts:363-368 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "715d3818a894dc2a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/lib/actions/map/map-http-utils.ts:57-65 et apps/web/src/lib/gamification/progression-utils.ts:291-299 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "36e066b7309ce9b1",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/lib/actions/participation/group-participation.helpers.ts:294-305 et apps/web/src/lib/actions/participation/registration-records.ts:157-168 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "eccdd7478260505f",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/lib/actions/participation/participant-summaries.ts:23-32 et apps/web/src/lib/community/event-rsvp-summaries.ts:24-33 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "a288ba26c5eba2e8",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/lib/actions/signalement/my-observations-client.ts:89-99 et apps/web/src/lib/actions/signalement/signalement-media-client.ts:148-158 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "ad7a4934cb934867",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/lib/dashboard/storage-business-contribution-donut-view-model.ts:76-86 et apps/web/src/lib/governance/governance-monthly-report.model.ts:30-40 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "ae771ef2a8f12456",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/lib/governance/governance-monthly-report-high-risk.fixtures.ts:291-303 et apps/web/src/lib/governance/governance-monthly-report.fixtures.ts:360-372 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "95b161080ebe86d2",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les occurrences se ressemblent textuellement mais leurs domaines, provenance ou invariants diffèrent ; aucun owner CURRENT commun n’est démontré, donc aucune abstraction transverse n’est justifiée.",
+      "evidence": "apps/web/src/lib/i18n/server-translation.ts:33-49 et apps/web/src/lib/i18n/use-translation.ts:30-46 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "2ad9d5dc7bb6a32c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/lib/learning/quiz/impact-reference-data.ts:178-183 et apps/web/src/lib/learning/quiz/impact-reference-data.ts:269-274 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e1b33b95878890fd",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/lib/learning/quiz/quiz-selection-engine.ts:118-123 et apps/web/src/lib/learning/quiz/quiz-selection-engine.ts:150-155 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "8005978179f87841",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/lib/navigation.ts:327-338 et apps/web/src/lib/navigation.ts:348-359 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e1b6ce4a69eebd93",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/lib/photo-upload.ts:85-93 et apps/web/src/lib/photo-upload.ts:109-117 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "2933909e8272c76c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "apps/web/src/lib/pilotage/overview.zones.ts:66-83 et apps/web/src/lib/pilotage/overview.zones.ts:89-106 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "d75a907327bc6384",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences restent des branches locales, des checks indépendants ou des contrôles sensibles ; leur répétition conserve la lisibilité du contrat et aucune connaissance transverse démontrée ne doit être fusionnée.",
+      "evidence": "scripts/checks/lint-audit-direct.js:222-228 et scripts/checks/lint-audit-direct.js:237-243 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3bfeede451001ba5",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/(app)/actions/history/actions-history.contract.test.ts:2-12 et apps/web/src/proxy.app-shell.test.ts:1-11 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "e4d9391606d7831a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/(app)/actions/map/page-client.test.tsx:174-183 et apps/web/src/components/actions/map-feed/actions-map-feed.test.tsx:32-41 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f46e96c411fc5866",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/(app)/dashboard/page.test.ts:1-7 et apps/web/src/app/(app)/reports/page.test.ts:1-7 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3920ef164bebabfd",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/(app)/dashboard/page.test.ts:89-97 et apps/web/src/app/(app)/sponsor-portal/page.test.ts:68-76 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2ecb96e62f84c161",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/(app)/dashboard/page.test.ts:90-97 et apps/web/src/components/dashboard/dashboard-overview-section.test.ts:3-10 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5cc11cee478bca3d",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/(app)/dashboard/page.test.ts:98-106 et apps/web/src/app/(app)/sponsor-portal/page.test.ts:73-80 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "47a8343a474f40dc",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/(app)/methodologie/page.test.ts:61-70 et apps/web/src/app/(app)/methodologie/page.test.ts:122-131 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5e3d721692be4f24",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api-boundary.test.ts:1-7 et apps/web/src/app/server-translation-boundary.test.ts:1-7 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "005aec0bbce9422d",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api-boundary.test.ts:13-20 et apps/web/src/app/server-translation-boundary.test.ts:14-21 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "646244f888521fc9",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api-boundary.test.ts:14-20 et apps/web/src/lib/server-client-boundaries.test.ts:19-25 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "a507787ab59793d4",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/chat/action-discussion-route.test.ts:21-31 et apps/web/src/app/api/chat/route.test.ts:139-149 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "9c3222bbf67752da",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/chat/action-share-route.test.ts:2-8 et apps/web/src/app/api/chat/share-destinations/route.test.ts:1-7 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2bb95980d64b724a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/chat/action-share-route.test.ts:11-16 et apps/web/src/app/api/chat/contact-requests/route.test.ts:5-10 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5d8247b20d59d32f",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/chat/action-share-route.test.ts:12-18 et apps/web/src/app/api/chat/share-destinations/route.test.ts:8-14 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ee5935cffdede8e6",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/chat/action-share-route.test.ts:35-43 et apps/web/src/app/api/chat/territory-context-route.test.ts:27-35 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "9cd27400d4d42e04",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/action-share-route.test.ts:48-53 et apps/web/src/app/api/chat/action-share-route.test.ts:83-88 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3ef1c185fd598bcc",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/action-share-route.test.ts:53-58 et apps/web/src/app/api/chat/action-share-route.test.ts:72-77 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "45239354c769e051",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/action-share-route.test.ts:53-58 et apps/web/src/app/api/chat/action-share-route.test.ts:117-122 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "86bb72f732eb3a2c",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/chat/admin-elu-topics.test.ts:6-11 et apps/web/src/app/api/chat/search/route.test.ts:16-22 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d8f603eff798286f",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/chat/admin-elu-topics.test.ts:17-22 et apps/web/src/app/api/chat/search/route.test.ts:22-28 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0b53cb39e9c9fb2e",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/chat/admin-elu-topics.test.ts:23-34 et apps/web/src/app/api/chat/route.feedback-reply.test.ts:28-39 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2b74274552c7e75e",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/chat/admin-elu-topics.test.ts:77-86 et apps/web/src/app/api/chat/route.feedback-reply.test.ts:127-136 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "6851eef124bc00e6",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/chat/inbox/route.test.ts:1-6 et apps/web/src/app/api/chat/route.feedback-reply.test.ts:8-13 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c396f5faaf348970",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/route.attachments.test.ts:54-64 et apps/web/src/app/api/chat/route.attachments.test.ts:73-83 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1e14868323d039bc",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/route.auth-rate-limit.test.ts:22-27 et apps/web/src/app/api/chat/route.auth-rate-limit.test.ts:50-55 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "75a399e7c965f53c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/route.auth-rate-limit.test.ts:35-43 et apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.test.ts:187-195 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "e4848197cf0db99a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/route.get.test.ts:170-186 et apps/web/src/app/api/chat/route.get.test.ts:246-262 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "59f69c5cabf15c21",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/route.polls.test.ts:40-48 et apps/web/src/app/api/chat/route.polls.test.ts:255-263 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0329db8fa7dab136",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/route.test.ts:54-67 et apps/web/src/app/api/chat/route.test.ts:150-162 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0258656d114fb063",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/route.test.ts:135-153 et apps/web/src/app/api/chat/route.test.ts:208-226 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "07cd699689832252",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/search/route.test.ts:188-194 et apps/web/src/app/api/chat/search/route.test.ts:225-231 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1b65aae4a0b93759",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/search/route.test.ts:277-288 et apps/web/src/app/api/chat/search/route.test.ts:314-325 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3278df9b81908f97",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/search/route.test.ts:277-283 et apps/web/src/app/api/chat/search/route.test.ts:359-365 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1ea9806922fe5797",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/users/route.test.ts:27-46 et apps/web/src/app/api/chat/users/route.test.ts:85-104 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "debc5f69c42c9e8a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/users/route.test.ts:50-61 et apps/web/src/app/api/chat/users/route.test.ts:108-118 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "8a8fa36d5b5e8fb2",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/chat/users/route.test.ts:64-72 et apps/web/src/app/api/chat/users/route.test.ts:118-126 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "acce63ebee612240",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/cron/environmental-impact/route.test.ts:9-23 et apps/web/src/app/api/cron/storage-usage/route.test.ts:15-29 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2ef35e34bc98e680",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/cron/environmental-impact/route.test.ts:11-23 et apps/web/src/app/api/cron/impact/route.test.ts:3-14 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2adce372a1353a72",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/cron/impact/route.test.ts:3-14 et apps/web/src/app/api/cron/maintenance/route.test.ts:3-14 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "cd91cbe8ba3aad15",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/email/test/route.test.ts:49-63 et apps/web/src/app/api/email/test/route.test.ts:120-134 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "929955baa163b6ce",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/email/test/route.test.ts:49-63 et apps/web/src/app/api/email/test/route.test.ts:155-169 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "34bd829779052e10",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/email/test/route.test.ts:49-61 et apps/web/src/app/api/email/test/route.test.ts:214-226 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "9f2482bfa211bf72",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/email/test/route.test.ts:68-78 et apps/web/src/app/api/email/test/route.test.ts:245-254 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d0c52c6147d8412a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/email/test/route.test.ts:100-108 et apps/web/src/app/api/send/route.test.ts:175-183 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "aa760d77a0e7f290",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/email/test/route.test.ts:130-138 et apps/web/src/app/api/send/route.test.ts:140-148 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d40492b2fb1337ee",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/email/test/route.test.ts:198-206 et apps/web/src/app/api/email/test/route.test.ts:231-239 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "259e0dfda001306c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/email/test/route.test.ts:198-207 et apps/web/src/app/api/email/test/route.test.ts:258-267 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "83b7980e047d954f",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/email/test/route.test.ts:224-232 et apps/web/src/app/api/send/route.test.ts:249-257 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f9c8aa0deb352bbe",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/environmental-impact/route.test.ts:37-48 et apps/web/src/app/api/environmental-impact/route.test.ts:69-81 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4c39f66a3f3f2585",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/gamification/badges/clean-zones.integration.test.ts:66-76 et apps/web/src/app/api/gamification/badges/clean-zones.integration.test.ts:108-118 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "66c27d8f27d93faa",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.test.ts:84-97 et apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.test.ts:99-112 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "54cc4603f733dd1f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.test.ts:84-97 et apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.test.ts:146-159 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5cd7cef4123ef2ea",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.test.ts:164-175 et apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.test.ts:190-201 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2f30cbd7550c87a3",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/geo/address-suggestions/route.test.ts:23-38 et apps/web/src/app/api/geo/address-suggestions/route.test.ts:80-95 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ca56ab9aa059be0b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/public-form-security.test.ts:104-119 et apps/web/src/app/api/public-form-security.test.ts:148-163 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "bcd5f2e05b10b597",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/public-form-security.test.ts:105-119 et apps/web/src/app/api/public-form-security.test.ts:178-192 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "69c5c8bed7ee8130",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/public-form-security.test.ts:155-169 et apps/web/src/app/api/public-form-security.test.ts:184-198 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "eb1b02bf27edc779",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/reports/actions.csv/route.test.ts:49-64 et apps/web/src/app/api/reports/actions.csv/route.test.ts:77-92 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4c35640a301a34c8",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/reports/actions.csv/route.test.ts:65-71 et apps/web/src/app/api/reports/actions.json/route.test.ts:47-53 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1feb0dac0c9ee4db",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/reports/actions.csv/route.test.ts:93-100 et apps/web/src/app/api/reports/actions.json/route.test.ts:68-75 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3ccee0db209e5478",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/app/api/reports/generations/[id]/route.test.ts:27-39 et apps/web/src/lib/reports/historical-report-client.test.ts:5-17 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c7c0592814b12e21",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/reports/generations/route.test.ts:151-163 et apps/web/src/app/api/reports/generations/route.test.ts:172-184 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "463408c8ee3ca361",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/sandbox/runbook-checks/route.test.ts:133-139 et apps/web/src/app/api/sandbox/runbook-checks/route.test.ts:153-159 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "085ca66b7625dcab",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/send/route.test.ts:57-68 et apps/web/src/app/api/send/route.test.ts:214-225 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "593dcda3b9687171",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/api/users/profile/display-name-mode/route.test.ts:88-97 et apps/web/src/app/api/users/profile/display-name-mode/route.test.ts:114-123 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "aed2397e41b4d868",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/app/server-translation-boundary.test.ts:34-44 et apps/web/src/app/server-translation-boundary.test.ts:52-62 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "535975366b83c30e",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/account/account-identity-chip.helpers.test.ts:10-16 et apps/web/src/components/account/account-identity-chip.test.ts:14-20 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d28684f0f188feb1",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/accueil/accueil-hero.test.tsx:12-32 et apps/web/src/components/accueil/accueil-hero.test.tsx:47-67 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d893b6bf473f0e34",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/actions/action-declaration/ui/action-declaration-form.feedback.test.ts:41-55 et apps/web/src/components/actions/action-declaration/ui/action-declaration-form.feedback.test.ts:62-76 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "84b4c0c2283054b3",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/actions/action-formalities-workflow-panel.test.tsx:27-40 et apps/web/src/components/actions/action-formalities-workflow-panel.test.tsx:53-66 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "50dfb5f3d7330835",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/actions/map-feed/actions-map-feed.test.tsx:28-41 et apps/web/src/components/actions/map-feed/actions-map-feed.test.tsx:57-70 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "a4a7bb17504c578e",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/actions/map-feed/actions-map-feed.test.tsx:28-41 et apps/web/src/components/actions/map-feed/actions-map-feed.test.tsx:90-103 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5025d13294d87bec",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/actions/map-feed/actions-map-feed.test.tsx:35-48 et apps/web/src/components/actions/map-feed/actions-map-feed.test.tsx:159-172 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "aeef330d4fddf907",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/actions/map-feed/actions-map-feed.test.tsx:62-74 et apps/web/src/components/actions/map-feed/actions-map-feed.test.tsx:95-107 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "fa8c6ca929e578ea",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/actions/map/layers/actions-map-geometry.utils.test.ts:287-301 et apps/web/src/components/actions/map/layers/actions-map-geometry.utils.test.ts:320-334 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "35f9a32b5102044f",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/actions/map/layers/map-geometry-tooltip-content.test.ts:49-56 et apps/web/src/components/actions/map/popup/action-popup-content.test.ts:244-251 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "051722d9633c7847",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/actions/map/popup/action-popup-content.test.ts:109-120 et apps/web/src/components/actions/map/popup/action-popup-content.test.ts:139-150 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "e5ee4db9cb83a90b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/actions/map/popup/action-popup-content.test.ts:109-120 et apps/web/src/components/actions/map/popup/action-popup-content.test.ts:165-176 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "06d012ef71d96a69",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/actions/map/popup/action-popup-content.test.ts:211-226 et apps/web/src/components/actions/map/popup/action-popup-content.test.ts:269-284 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "cec5ab7fd72e876a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/actions/map/popup/action-popup-content.test.ts:211-225 et apps/web/src/components/actions/map/popup/action-popup-content.test.ts:355-369 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d535208866d24591",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:33-54 et apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:62-83 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "391fd08c6730ca37",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:42-53 et apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:99-110 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "35b87f59669be10f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:42-53 et apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:136-147 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ba2035c10c3e3d3e",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:59-70 et apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:87-98 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "42d18ed4c9e227f0",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:126-143 et apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:162-179 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c67be5e934c16b82",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/admin/free-plan-services-panel.test.ts:75-92 et apps/web/src/components/admin/free-plan-services-visual.test.ts:164-181 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "91c7f3003227d968",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/analytics/project-pageview-tracker.test.ts:7-15 et apps/web/src/lib/analytics-consent.test.ts:16-24 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f9b80ad99b696c82",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/chat/hooks/use-chat-submit.test.ts:65-72 et apps/web/src/components/chat/hooks/use-chat-submit.test.ts:91-98 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3e8a48ab275e1044",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:51-68 et apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:116-133 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0e5b69174f4136af",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:55-68 et apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:218-231 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "fcabd81eb4fee586",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:55-68 et apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:281-294 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5d0719d2654731fd",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:58-68 et apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:357-367 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "40ffef56fc34ab74",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:113-133 et apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:533-553 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "cbce421d5b729524",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:352-367 et apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:412-427 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "b31aeff12d4cfc66",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:409-427 et apps/web/src/components/learn/quiz/quiz-session-panel.test.ts:466-484 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "6f07b0adf7a304ae",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/navigation/app-navigation-ribbon-height.test.ts:1-12 et apps/web/src/components/navigation/app-navigation-ribbon-menus.test.ts:1-12 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "db0bdfba008d74e8",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/pilotage/kpi-comparison-grid.test.tsx:24-46 et apps/web/src/components/pilotage/kpi-comparison-grid.test.tsx:47-69 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4fe6258eb8bf1232",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/profil/impact-card-export.test.ts:102-113 et apps/web/src/components/profil/impact-card-export.test.ts:125-136 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3bd94b9a301eed5e",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/reports/admin-workflow/use-admin-workflow.actions.test.ts:47-63 et apps/web/src/components/reports/admin-workflow/use-admin-workflow.state.test.ts:12-28 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f3238144b5b45bed",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/reports/admin-workflow/use-admin-workflow.actions.test.ts:188-202 et apps/web/src/components/reports/admin-workflow/use-admin-workflow.actions.test.ts:249-263 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "56d414543db864a3",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/reports/web-document/reports-web-document-preparation.test.ts:92-104 et apps/web/src/components/reports/web-document/reports-web-document.shared.test.ts:38-50 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c5d11553a8cf7d5a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/sections/rubriques/actors-section.test.tsx:1-9 et apps/web/src/components/sections/rubriques/annuaire/annuaire-section.test.tsx:1-9 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "dc56b58787e1b6b3",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/sections/rubriques/community/ics.test.ts:18-30 et apps/web/src/lib/reports/report-model/analytics.test.ts:133-145 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3bcd0092c03d5465",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.controller.test.ts:7-27 et apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.utils.test.ts:5-25 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "7d5518c4247f8e9b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/sections/rubriques/rejoindre-une-action.past-actions.test.tsx:51-60 et apps/web/src/components/sections/rubriques/rejoindre-une-action.past-actions.test.tsx:68-76 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "18e57d398bc85ca8",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/sections/rubriques/rejoindre-une-action.past-actions.test.tsx:80-87 et apps/web/src/components/sections/rubriques/rejoindre-une-action.past-actions.test.tsx:106-113 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0a02005758ed13e2",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/sections/rubriques/route/route-section.map.test.tsx:6-11 et apps/web/src/components/sections/rubriques/route/route-section.test.tsx:13-18 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "8a6921b87e8b821c",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/sections/rubriques/route/route-section.map.test.tsx:56-61 et apps/web/src/components/sections/rubriques/route/route-section.test.tsx:23-28 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "17e11e84a5358e6e",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/components/ui/cmm-skeleton.test.tsx:4-10 et apps/web/src/components/ui/system-state.test.tsx:11-17 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "7ccba05e5add2294",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/components/ui/site-preferences-locale-sync.test.ts:23-30 et apps/web/src/components/ui/site-preferences-locale-sync.test.ts:47-54 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f9cc3aa6fe2cba88",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/admin/referral-lineage-export.test.ts:9-33 et apps/web/src/lib/gamification/referrals/referral-lineage.test.ts:11-35 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "cf01ecb1108abeca",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/analytics-consent.test.ts:14-27 et apps/web/src/lib/storage/ui-state-storage.test.ts:14-25 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1d26cdf5b3cfc399",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/chat/channels.test.ts:137-150 et apps/web/src/lib/chat/channels.test.ts:153-166 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2fffc4b806543f12",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/community/engagement.helpers.test.ts:7-23 et apps/web/src/lib/community/engagement.test.ts:10-26 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ea30034372d21a1a",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/community/engagement.test.ts:59-77 et apps/web/src/lib/community/engagement/conversions.test.ts:6-24 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "403d7d824787557d",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/community/engagement.test.ts:80-96 et apps/web/src/lib/community/engagement/reminders.test.ts:6-22 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "6688080606992480",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/community/engagement.test.ts:99-117 et apps/web/src/lib/community/engagement/staffing.test.ts:6-24 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "e43d02ab06dcfa2b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/community/event-rsvp-summaries.test.ts:86-94 et apps/web/src/lib/community/event-rsvp-summaries.test.ts:95-103 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "9acb3244d7db9d9f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/environmental-impact-estimator/codex-usage-store.test.ts:9-21 et apps/web/src/lib/environmental-impact-estimator/codex-usage-store.test.ts:48-60 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ed1dc227521002d0",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/environmental-impact-estimator/dashboard-capture.test.ts:43-60 et apps/web/src/lib/environmental-impact-estimator/dashboard-capture.test.ts:145-161 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "045c776a7c00ea27",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/environmental-impact-estimator/project-signals.test.ts:205-217 et apps/web/src/lib/environmental-impact-estimator/project-signals.test.ts:482-494 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "b1469b8bff3a944c",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/environmental-impact-estimator/project-signals.test.ts:625-642 et apps/web/src/lib/environmental-impact-estimator/project-signals.test.ts:655-672 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "08b56e88a1af14a9",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/environmental-impact-estimator/service.test.ts:101-123 et apps/web/src/lib/environmental-impact-estimator/service.test.ts:312-334 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "825fe6f15cbd69af",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/environmental-impact-estimator/service.test.ts:123-143 et apps/web/src/lib/environmental-impact-estimator/service.test.ts:343-363 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f9e8b1b0978230da",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/gamification/action-balance.test.ts:72-97 et apps/web/src/lib/gamification/action-balance.test.ts:144-169 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ba9d710b45a3ff47",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/gamification/action-milestones.test.ts:58-74 et apps/web/src/lib/gamification/progression-data.action-milestones.test.ts:21-37 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f8e3383802efdd44",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/gamification/badges/listing.test.ts:19-27 et apps/web/src/lib/gamification/badges/listing.test.ts:39-47 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2aec0346f48f166e",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/gamification/badges/listing.test.ts:83-94 et apps/web/src/lib/gamification/badges/listing.test.ts:164-174 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "45c2e26033cfc1e9",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/gamification/points/analytics.test.ts:19-27 et apps/web/src/lib/gamification/points/analytics.test.ts:39-47 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "a7ab33b35a76ec06",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/gamification/progression-data.action-validation.test.ts:153-167 et apps/web/src/lib/gamification/progression-data.complete-actions.test.ts:44-58 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "bd85a798c325a680",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/gamification/progression-data.action-validation.test.ts:200-211 et apps/web/src/lib/gamification/progression-data.action-validation.test.ts:229-240 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "23166397333c862d",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/geo/greater-paris.test.ts:130-139 et apps/web/src/lib/geo/paris-neighborhood.test.ts:219-228 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "52efec697e203e55",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/geo/osrm-routing.test.ts:177-187 et apps/web/src/lib/route/fossgis-foot-routing.test.ts:167-177 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5f7e201cc3bc9490",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/geo/paris-pressure-geometry.test.ts:21-28 et apps/web/src/lib/geo/paris-pressure-geometry.test.ts:33-40 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "dfc1152869593654",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/geo/paris-pressure-risk.test.ts:289-295 et apps/web/src/lib/geo/paris-pressure-risk.test.ts:348-355 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "fed3d513e56a434e",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/geo/paris-pressure-risk.test.ts:295-300 et apps/web/src/lib/geo/paris-pressure-risk.test.ts:361-366 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "bebce0b8c0ac545f",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/geo/paris-pressure-risk.test.ts:475-492 et apps/web/src/lib/route/route-predicted-targets.test.ts:215-232 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "af1da8b4010fb3a7",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/learning/gestes-propres/gestes-propres-content-validation.test.ts:26-31 et apps/web/src/lib/learning/practice/numerique.test.ts:42-48 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c5457f8b63d012a8",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/legal-content-report/legal-content-report-persistence.test.ts:10-16 et apps/web/src/lib/persistence/runtime-backed-stores.test.ts:10-15 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ccca32b7014e90f0",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/legal-content-report/legal-content-report-persistence.test.ts:20-29 et apps/web/src/lib/persistence/runtime-backed-stores.test.ts:21-30 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "31f5b841eaa34dc5",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/legal-content-report/legal-content-report-persistence.test.ts:152-170 et apps/web/src/lib/legal-content-report/legal-content-report-persistence.test.ts:207-224 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "cc291158739bf8fc",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/legal-content-report/legal-content-report-persistence.test.ts:195-207 et apps/web/src/lib/legal-content-report/legal-content-report-persistence.test.ts:233-245 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "fa733a9b679e9829",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/legal-content-report/legal-content-report-persistence.test.ts:197-207 et apps/web/src/lib/legal-content-report/legal-content-report-persistence.test.ts:256-266 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "47e5a55cf873d166",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/legal-content-report/legal-content-report-persistence.test.ts:232-245 et apps/web/src/lib/legal-content-report/legal-content-report-persistence.test.ts:253-266 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4b3fdded0fa33975",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/notifications/client.test.ts:24-29 et apps/web/src/lib/notifications/client.test.ts:99-103 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5bef58d3c3f2b041",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/pdf-export/simple-pdf.test.ts:79-89 et apps/web/src/lib/pdf-export/simple-pdf.test.ts:104-114 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "de5a12b7e277145c",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/pilotage/overview.summary.test.ts:12-29 et apps/web/src/lib/pilotage/overview.test.ts:7-24 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f4b0db0801277a54",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/pilotage/overview.summary.test.ts:56-71 et apps/web/src/lib/pilotage/overview.test.ts:62-78 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "8ed094879a4e3e3f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/pilotage/overview.summary.test.ts:86-101 et apps/web/src/lib/pilotage/overview.summary.test.ts:123-138 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "5eff8ed141fed145",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/reports/master-pack/analytics/analytics.test.ts:26-35 et apps/web/src/lib/reports/report-model/analytics.test.ts:31-40 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ece6a36c580551e2",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/reports/report-export-quota.test.ts:1-9 et apps/web/src/lib/reports/report-generation-history-store.test.ts:1-9 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "8fd30b88135eaa29",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/reports/report-generation-history-store.test.ts:122-130 et apps/web/src/lib/reports/report-generation-history-store.test.ts:155-163 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4dc8b6c9a5664e53",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/reports/report-model/analytics.test.ts:41-64 et apps/web/src/lib/reports/report-model/analytics.test.ts:94-117 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "7a58ea1c5b9661b3",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/reports/report-model/analytics.test.ts:249-254 et apps/web/src/lib/reports/report-model/analytics.test.ts:344-349 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "aceeeee6d64e545c",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/route/route-active-version.test.ts:56-64 et apps/web/src/lib/route/route-refresh.test.ts:21-29 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "481c6f4c8def679f",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/route/route-active-version.test.ts:66-78 et apps/web/src/lib/route/route-refresh.test.ts:36-48 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "2514f1c5c7028106",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/route/route-contract.test.ts:49-56 et apps/web/src/lib/route/route-contract.test.ts:74-81 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "ed9d331ffbbbe5ed",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/route/route-group-partition.test.ts:24-53 et apps/web/src/lib/route/route-multi-route.test.ts:21-50 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "3b060707c221cb38",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/route/route-group-partition.test.ts:191-197 et apps/web/src/lib/route/route-group-partition.test.ts:206-212 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "dda9f6becb53445e",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "La ressemblance porte sur du setup, des données de test ou une projection répétée entre contrats distincts ; aucune factory technique commune ne peut être extraite sans coupler les suites ou masquer leurs assertions.",
+      "evidence": "apps/web/src/lib/route/route-multi-route.test.ts:5-15 et apps/web/src/lib/route/route-predicted-targets.preference.test.ts:10-20 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f83f0b49a07bb4ff",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/route/route-multi-route.test.ts:75-86 et apps/web/src/lib/route/route-multi-route.test.ts:109-120 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d3064def5ca2f0e6",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/route/route-planner.test.ts:330-341 et apps/web/src/lib/route/route-planner.test.ts:353-364 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "dc07b6a16cf3da61",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/route/route-predicted-targets.test.ts:213-233 et apps/web/src/lib/route/route-predicted-targets.test.ts:334-354 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "bc06ef64b544fab8",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/route/route-trace.test.ts:222-232 et apps/web/src/lib/route/route-trace.test.ts:243-253 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "b7b9a7f4aa599804",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les occurrences protègent des scénarios de test indépendants, ou une frontière AuthN/AuthZ/RLS ; conserver chaque bloc explicite évite de déplacer une preuve métier ou de sécurité dans un helper partagé.",
+      "evidence": "apps/web/src/lib/server-client-boundaries.test.ts:18-25 et apps/web/src/lib/server-client-boundaries.test.ts:37-44 ; les consommateurs, assertions ou invariants restent propres à chaque occurrence.",
+      "reviewedRef": "3ffb5529a3315aca3b492539c1bc50559d731556"
     }
   ]
 }
