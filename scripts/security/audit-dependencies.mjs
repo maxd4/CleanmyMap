@@ -54,7 +54,7 @@ export const EXPLICIT_MITIGATIONS = Object.freeze([
     version: "3.0.4",
     path: "apps/mobile/vendor/braces",
     documentation: GOVERNANCE_DOCUMENT,
-    verification: "apps/mobile/security/node-forge-security.test.mjs",
+    verification: "apps/mobile/security/braces-security.test.mjs",
   }),
 ]);
 

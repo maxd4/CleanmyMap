@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   buildNpmAuditInvocation,
+  EXPLICIT_MITIGATIONS,
   evaluateAuditPolicy,
   extractAuditFindings,
   formatAuditPolicyResult,
@@ -19,6 +20,33 @@ const lockfile = {
     "node_modules/node-forge": { version: "1.4.0" },
   },
 };
+
+const BRACES_ADVISORY = "GHSA-VFJ7-8CJW-P6XM";
+
+function bracesAuditReport() {
+  return {
+    vulnerabilities: {
+      braces: {
+        name: "braces",
+        severity: "high",
+        via: [{
+          url: `https://github.com/advisories/${BRACES_ADVISORY}`,
+          severity: "high",
+        }],
+        nodes: ["node_modules/braces"],
+      },
+    },
+  };
+}
+
+function bracesLockfile({ version, path }) {
+  return {
+    packages: {
+      "node_modules/braces": { link: true, resolved: path },
+      [path]: { version },
+    },
+  };
+}
 
 test("parseAuditOutput accepts JSON surrounded by npm diagnostics", () => {
   assert.deepEqual(parseAuditOutput("warning\n{\"auditReportVersion\":2}\n"), {
@@ -225,6 +253,65 @@ test("the exact vendor mitigation is accepted but a changed version is not", () 
   });
   assert.equal(rejected.passed, false);
   assert.equal(rejected.unmitigated[0].version, "1.9.2");
+});
+
+test("accepts only the exact braces backport and its dedicated security harness", () => {
+  const mitigation = EXPLICIT_MITIGATIONS.find((entry) => entry.advisory === BRACES_ADVISORY);
+  assert.deepEqual(mitigation, {
+    advisory: BRACES_ADVISORY,
+    packageName: "braces",
+    version: "3.0.4",
+    path: "apps/mobile/vendor/braces",
+    documentation: "documentation/security/dependency-advisory-governance.md",
+    verification: "apps/mobile/security/braces-security.test.mjs",
+  });
+
+  const result = evaluateAuditPolicy({
+    auditReport: bracesAuditReport(),
+    lockfile: bracesLockfile({ version: "3.0.4", path: "apps/mobile/vendor/braces" }),
+  });
+  assert.equal(result.passed, true);
+  assert.deepEqual(result.mitigated.map(({ advisory, packageName, version, path }) => ({
+    advisory,
+    packageName,
+    version,
+    path,
+  })), [{
+    advisory: BRACES_ADVISORY,
+    packageName: "braces",
+    version: "3.0.4",
+    path: "apps/mobile/vendor/braces",
+  }]);
+});
+
+test("keeps upstream braces@3.0.3 blocking", () => {
+  const result = evaluateAuditPolicy({
+    auditReport: bracesAuditReport(),
+    lockfile: bracesLockfile({ version: "3.0.3", path: "node_modules/braces" }),
+  });
+
+  assert.equal(result.passed, false);
+  assert.equal(result.unmitigated[0].version, "3.0.3");
+  assert.equal(result.unmitigated[0].path, "node_modules/braces");
+  assert.equal(result.unmitigated[0].mitigationStatus, "BLOCKED_BY_UPSTREAM");
+});
+
+test("does not cover a different braces version or resolved path", () => {
+  for (const candidate of [
+    { version: "3.0.5", path: "apps/mobile/vendor/braces" },
+    { version: "3.0.4", path: "apps/mobile/vendor/other-braces" },
+  ]) {
+    const result = evaluateAuditPolicy({
+      auditReport: bracesAuditReport(),
+      lockfile: bracesLockfile(candidate),
+    });
+
+    assert.equal(result.passed, false, `${candidate.version} at ${candidate.path} must remain uncovered`);
+    assert.equal(result.mitigated.length, 0);
+    assert.equal(result.unmitigated.length, 1);
+    assert.equal(result.unmitigated[0].version, candidate.version);
+    assert.equal(result.unmitigated[0].path, candidate.path);
+  }
 });
 
 test("a High finding without an exact mitigation fails, including string-only via entries", () => {
