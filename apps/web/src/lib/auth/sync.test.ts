@@ -19,6 +19,18 @@ type MockState = {
   filterValue: string | null;
 };
 
+const clerkUser = (overrides: Record<string, unknown>) => ({
+  id: "user_default",
+  username: "default_user",
+  emailAddresses: [],
+  imageUrl: "https://example.com/avatar.png",
+  publicMetadata: {},
+  privateMetadata: {},
+  firstName: "Default",
+  lastName: "User",
+  ...overrides,
+});
+
 function createSupabaseMock(options: {
   existingProfile?: {
     id: string;
@@ -121,16 +133,9 @@ describe("syncClerkUserToSupabase", () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await syncClerkUserToSupabase({
-      id: "user_1",
-      username: "custom_handle",
-      emailAddresses: [],
-      imageUrl: "https://example.com/avatar.png",
-      publicMetadata: {},
-      privateMetadata: {},
-      firstName: "Maxence",
-      lastName: "Demo",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({ id: "user_1", username: "custom_handle", firstName: "Maxence", lastName: "Demo" }) as never,
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -156,16 +161,9 @@ describe("syncClerkUserToSupabase", () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await syncClerkUserToSupabase({
-      id: "user_abcdef123456",
-      username: "max",
-      emailAddresses: [],
-      imageUrl: "https://example.com/avatar.png",
-      publicMetadata: {},
-      privateMetadata: {},
-      firstName: "Max",
-      lastName: "",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({ id: "user_abcdef123456", username: "max", firstName: "Max", lastName: "" }) as never,
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -188,16 +186,15 @@ describe("syncClerkUserToSupabase", () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await syncClerkUserToSupabase({
-      id: "user_admin",
-      username: "admin",
-      emailAddresses: [],
-      imageUrl: "https://example.com/avatar.png",
-      publicMetadata: { profile: "admin" },
-      privateMetadata: {},
-      firstName: "Ada",
-      lastName: "Admin",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: "user_admin",
+        username: "admin",
+        publicMetadata: { profile: "admin" },
+        firstName: "Ada",
+        lastName: "Admin",
+      }) as never,
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -220,16 +217,15 @@ describe("syncClerkUserToSupabase", () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await syncClerkUserToSupabase({
-      id: "user_max",
-      username: "max",
-      emailAddresses: [],
-      imageUrl: "https://example.com/avatar.png",
-      publicMetadata: { role: "max" },
-      privateMetadata: {},
-      firstName: "Max",
-      lastName: "Owner",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: "user_max",
+        username: "max",
+        publicMetadata: { role: "max" },
+        firstName: "Max",
+        lastName: "Owner",
+      }) as never,
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -252,16 +248,15 @@ describe("syncClerkUserToSupabase", () => {
     const { supabase, upsert } = createSupabaseMock({ existingProfile: null });
     getSupabaseAdminClientMock.mockReturnValue(supabase);
 
-    await syncClerkUserToSupabase({
-      id: `user_${grantedRole}_${activeRole}`,
-      username: "role_projection",
-      emailAddresses: [],
-      imageUrl: "https://example.com/avatar.png",
-      publicMetadata: { role: grantedRole, activeRole },
-      privateMetadata: {},
-      firstName: "Role",
-      lastName: "Projection",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: `user_${grantedRole}_${activeRole}`,
+        username: "role_projection",
+        publicMetadata: { role: grantedRole, activeRole },
+        firstName: "Role",
+        lastName: "Projection",
+      }) as never,
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -278,20 +273,19 @@ describe("syncClerkUserToSupabase", () => {
     });
     getSupabaseAdminClientMock.mockReturnValue(supabase);
 
-    await syncClerkUserToSupabase({
-      id: "user_email_only",
-      username: "email_only",
-      emailAddresses: [
-        { emailAddress: "contact@cleanmymap.fr" },
-        { emailAddress: "secondary@cleanmymap.fr" },
-      ],
-      primaryEmailAddress: { emailAddress: "contact@cleanmymap.fr" },
-      imageUrl: "https://example.com/avatar.png",
-      publicMetadata: {},
-      privateMetadata: {},
-      firstName: "Email",
-      lastName: "Only",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: "user_email_only",
+        username: "email_only",
+        emailAddresses: [
+          { emailAddress: "contact@cleanmymap.fr" },
+          { emailAddress: "secondary@cleanmymap.fr" },
+        ],
+        primaryEmailAddress: { emailAddress: "contact@cleanmymap.fr" },
+        firstName: "Email",
+        lastName: "Only",
+      }) as never,
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({ role_label: "benevole" }),
@@ -305,17 +299,16 @@ describe("syncClerkUserToSupabase", () => {
     });
     getSupabaseAdminClientMock.mockReturnValue(supabase);
 
-    await syncClerkUserToSupabase({
-      id: "user_contact_only",
-      username: null,
-      emailAddresses: [{ emailAddress: "contact@cleanmymap.fr" }],
-      primaryEmailAddress: { emailAddress: "contact@cleanmymap.fr" },
-      imageUrl: "https://example.com/avatar.png",
-      publicMetadata: {},
-      privateMetadata: {},
-      firstName: "Contact",
-      lastName: "Only",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: "user_contact_only",
+        username: null,
+        emailAddresses: [{ emailAddress: "contact@cleanmymap.fr" }],
+        primaryEmailAddress: { emailAddress: "contact@cleanmymap.fr" },
+        firstName: "Contact",
+        lastName: "Only",
+      }) as never,
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -335,18 +328,15 @@ describe("syncClerkUserToSupabase", () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await syncClerkUserToSupabase({
-      id: "user_zone",
-      username: "zone_user",
-      emailAddresses: [],
-      imageUrl: "https://example.com/avatar.png",
-      publicMetadata: {
-        zoneName: "5e arrondissement",
-      },
-      privateMetadata: {},
-      firstName: "Zone",
-      lastName: "User",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: "user_zone",
+        username: "zone_user",
+        publicMetadata: { zoneName: "5e arrondissement" },
+        firstName: "Zone",
+        lastName: "User",
+      }) as never,
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -373,16 +363,14 @@ describe("syncClerkUserToSupabase", () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await syncClerkUserToSupabase({
-      id: "user_legacy",
-      username: "legacy_handle",
-      emailAddresses: [],
-      imageUrl: "https://example.com/avatar.png",
-      publicMetadata: {},
-      privateMetadata: {},
-      firstName: "Legacy",
-      lastName: "Profile",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: "user_legacy",
+        username: "legacy_handle",
+        firstName: "Legacy",
+        lastName: "Profile",
+      }) as never,
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -417,16 +405,14 @@ describe("syncClerkUserToSupabase", () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await syncClerkUserToSupabase({
-      id: "user_2",
-      username: "handle_mode",
-      emailAddresses: [],
-      imageUrl: "https://example.com/avatar.png",
-      publicMetadata: {},
-      privateMetadata: {},
-      firstName: "Mode",
-      lastName: "Pseudo",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: "user_2",
+        username: "handle_mode",
+        firstName: "Mode",
+        lastName: "Pseudo",
+      }) as never,
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -446,18 +432,18 @@ describe("syncClerkUserToSupabase", () => {
     });
     getSupabaseAdminClientMock.mockReturnValue(supabase);
 
-    await syncClerkUserToSupabase({
-      id: "user_contact_only",
-      username: null,
-      emailAddresses: [{ emailAddress: "private@example.org" }],
-      primaryEmailAddress: { emailAddress: "private@example.org" },
-      primaryPhoneNumber: { phoneNumber: "+33612345678" },
-      imageUrl: "https://example.com/avatar.png",
-      publicMetadata: { display_name_mode: "pseudo" },
-      privateMetadata: {},
-      firstName: "",
-      lastName: "",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: "user_contact_only",
+        username: null,
+        emailAddresses: [{ emailAddress: "private@example.org" }],
+        primaryEmailAddress: { emailAddress: "private@example.org" },
+        primaryPhoneNumber: { phoneNumber: "+33612345678" },
+        publicMetadata: { display_name_mode: "pseudo" },
+        firstName: "",
+        lastName: "",
+      }) as never,
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -487,16 +473,15 @@ describe("syncClerkUserToSupabase", () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await syncClerkUserToSupabase({
-      id: "user_clerk_avatar",
-      username: "avatar_user",
-      emailAddresses: [],
-      imageUrl: "https://img.clerk.com/avatar.png",
-      publicMetadata: {},
-      privateMetadata: {},
-      firstName: "Avatar",
-      lastName: "User",
-    } as never);
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: "user_clerk_avatar",
+        username: "avatar_user",
+        imageUrl: "https://img.clerk.com/avatar.png",
+        firstName: "Avatar",
+        lastName: "User",
+      }) as never,
+    );
 
     expect(upload).toHaveBeenCalledTimes(1);
     expect(upsert).toHaveBeenCalledWith(

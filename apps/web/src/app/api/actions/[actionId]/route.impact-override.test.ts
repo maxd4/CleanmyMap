@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { appendActionModerationAuditMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, requireAuthenticatedAccessMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
+const patchRequest = (body: unknown) =>
+  new Request("http://localhost/api/actions/action-test-1", {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+
 describe("PATCH /api/actions/:actionId — impact validé et overrides admin", () => {
   beforeEach(() => {
     resetPatchRouteMocks();
@@ -19,10 +25,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
 
     const { PATCH } = await import("./route");
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({ wasteKg: 2 }),
-      }),
+      patchRequest({ wasteKg: 2 }),
       { params: Promise.resolve({ actionId: "action-test-1" }) },
     );
 
@@ -57,10 +60,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
 
     const { PATCH } = await import("./route");
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({ wasteKg: 2, reason: "Correction terrain" }),
-      }),
+      patchRequest({ wasteKg: 2, reason: "Correction terrain" }),
       { params: Promise.resolve({ actionId: "action-test-1" }) },
     );
 
@@ -107,10 +107,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
 
     const { PATCH } = await import("./route");
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({ wasteKg: 2, reason: "Correction globale validée" }),
-      }),
+      patchRequest({ wasteKg: 2, reason: "Correction globale validée" }),
       { params: Promise.resolve({ actionId: "action-test-1" }) },
     );
 
@@ -152,10 +149,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
 
     const { PATCH } = await import("./route");
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({ wasteKg: 2 }),
-      }),
+      patchRequest({ wasteKg: 2 }),
       { params: Promise.resolve({ actionId: "action-test-1" }) },
     );
 
@@ -182,10 +176,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({ locationLabel: "Nouveau lieu" }),
-      }),
+      patchRequest({ locationLabel: "Nouveau lieu" }),
       { params: Promise.resolve({ actionId: "action-test-1" }) },
     );
 
@@ -247,9 +238,7 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
 
     const { PATCH } = await import("./route");
     const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({
+      patchRequest({
           actorName: "Nouveau nom",
           locationLabel: "Nouveau lieu",
           latitude: 48.2,
@@ -276,7 +265,6 @@ describe("PATCH /api/actions/:actionId — impact validé et overrides admin", (
             },
           ],
         }),
-      }),
       { params: Promise.resolve({ actionId: "action-test-1" }) },
     );
 

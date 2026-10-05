@@ -1,4 +1,5 @@
 import * as React from "react";
+import type { ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { ActionMapItem } from "@/lib/actions/types";
@@ -10,6 +11,26 @@ import { ActionPopupContentHeader } from "./action-popup-content-header";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 import { resolveProjectionConfidence } from "@/lib/actions/pollution/projection-confidence";
 import type { ScopedActionPollutionScore } from "../scores/pollution-score-scope";
+
+type PopupBodyProps = ComponentProps<typeof ActionPopupContentBody>;
+
+const popupBodyProps = (overrides: Partial<PopupBodyProps> = {}): PopupBodyProps => ({
+  wasteKg: 5,
+  butts: 42,
+  volunteers: 3,
+  durationMinutes: 90,
+  operationalEngagementHours: 4.5,
+  associationName: null,
+  departure: null,
+  arrival: null,
+  notes: null,
+  observedAt: "08/04/2026",
+  sourceLabel: "Source: actions",
+  updateHref: "/actions/new?lat=48.8566&lng=2.3522",
+  hasPollution: true,
+  isAction: true,
+  ...overrides,
+});
 
 function buildActionItem(
   preparationData: { actionTitle?: string } | null,
@@ -108,22 +129,7 @@ describe("action popup presentation", () => {
 
   it("presents action quantities as collected results without residual-pollution language", () => {
     const markup = renderToStaticMarkup(
-      React.createElement(ActionPopupContentBody, {
-        wasteKg: 5,
-        butts: 42,
-        volunteers: 3,
-        durationMinutes: 90,
-        operationalEngagementHours: 4.5,
-        associationName: null,
-        departure: null,
-        arrival: null,
-        notes: "Bilan",
-        observedAt: "08/04/2026",
-        sourceLabel: "Source: actions",
-        updateHref: "/actions/new?lat=48.8566&lng=2.3522",
-        hasPollution: true,
-        isAction: true,
-      }),
+      React.createElement(ActionPopupContentBody, popupBodyProps({ notes: "Bilan" })),
     );
 
     expect(markup).toContain("Déchets collectés");
@@ -138,22 +144,7 @@ describe("action popup presentation", () => {
 
   it("uses an explicit accessible control for long notes on touch and keyboard", () => {
     const markup = renderToStaticMarkup(
-      React.createElement(ActionPopupContentBody, {
-        wasteKg: 5,
-        butts: 42,
-        volunteers: 3,
-        durationMinutes: 90,
-        operationalEngagementHours: 4.5,
-        associationName: null,
-        departure: null,
-        arrival: null,
-        notes: "Note longue de test",
-        observedAt: "08/04/2026",
-        sourceLabel: "Source: actions",
-        updateHref: "/actions/new?lat=48.8566&lng=2.3522",
-        hasPollution: true,
-        isAction: true,
-      }),
+      React.createElement(ActionPopupContentBody, popupBodyProps({ notes: "Note longue de test" })),
     );
 
     expect(markup).toContain('aria-expanded="false"');
@@ -164,24 +155,13 @@ describe("action popup presentation", () => {
 
   it("keeps secondary popup actions compact instead of presenting several full-width CTAs", () => {
     const markup = renderToStaticMarkup(
-      React.createElement(ActionPopupContentBody, {
-        wasteKg: 5,
-        butts: 42,
-        volunteers: 3,
-        durationMinutes: 90,
-        operationalEngagementHours: 4.5,
-        associationName: null,
-        departure: null,
-        arrival: null,
-        notes: null,
-        observedAt: "08/04/2026",
-        sourceLabel: "Source: actions",
-        updateHref: "/actions/new?lat=48.8566&lng=2.3522",
-        joinHref: "/sections/rejoindre-une-action?actionId=action-1",
-        hasPollution: true,
-        isAction: true,
-        onViewGeometry: () => undefined,
-      }),
+      React.createElement(
+        ActionPopupContentBody,
+        popupBodyProps({
+          joinHref: "/sections/rejoindre-une-action?actionId=action-1",
+          onViewGeometry: () => undefined,
+        }),
+      ),
     );
 
     expect(markup).toContain("Nouvelle action ici");
@@ -441,24 +421,20 @@ describe("action popup presentation", () => {
 
   it("offers explicit trace framing when the map provides the action", () => {
     const markup = renderToStaticMarkup(
-      React.createElement(ActionPopupContentBody, {
-        wasteKg: 0,
-        butts: 0,
-        volunteers: 1,
-        durationMinutes: 30,
-        operationalEngagementHours: 0.5,
-        associationName: null,
-        departure: null,
-        arrival: null,
-        notes: null,
-        observedAt: "08/04/2026",
-        sourceLabel: "Source: actions",
-        updateHref: null,
-        hasPollution: false,
-        isAction: true,
-        onViewGeometry: () => undefined,
-        geometryKind: "polygon",
-      }),
+      React.createElement(
+        ActionPopupContentBody,
+        popupBodyProps({
+          wasteKg: 0,
+          butts: 0,
+          volunteers: 1,
+          durationMinutes: 30,
+          operationalEngagementHours: 0.5,
+          updateHref: null,
+          hasPollution: false,
+          onViewGeometry: () => undefined,
+          geometryKind: "polygon",
+        }),
+      ),
     );
 
     expect(markup).toContain("Voir toute la zone");
@@ -466,22 +442,20 @@ describe("action popup presentation", () => {
 
   it("routes a clean-place context to the observation entry", () => {
     const markup = renderToStaticMarkup(
-      React.createElement(ActionPopupContentBody, {
-        wasteKg: 0,
-        butts: 0,
-        volunteers: 0,
-        durationMinutes: 0,
-        operationalEngagementHours: 0,
-        associationName: null,
-        departure: null,
-        arrival: null,
-        notes: null,
-        observedAt: "08/04/2026",
-        sourceLabel: "Source: trash spotter",
-        updateHref: "/signalement?lat=48.8566&lng=2.3522",
-        hasPollution: false,
-        isAction: false,
-      }),
+      React.createElement(
+        ActionPopupContentBody,
+        popupBodyProps({
+          wasteKg: 0,
+          butts: 0,
+          volunteers: 0,
+          durationMinutes: 0,
+          operationalEngagementHours: 0,
+          sourceLabel: "Source: trash spotter",
+          updateHref: "/signalement?lat=48.8566&lng=2.3522",
+          hasPollution: false,
+          isAction: false,
+        }),
+      ),
     );
 
     expect(markup).toContain("Mettre à jour l’état du lieu");

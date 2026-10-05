@@ -22,6 +22,27 @@ import {
 } from "./route.test.harness";
 
 describe("POST /api/route/recommend — routage réseau et budget", () => {
+  const networkGeometry = (overrides: Record<string, unknown> = {}) => ({
+    ...fallbackGeometry(),
+    mode: "network",
+    provider: "fossgis-osrm",
+    profile: "foot",
+    estimated: false,
+    ...overrides,
+  });
+
+  const setupTwoStopPlan = () => {
+    const secondCandidate = { ...candidate, id: "spot-2", latitude: 48.86 };
+    const plannedStops = [plannedStop(candidate), plannedStop(secondCandidate, 1)];
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate, secondCandidate]);
+    planRouteMock.mockReturnValueOnce({
+      stops: plannedStops,
+      diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+      audit: plannerAudit(plannedStops),
+    });
+    return { secondCandidate, plannedStops };
+  };
+
   beforeEach(() => {
     resetRouteRecommendMocks();
   });
@@ -202,18 +223,13 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
 
   it("sends origin followed by stops to FOSSGIS and applies origin legs", async () => {
     buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
-    const networkGeometry = {
-      ...fallbackGeometry(),
+    const network = networkGeometry({
       coordinates: [[48.9, 2.4], [candidate.latitude, candidate.longitude]],
       distanceKm: 2,
       durationMinutes: 12,
       legs: [{ fromStopIndex: 0, toStopIndex: 1, distanceKm: 2, estimatedMinutes: 12 }],
-      provider: "fossgis-osrm",
-      profile: "foot",
-      mode: "network",
-      estimated: false,
-    } as const;
-    routePolylineThroughFossgisFootMock.mockResolvedValueOnce(networkGeometry);
+    });
+    routePolylineThroughFossgisFootMock.mockResolvedValueOnce(network);
     const explicitOrigin = { latitude: 48.9, longitude: 2.4, source: "map" } as const;
 
     const { POST } = await import("./route");
@@ -226,40 +242,28 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
     );
     expect(applyOriginRouteGeometryLegsMock).toHaveBeenCalledWith(
       expect.any(Array),
-      networkGeometry,
+      network,
     );
   });
 
   it("recalcule la géométrie réseau pour le préfixe final retenu", async () => {
-    const secondCandidate = { ...candidate, id: "spot-2", latitude: 48.86 };
-    const plannedStops = [plannedStop(candidate), plannedStop(secondCandidate, 1)];
-    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate, secondCandidate]);
-    planRouteMock.mockReturnValueOnce({
-      stops: plannedStops,
-      diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
-      audit: plannerAudit(plannedStops),
-    });
-    const networkGeometry = {
-      ...fallbackGeometry(),
+    setupTwoStopPlan();
+    const network = networkGeometry({
       durationMinutes: 70,
-      mode: "network",
       legs: [
         { fromStopIndex: 0, toStopIndex: 1, distanceKm: 2, estimatedMinutes: 40 },
         { fromStopIndex: 1, toStopIndex: 2, distanceKm: 2, estimatedMinutes: 30 },
       ],
-      provider: "fossgis-osrm",
-      profile: "foot",
-      estimated: false,
-    } as const;
+    });
     const reconciledGeometry = {
-      ...networkGeometry,
+      ...network,
       coordinates: [[48.9, 2.4], [candidate.latitude, candidate.longitude]],
       distanceKm: 1.5,
       durationMinutes: 40,
-      legs: [networkGeometry.legs[0]],
+      legs: [network.legs[0]],
     } as const;
     routePolylineThroughFossgisFootMock
-      .mockResolvedValueOnce(networkGeometry)
+      .mockResolvedValueOnce(network)
       .mockResolvedValueOnce(reconciledGeometry);
     createFallbackRouteGeometryMock.mockImplementation(
       (coordinates: [number, number][]) => fallbackGeometry(coordinates, 8),
@@ -300,26 +304,14 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
   });
 
   it("dégrade explicitement si la seconde mesure réseau échoue", async () => {
-    const secondCandidate = { ...candidate, id: "spot-2", latitude: 48.86 };
-    const plannedStops = [plannedStop(candidate), plannedStop(secondCandidate, 1)];
-    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate, secondCandidate]);
-    planRouteMock.mockReturnValueOnce({
-      stops: plannedStops,
-      diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
-      audit: plannerAudit(plannedStops),
-    });
-    const overBudgetNetwork = {
-      ...fallbackGeometry(),
+    const { plannedStops } = setupTwoStopPlan();
+    const overBudgetNetwork = networkGeometry({
       durationMinutes: 70,
-      mode: "network" as const,
-      provider: "fossgis-osrm" as const,
-      profile: "foot" as const,
-      estimated: false,
       legs: [
         { fromStopIndex: 0, toStopIndex: 1, distanceKm: 1, estimatedMinutes: 40 },
         { fromStopIndex: 1, toStopIndex: 2, distanceKm: 1, estimatedMinutes: 30 },
       ],
-    };
+    });
     routePolylineThroughFossgisFootMock
       .mockResolvedValueOnce(overBudgetNetwork)
       .mockRejectedValueOnce(new Error("provider unavailable"));
@@ -356,15 +348,10 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
       audit: plannerAudit(plannedStops),
     });
-    routePolylineThroughFossgisFootMock.mockResolvedValueOnce({
-      ...fallbackGeometry(),
+    routePolylineThroughFossgisFootMock.mockResolvedValueOnce(networkGeometry({
       durationMinutes: 70,
-      mode: "network",
-      provider: "fossgis-osrm",
-      profile: "foot",
-      estimated: false,
       legs: [],
-    });
+    }));
 
     const { POST } = await import("./route");
     const response = await POST(request({
@@ -425,27 +412,17 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
       audit: plannerAudit(plannedStops),
     });
     routePolylineThroughFossgisFootMock
-      .mockResolvedValueOnce({
-        ...fallbackGeometry(),
+      .mockResolvedValueOnce(networkGeometry({
         durationMinutes: 70,
-        mode: "network",
-        provider: "fossgis-osrm",
-        profile: "foot",
-        estimated: false,
         legs: [
           { fromStopIndex: 0, toStopIndex: 1, distanceKm: 1, estimatedMinutes: 40 },
           { fromStopIndex: 1, toStopIndex: 2, distanceKm: 1, estimatedMinutes: 30 },
         ],
-      })
-      .mockResolvedValueOnce({
-        ...fallbackGeometry(),
+      }))
+      .mockResolvedValueOnce(networkGeometry({
         durationMinutes: 40,
-        mode: "network",
-        provider: "fossgis-osrm",
-        profile: "foot",
-        estimated: false,
         legs: [{ fromStopIndex: 0, toStopIndex: 1, distanceKm: 1, estimatedMinutes: 40 }],
-      });
+      }));
 
     const { POST } = await import("./route");
     const response = await POST(request({
@@ -463,14 +440,7 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
   });
 
   it("reduces an over-budget fallback route locally", async () => {
-    const secondCandidate = { ...candidate, id: "spot-2", latitude: 48.86 };
-    const plannedStops = [plannedStop(candidate), plannedStop(secondCandidate, 1)];
-    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate, secondCandidate]);
-    planRouteMock.mockReturnValueOnce({
-      stops: plannedStops,
-      diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
-      audit: plannerAudit(plannedStops),
-    });
+    const { plannedStops } = setupTwoStopPlan();
     routePolylineThroughFossgisFootMock.mockResolvedValueOnce(fallbackGeometry([], 70));
     fallbackRoutePrefixWithinBudgetMock.mockReturnValueOnce([plannedStops[0]]);
     createFallbackRouteGeometryMock.mockImplementation(
