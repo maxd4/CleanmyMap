@@ -3,7 +3,7 @@ import { buildDateFloor } from "@/lib/reports/csv";
 import { parsePositiveInteger } from "@/lib/http/query-params";
 
 export type ExportFormat = "json" | "md" | "pdf";
-export type ScopeKind = "global" | "account" | "association" | "arrondissement";
+type ScopeKind = "global" | "account" | "association" | "arrondissement";
 export type ScopeSelection = {
   kind: ScopeKind;
   value: string | null;
@@ -15,14 +15,14 @@ export const ELUS_DOSSIER_RESPONSE_CACHE_CONTROL =
 export const ELUS_DOSSIER_PDF_REDIRECT_CACHE_CONTROL =
   "private, max-age=300, stale-while-revalidate=86400";
 
-export function parseExportFormat(raw: string | null): ExportFormat {
+function parseExportFormat(raw: string | null): ExportFormat {
   if (raw === "md" || raw === "pdf") {
     return raw;
   }
   return "json";
 }
 
-export function resolveScopeSelection(params: {
+function resolveScopeSelection(params: {
   scopeKind: string | null;
   scopeValue: string | null;
   legacyAssociation: string | null;
@@ -43,7 +43,7 @@ export function resolveScopeSelection(params: {
   };
 }
 
-export function buildElusDossierPdfStoragePath(params: {
+function buildElusDossierPdfStoragePath(params: {
   generatedAt: string;
   days: number;
   limit: number;
