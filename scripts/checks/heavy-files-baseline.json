@@ -117,10 +117,10 @@
     {
       "path": "apps/web/src/components/actions/actions-history-list.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 601,
-      "maxBytes": 18959
+      "status": "IMPROVED",
+      "reviewedRef": "2d90795a947a5936e0c7c0200299c362753e3996",
+      "maxLines": 102,
+      "maxBytes": 3678
     },
     {
       "path": "apps/web/src/components/actions/actions-map-canvas.tsx",
@@ -285,10 +285,10 @@
     {
       "path": "apps/web/src/lib/actions/http.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 644,
-      "maxBytes": 18579
+      "status": "IMPROVED",
+      "reviewedRef": "2d90795a947a5936e0c7c0200299c362753e3996",
+      "maxLines": 20,
+      "maxBytes": 691
     },
     {
       "path": "apps/web/src/lib/actions/map/map-http.ts",
@@ -309,10 +309,10 @@
     {
       "path": "apps/web/src/lib/actions/participation/group-participation-review.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 637,
-      "maxBytes": 21448
+      "status": "IMPROVED",
+      "reviewedRef": "2d90795a947a5936e0c7c0200299c362753e3996",
+      "maxLines": 6,
+      "maxBytes": 286
     },
     {
       "path": "apps/web/src/lib/actions/participation/organizers.ts",
