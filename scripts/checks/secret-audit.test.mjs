@@ -168,6 +168,30 @@ test("a hash next to a password or token remains blocked", () => {
   assert.match(result.stderr, /Hash digest/);
 });
 
+test("a generated radar Git SHA beside an auth path is not a secret", () => {
+  const radarRef = "f528abe403800460874b0976a730f9688671a3a5";
+  const result = runAudit({
+    candidatePath: "documentation/architecture/monolith-split-plan.md",
+    candidateContent: `| \`apps/web/src/lib/auth/sync.ts\` | \`${radarRef}\` | 504 | 15548 | runtime | PRESENT — REVIEW | NONE | PROACTIVE_SPLIT |\n`,
+    foreignContent: "no secret here\n",
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /no probable secret found/);
+});
+
+test("a hash in an authentication context remains blocked", () => {
+  const sensitiveDigest = "c".repeat(40);
+  const result = runAudit({
+    candidatePath: "apps/web/src/lib/auth/digest.ts",
+    candidateContent: `const authDigest = \"${sensitiveDigest}\";\n`,
+    foreignContent: "no secret here\n",
+  });
+
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /Hash digest/);
+});
+
 test("a real token pattern remains blocked", () => {
   const syntheticToken = [
     "eyJaaaaaaaaaa",
