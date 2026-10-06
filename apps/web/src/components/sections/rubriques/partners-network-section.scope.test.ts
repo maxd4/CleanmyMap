@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const source = readFileSync(new URL("./partners-network-section.tsx", import.meta.url), "utf8");
+const source = [
+  readFileSync(new URL("./partners-network-directory.tsx", import.meta.url), "utf8"),
+  readFileSync(new URL("./partners-network-results.tsx", import.meta.url), "utf8"),
+].join("\n");
 
 describe("partners network public scope", () => {
   it("keeps the real editorial directory source explicit", () => {
