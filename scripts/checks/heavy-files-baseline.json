@@ -349,10 +349,10 @@
     {
       "path": "apps/web/src/lib/auth/sync.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 536,
-      "maxBytes": 16060
+      "status": "IMPROVED",
+      "reviewedRef": "428ca2d4fadb68e9c17add40a4df4fb07d1a895e",
+      "maxLines": 62,
+      "maxBytes": 2176
     },
     {
       "path": "apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts",
@@ -493,10 +493,10 @@
     {
       "path": "apps/web/src/lib/supabase/storage-usage.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 635,
-      "maxBytes": 18204
+      "status": "IMPROVED",
+      "reviewedRef": "428ca2d4fadb68e9c17add40a4df4fb07d1a895e",
+      "maxLines": 24,
+      "maxBytes": 642
     },
     {
       "path": "apps/web/src/lib/ui/button-theme.ts",
