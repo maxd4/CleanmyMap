@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "b1db6243005362b4f2449228dbba8121107be385",
+  "sourceCommit": "bcdbe4811b32e777e9e7fd634ee74a53dec3150c",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -187,10 +187,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
-      "line": 316,
+      "line": 11,
       "category": "routes API",
       "ceiling": 21,
-      "status": "LEGACY",
+      "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
     {
@@ -228,15 +228,6 @@
       "ceiling": 33,
       "status": "LEGACY",
       "functionIdentity": "named:getServiceState#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/app/docs/[...segments]/route.ts",
-      "line": 101,
-      "category": "routes API",
-      "ceiling": 48,
-      "status": "LEGACY",
-      "functionIdentity": "named:renderMarkdown#1"
     },
     {
       "metric": "complexity",
@@ -1888,65 +1879,11 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
-      "line": 71,
-      "category": "métier/domain pur",
-      "ceiling": 28,
-      "status": "LEGACY",
-      "functionIdentity": "named:renderOfficialMarkdown#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
-      "line": 197,
-      "category": "métier/domain pur",
-      "ceiling": 19,
-      "status": "LEGACY",
-      "functionIdentity": "named:renderChapter#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
       "line": 312,
       "category": "métier/domain pur",
       "ceiling": 25,
       "status": "LEGACY",
       "functionIdentity": "named:buildOfficialReportHtml#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
-      "line": 73,
-      "category": "métier/domain pur",
-      "ceiling": 21,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildPdfReportLines#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
-      "line": 115,
-      "category": "métier/domain pur",
-      "ceiling": 16,
-      "status": "LEGACY",
-      "functionIdentity": "callback:payload . data . chapters . forEach:0:#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
-      "line": 285,
-      "category": "métier/domain pur",
-      "ceiling": 28,
-      "status": "LEGACY",
-      "functionIdentity": "named:parseDonutChartBlock#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
-      "line": 484,
-      "category": "métier/domain pur",
-      "ceiling": 22,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildSimplePdf#1"
     },
     {
       "metric": "complexity",
@@ -2653,19 +2590,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
-      "line": 163,
-      "category": "routes API",
-      "ceiling": 101,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildMarkdownPack#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
-      "line": 316,
+      "line": 11,
       "category": "routes API",
       "ceiling": 202,
-      "status": "LEGACY",
+      "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
     {
@@ -2730,24 +2658,6 @@
       "ceiling": 127,
       "status": "LEGACY",
       "functionIdentity": "named:POST#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/app/docs/[...segments]/route.ts",
-      "line": 101,
-      "category": "routes API",
-      "ceiling": 141,
-      "status": "LEGACY",
-      "functionIdentity": "named:renderMarkdown#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/app/docs/[...segments]/route.ts",
-      "line": 273,
-      "category": "routes API",
-      "ceiling": 279,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildViewerHtml#1"
     },
     {
       "metric": "functionLength",
@@ -5038,15 +4948,6 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
-      "line": 197,
-      "category": "métier/domain pur",
-      "ceiling": 68,
-      "status": "LEGACY",
-      "functionIdentity": "named:renderChapter#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
       "line": 312,
       "category": "métier/domain pur",
       "ceiling": 205,
@@ -5061,42 +4962,6 @@
       "ceiling": 438,
       "status": "LEGACY",
       "functionIdentity": "named:buildOfficialReportCss#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
-      "line": 73,
-      "category": "métier/domain pur",
-      "ceiling": 77,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildPdfReportLines#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
-      "line": 285,
-      "category": "métier/domain pur",
-      "ceiling": 61,
-      "status": "LEGACY",
-      "functionIdentity": "named:parseDonutChartBlock#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
-      "line": 355,
-      "category": "métier/domain pur",
-      "ceiling": 102,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildDonutChartOps#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
-      "line": 484,
-      "category": "métier/domain pur",
-      "ceiling": 156,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildSimplePdf#1"
     },
     {
       "metric": "functionLength",
