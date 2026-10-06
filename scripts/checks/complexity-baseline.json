@@ -1545,15 +1545,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/auth/sync.ts",
-      "line": 206,
-      "category": "runtime/services/orchestration",
-      "ceiling": 42,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildCompatibilityProfileMetadata#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/lib/chat/action-conversations.ts",
       "line": 48,
       "category": "métier/domain pur",
