@@ -4,7 +4,7 @@ import { DmInbox } from "./dm-inbox";
 import { ChatContextSidebar } from "./chat-context-sidebar";
 import { ChatThreadPane, type ChatThreadPaneProps } from "./chat-thread-pane";
 
-type ChatShellLayoutProps = {
+export type ChatShellLayoutProps = {
   fullHeight: boolean;
   isLight: boolean;
   messagerieMode: boolean;

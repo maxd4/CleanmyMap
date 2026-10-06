@@ -113,11 +113,19 @@ describe("useChatSubmit retry wiring", () => {
       fileURLToPath(new URL("../chat-shell.tsx", import.meta.url)),
       "utf8",
     );
+    const contextSource = readFileSync(
+      fileURLToPath(new URL("./use-chat-shell-context.ts", import.meta.url)),
+      "utf8",
+    );
+    const dataSource = readFileSync(
+      fileURLToPath(new URL("./use-chat-shell-data.ts", import.meta.url)),
+      "utf8",
+    );
     const behaviorSource = readFileSync(
       fileURLToPath(new URL("../chat-shell.behavior.ts", import.meta.url)),
       "utf8",
     );
-    const source = `${shellSource}\n${behaviorSource}`;
+    const source = `${shellSource}\n${contextSource}\n${dataSource}\n${behaviorSource}`;
 
     expect(source).toContain("const [activeFeedbackId, setActiveFeedbackId]");
     expect(source).toContain(
@@ -126,7 +134,7 @@ describe("useChatSubmit retry wiring", () => {
     expect(source).toContain("setActiveFeedbackId(null)");
     expect(source).toContain("url.searchParams.delete(\"feedbackId\")");
     expect(source).toMatch(
-      /selectedRecipient\?\.id\s*===\s*initialRecipient\?\.id/,
+      /resolvedValue\?\.id\s*!==\s*initialRecipient\?\.id/,
     );
   });
 });
