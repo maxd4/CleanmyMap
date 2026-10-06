@@ -1302,15 +1302,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/actions/exports/export-form-media.ts",
-      "line": 280,
-      "category": "métier/domain pur",
-      "ceiling": 28,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildActionDeclarationSocialSvg#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/lib/actions/formalities-qualification.ts",
       "line": 349,
       "category": "métier/domain pur",
@@ -4197,15 +4188,6 @@
       "ceiling": 22,
       "status": "IMPROVED",
       "functionIdentity": "named:createActionSubmission#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/actions/exports/export-form-media.ts",
-      "line": 280,
-      "category": "métier/domain pur",
-      "ceiling": 139,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildActionDeclarationSocialSvg#1"
     },
     {
       "metric": "functionLength",
