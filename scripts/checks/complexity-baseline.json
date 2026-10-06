@@ -189,7 +189,7 @@
       "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
       "line": 11,
       "category": "routes API",
-      "ceiling": 21,
+      "ceiling": 4,
       "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
@@ -2592,7 +2592,7 @@
       "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
       "line": 11,
       "category": "routes API",
-      "ceiling": 202,
+      "ceiling": 23,
       "status": "IMPROVED",
       "functionIdentity": "named:GET#1"
     },
