@@ -341,10 +341,10 @@
     {
       "path": "apps/web/src/lib/actions/pollution/local-repollution-calibration.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 632,
-      "maxBytes": 19017
+      "status": "IMPROVED",
+      "reviewedRef": "f528abe403800460874b0976a730f9688671a3a5",
+      "maxLines": 20,
+      "maxBytes": 753
     },
     {
       "path": "apps/web/src/lib/auth/sync.ts",
@@ -469,10 +469,10 @@
     {
       "path": "apps/web/src/lib/route/route-predicted-targets.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 635,
-      "maxBytes": 21960
+      "status": "IMPROVED",
+      "reviewedRef": "f528abe403800460874b0976a730f9688671a3a5",
+      "maxLines": 19,
+      "maxBytes": 645
     },
     {
       "path": "apps/web/src/lib/route/route-trace.ts",
