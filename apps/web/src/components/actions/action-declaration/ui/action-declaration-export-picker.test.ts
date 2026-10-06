@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { initialState } from "../model";
 import {
+  buildActionDeclarationExportPreviewDataUrl,
   buildActionDeclarationExportFilename,
   buildActionDeclarationShareText,
   getActionDeclarationExportTargets,
@@ -41,9 +42,15 @@ describe("ActionDeclarationExportPicker", () => {
   });
 
   it("exposes the expected export targets and filenames", () => {
-    expect(
-      getActionDeclarationExportTargets().map((target) => target.label),
-    ).toEqual([
+    const targets = getActionDeclarationExportTargets();
+    expect(targets.map((target) => target.id)).toEqual([
+      "pdf",
+      "png",
+      "story-instagram",
+      "publication-facebook",
+      "publication-x",
+    ]);
+    expect(targets.map((target) => target.label)).toEqual([
       "Fichier PDF",
       "PNG",
       "Story Instagram",
@@ -70,6 +77,12 @@ describe("ActionDeclarationExportPicker", () => {
         "story-instagram",
       ),
     ).toBe("cleanmymap-declaration-2026-05-20-story-instagram.png");
+  });
+
+  it("keeps the pure SVG preview contract for image presets", () => {
+    const dataUrl = buildActionDeclarationExportPreviewDataUrl(initialState, "Bénévole", "png");
+    expect(dataUrl).toMatch(/^data:image\/svg\+xml;charset=utf-8,/);
+    expect(decodeURIComponent(dataUrl.split(",", 2)[1] ?? "")).toContain('width="1080" height="1080"');
   });
 
   it("builds a useful share caption", () => {

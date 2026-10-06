@@ -141,7 +141,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/app/api/chat/route.post.ts` | PROACTIVE_SPLIT | AFTER_ACTIVE_CHANGES | changements actifs Messagerie ; préserver AuthN/AuthZ, rate limit, streaming et ordre observable | stabilisation Messagerie ou prochain changement du contrat POST chat |
 | `apps/web/src/lib/impact/impact-terrain-2026.ts` | COHESIVE_SINGLE_FILE | NONE | owner canonique de la méthodologie scientifique versionnée | nouvelle version méthodologique ou famille de calculs réellement indépendante |
 | `apps/web/src/components/chat/discussion-guidance.ts` | COHESIVE_SINGLE_FILE | NONE | catalogue bilingue unique topics/canaux/guidance | source de contenu externe ou catalogues par canal réellement autonomes |
-| `apps/web/src/lib/actions/exports/export-form-media.ts` | PROACTIVE_SPLIT | NOW | préserver IDs presets/bundles et formats de partage | découpage autorisé dès maintenant entre données/narrative/SVG purs et conversion/téléchargement navigateur |
+| `apps/web/src/lib/actions/exports/export-form-media.ts` | ALREADY_MODULARIZED | NONE | façade publique minimale ; responsabilités presets/contrats, narrative, SVG pur et effets navigateur distribuées vers des owners spécialisés | nouvelle responsabilité autonome réintroduite dans la façade ou croissance substantielle d'un owner extrait |
 | `apps/web/src/app/api/reports/elus-dossier/route.ts` | ALREADY_MODULARIZED | NONE | préserver AuthN/AuthZ, scope, cache, storage, headers et formats | nouvelle responsabilité métier/stockage ajoutée directement au handler |
 | `apps/web/src/components/sections/rubriques/weather-section.conditions.tsx` | COHESIVE_SINGLE_FILE | NONE | un seul ConditionsPanel et état météo fortement partagé ; éviter prop drilling | nouvelle famille de conditions avec état/cycle de vie autonome |
 | `apps/web/src/lib/pdf-export/official-report-html.ts` | ALREADY_MODULARIZED | NONE | préserver échappement HTML, Markdown, tableaux, callouts et PdfReportPayload | nouvelle responsabilité indépendante ajoutée au compositeur |
@@ -788,12 +788,12 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | MAIN_CONSUMERS | export picker controller/model/view, bundle/history et formulaire de déclaration |
 | TEST_BOUNDARY | tests des contrôleurs export, bundle/history et déclaration |
 | COUPLING | mélange de formatage pur, rendu SVG et effet navigateur ; les types sont partagés par plusieurs modules |
-| NATURAL_EXTRACTION_BOUNDARY | presets/narrative, SVG pur, conversion PNG/browser et téléchargement |
-| ARCHITECTURE_DECISION | PROACTIVE_SPLIT |
-| RATIONALE | la séparation pur/browser est nette et réduirait le coût de test sans changer les exports publics |
-| PRIORITY | NOW |
-| DEPENDENCY_OR_BLOCKER | préserver IDs presets/bundles et formats de partage |
-| NEXT_TRIGGER | découpage autorisé dès maintenant entre données/narrative/SVG purs et conversion/téléchargement navigateur |
+| NATURAL_EXTRACTION_BOUNDARY | presets/contrats, narrative/labels/filename, SVG pur, conversion SVG → PNG navigateur et téléchargement Blob/browser |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | façade publique minimale ; responsabilités presets/contrats, narrative, SVG pur et effets navigateur distribuées vers des owners spécialisés |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver IDs presets/bundles, textes, noms de fichiers, dimensions/formats et API publique |
+| NEXT_TRIGGER | nouvelle responsabilité substantielle réintroduite dans la façade ou couplage anormal entre sous-modules |
 
 #### `apps/web/src/app/api/reports/elus-dossier/route.ts`
 
