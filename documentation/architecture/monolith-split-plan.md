@@ -71,7 +71,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/lib/actions/pollution/current-place-state.ts` | DEFERRED_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | owner CURRENT unique de la résolution d'état d'un lieu ; ne pas séparer les étapes privées uniquement pour la taille ; évolution indépendante des modèles observed/projected_today ou du modèle de repollution |
 | `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver matching spatial, complétude, confiance et projections ; nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/lib/route/route-predicted-targets.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver budgets planner, audits et contrats API route ; nouvelle responsabilité autonome réintroduite dans la façade |
-| `apps/web/src/components/sections/rubriques/route/route-section.tsx` | ALREADY_MODULARIZED | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | façade RouteSection déjà composée de sous-composants spécialisés ; nouvelle responsabilité autonome introduite directement dans RouteSection ou croissance nouvelle au-delà du ratchet |
+| `apps/web/src/components/sections/rubriques/route/route-section.tsx` | ALREADY_MODULARIZED | NONE | NONE | contrôles/origine, dérivations d'état et rendu des résultats séparés | préserver l'orchestration RouteSection et ses contrats ; nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | DEFERRED_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | stabiliser les types et préserver une direction de dépendance sans cycle ; évolution indépendante des modules, périodes/scopes ou contrat PDF |
 | `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | conserver réponses FR/EN et projection canonique Waste alignées ; famille de règles indépendante ou catalogue de contenu autonome démontré |
 | `apps/web/src/lib/route/route-trace.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | un seul owner du contrat RouteRecommendationTrace et de sa construction ; nouveau sous-contrat de trace consommé indépendamment du builder principal |
@@ -85,7 +85,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | owner unique de l'estimation infrastructure ; calculs internes au même modèle ; nouvelle famille de service réellement autonome ou API publique indépendante |
 | `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | DEFERRED_SPLIT | PRESENT — REVIEW | AFTER_ACTIVE_CHANGES | signaux complémentaires non mesurés | owner transversal map/déclaration ; éviter cycles et divergence des formats ; stabilisation du parcours déclaration/map puis évolution indépendante de normalisation, markers ou view-model |
 | `apps/web/src/components/actions/action-declaration/before/sections.tsx` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver la façade d'exports, BaseSectionProps, validation, focus et updateField ; nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
-| `apps/web/src/app/api/route/recommend/route.response.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | owner unique du mapping du DTO public de recommandation ; nouveau mode de réponse ou sous-contrat consommé indépendamment |
+| `apps/web/src/app/api/route/recommend/route.response.ts` | ALREADY_MODULARIZED | NONE | NONE | façade, budgets opérationnels, preuves et payloads séparés | préserver la façade `buildRouteRecommendationResponse` et le DTO public ; nouveau mode de réponse ou sous-contrat consommé indépendamment |
 | `apps/web/src/lib/actions/participation/group-participation-review.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver AuthZ, ownership, idempotence, audit et ordre des mutations ; nouvelle responsabilité autonome réintroduite dans la façade ou divergence de contrat |
 | `apps/web/src/lib/actions/pollution/corridor-history.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | owner unique du modèle corridor et de son historique ; nouveau mode de corridor ou sous-modèle historique indépendant |
 | `apps/web/src/lib/actions/http.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver URL, méthode, payload et erreurs de chaque famille endpoint ; nouvelle famille de contrat réintroduite dans la façade ou divergence URL/méthode/payload |
@@ -119,7 +119,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/lib/actions/pollution/current-place-state.ts` | DEFERRED_SPLIT | LATER | owner CURRENT unique de la résolution d'état d'un lieu ; ne pas séparer les étapes privées uniquement pour la taille | évolution indépendante des modèles observed/projected_today ou du modèle de repollution |
 | `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | ALREADY_MODULARIZED | NONE | préserver matching spatial, complétude, confiance et projections | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/lib/route/route-predicted-targets.ts` | ALREADY_MODULARIZED | NONE | préserver budgets planner, audits et contrats API route | nouvelle responsabilité autonome réintroduite dans la façade |
-| `apps/web/src/components/sections/rubriques/route/route-section.tsx` | ALREADY_MODULARIZED | NONE | façade RouteSection déjà composée de sous-composants spécialisés | nouvelle responsabilité autonome introduite directement dans RouteSection ou croissance nouvelle au-delà du ratchet |
+| `apps/web/src/components/sections/rubriques/route/route-section.tsx` | ALREADY_MODULARIZED | NONE | contrôles/origine, dérivations d'état et rendu des résultats restent séparés ; façade publique conservée | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | DEFERRED_SPLIT | LATER | stabiliser les types et préserver une direction de dépendance sans cycle | évolution indépendante des modules, périodes/scopes ou contrat PDF |
 | `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | COHESIVE_SINGLE_FILE | NONE | conserver réponses FR/EN et projection canonique Waste alignées | famille de règles indépendante ou catalogue de contenu autonome démontré |
 | `apps/web/src/lib/route/route-trace.ts` | COHESIVE_SINGLE_FILE | NONE | un seul owner du contrat RouteRecommendationTrace et de sa construction | nouveau sous-contrat de trace consommé indépendamment du builder principal |
@@ -133,7 +133,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | COHESIVE_SINGLE_FILE | NONE | owner unique de l'estimation infrastructure ; calculs internes au même modèle | nouvelle famille de service réellement autonome ou API publique indépendante |
 | `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | DEFERRED_SPLIT | AFTER_ACTIVE_CHANGES | owner transversal map/déclaration ; éviter cycles et divergence des formats | stabilisation du parcours déclaration/map puis évolution indépendante de normalisation, markers ou view-model |
 | `apps/web/src/components/actions/action-declaration/before/sections.tsx` | ALREADY_MODULARIZED | NONE | préserver la façade d'exports, BaseSectionProps, validation, focus et updateField | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
-| `apps/web/src/app/api/route/recommend/route.response.ts` | COHESIVE_SINGLE_FILE | NONE | owner unique du mapping du DTO public de recommandation | nouveau mode de réponse ou sous-contrat consommé indépendamment |
+| `apps/web/src/app/api/route/recommend/route.response.ts` | ALREADY_MODULARIZED | NONE | façade publique conservée ; budgets opérationnels, preuves snapshot/trace/calibration et payloads possèdent des builders internes distincts | nouveau mode de réponse ou sous-contrat consommé indépendamment |
 | `apps/web/src/lib/actions/participation/group-participation-review.ts` | ALREADY_MODULARIZED | NONE | préserver AuthZ, ownership, idempotence, audit et ordre des mutations | nouvelle responsabilité autonome réintroduite dans la façade ou divergence de contrat |
 | `apps/web/src/lib/actions/pollution/corridor-history.ts` | COHESIVE_SINGLE_FILE | NONE | owner unique du modèle corridor et de son historique | nouveau mode de corridor ou sous-modèle historique indépendant |
 | `apps/web/src/lib/actions/http.ts` | ALREADY_MODULARIZED | NONE | préserver URL, méthode, payload et erreurs de chaque famille endpoint | nouvelle famille de contrat réintroduite dans la façade ou divergence URL/méthode/payload |
@@ -414,12 +414,12 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | MAIN_CONSUMERS | `route/index.tsx`, `action-creation-shell.tsx`, tests de rubrique et map |
 | TEST_BOUNDARY | `route-section.test.tsx`, `route-section.map.test.tsx`, tests d'entrypoints et action creation shell |
 | COUPLING | couplage UI avec les modèles route, météo, carte, actions et responsive |
-| NATURAL_EXTRACTION_BOUNDARY | résumé/résultats, explication de route, états vides/erreur et CTA planner |
+| NATURAL_EXTRACTION_BOUNDARY | contrôles origine/déclenchement, dérivations d'état et rendu des résultats (résumé, groupes, carte, liste, export) |
 | ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
-| RATIONALE | la façade RouteSection est déjà composée de sous-composants spécialisés ; la taille résiduelle ne justifie pas un refactor mécanique |
+| RATIONALE | les contrôles, la dérivation pure du view-model et le rendu des résultats ont des responsabilités autonomes ; RouteSection conserve l'orchestration, l'Auth state et le handoff planner |
 | PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | façade RouteSection déjà composée de sous-composants spécialisés |
-| NEXT_TRIGGER | nouvelle responsabilité autonome introduite directement dans RouteSection ou croissance nouvelle au-delà du ratchet |
+| DEPENDENCY_OR_BLOCKER | préserver les textes, états async, origine carte, deep-links et CTA planner |
+| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans RouteSection ou couplage anormal entre owners |
 
 #### `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx`
 
@@ -646,17 +646,17 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 
 | Champ | Valeur |
 | --- | --- |
-| RESPONSIBILITIES | construction des stops, synthèse des candidats, trace multi-route et réponse HTTP de recommandation |
+| RESPONSIBILITIES | façade de construction de réponse ; délégation aux builders de budgets/contexte, multi-route, preuves snapshot/trace/calibration et payloads vide/résultat |
 | PUBLIC_CONTRACTS | `buildRouteRecommendationResponse`, payload de réponse API et trace associée |
 | SIDE_EFFECTS | aucun effet externe ; mapping pur de réponse |
 | MAIN_CONSUMERS | `route.ts`, tests `route.response.test.ts`, clients route et composants d'explication |
 | TEST_BOUNDARY | `route.response.test.ts`, tests API route recommendation et route trace |
 | COUPLING | couplage obligatoire avec le contrat API, `route-trace` et résultats planner |
-| NATURAL_EXTRACTION_BOUNDARY | mapping stops/trace et composition de réponse, mais la façade API doit rester unique |
-| ARCHITECTURE_DECISION | COHESIVE_SINGLE_FILE |
-| RATIONALE | il s'agit d'une frontière de réponse unique ; les helpers servent le même DTO public |
+| NATURAL_EXTRACTION_BOUNDARY | contexte/budgets opérationnels, multi-route, preuves, payload commun, cas vide et cas avec résultats |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | la façade reste l'owner du DTO public tandis que les étapes de composition sont des builders internes purs et testables ; aucun contrat API n'est déplacé |
 | PRIORITY | NONE |
-| DEPENDENCY_OR_BLOCKER | owner unique du mapping du DTO public de recommandation |
+| DEPENDENCY_OR_BLOCKER | préserver DTO, planner proof/snapshot, calibration et la façade `buildRouteRecommendationResponse` |
 | NEXT_TRIGGER | nouveau mode de réponse ou sous-contrat consommé indépendamment |
 
 #### `apps/web/src/lib/actions/participation/group-participation-review.ts`

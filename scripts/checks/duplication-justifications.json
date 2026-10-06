@@ -219,14 +219,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "dc58be24affbeea4",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les deux payloads Route partagent une enveloppe de réponse, mais l’absence de stops et la réponse planifiée portent des invariants opérationnels différents ; une extraction plus large couplerait les branches de projection.",
-      "evidence": "apps/web/src/app/api/route/recommend/route.response.ts:440-452 et apps/web/src/app/api/route/recommend/route.response.ts:526-538 ; les distances, le budget et la sélection restent propres à chaque branche.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "67b96c6753296975",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les audits Route single-group et multi-group partagent des métadonnées de contexte, mais leurs bornes d’exclusion et leurs assignments sont propres à chaque stratégie de partition ; une abstraction réduirait la lisibilité de la preuve opérationnelle.",
