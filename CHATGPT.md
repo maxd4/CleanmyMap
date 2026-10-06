@@ -631,6 +631,54 @@ Une dette structurelle directement liée, sûre et utile peut être corrigée da
 
 La zone modifiée doit ressortir au moins aussi simple, cohérente et testable qu'avant.
 
+### Obligations de conception des prompts Codex
+
+Tout prompt Codex impliquant la création de code, un déplacement, une
+extraction, une migration ou un refactor significatif doit exiger explicitement
+la méthode canonique de modularisation à deux niveaux, ou y référencer
+`documentation/development/conventions-modularisation.md`. Un prompt ne peut
+pas demander seulement un split de fichier, une réduction de lignes ou la
+création de sous-modules.
+
+Le prompt doit également demander :
+
+1. la revue des fonctions, méthodes, composants et handlers nouveaux,
+   déplacés ou substantiellement modifiés ;
+2. la décomposition des fonctions réellement multi-responsabilités ;
+3. la justification des fonctions longues conservées comme algorithmes ou
+   pipelines cohésifs ;
+4. la détection d'un simple transfert de complexité vers un autre fichier ou
+   module ;
+5. `npm run quality:complexity` ;
+6. `npm run quality:dead-code` ;
+7. `npm run quality:duplication` et `npm run quality:cycles` pour tout
+   déplacement ou extraction inter-modules.
+
+Le fichier principal passé sous le seuil `top-heavy` ne suffit jamais à
+déclarer le refactor réussi. Toute conséquence directement créée par le
+refactor doit être nettoyée dans le même lot cohérent ; elle ne doit pas être
+repoussée artificiellement dans un micro-lot. ChatGPT ne doit pas proposer de
+limite universelle de longueur de fonction ni demander la création de helpers
+artificiels uniquement pour améliorer une métrique. Les prompts privilégient
+la cohésion, la compréhension locale et une marge de croissance réelle.
+
+La STOP CONDITION standard d'un lot de modularisation est :
+
+```text
+responsabilités de modules claires
++ fonctions nouvelles/déplacées revues
++ aucun monolithe fonctionnel évitable transféré
++ aucun BASELINE_STALE imputable au lot
++ aucun nouveau dead-code
++ aucun nouveau cycle
++ aucune nouvelle duplication actionnable
++ tests ciblés PASS
+```
+
+Cette STOP CONDITION complète les critères généraux de clôture ci-dessous ;
+la méthode détaillée et les critères d'analyse restent dans la convention
+canonique de modularisation.
+
 ## 16. Dead code, legacy et suppressions
 
 L'absence d'import runtime n'est pas une preuve suffisante pour supprimer un fichier.
@@ -1174,6 +1222,10 @@ documentation mise à jour si le contrat durable a changé
 commit / push conformes au workflow Codex si le dépôt a été modifié
 STOP CONDITION atteinte ou dette résiduelle explicitée
 ```
+
+Pour un lot de modularisation, la STOP CONDITION standard de la section 15
+doit également être atteinte ; une dette directement imputable et qualifiée
+reste dans le même lot cohérent ou est explicitement signalée avant clôture.
 
 Ne pas prolonger artificiellement un chantier lorsqu'il est terminé.
 
