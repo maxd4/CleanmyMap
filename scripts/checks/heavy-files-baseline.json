@@ -29,10 +29,10 @@
     {
       "path": "apps/web/src/app/api/chat/route.post.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 556,
-      "maxBytes": 19717
+      "status": "IMPROVED",
+      "reviewedRef": "fec0f1f04c3b34cbfe8466229ea8d4f2cc5815d6",
+      "maxLines": 121,
+      "maxBytes": 5110
     },
     {
       "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
@@ -165,10 +165,10 @@
     {
       "path": "apps/web/src/components/chat/chat-shell.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 881,
-      "maxBytes": 29058
+      "status": "IMPROVED",
+      "reviewedRef": "fec0f1f04c3b34cbfe8466229ea8d4f2cc5815d6",
+      "maxLines": 150,
+      "maxBytes": 5130
     },
     {
       "path": "apps/web/src/components/chat/discussion-guidance.ts",

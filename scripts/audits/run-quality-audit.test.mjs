@@ -141,9 +141,9 @@ test("top-heavy distingue les décisions acquises, REVIEW_REQUIRED et les deltas
 test("la projection humaine associe les décisions du bloc canonique aux chemins", () => {
   const markdown = fs.readFileSync(path.join(process.cwd(), "documentation", "architecture", "monolith-split-plan.md"), "utf8");
   const decisions = buildHumanDecisionsByFile(markdown);
-  assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].architectureDecision, "PROACTIVE_SPLIT");
+  assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].architectureDecision, "ALREADY_MODULARIZED");
   assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].decisionAcquired, true);
-  assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].priority, "AFTER_ACTIVE_CHANGES");
+  assert.equal(decisions["apps/web/src/components/chat/chat-shell.tsx"].priority, "NONE");
 });
 
 test("all runs each engine once, aggregates statuses and retains other results after failure", async () => {
