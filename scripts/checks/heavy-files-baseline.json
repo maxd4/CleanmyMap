@@ -93,10 +93,10 @@
     {
       "path": "apps/web/src/components/actions/action-declaration/payload.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 610,
-      "maxBytes": 22520
+      "status": "IMPROVED",
+      "reviewedRef": "832ce8f48a7590e03606601a779b97d38063de43",
+      "maxLines": 25,
+      "maxBytes": 778
     },
     {
       "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx",
@@ -509,10 +509,10 @@
     {
       "path": "apps/web/src/lib/validation/action.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 671,
-      "maxBytes": 25179
+      "status": "IMPROVED",
+      "reviewedRef": "832ce8f48a7590e03606601a779b97d38063de43",
+      "maxLines": 193,
+      "maxBytes": 7325
     }
   ]
 }

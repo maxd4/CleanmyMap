@@ -135,8 +135,8 @@
       "path": "apps/web/src/app/api/chat/route.post.ts",
       "line": 50,
       "category": "routes API",
-      "ceiling": 136,
-      "status": "LEGACY",
+      "ceiling": 20,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -171,8 +171,8 @@
       "path": "apps/web/src/app/api/community/events/route.ts",
       "line": 264,
       "category": "routes API",
-      "ceiling": 24,
-      "status": "LEGACY",
+      "ceiling": 12,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -648,7 +648,7 @@
       "path": "apps/web/src/components/chat/chat-shell.tsx",
       "line": 99,
       "category": "React/JSX",
-      "ceiling": 19,
+      "ceiling": 17,
       "status": "IMPROVED",
       "functionIdentity": "named:ChatShell#1"
     },
@@ -945,8 +945,8 @@
       "path": "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
       "line": 55,
       "category": "React/JSX",
-      "ceiling": 49,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "named:FeedbackDashboardMode#1"
     },
     {
@@ -1026,8 +1026,8 @@
       "path": "apps/web/src/components/sections/rubriques/partners-network-section.tsx",
       "line": 100,
       "category": "React/JSX",
-      "ceiling": 48,
-      "status": "LEGACY",
+      "ceiling": 11,
+      "status": "IMPROVED",
       "functionIdentity": "named:PartnersNetworkSection#1"
     },
     {
@@ -1341,8 +1341,8 @@
       "path": "apps/web/src/lib/actions/participation/group-participation-membership.ts",
       "line": 82,
       "category": "métier/domain pur",
-      "ceiling": 18,
-      "status": "LEGACY",
+      "ceiling": 4,
+      "status": "IMPROVED",
       "functionIdentity": "named:joinActionParticipation#1"
     },
     {
@@ -1359,8 +1359,8 @@
       "path": "apps/web/src/lib/actions/participation/post-action-claims.ts",
       "line": 65,
       "category": "métier/domain pur",
-      "ceiling": 20,
-      "status": "LEGACY",
+      "ceiling": 10,
+      "status": "IMPROVED",
       "functionIdentity": "named:claimFinishedActionParticipation#1"
     },
     {
@@ -2214,7 +2214,7 @@
       "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.test.helpers.ts",
       "line": 268,
       "category": "tests",
-      "ceiling": 253,
+      "ceiling": 228,
       "status": "IMPROVED",
       "functionIdentity": "named:createParticipantsChain#1"
     },
@@ -2331,7 +2331,7 @@
       "path": "apps/web/src/app/api/admin/moderation/route.clean-place.ts",
       "line": 31,
       "category": "routes API",
-      "ceiling": 96,
+      "ceiling": 95,
       "status": "IMPROVED",
       "functionIdentity": "named:moderateCleanPlace#1"
     },
@@ -2421,7 +2421,7 @@
       "path": "apps/web/src/app/api/admin/promotion-requests/route.ts",
       "line": 57,
       "category": "routes API",
-      "ceiling": 98,
+      "ceiling": 84,
       "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
@@ -2430,8 +2430,8 @@
       "path": "apps/web/src/app/api/admin/role-accounts/route.ts",
       "line": 65,
       "category": "routes API",
-      "ceiling": 120,
-      "status": "LEGACY",
+      "ceiling": 37,
+      "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
     {
@@ -2448,7 +2448,7 @@
       "path": "apps/web/src/app/api/chat/route.post.ts",
       "line": 38,
       "category": "routes API",
-      "ceiling": 469,
+      "ceiling": 87,
       "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
@@ -2484,7 +2484,7 @@
       "path": "apps/web/src/app/api/community/bug-reports/route.ts",
       "line": 186,
       "category": "routes API",
-      "ceiling": 95,
+      "ceiling": 81,
       "status": "IMPROVED",
       "functionIdentity": "named:PATCH#1"
     },
@@ -2502,7 +2502,7 @@
       "path": "apps/web/src/app/api/community/events/route.ts",
       "line": 302,
       "category": "routes API",
-      "ceiling": 132,
+      "ceiling": 83,
       "status": "IMPROVED",
       "functionIdentity": "named:POST#1"
     },
@@ -2673,7 +2673,7 @@
       "path": "apps/web/src/components/accueil/accueil-community-credibility.tsx",
       "line": 283,
       "category": "React/JSX",
-      "ceiling": 303,
+      "ceiling": 45,
       "status": "IMPROVED",
       "functionIdentity": "named:HomeCommunityCredibility#1"
     },
@@ -3159,7 +3159,7 @@
       "path": "apps/web/src/components/chat/chat-shell.tsx",
       "line": 97,
       "category": "React/JSX",
-      "ceiling": 641,
+      "ceiling": 102,
       "status": "IMPROVED",
       "functionIdentity": "named:ChatShell#1"
     },
@@ -3789,8 +3789,8 @@
       "path": "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
       "line": 55,
       "category": "React/JSX",
-      "ceiling": 537,
-      "status": "LEGACY",
+      "ceiling": 16,
+      "status": "IMPROVED",
       "functionIdentity": "named:FeedbackDashboardMode#1"
     },
     {
@@ -3879,8 +3879,8 @@
       "path": "apps/web/src/components/sections/rubriques/partners-network-section.tsx",
       "line": 100,
       "category": "React/JSX",
-      "ceiling": 386,
-      "status": "LEGACY",
+      "ceiling": 69,
+      "status": "IMPROVED",
       "functionIdentity": "named:PartnersNetworkSection#1"
     },
     {
@@ -4194,8 +4194,8 @@
       "path": "apps/web/src/lib/actions/participation/group-participation-membership.ts",
       "line": 82,
       "category": "métier/domain pur",
-      "ceiling": 145,
-      "status": "LEGACY",
+      "ceiling": 27,
+      "status": "IMPROVED",
       "functionIdentity": "named:joinActionParticipation#1"
     },
     {
@@ -4221,8 +4221,8 @@
       "path": "apps/web/src/lib/actions/participation/organizers.ts",
       "line": 373,
       "category": "métier/domain pur",
-      "ceiling": 70,
-      "status": "LEGACY",
+      "ceiling": 56,
+      "status": "IMPROVED",
       "functionIdentity": "named:syncActionManualParticipants#1"
     },
     {
@@ -4230,8 +4230,8 @@
       "path": "apps/web/src/lib/actions/participation/post-action-claims.ts",
       "line": 65,
       "category": "métier/domain pur",
-      "ceiling": 117,
-      "status": "LEGACY",
+      "ceiling": 32,
+      "status": "IMPROVED",
       "functionIdentity": "named:claimFinishedActionParticipation#1"
     },
     {
@@ -5040,8 +5040,8 @@
       "path": "apps/web/src/lib/supabase/storage-usage-service.ts",
       "line": 130,
       "category": "runtime/services/orchestration",
-      "ceiling": 113,
-      "status": "LEGACY",
+      "ceiling": 99,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildStorageUsageReport#1"
     },
     {
