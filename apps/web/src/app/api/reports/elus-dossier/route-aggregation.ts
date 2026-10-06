@@ -95,13 +95,29 @@ function buildMethodology(shared: PersonalImpactMethodology) {
   };
 }
 
-export async function buildElusDossierPayload(params: {
+type ElusDossierContract = Awaited<ReturnType<typeof fetchUnifiedActionContracts>>["items"][number];
+
+type ScopedDossierData = {
+  scopeContracts: ElusDossierContract[];
+  approved: ElusDossierContract[];
+  isTruncated: boolean;
+  sourceHealth: UnifiedSourceHealth;
+};
+
+type DossierSummary = {
+  totalActions: number;
+  totalKg: number;
+  knownWasteActions: number;
+  totalVolunteers: number;
+  geocoverageRate: number;
+};
+
+async function loadScopedDossierData(params: {
   supabase: SupabaseAdminClient;
-  days: number;
   limit: number;
   floorDate: ReturnType<typeof buildDateFloor>;
   scope: ScopeSelection;
-}) {
+}): Promise<ScopedDossierData> {
   const { items: contracts, isTruncated, sourceHealth: fetchedSourceHealth } =
     await fetchUnifiedActionContracts(params.supabase, {
       limit: Math.max(params.limit * 2, params.limit),
@@ -121,7 +137,16 @@ export async function buildElusDossierPayload(params: {
     kind: params.scope.kind,
     value: params.scope.value,
   });
-  const approved = scopeContracts.filter((contract) => contract.status === "approved");
+
+  return {
+    scopeContracts,
+    approved: scopeContracts.filter((contract) => contract.status === "approved"),
+    isTruncated,
+    sourceHealth,
+  };
+}
+
+function buildDossierSummary(approved: ElusDossierContract[]): DossierSummary {
   const totalKg = sumApprovedMetric(approved, (contract) => contract.metadata.wasteKg);
   const knownWasteActions = countKnownMetric(approved, (contract) => contract.metadata.wasteKg);
   const totalActions = approved.length;
@@ -131,6 +156,16 @@ export async function buildElusDossierPayload(params: {
   );
   const geolocated = countGeolocatedContracts(approved);
 
+  return {
+    totalActions,
+    totalKg: Number(totalKg.toFixed(1)),
+    knownWasteActions,
+    totalVolunteers,
+    geocoverageRate: totalActions > 0 ? Math.round((geolocated / totalActions) * 100) : 0,
+  };
+}
+
+function buildDossierComparisons(scopeContracts: ElusDossierContract[], days: number) {
   const comparison = computePeriodComparison(
     scopeContracts.map((contract) => ({
       status: contract.status,
@@ -140,7 +175,7 @@ export async function buildElusDossierPayload(params: {
       longitude: contract.location.longitude,
       wasteKg: contract.metadata.wasteKg,
     })),
-    params.days,
+    days,
   );
   const benchmark = buildTerritorialBenchmark(
     scopeContracts.map((contract) => ({
@@ -153,29 +188,38 @@ export async function buildElusDossierPayload(params: {
   );
   const overview = buildPilotageOverviewFromContracts({
     contracts: scopeContracts,
-    periodDays: params.days,
+    periodDays: days,
   });
-  const qualityScores = approved.map((contract) =>
-    evaluateActionQuality(toActionListItem(contract)).score,
-  );
+
+  return { comparison, benchmark, overview };
+}
+
+function buildDossierQuality(approved: ElusDossierContract[]) {
+  const qualityScores = approved.map((contract) => evaluateActionQuality(toActionListItem(contract)).score);
   const qualityAverage =
     qualityScores.length > 0
       ? qualityScores.reduce((acc, score) => acc + score, 0) / qualityScores.length
       : 0;
   const sharedMethodology = buildPersonalImpactMethodology(qualityAverage);
-  const methodology = buildMethodology(sharedMethodology);
+  return { methodology: buildMethodology(sharedMethodology) };
+}
 
+function assembleElusDossierPayload(params: {
+  days: number;
+  summary: DossierSummary;
+  comparisons: ReturnType<typeof buildDossierComparisons>;
+  quality: ReturnType<typeof buildDossierQuality>;
+  isTruncated: boolean;
+  sourceHealth: UnifiedSourceHealth;
+}) {
+  const { summary, comparisons, quality, isTruncated, sourceHealth } = params;
+  const { benchmark, comparison, overview } = comparisons;
+  const { methodology } = quality;
   return {
     generatedAt: overview.generatedAt,
     periodDays: params.days,
     packVersion: methodology.version,
-    summary: {
-      totalActions,
-      totalKg: Number(totalKg.toFixed(1)),
-      knownWasteActions,
-      totalVolunteers,
-      geocoverageRate: totalActions > 0 ? Math.round((geolocated / totalActions) * 100) : 0,
-    },
+    summary,
     comparison,
     territorialPriorities: benchmark,
     decisionPriorities: buildDecisionPriorities(benchmark),
@@ -190,6 +234,28 @@ export async function buildElusDossierPayload(params: {
       "Lecture decisionnelle: priorisation haute/moyenne/fond selon score normalise.",
     ],
   };
+}
+
+export async function buildElusDossierPayload(params: {
+  supabase: SupabaseAdminClient;
+  days: number;
+  limit: number;
+  floorDate: ReturnType<typeof buildDateFloor>;
+  scope: ScopeSelection;
+}) {
+  const scopedData = await loadScopedDossierData(params);
+  const summary = buildDossierSummary(scopedData.approved);
+  const comparisons = buildDossierComparisons(scopedData.scopeContracts, params.days);
+  const quality = buildDossierQuality(scopedData.approved);
+
+  return assembleElusDossierPayload({
+    days: params.days,
+    summary,
+    comparisons,
+    quality,
+    isTruncated: scopedData.isTruncated,
+    sourceHealth: scopedData.sourceHealth,
+  });
 }
 
 export type ElusDossierPayload = Awaited<ReturnType<typeof buildElusDossierPayload>>;

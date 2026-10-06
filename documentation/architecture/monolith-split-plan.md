@@ -113,7 +113,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | COHESIVE_SINGLE_FILE | NONE | préserver les deux exports publics | ajout d'une nouvelle famille de méthodologie ou rupture du contrat legacy |
 | `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | ALREADY_MODULARIZED | NONE | aucun | nouvelle responsabilité métier ajoutée à la façade |
 | `apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts` | PROACTIVE_SPLIT | AFTER_ACTIVE_CHANGES | changements actifs du parcours déclaration | prochain changement du draft, de la géométrie ou du payload |
-| `apps/web/src/app/docs/[...segments]/route.ts` | PROACTIVE_SPLIT | NOW | préserver résolution anti-path-traversal, MIME, headers et contrat SEO | découpage autorisé dès maintenant autour du moteur Markdown, viewer HTML/CSS et adaptateur fichier, en gardant garde de chemin et GET dans la route |
+| `apps/web/src/app/docs/[...segments]/route.ts` | ALREADY_MODULARIZED | NONE | façade HTTP courte ; Markdown, viewer HTML/CSS et lecture/adaptation documentaire ont leurs owners dédiés | nouvelle responsabilité autonome réintroduite dans la façade ou croissance substantielle d'un owner extrait |
 | `apps/web/src/lib/validation/action.ts` | ALREADY_MODULARIZED | NONE | préserver l'owner unique des schémas create/update et l'ordre des validations | nouvelle responsabilité indépendante réintroduite dans la façade ou couplage anormal entre sous-modules |
 | `apps/web/src/lib/pdf-export/simple-pdf.ts` | ALREADY_MODULARIZED | NONE | préserver octets PDF, format des lignes et PdfReportPayload | nouvelle responsabilité substantielle réintroduite dans la façade ou couplage anormal entre sous-modules |
 | `apps/web/src/lib/actions/pollution/current-place-state.ts` | DEFERRED_SPLIT | LATER | owner CURRENT unique de la résolution d'état d'un lieu ; ne pas séparer les étapes privées uniquement pour la taille | évolution indépendante des modèles observed/projected_today ou du modèle de repollution |
@@ -313,11 +313,11 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | TEST_BOUNDARY | `route.test.ts`, tests du registre documentaire et routes documentation consommatrices |
 | COUPLING | couplage interne entre parsing Markdown, rendu HTML et transport de fichiers ; couplage externe limité au registre et SEO |
 | NATURAL_EXTRACTION_BOUNDARY | moteur Markdown, viewer HTML/CSS, adaptateur lecture/réponse fichier |
-| ARCHITECTURE_DECISION | PROACTIVE_SPLIT |
-| RATIONALE | trois responsabilités techniques autonomes sont visibles, mais la garde de chemin et le contrat HTTP doivent rester dans la route |
-| PRIORITY | NOW |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | façade HTTP courte ; Markdown appartient à route-markdown.ts, viewer HTML/CSS à route-viewer.ts et lecture/adaptation documentaire à route-document.ts ; GET, registre public, anti-path-traversal, MIME/cache/noindex et orchestration HTTP restent dans route.ts |
+| PRIORITY | NONE |
 | DEPENDENCY_OR_BLOCKER | préserver résolution anti-path-traversal, MIME, headers et contrat SEO |
-| NEXT_TRIGGER | découpage autorisé dès maintenant autour du moteur Markdown, viewer HTML/CSS et adaptateur fichier, en gardant garde de chemin et GET dans la route |
+| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade ou croissance substantielle d'un des owners extraits |
 
 #### `apps/web/src/lib/validation/action.ts`
 
