@@ -4,6 +4,14 @@ import type { RouteGroupPartitionResult } from "@/lib/route/route-group-partitio
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import { buildRouteRecommendationResponse } from "./route.response";
+import {
+  buildEmptyRouteResponsePayload,
+  buildResultRouteResponsePayload,
+} from "./route.response.payload";
+import {
+  buildRouteOperationalContext,
+  buildRouteProofContext,
+} from "./route.response.builders";
 
 const resolveRouteDataLayersMock = vi.hoisted(() => vi.fn());
 const applyOriginRouteGeometryLegsMock = vi.hoisted(() => vi.fn());
@@ -276,6 +284,24 @@ function installDefaultMocks() {
 }
 
 describe("route recommendation response trace contract", () => {
+  it("keeps the operational, proof and payload stages independently aligned", async () => {
+    installDefaultMocks();
+    const input = responseInput();
+    const operational = buildRouteOperationalContext(input);
+    const proofs = buildRouteProofContext(input, operational);
+
+    expect(operational.multiRoute.groupCount).toBe(input.groupCount);
+    expect(proofs.plannerProof.snapshotHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(buildEmptyRouteResponsePayload(input, operational, proofs).stops).toEqual([]);
+    expect(buildResultRouteResponsePayload({
+      ...input,
+      planning: {
+        ...input.planning,
+        plannedStops: [plannedStop(candidate("observed"))] as unknown as typeof input.planning.plannedStops,
+      },
+    }, operational, proofs).scoreBreakdown.priority).toBe(82);
+  });
+
   it("exposes an explicit unknown corridor handoff when no side proof exists", async () => {
     installDefaultMocks();
 
