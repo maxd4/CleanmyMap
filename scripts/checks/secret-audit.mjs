@@ -169,7 +169,7 @@ const SECRET_PATTERNS = [
     category: "Hash digest",
     severity: "low",
     regex: /\b(?:[a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64})\b/gi,
-    context: /password|token|secret|credential|auth/i,
+    context: hasHashDigestSecretContext,
   },
   {
     category: "Long base64-like string",
@@ -178,6 +178,17 @@ const SECRET_PATTERNS = [
     validator: isSuspiciousBase64,
   },
 ];
+
+const HASH_DIGEST_SENSITIVE_WORDS = /password|token|secret|credential/i;
+const HASH_DIGEST_AUTH_CONTEXT = /(?:^|[^a-z0-9_\/])auth(?:entication|orization)?(?:$|[^a-z0-9_\/])|(?:^|[^a-z0-9_\/])auth[A-Z][a-z0-9_]*/i;
+
+function hasHashDigestSecretContext(line) {
+  return HASH_DIGEST_SENSITIVE_WORDS.test(line) || HASH_DIGEST_AUTH_CONTEXT.test(line);
+}
+
+function matchesContext(context, line) {
+  return typeof context === "function" ? context(line) : context.test(line);
+}
 
 function parseArgs(argv) {
   const options = {
@@ -431,7 +442,7 @@ function scanLine(file, line, lineNumber) {
   const findings = [];
 
   for (const pattern of SECRET_PATTERNS) {
-    if (pattern.context && !pattern.context.test(line)) {
+    if (pattern.context && !matchesContext(pattern.context, line)) {
       continue;
     }
     pattern.regex.lastIndex = 0;
