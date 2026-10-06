@@ -29,7 +29,7 @@ describe("waste UX registry wiring", () => {
   });
 
   it("keeps the storage boundary explicit", () => {
-    expect(read("components/actions/action-declaration/payload.ts")).toContain("expectedWasteCategories");
+    expect(read("components/actions/action-declaration/payload-preparation.ts")).toContain("expectedWasteCategories");
     expect(read("components/sections/rubriques/use-trash-spotter.ts")).not.toContain("createSpot");
   });
 

@@ -17,6 +17,11 @@ import {
 } from "./action-measurements";
 import { preparationFormalitiesSchemaFields } from "./action-formalities";
 
+export const routeCalibrationContextSchema = z.custom<RouteCalibrationContext>(
+  isRouteCalibrationContext,
+  "Contexte historique de calibration invalide.",
+);
+
 export const preparationDataSchema = z
   .object({
     actionTitle: z.string().max(200).optional(),
@@ -58,10 +63,7 @@ export const preparationDataSchema = z
     expectedWasteCategories: z.array(wasteCategorySlugSchema).max(20).optional(),
     midRouteLocationLabel: z.string().max(200).optional(),
     routeTopology: z.enum(["loop", "point_to_point"]).optional(),
-    routeCalibrationContext: z.custom<RouteCalibrationContext>(
-      isRouteCalibrationContext,
-      "Contexte historique de calibration invalide.",
-    ).optional(),
+    routeCalibrationContext: routeCalibrationContextSchema.optional(),
     operationalRoute: z.custom<OperationalRoute>(
       isOperationalRoute,
       "Parcours opérationnel invalide.",
