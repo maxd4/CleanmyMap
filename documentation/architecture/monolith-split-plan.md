@@ -3,15 +3,15 @@
 <!-- RADAR:GENERATED:BEGIN -->
 ## A. En-tête snapshot
 
-`RADAR_REF=bcdbe4811b32e777e9e7fd634ee74a53dec3150c`<br>
-`RADAR_GENERATED_AT=2026-10-06T01:05:02.213Z`<br>
+`RADAR_REF=ad4b27ee907852b7364dad25ee5d43a9de308d0c`<br>
+`RADAR_GENERATED_AT=2026-10-06T02:10:56.852Z`<br>
 `RADAR_STATUS=CURRENT_AT_GENERATION`
 
 Commandes réellement utilisées :
 
 `node scripts/reports/generate-modularity-radar.mjs --ref=HEAD`
 
-Le snapshot lit l'arbre Git exact de bcdbe4811b32e777e9e7fd634ee74a53dec3150c. Le statut
+Le snapshot lit l'arbre Git exact de ad4b27ee907852b7364dad25ee5d43a9de308d0c. Le statut
 CURRENT_AT_GENERATION décrit l'instant de génération ; un document commité
 peut donc rester un snapshot reproductible de cette ref sans prétendre suivre
 automatiquement un HEAD ultérieur.
@@ -20,15 +20,15 @@ automatiquement un HEAD ultérieur.
 
 | Mesure factuelle | Valeur |
 | --- | ---: |
-| Fichiers mesurés | 2832 |
-| REVIEW architectural (runtime + data/config) | 31 |
+| Fichiers mesurés | 2841 |
+| REVIEW architectural (runtime + data/config) | 30 |
 | HARD contrôlé | 0 |
 | Tests volumineux | 0 |
 | Generated informatifs | 0 |
-| PROACTIVE_SPLIT établi | 16 |
+| PROACTIVE_SPLIT établi | 14 |
 | DEFERRED_SPLIT établi | 3 |
 | COHESIVE_SINGLE_FILE établi | 14 |
-| ALREADY_MODULARIZED établi | 9 |
+| ALREADY_MODULARIZED établi | 11 |
 | Candidats avec plusieurs signaux structurels attribués | 0 |
 
 La taille déclenche une revue, jamais un split mécanique. Les décisions
@@ -64,7 +64,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/app/learn/ressources/learn-ressources-client.data.ts` | COHESIVE_SINGLE_FILE | NONE | NONE | signaux complémentaires non mesurés | aucun ; ajout d'une famille de données indépendante ou changement du contrat de catalogue |
 | `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | préserver les deux exports publics ; ajout d'une nouvelle famille de méthodologie ou rupture du contrat legacy |
 | `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | ALREADY_MODULARIZED | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | aucun ; nouvelle responsabilité métier ajoutée à la façade |
-| `apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts` | PROACTIVE_SPLIT | NONE | AFTER_ACTIVE_CHANGES | signaux complémentaires non mesurés | changements actifs du parcours déclaration ; prochain changement du draft, de la géométrie ou du payload |
+| `apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver l'API publique du hook et les contrats draft, géométrie, validation, payload et submit ; nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 | `apps/web/src/app/docs/[...segments]/route.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver résolution anti-path-traversal, MIME, headers et contrat SEO ; nouvelle responsabilité autonome réintroduite dans la façade ou croissance substantielle d'un des owners extraits |
 | `apps/web/src/lib/validation/action.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver l'owner unique des schémas create/update et l'ordre des validations ; nouvelle responsabilité indépendante réintroduite dans la façade ou couplage anormal entre sous-modules |
 | `apps/web/src/lib/pdf-export/simple-pdf.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver octets PDF, format des lignes et PdfReportPayload ; nouvelle responsabilité substantielle réintroduite dans la façade ou couplage anormal entre sous-modules |
@@ -84,7 +84,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | moteur unique de critères et rapport d'audit ; nouveau domaine de qualité indépendant |
 | `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | owner unique de l'estimation infrastructure ; calculs internes au même modèle ; nouvelle famille de service réellement autonome ou API publique indépendante |
 | `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | DEFERRED_SPLIT | PRESENT — REVIEW | AFTER_ACTIVE_CHANGES | signaux complémentaires non mesurés | owner transversal map/déclaration ; éviter cycles et divergence des formats ; stabilisation du parcours déclaration/map puis évolution indépendante de normalisation, markers ou view-model |
-| `apps/web/src/components/actions/action-declaration/before/sections.tsx` | PROACTIVE_SPLIT | PRESENT — REVIEW | AFTER_ACTIVE_CHANGES | signaux complémentaires non mesurés | préserver BaseSectionProps, validation, focus et updateField ; stabilisation du parcours déclaration ; trois composants exportés constituent déjà des frontières naturelles |
+| `apps/web/src/components/actions/action-declaration/before/sections.tsx` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver la façade d'exports, BaseSectionProps, validation, focus et updateField ; nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 | `apps/web/src/app/api/route/recommend/route.response.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | owner unique du mapping du DTO public de recommandation ; nouveau mode de réponse ou sous-contrat consommé indépendamment |
 | `apps/web/src/lib/actions/participation/group-participation-review.ts` | PROACTIVE_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | préserver AuthZ, ownership, idempotence, audit et ordre des mutations ; prochain changement group-join ou participation admin |
 | `apps/web/src/lib/actions/pollution/corridor-history.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | owner unique du modèle corridor et de son historique ; nouveau mode de corridor ou sous-modèle historique indépendant |
@@ -112,7 +112,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/app/learn/ressources/learn-ressources-client.data.ts` | COHESIVE_SINGLE_FILE | NONE | aucun | ajout d'une famille de données indépendante ou changement du contrat de catalogue |
 | `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | COHESIVE_SINGLE_FILE | NONE | préserver les deux exports publics | ajout d'une nouvelle famille de méthodologie ou rupture du contrat legacy |
 | `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | ALREADY_MODULARIZED | NONE | aucun | nouvelle responsabilité métier ajoutée à la façade |
-| `apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts` | PROACTIVE_SPLIT | AFTER_ACTIVE_CHANGES | changements actifs du parcours déclaration | prochain changement du draft, de la géométrie ou du payload |
+| `apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts` | ALREADY_MODULARIZED | NONE | préserver l'API publique du hook et les contrats draft, géométrie, validation, payload et submit | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 | `apps/web/src/app/docs/[...segments]/route.ts` | ALREADY_MODULARIZED | NONE | préserver résolution anti-path-traversal, MIME, headers et contrat SEO | nouvelle responsabilité autonome réintroduite dans la façade ou croissance substantielle d'un des owners extraits |
 | `apps/web/src/lib/validation/action.ts` | ALREADY_MODULARIZED | NONE | préserver l'owner unique des schémas create/update et l'ordre des validations | nouvelle responsabilité indépendante réintroduite dans la façade ou couplage anormal entre sous-modules |
 | `apps/web/src/lib/pdf-export/simple-pdf.ts` | ALREADY_MODULARIZED | NONE | préserver octets PDF, format des lignes et PdfReportPayload | nouvelle responsabilité substantielle réintroduite dans la façade ou couplage anormal entre sous-modules |
@@ -132,7 +132,7 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts` | COHESIVE_SINGLE_FILE | NONE | moteur unique de critères et rapport d'audit | nouveau domaine de qualité indépendant |
 | `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | COHESIVE_SINGLE_FILE | NONE | owner unique de l'estimation infrastructure ; calculs internes au même modèle | nouvelle famille de service réellement autonome ou API publique indépendante |
 | `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | DEFERRED_SPLIT | AFTER_ACTIVE_CHANGES | owner transversal map/déclaration ; éviter cycles et divergence des formats | stabilisation du parcours déclaration/map puis évolution indépendante de normalisation, markers ou view-model |
-| `apps/web/src/components/actions/action-declaration/before/sections.tsx` | PROACTIVE_SPLIT | AFTER_ACTIVE_CHANGES | préserver BaseSectionProps, validation, focus et updateField | stabilisation du parcours déclaration ; trois composants exportés constituent déjà des frontières naturelles |
+| `apps/web/src/components/actions/action-declaration/before/sections.tsx` | ALREADY_MODULARIZED | NONE | préserver la façade d'exports, BaseSectionProps, validation, focus et updateField | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 | `apps/web/src/app/api/route/recommend/route.response.ts` | COHESIVE_SINGLE_FILE | NONE | owner unique du mapping du DTO public de recommandation | nouveau mode de réponse ou sous-contrat consommé indépendamment |
 | `apps/web/src/lib/actions/participation/group-participation-review.ts` | PROACTIVE_SPLIT | LATER | préserver AuthZ, ownership, idempotence, audit et ordre des mutations | prochain changement group-join ou participation admin |
 | `apps/web/src/lib/actions/pollution/corridor-history.ts` | COHESIVE_SINGLE_FILE | NONE | owner unique du modèle corridor et de son historique | nouveau mode de corridor ou sous-modèle historique indépendant |
@@ -289,18 +289,18 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 
 | Champ | Valeur |
 | --- | --- |
-| RESPONSIBILITIES | draft, tracking, géométrie, validation, payload et smart assist |
+| RESPONSIBILITIES | façade d'orchestration du draft/lifecycle, géométrie-validation, média et submit |
 | PUBLIC_CONTRACTS | API du hook consommée par le formulaire de déclaration |
 | SIDE_EFFECTS | synchronisation de draft et événements de parcours |
 | MAIN_CONSUMERS | `action-declaration-form.tsx` et étapes de déclaration |
 | TEST_BOUNDARY | validation pure, résolution de géométrie et orchestration du hook |
 | COUPLING | élevé entre état du formulaire, carte, route preview et payload serveur |
-| NATURAL_EXTRACTION_BOUNDARY | draft/lifecycle, géométrie/validation, payload/submit |
-| ARCHITECTURE_DECISION | PROACTIVE_SPLIT |
-| RATIONALE | plusieurs responsabilités indépendantes et testables sont visibles ; la frontière existe, mais le parcours actif doit d'abord stabiliser ses contrats |
-| PRIORITY | AFTER_ACTIVE_CHANGES |
-| DEPENDENCY_OR_BLOCKER | changements actifs du parcours déclaration |
-| NEXT_TRIGGER | prochain changement du draft, de la géométrie ou du payload |
+| NATURAL_EXTRACTION_BOUNDARY | owners séparés pour lifecycle/draft, géométrie, média, updates et execution ; la façade conserve l'API publique |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | l'orchestration est désormais cohésive et les responsabilités autonomes ont des owners dédiés ; ne pas recréer de hooks artificiels |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver l'API publique du hook et les contrats draft, géométrie, validation, payload et submit |
+| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 
 #### `apps/web/src/app/docs/[...segments]/route.ts`
 
@@ -629,18 +629,18 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 
 | Champ | Valeur |
 | --- | --- |
-| RESPONSIBILITIES | sections React d'identité/partage, action planifiée et préparation/sécurité, erreurs et champs obligatoires |
+| RESPONSIBILITIES | façade d'exports des sections React d'identité/partage, action planifiée et préparation/sécurité |
 | PUBLIC_CONTRACTS | `IdentityAndSharingSection`, `PlannedActionSection`, `PreparationAndSafetySection` |
 | SIDE_EFFECTS | rendu React et callbacks `updateField` ; aucune persistance directe |
 | MAIN_CONSUMERS | `before/form.tsx` et workflow préalable de déclaration |
 | TEST_BOUNDARY | tests du formulaire préalable, workflow before et composants de déclaration |
 | COUPLING | props communes mais sections métier largement indépendantes |
-| NATURAL_EXTRACTION_BOUNDARY | une section React par composant exporté, avec conservation des props communes |
-| ARCHITECTURE_DECISION | PROACTIVE_SPLIT |
-| RATIONALE | trois composants exportés portent déjà trois responsabilités UI autonomes ; la frontière est directe et démontrée |
-| PRIORITY | AFTER_ACTIVE_CHANGES |
-| DEPENDENCY_OR_BLOCKER | préserver BaseSectionProps, validation, focus et updateField |
-| NEXT_TRIGGER | stabilisation du parcours déclaration ; trois composants exportés constituent déjà des frontières naturelles |
+| NATURAL_EXTRACTION_BOUNDARY | un owner React par section exportée et un contrat partagé pour BaseSectionProps, validation et champs communs |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | les trois sections exportées disposent désormais de owners naturels ; la façade ne conserve que le contrat d'import historique |
+| PRIORITY | NONE |
+| DEPENDENCY_OR_BLOCKER | préserver la façade d'exports, BaseSectionProps, validation, focus et updateField |
+| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade ou couplage anormal entre owners |
 
 #### `apps/web/src/app/api/route/recommend/route.response.ts`
 
@@ -874,31 +874,31 @@ de découpage.
 
 | PATH | REF | LINES | BYTES | KIND | SIZE_SIGNAL | CORRELATIONS | DECISION |
 | --- | --- | ---: | ---: | --- | --- | --- | --- |
-| `apps/web/src/components/chat/chat-shell.tsx` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 770 | 21287 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 695 | 34077 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | ALREADY_MODULARIZED |
-| `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 681 | 29429 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/actions/pollution/current-place-state.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 647 | 19737 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 632 | 18982 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 631 | 27107 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/lib/route/route-predicted-targets.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 630 | 21501 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/components/sections/rubriques/route/route-section.tsx` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 615 | 32382 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | ALREADY_MODULARIZED |
-| `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 615 | 21712 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 613 | 24198 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/route/route-trace.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 605 | 20034 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/components/accueil/accueil-community-credibility.tsx` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 603 | 22909 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/lib/ui/button-theme.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 603 | 17967 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/supabase/storage-usage.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 602 | 17401 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/components/actions/actions-history-list.tsx` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 601 | 18959 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/lib/route/route-group-partition.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 596 | 22351 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 590 | 16820 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 588 | 21807 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 578 | 16037 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/components/actions/action-declaration/before/sections.tsx` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 576 | 31498 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/app/api/route/recommend/route.response.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 573 | 20969 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/actions/participation/group-participation-review.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 554 | 17494 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/lib/actions/pollution/corridor-history.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 550 | 16245 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/actions/http.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 541 | 15656 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
-| `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | `bcdbe4811b32e777e9e7fd634ee74a53dec3150c` | 537 | 20096 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/components/chat/chat-shell.tsx` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 770 | 21287 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 695 | 34077 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | ALREADY_MODULARIZED |
+| `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 681 | 29429 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/actions/pollution/current-place-state.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 647 | 19737 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 632 | 18982 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 631 | 27107 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/lib/route/route-predicted-targets.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 630 | 21501 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/components/sections/rubriques/route/route-section.tsx` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 615 | 32382 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | ALREADY_MODULARIZED |
+| `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 615 | 21712 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 613 | 24198 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/route/route-trace.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 605 | 20034 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/components/accueil/accueil-community-credibility.tsx` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 603 | 22909 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/lib/ui/button-theme.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 603 | 17967 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/supabase/storage-usage.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 602 | 17401 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/components/actions/actions-history-list.tsx` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 601 | 18959 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/lib/route/route-group-partition.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 596 | 22351 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 590 | 16820 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 588 | 21807 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 578 | 16037 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/app/api/route/recommend/route.response.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 573 | 20969 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/actions/participation/group-participation-review.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 554 | 17494 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/lib/actions/pollution/corridor-history.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 550 | 16245 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/actions/http.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 541 | 15656 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
+| `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 537 | 20096 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/app/api/chat/route.post.ts` | `ad4b27ee907852b7364dad25ee5d43a9de308d0c` | 536 | 19717 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | PROACTIVE_SPLIT |
 
 ### Tests volumineux — top 25
 
