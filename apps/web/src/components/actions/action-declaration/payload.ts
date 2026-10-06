@@ -1,6 +1,5 @@
 import type { FormState } from "./types";
 import { initialState } from "./model";
-export type { CreateActionPayloadParams } from "./payload-contract";
 export { OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "./payload-contract";
 export {
   parseOrganizerAccounts,

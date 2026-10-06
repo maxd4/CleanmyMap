@@ -24,7 +24,10 @@ import {
 } from "./action-measurements";
 import { commonActionIdentitySchemaFields, userMetadataSchema } from "./action-identity";
 import { photoAssetSchema } from "./action-media";
-import { preparationDataSchema } from "./action-preparation";
+import {
+  preparationDataSchema,
+  routeCalibrationContextSchema,
+} from "./action-preparation";
 
 export { commonActionCigaretteButtSchemaFields } from "./action-measurements";
 export { manualDrawingSchema } from "./action-geometry";
@@ -79,6 +82,7 @@ const createActionLegacyBaseSchema = z.object({
   longitude: z.number().min(-180).max(180).optional(),
   actionPhase: actionPhaseSchema.optional(),
   preparationData: preparationDataSchema.nullable().optional(),
+  routeCalibrationContext: routeCalibrationContextSchema.nullable().optional(),
   ...commonActionMeasurementSchemaFields,
   cigaretteButtsCount: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
   volunteerParticipation: volunteerParticipationSchema,
