@@ -367,10 +367,10 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/components/actions/actions-history-list.tsx",
-      "line": 51,
+      "line": 33,
       "category": "React/JSX",
-      "ceiling": 41,
-      "status": "LEGACY",
+      "ceiling": 17,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionsHistoryList#1"
     },
     {
@@ -1344,15 +1344,6 @@
       "ceiling": 18,
       "status": "LEGACY",
       "functionIdentity": "named:joinActionParticipation#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/lib/actions/participation/group-participation-review.ts",
-      "line": 386,
-      "category": "métier/domain pur",
-      "ceiling": 17,
-      "status": "LEGACY",
-      "functionIdentity": "named:addActionParticipationByAdmin#1"
     },
     {
       "metric": "complexity",
@@ -2896,10 +2887,10 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/actions-history-list.tsx",
-      "line": 51,
+      "line": 33,
       "category": "React/JSX",
-      "ceiling": 515,
-      "status": "LEGACY",
+      "ceiling": 69,
+      "status": "IMPROVED",
       "functionIdentity": "named:ActionsHistoryList#1"
     },
     {
@@ -4251,33 +4242,6 @@
       "ceiling": 17,
       "status": "IMPROVED",
       "functionIdentity": "named:loadUserParticipationHistory#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/actions/participation/group-participation-review.ts",
-      "line": 60,
-      "category": "métier/domain pur",
-      "ceiling": 83,
-      "status": "IMPROVED",
-      "functionIdentity": "named:loadActionParticipationReviews#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/actions/participation/group-participation-review.ts",
-      "line": 218,
-      "category": "métier/domain pur",
-      "ceiling": 162,
-      "status": "LEGACY",
-      "functionIdentity": "named:reviewActionParticipation#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/actions/participation/group-participation-review.ts",
-      "line": 386,
-      "category": "métier/domain pur",
-      "ceiling": 238,
-      "status": "LEGACY",
-      "functionIdentity": "named:addActionParticipationByAdmin#1"
     },
     {
       "metric": "functionLength",
