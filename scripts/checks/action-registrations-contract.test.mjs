@@ -108,7 +108,7 @@ test("future participation consumers use registrations while post-action claims 
     "apps/web/src/lib/actions/store-participants.ts",
     "apps/web/src/lib/actions/participation/organizers.ts",
     "apps/web/src/lib/actions/participation/group-participation-membership.ts",
-    "apps/web/src/lib/actions/participation/group-participation-review.ts",
+    "apps/web/src/lib/actions/participation/group-participation-review-read.ts",
     "apps/web/src/lib/actions/participation/participant-summaries.ts",
     "apps/web/src/lib/admin/admin-dashboard-contract.ts",
   ];
