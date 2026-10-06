@@ -61,10 +61,10 @@
     {
       "path": "apps/web/src/components/accueil/accueil-community-credibility.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 603,
-      "maxBytes": 22909
+      "status": "IMPROVED",
+      "reviewedRef": "506d22869a32639e978282be0da6cbca01c8e3d2",
+      "maxLines": 73,
+      "maxBytes": 2200
     },
     {
       "path": "apps/web/src/components/actions/action-declaration/before/sections.tsx",
@@ -221,10 +221,10 @@
     {
       "path": "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 631,
-      "maxBytes": 27107
+      "status": "IMPROVED",
+      "reviewedRef": "506d22869a32639e978282be0da6cbca01c8e3d2",
+      "maxLines": 30,
+      "maxBytes": 902
     },
     {
       "path": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx",
@@ -245,10 +245,10 @@
     {
       "path": "apps/web/src/components/sections/rubriques/partners-network-section.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 511,
-      "maxBytes": 22275
+      "status": "IMPROVED",
+      "reviewedRef": "506d22869a32639e978282be0da6cbca01c8e3d2",
+      "maxLines": 83,
+      "maxBytes": 3634
     },
     {
       "path": "apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts",
