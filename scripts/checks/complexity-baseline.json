@@ -1374,15 +1374,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/lib/actions/pollution/local-repollution-calibration.ts",
-      "line": 263,
-      "category": "métier/domain pur",
-      "ceiling": 18,
-      "status": "LEGACY",
-      "functionIdentity": "named:toDerivedObservation#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/lib/actions/pollution/projection-confidence.ts",
       "line": 88,
       "category": "métier/domain pur",
@@ -2010,15 +2001,6 @@
       "ceiling": 21,
       "status": "LEGACY",
       "functionIdentity": "named:isSnapshotParameters#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/lib/route/route-predicted-targets.ts",
-      "line": 353,
-      "category": "métier/domain pur",
-      "ceiling": 37,
-      "status": "IMPROVED",
-      "functionIdentity": "named:buildPredictedRouteCandidates#1"
     },
     {
       "metric": "complexity",
@@ -4290,24 +4272,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/lib/actions/pollution/local-repollution-calibration.ts",
-      "line": 263,
-      "category": "métier/domain pur",
-      "ceiling": 82,
-      "status": "LEGACY",
-      "functionIdentity": "named:toDerivedObservation#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/actions/pollution/local-repollution-calibration.ts",
-      "line": 371,
-      "category": "métier/domain pur",
-      "ceiling": 86,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildInterval#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/lib/actions/pollution/repollution-prediction-evaluation.ts",
       "line": 267,
       "category": "métier/domain pur",
@@ -5043,15 +5007,6 @@
       "ceiling": 176,
       "status": "LEGACY",
       "functionIdentity": "named:planRoute#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/web/src/lib/route/route-predicted-targets.ts",
-      "line": 353,
-      "category": "métier/domain pur",
-      "ceiling": 269,
-      "status": "IMPROVED",
-      "functionIdentity": "named:buildPredictedRouteCandidates#1"
     },
     {
       "metric": "functionLength",

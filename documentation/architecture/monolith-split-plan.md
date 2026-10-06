@@ -69,8 +69,8 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/lib/validation/action.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver l'owner unique des schémas create/update et l'ordre des validations ; nouvelle responsabilité indépendante réintroduite dans la façade ou couplage anormal entre sous-modules |
 | `apps/web/src/lib/pdf-export/simple-pdf.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | préserver octets PDF, format des lignes et PdfReportPayload ; nouvelle responsabilité substantielle réintroduite dans la façade ou couplage anormal entre sous-modules |
 | `apps/web/src/lib/actions/pollution/current-place-state.ts` | DEFERRED_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | owner CURRENT unique de la résolution d'état d'un lieu ; ne pas séparer les étapes privées uniquement pour la taille ; évolution indépendante des modèles observed/projected_today ou du modèle de repollution |
-| `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | PROACTIVE_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | préserver matching spatial, complétude, confiance et projections ; prochain changement de calibration, matching local ou projection pollution |
-| `apps/web/src/lib/route/route-predicted-targets.ts` | PROACTIVE_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | préserver budgets planner, audits et contrats API route ; prochain changement du pool, des préférences ou budgets |
+| `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | façades et owners séparés pour matching, historique, calibration et projection ; nouvelle responsabilité autonome réintroduite dans la façade |
+| `apps/web/src/lib/route/route-predicted-targets.ts` | ALREADY_MODULARIZED | NONE | NONE | signaux complémentaires non mesurés | façades et owners séparés pour pool, audits de budget, géométrie, candidats et sélection ; nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/sections/rubriques/route/route-section.tsx` | ALREADY_MODULARIZED | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | façade RouteSection déjà composée de sous-composants spécialisés ; nouvelle responsabilité autonome introduite directement dans RouteSection ou croissance nouvelle au-delà du ratchet |
 | `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | DEFERRED_SPLIT | PRESENT — REVIEW | LATER | signaux complémentaires non mesurés | stabiliser les types et préserver une direction de dépendance sans cycle ; évolution indépendante des modules, périodes/scopes ou contrat PDF |
 | `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | COHESIVE_SINGLE_FILE | PRESENT — REVIEW | NONE | signaux complémentaires non mesurés | conserver réponses FR/EN et projection canonique Waste alignées ; famille de règles indépendante ou catalogue de contenu autonome démontré |
@@ -117,8 +117,8 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 | `apps/web/src/lib/validation/action.ts` | ALREADY_MODULARIZED | NONE | préserver l'owner unique des schémas create/update et l'ordre des validations | nouvelle responsabilité indépendante réintroduite dans la façade ou couplage anormal entre sous-modules |
 | `apps/web/src/lib/pdf-export/simple-pdf.ts` | ALREADY_MODULARIZED | NONE | préserver octets PDF, format des lignes et PdfReportPayload | nouvelle responsabilité substantielle réintroduite dans la façade ou couplage anormal entre sous-modules |
 | `apps/web/src/lib/actions/pollution/current-place-state.ts` | DEFERRED_SPLIT | LATER | owner CURRENT unique de la résolution d'état d'un lieu ; ne pas séparer les étapes privées uniquement pour la taille | évolution indépendante des modèles observed/projected_today ou du modèle de repollution |
-| `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | PROACTIVE_SPLIT | LATER | préserver matching spatial, complétude, confiance et projections | prochain changement de calibration, matching local ou projection pollution |
-| `apps/web/src/lib/route/route-predicted-targets.ts` | PROACTIVE_SPLIT | LATER | préserver budgets planner, audits et contrats API route | prochain changement du pool, des préférences ou budgets |
+| `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | ALREADY_MODULARIZED | NONE | façades et owners séparés pour matching, historique, calibration et projection | nouvelle responsabilité autonome réintroduite dans la façade |
+| `apps/web/src/lib/route/route-predicted-targets.ts` | ALREADY_MODULARIZED | NONE | façades et owners séparés pour pool, audits de budget, géométrie, candidats et sélection | nouvelle responsabilité autonome réintroduite dans la façade |
 | `apps/web/src/components/sections/rubriques/route/route-section.tsx` | ALREADY_MODULARIZED | NONE | façade RouteSection déjà composée de sous-composants spécialisés | nouvelle responsabilité autonome introduite directement dans RouteSection ou croissance nouvelle au-delà du ratchet |
 | `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | DEFERRED_SPLIT | LATER | stabiliser les types et préserver une direction de dépendance sans cycle | évolution indépendante des modules, périodes/scopes ou contrat PDF |
 | `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | COHESIVE_SINGLE_FILE | NONE | conserver réponses FR/EN et projection canonique Waste alignées | famille de règles indépendante ou catalogue de contenu autonome démontré |
@@ -374,35 +374,35 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 
 | Champ | Valeur |
 | --- | --- |
-| RESPONSIBILITIES | normalisation des lieux, compatibilité géographique, regroupement des observations, calibration locale, projection et présentation des scores |
-| PUBLIC_CONTRACTS | constantes, types de calibration/historique/projection et fonctions exportées de dérivation/calibration |
+| RESPONSIBILITIES | façade de compatibilité ; owners séparés pour matching local, dérivation historique, calibration et projection |
+| PUBLIC_CONTRACTS | façade `local-repollution-calibration.ts` ; contrats de matching, historique, calibration et projection conservés |
 | SIDE_EFFECTS | aucun effet externe ; calculs purs |
 | MAIN_CONSUMERS | `current-place-state`, projections pollution et tests de calibration |
 | TEST_BOUNDARY | `local-repollution-calibration.test.ts`, `current-place-state.test.ts` et tests pollution |
-| COUPLING | couplage métier élevé entre matching local, complétude des données et score projeté |
-| NATURAL_EXTRACTION_BOUNDARY | normalisation/matching, dérivation historique, sélection calibration, projection et présentation |
-| ARCHITECTURE_DECISION | PROACTIVE_SPLIT |
-| RATIONALE | les étapes de la pipeline sont distinctes, mais doivent conserver les mêmes règles de fusion, complétude et confiance |
-| PRIORITY | LATER |
+| COUPLING | la façade coordonne des owners purs sans dupliquer les règles de fusion, complétude ou confiance |
+| NATURAL_EXTRACTION_BOUNDARY | `local-repollution-matching`, `local-repollution-history`, `local-repollution-calibration-core` et `local-repollution-projection` |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | matching, dérivation historique, calibration et projection ont des contrats autonomes ; la façade conserve les imports historiques et la détermination des owners |
+| PRIORITY | NONE |
 | DEPENDENCY_OR_BLOCKER | préserver matching spatial, complétude, confiance et projections |
-| NEXT_TRIGGER | prochain changement de calibration, matching local ou projection pollution |
+| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/lib/route/route-predicted-targets.ts`
 
 | Champ | Valeur |
 | --- | --- |
-| RESPONSIBILITIES | construction du pool de candidats, audits de budget, distances aux corridors et sélection de cibles prédites |
-| PUBLIC_CONTRACTS | `RoutePrediction*`, builders de pool, audits et `buildPredictedRouteCandidates` |
+| RESPONSIBILITIES | façade de compatibilité ; owners séparés pour pool de candidats, audits de budget, géométrie corridor et sélection |
+| PUBLIC_CONTRACTS | façade `route-predicted-targets.ts`, contrats `RoutePrediction*`, builders de pool, audits et `buildPredictedRouteCandidates` |
 | SIDE_EFFECTS | aucun effet externe ; calculs et audits purs |
 | MAIN_CONSUMERS | planning API, harness de tests planning, calibration et trace de route |
 | TEST_BOUNDARY | `route-predicted-targets.test.ts`, `route-predicted-targets.preference.test.ts`, tests `route.response` et planning |
-| COUPLING | couplage fort avec les contrats planning, candidats, budgets et traces |
-| NATURAL_EXTRACTION_BOUNDARY | pool de candidats, audits de budget, géométrie corridor et sélection finale |
-| ARCHITECTURE_DECISION | PROACTIVE_SPLIT |
-| RATIONALE | le module contient plusieurs étapes du planning mais chacune possède une frontière fonctionnelle claire |
-| PRIORITY | LATER |
+| COUPLING | la façade coordonne les contrats planning sans dupliquer les règles de budget ou de géométrie |
+| NATURAL_EXTRACTION_BOUNDARY | `route-predicted-targets-pool`, `route-predicted-targets-budget`, `route-predicted-targets-geometry`, `route-predicted-targets-candidate` et `route-predicted-targets-selection` |
+| ARCHITECTURE_DECISION | ALREADY_MODULARIZED |
+| RATIONALE | pool, audits, géométrie et sélection ont des frontières fonctionnelles démontrées ; la façade conserve les imports historiques et les mocks existants |
+| PRIORITY | NONE |
 | DEPENDENCY_OR_BLOCKER | préserver budgets planner, audits et contrats API route |
-| NEXT_TRIGGER | prochain changement du pool, des préférences ou budgets |
+| NEXT_TRIGGER | nouvelle responsabilité autonome réintroduite dans la façade |
 
 #### `apps/web/src/components/sections/rubriques/route/route-section.tsx`
 
