@@ -276,15 +276,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/actions/action-declaration/before/sections.tsx",
-      "line": 197,
-      "category": "React/JSX",
-      "ceiling": 26,
-      "status": "IMPROVED",
-      "functionIdentity": "named:PlannedActionSection#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/actions/action-declaration/draft-storage.ts",
       "line": 253,
       "category": "React/JSX",
@@ -336,15 +327,6 @@
       "ceiling": 3,
       "status": "IMPROVED",
       "functionIdentity": "named:ActionDeclarationForm#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
-      "line": 476,
-      "category": "hooks",
-      "ceiling": 19,
-      "status": "IMPROVED",
-      "functionIdentity": "named:updateForm#1"
     },
     {
       "metric": "complexity",
@@ -2751,15 +2733,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/actions/action-declaration/before/sections.tsx",
-      "line": 181,
-      "category": "React/JSX",
-      "ceiling": 296,
-      "status": "IMPROVED",
-      "functionIdentity": "named:PlannedActionSection#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts",
       "line": 21,
       "category": "hooks",
@@ -2815,9 +2788,9 @@
     {
       "metric": "functionLength",
       "path": "apps/web/src/components/actions/action-declaration/hooks/use-action-declaration-form.ts",
-      "line": 55,
+      "line": 18,
       "category": "hooks",
-      "ceiling": 294,
+      "ceiling": 113,
       "status": "IMPROVED",
       "functionIdentity": "named:useActionDeclarationForm#1"
     },

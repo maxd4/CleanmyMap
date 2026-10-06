@@ -69,10 +69,10 @@
     {
       "path": "apps/web/src/components/actions/action-declaration/before/sections.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 596,
-      "maxBytes": 32895
+      "status": "IMPROVED",
+      "reviewedRef": "9a9fdd137694883ffd4e8dd0437fe90cfe7fd6ef",
+      "maxLines": 5,
+      "maxBytes": 236
     },
     {
       "path": "apps/web/src/components/actions/action-declaration/action-declaration-form.tsx",
