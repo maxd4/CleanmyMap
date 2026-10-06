@@ -5,6 +5,11 @@ import { getDocumentationContentType } from "./route-seo";
 import { renderMarkdown } from "./route-markdown";
 import { buildViewerHtml } from "./route-viewer";
 
+const DOCUMENTATION_RESPONSE_HEADERS = {
+  "Content-Type": "text/html; charset=utf-8",
+  "Cache-Control": "public, max-age=0, must-revalidate",
+};
+
 function cleanTitle(title: string) {
   return title
     .replace(/\.[^.]+$/, "")
@@ -28,13 +33,57 @@ async function buildTextResponse(
     extra,
   });
 
+  return buildDocumentationResponse(html);
+}
+
+function buildDocumentationResponse(html: string) {
   return new Response(html, {
     status: 200,
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, max-age=0, must-revalidate",
-    },
+    headers: DOCUMENTATION_RESPONSE_HEADERS,
   });
+}
+
+async function buildMarkdownResponse(
+  filePath: string,
+  filename: string,
+  documentationRoot: string,
+) {
+  const markdown = await readFile(filePath, "utf8");
+  const html = buildViewerHtml({
+    title: cleanTitle(filename),
+    kind: "markdown",
+    body: renderMarkdown(markdown),
+    subtitle: `Fichier source: ${path.relative(documentationRoot, filePath).replace(/\\/g, "/")}`,
+    extra: "Markdown",
+  });
+
+  return buildDocumentationResponse(html);
+}
+
+async function buildImageResponse(
+  filePath: string,
+  filename: string,
+  documentationRoot: string,
+) {
+  const content = await readFile(filePath);
+  const mimeType = getDocumentationContentType(filePath).split(";")[0] ?? "application/octet-stream";
+  const dataUrl = `data:${mimeType};base64,${content.toString("base64")}`;
+  const html = buildViewerHtml({
+    title: cleanTitle(filename),
+    kind: "image",
+    body: `
+        <figure class="image-panel">
+          <img src="${dataUrl}" alt="${escapeHtml(cleanTitle(filename))}" />
+          <figcaption class="image-caption">
+            Image affichée directement dans le site. Elle sert de support visuel pour la documentation des quotas et ne déclenche pas de téléchargement.
+          </figcaption>
+        </figure>
+      `,
+    subtitle: `Aperçu du fichier: ${path.relative(documentationRoot, filePath).replace(/\\/g, "/")}`,
+    extra: "Image",
+  });
+
+  return buildDocumentationResponse(html);
 }
 
 export async function buildResponseForFile(
@@ -45,50 +94,11 @@ export async function buildResponseForFile(
   const ext = path.extname(filePath).toLowerCase();
 
   if (ext === ".md") {
-    const markdown = await readFile(filePath, "utf8");
-    const html = buildViewerHtml({
-      title: cleanTitle(filename),
-      kind: "markdown",
-      body: renderMarkdown(markdown),
-      subtitle: `Fichier source: ${path.relative(documentationRoot, filePath).replace(/\\/g, "/")}`,
-      extra: "Markdown",
-    });
-
-    return new Response(html, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=0, must-revalidate",
-      },
-    });
+    return buildMarkdownResponse(filePath, filename, documentationRoot);
   }
 
   if (ext === ".webp" || ext === ".png" || ext === ".jpg" || ext === ".jpeg" || ext === ".gif" || ext === ".svg") {
-    const content = await readFile(filePath);
-    const mimeType = getDocumentationContentType(filePath).split(";")[0] ?? "application/octet-stream";
-    const dataUrl = `data:${mimeType};base64,${content.toString("base64")}`;
-    const html = buildViewerHtml({
-      title: cleanTitle(filename),
-      kind: "image",
-      body: `
-        <figure class="image-panel">
-          <img src="${dataUrl}" alt="${escapeHtml(cleanTitle(filename))}" />
-          <figcaption class="image-caption">
-            Image affichée directement dans le site. Elle sert de support visuel pour la documentation des quotas et ne déclenche pas de téléchargement.
-          </figcaption>
-        </figure>
-      `,
-      subtitle: `Aperçu du fichier: ${path.relative(documentationRoot, filePath).replace(/\\/g, "/")}`,
-      extra: "Image",
-    });
-
-    return new Response(html, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=0, must-revalidate",
-      },
-    });
+    return buildImageResponse(filePath, filename, documentationRoot);
   }
 
   if (ext === ".json") {

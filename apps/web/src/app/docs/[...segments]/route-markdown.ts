@@ -131,6 +131,80 @@ function renderQuoteBlock(lines: string[], startIndex: number) {
   return { html: `<blockquote>${renderMarkdown(quoteLines.join("\n"))}</blockquote>`, nextIndex: index };
 }
 
+type MarkdownBlockKind =
+  | "blank"
+  | "paragraph"
+  | "code"
+  | "callout"
+  | "table"
+  | "unordered-list"
+  | "ordered-list"
+  | "quote"
+  | "h1"
+  | "h2"
+  | "h3"
+  | "horizontal-rule";
+
+type MarkdownBlockResult = {
+  html: string;
+  nextIndex: number;
+};
+
+function classifyMarkdownLine(lines: string[], index: number): MarkdownBlockKind {
+  const line = lines[index] ?? "";
+  const trimmed = line.trim();
+  if (!trimmed) return "blank";
+  if (trimmed.startsWith("```")) return "code";
+  if (trimmed.startsWith(":::")) return "callout";
+  if (trimmed.startsWith("|") && (lines[index + 1] ?? "").includes("---")) return "table";
+  if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) return "unordered-list";
+  if (/^\d+\.\s/.test(trimmed)) return "ordered-list";
+  if (trimmed.startsWith(">")) return "quote";
+  if (trimmed.startsWith("# ")) return "h1";
+  if (trimmed.startsWith("## ")) return "h2";
+  if (trimmed.startsWith("### ")) return "h3";
+  if (trimmed === "---" || trimmed === "***") return "horizontal-rule";
+  return "paragraph";
+}
+
+function renderMarkdownBlock(
+  lines: string[],
+  startIndex: number,
+  kind: Exclude<MarkdownBlockKind, "blank" | "paragraph">,
+): MarkdownBlockResult {
+  switch (kind) {
+    case "code":
+      return renderCodeBlock(lines, startIndex);
+    case "callout":
+      return renderCallout(lines, startIndex);
+    case "table":
+      return renderTableBlock(lines, startIndex);
+    case "unordered-list":
+      return renderListBlock(lines, startIndex, false);
+    case "ordered-list":
+      return renderListBlock(lines, startIndex, true);
+    case "quote":
+      return renderQuoteBlock(lines, startIndex);
+    case "h1":
+      return {
+        html: `<h1>${renderInlineMarkdown((lines[startIndex] ?? "").trim().slice(2))}</h1>`,
+        nextIndex: startIndex + 1,
+      };
+    case "h2":
+      return {
+        html: `<h2>${renderInlineMarkdown((lines[startIndex] ?? "").trim().slice(3))}</h2>`,
+        nextIndex: startIndex + 1,
+      };
+    case "h3":
+      return {
+        html: `<h3>${renderInlineMarkdown((lines[startIndex] ?? "").trim().slice(4))}</h3>`,
+        nextIndex: startIndex + 1,
+      };
+    case "horizontal-rule":
+      return { html: "<hr />", nextIndex: startIndex + 1 };
+  }
+}
+
 export function renderMarkdown(markdown: string): string {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const html: string[] = [];
@@ -147,85 +221,23 @@ export function renderMarkdown(markdown: string): string {
   };
 
   while (index < lines.length) {
-    const line = lines[index] ?? "";
-    const trimmed = line.trim();
-
-    if (!trimmed) {
+    const kind = classifyMarkdownLine(lines, index);
+    if (kind === "blank") {
       flushParagraph();
       index += 1;
       continue;
     }
 
-    if (trimmed.startsWith("```")) {
-      flushParagraph();
-      const block = renderCodeBlock(lines, index);
-      html.push(block.html);
-      index = block.nextIndex;
-      continue;
-    }
-
-    if (trimmed.startsWith(":::") || (trimmed.startsWith("|") && (lines[index + 1] ?? "").includes("---"))) {
-      flushParagraph();
-      const block = trimmed.startsWith(":::") ? renderCallout(lines, index) : renderTableBlock(lines, index);
-      html.push(block.html);
-      index = block.nextIndex;
-      continue;
-    }
-
-    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-      flushParagraph();
-      const block = renderListBlock(lines, index, false);
-      html.push(block.html);
-      index = block.nextIndex;
-      continue;
-    }
-
-    if (/^\d+\.\s/.test(trimmed)) {
-      flushParagraph();
-      const block = renderListBlock(lines, index, true);
-      html.push(block.html);
-      index = block.nextIndex;
-      continue;
-    }
-
-    if (trimmed.startsWith(">")) {
-      flushParagraph();
-      const block = renderQuoteBlock(lines, index);
-      html.push(block.html);
-      index = block.nextIndex;
-      continue;
-    }
-
-    if (trimmed.startsWith("# ")) {
-      flushParagraph();
-      html.push(`<h1>${renderInlineMarkdown(trimmed.slice(2))}</h1>`);
+    if (kind === "paragraph") {
+      paragraphLines.push((lines[index] ?? "").trim());
       index += 1;
       continue;
     }
 
-    if (trimmed.startsWith("## ")) {
-      flushParagraph();
-      html.push(`<h2>${renderInlineMarkdown(trimmed.slice(3))}</h2>`);
-      index += 1;
-      continue;
-    }
-
-    if (trimmed.startsWith("### ")) {
-      flushParagraph();
-      html.push(`<h3>${renderInlineMarkdown(trimmed.slice(4))}</h3>`);
-      index += 1;
-      continue;
-    }
-
-    if (trimmed === "---" || trimmed === "***") {
-      flushParagraph();
-      html.push("<hr />");
-      index += 1;
-      continue;
-    }
-
-    paragraphLines.push(trimmed);
-    index += 1;
+    flushParagraph();
+    const block = renderMarkdownBlock(lines, index, kind);
+    html.push(block.html);
+    index = block.nextIndex;
   }
 
   flushParagraph();
