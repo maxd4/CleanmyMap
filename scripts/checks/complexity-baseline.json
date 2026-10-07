@@ -207,8 +207,8 @@
       "path": "apps/web/src/app/api/route/recommend/route.response.ts",
       "line": 144,
       "category": "routes API",
-      "ceiling": 46,
-      "status": "LEGACY",
+      "ceiling": 2,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildRouteRecommendationResponse#1"
     },
     {
@@ -954,8 +954,8 @@
       "path": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx",
       "line": 52,
       "category": "React/JSX",
-      "ceiling": 66,
-      "status": "LEGACY",
+      "ceiling": 9,
+      "status": "IMPROVED",
       "functionIdentity": "named:FreePlanServicesMethodologyVisualImpact#1"
     },
     {
@@ -1017,8 +1017,8 @@
       "path": "apps/web/src/components/sections/rubriques/methodologie-page-client.tsx",
       "line": 219,
       "category": "React/JSX",
-      "ceiling": 54,
-      "status": "LEGACY",
+      "ceiling": 12,
+      "status": "IMPROVED",
       "functionIdentity": "named:LegacyMethodologieContent#1"
     },
     {
@@ -1170,8 +1170,8 @@
       "path": "apps/web/src/components/sections/rubriques/route/route-section.tsx",
       "line": 72,
       "category": "React/JSX",
-      "ceiling": 104,
-      "status": "LEGACY",
+      "ceiling": 12,
+      "status": "IMPROVED",
       "functionIdentity": "named:RouteSection#1"
     },
     {
@@ -1188,8 +1188,8 @@
       "path": "apps/web/src/components/sections/rubriques/weather-section.conditions.tsx",
       "line": 37,
       "category": "React/JSX",
-      "ceiling": 91,
-      "status": "LEGACY",
+      "ceiling": 1,
+      "status": "IMPROVED",
       "functionIdentity": "named:ConditionsPanel#1"
     },
     {
@@ -2556,8 +2556,8 @@
       "path": "apps/web/src/app/api/route/recommend/route.response.ts",
       "line": 144,
       "category": "routes API",
-      "ceiling": 424,
-      "status": "LEGACY",
+      "ceiling": 10,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildRouteRecommendationResponse#1"
     },
     {
@@ -2655,8 +2655,8 @@
       "path": "apps/web/src/components/account/account-identity-chip.tsx",
       "line": 31,
       "category": "React/JSX",
-      "ceiling": 304,
-      "status": "LEGACY",
+      "ceiling": 125,
+      "status": "IMPROVED",
       "functionIdentity": "named:AccountIdentityChip#1"
     },
     {
@@ -3816,8 +3816,8 @@
       "path": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx",
       "line": 52,
       "category": "React/JSX",
-      "ceiling": 619,
-      "status": "LEGACY",
+      "ceiling": 39,
+      "status": "IMPROVED",
       "functionIdentity": "named:FreePlanServicesMethodologyVisualImpact#1"
     },
     {
@@ -3861,7 +3861,7 @@
       "path": "apps/web/src/components/sections/rubriques/methodologie-page-client.tsx",
       "line": 218,
       "category": "React/JSX",
-      "ceiling": 432,
+      "ceiling": 70,
       "status": "IMPROVED",
       "functionIdentity": "named:LegacyMethodologieContent#1"
     },
@@ -4014,7 +4014,7 @@
       "path": "apps/web/src/components/sections/rubriques/route/route-section.tsx",
       "line": 68,
       "category": "React/JSX",
-      "ceiling": 538,
+      "ceiling": 75,
       "status": "IMPROVED",
       "functionIdentity": "named:RouteSection#1"
     },
@@ -4041,8 +4041,8 @@
       "path": "apps/web/src/components/sections/rubriques/weather-section.conditions.tsx",
       "line": 37,
       "category": "React/JSX",
-      "ceiling": 454,
-      "status": "LEGACY",
+      "ceiling": 48,
+      "status": "IMPROVED",
       "functionIdentity": "named:ConditionsPanel#1"
     },
     {

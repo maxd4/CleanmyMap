@@ -45,10 +45,10 @@
     {
       "path": "apps/web/src/app/api/route/recommend/route.response.ts",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 573,
-      "maxBytes": 20969
+      "status": "IMPROVED",
+      "reviewedRef": "cd94bd8b40dd55d14ab9799cd2e01bddbe5f0a5b",
+      "maxLines": 22,
+      "maxBytes": 763
     },
     {
       "path": "apps/web/src/app/docs/[...segments]/route.ts",
@@ -229,18 +229,18 @@
     {
       "path": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 695,
-      "maxBytes": 34077
+      "status": "IMPROVED",
+      "reviewedRef": "cd94bd8b40dd55d14ab9799cd2e01bddbe5f0a5b",
+      "maxLines": 271,
+      "maxBytes": 13080
     },
     {
       "path": "apps/web/src/components/sections/rubriques/methodologie-page-client.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 685,
-      "maxBytes": 29441
+      "status": "IMPROVED",
+      "reviewedRef": "cd94bd8b40dd55d14ab9799cd2e01bddbe5f0a5b",
+      "maxLines": 161,
+      "maxBytes": 7805
     },
     {
       "path": "apps/web/src/components/sections/rubriques/partners-network-section.tsx",
@@ -261,18 +261,18 @@
     {
       "path": "apps/web/src/components/sections/rubriques/route/route-section.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 627,
-      "maxBytes": 32382
+      "status": "IMPROVED",
+      "reviewedRef": "cd94bd8b40dd55d14ab9799cd2e01bddbe5f0a5b",
+      "maxLines": 108,
+      "maxBytes": 7587
     },
     {
       "path": "apps/web/src/components/sections/rubriques/weather-section.conditions.tsx",
       "kind": "runtime",
-      "status": "REVIEW",
-      "reviewedRef": "e5913889e5115a1b23d1187c6d75b4f2bafba5bf",
-      "maxLines": 510,
-      "maxBytes": 23918
+      "status": "IMPROVED",
+      "reviewedRef": "cd94bd8b40dd55d14ab9799cd2e01bddbe5f0a5b",
+      "maxLines": 58,
+      "maxBytes": 1850
     },
     {
       "path": "apps/web/src/lib/actions/exports/export-form-media.ts",
