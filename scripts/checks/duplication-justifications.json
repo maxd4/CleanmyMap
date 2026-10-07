@@ -363,70 +363,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "2036337c86222ef3",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les cartes d’apprentissage fr/en répètent volontairement une structure éditoriale traduite ; les contenus, libellés et messages de locale restent des données lisibles et indépendantes.",
-      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:38-55 et apps/web/src/lib/learning/learn-rubric-data.ts:94-111 ; les mêmes cartes portent des titres et détails de langue distincts.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "4fb34f55a5ce0018",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les blocs de cartes fr/en gardent une structure de présentation volontairement parallèle, sans seconde connaissance calculée à extraire des contenus éditoriaux.",
-      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:56-73 et apps/web/src/lib/learning/learn-rubric-data.ts:112-129 ; les valeurs traduites restent explicites.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "abb56bf92414a096",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La répétition fr/en correspond au catalogue de contenus Learn et non à une règle métier partagée ; rendre ces données opaques supprimerait leur lisibilité éditoriale.",
-      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:74-89 et apps/web/src/lib/learning/learn-rubric-data.ts:130-145 ; chaque locale conserve ses textes et valeurs visibles.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "d451521c4f57d24d",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les liens Learn fr/en partagent la structure de catalogue, mais leurs titres et détails sont des contenus éditoriaux traduits ; aucune métadonnée canonique commune supplémentaire n’est répétée.",
-      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:153-166 et apps/web/src/lib/learning/learn-rubric-data.ts:225-238 ; les deux tableaux restent lisibles par locale.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "1387585c30780719",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les cartes de pratique fr/en réutilisent intentionnellement la forme de donnée tout en conservant des libellés traduits ; centraliser les objets rendrait le contenu moins explicite sans supprimer une connaissance.",
-      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:167-180 et apps/web/src/lib/learning/learn-rubric-data.ts:239-252 ; les valeurs éditoriales sont portées séparément.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "abbb8134e71e81a4",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La structure de carte traduite est intentionnelle et ne constitue pas un invariant de présentation à partager au-delà du type LearnLinkCard déjà canonique.",
-      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:181-194 et apps/web/src/lib/learning/learn-rubric-data.ts:253-266 ; les contenus et destinations restent explicites dans chaque locale.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "57530fa0e5864beb",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les entrées de pratique fr/en sont des blocs éditoriaux parallèles, pas des calculs ou métadonnées propriétaires ; leur conservation lisible protège la maintenance des contenus.",
-      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:195-208 et apps/web/src/lib/learning/learn-rubric-data.ts:267-280 ; chaque bloc conserve ses formulations de locale.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "c73746dc6cf5a4ed",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La dernière paire de cartes Learn répète une structure de données traduite déjà portée par le contrat LearnLinkCard ; aucune extraction de contenu opaque ne serait bénéfique.",
-      "evidence": "apps/web/src/lib/learning/learn-rubric-data.ts:209-220 et apps/web/src/lib/learning/learn-rubric-data.ts:281-292 ; les détails fr/en restent des contenus indépendants.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "4c125945d94d76ae",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les tokens pink répétés appartiennent à des variantes de thème distinctes ; les valeurs proches sont des choix de palette et non une primitive de produit à centraliser.",
@@ -1599,14 +1535,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre lib/governance/governance-monthly-report-high-risk.fixtures.ts:291-303 ; symboles: timestamp, generatedAt, snapshotMonth, snapshotPersisted et lib/governance/governance-monthly-report.fixtures.ts:360-372 ; symboles: timestamp, snapshotMonth, snapshotPersisted, cron reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
       "evidence": "apps/web/src/lib/governance/governance-monthly-report-high-risk.fixtures.ts:291-303 et apps/web/src/lib/governance/governance-monthly-report.fixtures.ts:360-372 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "95b161080ebe86d2",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre lib/i18n/server-translation.ts:33-49 ; symboles: result, values, entries, reduce et lib/i18n/use-translation.ts:30-46 ; symboles: typeof, result, values, entries reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/lib/i18n/server-translation.ts:33-49 et apps/web/src/lib/i18n/use-translation.ts:30-46 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
       "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
     },
     {

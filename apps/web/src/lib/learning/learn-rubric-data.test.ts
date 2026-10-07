@@ -36,6 +36,11 @@ describe("learn rubric inventory", () => {
 
       expect(frCard.href).toBe(href);
       expect(enCard.href).toBe(href);
+      expect(enCard.visual.tone).toBe(frCard.visual.tone);
+      expect(enCard.visual.motif).toBe(frCard.visual.motif);
+      expect(enCard.visual.badge).toEqual(frCard.visual.badge);
+      expect(enCard.visual.chips).toEqual(frCard.visual.chips);
+      expect(enCard.visual.stats).toEqual(frCard.visual.stats);
       expect(frCard.title).not.toHaveLength(0);
       expect(enCard.title).not.toHaveLength(0);
       expect(frCard.detail).not.toHaveLength(0);
@@ -54,6 +59,10 @@ describe("learn rubric inventory", () => {
     EXPECTED_PRACTICE_ROUTES.forEach((href, index) => {
       expect(LEARN_PRACTICE_LINKS.fr[index].href).toBe(href);
       expect(LEARN_PRACTICE_LINKS.en[index].href).toBe(href);
+      expect(LEARN_PRACTICE_LINKS.en[index].visual.tone).toBe(LEARN_PRACTICE_LINKS.fr[index].visual.tone);
+      expect(LEARN_PRACTICE_LINKS.en[index].visual.motif).toBe(LEARN_PRACTICE_LINKS.fr[index].visual.motif);
+      expect(LEARN_PRACTICE_LINKS.en[index].visual.badge).toEqual(LEARN_PRACTICE_LINKS.fr[index].visual.badge);
+      expect(LEARN_PRACTICE_LINKS.en[index].visual.chips).toEqual(LEARN_PRACTICE_LINKS.fr[index].visual.chips);
     });
   });
 });
