@@ -3,15 +3,15 @@
 <!-- RADAR:GENERATED:BEGIN -->
 ## A. En-tête snapshot
 
-`RADAR_REF=f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd`<br>
-`RADAR_GENERATED_AT=2026-10-07T14:49:57.357Z`<br>
+`RADAR_REF=8c96069f522049cc6d737795f2e17bdf770a005c`<br>
+`RADAR_GENERATED_AT=2026-10-07T17:52:10.324Z`<br>
 `RADAR_STATUS=CURRENT_AT_GENERATION`
 
 Commandes réellement utilisées :
 
 `node scripts/reports/generate-modularity-radar.mjs --ref=HEAD`
 
-Le snapshot lit l'arbre Git exact de f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd. Le statut
+Le snapshot lit l'arbre Git exact de 8c96069f522049cc6d737795f2e17bdf770a005c. Le statut
 CURRENT_AT_GENERATION décrit l'instant de génération ; un document commité
 peut donc rester un snapshot reproductible de cette ref sans prétendre suivre
 automatiquement un HEAD ultérieur.
@@ -20,7 +20,7 @@ automatiquement un HEAD ultérieur.
 
 | Mesure factuelle | Valeur |
 | --- | ---: |
-| Fichiers mesurés | 2928 |
+| Fichiers mesurés | 2931 |
 | REVIEW architectural (runtime + data/config) | 13 |
 | HARD contrôlé | 0 |
 | Tests volumineux | 0 |
@@ -874,19 +874,19 @@ de découpage.
 
 | PATH | REF | LINES | BYTES | KIND | SIZE_SIGNAL | CORRELATIONS | DECISION |
 | --- | --- | ---: | ---: | --- | --- | --- | --- |
-| `apps/web/src/lib/actions/pollution/current-place-state.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 647 | 19737 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 615 | 21712 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 613 | 24198 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/route/route-trace.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 605 | 20034 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/ui/button-theme.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 603 | 17967 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/route/route-group-partition.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 596 | 22351 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 590 | 16820 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 588 | 21807 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 578 | 16037 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/lib/actions/pollution/corridor-history.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 550 | 16245 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 537 | 20096 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/impact/impact-terrain-2026.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 521 | 26764 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/components/chat/discussion-guidance.ts` | `f16bde3222fbc11fa2dbb90f2e4c5dea9482bcfd` | 518 | 20555 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/actions/pollution/current-place-state.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 647 | 19737 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 615 | 21712 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 613 | 24198 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/route/route-trace.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 605 | 20034 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/ui/button-theme.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 603 | 17967 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/route/route-group-partition.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 596 | 22351 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 590 | 16820 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 588 | 21807 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 578 | 16037 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/lib/actions/pollution/corridor-history.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 550 | 16245 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 537 | 20096 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/impact/impact-terrain-2026.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 521 | 26764 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/components/chat/discussion-guidance.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 518 | 20555 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
 
 ### Tests volumineux — top 25
 

@@ -152,6 +152,37 @@ frontière naturelle de séparation démontrée.
 Le radar ou un seuil de qualité déclenche une analyse. Il ne dicte pas à lui
 seul une arborescence cible.
 
+## Duplication : revue, owner et réouverture
+
+Un clone jscpd est un signal de revue, jamais une instruction automatique
+d'extraction. L'objectif n'est pas de minimiser un pourcentage global de
+duplication ni de faire disparaître un fingerprint isolé.
+
+Une extraction devient prioritaire lorsque plusieurs occurrences portent la
+même connaissance ou le même invariant qui doit rester synchronisé. Le signal
+prend davantage de poids lorsqu'il converge avec d'autres faits : fonction
+longue ou complexe, fichier `REVIEW`, fréquence de modification élevée,
+difficulté de test ou frontière fonctionnelle naturelle identifiable.
+
+À l'inverse, conserver explicitement une répétition est correct lorsqu'elle :
+
+- rend une frontière AuthN/AuthZ localement et auditivement explicite ;
+- maintient l'indépendance de scénarios de test et de leurs preuves ;
+- préserve la lisibilité de contrats métier différents ;
+- décrit des données déclaratives proches mais volontairement autonomes, comme
+  des palettes complètes par thème.
+
+Toute abstraction partagée doit avoir un owner et un invariant commun
+démontrables. À défaut, la famille reste qualifiée `KEEP_INTENTIONAL` ou
+`NO_ACTION_NOISE` selon la policy jscpd. Une décision historique n'est pas
+irrévocable : si le code évolue ou si la duplication converge ensuite avec
+d'autres signaux, la qualification doit être réouverte et revue sur les deux
+occurrences CURRENT.
+
+Les contrôles jscpd, leurs fingerprints et leurs métriques restent la source
+mesurée des audits ; cette convention conserve uniquement le raisonnement qui
+permet de décider, pas un compteur courant.
+
 ## Quand ne pas extraire
 
 Ne pas extraire uniquement pour :
