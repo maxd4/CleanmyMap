@@ -86,6 +86,52 @@ Pour chaque lot :
 Ne pas conserver ici une liste de warnings ou de compteurs qui peut être
 régénérée automatiquement.
 
+### Décisions durables sur la duplication
+
+Ces décisions conservent le raisonnement architectural des lots de
+déduplication ; elles ne constituent pas une seconde liste du radar ni un
+backlog à exécuter sans relecture du code CURRENT.
+
+#### Extractions confirmées
+
+- Le catalogue Learn FR/EN porte une même identité produit, un même ordre et
+  des métadonnées structurelles communes : un owner canonique et une projection
+  localisée sont justifiés.
+- La résolution et l'interpolation i18n server/client ont des frontières
+  d'exécution différentes, mais leur algorithme pur est commun : le noyau
+  partagé est l'owner de cette règle.
+
+Ces deux décisions ont été exécutées et validées ; elles décrivent désormais
+une architecture CURRENT, pas des tâches ouvertes.
+
+#### Décisions opportunistes bornées
+
+- Pour `AccountIdentityChip`, l'item de profil sélectionnable peut rester une
+  sous-vue locale lorsque la répétition converge avec la longueur du composant,
+  sans créer de menu ou de hook générique.
+- Pour les rendus de croissance de `storage-usage-panel.data.tsx`, une petite
+  sous-vue locale est justifiée uniquement si `bucketGrowth` et
+  `extensionGrowth` conservent exactement le même contrat d'affichage et les
+  mêmes calculs propriétaires.
+
+Ces règles ne justifient aucune abstraction préventive : une nouvelle
+évolution doit relire les occurrences et les owners avant d'extraire.
+
+#### Non-refactors explicites
+
+- `button-theme.ts` conserve les palettes complètes par thème ; une égalité
+  actuelle entre tokens ne constitue pas une identité durable.
+- Les panneaux feedback et promotion admin ne sont pas fusionnés : workflows,
+  statuts, payloads et décisions divergent.
+- La répétition locale des gardes AuthN/AuthZ reste acceptable lorsqu'elle
+  rend chaque frontière de privilège explicitement auditable.
+- Les tests ne reçoivent pas de fixture ou helper uniquement destiné à réduire
+  jscpd lorsqu'il masquerait l'invariant du scénario.
+- Les persistances et fallbacks de domaines distincts ne sont pas centralisés
+  sur une simple similarité de forme sans owner de données commun.
+- La décision Route n'est pas recopiée ici : `route.response.ts` relève du
+  chantier spécialisé de modularisation et de sa source canonique.
+
 ## P2 — monolithes
 
 La source de vérité est

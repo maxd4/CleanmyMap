@@ -443,22 +443,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "291b7478716b20e4",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:7-12 et app/api/actions/[actionId]/route-version/route.test.ts:5-10 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:7-12 et app/api/actions/[actionId]/route-version/route.test.ts:5-10 ; pair CURRENT relu.",
-      "reviewedRef": "0ef94ec34b47bd8c385a82ca1b4e932893e91de0"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "e02ef5a6934f531d",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:7-12 et app/api/chat/action-exclusions/route.test.ts:1-6 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:7-12 et app/api/chat/action-exclusions/route.test.ts:1-6 ; pair CURRENT relu.",
-      "reviewedRef": "0ef94ec34b47bd8c385a82ca1b4e932893e91de0"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "97b05916b3f99675",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:194-201 et app/api/actions/[actionId]/formalities/route.test.ts:308-315 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
@@ -1731,14 +1715,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "6851eef124bc00e6",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/chat/inbox/route.test.ts:1-6 et app/api/chat/route.feedback-reply.test.ts:8-13 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/chat/inbox/route.test.ts:1-6 et app/api/chat/route.feedback-reply.test.ts:8-13 ; pair CURRENT relu.",
-      "reviewedRef": "0ef94ec34b47bd8c385a82ca1b4e932893e91de0"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "c396f5faaf348970",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/chat/route.attachments.test.ts:54-64 ; symboles: attachmentType, image, details, arrayContaining et app/api/chat/route.attachments.test.ts:73-83 ; symboles: attachmentType, details, arrayContaining, stringContaining restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
@@ -1767,14 +1743,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/chat/route.get.test.ts:170-186 ; symboles: supabaseMock, buildSupabaseMock, profile, user et app/api/chat/route.get.test.ts:246-262 ; symboles: supabaseMock, buildSupabaseMock, profile, user restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
       "evidence": "app/api/chat/route.get.test.ts:170-186 et app/api/chat/route.get.test.ts:246-262 ; pair CURRENT relu.",
-      "reviewedRef": "0ef94ec34b47bd8c385a82ca1b4e932893e91de0"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "59f69c5cabf15c21",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/chat/route.polls.test.ts:40-48 ; symboles: rejects, poll, only, forbidden et app/api/chat/route.polls.test.ts:255-263 ; symboles: rejects, invalid, poll, options restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "app/api/chat/route.polls.test.ts:40-48 et app/api/chat/route.polls.test.ts:255-263 ; pair CURRENT relu.",
       "reviewedRef": "0ef94ec34b47bd8c385a82ca1b4e932893e91de0"
     },
     {
@@ -2763,22 +2731,6 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "6ca131d93bfad1f2",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:176-188 et app/api/actions/[actionId]/formalities/route.test.ts:345-354 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:176-188 et app/api/actions/[actionId]/formalities/route.test.ts:345-354 ; pair CURRENT relu.",
-      "reviewedRef": "0ef94ec34b47bd8c385a82ca1b4e932893e91de0"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "6953276a3275642a",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:177-188 et app/api/actions/[actionId]/formalities/route.test.ts:289-297 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:177-188 et app/api/actions/[actionId]/formalities/route.test.ts:289-297 ; pair CURRENT relu.",
-      "reviewedRef": "0ef94ec34b47bd8c385a82ca1b4e932893e91de0"
-    },
-    {
-      "scope": "tests",
       "fingerprint": "038e03572586a7e1",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:190-199 et app/api/actions/[actionId]/formalities/route.test.ts:239-248 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
@@ -2799,14 +2751,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:237-248 et app/api/actions/[actionId]/formalities/route.test.ts:302-313 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
       "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:237-248 et app/api/actions/[actionId]/formalities/route.test.ts:302-313 ; pair CURRENT relu.",
-      "reviewedRef": "0ef94ec34b47bd8c385a82ca1b4e932893e91de0"
-    },
-    {
-      "scope": "tests",
-      "fingerprint": "c8ad4273fda4a910",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/formalities/route.test.ts:290-297 et app/api/actions/[actionId]/formalities/route.test.ts:347-354 couvrent des branches de territoire, qualification et workflow des formalités ; les valeurs répétées sont le contexte de preuve et les attentes métier restent explicites dans chaque scénario.",
-      "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:290-297 et app/api/actions/[actionId]/formalities/route.test.ts:347-354 ; pair CURRENT relu.",
       "reviewedRef": "0ef94ec34b47bd8c385a82ca1b4e932893e91de0"
     },
     {
