@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { GET, PATCH } from "./route";
 
 const authMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
@@ -20,7 +21,6 @@ function assertResponse(response: Response | undefined): Response {
 
 describe("/api/chat/inbox", () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "user-1" });
     getCurrentUserIdentityMock.mockResolvedValue({ userId: "user-1" });
@@ -46,7 +46,6 @@ describe("/api/chat/inbox", () => {
       error: null,
     });
 
-    const { GET } = await import("./route");
     const response = assertResponse(await GET());
     const body = (await response.json()) as {
       conversations: Array<{
@@ -71,7 +70,6 @@ describe("/api/chat/inbox", () => {
       error: null,
     });
 
-    const { PATCH } = await import("./route");
     const response = assertResponse(await PATCH(
       new Request("http://localhost/api/chat/inbox", {
         method: "PATCH",
@@ -89,7 +87,6 @@ describe("/api/chat/inbox", () => {
   });
 
   it("rejects an invalid read cursor target before contacting Supabase", async () => {
-    const { PATCH } = await import("./route");
     const response = assertResponse(await PATCH(
       new Request("http://localhost/api/chat/inbox", {
         method: "PATCH",

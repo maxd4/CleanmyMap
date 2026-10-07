@@ -5,6 +5,7 @@ import {
   deriveActionFormalitiesFacts,
 } from "@/lib/actions/formalities-workflow";
 import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
+import { GET, PATCH } from "./route";
 
 const authMock = vi.hoisted(() => vi.fn());
 const identityMock = vi.hoisted(() => vi.fn());
@@ -82,7 +83,6 @@ describe("/api/actions/:actionId/formalities", () => {
   let from: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ ok: true, userId: "user-1" });
     identityMock.mockResolvedValue({
@@ -107,7 +107,6 @@ describe("/api/actions/:actionId/formalities", () => {
 
   it("does not load a private action for an anonymous visitor", async () => {
     authMock.mockResolvedValueOnce({ ok: false, status: 401 });
-    const { GET } = await import("./route");
 
     const response = await GET(formalitiesRequest(), {
       params: Promise.resolve({ actionId: "action-42" }),
@@ -119,8 +118,6 @@ describe("/api/actions/:actionId/formalities", () => {
   });
 
   it("rejects an empty action id before loading any action", async () => {
-    const { GET } = await import("./route");
-
     const response = await GET(formalitiesRequest(), {
       params: Promise.resolve({ actionId: "   " }),
     });
@@ -134,7 +131,6 @@ describe("/api/actions/:actionId/formalities", () => {
 
   it("returns not found without resolving permissions for a missing action", async () => {
     loadActionMock.mockResolvedValueOnce(null);
-    const { GET } = await import("./route");
 
     const response = await GET(formalitiesRequest(), {
       params: Promise.resolve({ actionId: "action-42" }),
@@ -153,8 +149,6 @@ describe("/api/actions/:actionId/formalities", () => {
       activeRole: "benevole",
     });
     loadOrganizersMock.mockResolvedValueOnce([]);
-    const { GET } = await import("./route");
-
     const response = await GET(formalitiesRequest(), {
       params: Promise.resolve({ actionId: "action-42" }),
     });
@@ -168,7 +162,6 @@ describe("/api/actions/:actionId/formalities", () => {
 
   it("keeps the GET contract limited to pre-actions", async () => {
     loadActionMock.mockResolvedValueOnce({ ...action(), action_phase: "post_action_complete" });
-    const { GET } = await import("./route");
 
     const response = await GET(formalitiesRequest(), {
       params: Promise.resolve({ actionId: "action-42" }),
@@ -182,7 +175,6 @@ describe("/api/actions/:actionId/formalities", () => {
   });
 
   it("returns an explainable unknown qualification when the manager is not known", async () => {
-    const { GET } = await import("./route");
     const response = await GET(formalitiesRequest(), {
       params: Promise.resolve({ actionId: "action-42" }),
     });
@@ -202,7 +194,6 @@ describe("/api/actions/:actionId/formalities", () => {
   });
 
   it("qualifies and persists the user-owned context without accepting a forged sent state", async () => {
-    const { PATCH } = await import("./route");
     const response = await PATCH(
       formalitiesRequest({
         method: "PATCH",
@@ -233,8 +224,6 @@ describe("/api/actions/:actionId/formalities", () => {
   });
 
   it("rejects malformed JSON before loading the action", async () => {
-    const { PATCH } = await import("./route");
-
     const response = await PATCH(
       formalitiesRequest({ method: "PATCH", body: "{" }),
       { params: Promise.resolve({ actionId: "action-42" }) },
@@ -246,8 +235,6 @@ describe("/api/actions/:actionId/formalities", () => {
   });
 
   it("rejects an empty patch before loading the action", async () => {
-    const { PATCH } = await import("./route");
-
     const response = await PATCH(
       formalitiesRequest({ method: "PATCH", body: JSON.stringify({}) }),
       { params: Promise.resolve({ actionId: "action-42" }) },
@@ -258,8 +245,6 @@ describe("/api/actions/:actionId/formalities", () => {
   });
 
   it("rejects a transition for a formality absent from the current qualification", async () => {
-    const { PATCH } = await import("./route");
-
     const response = await PATCH(
       formalitiesRequest({
         method: "PATCH",
@@ -287,8 +272,6 @@ describe("/api/actions/:actionId/formalities", () => {
     });
     from = vi.fn().mockReturnValue({ update });
     supabaseMock.mockReturnValue({ from });
-    const { PATCH } = await import("./route");
-
     const response = await PATCH(
       formalitiesRequest({
         method: "PATCH",
@@ -307,7 +290,6 @@ describe("/api/actions/:actionId/formalities", () => {
 
   it("keeps PATCH limited to pre-actions", async () => {
     loadActionMock.mockResolvedValueOnce({ ...action(), action_phase: "post_action_complete" });
-    const { PATCH } = await import("./route");
 
     const response = await PATCH(
       formalitiesRequest({
@@ -330,8 +312,6 @@ describe("/api/actions/:actionId/formalities", () => {
       department_code: "92",
       department_name: "Hauts-de-Seine",
     });
-    const { PATCH } = await import("./route");
-
     const response = await PATCH(
       formalitiesRequest({
         method: "PATCH",
@@ -381,8 +361,6 @@ describe("/api/actions/:actionId/formalities", () => {
       specialTerritory: null,
       source: "geo.api.gouv.fr",
     });
-    const { PATCH } = await import("./route");
-
     const response = await PATCH(
       formalitiesRequest({
         method: "PATCH",
@@ -442,8 +420,6 @@ describe("/api/actions/:actionId/formalities", () => {
       },
     });
     resolveActionTerritoryMock.mockResolvedValueOnce(null);
-    const { PATCH } = await import("./route");
-
     const response = await PATCH(
       formalitiesRequest({
         method: "PATCH",
@@ -499,8 +475,6 @@ describe("/api/actions/:actionId/formalities", () => {
         formalitiesWorkflow: previousWorkflow,
       },
     });
-    const { PATCH } = await import("./route");
-
     const response = await PATCH(
       formalitiesRequest({
         method: "PATCH",
@@ -548,8 +522,6 @@ describe("/api/actions/:actionId/formalities", () => {
     });
     authMock.mockResolvedValueOnce({ ok: true, userId: "other-user" });
     loadOrganizersMock.mockResolvedValueOnce([]);
-    const { PATCH } = await import("./route");
-
     const response = await PATCH(
       formalitiesRequest({
         method: "PATCH",

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { GET } from "./route";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -14,7 +15,6 @@ vi.mock("@/lib/supabase/server", () => ({
 
 describe("GET /api/actions/organizers", () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
     getSupabaseServerClientMock.mockReturnValue({
@@ -42,7 +42,6 @@ describe("GET /api/actions/organizers", () => {
   });
 
   it("returns only the public organizer projection", async () => {
-    const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/actions/organizers?type=collective&q=rivière"));
     const body = await response.json();
 

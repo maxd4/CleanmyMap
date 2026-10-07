@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { buildSupabaseMock, postChatPayload, type ChatMessageRow } from "./route.test.helpers";
+import { buildSupabaseMock, type ChatMessageRow } from "./route.test.helpers";
 import {
   getSupabaseClerkRlsClientMock,
   getSupabaseServerClientMock,
   resetChatRouteMocks,
 } from "./route.test.mocks";
+import { GET, POST } from "./route";
 
 function configurePollSupabase(
   pollMessage: ChatMessageRow,
@@ -29,6 +30,16 @@ function configurePollSupabase(
   return supabaseMock;
 }
 
+function postChatRequest(payload: Record<string, unknown>) {
+  return POST(
+    new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  );
+}
+
 describe("POST /api/chat — polls", () => {
   beforeEach(() => {
     resetChatRouteMocks();
@@ -38,7 +49,7 @@ describe("POST /api/chat — polls", () => {
     { attachmentUrl: "https://cdn.example.test/poll.pdf", attachmentType: "application/pdf" },
     { relatedEventId: "11111111-1111-4111-8111-111111111111" },
   ])("rejects poll-only forbidden context %#", async (forbiddenContext) => {
-    const response = await (await import("./route")).POST(
+    const response = await POST(
       new Request("http://localhost/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -75,8 +86,7 @@ describe("POST /api/chat — polls", () => {
     };
     const supabaseMock = configurePollSupabase(pollMessage);
 
-    const { GET } = await import("./route");
-    const response = await postChatPayload({
+    const response = await postChatRequest({
       channelType: "community",
       topicId: "coordination_secteur",
       messageKind: "poll",
@@ -126,7 +136,7 @@ describe("POST /api/chat — polls", () => {
   });
 
   it("rejects polls on bug_report", async () => {
-    const response = await (await import("./route")).POST(
+    const response = await POST(
       new Request("http://localhost/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -217,7 +227,7 @@ describe("POST /api/chat — polls", () => {
         : null,
     );
 
-    const response = await (await import("./route")).POST(
+    const response = await POST(
       new Request("http://localhost/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -253,7 +263,7 @@ describe("POST /api/chat — polls", () => {
     ["Oui", " oui "],
     ["Oui", "   "],
   ])("rejects invalid poll options", async (pollOptions) => {
-    const response = await (await import("./route")).POST(
+    const response = await POST(
       new Request("http://localhost/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
