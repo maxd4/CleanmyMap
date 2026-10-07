@@ -598,9 +598,13 @@ npm run quality:duplication
 
 réutilise les fingerprints natifs jscpd et compare aussi les blocs, les lignes
 et les tokens dupliqués à la baseline métrique. Tout nouveau fingerprint de
-clone (`NEW_CLONE_FINGERPRINTS > 0`) est bloquant pour le runtime et les tests ;
-les fixtures/data restent strictes. Les clones déjà présents dans les baselines
-natives restent historiques. Une réduction validée est acquise explicitement
+clone non qualifié (`NEW_CLONE_FINGERPRINTS > 0`) est bloquant pour le runtime et
+les tests ; les fixtures/data restent strictes. Un fingerprint CURRENT nouveau
+peut toutefois être qualifié dans `duplication-justifications.json` si ses deux
+occurrences réelles sont relues et couvertes par la preuve ; cette qualification
+ne modifie aucune baseline et le compteur `NEW_CLONE_FINGERPRINTS` est alors
+calculé sur les fingerprints non qualifiés. Les clones déjà présents dans les
+baselines natives restent historiques. Une réduction validée est acquise explicitement
 sur le commit mesuré avec `--baseline <baseline-file> --update-baseline`, en
 conservant exactement les mêmes scopes, patterns, seuils, ignores et version
 jscpd. Un fingerprint supprimé qui réapparaît ensuite devient un nouveau
@@ -613,10 +617,11 @@ relèvement de seuil ou abstraction artificielle ajoutée uniquement pour
 satisfaire jscpd. Les décisions `KEEP_INTENTIONAL` sont enregistrées dans
 `scripts/checks/duplication-justifications.json` avec le fingerprint natif, une
 raison, une preuve et un SHA complet de revue. Le contrôle vérifie que le
-fingerprint existe dans la baseline native et dans le rapport CURRENT SARIF ;
-une justification disparue produit `STALE_KEEP_INTENTIONAL` et bloque. Ce
-registre ne neutralise jamais `NEW_CLONE_FINGERPRINTS_BLOCKING` : un nouveau
-fingerprint reste bloquant même lorsqu'un registre de KEEP existe.
+fingerprint existe dans la baseline native ou dans le rapport CURRENT SARIF,
+et que la preuve couvre les deux occurrences CURRENT ; une justification
+disparue produit `STALE_KEEP_INTENTIONAL` ou `STALE_NO_ACTION_NOISE` et bloque.
+Un fingerprint nouveau et non qualifié reste bloquant ; une qualification
+explicite ne relève ni seuil, ni baseline, ni exclusion.
 
 Dans la CI, le step `quality:duplication` du job `web-quality` doit produire
 sa preuve sur tout candidat concerné dès que le checkout, Node et `npm ci` ont

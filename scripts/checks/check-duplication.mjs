@@ -110,15 +110,32 @@ export function runDuplicationPolicy() {
       gitRunner: (args) => execFileSync("git", args, { cwd: repositoryRoot, stdio: "ignore" }),
     },
   });
+  const qualifiedNewFingerprints = new Set(Object.values(justificationReport.classifications).flat());
+  for (const result of results) {
+    const scopeBaseline = baseline.scopes[result.scopeName];
+    const nativeBaseline = nativeBaselines[result.scopeName];
+    const qualified = [...result.fingerprints].filter((fingerprint) => (
+      !Object.hasOwn(nativeBaseline.fingerprints, fingerprint)
+      && qualifiedNewFingerprints.has(`${result.scopeName}:${fingerprint}`)
+    ));
+    result.qualifiedNewFingerprints = qualified;
+    result.metrics = {
+      ...result.metrics,
+      newClones: Math.max(0, result.metrics.newClones - qualified.length),
+    };
+    result.comparison = compareDuplicationMetrics(result.metrics, scopeBaseline, result.scopeName);
+  }
   return { baseline, results, justificationReport };
 }
 
 export function formatDuplicationReport({ results, justificationReport = null }) {
   const lines = [];
-  for (const { scopeName, metrics, comparison } of results) {
+  for (const result of results) {
+    const { scopeName, metrics, comparison } = result;
     lines.push(`${scopeName}: ${metrics.clones} clones, ${metrics.duplicatedLines}/${metrics.lines} lines (${metrics.percentage.toFixed(2)}%), ${metrics.duplicatedTokens}/${metrics.tokens} tokens.`);
     lines.push(`  DUPLICATION_STATUS: ${comparison.status}`);
     lines.push(`  NEW_CLONE_FINGERPRINTS: ${metrics.newClones}`);
+    lines.push(`  QUALIFIED_NEW_CLONE_FINGERPRINTS: ${result.qualifiedNewFingerprints?.length ?? 0}`);
     lines.push(`  DUPLICATED_LINES_DELTA: ${comparison.deltas.duplicatedLines}`);
     lines.push(`  DUPLICATED_TOKENS_DELTA: ${comparison.deltas.duplicatedTokens}`);
     lines.push(`  LINE_PERCENTAGE_POINT_DELTA: ${comparison.deltas.linePercentagePoints.toFixed(6)}`);

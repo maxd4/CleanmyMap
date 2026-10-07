@@ -298,6 +298,31 @@ test("a valid NO_ACTION_NOISE registry entry is durable and classified separatel
   assert.deepEqual(result.stale, []);
 });
 
+test("a current new fingerprint may be qualified with verifiable occurrence evidence", () => {
+  const fingerprint = "d1e2f30415263748";
+  const result = validateDuplicationJustificationsRegistry({
+    schemaVersion: 1,
+    justifications: [{
+      scope: "tests",
+      fingerprint,
+      classification: "NO_ACTION_NOISE",
+      reason: "Static mocks are required by two independent API boundary suites.",
+      evidence: "apps/web/src/first.test.ts:10-14 and apps/web/src/second.test.ts:31-35",
+      reviewedRef: "21c83ff399cb812c1dba18b1f19411b5fc7833e4",
+    }],
+  }, {
+    nativeBaselines: NATIVE_BASELINES,
+    currentFingerprintsByScope: { tests: new Set([fingerprint]) },
+    currentOccurrencesByScope: { tests: [{
+      fingerprint,
+      occurrenceA: { path: "apps/web/src/first.test.ts", startLine: 10, endLine: 14 },
+      occurrenceB: { path: "apps/web/src/second.test.ts", startLine: 31, endLine: 35 },
+    }] },
+  });
+  assert.equal(result.noActionNoise, 1);
+  assert.deepEqual(result.stale, []);
+});
+
 test("reviewedRef provenance must resolve to a commit and be ancestral to the audited SHA", () => {
   const reviewedRef = "21c83ff399cb812c1dba18b1f19411b5fc7833e4";
   const auditedSha = "fedcba98765432100123456789abcdef01234567";
@@ -357,7 +382,7 @@ test("an unknown native fingerprint cannot be justified", () => {
       evidence: "synthetic test",
       reviewedRef: "21c83ff399cb812c1dba18b1f19411b5fc7833e4",
     }],
-  }, { nativeBaselines: NATIVE_BASELINES }), /unknown native fingerprint/);
+  }, { nativeBaselines: NATIVE_BASELINES }), /unknown native fingerprint or CURRENT fingerprint/);
 });
 
 test("malformed justification fields fail explicitly", () => {

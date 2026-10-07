@@ -401,13 +401,13 @@ export function validateDuplicationJustificationsRegistry(
       }
     }
 
+    const currentFingerprints = currentFingerprintsByScope?.[scope];
     const baseline = nativeBaselines[scope];
     nativeBaselineFingerprintCount(baseline);
-    if (!Object.hasOwn(baseline.fingerprints, fingerprint)) {
-      justificationError(`entry ${index} targets an unknown native fingerprint.`);
+    if (!Object.hasOwn(baseline.fingerprints, fingerprint) && !currentFingerprints?.has(fingerprint)) {
+      justificationError(`entry ${index} targets an unknown native fingerprint or CURRENT fingerprint.`);
     }
 
-    const currentFingerprints = currentFingerprintsByScope?.[scope];
     if (currentFingerprints && !currentFingerprints.has(fingerprint)) {
       stale.push(identity);
       staleByClassification[classification].push(identity);
