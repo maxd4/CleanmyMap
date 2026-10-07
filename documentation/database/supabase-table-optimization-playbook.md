@@ -131,22 +131,35 @@ Choisir l'index pour le prédicat réellement exécuté.
 Un index inutile augmente aussi les coûts d'écriture et de maintenance ; ne pas
 indexer chaque colonne par réflexe.
 
-### Advisors Performance — état CURRENT du 27 septembre 2026
+### Advisors Performance — état CURRENT du 8 octobre 2026
 
-L'audit Performance linked observé le `2026-09-27` rapporte :
+L'audit Performance linked observé le `2026-10-08`, avant application de la
+migration append-only `20261003000010_optimize_action_geometry_contributions_rls.sql`,
+rapporte :
 
 ```text
 PERFORMANCE_ERROR: 0
-PERFORMANCE_WARN: 0
-UNUSED_INDEX_INFO: 81
+PERFORMANCE_WARN: 1
+UNUSED_INDEX_INFO: 82
 RECENT_FK_PROTECTION: 6
 EXPLICIT_PENDING_WORKLOAD: 3
-OTHER_NEEDS_WORKLOAD_EVIDENCE: 72
+DEFER_NO_CURRENT_WORKLOAD_PROOF: 1
+OTHER_NEEDS_WORKLOAD_EVIDENCE: 73
 IMMEDIATE_INDEX_REMOVAL: 0
 ```
 
-Les anciens findings `unindexed_foreign_keys` sont **RESOLVED** par la
-migration `20260927000001_index_unindexed_foreign_keys.sql`. Les six index
+Le seul WARN est `auth_rls_initplan` sur la policy
+`action_geometry_contributions_service_only`. La migration candidate remplace
+`auth.role()` par `(select auth.role())` sans changer la frontière service-only ;
+le finding reste donc visible sur l'environnement distant tant que cette
+migration n'a pas été appliquée.
+
+Le finding `unindexed_foreign_keys` concerne
+`action_geometry_contributions_mission_id_fkey`. La table distante est vide,
+aucun workload CURRENT ne lit, écrit ou supprime par `mission_id`, et le champ
+reste une provenance nullable avec `ON DELETE SET NULL`. La décision canonique
+est donc `DEFER_NO_CURRENT_WORKLOAD_PROOF` : aucun index n'est ajouté ; la
+décision devra être réévaluée si le workload apparaît. Les six index
 correctifs peuvent cependant apparaître temporairement comme
 `unused_index` :
 
@@ -169,14 +182,15 @@ justifie jamais un `DROP INDEX`. Une suppression future exige soit une preuve
 statique de redondance, soit une observation de workload suffisamment
 représentative. Le tooling de présentation
 `apps/web/scripts/supabase-performance-advisors.mjs` conserve les findings
-dynamiques dans `OTHER_NEEDS_WORKLOAD_EVIDENCE`, expose un mode `--raw` et ne
+dynamiques dans `OTHER_NEEDS_WORKLOAD_EVIDENCE`, classe explicitement le FK
+ci-dessus dans `DEFER_NO_CURRENT_WORKLOAD_PROOF`, expose un mode `--raw` et ne
 déclenche aucune mutation.
 
 La synthèse liée se lance explicitement depuis la racine du dépôt :
 
 ```bash
-node apps/web/scripts/supabase-performance-advisors.mjs --linked
-node apps/web/scripts/supabase-performance-advisors.mjs --linked --raw
+npm run backend:supabase:advisors:linked -w apps/web
+npm run backend:supabase:advisors:linked -w apps/web -- --raw
 ```
 
 Le premier mode affiche les compteurs et les catégories ; `--raw` restitue le

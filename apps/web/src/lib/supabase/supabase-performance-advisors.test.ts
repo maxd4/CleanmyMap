@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   EXPLICIT_PENDING_WORKLOAD_INDEXES,
+  DEFERRED_FOREIGN_KEY_WORKLOADS,
   PERFORMANCE_ADVISOR_COMMAND_OPTIONS,
   RECENT_FK_PROTECTION_INDEXES,
   formatPerformanceAdvisorSummary,
@@ -12,13 +13,43 @@ import {
   summarizePerformanceAdvisorOutput,
 } from "../../../scripts/supabase-performance-advisors.mjs";
 
-function unusedIndexFinding(index: string, table = "app_messages", extra: Record<string, unknown> = {}) {
+function unusedIndexFinding(
+  index: string,
+  table = "app_messages",
+  extra: Record<string, unknown> = {},
+): {
+  name: string;
+  level: string;
+  title: string;
+  detail: string;
+  metadata: Record<string, unknown>;
+} {
   return {
     name: "unused_index",
     level: "INFO",
     title: `Index ${index} has not been used`,
     detail: `Index ${index} on public.${table} has not been observed as used`,
     metadata: { name: index, type: "index", schema: "public", table, ...extra },
+  };
+}
+
+function unindexedForeignKeyFinding(
+  contract = DEFERRED_FOREIGN_KEY_WORKLOADS[0],
+  extra: Record<string, unknown> = {},
+) {
+  return {
+    name: "unindexed_foreign_keys",
+    level: "INFO",
+    title: "Unindexed foreign keys",
+    detail: `Table public.${contract.table} has a foreign key ${contract.constraint} without a covering index`,
+    metadata: {
+      name: contract.table,
+      type: "table",
+      schema: "public",
+      fkey_name: contract.constraint,
+      fkey_columns: [7],
+      ...extra,
+    },
   };
 }
 
@@ -29,14 +60,14 @@ function currentPerformancePayload() {
   const pending = EXPLICIT_PENDING_WORKLOAD_INDEXES.map((entry) =>
     unusedIndexFinding(entry.name, entry.table),
   );
-  const other = Array.from({ length: 72 }, (_, index) =>
+  const other = Array.from({ length: 73 }, (_, index) =>
     unusedIndexFinding(`idx_other_${String(index + 1).padStart(2, "0")}`),
   );
-  return [...recent, ...pending, ...other];
+  return [unindexedForeignKeyFinding(), ...recent, ...pending, ...other];
 }
 
 describe("Supabase performance advisor normalization", () => {
-  it("summarizes 81 unused_index INFO findings without listing the payload", () => {
+  it("summarizes 82 unused_index INFO findings and the deferred FK decision without listing the payload", () => {
     const payload = JSON.stringify(currentPerformancePayload());
     const summary = summarizePerformanceAdvisorOutput(payload);
     const output = formatPerformanceAdvisorSummary(summary);
@@ -44,17 +75,19 @@ describe("Supabase performance advisor normalization", () => {
     expect(summary.status).toBe("PASS");
     expect(summary.performanceError).toBe(0);
     expect(summary.performanceWarn).toBe(0);
-    expect(summary.unusedIndexInfo).toBe(81);
+    expect(summary.unusedIndexInfo).toBe(82);
     expect(summary.recentFkProtection).toBe(6);
     expect(summary.explicitPendingWorkload).toBe(3);
-    expect(summary.otherNeedsWorkloadEvidence).toBe(72);
+    expect(summary.deferNoCurrentWorkloadProof).toBe(1);
+    expect(summary.otherNeedsWorkloadEvidence).toBe(73);
     expect(summary.immediateIndexRemoval).toBe(0);
     expect(output).toContain("PERFORMANCE_ERROR: 0");
     expect(output).toContain("PERFORMANCE_WARN: 0");
-    expect(output).toContain("UNUSED_INDEX_INFO: 81");
+    expect(output).toContain("UNUSED_INDEX_INFO: 82");
     expect(output).toContain("RECENT_FK_PROTECTION: 6");
     expect(output).toContain("EXPLICIT_PENDING_WORKLOAD: 3");
-    expect(output).toContain("OTHER_NEEDS_WORKLOAD_EVIDENCE: 72");
+    expect(output).toContain("DEFER_NO_CURRENT_WORKLOAD_PROOF: 1");
+    expect(output).toContain("OTHER_NEEDS_WORKLOAD_EVIDENCE: 73");
     expect(output).toContain("IMMEDIATE_INDEX_REMOVAL: 0");
     expect(output).not.toContain("idx_other_01");
     expect(output).not.toContain("PERFORMANCE_FINDINGS:");
@@ -86,6 +119,36 @@ describe("Supabase performance advisor normalization", () => {
     expect(summary.explicitPendingWorkload).toBe(3);
     expect(summary.recentFkProtection).toBe(0);
     expect(summary.status).toBe("PASS");
+  });
+
+  it("classifies only the reviewed contribution FK as deferred", () => {
+    const summary = summarizePerformanceAdvisorOutput(JSON.stringify([unindexedForeignKeyFinding()]));
+
+    expect(summary.deferNoCurrentWorkloadProof).toBe(1);
+    expect(summary.unexpectedFindings).toHaveLength(0);
+    expect(summary.status).toBe("PASS");
+  });
+
+  it("extracts an unused index from the advisor detail when metadata.name is the table", () => {
+    const finding = unusedIndexFinding("idx_messages_dm", "app_messages");
+    finding.detail = "Index `idx_messages_dm` on table `public.app_messages` has not been used";
+    finding.metadata = { name: "app_messages", schema: "public", type: "table" };
+
+    const summary = summarizePerformanceAdvisorOutput(JSON.stringify([finding]));
+
+    expect(summary.explicitPendingWorkload).toBe(1);
+    expect(summary.unexpectedFindings).toHaveLength(0);
+    expect(summary.status).toBe("PASS");
+  });
+
+  it("fails closed when the deferred FK identity changes", () => {
+    const finding = unindexedForeignKeyFinding(DEFERRED_FOREIGN_KEY_WORKLOADS[0], {
+      fkey_name: "action_geometry_contributions_other_fkey",
+    });
+    const output = renderPerformanceAdvisorOutput(JSON.stringify([finding]));
+
+    expect(output).toContain("PERFORMANCE_STATUS: FAIL");
+    expect(output).toContain("unindexed_foreign_keys finding has no reviewed workload decision");
   });
 
   it("keeps WARN and ERROR findings visible and blocking", () => {

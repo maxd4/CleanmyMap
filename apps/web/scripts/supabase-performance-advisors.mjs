@@ -29,6 +29,16 @@ export const EXPLICIT_PENDING_WORKLOAD_INDEXES = Object.freeze([
   Object.freeze({ name: "idx_progression_events_user_type", table: "progression_events" }),
 ]);
 
+export const DEFERRED_FOREIGN_KEY_WORKLOADS = Object.freeze([
+  Object.freeze({
+    table: "action_geometry_contributions",
+    constraint: "action_geometry_contributions_mission_id_fkey",
+    columns: ["mission_id"],
+    decision: "DEFER_NO_CURRENT_WORKLOAD_PROOF",
+    reason: "The table is currently empty and no current mission_id read, write, or delete workload justifies an index.",
+  }),
+]);
+
 const recentFkProtectionByName = new Map(
   RECENT_FK_PROTECTION_INDEXES.map((entry) => [entry.name, entry]),
 );
@@ -97,15 +107,25 @@ function textForFinding(finding) {
 
 function extractIndexName(finding) {
   const metadata = finding?.metadata;
+  const textIndexName = textForFinding(finding).match(
+    /\bindex\s+\\?[`"']?([a-z0-9_]+)\\?[`"']?\s+on\b/i,
+  )?.[1];
+  if (textIndexName) return textIndexName;
+
   const candidates = [
     metadata?.index,
     metadata?.index_name,
-    metadata?.name,
     finding?.index,
     finding?.index_name,
+    metadata?.name,
   ];
   for (const candidate of candidates) {
-    if (typeof candidate === "string" && candidate.trim().length > 0 && normalizeAdvisorName(candidate) !== "unused_index") {
+    if (
+      typeof candidate === "string" &&
+      candidate.trim().length > 0 &&
+      normalizeAdvisorName(candidate) !== "unused_index" &&
+      (candidate.trim().toLowerCase().startsWith("idx_") || candidate === metadata?.name)
+    ) {
       return candidate.trim();
     }
   }
@@ -129,14 +149,31 @@ function columnsFromFinding(finding) {
   return [];
 }
 
+function extractForeignKeyConstraintName(finding) {
+  const metadata = finding?.metadata;
+  const candidates = [
+    metadata?.fkey_name,
+    metadata?.constraint,
+    metadata?.constraint_name,
+    finding?.fkey_name,
+    finding?.constraint,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim().length > 0) return candidate.trim();
+  }
+
+  return textForFinding(finding).match(/foreign key\s+[`"']?([a-z0-9_]+)/i)?.[1] ?? "";
+}
+
 function knownIndexContractIssues(finding, contract) {
   const issues = [];
   const type = metadataValue(finding, ["type"]);
   const schema = metadataValue(finding, ["schema", "schema_name"]);
-  const table = metadataValue(finding, ["table", "table_name"]);
+  const table = metadataValue(finding, ["table", "table_name"]) ||
+    (type === "table" ? metadataValue(finding, ["name"]) : "");
   const columns = columnsFromFinding(finding);
 
-  if (type && normalizeAdvisorName(type) !== "index") issues.push(`metadata.type=${type}`);
+  if (type && !["index", "table"].includes(normalizeAdvisorName(type))) issues.push(`metadata.type=${type}`);
   if (schema && schema !== "public") issues.push(`metadata.schema=${schema}`);
   if (table && table !== contract.table) issues.push(`metadata.table=${table}`);
   if (columns.length > 0 && columns.join("|") !== contract.columns?.join("|") && contract.columns) {
@@ -145,9 +182,51 @@ function knownIndexContractIssues(finding, contract) {
   return issues;
 }
 
+function knownForeignKeyContractIssues(finding, contract) {
+  const issues = [];
+  const type = metadataValue(finding, ["type"]);
+  const schema = metadataValue(finding, ["schema", "schema_name"]);
+  const table = metadataValue(finding, ["name", "table", "table_name"]);
+  const constraint = extractForeignKeyConstraintName(finding);
+
+  if (type !== "table") issues.push(`metadata.type=${type || "missing"}`);
+  if (schema !== "public") issues.push(`metadata.schema=${schema || "missing"}`);
+  if (table !== contract.table) issues.push(`metadata.table=${table || "missing"}`);
+  if (constraint !== contract.constraint) issues.push(`metadata.constraint=${constraint || "missing"}`);
+  return issues;
+}
+
 function classifyFinding(finding) {
   const advisorName = normalizeAdvisorName(findingName(finding));
   const level = findingLevel(finding);
+  if (advisorName === "unindexed_foreign_keys" && level === "INFO") {
+    const foreignKeyName = extractForeignKeyConstraintName(finding);
+    const contract = DEFERRED_FOREIGN_KEY_WORKLOADS.find(
+      (entry) => entry.constraint === foreignKeyName,
+    );
+    if (!contract) {
+      return {
+        category: "unexpected",
+        finding,
+        advisorName,
+        level,
+        foreignKeyName,
+        issues: ["unindexed_foreign_keys finding has no reviewed workload decision"],
+      };
+    }
+
+    return {
+      category: "defer-no-current-workload-proof",
+      finding,
+      advisorName,
+      level,
+      foreignKeyName,
+      decision: contract.decision,
+      reason: contract.reason,
+      issues: knownForeignKeyContractIssues(finding, contract),
+    };
+  }
+
   if (advisorName !== "unused_index" || level !== "INFO") {
     return {
       category: "unexpected",
@@ -215,6 +294,9 @@ export function summarizePerformanceAdvisorOutput(output) {
   ).length;
   const recentFkProtection = classifiedFindings.filter(({ category }) => category === "recent-fk-protection").length;
   const explicitPendingWorkload = classifiedFindings.filter(({ category }) => category === "explicit-pending-workload").length;
+  const deferNoCurrentWorkloadProof = classifiedFindings.filter(
+    ({ category }) => category === "defer-no-current-workload-proof",
+  ).length;
   const otherNeedsWorkloadEvidence = classifiedFindings.filter(
     ({ category }) => category === "other-needs-workload-evidence",
   ).length;
@@ -224,6 +306,7 @@ export function summarizePerformanceAdvisorOutput(output) {
 
   return {
     classifiedFindings,
+    deferNoCurrentWorkloadProof,
     explicitPendingWorkload,
     immediateIndexRemoval: 0,
     otherNeedsWorkloadEvidence,
@@ -239,7 +322,8 @@ export function summarizePerformanceAdvisorOutput(output) {
 function formatFinding(finding) {
   const name = findingName(finding.finding) || "unknown";
   const level = finding.level ? ` [${finding.level}]` : "";
-  const index = finding.indexName ? ` (${finding.indexName})` : "";
+  const subject = finding.indexName || finding.foreignKeyName;
+  const index = subject ? ` (${subject})` : "";
   const title = typeof finding.finding?.title === "string" ? finding.finding.title : "";
   const detail = typeof finding.finding?.detail === "string" ? finding.finding.detail : "";
   const description = title || detail;
@@ -255,6 +339,7 @@ export function formatPerformanceAdvisorSummary(summary) {
     `UNUSED_INDEX_INFO: ${summary.unusedIndexInfo}`,
     `RECENT_FK_PROTECTION: ${summary.recentFkProtection}`,
     `EXPLICIT_PENDING_WORKLOAD: ${summary.explicitPendingWorkload}`,
+    `DEFER_NO_CURRENT_WORKLOAD_PROOF: ${summary.deferNoCurrentWorkloadProof}`,
     `OTHER_NEEDS_WORKLOAD_EVIDENCE: ${summary.otherNeedsWorkloadEvidence}`,
     `IMMEDIATE_INDEX_REMOVAL: ${summary.immediateIndexRemoval}`,
   ];

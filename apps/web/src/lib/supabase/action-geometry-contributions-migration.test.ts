@@ -5,9 +5,13 @@ import { describe, expect, it } from "vitest";
 const migration = fileURLToPath(
   new URL("../../../supabase/migrations/20261003000004_action_geometry_contributions.sql", import.meta.url),
 );
+const optimizationMigration = fileURLToPath(
+  new URL("../../../supabase/migrations/20261003000010_optimize_action_geometry_contributions_rls.sql", import.meta.url),
+);
 
 describe("action geometry contribution migration contract", () => {
   const sql = readFileSync(migration, "utf8");
+  const optimizationSql = readFileSync(optimizationMigration, "utf8");
 
   it("keeps attributable observations append-only and idempotent", () => {
     expect(sql).toMatch(/create table if not exists public\.action_geometry_contributions/i);
@@ -37,5 +41,18 @@ describe("action geometry contribution migration contract", () => {
     expect(sql).toMatch(/promote_completed_mission_geometry/i);
     expect(sql).toMatch(/point_count < 2/i);
     expect(sql).toMatch(/gps_tracking.*new\.id/i);
+  });
+
+  it("optimizes the service-only policy without changing its boundary or adding an FK index", () => {
+    expect(sql).toMatch(/enable row level security/i);
+    expect(sql).toMatch(/revoke all on table public\.action_geometry_contributions from public, anon, authenticated/i);
+    expect(sql).toMatch(/grant all privileges on table public\.action_geometry_contributions to service_role/i);
+    expect(sql).toMatch(/create policy action_geometry_contributions_service_only[\s\S]*for all[\s\S]*using \(auth\.role\(\) = 'service_role'\)[\s\S]*with check \(auth\.role\(\) = 'service_role'\)/i);
+    expect(optimizationSql).toMatch(/alter policy action_geometry_contributions_service_only/i);
+    expect(optimizationSql).toMatch(/using \(\(select auth\.role\(\)\) = 'service_role'\)/i);
+    expect(optimizationSql).toMatch(/with check \(\(select auth\.role\(\)\) = 'service_role'\)/i);
+    expect(optimizationSql).toMatch(/DEFER_NO_CURRENT_WORKLOAD_PROOF/i);
+    expect(optimizationSql).not.toMatch(/create\s+(?:unique\s+)?index/i);
+    expect(optimizationSql).not.toMatch(/alter table|grant\s|revoke\s|create policy|create or replace function|create trigger|drop trigger/i);
   });
 });
