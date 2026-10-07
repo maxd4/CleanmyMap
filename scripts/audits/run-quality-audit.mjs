@@ -17,9 +17,9 @@ import { runComplexityPolicy } from "../checks/check-complexity-policy.mjs";
 import { runTopHeavyPolicy } from "../checks/check-top-heavy-files.mjs";
 import { createRepositoryView } from "../checks/repository-view.mjs";
 import {
+  createCorrelationSignalsFromAuditResults,
   createRadarRows,
   extractHumanDecisions,
-  loadCorrelationSignals,
   parseHumanDecisions,
 } from "../reports/generate-modularity-radar.mjs";
 
@@ -271,8 +271,7 @@ async function executeAudit(audit, root) {
       ? buildHumanDecisionsByFile(view.readText(HUMAN_DECISIONS_PATH))
       : {};
     const evaluation = enrichTopHeavyEvaluation(result.evaluation, humanDecisionsByFile);
-    const radarRows = createRadarRows(result.rows, loadCorrelationSignals(view));
-    const enrichedResult = { ...result, evaluation, radarProjection: { rows: radarRows } };
+    const enrichedResult = { ...result, evaluation };
     return { ...enrichedResult, status: statusForAudit(audit, enrichedResult) };
   }
   if (audit === "complexity") return runComplexityPolicy();
@@ -311,6 +310,24 @@ export async function runQualityAudit(mode, {
     }
     const status = statusForAudit(audit, raw);
     results.push({ audit, result: raw, status, attentionRequired: attentionRequired(audit, raw) });
+  }
+
+  if (mode === "all") {
+    const resultsByAudit = Object.fromEntries(results.map(({ audit, result }) => [audit, result]));
+    const topHeavy = results.find((entry) => entry.audit === "top-heavy");
+    if (topHeavy?.result?.rows) {
+      const correlations = createCorrelationSignalsFromAuditResults(resultsByAudit);
+      topHeavy.result = {
+        ...topHeavy.result,
+        radarProjection: {
+          rows: createRadarRows(topHeavy.result.rows, correlations),
+          evidence: {
+            measured: correlations.measured,
+            detail: correlations.detail,
+          },
+        },
+      };
+    }
   }
 
   const end = snapshot();

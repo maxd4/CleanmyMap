@@ -36,7 +36,7 @@ function fixtureResult(audit) {
   if (audit === "duplication") return { results: [{ scopeName: "runtime", metrics: { clones: 0, duplicatedLines: 0, duplicatedTokens: 0, newClones: 0 }, comparison: { status: "PASS", failures: [] } }], justificationReport: { stale: [] } };
   if (audit === "top-heavy") return { status: "PASS", rows: [], proximityRows: [], radarProjection: { rows: [] }, evaluation: { blockingFindings: [], reviewWarnings: [], reviewImprovements: [], staleReviewBaselineEntries: [], staleBaselineEntries: [] } };
   if (audit === "complexity") return { status: "PASS", metrics: [], result: { failures: [], stale: [], improvements: [], reviews: [] } };
-  return { gateStatus: "PASS", cycles: [], comparison: { added: [], stale: [] } };
+  return { gateStatus: "PASS", cycles: [], cycleObjects: [], comparison: { added: [], stale: [] } };
 }
 
 test("CLI parser accepts exactly the six audit modes and rejects unknown input", () => {
@@ -165,6 +165,26 @@ test("all runs each engine once, aggregates statuses and retains other results a
     assert.equal(result.results.find((entry) => entry.audit === "duplication").status, "FAIL");
     assert.equal(result.results.find((entry) => entry.audit === "cycles").status, "PASS");
     assert.ok(fs.existsSync(path.join(root, "artifacts", "quality-audits", sha, "manifest.json")));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+test("all correlates the five current gate results after execution without rerunning an engine", async () => {
+  const root = tempRoot();
+  try {
+    const candidate = { file: "apps/web/src/example.ts", lines: 601, bytes: 20_000, kind: "runtime" };
+    const result = await runQualityAudit("all", {
+      root,
+      snapshot: () => stableSnapshot,
+      engine: async (audit) => {
+        if (audit === "top-heavy") return { ...fixtureResult(audit), rows: [candidate] };
+        if (audit === "complexity") return { ...fixtureResult(audit), metrics: [{ metric: "complexity", path: candidate.file, category: "React/JSX", value: 23 }] };
+        return fixtureResult(audit);
+      },
+    });
+    const topHeavy = result.results.find((entry) => entry.audit === "top-heavy").result;
+    assert.equal(topHeavy.radarProjection.rows[0].signals.size.state, "PRESENT");
+    assert.equal(topHeavy.radarProjection.rows[0].signals.complexity.state, "PRESENT");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
