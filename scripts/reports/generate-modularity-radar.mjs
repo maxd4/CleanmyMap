@@ -199,10 +199,10 @@ function signalForRow(row, correlations) {
     size: isAboveReview(row)
       ? signal("PRESENT", isAboveHard(row) ? "HARD" : "REVIEW")
       : signal("NONE"),
-    complexity: signalFromMap(correlations.complexityByFile, "complexity"),
-    cycle: signalFromMap(correlations.cycleByFile, "cycle"),
-    deadCode: signalFromMap(correlations.deadCodeByFile, "dead-code"),
-    duplication: signalFromMap(correlations.duplicationByFile, "duplication"),
+    complexity: signalFromMap(correlations.complexityByFile),
+    cycle: signalFromMap(correlations.cycleByFile),
+    deadCode: signalFromMap(correlations.deadCodeByFile),
+    duplication: signalFromMap(correlations.duplicationByFile),
     testability: signal("NOT_MEASURED", "quality:coverage n'est pas attribuable ici au fichier candidat"),
   };
 }
