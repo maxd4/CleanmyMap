@@ -3,7 +3,7 @@ import { CodexUsagePanel } from"@/components/admin/codex-usage-panel";
 import { EnvironmentalImpactCapturePanel } from"@/components/admin/environmental-impact-capture-panel";
 import { FreePlanServicesPanel } from"@/components/admin/free-plan-services-panel";
 import { VisionTrainingPanel } from"@/components/admin/vision-training-panel";
-import { StorageUsagePanel } from"@/components/dashboard/storage-usage-panel";
+import { DeferredStorageUsagePanel } from "@/components/dashboard/deferred-storage-usage-panel";
 import { SystemStatusPanel } from"@/components/dashboard/system-status-panel";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
@@ -87,7 +87,7 @@ export default async function AdminServicesPage() {
  </section>
 
  <div id="storage">
- <StorageUsagePanel />
+ <DeferredStorageUsagePanel />
  </div>
 
  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" id="governance-report">

@@ -24,7 +24,15 @@ vi.mock("@/components/dashboard/storage-business-contribution-panel", () => ({
   StorageBusinessContributionPanel: () => React.createElement("div"),
 }));
 
+vi.mock("@/components/ui/use-in-view-once", () => ({
+  useInViewOnce: () => ({
+    ref: React.createRef<HTMLDivElement>(),
+    isInView: false,
+  }),
+}));
+
 import { StorageUsagePanel } from "./storage-usage-panel";
+import { DeferredStorageUsagePanel } from "./deferred-storage-usage-panel";
 
 const current = {
   generatedAt: "2026-08-23T00:00:00.000Z",
@@ -107,5 +115,15 @@ describe("StorageUsagePanel", () => {
     expect(markup).toContain("512 B");
     expect(markup).toContain("Aucun historique disponible pour le moment.");
     expect(markup).toContain("Aucune comparaison mensuelle encore disponible.");
+  });
+
+  it("defers the panel before its section is near the viewport", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(DeferredStorageUsagePanel),
+    );
+
+    expect(markup).toContain("Stockage Supabase");
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).toContain("Chargement du suivi du stockage");
   });
 });
