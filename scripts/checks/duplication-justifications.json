@@ -2863,7 +2863,7 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les imports et mocks statiques se ressemblent entre les tests de formalités et de version de route, mais ils alimentent deux frontières API et deux contrats métier distincts ; un harness partagé masquerait les dépendances propres à chaque route.",
       "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:8-13 et app/api/actions/[actionId]/route-version/route.test.ts:5-10 ; pair CURRENT relu.",
-      "reviewedRef": "9112b4638c4f9fbaaa608c235dba7289d1cf6c25"
+      "reviewedRef": "dd4883cc941478f4a417bc93c71cb9fc14838de0"
     },
     {
       "scope": "tests",
@@ -2871,7 +2871,7 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Le setup statique partagé par les tests de formalités et de contrôle des exclusions est une coïncidence de mocks de frontière ; les handlers protègent des parcours et des décisions d'accès différents, sans owner technique commun démontré.",
       "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:8-13 et app/api/chat/action-exclusions/route.test.ts:1-6 ; pair CURRENT relu.",
-      "reviewedRef": "9112b4638c4f9fbaaa608c235dba7289d1cf6c25"
+      "reviewedRef": "dd4883cc941478f4a417bc93c71cb9fc14838de0"
     },
     {
       "scope": "tests",
@@ -2879,7 +2879,7 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les deux constructions PATCH dans la suite de formalités réutilisent le même contexte de requête pour tester séparément l'erreur de persistance et l'interdiction post-action ; les invariants et statuts attendus restent indépendants et doivent rester lisibles dans chaque scénario.",
       "evidence": "app/api/actions/[actionId]/formalities/route.test.ts:274-283 et app/api/actions/[actionId]/formalities/route.test.ts:292-302 ; pair CURRENT relu.",
-      "reviewedRef": "9112b4638c4f9fbaaa608c235dba7289d1cf6c25"
+      "reviewedRef": "dd4883cc941478f4a417bc93c71cb9fc14838de0"
     },
     {
       "scope": "tests",
@@ -2887,7 +2887,7 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "Les imports et mocks statiques analogues entre inbox et réponse de feedback sont nécessaires à deux frontières API de chat distinctes ; mutualiser ce setup créerait un harness transversal sans sémantique propre et réduirait l'autonomie des suites.",
       "evidence": "app/api/chat/inbox/route.test.ts:2-7 et app/api/chat/route.feedback-reply.test.ts:8-13 ; pair CURRENT relu.",
-      "reviewedRef": "9112b4638c4f9fbaaa608c235dba7289d1cf6c25"
+      "reviewedRef": "dd4883cc941478f4a417bc93c71cb9fc14838de0"
     },
     {
       "scope": "tests",
@@ -2895,7 +2895,7 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les facts Paris répétés dans deux tests de rendu rendent chaque scénario autonome ; le premier vérifie la qualification et le second la persistance des statuts et détails de workflow, donc les valeurs de contexte communes ne portent pas le même invariant.",
       "evidence": "components/actions/action-formalities-workflow-panel.test.tsx:12-29 et components/actions/action-formalities-workflow-panel.test.tsx:73-90 ; pair CURRENT relu.",
-      "reviewedRef": "9112b4638c4f9fbaaa608c235dba7289d1cf6c25"
+      "reviewedRef": "dd4883cc941478f4a417bc93c71cb9fc14838de0"
     }
   ]
 }
