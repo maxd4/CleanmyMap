@@ -366,6 +366,20 @@ function renderHumanSection(entries) {
   return `${HUMAN_BEGIN}\n${summary.join("\n")}\n\n### Décisions établies — grille détaillée\n\n${details.join("\n").trim()}\n${HUMAN_END}`;
 }
 
+function renderPreservedHumanSection(humanBlock) {
+  if (humanBlock && humanBlock !== "_Aucune décision humaine enregistrée._") {
+    if (/^\| PATH \| ARCHITECTURE_DECISION \| PRIORITY \| DEPENDENCY_OR_BLOCKER \| NEXT_TRIGGER \|$/m.test(humanBlock)) {
+      const sanitized = humanBlock.split(/\r?\n/).filter((line) => {
+        const cells = splitTableRow(line);
+        return cells.length !== 2 || cells[0] === "Champ" || /^-+$/.test(cells[0]) || HUMAN_FIELDS.includes(cells[0]);
+      }).join("\n");
+      return `${HUMAN_BEGIN}\n${sanitized.trim()}\n${HUMAN_END}`;
+    }
+    return renderHumanSection(parseHumanDecisions(humanBlock));
+  }
+  return renderHumanSection([]);
+}
+
 export function buildRadarMarkdown({ report, refInfo, humanBlock, top = DEFAULT_TOP, generatedAt = new Date().toISOString() }) {
   const humanEntries = parseHumanDecisions(humanBlock);
   const humanByFile = new Map(humanEntries.map((entry) => [entry.file, entry]));
@@ -435,7 +449,7 @@ ${renderPriorities(humanEntries, radarByFile)}
 
 ## E. Décisions établies
 
-${renderHumanSection(humanEntries)}
+${renderPreservedHumanSection(humanBlock)}
 
 ## F. Radar brut à auditer
 
