@@ -118,6 +118,69 @@ describe("/api/actions/:actionId/formalities", () => {
     expect(supabaseMock).not.toHaveBeenCalled();
   });
 
+  it("rejects an empty action id before loading any action", async () => {
+    const { GET } = await import("./route");
+
+    const response = await GET(formalitiesRequest(), {
+      params: Promise.resolve({ actionId: "   " }),
+    });
+
+    expect(response.status).toBe(422);
+    expect(validationErrorMock).toHaveBeenCalledWith({
+      actionId: ["Identifiant d'action manquant."],
+    });
+    expect(loadActionMock).not.toHaveBeenCalled();
+  });
+
+  it("returns not found without resolving permissions for a missing action", async () => {
+    loadActionMock.mockResolvedValueOnce(null);
+    const { GET } = await import("./route");
+
+    const response = await GET(formalitiesRequest(), {
+      params: Promise.resolve({ actionId: "action-42" }),
+    });
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "Action introuvable." });
+    expect(loadOrganizersMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses a GET when the authenticated user cannot manage the action", async () => {
+    authMock.mockResolvedValueOnce({ ok: true, userId: "other-user" });
+    identityMock.mockResolvedValueOnce({
+      userId: "other-user",
+      role: "benevole",
+      activeRole: "benevole",
+    });
+    loadOrganizersMock.mockResolvedValueOnce([]);
+    const { GET } = await import("./route");
+
+    const response = await GET(formalitiesRequest(), {
+      params: Promise.resolve({ actionId: "action-42" }),
+    });
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({
+      error: "Vous n'êtes pas autorisé à consulter les formalités de cette action.",
+    });
+    expect(resolveActionTerritoryMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the GET contract limited to pre-actions", async () => {
+    loadActionMock.mockResolvedValueOnce({ ...action(), action_phase: "post_action_complete" });
+    const { GET } = await import("./route");
+
+    const response = await GET(formalitiesRequest(), {
+      params: Promise.resolve({ actionId: "action-42" }),
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "Les formalités locales concernent uniquement une pré-action.",
+    });
+    expect(resolveActionTerritoryMock).not.toHaveBeenCalled();
+  });
+
   it("returns an explainable unknown qualification when the manager is not known", async () => {
     const { GET } = await import("./route");
     const response = await GET(formalitiesRequest(), {
@@ -167,6 +230,98 @@ describe("/api/actions/:actionId/formalities", () => {
         }),
       }),
     );
+  });
+
+  it("rejects malformed JSON before loading the action", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      formalitiesRequest({ method: "PATCH", body: "{" }),
+      { params: Promise.resolve({ actionId: "action-42" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "Invalid JSON payload" });
+    expect(loadActionMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an empty patch before loading the action", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      formalitiesRequest({ method: "PATCH", body: JSON.stringify({}) }),
+      { params: Promise.resolve({ actionId: "action-42" }) },
+    );
+
+    expect(response.status).toBe(422);
+    expect(loadActionMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a transition for a formality absent from the current qualification", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      formalitiesRequest({
+        method: "PATCH",
+        body: JSON.stringify({
+          transition: { formalityId: "not-currently-applicable", kind: "mark_prepared" },
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-42" }) },
+    );
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      error: { transition: ["La formalité sélectionnée n'est plus applicable à ces faits."] },
+    });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("returns a server error when persisting the qualification fails", async () => {
+    update = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ error: new Error("database failure") }),
+        }),
+      }),
+    });
+    from = vi.fn().mockReturnValue({ update });
+    supabaseMock.mockReturnValue({ from });
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      formalitiesRequest({
+        method: "PATCH",
+        body: JSON.stringify({ facts: formalitiesFacts() }),
+      }),
+      { params: Promise.resolve({ actionId: "action-42" }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "server" });
+    expect(handleApiErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "database failure" }),
+      "PATCH /api/actions/:actionId/formalities",
+    );
+  });
+
+  it("keeps PATCH limited to pre-actions", async () => {
+    loadActionMock.mockResolvedValueOnce({ ...action(), action_phase: "post_action_complete" });
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      formalitiesRequest({
+        method: "PATCH",
+        body: JSON.stringify({ facts: formalitiesFacts() }),
+      }),
+      { params: Promise.resolve({ actionId: "action-42" }) },
+    );
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "Les formalités locales concernent uniquement une pré-action.",
+    });
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("ignores a forged Paris territory while preserving other declarative facts", async () => {
