@@ -14,8 +14,8 @@ const climateComponents = readFileSync(
   new URL("./climate-components.tsx", import.meta.url),
   "utf8",
 );
-const methodologyClient = readFileSync(
-  new URL("../methodologie-page-client.tsx", import.meta.url),
+const methodologyTechnicalImpact = readFileSync(
+  new URL("../methodologie-page-technical-impact.tsx", import.meta.url),
   "utf8",
 );
 const methodologyVisual = readFileSync(
@@ -63,7 +63,7 @@ describe("Climate public content contract", () => {
 
   it("links the water-impact CTA to the existing methodology anchor", () => {
     expect(climateImplementation).toContain('href="/methodologie#impact-services"');
-    expect(methodologyClient).toContain('sectionId="impact-services"');
+    expect(methodologyTechnicalImpact).toContain('sectionId="impact-services"');
     expect(methodologyVisual).toContain("id={sectionId}");
   });
 });
