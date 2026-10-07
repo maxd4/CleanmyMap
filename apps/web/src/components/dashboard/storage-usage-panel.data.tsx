@@ -26,6 +26,51 @@ import {
 import { cn } from "@/lib/utils";
 import { BreakdownTable } from "./storage-usage-panel.async";
 
+type StorageGrowthItem = StorageUsageResponse["comparison"]["bucketGrowth"][number];
+
+function StorageGrowthList({
+  title,
+  items,
+}: {
+  title: string;
+  items: StorageGrowthItem[];
+}) {
+  return (
+    <div>
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
+        {title}
+      </p>
+      <ul className="mt-2 space-y-2">
+        {items.slice(0, 4).map((item) => (
+          <li key={item.key} className="rounded-2xl border border-white/5 bg-slate-950/40 px-3 py-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  {item.label}
+                </p>
+                <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
+                  {formatStorageBytes(item.previousBytes)} →{" "}
+                  {formatStorageBytes(item.currentBytes)}
+                </p>
+              </div>
+              <p
+                className={cn(
+                  "text-sm font-black",
+                  item.deltaBytes >= 0
+                    ? "text-rose-300"
+                    : "text-emerald-300",
+                )}
+              >
+                {formatDelta(item.deltaBytes)}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function StorageUsageDataView({
   data,
   current,
@@ -310,71 +355,14 @@ export function StorageUsageDataView({
                   </div>
 
                   <div className="space-y-3">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
-                        Buckets en croissance
-                      </p>
-                      <ul className="mt-2 space-y-2">
-                        {comparisonData.bucketGrowth.slice(0, 4).map((item) => (
-                          <li key={item.key} className="rounded-2xl border border-white/5 bg-slate-950/40 px-3 py-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-semibold text-white">
-                                  {item.label}
-                                </p>
-                                <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
-                                  {formatStorageBytes(item.previousBytes)} →{" "}
-                                  {formatStorageBytes(item.currentBytes)}
-                                </p>
-                              </div>
-                              <p
-                                className={cn(
-                                  "text-sm font-black",
-                                  item.deltaBytes >= 0
-                                    ? "text-rose-300"
-                                    : "text-emerald-300",
-                                )}
-                              >
-                                {formatDelta(item.deltaBytes)}
-                              </p>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
-                        Types en croissance
-                      </p>
-                      <ul className="mt-2 space-y-2">
-                        {comparisonData.extensionGrowth.slice(0, 4).map((item) => (
-                          <li key={item.key} className="rounded-2xl border border-white/5 bg-slate-950/40 px-3 py-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-semibold text-white">
-                                  {item.label}
-                                </p>
-                                <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
-                                  {formatStorageBytes(item.previousBytes)} →{" "}
-                                  {formatStorageBytes(item.currentBytes)}
-                                </p>
-                              </div>
-                              <p
-                                className={cn(
-                                  "text-sm font-black",
-                                  item.deltaBytes >= 0
-                                    ? "text-rose-300"
-                                    : "text-emerald-300",
-                                )}
-                              >
-                                {formatDelta(item.deltaBytes)}
-                              </p>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    <StorageGrowthList
+                      title="Buckets en croissance"
+                      items={comparisonData.bucketGrowth}
+                    />
+                    <StorageGrowthList
+                      title="Types en croissance"
+                      items={comparisonData.extensionGrowth}
+                    />
                   </div>
                 </div>
               ) : (

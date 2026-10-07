@@ -1171,22 +1171,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "a5d68fb3d2c39586",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/account/account-evolution-status-link.tsx:31-43 ; symboles: isPending, setIsPending, useState, pendingInitially et components/account/account-identity-chip.tsx:55-67 ; symboles: useEffect, isMounted, void, fetch reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/account/account-evolution-status-link.tsx:31-43 et apps/web/src/components/account/account-identity-chip.tsx:55-67 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "dc7bf8fd8f0c8c78",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT components/account/account-identity-chip.tsx:176-194 ; symboles: button, type, role, menuitemradio et components/account/account-identity-chip.tsx:230-248 ; symboles: button, type, role, menuitemradio restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "apps/web/src/components/account/account-identity-chip.tsx:176-194 et apps/web/src/components/account/account-identity-chip.tsx:230-248 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "d2ba81b427142cb2",
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre components/actions/action-declaration/sections/harvest-megots-section.tsx:198-208 ; symboles: formatKg, megotsCurrentPerVolunteer, span, className et components/actions/action-declaration/sections/harvest-waste-section.tsx:161-171 ; symboles: formatKg, wasteCurrentPerVolunteer, span, className reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
@@ -1287,14 +1271,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT components/admin/promotion-requests-panel.tsx:277-285 ; symboles: className, flex, wrap, button et components/admin/promotion-requests-panel.tsx:296-304 ; symboles: button, type, disabled, actionState restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
       "evidence": "apps/web/src/components/admin/promotion-requests-panel.tsx:277-285 et apps/web/src/components/admin/promotion-requests-panel.tsx:296-304 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "9afb308807950310",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT components/dashboard/storage-usage-panel.data.tsx:318-344 ; symboles: comparisonData, bucketGrowth, slice, item et components/dashboard/storage-usage-panel.data.tsx:351-377 ; symboles: comparisonData, extensionGrowth, slice, item restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "apps/web/src/components/dashboard/storage-usage-panel.data.tsx:318-344 et apps/web/src/components/dashboard/storage-usage-panel.data.tsx:351-377 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
       "reviewedRef": "a2e9fe42d04a6710e48d08334153b9eb4a5c76af"
     },
     {
