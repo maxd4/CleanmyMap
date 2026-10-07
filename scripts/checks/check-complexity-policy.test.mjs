@@ -6,6 +6,7 @@ import {
   acquireImprovement,
   baselineKey,
   classifyComplexityCategory,
+  getComplexityTarget,
   classifyFileKind,
   compareLegacyValue,
   deriveFunctionIdentity,
@@ -22,6 +23,8 @@ import { evaluateMetrics, parseChangedDiffText, resolveChangedFrom } from "./che
 import { classifyFileKind as classifyTopHeavyFileKind } from "./top-heavy-measurement.mjs";
 
 test("complexity target blocks new code at 15 for domain and 20 for runtime", () => {
+  assert.equal(getComplexityTarget("complexity", "métier/domain pur"), 15);
+  assert.equal(getComplexityTarget("complexity", "runtime/services/orchestration"), 20);
   assert.equal(evaluateNewMetric("complexity", "métier/domain pur", 15).status, "PASS");
   assert.equal(evaluateNewMetric("complexity", "métier/domain pur", 16).status, "FAIL");
   assert.equal(evaluateNewMetric("complexity", "runtime/services/orchestration", 20).status, "PASS");

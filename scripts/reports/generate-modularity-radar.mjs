@@ -26,6 +26,7 @@ import {
   isAboveReview,
   isExcludedGeneratedRow,
 } from "../checks/top-heavy-policy.mjs";
+import { getComplexityTarget } from "../checks/complexity-policy.mjs";
 import { getRadarGroups } from "./analyze-heavy-files.mjs";
 
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -34,6 +35,7 @@ const SCAN_ROOTS = ["apps/web/src"];
 const HUMAN_BEGIN = "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->";
 const HUMAN_END = "<!-- RADAR:HUMAN_DECISIONS:END -->";
 const DEFAULT_TOP = 25;
+const QUALITY_AUDITS = Object.freeze(["dead-code", "duplication", "top-heavy", "complexity", "cycles"]);
 const SIGNAL_STATES = new Set(["NONE", "PRESENT", "NOT_APPLICABLE", "NOT_MEASURED"]);
 const HUMAN_FIELDS = Object.freeze([
   "RESPONSIBILITIES",
@@ -66,57 +68,141 @@ export function resolveRadarRef(ref, root = REPOSITORY_ROOT) {
   };
 }
 
-function parseJson(view, file) {
-  if (!view.isFile(file)) return null;
-  try {
-    return JSON.parse(view.readText(file));
-  } catch {
-    return null;
-  }
-}
-
 function signal(state, detail = "") {
   if (!SIGNAL_STATES.has(state)) throw new Error(`Signal inconnu: ${state}`);
   return { state, detail };
 }
 
-function countByFile(entries, pathForEntry) {
-  const counts = new Map();
-  for (const entry of entries ?? []) {
-    const file = pathForEntry(entry);
-    if (file) counts.set(file, (counts.get(file) ?? 0) + 1);
-  }
-  return counts;
+function normalizeFile(file) {
+  const normalized = String(file ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
+  if (normalized.startsWith("apps/web/") || normalized.startsWith("apps/mobile/") || normalized.startsWith("scripts/")) return normalized;
+  if (normalized.startsWith("src/")) return `apps/web/${normalized}`;
+  return normalized;
 }
 
-export function loadCorrelationSignals(view) {
-  const complexity = parseJson(view, "scripts/checks/complexity-baseline.json");
-  const complexityByFile = countByFile(complexity?.entries, (entry) => {
-    if (typeof entry?.path !== "string") return null;
-    return entry.path.startsWith("src/") ? `apps/web/${entry.path}` : entry.path;
-  });
+function addFileCount(counts, file, amount = 1) {
+  const normalized = normalizeFile(file);
+  if (normalized) counts.set(normalized, (counts.get(normalized) ?? 0) + amount);
+}
 
-  const deadCode = parseJson(view, "scripts/checks/dead-code-baseline.json");
-  const deadCodeByFile = countByFile(deadCode?.findings, (entry) => entry?.file);
+function createEmptyCorrelationSignals(detail) {
+  return {
+    measured: false,
+    detail,
+    complexityByFile: new Map(),
+    deadCodeByFile: new Map(),
+    cycleByFile: new Map(),
+    duplicationByFile: new Map(),
+  };
+}
 
-  return { complexity, complexityByFile, deadCode, deadCodeByFile };
+function createMeasuredCorrelationSignals({ complexityByFile = new Map(), deadCodeByFile = new Map(), cycleByFile = new Map(), duplicationByFile = new Map() }) {
+  return {
+    measured: true,
+    detail: "mesures actuelles des cinq gates quality:...",
+    complexityByFile,
+    deadCodeByFile,
+    cycleByFile,
+    duplicationByFile,
+  };
+}
+
+function occurrenceFiles(occurrence) {
+  return [occurrence?.occurrenceA?.path, occurrence?.occurrenceB?.path]
+    .map(normalizeFile)
+    .filter(Boolean);
+}
+
+function addCurrentComplexityFindings(metrics, complexityByFile) {
+  for (const metric of metrics ?? []) {
+    const target = getComplexityTarget(metric.metric, metric.category);
+    if (target !== null && metric.value > target) addFileCount(complexityByFile, metric.path);
+  }
+}
+
+function addDeadCodeFindings(comparison, deadCodeByFile) {
+  for (const finding of [
+    ...(comparison?.newFindings ?? []),
+    ...(comparison?.historicalActionableFindings ?? []),
+  ]) addFileCount(deadCodeByFile, finding.file);
+}
+
+function addCycleFindings(cycleObjects, cycleByFile) {
+  for (const cycle of cycleObjects ?? []) {
+    for (const file of cycle?.files ?? []) addFileCount(cycleByFile, file);
+  }
+}
+
+function addDuplicationFindings(results, justificationReport, duplicationByFile) {
+  const qualified = new Set([
+    ...(justificationReport?.classifications?.KEEP_INTENTIONAL ?? []),
+    ...(justificationReport?.classifications?.NO_ACTION_NOISE ?? []),
+  ]);
+  for (const result of results ?? []) {
+    for (const occurrence of result.occurrences ?? []) {
+      const identity = `${result.scopeName}:${occurrence.fingerprint}`;
+      if (qualified.has(identity)) continue;
+      for (const file of occurrenceFiles(occurrence)) addFileCount(duplicationByFile, file);
+    }
+  }
+}
+
+export function createCorrelationSignalsFromAuditResults(resultsByAudit) {
+  const complexity = resultsByAudit?.complexity;
+  const deadCode = resultsByAudit?.["dead-code"];
+  const duplication = resultsByAudit?.duplication;
+  const cycles = resultsByAudit?.cycles;
+  const topHeavy = resultsByAudit?.["top-heavy"];
+  if (!topHeavy || !complexity?.result || !deadCode?.comparison || !Array.isArray(duplication?.results) || !Array.isArray(cycles?.cycleObjects)) {
+    return createEmptyCorrelationSignals("les rapports courants des cinq gates ne sont pas disponibles");
+  }
+
+  const complexityByFile = new Map();
+  const deadCodeByFile = new Map();
+  const cycleByFile = new Map();
+  const duplicationByFile = new Map();
+  addCurrentComplexityFindings(complexity.metrics, complexityByFile);
+  addDeadCodeFindings(deadCode.comparison, deadCodeByFile);
+  addCycleFindings(cycles.cycleObjects, cycleByFile);
+  addDuplicationFindings(duplication.results, duplication.justificationReport, duplicationByFile);
+  return createMeasuredCorrelationSignals({ complexityByFile, deadCodeByFile, cycleByFile, duplicationByFile });
+}
+
+function readFilesystemJson(root, relativePath) {
+  try {
+    return JSON.parse(readFileSync(path.join(root, ...relativePath.split("/")), "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+export function loadQualityAuditArtifacts({ root = REPOSITORY_ROOT, auditedSha }) {
+  if (!/^[0-9a-f]{40}$/i.test(auditedSha ?? "")) return createEmptyCorrelationSignals("RADAR_REF incomplet");
+  const reports = {};
+  for (const audit of QUALITY_AUDITS) {
+    const base = `artifacts/quality-audits/${auditedSha}/${audit}`;
+    const manifest = readFilesystemJson(root, `${base}/manifest.json`);
+    const report = readFilesystemJson(root, `${base}/report.json`);
+    if (!manifest || manifest.schemaVersion !== 1 || manifest.audit !== audit || manifest.auditedHead !== auditedSha || manifest.originMain !== auditedSha || manifest.baselineStable !== true || manifest.worktreeClean !== true || !report) {
+      return createEmptyCorrelationSignals(`preuve quality incomplète ou non stable pour ${auditedSha}`);
+    }
+    reports[audit] = report;
+  }
+  return createCorrelationSignalsFromAuditResults(reports);
 }
 
 function signalForRow(row, correlations) {
-  const complexityCount = correlations.complexityByFile.get(row.file) ?? 0;
-  const deadCodeCount = correlations.deadCodeByFile.get(row.file) ?? 0;
+  const signalFromMap = (map) => correlations.measured
+    ? signal(map.has(row.file) ? "PRESENT" : "NONE", map.has(row.file) ? `${map.get(row.file)} finding(s) actuel(s)` : "")
+    : signal("NOT_MEASURED", correlations.detail);
   return {
     size: isAboveReview(row)
       ? signal("PRESENT", isAboveHard(row) ? "HARD" : "REVIEW")
       : signal("NONE"),
-    complexity: signal("NOT_MEASURED", complexityCount > 0
-      ? `baseline historique: ${complexityCount} entrée(s); quality:complexity non exécuté sur RADAR_REF`
-      : "quality:complexity non exécuté sur RADAR_REF"),
-    cycle: signal("NOT_MEASURED", "quality:cycles/GitNexus non exécuté par la génération normale"),
-    deadCode: signal("NOT_MEASURED", deadCodeCount > 0
-      ? `baseline historique: ${deadCodeCount} entrée(s); Knip non exécuté sur RADAR_REF`
-      : "Knip non exécuté sur RADAR_REF"),
-    duplication: signal("NOT_MEASURED", "jscpd expose ici une métrique globale, sans attribution fiable au fichier"),
+    complexity: signalFromMap(correlations.complexityByFile, "complexity"),
+    cycle: signalFromMap(correlations.cycleByFile, "cycle"),
+    deadCode: signalFromMap(correlations.deadCodeByFile, "dead-code"),
+    duplication: signalFromMap(correlations.duplicationByFile, "duplication"),
     testability: signal("NOT_MEASURED", "quality:coverage n'est pas attribuable ici au fichier candidat"),
   };
 }
@@ -257,7 +343,7 @@ function renderPriorities(entries, radarByFile) {
 }
 
 function countStructuralSignals(row) {
-  return [row.signals.complexity, row.signals.cycle, row.signals.deadCode, row.signals.duplication, row.signals.testability]
+  return [row.signals.size, row.signals.complexity, row.signals.cycle, row.signals.deadCode, row.signals.duplication, row.signals.testability]
     .filter((item) => item.state === "PRESENT").length;
 }
 
@@ -394,18 +480,18 @@ automatiquement de la taille.
 - SIZE_SIGNAL vient de quality:top-heavy, de classifyFileKind() et
   de la baseline heavy-files ; ce contrôle reste la source de vérité de la
   taille et de ses plafonds.
-- COMPLEXITY_SIGNAL et DEAD_CODE_SIGNAL ne déduisent jamais un finding
-  actuel d'une baseline historique. En génération normale, une entrée de
-  baseline produit au plus NOT_MEASURED — baseline historique: N entrée(s) ;
-  quality:complexity ou Knip reste propriétaire de la mesure actuelle.
-- Une génération deep n'est pas activée par défaut : les contrôles existants
-  n'exposent pas tous une mesure attribuable à une ref exacte sans rejouer leur
-  environnement complet. Le radar préfère donc NOT_MEASURED à une attribution
-  locale inventée.
-- cycles/GitNexus, jscpd et coverage sont NOT_MEASURED dans la génération
-  normale lorsqu'une sortie actuelle attribuable au fichier n'est pas déjà
-  disponible. Le radar ne lance pas ces analyses coûteuses et ne convertit
-  pas leurs métriques globales en findings locaux.
+- En génération standalone, COMPLEXITY_SIGNAL, DEAD_CODE_SIGNAL,
+  DUPLICATION_SIGNAL et CYCLE_SIGNAL proviennent uniquement des cinq rapports
+  quality-audits dont les manifests prouvent le même RADAR_REF, une baseline
+  stable et un worktree propre. Une preuve absente, invalide ou d'une autre ref
+  produit NOT_MEASURED ; aucune baseline historique n'est projetée.
+- COMPLEXITY_SIGNAL utilise les mesures de fonctions actuelles et le target de
+  la policy complexity, y compris lorsque le ratchet legacy autorise encore la
+  valeur. Les findings KEEP_JUSTIFIED, KEEP_INTENTIONAL et NO_ACTION_NOISE
+  restent visibles dans les rapports bruts mais ne sont pas des signaux
+  structurels actionnables.
+- L'orchestration audit:quality all construit cette corrélation après les
+  cinq gates à partir de leurs résultats en mémoire, sans relancer d'outil.
 - Un candidat cumule plusieurs signaux seulement lorsque plusieurs états
   PRESENT sont réellement attribués ; ce compteur n'est pas un score et ne
   remplace aucune gate.
@@ -430,13 +516,13 @@ export function createRadarReport({ root = REPOSITORY_ROOT, ref }) {
   const refInfo = resolveRadarRef(ref, root);
   const view = createRepositoryView({ root, ref: refInfo.resolved });
   const rows = collectMeasuredRows(view, SCAN_ROOTS);
-  const correlations = loadCorrelationSignals(view);
+  const correlations = loadQualityAuditArtifacts({ root, auditedSha: refInfo.resolved });
   const radarRows = createRadarRows(rows, correlations).map((row) => ({
     ...row,
     ref: refInfo.resolved,
   }));
   const groups = getRadarGroups(rows);
-  return { refInfo, view, rows, radarRows, ...groups };
+  return { refInfo, view, rows, radarRows, correlations, ...groups };
 }
 
 function getOption(args, name) {

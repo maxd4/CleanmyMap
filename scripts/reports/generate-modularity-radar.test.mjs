@@ -1,12 +1,16 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 
 import {
   buildRadarMarkdown,
   compactSignalText,
+  createCorrelationSignalsFromAuditResults,
   createRadarRows,
   extractHumanDecisions,
-  loadCorrelationSignals,
+  loadQualityAuditArtifacts,
   parseHumanDecisions,
   parseDecisionSummary,
   resolveRadarRef,
@@ -120,29 +124,101 @@ test("fresh measurements replace stale machine fields while human rationale surv
 test("historical baseline entries never become current PRESENT signals", () => {
   const candidate = row("apps/web/src/example.ts");
   const [result] = createRadarRows([candidate], {
+    measured: false,
+    detail: "preuve absente",
     complexityByFile: new Map([[candidate.file, 1]]),
     deadCodeByFile: new Map([[candidate.file, 2]]),
+    cycleByFile: new Map(),
+    duplicationByFile: new Map(),
   });
   assert.equal(result.signals.complexity.state, "NOT_MEASURED");
-  assert.match(result.signals.complexity.detail, /baseline historique: 1 entrée/);
   assert.equal(result.signals.deadCode.state, "NOT_MEASURED");
-  assert.match(result.signals.deadCode.detail, /baseline historique: 2 entrée/);
 });
 
-test("an IMPROVED complexity baseline entry is still only historical context", () => {
-  const view = {
-    isFile: () => true,
-    readText(file) {
-      if (file.includes("complexity-baseline")) {
-        return JSON.stringify({ entries: [{ path: "src/example.ts", status: "IMPROVED" }] });
-      }
-      return JSON.stringify({ findings: [] });
-    },
+function auditResults(overrides = {}) {
+  return {
+    "top-heavy": { rows: [] },
+    complexity: { metrics: [], result: { failures: [], reviews: [], improvements: [], stale: [] } },
+    "dead-code": { comparison: { newFindings: [], historicalActionableFindings: [], keepJustifiedFindings: [] } },
+    duplication: { results: [], justificationReport: { classifications: { KEEP_INTENTIONAL: [], NO_ACTION_NOISE: [] } } },
+    cycles: { cycleObjects: [] },
+    ...overrides,
   };
-  const correlations = loadCorrelationSignals(view);
-  const [result] = createRadarRows([row("apps/web/src/example.ts")], correlations);
-  assert.equal(result.signals.complexity.state, "NOT_MEASURED");
-  assert.doesNotMatch(result.signals.complexity.detail, /PRESENT|finding/);
+}
+
+test("size alone remains PRESENT while complementary measured gates remain NONE", () => {
+  const [result] = createRadarRows([row("apps/web/src/example.ts")], createCorrelationSignalsFromAuditResults(auditResults()));
+  assert.equal(result.signals.size.state, "PRESENT");
+  assert.equal(result.signals.complexity.state, "NONE");
+  assert.equal(result.signals.deadCode.state, "NONE");
+  assert.equal(result.signals.duplication.state, "NONE");
+  assert.equal(result.signals.cycle.state, "NONE");
+});
+
+test("legacy complexity above the canonical target is correlated with a size REVIEW", () => {
+  const candidate = row("apps/web/src/example.ts");
+  const correlations = createCorrelationSignalsFromAuditResults(auditResults({
+    complexity: {
+      metrics: [{ metric: "complexity", path: candidate.file, category: "React/JSX", value: 23 }],
+      result: { failures: [], reviews: [], improvements: [], stale: [] },
+    },
+  }));
+  const [result] = createRadarRows([candidate], correlations);
+  assert.equal(result.signals.size.state, "PRESENT");
+  assert.equal(result.signals.complexity.state, "PRESENT");
+});
+
+test("dead-code excludes KEEP_JUSTIFIED and attributes current actionable findings", () => {
+  const file = "apps/web/src/actionable.ts";
+  const kept = { file: "apps/web/src/kept.ts" };
+  const correlations = createCorrelationSignalsFromAuditResults(auditResults({
+    "dead-code": { comparison: { newFindings: [{ file }], historicalActionableFindings: [], keepJustifiedFindings: [kept] } },
+  }));
+  assert.equal(correlations.deadCodeByFile.has(file), true);
+  assert.equal(correlations.deadCodeByFile.has(kept.file), false);
+});
+
+test("duplication excludes qualified fingerprints and attributes new occurrences", () => {
+  const qualified = { scope: "runtime", fingerprint: "aaaaaaaaaaaaaaaa", occurrenceA: { path: "apps/web/src/kept.ts" }, occurrenceB: { path: "apps/web/src/other.ts" } };
+  const fresh = { scope: "runtime", fingerprint: "bbbbbbbbbbbbbbbb", occurrenceA: { path: "apps/web/src/new.ts" }, occurrenceB: { path: "apps/web/src/other.ts" } };
+  const correlations = createCorrelationSignalsFromAuditResults(auditResults({
+    duplication: {
+      results: [{ scopeName: "runtime", occurrences: [qualified, fresh] }],
+      justificationReport: { classifications: { KEEP_INTENTIONAL: ["runtime:aaaaaaaaaaaaaaaa"], NO_ACTION_NOISE: [] } },
+    },
+  }));
+  assert.equal(correlations.duplicationByFile.has("apps/web/src/kept.ts"), false);
+  assert.equal(correlations.duplicationByFile.has("apps/web/src/new.ts"), true);
+});
+
+test("cycles are attributed to every current participant", () => {
+  const correlations = createCorrelationSignalsFromAuditResults(auditResults({
+    cycles: { cycleObjects: [{ files: ["apps/web/src/a.ts", "apps/web/src/b.ts", "apps/web/src/a.ts"] }] },
+  }));
+  assert.equal(correlations.cycleByFile.has("apps/web/src/a.ts"), true);
+  assert.equal(correlations.cycleByFile.has("apps/web/src/b.ts"), true);
+});
+
+test("missing or other-SHA artifact proof remains NOT_MEASURED", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-radar-proof-"));
+  try {
+    const missing = loadQualityAuditArtifacts({ root, auditedSha: currentRef });
+    assert.equal(missing.measured, false);
+    assert.equal(createRadarRows([row("apps/web/src/example.ts")], missing)[0].signals.complexity.state, "NOT_MEASURED");
+
+    const otherRef = "b".repeat(40);
+    const base = path.join(root, "artifacts", "quality-audits", otherRef);
+    for (const audit of ["dead-code", "duplication", "top-heavy", "complexity", "cycles"]) {
+      const target = path.join(base, audit);
+      fs.mkdirSync(target, { recursive: true });
+      fs.writeFileSync(path.join(target, "manifest.json"), JSON.stringify({ schemaVersion: 1, audit, auditedHead: otherRef, originMain: otherRef, baselineStable: true, worktreeClean: true }));
+      fs.writeFileSync(path.join(target, "report.json"), JSON.stringify(auditResults()[audit]));
+    }
+    const rejected = loadQualityAuditArtifacts({ root, auditedSha: currentRef });
+    assert.equal(rejected.measured, false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("NONE and NOT_MEASURED stay distinct and only PRESENT signals count", () => {
@@ -158,6 +234,7 @@ test("NONE and NOT_MEASURED stay distinct and only PRESENT signals count", () =>
   assert.equal(compactSignalText(none.signals), "signaux complémentaires non mesurés");
 
   const onePresent = row("apps/web/src/one.ts");
+  onePresent.signals.complexity = { state: "NONE", detail: "no current finding" };
   onePresent.signals.deadCode = { state: "NOT_MEASURED", detail: "historical only" };
   const twoPresent = row("apps/web/src/two.ts");
   twoPresent.signals.deadCode = { state: "PRESENT", detail: "current finding" };

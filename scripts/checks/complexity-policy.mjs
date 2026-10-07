@@ -20,6 +20,16 @@ const FUNCTION_LENGTH_THRESHOLDS = Object.freeze({
   "routes API": Object.freeze({ target: 100, blockAbove: 150 }),
 });
 
+export function getComplexityTarget(metric, category) {
+  const thresholds = metric === "complexity"
+    ? COMPLEXITY_THRESHOLDS[category]
+    : metric === "functionLength"
+      ? FUNCTION_LENGTH_THRESHOLDS[category]
+      : undefined;
+  if (!thresholds) return null;
+  return thresholds.target ?? thresholds.reviewAbove ?? null;
+}
+
 const COMPLEXITY_POLICY_FINGERPRINT = createHash("sha256")
   .update(JSON.stringify({
     version: COMPLEXITY_POLICY_VERSION,
@@ -184,9 +194,7 @@ export function evaluateBaselinedMetric(
   changed,
   { changedLines = 0, functionStartLine = 1, functionEndLine = functionStartLine } = {},
 ) {
-  const target = metric === "complexity"
-    ? COMPLEXITY_THRESHOLDS[category]?.target
-    : FUNCTION_LENGTH_THRESHOLDS[category]?.target;
+  const target = getComplexityTarget(metric, category);
   const substantiallyChanged = isSubstantiallyChanged({
     changedLines,
     functionStartLine,
