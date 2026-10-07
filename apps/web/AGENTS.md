@@ -18,7 +18,7 @@ des scripts sont définies dans les `AGENTS.md` de ces sous-arbres.
 
 ## Stack web
 
-- Next.js `16.3.6` avec App Router ;
+- Next.js `16.3.8` avec App Router ;
 - React `19.2.8` ;
 - TypeScript `^7`.
 
