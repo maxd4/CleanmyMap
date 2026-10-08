@@ -33,6 +33,61 @@ Une route Vercel n'est pas un proxy Supabase par défaut. Un accès direct
 navigateur → Supabase n'est acceptable que si le contrat RLS et la surface de
 données le permettent réellement.
 
+## Soutenabilité préventive des plans gratuits
+
+CleanMyMap doit pouvoir rester sur les offres gratuites de Vercel, Supabase et
+des services associés aussi longtemps que raisonnablement possible, y compris
+lorsque le nombre de bénévoles, d'actions et de consultations augmente
+fortement. La maîtrise des quotas est une contrainte d'architecture et de
+produit dès la conception, et non une correction à effectuer après saturation.
+
+Une réévaluation est prioritaire lorsqu'au moins l'un des cas suivants apparaît :
+
+- une page, une fonctionnalité, une ressource, une tâche automatique ou une
+  famille de requêtes représente plus de 50 % de la consommation observée d'un
+  quota, même si le quota gratuit global reste largement disponible ;
+- une seule fonctionnalité consomme ou risque de consommer une part majeure de
+  l'allocation gratuite totale ;
+- une projection de croissance crédible montre qu'une fonctionnalité pourrait
+  saturer un quota avec l'arrivée de nouveaux bénévoles, même si son usage
+  actuel est faible ;
+- une consommation importante existe sans utilisateurs actifs : robots,
+  monitoring, polling, déploiements, revalidations ou traitements de fond.
+
+Lorsqu'un de ces cas est observé, l'analyse doit :
+
+1. identifier la cause réelle en mesurant les appels, octets, exécutions, coûts
+   unitaires et mécanismes de cache, en distinguant les mesures observées, les
+   estimations et les hypothèses ;
+2. anticiper la croissance avec plusieurs scénarios explicites d'utilisation,
+   sans supposer que tous les coûts évoluent linéairement avec le nombre
+   d'utilisateurs ;
+3. comparer des alternatives fortes : statification, suppression de calculs
+   répétés, chargement à la demande, cache, traitements différés, réduction de
+   fréquence, simplification fonctionnelle, changement d'architecture ou de
+   fournisseur ;
+4. autoriser, lorsque c'est nécessaire, un arbitrage produit explicite : une
+   fonctionnalité coûteuse peut être simplifiée, restreinte, remplacée,
+   différée ou retirée si sa valeur ne justifie pas son coût prévisible ; une
+   modification durable de son contrat fonctionnel exige toutefois une
+   décision produit explicite ;
+5. privilégier l'économie structurelle, c'est-à-dire une réduction du coût par
+   action ou par utilisateur, plutôt qu'une optimisation cosmétique des
+   compteurs actuels ;
+6. valider les scénarios de charge, les audits de quotas et les risques de
+   croissance avant l'ouverture à un public plus large, sans attendre la
+   saturation.
+
+La sécurité, les droits d'accès, l'intégrité des données et les obligations
+légales restent prioritaires. Une économie de quota ne justifie jamais leur
+affaiblissement.
+
+Une fonctionnalité dominante en consommation n'est donc pas automatiquement
+supprimée, mais elle ne peut pas être conservée sans examen explicite de sa
+nécessité, de ses alternatives et de sa soutenabilité à plus grande échelle.
+L'absence d'utilisateurs actifs ou le faible pourcentage actuel du quota
+gratuit ne constitue jamais, à lui seul, une preuve de soutenabilité.
+
 ## Dimensions de coût à surveiller
 
 Les libellés Vercel utilisés par le dépôt incluent notamment :
