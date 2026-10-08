@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import useSWR from "swr";
 import type {
   HomeCommunityActivityResponse,
   HomeCommunityActivitySummary,
 } from "@/lib/accueil/data";
 import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import {
   fetchHomepageActivity,
   HOMEPAGE_ACTIVITY_ENDPOINT,
@@ -29,9 +30,18 @@ export function HomeCommunityCredibility({
   errorMessage,
 }: HomeCommunityCredibilityProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const { ref: visibilityRef, isInView: isNearViewport } =
+    useInViewOnce<HTMLElement>({ rootMargin: "260px 0px" });
+  const setSectionRefs = useCallback(
+    (node: HTMLElement | null) => {
+      sectionRef.current = node;
+      visibilityRef.current = node;
+    },
+    [visibilityRef],
+  );
   const { data: refreshedActivity, error: refreshError } =
     useSWR<HomeCommunityActivityResponse>(
-      HOMEPAGE_ACTIVITY_ENDPOINT,
+      isNearViewport ? HOMEPAGE_ACTIVITY_ENDPOINT : null,
       fetchHomepageActivity,
       {
         fallbackData: { activity, errorMessage: errorMessage ?? null },
@@ -57,7 +67,7 @@ export function HomeCommunityCredibility({
 
   return (
     <section
-      ref={sectionRef}
+      ref={setSectionRefs}
       data-homepage-section="community-credibility"
       className="relative isolate overflow-hidden py-8 sm:py-10 lg:py-12"
     >

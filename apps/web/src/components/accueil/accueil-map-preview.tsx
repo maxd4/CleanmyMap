@@ -1,5 +1,6 @@
 "use client";
 
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
 import {
   ACTIONS_MAP_PUBLIC_FEED_DEFAULTS,
@@ -7,13 +8,17 @@ import {
 } from "@/components/actions/map/filters/actions-map-filters.utils";
 
 export function HomeMapPreview() {
+  const { ref: mapPreviewRef, isInView: isNearViewport } =
+    useInViewOnce<HTMLDivElement>({ rootMargin: "260px 0px" });
   const edgeMask =
     "linear-gradient(to right, transparent 0%, #000 3.5%, #000 96.5%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 3.5%, #000 96.5%, transparent 100%)";
 
   return (
     <div
+      ref={mapPreviewRef}
       className="relative isolate h-[20rem] min-w-0 overflow-hidden sm:h-[24rem] lg:h-[31rem]"
       aria-label="Aperçu de la carte des actions"
+      aria-busy={!isNearViewport}
     >
       <div
         className="absolute inset-0"
@@ -24,19 +29,21 @@ export function HomeMapPreview() {
           WebkitMaskComposite: "source-in",
         }}
       >
-        <ActionsMapFeed
-          days={getActionsMapCurrentYearDays()}
-          dateScope={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.dateScope}
-          statusFilter={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.statusFilter}
-          impactFilter={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.impactFilter}
-          qualityMin={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.qualityMin}
-          presentation="homepage-preview"
-          tone="emerald"
-          showIntro={false}
-          showStoriesCarousel={false}
-          compact
-          limit={120}
-        />
+        {isNearViewport ? (
+          <ActionsMapFeed
+            days={getActionsMapCurrentYearDays()}
+            dateScope={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.dateScope}
+            statusFilter={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.statusFilter}
+            impactFilter={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.impactFilter}
+            qualityMin={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.qualityMin}
+            presentation="homepage-preview"
+            tone="emerald"
+            showIntro={false}
+            showStoriesCarousel={false}
+            compact
+            limit={120}
+          />
+        ) : null}
       </div>
     </div>
   );

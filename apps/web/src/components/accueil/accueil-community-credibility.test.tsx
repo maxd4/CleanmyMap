@@ -2,8 +2,27 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HomeCommunityActivitySummary } from "@/lib/accueil/data";
 
+const state = vi.hoisted(() => ({
+  isNearViewport: false,
+  swrCalls: [] as unknown[][],
+}));
+
 vi.mock("@/lib/animations/use-gsap-reveal", () => ({
   useGsapReveal: () => undefined,
+}));
+
+vi.mock("@/components/ui/use-in-view-once", () => ({
+  useInViewOnce: () => ({
+    ref: { current: null },
+    isInView: state.isNearViewport,
+  }),
+}));
+
+vi.mock("swr", () => ({
+  default: (...args: unknown[]) => {
+    state.swrCalls.push(args);
+    return { data: undefined, error: undefined };
+  },
 }));
 
 import {
@@ -48,6 +67,8 @@ const ACTIVITY_RESPONSE = {
 };
 
 afterEach(() => {
+  state.isNearViewport = false;
+  state.swrCalls = [];
   vi.unstubAllGlobals();
 });
 
@@ -175,5 +196,16 @@ describe("HomeCommunityCredibility action hierarchy", () => {
     expect(markup).toContain("La Brigade Verte a réuni 10 bénévoles le 14/04/2026");
     expect(markup).not.toContain("Unexpected end of JSON input");
     expect(markup).not.toContain("Supabase");
+  });
+
+  it("defers the activity revalidation until the section approaches the viewport", () => {
+    renderToStaticMarkup(<HomeCommunityCredibility activity={EMPTY_ACTIVITY} />);
+
+    expect(state.swrCalls[0]?.[0]).toBeNull();
+
+    state.isNearViewport = true;
+    renderToStaticMarkup(<HomeCommunityCredibility activity={EMPTY_ACTIVITY} />);
+
+    expect(state.swrCalls[1]?.[0]).toBe("/api/homepage/activity");
   });
 });

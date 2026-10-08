@@ -33,6 +33,20 @@ Une route Vercel n'est pas un proxy Supabase par défaut. Un accès direct
 navigateur → Supabase n'est acceptable que si le contrat RLS et la surface de
 données le permettent réellement.
 
+## Dimensions de coût à surveiller
+
+Les libellés Vercel utilisés par le dépôt incluent notamment :
+
+- `Invocations` : exécutions de fonctions et rendus serveur ;
+- `Edge Requests` : requêtes traitées par l'edge ;
+- `Fast Origin Transfer` : données transférées entre edge et origine ;
+- `Fluid Memory` : mémoire provisionnée pendant l'exécution ;
+- `Fast Data Transfer` : octets servis au visiteur.
+
+Les noms et modalités commerciales peuvent évoluer chez le fournisseur. Les
+scripts et dashboards courants restent l'autorité pour les mesures actuelles ;
+ce document ne fige aucun plafond numérique.
+
 ## Soutenabilité préventive des plans gratuits
 
 CleanMyMap doit pouvoir rester sur les offres gratuites de Vercel, Supabase et
@@ -87,20 +101,6 @@ supprimée, mais elle ne peut pas être conservée sans examen explicite de sa
 nécessité, de ses alternatives et de sa soutenabilité à plus grande échelle.
 L'absence d'utilisateurs actifs ou le faible pourcentage actuel du quota
 gratuit ne constitue jamais, à lui seul, une preuve de soutenabilité.
-
-## Dimensions de coût à surveiller
-
-Les libellés Vercel utilisés par le dépôt incluent notamment :
-
-- `Invocations` : exécutions de fonctions et rendus serveur ;
-- `Edge Requests` : requêtes traitées par l'edge ;
-- `Fast Origin Transfer` : données transférées entre edge et origine ;
-- `Fluid Memory` : mémoire provisionnée pendant l'exécution ;
-- `Fast Data Transfer` : octets servis au visiteur.
-
-Les noms et modalités commerciales peuvent évoluer chez le fournisseur. Les
-scripts et dashboards courants restent l'autorité pour les mesures actuelles ;
-ce document ne fige aucun plafond numérique.
 
 ## Arbre de décision
 
@@ -449,6 +449,11 @@ Avant publication d'une fonctionnalité qui touche la plateforme :
 - [ ] l'AuthZ reste portée par le contrat de sécurité ;
 - [ ] la taille du bundle est revue si une dépendance lourde est ajoutée ;
 - [ ] le quota ou coût susceptible d'augmenter est identifiable ;
+- [ ] toute surface représentant plus de 50 % d'un quota observé, ou risquant
+      de devenir dominante selon un scénario crédible, fait l'objet d'un examen
+      explicite de concentration et de soutenabilité ;
+- [ ] les coûts fixes sans utilisateurs actifs et plusieurs scénarios de montée
+      en charge ont été examinés avant d'élargir l'audience ;
 - [ ] les tests et audits pertinents sont exécutés.
 
 ## Audits et commandes

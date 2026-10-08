@@ -14,8 +14,13 @@ export function useInViewOnce<TElement extends Element>(
   const [isInView, setIsInView] = useState(false);
 
   useEffect(() => {
-    if (isInView || typeof IntersectionObserver === "undefined") {
+    if (isInView) {
       return undefined;
+    }
+
+    if (typeof IntersectionObserver === "undefined") {
+      const fallbackTimer = window.setTimeout(() => setIsInView(true), 0);
+      return () => window.clearTimeout(fallbackTimer);
     }
 
     const observer = new IntersectionObserver(
