@@ -194,7 +194,7 @@ export function buildPublicationSummary(
       value: preparationDetails,
     },
     { label: "Météo", value: formatWeather(source) },
-    { label: "Formalité Paris", value: logisticsNotes },
+    { label: "Informations logistiques", value: logisticsNotes },
     { label: "Bénévoles recherchés", value: volunteers },
     { label: "Consignes principales", value: safetyInstructions },
   ];

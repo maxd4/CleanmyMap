@@ -2,12 +2,15 @@ import type { ActionPreparationData } from "../../../lib/actions/types";
 import { resolveFinalActionGeometry } from "../../../lib/actions/geometry/final-geometry";
 import { resolveActionRouteTopology } from "../../../lib/actions/route-topology";
 import { resolveRouteTargetDistance } from "../../../lib/actions/route-target-distance";
-import { formatWasteGuidanceLines } from "../../../lib/waste";
 import type { FinalActionGeometry } from "../../../lib/actions/geometry/final-geometry";
 import type { FormState } from "./model";
 import { buildVolunteerParticipationFromForm } from "./payload-measurements";
 import { toOptionalNumber } from "./payload-numbers";
 import { normalizeVolunteerParticipation } from "../../../lib/actions/volunteer-participation";
+import {
+  buildPreparationGuidanceFields,
+  stripHistoricalDerivedGuidance,
+} from "./payload-preparation-guidance";
 
 function buildPreparationRouteFields(
   form: FormState,
@@ -74,31 +77,6 @@ function buildPreparationGeometryFields(
   };
 }
 
-function buildPreparationGuidanceFields(
-  form: FormState,
-  guidance: ReturnType<typeof formatWasteGuidanceLines>,
-) {
-  const supplement = (manual: string, derived: string, title: string) => {
-    const value = manual.trim();
-    if (!derived) return value || undefined;
-    const block = `${title}:\n${derived}`;
-    return value ? `${value}\n\n${block}` : block;
-  };
-  return {
-    accessibility: form.accessibility.trim() || undefined,
-    safetyInstructions: supplement(
-      form.safetyInstructions,
-      [guidance.toAvoid, guidance.toReport].filter(Boolean).join("\n"),
-      "Consignes dérivées du référentiel",
-    ),
-    recommendedMaterials: supplement(
-      form.recommendedMaterials,
-      guidance.toPrepare,
-      "Matériel dérivé du référentiel",
-    ),
-  };
-}
-
 function buildPreparationParticipationFields(
   form: FormState,
   volunteerParticipationInput: ReturnType<typeof buildVolunteerParticipationFromForm>,
@@ -119,7 +97,6 @@ function buildPreparationParticipationFields(
 
 function buildPreparationContentFields(
   form: FormState,
-  guidance: ReturnType<typeof formatWasteGuidanceLines>,
 ) {
   return {
     actionTitle: form.actionTitle.trim() || undefined,
@@ -130,7 +107,7 @@ function buildPreparationContentFields(
     ...(form.plannedObjective ? { plannedObjective: form.plannedObjective } : {}),
     ...(form.placeType ? { placeType: form.placeType } : {}),
     ...(form.estimatedDifficulty ? { estimatedDifficulty: form.estimatedDifficulty } : {}),
-    ...buildPreparationGuidanceFields(form, guidance),
+    ...buildPreparationGuidanceFields(form),
     participantMessage: form.participantMessage.trim() || undefined,
     logisticsNotes: form.logisticsNotes.trim() || undefined,
     checklistBeforeDeparture: form.checklistBeforeDeparture.trim() || undefined,
@@ -141,7 +118,6 @@ function resolvePreparationContext(
   form: FormState,
   finalGeometry: FinalActionGeometry | null,
 ) {
-  const wasteCategories = form.wasteCategories ?? [];
   const routeTopology = resolveActionRouteTopology({
     topology: form.routeTopology,
     arrivalLocationLabel: form.arrivalLocationLabel,
@@ -149,7 +125,6 @@ function resolvePreparationContext(
   });
   const volunteerParticipationInput = buildVolunteerParticipationFromForm(form);
   const volunteerParticipation = normalizeVolunteerParticipation(volunteerParticipationInput);
-  const guidance = formatWasteGuidanceLines(wasteCategories);
   const targetSource: "derived" | "manual" = form.routeTargetDistanceKmManuallySet ? "manual" : "derived";
   const resolvedTarget = resolveRouteTargetDistance({
     durationMinutes: form.durationMinutes,
@@ -160,7 +135,6 @@ function resolvePreparationContext(
     routeTopology,
     volunteerParticipationInput,
     volunteerParticipation,
-    guidance,
     resolvedTarget,
     finalGeometry,
   };
@@ -175,7 +149,7 @@ export function buildPreparationDataFromForm(
 ): ActionPreparationData {
   const context = resolvePreparationContext(form, finalGeometry);
   return {
-    ...buildPreparationContentFields(form, context.guidance),
+    ...buildPreparationContentFields(form),
     ...buildPreparationRouteFields(
       form,
       context.routeTopology,
@@ -237,8 +211,16 @@ function buildHydratedDescriptionFields(
     placeType: preparationData.placeType ?? form.placeType,
     estimatedDifficulty: preparationData.estimatedDifficulty ?? form.estimatedDifficulty,
     accessibility: preparationData.accessibility ?? form.accessibility,
-    safetyInstructions: preparationData.safetyInstructions ?? form.safetyInstructions,
-    recommendedMaterials: preparationData.recommendedMaterials ?? form.recommendedMaterials,
+    safetyInstructions:
+      stripHistoricalDerivedGuidance(
+        preparationData.safetyInstructions,
+        "safetyInstructions",
+      ) ?? form.safetyInstructions,
+    recommendedMaterials:
+      stripHistoricalDerivedGuidance(
+        preparationData.recommendedMaterials,
+        "recommendedMaterials",
+      ) ?? form.recommendedMaterials,
     participantMessage: preparationData.participantMessage ?? form.participantMessage,
     logisticsNotes: preparationData.logisticsNotes ?? form.logisticsNotes,
     checklistBeforeDeparture: preparationData.checklistBeforeDeparture ?? form.checklistBeforeDeparture,

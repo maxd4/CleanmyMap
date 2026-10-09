@@ -152,7 +152,7 @@ describe("buildPublicationSummary", () => {
       { label: "Itinéraire", value: "Place de la mairie → Quai de Seine · 2 groupe(s)" },
       { label: "Date / heure", value: "2026-09-20 · 09:00 · à 11:00" },
       { label: "Météo", value: "Prévision disponible · 18 °C" },
-      { label: "Formalité Paris", value: "Vérifier l'autorisation du lieu." },
+      { label: "Informations logistiques", value: "Vérifier l'autorisation du lieu." },
       { label: "Bénévoles recherchés", value: "8" },
       { label: "Consignes principales", value: "Rester en groupe." },
     ]));
@@ -168,6 +168,6 @@ describe("buildPublicationSummary", () => {
     });
 
     expect(summary.find((item) => item.label === "Météo")?.value).toContain("Non disponible");
-    expect(summary.find((item) => item.label === "Formalité Paris")?.value).toContain("à vérifier");
+    expect(summary.find((item) => item.label === "Informations logistiques")?.value).toContain("à vérifier");
   });
 });

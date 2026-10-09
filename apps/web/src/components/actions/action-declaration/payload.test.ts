@@ -12,6 +12,7 @@ import {
  toRequiredNumber,
 } from"./payload";
 import { deriveRouteTargetDistanceKm } from "@/lib/actions/route-target-distance";
+import { formatWasteGuidanceLines } from "@/lib/waste";
 import type { ActionDrawing } from"@/lib/actions/types";
 
 function buildBaseForm() {
@@ -497,7 +498,7 @@ describe("action declaration payload helpers", () => {
     expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
   });
 
-  it("stores canonical waste expectations and supplements manual preparation notes", () => {
+  it("stores canonical waste expectations without persisting derived guidance", () => {
     const form = buildBaseForm();
     form.wasteCategories = ["broken_glass", "sharps"];
     form.safetyInstructions = "Consigne organisateur";
@@ -514,9 +515,60 @@ describe("action declaration payload helpers", () => {
     });
 
     expect(payload.preparationData?.expectedWasteCategories).toEqual(["broken_glass", "sharps"]);
-    expect(payload.preparationData?.safetyInstructions).toContain("Consigne organisateur");
-    expect(payload.preparationData?.safetyInstructions).toContain("Balisser");
-    expect(payload.preparationData?.recommendedMaterials).toContain("Gants anti-coupure");
+    expect(payload.preparationData?.safetyInstructions).toBe("Consigne organisateur");
+    expect(payload.preparationData?.recommendedMaterials).toBe("Sacs renforcés");
+    expect(payload.preparationData?.safetyInstructions).not.toContain("dérivées du référentiel");
+    expect(payload.preparationData?.recommendedMaterials).not.toContain("dérivé du référentiel");
+  });
+
+  it("rehydrates historical derived blocks into editable organizer text once", () => {
+    const form = buildBaseForm();
+    const guidance = formatWasteGuidanceLines(["broken_glass"]);
+    const hydrated = applyPreparationDataToForm(form, {
+      expectedWasteCategories: ["broken_glass"],
+      safetyInstructions: `Consigne organisateur\n\nConsignes dérivées du référentiel:\n${guidance.toAvoid}\n${guidance.toReport}`,
+      recommendedMaterials: `Sacs renforcés\n\nMatériel dérivé du référentiel:\n${guidance.toPrepare}`,
+    });
+
+    expect(hydrated.safetyInstructions).toBe("Consigne organisateur");
+    expect(hydrated.recommendedMaterials).toBe("Sacs renforcés");
+
+    const saved = buildPreparationDataFromForm(hydrated);
+    const savedAgain = buildPreparationDataFromForm(
+      applyPreparationDataToForm(hydrated, saved),
+    );
+    expect(saved.safetyInstructions).toBe("Consigne organisateur");
+    expect(saved.recommendedMaterials).toBe("Sacs renforcés");
+    expect(savedAgain.safetyInstructions).toBe("Consigne organisateur");
+    expect(savedAgain.recommendedMaterials).toBe("Sacs renforcés");
+  });
+
+  it("updates derived guidance after category changes without erasing manual text", () => {
+    const form = buildBaseForm();
+    const guidance = formatWasteGuidanceLines(["broken_glass"]);
+    const hydrated = applyPreparationDataToForm(form, {
+      expectedWasteCategories: ["sharps"],
+      safetyInstructions: `Consigne organisateur\n\nConsignes dérivées du référentiel:\n${guidance.toAvoid}\n${guidance.toReport}`,
+      recommendedMaterials: `Sacs renforcés\n\nMatériel dérivé du référentiel:\n${guidance.toPrepare}`,
+    });
+
+    expect(hydrated.wasteCategories).toEqual(["sharps"]);
+    expect(hydrated.safetyInstructions).toBe("Consigne organisateur");
+    expect(hydrated.recommendedMaterials).toBe("Sacs renforcés");
+    expect(buildPreparationDataFromForm(hydrated).expectedWasteCategories).toEqual(["sharps"]);
+  });
+
+  it("preserves ambiguous historical text and omits empty recommendations", () => {
+    const form = createInitialFormState("Alice");
+    const hydrated = applyPreparationDataToForm(form, {
+      safetyInstructions: "Consigne organisateur\n\nConsignes dérivées du référentiel:\n- Consigne écrite par l'organisateur",
+      recommendedMaterials: "Matériel libre",
+    });
+
+    expect(hydrated.safetyInstructions).toContain("Consignes dérivées du référentiel");
+    expect(buildPreparationDataFromForm(hydrated).safetyInstructions).toContain("Consignes dérivées du référentiel");
+    expect(buildPreparationDataFromForm(form).safetyInstructions).toBeUndefined();
+    expect(buildPreparationDataFromForm(form).recommendedMaterials).toBeUndefined();
   });
 
   it("keeps the record type in the payload", () => {
