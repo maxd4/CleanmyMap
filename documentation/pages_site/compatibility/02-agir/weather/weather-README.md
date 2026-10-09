@@ -40,6 +40,12 @@ Ils ne constituent ni une prescription officielle, ni une règle réglementaire
 ou médicale : l’utilisateur décide selon le terrain, l’équipe et les
 conditions réelles.
 
+La météo courante reste distincte du jour prévisionnel sélectionné. Les
+fenêtres et recommandations visibles utilisent uniquement les heures locales
+`Europe/Paris` correspondant à ce jour et à ce lieu vérifié ; une localisation
+non géocodée ou une date hors horizon conserve un état explicite sans météo de
+fallback.
+
 ## Contrat runtime
 
 - `ActionCreationShell` rend `WeatherSection` dans le panneau `meteo`.

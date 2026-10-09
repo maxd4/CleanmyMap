@@ -1,11 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildFallbackWeatherLocation,
   canApplyAutomaticWeatherLocation,
   canApplyDraftWeatherLocation,
   shouldApplyDraftForecastDate,
 } from "./use-weather-data";
 
 describe("weather context precedence", () => {
+  it("marks a failed geocoding fallback as unresolved instead of a weather locale", () => {
+    const fallback = buildFallbackWeatherLocation("Lieu inconnu", "Lieu du pré-formulaire");
+
+    expect(fallback).toMatchObject({
+      label: "Lieu inconnu",
+      resolution: "unresolved",
+    });
+  });
+
   it("gives a pre-form location priority over stored, profile and geolocation sources", () => {
     expect(
       canApplyAutomaticWeatherLocation({

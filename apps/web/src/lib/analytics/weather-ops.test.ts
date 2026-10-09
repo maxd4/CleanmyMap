@@ -20,6 +20,17 @@ describe("evaluateWeatherRisk", () => {
     expect(risk.operationalLimitMinutes).toBeNull();
   });
 
+  it.each([
+    [{ temperature: 20, rain: 0.8, wind: 10 }, "orange"],
+    [{ temperature: 20, rain: 3, wind: 10 }, "rouge"],
+    [{ temperature: 20, rain: 0, wind: 30 }, "orange"],
+    [{ temperature: 20, rain: 0, wind: 45 }, "rouge"],
+    [{ temperature: 28, rain: 0, wind: 10 }, "orange"],
+    [{ temperature: 33, rain: 0, wind: 10 }, "rouge"],
+  ] as const)("keeps the established threshold at %j", (input, expected) => {
+    expect(evaluateWeatherRisk(input).level).toBe(expected);
+  });
+
   it("aggregates a window deterministically without inventing missing metrics", () => {
     const risk = evaluateWeatherWindowRisk([
       { time: "2026-04-10T10:00:00Z", temperature: 20, rain: 0, wind: 10 },
@@ -52,5 +63,26 @@ describe("buildInterventionWindows", () => {
     const windows = buildInterventionWindows(hourly);
     expect(windows.recommended.length).toBeGreaterThan(0);
     expect(windows.avoid.length).toBeGreaterThan(0);
+  });
+
+  it("does not create a window across a local day boundary or a missing hour", () => {
+    const windows = buildInterventionWindows([
+      { time: "2026-10-25T23:00", temperature: 20, rain: 0, wind: 10 },
+      { time: "2026-10-26T00:00", temperature: 20, rain: 0, wind: 10 },
+      { time: "2026-10-26T02:00", temperature: 20, rain: 0, wind: 10 },
+      { time: "2026-10-26T04:00", temperature: 20, rain: 0, wind: 10 },
+    ]);
+
+    expect(windows.recommended).toEqual([]);
+    expect(windows.avoid).toEqual([]);
+  });
+
+  it("accepts an ordered repeated local hour during the autumn DST transition", () => {
+    const windows = buildInterventionWindows([
+      { time: "2026-10-25T02:00", temperature: 20, rain: 0, wind: 10 },
+      { time: "2026-10-25T02:00", temperature: 20, rain: 0, wind: 10 },
+    ]);
+
+    expect(windows.recommended).toHaveLength(1);
   });
 });

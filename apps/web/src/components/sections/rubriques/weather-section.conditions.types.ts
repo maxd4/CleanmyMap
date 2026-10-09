@@ -5,7 +5,10 @@ type WeatherData = ReturnType<typeof useWeatherData>;
 export type ConditionsPanelProps = Pick<
   WeatherData,
   | "currentRisk"
+  | "selectedForecastRisk"
   | "forecastDays"
+  | "forecastSelectionStatus"
+  | "locationResolution"
   | "locationQuery"
   | "locationSuggestions"
   | "locationSuggestionsError"
@@ -27,6 +30,7 @@ export type WeatherLocationAndStateProps = Pick<
   | "isLocationSuggestionsLoading"
   | "selectLocation"
   | "selectedLocation"
+  | "locationResolution"
   | "setLocationQuery"
   | "weatherStatus"
   | "fr"
@@ -35,7 +39,9 @@ export type WeatherLocationAndStateProps = Pick<
 export type WeatherForecastProps = Pick<
   ConditionsPanelProps,
   | "currentRisk"
+  | "selectedForecastRisk"
   | "forecastDays"
+  | "forecastSelectionStatus"
   | "selectedForecastDayIndex"
   | "setSelectedForecastDayIndex"
   | "weatherStatus"
@@ -43,4 +49,4 @@ export type WeatherForecastProps = Pick<
   | "fr"
 >;
 
-export type WeatherSafetyGuidanceProps = Pick<ConditionsPanelProps, "currentRisk" | "weatherStatus" | "fr">;
+export type WeatherSafetyGuidanceProps = Pick<ConditionsPanelProps, "selectedForecastRisk" | "weatherStatus" | "fr">;

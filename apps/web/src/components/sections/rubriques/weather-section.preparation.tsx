@@ -14,11 +14,11 @@ import {
   PreparationKitCard,
   PreparationKitSectionView,
 } from "./weather-section.preparation-kit";
-import { getDurationLabel } from "./weather-section.helpers";
+import { getDurationLabel, getVigilanceLabel } from "./weather-section.helpers";
 import { CmmButton } from "@/components/ui/cmm-button";
 
 export function PreparationPanel({
-  currentRisk,
+  selectedForecastRisk,
   weatherStatus,
   selectedLocationLabel,
   selectedLocationSubtitle,
@@ -29,7 +29,7 @@ export function PreparationPanel({
   onPreparationValidated,
   initialPreparationValidated = false,
 }: {
-  currentRisk: ReturnType<typeof useWeatherData>["currentRisk"];
+  selectedForecastRisk: ReturnType<typeof useWeatherData>["selectedForecastRisk"];
   weatherStatus: ReturnType<typeof useWeatherData>["weatherStatus"];
   selectedLocationLabel: string;
   selectedLocationSubtitle: string;
@@ -40,25 +40,14 @@ export function PreparationPanel({
   onPreparationValidated?: (validated: boolean) => void;
   initialPreparationValidated?: boolean;
 }) {
-  const isWeatherReady = weatherStatus === "ready" && currentRisk !== null;
-  const durationLabel = isWeatherReady
-    ? getDurationLabel(currentRisk.level)
+  const durationLabel = getDurationLabel(selectedForecastRisk, fr);
+  const forecastRiskLabel = selectedForecastRisk
+    ? getVigilanceLabel(selectedForecastRisk.level, fr)
     : fr
-      ? "1 h à 2 h · durée indicative"
-      : "1h to 2h · indicative duration";
-  const effortLabel = isWeatherReady
-    ? currentRisk.level === "rouge"
-      ? fr
-        ? "Fort"
-        : "High"
-      : fr
-        ? "Modéré"
-        : "Moderate"
-    : fr
-      ? "Modéré"
-      : "Moderate";
-  const gearPreview = isWeatherReady
-    ? currentRisk.equipment.slice(0, 2).join(" • ")
+      ? "Prévision indisponible"
+      : "Forecast unavailable";
+  const gearPreview = selectedForecastRisk
+    ? selectedForecastRisk.equipment.slice(0, 2).join(" • ")
       : packItems.slice(0, 2).join(" • ");
   const [checkedItems, setCheckedItems] = useState<Set<string>>(
     () => (initialPreparationValidated ? new Set(packItems) : new Set()),
@@ -75,7 +64,7 @@ export function PreparationPanel({
         selectedLocationLabel={selectedLocationLabel}
         selectedLocationSubtitle={selectedLocationSubtitle}
         packItems={packItems}
-        heroStats={buildPreparationHeroStats(fr, durationLabel, gearPreview, effortLabel)}
+        heroStats={buildPreparationHeroStats(fr, durationLabel, gearPreview, forecastRiskLabel)}
       />
       <PreparationGuide
         fr={fr}

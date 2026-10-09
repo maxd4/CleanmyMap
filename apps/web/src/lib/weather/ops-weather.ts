@@ -32,6 +32,26 @@ export type InterventionWindow = {
   reason: string;
 };
 
+function localTimeParts(value: string): { date: string; minutes: number } | null {
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/.exec(value);
+  if (!match) return null;
+  const hour = Number(match[2]);
+  const minute = Number(match[3]);
+  if (hour > 23 || minute > 59) return null;
+  return { date: match[1]!, minutes: hour * 60 + minute };
+}
+
+function areAdjacentLocalHours(start: string, end: string): boolean {
+  const startParts = localTimeParts(start);
+  const endParts = localTimeParts(end);
+  if (!startParts || !endParts || startParts.date !== endParts.date) return false;
+
+  // Open-Meteo returns local civil times for the requested Europe/Paris
+  // timezone. A repeated local hour can occur at the autumn DST transition;
+  // the ordered provider rows are still adjacent in that case.
+  return endParts.minutes === startParts.minutes || endParts.minutes - startParts.minutes === 60;
+}
+
 function maxLevel(levels: WeatherRiskLevel[]): WeatherRiskLevel {
   if (levels.includes("rouge")) {
     return "rouge";
@@ -136,7 +156,7 @@ export function evaluateWeatherRisk(input: {
 
   return {
     level,
-    reasons: reasons.length > 0 ? reasons : ["Conditions meteo stables"],
+    reasons: reasons.length > 0 ? reasons : ["Aucun seuil de vigilance dépassé"],
     equipment,
     constraints,
     operationalRule,
@@ -181,45 +201,44 @@ export function buildInterventionWindows(hourly: HourlyPoint[]): {
   recommended: InterventionWindow[];
   avoid: InterventionWindow[];
 } {
-  const next72h = hourly.slice(0, 72);
   const recommended: InterventionWindow[] = [];
   const avoid: InterventionWindow[] = [];
 
-  for (let i = 0; i <= next72h.length - 2; i += 2) {
-    const start = next72h[i];
-    const end = next72h[i + 1];
+  let i = 0;
+  while (i <= hourly.length - 2) {
+    const start = hourly[i];
+    const end = hourly[i + 1];
     if (!start || !end) {
+      i += 1;
       continue;
     }
-    const startRisk = evaluateWeatherRisk({
-      temperature: start.temperature,
-      rain: start.rain,
-      wind: start.wind,
-    });
-    const endRisk = evaluateWeatherRisk({
-      temperature: end.temperature,
-      rain: end.rain,
-      wind: end.wind,
-    });
-
-    const level = maxLevel([startRisk.level, endRisk.level]);
+    if (!areAdjacentLocalHours(start.time, end.time)) {
+      i += 1;
+      continue;
+    }
+    const windowRisk = evaluateWeatherWindowRisk([start, end]);
+    if (!windowRisk) {
+      i += 1;
+      continue;
+    }
     const window: InterventionWindow = {
       from: start.time,
       to: end.time,
-      level,
+      level: windowRisk.level,
       reason:
-        level === "rouge"
+        windowRisk.level === "rouge"
           ? "Risque meteo eleve"
-          : level === "orange"
+          : windowRisk.level === "orange"
             ? "Conditions prudentes"
             : "Fenetre favorable",
     };
 
-    if (level === "rouge") {
+    if (windowRisk.level === "rouge") {
       avoid.push(window);
     } else {
       recommended.push(window);
     }
+    i += 2;
   }
 
   return {

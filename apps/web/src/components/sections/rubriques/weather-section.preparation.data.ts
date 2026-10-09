@@ -4,7 +4,6 @@ import {
   Heart,
   Leaf,
   Lightbulb,
-  Mountain,
   Package,
   Recycle,
   ShieldCheck,
@@ -58,14 +57,14 @@ export function buildPreparationHeroStats(
   fr: boolean,
   durationLabel: string,
   gearPreview: string,
-  effortLabel: string,
+  forecastRiskLabel: string,
 ): PreparationHeroStat[] {
   return [
     {
       icon: CalendarDays,
       label: fr ? "Durée indicative" : "Indicative duration",
       value: durationLabel,
-      note: fr ? "1h à 2h selon le site" : "1h to 2h depending on the site",
+      note: fr ? "issue de la règle météo du créneau" : "from the slot's weather rule",
     },
     {
       icon: Package,
@@ -75,15 +74,9 @@ export function buildPreparationHeroStats(
     },
     {
       icon: Heart,
-      label: fr ? "Niveau d'effort" : "Effort level",
-      value: effortLabel,
-      note: fr ? "à ajuster selon l’équipe et le terrain" : "adjust to the team and terrain",
-    },
-    {
-      icon: Mountain,
-      label: fr ? "Accessibilité / terrain" : "Accessibility / terrain",
-      value: fr ? "Urbain ou naturel" : "Urban or natural",
-      note: fr ? "varié selon la zone" : "varies by area",
+      label: fr ? "Vigilance du créneau" : "Slot vigilance",
+      value: forecastRiskLabel,
+      note: fr ? "calculée depuis la prévision du jour choisi" : "calculated from the selected day's forecast",
     },
   ];
 }

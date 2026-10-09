@@ -69,7 +69,9 @@ export function WeatherSection({
           <motion.div variants={itemVariants}>
             <ConditionsPanel
               currentRisk={weather.currentRisk}
+              selectedForecastRisk={weather.selectedForecastRisk}
               weatherStatus={weather.weatherStatus}
+              locationResolution={weather.locationResolution}
               selectedLocation={weather.selectedLocation}
               locationQuery={weather.locationQuery}
               setLocationQuery={weather.setLocationQuery}
@@ -79,6 +81,7 @@ export function WeatherSection({
               selectLocation={weather.selectLocation}
               forecastDays={weather.forecastDays}
               selectedForecastDayIndex={weather.selectedForecastDayIndex}
+              forecastSelectionStatus={weather.forecastSelectionStatus}
               setSelectedForecastDayIndex={weather.setSelectedForecastDayIndex}
               windows={weather.windows}
               fr={fr}
@@ -87,7 +90,7 @@ export function WeatherSection({
 
           <motion.div variants={itemVariants}>
             <PreparationPanel
-              currentRisk={weather.currentRisk}
+              selectedForecastRisk={weather.selectedForecastRisk}
               weatherStatus={weather.weatherStatus}
               selectedLocationLabel={weather.selectedLocation.label}
               selectedLocationSubtitle={weather.selectedLocation.subtitle}

@@ -6,16 +6,25 @@ import {
   buildQuickActions,
   buildUsefulBlocks,
 } from "./weather-section.preparation.data";
-import { getDurationLabel, getReportLabel } from "./weather-section.helpers";
+import { getDurationLabel, getReportLabel, getWeatherStateCopy } from "./weather-section.helpers";
 import { evaluateWeatherRisk } from "@/lib/weather/ops-weather";
 
 describe("Weather content contract", () => {
   it.each(["vert", "orange", "rouge"] as const)(
     "describes %s duration as indicative rather than as a hard limit",
     (level) => {
-      const label = getDurationLabel(level);
+      const label = getDurationLabel(
+        evaluateWeatherRisk(
+          level === "rouge"
+            ? { temperature: 34, rain: 3.2, wind: 50 }
+            : level === "orange"
+              ? { temperature: 29, rain: 1, wind: 10 }
+              : { temperature: 20, rain: 0, wind: 10 },
+        ),
+        true,
+      );
 
-      expect(label).toContain("durée indicative");
+      expect(label.toLowerCase()).toContain("durée indicative");
       expect(label.toLowerCase()).not.toContain("max");
     },
   );
@@ -25,6 +34,18 @@ describe("Weather content contract", () => {
 
     expect(label).toContain("conditions");
     expect(label).not.toContain("report recommandé");
+  });
+
+  it("does not present fallback coordinates as the user's weather locale", () => {
+    const state = getWeatherStateCopy({
+      weatherStatus: "empty",
+      locationResolution: "unresolved",
+      selectedZoneLabel: "Lieu introuvable",
+      fr: true,
+    });
+
+    expect(state.title).toBe("Localisation à préciser");
+    expect(String(state.description)).toContain("géocodé");
   });
 
   it("does not turn risk calculations into mandatory prescriptions", () => {

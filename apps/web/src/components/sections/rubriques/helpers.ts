@@ -6,7 +6,6 @@ export function extractArrondissement(label: string): string {
  }
  return `${matched[1]}e`;
 }
-
 export function formatSigned(value: number, digits = 1): string {
  const fixed = value.toFixed(digits);
  return `${value >= 0 ?"+" :""}${fixed}`;
@@ -20,18 +19,5 @@ export function formatDateShort(value: string): string {
  return parsed.toLocaleDateString("fr-FR", {
  day:"2-digit",
  month:"2-digit",
- });
-}
-
-export function formatDateTimeShort(value: string): string {
- const parsed = new Date(value);
- if (Number.isNaN(parsed.getTime())) {
- return value;
- }
- return parsed.toLocaleString("fr-FR", {
- day:"2-digit",
- month:"2-digit",
- hour:"2-digit",
- minute:"2-digit",
  });
 }

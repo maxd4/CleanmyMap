@@ -3,10 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { useUser } from "@clerk/nextjs";
-import {
-  buildInterventionWindows,
-  evaluateWeatherRisk,
-} from "@/lib/weather/ops-weather";
 import { TERRITORY_CENTER } from "@/lib/geo/territory";
 import {
   getLocalGeoAddressSuggestions,
@@ -23,9 +19,15 @@ import {
   storeWeatherLocation,
 } from "./weather-location-storage";
 import { useWeatherLocationSuggestions } from "./use-weather-location-suggestions";
+import {
+  assessForecastDay,
+  evaluateCurrentWeatherRisk,
+  selectForecastDayIndex,
+} from "./weather-data.model";
 import type {
   WeatherDataStatus,
   WeatherLocation,
+  WeatherLocationResolution,
   WeatherLocationSuggestion,
   WeatherPoint,
 } from "./weather-types";
@@ -36,6 +38,7 @@ const DEFAULT_LOCATION: WeatherLocation = {
   latitude: TERRITORY_CENTER[0],
   longitude: TERRITORY_CENTER[1],
   importance: null,
+  resolution: "resolved",
 };
 
 type AddressSuggestionsResponse = {
@@ -86,13 +89,14 @@ export function shouldApplyDraftForecastDate({
   return draftActionDate.trim().length > 0 && !hasManualForecastDay && forecastDaysLength > 0;
 }
 
-function buildFallbackWeatherLocation(label: string, subtitle: string | null): WeatherLocation {
+export function buildFallbackWeatherLocation(label: string, subtitle: string | null): WeatherLocation {
   return {
     label: label.trim() || DEFAULT_LOCATION.label,
     subtitle: subtitle?.trim() || DEFAULT_LOCATION.subtitle,
     latitude: DEFAULT_LOCATION.latitude,
     longitude: DEFAULT_LOCATION.longitude,
     importance: null,
+    resolution: "unresolved",
   };
 }
 
@@ -103,7 +107,7 @@ async function resolveWeatherLocationFromLabel(
   const fallback = buildFallbackWeatherLocation(label, subtitle);
   const localSuggestion = getLocalGeoAddressSuggestions(label, 1)[0];
   if (localSuggestion) {
-    return localSuggestion;
+    return { ...localSuggestion, resolution: "resolved" };
   }
 
   try {
@@ -121,7 +125,7 @@ async function resolveWeatherLocationFromLabel(
       const body = (await response.json()) as AddressSuggestionsResponse;
       const suggestion = body.items[0];
       if (suggestion) {
-        return suggestion;
+        return { ...suggestion, resolution: "resolved" };
       }
     }
   } catch {
@@ -135,7 +139,11 @@ async function resolveWeatherLocationFromPreference(
   preference: NonNullable<ReturnType<typeof extractTerritoryLocationPreferenceFromMetadata>>,
 ): Promise<WeatherLocation> {
   if (preference.level === "country") {
-    return buildFallbackWeatherLocation(preference.label, preference.subtitle ?? "Vue nationale");
+    return {
+      ...DEFAULT_LOCATION,
+      label: preference.label,
+      subtitle: preference.subtitle ?? "Vue nationale",
+    };
   }
 
   return resolveWeatherLocationFromLabel(
@@ -159,7 +167,7 @@ function formatDayLabel(value: string): string {
 }
 
 function isDaytimeHour(time: string): boolean {
-  const hour = new Date(time).getHours();
+  const hour = Number(/^\d{4}-\d{2}-\d{2}T(\d{2})/.exec(time)?.[1] ?? Number.NaN);
   return hour >= 8 && hour < 22;
 }
 
@@ -167,20 +175,25 @@ export function useWeatherData(
   draftContext?: { locationLabel?: string; actionDate?: string },
 ) {
   const { isLoaded, user } = useUser();
-  const [selectedLocation, setSelectedLocation] = useState<WeatherLocation>(DEFAULT_LOCATION);
-  const [locationQuery, setLocationQuery] = useState(DEFAULT_LOCATION.label);
   const [selectedForecastDayIndex, setSelectedForecastDayIndex] = useState(0);
+  const [hasManualForecastDay, setHasManualForecastDay] = useState(false);
   const hasManualLocationRef = useRef(false);
-  const hasManualForecastDayRef = useRef(false);
   const hasResolvedInitialLocationRef = useRef(false);
   const draftLocationRef = useRef<string | null>(null);
   const draftLocationLabel = draftContext?.locationLabel?.trim() ?? "";
   const draftActionDate = draftContext?.actionDate?.trim() ?? "";
+  const initialLocation = draftLocationLabel
+    ? buildFallbackWeatherLocation(draftLocationLabel, "Lieu du pré-formulaire")
+    : DEFAULT_LOCATION;
+  const [selectedLocation, setSelectedLocation] = useState<WeatherLocation>(initialLocation);
+  const [locationQuery, setLocationQuery] = useState(draftLocationLabel || DEFAULT_LOCATION.label);
   const { locationSuggestions, locationSuggestionsError } =
     useWeatherLocationSuggestions(locationQuery);
 
   const { data, isLoading, error } = useSWR(
-    ["section-weather-location", selectedLocation.latitude, selectedLocation.longitude],
+    selectedLocation.resolution === "resolved"
+      ? ["section-weather-location", selectedLocation.latitude, selectedLocation.longitude]
+      : null,
     async () => {
       return fetchOpenMeteoForecast({
         latitude: selectedLocation.latitude,
@@ -222,13 +235,15 @@ export function useWeatherData(
     swrRecentViewOptions,
   );
 
-  const weatherStatus: WeatherDataStatus = error
-    ? "error"
-    : data?.hourly?.time?.length
-      ? "ready"
-      : isLoading
-        ? "loading"
-        : "empty";
+  const weatherStatus: WeatherDataStatus = selectedLocation.resolution === "unresolved"
+    ? "empty"
+    : error
+      ? "error"
+      : data?.hourly?.time?.length
+        ? "ready"
+        : isLoading
+          ? "loading"
+          : "empty";
 
   const weatherIssue: WeatherIssue =
     weatherStatus === "error"
@@ -239,7 +254,7 @@ export function useWeatherData(
 
   const selectLocation = (location: WeatherLocationSuggestion) => {
     hasManualLocationRef.current = true;
-    setSelectedLocation(location);
+    setSelectedLocation({ ...location, resolution: "resolved" });
     setLocationQuery(location.label);
     setSelectedForecastDayIndex(0);
     storeWeatherLocation({
@@ -249,7 +264,7 @@ export function useWeatherData(
   };
 
   const selectForecastDay = (index: number) => {
-    hasManualForecastDayRef.current = true;
+    setHasManualForecastDay(true);
     setSelectedForecastDayIndex(index);
   };
 
@@ -426,25 +441,13 @@ export function useWeatherData(
         ? data.hourly.time
             .map((time, index) => ({
               time,
-              temperature: Number(
-                data.hourly?.temperature_2m?.[index] ?? data.current?.temperature_2m ?? 0,
-              ),
-              rain: Number(data.hourly?.precipitation?.[index] ?? data.current?.precipitation ?? 0),
-              precipitationProbability: Number(
-                data.hourly?.precipitation_probability?.[index] ??
-                  data.current?.precipitation_probability ??
-                  0,
-              ),
-              wind: Number(
-                data.hourly?.wind_speed_10m?.[index] ?? data.current?.wind_speed_10m ?? 0,
-              ),
-              humidity: Number(
-                data.hourly?.relative_humidity_2m?.[index] ?? data.current?.relative_humidity_2m ?? 0,
-              ),
-              uv: Number(data.hourly?.uv_index?.[index] ?? data.current?.uv_index ?? 0),
-              weatherCode: Number(
-                data.hourly?.weather_code?.[index] ?? data.current?.weather_code ?? 0,
-              ),
+              temperature: data.hourly?.temperature_2m?.[index] ?? null,
+              rain: data.hourly?.precipitation?.[index] ?? null,
+              precipitationProbability: data.hourly?.precipitation_probability?.[index] ?? null,
+              wind: data.hourly?.wind_speed_10m?.[index] ?? null,
+              humidity: data.hourly?.relative_humidity_2m?.[index] ?? null,
+              uv: data.hourly?.uv_index?.[index] ?? null,
+              weatherCode: data.hourly?.weather_code?.[index] ?? null,
             }))
             .filter((point) => isDaytimeHour(point.time))
         : [],
@@ -460,12 +463,12 @@ export function useWeatherData(
               date: day,
               label: index === 0 ? "Aujourd’hui" : formatDayLabel(day),
               subtitle: formatDateShort(day),
-              min: Number(data.daily?.temperature_2m_min?.[index] ?? 0),
-              max: Number(data.daily?.temperature_2m_max?.[index] ?? 0),
-              rain: Number(data.daily?.precipitation_sum?.[index] ?? 0),
-              wind: Number(data.daily?.wind_speed_10m_max?.[index] ?? 0),
-              uv: Number(data.daily?.uv_index_max?.[index] ?? 0),
-              weatherCode: Number(data.daily?.weather_code?.[index] ?? hours[0]?.weatherCode ?? 0),
+              min: data.daily?.temperature_2m_min?.[index] ?? null,
+              max: data.daily?.temperature_2m_max?.[index] ?? null,
+              rain: data.daily?.precipitation_sum?.[index] ?? null,
+              wind: data.daily?.wind_speed_10m_max?.[index] ?? null,
+              uv: data.daily?.uv_index_max?.[index] ?? null,
+              weatherCode: data.daily?.weather_code?.[index] ?? hours.find((hour) => hour.weatherCode !== null)?.weatherCode ?? null,
               hours,
             };
           })
@@ -477,7 +480,7 @@ export function useWeatherData(
     if (
       !shouldApplyDraftForecastDate({
         draftActionDate,
-        hasManualForecastDay: hasManualForecastDayRef.current,
+        hasManualForecastDay,
         forecastDaysLength: forecastDays.length,
       })
     ) {
@@ -488,21 +491,28 @@ export function useWeatherData(
       // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronize optional pre-form date context
       setSelectedForecastDayIndex(matchingIndex);
     }
-  }, [draftActionDate, forecastDays]);
+  }, [draftActionDate, forecastDays, hasManualForecastDay]);
 
-  const currentRisk =
-    weatherStatus === "ready" && hourlyPoints[0]
-      ? evaluateWeatherRisk({
-          temperature: Number(data?.current?.temperature_2m ?? hourlyPoints[0].temperature),
-          rain: Number(data?.current?.precipitation ?? hourlyPoints[0].rain),
-          wind: Number(data?.current?.wind_speed_10m ?? hourlyPoints[0].wind),
-        })
-      : null;
-
-  const windows =
-    weatherStatus === "ready" && hourlyPoints.length > 0
-      ? buildInterventionWindows(hourlyPoints)
-      : { recommended: [], avoid: [] };
+  const currentRisk = weatherStatus === "ready"
+    ? evaluateCurrentWeatherRisk({
+        temperature: data?.current?.temperature_2m,
+        rain: data?.current?.precipitation,
+        wind: data?.current?.wind_speed_10m,
+      })
+    : null;
+  const activeForecastDayIndex = selectForecastDayIndex({
+    forecastDates: forecastDays.map((day) => day.date),
+    draftActionDate,
+    selectedIndex: selectedForecastDayIndex,
+    hasManualSelection: hasManualForecastDay,
+  });
+  const selectedForecastDay = forecastDays[activeForecastDayIndex] ?? null;
+  const forecastSelectionStatus: "selected" | "unavailable" = selectedForecastDay
+    ? "selected"
+    : "unavailable";
+  const selectedForecastAssessment = weatherStatus === "ready" && forecastSelectionStatus === "selected"
+    ? assessForecastDay(selectedForecastDay)
+    : { risk: null, windows: { recommended: [], avoid: [] } };
 
   return {
     selectedLocation,
@@ -514,15 +524,19 @@ export function useWeatherData(
     locationSuggestionsError,
     selectLocation,
     forecastDays,
-    selectedForecastDayIndex,
+    selectedForecastDayIndex: activeForecastDayIndex,
     setSelectedForecastDayIndex: selectForecastDay,
     data,
     isLoading,
     error,
     weatherStatus,
     weatherIssue,
+    locationResolution: selectedLocation.resolution as WeatherLocationResolution,
     hourlyPoints,
-    windows,
+    selectedForecastDay,
+    forecastSelectionStatus,
+    windows: selectedForecastAssessment.windows,
     currentRisk,
+    selectedForecastRisk: selectedForecastAssessment.risk,
   };
 }

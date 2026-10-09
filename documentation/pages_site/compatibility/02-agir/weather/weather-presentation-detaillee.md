@@ -52,11 +52,17 @@ Le composant de recherche :
 
 Une fois la localisation définie, la page affiche :
 
-- la météo courante ;
+- la météo courante, séparée de l'évaluation prévisionnelle ;
 - les prévisions sur 7 jours ;
-- les heures utiles de la journée ;
-- les créneaux favorables selon les données ;
+- les heures utiles du jour sélectionné ;
+- les créneaux favorables calculés uniquement depuis les heures du jour et du lieu sélectionnés ;
 - les signaux de vigilance.
+
+La sélection d'une date du pré-formulaire ne réutilise jamais le risque météo
+courant. Les recommandations de préparation, les fenêtres et la durée
+indicative proviennent de la même sélection horaire locale `Europe/Paris` et
+ne traversent pas artificiellement minuit. Une date hors de l'horizon
+Open-Meteo conserve l'état `Prévision indisponible`.
 
 ### 3. Préparation
 
@@ -87,6 +93,10 @@ Le runtime agrège :
 - la préférence utilisateur ;
 - la géolocalisation navigateur quand elle est autorisée.
 
+Une saisie conservée sans géocodage vérifié reste affichée comme texte, mais
+aucune prévision calculée sur les coordonnées nationales par défaut ne lui est
+attribuée. L'interface expose alors `Localisation à préciser`.
+
 ## États
 
 ### `loading`
@@ -104,6 +114,10 @@ La récupération météo a échoué pour la localisation choisie.
 ### `ready`
 
 Les prévisions et les repères indicatifs sont disponibles.
+
+Les cartes ne déduisent pas le relief, l'état du sol, l'accessibilité ou un
+niveau d'effort réel depuis la météo. Ces éléments doivent être vérifiés ou
+décrits séparément sur le terrain.
 
 ## Notes d'audit
 
