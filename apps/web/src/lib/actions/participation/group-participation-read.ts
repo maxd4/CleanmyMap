@@ -150,6 +150,7 @@ export async function loadJoinableActions(
 
 type ParticipantImpactRow = {
   id: string;
+  updatedAt: string | null;
   participationStatus: string;
   measurement: ReturnType<typeof toIndividualImpactMeasurement>;
 };
@@ -163,7 +164,12 @@ function groupParticipantImpactRows(
     const id = typeof row.user_id === "string" ? row.user_id : null;
     if (!actionId || !id) continue;
     const rows = rowsByActionId.get(actionId) ?? [];
-    rows.push({ id, participationStatus: String(row.participation_status ?? "confirmed"), measurement: toIndividualImpactMeasurement(row) });
+    rows.push({
+      id,
+      updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
+      participationStatus: String(row.participation_status ?? "confirmed"),
+      measurement: toIndividualImpactMeasurement(row),
+    });
     rowsByActionId.set(actionId, rows);
   }
   return rowsByActionId;
@@ -191,22 +197,69 @@ async function loadParticipantImpactAttributions(
   actionById: Map<string, ActionPreviewRow>,
   finalActionIds: string[],
 ): Promise<Map<string, ReturnType<typeof allocateActionParticipantImpact>>> {
-  if (finalActionIds.length === 0) return new Map();
+  return (await loadParticipantImpactProjection(supabase, actionById, finalActionIds))
+    .attributionsByActionId;
+}
+
+type ParticipantImpactProjection = {
+  attributionsByActionId: Map<
+    string,
+    ReturnType<typeof allocateActionParticipantImpact>
+  >;
+  revisionByActionId: Map<string, string | null>;
+};
+
+function buildParticipantImpactRevision(
+  action: ActionPreviewRow | undefined,
+  rows: ParticipantImpactRow[],
+): string | null {
+  if (!action) return null;
+  const participantRevisions = rows
+    .map((row) => `${row.id}:${row.updatedAt ?? ""}`)
+    .sort();
+  const actionRevision = action.updated_at ?? "";
+  const revision = [actionRevision, ...participantRevisions].join("|");
+  return revision.length > 0 ? revision : null;
+}
+
+async function loadParticipantImpactProjection(
+  supabase: SupabaseClient,
+  actionById: Map<string, ActionPreviewRow>,
+  finalActionIds: string[],
+): Promise<ParticipantImpactProjection> {
+  const empty: ParticipantImpactProjection = {
+    attributionsByActionId: new Map(),
+    revisionByActionId: new Map(),
+  };
+  if (finalActionIds.length === 0) return empty;
   const result = await supabase
     .from("action_participants")
-    .select(`user_id, action_id, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`)
+    .select(`user_id, action_id, updated_at, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`)
     .in("action_id", finalActionIds)
     .eq("participation_status", ACTIVE_PARTICIPATION_STATUS);
-  if (result.error) return new Map();
-  return allocateParticipantImpactRows(
-    actionById,
-    finalActionIds,
-    groupParticipantImpactRows(result.data),
-  );
+  if (result.error) return empty;
+  const rowsByActionId = groupParticipantImpactRows(result.data);
+  return {
+    attributionsByActionId: allocateParticipantImpactRows(
+      actionById,
+      finalActionIds,
+      rowsByActionId,
+    ),
+    revisionByActionId: new Map(
+      finalActionIds.map((actionId) => [
+        actionId,
+        buildParticipantImpactRevision(
+          actionById.get(actionId),
+          rowsByActionId.get(actionId) ?? [],
+        ),
+      ]),
+    ),
+  };
 }
 
 export type ActionParticipantImpactSnapshot = {
   available: boolean;
+  revision: string | null;
   attributions: Map<string, ActionParticipantImpactAttribution>;
 };
 
@@ -230,17 +283,19 @@ export async function loadActionParticipantImpactSnapshot(
       action.moderation_visibility !== "hidden",
   );
   if (!action || !available) {
-    return { available: false, attributions: new Map() };
+    return { available: false, revision: null, attributions: new Map() };
   }
 
-  const participantImpactByActionId = await loadParticipantImpactAttributions(
+  const participantImpactProjection = await loadParticipantImpactProjection(
     supabase,
     new Map([[action.id, action]]),
     [action.id],
   );
   return {
     available: true,
-    attributions: participantImpactByActionId.get(action.id) ?? new Map(),
+    revision: participantImpactProjection.revisionByActionId.get(action.id) ?? null,
+    attributions:
+      participantImpactProjection.attributionsByActionId.get(action.id) ?? new Map(),
   };
 }
 

@@ -251,7 +251,11 @@ async function updateActionStatus(
   id: string,
   status: "pending" | "approved" | "rejected",
   edits?: ActionEdits,
-): Promise<{ source: "actions" | "submissions"; found: boolean }> {
+): Promise<{
+  source: "actions" | "submissions";
+  found: boolean;
+  revision: string | null;
+}> {
   const updates = edits
     ? await buildAdminActionUpdates(supabase, id, status, edits)
     : { status };
@@ -259,9 +263,15 @@ async function updateActionStatus(
     .from("actions")
     .update(updates)
     .eq("id", id)
-    .select("id")
+    .select("id, updated_at")
     .maybeSingle();
-  if (!primary.error && primary.data) return { source: "actions", found: true };
+  if (!primary.error && primary.data) {
+    return {
+      source: "actions",
+      found: true,
+      revision: typeof primary.data.updated_at === "string" ? primary.data.updated_at : null,
+    };
+  }
   if (primary.error && !isMissingActionsTableError(primary.error.message)) {
     console.error("[Admin Moderation] Action update failed", {
       id,
@@ -285,7 +295,7 @@ async function updateActionStatus(
     });
     throw new Error("Database update failed");
   }
-  return { source: "submissions", found: Boolean(legacy.data) };
+  return { source: "submissions", found: Boolean(legacy.data), revision: null };
 }
 
 export async function moderateAction({

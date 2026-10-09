@@ -230,6 +230,10 @@ async function finalizeReviewResult(params: {
       supabase: params.supabase,
       actionId,
       previousSnapshot: params.previousImpactSnapshot,
+      persistedRevision:
+        !alreadyReviewed && result.updatedAt
+          ? `participant:${result.participantUserId}:${result.updatedAt}`
+          : null,
     });
   }
 

@@ -46,6 +46,7 @@ describe("moderation notifications", () => {
     await notifyActionValidation(supabase as never, {
       actionId: "action-1",
       userId: "user-1",
+      revision: "revision-1",
     });
 
     expect(supabase.notificationInsert).toHaveBeenCalledWith({
@@ -57,7 +58,7 @@ describe("moderation notifications", () => {
         entityType: "action",
         id: "action-1",
         moderationOutcome: "approved",
-        eventKey: "moderation:action:action-1:approved",
+        eventKey: "moderation:action:action-1:revision-1:approved",
       },
     });
   });
@@ -91,6 +92,7 @@ describe("moderation notifications", () => {
       actionId: "action-1",
       userId: "user-1",
       reason: "Dossier incomplet à vérifier.",
+      revision: "revision-1",
     });
 
     expect(supabase.notificationInsert).toHaveBeenCalledWith({
@@ -102,7 +104,7 @@ describe("moderation notifications", () => {
         entityType: "action",
         id: "action-1",
         moderationOutcome: "rejected",
-        eventKey: "moderation:action:action-1:rejected",
+        eventKey: "moderation:action:action-1:revision-1:rejected",
       },
     });
   });
@@ -116,6 +118,7 @@ describe("moderation notifications", () => {
         actionId: "action-1",
         userId: "user-1",
         reason: "Motif public",
+        revision: "revision-1",
       }),
     ).resolves.toBeUndefined();
   });
@@ -126,8 +129,41 @@ describe("moderation notifications", () => {
     await notifyActionValidation(supabase as never, {
       actionId: "action-1",
       userId: null,
+      revision: "revision-1",
     });
 
     expect(supabase.notificationInsert).not.toHaveBeenCalled();
+  });
+
+  it("keeps repeated approval and rejection decisions distinct by persisted revision", async () => {
+    const supabase = createSupabaseHarness();
+
+    await notifyActionValidation(supabase as never, {
+      actionId: "action-1",
+      userId: "user-1",
+      revision: "revision-1",
+    });
+    await notifyActionRejection(supabase as never, {
+      actionId: "action-1",
+      userId: "user-1",
+      reason: null,
+      revision: "revision-2",
+    });
+    await notifyActionValidation(supabase as never, {
+      actionId: "action-1",
+      userId: "user-1",
+      revision: "revision-3",
+    });
+    await notifyActionRejection(supabase as never, {
+      actionId: "action-1",
+      userId: "user-1",
+      reason: null,
+      revision: "revision-4",
+    });
+
+    const eventKeys = supabase.notificationInsert.mock.calls.map(
+      ([notification]) => notification.payload.eventKey,
+    );
+    expect(new Set(eventKeys).size).toBe(4);
   });
 });

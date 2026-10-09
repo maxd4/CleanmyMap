@@ -11,7 +11,7 @@ import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import {
   buildStoredIndividualImpactMeasurement,
   toIndividualImpactMeasurement,
-  INDIVIDUAL_IMPACT_SELECT,
+  REVIEW_SELECT,
   type IndividualImpactRow,
 } from "@/lib/actions/participation/individual-impact";
 import { resolveReviewerAccess } from "../group-join/route";
@@ -98,7 +98,7 @@ async function loadImpactContext(
 
   const participantResult = await supabase
     .from("action_participants")
-    .select(`id, action_id, user_id, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`)
+    .select(REVIEW_SELECT)
     .eq("action_id", actionId)
     .eq("id", participantId)
     .maybeSingle();
@@ -148,7 +148,7 @@ function buildMeasurementUpdate(
   payload: ParticipantImpactPayload,
   current: ReturnType<typeof toIndividualImpactMeasurement>,
   actorUserId: string,
-) {
+): { measuredAt: string | null; updatePayload: IndividualImpactRow } {
   const nextWaste = resolveWasteMeasurement(payload, current);
   const nextButts = resolveButtsMeasurement(payload, current);
   const hasMeasurement = nextWaste !== null || nextButts !== null;
@@ -196,10 +196,12 @@ async function persistParticipantImpact(
     .update(measurementUpdate.updatePayload)
     .eq("action_id", actionId)
     .eq("id", participantId)
-    .select(`id, action_id, user_id, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`)
+    .select("id, updated_at")
     .single();
   if (updateResult.error) throw new Error(updateResult.error.message);
-  const nextMeasurement = toIndividualImpactMeasurement(updateResult.data as unknown as IndividualImpactRow);
+  const nextMeasurement = toIndividualImpactMeasurement(
+    measurementUpdate.updatePayload,
+  );
   await appendActionModerationAudit({
     operationId: `action-participant-impact-${actionId}-${participantId}-${Date.now()}`,
     actorUserId: context.reviewerUserId,
@@ -217,6 +219,10 @@ async function persistParticipantImpact(
       supabase,
       actionId,
       previousSnapshot: previousImpactSnapshot,
+      persistedRevision:
+        typeof updateResult.data?.updated_at === "string"
+          ? `participant:${updateResult.data.id}:${updateResult.data.updated_at}`
+          : null,
     });
   }
   await refreshProgressionProfile(supabase, context.participant.user_id).catch(() => null);

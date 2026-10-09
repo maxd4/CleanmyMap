@@ -38,6 +38,7 @@ export async function runActionUpdatePostProcessing(params: {
   shouldAuditModeration: boolean;
   auditSnapshots: ActionAuditSnapshots | null;
   previousImpactSnapshot?: ActionParticipantImpactSnapshot | null;
+  persistedActionRevision?: string | null;
   adminAuditActorUserId: string;
   adminAuditTargetUserId: string | null;
   moderationOperation: string;
@@ -56,6 +57,7 @@ export async function runActionUpdatePostProcessing(params: {
     shouldAuditModeration,
     auditSnapshots,
     previousImpactSnapshot = null,
+    persistedActionRevision = null,
     adminAuditActorUserId,
     adminAuditTargetUserId,
     moderationOperation,
@@ -79,6 +81,7 @@ export async function runActionUpdatePostProcessing(params: {
       supabase,
       actionId,
       previousSnapshot: previousImpactSnapshot,
+      persistedRevision: persistedActionRevision,
     });
   }
   await appendPostProcessingAudit({

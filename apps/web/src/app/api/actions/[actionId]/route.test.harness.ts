@@ -131,6 +131,7 @@ vi.mock("@/lib/actions/action-update-notifications", () => ({
 
 export {
   appendActionModerationAuditMock,
+  emitActionUpdateNotificationsMock,
   extractActionMetadataFromNotesMock,
   getCurrentUserIdentityMock,
   loadActionByIdMock,
@@ -192,9 +193,11 @@ export function resetPatchRouteMocks() {
   });
   getSupabaseServerClientMock.mockReturnValue({
     from: fromMock,
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
   });
   loadActionByIdMock.mockResolvedValue({
     id: "action-test-1",
+    updated_at: "old-revision",
     status: "pending",
     action_phase: "pre_action",
     preparation_data: {},

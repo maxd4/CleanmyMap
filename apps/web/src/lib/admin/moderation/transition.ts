@@ -12,7 +12,12 @@ import { logFailure } from "@/lib/logging/failure-log";
 
 async function runActionRejectionSideEffects(
   supabase: ModerationSupabaseClient,
-  params: { actionId: string; actorUserId: string; reason: string | null },
+  params: {
+    actionId: string;
+    actorUserId: string;
+    reason: string | null;
+    revision: string | null;
+  },
 ): Promise<void> {
   const actionDetails = await runSingleActionQuery<{
     created_by_clerk_id: string | null;
@@ -31,11 +36,22 @@ async function runActionRejectionSideEffects(
     );
   }
 
+  if (!params.revision) {
+    logFailure(
+      "Moderation/Action",
+      "Action rejection notification skipped because the persisted revision is unavailable",
+      undefined,
+      { actionId: params.actionId },
+    );
+    return;
+  }
+
   try {
     await notifyActionRejection(supabase, {
       actionId: params.actionId,
       userId: actionDetails?.created_by_clerk_id ?? null,
       reason: params.reason,
+      revision: params.revision,
     });
   } catch (error) {
     logFailure(
@@ -55,6 +71,7 @@ export async function runActionTransitionSideEffects(
     approvalTransition: boolean;
     rejectionTransition: boolean;
     reason: string | null;
+    revision: string | null;
   },
 ): Promise<void> {
   if (params.approvalTransition) {
@@ -75,10 +92,21 @@ export async function runActionTransitionSideEffects(
       );
     }
 
+    if (!params.revision) {
+      logFailure(
+        "Moderation/Action",
+        "Action validation notification skipped because the persisted revision is unavailable",
+        undefined,
+        { actionId: params.actionId },
+      );
+      return;
+    }
+
     try {
       await notifyActionValidation(supabase, {
         actionId: params.actionId,
         userId: actionDetails?.created_by_clerk_id ?? null,
+        revision: params.revision,
       });
     } catch (error) {
       logFailure(

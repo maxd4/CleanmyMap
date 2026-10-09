@@ -25,13 +25,20 @@ import {
   buildActionAuditSnapshots,
   type ActionUpdateInput,
 } from "@/lib/actions/action-update-audit";
-import { ActionUpdateValidationError } from "@/lib/actions/action-update-persistence";
+import {
+  ActionUpdateValidationError,
+  persistActionUpdate,
+} from "@/lib/actions/action-update-persistence";
 import {
   runActionUpdatePostProcessing,
   syncUpdatedOrganizers,
   type AdminOverrideErrorStage,
 } from "@/lib/actions/action-update-post-processing";
-import { preparePatchMutation, type PreparedPatchMutation } from "./route.patch-preparation";
+import {
+  preparePatchMutation,
+  shouldSyncOrganizersBeforeFinalization,
+  type PreparedPatchMutation,
+} from "./route.patch-preparation";
 import { createAdminAuditOnceAppender } from "./route.patch-audit";
 import {
   ensureGpxGeometryContributionEligible,
@@ -40,12 +47,8 @@ import {
   reconcileGeometryContributionProgressionIfNeeded,
   stripObservedGeometryProjectionFields,
 } from "@/lib/actions/geometry/action-geometry-contribution-workflow";
-import {
-  buildActionChangeEventKey,
-  detectActionChangeKinds,
-} from "@/lib/actions/action-change-notifications";
+import { emitPublishedActionUpdateIfNeeded } from "@/lib/actions/action-change-notifications";
 import { emitAdministrativeRequirementNotificationsIfNeeded } from "@/lib/actions/administrative-requirement-notifications";
-import { emitActionUpdateNotifications } from "@/lib/actions/action-update-notifications";
 import {
   captureActionUpdateParticipantImpactSnapshot,
 } from "@/lib/actions/action-participant-impact-notifications";
@@ -130,39 +133,12 @@ async function loadAuthorizedPatchAction({
 type PatchExecutionState = {
   auditSnapshots: ReturnType<typeof buildActionAuditSnapshots> | null;
   actionWriteSucceeded: boolean;
+  persistedActionRevision: string | null;
   contributionPersisted: boolean;
   adminErrorStage: AdminOverrideErrorStage;
 };
 
 const PATCH_ATOMICITY = "PARTIAL_ALLOWED" as const;
-
-async function emitPublishedActionUpdateIfNeeded(params: {
-  supabase: ReturnType<typeof getSupabaseServerClient>;
-  actionId: string;
-  actorUserId: string;
-  current: EditableAction;
-  updateData: Record<string, unknown>;
-  actionWriteSucceeded: boolean;
-}): Promise<void> {
-  if (!params.actionWriteSucceeded) return;
-  const changeKinds = detectActionChangeKinds({
-    current: params.current,
-    updateData: params.updateData,
-  });
-  if (changeKinds.length === 0) return;
-
-  await emitActionUpdateNotifications({
-    supabase: params.supabase,
-    actionId: params.actionId,
-    actorUserId: params.actorUserId,
-    changeKinds,
-    eventKey: buildActionChangeEventKey({
-      actionId: params.actionId,
-      revision: params.current.updated_at ?? "missing-revision",
-      changeKinds,
-    }),
-  });
-}
 
 async function executePreparedActionUpdate({
   supabase,
@@ -213,11 +189,7 @@ async function executePreparedActionUpdate({
   const previousImpactSnapshot: ActionParticipantImpactSnapshot | null =
     await captureActionUpdateParticipantImpactSnapshot({ supabase, actionId, current, body });
 
-  const hasActionUpdates = Object.keys(scalarUpdateData).length > 0;
-  const organizerMustPrecedeSpontaneousFinalization =
-    (body.organizerType ?? current.organizer_type) === "spontaneous" &&
-    scalarUpdateData.action_phase === "post_action_complete" &&
-    body.organizerAccounts !== undefined;
+  const organizerMustPrecedeSpontaneousFinalization = shouldSyncOrganizersBeforeFinalization({ body, current, updateData: scalarUpdateData });
   if (organizerMustPrecedeSpontaneousFinalization) {
     await syncUpdatedOrganizers({
       supabase,
@@ -228,11 +200,9 @@ async function executePreparedActionUpdate({
     });
   }
   state.adminErrorStage = "action_update";
-  const updateResult = hasActionUpdates
-    ? await supabase.from("actions").update(scalarUpdateData).eq("id", actionId).select("id").single()
-    : { data: { id: actionId }, error: null };
-  if (updateResult.error) throw new Error("Action update failed");
-  state.actionWriteSucceeded = hasActionUpdates && Boolean(updateResult.data);
+  const actionWrite = await persistActionUpdate({ supabase, actionId, updateData: scalarUpdateData });
+  state.actionWriteSucceeded = actionWrite.succeeded;
+  state.persistedActionRevision = actionWrite.revision;
   await emitPublishedActionUpdateIfNeeded({
     supabase,
     actionId,
@@ -240,6 +210,7 @@ async function executePreparedActionUpdate({
     current,
     updateData: scalarUpdateData,
     actionWriteSucceeded: state.actionWriteSucceeded,
+    persistedActionRevision: state.persistedActionRevision,
   });
   await emitAdministrativeRequirementNotificationsIfNeeded({
     supabase,
@@ -248,7 +219,6 @@ async function executePreparedActionUpdate({
     updateData: scalarUpdateData,
     actionWriteSucceeded: state.actionWriteSucceeded,
   });
-
   state.adminErrorStage = hasGeometryContribution
     ? "geometry_contribution"
     : state.adminErrorStage;
@@ -259,14 +229,13 @@ async function executePreparedActionUpdate({
   if (geometryContribution) {
     state.contributionPersisted ||= geometryContribution.persisted;
   }
-
   await reconcileGeometryContributionProgressionIfNeeded({
     accepted: geometryContribution?.accepted ?? false,
     supabase,
     actionId,
     userId,
   });
-  await runActionUpdatePostProcessing({ supabase, actionId, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, previousImpactSnapshot, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, organizersAlreadySynced: organizerMustPrecedeSpontaneousFinalization, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
+  await runActionUpdatePostProcessing({ supabase, actionId, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, previousImpactSnapshot, persistedActionRevision: state.persistedActionRevision, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, organizersAlreadySynced: organizerMustPrecedeSpontaneousFinalization, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
   return body;
 }
 
@@ -405,6 +374,7 @@ async function executePatchRequest({
   const patchState: PatchExecutionState = {
     auditSnapshots: null,
     actionWriteSucceeded: false,
+    persistedActionRevision: null,
     contributionPersisted: false,
     adminErrorStage: "action_update",
   };

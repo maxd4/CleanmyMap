@@ -1,6 +1,8 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionPreparationData } from "./types";
 import type { ActionRow } from "@/types/database";
 import { normalizeClockTime } from "./time-contract";
+import { emitActionUpdateNotifications } from "./action-update-notifications";
 
 export type ActionChangeKind = "meeting_point" | "schedule" | "route" | "cancellation";
 
@@ -11,7 +13,7 @@ export const ACTION_CHANGE_LABELS: Record<ActionChangeKind, { fr: string; en: st
   cancellation: { fr: "Action annulée", en: "Action cancelled" },
 };
 
-type ActionChangeSource = Pick<
+export type ActionChangeSource = Pick<
   ActionRow,
   | "published_at"
   | "action_phase"
@@ -162,4 +164,34 @@ export function buildActionChangeEventKey(params: {
 }): string {
   const kinds = [...new Set(params.changeKinds)].sort().join(",");
   return `action_update:${params.actionId}:${params.revision}:${kinds}`;
+}
+
+export async function emitPublishedActionUpdateIfNeeded(params: {
+  supabase: SupabaseClient;
+  actionId: string;
+  actorUserId: string;
+  current: ActionChangeSource;
+  updateData: Record<string, unknown>;
+  actionWriteSucceeded: boolean;
+  persistedActionRevision: string | null;
+}): Promise<void> {
+  if (!params.actionWriteSucceeded || !params.persistedActionRevision) return;
+
+  const changeKinds = detectActionChangeKinds({
+    current: params.current,
+    updateData: params.updateData,
+  });
+  if (changeKinds.length === 0) return;
+
+  await emitActionUpdateNotifications({
+    supabase: params.supabase,
+    actionId: params.actionId,
+    actorUserId: params.actorUserId,
+    changeKinds,
+    eventKey: buildActionChangeEventKey({
+      actionId: params.actionId,
+      revision: params.persistedActionRevision,
+      changeKinds,
+    }),
+  });
 }

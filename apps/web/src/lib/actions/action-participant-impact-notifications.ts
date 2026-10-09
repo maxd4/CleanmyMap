@@ -13,6 +13,7 @@ type ActionParticipantImpactNotificationParams = {
   supabase: SupabaseClient;
   actionId: string;
   previousSnapshot: ActionParticipantImpactSnapshot | null;
+  persistedRevision?: string | null;
 };
 
 export async function captureActionParticipantImpactSnapshot(
@@ -85,6 +86,7 @@ function isUniqueViolation(error: unknown): boolean {
 function actionImpactNotificationPayload(params: {
   actionId: string;
   userId: string;
+  revision: string;
   fingerprint: string;
 }) {
   return {
@@ -92,42 +94,11 @@ function actionImpactNotificationPayload(params: {
     subtype: "action_result_impact",
     requestKind: "action_result_impact",
     actionId: params.actionId,
+    revision: params.revision,
     attributionFingerprint: params.fingerprint,
-    eventKey: `action_result_impact:${params.actionId}:${params.userId}:${params.fingerprint}`,
+    eventKey: `action_result_impact:${params.actionId}:${params.userId}:${params.revision}:${params.fingerprint}`,
     href: `/sections/rejoindre-une-action?tab=past&actionId=${encodeURIComponent(params.actionId)}`,
   };
-}
-
-async function loadLatestAttributionFingerprints(
-  supabase: SupabaseClient,
-  actionId: string,
-  userIds: string[],
-): Promise<Map<string, string>> {
-  const existingResult = await supabase
-    .from("app_notifications")
-    .select("user_id, payload, created_at")
-    .in("user_id", userIds)
-    .eq("type", "action_event")
-    .filter("payload->>subtype", "eq", "action_result_impact")
-    .filter("payload->>actionId", "eq", actionId)
-    .order("created_at", { ascending: false })
-    .limit(Math.max(userIds.length * 4, 20));
-  if (existingResult.error) throw new Error(existingResult.error.message);
-
-  const latestFingerprintByUser = new Map<string, string>();
-  for (const row of (existingResult.data ?? []) as Array<Record<string, unknown>>) {
-    const userId = typeof row.user_id === "string" ? row.user_id : null;
-    const payload = row.payload && typeof row.payload === "object"
-      ? row.payload as Record<string, unknown>
-      : null;
-    const fingerprint = typeof payload?.attributionFingerprint === "string"
-      ? payload.attributionFingerprint
-      : null;
-    if (userId && fingerprint && !latestFingerprintByUser.has(userId)) {
-      latestFingerprintByUser.set(userId, fingerprint);
-    }
-  }
-  return latestFingerprintByUser;
 }
 
 async function insertImpactNotifications(params: {
@@ -135,14 +106,15 @@ async function insertImpactNotifications(params: {
   actionId: string;
   snapshot: ActionParticipantImpactSnapshot;
   userIds: string[];
-  latestFingerprintByUser: Map<string, string>;
+  revision?: string | null;
 }): Promise<boolean> {
   let inserted = false;
+  const revision = params.revision ?? params.snapshot.revision;
+  if (!revision) return false;
   for (const userId of params.userIds) {
     const attribution = params.snapshot.attributions.get(userId);
     if (!attribution) continue;
     const fingerprint = attributionFingerprint(attribution);
-    if (params.latestFingerprintByUser.get(userId) === fingerprint) continue;
 
     const result = await params.supabase.from("app_notifications").insert({
       user_id: userId,
@@ -152,6 +124,7 @@ async function insertImpactNotifications(params: {
       payload: actionImpactNotificationPayload({
         actionId: params.actionId,
         userId,
+        revision,
         fingerprint,
       }),
     });
@@ -188,17 +161,12 @@ export async function emitActionParticipantImpactNotifications(
       .map(([userId]) => userId);
     if (changedUserIds.length === 0) return false;
 
-    const latestFingerprintByUser = await loadLatestAttributionFingerprints(
-      params.supabase,
-      params.actionId,
-      changedUserIds,
-    );
     return insertImpactNotifications({
       supabase: params.supabase,
       actionId: params.actionId,
       snapshot: currentSnapshot,
       userIds: changedUserIds,
-      latestFingerprintByUser,
+      revision: params.persistedRevision,
     });
   } catch (error) {
     logFailure(

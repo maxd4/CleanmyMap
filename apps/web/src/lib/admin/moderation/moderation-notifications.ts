@@ -28,7 +28,7 @@ async function insertModerationNotification(
 
 export async function notifyActionValidation(
   supabase: ModerationNotificationClient,
-  params: { actionId: string; userId: string | null },
+  params: { actionId: string; userId: string | null; revision: string },
 ): Promise<void> {
   if (!params.userId) {
     return;
@@ -56,14 +56,19 @@ export async function notifyActionValidation(
       entityType: "action",
       id: params.actionId,
       moderationOutcome: "approved",
-      eventKey: `moderation:action:${params.actionId}:approved`,
+      eventKey: `moderation:action:${params.actionId}:${params.revision}:approved`,
     },
   });
 }
 
 export async function notifyActionRejection(
   supabase: ModerationNotificationClient,
-  params: { actionId: string; userId: string | null; reason: string | null },
+  params: {
+    actionId: string;
+    userId: string | null;
+    reason: string | null;
+    revision: string;
+  },
 ): Promise<void> {
   if (!params.userId) return;
 
@@ -89,7 +94,7 @@ export async function notifyActionRejection(
       entityType: "action",
       id: params.actionId,
       moderationOutcome: "rejected",
-      eventKey: `moderation:action:${params.actionId}:rejected`,
+      eventKey: `moderation:action:${params.actionId}:${params.revision}:rejected`,
     },
   });
 }

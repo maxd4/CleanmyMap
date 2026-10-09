@@ -1,4 +1,5 @@
 import type { ActionRow } from "@/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import { extractActionMetadataFromNotes } from "./metadata";
 import { getTimeContractValidationMessage } from "./time-contract";
@@ -27,6 +28,27 @@ export type PreparedActionUpdate = {
   currentMetadata: ActionMetadata;
   updateData: Record<string, unknown>;
 };
+
+export async function persistActionUpdate(params: {
+  supabase: SupabaseClient;
+  actionId: string;
+  updateData: Record<string, unknown>;
+}): Promise<{ succeeded: boolean; revision: string | null }> {
+  if (Object.keys(params.updateData).length === 0) {
+    return { succeeded: false, revision: null };
+  }
+  const updateResult = await params.supabase
+    .from("actions")
+    .update(params.updateData)
+    .eq("id", params.actionId)
+    .select("id, updated_at")
+    .single();
+  if (updateResult.error) throw new Error("Action update failed");
+  return {
+    succeeded: Boolean(updateResult.data),
+    revision: typeof updateResult.data?.updated_at === "string" ? updateResult.data.updated_at : null,
+  };
+}
 
 export async function prepareActionUpdate(params: {
   current: ActionRow;

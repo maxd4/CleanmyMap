@@ -161,6 +161,9 @@ export function createGroupJoinSupabaseMock(params: { action: GroupJoinActionRow
       if (table === "profiles") {
         return createProfilesChain(params.profiles ?? []);
       }
+      if (table === "app_notifications") {
+        return { insert: vi.fn(async () => ({ error: null })) };
+      }
       throw new Error(`Unexpected table: ${table}`);
     }),
   };

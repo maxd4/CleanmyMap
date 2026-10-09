@@ -29,6 +29,7 @@ export type ActionPreviewRow = Pick<
   ActionRow,
   | "id"
   | "created_at"
+  | "updated_at"
   | "action_date"
   | "location_label"
   | "volunteers_count"
@@ -77,7 +78,7 @@ export type ActionParticipantReviewRow = Pick<
 };
 
 const ACTION_PREVIEW_COLUMNS =
-  "id, created_at, action_date, event_start_time, location_label, volunteers_count, duration_minutes, waste_kg, cigarette_butts, status, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status, preparation_data";
+  "id, created_at, updated_at, action_date, event_start_time, location_label, volunteers_count, duration_minutes, waste_kg, cigarette_butts, status, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status, preparation_data";
 const ACTION_PARTICIPATION_COLUMNS =
   "status, moderation_visibility, notes, published_at, action_phase, action_date, event_start_time, cancelled_at";
 

@@ -42,7 +42,7 @@ export function registerActionTransitionScenarios({
     expect(notifyActionValidationMock).toHaveBeenCalledTimes(1);
     expect(notifyActionValidationMock).toHaveBeenCalledWith(
       expect.anything(),
-      { actionId: "action-1", userId: "creator-1" },
+      { actionId: "action-1", userId: "creator-1", revision: "revision-1" },
     );
   });
 
@@ -101,6 +101,7 @@ export function registerActionTransitionScenarios({
         actionId: "action-1",
         userId: "creator-1",
         reason: "Dossier incomplet à vérifier.",
+        revision: "revision-1",
       },
     );
     expect(notifyActionValidationMock).not.toHaveBeenCalled();

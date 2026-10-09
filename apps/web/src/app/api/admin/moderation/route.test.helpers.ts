@@ -3,6 +3,7 @@ import { vi } from "vitest";
 export function createActionSupabaseHarness(initialStatus: "pending" | "approved" | "rejected" = "pending") {
   let row: Record<string, unknown> = {
     id: "action-1",
+    updated_at: "revision-1",
     status: initialStatus,
     moderation_visibility: "visible",
     created_by_clerk_id: "creator-1",
@@ -51,7 +52,9 @@ export function createActionSupabaseHarness(initialStatus: "pending" | "approved
                   hidden_by_clerk_id: row.hidden_by_clerk_id ?? null,
                   hidden_reason: row.hidden_reason ?? null,
                 }
-              : { id: row.id },
+              : columns.includes("updated_at")
+                ? { id: row.id, updated_at: row.updated_at }
+                : { id: row.id },
             error: null,
           }),
         })),

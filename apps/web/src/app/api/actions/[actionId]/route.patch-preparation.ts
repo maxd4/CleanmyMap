@@ -30,6 +30,18 @@ export type PreparedPatchMutation = {
   moderationReason: string | null;
 };
 
+export function shouldSyncOrganizersBeforeFinalization(params: {
+  body: ActionUpdateInput;
+  current: ActionRow;
+  updateData: Record<string, unknown>;
+}): boolean {
+  return (
+    (params.body.organizerType ?? params.current.organizer_type) === "spontaneous" &&
+    params.updateData.action_phase === "post_action_complete" &&
+    params.body.organizerAccounts !== undefined
+  );
+}
+
 async function preparePatchOrganizerFields({
   supabase,
   userId,

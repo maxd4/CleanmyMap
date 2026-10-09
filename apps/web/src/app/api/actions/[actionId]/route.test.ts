@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { appendActionModerationAuditMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, emitActionUpdateNotificationsMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   beforeEach(() => {
@@ -24,6 +24,93 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
         status: "pending",
       }),
     );
+  });
+
+  it("uses the revision returned by each persisted write for concurrent operational notifications", async () => {
+    loadActionByIdMock.mockResolvedValue({
+      id: "action-test-1",
+      updated_at: "old-revision",
+      status: "approved",
+      action_phase: "pre_action",
+      published_at: "2026-09-01T09:00:00.000Z",
+      moderation_visibility: "visible",
+      action_date: "2026-09-13",
+      event_start_time: "09:00:00",
+      location_label: "Quai de Seine",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-1",
+      notes: null,
+    });
+    getCurrentUserIdentityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
+    let writeNumber = 0;
+    updateMock.mockImplementation(() => ({
+      eq: () => ({
+        select: () => ({
+          single: async () => ({
+            data: { id: "action-test-1", updated_at: `persisted-revision-${++writeNumber}` },
+            error: null,
+          }),
+        }),
+      }),
+    }));
+    const { PATCH } = await import("./route");
+
+    const requests = ["2026-09-14", "2026-09-15"].map((actionDate) =>
+      PATCH(
+        new Request("http://localhost/api/actions/action-test-1", {
+          method: "PATCH",
+          body: JSON.stringify({ actionDate, reason: "Révision opérationnelle validée." }),
+        }),
+        { params: Promise.resolve({ actionId: "action-test-1" }) },
+      ),
+    );
+    const responses = await Promise.all(requests);
+
+    expect(responses.every((response) => response.status === 200)).toBe(true);
+    const eventKeys = emitActionUpdateNotificationsMock.mock.calls.map(
+      ([params]) => params.eventKey,
+    );
+    expect(eventKeys).toEqual([
+      "action_update:action-test-1:persisted-revision-1:schedule",
+      "action_update:action-test-1:persisted-revision-2:schedule",
+    ]);
+  });
+
+  it("does not emit an operational notification when the action write fails", async () => {
+    loadActionByIdMock.mockResolvedValue({
+      id: "action-test-1",
+      updated_at: "old-revision",
+      status: "approved",
+      action_phase: "pre_action",
+      published_at: "2026-09-01T09:00:00.000Z",
+      moderation_visibility: "visible",
+      action_date: "2026-09-13",
+      event_start_time: "09:00:00",
+      location_label: "Quai de Seine",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-1",
+      notes: null,
+    });
+    getCurrentUserIdentityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
+    updateMock.mockImplementation(() => ({
+      eq: () => ({
+        select: () => ({
+          single: async () => ({ data: null, error: { code: "PERSISTENCE_FAILURE" } }),
+        }),
+      }),
+    }));
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ actionDate: "2026-09-14", reason: "Révision opérationnelle validée." }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(emitActionUpdateNotificationsMock).not.toHaveBeenCalled();
   });
 
   it("allows retrospective finalization while administrative requirements are pending", async () => {

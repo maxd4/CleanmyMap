@@ -17,6 +17,7 @@ import {
 export type ActionStatusUpdateResult = {
   source: "actions" | "submissions";
   found: boolean;
+  revision: string | null;
 };
 
 export type ActionVisibilityUpdateResult = { found: boolean } | null;
@@ -263,6 +264,7 @@ async function runActionModerationPostUpdateEffects(params: {
       approvalTransition: isApprovalTransition,
       rejectionTransition: isRejectionTransition,
       reason,
+      revision: statusUpdate.revision,
     });
   }
 
