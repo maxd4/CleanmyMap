@@ -48,6 +48,20 @@ describe("Weather content contract", () => {
     expect(String(state.description)).toContain("géocodé");
   });
 
+  it.each([
+    ["loading", "Chargement météo"],
+    ["ready", "Conditions disponibles"],
+    ["empty", "Aucune donnée météo"],
+    ["error", "Météo indisponible"],
+  ] as const)("keeps the %s weather state explicit", (weatherStatus, title) => {
+    expect(getWeatherStateCopy({
+      weatherStatus,
+      locationResolution: "resolved",
+      selectedZoneLabel: "Lyon",
+      fr: true,
+    }).title).toBe(title);
+  });
+
   it("does not turn risk calculations into mandatory prescriptions", () => {
     const riskText = [
       ...evaluateWeatherRisk({ temperature: 34, rain: 3.2, wind: 50 }).equipment,
