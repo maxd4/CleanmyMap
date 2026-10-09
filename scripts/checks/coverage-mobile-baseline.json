@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "f0f39bdbdd8e0d30077768a9bc2b271ae22432a8",
-  "measuredAt": "2026-09-28",
+  "sourceCommit": "5c0a7bde2193fe4ac88241bc0f06aa5bab6068c2",
+  "measuredAt": "2026-10-09",
   "tool": {
     "vitest": "4.1.11",
     "provider": "@vitest/coverage-v8@4.1.11"
@@ -22,24 +22,24 @@
   "scopeFingerprint": "e50eeed2bae7b1dc71b65b93e00a5a710c451d2427cc65938c640fbd1dd9c3bd",
   "metrics": {
     "statements": {
-      "total": 458,
-      "covered": 145,
-      "pct": 31.65
+      "total": 883,
+      "covered": 420,
+      "pct": 47.56
     },
     "branches": {
-      "total": 248,
-      "covered": 55,
-      "pct": 22.17
+      "total": 485,
+      "covered": 196,
+      "pct": 40.41
     },
     "functions": {
-      "total": 88,
-      "covered": 30,
-      "pct": 34.09
+      "total": 238,
+      "covered": 114,
+      "pct": 47.89
     },
     "lines": {
-      "total": 439,
-      "covered": 142,
-      "pct": 32.34
+      "total": 804,
+      "covered": 396,
+      "pct": 49.25
     }
   },
   "domains": {}

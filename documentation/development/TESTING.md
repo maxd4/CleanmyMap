@@ -450,9 +450,10 @@ npm run quality:mobile-coverage
 
 Le périmètre mobile est `apps/mobile` hors tests, déclarations et vendor. Sa
 baseline indépendante est `scripts/checks/coverage-mobile-baseline.json`,
-mesurée sur le SHA `f0f39bdbdd8e0d30077768a9bc2b271ae22432a8` : statements
-`31.65 %` (`145/458`), branches `22.17 %` (`55/248`), functions `34.09 %`
-(`30/88`) et lines `32.34 %` (`142/439`). Aucun pourcentage mobile n'est
+ratifiée sur le SHA `5c0a7bde2193fe4ac88241bc0f06aa5bab6068c2` avec une mesure
+vérifiée : statements `47.56 %` (`420/883`), branches `40.41 %` (`196/485`),
+functions `47.89 %` (`114/238`) et lines `49.25 %` (`396/804`). Aucun
+pourcentage mobile n'est
 agrégé avec le web et le mobile ne possède pas de domaines web artificiels.
 Une baisse mobile est donc comparée indépendamment sur les quatre métriques.
 
