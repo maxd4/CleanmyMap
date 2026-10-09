@@ -23,6 +23,7 @@ Permettre a un bénévole de rejoindre le formulaire visible d'une action publi�
 13. Une demande `group_form` `pending` génère un événement `action_event` dédupliqué pour le créateur, les organisateurs habilités et les rôles `admin`/`max`, à l'exclusion du demandeur. Elle est distinguée d'une invitation `manual_add` par `payload.subtype = registration_request`.
 14. La carte « Demande d'inscription » expose `✓ Accepter` et `× Refuser`. Chaque clic repasse par l'autorisation serveur et une transition conditionnelle depuis `pending`; une décision concurrente ou un droit révoqué rend la carte indisponible sans seconde mutation.
 15. Une décision effective `confirmed` ou `cancelled` crée une notification `registration_decision` pour le demandeur avec un lien vers l'action. L'annulation de l'action retire la demande de la projection actionnable sans acceptation implicite ni refus fabriqué.
+16. La file de review d'une action future ne contient que les inscriptions `registration_source = group_form` et `registration_status = pending`. Une invitation `manual_add` reste absente de cette file, même si son identifiant est connu ; son destinataire est le seul parcours normal d'acceptation ou de refus via `respond_to_action_invitation`.
 
 ## Placement dans le bloc Agir
 
@@ -99,6 +100,7 @@ doit donc venir du parcours explicite `post_action_claim`, puis de sa validation
 - Source de participation finale: table `action_participants` avec `participation_status`, `participation_source`, `joined_at` et `updated_at`.
 - Identité de création: `actions.created_by_clerk_id`; responsabilité organisationnelle et permissions: `action_organizers`; aucune de ces deux sources ne prouve une présence terrain.
 - Origine d'inscription: `group_form` pour les demandes publiques futures et `manual_add` pour les invitations directes. Les invitations directes commencent toujours en `pending` et passent à `confirmed` ou `cancelled` uniquement par la réponse canonique du destinataire.
+- Dans `Rejoindre une action`, une inscription future `group_form` `pending` est libellée « Demande d'inscription », tandis qu'une invitation `manual_add` `pending` est libellée « Invitation en attente de réponse » et renvoie à la carte de notification ; elle ne peut pas être annulée ou confirmée par la review organisateur.
 - Origine de participation finale: `admin`, `admin_override`, `import` ou `post_action_claim` selon l'opération qui l'a créée.
 - Source badge, progression et gamification: uniquement `action_participants` avec `participation_status = confirmed`. Un claim confirmé suit cette même source; une inscription future ne la remplace jamais.
 - Source stats et quotes-parts: uniquement les participants finaux confirmés; le dénominateur exclut les inscriptions, les demandes `pending` et les lignes `cancelled`.

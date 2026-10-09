@@ -3,6 +3,7 @@ import type { ActionPhase } from "@/lib/actions/types";
 import { usesRegistrationStore } from "./action-phase";
 import {
   ACTIVE_PARTICIPATION_STATUS,
+  GROUP_PARTICIPATION_SOURCE,
   PENDING_PARTICIPATION_STATUS,
   type ParticipationStatus,
 } from "./group-participation.helpers";
@@ -76,6 +77,17 @@ async function loadReviewParticipation(
     const notFoundError = new Error("Participation request not found.");
     notFoundError.name = "NotFoundError";
     throw notFoundError;
+  }
+  if (
+    useRegistrations &&
+    existing.status === PENDING_PARTICIPATION_STATUS &&
+    existing.source !== GROUP_PARTICIPATION_SOURCE
+  ) {
+    const validationError = new Error(
+      "Cette invitation doit être traitée par son destinataire.",
+    );
+    validationError.name = "ValidationError";
+    throw validationError;
   }
   if (existing.status === "cancelled" && !params.requirePending) {
     const validationError = new Error(

@@ -90,6 +90,20 @@ describe("Rejoindre une action content contract", () => {
     expect(markup).not.toContain("Participation à confirmer");
   });
 
+  it("labels a pending manual invitation as awaiting the recipient response", () => {
+    const markup = renderCard(
+      buildItem({
+        awaitingApproval: true,
+        participationStatus: "pending",
+        participationSource: "manual_add",
+      }),
+    );
+
+    expect(markup).toContain("Invitation en attente de réponse");
+    expect(markup).toContain("Répondez depuis la notification d’invitation.");
+    expect(markup).not.toContain("Demande d&#x27;inscription");
+  });
+
   it("keeps registration vocabulary during the post-action draft phase", () => {
     const markup = renderCard(
       buildItem({

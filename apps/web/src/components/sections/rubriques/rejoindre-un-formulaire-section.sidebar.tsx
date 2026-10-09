@@ -66,7 +66,7 @@ export function JoinFormSidebar({
                 </div>
                 <PillBadge tone={status === "pending" ? "amber" : status === "closed" || status === "cancelled" ? "slate" : "emerald"}>
                   {usesRegistrationStore(item.actionPhase)
-                    ? getRegistrationStatusLabel(status, fr)
+                    ? getRegistrationStatusLabel(status, fr, item.participationSource ?? undefined)
                     : getParticipationStatusLabel(status, fr)}
                 </PillBadge>
               </div>

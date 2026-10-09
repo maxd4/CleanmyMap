@@ -73,11 +73,18 @@ async function loadParticipationReviewRows(
   actionPhase?: ActionPhase,
 ): Promise<ParticipationReviewRow[]> {
   const useRegs = usesRegistrationStore(actionPhase);
-  const result = await supabase
+  let query = supabase
     .from(useRegs ? "action_registrations" : "action_participants")
     .select(useRegs ? "id, action_id, created_at, registered_at, updated_at, user_id, registration_status, registration_source" : REVIEW_SELECT)
     .eq("action_id", actionId)
-    .in(useRegs ? "registration_status" : "participation_status", statuses)
+    .in(useRegs ? "registration_status" : "participation_status", statuses);
+
+  if (useRegs && statuses.includes(PENDING_PARTICIPATION_STATUS)) {
+    // Une invitation manual_add est réservée à la réponse de son destinataire.
+    query = query.eq("registration_source", "group_form");
+  }
+
+  const result = await query
     .order("created_at", { ascending: true })
     .limit(reviewLimit);
 

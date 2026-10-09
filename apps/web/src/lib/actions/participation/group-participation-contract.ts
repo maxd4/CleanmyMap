@@ -3,10 +3,16 @@ import type {
   ActionParticipantImpactAttribution,
   IndividualImpactMeasurement,
 } from "./individual-impact";
+import type { ActionParticipantRow, ActionRegistrationRow } from "@/types/database";
 import {
   type ParticipationSource,
   type ParticipationStatus,
 } from "./group-participation.helpers";
+
+type JoinableParticipationSource =
+  | ParticipationSource
+  | ActionParticipantRow["participation_source"]
+  | ActionRegistrationRow["registration_source"];
 
 export type ParticipationAuditValue = {
   participationStatus: ParticipationStatus;
@@ -110,7 +116,7 @@ export type JoinableActionItem = {
   awaitingApproval: boolean;
   joinedAt: string | null;
   participationStatus: ParticipationStatus | null;
-  participationSource: ParticipationSource | null;
+  participationSource: JoinableParticipationSource | null;
   participationUpdatedAt: string | null;
   groupJoinEnabled: boolean;
   pendingRequestsCount: number;

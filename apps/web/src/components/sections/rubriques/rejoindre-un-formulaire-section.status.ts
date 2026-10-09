@@ -1,4 +1,6 @@
 import type { ActionPhase } from "@/lib/actions/types";
+import type { ActionRegistrationRow } from "@/types/database";
+import type { ParticipationSource } from "@/lib/actions/participation/group-participation.helpers";
 import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
 
 export type ActionCardStatus = "open" | "pending" | "closed" | "confirmed" | "cancelled" | "completed";
@@ -38,9 +40,16 @@ export function getCardDisplayStatus(item: JoinableActionItem): ActionCardStatus
   return "open";
 }
 
-export function getRegistrationStatusLabel(status: ActionCardStatus, fr: boolean): string {
+export function getRegistrationStatusLabel(
+  status: ActionCardStatus,
+  fr: boolean,
+  source?: ActionRegistrationRow["registration_source"] | ParticipationSource,
+): string {
   switch (status) {
     case "pending":
+      if (source === "manual_add") {
+        return fr ? "Invitation en attente de réponse" : "Invitation awaiting response";
+      }
       return fr ? "Demande d'inscription" : "Registration request";
     case "confirmed":
       return fr ? "Inscription confirmée" : "Registration confirmed";

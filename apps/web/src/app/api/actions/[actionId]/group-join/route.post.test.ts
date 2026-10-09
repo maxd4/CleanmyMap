@@ -454,6 +454,42 @@ describe("POST /api/actions/:actionId/group-join", () => {
     expect((await response.json()).participationStatus).toBe("confirmed");
   }, 15000);
 
+  it("does not let an organizer accept a pending manual invitation", async () => {
+    authMock.mockResolvedValueOnce({ userId: "organizer-1" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "organizer-1",
+      role: "benevole",
+      activeRole: "benevole",
+    });
+    groupJoinMocks.loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["organizer-1"]);
+    const participants = [
+      createGroupJoinParticipant({
+        id: "manual-invitation-1",
+        action_id: "action-1",
+        user_id: "invitee-1",
+        created_at: "2026-06-01T10:00:00Z",
+        registration_status: "pending",
+        registration_source: "manual_add" as never,
+      }),
+    ];
+    seedApprovedActionParticipants(participants, {
+      createdByClerkId: "action-owner",
+      profiles: [createGroupJoinProfile({ id: "invitee-1", display_name: "Alice", handle: "alice" })],
+    });
+
+    const response = await postActionGroupJoin({
+      participantId: "manual-invitation-1",
+      decision: "accept",
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body.details?.participantId?.[0]).toContain("destinataire");
+    expect(participants[0]?.registration_status).toBe("pending");
+    expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
+    expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
+  }, 15000);
+
   it("keeps an already confirmed participant idempotent", async () => {
     const participants = [
       createGroupJoinParticipant({

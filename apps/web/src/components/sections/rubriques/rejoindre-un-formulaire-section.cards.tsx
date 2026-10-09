@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Leaf, Loader2, MapPin, ShieldCheck, Sparkles, UserRound, X } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronRight, Leaf, MapPin, ShieldCheck, Sparkles, UserRound, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ActionParticipationReviewItem, JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 import { ActionThumbnail } from "./rejoindre-un-formulaire-section.illustrations";
-import { getActionDisplayStatus, getCardDisplayStatus, getLifecycleLabel, getParticipationStatusLabel, getRegistrationStatusLabel, getStatusDotTone } from "./rejoindre-un-formulaire-section.status";
+import { ActionCardActions } from "./rejoindre-un-formulaire-section.card-actions";
+import { getActionDisplayStatus, getCardDisplayStatus, getLifecycleLabel, getParticipationStatusLabel, getRegistrationStatusLabel, getStatusDotTone, type ActionCardStatus } from "./rejoindre-un-formulaire-section.status";
 
 export function PillBadge({
   tone,
@@ -106,6 +107,97 @@ export function HelpCard() {
   );
 }
 
+
+function ActionCardDetails({
+  item,
+  fr,
+  status,
+  usesRegistration,
+  isPreAction,
+  cardStatus,
+  statusLabel,
+  lifecycleLabel,
+  requestCountLabel,
+}: {
+  item: JoinableActionItem;
+  fr: boolean;
+  status: ReturnType<typeof getActionDisplayStatus>;
+  usesRegistration: boolean;
+  isPreAction: boolean;
+  cardStatus: ActionCardStatus;
+  statusLabel: string;
+  lifecycleLabel: string;
+  requestCountLabel: string;
+}) {
+  return (
+    <div className="min-w-0 space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <h3 className="text-xl font-black text-emerald-950">
+            {item.actionTitle?.trim() || item.location_label}
+          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <PillBadge tone={usesRegistration ? "amber" : "emerald"}>
+              {lifecycleLabel}
+            </PillBadge>
+            <p className="flex items-center gap-2 text-sm text-slate-600">
+              <MapPin size={14} className="text-slate-400" />
+              {item.location_label}
+            </p>
+          </div>
+        </div>
+        <PillBadge tone={cardStatus === "pending" ? "amber" : cardStatus === "closed" || cardStatus === "cancelled" ? "slate" : "emerald"}>
+          <span className={`h-2 w-2 rounded-full ${getStatusDotTone(cardStatus)}`} />
+          {statusLabel}
+        </PillBadge>
+      </div>
+
+      <div className="space-y-1 text-sm text-slate-600">
+        {item.status === "cancelled" ? (
+          <p className="font-semibold text-slate-700">
+            {fr ? "Cette action a été annulée." : "This action was cancelled."}
+          </p>
+        ) : null}
+        <p className="flex items-center gap-2">
+          <CalendarDays size={14} className="text-slate-400" />
+          {fr ? formatDate(item.action_date, "fr") : formatDate(item.action_date, "en")}
+          <span className="text-slate-300">•</span>
+          {item.duration_minutes > 0 ? `${formatCount(item.duration_minutes)} min` : "—"}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+          {formatCount(item.participantsCount)}/{formatCount(item.volunteers_count)}{" "}
+          {usesRegistration
+            ? fr
+              ? "Inscriptions confirmées"
+              : "Confirmed registrations"
+            : fr
+              ? "Participations confirmées"
+              : "Confirmed participations"}
+        </span>
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+          {requestCountLabel}
+        </span>
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+          {isPreAction
+            ? status === "closed"
+              ? fr
+                ? "Action future fermée"
+                : "Future action closed"
+              : fr
+                ? "Ouvert aux bénévoles"
+                : "Open to volunteers"
+            : fr
+              ? "Déclaration complète"
+              : "Complete declaration"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function ActionCard({
   item,
   index,
@@ -133,8 +225,10 @@ export function ActionCard({
   const usesRegistration = usesRegistrationStore(item.actionPhase);
   const isPreAction = item.actionPhase === "pre_action";
   const cardStatus = getCardDisplayStatus(item);
+  const isPendingInvitation =
+    item.participationStatus === "pending" && item.participationSource === "manual_add";
   const statusLabel = usesRegistration
-    ? getRegistrationStatusLabel(cardStatus, fr)
+    ? getRegistrationStatusLabel(cardStatus, fr, item.participationSource ?? undefined)
     : getParticipationStatusLabel(cardStatus, fr);
   const lifecycleLabel = getLifecycleLabel(item.actionPhase, fr);
   const footerLabel = isPreAction
@@ -161,141 +255,31 @@ export function ActionCard({
       <div className="grid gap-4 md:grid-cols-[minmax(150px,180px)_minmax(0,1fr)_minmax(180px,auto)] md:items-stretch">
         <ActionThumbnail item={item} index={index} />
 
-        <div className="min-w-0 space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-              <h3 className="text-xl font-black text-emerald-950">
-                {item.actionTitle?.trim() || item.location_label}
-              </h3>
-              <div className="flex flex-wrap items-center gap-2">
-                <PillBadge tone={usesRegistration ? "amber" : "emerald"}>
-                  {lifecycleLabel}
-                </PillBadge>
-                <p className="flex items-center gap-2 text-sm text-slate-600">
-                  <MapPin size={14} className="text-slate-400" />
-                  {item.location_label}
-                </p>
-              </div>
-            </div>
-            <PillBadge tone={cardStatus === "pending" ? "amber" : cardStatus === "closed" || cardStatus === "cancelled" ? "slate" : "emerald"}>
-              <span className={`h-2 w-2 rounded-full ${getStatusDotTone(cardStatus)}`} />
-              {statusLabel}
-            </PillBadge>
-          </div>
+        <ActionCardDetails
+          item={item}
+          fr={fr}
+          status={status}
+          usesRegistration={usesRegistration}
+          isPreAction={isPreAction}
+          cardStatus={cardStatus}
+          statusLabel={statusLabel}
+          lifecycleLabel={lifecycleLabel}
+          requestCountLabel={requestCountLabel}
+        />
 
-          <div className="space-y-1 text-sm text-slate-600">
-            {item.status === "cancelled" ? (
-              <p className="font-semibold text-slate-700">
-                {fr ? "Cette action a été annulée." : "This action was cancelled."}
-              </p>
-            ) : null}
-            <p className="flex items-center gap-2">
-              <CalendarDays size={14} className="text-slate-400" />
-              {fr ? formatDate(item.action_date, "fr") : formatDate(item.action_date, "en")}
-              <span className="text-slate-300">•</span>
-              {item.duration_minutes > 0 ? `${formatCount(item.duration_minutes)} min` : "—"}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
-              {formatCount(item.participantsCount)}/{formatCount(item.volunteers_count)}{" "}
-              {usesRegistration
-                ? fr
-                  ? "Inscriptions confirmées"
-                  : "Confirmed registrations"
-                : fr
-                  ? "Participations confirmées"
-                  : "Confirmed participations"}
-            </span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
-              {requestCountLabel}
-            </span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
-              {isPreAction
-                ? status === "closed"
-                  ? fr
-                    ? "Action future fermée"
-                    : "Future action closed"
-                  : fr
-                    ? "Ouvert aux bénévoles"
-                    : "Open to volunteers"
-                : fr
-                  ? "Déclaration complète"
-                  : "Complete declaration"}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-col justify-between gap-3 md:items-end">
-          {!isPreAction || status === "closed" ? (
-            <CmmButton href="/actions/history" tone="secondary" variant="pill" className="min-w-[12rem] px-5">
-              <span className="flex items-center gap-2">
-                {fr ? "Voir les détails" : "View details"}
-                <ChevronRight size={16} />
-              </span>
-            </CmmButton>
-          ) : authenticated ? (
-            item.joined || item.awaitingApproval ? (
-              <CmmButton
-                tone="secondary"
-                variant="pill"
-                className="min-w-[12rem] px-5"
-                disabled={leaving}
-                onClick={() => onRequestLeave(item.id)}
-              >
-                {leaving ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" />
-                    {fr ? "Retrait..." : "Leaving..."}
-                  </>
-                ) : item.joined ? (
-                  <>
-                    <X size={14} />
-                    {fr ? "Annuler mon inscription" : "Cancel my registration"}
-                  </>
-                ) : (
-                  <>
-                    <X size={14} />
-                    {fr ? "Annuler ma demande" : "Cancel request"}
-                  </>
-                )}
-              </CmmButton>
-            ) : (
-              <CmmButton
-                tone="primary"
-                variant="pill"
-                className="min-w-[12rem] px-5"
-                disabled={joining}
-                onClick={() => onRequestJoin(item.id)}
-              >
-                {joining ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" />
-                    {fr ? "Envoi..." : "Saving..."}
-                  </>
-                ) : (
-                  <>
-                    <ClipboardList size={14} />
-                    {fr ? "Demander à s'inscrire" : "Request registration"}
-                  </>
-                )}
-              </CmmButton>
-            )
-          ) : (
-            <CmmButton href="/sign-in" tone="primary" variant="pill" className="min-w-[12rem] px-5">
-              <span className="flex items-center gap-2">
-                <ClipboardList size={14} />
-                {fr ? "Se connecter" : "Sign in"}
-              </span>
-            </CmmButton>
-          )}
-          {onShareAction ? (
-            <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>
-              {fr ? "Partager dans la messagerie" : "Share in messaging"}
-            </CmmButton>
-          ) : null}
-        </div>
+        <ActionCardActions
+          item={item}
+          status={status}
+          fr={fr}
+          authenticated={authenticated}
+          isPreAction={isPreAction}
+          isPendingInvitation={isPendingInvitation}
+          joining={joining}
+          leaving={leaving}
+          onRequestJoin={onRequestJoin}
+          onRequestLeave={onRequestLeave}
+          onShareAction={onShareAction}
+        />
       </div>
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">

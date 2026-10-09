@@ -60,4 +60,25 @@ describe("/api/actions/invitations", () => {
       p_decision: "accept",
     });
   });
+
+  it("passes a recipient-bound rejection to the atomic RPC", async () => {
+    const registrationId = "22222222-2222-4222-8222-222222222222";
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ status: "rejected", registration_id: registrationId, action_id: "action-1" }],
+      error: null,
+    });
+    serverMock.mockReturnValue({ rpc });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/actions/invitations", {
+      method: "PATCH",
+      body: JSON.stringify({ registrationId, decision: "reject" }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenCalledWith("respond_to_action_invitation", {
+      p_registration_id: registrationId,
+      p_recipient_id: "recipient-1",
+      p_decision: "reject",
+    });
+  });
 });

@@ -10,7 +10,7 @@ type RegistrationRow = {
   updated_at: string | null;
   user_id: string;
   registration_status: "pending" | "confirmed" | "cancelled";
-  registration_source: "group_form";
+  registration_source: "group_form" | "manual_add";
 };
 
 function createRegistrationSupabase(initial: RegistrationRow) {
@@ -124,6 +124,27 @@ describe("reviewActionParticipation registration requests", () => {
 
     expect(result.alreadyReviewed).toBe(true);
     expect(result.participationStatus).toBe("cancelled");
+    expect(state.getUpdateCount()).toBe(0);
+  });
+
+  it("rejects a pending manual invitation from the organizer review mutation", async () => {
+    const state = createRegistrationSupabase({
+      ...pendingRegistration,
+      registration_source: "manual_add",
+    });
+
+    await expect(
+      reviewActionParticipation(state.supabase, {
+        actionId: "action-1",
+        participantId: "registration-1",
+        decision: "accept",
+        actionPhase: "pre_action",
+      }),
+    ).rejects.toMatchObject({
+      name: "ValidationError",
+      message: "Cette invitation doit être traitée par son destinataire.",
+    });
+    expect(state.getRow().registration_status).toBe("pending");
     expect(state.getUpdateCount()).toBe(0);
   });
 });

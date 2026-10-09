@@ -8,7 +8,10 @@ export type ActionParticipantSummary = {
   activeCount: number;
   totalCount: number;
   myParticipationStatus: ActionRegistrationRow["registration_status"] | null;
-  myParticipationSource: ActionParticipantRow["participation_source"] | null;
+  myParticipationSource:
+    | ActionParticipantRow["participation_source"]
+    | ActionRegistrationRow["registration_source"]
+    | null;
   myJoinedAt: string | null;
   myUpdatedAt: string | null;
 };
@@ -18,7 +21,10 @@ type ActionParticipantSummaryRow = {
   active_count: number | string | null;
   total_count: number | string | null;
   my_participation_status: ActionRegistrationRow["registration_status"] | null;
-  my_participation_source: ActionParticipantRow["participation_source"] | null;
+  my_participation_source:
+    | ActionParticipantRow["participation_source"]
+    | ActionRegistrationRow["registration_source"]
+    | null;
   my_joined_at: string | null;
   my_updated_at: string | null;
 };
@@ -129,7 +135,10 @@ async function loadActionParticipantDetailsForUser(
       : value?.["participation_status"]) as ActionRegistrationRow["registration_status"] | null,
     myParticipationSource: (useRegistrations
       ? value?.["registration_source"]
-      : value?.["participation_source"]) as ActionParticipantRow["participation_source"] | null,
+      : value?.["participation_source"]) as
+      | ActionParticipantRow["participation_source"]
+      | ActionRegistrationRow["registration_source"]
+      | null,
     myJoinedAt: (useRegistrations ? value?.["registered_at"] : value?.["joined_at"]) as string | null,
     myUpdatedAt: (value?.["updated_at"] ?? null) as string | null,
   };

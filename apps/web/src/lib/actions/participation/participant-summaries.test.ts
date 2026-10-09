@@ -16,21 +16,33 @@ function createFallbackParticipantSupabaseMock() {
       action_id: "action-1",
       user_id: "user-2",
       registration_status: "pending",
-      registration_source: "admin",
+      registration_source: "group_form",
       registered_at: "2026-06-03T12:00:00Z",
       updated_at: "2026-06-04T12:00:00Z",
+    },
+    {
+      action_id: "action-1",
+      user_id: "user-3",
+      registration_status: "pending",
+      registration_source: "manual_add",
+      registered_at: "2026-06-05T12:00:00Z",
+      updated_at: "2026-06-06T12:00:00Z",
     },
   ];
 
   const createParticipantChain = () => {
     const state = {
         registrationStatus: null as "confirmed" | "pending" | null,
+      registrationSource: null as "group_form" | "manual_add" | null,
     };
     const participantChain = {
       select: vi.fn(() => participantChain),
       eq: vi.fn((field: string, value: string) => {
         if (field === "registration_status") {
           state.registrationStatus = value as "confirmed" | "pending";
+        }
+        if (field === "registration_source") {
+          state.registrationSource = value as "group_form" | "manual_add";
         }
         return participantChain;
       }),
@@ -48,7 +60,11 @@ function createFallbackParticipantSupabaseMock() {
       ) =>
         Promise.resolve({
           data: rows,
-          count: state.registrationStatus ? 1 : 2,
+          count: rows.filter(
+            (row) =>
+              (!state.registrationStatus || row.registration_status === state.registrationStatus) &&
+              (!state.registrationSource || row.registration_source === state.registrationSource),
+          ).length,
           error: null,
         }).then(resolve, reject),
     };
