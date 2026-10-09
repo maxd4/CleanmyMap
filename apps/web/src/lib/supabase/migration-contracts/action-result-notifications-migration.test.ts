@@ -6,6 +6,10 @@ const migration = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20261009000008_action_result_notifications.sql"),
   "utf8",
 );
+const impactMigration = readFileSync(
+  resolve(process.cwd(), "supabase/migrations/20261009000009_action_participant_impact_notifications.sql"),
+  "utf8",
+);
 
 describe("action result notifications migration STATIC_CONTRACT", () => {
   it("notifies confirmed future registrants once the public final result exists", () => {
@@ -37,5 +41,19 @@ describe("action result notifications migration STATIC_CONTRACT", () => {
     expect(migration).toContain("new.participation_status in ('confirmed', 'cancelled')");
     expect(migration).toContain("subtype', 'post_action_claim_decision'");
     expect(migration).toContain("grant execute on function public.sync_action_post_action_claim_notifications()");
+  });
+
+  it("keeps personal impact notifications on confirmed participants and the canonical action projection", () => {
+    expect(impactMigration).toContain("action_result_impact");
+    expect(impactMigration).toContain("ap.participation_status = 'confirmed'");
+    expect(impactMigration).toContain("Participation confirmée et résultats disponibles");
+    expect(impactMigration).toContain("tab=past&actionId=");
+    expect(impactMigration).toContain("create trigger action_participants_action_result_impact_notifications");
+    expect(impactMigration).toContain("eventKey', 'action_result_impact:'");
+    expect(impactMigration).toContain("on conflict do nothing");
+    expect(impactMigration).toContain("payload ->> 'subtype' = 'action_result'");
+    expect(impactMigration).toContain("'decisionState', 'treated', 'decision', 'confirmed'");
+    expect(impactMigration).not.toContain("allocateActionParticipantImpact");
+    expect(impactMigration).not.toContain("individual_waste_kg / ");
   });
 });

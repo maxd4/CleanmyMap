@@ -7,6 +7,10 @@ import {
 import { syncActionOrganizers } from "./participation/organizer-sync";
 import { ManualParticipantSyncValidationError } from "./participation/manual-participant-sync";
 import { ActionUpdateValidationError } from "./action-update-persistence";
+import {
+  emitActionParticipantImpactNotifications,
+} from "./action-participant-impact-notifications";
+import type { ActionParticipantImpactSnapshot } from "./participation/group-participation-read";
 import type { appendActionModerationAudit } from "./moderation-audit";
 import type { UserIdentity } from "@/lib/authz";
 import type {
@@ -33,6 +37,7 @@ export async function runActionUpdatePostProcessing(params: {
   identity: UserIdentity | null;
   shouldAuditModeration: boolean;
   auditSnapshots: ActionAuditSnapshots | null;
+  previousImpactSnapshot?: ActionParticipantImpactSnapshot | null;
   adminAuditActorUserId: string;
   adminAuditTargetUserId: string | null;
   moderationOperation: string;
@@ -50,6 +55,7 @@ export async function runActionUpdatePostProcessing(params: {
     identity,
     shouldAuditModeration,
     auditSnapshots,
+    previousImpactSnapshot = null,
     adminAuditActorUserId,
     adminAuditTargetUserId,
     moderationOperation,
@@ -68,6 +74,13 @@ export async function runActionUpdatePostProcessing(params: {
     await syncUpdatedOrganizers({ supabase, actionId, body, userId, identity });
   }
   await syncUpdatedParticipants({ supabase, actionId, body, userId, identity, setErrorStage });
+  if (previousImpactSnapshot) {
+    await emitActionParticipantImpactNotifications({
+      supabase,
+      actionId,
+      previousSnapshot: previousImpactSnapshot,
+    });
+  }
   await appendPostProcessingAudit({
     shouldAuditModeration,
     auditSnapshots,

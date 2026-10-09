@@ -30,6 +30,8 @@ Permettre a un bénévole de rejoindre le formulaire visible d'une action publi�
 20. Quand une action est publiée, approuvée et réellement passée en `post_action_complete`, une notification `action_event` `subtype = action_result` est créée une seule fois par action et inscrit confirmé qui ne possède pas encore de participation finale `confirmed`. Elle utilise uniquement `actionId` et propose « J'ai participé » ou « Je n'ai pas participé ».
 21. « J'ai participé » crée ou retrouve exclusivement un claim `action_participants` `post_action_claim` `pending`; il ne confirme jamais une présence. « Je n'ai pas participé » traite la sollicitation dans la notification sans modifier le bilan collectif. Les claims pendants apparaissent aux organisateurs habilités et à `admin`/`max` dans une carte `post_action_claim`, puis la review existante produit une notification de résultat au demandeur.
 22. Le centre de notifications reste la boîte unique : les projections `post-action-prompts` et `post-action-claims` relisent respectivement les notifications `action_result` et `post_action_claim` avec les états métier canoniques. Une décision lue, traitée, refusée ou rendue impossible n'est jamais reproposée comme décision ouverte.
+23. Après confirmation effective d'une participation finale et publication du bilan validé, une notification informative `action_event` `subtype = action_result_impact` intitulée « Participation confirmée et résultats disponibles » renvoie vers `Rejoindre une action` en vue `past` avec le même `actionId`. Elle ne fige aucun montant : la vue relit `personalImpactAttribution` et donne accès à la progression courante canonique.
+24. Les recalculs d'attribution ne produisent une notification supplémentaire que si la projection canonique de déchets ou de mégots change pour un participant déjà `action_participants.confirmed`. La notification porte une empreinte de projection versionnée ; une réexécution identique est silencieuse. Une incohérence ou une mesure indisponible n'est jamais annoncée comme une attribution définitive.
 
 ## Placement dans le bloc Agir
 
@@ -65,6 +67,7 @@ Permettre a un bénévole de rejoindre le formulaire visible d'une action publi�
 - Le contexte `wasRegisteredBeforeAction` peut être montré au validateur lorsqu'un claim correspond à une inscription antérieure. Il reste informatif: il n'accepte jamais le claim automatiquement et ne constitue pas une preuve de présence.
 - Un claim ne reconstitue pas les effectifs terrain et ne modifie ni `volunteersCount`, ni `volunteerParticipation`, ni `effectiveVolunteerUnits`, ni les résultats collectifs tant qu'il n'est pas confirmé.
 - Seules les lignes `action_participants` dont `participation_status = confirmed` contribuent aux statistiques personnelles, aux badges, à la progression, à la gamification et aux quotes-parts. Les inscriptions `action_registrations`, même confirmées, ainsi que les participations finales `pending` ou `cancelled`, sont exclues.
+- Les notifications d'impact réutilisent exclusivement `loadActionParticipantImpactSnapshot`, `personalImpactAttribution` et `allocateActionParticipantImpact()`. Elles n'implémentent aucun calcul de quote-part et ne transforment jamais une valeur physique en XP.
 
 ## Données
 

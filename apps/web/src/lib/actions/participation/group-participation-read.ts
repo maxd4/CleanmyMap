@@ -38,6 +38,7 @@ import {
   INDIVIDUAL_IMPACT_SELECT,
   allocateActionParticipantImpact,
   toIndividualImpactMeasurement,
+  type ActionParticipantImpactAttribution,
 } from "./individual-impact";
 
 export function isVisibleInGroupForms(
@@ -202,6 +203,45 @@ async function loadParticipantImpactAttributions(
     finalActionIds,
     groupParticipantImpactRows(result.data),
   );
+}
+
+export type ActionParticipantImpactSnapshot = {
+  available: boolean;
+  attributions: Map<string, ActionParticipantImpactAttribution>;
+};
+
+/**
+ * Returns the current canonical impact projection for one public final action.
+ * The notification layer consumes this projection; it never owns allocation
+ * rules or derives a second share from raw measurements.
+ */
+export async function loadActionParticipantImpactSnapshot(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<ActionParticipantImpactSnapshot> {
+  const action = await runSingleActionQuery<ActionPreviewRow>(supabase, (query) =>
+    query.select(ACTION_PREVIEW_COLUMNS).eq("id", actionId).maybeSingle(),
+  );
+  const available = Boolean(
+    action &&
+      action.status === "approved" &&
+      action.action_phase === "post_action_complete" &&
+      action.published_at &&
+      action.moderation_visibility !== "hidden",
+  );
+  if (!action || !available) {
+    return { available: false, attributions: new Map() };
+  }
+
+  const participantImpactByActionId = await loadParticipantImpactAttributions(
+    supabase,
+    new Map([[action.id, action]]),
+    [action.id],
+  );
+  return {
+    available: true,
+    attributions: participantImpactByActionId.get(action.id) ?? new Map(),
+  };
 }
 
 export type ConfirmedParticipantImpactAttribution = {

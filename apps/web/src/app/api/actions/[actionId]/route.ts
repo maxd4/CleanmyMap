@@ -45,6 +45,10 @@ import {
   detectActionChangeKinds,
 } from "@/lib/actions/action-change-notifications";
 import { emitActionUpdateNotifications } from "@/lib/actions/action-update-notifications";
+import {
+  captureActionUpdateParticipantImpactSnapshot,
+} from "@/lib/actions/action-participant-impact-notifications";
+import type { ActionParticipantImpactSnapshot } from "@/lib/actions/participation/group-participation-read";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -205,6 +209,9 @@ async function executePreparedActionUpdate({
     ? stripObservedGeometryProjectionFields(updateData)
     : updateData;
 
+  const previousImpactSnapshot: ActionParticipantImpactSnapshot | null =
+    await captureActionUpdateParticipantImpactSnapshot({ supabase, actionId, current, body });
+
   const hasActionUpdates = Object.keys(scalarUpdateData).length > 0;
   const organizerMustPrecedeSpontaneousFinalization =
     (body.organizerType ?? current.organizer_type) === "spontaneous" &&
@@ -251,7 +258,7 @@ async function executePreparedActionUpdate({
     actionId,
     userId,
   });
-  await runActionUpdatePostProcessing({ supabase, actionId, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, organizersAlreadySynced: organizerMustPrecedeSpontaneousFinalization, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
+  await runActionUpdatePostProcessing({ supabase, actionId, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, previousImpactSnapshot, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, organizersAlreadySynced: organizerMustPrecedeSpontaneousFinalization, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
   return body;
 }
 

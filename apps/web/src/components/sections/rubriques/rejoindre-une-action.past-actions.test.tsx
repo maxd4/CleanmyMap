@@ -130,6 +130,8 @@ describe("PastActionsPanel", () => {
     expect(markup).toContain("4 mégots");
     expect(markup).toContain("Quote-part calculée");
     expect(markup).toContain("Une quote-part calculée n’est pas une mesure physique individuelle");
+    expect(markup).toContain("Voir ma progression actuelle");
+    expect(markup).toContain('href="/gamification"');
     expect(markup).not.toContain("3 kg");
     expect(markup).toContain("Discussion de l’action");
     expect(markup).toContain("/sections/messagerie?channel=action&amp;actionId=past-action");

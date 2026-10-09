@@ -130,6 +130,9 @@ function PastActionCardAttribution({ claimState, fr }: { claimState: ClaimState 
         <PersonalAttributionMetric label={fr ? "Déchets" : "Waste"} value={attribution.wasteKg} unit="kg" kind={attribution.wasteKind} fr={fr} />
         <PersonalAttributionMetric label={fr ? "Mégots" : "Cigarette butts"} value={attribution.cigaretteButts} unit={fr ? "mégots" : "cigarette butts"} kind={attribution.cigaretteButtsKind} fr={fr} />
       </div>
+      <CmmButton href="/gamification" tone="secondary" variant="pill" size="sm" className="mt-2 w-full justify-center text-xs">
+        {fr ? "Voir ma progression actuelle" : "View my current progression"}
+      </CmmButton>
     </div>
   );
 }

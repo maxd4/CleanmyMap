@@ -16,6 +16,13 @@ import {
 } from "@/lib/actions/participation/individual-impact";
 import { resolveReviewerAccess } from "../group-join/route";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
+import {
+  captureActionParticipantImpactSnapshot,
+  emitActionParticipantImpactNotifications,
+} from "@/lib/actions/action-participant-impact-notifications";
+import {
+  type ActionParticipantImpactSnapshot,
+} from "@/lib/actions/participation/group-participation-read";
 
 const wasteSchema = z.object({
   kg: z.number().min(0).max(100_000),
@@ -181,6 +188,8 @@ async function persistParticipantImpact(
   payload: ParticipantImpactPayload,
   context: ImpactContext,
 ) {
+  const previousImpactSnapshot: ActionParticipantImpactSnapshot | null =
+    await captureActionParticipantImpactSnapshot(supabase, actionId);
   const measurementUpdate = buildMeasurementUpdate(payload, context.current, context.reviewerUserId);
   const updateResult = await supabase
     .from("action_participants")
@@ -203,6 +212,13 @@ async function persistParticipantImpact(
     newValue: nextMeasurement,
     details: { participantId, actionId, measuredAt: measurementUpdate.measuredAt },
   });
+  if (previousImpactSnapshot) {
+    await emitActionParticipantImpactNotifications({
+      supabase,
+      actionId,
+      previousSnapshot: previousImpactSnapshot,
+    });
+  }
   await refreshProgressionProfile(supabase, context.participant.user_id).catch(() => null);
   return NextResponse.json({
     status: "ok",

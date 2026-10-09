@@ -12,6 +12,13 @@ import { POST_ACTION_CLAIM_PARTICIPATION_SOURCE } from "@/lib/actions/participat
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
 import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild";
 import {
+  captureActionParticipantImpactSnapshot,
+  emitActionParticipantImpactNotifications,
+} from "@/lib/actions/action-participant-impact-notifications";
+import {
+  type ActionParticipantImpactSnapshot,
+} from "@/lib/actions/participation/group-participation-read";
+import {
   type GroupJoinAuditErrorStage,
   type GroupJoinAction,
   type GroupJoinModerationParams,
@@ -183,6 +190,7 @@ async function finalizeReviewResult(params: {
   access: Extract<Awaited<ReturnType<GroupJoinModerationParams["resolveReviewerAccess"]>>, { ok: true }>;
   reason: string | null;
   result: ReviewMutationResult;
+  previousImpactSnapshot: ActionParticipantImpactSnapshot | null;
   appendAudit: ModerationAuditAppender;
   canOverrideActionParticipants: GroupJoinModerationParams["canOverrideActionParticipants"];
 }) {
@@ -214,6 +222,14 @@ async function finalizeReviewResult(params: {
         participationSource: result.participationSource,
         decision: "decision" in data ? data.decision : "accept",
       },
+    });
+  }
+
+  if (params.previousImpactSnapshot) {
+    await emitActionParticipantImpactNotifications({
+      supabase: params.supabase,
+      actionId,
+      previousSnapshot: params.previousImpactSnapshot,
     });
   }
 
@@ -305,6 +321,8 @@ export async function handleGroupJoinReview(
     );
     if ("response" in actionResolution) return actionResolution.response;
     const actionResult = actionResolution.action;
+    const previousImpactSnapshot: ActionParticipantImpactSnapshot | null =
+      await captureActionParticipantImpactSnapshot(supabase, trimmedActionId);
     const moderation = await prepareReviewModeration({
       action: actionResult,
       actionId: trimmedActionId,
@@ -343,6 +361,7 @@ export async function handleGroupJoinReview(
       access,
       reason,
       result,
+      previousImpactSnapshot,
       appendAudit: appendAdminParticipationAuditOnce,
       canOverrideActionParticipants,
     });

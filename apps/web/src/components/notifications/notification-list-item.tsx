@@ -53,6 +53,19 @@ const stateLabels: Record<NotificationDisplayState, { fr: string; en: string }> 
   unavailable: { fr: "Indisponible", en: "Unavailable" },
 };
 
+const actionEventStaticLabels: Record<string, { fr: string; en: string }> = {
+  invitation: { fr: "Invitation de l'organisateur", en: "Organizer invitation" },
+  registration_request: { fr: "Demande d'inscription", en: "Registration request" },
+  registration_decision: { fr: "Suivi de votre demande", en: "Registration update" },
+  action_result: { fr: "Résultats disponibles", en: "Results available" },
+  action_result_impact: {
+    fr: "Participation confirmée et résultats disponibles",
+    en: "Participation confirmed and results available",
+  },
+  post_action_claim: { fr: "Réclamation de participation", en: "Participation claim" },
+  post_action_claim_decision: { fr: "Résultat de votre réclamation", en: "Claim review result" },
+};
+
 function getStateLabel(
   notification: AppNotification,
   displayState: NotificationDisplayState,
@@ -216,12 +229,9 @@ function getActionEventLabel(
 ): string | null {
   if (notification.type !== "action_event" || !notification.payload) return null;
   const subtype = notification.payload.subtype;
-  if (subtype === "invitation") return locale === "fr" ? "Invitation de l'organisateur" : "Organizer invitation";
-  if (subtype === "registration_request") return locale === "fr" ? "Demande d'inscription" : "Registration request";
-  if (subtype === "registration_decision") return locale === "fr" ? "Suivi de votre demande" : "Registration update";
-  if (subtype === "action_result") return locale === "fr" ? "Résultats disponibles" : "Results available";
-  if (subtype === "post_action_claim") return locale === "fr" ? "Réclamation de participation" : "Participation claim";
-  if (subtype === "post_action_claim_decision") return locale === "fr" ? "Résultat de votre réclamation" : "Claim review result";
+  if (typeof subtype !== "string") return null;
+  const staticLabel = actionEventStaticLabels[subtype];
+  if (staticLabel) return staticLabel[locale];
   if (subtype === "action_update") {
     const changeKinds = Array.isArray(notification.payload.changeKinds)
       ? notification.payload.changeKinds.filter(
