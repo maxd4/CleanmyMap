@@ -78,7 +78,6 @@ function preparationDataFrom(source: PublicationSummarySource): ActionPreparatio
     safetyInstructions: source.safetyInstructions,
     recommendedMaterials: source.recommendedMaterials,
     participantMessage: source.participantMessage,
-    preparationState: source.preparationState,
     logisticsNotes: source.logisticsNotes,
     checklistBeforeDeparture: source.checklistBeforeDeparture,
     volunteersExpected: Number(source.volunteersCount) || undefined,
@@ -141,10 +140,6 @@ export function buildPublicationSummary(
       : preparation.pointDeRendezVous ?? preparation.communeZoneLabel,
     "Lieu non renseigné",
   );
-  const preparationState = textValue(
-    preparation.preparationState,
-    "Préparation non renseignée",
-  );
   const volunteers =
     "volunteersCount" in source
       ? String(source.volunteersCount)
@@ -156,7 +151,6 @@ export function buildPublicationSummary(
     "Aucune consigne principale renseignée",
   );
   const preparationDetails = [
-    labelForPreparationState(preparationState as FormState["preparationState"]),
     preparation.recommendedMaterials
       ? `Matériel : ${preparation.recommendedMaterials.trim()}`
       : null,
@@ -173,6 +167,7 @@ export function buildPublicationSummary(
 
   return [
     { label: "Itinéraire", value: formatItinerary(source) },
+    { label: "État de l'action", value: actionWorkflowStateLabel(source) },
     {
       label: "Date / heure",
       value: [actionDate, startTime, endTime ? `à ${endTime}` : null]
@@ -189,6 +184,26 @@ export function buildPublicationSummary(
     { label: "Bénévoles recherchés", value: volunteers },
     { label: "Consignes principales", value: safetyInstructions },
   ];
+}
+
+export function actionWorkflowStateLabel(source: PublicationSummarySource): string {
+  if (!("actionPhase" in source)) {
+    return "Brouillon";
+  }
+
+  if (source.status === "cancelled") return "Action annulée";
+  if (source.status === "rejected") return "Pré-action rejetée";
+  if (source.actionPhase === "post_action_complete") {
+    return source.status === "approved"
+      ? "Action finalisée et validée"
+      : "Action finalisée, validation en attente";
+  }
+  if (source.actionPhase === "post_action_draft") {
+    return "Formulaire complet en brouillon";
+  }
+  return source.publishedAt
+    ? "Pré-action publiée"
+    : "Brouillon de pré-action";
 }
 
 export type BeforeActionFieldUpdater = <K extends keyof FormState>(
@@ -209,13 +224,6 @@ export const DIFFICULTY_OPTIONS: SelectOption[] = [
   { value: "facile", label: "Facile" },
   { value: "moderee", label: "Modérée" },
   { value: "soutenue", label: "Soutenue" },
-];
-
-export const PREPARATION_STATE_OPTIONS: SelectOption[] = [
-  { value: "brouillon", label: "Brouillon" },
-  { value: "pret_a_partager", label: "Prêt à partager" },
-  { value: "action_en_cours", label: "Action en cours" },
-  { value: "a_completer_apres_action", label: "À compléter après action" },
 ];
 
 export function sanitizePreActionForm(form: FormState): FormState {
@@ -276,8 +284,4 @@ export function buildPreActionSummaryNote(form: FormState): string | null {
     form.plannedObjective.trim(),
   ].filter((value) => value.length > 0);
   return chunks.length > 0 ? chunks.join(" · ") : null;
-}
-
-function labelForPreparationState(value: FormState["preparationState"]): string {
-  return PREPARATION_STATE_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }

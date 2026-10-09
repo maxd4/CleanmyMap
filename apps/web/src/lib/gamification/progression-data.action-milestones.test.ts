@@ -28,7 +28,6 @@ function buildAction(id = "action-1", status: ActionRow["status"] = "approved"):
       coordinates: [[2.35, 48.85], [2.351, 48.851]],
     }),
     preparation_data: {
-      preparationState: "action_en_cours",
       gpxImport: {
         source: "gpx_import",
         observedDistanceKm: 1.2,

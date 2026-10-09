@@ -26,7 +26,24 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     );
   });
 
-  it("rejects starting a pending pre-action through the generic PATCH", async () => {
+  it("rejects finalizing an action while administrative requirements are pending", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          actionPhase: "post_action_complete",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a forged preparation state before loading the action", async () => {
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
@@ -40,10 +57,25 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     );
 
     expect(response.status).toBe(400);
+    expect(loadActionByIdMock).not.toHaveBeenCalled();
     expect(updateMock).not.toHaveBeenCalled();
   });
 
   it("keeps an ordinary final declaration pending moderation", async () => {
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "pending",
+      action_phase: "post_action_draft",
+      preparation_data: {
+        administrativeRequirements: {
+          status: "validated",
+          validatedAt: "2026-09-15T10:00:00.000Z",
+          validatedByUserId: "validator-1",
+        },
+      },
+      created_by_clerk_id: "user-test-1",
+      notes: null,
+    });
     const { PATCH } = await import("./route");
 
     const response = await PATCH(

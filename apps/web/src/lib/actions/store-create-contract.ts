@@ -30,6 +30,14 @@ import {
 } from "./store-notes";
 import { resolveParticipantsCount } from "@/lib/actions/volunteer-participation";
 
+function stripLegacyPreparationState(
+  preparationData: ActionPreparationData,
+): ActionPreparationData {
+  const next = { ...preparationData };
+  delete next.preparationState;
+  return next;
+}
+
 export function resolveCreateActionRouteTopology(payload: CreateActionPayload) {
   const recordType = payload.recordType ?? "action";
   return {
@@ -100,10 +108,10 @@ export function buildActionInsertPayload(params: {
   status: Exclude<ActionStatus, "cancelled"> | undefined;
 }) {
   const { recordType, routeTopology } = resolveCreateActionRouteTopology(params.payload);
-  const normalizedInputPreparationData = normalizeActionPreparationData({
+  const normalizedInputPreparationData = stripLegacyPreparationState(normalizeActionPreparationData({
     ...(params.payload.preparationData ?? {}),
     routeTopology,
-  });
+  }));
   const activeGeometry = resolveFinalActionGeometry({
     gpxDrawing: normalizedInputPreparationData.gpxImport ? params.payload.manualDrawing : null,
     gpxImport: normalizedInputPreparationData.gpxImport,

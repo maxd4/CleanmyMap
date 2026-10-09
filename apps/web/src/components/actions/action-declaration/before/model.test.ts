@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialFormState } from "../payload";
 import {
+  actionWorkflowStateLabel,
   buildPublicationSummary,
   isResumablePreAction,
   sanitizePreActionForm,
@@ -35,7 +36,6 @@ describe("sanitizePreActionForm", () => {
     expect(form.plannedObjective).toBe("");
     expect(form.estimatedDifficulty).toBe("");
     expect(form.placeType).toBe("");
-    expect(form.preparationState).toBe("brouillon");
   });
 
   it("removes final harvest fields while keeping expected waste categories", () => {
@@ -107,6 +107,19 @@ describe("sanitizePreActionForm", () => {
 });
 
 describe("buildPublicationSummary", () => {
+  it("derives the read-only action state from canonical persisted fields", () => {
+    expect(actionWorkflowStateLabel({
+      status: "approved",
+      actionPhase: "post_action_complete",
+      publishedAt: "2026-09-15T10:00:00.000Z",
+    } as never)).toBe("Action finalisée et validée");
+    expect(actionWorkflowStateLabel({
+      status: "pending",
+      actionPhase: "pre_action",
+      publishedAt: null,
+    } as never)).toBe("Brouillon de pré-action");
+  });
+
   it("maps the canonical published action to the final recap", () => {
     const summary = buildPublicationSummary({
       id: "action-42",
@@ -118,7 +131,6 @@ describe("buildPublicationSummary", () => {
       arrivalLocationLabel: "Quai de Seine",
       volunteersCount: 8,
       preparationData: {
-        preparationState: "pret_a_partager",
         safetyInstructions: "Rester en groupe.",
         logisticsNotes: "Vérifier l'autorisation du lieu.",
         operationalRoute: {

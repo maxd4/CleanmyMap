@@ -48,11 +48,10 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Commentaire logistique");
     expect(html).toContain("Checklist avant départ");
     expect(html).toContain("Localisation du rendez-vous");
-    expect(html).toContain("État de préparation");
+    expect(html).not.toContain("État de préparation");
     expect(html).toContain("Sélectionnez un type d&#x27;action");
     expect(html).toContain("Sélectionnez un type de zone");
     expect(html).toContain("Sélectionnez un niveau");
-    expect(html).toContain("Sélectionnez un rôle");
     expect(html).toContain("Date et horaires");
     expect(html).toContain("Début du créneau global");
     expect(html).toContain("Fin du créneau global");

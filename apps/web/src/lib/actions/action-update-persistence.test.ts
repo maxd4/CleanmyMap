@@ -122,6 +122,25 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
     });
   });
 
+  it("preserves a historical preparation state without accepting it as new input", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({
+        actionTitle: "Avant",
+        preparationState: "pret_a_partager",
+      } as never),
+      parsedBody: ({ preparationData: { actionTitle: "Après" } } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject({
+      actionTitle: "Après",
+      preparationState: "pret_a_partager",
+    });
+  });
+
   it("preserves the canonical value when the same PATCH changes phase", async () => {
     resolveActionDepartmentForPersistenceMock.mockResolvedValue({
       departmentCode: null,
@@ -208,7 +227,7 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
     });
   });
 
-  it("does not retain an in-progress pre-action while requirements are pending", async () => {
+  it("blocks the real action completion while requirements are pending", async () => {
     resolveActionDepartmentForPersistenceMock.mockResolvedValue({
       departmentCode: null,
       departmentName: null,
@@ -217,15 +236,37 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
     await expect(
       prepareActionUpdate({
         current: buildCurrent({
-          preparationState: "action_en_cours",
           administrativeRequirements: {
             status: "pending",
             validatedAt: null,
             validatedByUserId: null,
           },
         }),
-        parsedBody: ({ notes: "Mise à jour sans démarrage" } as unknown as ActionUpdateInput),
+        parsedBody: ({
+          actionPhase: "post_action_complete",
+          notes: "Finalisation de l'action",
+        } as unknown as ActionUpdateInput),
       }),
     ).rejects.toThrow("Les démarches administratives doivent être validées");
+  });
+
+  it("allows the post-action draft transition while requirements are pending", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+
+    await expect(
+      prepareActionUpdate({
+        current: buildCurrent({
+          administrativeRequirements: {
+            status: "pending",
+            validatedAt: null,
+            validatedByUserId: null,
+          },
+        }),
+        parsedBody: ({ actionPhase: "post_action_draft" } as unknown as ActionUpdateInput),
+      }),
+    ).resolves.toBeDefined();
   });
 });

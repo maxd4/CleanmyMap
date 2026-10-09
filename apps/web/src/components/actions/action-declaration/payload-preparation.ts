@@ -131,7 +131,6 @@ function buildPreparationContentFields(
     ...(form.estimatedDifficulty ? { estimatedDifficulty: form.estimatedDifficulty } : {}),
     ...buildPreparationGuidanceFields(form, guidance),
     participantMessage: form.participantMessage.trim() || undefined,
-    preparationState: form.preparationState,
     logisticsNotes: form.logisticsNotes.trim() || undefined,
     checklistBeforeDeparture: form.checklistBeforeDeparture.trim() || undefined,
   };
@@ -239,7 +238,6 @@ function buildHydratedDescriptionFields(
     safetyInstructions: preparationData.safetyInstructions ?? form.safetyInstructions,
     recommendedMaterials: preparationData.recommendedMaterials ?? form.recommendedMaterials,
     participantMessage: preparationData.participantMessage ?? form.participantMessage,
-    preparationState: preparationData.preparationState ?? form.preparationState,
     logisticsNotes: preparationData.logisticsNotes ?? form.logisticsNotes,
     checklistBeforeDeparture: preparationData.checklistBeforeDeparture ?? form.checklistBeforeDeparture,
   };

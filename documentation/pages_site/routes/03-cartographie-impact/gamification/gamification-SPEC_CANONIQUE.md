@@ -630,7 +630,7 @@ partir d’une fraîcheur courante plus faible.
 - one-shot;
 - `+1 XP`;
 - organisateur canonique;
-- préparation explicite démontrée (`preparationState` hors brouillon),
+- parcours de préparation effectivement publié (`published_at` présent), puis finalisation et validation CURRENT ; une ancienne valeur `preparationState` ne constitue jamais une preuve,
   post-action finalisée et validation CURRENT (`approved` +
   `post_action_complete`);
 - une action complète créée directement sans ce parcours démontré ne suffit

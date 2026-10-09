@@ -65,7 +65,6 @@ function buildAction(overrides: Partial<ActionRow> = {}): ActionRow {
       coordinates: [[2.35, 48.85], [2.351, 48.851]],
     }),
     preparation_data: {
-      preparationState: "action_en_cours",
       gpxImport: {
         source: "gpx_import",
         observedDistanceKm: 1.2,
@@ -114,7 +113,8 @@ describe("CURRENT action one-shot milestones", () => {
   });
 
   it("rejects partial facts and never treats a direct complete form as a loop", () => {
-    expect(assessmentMap(buildAction({ preparation_data: { preparationState: "brouillon" } })).get("boucle_bouclee")?.qualified).toBe(false);
+    expect(assessmentMap(buildAction({ published_at: null })).get("boucle_bouclee")?.qualified).toBe(false);
+    expect(assessmentMap(buildAction({ preparation_data: { preparationState: "action_en_cours" }, published_at: null })).get("boucle_bouclee")?.qualified).toBe(false);
     expect(assessmentMap(buildAction({ published_at: null })).get("mobilisateur")?.qualified).toBe(false);
     expect(assessmentMap(buildAction(), "B").get("donnee_exemplaire")?.qualified).toBe(false);
     expect(assessmentMap(buildAction({ geometry_source: "estimated_route" })).get("parcours_documente")?.qualified).toBe(false);
@@ -141,7 +141,6 @@ describe("CURRENT action one-shot milestones", () => {
       assessmentMap(
         buildAction({
           preparation_data: {
-            preparationState: "action_en_cours",
             formalitiesWorkflow: workflowWithoutRequiredFormality,
           },
         }),

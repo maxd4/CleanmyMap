@@ -22,7 +22,6 @@ function buildHookState(overrides: Record<string, unknown> = {}) {
   form.departureLocationLabel = "Paris 15e";
   form.arrivalLocationLabel = "Quai de Seine";
   form.volunteersCount = "8";
-  form.preparationState = "pret_a_partager";
   form.safetyInstructions = "Rester en groupe.";
 
   return {
@@ -42,7 +41,6 @@ function buildHookState(overrides: Record<string, unknown> = {}) {
       arrivalLocationLabel: "Quai de Seine",
       volunteersCount: 8,
       preparationData: {
-        preparationState: "pret_a_partager",
         safetyInstructions: "Rester en groupe.",
       },
     },

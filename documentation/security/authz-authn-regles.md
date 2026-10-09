@@ -887,7 +887,7 @@ autres → 403
 
 Le créateur n'obtient pas cette capacité du seul fait de la création. La
 mutation est contrôlée côté serveur, conserve `administrativeRequirements`
-séparé de `preparationState`, et réutilise l'audit Actions avec les valeurs
+séparé de l'ancien `preparationState` (lecture historique uniquement), et réutilise l'audit Actions avec les valeurs
 avant/après. Une pré-action créée ne signifie donc pas que les démarches sont
 validées ; elles doivent l'être avant le démarrage réel de l'action. Cette
 validation ne doit pas empêcher la saisie rétrospective des résultats déjà

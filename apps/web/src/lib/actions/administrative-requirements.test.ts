@@ -119,4 +119,20 @@ describe("administrative requirements", () => {
       );
     }
   });
+
+  it("rejects the legacy preparation state on new create and PATCH payloads", () => {
+    const createResult = createActionSchema.safeParse({
+      associationName: "Action spontanée",
+      actionDate: "2026-09-20",
+      locationLabel: "Paris",
+      organizerType: "spontaneous",
+      preparationData: { preparationState: "action_en_cours" },
+    });
+    const updateResult = updateActionSchema.safeParse({
+      preparationData: { preparationState: "pret_a_partager" },
+    });
+
+    expect(createResult.success).toBe(false);
+    expect(updateResult.success).toBe(false);
+  });
 });

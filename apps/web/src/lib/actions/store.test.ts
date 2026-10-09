@@ -232,6 +232,23 @@ describe("administrative requirements persistence", () => {
     });
     expect(row.preparation_data.administrativeRequirements).toBeUndefined();
   });
+
+  it("does not write the legacy preparation state on a new action", () => {
+    const payload = buildPayload({
+      preparationData: {
+        preparationState: "action_en_cours",
+      },
+    });
+    const row = buildActionInsertPayload({
+      payload,
+      userId: "user-test",
+      status: "pending",
+      persistedGeometry: buildCreateActionGeometry(payload, null),
+      finalDrawing: null,
+    });
+
+    expect(row.preparation_data).not.toHaveProperty("preparationState");
+  });
 });
 
 describe("route topology persistence", () => {

@@ -10,8 +10,7 @@ import type { FormState } from "../model";
 import type { ActiveRole } from "@/lib/domain-language";
 import { ActionParticipantPicker } from "../../action-participant-picker";
 import { normalizeParticipantAccounts, parseOrganizerAccounts } from "../payload";
-import { PREPARATION_STATE_OPTIONS } from "./model";
-import { FieldShell, GroupJoinPublishCard, SectionLabel, SelectShell } from "./ui";
+import { FieldShell, GroupJoinPublishCard, SectionLabel } from "./ui";
 import { cn } from "@/lib/utils";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
 
@@ -145,7 +144,6 @@ function IdentityFieldGrid({
         {missingAssociation ? <span id="before-organizer-structure-error" className="block text-xs font-medium text-rose-700">Renseignez un organisateur.</span> : null}
       </FieldShell>
 
-      <SelectShell label="État de préparation" value={form.preparationState} onChange={(value) => updateField("preparationState", value as FormState["preparationState"])} options={PREPARATION_STATE_OPTIONS} />
     </div>
   );
 }

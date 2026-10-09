@@ -52,7 +52,6 @@ export const preparationDataSchema = z
     safetyInstructions: z.string().max(2000).optional(),
     recommendedMaterials: z.string().max(2000).optional(),
     participantMessage: z.string().max(2000).optional(),
-    preparationState: z.enum(["brouillon", "pret_a_partager", "action_en_cours", "a_completer_apres_action"]).optional(),
     ...preparationFormalitiesSchemaFields,
     logisticsNotes: z.string().max(2000).optional(),
     checklistBeforeDeparture: z.string().max(2000).optional(),

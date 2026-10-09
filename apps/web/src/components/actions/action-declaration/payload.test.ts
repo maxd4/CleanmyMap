@@ -80,7 +80,7 @@ describe("action declaration payload helpers", () => {
     expect(hydrated.estimatedDifficulty).toBe("");
     expect(hydrated).not.toHaveProperty("creatorRole");
     expect(hydrated.placeType).toBe("");
-    expect(hydrated.preparationState).toBe("brouillon");
+    expect(hydrated).not.toHaveProperty("preparationState");
   });
 
   it("derives an editable route target from duration and ignores legacy unproven values", () => {

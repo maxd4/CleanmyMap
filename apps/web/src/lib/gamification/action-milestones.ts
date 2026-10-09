@@ -55,13 +55,8 @@ function preparationDataFor(action: ActionRow): ActionPreparationData {
   return action.preparation_data ?? {};
 }
 
-function hasPreparationJourney(action: ActionRow): boolean {
-  const state = preparationDataFor(action).preparationState;
-  return (
-    state === "pret_a_partager" ||
-    state === "action_en_cours" ||
-    state === "a_completer_apres_action"
-  );
+function hasPersistedPreparationJourney(action: ActionRow): boolean {
+  return action.action_phase === "post_action_complete" && Boolean(action.published_at);
 }
 
 export function isCurrentActionValidated(action: ActionRow): boolean {
@@ -194,8 +189,8 @@ export function assessActionMilestones(input: ActionMilestoneInput): ActionMiles
 
   const qualifications: Record<ActionMilestoneId, { qualified: boolean; reason: string }> = {
     boucle_bouclee: {
-      qualified: qualifiesCurrentAction(validated, isCanonicalOrganizer, hasPreparationJourney(action)),
-      reason: "organisateur canonique + préparation démontrée + post-action finalisée + validation actuelle",
+      qualified: qualifiesCurrentAction(validated, isCanonicalOrganizer, hasPersistedPreparationJourney(action)),
+      reason: "organisateur canonique + pré-action effectivement publiée + post-action finalisée + validation actuelle",
     },
     mobilisateur: {
       qualified: qualifiesCurrentAction(

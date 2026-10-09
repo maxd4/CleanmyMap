@@ -1,5 +1,6 @@
 import { preserveHistoricalRouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { ActionRow } from "@/types/database";
+import type { ActionPreparationData } from "./types";
 import type { ActionUpdateInput } from "./action-update-audit";
 import {
   normalizeAdministrativeRequirements,
@@ -34,7 +35,18 @@ export function prepareActionUpdateBody(
     withFormalitiesWorkflow,
   ) as typeof parsedBody.preparationData;
 
-  return { ...parsedBody, preparationData: preservedPreparationData };
+  const legacyPreparationState = (
+    current.preparation_data as ActionPreparationData | null | undefined
+  )?.preparationState;
+  const nextLegacyPreparationState = (
+    preservedPreparationData as ActionPreparationData | null | undefined
+  )?.preparationState;
+  const preparationDataWithLegacyCompatibility =
+    legacyPreparationState && preservedPreparationData && nextLegacyPreparationState === undefined
+      ? ({ ...preservedPreparationData, preparationState: legacyPreparationState } as typeof parsedBody.preparationData)
+      : preservedPreparationData;
+
+  return { ...parsedBody, preparationData: preparationDataWithLegacyCompatibility };
 }
 
 export function hasPendingAdministrativeRequirements(
@@ -42,13 +54,10 @@ export function hasPendingAdministrativeRequirements(
   body: ActionUpdateInput,
 ): boolean {
   const nextActionPhase = body.actionPhase ?? current.action_phase;
-  const nextPreparationState =
-    body.preparationData?.preparationState ??
-    current.preparation_data?.preparationState;
 
   return (
-    nextActionPhase === "pre_action" &&
-    nextPreparationState === "action_en_cours" &&
+    current.action_phase !== "post_action_complete" &&
+    nextActionPhase === "post_action_complete" &&
     normalizeAdministrativeRequirements(
       current.preparation_data?.administrativeRequirements,
     ).status === "pending"
