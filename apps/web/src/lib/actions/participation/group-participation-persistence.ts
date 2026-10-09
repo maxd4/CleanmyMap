@@ -121,6 +121,7 @@ export async function updateParticipationRecordForPhase(params: {
         joinedAt: params.joinedAt,
         participationStatus: params.status,
         participationSource: params.source,
+        expectedParticipationStatus: params.expectedStatus,
       });
   return fromStoreRow({ ...row, id: params.recordId, user_id: params.userId } as ParticipationStoreRow, params.userId);
 }

@@ -105,4 +105,25 @@ describe("notification list item", () => {
     expect(markup).toContain("Horaire modifié");
     expect(markup).not.toContain("Demande d'inscription");
   });
+
+  it("offers the two explicit result answers without turning a claim into attendance", () => {
+    const markup = renderToStaticMarkup(
+      <NotificationListItem
+        notification={{
+          ...notification,
+          type: "action_event",
+          title: "Résultats disponibles",
+          payload: { eventType: "action_event", subtype: "action_result", actionId: "action-1" },
+        }}
+        locale="fr"
+        displayState="decision_pending"
+        decision={{ kind: "action_result", state: "decision_pending", onDecision: vi.fn() }}
+        onClick={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("J&#x27;ai participé");
+    expect(markup).toContain("Je n&#x27;ai pas participé");
+    expect(markup).not.toContain("Accepter la demande");
+  });
 });

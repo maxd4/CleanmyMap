@@ -37,7 +37,7 @@ export type PendingDecisionNotifications = {
   missingRequestIds: string[];
 };
 
-export type NotificationDecision = "accept" | "reject";
+export type NotificationDecision = "accept" | "reject" | "claim" | "not_participated";
 
 export type NotificationDecisionResponse = {
   status: "accepted" | "rejected" | "ignored" | "unavailable";
@@ -107,7 +107,7 @@ function parseContactRequestIds(payload: unknown): string[] {
   });
 }
 
-async function readContactRequestsResponse(response: Response): Promise<unknown> {
+export async function readContactRequestsResponse(response: Response): Promise<unknown> {
   let payload: unknown = null;
   try {
     payload = await response.json();
@@ -237,6 +237,10 @@ export async function loadPendingActionRegistrationRequestIds(): Promise<string[
   return parseRegistrationRequestIds(await readContactRequestsResponse(response));
 }
 
+function readNotificationString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 function readDecisionRequestId(payload: Record<string, unknown> | null): string | null {
   if (!payload) return null;
   if (payload.requestKind === "action_share") {
@@ -257,6 +261,12 @@ function readDecisionRequestId(payload: Record<string, unknown> | null): string 
     return typeof payload.registrationId === "string" && payload.registrationId.trim()
       ? payload.registrationId.trim()
       : null;
+  }
+  if (payload.eventType === "action_event" && payload.subtype === "action_result") {
+    return readNotificationString(payload.actionId);
+  }
+  if (payload.eventType === "action_event" && payload.subtype === "post_action_claim") {
+    return readNotificationString(payload.participationId);
   }
   return null;
 }
@@ -292,7 +302,12 @@ export async function loadPendingDecisionNotificationsForCurrentUser(
   for (const requestIdBatch of chunk(requestIds, PENDING_NOTIFICATION_BATCH_SIZE)) {
     const filters = requestIdBatch.flatMap((requestId) => {
       const escaped = escapePostgrestFilterValue(requestId);
-      return [`payload->>requestId.eq.${escaped}`, `payload->>registrationId.eq.${escaped}`];
+      return [
+        `payload->>requestId.eq.${escaped}`,
+        `payload->>registrationId.eq.${escaped}`,
+        `payload->>actionId.eq.${escaped}`,
+        `payload->>participationId.eq.${escaped}`,
+      ];
     });
     const query = supabase
       .from("app_notifications")

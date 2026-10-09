@@ -96,10 +96,41 @@ describe("notification decision state", () => {
     })).toBe("decision_pending");
   });
 
+  it("recognizes result prompts and reviewer claim cards on the same action id", () => {
+    expect(getNotificationDecisionDescriptor({
+      eventType: "action_event",
+      subtype: "action_result",
+      actionId: "action-final-1",
+    })).toEqual({
+      kind: "action_result",
+      requestId: "action-final-1",
+      actionId: "action-final-1",
+    });
+    expect(getNotificationDecisionDescriptor({
+      eventType: "action_event",
+      subtype: "post_action_claim",
+      actionId: "action-final-1",
+      participationId: "claim-1",
+    })).toEqual({
+      kind: "action_post_action_claim",
+      requestId: "claim-1",
+      actionId: "action-final-1",
+    });
+    expect(resolveNotificationDisplayState({
+      notification: notification({
+        type: "action_event",
+        payload: { eventType: "action_event", subtype: "action_result", actionId: "action-final-1" },
+      }),
+      pendingRequestIds: new Set(["action-final-1"]),
+    })).toBe("decision_pending");
+  });
+
   it("renders durable outcomes and prioritizes old decisions over recent information", () => {
     expect(getNotificationDecisionOutcome({ decision: "accepted" })).toBe("accepted");
     expect(getNotificationDecisionOutcome({ decision: "reject" })).toBe("rejected");
     expect(getNotificationDecisionOutcome({ decision: "withdrawn" })).toBe("withdrawn");
+    expect(getNotificationDecisionOutcome({ decision: "claim" })).toBe("claimed");
+    expect(getNotificationDecisionOutcome({ decision: "not_participated" })).toBe("not_participated");
 
     const oldDecision = notification({ id: "old-decision" });
     const recentInformation = notification({ id: "recent-information", payload: null });

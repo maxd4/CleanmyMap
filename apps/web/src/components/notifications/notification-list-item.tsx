@@ -37,6 +37,7 @@ type NotificationListItemProps = {
   compact?: boolean;
   displayState?: NotificationDisplayState;
   decision?: {
+    kind?: "action_share" | "action_invitation" | "action_registration_request" | "action_result" | "action_post_action_claim";
     state: "decision_pending" | "treated" | "unavailable";
     busy?: boolean;
     error?: string | null;
@@ -60,8 +61,8 @@ function getStateLabel(
   const outcome = getNotificationDecisionOutcome(notification.payload);
   if (displayState === "treated" && outcome) {
     return locale === "fr"
-      ? { accepted: "Acceptée", rejected: "Refusée", withdrawn: "Retirée" }[outcome]
-      : { accepted: "Accepted", rejected: "Refused", withdrawn: "Withdrawn" }[outcome];
+      ? { accepted: "Acceptée", rejected: "Refusée", withdrawn: "Retirée", claimed: "Demande envoyée", not_participated: "Je n'ai pas participé" }[outcome]
+      : { accepted: "Accepted", rejected: "Refused", withdrawn: "Withdrawn", claimed: "Claim submitted", not_participated: "Not participated" }[outcome];
   }
   if (displayState === "unavailable" && outcome === "withdrawn") {
     return locale === "fr" ? "Retirée" : "Withdrawn";
@@ -218,6 +219,9 @@ function getActionEventLabel(
   if (subtype === "invitation") return locale === "fr" ? "Invitation de l'organisateur" : "Organizer invitation";
   if (subtype === "registration_request") return locale === "fr" ? "Demande d'inscription" : "Registration request";
   if (subtype === "registration_decision") return locale === "fr" ? "Suivi de votre demande" : "Registration update";
+  if (subtype === "action_result") return locale === "fr" ? "Résultats disponibles" : "Results available";
+  if (subtype === "post_action_claim") return locale === "fr" ? "Réclamation de participation" : "Participation claim";
+  if (subtype === "post_action_claim_decision") return locale === "fr" ? "Résultat de votre réclamation" : "Claim review result";
   if (subtype === "action_update") {
     const changeKinds = Array.isArray(notification.payload.changeKinds)
       ? notification.payload.changeKinds.filter(
@@ -246,14 +250,25 @@ function NotificationDecisionActions({
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
       {decision.state === "decision_pending" ? (
-        <>
-          <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("accept")} aria-label={locale === "fr" ? "Accepter la demande" : "Accept request"} className="rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60">
-            ✓ {locale === "fr" ? "Accepter" : "Accept"}
-          </button>
-          <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("reject")} aria-label={locale === "fr" ? "Refuser la demande" : "Reject request"} className="rounded-lg border border-rose-300/40 bg-rose-400/15 px-2.5 py-1.5 text-xs font-bold text-rose-100 transition-colors hover:bg-rose-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 disabled:cursor-wait disabled:opacity-60">
-            × {locale === "fr" ? "Refuser" : "Reject"}
-          </button>
-        </>
+        decision.kind === "action_result" ? (
+          <>
+            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("claim")} aria-label={locale === "fr" ? "Indiquer que j'ai participé" : "Say I participated"} className="rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60">
+              ✓ {locale === "fr" ? "J'ai participé" : "I participated"}
+            </button>
+            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("not_participated")} aria-label={locale === "fr" ? "Indiquer que je n'ai pas participé" : "Say I did not participate"} className="rounded-lg border border-slate-300/40 bg-slate-400/15 px-2.5 py-1.5 text-xs font-bold text-slate-100 transition-colors hover:bg-slate-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 disabled:cursor-wait disabled:opacity-60">
+              × {locale === "fr" ? "Je n'ai pas participé" : "I did not participate"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("accept")} aria-label={locale === "fr" ? "Accepter la demande" : "Accept request"} className="rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60">
+              ✓ {locale === "fr" ? "Accepter" : "Accept"}
+            </button>
+            <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("reject")} aria-label={locale === "fr" ? "Refuser la demande" : "Reject request"} className="rounded-lg border border-rose-300/40 bg-rose-400/15 px-2.5 py-1.5 text-xs font-bold text-rose-100 transition-colors hover:bg-rose-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 disabled:cursor-wait disabled:opacity-60">
+              × {locale === "fr" ? "Refuser" : "Reject"}
+            </button>
+          </>
+        )
       ) : null}
       {decision.busy ? <span className="text-xs font-semibold opacity-75" role="status">{locale === "fr" ? "Traitement…" : "Processing…"}</span> : null}
       {decision.error ? <span className="text-xs font-semibold text-rose-200" role="alert">{decision.error}</span> : null}

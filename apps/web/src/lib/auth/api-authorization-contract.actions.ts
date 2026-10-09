@@ -333,6 +333,28 @@ export const actionsAuthorizationContract = {
       evidence: ["auth", "list_pending_action_registration_requests_for_reviewer"],
     },
   },
+  "actions/post-action-prompts": {
+    GET: {
+      expected: "Authenticated confirmed-registration recipient read of still-actionable final-result prompts",
+      dimensions: ["authentication", "ownership"],
+      actual: "Clerk auth userId + service-only recipient-scoped public-result prompt RPC",
+      evidence: ["auth", "list_pending_action_result_prompts_for_recipient"],
+    },
+    PATCH: {
+      expected: "Authenticated confirmed-registration recipient response that either creates a pending post_action_claim or closes only the prompt",
+      dimensions: ["authentication", "ownership", "business permission"],
+      actual: "Clerk auth userId + recipient-bound atomic respond_to_action_result_prompt RPC",
+      evidence: ["auth", "respond_to_action_result_prompt"],
+    },
+  },
+  "actions/post-action-claims": {
+    GET: {
+      expected: "Authenticated action creator/organizer or admin/max read of still-pending post_action_claim review cards",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "Clerk auth userId + service-only reviewer-scoped pending post_action_claim RPC",
+      evidence: ["auth", "list_pending_post_action_claims_for_reviewer"],
+    },
+  },
   "actions/[actionId]/public": {
     GET: {
       expected: "Public-safe dynamic action reference projection; inaccessible actions return a neutral not-found response",

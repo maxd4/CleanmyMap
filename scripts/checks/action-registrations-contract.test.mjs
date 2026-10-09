@@ -106,7 +106,6 @@ test("action registrations expose an explicit browser deny policy append-only", 
 test("future participation consumers use registrations while post-action claims retain participants", () => {
   const futureConsumers = [
     "apps/web/src/lib/actions/store-participants.ts",
-    "apps/web/src/lib/actions/participation/organizers.ts",
     "apps/web/src/lib/actions/participation/group-participation-membership.ts",
     "apps/web/src/lib/actions/participation/group-participation-review-read.ts",
     "apps/web/src/lib/actions/participation/participant-summaries.ts",
@@ -117,6 +116,21 @@ test("future participation consumers use registrations while post-action claims 
     const source = read(relativePath);
     assert.match(source, /action_registrations|registration-records/);
   }
+
+  // The organizer facade delegates its persistence boundary to the canonical
+  // manual sync owner; verify both sides of that boundary explicitly.
+  assert.match(
+    read("apps/web/src/lib/actions/participation/organizers.ts"),
+    /manual-participant-sync/,
+  );
+  assert.match(
+    read("apps/web/src/lib/actions/participation/manual-participant-sync.ts"),
+    /sync_action_manual_participants/,
+  );
+  assert.match(
+    read("apps/web/supabase/migrations/20261009000005_atomic_manual_invitation_lifecycle.sql"),
+    /sync_action_manual_participants[\s\S]+action_registrations/,
+  );
 
   assert.match(
     read("apps/web/src/lib/actions/participation/post-action-claims.ts"),

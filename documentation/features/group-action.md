@@ -27,6 +27,9 @@ Permettre a un bénévole de rejoindre le formulaire visible d'une action publi�
 17. La file de review d'une action future ne contient que les inscriptions `registration_source = group_form` et `registration_status = pending`. Une invitation `manual_add` reste absente de cette file, même si son identifiant est connu ; son destinataire est le seul parcours normal d'acceptation ou de refus via `respond_to_action_invitation`.
 18. Après une écriture réussie sur une action publiée future en pré-action, les seuls changements notifiés sont la date, l'horaire, le point de rendez-vous, le parcours actif ou l'annulation. Les notifications `action_event` ciblent le créateur, les organisateurs et les inscriptions `confirmed`, excluent l'auteur et les inscriptions `cancelled`, puis sont dédupliquées par une clé de révision.
 19. Les modifications opérationnelles rapprochées sont regroupées dans une seule notification non lue par action. Son `changeEvents` conserve au plus 50 événements ; une notification déjà lue reste immuable afin de préserver la traçabilité. Les brouillons, descriptions, estimations et formalités internes ne déclenchent pas cette émission.
+20. Quand une action est publiée, approuvée et réellement passée en `post_action_complete`, une notification `action_event` `subtype = action_result` est créée une seule fois par action et inscrit confirmé qui ne possède pas encore de participation finale `confirmed`. Elle utilise uniquement `actionId` et propose « J'ai participé » ou « Je n'ai pas participé ».
+21. « J'ai participé » crée ou retrouve exclusivement un claim `action_participants` `post_action_claim` `pending`; il ne confirme jamais une présence. « Je n'ai pas participé » traite la sollicitation dans la notification sans modifier le bilan collectif. Les claims pendants apparaissent aux organisateurs habilités et à `admin`/`max` dans une carte `post_action_claim`, puis la review existante produit une notification de résultat au demandeur.
+22. Le centre de notifications reste la boîte unique : les projections `post-action-prompts` et `post-action-claims` relisent respectivement les notifications `action_result` et `post_action_claim` avec les états métier canoniques. Une décision lue, traitée, refusée ou rendue impossible n'est jamais reproposée comme décision ouverte.
 
 ## Placement dans le bloc Agir
 
@@ -126,3 +129,6 @@ doit donc venir du parcours explicite `post_action_claim`, puis de sa validation
 - Verifier qu'une action terminée publique peut recevoir un claim idempotent et qu'un claim refusé reste terminal.
 - Verifier qu'un utilisateur inscrit avant l'action peut conserver son inscription et créer un claim final distinct.
 - Verifier qu'un claim `pending` reste absent des statistiques et qu'un claim `confirmed` y contribue uniquement après décision.
+- Verifier qu'une action finalisée publiquement ne notifie qu'une fois chaque inscrit confirmé sans participation finale confirmée, avec le même `actionId`.
+- Verifier que « J'ai participé » reste `pending` jusqu'à review et que « Je n'ai pas participé » ne modifie ni les résultats ni les statistiques.
+- Verifier qu'une décision concurrente, un droit de review révoqué ou une action devenue indisponible rend la carte non actionnable et conserve l'état métier observé.

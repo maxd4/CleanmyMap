@@ -367,6 +367,7 @@ function DashboardNotificationList({
             locale={locale}
             displayState={displayState}
             decision={notificationDecision ? {
+              kind: notificationDecision.kind,
               state: displayState === "decision_pending" || displayState === "treated" || displayState === "unavailable" ? displayState : "unavailable",
               busy: decisionState.busyDecisionIds.has(notification.id),
               error: decisionState.decisionErrors[notification.id],

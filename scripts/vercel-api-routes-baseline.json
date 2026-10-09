@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-30T17:43:01.000Z",
-  "apiRouteCount": 115,
+  "apiRouteCount": 117,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -21,6 +21,20 @@
       "introducedBy": "7428cde0ed51e40c0caa42c0361701cdaab1c0a8",
       "reason": "Surface authentifiée de projection des demandes group_form encore pendantes pour un reviewer habilité, distincte du parcours destinataire des invitations manual_add.",
       "costContract": "GET borné au reviewer Clerk et à une projection de registration_id/action_id issue d'une RPC qui filtre action publiée, future, visible, group_form/pending, notification existante et droits actuels ; réponse private/no-store. Les appels suivent le même rafraîchissement borné du centre de notifications : 300 s cloche ouverte, 900 s cloche fermée et visible, ou chargement explicite du tableau de bord.",
+      "reviewedAt": "2026-10-09"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/post-action-prompts/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Surface authentifiée du centre de notifications pour projeter les sollicitations de bilan et enregistrer le choix du destinataire via une RPC atomique liée à son identité Clerk.",
+      "costContract": "GET borné à 100 actions et PATCH borné à une action UUID par appel, avec rate limits serveur 30/10 par minute, RPC service_role liée au destinataire, réponse private/no-store et aucun polling dédié.",
+      "reviewedAt": "2026-10-09"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/post-action-claims/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Projection authentifiée des claims post_action_claim pendants pour les organisateurs et administrateurs habilités, sans seconde file de demandes.",
+      "costContract": "GET borné à 100 claims, rate limit serveur 30 requêtes par minute, RPC service_role revalidant action publiée, état pending et droits actuels, réponse private/no-store et aucun polling dédié.",
       "reviewedAt": "2026-10-09"
     }
   ],
@@ -49,6 +63,8 @@
     "apps/web/src/app/api/actions/map/pollution-score-references/route.ts",
     "apps/web/src/app/api/actions/map/route.ts",
     "apps/web/src/app/api/actions/organizers/route.ts",
+    "apps/web/src/app/api/actions/post-action-claims/route.ts",
+    "apps/web/src/app/api/actions/post-action-prompts/route.ts",
     "apps/web/src/app/api/actions/prefill/route.ts",
     "apps/web/src/app/api/actions/registration-requests/route.ts",
     "apps/web/src/app/api/actions/route.ts",

@@ -8,15 +8,54 @@ export type NotificationDisplayState =
   | "unavailable";
 
 export type NotificationDecisionDescriptor = {
-  kind: "action_share" | "action_invitation" | "action_registration_request";
+  kind:
+    | "action_share"
+    | "action_invitation"
+    | "action_registration_request"
+    | "action_result"
+    | "action_post_action_claim";
   requestId: string;
   actionId?: string;
 };
 
-export type NotificationDecisionOutcome = "accepted" | "rejected" | "withdrawn";
+export type NotificationDecisionOutcome =
+  | "accepted"
+  | "rejected"
+  | "withdrawn"
+  | "claimed"
+  | "not_participated";
 
 function readString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function getActionEventDecisionDescriptor(
+  raw: Record<string, unknown>,
+): NotificationDecisionDescriptor | null {
+  if (raw.eventType !== "action_event") return null;
+  if (raw.subtype === "invitation") {
+    const registrationId = readString(raw.registrationId);
+    return registrationId ? { kind: "action_invitation", requestId: registrationId } : null;
+  }
+  if (raw.subtype === "registration_request" && raw.requestKind === "registration_request") {
+    const registrationId = readString(raw.registrationId);
+    const actionId = readString(raw.actionId);
+    return registrationId && actionId
+      ? { kind: "action_registration_request", requestId: registrationId, actionId }
+      : null;
+  }
+  if (raw.subtype === "action_result") {
+    const actionId = readString(raw.actionId);
+    return actionId ? { kind: "action_result", requestId: actionId, actionId } : null;
+  }
+  if (raw.subtype === "post_action_claim") {
+    const participationId = readString(raw.participationId);
+    const actionId = readString(raw.actionId);
+    return participationId && actionId
+      ? { kind: "action_post_action_claim", requestId: participationId, actionId }
+      : null;
+  }
+  return null;
 }
 
 export function getNotificationDecisionDescriptor(
@@ -29,22 +68,7 @@ export function getNotificationDecisionDescriptor(
     const requestId = readString(raw.requestId);
     return requestId ? { kind: "action_share", requestId } : null;
   }
-  if (raw.eventType === "action_event" && raw.subtype === "invitation") {
-    const registrationId = readString(raw.registrationId);
-    return registrationId ? { kind: "action_invitation", requestId: registrationId } : null;
-  }
-  if (
-    raw.eventType === "action_event" &&
-    raw.subtype === "registration_request" &&
-    raw.requestKind === "registration_request"
-  ) {
-    const registrationId = readString(raw.registrationId);
-    const actionId = readString(raw.actionId);
-    return registrationId && actionId
-      ? { kind: "action_registration_request", requestId: registrationId, actionId }
-      : null;
-  }
-  return null;
+  return getActionEventDecisionDescriptor(raw);
 }
 
 function getPersistedDecisionState(payload: unknown): "treated" | "unavailable" | null {
@@ -59,6 +83,8 @@ export function getNotificationDecisionOutcome(payload: unknown): NotificationDe
   if (decision === "accept" || decision === "accepted") return "accepted";
   if (decision === "reject" || decision === "rejected") return "rejected";
   if (decision === "withdrawn") return "withdrawn";
+  if (decision === "claim" || decision === "claimed") return "claimed";
+  if (decision === "not_participated") return "not_participated";
   return null;
 }
 

@@ -14,7 +14,7 @@ export const reviewSchema = z.object({
   participantId: z.string().trim().min(1),
   decision: z.enum(["accept", "reject"]),
   reason: z.string().trim().max(500).optional(),
-  requestKind: z.literal("registration_request").optional(),
+  requestKind: z.enum(["registration_request", "post_action_claim"]).optional(),
 });
 
 export const addParticipantSchema = z.object({

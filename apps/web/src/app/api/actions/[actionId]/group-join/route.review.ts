@@ -331,7 +331,9 @@ export async function handleGroupJoinReview(
             participantId: parsed.data.participantId,
             decision: parsed.data.decision,
             actionPhase: actionResult.action_phase,
-            requirePending: parsed.data.requestKind === "registration_request",
+            requirePending:
+              parsed.data.requestKind === "registration_request" ||
+              parsed.data.requestKind === "post_action_claim",
           });
     return await finalizeReviewResult({
       supabase,

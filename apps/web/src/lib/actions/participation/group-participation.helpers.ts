@@ -247,9 +247,10 @@ export async function updateParticipantRecord(
     joinedAt: string;
     participationStatus: ParticipationStatus;
     participationSource: ParticipationSource;
+    expectedParticipationStatus?: ParticipationStatus;
   },
 ): Promise<ActionParticipantStatusRow> {
-  const result = await supabase
+  let query = supabase
     .from("action_participants")
     .update({
       joined_at: params.joinedAt,
@@ -257,7 +258,11 @@ export async function updateParticipantRecord(
       participation_source: params.participationSource,
     })
     .eq("action_id", params.actionId)
-    .eq("user_id", params.userId)
+    .eq("user_id", params.userId);
+  if (params.expectedParticipationStatus) {
+    query = query.eq("participation_status", params.expectedParticipationStatus);
+  }
+  const result = await query
     .select(
       "action_id, created_at, joined_at, updated_at, participation_status, participation_source",
     )

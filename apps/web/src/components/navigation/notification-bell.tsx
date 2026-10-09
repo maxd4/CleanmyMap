@@ -237,7 +237,7 @@ function NotificationBellPanel({
           previewNotifications.map((notification) => {
             const displayState = stateFor(notification);
             const notificationDecision = getNotificationDecisionDescriptor(notification.payload);
-            return <NotificationListItem key={notification.id} notification={notification} locale={locale} compact displayState={displayState} decision={notificationDecision ? { state: displayState === "decision_pending" || displayState === "treated" || displayState === "unavailable" ? displayState : "unavailable", busy: decisionState.busyDecisionIds.has(notification.id), error: decisionState.decisionErrors[notification.id], onDecision: (choice) => void decisionState.handleDecision(notification, choice) } : undefined} onClick={onNotificationClick} />;
+            return <NotificationListItem key={notification.id} notification={notification} locale={locale} compact displayState={displayState} decision={notificationDecision ? { kind: notificationDecision.kind, state: displayState === "decision_pending" || displayState === "treated" || displayState === "unavailable" ? displayState : "unavailable", busy: decisionState.busyDecisionIds.has(notification.id), error: decisionState.decisionErrors[notification.id], onDecision: (choice) => void decisionState.handleDecision(notification, choice) } : undefined} onClick={onNotificationClick} />;
           })
         )}
       </div>
