@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Info, type LucideIcon } from "lucide-react";
-import type { SelectOption } from "./model";
 
 export function SectionLabel({
   icon: Icon,
@@ -39,43 +38,6 @@ export function FieldShell({
       {children}
       {hint ? <span className="block text-xs font-normal leading-5 text-emerald-900/58">{hint}</span> : null}
     </label>
-  );
-}
-
-export function SelectShell({
-  label,
-  value,
-  onChange,
-  options,
-  placeholder,
-  hint,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: SelectOption[];
-  placeholder?: string;
-  hint?: string;
-}) {
-  return (
-    <FieldShell label={label} hint={hint}>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-      >
-        {placeholder ? (
-          <option value="" disabled>
-            {placeholder}
-          </option>
-        ) : null}
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </FieldShell>
   );
 }
 

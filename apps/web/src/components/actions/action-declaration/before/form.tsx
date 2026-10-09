@@ -4,14 +4,11 @@ import { AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
-import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { IdentityAndSharingSection, PlannedActionSection, PreparationAndSafetySection } from "./sections";
 import { useBeforeActionForm } from "./use-before-action-form";
 import type { ActionBeforeDeclarationFormProps } from "./model";
-import { OperationalRouteEditor } from "../operational-route-editor";
-import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 import {
   ActionBeforeHydrationView,
   ActionBeforePublicationView,
@@ -108,7 +105,6 @@ export function ActionBeforeDeclarationForm({
             <PlannedActionSection form={form} updateField={updateField} updateFields={updateFields} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
             <PreparationAndSafetySection form={form} updateField={updateField} />
           </div>
-          {form.operationalRoute ? <CmmDisclosure summary={<ActionFormDisclosureSummary label="Parcours et géométrie" detail="parcours calculé" />} tone="emerald" size="md"><OperationalRouteEditor operationalRoute={form.operationalRoute} onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)} /></CmmDisclosure> : null}
           {validationIssues.length > 0 || errorMessage ? <div className="rounded-[1.5rem] border border-rose-200/70 bg-[#FFF7F8] px-4 py-3 text-sm leading-6 text-rose-950"><div className="flex items-center gap-2 font-semibold"><AlertTriangle size={16} className="text-rose-500" />La préparation n&apos;a pas encore pu être enregistrée</div>{validationIssues.length > 0 ? <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-rose-800/80">{validationIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul> : null}{errorMessage && validationIssues.length === 0 ? <p className="mt-2 text-xs text-rose-800/80">{errorMessage}</p> : null}{!isAuthenticated ? <div className="mt-3 flex flex-wrap gap-2">{signInHref ? <CmmButton href={signInHref} tone="primary" variant="pill" size="sm">Se connecter et reprendre</CmmButton> : null}{signUpHref ? <CmmButton href={signUpHref} tone="secondary" variant="pill" size="sm">Créer un compte</CmmButton> : null}</div> : null}</div> : null}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-emerald-200/70 bg-white/90 px-4 py-3 shadow-sm"><div className="space-y-1"><p className="text-sm font-semibold text-emerald-950">Enregistrer la préparation</p><p className="text-xs leading-5 text-emerald-900/66">L&apos;enregistrement reste privé ; la publication sera déclenchée explicitement après vérification.</p></div><div className="flex flex-wrap gap-2"><CmmButton tone="primary" variant="pill" size="md" type="submit" disabled={submissionState === "pending"}>{submissionState === "pending" ? <><Loader2 size={14} className="animate-spin" />Enregistrement...</> : <>Enregistrer la préparation<ArrowRight size={14} /></>}</CmmButton></div></div>
         </form>

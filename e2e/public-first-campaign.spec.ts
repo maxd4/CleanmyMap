@@ -76,13 +76,48 @@ test.describe("campaign 1 - public reading and late authentication", () => {
     await expect(page.getByRole("textbox", { name: /rechercher une action/i })).toBeVisible();
   });
 
-  test("action declaration exposes the public choice before authentication", async ({ page }) => {
+  test("action declaration exposes the guided pre-form before authentication", async ({ page }) => {
     await page.goto("/actions/new");
-    await expect(page.getByRole("heading", { name: "Choisissez votre parcours" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Organiser une action" })).toBeVisible();
 
-    await page.getByRole("button", { name: /Déclarer avant l'action/i }).click();
-    await expect(page.getByRole("heading", { name: "Préparer le formulaire de groupe" })).toBeVisible();
-    await expect(page.getByRole("button", { name: /publier le pré-formulaire/i })).toBeVisible();
+    await page.getByRole("button", { name: /4\. Préformulaire/i }).click();
+    await expect(page.getByRole("heading", { name: "Action prévue" })).toBeVisible();
+    await expect(page.getByLabel("Titre de l’action")).toBeVisible();
+  });
+
+  test("pre-action section stays ordered and usable on desktop and mobile", async ({ page }) => {
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto("/actions/new");
+      await page.getByRole("button", { name: /4\. Préformulaire/i }).click();
+
+      await expect(page.getByRole("heading", { name: "Action prévue" })).toBeVisible();
+      await expect(page.getByLabel("Titre de l’action")).toBeVisible();
+      await expect(page.getByLabel("Date prévue")).toBeVisible();
+      await expect(page.getByLabel("Heure de rendez-vous")).toBeVisible();
+      await expect(page.getByLabel("Heure de départ")).toBeVisible();
+      await expect(page.getByLabel("Durée estimée")).toBeVisible();
+      await expect(page.getByLabel("Commune ou secteur d’intervention")).toBeVisible();
+      await expect(page.getByRole("combobox", { name: "Point de rendez-vous précis" })).toBeVisible();
+      await expect(page.getByLabel("Nombre de bénévoles attendus")).toBeVisible();
+      await expect(page.getByLabel("Message complémentaire aux participants")).toBeVisible();
+
+      await page.getByText("Créneau global", { exact: true }).click();
+      await expect(page.getByLabel("Début du créneau global")).toBeVisible();
+      await expect(page.getByLabel("Fin du créneau global")).toBeVisible();
+      await page.getByText("Options avancées", { exact: true }).click();
+      await expect(page.getByLabel("Latitude")).toBeVisible();
+      await expect(page.getByLabel("Longitude")).toBeVisible();
+
+      const width = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(width.scrollWidth).toBeLessThanOrEqual(width.clientWidth + 1);
+    }
   });
 
   test("signalement exposes location and entry controls before authentication", async ({ page }) => {

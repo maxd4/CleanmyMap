@@ -1,18 +1,20 @@
 "use client";
 
-import { CheckCircle2, Clock3, Info, Navigation, Sparkles } from "lucide-react";
+import { CheckCircle2, Info, Navigation, Sparkles } from "lucide-react";
 import { PLACE_TYPE_FORM_OPTIONS } from "@/lib/actions/place-type-options";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+import { CmmField, CmmInput, CmmSelect, CmmTextarea } from "@/components/ui/cmm-field";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 import { ActionAddressAutocomplete } from "../action-address-autocomplete";
+import { OperationalRouteEditor } from "../operational-route-editor";
 import type { FormState } from "../model";
 import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
 import {
   DIFFICULTY_OPTIONS,
   PLANNED_OBJECTIVE_OPTIONS,
 } from "./model";
-import { FieldShell, SectionLabel, SelectShell } from "./ui";
+import { SectionLabel } from "./ui";
 import {
   deriveEventDurationMinutes,
   deriveOrganizationMinutes,
@@ -46,58 +48,95 @@ export function PlannedActionSection({
   const hasConfirmedCoordinates = hasValidCoordinatePair(form.latitude, form.longitude);
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
-      <div className="space-y-4">
+      <div className="space-y-7">
         <SectionLabel icon={Sparkles} title="Action prévue" subtitle="Le contenu nécessaire avant le terrain, sans les champs de récolte réelle." />
-        <div className="space-y-4">
-          <FieldShell label={<span>Titre de l&apos;action<RequiredMark /></span>} hint="Nom affiché dans le formulaire de groupe.">
-            <input id="before-action-title" type="text" value={form.actionTitle} onChange={(event) => updateField("actionTitle", event.target.value)} aria-invalid={missingTitle} aria-describedby={missingTitle ? "before-action-title-error" : undefined} className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingTitle ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")} placeholder="Ex. Nettoyage des berges de la Seine" />
-            {missingTitle ? <span id="before-action-title-error" className="block text-xs font-medium text-rose-700">Indiquez un titre pour enregistrer la préparation.</span> : null}
-          </FieldShell>
+        <section aria-labelledby="before-action-presentation" className="space-y-3">
+          <SectionHeading id="before-action-presentation" title="Présentation" />
+          <div className="grid gap-4">
+            <CmmField
+              id="before-action-title"
+              label="Titre de l’action"
+              required
+              hint="Nom visible par les participants."
+              error={missingTitle ? "Indiquez un titre pour enregistrer la préparation." : undefined}
+            >
+              <CmmInput
+                type="text"
+                value={form.actionTitle}
+                onChange={(event) => updateField("actionTitle", event.target.value)}
+                placeholder="Ex. Nettoyage des berges de la Seine"
+              />
+            </CmmField>
+            <CmmField id="before-action-description" label="Description courte">
+              <CmmTextarea
+                value={form.shortDescription}
+                onChange={(event) => updateField("shortDescription", event.target.value)}
+                rows={2}
+                placeholder="Contexte ou objectif en quelques lignes."
+              />
+            </CmmField>
+          </div>
+        </section>
 
-          <FieldShell label="Description courte" hint="Quelques lignes pour expliquer le contexte.">
-            <textarea value={form.shortDescription} onChange={(event) => updateField("shortDescription", event.target.value)} className="min-h-[118px] w-full rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" placeholder="Ex. Préparation d'une action de collecte et repérage du site..." />
-          </FieldShell>
+        <ScheduleFields form={form} updateField={updateField} hasAttemptedSubmit={hasAttemptedSubmit} validationIssueFields={validationIssueFields} />
 
+        <section aria-labelledby="before-action-location" className="space-y-3">
+          <SectionHeading id="before-action-location" title="Localisation et parcours" />
           <div className="grid gap-4 lg:grid-cols-2">
-            <FieldShell label="Commune ou secteur d’intervention" hint="Ville, quartier ou secteur principal, indépendant du rendez-vous et de l’arrivée.">
-              <input type="text" value={form.communeZoneLabel} onChange={(event) => updateField("communeZoneLabel", event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" placeholder="Ex. Paris 15e, berges nord" />
-            </FieldShell>
+            <CmmField id="before-commune-zone" label="Commune ou secteur d’intervention" hint="Secteur principal, indépendant du rendez-vous et de l’arrivée.">
+              <CmmInput
+                type="text"
+                value={form.communeZoneLabel}
+                onChange={(event) => updateField("communeZoneLabel", event.target.value)}
+                placeholder="Ex. Paris 15e, berges nord"
+              />
+            </CmmField>
             <MeetingLocationFields form={form} updateField={updateField} updateFields={updateFields} hasAttemptedSubmit={hasAttemptedSubmit} validationIssueFields={validationIssueFields} />
           </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <RouteDestinationField form={form} updateField={updateField} updateFields={updateFields} hasAttemptedSubmit={hasAttemptedSubmit} validationIssueFields={validationIssueFields} />
-            <VolunteerForecast form={form} updateField={updateField} splitDetail={volunteerSplitDetail} validationIssueFields={validationIssueFields} />
-          </div>
-
-          <div className="space-y-4">
-            <CmmDisclosure summary={<ActionFormDisclosureSummary label="Localisation du rendez-vous" detail={hasConfirmedCoordinates ? "Localisation confirmée · coordonnées avancées" : "Coordonnées avancées (facultatif)"} />} tone="emerald" size="md">
-              <div className="space-y-2">
-                <p className="text-sm leading-5 text-emerald-900/70">L&apos;adresse ou le lieu saisi suffit généralement. Ces coordonnées conservent le contrat existant lorsqu&apos;elles sont déjà connues.</p>
-                <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
-                  <FieldShell label="Latitude"><input type="number" step="any" value={form.latitude} onChange={(event) => updateField("latitude", event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" placeholder="Latitude" /></FieldShell>
-                  <FieldShell label="Longitude"><input type="number" step="any" value={form.longitude} onChange={(event) => updateField("longitude", event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" placeholder="Longitude" /></FieldShell>
-                </div>
-              </div>
+          <RouteDestinationField form={form} updateField={updateField} updateFields={updateFields} hasAttemptedSubmit={hasAttemptedSubmit} validationIssueFields={validationIssueFields} />
+          {form.operationalRoute ? (
+            <CmmDisclosure summary={<ActionFormDisclosureSummary label="Parcours existant" detail="parcours calculé conservé" />} tone="emerald" size="sm">
+              <p className="mb-3 text-sm text-emerald-900/70">Le parcours calculé par le planificateur est repris ici sans nouvelle géométrie.</p>
+              <OperationalRouteEditor operationalRoute={form.operationalRoute} onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)} />
             </CmmDisclosure>
-            <FieldShell label="Message pour les participants" hint="Visible par les personnes qui rejoignent le formulaire de groupe.">
-              <textarea value={form.participantMessage} onChange={(event) => updateField("participantMessage", event.target.value)} className="min-h-[132px] w-full rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" placeholder="Ex. Merci d'arriver 10 minutes avant, prévoir des chaussures fermées." />
-            </FieldShell>
+          ) : null}
+          <CmmDisclosure summary={<ActionFormDisclosureSummary label="Options avancées" detail={hasConfirmedCoordinates ? "coordonnées renseignées" : "coordonnées facultatives"} />} tone="emerald" size="sm">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <CmmField id="before-latitude" label="Latitude">
+                <CmmInput type="number" step="any" value={form.latitude} onChange={(event) => updateField("latitude", event.target.value)} placeholder="Latitude" />
+              </CmmField>
+              <CmmField id="before-longitude" label="Longitude">
+                <CmmInput type="number" step="any" value={form.longitude} onChange={(event) => updateField("longitude", event.target.value)} placeholder="Longitude" />
+              </CmmField>
+            </div>
+          </CmmDisclosure>
+        </section>
+
+        <section aria-labelledby="before-action-practical" className="space-y-3">
+          <SectionHeading id="before-action-practical" title="Bénévoles et informations pratiques" />
+          <VolunteerForecast form={form} updateField={updateField} splitDetail={volunteerSplitDetail} validationIssueFields={validationIssueFields} />
+          <CmmField id="before-participant-message" label="Message complémentaire aux participants" hint="Accueil et consignes utiles ; le matériel et la sécurité sont détaillés ci-dessous.">
+            <CmmTextarea
+              value={form.participantMessage}
+              onChange={(event) => updateField("participantMessage", event.target.value)}
+              rows={2}
+              placeholder="Ex. Merci d’arriver 10 minutes avant."
+            />
+          </CmmField>
+          <div className="grid gap-4 md:grid-cols-3">
+            <SelectField label="Type d’action prévue" value={form.plannedObjective} onChange={(value) => updateField("plannedObjective", value as FormState["plannedObjective"])} options={PLANNED_OBJECTIVE_OPTIONS} placeholder="Sélectionnez un type d’action" />
+            <SelectField label="Type de zone" value={form.placeType} onChange={(value) => updateField("placeType", value)} options={PLACE_TYPE_FORM_OPTIONS.map((option) => ({ value: option.value, label: option.label }))} placeholder="Sélectionnez un type de zone" />
+            <SelectField label="Niveau de difficulté estimé" value={form.estimatedDifficulty} onChange={(value) => updateField("estimatedDifficulty", value as FormState["estimatedDifficulty"])} options={DIFFICULTY_OPTIONS} placeholder="Sélectionnez un niveau" />
           </div>
-
-          <ScheduleFields form={form} updateField={updateField} hasAttemptedSubmit={hasAttemptedSubmit} validationIssueFields={validationIssueFields} />
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <SelectShell label="Type d'action prévue" value={form.plannedObjective} onChange={(value) => updateField("plannedObjective", value as FormState["plannedObjective"])} options={PLANNED_OBJECTIVE_OPTIONS} placeholder="Sélectionnez un type d'action" />
-            <SelectShell label="Type de zone" value={form.placeType} onChange={(value) => updateField("placeType", value)} options={PLACE_TYPE_FORM_OPTIONS.map((option) => ({ value: option.value, label: option.label }))} placeholder="Sélectionnez un type de zone" />
-            <SelectShell label="Niveau de difficulté estimé" value={form.estimatedDifficulty} onChange={(value) => updateField("estimatedDifficulty", value as FormState["estimatedDifficulty"])} options={DIFFICULTY_OPTIONS} placeholder="Sélectionnez un niveau" />
-          </div>
-
           <ExpectedWasteSection form={form} updateField={updateField} />
-        </div>
+        </section>
       </div>
     </CmmCard>
   );
+}
+
+function SectionHeading({ id, title }: { id: string; title: string }) {
+  return <h4 id={id} className="text-base font-black text-emerald-950">{title}</h4>;
 }
 
 function ScheduleFields({
@@ -125,13 +164,17 @@ function ScheduleFields({
     : temporalIssues.find((issue) => issue.field === "durationMinutes")?.message;
 
   return (
-    <fieldset className="rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] p-4 md:p-5">
+    <fieldset className="rounded-3xl border border-emerald-200/70 bg-white/75 p-4 md:p-5">
       <legend className="px-2 text-base font-black text-emerald-950">Date et horaires principaux</legend>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <FieldShell label={<span>Date prévue<RequiredMark /></span>}>
-          <input id="before-action-date" type="date" value={form.actionDate} onChange={(event) => updateField("actionDate", event.target.value)} aria-invalid={missingDate} aria-describedby={missingDate ? "before-action-date-error" : undefined} className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingDate ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")} />
-          {missingDate ? <span id="before-action-date-error" className="block text-xs font-medium text-rose-700">Indiquez la date prévue avant d’enregistrer.</span> : null}
-        </FieldShell>
+        <CmmField
+          id="before-action-date"
+          label="Date prévue"
+          required
+          error={missingDate ? "Indiquez la date prévue avant d’enregistrer." : undefined}
+        >
+          <CmmInput type="date" value={form.actionDate} onChange={(event) => updateField("actionDate", event.target.value)} />
+        </CmmField>
         <TimeField
           id="before-meeting-time"
           label="Heure de rendez-vous"
@@ -150,11 +193,14 @@ function ScheduleFields({
           validationIssueFields={validationIssueFields}
           message={getTemporalIssueMessage(temporalIssues, "departureTime")}
         />
-        <FieldShell label="Durée estimée" hint="Marche + ramassage + tri + pesée ; laissez vide si elle est inconnue.">
-          <div className="relative"><Clock3 size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-700/45" /><input id="before-duration-minutes" type="number" min="0" step="1" value={form.durationMinutes} onChange={(event) => updateField("durationMinutes", event.target.value)} aria-invalid={Boolean(hasValidationIssue(validationIssueFields, "durationMinutes"))} aria-describedby={hasValidationIssue(validationIssueFields, "durationMinutes") ? "before-duration-minutes-error" : undefined} className={cn("w-full rounded-2xl border bg-[#F3FBF6] py-3 pl-10 pr-4 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", hasValidationIssue(validationIssueFields, "durationMinutes") ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")} placeholder="Ex. 60" /></div>
-          <p className="mt-1 text-xs text-emerald-900/55">{formatBusinessDurationMinutes(toOptionalNumber(form.durationMinutes))} ; aucune valeur technique n’est affichée comme une prévision.</p>
-          {hasValidationIssue(validationIssueFields, "durationMinutes") ? <InlineFieldError id="before-duration-minutes-error" message={durationIssue} /> : null}
-        </FieldShell>
+        <CmmField
+          id="before-duration-minutes"
+          label="Durée estimée"
+          hint={`${formatBusinessDurationMinutes(toOptionalNumber(form.durationMinutes))} ; laissez vide si elle est inconnue.`}
+          error={hasValidationIssue(validationIssueFields, "durationMinutes") ? durationIssue : undefined}
+        >
+          <CmmInput type="number" min="0" step="1" value={form.durationMinutes} onChange={(event) => updateField("durationMinutes", event.target.value)} placeholder="Ex. 60" />
+        </CmmField>
       </div>
       <CmmDisclosure summary={<ActionFormDisclosureSummary label="Créneau global" detail={event.status === "available" ? `${form.eventStartTime}–${form.eventEndTime}` : "facultatif"} />} tone="emerald" size="sm">
         <div className="grid gap-4 md:grid-cols-2">
@@ -212,12 +258,33 @@ function TimeField({
   message?: string;
 }) {
   const hasIssue = hasValidationIssue(validationIssueFields, field);
-  const errorId = `${id}-error`;
   return (
-    <FieldShell label={label} hint={hint}>
-      <input id={id} type="time" value={value} onChange={(event) => updateField(field, event.target.value)} aria-invalid={hasIssue} aria-describedby={hasIssue ? errorId : undefined} className={cn("w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", hasIssue ? "border-rose-400 ring-2 ring-rose-400/20" : undefined)} />
-      {hasIssue ? <InlineFieldError id={errorId} message={message} /> : null}
-    </FieldShell>
+    <CmmField label={label} hint={hint} error={hasIssue ? message : undefined}>
+      <CmmInput id={id} type="time" value={value} onChange={(event) => updateField(field, event.target.value)} />
+    </CmmField>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  placeholder: string;
+}) {
+  return (
+    <CmmField label={label}>
+      <CmmSelect value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value="" disabled>{placeholder}</option>
+        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </CmmSelect>
+    </CmmField>
   );
 }
 
@@ -226,10 +293,6 @@ function hasValidCoordinatePair(latitude: string, longitude: string): boolean {
   const parsedLatitude = Number(latitude);
   const parsedLongitude = Number(longitude);
   return Number.isFinite(parsedLatitude) && parsedLatitude >= -90 && parsedLatitude <= 90 && Number.isFinite(parsedLongitude) && parsedLongitude >= -180 && parsedLongitude <= 180;
-}
-
-function InlineFieldError({ id, message }: { id: string; message?: string }) {
-  return <span id={id} className="block text-xs font-medium text-rose-700">{message ?? "Vérifiez cette valeur."}</span>;
 }
 
 function MeetingLocationFields({
@@ -313,28 +376,22 @@ function VolunteerForecast({
   splitDetail: string;
 }) {
   return (
-    <div className="space-y-2 md:col-span-2 lg:col-span-2">
-      <FieldShell
+    <div className="space-y-3">
+      <CmmField
+        id="before-volunteers-count"
         label="Nombre de bénévoles attendus"
-        hint="Prévision avant le terrain ; laissez vide si elle est encore inconnue."
+        hint="Prévision avant le terrain ; laissez vide si elle est inconnue."
+        error={hasValidationIssue(validationIssueFields, "volunteersCount") ? "Indiquez un entier d’au moins 1." : undefined}
       >
-        <input
-          id="before-volunteers-count"
+        <CmmInput
           type="number"
           min="1"
           step="1"
           value={form.volunteersCount}
           onChange={(event) => updateField("volunteersCount", event.target.value)}
-          aria-invalid={hasValidationIssue(validationIssueFields, "volunteersCount")}
-          className={cn(
-            "w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white",
-            hasValidationIssue(validationIssueFields, "volunteersCount")
-              ? "border-rose-400 ring-2 ring-rose-400/20"
-              : "border-emerald-200/70",
-          )}
           placeholder="Ex. 12"
         />
-      </FieldShell>
+      </CmmField>
       <CmmDisclosure
         id="before-volunteer-participation"
         summary={<ActionFormDisclosureSummary label="Répartition facultative" detail={splitDetail} />}
@@ -343,25 +400,15 @@ function VolunteerForecast({
         className={hasValidationIssue(validationIssueFields, "volunteerParticipation") ? "ring-2 ring-rose-400/20" : undefined}
       >
         <div className="space-y-3">
-          <p className="text-xs leading-5 text-emerald-900/70">
-            Catégories non chevauchantes : chaque bénévole est compté dans une seule catégorie. Laissez toute la répartition vide si vous ne souhaitez pas la préciser.
-          </p>
+          <p className="text-sm text-emerald-900/70">Catégories non chevauchantes ; leur somme doit correspondre au total attendu.</p>
           <div className="grid gap-3 sm:grid-cols-3">
             {([["Enfants", "childrenCount"], ["Adultes", "adultCount"], ["Retraités", "retiredCount"]] as const).map(([label, field]) => (
-              <FieldShell key={field} label={label} hint="Prévision avant départ.">
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={form[field]}
-                  onChange={(event) => updateField(field, event.target.value)}
-                  className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-                  placeholder="0"
-                />
-              </FieldShell>
+              <CmmField key={field} id={`before-${field}`} label={label}>
+                <CmmInput type="number" min="0" step="1" value={form[field]} onChange={(event) => updateField(field, event.target.value)} placeholder="0" />
+              </CmmField>
             ))}
           </div>
-          <p className="text-xs font-semibold text-emerald-900/65">La somme des trois catégories doit correspondre au total attendu.</p>
+          {hasValidationIssue(validationIssueFields, "volunteerParticipation") ? <p className="text-sm font-medium text-rose-700" role="alert">La répartition doit contenir trois catégories cohérentes avec le total.</p> : null}
         </div>
       </CmmDisclosure>
     </div>
@@ -390,10 +437,9 @@ function ScheduleFeedback({
 function ExpectedWasteSection({ form, updateField }: BaseSectionProps) {
   return (
     <CmmDisclosure summary={<ActionFormDisclosureSummary label="Déchets attendus" detail={form.wasteCategories?.length ? `${form.wasteCategories.length} catégorie${form.wasteCategories.length > 1 ? "s" : ""}` : undefined} />} tone="emerald" size="md">
-      <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-4">
-        <p className="mb-4 text-sm font-black text-emerald-950">Déchets attendus</p>
+      <div className="space-y-4">
         <WasteCategorySelector value={form.wasteCategories ?? []} onChange={(value) => updateField("wasteCategories", value)} idPrefix="expected-waste" />
-        <WasteFieldSummary value={form.wasteCategories ?? []} className="mt-4" />
+        <WasteFieldSummary value={form.wasteCategories ?? []} />
       </div>
     </CmmDisclosure>
   );

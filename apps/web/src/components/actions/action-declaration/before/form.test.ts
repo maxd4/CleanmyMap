@@ -49,12 +49,16 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Adultes");
     expect(html).toContain("Retraités");
     expect(html).not.toContain("unités opérationnelles");
-    expect(html).toContain("Message pour les participants");
+    expect(html).toContain("Message complémentaire aux participants");
     expect(html).toContain("Commentaire logistique");
     expect(html).toContain("Checklist avant départ");
-    expect(html).toContain("Localisation du rendez-vous");
+    expect(html).toContain("Présentation");
+    expect(html).toContain("Localisation et parcours");
+    expect(html).toContain("Options avancées");
+    expect(html).toContain("Bénévoles et informations pratiques");
+    expect(html).not.toContain("Localisation du rendez-vous");
     expect(html).not.toContain("État de préparation");
-    expect(html).toContain("Sélectionnez un type d&#x27;action");
+    expect(html).toContain("Sélectionnez un type d’action");
     expect(html).toContain("Sélectionnez un type de zone");
     expect(html).toContain("Sélectionnez un niveau");
     expect(html).toContain("Date et horaires");
@@ -62,8 +66,11 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Fin du créneau global");
     expect(html).toContain("Inscriptions des bénévoles");
     expect(html).toContain("Membres préinscrits");
-    expect(html).toContain("Coordonnées avancées");
+    expect(html).toContain("coordonnées facultatives");
     expect(html).toContain('class="cmm-disclosure"');
+    expect(html).toContain('data-cmm-field-control="input"');
+    expect(html).toContain('data-cmm-field-control="textarea"');
+    expect(html).toContain('data-cmm-field-control="select"');
     expect(html).toContain("Obligatoire");
     expect(html).toContain('id="before-action-title"');
     expect(html).toContain('id="before-action-date"');
@@ -73,6 +80,15 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("Photos de preuve");
     expect(html).not.toContain("Score d'impact");
     expect(html).not.toContain("Confirmer et publier");
+
+    const presentationIndex = html.indexOf("Présentation");
+    const scheduleIndex = html.indexOf("Date et horaires principaux");
+    const locationIndex = html.indexOf("Localisation et parcours");
+    const practicalIndex = html.indexOf("Bénévoles et informations pratiques");
+    expect(presentationIndex).toBeGreaterThan(-1);
+    expect(scheduleIndex).toBeGreaterThan(presentationIndex);
+    expect(locationIndex).toBeGreaterThan(scheduleIndex);
+    expect(practicalIndex).toBeGreaterThan(locationIndex);
   });
 
   it("shows an explicit arrival only for point-to-point topology", () => {
