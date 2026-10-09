@@ -59,9 +59,11 @@ export function resolveNotificationDisplayState(params: {
   const { notification, pendingRequestIds, treatedNotificationIds } = params;
   const decision = getNotificationDecisionDescriptor(notification.payload);
   if (decision) {
+    const persistedState = getPersistedDecisionState(notification.payload);
+    if (persistedState) return persistedState;
     if (treatedNotificationIds?.has(notification.id)) return "treated";
     if (pendingRequestIds.has(decision.requestId)) return "decision_pending";
-    return getPersistedDecisionState(notification.payload) ?? "unavailable";
+    return "unavailable";
   }
 
   return notification.read_at ? "read" : "unread";

@@ -66,6 +66,12 @@ export type ActionRegistrationRow = {
     | "admin"
     | "admin_override"
     | "import";
+  registration_cancellation_reason?:
+    | "recipient_rejected"
+    | "organizer_withdrawn"
+    | "accepted_cancelled"
+    | null;
+  manual_invitation_version?: number;
 };
 
 export type ActionRow = {

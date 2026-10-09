@@ -5,6 +5,7 @@ import {
   syncActionManualParticipants,
 } from "./participation/organizers";
 import { syncActionOrganizers } from "./participation/organizer-sync";
+import { ManualParticipantSyncValidationError } from "./participation/manual-participant-sync";
 import { ActionUpdateValidationError } from "./action-update-persistence";
 import type { appendActionModerationAudit } from "./moderation-audit";
 import type { UserIdentity } from "@/lib/authz";
@@ -130,13 +131,26 @@ async function syncUpdatedParticipants({
   if (body.participantAccounts === undefined) return;
   setErrorStage("participant_sync");
   const organizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, actionId);
-  await syncActionManualParticipants({
-    supabase,
-    actionId,
-    creator: resolvePostProcessingCreator(userId, identity),
-    participantAccounts: body.participantAccounts,
-    organizerIds,
-  });
+  try {
+    const resolution = await syncActionManualParticipants({
+      supabase,
+      actionId,
+      creator: resolvePostProcessingCreator(userId, identity),
+      participantAccounts: body.participantAccounts,
+      organizerIds,
+    });
+    if (resolution.unresolvedTokens.length > 0) {
+      throw new ActionUpdateValidationError(
+        "participantAccounts",
+        `Comptes participants introuvables: ${resolution.unresolvedTokens.join(", ")}`,
+      );
+    }
+  } catch (error) {
+    if (error instanceof ManualParticipantSyncValidationError) {
+      throw new ActionUpdateValidationError("participantAccounts", error.message);
+    }
+    throw error;
+  }
 }
 
 function resolvePostProcessingCreator(userId: string, identity: UserIdentity | null) {

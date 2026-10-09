@@ -103,6 +103,14 @@ export async function cancelActionParticipation(
     registeredAt: resolveRegisteredAt(existing),
     registrationStatus: "cancelled",
     registrationSource: existing.registration_source,
+    registrationCancellationReason:
+      existing.registration_source !== "manual_add"
+        ? null
+        : existing.registration_status === "confirmed"
+          ? "accepted_cancelled"
+          : existing.registration_status === "pending"
+            ? "recipient_rejected"
+            : null,
   });
 
   return {

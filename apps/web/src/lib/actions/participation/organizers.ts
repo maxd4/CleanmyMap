@@ -2,10 +2,6 @@ import { clerkClient } from "@clerk/nextjs/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import { buildFallbackHandle } from "@/lib/auth/identity-handle";
-import {
-  loadActionRegistrationIdsForAction,
-  loadManualRegistrationIdsForAction,
-} from "./registration-records";
 import { persistManualParticipantDiff } from "./manual-participant-sync";
 
 type ProfileLookupRow = {
@@ -260,17 +256,6 @@ async function resolveAndTrackActionAccount(params: {
   return resolved;
 }
 
-async function loadCurrentRegistrationIds(
-  supabase: SupabaseClient,
-  actionId: string,
-): Promise<{ currentRegistrationIds: string[]; currentManualRegistrationIds: string[] }> {
-  const [currentRegistrationIds, currentManualRegistrationIds] = await Promise.all([
-    loadActionRegistrationIdsForAction(supabase, actionId),
-    loadManualRegistrationIdsForAction(supabase, actionId),
-  ]);
-  return { currentRegistrationIds, currentManualRegistrationIds };
-}
-
 export async function resolveActionOrganizers(params: {
   supabase: SupabaseClient;
   creator: {
@@ -365,9 +350,6 @@ export async function syncActionManualParticipants(params: ActionAccountResoluti
   participants: ResolvedActionParticipant[];
   unresolvedTokens: string[];
 }> {
-  const { currentRegistrationIds, currentManualRegistrationIds } =
-    await loadCurrentRegistrationIds(params.supabase, params.actionId);
-
   const resolution = await resolveActionParticipants({
     supabase: params.supabase,
     creator: params.creator,
@@ -385,8 +367,6 @@ export async function syncActionManualParticipants(params: ActionAccountResoluti
   await persistManualParticipantDiff({
     supabase: params.supabase,
     actionId: params.actionId,
-    currentRegistrationIds,
-    currentManualRegistrationIds,
     participants: resolution.participants,
   });
 

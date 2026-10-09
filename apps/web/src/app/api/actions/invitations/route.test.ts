@@ -2,9 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
 const serverMock = vi.hoisted(() => vi.fn());
+const verifyRateLimitMock = vi.hoisted(() => vi.fn());
+const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: serverMock }));
+vi.mock("@/lib/rate-limit/server", () => ({
+  verifyRateLimit: verifyRateLimitMock,
+  createServerRateLimitResponse: createServerRateLimitResponseMock,
+}));
 vi.mock("@/lib/http/auth-responses", () => ({
   unauthorizedJsonResponse: vi.fn(() => new Response("Unauthorized", { status: 401 })),
 }));
@@ -18,12 +24,14 @@ describe("/api/actions/invitations", () => {
     vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "recipient-1" });
+    verifyRateLimitMock.mockResolvedValue({ allowed: true, retryAfter: 0, source: "test" });
+    createServerRateLimitResponseMock.mockReturnValue(null);
   });
 
   it("refuses unauthenticated reads", async () => {
     authMock.mockResolvedValue({ userId: null });
     const { GET } = await import("./route");
-    expect((await GET()).status).toBe(401);
+    expect((await GET(new Request("http://localhost/api/actions/invitations"))).status).toBe(401);
     expect(serverMock).not.toHaveBeenCalled();
   });
 
@@ -34,7 +42,7 @@ describe("/api/actions/invitations", () => {
     });
     serverMock.mockReturnValue({ rpc });
     const { GET } = await import("./route");
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/actions/invitations"));
     expect(response.status).toBe(200);
     expect(rpc).toHaveBeenCalledWith("list_pending_action_invitations_for_recipient", {
       p_recipient_id: "recipient-1",
@@ -59,6 +67,19 @@ describe("/api/actions/invitations", () => {
       p_recipient_id: "recipient-1",
       p_decision: "accept",
     });
+  });
+
+  it("stops repeated reads through the canonical rate limiter", async () => {
+    verifyRateLimitMock.mockResolvedValueOnce({ allowed: false, retryAfter: 17, source: "distributed" });
+    createServerRateLimitResponseMock.mockReturnValueOnce(new Response("Too many requests", { status: 429 }));
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/actions/invitations"));
+
+    expect(response.status).toBe(429);
+    expect(authMock).not.toHaveBeenCalled();
+    expect(serverMock).not.toHaveBeenCalled();
+    expect(verifyRateLimitMock).toHaveBeenCalledWith(expect.any(Request), { limit: 30, window: 60 });
   });
 
   it("passes a recipient-bound rejection to the atomic RPC", async () => {

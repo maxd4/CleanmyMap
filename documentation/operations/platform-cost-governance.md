@@ -67,7 +67,9 @@ avec leur provenance et leur contrat de coût :
   destinataire-scopées et ne projettent que les identifiants d'inscription et
   d'action ; la décision est atomique et idempotente. `private, no-store` est
   nécessaire pour ne pas servir à un autre destinataire un état d'invitation
-  personnel qui doit rester frais.
+  personnel qui doit rester frais. La lecture est limitée à 30 requêtes par
+  minute et les décisions à 10 par minute via le limiteur canonique ; aucune
+  sauvegarde ordinaire ne crée une nouvelle invitation.
 - `GET /api/actions/registration-requests` est réservé à un reviewer
   authentifié. Sa RPC reprojette uniquement les demandes `group_form/pending`
   d'actions futures publiées et visibles, avec notification existante et droits

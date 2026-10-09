@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { appendActionModerationAuditMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — participants et organisateurs", () => {
   beforeEach(() => {
@@ -87,6 +87,25 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
         organizerAccounts: ["user-associated-1", "user-associated-2"],
       }),
     );
+  });
+
+  it("returns unresolved participant accounts as a validation error before the mutation is accepted", async () => {
+    syncActionManualParticipantsMock.mockResolvedValueOnce({
+      participants: [],
+      unresolvedTokens: ["missing-user"],
+    });
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ participantAccounts: ["missing-user"] }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(syncActionManualParticipantsMock).toHaveBeenCalled();
   });
 
   it("keeps an admin user's finalization of another action pending", async () => {

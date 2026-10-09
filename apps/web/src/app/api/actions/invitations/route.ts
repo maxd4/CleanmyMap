@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import {
+  createServerRateLimitResponse,
+  verifyRateLimit,
+} from "@/lib/rate-limit/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -19,7 +23,15 @@ async function getCurrentUserId() {
   return userId;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const rateLimit = await verifyRateLimit(request, { limit: 30, window: 60 });
+  const rateLimitResponse = createServerRateLimitResponse(
+    rateLimit.allowed,
+    rateLimit.retryAfter,
+    rateLimit,
+  );
+  if (rateLimitResponse) return rateLimitResponse;
+
   const userId = await getCurrentUserId();
   if (!userId) return unauthorizedJsonResponse();
 
@@ -40,6 +52,14 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  const rateLimit = await verifyRateLimit(request, { limit: 10, window: 60 });
+  const rateLimitResponse = createServerRateLimitResponse(
+    rateLimit.allowed,
+    rateLimit.retryAfter,
+    rateLimit,
+  );
+  if (rateLimitResponse) return rateLimitResponse;
+
   const userId = await getCurrentUserId();
   if (!userId) return unauthorizedJsonResponse();
 

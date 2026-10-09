@@ -55,6 +55,23 @@ describe("notification decision state", () => {
     })).toBe("decision_pending");
   });
 
+  it("keeps a withdrawn invitation unavailable even if a stale pending projection remains", () => {
+    const item = notification({
+      type: "action_event",
+      payload: {
+        eventType: "action_event",
+        subtype: "invitation",
+        registrationId: "registration-1",
+        decisionState: "unavailable",
+        decision: "withdrawn",
+      },
+    });
+    expect(resolveNotificationDisplayState({
+      notification: item,
+      pendingRequestIds: new Set(["registration-1"]),
+    })).toBe("unavailable");
+  });
+
   it("recognizes a public registration request separately from an invitation", () => {
     const item = notification({
       type: "action_event",

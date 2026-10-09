@@ -3,6 +3,9 @@ import type { ActionRegistrationRow } from "@/types/database";
 
 export type ActionRegistrationStatus = ActionRegistrationRow["registration_status"];
 export type ActionRegistrationSource = ActionRegistrationRow["registration_source"];
+export type ActionRegistrationCancellationReason = NonNullable<
+  ActionRegistrationRow["registration_cancellation_reason"]
+>;
 
 export type ActionRegistrationStatusRow = Pick<
   ActionRegistrationRow,
@@ -12,6 +15,8 @@ export type ActionRegistrationStatusRow = Pick<
   | "updated_at"
   | "registration_status"
   | "registration_source"
+  | "registration_cancellation_reason"
+  | "manual_invitation_version"
 >;
 
 export type ActionRegistrationReviewRow = Pick<
@@ -24,12 +29,14 @@ export type ActionRegistrationReviewRow = Pick<
   | "user_id"
   | "registration_status"
   | "registration_source"
+  | "registration_cancellation_reason"
+  | "manual_invitation_version"
 >;
 
 const REGISTRATION_STATUS_COLUMNS =
-  "action_id, created_at, registered_at, updated_at, registration_status, registration_source";
+  "action_id, created_at, registered_at, updated_at, registration_status, registration_source, registration_cancellation_reason, manual_invitation_version";
 const REGISTRATION_REVIEW_COLUMNS =
-  "id, action_id, created_at, registered_at, updated_at, user_id, registration_status, registration_source";
+  "id, action_id, created_at, registered_at, updated_at, user_id, registration_status, registration_source, registration_cancellation_reason, manual_invitation_version";
 
 function normalizeRegistrationUserIds(rows: readonly { user_id?: string | null }[]): string[] {
   return Array.from(
@@ -115,15 +122,20 @@ export async function updateActionRegistrationRecord(
     registrationStatus: ActionRegistrationStatus;
     registrationSource: ActionRegistrationSource;
     expectedRegistrationStatus?: ActionRegistrationStatus;
+    registrationCancellationReason?: ActionRegistrationCancellationReason | null;
   },
 ): Promise<ActionRegistrationStatusRow> {
+  const updateData: Record<string, string | null> = {
+    registered_at: params.registeredAt,
+    registration_status: params.registrationStatus,
+    registration_source: params.registrationSource,
+  };
+  if (params.registrationCancellationReason !== undefined) {
+    updateData.registration_cancellation_reason = params.registrationCancellationReason;
+  }
   let query = supabase
     .from("action_registrations")
-    .update({
-      registered_at: params.registeredAt,
-      registration_status: params.registrationStatus,
-      registration_source: params.registrationSource,
-    })
+    .update(updateData)
     .eq("action_id", params.actionId)
     .eq("user_id", params.userId);
   if (params.expectedRegistrationStatus) {
@@ -169,23 +181,6 @@ export async function insertActionRegistrationRecord(
   }
 
   return result.data as ActionRegistrationStatusRow;
-}
-
-export async function loadActionRegistrationIdsForAction(
-  supabase: SupabaseClient,
-  actionId: string,
-): Promise<string[]> {
-  const result = await supabase
-    .from("action_registrations")
-    .select("user_id, registration_status")
-    .eq("action_id", actionId)
-    .neq("registration_status", "cancelled");
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  return normalizeRegistrationUserIds(result.data ?? []);
 }
 
 export async function loadManualRegistrationIdsForAction(
