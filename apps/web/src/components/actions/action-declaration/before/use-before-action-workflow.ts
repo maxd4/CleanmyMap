@@ -73,11 +73,14 @@ function usePlannerActionHandoffHydration({
     if (initialActionId || hydratedRef.current) return;
     hydratedRef.current = true;
     const handoff = consumePlannerActionHandoff();
-    if (!handoff) return;
-    const prepared = mergePlannerHandoffIntoForm(form, handoff);
-    // Hydrate after the client boundary so sessionStorage never changes SSR markup.
-    setForm(prepared); onFormChange?.(prepared); saveDraft(prepared);
-  // The handoff is intentionally consumed once on mount; the current form is the merge base.
+    const draft = loadDraftSnapshot(form, form.recordType)?.form;
+    if (!handoff && !draft) return;
+    const prepared = handoff
+      ? mergePlannerHandoffIntoForm(draft ?? form, handoff)
+      : sanitizePreActionForm(draft ?? form);
+    // Hydrate after the client boundary so localStorage/sessionStorage never changes SSR markup.
+    setForm(prepared); onFormChange?.(prepared); if (handoff) saveDraft(prepared);
+  // The handoff and draft are intentionally consumed once on mount; the current form is the merge base.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialActionId, onFormChange]);
 }
@@ -218,8 +221,17 @@ function resolveActionDurationInput(
   return action.durationMinutes > 0 ? String(action.durationMinutes) : "";
 }
 
+export function buildBeforeActionFallbackForm(actorNameOptions: string[], defaultActorName: string, initialRecordType: "action"): FormState {
+  return sanitizePreActionForm(
+    createInitialBeforeActionForm(
+      actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? defaultActorName,
+      initialRecordType,
+    ),
+  );
+}
+
 export function buildBeforeActionInitialForm(actorNameOptions: string[], defaultActorName: string, initialRecordType: "action"): FormState {
-  const fallback = createInitialBeforeActionForm(actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? defaultActorName, initialRecordType);
+  const fallback = buildBeforeActionFallbackForm(actorNameOptions, defaultActorName, initialRecordType);
   const snapshot = loadDraftSnapshot(fallback, initialRecordType);
   return sanitizePreActionForm(snapshot?.form ?? fallback);
 }

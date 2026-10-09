@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ActionBeforeDeclarationForm } from "./form";
 import { IdentityAndSharingSection } from "./identity-and-sharing-section";
 import { PlannedActionSection } from "./planned-action-section";
+import { PreparationAndSafetySection } from "./preparation-and-safety-section";
 import { createInitialFormState } from "../payload";
 
 describe("ActionBeforeDeclarationForm", () => {
@@ -154,6 +155,82 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("Stockage précis ; affichage métier");
     expect(html).not.toContain("affichage métier");
     expect((html.match(/Déchets attendus/g) ?? []).length).toBe(1);
+  });
+
+  it("renders preparation and safety as four compact groups without the obsolete GPS banner", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.wasteCategories = ["broken_glass"];
+    form.safetyInstructions = "Rester en groupe.";
+    form.materialsProvided = "Pinces disponibles.";
+    form.suggestedMaterials = ["gloves", "grabbers"];
+    form.recommendedMaterials = "Prévoir de l'eau.";
+    form.accessibilityStatus = "conditions_reported";
+    form.accessibility = "Accès par la rue latérale.";
+    form.preparationChecklist[0] = { ...form.preparationChecklist[0], checked: true };
+    form.logisticsNotes = "Prévoir un lieu de repli.";
+    form.operationalRoute = { routes: [] } as never;
+
+    const html = renderToStaticMarkup(
+      React.createElement(PreparationAndSafetySection, {
+        form,
+        updateField: vi.fn(),
+      }),
+    );
+
+    const securityIndex = html.indexOf("Sécurité et risques");
+    const materialIndex = html.indexOf("Matériel à prévoir");
+    const accessibilityIndex = html.indexOf("Accessibilité");
+    const logisticsIndex = html.indexOf("Logistique et checklist");
+    expect(securityIndex).toBeGreaterThan(-1);
+    expect(materialIndex).toBeGreaterThan(securityIndex);
+    expect(accessibilityIndex).toBeGreaterThan(materialIndex);
+    expect(logisticsIndex).toBeGreaterThan(accessibilityIndex);
+    expect(html).toContain("Recommandations calculées depuis les déchets attendus");
+    expect(html).toContain("Balisser");
+    expect(html).toContain("Consignes particulières de l&#x27;organisateur");
+    expect(html).toContain("Matériel fourni par l&#x27;organisateur");
+    expect(html).toContain("Complément libre à apporter (facultatif)");
+    expect(html).toContain("Précisions d&#x27;accessibilité");
+    expect(html).toContain("Checklist avant départ");
+    expect(html).toContain('class="cmm-disclosure"');
+    expect(html).toContain("Notes logistiques facultatives");
+    expect(html).not.toContain("Bon à savoir");
+    expect(html).not.toContain("Ce pré-formulaire ne comprend pas de tracé GPS");
+    expect(html).not.toContain("min-h-[132px]");
+    expect(html).toContain('data-cmm-field-control="textarea"');
+    expect(html).toContain('data-cmm-field-control="select"');
+  });
+
+  it("keeps historical accessibility text visible when no status has been selected", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.accessibility = "Description historique à conserver.";
+
+    const html = renderToStaticMarkup(
+      React.createElement(PreparationAndSafetySection, {
+        form,
+        updateField: vi.fn(),
+      }),
+    );
+
+    expect(html).toContain("Description historique à conserver.");
+    expect(html).toContain("Précisions d&#x27;accessibilité");
+    expect(html).toContain("Aucune recommandation automatique pour les déchets attendus renseignés.");
+  });
+
+  it("keeps a length error beside an overlong legacy value", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.safetyInstructions = "x".repeat(2001);
+
+    const html = renderToStaticMarkup(
+      React.createElement(PreparationAndSafetySection, {
+        form,
+        updateField: vi.fn(),
+      }),
+    );
+
+    expect(html).toContain("2001/2000 caractères");
+    expect(html).toContain("Les consignes particulières dépasse la limite de 2000 caractères.");
+    expect(html).toContain('aria-invalid="true"');
   });
 
   it("labels a typed rendez-vous without coordinates as a free non-geolocated address", () => {

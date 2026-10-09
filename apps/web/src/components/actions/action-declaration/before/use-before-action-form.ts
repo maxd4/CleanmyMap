@@ -9,7 +9,7 @@ import {
   type TerminalPreActionStatus,
 } from "./model";
 import {
-  buildBeforeActionInitialForm,
+  buildBeforeActionFallbackForm,
   useBeforeActionFieldUpdates,
   useBeforeActionHydration,
   useBeforeActionPublication,
@@ -31,7 +31,7 @@ export function useBeforeActionForm({
   onActionPersisted,
 }: ActionBeforeDeclarationFormProps) {
   const resolvedDefaultActorName = actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? userMetadata.userId;
-  const [form, setForm] = useState<FormState>(() => buildBeforeActionInitialForm(actorNameOptions, resolvedDefaultActorName, initialRecordType));
+  const [form, setForm] = useState<FormState>(() => buildBeforeActionFallbackForm(actorNameOptions, resolvedDefaultActorName, initialRecordType));
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
