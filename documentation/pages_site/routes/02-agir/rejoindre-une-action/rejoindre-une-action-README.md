@@ -108,6 +108,14 @@ claim rétroactif décrit ci-dessus, sans transformer une inscription antérieur
 en preuve de présence. L'historique personnel et le partage d'une référence
 d'action restent des capacités distinctes de ce parcours.
 
+Pour une participation confirmée à une action terminée, la carte « Votre part
+des résultats » affiche uniquement la projection canonique
+`personalImpactAttribution`. Chaque métrique indique sa provenance — « Mesure
+individuelle », « Quote-part calculée » ou « Indisponible ». Une quote-part
+calculée n'est jamais présentée comme une mesure physique individuelle ; les
+participations non confirmées et les mesures indisponibles restent exclues ou
+signalées selon le contrat d'attribution.
+
 Une action future annulée n'est plus renvoyée dans la liste normale et ne peut
 plus être rejointe. Lorsqu'un utilisateur y avait déjà une participation, son
 historique peut afficher `Cette action a été annulée.` ; la relation de

@@ -7,7 +7,6 @@ import type { JoinableActionHistoryItem } from "@/lib/actions/participation/grou
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
-import { derivePersonalAttribution } from "@/lib/actions/personal-attribution";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 
 function actionTitle(item: ActionListItem): string {
@@ -22,7 +21,23 @@ function finalParticipants(item: ActionListItem): number | null {
 type ClaimState = Pick<
   JoinableActionHistoryItem,
   "participationStatus" | "participationSource"
-> & { participantsCount?: number | null };
+> & {
+  personalImpactAttribution?: JoinableActionHistoryItem["personalImpactAttribution"];
+};
+
+type PersonalImpactAttribution = NonNullable<JoinableActionHistoryItem["personalImpactAttribution"]>;
+type AttributionKind = PersonalImpactAttribution["wasteKind"];
+
+function attributionKindLabel(kind: AttributionKind, fr: boolean): string {
+  if (kind === "individual") return fr ? "Mesure individuelle" : "Individual measurement";
+  if (kind === "quote_part") return fr ? "Quote-part calculée" : "Calculated share";
+  return fr ? "Indisponible" : "Unavailable";
+}
+
+function formatAttributionValue(value: number | null, unit: string, fr: boolean): string {
+  if (value === null || !Number.isFinite(value)) return fr ? "Indisponible" : "Unavailable";
+  return `${value.toLocaleString(fr ? "fr-FR" : "en-US", { maximumFractionDigits: 2 })} ${unit}`;
+}
 
 function claimStatusLabel(state: ClaimState, fr: boolean): string {
   if (state.participationStatus === "confirmed") {
@@ -65,21 +80,55 @@ function PastActionCardSummary({
   );
 }
 
-function PastActionCardAttribution({ item, claimState, fr }: { item: ActionListItem; claimState: ClaimState | null; fr: boolean }) {
-  const personalAttribution = derivePersonalAttribution({
-    participationStatus: claimState?.participationStatus ?? null,
-    confirmedParticipantCount: claimState?.participantsCount,
-    finalWasteKg: item.waste_kg,
-    finalCigaretteButts: item.cigarette_butts,
-  });
-  if (!personalAttribution) return null;
+function PersonalAttributionMetric({
+  label,
+  value,
+  unit,
+  kind,
+  fr,
+}: {
+  label: string;
+  value: number | null;
+  unit: string;
+  kind: AttributionKind;
+  fr: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <span>{label}</span>
+      <span className="text-right">
+        <span className="block font-bold">{formatAttributionValue(value, unit, fr)}</span>
+        <span className="block text-xs font-medium text-emerald-800">{attributionKindLabel(kind, fr)}</span>
+      </span>
+    </div>
+  );
+}
+
+function PastActionCardAttribution({ claimState, fr }: { claimState: ClaimState | null; fr: boolean }) {
+  if (claimState?.participationStatus !== "confirmed") return null;
+  const personalAttribution = claimState.personalImpactAttribution ?? null;
+  const unavailableAttribution: PersonalImpactAttribution = {
+    wasteKg: null,
+    wasteKind: "unavailable",
+    wasteEquivalentSecKg: null,
+    wasteMohsValue: null,
+    wasteMohsSource: null,
+    cigaretteButts: null,
+    cigaretteButtsKind: "unavailable",
+    cigaretteButtsProvenance: null,
+    wasteInconsistent: false,
+    cigaretteButtsInconsistent: false,
+    wasteMohsEligible: false,
+    cigaretteButtsMohsEligible: false,
+  };
+  const attribution = personalAttribution ?? unavailableAttribution;
   return (
     <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-950">
       <p className="font-bold">{fr ? "Votre part des résultats" : "Your share of the results"}</p>
-      <p className="mt-1">{fr ? "Quote-part attribuée à votre profil, dérivée des participants confirmés." : "Share attributed to your profile, derived from confirmed participants."}</p>
+      <p className="mt-1">{fr ? "Chaque valeur reprend la projection canonique de votre participation confirmée. Une quote-part calculée n’est pas une mesure physique individuelle." : "Each value uses the canonical projection of your confirmed participation. A calculated share is not an individual physical measurement."}</p>
       <div className="mt-2 grid gap-1 font-semibold">
-        {personalAttribution.wasteKg !== null ? <span>{personalAttribution.wasteKg.toLocaleString(fr ? "fr-FR" : "en-US", { maximumFractionDigits: 2 })} kg</span> : null}
-        {personalAttribution.cigaretteButts !== null ? <span>{personalAttribution.cigaretteButts.toLocaleString(fr ? "fr-FR" : "en-US", { maximumFractionDigits: 2 })} {fr ? "mégots" : "cigarette butts"}</span> : null}
+        <PersonalAttributionMetric label={fr ? "Déchets" : "Waste"} value={attribution.wasteKg} unit="kg" kind={attribution.wasteKind} fr={fr} />
+        <PersonalAttributionMetric label={fr ? "Mégots" : "Cigarette butts"} value={attribution.cigaretteButts} unit={fr ? "mégots" : "cigarette butts"} kind={attribution.cigaretteButtsKind} fr={fr} />
       </div>
     </div>
   );
@@ -146,7 +195,7 @@ function PastActionCard({
       ) : null}
       <div className="space-y-3">
         <PastActionCardSummary item={item} fr={fr} onShareAction={onShareAction} />
-        <PastActionCardAttribution item={item} claimState={claimState} fr={fr} />
+        <PastActionCardAttribution claimState={claimState} fr={fr} />
         <PastActionCardActions item={item} fr={fr} authenticated={authenticated} claimState={claimState} claiming={claiming} claimError={claimError} onRequestClaim={onRequestClaim} />
       </div>
     </article>
@@ -179,7 +228,7 @@ export function PastActionsPanel({
     () => new Map(historyItems.map((item) => [item.id, {
       participationStatus: item.participationStatus,
       participationSource: item.participationSource,
-      participantsCount: item.participantsCount,
+      personalImpactAttribution: item.personalImpactAttribution,
     }] as const)),
     [historyItems],
   );

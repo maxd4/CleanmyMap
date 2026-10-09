@@ -109,6 +109,22 @@ describe("individual action impact attribution", () => {
     expect(withTenChildren.attribution).toEqual(withTwoChildren.attribution);
   });
 
+  it("allocates the 10 kg individual measure before the conservative remainder of a 20 kg total", () => {
+    const alice = toIndividualImpactMeasurement({
+      individual_waste_kg: 10,
+      individual_waste_condition: "sec",
+    });
+    const result = allocateActionParticipantImpact({
+      totalWasteKg: 20,
+      totalCigaretteButts: null,
+      participants: [participant("alice", alice), participant("bob"), participant("cara")],
+    });
+
+    expect(result.get("alice")).toMatchObject({ wasteKg: 10, wasteKind: "individual" });
+    expect(result.get("bob")).toMatchObject({ wasteKg: 5, wasteKind: "quote_part" });
+    expect(result.get("cara")).toMatchObject({ wasteKg: 5, wasteKind: "quote_part" });
+  });
+
   it("keeps the existing equal quote-part when no exact measurement exists", () => {
     const result = allocateActionParticipantImpact({
       totalWasteKg: 100,
