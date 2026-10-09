@@ -110,4 +110,24 @@ describe("notification decision state", () => {
       4,
     ).map((item) => item.id)).toEqual(["old-decision", "recent-information"]);
   });
+
+  it("keeps decisions at positions 21 or 100 reachable without loading history", () => {
+    const history = Array.from({ length: 100 }, (_, index) => notification({
+      id: `information-${index + 1}`,
+      payload: null,
+    }));
+    const firstPending = notification({ id: "pending-21" });
+    const secondPending = notification({ id: "pending-100" });
+
+    expect(prioritizeNotificationPreview(
+      [firstPending, secondPending],
+      history,
+      4,
+    ).map((item) => item.id)).toEqual([
+      "pending-21",
+      "pending-100",
+      "information-1",
+      "information-2",
+    ]);
+  });
 });
