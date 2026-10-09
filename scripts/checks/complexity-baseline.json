@@ -4038,15 +4038,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/weather-section.preparation-guide.tsx",
-      "line": 16,
-      "category": "React/JSX",
-      "ceiling": 219,
-      "status": "LEGACY",
-      "functionIdentity": "named:PreparationGuide#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/ui/cmm-dropdown.tsx",
       "line": 57,
       "category": "React/JSX",

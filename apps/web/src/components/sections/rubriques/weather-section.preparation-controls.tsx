@@ -17,14 +17,16 @@ export function PreparationChecklist({
   items,
   fr,
   onChange,
+  compact = false,
 }: {
   items: ActionPreparationChecklistItem[];
   fr: boolean;
   onChange: (key: string, checked: boolean) => void;
+  compact?: boolean;
 }) {
   const complete = items.length > 0 && items.every((item) => item.checked);
   return (
-    <section className="rounded-2xl border border-emerald-200 bg-white/95 p-4 shadow-sm" data-testid="preparation-checklist" aria-labelledby="preparation-checklist-title">
+    <section className={compact ? "space-y-3" : "rounded-2xl border border-emerald-200 bg-white/95 p-4 shadow-sm"} data-testid="preparation-checklist" aria-labelledby="preparation-checklist-title">
       <div className="space-y-2">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h3 id="preparation-checklist-title" className="text-lg font-black text-slate-900">
@@ -61,10 +63,12 @@ export function PreparationMaterials({
   context,
   fr,
   onChange,
+  compact = false,
 }: {
   context?: ActionPreparationContext;
   fr: boolean;
   onChange: (update: PreparationContextUpdate) => void;
+  compact?: boolean;
 }) {
   const suggestedMaterials = context?.suggestedMaterials ?? [];
   const toggleSuggestion = (value: ActionMaterialSuggestion) => {
@@ -76,7 +80,7 @@ export function PreparationMaterials({
   };
 
   return (
-    <section className="rounded-2xl border border-emerald-200 bg-white/95 p-4 shadow-sm">
+    <section className={compact ? "space-y-3" : "rounded-2xl border border-emerald-200 bg-white/95 p-4 shadow-sm"}>
       <h3 className="text-base font-black text-slate-900">{fr ? "Matériel" : "Equipment"}</h3>
       <p className="mt-1 text-sm text-slate-600">{fr ? "Suggestions à adapter au contexte ; elles ne calculent ni quantité ni besoin universel." : "Suggestions to adapt to the context; they do not calculate quantities or universal needs."}</p>
       <fieldset className="mt-3 space-y-2">

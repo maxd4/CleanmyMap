@@ -22,7 +22,6 @@ describe("PreparationPanel", () => {
       React.createElement(PreparationPanel, {
         selectedForecastRisk: null,
         weatherStatus: "empty",
-        recommendedWindow: null,
         preparationContext: context,
         fr: true,
       }),
@@ -32,7 +31,7 @@ describe("PreparationPanel", () => {
     expect(html).toContain("Matériel prévu");
     expect(html).toContain("Matériel fourni");
     expect(html).toContain("À prévoir");
-    expect(html).toContain("météo n’est pas disponible");
+    expect(html).toContain("Aucune recommandation météo affichée");
     expect(html).not.toContain("kit-main");
     expect(html).not.toContain("guide-main");
     expect(html).not.toContain("Progression du kit");

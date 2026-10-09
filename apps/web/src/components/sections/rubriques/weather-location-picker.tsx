@@ -163,8 +163,8 @@ export function WeatherLocationPicker({
               <p className="mt-1 truncate text-sm font-semibold text-emerald-950">{selectedLocation.label}</p>
               <p className="mt-0.5 truncate text-xs text-emerald-900/70">{selectedLocation.subtitle}</p>
             </div>
-            <span className="mt-0.5 inline-flex shrink-0 rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
-              GPS
+            <span className={cn("cmm-text-caption mt-0.5 inline-flex shrink-0 rounded-full border bg-white px-2.5 py-1 font-black uppercase tracking-[0.22em]", selectedLocation.resolution === "resolved" ? "border-emerald-200 text-emerald-700" : "border-amber-200 text-amber-800")}>
+              {selectedLocation.resolution === "resolved" ? "GPS confirmé" : "À préciser"}
             </span>
           </div>
         </div>

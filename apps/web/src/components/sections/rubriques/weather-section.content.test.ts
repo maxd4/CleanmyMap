@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildPreparationHeroStats,
-  buildQuickActions,
-  buildUsefulBlocks,
-} from "./weather-section.preparation.data";
 import { getDurationLabel, getReportLabel, getWeatherStateCopy } from "./weather-section.helpers";
 import { evaluateWeatherRisk } from "@/lib/weather/ops-weather";
 
@@ -73,23 +68,13 @@ describe("Weather content contract", () => {
     expect(riskText).not.toContain("<=");
   });
 
-  it("keeps preparation copy contextual and avoids universal water quantities", () => {
-    const heroStats = buildPreparationHeroStats(true, "1 h", "Gants", "Modéré");
-    const usefulBlocks = buildUsefulBlocks(true);
-    const copy = JSON.stringify({ heroStats, usefulBlocks }).toLowerCase();
-
-    expect(copy).not.toContain("adapté à tous");
-    expect(copy).not.toContain("1 l+");
-    expect(copy).not.toContain("merci la nature");
-  });
-
-  it("keeps only quick actions with a real non-weather destination", () => {
-    const actions = buildQuickActions(true);
-    const hrefs = actions.map((action) => action.href);
-
-    expect(hrefs).toEqual(["/sections/recycling"]);
-    expect(hrefs).not.toContain("/sections/reports");
-    expect(hrefs).not.toContain("/sections/weather");
-    expect(actions.map((action) => action.title)).not.toContain("Partager la fiche");
+  it("does not use the retired pedagogical preparation blocks", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const source = await readFile(new URL("./weather-section.tsx", import.meta.url), "utf8");
+    expect(source).toContain("PreparationLocationBlock");
+    expect(source).toContain("PreparationForecastBlock");
+    expect(source).toContain("CmmDisclosure");
+    expect(source).not.toContain("PreparationGuide");
+    expect(source).not.toContain("Bien cadrer la cleanwalk");
   });
 });

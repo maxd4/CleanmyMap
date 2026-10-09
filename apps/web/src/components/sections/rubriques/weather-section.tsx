@@ -1,21 +1,18 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { PageHeader } from "@/components/ui/page-header";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { ConditionsPanel } from "./weather-section.conditions";
-import { PreparationPanel } from "./weather-section.preparation";
+import { PreparationForecastBlock, PreparationLocationBlock, PreparationPanel } from "./weather-section.preparation";
 import { useWeatherData } from "./use-weather-data";
 import type { ActionPreparationContext, PreparationSelection } from "@/lib/actions/action-preparation-context";
 import type { resolvePreparationSelection } from "@/lib/actions/action-preparation-context";
-
-const itemVariants = {
-  hidden: { opacity: 1, y: 18 },
-  visible: { opacity: 1, y: 0 },
-};
 
 export function WeatherSection({
   draftContext,
@@ -36,77 +33,77 @@ export function WeatherSection({
   const pageFamily = resolvePageFamily(pathname);
 
   const weather = useWeatherData(draftContext);
-  const recommendedWindow = weather.windows.recommended[0] ?? null;
   const actionLocation = preparationContext?.locationLabel?.trim() ?? draftContext?.locationLabel?.trim() ?? "";
-  const weatherLocationDiffers = Boolean(actionLocation && weather.selectedLocation.label && actionLocation.toLocaleLowerCase() !== weather.selectedLocation.label.trim().toLocaleLowerCase());
+  const actionDate = preparationContext?.actionDate?.trim() ?? draftContext?.actionDate?.trim() ?? "";
 
   return (
     <SectionShell
       id="weather"
       hideHeader
     >
-      <div className="space-y-10 pt-12 text-slate-900">
-        <div className="space-y-6">
+      <div className="space-y-6 pt-8 text-slate-900">
+        <div className="space-y-4">
           <PageHeader
             family={pageFamily}
             align="center"
-            title={fr ? "Météo & conditions terrain" : "Weather & field conditions"}
+            title={fr ? "Préparer l’action" : "Prepare the action"}
             subtitle={
               fr
-                ? "Consultez la météo réelle du lieu puis préparez le terrain pour décider du bon créneau d’action."
-                : "Check the real weather for the location, then prepare the field to choose the right action slot."
+                ? "Vérifiez le lieu et le jour utiles, retenez si besoin un créneau, puis préparez le matériel."
+                : "Check the relevant place and day, keep a slot if useful, then prepare the equipment."
             }
           />
-
-          <div className="max-w-xl text-center">
-            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700/80">
-              {fr ? "Lieu sélectionné" : "Selected place"}
-            </p>
-            <p className="mt-1 text-lg font-black tracking-tight text-slate-900">
-              {weather.selectedLocation.label}
-            </p>
-            <p className="mt-1 text-sm text-slate-500">{weather.selectedLocation.subtitle}</p>
-            {weatherLocationDiffers ? <p role="note" className="mt-2 text-sm font-semibold text-amber-800">{fr ? `La météo est consultée pour « ${weather.selectedLocation.label} », différent du lieu de l’action « ${actionLocation} ».` : `Weather is checked for “${weather.selectedLocation.label}”, which differs from the action location “${actionLocation}”.`}</p> : null}
-          </div>
-
         </div>
 
-        <div className="space-y-8">
-          <motion.div variants={itemVariants}>
-            <ConditionsPanel
-              currentRisk={weather.currentRisk}
-              selectedForecastRisk={weather.selectedForecastRisk}
-              weatherStatus={weather.weatherStatus}
-              locationResolution={weather.locationResolution}
-              selectedLocation={weather.selectedLocation}
-              locationQuery={weather.locationQuery}
-              setLocationQuery={weather.setLocationQuery}
-              locationSuggestions={weather.locationSuggestions}
-              locationSuggestionsError={weather.locationSuggestionsError}
-              isLocationSuggestionsLoading={weather.isLocationSuggestionsLoading}
-              selectLocation={weather.selectLocation}
-              forecastDays={weather.forecastDays}
-              selectedForecastDay={weather.selectedForecastDay}
-              selectedForecastDayIndex={weather.selectedForecastDayIndex}
-              forecastSelectionStatus={weather.forecastSelectionStatus}
-              setSelectedForecastDayIndex={weather.setSelectedForecastDayIndex}
-              windows={weather.windows}
-              onPreparationSelection={onPreparationSelection}
-              fr={fr}
-            />
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <PreparationPanel
-              selectedForecastRisk={weather.selectedForecastRisk}
-              weatherStatus={weather.weatherStatus}
-              recommendedWindow={recommendedWindow}
-              preparationContext={preparationContext}
-              fr={fr}
-              onPreparationValidated={onPreparationValidated}
-              onPreparationContextChange={onPreparationContextChange}
-            />
-          </motion.div>
+        <div className="space-y-4" data-testid="preparation-overview">
+          <PreparationLocationBlock actionLocation={actionLocation} actionDate={actionDate} weather={weather} fr={fr} />
+          <PreparationForecastBlock weather={weather} actionDate={actionDate} onPreparationSelection={onPreparationSelection} fr={fr} />
+          <PreparationPanel
+            selectedForecastRisk={weather.selectedForecastRisk}
+            weatherStatus={weather.weatherStatus}
+            preparationContext={preparationContext}
+            fr={fr}
+            onPreparationValidated={onPreparationValidated}
+            onPreparationContextChange={onPreparationContextChange}
+          />
+          <CmmDisclosure
+            summary={
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="font-bold">{fr ? "Prévisions détaillées et conseils complémentaires" : "Detailed forecasts and complementary advice"}</span>
+                <span className="text-xs font-normal text-slate-600">{fr ? "7 jours, heures et contraintes" : "7 days, hours and constraints"}</span>
+              </span>
+            }
+            tone="emerald"
+            size="md"
+            id="preparation-weather-details"
+          >
+            <div className="space-y-4">
+              <ConditionsPanel
+                currentRisk={weather.currentRisk}
+                selectedForecastRisk={weather.selectedForecastRisk}
+                weatherStatus={weather.weatherStatus}
+                locationResolution={weather.locationResolution}
+                selectedLocation={weather.selectedLocation}
+                locationQuery={weather.locationQuery}
+                setLocationQuery={weather.setLocationQuery}
+                locationSuggestions={weather.locationSuggestions}
+                locationSuggestionsError={weather.locationSuggestionsError}
+                isLocationSuggestionsLoading={weather.isLocationSuggestionsLoading}
+                selectLocation={weather.selectLocation}
+                forecastDays={weather.forecastDays}
+                selectedForecastDay={weather.selectedForecastDay}
+                selectedForecastDayIndex={weather.selectedForecastDayIndex}
+                forecastSelectionStatus={weather.forecastSelectionStatus}
+                setSelectedForecastDayIndex={weather.setSelectedForecastDayIndex}
+                windows={weather.windows}
+                fr={fr}
+              />
+              <CmmCard tone="emerald" variant="muted" size="sm" className="flex flex-wrap items-center justify-between gap-3">
+                <div><h3 className="font-bold text-emerald-950">{fr ? "Conseil complémentaire" : "Complementary advice"}</h3><p className="mt-1 text-sm text-slate-600">{fr ? "Retrouvez les repères de tri dans la source dédiée, sans quitter cette préparation." : "Find sorting guidance in the dedicated source without leaving this preparation."}</p></div>
+                <CmmButton href="/sections/recycling" tone="secondary" variant="pill" size="sm">{fr ? "Comprendre le tri" : "Understand sorting"}</CmmButton>
+              </CmmCard>
+            </div>
+          </CmmDisclosure>
         </div>
       </div>
     </SectionShell>

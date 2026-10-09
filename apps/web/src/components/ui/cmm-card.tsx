@@ -36,6 +36,7 @@ export interface CmmCardProps {
   lineClamp?: 2 | 3;
   /** Label accessible pour la card cliquable */
   ariaLabel?: string;
+  "data-testid"?: string;
 }
 
 /**
@@ -61,6 +62,7 @@ export function CmmCard({
   prose,
   lineClamp,
   ariaLabel,
+  "data-testid": dataTestId,
 }: CmmCardProps) {
   const CardElement = as;
   const proseClass = prose === true
@@ -83,6 +85,7 @@ export function CmmCard({
       tabIndex={clickable && !disabled ? 0 : undefined}
       aria-label={ariaLabel}
       aria-disabled={disabled}
+      data-testid={dataTestId}
       onClick={!disabled ? onClick : undefined}
       onKeyDown={(event) => {
         if (clickable && !disabled && onClick && (event.key === "Enter" || event.key === " ")) {
