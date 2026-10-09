@@ -38,6 +38,8 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Action prévue");
     expect(html).toContain("Préparation et sécurité");
     expect(html).toContain("Déchets attendus");
+    expect(html).toContain("catégories susceptibles d’être rencontrées");
+    expect(html).toContain("distincte des déchets réellement collectés");
     expect(html).toContain("Point de rendez-vous précis");
     expect(html).toContain("Commune ou secteur d’intervention");
     expect(html).toContain("Boucle");
@@ -62,6 +64,8 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Sélectionnez un type de zone");
     expect(html).toContain("Sélectionnez un niveau");
     expect(html).toContain("Date et horaires");
+    expect(html).toContain("Accueil des bénévoles au point de rendez-vous.");
+    expect(html).toContain("Départ effectif après le rendez-vous.");
     expect(html).toContain("Début du créneau global");
     expect(html).toContain("Fin du créneau global");
     expect(html).toContain("Inscriptions des bénévoles");
@@ -126,6 +130,30 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toMatch(/id="before-duration-minutes"[^>]*value=""/);
     expect(html).toContain("Date et horaires principaux");
     expect(html).toContain("Créneau global");
+    expect(html).not.toContain("Stockage précis ; affichage métier");
+  });
+
+  it("keeps expected waste optional and derives safety guidance from the catalog", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.durationMinutes = "60";
+    form.wasteCategories = ["broken_glass"];
+    const html = renderToStaticMarkup(
+      React.createElement(PlannedActionSection, {
+        form,
+        updateField: vi.fn(),
+        updateFields: vi.fn(),
+        hasAttemptedSubmit: false,
+        validationIssueFields: [],
+      }),
+    );
+
+    expect(html).toContain("1 catégorie");
+    expect(html).toContain("Gants anti-coupure et contenant rigide adapté");
+    expect(html).toContain("Balisser ou signaler la zone si la collecte n&#x27;est pas sûre.");
+    expect(html).toContain("60 min");
+    expect(html).not.toContain("Stockage précis ; affichage métier");
+    expect(html).not.toContain("affichage métier");
+    expect((html.match(/Déchets attendus/g) ?? []).length).toBe(1);
   });
 
   it("labels a typed rendez-vous without coordinates as a free non-geolocated address", () => {

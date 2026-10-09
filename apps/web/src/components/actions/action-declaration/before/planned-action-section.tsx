@@ -178,6 +178,7 @@ function ScheduleFields({
         <TimeField
           id="before-meeting-time"
           label="Heure de rendez-vous"
+          hint="Accueil des bénévoles au point de rendez-vous."
           value={form.meetingTime}
           field="meetingTime"
           updateField={updateField}
@@ -187,6 +188,7 @@ function ScheduleFields({
         <TimeField
           id="before-departure-time"
           label="Heure de départ"
+          hint="Départ effectif après le rendez-vous."
           value={form.departureTime}
           field="departureTime"
           updateField={updateField}
@@ -196,7 +198,7 @@ function ScheduleFields({
         <CmmField
           id="before-duration-minutes"
           label="Durée estimée"
-          hint={`${formatBusinessDurationMinutes(toOptionalNumber(form.durationMinutes))} ; laissez vide si elle est inconnue.`}
+          hint={formatBusinessDurationMinutes(toOptionalNumber(form.durationMinutes))}
           error={hasValidationIssue(validationIssueFields, "durationMinutes") ? durationIssue : undefined}
         >
           <CmmInput type="number" min="0" step="1" value={form.durationMinutes} onChange={(event) => updateField("durationMinutes", event.target.value)} placeholder="Ex. 60" />
@@ -438,6 +440,7 @@ function ExpectedWasteSection({ form, updateField }: BaseSectionProps) {
   return (
     <CmmDisclosure summary={<ActionFormDisclosureSummary label="Déchets attendus" detail={form.wasteCategories?.length ? `${form.wasteCategories.length} catégorie${form.wasteCategories.length > 1 ? "s" : ""}` : undefined} />} tone="emerald" size="md">
       <div className="space-y-4">
+        <p className="text-sm leading-5 text-emerald-900/70">Sélection facultative de catégories susceptibles d’être rencontrées pendant l’action. Il s’agit d’une prévision, distincte des déchets réellement collectés ; les consignes dérivées du référentiel s’affichent après sélection.</p>
         <WasteCategorySelector value={form.wasteCategories ?? []} onChange={(value) => updateField("wasteCategories", value)} idPrefix="expected-waste" />
         <WasteFieldSummary value={form.wasteCategories ?? []} />
       </div>
