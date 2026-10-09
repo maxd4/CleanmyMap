@@ -33,7 +33,7 @@ export async function emitAdministrativeRequirementNotifications(params: {
 export async function emitAdministrativeRequirementNotificationsIfNeeded(params: {
   supabase: SupabaseClient;
   actionId: string;
-  current: { published_at: string | null };
+  current: { published_at?: string | null };
   updateData: Record<string, unknown>;
   actionWriteSucceeded: boolean;
 }): Promise<void> {
