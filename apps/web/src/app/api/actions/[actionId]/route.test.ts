@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { appendActionModerationAuditMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   beforeEach(() => {
@@ -58,6 +58,21 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
 
     expect(response.status).toBe(400);
     expect(loadActionByIdMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects clearing all organizers on a structured action", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ organizerAccounts: [] }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(400);
     expect(updateMock).not.toHaveBeenCalled();
   });
 
@@ -123,6 +138,43 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     );
 
     expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("does not finalize a spontaneous action when organizer persistence fails", async () => {
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "pending",
+      action_phase: "pre_action",
+      organizer_type: "spontaneous",
+      organizer_id: null,
+      organizer_name: "Organisateur en attente de compte",
+      preparation_data: {
+        administrativeRequirements: {
+          status: "validated",
+          validatedAt: "2026-09-15T10:00:00.000Z",
+          validatedByUserId: "validator-1",
+        },
+      },
+      created_by_clerk_id: "user-test-1",
+      notes: null,
+    });
+    syncActionOrganizersMock.mockRejectedValueOnce(new Error("organizer RPC failed"));
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          organizerType: "spontaneous",
+          organizerAccounts: ["user-associated-1"],
+          actionPhase: "post_action_complete",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(500);
     expect(updateMock).not.toHaveBeenCalled();
   });
 

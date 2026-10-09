@@ -13,14 +13,8 @@ import {
 } from "@/lib/authz";
 import {
   canManageAction,
-  canManageActionsGlobally,
-  canEditValidatedImpact,
 } from "@/lib/actions/permissions";
-import {
-  appendActionModerationAudit,
-  isModerationReasonRequired,
-  normalizeModerationReason,
-} from "@/lib/actions/moderation-audit";
+import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
 import { loadManualRegistrationIdsForAction } from "@/lib/actions/participation/registration-records";
 import {
   loadCanonicalActionOrganizerIdsForAction,
@@ -31,20 +25,13 @@ import {
   buildActionAuditSnapshots,
   type ActionUpdateInput,
 } from "@/lib/actions/action-update-audit";
-import { hasActionImpactUpdate } from "@/lib/actions/action-update-impact";
-import {
-  ActionUpdateValidationError,
-  prepareActionUpdate,
-} from "@/lib/actions/action-update-persistence";
+import { ActionUpdateValidationError } from "@/lib/actions/action-update-persistence";
 import {
   runActionUpdatePostProcessing,
+  syncUpdatedOrganizers,
   type AdminOverrideErrorStage,
 } from "@/lib/actions/action-update-post-processing";
-import { resolveActionUpdateOrganizer } from "@/lib/actions/action-update-organizer";
-import {
-  validatePatchOrganizerAccounts,
-  validateSpontaneousOrganizerPatch,
-} from "./route.patch-organizers";
+import { preparePatchMutation, type PreparedPatchMutation } from "./route.patch-preparation";
 import { createAdminAuditOnceAppender } from "./route.patch-audit";
 import {
   ensureGpxGeometryContributionEligible,
@@ -89,7 +76,7 @@ async function parsePatchRequest(
 }
 
 type EditableAction = NonNullable<Awaited<ReturnType<typeof loadActionById>>>;
-type PreparedActionUpdate = Exclude<Awaited<ReturnType<typeof prepareActionUpdate>>, Response>;
+type PreparedActionUpdate = PreparedPatchMutation["preparedUpdate"];
 
 async function loadAuthorizedPatchAction({
   supabase,
@@ -99,7 +86,11 @@ async function loadAuthorizedPatchAction({
   supabase: ReturnType<typeof getSupabaseServerClient>;
   userId: string;
   actionId: string;
-}): Promise<Response | { current: EditableAction; identity: Awaited<ReturnType<typeof getCurrentUserIdentity>> }> {
+}): Promise<Response | {
+  current: EditableAction;
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
+  organizerIds: string[];
+}> {
   const current = await loadActionById(supabase, actionId);
   if (!current) return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
 
@@ -123,68 +114,7 @@ async function loadAuthorizedPatchAction({
       { status: 409 },
     );
   }
-  return { current, identity };
-}
-
-async function preparePatchMutation({
-  supabase,
-  userId,
-  current,
-  identity,
-  parsed,
-}: {
-  supabase: ReturnType<typeof getSupabaseServerClient>;
-  userId: string;
-  current: EditableAction;
-  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
-  parsed: ActionUpdateInput;
-}): Promise<Response | {
-  preparedUpdate: PreparedActionUpdate;
-  shouldAuditModeration: boolean;
-  adminAuditActorUserId: string;
-  adminAuditTargetUserId: string | null;
-  moderationOperation: string;
-  moderationReason: string | null;
-}> {
-  const spontaneousOrganizerError = validateSpontaneousOrganizerPatch(current, parsed);
-  if (spontaneousOrganizerError) return spontaneousOrganizerError;
-  const parsedBody = await resolveActionUpdateOrganizer({ supabase, body: parsed, current });
-  const organizerAccountsError = await validatePatchOrganizerAccounts({ supabase, userId, identity, organizerAccounts: parsedBody.organizerAccounts });
-  if (organizerAccountsError) return organizerAccountsError;
-  const validatedImpactCorrection = current.status === "approved" && hasActionImpactUpdate(parsedBody);
-  if (validatedImpactCorrection && !canEditValidatedImpact(identity)) {
-    return NextResponse.json(
-      { error: "La correction d'un impact validé est réservée aux administrateurs autorisés." },
-      { status: 403 },
-    );
-  }
-  const moderationReason = validatedImpactCorrection
-    ? normalizeModerationReason(parsedBody.reason, { required: isModerationReasonRequired("correct_impact") })
-    : null;
-  if (validatedImpactCorrection && !moderationReason) {
-    return validationErrorResponse({ reason: ["Un motif d'au moins 5 caractères est requis pour corriger un impact validé."] });
-  }
-
-  const preparedUpdate = await prepareActionUpdate({ current, parsedBody }).catch((error: unknown) => {
-    if (error instanceof ActionUpdateValidationError) {
-      return validationErrorResponse({ [error.field]: [error.message] });
-    }
-    throw error;
-  });
-  if (preparedUpdate instanceof Response) return preparedUpdate;
-
-  return {
-    preparedUpdate,
-    shouldAuditModeration: validatedImpactCorrection || (
-      Boolean(identity) &&
-      userId !== current.created_by_clerk_id &&
-      canManageActionsGlobally(identity)
-    ),
-    adminAuditActorUserId: identity?.userId ?? userId,
-    adminAuditTargetUserId: current.created_by_clerk_id.trim() || null,
-    moderationOperation: validatedImpactCorrection ? "correct_impact" : "edit_action",
-    moderationReason,
-  };
+  return { current, identity, organizerIds };
 }
 
 type PatchExecutionState = {
@@ -243,6 +173,19 @@ async function executePreparedActionUpdate({
     : updateData;
 
   const hasActionUpdates = Object.keys(scalarUpdateData).length > 0;
+  const organizerMustPrecedeSpontaneousFinalization =
+    (body.organizerType ?? current.organizer_type) === "spontaneous" &&
+    scalarUpdateData.action_phase === "post_action_complete" &&
+    body.organizerAccounts !== undefined;
+  if (organizerMustPrecedeSpontaneousFinalization) {
+    await syncUpdatedOrganizers({
+      supabase,
+      actionId,
+      body,
+      userId,
+      identity,
+    });
+  }
   state.adminErrorStage = "action_update";
   const updateResult = hasActionUpdates
     ? await supabase.from("actions").update(scalarUpdateData).eq("id", actionId).select("id").single()
@@ -267,7 +210,7 @@ async function executePreparedActionUpdate({
     actionId,
     userId,
   });
-  await runActionUpdatePostProcessing({ supabase, actionId, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
+  await runActionUpdatePostProcessing({ supabase, actionId, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, organizersAlreadySynced: organizerMustPrecedeSpontaneousFinalization, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
   return body;
 }
 
@@ -417,13 +360,14 @@ async function executePatchRequest({
       actionId: trimmedActionId,
     });
     if (actionContext instanceof Response) return actionContext;
-    const { current, identity } = actionContext;
+    const { current, identity, organizerIds } = actionContext;
 
     const mutation = await preparePatchMutation({
       supabase,
       userId,
       current,
       identity,
+      organizerIds,
       parsed,
     });
     if (mutation instanceof Response) return mutation;

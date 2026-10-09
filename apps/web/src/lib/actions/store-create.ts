@@ -11,8 +11,8 @@ import type {
 } from "@/lib/actions/participation/organizers";
 import {
   buildInitialActionRegistrationRows,
-  insertActionOrganizers,
-  insertActionRegistrations,
+  insertCreatedActionOrganizers,
+  insertCreatedActionRegistrations,
 } from "./store-participants";
 import { reconstructActionRoute } from "@/lib/actions/geometry/route-reconstruction";
 import {
@@ -50,7 +50,7 @@ async function persistActionOrganizers(
   requirement: "required" | "optional" | undefined,
 ): Promise<void> {
   if (requirement !== "optional" || organizers.length > 0) {
-    await insertActionOrganizers(supabase, actionId, organizers);
+    await insertCreatedActionOrganizers(supabase, actionId, organizers);
   }
 }
 
@@ -72,7 +72,7 @@ async function persistCreatedActionData(
     params.organizers,
     params.organizerRequirement,
   );
-  await insertActionRegistrations(
+  await insertCreatedActionRegistrations(
     supabase,
     params.actionId,
     buildInitialActionRegistrationRows({

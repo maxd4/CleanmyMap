@@ -9,6 +9,7 @@ import type { ActionUpdateInput } from "@/lib/actions/action-update-audit";
 export function validateSpontaneousOrganizerPatch(
   current: Pick<ActionRow, "organizer_type">,
   parsed: ActionUpdateInput,
+  persistedOrganizerIds: string[],
 ): Response | null {
   const nextOrganizerType = parsed.organizerType ?? current.organizer_type;
   const organizerAccounts = parsed.organizerAccounts;
@@ -25,7 +26,13 @@ export function validateSpontaneousOrganizerPatch(
       ],
     });
   }
-  if (isExplicitlyUnassignedSpontaneous && parsed.actionPhase === "post_action_complete") {
+  const hasPersistedOrganizer = persistedOrganizerIds.length > 0;
+  const hasSelectedOrganizer = organizerAccounts === undefined
+    ? hasPersistedOrganizer
+    : organizerAccounts.length > 0;
+  if (nextOrganizerType === "spontaneous"
+    && parsed.actionPhase === "post_action_complete"
+    && !hasSelectedOrganizer) {
     return validationErrorResponse({
       organizerAccounts: [
         "Une déclaration finale exige un compte utilisateur organisateur réel.",

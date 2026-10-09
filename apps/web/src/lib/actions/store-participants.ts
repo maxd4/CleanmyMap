@@ -16,7 +16,11 @@ type ActionRegistrationInsertRow = {
   registration_source: ActionRegistrationSource;
 };
 
-export async function insertActionOrganizers(
+/**
+ * Creation-only persistence. Editing an action must use the atomic organizer
+ * synchronization RPC instead of this cleanup-oriented workflow.
+ */
+export async function insertCreatedActionOrganizers(
   supabase: SupabaseClient,
   actionId: string,
   organizers: ResolvedActionOrganizer[],
@@ -97,7 +101,11 @@ export function buildInitialActionRegistrationRows(params: {
   return rows;
 }
 
-export async function insertActionRegistrations(
+/**
+ * Creation-only persistence. The compensating deletes are intentionally
+ * scoped to a partially-created action and must never be reused by PATCH.
+ */
+export async function insertCreatedActionRegistrations(
   supabase: SupabaseClient,
   actionId: string,
   rows: ActionRegistrationInsertRow[],

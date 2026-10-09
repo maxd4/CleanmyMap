@@ -102,4 +102,23 @@ describe("POST /api/actions/:actionId/publish", () => {
       expect(response.status).toBe(422);
     },
   );
+
+  it("rejects a spontaneous action with only a legacy display label", async () => {
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-1",
+      created_by_clerk_id: "owner-1",
+      action_phase: "pre_action",
+      published_at: null,
+      organizer_type: "spontaneous",
+      organizer_name: "Ancien référent libre",
+    });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost"), {
+      params: Promise.resolve({ actionId: "action-1" }),
+    });
+
+    expect(response.status).toBe(422);
+  });
 });

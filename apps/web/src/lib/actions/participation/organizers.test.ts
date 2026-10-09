@@ -8,7 +8,9 @@ import {
 import { syncActionOrganizers } from "./organizer-sync";
 
 vi.mock("@clerk/nextjs/server", () => ({
-  clerkClient: vi.fn(),
+  clerkClient: vi.fn().mockResolvedValue({
+    users: { getUserList: vi.fn().mockResolvedValue({ data: [] }) },
+  }),
 }));
 
 vi.mock("@/lib/env", () => ({
@@ -50,6 +52,7 @@ function createSupabaseMock(profileRows: Array<{ id: string; display_name: strin
       }
       return { data: null, error: null };
     }),
+    limit: vi.fn(async () => ({ data: [], error: null })),
   } as ProfilesChain;
 
   return {
@@ -187,7 +190,7 @@ describe("loadCanonicalActionOrganizerIdsForAction", () => {
 
 describe("syncActionOrganizers", () => {
   it("persists the selected CleanMyMap account ids by canonical id", async () => {
-    const insertedRows: Array<Record<string, unknown>> = [];
+    const rpcCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
     const currentRows = [
       {
         action_id: "action-1",
@@ -230,16 +233,13 @@ describe("syncActionOrganizers", () => {
                   })),
               })),
             })),
-            delete: vi.fn(() => ({
-              eq: vi.fn().mockResolvedValue({ error: null }),
-            })),
-            insert: vi.fn((rows: Array<Record<string, unknown>>) => {
-              insertedRows.push(...rows);
-              return Promise.resolve({ error: null });
-            }),
           };
         }
         throw new Error(`Unexpected table ${table}`);
+      }),
+      rpc: vi.fn((name: string, args: Record<string, unknown>) => {
+        rpcCalls.push({ name, args });
+        return Promise.resolve({ error: null });
       }),
     } as unknown as SupabaseClient;
 
@@ -258,13 +258,111 @@ describe("syncActionOrganizers", () => {
 
     expect(result.unresolvedTokens).toEqual([]);
     expect(result.organizers.map((organizer) => organizer.userId)).toEqual(["user-new"]);
-    expect(insertedRows).toEqual([
-      expect.objectContaining({
+    expect(rpcCalls).toEqual([{
+      name: "replace_action_organizers",
+      args: {
+        p_action_id: "action-1",
+        p_organizers: [{
+          organizer_clerk_id: "user-new",
+          organizer_label: "Nouvel organisateur",
+          organizer_handle: "nouveau",
+          is_primary: true,
+        }],
+      },
+    }]);
+  });
+
+  it("keeps the current primary only when it remains selected", async () => {
+    const currentRows = [
+      {
+        action_id: "action-1",
+        organizer_clerk_id: "user-keep",
+        organizer_label: "Principal actuel",
+        organizer_handle: "principal",
+        is_primary: true,
+        created_at: "2026-01-01T00:00:00.000Z",
+      },
+      {
         action_id: "action-1",
         organizer_clerk_id: "user-new",
-        organizer_label: "Nouvel organisateur",
-        is_primary: true,
-      }),
+        organizer_label: "Second compte",
+        organizer_handle: "second",
+        is_primary: false,
+        created_at: "2026-01-02T00:00:00.000Z",
+      },
+    ];
+    const profiles = new Map([
+      ["user-keep", { id: "user-keep", display_name: "Principal actuel", handle: "principal" }],
+      ["user-new", { id: "user-new", display_name: "Second compte", handle: "second" }],
     ]);
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === "profiles") {
+          const chain = {
+            select: vi.fn(() => chain),
+            eq: vi.fn((field: string, value: string) => {
+              if (field === "id") {
+                chain.maybeSingle = vi.fn().mockResolvedValue({
+                  data: profiles.get(value) ?? null,
+                  error: null,
+                });
+              }
+              return chain;
+            }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            ilike: vi.fn(() => chain),
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          };
+          return chain;
+        }
+        if (table === "action_organizers") {
+          const query = {
+            select: vi.fn(() => query),
+            eq: vi.fn(() => query),
+            order: vi.fn()
+              .mockImplementationOnce(() => ({
+                order: vi.fn().mockResolvedValue({ data: currentRows, error: null }),
+              })),
+          };
+          return query;
+        }
+        throw new Error(`Unexpected table ${table}`);
+      }),
+      rpc,
+    } as unknown as SupabaseClient;
+
+    const result = await syncActionOrganizers({
+      supabase,
+      actionId: "action-1",
+      creator: { userId: "user-creator", displayName: "Déclarant" },
+      organizerAccounts: ["user-new", "user-keep"],
+    });
+
+    expect(result.organizers.map((organizer) => organizer.isPrimary)).toEqual([false, true]);
+    expect(rpc).toHaveBeenCalledWith("replace_action_organizers", {
+      p_action_id: "action-1",
+      p_organizers: [
+        expect.objectContaining({ organizer_clerk_id: "user-new", is_primary: false }),
+        expect.objectContaining({ organizer_clerk_id: "user-keep", is_primary: true }),
+      ],
+    });
+    expect(result.organizers.filter((organizer) => organizer.isPrimary)).toHaveLength(1);
+  });
+
+  it("does not mutate relations when an account cannot be resolved", async () => {
+    const rpc = vi.fn();
+    const supabase = createSupabaseMock([]);
+    (supabase as unknown as { rpc: typeof rpc }).rpc = rpc;
+
+    const result = await syncActionOrganizers({
+      supabase,
+      actionId: "action-1",
+      creator: { userId: "user-creator", displayName: "Déclarant" },
+      organizerAccounts: ["unknown-account"],
+    });
+
+    expect(result.unresolvedTokens).toEqual(["unknown-account"]);
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

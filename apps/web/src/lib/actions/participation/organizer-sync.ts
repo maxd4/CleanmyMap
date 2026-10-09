@@ -1,4 +1,3 @@
-import { insertActionOrganizers } from "../store-participants";
 import {
   loadActionOrganizerRowsForAction,
   resolveActionOrganizers,
@@ -27,24 +26,30 @@ export async function syncActionOrganizers(
     params.supabase,
     params.actionId,
   );
-  const currentPrimaryId = currentRows.find((row) => row.is_primary)?.organizer_clerk_id.trim();
-  const nextOrganizers = resolution.organizers.map((organizer, index) => ({
+  const nextOrganizerIds = new Set(
+    resolution.organizers.map((organizer) => organizer.userId),
+  );
+  const currentPrimaryId = currentRows.find(
+    (row) => row.is_primary && nextOrganizerIds.has(row.organizer_clerk_id.trim()),
+  )?.organizer_clerk_id.trim();
+  const primaryId = currentPrimaryId ?? resolution.organizers[0]?.userId;
+  const nextOrganizers = resolution.organizers.map((organizer) => ({
     ...organizer,
-    isPrimary: currentPrimaryId
-      ? organizer.userId === currentPrimaryId
-      : index === 0,
+    isPrimary: organizer.userId === primaryId,
   }));
 
-  const deleteResult = await params.supabase
-    .from("action_organizers")
-    .delete()
-    .eq("action_id", params.actionId);
-  if (deleteResult.error) {
-    throw new Error(deleteResult.error.message);
+  const replacement = await params.supabase.rpc("replace_action_organizers", {
+    p_action_id: params.actionId,
+    p_organizers: nextOrganizers.map((organizer) => ({
+      organizer_clerk_id: organizer.userId,
+      organizer_label: organizer.displayName,
+      organizer_handle: organizer.handle,
+      is_primary: organizer.isPrimary,
+    })),
+  });
+  if (replacement.error) {
+    throw new Error(replacement.error.message);
   }
 
-  if (nextOrganizers.length > 0) {
-    await insertActionOrganizers(params.supabase, params.actionId, nextOrganizers);
-  }
   return { ...resolution, organizers: nextOrganizers };
 }

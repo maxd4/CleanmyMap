@@ -8,7 +8,6 @@ import { loadActionById } from "@/lib/actions/store";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { canPublishPreAction } from "@/lib/actions/publication";
 import { initializeActionRouteVersioning } from "@/lib/actions/route-version-persistence";
-import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
 import type { ActionRow } from "@/types/database";
 
 export const runtime = "nodejs";
@@ -36,15 +35,10 @@ function buildPublicationUpdate(params: {
 }
 
 function spontaneousOrganizerPublicationError(
-  action: Pick<ActionRow, "organizer_type" | "organizer_name">,
+  action: Pick<ActionRow, "organizer_type">,
   organizerIds: string[],
 ) {
-  if (
-    action.organizer_type !== "spontaneous" ||
-    organizerIds.length > 0 ||
-    (action.organizer_name?.trim() &&
-      action.organizer_name.trim() !== SPONTANEOUS_PENDING_ORGANIZER_LABEL)
-  ) {
+  if (action.organizer_type !== "spontaneous" || organizerIds.length > 0) {
     return null;
   }
   return NextResponse.json(

@@ -3,12 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import { buildFallbackHandle } from "@/lib/auth/identity-handle";
 import {
-  ACTIVE_PARTICIPATION_STATUS,
-} from "./group-participation.helpers";
-import {
   loadActionRegistrationIdsForAction,
   loadManualRegistrationIdsForAction,
 } from "./registration-records";
+import { persistManualParticipantDiff } from "./manual-participant-sync";
 
 type ProfileLookupRow = {
   id: string;
@@ -324,7 +322,6 @@ export async function resolveActionOrganizers(params: {
 export async function resolveActionParticipants(params: ActionAccountResolutionParams & {
   participantAccounts?: string[] | null;
   organizerIds?: string[] | null;
-  existingParticipantIds?: string[] | null;
 }): Promise<{
   participants: ResolvedActionParticipant[];
   unresolvedTokens: string[];
@@ -336,12 +333,6 @@ export async function resolveActionParticipants(params: ActionAccountResolutionP
       .map((value) => value.trim())
       .filter((value) => value.length > 0),
   );
-  for (const participantId of params.existingParticipantIds ?? []) {
-    const normalized = participantId.trim();
-    if (normalized.length > 0) {
-      seen.add(normalized);
-    }
-  }
   seen.add(params.creator.userId);
 
   for (const token of uniqueTokens(params.participantAccounts ?? [])) {
@@ -382,51 +373,22 @@ export async function syncActionManualParticipants(params: ActionAccountResoluti
     creator: params.creator,
     participantAccounts: params.participantAccounts,
     organizerIds: params.organizerIds,
-    existingParticipantIds: currentRegistrationIds,
   });
 
-  const targetParticipantIds = new Set(
-    resolution.participants.map((participant) => participant.userId),
-  );
-  const idsToRemove = currentManualRegistrationIds.filter(
-    (participantId) => !targetParticipantIds.has(participantId),
-  );
-
-  if (idsToRemove.length > 0) {
-    const deleteResult = await params.supabase
-      .from("action_registrations")
-      .delete()
-      .eq("action_id", params.actionId)
-      .eq("registration_source", "manual_add")
-      .in("user_id", idsToRemove);
-
-    if (deleteResult.error) {
-      throw new Error(deleteResult.error.message);
-    }
+  // A partial or failed account resolution must not be interpreted as an
+  // explicit removal. Resolve the complete requested set before changing any
+  // existing registration.
+  if (resolution.unresolvedTokens.length > 0) {
+    return resolution;
   }
 
-  const idsToInsert = resolution.participants.filter(
-    (participant) => !currentRegistrationIds.includes(participant.userId),
-  );
-
-  if (idsToInsert.length > 0) {
-    const joinedAt = new Date().toISOString();
-    const insertResult = await params.supabase
-      .from("action_registrations")
-      .insert(
-        idsToInsert.map((participant) => ({
-          action_id: params.actionId,
-          user_id: participant.userId,
-          registered_at: joinedAt,
-          registration_status: ACTIVE_PARTICIPATION_STATUS,
-          registration_source: "manual_add" as const,
-        })),
-      );
-
-    if (insertResult.error) {
-      throw new Error(insertResult.error.message);
-    }
-  }
+  await persistManualParticipantDiff({
+    supabase: params.supabase,
+    actionId: params.actionId,
+    currentRegistrationIds,
+    currentManualRegistrationIds,
+    participants: resolution.participants,
+  });
 
   return resolution;
 }

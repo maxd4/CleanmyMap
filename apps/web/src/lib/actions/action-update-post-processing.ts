@@ -36,6 +36,7 @@ export async function runActionUpdatePostProcessing(params: {
   adminAuditTargetUserId: string | null;
   moderationOperation: string;
   moderationReason: string | null;
+  organizersAlreadySynced?: boolean;
   appendAdminAuditOnce: AuditAppender;
   setErrorStage: (stage: AdminOverrideErrorStage) => void;
 }): Promise<void> {
@@ -52,6 +53,7 @@ export async function runActionUpdatePostProcessing(params: {
     adminAuditTargetUserId,
     moderationOperation,
     moderationReason,
+    organizersAlreadySynced = false,
     appendAdminAuditOnce,
     setErrorStage,
   } = params;
@@ -61,7 +63,9 @@ export async function runActionUpdatePostProcessing(params: {
     await recordRepollutionPredictionEvaluationForAction(supabase, actionId);
   }
 
-  await syncUpdatedOrganizers({ supabase, actionId, body, userId, identity });
+  if (!organizersAlreadySynced) {
+    await syncUpdatedOrganizers({ supabase, actionId, body, userId, identity });
+  }
   await syncUpdatedParticipants({ supabase, actionId, body, userId, identity, setErrorStage });
   await appendPostProcessingAudit({
     shouldAuditModeration,
@@ -76,7 +80,7 @@ export async function runActionUpdatePostProcessing(params: {
   });
 }
 
-async function syncUpdatedOrganizers({
+export async function syncUpdatedOrganizers({
   supabase,
   actionId,
   body,

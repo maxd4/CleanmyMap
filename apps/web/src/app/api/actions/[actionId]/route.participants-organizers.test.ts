@@ -32,6 +32,20 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
       role: "admin",
       activeRole: "admin",
     });
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "pending",
+      action_phase: "pre_action",
+      preparation_data: {
+        administrativeRequirements: {
+          status: "validated",
+          validatedAt: "2026-09-15T10:00:00.000Z",
+          validatedByUserId: "validator-1",
+        },
+      },
+      created_by_clerk_id: "user-test-1",
+      notes: null,
+    });
 
     const { PATCH } = await import("./route");
 
@@ -86,7 +100,13 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
       id: "action-test-1",
       status: "pending",
       action_phase: "pre_action",
-      preparation_data: {},
+      preparation_data: {
+        administrativeRequirements: {
+          status: "validated",
+          validatedAt: "2026-09-15T10:00:00.000Z",
+          validatedByUserId: "validator-1",
+        },
+      },
       created_by_clerk_id: "user-test-2",
       notes: null,
     });
