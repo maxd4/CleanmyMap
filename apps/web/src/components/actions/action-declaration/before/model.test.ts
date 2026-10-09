@@ -88,7 +88,7 @@ describe("sanitizePreActionForm", () => {
     expect(sanitized.organizerName).toBe("Entreprise - Veolia");
     expect(sanitized.participantAccounts).toEqual(["alice", "bob"]);
     expect(sanitized.organizerAccounts).toBe("user-organizer, user-other");
-    expect(sanitized.volunteersCount).toBe("1");
+    expect(sanitized.volunteersCount).toBe("");
   });
 
   it("preserves the declared action time and event window in the pre-form", () => {
@@ -131,6 +131,7 @@ describe("buildPublicationSummary", () => {
       arrivalLocationLabel: "Quai de Seine",
       volunteersCount: 8,
       preparationData: {
+        volunteersExpected: 8,
         safetyInstructions: "Rester en groupe.",
         logisticsNotes: "Vérifier l'autorisation du lieu.",
         operationalRoute: {

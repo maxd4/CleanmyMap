@@ -13,6 +13,7 @@ import {
   preserveManualDrawing,
 } from "./action-update-notes";
 import { preserveObservedRouteGeometry } from "./action-update-geometry";
+import { getVolunteerForecastValidationMessage } from "./volunteer-participation";
 
 export class ActionUpdateValidationError extends Error {
   constructor(
@@ -53,6 +54,20 @@ export async function prepareActionUpdate(params: {
       "preparationData",
       "Les démarches administratives doivent être validées avant le démarrage de l'action.",
     );
+  }
+
+  const nextActionPhase = body.actionPhase ?? current.action_phase;
+  if (nextActionPhase === "pre_action" && body.preparationData) {
+    const volunteerForecastMessage = getVolunteerForecastValidationMessage({
+      volunteersExpected: body.preparationData.volunteersExpected,
+      volunteerParticipation: body.preparationData.volunteerParticipation,
+    });
+    if (volunteerForecastMessage) {
+      throw new ActionUpdateValidationError(
+        "preparationData",
+        volunteerForecastMessage,
+      );
+    }
   }
 
   const currentMetadata = extractActionMetadataFromNotes(current.notes);

@@ -269,4 +269,28 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
       }),
     ).resolves.toBeDefined();
   });
+
+  it("blocks an incoherent pre-action forecast on an existing draft", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+
+    await expect(
+      prepareActionUpdate({
+        current: buildCurrent({}),
+        parsedBody: ({
+          actionPhase: "pre_action",
+          preparationData: {
+            volunteersExpected: 12,
+            volunteerParticipation: {
+              childrenCount: 2,
+              adultCount: 4,
+              retiredCount: 2,
+            },
+          },
+        } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toThrow("La somme de la répartition (8) doit correspondre");
+  });
 });

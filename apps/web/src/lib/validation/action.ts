@@ -4,6 +4,7 @@ import {
   type ActionContractCreatePayload,
 } from "@/lib/actions/data-contract";
 import type { CreateActionPayload } from "@/lib/actions/types";
+import { getVolunteerForecastValidationMessage } from "@/lib/actions/volunteer-participation";
 import { getTimeContractValidationMessage, isValidClockTime } from "@/lib/actions/time-contract";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import {
@@ -67,6 +68,43 @@ function addTemporalContractIssue(
   }
 }
 
+function addPreActionVolunteerForecastIssue(
+  value: {
+    actionPhase?: string;
+    submissionMode?: string;
+    preparationData?: {
+      volunteersExpected?: number;
+      volunteerParticipation?: {
+        childrenCount?: number | null;
+        adultCount?: number | null;
+        retiredCount?: number | null;
+      } | null;
+    } | null;
+  },
+  ctx: z.RefinementCtx,
+) {
+  if (
+    value.actionPhase !== "pre_action" ||
+    value.submissionMode !== "quick" ||
+    value.preparationData === undefined ||
+    value.preparationData === null
+  ) {
+    return;
+  }
+
+  const message = getVolunteerForecastValidationMessage({
+    volunteersExpected: value.preparationData.volunteersExpected,
+    volunteerParticipation: value.preparationData.volunteerParticipation,
+  });
+  if (message) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["preparationData", "volunteersExpected"],
+      message,
+    });
+  }
+}
+
 const createActionLegacyBaseSchema = z.object({
   ...commonActionIdentitySchemaFields,
   recordType: z.enum(["action", "clean_place", "spot"]).optional(),
@@ -105,6 +143,7 @@ const createActionLegacySchema = createActionLegacyBaseSchema
     addTemporalContractIssue(value, ctx);
     addRouteTopologyIssue(value, ctx);
     addGpxImportIssue(value, ctx);
+    addPreActionVolunteerForecastIssue(value, ctx);
   });
 
 const createActionContractSchema = z.object({
@@ -165,6 +204,11 @@ const createActionContractSchema = z.object({
     arrivalLocationLabel: value.arrivalLocationLabel ?? value.metadata.arrivalLocationLabel,
     recordType: value.type,
   }, ctx);
+  addPreActionVolunteerForecastIssue({
+    actionPhase: value.metadata.actionPhase,
+    submissionMode: value.metadata.submissionMode,
+    preparationData: value.metadata.preparationData,
+  }, ctx);
 });
 
 export const createActionSchema = z
@@ -189,4 +233,7 @@ export const updateActionSchema = createActionLegacyBaseSchema
     preparationData: preparationDataSchema.nullable().optional(),
     reason: z.string().trim().max(500).optional(),
   })
-  .superRefine(addTemporalContractIssue);
+  .superRefine((value, ctx) => {
+    addTemporalContractIssue(value, ctx);
+    addPreActionVolunteerForecastIssue(value, ctx);
+  });

@@ -352,6 +352,52 @@ describe("createActionSchema", () => {
     ).toBe(false);
   });
 
+  it("requires a coherent volunteer forecast split for quick pre-actions", () => {
+    const incoherent = createActionSchema.safeParse({
+      ...basePayload,
+      actionPhase: "pre_action",
+      submissionMode: "quick",
+      preparationData: {
+        volunteersExpected: 12,
+        volunteerParticipation: {
+          childrenCount: 2,
+          adultCount: 4,
+          retiredCount: 2,
+        },
+      },
+    });
+    expect(incoherent.success).toBe(false);
+
+    const explicitWithoutSplit = createActionSchema.safeParse({
+      ...basePayload,
+      actionPhase: "pre_action",
+      submissionMode: "quick",
+      preparationData: {
+        volunteersExpected: 12,
+        volunteerParticipation: {
+          childrenCount: null,
+          adultCount: null,
+          retiredCount: null,
+        },
+      },
+    });
+    expect(explicitWithoutSplit.success).toBe(true);
+
+    const emptyForecast = createActionSchema.safeParse({
+      ...basePayload,
+      actionPhase: "pre_action",
+      submissionMode: "quick",
+      preparationData: {
+        volunteerParticipation: {
+          childrenCount: null,
+          adultCount: null,
+          retiredCount: null,
+        },
+      },
+    });
+    expect(emptyForecast.success).toBe(true);
+  });
+
   it("rejects off-grid ordinary masses without rounding, including update input", () => {
     for (const value of [0, 0.1, 9.9, 10.1]) {
       expect(createActionSchema.safeParse({ ...basePayload, wasteKg: value }).success).toBe(true);

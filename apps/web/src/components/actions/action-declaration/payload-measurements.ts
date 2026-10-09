@@ -80,7 +80,7 @@ export function buildCreateActionPayloadMeasurementFields(
     volunteerParticipation: parts.volunteerParticipationInput as CreateActionPayload["volunteerParticipation"],
     volunteersCount:
       parts.volunteerParticipation.participantsCount ??
-      Math.trunc(toRequiredNumber(form.volunteersCount, 0)),
+      Math.max(1, Math.trunc(toRequiredNumber(form.volunteersCount, 1))),
     durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
     eventStartTime: form.eventStartTime.trim() || null,
     eventEndTime: form.eventEndTime.trim() || null,

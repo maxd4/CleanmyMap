@@ -25,6 +25,8 @@ const BEFORE_VALIDATION_FIELD_IDS: Record<string, string> = {
   organizerType: "before-organizer-type",
   departureLocationLabel: "before-departure-location",
   eventStartTime: "before-action-event-start",
+  volunteersCount: "before-volunteers-count",
+  volunteerParticipation: "before-volunteer-participation",
 };
 
 export function ActionBeforeDeclarationForm({

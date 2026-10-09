@@ -22,6 +22,11 @@ export type VolunteerParticipationInput = {
   retiredCount?: number | null;
 };
 
+export type VolunteerForecastValidationInput = {
+  volunteersExpected?: number | null;
+  volunteerParticipation?: VolunteerParticipationInput | null;
+};
+
 function normalizeCount(value: number | null | undefined): number | null {
   if (value === null || value === undefined) {
     return null;
@@ -54,6 +59,40 @@ export function hasCompleteVolunteerCategoryData(
     participation.adultCount !== null &&
     participation.retiredCount !== null
   );
+}
+
+export function getVolunteerForecastValidationMessage(
+  input: VolunteerForecastValidationInput,
+): string | null {
+  const childrenCount = input.volunteerParticipation?.childrenCount ?? null;
+  const adultCount = input.volunteerParticipation?.adultCount ?? null;
+  const retiredCount = input.volunteerParticipation?.retiredCount ?? null;
+  const hasAnyCategory = hasVolunteerCategoryData({
+    childrenCount,
+    adultCount,
+    retiredCount,
+  });
+
+  if (!hasAnyCategory) return null;
+
+  if (
+    childrenCount === null ||
+    adultCount === null ||
+    retiredCount === null
+  ) {
+    return "La répartition facultative doit renseigner Enfants, Adultes et Retraités, ou rester entièrement vide.";
+  }
+
+  if (input.volunteersExpected === null || input.volunteersExpected === undefined) {
+    return "Renseignez le nombre total de bénévoles attendus pour utiliser la répartition.";
+  }
+
+  const categoryTotal = childrenCount + adultCount + retiredCount;
+  if (categoryTotal !== input.volunteersExpected) {
+    return `La somme de la répartition (${categoryTotal}) doit correspondre au nombre total attendu (${input.volunteersExpected}).`;
+  }
+
+  return null;
 }
 
 /**

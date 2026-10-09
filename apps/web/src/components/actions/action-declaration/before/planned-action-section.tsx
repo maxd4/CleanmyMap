@@ -36,7 +36,16 @@ export function PlannedActionSection({
     eventDurationMinutes: event.eventDurationMinutes,
   });
   const volunteerParticipation = normalizeVolunteerParticipationFromForm(form);
-  const totalVolunteers = volunteerParticipation.participantsCount ?? (form.volunteersCount.trim() || "—");
+  const hasVolunteerCategoryInput = [
+    form.childrenCount,
+    form.adultCount,
+    form.retiredCount,
+  ].some((value) => value.trim() !== "");
+  const volunteerSplitDetail = hasVolunteerCategoryInput
+    ? volunteerParticipation.participantsCount === null
+      ? "à compléter"
+      : `${volunteerParticipation.participantsCount} répartis`
+    : "facultatif";
 
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
@@ -66,7 +75,7 @@ export function PlannedActionSection({
             <FieldShell label="Zone cible prévue" hint="Périmètre visé en quelques mots.">
               <input type="text" value={form.arrivalLocationLabel} onChange={(event) => updateField("arrivalLocationLabel", event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" placeholder="Ex. Parc rive gauche, quais nord" />
             </FieldShell>
-            <VolunteerForecast form={form} updateField={updateField} totalVolunteers={totalVolunteers} effectiveVolunteerUnits={volunteerParticipation.effectiveVolunteerUnits} />
+            <VolunteerForecast form={form} updateField={updateField} splitDetail={volunteerSplitDetail} validationIssueFields={validationIssueFields} />
           </div>
 
           <div className="space-y-4">
@@ -121,23 +130,63 @@ export function PlannedActionSection({
 function VolunteerForecast({
   form,
   updateField,
-  totalVolunteers,
-  effectiveVolunteerUnits,
+  splitDetail,
+  validationIssueFields,
 }: BaseSectionProps & {
-  totalVolunteers: string | number;
-  effectiveVolunteerUnits?: number | null;
+  splitDetail: string;
 }) {
   return (
     <div className="space-y-2 md:col-span-2 lg:col-span-2">
-      <p className="text-sm font-semibold text-emerald-950">Bénévoles attendus par catégorie</p>
-      <div className="grid gap-3 sm:grid-cols-3">
-        {([["Enfants", "childrenCount"], ["Adultes", "adultCount"], ["Retraités", "retiredCount"]] as const).map(([label, field]) => (
-          <FieldShell key={field} label={label} hint="Estimation avant départ.">
-            <input type="number" min="0" value={form[field]} onChange={(event) => updateField(field, event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" />
-          </FieldShell>
-        ))}
-      </div>
-      <p className="text-xs font-semibold text-emerald-900/65">Total attendu : {totalVolunteers} participant(s) · unités opérationnelles : {effectiveVolunteerUnits ?? "à préciser"}</p>
+      <FieldShell
+        label="Nombre de bénévoles attendus"
+        hint="Prévision avant le terrain ; laissez vide si elle est encore inconnue."
+      >
+        <input
+          id="before-volunteers-count"
+          type="number"
+          min="1"
+          step="1"
+          value={form.volunteersCount}
+          onChange={(event) => updateField("volunteersCount", event.target.value)}
+          aria-invalid={hasValidationIssue(validationIssueFields, "volunteersCount")}
+          className={cn(
+            "w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white",
+            hasValidationIssue(validationIssueFields, "volunteersCount")
+              ? "border-rose-400 ring-2 ring-rose-400/20"
+              : "border-emerald-200/70",
+          )}
+          placeholder="Ex. 12"
+        />
+      </FieldShell>
+      <CmmDisclosure
+        id="before-volunteer-participation"
+        summary={<ActionFormDisclosureSummary label="Répartition facultative" detail={splitDetail} />}
+        tone="emerald"
+        size="sm"
+        className={hasValidationIssue(validationIssueFields, "volunteerParticipation") ? "ring-2 ring-rose-400/20" : undefined}
+      >
+        <div className="space-y-3">
+          <p className="text-xs leading-5 text-emerald-900/70">
+            Catégories non chevauchantes : chaque bénévole est compté dans une seule catégorie. Laissez toute la répartition vide si vous ne souhaitez pas la préciser.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {([["Enfants", "childrenCount"], ["Adultes", "adultCount"], ["Retraités", "retiredCount"]] as const).map(([label, field]) => (
+              <FieldShell key={field} label={label} hint="Prévision avant départ.">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form[field]}
+                  onChange={(event) => updateField(field, event.target.value)}
+                  className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                  placeholder="0"
+                />
+              </FieldShell>
+            ))}
+          </div>
+          <p className="text-xs font-semibold text-emerald-900/65">La somme des trois catégories doit correspondre au total attendu.</p>
+        </div>
+      </CmmDisclosure>
     </div>
   );
 }

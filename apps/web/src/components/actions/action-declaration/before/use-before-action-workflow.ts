@@ -34,6 +34,19 @@ type BeforeActionRecordSetters = {
   setSubmissionState: StateSetter<SubmissionState>;
 };
 
+function createInitialBeforeActionForm(
+  actorName: string,
+  recordType: "action",
+): FormState {
+  return {
+    ...createInitialFormState(actorName, recordType),
+    volunteersCount: "",
+    childrenCount: "",
+    adultCount: "",
+    retiredCount: "",
+  };
+}
+
 export async function persistBeforeAction(
   actionId: string | null | undefined,
   payload: CreateActionPayload,
@@ -113,7 +126,7 @@ export function buildBeforeActionFormFromAction({
 }): FormState {
   const hydrated = sanitizePreActionForm(
     applyPreparationDataToForm(
-      createInitialFormState(resolvedDefaultActorName, initialRecordType),
+      createInitialBeforeActionForm(resolvedDefaultActorName, initialRecordType),
       action.preparationData,
     ),
   );
@@ -139,7 +152,10 @@ export function buildBeforeActionFormFromAction({
       action.arrivalLocationLabel ?? hydrated.arrivalLocationLabel,
     eventStartTime: action.eventStartTime ?? hydrated.eventStartTime,
     eventEndTime: action.eventEndTime ?? hydrated.eventEndTime,
-    volunteersCount: String(action.volunteersCount),
+    volunteersCount:
+      typeof action.preparationData?.volunteersExpected === "number"
+        ? String(action.preparationData.volunteersExpected)
+        : "",
     durationMinutes: String(action.durationMinutes),
     groupJoinEnabled: action.groupJoinEnabled,
     participantAccounts: normalizeParticipantAccounts(action.participantAccounts),
@@ -147,7 +163,7 @@ export function buildBeforeActionFormFromAction({
 }
 
 export function buildBeforeActionInitialForm(actorNameOptions: string[], defaultActorName: string, initialRecordType: "action"): FormState {
-  const fallback = createInitialFormState(actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? defaultActorName, initialRecordType);
+  const fallback = createInitialBeforeActionForm(actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? defaultActorName, initialRecordType);
   const snapshot = loadDraftSnapshot(fallback, initialRecordType);
   return sanitizePreActionForm(snapshot?.form ?? fallback);
 }

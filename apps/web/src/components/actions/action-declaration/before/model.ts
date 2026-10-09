@@ -62,6 +62,10 @@ function preparationDataFrom(source: PublicationSummarySource): ActionPreparatio
     return source.preparationData ?? {};
   }
 
+  const volunteersExpected = source.volunteersCount.trim() === ""
+    ? undefined
+    : Number(source.volunteersCount);
+
   return {
     actionTitle: source.actionTitle,
     shortDescription: source.shortDescription,
@@ -80,7 +84,9 @@ function preparationDataFrom(source: PublicationSummarySource): ActionPreparatio
     participantMessage: source.participantMessage,
     logisticsNotes: source.logisticsNotes,
     checklistBeforeDeparture: source.checklistBeforeDeparture,
-    volunteersExpected: Number(source.volunteersCount) || undefined,
+    ...(typeof volunteersExpected === "number" && Number.isFinite(volunteersExpected)
+      ? { volunteersExpected }
+      : {}),
     groupJoinEnabled: source.groupJoinEnabled,
     expectedWasteCategories: source.wasteCategories,
     operationalRoute: source.operationalRoute ?? undefined,
@@ -141,11 +147,11 @@ export function buildPublicationSummary(
     "Lieu non renseigné",
   );
   const volunteers =
-    "volunteersCount" in source
-      ? String(source.volunteersCount)
-      : typeof preparation.volunteersExpected === "number"
-        ? String(preparation.volunteersExpected)
-        : "Non renseigné";
+    typeof preparation.volunteersExpected === "number"
+      ? String(preparation.volunteersExpected)
+      : "preparationData" in source
+        ? "Non renseigné"
+        : source.volunteersCount.trim() || "Non renseigné";
   const safetyInstructions = textValue(
     preparation.safetyInstructions,
     "Aucune consigne principale renseignée",
@@ -258,7 +264,7 @@ export function sanitizePreActionForm(form: FormState): FormState {
   next.groupJoinEnabled = Boolean(next.groupJoinEnabled);
   next.organizerAccounts = parseOrganizerAccounts(next.organizerAccounts).join(", ");
   next.participantAccounts = normalizeParticipantAccounts(next.participantAccounts);
-  next.volunteersCount = next.volunteersCount.trim() || "1";
+  next.volunteersCount = next.volunteersCount.trim();
   next.childrenCount = next.childrenCount.trim();
   next.adultCount = next.adultCount.trim();
   next.retiredCount = next.retiredCount.trim();
