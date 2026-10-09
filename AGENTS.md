@@ -624,6 +624,14 @@ Les détails de diagnostic host et de fichiers temporaires sont documentés dans
 
 Ne jamais annoncer une validation non exécutée comme réussie.
 
+`precommit:guard` est une barrière bloquante du lot : dès qu'il échoue,
+diagnostiquer sa sortie, corriger la cause dans le même lot et le relancer
+avant tout commit ou push. Ne pas attendre une nouvelle demande de l'utilisateur
+pour effectuer cette correction. Si la réparation exige une autorité nouvelle,
+une extension de périmètre ou rencontre un blocage externe/preexistant qui ne
+peut pas être corrigé sans risque, s'arrêter en documentant précisément le
+blocage plutôt que contourner ou désactiver le garde.
+
 La validation est proportionnelle au risque :
 
 ```text
