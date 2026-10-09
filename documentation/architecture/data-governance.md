@@ -654,13 +654,15 @@ pas aux champs d'édition, aux exports, aux contrôles administratifs ou aux
 preuves techniques qui attendent la minute exacte.
 
 Une heure absente rend les deux durées dérivées indisponibles. Une heure
-invalide, une fin antérieure au début ou un créneau inférieur au temps
-d’action est signalé comme incohérence ; aucune durée de passage à minuit,
-valeur historique d’événement ou valeur fictive n’est reconstruite. Les
-anciennes valeurs de `duration_minutes` restent intactes et représentent le
-temps d’action déclaré. `estimatedDurationMinutes` dans d’anciens
-`preparation_data` est lu uniquement pour compatibilité ; les nouveaux
-formulaires n’enregistrent pas une seconde durée planifiée.
+invalide, un rendez-vous après le départ, un horaire hors du créneau global,
+une fin antérieure au début ou un créneau inférieur au temps d’action est
+signalé comme incohérence ; aucune durée de passage à minuit, valeur historique
+d’événement ou valeur fictive n’est reconstruite. Les anciennes valeurs de
+`duration_minutes` restent intactes. Comme cette colonne reste
+`NOT NULL DEFAULT 0`, `preparation_data.durationMinutesDeclared` distingue une
+durée effectivement saisie de la valeur technique de compatibilité `0` ; une
+durée inconnue reste vide dans l’interface. `estimatedDurationMinutes` dans
+d’anciens `preparation_data` est lu uniquement pour compatibilité.
 
 ## Ingestion multi-source
 

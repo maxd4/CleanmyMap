@@ -42,7 +42,7 @@ export function useBeforeActionForm({
   const [publicationError, setPublicationError] = useState<string | null>(null);
   const [publicationConfirmationOpen, setPublicationConfirmationOpen] = useState(false);
   const [validationIssues, setValidationIssues] = useState<string[]>([]);
-  const [validationIssueFields, setValidationIssueFields] = useState<Array<"actionTitle" | "actionDate" | "associationName" | "organizerType" | "departureLocationLabel" | "arrivalLocationLabel" | "eventStartTime" | "volunteersCount" | "volunteerParticipation">>([]);
+  const [validationIssueFields, setValidationIssueFields] = useState<Array<"actionTitle" | "actionDate" | "associationName" | "organizerType" | "departureLocationLabel" | "arrivalLocationLabel" | "meetingTime" | "departureTime" | "durationMinutes" | "eventStartTime" | "eventEndTime" | "volunteersCount" | "volunteerParticipation">>([]);
   const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
 
   const isHydratingAction = useBeforeActionHydration({ resolvedDefaultActorName, initialActionId, initialRecordType, form, setForm, onFormChange, setCreatedId, setPublishedAction, setPublishedAt, setTerminalActionStatus, setSubmissionState, setErrorMessage });

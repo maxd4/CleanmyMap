@@ -32,6 +32,7 @@ export const preparationDataSchema = z
     actionDate: z.string().date().optional(),
     meetingTime: z.string().max(20).optional(),
     departureTime: z.string().max(20).optional(),
+    durationMinutesDeclared: z.boolean().optional(),
     estimatedDurationMinutes: z.number().int().min(0).max(24 * 60).optional(),
     routeTargetDistanceKm: z.number().min(0).max(100).optional(),
     routeTargetDistanceSource: z.enum(["derived", "manual"]).optional(),

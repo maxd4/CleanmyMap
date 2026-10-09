@@ -96,7 +96,9 @@ export type ActionPreparationData = {
   actionDate?: string;
   meetingTime?: string;
   departureTime?: string;
-  /** Legacy compatibility only; new forms keep action duration on the row. */
+  /** Explicitly distinguishes an entered duration from the SQL compatibility value 0. */
+  durationMinutesDeclared?: boolean;
+  /** Legacy compatibility only; read older planner data when present. */
   estimatedDurationMinutes?: number;
   plannedObjective?: "repérage" | "nettoyage" | "collecte_mégots" | "action_mixte" | "sensibilisation" | "autre";
   placeType?: string;

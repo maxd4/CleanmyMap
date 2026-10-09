@@ -93,6 +93,25 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("aucun point d’arrivée distinct n’est fabriqué");
   });
 
+  it("does not invent a date or duration for a new action", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(PlannedActionSection, {
+        form: createInitialFormState("Aperçu local", "action"),
+        updateField: vi.fn(),
+        updateFields: vi.fn(),
+        hasAttemptedSubmit: false,
+        validationIssueFields: [],
+      }),
+    );
+
+    expect(html).toMatch(/id="before-action-date"[^>]*value=""/);
+    expect(html).toMatch(/id="before-meeting-time"[^>]*value=""/);
+    expect(html).toMatch(/id="before-departure-time"[^>]*value=""/);
+    expect(html).toMatch(/id="before-duration-minutes"[^>]*value=""/);
+    expect(html).toContain("Date et horaires principaux");
+    expect(html).toContain("Créneau global");
+  });
+
   it("labels a typed rendez-vous without coordinates as a free non-geolocated address", () => {
     const form = createInitialFormState("Aperçu local", "action");
     form.departureLocationLabel = "Entrée non répertoriée";

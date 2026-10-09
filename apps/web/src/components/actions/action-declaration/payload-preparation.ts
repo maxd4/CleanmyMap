@@ -39,6 +39,7 @@ function buildPreparationLocationFields(
     actionDate: form.actionDate.trim() || undefined,
     meetingTime: form.meetingTime.trim() || undefined,
     departureTime: form.departureTime.trim() || undefined,
+    durationMinutesDeclared: form.durationMinutes.trim() !== "",
   };
 }
 
@@ -214,13 +215,14 @@ function buildHydratedTimingFields(
   resolvedTarget: ReturnType<typeof resolveRouteTargetDistance>,
 ) {
   return {
-    actionDate: preparationData.actionDate ?? form.actionDate,
-    meetingTime: preparationData.meetingTime ?? form.meetingTime,
-    departureTime: preparationData.departureTime ?? form.departureTime,
+    actionDate: form.actionDate.trim() || preparationData.actionDate || "",
+    meetingTime: form.meetingTime.trim() || preparationData.meetingTime || "",
+    departureTime: form.departureTime.trim() || preparationData.departureTime || "",
     durationMinutes:
-      typeof preparationData.estimatedDurationMinutes === "number"
+      form.durationMinutes.trim() ||
+      (typeof preparationData.estimatedDurationMinutes === "number"
         ? String(preparationData.estimatedDurationMinutes)
-        : form.durationMinutes,
+        : ""),
     routeTargetDistanceKm: String(resolvedTarget.distanceKm),
     routeTargetDistanceKmManuallySet: resolvedTarget.source === "manual",
   };
@@ -286,7 +288,8 @@ export function applyPreparationDataToForm(
   });
 
   const resolvedTarget = resolveRouteTargetDistance({
-    durationMinutes: preparationData.estimatedDurationMinutes ?? form.durationMinutes,
+    durationMinutes:
+      form.durationMinutes.trim() || preparationData.estimatedDurationMinutes,
     routeTargetDistanceKm: preparationData.routeTargetDistanceKm,
     routeTargetDistanceSource: preparationData.routeTargetDistanceSource,
   });

@@ -14,6 +14,26 @@ export type OrganizationDurationDerivation = {
   status: "available" | "unavailable" | "inconsistent";
 };
 
+type TimeContractField =
+  | "meetingTime"
+  | "departureTime"
+  | "durationMinutes"
+  | "eventStartTime"
+  | "eventEndTime";
+
+export type TimeContractIssue = {
+  field: TimeContractField;
+  message: string;
+};
+
+type TimeContractValidationParams = {
+  actionDurationMinutes: number | null | undefined;
+  startTime: string | null | undefined;
+  endTime: string | null | undefined;
+  meetingTime?: string | null | undefined;
+  departureTime?: string | null | undefined;
+};
+
 const CLOCK_TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?$/;
 
 /** Normalize form/API values and PostgreSQL `time` values to HH:MM. */
@@ -91,29 +111,90 @@ export function deriveOrganizationMinutes(params: {
   return { organizationMinutes, status: "available" };
 }
 
-export function getTimeContractValidationMessage(params: {
-  actionDurationMinutes: number | null | undefined;
-  startTime: string | null | undefined;
-  endTime: string | null | undefined;
-}): string | null {
-  if (!isValidClockTime(params.startTime) || !isValidClockTime(params.endTime)) {
-    return "Les heures de début et de fin doivent respecter le format HH:MM.";
-  }
+export function getTimeContractValidationMessage(params: TimeContractValidationParams): string | null {
+  return getTimeContractValidationIssues(params)[0]?.message ?? null;
+}
 
+export function getTimeContractValidationIssues(params: TimeContractValidationParams): TimeContractIssue[] {
+  return [
+    ...getInvalidClockTimeIssues(params),
+    ...getMeetingDepartureIssues(params),
+    ...getGlobalWindowIssues(params),
+    ...getDurationIssues(params),
+  ];
+}
+
+function getInvalidClockTimeIssues(params: TimeContractValidationParams): TimeContractIssue[] {
+  const clockFields = [
+    ["meetingTime", params.meetingTime],
+    ["departureTime", params.departureTime],
+    ["eventStartTime", params.startTime],
+    ["eventEndTime", params.endTime],
+  ] as const;
+
+  return clockFields
+    .filter(([, value]) => Boolean(value?.trim()) && !isValidClockTime(value))
+    .map(([field]) => ({ field, message: "L’heure doit respecter le format HH:MM." }));
+}
+
+function getMeetingDepartureIssues(params: TimeContractValidationParams): TimeContractIssue[] {
+  const meetingMinutes = clockTimeToMinutes(params.meetingTime);
+  const departureMinutes = clockTimeToMinutes(params.departureTime);
+  if (meetingMinutes === null || departureMinutes === null || meetingMinutes <= departureMinutes) {
+    return [];
+  }
+  return [{
+    field: "departureTime",
+    message: "L’heure de départ doit être postérieure ou égale à l’heure de rendez-vous.",
+  }];
+}
+
+function getGlobalWindowIssues(params: TimeContractValidationParams): TimeContractIssue[] {
   const event = deriveEventDurationMinutes(params.startTime, params.endTime);
   if (event.status === "inconsistent") {
-    return "L’heure de fin ne peut pas être antérieure à l’heure de début le même jour.";
+    return [{
+      field: "eventEndTime",
+      message: "L’heure de fin ne peut pas être antérieure à l’heure de début le même jour.",
+    }];
+  }
+  if (event.status !== "available") {
+    return [];
   }
 
+  const startMinutes = clockTimeToMinutes(params.startTime);
+  const endMinutes = clockTimeToMinutes(params.endTime);
+  return [
+    getWindowBoundaryIssue("meetingTime", params.meetingTime, startMinutes, endMinutes, "L’heure de rendez-vous doit être comprise dans le créneau global."),
+    getWindowBoundaryIssue("departureTime", params.departureTime, startMinutes, endMinutes, "L’heure de départ doit être comprise dans le créneau global."),
+  ].filter((issue): issue is TimeContractIssue => issue !== null);
+}
+
+function getWindowBoundaryIssue(
+  field: "meetingTime" | "departureTime",
+  value: string | null | undefined,
+  startMinutes: number | null,
+  endMinutes: number | null,
+  message: string,
+): TimeContractIssue | null {
+  const valueMinutes = clockTimeToMinutes(value);
+  if (valueMinutes === null || startMinutes === null || endMinutes === null) {
+    return null;
+  }
+  return valueMinutes < startMinutes || valueMinutes > endMinutes ? { field, message } : null;
+}
+
+function getDurationIssues(params: TimeContractValidationParams): TimeContractIssue[] {
+  const event = deriveEventDurationMinutes(params.startTime, params.endTime);
   const organization = deriveOrganizationMinutes({
     actionDurationMinutes: params.actionDurationMinutes,
     eventDurationMinutes: event.eventDurationMinutes,
   });
-  if (organization.status === "inconsistent") {
-    return "Le créneau total de l’événement est inférieur au temps d’action déclaré.";
-  }
-
-  return null;
+  return organization.status === "inconsistent"
+    ? [{
+        field: "durationMinutes",
+        message: "Le créneau total de l’événement est inférieur au temps d’action déclaré.",
+      }]
+    : [];
 }
 
 export function roundBusinessDurationMinutes(

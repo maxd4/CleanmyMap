@@ -101,6 +101,39 @@ describe("pre-action route topology", () => {
   });
 });
 
+describe("pre-action temporal validation", () => {
+  it("keeps a new action date and duration empty until explicitly entered", () => {
+    const form = createInitialFormState("Maxence", "action");
+
+    expect(form.actionDate).toBe("");
+    expect(form.durationMinutes).toBe("");
+    expect(validateBeforeActionForm(buildValidPreActionForm())).toEqual([]);
+  });
+
+  it("reports temporal errors on their concerned fields", () => {
+    const form = buildValidPreActionForm();
+    form.meetingTime = "09:30";
+    form.departureTime = "09:00";
+    form.durationMinutes = "120";
+    form.eventStartTime = "09:00";
+    form.eventEndTime = "10:00";
+
+    expect(validateBeforeActionForm(form).map((issue) => issue.field)).toEqual([
+      "departureTime",
+      "durationMinutes",
+    ]);
+  });
+
+  it("does not validate an absent optional global window as a zero-duration event", () => {
+    const form = buildValidPreActionForm();
+    form.durationMinutes = "";
+    form.meetingTime = "09:00";
+    form.departureTime = "09:00";
+
+    expect(validateBeforeActionForm(form)).toEqual([]);
+  });
+});
+
 describe("pre-action identity payload", () => {
   it("sends the authenticated creator label and distinct organizer/participant ids", () => {
     const form = createInitialFormState("legacy-alias", "action");

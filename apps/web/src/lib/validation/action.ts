@@ -5,7 +5,7 @@ import {
 } from "@/lib/actions/data-contract";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { getVolunteerForecastValidationMessage } from "@/lib/actions/volunteer-participation";
-import { getTimeContractValidationMessage, isValidClockTime } from "@/lib/actions/time-contract";
+import { getTimeContractValidationIssues, isValidClockTime } from "@/lib/actions/time-contract";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import {
   actionInputGeometrySourceSchema,
@@ -48,22 +48,32 @@ const eventTimeSchema = z
 
 function addTemporalContractIssue(
   value: {
-    durationMinutes?: number;
+    durationMinutes?: number | null;
     eventStartTime?: string | null;
     eventEndTime?: string | null;
+    preparationData?: {
+      meetingTime?: string;
+      departureTime?: string;
+    } | null;
   },
   ctx: z.RefinementCtx,
+  preparationPath: readonly (string | number)[] = ["preparationData"],
 ) {
-  const message = getTimeContractValidationMessage({
-    actionDurationMinutes: value.durationMinutes ?? 0,
+  const issues = getTimeContractValidationIssues({
+    actionDurationMinutes: value.durationMinutes,
     startTime: value.eventStartTime,
     endTime: value.eventEndTime,
+    meetingTime: value.preparationData?.meetingTime,
+    departureTime: value.preparationData?.departureTime,
   });
-  if (message) {
+  for (const issue of issues) {
+    const path = issue.field === "meetingTime" || issue.field === "departureTime"
+      ? [...preparationPath, issue.field]
+      : [issue.field];
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ["eventStartTime"],
-      message,
+      path,
+      message: issue.message,
     });
   }
 }
@@ -190,7 +200,8 @@ const createActionContractSchema = z.object({
     durationMinutes: value.metadata.durationMinutes,
     eventStartTime: value.dates.eventStartTime,
     eventEndTime: value.dates.eventEndTime,
-  }, ctx);
+    preparationData: value.metadata.preparationData,
+  }, ctx, ["metadata", "preparationData"]);
   addRouteTopologyIssue({
     routeTopology: value.routeTopology ?? value.metadata.routeTopology,
     arrivalLocationLabel: value.arrivalLocationLabel ?? value.metadata.arrivalLocationLabel,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   deriveEventDurationMinutes,
   deriveOrganizationMinutes,
+  getTimeContractValidationIssues,
   getTimeContractValidationMessage,
   normalizeClockTime,
   formatBusinessDurationMinutes,
@@ -65,6 +66,43 @@ describe("action temporal contract", () => {
       eventDurationMinutes: 0,
       status: "available",
     });
+  });
+
+  it("checks rendez-vous, departure, global window, and declared duration together", () => {
+    expect(getTimeContractValidationIssues({
+      actionDurationMinutes: 120,
+      meetingTime: "08:30",
+      departureTime: "08:00",
+      startTime: "09:00",
+      endTime: "10:00",
+    })).toEqual([
+      {
+        field: "departureTime",
+        message: "L’heure de départ doit être postérieure ou égale à l’heure de rendez-vous.",
+      },
+      {
+        field: "meetingTime",
+        message: "L’heure de rendez-vous doit être comprise dans le créneau global.",
+      },
+      {
+        field: "departureTime",
+        message: "L’heure de départ doit être comprise dans le créneau global.",
+      },
+      {
+        field: "durationMinutes",
+        message: "Le créneau total de l’événement est inférieur au temps d’action déclaré.",
+      },
+    ]);
+  });
+
+  it("accepts incomplete optional hours and an unknown duration", () => {
+    expect(getTimeContractValidationIssues({
+      actionDurationMinutes: undefined,
+      meetingTime: "09:00",
+      departureTime: "",
+      startTime: "",
+      endTime: "10:00",
+    })).toEqual([]);
   });
 
   it("rounds only the business display duration to the nearest quarter hour", () => {

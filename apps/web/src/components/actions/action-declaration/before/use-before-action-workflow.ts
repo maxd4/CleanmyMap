@@ -202,8 +202,20 @@ function buildBeforeActionTimingFields(
     eventStartTime: action.eventStartTime ?? hydrated.eventStartTime,
     eventEndTime: action.eventEndTime ?? hydrated.eventEndTime,
     volunteersCount: typeof action.preparationData?.volunteersExpected === "number" ? String(action.preparationData.volunteersExpected) : "",
-    durationMinutes: String(action.durationMinutes),
+    durationMinutes: resolveActionDurationInput(action),
   };
+}
+
+function resolveActionDurationInput(
+  action: Awaited<ReturnType<typeof fetchActionById>>,
+): string {
+  if (action.preparationData?.durationMinutesDeclared === true) {
+    return String(action.durationMinutes);
+  }
+  if (typeof action.preparationData?.estimatedDurationMinutes === "number") {
+    return String(action.preparationData.estimatedDurationMinutes);
+  }
+  return action.durationMinutes > 0 ? String(action.durationMinutes) : "";
 }
 
 export function buildBeforeActionInitialForm(actorNameOptions: string[], defaultActorName: string, initialRecordType: "action"): FormState {

@@ -17,10 +17,12 @@ import {
   deriveEventDurationMinutes,
   deriveOrganizationMinutes,
   formatBusinessDurationMinutes,
+  getTimeContractValidationIssues,
 } from "@/lib/actions/time-contract";
 import { normalizeVolunteerParticipationFromForm } from "@/lib/actions/volunteer-participation";
 import { cn } from "@/lib/utils";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
+import { toOptionalNumber } from "../payload-numbers";
 
 export function PlannedActionSection({
   form,
@@ -30,12 +32,6 @@ export function PlannedActionSection({
   updateFields,
 }: BaseSectionProps) {
   const missingTitle = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "actionTitle"));
-  const missingDate = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "actionDate"));
-  const event = deriveEventDurationMinutes(form.eventStartTime, form.eventEndTime);
-  const organization = deriveOrganizationMinutes({
-    actionDurationMinutes: Number(form.durationMinutes),
-    eventDurationMinutes: event.eventDurationMinutes,
-  });
   const volunteerParticipation = normalizeVolunteerParticipationFromForm(form);
   const hasVolunteerCategoryInput = [
     form.childrenCount,
@@ -48,7 +44,6 @@ export function PlannedActionSection({
       : `${volunteerParticipation.participantsCount} répartis`
     : "facultatif";
   const hasConfirmedCoordinates = hasValidCoordinatePair(form.latitude, form.longitude);
-
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
       <div className="space-y-4">
@@ -90,26 +85,7 @@ export function PlannedActionSection({
             </FieldShell>
           </div>
 
-          <fieldset className="rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] p-4 md:p-5">
-            <legend className="px-2 text-base font-black text-emerald-950">Date et horaires</legend>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <FieldShell label={<span>Date prévue<RequiredMark /></span>}>
-                <input id="before-action-date" type="date" value={form.actionDate} onChange={(event) => updateField("actionDate", event.target.value)} aria-invalid={missingDate} aria-describedby={missingDate ? "before-action-date-error" : undefined} className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingDate ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")} />
-                {missingDate ? <span id="before-action-date-error" className="block text-xs font-medium text-rose-700">Indiquez la date prévue avant d’enregistrer.</span> : null}
-              </FieldShell>
-              <FieldShell label="Heure de rendez-vous"><input id="before-meeting-time" type="time" value={form.meetingTime} onChange={(event) => updateField("meetingTime", event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" /></FieldShell>
-              <FieldShell label="Heure de départ prévue"><input id="before-action-event-start" type="time" value={form.departureTime} onChange={(event) => updateField("departureTime", event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" /></FieldShell>
-              <FieldShell label="Durée de l’action" hint="Marche + ramassage + tri + pesée, sans séparer ces étapes.">
-                <div className="relative"><Clock3 size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-700/45" /><input type="number" min="0" value={form.durationMinutes} onChange={(event) => updateField("durationMinutes", event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] py-3 pl-10 pr-4 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" placeholder="60" /></div>
-                <p className="mt-1 text-xs text-emerald-900/55">Stockage précis ; affichage métier : {formatBusinessDurationMinutes(Number(form.durationMinutes))}.</p>
-              </FieldShell>
-            </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <FieldShell label="Début du créneau global" hint="Heure réelle ou actuellement convenue, le même jour que l’action."><input type="time" value={form.eventStartTime} onChange={(event) => updateField("eventStartTime", event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" /></FieldShell>
-              <FieldShell label="Fin du créneau global" hint="Laissez vide si l’horaire n’est pas encore connu."><input type="time" value={form.eventEndTime} onChange={(event) => updateField("eventEndTime", event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" /></FieldShell>
-            </div>
-            <ScheduleFeedback event={event} organization={organization} />
-          </fieldset>
+          <ScheduleFields form={form} updateField={updateField} hasAttemptedSubmit={hasAttemptedSubmit} validationIssueFields={validationIssueFields} />
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <SelectShell label="Type d'action prévue" value={form.plannedObjective} onChange={(value) => updateField("plannedObjective", value as FormState["plannedObjective"])} options={PLANNED_OBJECTIVE_OPTIONS} placeholder="Sélectionnez un type d'action" />
@@ -124,11 +100,136 @@ export function PlannedActionSection({
   );
 }
 
+function ScheduleFields({
+  form,
+  updateField,
+  hasAttemptedSubmit,
+  validationIssueFields,
+}: Pick<BaseSectionProps, "form" | "updateField" | "hasAttemptedSubmit" | "validationIssueFields">) {
+  const missingDate = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "actionDate"));
+  const event = deriveEventDurationMinutes(form.eventStartTime, form.eventEndTime);
+  const organization = deriveOrganizationMinutes({
+    actionDurationMinutes: toOptionalNumber(form.durationMinutes),
+    eventDurationMinutes: event.eventDurationMinutes,
+  });
+  const temporalIssues = getTimeContractValidationIssues({
+    actionDurationMinutes: toOptionalNumber(form.durationMinutes),
+    startTime: form.eventStartTime,
+    endTime: form.eventEndTime,
+    meetingTime: form.meetingTime,
+    departureTime: form.departureTime,
+  });
+  const durationInput = form.durationMinutes.trim();
+  const durationIssue = durationInput && toOptionalNumber(durationInput) === undefined
+    ? "La durée estimée doit être un nombre entier positif ou nul."
+    : temporalIssues.find((issue) => issue.field === "durationMinutes")?.message;
+
+  return (
+    <fieldset className="rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] p-4 md:p-5">
+      <legend className="px-2 text-base font-black text-emerald-950">Date et horaires principaux</legend>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <FieldShell label={<span>Date prévue<RequiredMark /></span>}>
+          <input id="before-action-date" type="date" value={form.actionDate} onChange={(event) => updateField("actionDate", event.target.value)} aria-invalid={missingDate} aria-describedby={missingDate ? "before-action-date-error" : undefined} className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingDate ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")} />
+          {missingDate ? <span id="before-action-date-error" className="block text-xs font-medium text-rose-700">Indiquez la date prévue avant d’enregistrer.</span> : null}
+        </FieldShell>
+        <TimeField
+          id="before-meeting-time"
+          label="Heure de rendez-vous"
+          value={form.meetingTime}
+          field="meetingTime"
+          updateField={updateField}
+          validationIssueFields={validationIssueFields}
+          message={getTemporalIssueMessage(temporalIssues, "meetingTime")}
+        />
+        <TimeField
+          id="before-departure-time"
+          label="Heure de départ"
+          value={form.departureTime}
+          field="departureTime"
+          updateField={updateField}
+          validationIssueFields={validationIssueFields}
+          message={getTemporalIssueMessage(temporalIssues, "departureTime")}
+        />
+        <FieldShell label="Durée estimée" hint="Marche + ramassage + tri + pesée ; laissez vide si elle est inconnue.">
+          <div className="relative"><Clock3 size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-700/45" /><input id="before-duration-minutes" type="number" min="0" step="1" value={form.durationMinutes} onChange={(event) => updateField("durationMinutes", event.target.value)} aria-invalid={Boolean(hasValidationIssue(validationIssueFields, "durationMinutes"))} aria-describedby={hasValidationIssue(validationIssueFields, "durationMinutes") ? "before-duration-minutes-error" : undefined} className={cn("w-full rounded-2xl border bg-[#F3FBF6] py-3 pl-10 pr-4 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", hasValidationIssue(validationIssueFields, "durationMinutes") ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")} placeholder="Ex. 60" /></div>
+          <p className="mt-1 text-xs text-emerald-900/55">{formatBusinessDurationMinutes(toOptionalNumber(form.durationMinutes))} ; aucune valeur technique n’est affichée comme une prévision.</p>
+          {hasValidationIssue(validationIssueFields, "durationMinutes") ? <InlineFieldError id="before-duration-minutes-error" message={durationIssue} /> : null}
+        </FieldShell>
+      </div>
+      <CmmDisclosure summary={<ActionFormDisclosureSummary label="Créneau global" detail={event.status === "available" ? `${form.eventStartTime}–${form.eventEndTime}` : "facultatif"} />} tone="emerald" size="sm">
+        <div className="grid gap-4 md:grid-cols-2">
+          <TimeField
+            id="before-action-event-start"
+            label="Début du créneau global"
+            hint="Début de l’accueil ou de l’organisation, le même jour que l’action."
+            value={form.eventStartTime}
+            field="eventStartTime"
+            updateField={updateField}
+            validationIssueFields={validationIssueFields}
+            message={getTemporalIssueMessage(temporalIssues, "eventStartTime")}
+          />
+          <TimeField
+            id="before-action-event-end"
+            label="Fin du créneau global"
+            hint="Fin de l’organisation et du rangement, le même jour que l’action."
+            value={form.eventEndTime}
+            field="eventEndTime"
+            updateField={updateField}
+            validationIssueFields={validationIssueFields}
+            message={getTemporalIssueMessage(temporalIssues, "eventEndTime")}
+          />
+        </div>
+        <ScheduleFeedback event={event} organization={organization} />
+      </CmmDisclosure>
+    </fieldset>
+  );
+}
+
+function getTemporalIssueMessage(
+  issues: ReturnType<typeof getTimeContractValidationIssues>,
+  field: "meetingTime" | "departureTime" | "eventStartTime" | "eventEndTime",
+): string | undefined {
+  return issues.find((issue) => issue.field === field)?.message;
+}
+
+function TimeField({
+  id,
+  label,
+  hint,
+  value,
+  field,
+  updateField,
+  validationIssueFields,
+  message,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  value: string;
+  field: "meetingTime" | "departureTime" | "eventStartTime" | "eventEndTime";
+  updateField: BaseSectionProps["updateField"];
+  validationIssueFields: BaseSectionProps["validationIssueFields"];
+  message?: string;
+}) {
+  const hasIssue = hasValidationIssue(validationIssueFields, field);
+  const errorId = `${id}-error`;
+  return (
+    <FieldShell label={label} hint={hint}>
+      <input id={id} type="time" value={value} onChange={(event) => updateField(field, event.target.value)} aria-invalid={hasIssue} aria-describedby={hasIssue ? errorId : undefined} className={cn("w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", hasIssue ? "border-rose-400 ring-2 ring-rose-400/20" : undefined)} />
+      {hasIssue ? <InlineFieldError id={errorId} message={message} /> : null}
+    </FieldShell>
+  );
+}
+
 function hasValidCoordinatePair(latitude: string, longitude: string): boolean {
   if (!latitude.trim() || !longitude.trim()) return false;
   const parsedLatitude = Number(latitude);
   const parsedLongitude = Number(longitude);
   return Number.isFinite(parsedLatitude) && parsedLatitude >= -90 && parsedLatitude <= 90 && Number.isFinite(parsedLongitude) && parsedLongitude >= -180 && parsedLongitude <= 180;
+}
+
+function InlineFieldError({ id, message }: { id: string; message?: string }) {
+  return <span id={id} className="block text-xs font-medium text-rose-700">{message ?? "Vérifiez cette valeur."}</span>;
 }
 
 function MeetingLocationFields({

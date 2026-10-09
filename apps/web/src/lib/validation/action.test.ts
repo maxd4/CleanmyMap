@@ -488,3 +488,35 @@ describe("createActionSchema", () => {
     ).toBe(false);
   });
 });
+
+describe("pre-action temporal contract", () => {
+  it("validates rendez-vous and departure against the global window", () => {
+    const invalid = createActionSchema.safeParse({
+      actorName: "Bénévole test",
+      associationName: "Action spontanée",
+      actionDate: "2026-04-22",
+      locationLabel: "Canal Saint-Martin",
+      wasteKg: 1.5,
+      cigaretteButts: 0,
+      volunteersCount: 2,
+      durationMinutes: 45,
+      actionPhase: "pre_action",
+      submissionMode: "quick",
+      eventStartTime: "09:00",
+      eventEndTime: "10:00",
+      preparationData: {
+        meetingTime: "08:45",
+        departureTime: "08:30",
+        durationMinutesDeclared: true,
+      },
+    });
+
+    expect(invalid.success).toBe(false);
+    if (!invalid.success) {
+      expect(invalid.error.issues.map((issue) => issue.path.join("."))).toEqual(expect.arrayContaining([
+        "preparationData.meetingTime",
+        "preparationData.departureTime",
+      ]));
+    }
+  });
+});

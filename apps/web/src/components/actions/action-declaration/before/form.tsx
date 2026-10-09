@@ -25,7 +25,11 @@ const BEFORE_VALIDATION_FIELD_IDS: Record<string, string> = {
   organizerType: "before-organizer-type",
   departureLocationLabel: "before-departure-location",
   arrivalLocationLabel: "before-arrival-location",
+  meetingTime: "before-meeting-time",
+  departureTime: "before-departure-time",
+  durationMinutes: "before-duration-minutes",
   eventStartTime: "before-action-event-start",
+  eventEndTime: "before-action-event-end",
   volunteersCount: "before-volunteers-count",
   volunteerParticipation: "before-volunteer-participation",
 };

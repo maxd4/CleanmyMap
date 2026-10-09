@@ -48,6 +48,7 @@ describe("action declaration payload helpers", () => {
     expect(blankPreparation).not.toHaveProperty("estimatedDifficulty");
     expect(blankPreparation).not.toHaveProperty("creatorRole");
     expect(blankPreparation).not.toHaveProperty("placeType");
+    expect(blankPreparation.durationMinutesDeclared).toBe(false);
     expect(blankPayload).not.toHaveProperty("placeType");
     expect(blankPayload.preparationData).not.toHaveProperty("plannedObjective");
     expect(blankPayload.preparationData).not.toHaveProperty("estimatedDifficulty");
@@ -66,7 +67,11 @@ describe("action declaration payload helpers", () => {
       plannedObjective: "nettoyage",
       estimatedDifficulty: "soutenue",
       placeType: "parc",
+      durationMinutesDeclared: false,
     });
+
+    explicitForm.durationMinutes = "45";
+    expect(buildPreparationDataFromForm(explicitForm).durationMinutesDeclared).toBe(true);
   });
 
   it("keeps descriptive choices absent when hydrating a draft without them", () => {
@@ -95,6 +100,44 @@ describe("action declaration payload helpers", () => {
 
     expect(prepared.routeTargetDistanceKm).toBe("1.5");
     expect(prepared.routeTargetDistanceKmManuallySet).toBe(false);
+  });
+
+  it("prefills empty temporal fields from a planner but never overwrites entered values", () => {
+    const emptyForm = createInitialFormState("Alice");
+    const fromPlanner = applyPreparationDataToForm(emptyForm, {
+      actionDate: "2026-10-12",
+      meetingTime: "09:00",
+      departureTime: "09:15",
+      estimatedDurationMinutes: 45,
+    });
+
+    expect(fromPlanner.actionDate).toBe("2026-10-12");
+    expect(fromPlanner.meetingTime).toBe("09:00");
+    expect(fromPlanner.departureTime).toBe("09:15");
+    expect(fromPlanner.durationMinutes).toBe("45");
+
+    const enteredForm = {
+      ...emptyForm,
+      actionDate: "2026-10-13",
+      meetingTime: "10:00",
+      departureTime: "10:15",
+      durationMinutes: "60",
+      eventStartTime: "10:00",
+      eventEndTime: "11:30",
+    };
+    const preserved = applyPreparationDataToForm(enteredForm, {
+      actionDate: "2026-10-12",
+      meetingTime: "09:00",
+      departureTime: "09:15",
+      estimatedDurationMinutes: 45,
+    });
+
+    expect(preserved.actionDate).toBe("2026-10-13");
+    expect(preserved.meetingTime).toBe("10:00");
+    expect(preserved.departureTime).toBe("10:15");
+    expect(preserved.durationMinutes).toBe("60");
+    expect(preserved.eventStartTime).toBe("10:00");
+    expect(preserved.eventEndTime).toBe("11:30");
   });
 
   it("persists a derived target with its source and policy version", () => {

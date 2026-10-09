@@ -1,7 +1,7 @@
 import { buildCreateActionPayload } from "../payload";
 import type { FormState } from "../model";
 import type { ActionPhotoAsset, ActionVisionEstimate, CreateActionPayload } from "@/lib/actions/types";
-import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
+import { getTimeContractValidationIssues } from "@/lib/actions/time-contract";
 import {
   getVolunteerForecastValidationMessage,
   type VolunteerParticipationInput,
@@ -16,7 +16,11 @@ export type BeforeValidationField =
   | "organizerType"
   | "departureLocationLabel"
   | "arrivalLocationLabel"
+  | "meetingTime"
+  | "departureTime"
+  | "durationMinutes"
   | "eventStartTime"
+  | "eventEndTime"
   | "volunteersCount"
   | "volunteerParticipation";
 
@@ -35,12 +39,25 @@ export function validateBeforeActionForm(form: FormState): BeforeValidationIssue
   if (form.recordType === "action" && form.routeTopology === "point_to_point" && !form.arrivalLocationLabel.trim()) {
     issues.push({ field: "arrivalLocationLabel", message: "Indiquez l'arrivée pour un parcours départ → arrivée." });
   }
-  const timeMessage = getTimeContractValidationMessage({
-    actionDurationMinutes: Number(form.durationMinutes),
+  const durationInput = form.durationMinutes.trim();
+  const duration = toOptionalNumber(durationInput);
+  if (
+    durationInput &&
+    (duration === undefined || !Number.isInteger(duration) || duration < 0)
+  ) {
+    issues.push({
+      field: "durationMinutes",
+      message: "La durée estimée doit être un nombre entier positif ou nul.",
+    });
+  }
+  const timeIssues = getTimeContractValidationIssues({
+    actionDurationMinutes: duration,
     startTime: form.eventStartTime,
     endTime: form.eventEndTime,
+    meetingTime: form.meetingTime,
+    departureTime: form.departureTime,
   });
-  if (timeMessage) issues.push({ field: "eventStartTime", message: timeMessage });
+  issues.push(...timeIssues);
 
   const volunteerForecast = validateVolunteerForecastForm(form);
   issues.push(...volunteerForecast);
