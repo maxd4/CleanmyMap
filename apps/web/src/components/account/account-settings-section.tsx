@@ -6,6 +6,7 @@ import Link from "next/link";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type { Locale } from "@/lib/ui/preferences";
+import { NotificationPreferencesSetting } from "@/components/account/notification-preferences-setting";
 
 const ACCOUNT_SETTINGS_COPY = {
   fr: {
@@ -168,6 +169,8 @@ export function AccountSettingsSection({
             )}
           </div>
         </div>
+
+        <NotificationPreferencesSetting locale={localeOverride ?? locale} />
 
         <p className="text-xs text-slate-500 mt-5">
           {copy.dataQuestions}

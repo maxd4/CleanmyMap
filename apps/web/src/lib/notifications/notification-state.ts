@@ -29,6 +29,34 @@ function readString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
+export function getNotificationActionId(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const raw = payload as Record<string, unknown>;
+  return raw.eventType === "action_event" ? readString(raw.actionId) : null;
+}
+
+export function isCriticalNotification(notification: AppNotification): boolean {
+  if (notification.type === "security" || notification.type === "validation") return true;
+  if (notification.payload?.critical === true) return true;
+  if (notification.payload?.eventType !== "action_event") return false;
+  if (notification.payload.subtype !== "action_update") return false;
+  return Array.isArray(notification.payload.changeKinds)
+    && notification.payload.changeKinds.includes("cancellation");
+}
+
+export function isOptionalInformationNotification(notification: AppNotification): boolean {
+  if (isCriticalNotification(notification)) return false;
+  if (notification.type !== "action_event" || !notification.payload) return false;
+  return notification.payload.optional === true
+    || [
+      "action_update",
+      "action_result",
+      "action_result_impact",
+      "registration_decision",
+      "administrative_requirements",
+    ].includes(String(notification.payload.subtype));
+}
+
 function getActionEventDecisionDescriptor(
   raw: Record<string, unknown>,
 ): NotificationDecisionDescriptor | null {

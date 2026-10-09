@@ -16,12 +16,20 @@ import {
 } from "@/lib/notifications/client";
 import {
   getNotificationDecisionDescriptor,
+  getNotificationActionId,
+  isOptionalInformationNotification,
   resolveNotificationDisplayState,
   type NotificationDisplayState,
 } from "@/lib/notifications/notification-state";
 import { useNotificationRequestIdentity } from "@/lib/notifications/use-notification-request-identity";
 import { useNotificationDecisionState } from "@/lib/notifications/use-notification-decision-state";
 import { buildNotificationHref } from "@/lib/notifications/notification-targets";
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  loadNotificationPreferences,
+  updateNotificationPreferences,
+  type NotificationPreferences,
+} from "@/lib/notifications/notification-preferences-client";
 import type { NotificationIdentity } from "@/lib/notifications/identity";
 
 type NotificationAuthState = Pick<
@@ -95,6 +103,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
   const [error, setError] = useState(false);
   const [nextCursor, setNextCursor] = useState<NotificationPageCursor | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
   const { getRequest, isCurrentRequest } = useNotificationRequestIdentity(userId);
   const fetchInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
   const loadMoreInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
@@ -111,14 +120,16 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
     setLoading(true);
     setError(false);
     try {
-      const [page] = await Promise.all([
+      const [page, , loadedPreferences] = await Promise.all([
         loadNotificationsPageForCurrentUser(request.userId, getToken),
         refreshDecisionState(request),
+        loadNotificationPreferences().catch(() => DEFAULT_NOTIFICATION_PREFERENCES),
       ]);
       if (!isCurrentRequest(request)) return;
       setAllNotifications(page.notifications);
       setNextCursor(page.nextCursor);
       setHasMore(page.nextCursor !== null);
+      setPreferences(loadedPreferences);
     } catch (err) {
       if (!isCurrentRequest(request)) return;
       setError(true);
@@ -189,8 +200,14 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
     [pendingNotifications],
   );
   const informationNotifications = useMemo(
-    () => allNotifications.filter((notification) => !pendingNotificationIds.has(notification.id) && stateFor(notification) !== "decision_pending"),
-    [allNotifications, pendingNotificationIds, stateFor],
+    () => allNotifications.filter((notification) => {
+      if (pendingNotificationIds.has(notification.id) || stateFor(notification) === "decision_pending") return false;
+      if (!isOptionalInformationNotification(notification)) return true;
+      const actionId = getNotificationActionId(notification.payload);
+      return preferences.informationalEnabled
+        && (!actionId || !preferences.mutedInformationActionIds.includes(actionId));
+    }),
+    [allNotifications, pendingNotificationIds, preferences, stateFor],
   );
   const visibleNotifications = view === "pending" ? pendingNotifications : informationNotifications;
   const pendingCount = decisionState.pendingRequestIds.size;
@@ -203,7 +220,16 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
     });
   };
 
-  return <DashboardNotificationsView isLoaded={isLoaded} locale={locale === "fr" ? "fr" : "en"} view={view} setView={setView} loading={loading} error={error} loadingMore={loadingMore} visibleNotifications={visibleNotifications} pendingCount={pendingCount} missingPendingCount={decisionState.missingPendingRequestIds.length} hasMore={hasMore} decisionState={decisionState} stateFor={stateFor} onOpen={markAsRead} onLoadMore={loadMoreNotifications} />;
+  const muteActionInformation = async (actionId: string) => {
+    try {
+      const nextPreferences = await updateNotificationPreferences({ actionId, muted: true });
+      setPreferences(nextPreferences);
+    } catch (err) {
+      logFailure("Dashboard notifications", "Mute action information failed", err, { actionId });
+    }
+  };
+
+  return <DashboardNotificationsView isLoaded={isLoaded} locale={locale === "fr" ? "fr" : "en"} view={view} setView={setView} loading={loading} error={error} loadingMore={loadingMore} visibleNotifications={visibleNotifications} pendingCount={pendingCount} missingPendingCount={decisionState.missingPendingRequestIds.length} hasMore={hasMore} decisionState={decisionState} stateFor={stateFor} onOpen={markAsRead} onMuteAction={muteActionInformation} onLoadMore={loadMoreNotifications} />;
 }
 
 function DashboardNotificationsView({
@@ -221,6 +247,7 @@ function DashboardNotificationsView({
   decisionState,
   stateFor,
   onOpen,
+  onMuteAction,
   onLoadMore,
 }: {
   isLoaded: boolean;
@@ -237,6 +264,7 @@ function DashboardNotificationsView({
   decisionState: ReturnType<typeof useNotificationDecisionState>;
   stateFor: (notification: AppNotification) => NotificationDisplayState;
   onOpen: (notification: AppNotification) => void;
+  onMuteAction: (actionId: string) => void;
   onLoadMore: () => Promise<void>;
 }) {
   return (
@@ -266,6 +294,7 @@ function DashboardNotificationsView({
         decisionState={decisionState}
         stateFor={stateFor}
         onOpen={onOpen}
+        onMuteAction={onMuteAction}
         onLoadMore={onLoadMore}
       />
     </section>
@@ -285,6 +314,7 @@ function DashboardNotificationContent({
   decisionState,
   stateFor,
   onOpen,
+  onMuteAction,
   onLoadMore,
 }: {
   isLoaded: boolean;
@@ -299,6 +329,7 @@ function DashboardNotificationContent({
   decisionState: ReturnType<typeof useNotificationDecisionState>;
   stateFor: (notification: AppNotification) => NotificationDisplayState;
   onOpen: (notification: AppNotification) => void;
+  onMuteAction: (actionId: string) => void;
   onLoadMore: () => Promise<void>;
 }) {
   if (decisionState.decisionStateError && missingPendingCount === 0) {
@@ -318,7 +349,7 @@ function DashboardNotificationContent({
   }
   return (
     <>
-      <DashboardNotificationList visibleNotifications={visibleNotifications} locale={locale} stateFor={stateFor} decisionState={decisionState} onOpen={onOpen} />
+      <DashboardNotificationList visibleNotifications={visibleNotifications} locale={locale} stateFor={stateFor} decisionState={decisionState} onOpen={onOpen} onMuteAction={onMuteAction} />
       {error ? <p className="pt-4 text-sm leading-relaxed text-amber-100/85" role="alert">Le chargement des notifications a échoué.</p> : null}
       {view === "information" ? (hasMore ? <DashboardLoadMoreButton loadingMore={loadingMore} onLoadMore={onLoadMore} /> : <p className="pt-5 text-center text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/54">Fin de l&apos;historique des notifications</p>) : null}
     </>
@@ -348,12 +379,14 @@ function DashboardNotificationList({
   stateFor,
   decisionState,
   onOpen,
+  onMuteAction,
 }: {
   visibleNotifications: AppNotification[];
   locale: "fr" | "en";
   stateFor: (notification: AppNotification) => NotificationDisplayState;
   decisionState: ReturnType<typeof useNotificationDecisionState>;
   onOpen: (notification: AppNotification) => void;
+  onMuteAction: (actionId: string) => void;
 }) {
   return (
     <div className="pt-2">
@@ -374,6 +407,7 @@ function DashboardNotificationList({
               onDecision: (choice) => void decisionState.handleDecision(notification, choice),
             } : undefined}
             onClick={onOpen}
+            onMuteAction={onMuteAction}
           />
         );
       })}

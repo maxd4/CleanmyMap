@@ -7,6 +7,10 @@ export function getUtcWeekStart(date: Date): string {
   return start.toISOString().slice(0, 10);
 }
 
+export function getUtcDayStart(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
 export function getUtcMonthStart(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-01`;
 }

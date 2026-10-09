@@ -13,12 +13,17 @@ import { buildNotificationHref } from "@/lib/notifications/notification-targets"
 import { logFailure } from "@/lib/logging/failure-log";
 import {
   loadNotificationsForCurrentUser,
-  loadUnreadNotificationCountForCurrentUser,
   markNotificationAsReadForCurrentUser,
   type AppNotification,
 } from "@/lib/notifications/client";
 import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  loadNotificationPreferences,
+  type NotificationPreferences,
+} from "@/lib/notifications/notification-preferences-client";
+import {
   getNotificationDecisionDescriptor,
+  isOptionalInformationNotification,
   prioritizeNotificationPreview,
   resolveNotificationDisplayState,
   type NotificationDisplayState,
@@ -49,7 +54,7 @@ function NotificationBellSession({
   const router = useRouter();
   const { locale } = useSitePreferences();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const { getRequest, isCurrentRequest } = useNotificationRequestIdentity(userId);
@@ -67,13 +72,13 @@ function NotificationBellSession({
     fetchInFlightRef.current = request;
     setLoading(true);
     try {
-      const [loadedNotifications, loadedUnreadCount] = await Promise.all([
+      const [loadedNotifications, loadedPreferences] = await Promise.all([
         loadNotificationsForCurrentUser(request.userId, getToken),
-        loadUnreadNotificationCountForCurrentUser(request.userId, getToken),
+        loadNotificationPreferences().catch(() => DEFAULT_NOTIFICATION_PREFERENCES),
       ]);
       if (!isCurrentRequest(request)) return;
       setNotifications(loadedNotifications);
-      setUnreadCount(loadedUnreadCount);
+      setPreferences(loadedPreferences);
       await refreshDecisionState(request);
     } catch (err) {
       if (isCurrentRequest(request)) logFailure("Notifications", "Fetch failed", err);
@@ -117,15 +122,13 @@ function NotificationBellSession({
     };
   }, [fetchNotifications, isLoaded, isSignedIn, isOpen, pollIntervalMs]);
 
-  const visibleNotifications = useMemo(() => (isLoaded && isSignedIn ? notifications : []), [isLoaded, isSignedIn, notifications]);
-
-  useEffect(() => {
-    if (unreadCount > 0 && typeof window !== "undefined" && "navigator" in window && "vibrate" in navigator) {
-      const latestUnread = visibleNotifications.find((notification) => !notification.read_at);
-      const isMajor = latestUnread?.type === "system" && latestUnread.title.includes("Niveau Supérieur");
-      try { navigator.vibrate(isMajor ? [20, 50, 20] : 15); } catch { /* Optional device feedback. */ }
-    }
-  }, [visibleNotifications, unreadCount]);
+  const visibleNotifications = useMemo(() => {
+    if (!isLoaded || !isSignedIn) return [];
+    return notifications.filter((notification) =>
+      !isOptionalInformationNotification(notification)
+      || preferences.informationalEnabled,
+    );
+  }, [isLoaded, isSignedIn, notifications, preferences.informationalEnabled]);
 
   const stateFor = useCallback((notification: AppNotification): NotificationDisplayState => resolveNotificationDisplayState({ notification, pendingRequestIds: decisionState.pendingRequestIds, treatedNotificationIds: decisionState.treatedNotificationIds }), [decisionState.pendingRequestIds, decisionState.treatedNotificationIds]);
   const pendingNotifications = useMemo(
@@ -140,13 +143,11 @@ function NotificationBellSession({
   const markAsRead = async (id: string) => {
     const request = getRequest();
     if (!request.userId || (markReadInFlightRef.current && isCurrentRequest(markReadInFlightRef.current))) return;
-    const wasUnread = notifications.some((notification) => notification.id === id && !notification.read_at);
     markReadInFlightRef.current = request;
     try {
       await markNotificationAsReadForCurrentUser(request.userId, id, getToken);
       if (!isCurrentRequest(request)) return;
       setNotifications((previous) => previous.map((notification) => notification.id === id ? { ...notification, read_at: new Date().toISOString() } : notification));
-      if (wasUnread) setUnreadCount((count) => Math.max(0, count - 1));
     } catch (err) {
       if (isCurrentRequest(request)) logFailure("Notifications", "Mark as read failed", err, { id });
     } finally {
@@ -170,7 +171,7 @@ function NotificationBellSession({
     setIsOpen={setIsOpen}
     ribbonChrome={ribbonChrome}
     locale={locale === "fr" ? "fr" : "en"}
-    unreadCount={unreadCount}
+    pendingCount={decisionState.pendingRequestIds.size}
     loading={loading}
     visibleNotifications={visibleNotifications}
     previewNotifications={previewNotifications}
@@ -185,7 +186,7 @@ function NotificationBellPanel({
   setIsOpen,
   ribbonChrome,
   locale,
-  unreadCount,
+  pendingCount,
   loading,
   visibleNotifications,
   previewNotifications,
@@ -197,7 +198,7 @@ function NotificationBellPanel({
   setIsOpen: (open: boolean) => void;
   ribbonChrome?: RibbonChrome;
   locale: "fr" | "en";
-  unreadCount: number;
+  pendingCount: number;
   loading: boolean;
   visibleNotifications: AppNotification[];
   previewNotifications: AppNotification[];
@@ -214,9 +215,9 @@ function NotificationBellPanel({
       panelClassName="w-[min(22rem,calc(100vw-1rem))] overflow-visible rounded-2xl border border-white/15 bg-slate-950/95 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]"
       panelStyle={ribbonChrome ? { backgroundImage: ribbonChrome.backgroundImage, backgroundColor: ribbonChrome.backgroundColor, borderColor: ribbonChrome.borderColor } : undefined}
       renderTrigger={(triggerProps) => (
-        <button {...triggerProps} aria-label={`Notifications (${unreadCount} non lues)`} className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/88 shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] transition-all hover:border-pink-200/28 hover:bg-pink-400/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300/40 xl:h-10 xl:w-10">
-          <Bell className={`h-5 w-5 ${unreadCount > 0 ? "text-pink-300 animate-swing" : "text-white/70"}`} aria-hidden="true" />
-          <CmmCountBadge count={unreadCount} tone="rose" className="absolute right-1.5 top-1.5 !min-h-4 !min-w-4 !border-0 !p-0 text-white" />
+        <button {...triggerProps} aria-label={`Notifications (${pendingCount} à traiter)`} className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/88 shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] transition-all hover:border-pink-200/28 hover:bg-pink-400/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300/40 xl:h-10 xl:w-10">
+          <Bell className={`h-5 w-5 ${pendingCount > 0 ? "text-pink-300 animate-swing" : "text-white/70"}`} aria-hidden="true" />
+          <CmmCountBadge count={pendingCount} tone="rose" className="absolute right-1.5 top-1.5 !min-h-4 !min-w-4 !border-0 !p-0 text-white" />
         </button>
       )}
     >

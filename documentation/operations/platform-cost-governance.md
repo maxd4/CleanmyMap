@@ -86,6 +86,15 @@ par utilisateur/reviewer, l'état canonique encore actionnable et cette fréquen
 de rafraîchissement ; aucun payload de notification complet ni donnée privée
 Clerk n'est répliqué dans Vercel.
 
+Le rappel J-1 des inscriptions confirmées ne crée pas de cron supplémentaire :
+le job quotidien `action-reminders` est exécuté par le registre de
+`/api/cron/maintenance`. Sa RPC ne parcourt que les actions dont la date locale
+`Europe/Paris` est le lendemain, les inscriptions `confirmed` et la préférence
+de rappel ; l'index d'événements stable rend les retries sans effet et empêche
+la réémission après changement de date. La page de réglages lit une préférence
+agrégée et les masques d'action ; elle reste `private, no-store` et
+rate-limitée, sans canal email, SMS ou push implicite.
+
 ## Soutenabilité préventive des plans gratuits
 
 CleanMyMap doit pouvoir rester sur les offres gratuites de Vercel, Supabase et

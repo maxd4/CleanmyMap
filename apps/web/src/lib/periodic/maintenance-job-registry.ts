@@ -22,10 +22,12 @@ import {
   MAP_POLLUTION_REFERENCES_VERSION,
   runPollutionScoreReferencesJob,
 } from "@/lib/actions/pollution/pollution-score-reference-snapshot";
+import { runActionRemindersJob } from "./action-reminders-job";
 import { readLatestPublicSurfaceSnapshot } from "@/lib/public-surface-snapshots";
-import { getUtcMonthStart, getUtcWeekStart } from "./periodic-job-calendar";
+import { getUtcDayStart, getUtcMonthStart, getUtcWeekStart } from "./periodic-job-calendar";
 
 export const MAINTENANCE_JOB_IDS = [
+  "action-reminders",
   "impact-terrain",
   "platform-usage",
   "map-pollution-references",
@@ -33,7 +35,7 @@ export const MAINTENANCE_JOB_IDS = [
 ] as const;
 
 type MaintenanceJobId = (typeof MAINTENANCE_JOB_IDS)[number];
-type MaintenanceJobCadence = "weekly" | "monthly";
+type MaintenanceJobCadence = "daily" | "weekly" | "monthly";
 type MaintenanceJobStatus = "executed" | "skipped" | "failed";
 
 type MaintenanceJobOutcome = {
@@ -105,6 +107,17 @@ async function hasGovernanceReport(period: string): Promise<boolean> {
 }
 
 export const MAINTENANCE_JOB_REGISTRY: readonly MaintenanceJobDefinition[] = [
+  {
+    id: "action-reminders",
+    cadence: "daily",
+    getPeriod: getUtcDayStart,
+    // Reminder delivery is keyed by confirmed user/action registration in the
+    // database. A daily retry is intentional: a new confirmation on J-1 must
+    // still receive its one reminder, while the unique event key prevents
+    // duplicates and date-change re-emission.
+    isProduced: async () => false,
+    run: async (now) => runActionRemindersJob({ now }),
+  },
   {
     id: "impact-terrain",
     cadence: "monthly",

@@ -7,6 +7,8 @@ import { enUS, fr } from "date-fns/locale";
 import type { AppNotification, NotificationDecision } from "@/lib/notifications/client";
 import {
   getNotificationDecisionOutcome,
+  getNotificationActionId,
+  isOptionalInformationNotification,
   type NotificationDisplayState,
 } from "@/lib/notifications/notification-state";
 import { ACTION_CHANGE_LABELS, type ActionChangeKind } from "@/lib/actions/action-change-notifications";
@@ -43,6 +45,7 @@ type NotificationListItemProps = {
     error?: string | null;
     onDecision: (decision: NotificationDecision) => void;
   };
+  onMuteAction?: (actionId: string) => void;
 };
 
 const stateLabels: Record<NotificationDisplayState, { fr: string; en: string }> = {
@@ -50,10 +53,11 @@ const stateLabels: Record<NotificationDisplayState, { fr: string; en: string }> 
   read: { fr: "Lue", en: "Read" },
   decision_pending: { fr: "À traiter", en: "Pending decision" },
   treated: { fr: "Traitée", en: "Treated" },
-  unavailable: { fr: "Indisponible", en: "Unavailable" },
+  unavailable: { fr: "Obsolète", en: "Obsolete" },
 };
 
 const actionEventStaticLabels: Record<string, { fr: string; en: string }> = {
+  action_reminder: { fr: "Rappel J-1", en: "J-1 reminder" },
   invitation: { fr: "Invitation de l'organisateur", en: "Organizer invitation" },
   registration_request: { fr: "Demande d'inscription", en: "Registration request" },
   registration_decision: { fr: "Suivi de votre demande", en: "Registration update" },
@@ -94,6 +98,7 @@ export function NotificationListItem({
   compact = false,
   displayState = notification.read_at ? "read" : "unread",
   decision,
+  onMuteAction,
 }: NotificationListItemProps) {
   const isUnread = displayState === "unread" || displayState === "decision_pending";
   const createdAt = new Date(notification.created_at);
@@ -155,8 +160,42 @@ export function NotificationListItem({
           onClick={onClick}
         />
         <NotificationDecisionActions decision={decision} locale={locale} />
+        <NotificationMuteAction
+          notification={notification}
+          locale={locale}
+          compact={compact}
+          onMuteAction={onMuteAction}
+        />
       </div>
     </article>
+  );
+}
+
+function NotificationMuteAction({
+  notification,
+  locale,
+  compact,
+  onMuteAction,
+}: {
+  notification: AppNotification;
+  locale: "fr" | "en";
+  compact: boolean;
+  onMuteAction?: (actionId: string) => void;
+}) {
+  const actionId = getNotificationActionId(notification.payload);
+  if (!onMuteAction || !actionId || !isOptionalInformationNotification(notification)) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        onMuteAction(actionId);
+      }}
+      className={`mt-2 text-xs font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 ${compact ? "text-sky-300 focus-visible:ring-sky-300" : "text-amber-100/80 focus-visible:ring-amber-200"}`}
+    >
+      {locale === "fr" ? "Masquer les informations de cette action" : "Hide information for this action"}
+    </button>
   );
 }
 

@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import type { AppNotification } from "./client";
 import {
   countPendingNotificationDecisions,
+  getNotificationActionId,
   getNotificationDecisionDescriptor,
   getNotificationDecisionOutcome,
+  isCriticalNotification,
+  isOptionalInformationNotification,
   prioritizeNotificationPreview,
   resolveNotificationDisplayState,
 } from "./notification-state";
@@ -72,6 +75,22 @@ describe("notification decision state", () => {
       notification: item,
       pendingRequestIds: new Set(["registration-1"]),
     })).toBe("unavailable");
+  });
+
+  it("filters optional action information but keeps cancellation critical", () => {
+    const information = notification({
+      type: "action_event",
+      payload: { eventType: "action_event", subtype: "action_update", actionId: "action-1", changeKinds: ["schedule"] },
+    });
+    const cancellation = notification({
+      type: "action_event",
+      payload: { eventType: "action_event", subtype: "action_update", actionId: "action-1", changeKinds: ["cancellation"] },
+    });
+    expect(getNotificationActionId(information.payload)).toBe("action-1");
+    expect(isOptionalInformationNotification(information)).toBe(true);
+    expect(isCriticalNotification(information)).toBe(false);
+    expect(isOptionalInformationNotification(cancellation)).toBe(false);
+    expect(isCriticalNotification(cancellation)).toBe(true);
   });
 
   it("recognizes a public registration request separately from an invitation", () => {

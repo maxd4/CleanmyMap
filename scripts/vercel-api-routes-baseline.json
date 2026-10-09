@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-30T17:43:01.000Z",
-  "apiRouteCount": 117,
+  "apiRouteCount": 118,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -35,6 +35,13 @@
       "introducedBy": "WORKTREE-CANDIDATE",
       "reason": "Projection authentifiée des claims post_action_claim pendants pour les organisateurs et administrateurs habilités, sans seconde file de demandes.",
       "costContract": "GET borné à 100 claims, rate limit serveur 30 requêtes par minute, RPC service_role revalidant action publiée, état pending et droits actuels, réponse private/no-store et aucun polling dédié.",
+      "reviewedAt": "2026-10-09"
+    },
+    {
+      "route": "apps/web/src/app/api/notifications/preferences/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Surface authentifiée des préférences persistées de notifications : informations facultatives, rappels J-1 et masques d'informations par action.",
+      "costContract": "GET limité à 30 requêtes/minute et PATCH à 20 requêtes/minute, chacun borné à l'identité Clerk et à une préférence ou un UUID d'action ; deux lectures ciblées au GET et aucune donnée de notification complète ne transitent par la route. Réponse private/no-store, sans email, SMS, push ni polling dédié.",
       "reviewedAt": "2026-10-09"
     }
   ],
@@ -129,6 +136,7 @@
     "apps/web/src/app/api/missions/[missionId]/reconcile/route.ts",
     "apps/web/src/app/api/missions/route.ts",
     "apps/web/src/app/api/newsletter/subscribe/route.ts",
+    "apps/web/src/app/api/notifications/preferences/route.ts",
     "apps/web/src/app/api/partners/onboarding-requests/route.ts",
     "apps/web/src/app/api/partners/published-directory/route.ts",
     "apps/web/src/app/api/pilotage/overview/route.ts",
