@@ -29,6 +29,8 @@ import {
   assessRouteWeatherRefreshSignal,
   buildRouteRefreshSignals,
 } from "@/lib/route/route-refresh-signals";
+import { buildActionChangeEventKey } from "@/lib/actions/action-change-notifications";
+import { emitActionUpdateNotifications } from "@/lib/actions/action-update-notifications";
 
 export const runtime = "nodejs";
 // Justification Vercel: route version reads and writes depend on the authenticated user and fresh action state.
@@ -249,6 +251,39 @@ function buildNextRouteVersioning(params: {
   };
 }
 
+async function persistRouteVersionUpdate(params: {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  actionId: string;
+  currentPublishedAt: string;
+  currentUpdatedAt: string;
+  updateData: Record<string, unknown>;
+  actorUserId: string;
+}): Promise<Response | null> {
+  const updated = await params.supabase
+    .from("actions")
+    .update(params.updateData)
+    .eq("id", params.actionId)
+    .eq("published_at", params.currentPublishedAt)
+    .eq("updated_at", params.currentUpdatedAt)
+    .select("id")
+    .maybeSingle();
+  if (updated.error) throw updated.error;
+  if (!updated.data) return conflict("L'action a changé avant l'application de l'itinéraire.");
+
+  await emitActionUpdateNotifications({
+    supabase: params.supabase,
+    actionId: params.actionId,
+    actorUserId: params.actorUserId,
+    changeKinds: ["route"],
+    eventKey: buildActionChangeEventKey({
+      actionId: params.actionId,
+      revision: params.currentUpdatedAt,
+      changeKinds: ["route"],
+    }),
+  });
+  return null;
+}
+
 export async function POST(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
@@ -293,7 +328,11 @@ export async function POST(
         history: validated.currentVersioning.history,
       });
     }
-    if (!current.updated_at) return conflict("L'action a changé avant l'application de l'itinéraire.");
+    const currentPublishedAt = current.published_at;
+    const currentUpdatedAt = current.updated_at;
+    if (!currentPublishedAt || !currentUpdatedAt) {
+      return conflict("L'action a changé avant l'application de l'itinéraire.");
+    }
 
     const appliedAt = new Date().toISOString();
     const nextVersioning = buildNextRouteVersioning({
@@ -314,9 +353,13 @@ export async function POST(
       departureLocationLabel: preparationData.pointDeRendezVous,
       arrivalLocationLabel: preparationData.zoneCiblePrevue,
     });
-    const updated = await supabase
-      .from("actions")
-      .update({
+    const persistenceConflict = await persistRouteVersionUpdate({
+      supabase,
+      actionId: trimmedActionId,
+      currentPublishedAt,
+      currentUpdatedAt,
+      actorUserId: access.userId,
+      updateData: {
         preparation_data: {
           ...preparationData,
           operationalRoute: parsed.data.operationalRoute,
@@ -326,14 +369,9 @@ export async function POST(
         derived_geometry_geojson: persistedGeometry.geojson,
         geometry_confidence: persistedGeometry.confidence,
         geometry_source: "routed",
-      })
-      .eq("id", trimmedActionId)
-      .eq("published_at", current.published_at)
-      .eq("updated_at", current.updated_at)
-      .select("id")
-      .maybeSingle();
-    if (updated.error) throw updated.error;
-    if (!updated.data) return conflict("L'action a changé avant l'application de l'itinéraire.");
+      },
+    });
+    if (persistenceConflict) return persistenceConflict;
 
     return NextResponse.json({
       status: "applied",

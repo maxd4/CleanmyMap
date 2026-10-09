@@ -9,11 +9,32 @@ import {
   type ActionCancellationReason,
   type ActionCancellationResult,
 } from "./cancellation-contract";
+import { buildActionChangeEventKey } from "./action-change-notifications";
+import { emitActionUpdateNotifications } from "./action-update-notifications";
 
 export type {
   ActionCancellationReason,
   ActionCancellationResult,
 } from "./cancellation-contract";
+
+async function emitCancellationNotification(
+  supabase: SupabaseClient,
+  actionId: string,
+  actorUserId: string,
+  cancelledAt: string,
+) {
+  await emitActionUpdateNotifications({
+    supabase,
+    actionId,
+    actorUserId,
+    changeKinds: ["cancellation"],
+    eventKey: buildActionChangeEventKey({
+      actionId,
+      revision: cancelledAt,
+      changeKinds: ["cancellation"],
+    }),
+  });
+}
 
 function cancellationResultFromAction(
   action: ActionRow,
@@ -92,10 +113,12 @@ export async function cancelFutureAction(
   }
 
   if (result.data) {
-    return cancellationResultFromAction(
+    const cancellationResult = cancellationResultFromAction(
       result.data as ActionRow,
       false,
     );
+    await emitCancellationNotification(supabase, params.actionId, params.actorUserId, cancellationResult.cancelledAt);
+    return cancellationResult;
   }
 
   const afterRace = await loadActionById(supabase, params.actionId);

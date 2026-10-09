@@ -9,6 +9,7 @@ import {
   getNotificationDecisionOutcome,
   type NotificationDisplayState,
 } from "@/lib/notifications/notification-state";
+import { ACTION_CHANGE_LABELS, type ActionChangeKind } from "@/lib/actions/action-change-notifications";
 
 function getNotificationIcon(type: AppNotification["type"]) {
   switch (type) {
@@ -217,6 +218,20 @@ function getActionEventLabel(
   if (subtype === "invitation") return locale === "fr" ? "Invitation de l'organisateur" : "Organizer invitation";
   if (subtype === "registration_request") return locale === "fr" ? "Demande d'inscription" : "Registration request";
   if (subtype === "registration_decision") return locale === "fr" ? "Suivi de votre demande" : "Registration update";
+  if (subtype === "action_update") {
+    const changeKinds = Array.isArray(notification.payload.changeKinds)
+      ? notification.payload.changeKinds.filter(
+          (kind): kind is ActionChangeKind => kind in ACTION_CHANGE_LABELS,
+        )
+      : [];
+    if (changeKinds.includes("cancellation")) {
+      return ACTION_CHANGE_LABELS.cancellation[locale];
+    }
+    const labels = [...new Set(changeKinds)].map((kind) => ACTION_CHANGE_LABELS[kind][locale]);
+    return labels.length > 0
+      ? labels.join(" · ")
+      : locale === "fr" ? "Action modifiée" : "Action updated";
+  }
   return null;
 }
 

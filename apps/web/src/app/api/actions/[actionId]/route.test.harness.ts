@@ -25,6 +25,7 @@ const ensureGpxGeometryContributionEligibleMock = vi.hoisted(() => vi.fn());
 const recordGpxGeometryContributionIfPresentMock = vi.hoisted(() => vi.fn());
 const hasGpxGeometryContributionMock = vi.hoisted(() => vi.fn());
 const reconcileGeometryContributionProgressionIfNeededMock = vi.hoisted(() => vi.fn());
+const emitActionUpdateNotificationsMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
@@ -124,6 +125,10 @@ vi.mock("@/lib/actions/geometry/action-geometry-contribution-workflow", () => ({
   stripObservedGeometryProjectionFields: vi.fn((value) => value),
 }));
 
+vi.mock("@/lib/actions/action-update-notifications", () => ({
+  emitActionUpdateNotifications: emitActionUpdateNotificationsMock,
+}));
+
 export {
   appendActionModerationAuditMock,
   extractActionMetadataFromNotesMock,
@@ -221,6 +226,7 @@ export function resetPatchRouteMocks() {
   hasGpxGeometryContributionMock.mockReturnValue(false);
   recordGpxGeometryContributionIfPresentMock.mockResolvedValue(null);
   reconcileGeometryContributionProgressionIfNeededMock.mockResolvedValue(undefined);
+  emitActionUpdateNotificationsMock.mockResolvedValue(true);
   unauthorizedJsonResponseMock.mockReturnValue({ status: 401 });
   handleApiErrorMock.mockResolvedValue(new Response("error", { status: 500 }));
 }

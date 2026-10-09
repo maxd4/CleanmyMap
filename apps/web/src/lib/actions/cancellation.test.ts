@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
+const emitActionUpdateNotificationsMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionByIdMock }));
+vi.mock("./action-update-notifications", () => ({
+  emitActionUpdateNotifications: emitActionUpdateNotificationsMock,
+}));
 
 import {
   cancelFutureAction,
@@ -19,7 +23,10 @@ const baseAction = {
 };
 
 describe("action cancellation contract", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    emitActionUpdateNotificationsMock.mockResolvedValue(true);
+  });
 
   it.each(["pending", "approved"] as const)(
     "accepts a published future %s pre-action",
@@ -90,6 +97,11 @@ describe("action cancellation contract", () => {
     });
     expect(supabase.from).not.toHaveBeenCalledWith("action_participants");
     expect(supabase.from).not.toHaveBeenCalledWith("app_messages");
+    expect(emitActionUpdateNotificationsMock).toHaveBeenCalledWith(expect.objectContaining({
+      actionId: "action-1",
+      actorUserId: "admin-1",
+      changeKinds: ["cancellation"],
+    }));
   });
 
   it("is idempotent for an already cancelled tombstone", async () => {

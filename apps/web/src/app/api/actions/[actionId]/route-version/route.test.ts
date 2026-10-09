@@ -11,6 +11,7 @@ const organizersMock = vi.hoisted(() => vi.fn());
 const supabaseMock = vi.hoisted(() => vi.fn());
 const participantSummariesMock = vi.hoisted(() => vi.fn());
 const freshnessMock = vi.hoisted(() => vi.fn());
+const emitActionUpdateNotificationsMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: authMock,
@@ -25,6 +26,9 @@ vi.mock("@/lib/actions/participation/participant-summaries", () => ({
 }));
 vi.mock("@/lib/route/route-refresh-signals-loader", () => ({
   loadRouteFreshnessSignal: freshnessMock,
+}));
+vi.mock("@/lib/actions/action-update-notifications", () => ({
+  emitActionUpdateNotifications: emitActionUpdateNotificationsMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: supabaseMock }));
 vi.mock("@/lib/http/auth-responses", () => ({
@@ -186,6 +190,7 @@ describe("POST /api/actions/:actionId/route-version", () => {
     organizersMock.mockResolvedValue([]);
     participantSummariesMock.mockResolvedValue([]);
     freshnessMock.mockResolvedValue({ status: "current", latestSourceAt: null });
+    emitActionUpdateNotificationsMock.mockResolvedValue(true);
   });
 
   it("refuses anonymous recalculation and past actions", async () => {

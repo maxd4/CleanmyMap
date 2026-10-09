@@ -40,6 +40,11 @@ import {
   reconcileGeometryContributionProgressionIfNeeded,
   stripObservedGeometryProjectionFields,
 } from "@/lib/actions/geometry/action-geometry-contribution-workflow";
+import {
+  buildActionChangeEventKey,
+  detectActionChangeKinds,
+} from "@/lib/actions/action-change-notifications";
+import { emitActionUpdateNotifications } from "@/lib/actions/action-update-notifications";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -126,6 +131,34 @@ type PatchExecutionState = {
 
 const PATCH_ATOMICITY = "PARTIAL_ALLOWED" as const;
 
+async function emitPublishedActionUpdateIfNeeded(params: {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  actionId: string;
+  actorUserId: string;
+  current: EditableAction;
+  updateData: Record<string, unknown>;
+  actionWriteSucceeded: boolean;
+}): Promise<void> {
+  if (!params.actionWriteSucceeded) return;
+  const changeKinds = detectActionChangeKinds({
+    current: params.current,
+    updateData: params.updateData,
+  });
+  if (changeKinds.length === 0) return;
+
+  await emitActionUpdateNotifications({
+    supabase: params.supabase,
+    actionId: params.actionId,
+    actorUserId: params.actorUserId,
+    changeKinds,
+    eventKey: buildActionChangeEventKey({
+      actionId: params.actionId,
+      revision: params.current.updated_at ?? "missing-revision",
+      changeKinds,
+    }),
+  });
+}
+
 async function executePreparedActionUpdate({
   supabase,
   actionId,
@@ -192,6 +225,14 @@ async function executePreparedActionUpdate({
     : { data: { id: actionId }, error: null };
   if (updateResult.error) throw new Error("Action update failed");
   state.actionWriteSucceeded = hasActionUpdates && Boolean(updateResult.data);
+  await emitPublishedActionUpdateIfNeeded({
+    supabase,
+    actionId,
+    actorUserId: userId,
+    current,
+    updateData: scalarUpdateData,
+    actionWriteSucceeded: state.actionWriteSucceeded,
+  });
 
   state.adminErrorStage = hasGeometryContribution
     ? "geometry_contribution"

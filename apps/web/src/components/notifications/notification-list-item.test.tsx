@@ -81,4 +81,28 @@ describe("notification list item", () => {
     expect(markup).toContain("Acceptée");
     expect(markup).not.toContain("Indisponible");
   });
+
+  it("labels operational action updates from their canonical change kinds", () => {
+    const markup = renderToStaticMarkup(
+      <NotificationListItem
+        notification={{
+          ...notification,
+          type: "action_event",
+          title: "Horaire modifié",
+          content: "Les informations opérationnelles de cette action ont changé.",
+          payload: {
+            eventType: "action_event",
+            subtype: "action_update",
+            actionId: "action-1",
+            changeKinds: ["schedule"],
+          },
+        }}
+        locale="fr"
+        onClick={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("Horaire modifié");
+    expect(markup).not.toContain("Demande d'inscription");
+  });
 });
