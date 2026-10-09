@@ -24,6 +24,15 @@ function buildItem(): JoinableActionItem {
     participationUpdatedAt: null,
     groupJoinEnabled: true,
     pendingRequestsCount: 0,
+    practicalInfo: {
+      accessibility: null,
+      safetyInstructions: null,
+      derivedSafetyRecommendations: [],
+      materialsToBring: null,
+      derivedMaterials: [],
+      materialsProvided: null,
+      participantMessage: null,
+    },
   };
 }
 

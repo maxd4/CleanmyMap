@@ -277,6 +277,24 @@ Toute évolution de cette logique doit rester idempotente.
 - confirmation avant participation, annulation ou départ ;
 - états loading, empty, error et forbidden accessibles.
 
+Chaque carte d'action future publiée contient un bloc compact `Informations
+pratiques`. Sa projection publique minimale distingue les indications de
+l'organisateur (accessibilité, consignes, matériel à apporter ou fourni,
+message aux participants) des recommandations produites par le catalogue Waste
+à partir des déchets attendus. Les champs absents restent explicites :
+`Accessibilité non évaluée`, `Non renseigné` ou `Matériel à confirmer`.
+
+La carte ne renvoie jamais `preparation_data` dans son intégralité : les notes
+privées, checklists, traces administratives et contexte technique du planner
+restent côté serveur. Les actions historiques sans préparation structurée
+conservent la même `actionId` et reçoivent une projection vide, sans exposer de
+contenu de compatibilité.
+
+Après publication, une évolution effective des consignes de sécurité ou du
+matériel à prévoir réutilise le flux `action_event` existant, avec la révision
+persistée et la déduplication de la RPC d'updates. Une simple variation de
+casse, d'espacement ou de ponctuation ne produit pas de notification.
+
 ## États
 
 ```txt

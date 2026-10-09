@@ -8,6 +8,7 @@ import {
   type ParticipationSource,
   type ParticipationStatus,
 } from "./group-participation.helpers";
+import type { PublicActionPracticalInformation } from "./group-participation-public-projection";
 
 type JoinableParticipationSource =
   | ParticipationSource
@@ -120,6 +121,7 @@ export type JoinableActionItem = {
   participationUpdatedAt: string | null;
   groupJoinEnabled: boolean;
   pendingRequestsCount: number;
+  practicalInfo: PublicActionPracticalInformation;
 };
 
 export type JoinableActionHistoryItem = JoinableActionItem & {

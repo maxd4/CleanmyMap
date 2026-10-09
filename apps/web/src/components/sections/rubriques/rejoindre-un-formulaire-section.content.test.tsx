@@ -40,6 +40,15 @@ function buildItem(overrides: Partial<JoinableActionItem> = {}): JoinableActionI
     participationUpdatedAt: null,
     groupJoinEnabled: true,
     pendingRequestsCount: 0,
+    practicalInfo: {
+      accessibility: null,
+      safetyInstructions: null,
+      derivedSafetyRecommendations: [],
+      materialsToBring: null,
+      derivedMaterials: [],
+      materialsProvided: null,
+      participantMessage: null,
+    },
     ...overrides,
   };
 }
@@ -81,6 +90,34 @@ describe("Rejoindre une action content contract", () => {
 
     expect(markup).toContain("Nettoyage des berges");
     expect(markup).toContain("Quai de Seine");
+  });
+
+  it("shows organizer information separately from catalogue recommendations", () => {
+    const markup = renderCard(buildItem({
+      practicalInfo: {
+        accessibility: "Accès par la rampe nord.",
+        safetyInstructions: "Rester en binôme.",
+        derivedSafetyRecommendations: ["Ne pas ramasser les objets piquants."],
+        materialsToBring: "Gants et sacs.",
+        derivedMaterials: ["Gants résistants"],
+        materialsProvided: null,
+        participantMessage: "Rendez-vous devant la grille.",
+      },
+    }));
+
+    expect(markup).toContain("Informations pratiques");
+    expect(markup).toContain("Indications de l’organisateur");
+    expect(markup).toContain("Recommandations CleanMyMap");
+    expect(markup).toContain("Ne pas ramasser les objets piquants.");
+    expect(markup).not.toContain("checklistBeforeDeparture");
+  });
+
+  it("states when practical information is missing", () => {
+    const markup = renderCard(buildItem());
+
+    expect(markup).toContain("Accessibilité non évaluée");
+    expect(markup).toContain("Matériel à confirmer");
+    expect(markup).toContain("Non renseigné");
   });
 
   it("uses registration vocabulary for a pending future request", () => {

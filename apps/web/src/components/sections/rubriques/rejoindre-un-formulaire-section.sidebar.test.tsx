@@ -25,6 +25,15 @@ function buildHistoryItem(
     participationUpdatedAt: "2026-09-01T10:00:00.000Z",
     groupJoinEnabled: true,
     pendingRequestsCount: 0,
+    practicalInfo: {
+      accessibility: null,
+      safetyInstructions: null,
+      derivedSafetyRecommendations: [],
+      materialsToBring: null,
+      derivedMaterials: [],
+      materialsProvided: null,
+      participantMessage: null,
+    },
   };
 }
 

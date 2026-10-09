@@ -209,7 +209,15 @@ describe("group participation fallback handling", () => {
         status: "approved",
         notes: null,
         action_phase: "pre_action",
-        preparation_data: { actionTitle: "Nettoyage des berges" },
+        preparation_data: {
+          actionTitle: "Nettoyage des berges",
+          accessibility: "Accès par la rampe nord.",
+          safetyInstructions: "Rester en binôme.",
+          recommendedMaterials: "Gants et sacs.",
+          participantMessage: "Rendez-vous devant la grille.",
+          expectedWasteCategories: ["battery"],
+          logisticsNotes: "Note privée",
+        },
       },
       { groupJoinEnabled: true },
       4,
@@ -235,6 +243,15 @@ describe("group participation fallback handling", () => {
       groupJoinEnabled: true,
       pendingRequestsCount: 2,
     });
+    expect(item.practicalInfo).toMatchObject({
+      accessibility: "Accès par la rampe nord.",
+      safetyInstructions: "Rester en binôme.",
+      materialsToBring: "Gants et sacs.",
+      participantMessage: "Rendez-vous devant la grille.",
+    });
+    expect(item).not.toHaveProperty("preparation_data");
+    expect(item).not.toHaveProperty("notes");
+    expect(JSON.stringify(item)).not.toContain("Note privée");
   });
 
   it("resolves the latest participation timestamp from a row", () => {

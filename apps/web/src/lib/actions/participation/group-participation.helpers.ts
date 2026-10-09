@@ -3,6 +3,7 @@ import type { ActionParticipantRow, ActionRow } from "@/types/database";
 import type { ActionParticipantSummary } from "./participant-summaries";
 import type { ActionPreparationData } from "@/lib/actions/types";
 import type { JoinableActionItem } from "./group-participation-contract";
+import { buildPublicActionPracticalInformation } from "./group-participation-public-projection";
 
 export const PENDING_PARTICIPATION_STATUS = "pending" as const;
 export const ACTIVE_PARTICIPATION_STATUS = "confirmed" as const;
@@ -125,16 +126,28 @@ export function getActionTitle(action: Pick<ActionPreviewRow, "preparation_data"
   return preparationData?.actionTitle?.trim() || null;
 }
 
+export function buildPublicActionFields(action: ActionPreviewRow) {
+  return {
+    id: action.id,
+    created_at: action.created_at,
+    action_date: action.action_date,
+    location_label: action.location_label,
+    volunteers_count: action.volunteers_count,
+    duration_minutes: action.duration_minutes,
+    status: action.status,
+    cancelled_at: action.cancelled_at,
+    cancellation_reason: action.cancellation_reason,
+  };
+}
+
 export function buildJoinableItem(
   action: ActionPreviewRow,
   metadata: JoinableActionMetadata,
   participantsCount: number,
   participantSummary: ActionParticipantSummary | null,
 ): JoinableActionItem {
-  const publicAction = { ...action };
-  delete publicAction.preparation_data;
   return {
-    ...publicAction,
+    ...buildPublicActionFields(action),
     actionTitle: getActionTitle(action),
     actionPhase: action.action_phase ?? "post_action_complete",
     participantsCount,
@@ -147,6 +160,7 @@ export function buildJoinableItem(
       participantSummary?.myUpdatedAt ?? participantSummary?.myJoinedAt ?? null,
     groupJoinEnabled: metadata.groupJoinEnabled,
     pendingRequestsCount: resolvePendingRequestsCount(participantSummary, participantsCount),
+    practicalInfo: buildPublicActionPracticalInformation(action.preparation_data),
   };
 }
 

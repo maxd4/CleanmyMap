@@ -28,6 +28,15 @@ describe("GET /api/actions/group-join", () => {
           volunteers_count: 12,
           duration_minutes: 45,
           status: "approved",
+          preparation_data: {
+            accessibility: "Accès sans escalier.",
+            safetyInstructions: "Rester en binôme.",
+            recommendedMaterials: "Gants et sacs.",
+            participantMessage: "Rendez-vous à 9 h.",
+            expectedWasteCategories: ["battery"],
+            logisticsNotes: "Note privée non exposée.",
+            checklistBeforeDeparture: "Checklist interne non exposée.",
+          },
         }),
         {
           id: "action-2",
@@ -61,7 +70,22 @@ describe("GET /api/actions/group-join", () => {
     const body = (await response.json()) as {
       authenticated?: boolean;
       count?: number;
-      items?: Array<{ id: string; participantsCount: number; joined: boolean }>;
+      items?: Array<{
+        id: string;
+        participantsCount: number;
+        joined: boolean;
+        practicalInfo?: {
+          accessibility: string | null;
+          safetyInstructions: string | null;
+          derivedSafetyRecommendations: string[];
+          materialsToBring: string | null;
+          derivedMaterials: string[];
+          materialsProvided: string | null;
+          participantMessage: string | null;
+        };
+        preparation_data?: unknown;
+        notes?: unknown;
+      }>;
     };
 
     expect(response.status).toBe(200);
@@ -72,6 +96,15 @@ describe("GET /api/actions/group-join", () => {
       participantsCount: 2,
       joined: true,
     });
+    expect(body.items?.[0]?.practicalInfo).toMatchObject({
+      accessibility: "Accès sans escalier.",
+      safetyInstructions: "Rester en binôme.",
+      materialsToBring: "Gants et sacs.",
+      participantMessage: "Rendez-vous à 9 h.",
+    });
+    expect(body.items?.[0]).not.toHaveProperty("preparation_data");
+    expect(body.items?.[0]).not.toHaveProperty("notes");
+    expect(JSON.stringify(body.items?.[0])).not.toContain("Note privée non exposée");
   }, 15000);
 
   it("keeps the list available when Clerk auth cannot resolve the session", async () => {

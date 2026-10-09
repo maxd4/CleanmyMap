@@ -7,6 +7,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 import { ActionThumbnail } from "./rejoindre-un-formulaire-section.illustrations";
 import { ActionCardActions } from "./rejoindre-un-formulaire-section.card-actions";
+import { ActionPracticalInformation } from "./rejoindre-un-formulaire-section.practical-info";
 import { getActionDisplayStatus, getCardDisplayStatus, getLifecycleLabel, getParticipationStatusLabel, getRegistrationStatusLabel, getStatusDotTone, type ActionCardStatus } from "./rejoindre-un-formulaire-section.status";
 
 export function PillBadge({
@@ -281,6 +282,8 @@ export function ActionCard({
           onShareAction={onShareAction}
         />
       </div>
+
+      <ActionPracticalInformation info={item.practicalInfo} fr={fr} />
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
         <span>{footerLabel}</span>

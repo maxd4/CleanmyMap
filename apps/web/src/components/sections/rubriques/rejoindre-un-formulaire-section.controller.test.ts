@@ -21,6 +21,15 @@ function makeItem(
     participationUpdatedAt: partial.participationUpdatedAt ?? null,
     groupJoinEnabled: partial.groupJoinEnabled ?? false,
     pendingRequestsCount: partial.pendingRequestsCount ?? 0,
+    practicalInfo: partial.practicalInfo ?? {
+      accessibility: null,
+      safetyInstructions: null,
+      derivedSafetyRecommendations: [],
+      materialsToBring: null,
+      derivedMaterials: [],
+      materialsProvided: null,
+      participantMessage: null,
+    },
   };
 }
 

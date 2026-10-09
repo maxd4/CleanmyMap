@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
+import type { ActionPreparationData } from "@/lib/actions/types";
 
 const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccessMock: vi.fn(),
@@ -46,6 +47,7 @@ export type ActionRow = {
   moderation_visibility?: "visible" | "hidden";
   action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
   published_at?: string | null; notes?: string | null;
+  preparation_data?: ActionPreparationData;
 };
 
 export type ParticipantRow = {

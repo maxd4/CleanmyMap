@@ -4,6 +4,7 @@ export type {
   JoinableActionHistoryItem,
   JoinableActionItem,
 } from "./group-participation-contract";
+export type { PublicActionPracticalInformation } from "./group-participation-public-projection";
 export { ActionParticipationOperationError } from "./group-participation-contract";
 export {
   isVisibleInGroupForms,

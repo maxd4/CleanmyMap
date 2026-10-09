@@ -6,6 +6,10 @@ const migration = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20261009000007_action_update_notifications.sql"),
   "utf8",
 );
+const preparationMigration = readFileSync(
+  resolve(process.cwd(), "supabase/migrations/20261009000014_action_preparation_update_notifications.sql"),
+  "utf8",
+);
 
 describe("action update notifications migration STATIC_CONTRACT", () => {
   it("is service-role-only, published-action scoped and idempotent", () => {
@@ -33,5 +37,13 @@ describe("action update notifications migration STATIC_CONTRACT", () => {
     expect(migration).toContain("'eventKeys'");
     expect(migration).toContain("jsonb_array_length(v_next_events) - 50");
     expect(migration).toContain("'Action annulée'");
+  });
+
+  it("extends the same action_event contract for meaningful preparation changes", () => {
+    expect(preparationMigration).toContain("'safety', 'materials'");
+    expect(preparationMigration).toContain("Consignes de sécurité modifiées");
+    expect(preparationMigration).toContain("Matériel à prévoir modifié");
+    expect(preparationMigration).toContain("grant execute on function public.emit_action_update_notifications");
+    expect(preparationMigration).toContain("on conflict do nothing");
   });
 });

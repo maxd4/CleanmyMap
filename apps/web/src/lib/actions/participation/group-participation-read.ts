@@ -13,6 +13,7 @@ import {
   ACTION_PREVIEW_COLUMNS,
   ACTIVE_PARTICIPATION_STATUS,
   buildJoinableItem,
+  buildPublicActionFields,
   PENDING_PARTICIPATION_STATUS,
   resolveJoinedAt,
   resolveParticipationUpdatedAt,
@@ -35,6 +36,7 @@ import type {
 } from "./group-participation-contract";
 import { usesRegistrationStore } from "./action-phase";
 import { loadParticipantImpactAttributions } from "./group-participation-impact-read";
+import { buildPublicActionPracticalInformation } from "./group-participation-public-projection";
 export {
   loadActionParticipantImpactSnapshot,
   type ActionParticipantImpactSnapshot,
@@ -295,10 +297,8 @@ function buildActionHistoryItems(
       }));
   const metadata = extractActionMetadataFromNotes(action.notes);
   return records.map((record) => {
-    const publicAction = { ...action };
-    delete publicAction.preparation_data;
     return {
-      ...publicAction,
+      ...buildPublicActionFields(action),
       actionTitle: getActionTitle(action), actionPhase: action.action_phase ?? "post_action_complete",
       participantsCount: context.participantCounts.get(action.id) ?? 0,
       joined: record.status === ACTIVE_PARTICIPATION_STATUS,
@@ -306,6 +306,7 @@ function buildActionHistoryItems(
       joinedAt: record.joinedAt, participationStatus: record.status, participationSource: record.source,
       participationUpdatedAt: record.updatedAt, groupJoinEnabled: metadata.groupJoinEnabled,
       pendingRequestsCount: Math.max(0, (context.participantSummaryByActionId.get(action.id)?.totalCount ?? 0) - (context.participantCounts.get(action.id) ?? 0)),
+      practicalInfo: buildPublicActionPracticalInformation(action.preparation_data),
       individualImpact: "individualImpact" in record ? record.individualImpact : null,
       personalImpactAttribution: "participantId" in record
         ? context.participantImpactByActionId.get(action.id)?.get(record.participantId) ?? null

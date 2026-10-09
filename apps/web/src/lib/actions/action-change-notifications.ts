@@ -4,12 +4,20 @@ import type { ActionRow } from "@/types/database";
 import { normalizeClockTime } from "./time-contract";
 import { emitActionUpdateNotifications } from "./action-update-notifications";
 
-export type ActionChangeKind = "meeting_point" | "schedule" | "route" | "cancellation";
+export type ActionChangeKind =
+  | "meeting_point"
+  | "schedule"
+  | "route"
+  | "safety"
+  | "materials"
+  | "cancellation";
 
 export const ACTION_CHANGE_LABELS: Record<ActionChangeKind, { fr: string; en: string }> = {
   meeting_point: { fr: "Rendez-vous modifié", en: "Meeting point changed" },
   schedule: { fr: "Horaire modifié", en: "Schedule changed" },
   route: { fr: "Parcours actualisé", en: "Route updated" },
+  safety: { fr: "Consignes de sécurité modifiées", en: "Safety instructions changed" },
+  materials: { fr: "Matériel à prévoir modifié", en: "Equipment to bring changed" },
   cancellation: { fr: "Action annulée", en: "Action cancelled" },
 };
 
@@ -46,16 +54,33 @@ function valuesDiffer(current: unknown, next: unknown): boolean {
   return JSON.stringify(current ?? null) !== JSON.stringify(next ?? null);
 }
 
+function normalizeMeaningfulText(value: unknown): string | null {
+  const text = readString(value);
+  if (!text) return null;
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("fr-FR")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function meaningfulTextChanged(current: unknown, next: unknown): boolean {
+  return normalizeMeaningfulText(current) !== normalizeMeaningfulText(next);
+}
+
 function operationalPreparationChanged(
   current: ActionPreparationData,
   next: ActionPreparationData,
-): Pick<Record<ActionChangeKind, boolean>, "meeting_point" | "schedule" | "route"> {
+): Pick<Record<ActionChangeKind, boolean>, "meeting_point" | "schedule" | "route" | "safety" | "materials"> {
   return {
     meeting_point: readString(current.pointDeRendezVous) !== readString(next.pointDeRendezVous),
     schedule:
       normalizeClockTime(current.meetingTime) !== normalizeClockTime(next.meetingTime) ||
       normalizeClockTime(current.departureTime) !== normalizeClockTime(next.departureTime),
     route: valuesDiffer(readNestedRouteValue(current), readNestedRouteValue(next)),
+    safety: meaningfulTextChanged(current.safetyInstructions, next.safetyInstructions),
+    materials: meaningfulTextChanged(current.recommendedMaterials, next.recommendedMaterials),
   };
 }
 
@@ -136,7 +161,9 @@ function hasRouteChange(
 /**
  * Classifies only operational changes that can affect a published future action.
  * Descriptions, estimates, formalities and other preparation metadata are
- * intentionally ignored here.
+ * intentionally ignored here. Safety and equipment changes are included only
+ * when their normalized content changes, so formatting-only edits do not
+ * create an action event.
  */
 export function detectActionChangeKinds(params: {
   current: ActionChangeSource;
@@ -154,6 +181,9 @@ export function detectActionChangeKinds(params: {
   if (hasMeetingPointChange(current, updateData, preparation)) kinds.push("meeting_point");
   if (hasScheduleChange(current, updateData, preparation)) kinds.push("schedule");
   if (hasRouteChange(current, updateData, preparation)) kinds.push("route");
+  const preparationChanges = operationalPreparationChanged(preparation.current, preparation.next);
+  if (preparationChanges.safety) kinds.push("safety");
+  if (preparationChanges.materials) kinds.push("materials");
   return kinds;
 }
 

@@ -65,6 +65,21 @@ describe("action change notification classification", () => {
     })).toEqual(["route"]);
   });
 
+  it("emits meaningful safety and equipment events but ignores formatting-only edits", () => {
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { safetyInstructions: "Rester en binôme." } }),
+      updateData: { preparation_data: { safetyInstructions: "  RESTER EN BINÔME ! " } },
+    })).toEqual([]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { safetyInstructions: "Rester en binôme." } }),
+      updateData: { preparation_data: { safetyInstructions: "Rester en binôme et porter un gilet visible." } },
+    })).toEqual(["safety"]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { recommendedMaterials: "Gants." } }),
+      updateData: { preparation_data: { recommendedMaterials: "Gants et sacs renforcés." } },
+    })).toEqual(["materials"]);
+  });
+
   it("uses a stable key for retries and separates revisions", () => {
     const first = buildActionChangeEventKey({
       actionId: "action-1",
