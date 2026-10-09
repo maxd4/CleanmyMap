@@ -15,6 +15,7 @@ export type BeforeValidationField =
   | "associationName"
   | "organizerType"
   | "departureLocationLabel"
+  | "arrivalLocationLabel"
   | "eventStartTime"
   | "volunteersCount"
   | "volunteerParticipation";
@@ -31,6 +32,9 @@ export function validateBeforeActionForm(form: FormState): BeforeValidationIssue
   if (!form.associationName.trim()) issues.push({ field: "associationName", message: "Sélectionnez une structure ou un cadre d'engagement." });
   if (!form.organizerType) issues.push({ field: "organizerType", message: "Sélectionnez un type de structure avant d'enregistrer le pré-formulaire." });
   if (!form.departureLocationLabel.trim()) issues.push({ field: "departureLocationLabel", message: "Indiquez le point de rendez-vous avant d'enregistrer." });
+  if (form.recordType === "action" && form.routeTopology === "point_to_point" && !form.arrivalLocationLabel.trim()) {
+    issues.push({ field: "arrivalLocationLabel", message: "Indiquez l'arrivée pour un parcours départ → arrivée." });
+  }
   const timeMessage = getTimeContractValidationMessage({
     actionDurationMinutes: Number(form.durationMinutes),
     startTime: form.eventStartTime,

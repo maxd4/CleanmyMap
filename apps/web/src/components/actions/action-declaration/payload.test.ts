@@ -171,6 +171,59 @@ describe("action declaration payload helpers", () => {
     });
   });
 
+  it("keeps pre-action rendez-vous coordinates when an operational route is present", () => {
+    const form = createInitialFormState("Alice");
+    form.actionTitle = "Boucle test";
+    form.departureLocationLabel = "Départ sélectionné, Paris";
+    form.latitude = "48.850000";
+    form.longitude = "2.350000";
+    form.operationalRoute = {
+      version: "operational-route-v1",
+      initializedAt: "2026-10-09T09:00:00.000Z",
+      updatedAt: "2026-10-09T09:00:00.000Z",
+      source: "planner",
+      state: "planner_copy",
+      plannerGroupCount: 1,
+      routes: [{
+        routeId: "planner-group-1",
+        groupIndex: 1,
+        geometry: {
+          isLoop: true,
+          origin: [48.85, 2.35],
+          returnLeg: null,
+          coordinates: [[48.85, 2.35], [48.86, 2.36]],
+          distanceKm: 1,
+          durationMinutes: 10,
+          legs: [],
+          provider: "none",
+          profile: null,
+          mode: "fallback",
+          estimated: true,
+        },
+        plannerTechnicalStops: [],
+      }],
+      zones: {
+        departure: { label: "Départ planner", coordinate: [48.85, 2.35] },
+        midpoint: { label: "Mi-parcours", coordinate: [48.855, 2.355] },
+        arrival: { label: "Retour", coordinate: [48.85, 2.35] },
+      },
+    };
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "quick",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.latitude).toBe(48.85);
+    expect(payload.longitude).toBe(2.35);
+    expect(payload.preparationData?.operationalRoute).toBeDefined();
+  });
+
   it("sends the explicit point-to-point topology and keeps loop payloads arrival-free", () => {
     const pointForm = createInitialFormState("Alice");
     pointForm.routeTopology = "point_to_point";

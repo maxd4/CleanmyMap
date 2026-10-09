@@ -24,6 +24,7 @@ const BEFORE_VALIDATION_FIELD_IDS: Record<string, string> = {
   associationName: "before-organizer-structure",
   organizerType: "before-organizer-type",
   departureLocationLabel: "before-departure-location",
+  arrivalLocationLabel: "before-arrival-location",
   eventStartTime: "before-action-event-start",
   volunteersCount: "before-volunteers-count",
   volunteerParticipation: "before-volunteer-participation",
@@ -100,7 +101,7 @@ export function ActionBeforeDeclarationForm({
         <form onSubmit={(event) => { void handleSubmit(event); }} className="space-y-6">
           <div className="space-y-6">
             <IdentityAndSharingSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
-            <PlannedActionSection form={form} updateField={updateField} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
+            <PlannedActionSection form={form} updateField={updateField} updateFields={updateFields} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
             <PreparationAndSafetySection form={form} updateField={updateField} />
           </div>
           {form.operationalRoute ? <CmmDisclosure summary={<ActionFormDisclosureSummary label="Parcours et géométrie" detail="parcours calculé" />} tone="emerald" size="md"><OperationalRouteEditor operationalRoute={form.operationalRoute} onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)} /></CmmDisclosure> : null}

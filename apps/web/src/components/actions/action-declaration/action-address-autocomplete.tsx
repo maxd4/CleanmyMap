@@ -8,12 +8,14 @@ import { useActionAddressAutocomplete } from "./hooks/use-action-address-autocom
 export type ActionAddressAutocompleteProps = {
   id: string;
   icon?: React.ElementType;
-  label: string;
+  label: React.ReactNode;
   placeholder: string;
   value: string;
   onChange: (value: string, coordinates?: ActionLocationCoordinates | null) => void;
   optional?: boolean;
   helperText: string;
+  ariaInvalid?: boolean;
+  ariaDescribedBy?: string;
 };
 
 export function ActionAddressAutocomplete({
@@ -25,6 +27,8 @@ export function ActionAddressAutocomplete({
   onChange,
   optional,
   helperText,
+  ariaInvalid,
+  ariaDescribedBy,
 }: ActionAddressAutocompleteProps) {
   const behavior = useActionAddressAutocomplete({ value, onChange });
 
@@ -47,6 +51,11 @@ export function ActionAddressAutocomplete({
           aria-autocomplete="list"
           aria-expanded={behavior.hasVisibleSuggestions}
           aria-controls={behavior.listboxId}
+          aria-activedescendant={behavior.highlightedIndex >= 0 && behavior.suggestions[behavior.highlightedIndex]
+            ? `${behavior.listboxId}-option-${behavior.highlightedIndex}`
+            : undefined}
+          aria-invalid={ariaInvalid}
+          aria-describedby={ariaDescribedBy}
           onChange={behavior.handleChange}
           onFocus={behavior.handleFocus}
           onBlur={behavior.handleBlur}
@@ -64,6 +73,7 @@ export function ActionAddressAutocomplete({
                 return (
                   <button
                     key={`${suggestion.label}-${index}`}
+                    id={`${behavior.listboxId}-option-${index}`}
                     type="button"
                     role="option"
                     aria-selected={isHighlighted}

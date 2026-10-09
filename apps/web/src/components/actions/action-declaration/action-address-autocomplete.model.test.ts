@@ -72,4 +72,30 @@ describe("action address autocomplete model", () => {
       fetcher: abortedFetcher,
     })).resolves.toBeNull();
   });
+
+  it("does not retry or lose free-entry support when geocoding is quota-limited or empty", async () => {
+    const quotaFetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response("quota", { status: 429 }),
+    );
+    await expect(loadRemoteAddressSuggestions({
+      query: "entrée non répertoriée",
+      localSuggestions: [],
+      signal: new AbortController().signal,
+      fetcher: quotaFetcher,
+    })).resolves.toEqual([]);
+    expect(quotaFetcher).toHaveBeenCalledTimes(1);
+
+    const emptyFetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ status: "ok", query: "inconnu", items: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    await expect(loadRemoteAddressSuggestions({
+      query: "inconnu",
+      localSuggestions: [],
+      signal: new AbortController().signal,
+      fetcher: emptyFetcher,
+    })).resolves.toEqual([]);
+  });
 });

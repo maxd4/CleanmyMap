@@ -71,6 +71,36 @@ describe("pre-action volunteer forecast", () => {
   });
 });
 
+describe("pre-action route topology", () => {
+  it("requires an explicit arrival for point-to-point actions", () => {
+    const form = buildValidPreActionForm();
+    form.routeTopology = "point_to_point";
+    form.arrivalLocationLabel = "";
+
+    expect(validateBeforeActionForm(form).map((issue) => issue.message)).toContain(
+      "Indiquez l'arrivée pour un parcours départ → arrivée.",
+    );
+
+    form.arrivalLocationLabel = "Place de la République, Paris";
+    expect(validateBeforeActionForm(form)).toEqual([]);
+  });
+
+  it("keeps a loop independent from a stale arrival label in its payload", () => {
+    const form = buildValidPreActionForm();
+    form.routeTopology = "loop";
+    form.arrivalLocationLabel = "Ancienne arrivée";
+
+    const payload = buildBeforeActionPayload({
+      form,
+      userMetadata: { userId: "user-creator", displayName: "Maxence" },
+    });
+
+    expect(payload.routeTopology).toBe("loop");
+    expect(payload.arrivalLocationLabel).toBeUndefined();
+    expect(payload.preparationData?.zoneCiblePrevue).toBeUndefined();
+  });
+});
+
 describe("pre-action identity payload", () => {
   it("sends the authenticated creator label and distinct organizer/participant ids", () => {
     const form = createInitialFormState("legacy-alias", "action");

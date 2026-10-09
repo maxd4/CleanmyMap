@@ -11,6 +11,7 @@ import { trackFunnel } from "@/lib/analytics/funnel-client";
 import { createAction, fetchActionById, publishAction, updateAction, type ActionEditorRecord } from "@/lib/actions/http";
 import type { FormState } from "../model";
 import type { CreateActionPayload } from "@/lib/actions/types";
+import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 import {
   isResumablePreAction,
   sanitizePreActionForm,
@@ -130,8 +131,36 @@ export function buildBeforeActionFormFromAction({
       action.preparationData,
     ),
   );
+  const routeTopology = resolveActionRouteTopology({
+    topology: action.preparationData?.routeTopology,
+    arrivalLocationLabel: action.arrivalLocationLabel ?? hydrated.arrivalLocationLabel,
+    recordType: "action",
+  });
   return {
     ...hydrated,
+    ...buildBeforeActionIdentityFields(action, hydrated),
+    ...buildBeforeActionLocationFields(action, hydrated, routeTopology),
+    ...buildBeforeActionTimingFields(action, hydrated),
+  };
+}
+
+type BeforeActionIdentityFields = Pick<
+  FormState,
+  | "actorName"
+  | "associationName"
+  | "organizerType"
+  | "organizerId"
+  | "organizerName"
+  | "organizerAccounts"
+  | "participantAccounts"
+  | "groupJoinEnabled"
+>;
+
+function buildBeforeActionIdentityFields(
+  action: Awaited<ReturnType<typeof fetchActionById>>,
+  hydrated: FormState,
+): BeforeActionIdentityFields {
+  return {
     actorName: action.actorName ?? hydrated.actorName,
     associationName: action.associationName ?? hydrated.associationName,
     organizerType: action.organizerType ?? hydrated.organizerType,
@@ -144,21 +173,36 @@ export function buildBeforeActionFormFromAction({
     organizerAccounts: parseOrganizerAccounts(
       action.organizerAccounts?.join(", ") ?? hydrated.organizerAccounts,
     ).join(", "),
-    actionDate: action.actionDate,
-    locationLabel: action.locationLabel,
-    departureLocationLabel:
-      action.departureLocationLabel ?? hydrated.departureLocationLabel,
-    arrivalLocationLabel:
-      action.arrivalLocationLabel ?? hydrated.arrivalLocationLabel,
-    eventStartTime: action.eventStartTime ?? hydrated.eventStartTime,
-    eventEndTime: action.eventEndTime ?? hydrated.eventEndTime,
-    volunteersCount:
-      typeof action.preparationData?.volunteersExpected === "number"
-        ? String(action.preparationData.volunteersExpected)
-        : "",
-    durationMinutes: String(action.durationMinutes),
     groupJoinEnabled: action.groupJoinEnabled,
     participantAccounts: normalizeParticipantAccounts(action.participantAccounts),
+  };
+}
+
+function buildBeforeActionLocationFields(
+  action: Awaited<ReturnType<typeof fetchActionById>>,
+  hydrated: FormState,
+  routeTopology: FormState["routeTopology"],
+): Pick<FormState, "actionDate" | "locationLabel" | "departureLocationLabel" | "arrivalLocationLabel" | "routeTopology" | "latitude" | "longitude"> {
+  return {
+    actionDate: action.actionDate,
+    locationLabel: action.locationLabel,
+    departureLocationLabel: action.departureLocationLabel ?? hydrated.departureLocationLabel,
+    arrivalLocationLabel: routeTopology === "point_to_point" ? action.arrivalLocationLabel ?? hydrated.arrivalLocationLabel : "",
+    routeTopology,
+    latitude: typeof action.latitude === "number" && Number.isFinite(action.latitude) ? String(action.latitude) : hydrated.latitude,
+    longitude: typeof action.longitude === "number" && Number.isFinite(action.longitude) ? String(action.longitude) : hydrated.longitude,
+  };
+}
+
+function buildBeforeActionTimingFields(
+  action: Awaited<ReturnType<typeof fetchActionById>>,
+  hydrated: FormState,
+): Pick<FormState, "eventStartTime" | "eventEndTime" | "volunteersCount" | "durationMinutes"> {
+  return {
+    eventStartTime: action.eventStartTime ?? hydrated.eventStartTime,
+    eventEndTime: action.eventEndTime ?? hydrated.eventEndTime,
+    volunteersCount: typeof action.preparationData?.volunteersExpected === "number" ? String(action.preparationData.volunteersExpected) : "",
+    durationMinutes: String(action.durationMinutes),
   };
 }
 
@@ -174,6 +218,20 @@ function mergePlannerHandoffIntoForm(form: FormState, handoff: ReturnType<typeof
     ? { ...handoff.preparationData, operationalRoute: handoff.operationalRoute, routeCalibrationContext: handoff.routeCalibrationContext ?? undefined }
     : { operationalRoute: handoff.operationalRoute, routeCalibrationContext: handoff.routeCalibrationContext ?? undefined };
   const prepared = sanitizePreActionForm(applyPreparationDataToForm(form, preparationData));
+  const departureCoordinate = handoff.operationalRoute.zones.departure.coordinate;
+  if (!prepared.latitude.trim() && !prepared.longitude.trim() && departureCoordinate) {
+    prepared.latitude = String(departureCoordinate[0]);
+    prepared.longitude = String(departureCoordinate[1]);
+  }
+  if (prepared.routeTopology === "point_to_point" && !prepared.arrivalCoordinates) {
+    const arrivalCoordinate = handoff.operationalRoute.zones.arrival.coordinate;
+    if (arrivalCoordinate) {
+      prepared.arrivalCoordinates = {
+        latitude: arrivalCoordinate[0],
+        longitude: arrivalCoordinate[1],
+      };
+    }
+  }
   if (handoff.preparationData?.volunteersExpected !== undefined && !handoff.preparationData.volunteerParticipation) {
     prepared.childrenCount = "";
     prepared.adultCount = "";
@@ -251,6 +309,10 @@ export function useBeforeActionFieldUpdates({
     }
     const nextForm = sanitizePreActionForm({ ...form, ...updates } as FormState);
     if ("routeStyle" in updates) nextForm.routeStyle = "souple";
+    if (updates.routeTopology === "loop" && nextForm.recordType === "action") {
+      nextForm.arrivalLocationLabel = "";
+      nextForm.arrivalCoordinates = null;
+    }
     applyOrganizerFormUpdates(nextForm, form, updates);
     setForm(nextForm); onFormChange?.(nextForm); saveDraft(nextForm);
     if (submissionState === "error") { setSubmissionState("idle"); setErrorMessage(null); setValidationIssues([]); setValidationIssueFields([]); }

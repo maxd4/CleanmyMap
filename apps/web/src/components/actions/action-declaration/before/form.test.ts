@@ -4,6 +4,7 @@ import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { ActionBeforeDeclarationForm } from "./form";
 import { IdentityAndSharingSection } from "./identity-and-sharing-section";
+import { PlannedActionSection } from "./planned-action-section";
 import { createInitialFormState } from "../payload";
 
 describe("ActionBeforeDeclarationForm", () => {
@@ -38,7 +39,10 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Préparation et sécurité");
     expect(html).toContain("Déchets attendus");
     expect(html).toContain("Point de rendez-vous précis");
-    expect(html).toContain("Zone cible prévue");
+    expect(html).toContain("Commune ou secteur d’intervention");
+    expect(html).toContain("Boucle");
+    expect(html).not.toContain("Zone cible prévue");
+    expect(html).toContain('role="combobox"');
     expect(html).toContain("Nombre de bénévoles attendus");
     expect(html).toContain("Répartition facultative");
     expect(html).toContain("Enfants");
@@ -69,6 +73,43 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("Photos de preuve");
     expect(html).not.toContain("Score d'impact");
     expect(html).not.toContain("Confirmer et publier");
+  });
+
+  it("shows an explicit arrival only for point-to-point topology", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.routeTopology = "point_to_point";
+    const html = renderToStaticMarkup(
+      React.createElement(PlannedActionSection, {
+        form,
+        updateField: vi.fn(),
+        updateFields: vi.fn(),
+        hasAttemptedSubmit: false,
+        validationIssueFields: [],
+      }),
+    );
+
+    expect(html).toContain("Arrivée");
+    expect(html).toContain('id="before-arrival-location"');
+    expect(html).not.toContain("aucun point d’arrivée distinct n’est fabriqué");
+  });
+
+  it("labels a typed rendez-vous without coordinates as a free non-geolocated address", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.departureLocationLabel = "Entrée non répertoriée";
+    form.latitude = "";
+    form.longitude = "";
+    const html = renderToStaticMarkup(
+      React.createElement(PlannedActionSection, {
+        form,
+        updateField: vi.fn(),
+        updateFields: vi.fn(),
+        hasAttemptedSubmit: false,
+        validationIssueFields: [],
+      }),
+    );
+
+    expect(html).toContain("Adresse libre non géolocalisée");
+    expect(html).toContain("l’entrée ou le repère est conservé sans coordonnées");
   });
 
   it("keeps the authenticated creator read-only and separates co-organizers from participants", () => {

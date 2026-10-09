@@ -15,7 +15,7 @@ describe("before-action resume hydration", () => {
   it("rehydrates organizers and participants from the authorized action payload", () => {
     const action = {
       actionPhase: "pre_action",
-      preparationData: null,
+      preparationData: { routeTopology: "loop" },
       actorName: "Maxence",
       associationName: "Association locale",
       organizerType: "association",
@@ -25,7 +25,9 @@ describe("before-action resume hydration", () => {
       actionDate: "2026-10-09",
       locationLabel: "Paris",
       departureLocationLabel: null,
-      arrivalLocationLabel: null,
+      arrivalLocationLabel: "Ancienne arrivée",
+      latitude: 48.85,
+      longitude: 2.35,
       eventStartTime: null,
       eventEndTime: null,
       volunteersCount: 2,
@@ -43,6 +45,9 @@ describe("before-action resume hydration", () => {
     expect(form.organizerAccounts).toBe("user-organizer");
     expect(form.participantAccounts).toEqual(["user-participant"]);
     expect(form.volunteersCount).toBe("");
+    expect(form.arrivalLocationLabel).toBe("");
+    expect(form.latitude).toBe("48.85");
+    expect(form.longitude).toBe("2.35");
   });
 
   it("rehydrates an explicitly persisted forecast and its non-overlapping split", () => {

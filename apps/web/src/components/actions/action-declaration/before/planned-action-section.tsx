@@ -1,10 +1,11 @@
 "use client";
 
-import { Clock3, Sparkles } from "lucide-react";
+import { CheckCircle2, Clock3, Info, Navigation, Sparkles } from "lucide-react";
 import { PLACE_TYPE_FORM_OPTIONS } from "@/lib/actions/place-type-options";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
+import { ActionAddressAutocomplete } from "../action-address-autocomplete";
 import type { FormState } from "../model";
 import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
 import {
@@ -26,10 +27,10 @@ export function PlannedActionSection({
   updateField,
   hasAttemptedSubmit,
   validationIssueFields,
+  updateFields,
 }: BaseSectionProps) {
   const missingTitle = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "actionTitle"));
   const missingDate = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "actionDate"));
-  const missingDeparture = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "departureLocationLabel"));
   const event = deriveEventDurationMinutes(form.eventStartTime, form.eventEndTime);
   const organization = deriveOrganizationMinutes({
     actionDurationMinutes: Number(form.durationMinutes),
@@ -46,6 +47,7 @@ export function PlannedActionSection({
       ? "à compléter"
       : `${volunteerParticipation.participantsCount} répartis`
     : "facultatif";
+  const hasConfirmedCoordinates = hasValidCoordinatePair(form.latitude, form.longitude);
 
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
@@ -62,24 +64,19 @@ export function PlannedActionSection({
           </FieldShell>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <FieldShell label="Commune ou zone concernée" hint="Ville, quartier ou secteur principal.">
+            <FieldShell label="Commune ou secteur d’intervention" hint="Ville, quartier ou secteur principal, indépendant du rendez-vous et de l’arrivée.">
               <input type="text" value={form.communeZoneLabel} onChange={(event) => updateField("communeZoneLabel", event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" placeholder="Ex. Paris 15e, berges nord" />
             </FieldShell>
-            <FieldShell label={<span>Point de rendez-vous précis<RequiredMark /></span>} hint="Adresse, entrée ou repère exact avant le départ.">
-              <input type="text" value={form.departureLocationLabel} onChange={(event) => updateField("departureLocationLabel", event.target.value)} id="before-departure-location" aria-invalid={missingDeparture} aria-describedby={missingDeparture ? "before-departure-location-error" : undefined} className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingDeparture ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")} placeholder="Ex. Entrée principale, côté métro" />
-              {missingDeparture ? <span id="before-departure-location-error" className="block text-xs font-medium text-rose-700">Indiquez le point de rendez-vous avant d’enregistrer.</span> : null}
-            </FieldShell>
+            <MeetingLocationFields form={form} updateField={updateField} updateFields={updateFields} hasAttemptedSubmit={hasAttemptedSubmit} validationIssueFields={validationIssueFields} />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <FieldShell label="Zone cible prévue" hint="Périmètre visé en quelques mots.">
-              <input type="text" value={form.arrivalLocationLabel} onChange={(event) => updateField("arrivalLocationLabel", event.target.value)} className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white" placeholder="Ex. Parc rive gauche, quais nord" />
-            </FieldShell>
+            <RouteDestinationField form={form} updateField={updateField} updateFields={updateFields} hasAttemptedSubmit={hasAttemptedSubmit} validationIssueFields={validationIssueFields} />
             <VolunteerForecast form={form} updateField={updateField} splitDetail={volunteerSplitDetail} validationIssueFields={validationIssueFields} />
           </div>
 
           <div className="space-y-4">
-            <CmmDisclosure summary={<ActionFormDisclosureSummary label="Localisation du rendez-vous" detail={form.latitude.trim() || form.longitude.trim() ? "Coordonnées avancées · coordonnées renseignées" : "Coordonnées avancées (facultatif)"} />} tone="emerald" size="md">
+            <CmmDisclosure summary={<ActionFormDisclosureSummary label="Localisation du rendez-vous" detail={hasConfirmedCoordinates ? "Localisation confirmée · coordonnées avancées" : "Coordonnées avancées (facultatif)"} />} tone="emerald" size="md">
               <div className="space-y-2">
                 <p className="text-sm leading-5 text-emerald-900/70">L&apos;adresse ou le lieu saisi suffit généralement. Ces coordonnées conservent le contrat existant lorsqu&apos;elles sont déjà connues.</p>
                 <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
@@ -124,6 +121,85 @@ export function PlannedActionSection({
         </div>
       </div>
     </CmmCard>
+  );
+}
+
+function hasValidCoordinatePair(latitude: string, longitude: string): boolean {
+  if (!latitude.trim() || !longitude.trim()) return false;
+  const parsedLatitude = Number(latitude);
+  const parsedLongitude = Number(longitude);
+  return Number.isFinite(parsedLatitude) && parsedLatitude >= -90 && parsedLatitude <= 90 && Number.isFinite(parsedLongitude) && parsedLongitude >= -180 && parsedLongitude <= 180;
+}
+
+function MeetingLocationFields({
+  form,
+  updateFields,
+  hasAttemptedSubmit,
+  validationIssueFields,
+}: BaseSectionProps) {
+  const missingDeparture = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "departureLocationLabel"));
+  const hasConfirmedCoordinates = hasValidCoordinatePair(form.latitude, form.longitude);
+  const hasFreeAddress = form.departureLocationLabel.trim().length > 0;
+  const updateDepartureLocation = (value: string, coordinates?: FormState["midRouteCoordinates"]) => {
+    updateFields?.({
+      departureLocationLabel: value,
+      locationLabel: value,
+      latitude: coordinates ? String(coordinates.latitude) : "",
+      longitude: coordinates ? String(coordinates.longitude) : "",
+    });
+  };
+
+  return (
+    <div className="space-y-2">
+      <ActionAddressAutocomplete
+        id="before-departure-location"
+        label="Point de rendez-vous précis"
+        placeholder="Ex. Entrée principale, côté métro"
+        value={form.departureLocationLabel}
+        onChange={updateDepartureLocation}
+        helperText="Adresse exacte du rendez-vous"
+        ariaInvalid={missingDeparture}
+        ariaDescribedBy={missingDeparture ? "before-departure-location-error" : "before-location-status"}
+      />
+      {missingDeparture ? <span id="before-departure-location-error" className="block text-xs font-medium text-rose-700">Indiquez le point de rendez-vous avant d’enregistrer.</span> : null}
+      <p id="before-location-status" role="status" className={cn("flex items-center gap-1.5 px-1 text-xs", hasConfirmedCoordinates ? "text-emerald-700" : hasFreeAddress ? "text-amber-700" : "text-emerald-900/50")}>
+        {hasConfirmedCoordinates ? <CheckCircle2 size={13} aria-hidden="true" /> : <Info size={13} aria-hidden="true" />}
+        <span>{hasConfirmedCoordinates ? "Localisation confirmée · coordonnées conservées" : hasFreeAddress ? "Adresse libre non géolocalisée · l’entrée ou le repère est conservé sans coordonnées" : "Localisation à préciser"}</span>
+      </p>
+    </div>
+  );
+}
+
+function RouteDestinationField({
+  form,
+  updateFields,
+  hasAttemptedSubmit,
+  validationIssueFields,
+}: BaseSectionProps) {
+  if (form.routeTopology !== "point_to_point") {
+    return (
+      <p className="flex items-start gap-2 rounded-2xl border border-sky-200/70 bg-sky-50/70 px-4 py-3 text-xs leading-5 text-sky-900/75 md:col-span-2">
+        <Navigation size={15} className="mt-0.5 shrink-0 text-sky-700" aria-hidden="true" />
+        <span><strong>Boucle :</strong> le secteur d’intervention reste celui indiqué ci-dessus ; aucun point d’arrivée distinct n’est fabriqué.</span>
+      </p>
+    );
+  }
+
+  const missingArrival = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "arrivalLocationLabel"));
+  return (
+    <div className="space-y-2 md:col-span-2">
+      <ActionAddressAutocomplete
+        id="before-arrival-location"
+        label={<span>Arrivée<RequiredMark /></span>}
+        placeholder="Ex. Place de la République"
+        value={form.arrivalLocationLabel}
+        onChange={(value, coordinates) => updateFields?.({ arrivalLocationLabel: value, arrivalCoordinates: coordinates ?? null })}
+        helperText="Adresse exacte de l’arrivée"
+        ariaInvalid={missingArrival}
+        ariaDescribedBy={missingArrival ? "before-arrival-location-error" : undefined}
+      />
+      {missingArrival ? <span id="before-arrival-location-error" className="block px-1 text-xs font-medium text-rose-700">Indiquez l’arrivée pour un parcours départ → arrivée.</span> : null}
+    </div>
   );
 }
 

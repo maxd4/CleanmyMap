@@ -9,6 +9,7 @@ import { normalizeParticipantAccounts, parseOrganizerAccounts } from "../payload
 import {
   normalizeAssociationSelectionForPrefill,
 } from "@/lib/actions/association-options";
+import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 
 export type SelectOption = {
   value: string;
@@ -126,7 +127,14 @@ function formatItinerary(source: PublicationSummarySource): string {
       : preparation.zoneCiblePrevue,
     "Zone cible non renseignée",
   );
-  const route = `${departure} → ${arrival}`;
+  const topology = resolveActionRouteTopology({
+    topology: preparation.routeTopology,
+    arrivalLocationLabel: "arrivalLocationLabel" in source ? source.arrivalLocationLabel : preparation.zoneCiblePrevue,
+    recordType: "action",
+  });
+  const route = topology === "point_to_point"
+    ? `${departure} → ${arrival}`
+    : `Boucle · ${departure}`;
   return routeCount > 0 ? `${route} · ${routeCount} groupe(s)` : route;
 }
 

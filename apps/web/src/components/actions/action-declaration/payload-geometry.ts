@@ -76,7 +76,10 @@ export function resolveCreateActionRouteParts(
   });
   const normalizedDrawing = finalGeometry?.drawing ?? null;
   const resolvedManualDrawingSource = finalGeometry?.source ?? null;
-  if (normalizedDrawing && (effectiveManualDrawingEnabled || finalGeometry?.operationalRoute || routePreviewDrawing)) {
+  const shouldUseGeometryCentroid = params.declarationMode !== "quick" &&
+    normalizedDrawing &&
+    (effectiveManualDrawingEnabled || finalGeometry?.operationalRoute || routePreviewDrawing);
+  if (shouldUseGeometryCentroid) {
     const centroid = getDrawingCentroid(normalizedDrawing);
     latitude = centroid.latitude;
     longitude = centroid.longitude;
