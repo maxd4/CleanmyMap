@@ -64,4 +64,21 @@ describe("notification list item", () => {
     expect(markup).toContain("Refuser");
     expect(markup.indexOf("</button><div")).toBeGreaterThan(-1);
   });
+
+  it("keeps the durable decision outcome visible after reload", () => {
+    const markup = renderToStaticMarkup(
+      <NotificationListItem
+        notification={{
+          ...notification,
+          payload: { requestKind: "action_share", requestId: "request-1", decision: "accepted", decisionState: "treated" },
+        }}
+        locale="fr"
+        displayState="treated"
+        onClick={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("Acceptée");
+    expect(markup).not.toContain("Indisponible");
+  });
 });

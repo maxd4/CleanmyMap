@@ -19,6 +19,7 @@ import {
 } from "@/lib/notifications/client";
 import {
   getNotificationDecisionDescriptor,
+  prioritizeNotificationPreview,
   resolveNotificationDisplayState,
   type NotificationDisplayState,
 } from "@/lib/notifications/notification-state";
@@ -55,7 +56,7 @@ function NotificationBellSession({
   const fetchInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
   const markReadInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
   const pollIntervalMs = isOpen ? 300_000 : 900_000;
-  const decisionState = useNotificationDecisionState({ getRequest, isCurrentRequest, scope: "Notifications" });
+  const decisionState = useNotificationDecisionState({ getRequest, isCurrentRequest, getToken, scope: "Notifications" });
   const refreshDecisionState = decisionState.refreshDecisionState;
 
   const fetchNotifications = useCallback(async () => {
@@ -117,7 +118,6 @@ function NotificationBellSession({
   }, [fetchNotifications, isLoaded, isSignedIn, isOpen, pollIntervalMs]);
 
   const visibleNotifications = useMemo(() => (isLoaded && isSignedIn ? notifications : []), [isLoaded, isSignedIn, notifications]);
-  const previewNotifications = useMemo(() => visibleNotifications.slice(0, 4), [visibleNotifications]);
 
   useEffect(() => {
     if (unreadCount > 0 && typeof window !== "undefined" && "navigator" in window && "vibrate" in navigator) {
@@ -127,7 +127,15 @@ function NotificationBellSession({
     }
   }, [visibleNotifications, unreadCount]);
 
-  const stateFor = (notification: AppNotification): NotificationDisplayState => resolveNotificationDisplayState({ notification, pendingRequestIds: decisionState.pendingRequestIds, treatedNotificationIds: decisionState.treatedNotificationIds });
+  const stateFor = useCallback((notification: AppNotification): NotificationDisplayState => resolveNotificationDisplayState({ notification, pendingRequestIds: decisionState.pendingRequestIds, treatedNotificationIds: decisionState.treatedNotificationIds }), [decisionState.pendingRequestIds, decisionState.treatedNotificationIds]);
+  const pendingNotifications = useMemo(
+    () => decisionState.pendingDecisionNotifications.filter((notification) => stateFor(notification) === "decision_pending"),
+    [decisionState.pendingDecisionNotifications, stateFor],
+  );
+  const previewNotifications = useMemo(
+    () => prioritizeNotificationPreview(pendingNotifications, visibleNotifications.filter((notification) => !pendingNotifications.some((pending) => pending.id === notification.id)), 4),
+    [pendingNotifications, visibleNotifications],
+  );
 
   const markAsRead = async (id: string) => {
     const request = getRequest();
@@ -157,6 +165,46 @@ function NotificationBellSession({
     }
   };
 
+  return <NotificationBellPanel
+    isOpen={isOpen}
+    setIsOpen={setIsOpen}
+    ribbonChrome={ribbonChrome}
+    locale={locale === "fr" ? "fr" : "en"}
+    unreadCount={unreadCount}
+    loading={loading}
+    visibleNotifications={visibleNotifications}
+    previewNotifications={previewNotifications}
+    decisionState={decisionState}
+    stateFor={stateFor}
+    onNotificationClick={(notification) => void handleNotificationClick(notification)}
+  />;
+}
+
+function NotificationBellPanel({
+  isOpen,
+  setIsOpen,
+  ribbonChrome,
+  locale,
+  unreadCount,
+  loading,
+  visibleNotifications,
+  previewNotifications,
+  decisionState,
+  stateFor,
+  onNotificationClick,
+}: {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  ribbonChrome?: RibbonChrome;
+  locale: "fr" | "en";
+  unreadCount: number;
+  loading: boolean;
+  visibleNotifications: AppNotification[];
+  previewNotifications: AppNotification[];
+  decisionState: ReturnType<typeof useNotificationDecisionState>;
+  stateFor: (notification: AppNotification) => NotificationDisplayState;
+  onNotificationClick: (notification: AppNotification) => void;
+}) {
   return (
     <CmmPopover
       id="notifications-popover-panel"
@@ -176,6 +224,7 @@ function NotificationBellSession({
         <div>
           <h3 className="text-sm font-bold text-white">Notifications</h3>
           <p className="mt-0.5 text-xs text-white/60">À traiter : {decisionState.pendingRequestIds.size}</p>
+          {decisionState.missingPendingRequestIds.length > 0 ? <p className="mt-1 text-xs text-amber-200/90" role="status">Certaines décisions nécessitent une actualisation.</p> : null}
         </div>
         {loading ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-pink-400 border-t-transparent" role="status" aria-label="Chargement" /> : null}
       </div>
@@ -188,7 +237,7 @@ function NotificationBellSession({
           previewNotifications.map((notification) => {
             const displayState = stateFor(notification);
             const notificationDecision = getNotificationDecisionDescriptor(notification.payload);
-            return <NotificationListItem key={notification.id} notification={notification} locale={locale === "fr" ? "fr" : "en"} compact displayState={displayState} decision={notificationDecision ? { state: displayState === "decision_pending" || displayState === "treated" || displayState === "unavailable" ? displayState : "unavailable", busy: decisionState.busyDecisionIds.has(notification.id), error: decisionState.decisionErrors[notification.id], onDecision: (choice) => void decisionState.handleDecision(notification, choice) } : undefined} onClick={(item) => void handleNotificationClick(item)} />;
+            return <NotificationListItem key={notification.id} notification={notification} locale={locale} compact displayState={displayState} decision={notificationDecision ? { state: displayState === "decision_pending" || displayState === "treated" || displayState === "unavailable" ? displayState : "unavailable", busy: decisionState.busyDecisionIds.has(notification.id), error: decisionState.decisionErrors[notification.id], onDecision: (choice) => void decisionState.handleDecision(notification, choice) } : undefined} onClick={onNotificationClick} />;
           })
         )}
       </div>

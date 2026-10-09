@@ -17,6 +17,8 @@ describe("dashboard notifications section contract", () => {
   it("uses the existing app_notifications client without dashboard polling", () => {
     expect(source).toContain('id="notifications"');
     expect(source).toContain("loadNotificationsPageForCurrentUser");
+    expect(source).toContain("pendingDecisionNotifications");
+    expect(source).toContain("missingPendingCount");
     expect(source).toContain("markNotificationAsReadForCurrentUser");
     expect(source).toContain("buildNotificationHref");
     expect(itemSource).toContain("Voir les changements");
@@ -30,6 +32,7 @@ describe("dashboard notifications section contract", () => {
     expect(source).toContain("loadMoreNotifications");
     expect(source).toContain("nextCursor");
     expect(source).toContain("Afficher plus");
+    expect(source).toContain('view === "information"');
 
     const notification = (id: string): AppNotification => ({
       id,

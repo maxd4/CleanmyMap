@@ -18,9 +18,15 @@ describe("notification bell compact preview contract", () => {
   });
 
   it("renders at most four notifications in the preview", () => {
-    expect(source).toContain("visibleNotifications.slice(0, 4)");
+    expect(source).toContain("prioritizeNotificationPreview");
     expect(source).toContain("previewNotifications.map");
     expect(source).not.toContain("visibleNotifications.map");
+  });
+
+  it("loads pending decisions before the four-item information preview", () => {
+    expect(source).toContain("pendingDecisionNotifications");
+    expect(source).toContain("missingPendingRequestIds");
+    expect(source).toContain("decisionState.pendingRequestIds.size");
   });
 
   it("uses the responsive 22rem width and clamps preview copy", () => {

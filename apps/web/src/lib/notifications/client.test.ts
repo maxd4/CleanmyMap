@@ -130,6 +130,71 @@ describe("notification client", () => {
     expect(isMock).toHaveBeenCalledWith("read_at", null);
   });
 
+  it("loads pending decision notifications by business id instead of chronology", async () => {
+    const limitMock = vi.fn().mockResolvedValue({
+      data: [{
+        id: "notification-100",
+        type: "action_event",
+        title: "Demande",
+        content: "À examiner",
+        read_at: null,
+        created_at: "2026-10-01T10:00:00.000Z",
+        payload: {
+          eventType: "action_event",
+          subtype: "registration_request",
+          requestKind: "registration_request",
+          registrationId: "registration-100",
+        },
+      }],
+      error: null,
+    });
+    const secondOrderMock = vi.fn(() => ({ limit: limitMock }));
+    const orderMock = vi.fn(() => ({ order: secondOrderMock }));
+    const orMock = vi.fn(() => ({ order: orderMock }));
+    const eqMock = vi.fn(() => ({ or: orMock }));
+    const selectMock = vi.fn(() => ({ eq: eqMock }));
+    getSupabaseBrowserClientMock.mockReturnValue({
+      from: vi.fn(() => ({ select: selectMock })),
+    });
+    getTokenMock.mockResolvedValue("clerk-supabase-token");
+
+    const { loadPendingDecisionNotificationsForCurrentUser } = await import("./client");
+    await expect(loadPendingDecisionNotificationsForCurrentUser(
+      "user_123",
+      getTokenMock,
+      ["registration-100"],
+    )).resolves.toMatchObject({
+      notifications: [{ id: "notification-100" }],
+      missingRequestIds: [],
+    });
+    expect(eqMock).toHaveBeenCalledWith("user_id", "user_123");
+    expect(orMock).toHaveBeenCalledWith(expect.stringContaining("registrationId.eq.registration-100"));
+    expect(limitMock).toHaveBeenCalledWith(50);
+  });
+
+  it("reports a canonical pending id with no accessible notification event", async () => {
+    const limitMock = vi.fn().mockResolvedValue({ data: [], error: null });
+    const secondOrderMock = vi.fn(() => ({ limit: limitMock }));
+    const orderMock = vi.fn(() => ({ order: secondOrderMock }));
+    const orMock = vi.fn(() => ({ order: orderMock }));
+    const eqMock = vi.fn(() => ({ or: orMock }));
+    const selectMock = vi.fn(() => ({ eq: eqMock }));
+    getSupabaseBrowserClientMock.mockReturnValue({
+      from: vi.fn(() => ({ select: selectMock })),
+    });
+    getTokenMock.mockResolvedValue("clerk-supabase-token");
+
+    const { loadPendingDecisionNotificationsForCurrentUser } = await import("./client");
+    await expect(loadPendingDecisionNotificationsForCurrentUser(
+      "user_123",
+      getTokenMock,
+      ["missing-registration"],
+    )).resolves.toMatchObject({
+      notifications: [],
+      missingRequestIds: ["missing-registration"],
+    });
+  });
+
   it("does not create an anon client when the Clerk token is unavailable", async () => {
     getTokenMock.mockResolvedValue(null);
 

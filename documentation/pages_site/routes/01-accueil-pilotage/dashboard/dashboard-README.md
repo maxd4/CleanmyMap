@@ -42,28 +42,37 @@
 ## Notifications
 
 - La section canonique est disponible à l’ancre `/dashboard#notifications`.
-- Elle lit exclusivement `public.app_notifications` via le client existant,
-  avec une page initiale de 20 notifications puis des pages supplémentaires
-  de 20 éléments.
+- Elle lit exclusivement `public.app_notifications` via le client existant.
+  La vue **À traiter** projette séparément, par lots bornés, les notifications
+  correspondant aux identifiants métier encore pendants ; elle ne dépend donc
+  pas de leur position dans l'historique. La vue **Informations** conserve une
+  pagination chronologique initiale de 20 notifications puis des pages
+  supplémentaires de 20 éléments.
 - Le centre propose deux vues : **À traiter** pour les décisions encore
   ouvertes selon l’état métier canonique, et **Informations** pour les autres
   notifications. Une notification lue peut donc rester « À traiter » tant
   que sa demande métier n’a pas été décidée.
 - Les boutons de décision sont exposés uniquement pour les événements métier
-  autorisés : demandes de partage d’action et invitations `action_event` de
-  sous-type `invitation`. Le centre recharge respectivement les demandes de
-  partage et les inscriptions `action_registrations` `manual_add` `pending`
-  avant affichage puis avant mutation ; aucune notification ne devient une
-  seconde boîte métier.
+  autorisés : demandes de partage d’action, invitations `action_event` de
+  sous-type `invitation` et demandes `action_event` de sous-type
+  `registration_request`. Le centre recharge respectivement les demandes de
+  partage et les inscriptions `action_registrations` `manual_add` `pending`,
+  puis vérifie la correspondance avec l'événement `app_notifications` du même
+  utilisateur avant affichage puis avant mutation ; aucune notification ne
+  devient une seconde boîte métier. Une discordance est signalée, elle ne se
+  transforme pas en liste vide présentée comme saine.
 - La pagination suit un curseur stable sur `created_at DESC` puis `id DESC`;
   l’historique complet n’est jamais chargé en une seule requête et aucun
   polling supplémentaire n’est activé dans le Dashboard.
 - La cloche utilise un décompte serveur exact des lignes `read_at IS NULL`,
-  indépendant de sa prévisualisation limitée à quatre notifications. Le
-  compteur « À traiter » reste séparé et provient des demandes de partage et
-  invitations encore pendantes ; il n'est pas déduit de `read_at`.
+  indépendant de sa prévisualisation limitée à quatre notifications. Les
+  décisions encore ouvertes sont chargées en priorité dans cette prévisualisation,
+  devant les informations récentes, même si leur événement est ancien. Le
+  compteur « À traiter » reste séparé et provient des demandes métier encore
+  pendantes ; il n'est pas déduit de `read_at`.
 - Chaque notification affiche son type et son pictogramme, son état lu/non
-  lu, sa décision éventuelle (en attente, traitée ou indisponible), son titre
+  lu, sa décision éventuelle (en attente, acceptée, refusée, retirée, traitée
+  ou indisponible), son titre
   et son contenu complets, sa date et son heure ainsi qu’une
   date relative. Le champ `payload` brut n’est pas affiché.
 - Le bouton `Afficher plus` charge la page suivante jusqu’à l’épuisement de

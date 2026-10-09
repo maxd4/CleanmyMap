@@ -5,7 +5,10 @@ import { format, formatDistanceToNow } from "date-fns";
 import { enUS, fr } from "date-fns/locale";
 
 import type { AppNotification, NotificationDecision } from "@/lib/notifications/client";
-import type { NotificationDisplayState } from "@/lib/notifications/notification-state";
+import {
+  getNotificationDecisionOutcome,
+  type NotificationDisplayState,
+} from "@/lib/notifications/notification-state";
 
 function getNotificationIcon(type: AppNotification["type"]) {
   switch (type) {
@@ -48,6 +51,23 @@ const stateLabels: Record<NotificationDisplayState, { fr: string; en: string }> 
   unavailable: { fr: "Indisponible", en: "Unavailable" },
 };
 
+function getStateLabel(
+  notification: AppNotification,
+  displayState: NotificationDisplayState,
+  locale: "fr" | "en",
+): string {
+  const outcome = getNotificationDecisionOutcome(notification.payload);
+  if (displayState === "treated" && outcome) {
+    return locale === "fr"
+      ? { accepted: "Acceptée", rejected: "Refusée", withdrawn: "Retirée" }[outcome]
+      : { accepted: "Accepted", rejected: "Refused", withdrawn: "Withdrawn" }[outcome];
+  }
+  if (displayState === "unavailable" && outcome === "withdrawn") {
+    return locale === "fr" ? "Retirée" : "Withdrawn";
+  }
+  return stateLabels[displayState][locale];
+}
+
 export function NotificationListItem({
   notification,
   locale,
@@ -67,7 +87,7 @@ export function NotificationListItem({
     locale === "fr" ? "dd/MM/yyyy HH:mm" : "MM/dd/yyyy HH:mm",
     { locale: locale === "fr" ? fr : enUS },
   );
-  const stateLabel = stateLabels[displayState][locale];
+  const stateLabel = getStateLabel(notification, displayState, locale);
 
   return (
     <article

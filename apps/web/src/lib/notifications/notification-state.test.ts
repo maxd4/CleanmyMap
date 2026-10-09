@@ -4,6 +4,8 @@ import type { AppNotification } from "./client";
 import {
   countPendingNotificationDecisions,
   getNotificationDecisionDescriptor,
+  getNotificationDecisionOutcome,
+  prioritizeNotificationPreview,
   resolveNotificationDisplayState,
 } from "./notification-state";
 
@@ -92,5 +94,20 @@ describe("notification decision state", () => {
       notification: item,
       pendingRequestIds: new Set(["registration-2"]),
     })).toBe("decision_pending");
+  });
+
+  it("renders durable outcomes and prioritizes old decisions over recent information", () => {
+    expect(getNotificationDecisionOutcome({ decision: "accepted" })).toBe("accepted");
+    expect(getNotificationDecisionOutcome({ decision: "reject" })).toBe("rejected");
+    expect(getNotificationDecisionOutcome({ decision: "withdrawn" })).toBe("withdrawn");
+
+    const oldDecision = notification({ id: "old-decision" });
+    const recentInformation = notification({ id: "recent-information", payload: null });
+    const duplicateDecision = notification({ id: "old-decision", title: "Duplicate" });
+    expect(prioritizeNotificationPreview(
+      [oldDecision],
+      [recentInformation, duplicateDecision],
+      4,
+    ).map((item) => item.id)).toEqual(["old-decision", "recent-information"]);
   });
 });

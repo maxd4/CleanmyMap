@@ -99,7 +99,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
   const fetchInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
   const loadMoreInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
   const markReadInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
-  const decisionState = useNotificationDecisionState({ getRequest, isCurrentRequest, scope: "Dashboard notifications" });
+  const decisionState = useNotificationDecisionState({ getRequest, isCurrentRequest, getToken, scope: "Dashboard notifications" });
   const refreshDecisionState = decisionState.refreshDecisionState;
 
   const fetchNotifications = useCallback(async () => {
@@ -181,12 +181,16 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
   }, [decisionState.pendingRequestIds, decisionState.treatedNotificationIds]);
 
   const pendingNotifications = useMemo(
-    () => allNotifications.filter((notification) => stateFor(notification) === "decision_pending"),
-    [allNotifications, stateFor],
+    () => decisionState.pendingDecisionNotifications.filter((notification) => stateFor(notification) === "decision_pending"),
+    [decisionState.pendingDecisionNotifications, stateFor],
+  );
+  const pendingNotificationIds = useMemo(
+    () => new Set(pendingNotifications.map((notification) => notification.id)),
+    [pendingNotifications],
   );
   const informationNotifications = useMemo(
-    () => allNotifications.filter((notification) => stateFor(notification) !== "decision_pending"),
-    [allNotifications, stateFor],
+    () => allNotifications.filter((notification) => !pendingNotificationIds.has(notification.id) && stateFor(notification) !== "decision_pending"),
+    [allNotifications, pendingNotificationIds, stateFor],
   );
   const visibleNotifications = view === "pending" ? pendingNotifications : informationNotifications;
   const pendingCount = decisionState.pendingRequestIds.size;
@@ -199,7 +203,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
     });
   };
 
-  return <DashboardNotificationsView isLoaded={isLoaded} locale={locale === "fr" ? "fr" : "en"} view={view} setView={setView} loading={loading} error={error} loadingMore={loadingMore} visibleNotifications={visibleNotifications} pendingCount={pendingCount} hasMore={hasMore} decisionState={decisionState} stateFor={stateFor} onOpen={markAsRead} onLoadMore={loadMoreNotifications} />;
+  return <DashboardNotificationsView isLoaded={isLoaded} locale={locale === "fr" ? "fr" : "en"} view={view} setView={setView} loading={loading} error={error} loadingMore={loadingMore} visibleNotifications={visibleNotifications} pendingCount={pendingCount} missingPendingCount={decisionState.missingPendingRequestIds.length} hasMore={hasMore} decisionState={decisionState} stateFor={stateFor} onOpen={markAsRead} onLoadMore={loadMoreNotifications} />;
 }
 
 function DashboardNotificationsView({
@@ -212,6 +216,7 @@ function DashboardNotificationsView({
   loadingMore,
   visibleNotifications,
   pendingCount,
+  missingPendingCount,
   hasMore,
   decisionState,
   stateFor,
@@ -227,6 +232,7 @@ function DashboardNotificationsView({
   loadingMore: boolean;
   visibleNotifications: AppNotification[];
   pendingCount: number;
+  missingPendingCount: number;
   hasMore: boolean;
   decisionState: ReturnType<typeof useNotificationDecisionState>;
   stateFor: (notification: AppNotification) => NotificationDisplayState;
@@ -246,18 +252,85 @@ function DashboardNotificationsView({
         <button type="button" role="tab" aria-selected={view === "pending"} onClick={() => setView("pending")} className="rounded-xl border border-amber-200/25 px-3 py-2 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80">À traiter{pendingCount > 0 ? ` (${pendingCount})` : ""}</button>
         <button type="button" role="tab" aria-selected={view === "information"} onClick={() => setView("information")} className="rounded-xl border border-amber-200/25 px-3 py-2 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80">Informations</button>
       </div>
-      {decisionState.decisionStateError ? <p className="pt-3 text-sm text-amber-100/75" role="status">Les décisions disponibles n&apos;ont pas pu être actualisées.</p> : null}
-      {!isLoaded || (loading && visibleNotifications.length === 0) ? <DashboardNotificationsLoading locale={locale} /> : error && visibleNotifications.length === 0 ? <p className="pt-5 text-sm leading-relaxed text-amber-50/85">{locale === "fr" ? "Les notifications sont momentanément indisponibles." : "Notifications are temporarily unavailable."}</p> : visibleNotifications.length === 0 ? <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold text-amber-50">{view === "pending" ? "Aucune décision à traiter" : "Aucune notification"}</p></div> : <>
-        <DashboardNotificationList visibleNotifications={visibleNotifications} locale={locale} stateFor={stateFor} decisionState={decisionState} onOpen={onOpen} />
-        {error ? <p className="pt-4 text-sm leading-relaxed text-amber-100/85" role="alert">Le chargement des notifications a échoué.</p> : null}
-        {hasMore ? <button type="button" onClick={() => void onLoadMore()} disabled={loadingMore} aria-busy={loadingMore} className="mt-5 w-full rounded-2xl border border-amber-200/24 bg-amber-100/[0.08] px-4 py-3 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80 disabled:cursor-wait disabled:opacity-70">{loadingMore ? "Chargement…" : "Afficher plus"}</button> : <p className="pt-5 text-center text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/54">Fin de l&apos;historique des notifications</p>}
-      </>}
+      {missingPendingCount > 0 && view === "pending" ? <p className="pt-3 text-sm text-amber-100/90" role="alert">{missingPendingCount} décision(s) métier sont encore ouvertes, mais leur notification n&apos;est pas accessible dans cette session. Actualisez avant de décider.</p> : null}
+      <DashboardNotificationContent
+        isLoaded={isLoaded}
+        locale={locale}
+        view={view}
+        loading={loading}
+        error={error}
+        loadingMore={loadingMore}
+        visibleNotifications={visibleNotifications}
+        missingPendingCount={missingPendingCount}
+        hasMore={hasMore}
+        decisionState={decisionState}
+        stateFor={stateFor}
+        onOpen={onOpen}
+        onLoadMore={onLoadMore}
+      />
     </section>
+  );
+}
+
+function DashboardNotificationContent({
+  isLoaded,
+  locale,
+  view,
+  loading,
+  error,
+  loadingMore,
+  visibleNotifications,
+  missingPendingCount,
+  hasMore,
+  decisionState,
+  stateFor,
+  onOpen,
+  onLoadMore,
+}: {
+  isLoaded: boolean;
+  locale: "fr" | "en";
+  view: "pending" | "information";
+  loading: boolean;
+  error: boolean;
+  loadingMore: boolean;
+  visibleNotifications: AppNotification[];
+  missingPendingCount: number;
+  hasMore: boolean;
+  decisionState: ReturnType<typeof useNotificationDecisionState>;
+  stateFor: (notification: AppNotification) => NotificationDisplayState;
+  onOpen: (notification: AppNotification) => void;
+  onLoadMore: () => Promise<void>;
+}) {
+  if (decisionState.decisionStateError && missingPendingCount === 0) {
+    return <p className="pt-3 text-sm text-amber-100/75" role="status">Les décisions disponibles n&apos;ont pas pu être actualisées.</p>;
+  }
+  if (!isLoaded || (loading && visibleNotifications.length === 0)) {
+    return <DashboardNotificationsLoading locale={locale} />;
+  }
+  if (error && visibleNotifications.length === 0) {
+    return <p className="pt-5 text-sm leading-relaxed text-amber-50/85">{locale === "fr" ? "Les notifications sont momentanément indisponibles." : "Notifications are temporarily unavailable."}</p>;
+  }
+  if (view === "pending" && missingPendingCount > 0 && visibleNotifications.length === 0) {
+    return <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold text-amber-50">Certaines décisions ne peuvent pas être affichées</p></div>;
+  }
+  if (visibleNotifications.length === 0) {
+    return <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold text-amber-50">{view === "pending" ? "Aucune décision à traiter" : "Aucune notification"}</p>{view === "information" && hasMore ? <DashboardLoadMoreButton loadingMore={loadingMore} onLoadMore={onLoadMore} /> : null}</div>;
+  }
+  return (
+    <>
+      <DashboardNotificationList visibleNotifications={visibleNotifications} locale={locale} stateFor={stateFor} decisionState={decisionState} onOpen={onOpen} />
+      {error ? <p className="pt-4 text-sm leading-relaxed text-amber-100/85" role="alert">Le chargement des notifications a échoué.</p> : null}
+      {view === "information" ? (hasMore ? <DashboardLoadMoreButton loadingMore={loadingMore} onLoadMore={onLoadMore} /> : <p className="pt-5 text-center text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/54">Fin de l&apos;historique des notifications</p>) : null}
+    </>
   );
 }
 
 function DashboardNotificationsLoading({ locale }: { locale: "fr" | "en" }) {
   return <div className="space-y-3 pt-5" role="status"><div className="h-14 animate-pulse rounded-2xl bg-amber-950/35" /><div className="h-14 animate-pulse rounded-2xl bg-amber-950/35" /><span className="sr-only">{locale === "fr" ? "Chargement des notifications" : "Loading notifications"}</span></div>;
+}
+
+function DashboardLoadMoreButton({ loadingMore, onLoadMore }: { loadingMore: boolean; onLoadMore: () => Promise<void> }) {
+  return <button type="button" onClick={() => void onLoadMore()} disabled={loadingMore} aria-busy={loadingMore} className="mt-5 w-full rounded-2xl border border-amber-200/24 bg-amber-100/[0.08] px-4 py-3 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80 disabled:cursor-wait disabled:opacity-70">{loadingMore ? "Chargement…" : "Afficher plus"}</button>;
 }
 
 function CheckMark() {

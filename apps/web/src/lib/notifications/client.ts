@@ -20,6 +20,7 @@ const notificationColumns =
   "id, type, title, content, read_at, seen_at, acknowledged_at, created_at, payload" as const;
 
 const NOTIFICATIONS_PAGE_SIZE = 20;
+const PENDING_NOTIFICATION_BATCH_SIZE = 50;
 
 export type NotificationPageCursor = {
   createdAt: string;
@@ -29,6 +30,11 @@ export type NotificationPageCursor = {
 export type NotificationsPage = {
   notifications: AppNotification[];
   nextCursor: NotificationPageCursor | null;
+};
+
+export type PendingDecisionNotifications = {
+  notifications: AppNotification[];
+  missingRequestIds: string[];
 };
 
 export type NotificationDecision = "accept" | "reject";
@@ -229,6 +235,95 @@ export async function loadPendingActionRegistrationRequestIds(): Promise<string[
     headers: { Accept: "application/json" },
   });
   return parseRegistrationRequestIds(await readContactRequestsResponse(response));
+}
+
+function readDecisionRequestId(payload: Record<string, unknown> | null): string | null {
+  if (!payload) return null;
+  if (payload.requestKind === "action_share") {
+    return typeof payload.requestId === "string" && payload.requestId.trim()
+      ? payload.requestId.trim()
+      : null;
+  }
+  if (payload.eventType === "action_event" && payload.subtype === "invitation") {
+    return typeof payload.registrationId === "string" && payload.registrationId.trim()
+      ? payload.registrationId.trim()
+      : null;
+  }
+  if (
+    payload.eventType === "action_event" &&
+    payload.subtype === "registration_request" &&
+    payload.requestKind === "registration_request"
+  ) {
+    return typeof payload.registrationId === "string" && payload.registrationId.trim()
+      ? payload.registrationId.trim()
+      : null;
+  }
+  return null;
+}
+
+function escapePostgrestFilterValue(value: string): string {
+  return value.replaceAll("\\", "\\\\").replaceAll(",", "\\,");
+}
+
+function chunk<T>(items: readonly T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size) as T[]);
+  }
+  return chunks;
+}
+
+/**
+ * Loads only decision events whose canonical business request is still pending.
+ * The user predicate is intentional: RLS remains the final permission boundary,
+ * while this predicate prevents a session from projecting another user's event.
+ */
+export async function loadPendingDecisionNotificationsForCurrentUser(
+  userId: string,
+  getToken: () => Promise<string | null>,
+  pendingRequestIds: readonly string[],
+): Promise<PendingDecisionNotifications> {
+  const requestIds = [...new Set(pendingRequestIds.map((id) => id.trim()).filter(Boolean))];
+  if (requestIds.length === 0) return { notifications: [], missingRequestIds: [] };
+
+  const supabase = await getNotificationsClient(getToken);
+  const notificationsById = new Map<string, AppNotification>();
+
+  for (const requestIdBatch of chunk(requestIds, PENDING_NOTIFICATION_BATCH_SIZE)) {
+    const filters = requestIdBatch.flatMap((requestId) => {
+      const escaped = escapePostgrestFilterValue(requestId);
+      return [`payload->>requestId.eq.${escaped}`, `payload->>registrationId.eq.${escaped}`];
+    });
+    const query = supabase
+      .from("app_notifications")
+      .select(notificationColumns)
+      .eq("user_id", userId)
+      .or(filters.join(","))
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(PENDING_NOTIFICATION_BATCH_SIZE);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    for (const notification of (data ?? []) as AppNotification[]) {
+      const requestId = readDecisionRequestId(notification.payload);
+      if (requestId && requestIds.includes(requestId)) {
+        notificationsById.set(notification.id, notification);
+      }
+    }
+  }
+
+  const matchedRequestIds = new Set(
+    [...notificationsById.values()]
+      .map((notification) => readDecisionRequestId(notification.payload))
+      .filter((requestId): requestId is string => requestId !== null),
+  );
+
+  return {
+    notifications: [...notificationsById.values()],
+    missingRequestIds: requestIds.filter((requestId) => !matchedRequestIds.has(requestId)),
+  };
 }
 
 export async function respondToActionRegistrationRequest(

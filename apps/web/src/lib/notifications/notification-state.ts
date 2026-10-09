@@ -13,6 +13,8 @@ export type NotificationDecisionDescriptor = {
   actionId?: string;
 };
 
+export type NotificationDecisionOutcome = "accepted" | "rejected" | "withdrawn";
+
 function readString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
@@ -51,6 +53,15 @@ function getPersistedDecisionState(payload: unknown): "treated" | "unavailable" 
   return state === "treated" || state === "unavailable" ? state : null;
 }
 
+export function getNotificationDecisionOutcome(payload: unknown): NotificationDecisionOutcome | null {
+  if (!payload || typeof payload !== "object") return null;
+  const decision = readString((payload as Record<string, unknown>).decision);
+  if (decision === "accept" || decision === "accepted") return "accepted";
+  if (decision === "reject" || decision === "rejected") return "rejected";
+  if (decision === "withdrawn") return "withdrawn";
+  return null;
+}
+
 export function resolveNotificationDisplayState(params: {
   notification: AppNotification;
   pendingRequestIds: ReadonlySet<string>;
@@ -77,4 +88,20 @@ export function countPendingNotificationDecisions(
     const decision = getNotificationDecisionDescriptor(notification.payload);
     return decision && pendingRequestIds.has(decision.requestId) ? count + 1 : count;
   }, 0);
+}
+
+export function prioritizeNotificationPreview(
+  pendingNotifications: readonly AppNotification[],
+  chronologicalNotifications: readonly AppNotification[],
+  limit = 4,
+): AppNotification[] {
+  const result: AppNotification[] = [];
+  const seen = new Set<string>();
+  for (const notification of [...pendingNotifications, ...chronologicalNotifications]) {
+    if (seen.has(notification.id)) continue;
+    seen.add(notification.id);
+    result.push(notification);
+    if (result.length >= limit) break;
+  }
+  return result;
 }
