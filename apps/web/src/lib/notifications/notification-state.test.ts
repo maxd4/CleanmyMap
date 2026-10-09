@@ -60,6 +60,22 @@ describe("notification decision state", () => {
     })).toBe("decision_pending");
   });
 
+  it("does not cross-match the same raw id between decision families", () => {
+    const item = notification({
+      type: "action_event",
+      payload: {
+        eventType: "action_event",
+        subtype: "invitation",
+        registrationId: "shared-id",
+      },
+    });
+    expect(resolveNotificationDisplayState({
+      notification: item,
+      pendingRequestIds: new Set(["shared-id"]),
+      pendingDecisionKeys: new Set(["action_result:shared-id"]),
+    })).toBe("unavailable");
+  });
+
   it("keeps a withdrawn invitation unavailable even if a stale pending projection remains", () => {
     const item = notification({
       type: "action_event",

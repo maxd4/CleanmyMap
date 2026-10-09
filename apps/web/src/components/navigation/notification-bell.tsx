@@ -130,7 +130,7 @@ function NotificationBellSession({
     );
   }, [isLoaded, isSignedIn, notifications, preferences.informationalEnabled]);
 
-  const stateFor = useCallback((notification: AppNotification): NotificationDisplayState => resolveNotificationDisplayState({ notification, pendingRequestIds: decisionState.pendingRequestIds, treatedNotificationIds: decisionState.treatedNotificationIds }), [decisionState.pendingRequestIds, decisionState.treatedNotificationIds]);
+  const stateFor = useCallback((notification: AppNotification): NotificationDisplayState => resolveNotificationDisplayState({ notification, pendingRequestIds: decisionState.pendingRequestIds, pendingDecisionKeys: decisionState.pendingDecisionKeys, treatedNotificationIds: decisionState.treatedNotificationIds }), [decisionState.pendingDecisionKeys, decisionState.pendingRequestIds, decisionState.treatedNotificationIds]);
   const pendingNotifications = useMemo(
     () => decisionState.pendingDecisionNotifications.filter((notification) => stateFor(notification) === "decision_pending"),
     [decisionState.pendingDecisionNotifications, stateFor],
@@ -171,7 +171,7 @@ function NotificationBellSession({
     setIsOpen={setIsOpen}
     ribbonChrome={ribbonChrome}
     locale={locale === "fr" ? "fr" : "en"}
-    pendingCount={decisionState.pendingRequestIds.size}
+    pendingCount={decisionState.pendingDecisionKeys.size}
     loading={loading}
     visibleNotifications={visibleNotifications}
     previewNotifications={previewNotifications}
@@ -224,7 +224,7 @@ function NotificationBellPanel({
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3.5">
         <div>
           <h3 className="text-sm font-bold text-white">Notifications</h3>
-          <p className="mt-0.5 text-xs text-white/60">À traiter : {decisionState.pendingRequestIds.size}</p>
+          <p className="mt-0.5 text-xs text-white/60">À traiter : {decisionState.pendingDecisionKeys.size}</p>
           {decisionState.missingPendingRequestIds.length > 0 ? <p className="mt-1 text-xs text-amber-200/90" role="status">Certaines décisions nécessitent une actualisation.</p> : null}
         </div>
         {loading ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-pink-400 border-t-transparent" role="status" aria-label="Chargement" /> : null}

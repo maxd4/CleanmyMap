@@ -14,6 +14,38 @@ vi.mock("@/lib/env", () => ({
 }));
 
 describe("notification client", () => {
+  function setupPendingQuery(
+    resolvePage: (from: number, to: number) => Promise<{ data: unknown[]; error: null }>,
+  ) {
+    const rangeMock = vi.fn((from: number, to: number) => resolvePage(from, to));
+    const secondOrderMock = vi.fn(() => ({ range: rangeMock }));
+    const orderMock = vi.fn(() => ({ order: secondOrderMock }));
+    const orMock = vi.fn(() => ({ order: orderMock }));
+    const eqMock = vi.fn(() => ({ or: orMock }));
+    const selectMock = vi.fn(() => ({ eq: eqMock }));
+    getSupabaseBrowserClientMock.mockReturnValue({
+      from: vi.fn(() => ({ select: selectMock })),
+    });
+    getTokenMock.mockResolvedValue("clerk-supabase-token");
+    return { eqMock, orMock, rangeMock };
+  }
+
+  const actionEvent = (overrides: Record<string, unknown>) => {
+    const { id = "notification-default", ...payload } = overrides;
+    return {
+    id,
+    type: "action_event",
+    title: "Décision",
+    content: "À traiter",
+    read_at: null,
+    created_at: "2026-10-01T10:00:00.000Z",
+    payload: {
+      eventType: "action_event",
+      ...payload,
+    },
+    };
+  };
+
   beforeEach(() => {
     getSupabaseBrowserClientMock.mockReset();
     getTokenMock.mockReset();
@@ -130,69 +162,188 @@ describe("notification client", () => {
     expect(isMock).toHaveBeenCalledWith("read_at", null);
   });
 
-  it("loads pending decision notifications by business id instead of chronology", async () => {
-    const limitMock = vi.fn().mockResolvedValue({
-      data: [{
-        id: "notification-100",
-        type: "action_event",
-        title: "Demande",
-        content: "À examiner",
-        read_at: null,
-        created_at: "2026-10-01T10:00:00.000Z",
-        payload: {
-          eventType: "action_event",
-          subtype: "registration_request",
-          requestKind: "registration_request",
-          registrationId: "registration-100",
-        },
-      }],
+  it("loads pending decision notifications by business family instead of chronology", async () => {
+    const { eqMock, orMock, rangeMock } = setupPendingQuery(async () => ({
+      data: [actionEvent({
+        subtype: "registration_request",
+        requestKind: "registration_request",
+        registrationId: "registration-100",
+      })],
       error: null,
-    });
-    const secondOrderMock = vi.fn(() => ({ limit: limitMock }));
-    const orderMock = vi.fn(() => ({ order: secondOrderMock }));
-    const orMock = vi.fn(() => ({ order: orderMock }));
-    const eqMock = vi.fn(() => ({ or: orMock }));
-    const selectMock = vi.fn(() => ({ eq: eqMock }));
-    getSupabaseBrowserClientMock.mockReturnValue({
-      from: vi.fn(() => ({ select: selectMock })),
-    });
-    getTokenMock.mockResolvedValue("clerk-supabase-token");
+    }));
 
     const { loadPendingDecisionNotificationsForCurrentUser } = await import("./client");
     await expect(loadPendingDecisionNotificationsForCurrentUser(
       "user_123",
       getTokenMock,
-      ["registration-100"],
+      [{ kind: "action_registration_request", requestId: "registration-100" }],
     )).resolves.toMatchObject({
-      notifications: [{ id: "notification-100" }],
+      notifications: [{ id: "notification-default" }],
       missingRequestIds: [],
+      unresolvedRequestIds: [],
     });
     expect(eqMock).toHaveBeenCalledWith("user_id", "user_123");
-    expect(orMock).toHaveBeenCalledWith(expect.stringContaining("registrationId.eq.registration-100"));
-    expect(limitMock).toHaveBeenCalledWith(50);
+    expect(orMock).toHaveBeenCalledWith(expect.stringContaining("subtype.eq.registration_request"));
+    expect(rangeMock).toHaveBeenCalledWith(0, 49);
   });
 
-  it("reports a canonical pending id with no accessible notification event", async () => {
-    const limitMock = vi.fn().mockResolvedValue({ data: [], error: null });
-    const secondOrderMock = vi.fn(() => ({ limit: limitMock }));
-    const orderMock = vi.fn(() => ({ order: secondOrderMock }));
-    const orMock = vi.fn(() => ({ order: orderMock }));
-    const eqMock = vi.fn(() => ({ or: orMock }));
-    const selectMock = vi.fn(() => ({ eq: eqMock }));
-    getSupabaseBrowserClientMock.mockReturnValue({
-      from: vi.fn(() => ({ select: selectMock })),
+  it("pages past more than fifty recent events to resolve an older open decision", async () => {
+    const recentEvents = Array.from({ length: 50 }, (_, index) => actionEvent({
+      id: `recent-${index}`,
+      subtype: "action_result",
+      actionId: "action-recent",
+    }));
+    const oldDecision = actionEvent({
+      id: "old-decision",
+      subtype: "action_result",
+      actionId: "action-old",
     });
-    getTokenMock.mockResolvedValue("clerk-supabase-token");
+    const { rangeMock } = setupPendingQuery(async (from) => ({
+      data: from === 0 ? recentEvents : [oldDecision],
+      error: null,
+    }));
+
+    const { loadPendingDecisionNotificationsForCurrentUser } = await import("./client");
+    const result = await loadPendingDecisionNotificationsForCurrentUser(
+      "user_123",
+      getTokenMock,
+      [
+        { kind: "action_result", requestId: "action-recent" },
+        { kind: "action_result", requestId: "action-old" },
+      ],
+    );
+    expect(result.notifications.some((notification) => notification.id === "old-decision")).toBe(true);
+    expect(result.missingRequestIds).toEqual([]);
+    expect(result.unresolvedRequestIds).toEqual([]);
+    expect(rangeMock).toHaveBeenNthCalledWith(1, 0, 49);
+    expect(rangeMock).toHaveBeenNthCalledWith(2, 50, 99);
+  });
+
+  it("resolves several registration decisions independently on the same action", async () => {
+    const { rangeMock } = setupPendingQuery(async () => ({
+      data: [
+        actionEvent({
+          id: "registration-request-1",
+          subtype: "registration_request",
+          requestKind: "registration_request",
+          actionId: "action-shared",
+          registrationId: "registration-1",
+        }),
+        actionEvent({
+          id: "registration-request-2",
+          subtype: "registration_request",
+          requestKind: "registration_request",
+          actionId: "action-shared",
+          registrationId: "registration-2",
+        }),
+      ],
+      error: null,
+    }));
+
+    const { loadPendingDecisionNotificationsForCurrentUser } = await import("./client");
+    const result = await loadPendingDecisionNotificationsForCurrentUser(
+      "user_123",
+      getTokenMock,
+      [
+        { kind: "action_registration_request", requestId: "registration-1" },
+        { kind: "action_registration_request", requestId: "registration-2" },
+      ],
+    );
+    expect(result.missingRequestIds).toEqual([]);
+    expect(result.unresolvedRequestIds).toEqual([]);
+    expect(result.notifications.map((notification) => notification.id)).toEqual([
+      "registration-request-1",
+      "registration-request-2",
+    ]);
+    expect(rangeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not let an informative action event satisfy an action result decision", async () => {
+    const { orMock } = setupPendingQuery(async () => ({
+      data: [
+        actionEvent({ subtype: "action_update", actionId: "action-1" }),
+        actionEvent({ subtype: "action_result", actionId: "action-1" }),
+      ],
+      error: null,
+    }));
 
     const { loadPendingDecisionNotificationsForCurrentUser } = await import("./client");
     await expect(loadPendingDecisionNotificationsForCurrentUser(
       "user_123",
       getTokenMock,
-      ["missing-registration"],
-    )).resolves.toMatchObject({
-      notifications: [],
-      missingRequestIds: ["missing-registration"],
-    });
+      [{ kind: "action_result", requestId: "action-1" }],
+    )).resolves.toMatchObject({ missingRequestIds: [], unresolvedRequestIds: [] });
+    expect(orMock).toHaveBeenCalledWith(expect.stringContaining("subtype.eq.action_result"));
+  });
+
+  it("does not reuse a withdrawn invitation event when the current version is absent", async () => {
+    const { rangeMock } = setupPendingQuery(async () => ({
+      data: [actionEvent({
+        subtype: "invitation",
+        registrationId: "registration-1",
+        invitationVersion: 1,
+        decisionState: "unavailable",
+      })],
+      error: null,
+    }));
+
+    const { loadPendingDecisionNotificationsForCurrentUser } = await import("./client");
+    await expect(loadPendingDecisionNotificationsForCurrentUser(
+      "user_123",
+      getTokenMock,
+      [{ kind: "action_invitation", requestId: "registration-1" }],
+    )).resolves.toMatchObject({ missingRequestIds: ["registration-1"], unresolvedRequestIds: [] });
+    expect(rangeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("prefers a newer open invitation version over the treated historical version", async () => {
+    const { rangeMock } = setupPendingQuery(async () => ({
+      data: [
+        actionEvent({
+          id: "invitation-v2",
+          subtype: "invitation",
+          registrationId: "registration-1",
+          invitationVersion: 2,
+          decisionState: "pending",
+        }),
+        actionEvent({
+          id: "invitation-v1",
+          subtype: "invitation",
+          registrationId: "registration-1",
+          invitationVersion: 1,
+          decisionState: "treated",
+        }),
+      ],
+      error: null,
+    }));
+
+    const { loadPendingDecisionNotificationsForCurrentUser } = await import("./client");
+    await expect(loadPendingDecisionNotificationsForCurrentUser(
+      "user_123",
+      getTokenMock,
+      [{ kind: "action_invitation", requestId: "registration-1" }],
+    )).resolves.toMatchObject({ missingRequestIds: [], unresolvedRequestIds: [] });
+    expect(rangeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not classify a bounded partial traversal as missing", async () => {
+    const page = Array.from({ length: 50 }, (_, index) => actionEvent({
+      id: `page-${index}`,
+      subtype: "action_result",
+      actionId: "action-observed",
+    }));
+    const { rangeMock } = setupPendingQuery(async () => ({ data: page, error: null }));
+
+    const { loadPendingDecisionNotificationsForCurrentUser } = await import("./client");
+    await expect(loadPendingDecisionNotificationsForCurrentUser(
+      "user_123",
+      getTokenMock,
+      [
+        { kind: "action_result", requestId: "action-observed" },
+        { kind: "action_result", requestId: "action-not-seen" },
+      ],
+    )).resolves.toMatchObject({ missingRequestIds: [], unresolvedRequestIds: ["action-not-seen"] });
+    expect(rangeMock).toHaveBeenCalledTimes(20);
   });
 
   it("does not create an anon client when the Clerk token is unavailable", async () => {

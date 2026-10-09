@@ -187,9 +187,10 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
     return resolveNotificationDisplayState({
       notification,
       pendingRequestIds: decisionState.pendingRequestIds,
+      pendingDecisionKeys: decisionState.pendingDecisionKeys,
       treatedNotificationIds: decisionState.treatedNotificationIds,
     });
-  }, [decisionState.pendingRequestIds, decisionState.treatedNotificationIds]);
+  }, [decisionState.pendingDecisionKeys, decisionState.pendingRequestIds, decisionState.treatedNotificationIds]);
 
   const pendingNotifications = useMemo(
     () => decisionState.pendingDecisionNotifications.filter((notification) => stateFor(notification) === "decision_pending"),
@@ -210,7 +211,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
     [allNotifications, pendingNotificationIds, preferences, stateFor],
   );
   const visibleNotifications = view === "pending" ? pendingNotifications : informationNotifications;
-  const pendingCount = decisionState.pendingRequestIds.size;
+  const pendingCount = decisionState.pendingDecisionKeys.size;
 
   const markAsRead = (notification: AppNotification) => {
     if (!userId) return;

@@ -13,6 +13,8 @@ import {
   respondToNotificationDecision,
   type AppNotification,
   type NotificationDecision,
+  type PendingDecisionRequest,
+  getPendingDecisionRequestKey,
 } from "./client";
 import {
   loadPendingActionResultPromptIds,
@@ -23,7 +25,7 @@ import {
 import { getNotificationDecisionDescriptor, type NotificationDecisionDescriptor } from "./notification-state";
 import type { NotificationIdentity } from "./identity";
 
-async function loadAllPendingRequestIds(): Promise<string[]> {
+async function loadAllPendingDecisionRequests(): Promise<PendingDecisionRequest[]> {
   const [shareIds, invitationIds, registrationRequestIds, resultPromptIds, postActionClaimIds] = await Promise.all([
     loadPendingNotificationDecisionIds(),
     loadPendingActionInvitationIds(),
@@ -31,13 +33,20 @@ async function loadAllPendingRequestIds(): Promise<string[]> {
     loadPendingActionResultPromptIds(),
     loadPendingPostActionClaimIds(),
   ]);
-  return [...new Set([
-    ...shareIds,
-    ...invitationIds,
-    ...registrationRequestIds,
-    ...resultPromptIds,
-    ...postActionClaimIds,
-  ])];
+  const requests: PendingDecisionRequest[] = [
+    ...shareIds.map((requestId) => ({ kind: "action_share" as const, requestId })),
+    ...invitationIds.map((requestId) => ({ kind: "action_invitation" as const, requestId })),
+    ...registrationRequestIds.map((requestId) => ({ kind: "action_registration_request" as const, requestId })),
+    ...resultPromptIds.map((requestId) => ({ kind: "action_result" as const, requestId })),
+    ...postActionClaimIds.map((requestId) => ({ kind: "action_post_action_claim" as const, requestId })),
+  ];
+  const seen = new Set<string>();
+  return requests.filter((request) => {
+    const key = getPendingDecisionRequestKey(request.kind, request.requestId);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 async function submitNotificationDecision(
@@ -69,7 +78,7 @@ function useNotificationDecisionRefresh(params: {
   getToken: () => Promise<string | null>;
   isCurrentRequest: (request: NotificationIdentity) => boolean;
   scope: string;
-  setPendingIds: (ids: string[]) => void;
+  setPendingRequests: (requests: PendingDecisionRequest[]) => void;
   setPendingDecisionNotifications: Dispatch<SetStateAction<AppNotification[]>>;
   setMissingPendingRequestIds: Dispatch<SetStateAction<string[]>>;
   setDecisionStateError: Dispatch<SetStateAction<boolean>>;
@@ -78,7 +87,7 @@ function useNotificationDecisionRefresh(params: {
     getToken,
     isCurrentRequest,
     scope,
-    setPendingIds,
+    setPendingRequests,
     setPendingDecisionNotifications,
     setMissingPendingRequestIds,
     setDecisionStateError,
@@ -86,19 +95,20 @@ function useNotificationDecisionRefresh(params: {
 
   return useCallback(async (request: NotificationIdentity) => {
     try {
-      const ids = await loadAllPendingRequestIds();
+      const requests = await loadAllPendingDecisionRequests();
       if (!isCurrentRequest(request) || !request.userId) return null;
       const pendingProjection = await loadPendingDecisionNotificationsForCurrentUser(
         request.userId,
         getToken,
-        ids,
+        requests,
       );
       if (!isCurrentRequest(request)) return null;
-      setPendingIds(ids);
+      setPendingRequests(requests);
       setPendingDecisionNotifications(pendingProjection.notifications);
-      setMissingPendingRequestIds(pendingProjection.missingRequestIds);
-      setDecisionStateError(pendingProjection.missingRequestIds.length > 0);
-      return new Set(ids);
+      const resolutionIssues = [...pendingProjection.missingRequestIds, ...pendingProjection.unresolvedRequestIds];
+      setMissingPendingRequestIds([...new Set(resolutionIssues)]);
+      setDecisionStateError(resolutionIssues.length > 0);
+      return new Set(requests.map((item) => getPendingDecisionRequestKey(item.kind, item.requestId)));
     } catch (error) {
       if (isCurrentRequest(request)) {
         setDecisionStateError(true);
@@ -106,7 +116,7 @@ function useNotificationDecisionRefresh(params: {
       }
       return null;
     }
-  }, [getToken, isCurrentRequest, scope, setDecisionStateError, setMissingPendingRequestIds, setPendingDecisionNotifications, setPendingIds]);
+  }, [getToken, isCurrentRequest, scope, setDecisionStateError, setMissingPendingRequestIds, setPendingDecisionNotifications, setPendingRequests]);
 }
 
 export function useNotificationDecisionState(params: {
@@ -117,7 +127,8 @@ export function useNotificationDecisionState(params: {
 }) {
   const { getRequest, isCurrentRequest, getToken, scope } = params;
   const [pendingRequestIds, setPendingRequestIds] = useState<Set<string>>(new Set());
-  const pendingRequestIdsRef = useRef<Set<string>>(new Set());
+  const [pendingDecisionKeys, setPendingDecisionKeys] = useState<Set<string>>(new Set());
+  const pendingDecisionRequestsRef = useRef<PendingDecisionRequest[]>([]);
   const [pendingDecisionNotifications, setPendingDecisionNotifications] = useState<AppNotification[]>([]);
   const [missingPendingRequestIds, setMissingPendingRequestIds] = useState<string[]>([]);
   const [treatedNotificationIds, setTreatedNotificationIds] = useState<Set<string>>(new Set());
@@ -125,17 +136,17 @@ export function useNotificationDecisionState(params: {
   const [busyDecisionIds, setBusyDecisionIds] = useState<Set<string>>(new Set());
   const [decisionStateError, setDecisionStateError] = useState(false);
 
-  const setPendingIds = useCallback((ids: string[]) => {
-    const next = new Set(ids);
-    pendingRequestIdsRef.current = next;
-    setPendingRequestIds(next);
+  const setPendingRequests = useCallback((requests: PendingDecisionRequest[]) => {
+    pendingDecisionRequestsRef.current = requests;
+    setPendingRequestIds(new Set(requests.map((request) => request.requestId)));
+    setPendingDecisionKeys(new Set(requests.map((request) => getPendingDecisionRequestKey(request.kind, request.requestId))));
   }, []);
 
   const refreshDecisionState = useNotificationDecisionRefresh({
     getToken,
     isCurrentRequest,
     scope,
-    setPendingIds,
+    setPendingRequests,
     setPendingDecisionNotifications,
     setMissingPendingRequestIds,
     setDecisionStateError,
@@ -155,7 +166,8 @@ export function useNotificationDecisionState(params: {
     try {
       const currentPendingIds = await refreshDecisionState(request);
       if (!isCurrentRequest(request)) return;
-      if (!currentPendingIds?.has(descriptor.requestId)) {
+      const decisionKey = getPendingDecisionRequestKey(descriptor.kind, descriptor.requestId);
+      if (!currentPendingIds?.has(decisionKey)) {
         setDecisionErrors((previous) => ({ ...previous, [notification.id]: "Cette décision n'est plus disponible." }));
         return;
       }
@@ -163,13 +175,17 @@ export function useNotificationDecisionState(params: {
       const result = await submitNotificationDecision(descriptor, decision);
       if (!isCurrentRequest(request)) return;
       if (result.status === "unavailable") {
-        setPendingIds([...pendingRequestIdsRef.current].filter((id) => id !== descriptor.requestId));
+        setPendingRequests(pendingDecisionRequestsRef.current.filter((item) =>
+          getPendingDecisionRequestKey(item.kind, item.requestId) !== decisionKey,
+        ));
         setPendingDecisionNotifications((previous) => previous.filter((item) => item.id !== notification.id));
         setDecisionErrors((previous) => ({ ...previous, [notification.id]: "Cette décision n'est plus disponible." }));
         return;
       }
 
-      setPendingIds([...pendingRequestIdsRef.current].filter((id) => id !== descriptor.requestId));
+      setPendingRequests(pendingDecisionRequestsRef.current.filter((item) =>
+        getPendingDecisionRequestKey(item.kind, item.requestId) !== decisionKey,
+      ));
       setPendingDecisionNotifications((previous) => previous.filter((item) => item.id !== notification.id));
       setTreatedNotificationIds((previous) => new Set(previous).add(notification.id));
       await refreshDecisionState(request);
@@ -187,18 +203,17 @@ export function useNotificationDecisionState(params: {
         });
       }
     }
-  }, [busyDecisionIds, getRequest, isCurrentRequest, refreshDecisionState, scope, setPendingIds]);
+  }, [busyDecisionIds, getRequest, isCurrentRequest, refreshDecisionState, scope, setPendingRequests]);
 
   return {
     pendingRequestIds,
-    pendingRequestIdsRef,
+    pendingDecisionKeys,
     pendingDecisionNotifications,
     missingPendingRequestIds,
     treatedNotificationIds,
     decisionErrors,
     busyDecisionIds,
     decisionStateError,
-    setPendingIds,
     refreshDecisionState,
     handleDecision,
   };

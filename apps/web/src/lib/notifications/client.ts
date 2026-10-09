@@ -3,6 +3,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildRequiredClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  buildPendingDecisionFilter,
+  getPendingDecisionRequestKey,
+  isActionablePendingDecisionNotification,
+  normalizePendingDecisionRequests,
+  readPendingDecisionRequest,
+} from "./pending-decision-client";
+import type { PendingDecisionRequest } from "./pending-decision-client";
+export {
+  getPendingDecisionRequestKey,
+} from "./pending-decision-client";
+export type {
+  PendingDecisionRequest,
+} from "./pending-decision-client";
 
 export type AppNotification = {
   id: string;
@@ -20,7 +34,9 @@ const notificationColumns =
   "id, type, title, content, read_at, seen_at, acknowledged_at, created_at, payload" as const;
 
 const NOTIFICATIONS_PAGE_SIZE = 20;
-const PENDING_NOTIFICATION_BATCH_SIZE = 50;
+const PENDING_NOTIFICATION_REQUEST_BATCH_SIZE = 50;
+const PENDING_NOTIFICATION_PAGE_SIZE = 50;
+const PENDING_NOTIFICATION_MAX_PAGES = 20;
 
 export type NotificationPageCursor = {
   createdAt: string;
@@ -35,6 +51,7 @@ export type NotificationsPage = {
 export type PendingDecisionNotifications = {
   notifications: AppNotification[];
   missingRequestIds: string[];
+  unresolvedRequestIds: string[];
 };
 
 export type NotificationDecision = "accept" | "reject" | "claim" | "not_participated";
@@ -237,44 +254,6 @@ export async function loadPendingActionRegistrationRequestIds(): Promise<string[
   return parseRegistrationRequestIds(await readContactRequestsResponse(response));
 }
 
-function readNotificationString(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
-function readDecisionRequestId(payload: Record<string, unknown> | null): string | null {
-  if (!payload) return null;
-  if (payload.requestKind === "action_share") {
-    return typeof payload.requestId === "string" && payload.requestId.trim()
-      ? payload.requestId.trim()
-      : null;
-  }
-  if (payload.eventType === "action_event" && payload.subtype === "invitation") {
-    return typeof payload.registrationId === "string" && payload.registrationId.trim()
-      ? payload.registrationId.trim()
-      : null;
-  }
-  if (
-    payload.eventType === "action_event" &&
-    payload.subtype === "registration_request" &&
-    payload.requestKind === "registration_request"
-  ) {
-    return typeof payload.registrationId === "string" && payload.registrationId.trim()
-      ? payload.registrationId.trim()
-      : null;
-  }
-  if (payload.eventType === "action_event" && payload.subtype === "action_result") {
-    return readNotificationString(payload.actionId);
-  }
-  if (payload.eventType === "action_event" && payload.subtype === "post_action_claim") {
-    return readNotificationString(payload.participationId);
-  }
-  return null;
-}
-
-function escapePostgrestFilterValue(value: string): string {
-  return value.replaceAll("\\", "\\\\").replaceAll(",", "\\,");
-}
-
 function chunk<T>(items: readonly T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let index = 0; index < items.length; index += size) {
@@ -291,53 +270,89 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
 export async function loadPendingDecisionNotificationsForCurrentUser(
   userId: string,
   getToken: () => Promise<string | null>,
-  pendingRequestIds: readonly string[],
+  pendingRequests: readonly PendingDecisionRequest[],
 ): Promise<PendingDecisionNotifications> {
-  const requestIds = [...new Set(pendingRequestIds.map((id) => id.trim()).filter(Boolean))];
-  if (requestIds.length === 0) return { notifications: [], missingRequestIds: [] };
+  const requests = normalizePendingDecisionRequests(pendingRequests);
+  if (requests.length === 0) {
+    return { notifications: [], missingRequestIds: [], unresolvedRequestIds: [] };
+  }
 
   const supabase = await getNotificationsClient(getToken);
   const notificationsById = new Map<string, AppNotification>();
+  const latestNotificationByRequestKey = new Map<string, AppNotification>();
+  const unresolvedRequestKeys = new Set<string>();
 
-  for (const requestIdBatch of chunk(requestIds, PENDING_NOTIFICATION_BATCH_SIZE)) {
-    const filters = requestIdBatch.flatMap((requestId) => {
-      const escaped = escapePostgrestFilterValue(requestId);
-      return [
-        `payload->>requestId.eq.${escaped}`,
-        `payload->>registrationId.eq.${escaped}`,
-        `payload->>actionId.eq.${escaped}`,
-        `payload->>participationId.eq.${escaped}`,
-      ];
-    });
-    const query = supabase
-      .from("app_notifications")
-      .select(notificationColumns)
-      .eq("user_id", userId)
-      .or(filters.join(","))
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false })
-      .limit(PENDING_NOTIFICATION_BATCH_SIZE);
+  for (const requestBatch of chunk(requests, PENDING_NOTIFICATION_REQUEST_BATCH_SIZE)) {
+    const requestKeys = new Set(
+      requestBatch.map((request) => getPendingDecisionRequestKey(request.kind, request.requestId)),
+    );
+    // Cost is bounded to 20 reads of at most 50 rows for each batch of 50
+    // business decisions. A capped traversal produces unresolved ids, never
+    // a false missing decision.
+    let offset = 0;
+    let page = 0;
 
-    const { data, error } = await query;
-    if (error) throw error;
+    while (page < PENDING_NOTIFICATION_MAX_PAGES) {
+      const query = supabase
+        .from("app_notifications")
+        .select(notificationColumns)
+        .eq("user_id", userId)
+        .or(requestBatch.map(buildPendingDecisionFilter).join(","))
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(offset, offset + PENDING_NOTIFICATION_PAGE_SIZE - 1);
 
-    for (const notification of (data ?? []) as AppNotification[]) {
-      const requestId = readDecisionRequestId(notification.payload);
-      if (requestId && requestIds.includes(requestId)) {
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const pageNotifications = (data ?? []) as AppNotification[];
+      for (const notification of pageNotifications) {
+        const request = readPendingDecisionRequest(notification.payload);
+        if (!request) continue;
+        const requestKey = getPendingDecisionRequestKey(request.kind, request.requestId);
+        if (!requestKeys.has(requestKey)) continue;
         notificationsById.set(notification.id, notification);
+        if (!latestNotificationByRequestKey.has(requestKey)) {
+          latestNotificationByRequestKey.set(requestKey, notification);
+        }
+      }
+
+      const allRequestsObserved = requestBatch.every((request) =>
+        latestNotificationByRequestKey.has(getPendingDecisionRequestKey(request.kind, request.requestId)),
+      );
+      if (allRequestsObserved || pageNotifications.length < PENDING_NOTIFICATION_PAGE_SIZE) break;
+
+      offset += PENDING_NOTIFICATION_PAGE_SIZE;
+      page += 1;
+    }
+
+    for (const request of requestBatch) {
+      const requestKey = getPendingDecisionRequestKey(request.kind, request.requestId);
+      if (!latestNotificationByRequestKey.has(requestKey)) {
+        unresolvedRequestKeys.add(requestKey);
       }
     }
   }
 
-  const matchedRequestIds = new Set(
-    [...notificationsById.values()]
-      .map((notification) => readDecisionRequestId(notification.payload))
-      .filter((requestId): requestId is string => requestId !== null),
+  const matchedRequestKeys = new Set(
+    [...latestNotificationByRequestKey.entries()]
+      .filter(([, notification]) => isActionablePendingDecisionNotification(notification))
+      .map(([requestKey]) => requestKey),
   );
+  const missingRequestIds = requests
+    .filter((request) => {
+      const requestKey = getPendingDecisionRequestKey(request.kind, request.requestId);
+      return !unresolvedRequestKeys.has(requestKey) && !matchedRequestKeys.has(requestKey);
+    })
+    .map((request) => request.requestId);
+  const unresolvedRequestIds = requests
+    .filter((request) => unresolvedRequestKeys.has(getPendingDecisionRequestKey(request.kind, request.requestId)))
+    .map((request) => request.requestId);
 
   return {
     notifications: [...notificationsById.values()],
-    missingRequestIds: requestIds.filter((requestId) => !matchedRequestIds.has(requestId)),
+    missingRequestIds: [...new Set(missingRequestIds)],
+    unresolvedRequestIds: [...new Set(unresolvedRequestIds)],
   };
 }
 

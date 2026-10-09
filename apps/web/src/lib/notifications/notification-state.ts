@@ -1,4 +1,4 @@
-import type { AppNotification } from "./client";
+import { getPendingDecisionRequestKey, type AppNotification } from "./client";
 
 export type NotificationDisplayState =
   | "unread"
@@ -119,15 +119,18 @@ export function getNotificationDecisionOutcome(payload: unknown): NotificationDe
 export function resolveNotificationDisplayState(params: {
   notification: AppNotification;
   pendingRequestIds: ReadonlySet<string>;
+  pendingDecisionKeys?: ReadonlySet<string>;
   treatedNotificationIds?: ReadonlySet<string>;
 }): NotificationDisplayState {
-  const { notification, pendingRequestIds, treatedNotificationIds } = params;
+  const { notification, pendingRequestIds, pendingDecisionKeys, treatedNotificationIds } = params;
   const decision = getNotificationDecisionDescriptor(notification.payload);
   if (decision) {
     const persistedState = getPersistedDecisionState(notification.payload);
     if (persistedState) return persistedState;
     if (treatedNotificationIds?.has(notification.id)) return "treated";
-    if (pendingRequestIds.has(decision.requestId)) return "decision_pending";
+    if (pendingDecisionKeys
+      ? pendingDecisionKeys.has(getPendingDecisionRequestKey(decision.kind, decision.requestId))
+      : pendingRequestIds.has(decision.requestId)) return "decision_pending";
     return "unavailable";
   }
 

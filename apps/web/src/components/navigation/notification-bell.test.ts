@@ -26,7 +26,7 @@ describe("notification bell compact preview contract", () => {
   it("loads pending decisions before the four-item information preview", () => {
     expect(source).toContain("pendingDecisionNotifications");
     expect(source).toContain("missingPendingRequestIds");
-    expect(source).toContain("decisionState.pendingRequestIds.size");
+    expect(source).toContain("decisionState.pendingDecisionKeys.size");
   });
 
   it("uses the responsive 22rem width and clamps preview copy", () => {
