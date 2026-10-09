@@ -26,7 +26,7 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     );
   });
 
-  it("rejects finalizing an action while administrative requirements are pending", async () => {
+  it("allows retrospective finalization while administrative requirements are pending", async () => {
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
@@ -39,8 +39,12 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
       { params: Promise.resolve({ actionId: "action-test-1" }) },
     );
 
-    expect(response.status).toBe(400);
-    expect(updateMock).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action_phase: "post_action_complete",
+      }),
+    );
   });
 
   it("rejects a forged preparation state before loading the action", async () => {
