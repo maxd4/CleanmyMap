@@ -188,14 +188,16 @@ async function finalizeReviewResult(params: {
 }) {
   const { actionId, userId, data, access, reason, result, appendAudit, canOverrideActionParticipants } = params;
   const alreadyReviewed = "alreadyReviewed" in result && result.alreadyReviewed === true;
+  const staleRegistrationRequest =
+    "requestKind" in data && data.requestKind === "registration_request" && alreadyReviewed;
   const isPostActionClaim = result.participationSource === POST_ACTION_CLAIM_PARTICIPATION_SOURCE;
 
-  if (!alreadyReviewed && ("participantUserId" in data || data.decision === "accept")) {
+  if (!staleRegistrationRequest && ("participantUserId" in data || data.decision === "accept")) {
     await rebuildUserGamificationBadges(params.supabase, result.participantUserId).catch(() => null);
     await refreshProgressionProfile(params.supabase, result.participantUserId).catch(() => null);
   }
 
-  if (!alreadyReviewed && (isPostActionClaim || canOverrideActionParticipants(access.identity))) {
+  if (!staleRegistrationRequest && (isPostActionClaim || canOverrideActionParticipants(access.identity))) {
     await appendAudit({
       operationId: `action-group-join-${actionId}-${Date.now()}`,
       actorUserId: access.identity?.userId ?? userId,
@@ -331,7 +333,7 @@ export async function handleGroupJoinReview(
             actionPhase: actionResult.action_phase,
             requirePending: parsed.data.requestKind === "registration_request",
           });
-    return finalizeReviewResult({
+    return await finalizeReviewResult({
       supabase,
       actionId: trimmedActionId,
       userId,
