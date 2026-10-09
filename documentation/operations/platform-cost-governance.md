@@ -58,6 +58,32 @@ données de sélection et ne transmet ni email privé ni activité Clerk. Le co�
 avec une taille de réponse bornée ; toute évolution du volume ou de la
 fréquence doit passer par l'audit de quotas existant.
 
+Les décisions d'actions utilisent deux surfaces privées distinctes, conservées
+dans [`scripts/vercel-api-routes-baseline.json`](../../scripts/vercel-api-routes-baseline.json)
+avec leur provenance et leur contrat de coût :
+
+- `GET/PATCH /api/actions/invitations` est réservé au destinataire authentifié
+  d'une invitation `manual_add`. La lecture et la décision passent par les RPC
+  destinataire-scopées et ne projettent que les identifiants d'inscription et
+  d'action ; la décision est atomique et idempotente. `private, no-store` est
+  nécessaire pour ne pas servir à un autre destinataire un état d'invitation
+  personnel qui doit rester frais.
+- `GET /api/actions/registration-requests` est réservé à un reviewer
+  authentifié. Sa RPC reprojette uniquement les demandes `group_form/pending`
+  d'actions futures publiées et visibles, avec notification existante et droits
+  actuels ; elle ne crée pas de seconde file. Sa projection est limitée aux
+  identifiants d'inscription et d'action et reste `private, no-store` pour
+  synchroniser les décisions concurrentes.
+
+Ces lectures de décision sont déclenchées par le rafraîchissement du centre de
+notifications : la cloche utilise un intervalle de 300 secondes lorsqu'elle
+est ouverte et de 900 secondes lorsqu'elle est fermée mais visible ; le tableau
+de bord les charge à son ouverture et lors d'un chargement explicite
+supplémentaire, sans intervalle dédié. Les bornes sont donc la projection RPC
+par utilisateur/reviewer, l'état canonique encore actionnable et cette fréquence
+de rafraîchissement ; aucun payload de notification complet ni donnée privée
+Clerk n'est répliqué dans Vercel.
+
 ## Soutenabilité préventive des plans gratuits
 
 CleanMyMap doit pouvoir rester sur les offres gratuites de Vercel, Supabase et

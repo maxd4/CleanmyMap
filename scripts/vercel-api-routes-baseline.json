@@ -8,6 +8,22 @@
     "costContract": "GET borné à 10 comptes par page, recherche limitée à 120 caractères, offset limité à 100000, rate limit 60 requêtes par minute et réponse private/no-store ; aucun email ni timestamp Clerk n'est transmis.",
     "reviewedAt": "2026-10-09"
   },
+  "additionalChangeJustifications": [
+    {
+      "route": "apps/web/src/app/api/actions/invitations/route.ts",
+      "introducedBy": "3e305ec7edf7e2eb4ebdbd140e65622fc86b87aa",
+      "reason": "Surface authentifiée réservée au destinataire d'une invitation manual_add : lecture de ses invitations encore pendantes et décision atomique acceptation/refus via respond_to_action_invitation.",
+      "costContract": "GET et PATCH bornés à un destinataire Clerk et à une projection de registration_id/action_id ; la RPC vérifie l'action future et l'état canonique, la décision est idempotente et la réponse reste private/no-store. Les GET suivent le rafraîchissement du centre de notifications : 300 s lorsque la cloche est ouverte, 900 s lorsqu'elle est fermée et visible ; aucun polling dédié du tableau de bord.",
+      "reviewedAt": "2026-10-09"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/registration-requests/route.ts",
+      "introducedBy": "7428cde0ed51e40c0caa42c0361701cdaab1c0a8",
+      "reason": "Surface authentifiée de projection des demandes group_form encore pendantes pour un reviewer habilité, distincte du parcours destinataire des invitations manual_add.",
+      "costContract": "GET borné au reviewer Clerk et à une projection de registration_id/action_id issue d'une RPC qui filtre action publiée, future, visible, group_form/pending, notification existante et droits actuels ; réponse private/no-store. Les appels suivent le même rafraîchissement borné du centre de notifications : 300 s cloche ouverte, 900 s cloche fermée et visible, ou chargement explicite du tableau de bord.",
+      "reviewedAt": "2026-10-09"
+    }
+  ],
   "apiRoutes": [
     "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
     "apps/web/src/app/api/account/active-profile/route.ts",
