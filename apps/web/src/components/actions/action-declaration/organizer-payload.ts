@@ -8,9 +8,8 @@ export function resolveOrganizerPayload(form: FormState, isEntrepriseMode = fals
   void isEntrepriseMode;
   const isSpontaneousAction =
     form.organizerType === "spontaneous" ||
-    form.associationName === "Action spontanée" ||
     form.associationName === "__autre_benevole__";
-  const organizerName = form.organizerName.trim() || (isSpontaneousAction ? form.actorName.trim() : "");
+  const organizerName = form.organizerName.trim();
   return {
     isSpontaneousAction,
     organizerName,

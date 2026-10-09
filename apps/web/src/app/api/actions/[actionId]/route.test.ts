@@ -63,6 +63,37 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
     );
   });
 
+  it("rejects finalizing a spontaneous action without an explicitly selected account", async () => {
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "pending",
+      action_phase: "pre_action",
+      organizer_type: "spontaneous",
+      organizer_id: null,
+      organizer_name: "",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-1",
+      notes: null,
+    });
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          organizerType: "spontaneous",
+          organizerAccounts: [],
+          organizerName: "Organisateur en attente de compte",
+          actionPhase: "post_action_complete",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["owner", "user-test-1", "benevole"],
     ["admin", "admin-1", "admin"],

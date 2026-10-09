@@ -46,6 +46,7 @@ describe("POST /api/actions — création standard et pré-action", () => {
       volunteersCount: Number(form.volunteersCount),
       durationMinutes: Number(form.durationMinutes),
       notes: form.notes,
+      organizerName: "Organisateur en attente de compte",
       submissionMode: "quick",
     });
 
@@ -80,7 +81,7 @@ describe("POST /api/actions — création standard et pré-action", () => {
     expect(resolveActionParticipantsMock).toHaveBeenCalledWith(
       expect.objectContaining({
         participantAccounts: undefined,
-        organizerIds: ["user-test-1"],
+        organizerIds: [],
       }),
     );
     expect(trackActionCreatedMock).toHaveBeenCalledWith(expect.anything(), {
@@ -109,6 +110,7 @@ describe("POST /api/actions — création standard et pré-action", () => {
       volunteersCount: 4,
       durationMinutes: 45,
       notes: "Formulaire bénévole de test",
+      organizerAccounts: ["user-test-1"],
       submissionMode: "complete",
     });
 
@@ -143,6 +145,7 @@ describe("POST /api/actions — création standard et pré-action", () => {
       volunteersCount: 3,
       durationMinutes: 30,
       notes: "Préparation de l'action future",
+      organizerName: "Organisateur en attente de compte",
       submissionMode: "quick",
     });
 
@@ -213,6 +216,7 @@ describe("POST /api/actions — création standard et pré-action", () => {
       volunteersCount: 4,
       durationMinutes: 45,
       notes: "Brouillon admin de test",
+      organizerAccounts: ["user-test-1"],
       submissionMode: "complete",
       recordType: "action",
     });

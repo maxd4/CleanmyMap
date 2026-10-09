@@ -1,5 +1,6 @@
 import { Building, Calendar } from "lucide-react";
 import { OrganizerCombobox } from "@/components/actions/organizer-combobox";
+import { parseOrganizerAccounts } from "../payload";
 import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
 import type { ActiveRole } from "@/lib/domain-language";
 import type { FormState } from "../model";
@@ -21,6 +22,7 @@ type OrganizerSectionProps = {
   updateField: UpdateField;
   updateFields: (updates: Partial<FormState>) => void;
   userMetadata: {
+    userId: string;
     activeRole?: ActiveRole;
     displayName?: string;
     handle?: string;
@@ -41,9 +43,10 @@ type OrganizerRenderProps = {
   associationErrorId: string;
   organizerTypeErrorId: string;
   dateErrorId: string;
-  onAssociationChange: (selection: { id: string | null; name: string }) => void;
+  onAssociationChange: (selection: { id: string | null; name: string; accountIds?: string[] }) => void;
   onOrganizerTypeChange: (nextType: FormState["organizerType"]) => void;
   activeRole?: ActiveRole;
+  currentUserId: string;
 };
 
 function OrganizerSelection({
@@ -53,6 +56,7 @@ function OrganizerSelection({
   associationErrorId,
   onChange,
   activeRole,
+  currentUserId,
   className,
   errorClassName,
 }: {
@@ -60,8 +64,9 @@ function OrganizerSelection({
   isActionMode: boolean;
   missingAssociation: boolean;
   associationErrorId: string;
-  onChange: (selection: { id: string | null; name: string }) => void;
+  onChange: (selection: { id: string | null; name: string; accountIds?: string[] }) => void;
   activeRole?: ActiveRole;
+  currentUserId: string;
   className: string;
   errorClassName?: string;
 }) {
@@ -71,10 +76,9 @@ function OrganizerSelection({
         id="action-organizer-structure"
         organizerType={form.organizerType}
         organizerId={form.organizerId}
-        value={
-          form.organizerName ||
-          (form.organizerType === "spontaneous" ? form.actorName : "")
-        }
+        value={form.organizerName}
+        organizerAccountIds={parseOrganizerAccounts(form.organizerAccounts)}
+        currentUserId={currentUserId}
         activeRole={activeRole}
         onChange={onChange}
         required={isActionMode}
@@ -143,6 +147,7 @@ function CompactOrganizerSection({
   onAssociationChange,
   onOrganizerTypeChange,
   activeRole,
+  currentUserId,
 }: OrganizerRenderProps) {
   return (
     <div className="grid gap-3 md:grid-cols-3">
@@ -209,6 +214,7 @@ function CompactOrganizerSection({
           associationErrorId={associationErrorId}
           onChange={onAssociationChange}
           activeRole={activeRole}
+          currentUserId={currentUserId}
           className="space-y-1.5"
         />
       ) : null}
@@ -229,6 +235,7 @@ function FullOrganizerSection({
   onAssociationChange,
   onOrganizerTypeChange,
   activeRole,
+  currentUserId,
 }: OrganizerRenderProps) {
   return (
     <div>
@@ -270,6 +277,7 @@ function FullOrganizerSection({
             associationErrorId={associationErrorId}
             onChange={onAssociationChange}
             activeRole={activeRole}
+            currentUserId={currentUserId}
             className="space-y-1"
             errorClassName="pl-1"
           />
@@ -317,10 +325,14 @@ export function ActionOrganizerSection({
   function handleAssociationChange(selection: {
     id: string | null;
     name: string;
+    accountIds?: string[];
   }) {
     updateFields({
       organizerId: selection.id,
       organizerName: selection.name,
+      ...(form.organizerType === "spontaneous" && selection.accountIds
+        ? { organizerAccounts: selection.accountIds.join(", ") }
+        : {}),
       associationName:
         form.organizerType === "spontaneous"
           ? "Action spontanée"
@@ -332,13 +344,8 @@ export function ActionOrganizerSection({
     updateFields({
       organizerType: nextType,
       organizerId: null,
-      organizerName:
-        nextType === "spontaneous"
-          ? userMetadata.displayName ??
-            userMetadata.handle ??
-            userMetadata.username ??
-            ""
-          : "",
+      organizerName: "",
+      organizerAccounts: "",
       associationName:
         nextType === "spontaneous" ? "Action spontanée" : "",
     });
@@ -357,6 +364,7 @@ export function ActionOrganizerSection({
     onAssociationChange: handleAssociationChange,
     onOrganizerTypeChange: handleOrganizerTypeChange,
     activeRole: userMetadata.activeRole,
+    currentUserId: userMetadata.userId,
   } satisfies OrganizerRenderProps;
 
   return variant === "compact" ? (

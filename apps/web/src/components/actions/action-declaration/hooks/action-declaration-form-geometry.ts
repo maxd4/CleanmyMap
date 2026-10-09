@@ -125,9 +125,6 @@ export function prepareActionDeclarationFormUpdate(
   if (updates.routeTopology === "loop" && nextForm.recordType === "action") {
     nextForm.arrivalLocationLabel = "";
   }
-  if (updates.associationName === "Action spontanée") {
-    nextForm.organizerAccounts = "";
-  }
   applyOrganizerFormUpdates(nextForm, form, updates);
 
   return { nextForm, clearsPersistedDrawing };

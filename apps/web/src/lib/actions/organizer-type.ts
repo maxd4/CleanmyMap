@@ -9,6 +9,8 @@ export const ORGANIZER_TYPE_VALUES = [
 
 export type OrganizerType = (typeof ORGANIZER_TYPE_VALUES)[number];
 
+export const SPONTANEOUS_PENDING_ORGANIZER_LABEL = "Organisateur en attente de compte";
+
 export const ORGANIZER_TYPE_OPTIONS = [
   { value: "spontaneous", label: "Action spontanée" },
   { value: "company", label: "Entreprise" },

@@ -15,6 +15,7 @@ describe("POST /api/actions — rôles et modération", () => {
           eventEndTime: "10:00",
           locationLabel: "Parc futur",
           actionPhase: "pre_action",
+          organizerAccounts: ["user-test-1"],
           preparationData: {
             actionTitle: "Pré-action forgée",
             administrativeRequirements: {

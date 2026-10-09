@@ -32,6 +32,10 @@ function normalizeQuery(value: string | null): string {
   return (value ?? "").trim().slice(0, MAX_QUERY_LENGTH);
 }
 
+function parseIncludeCurrentUser(value: string | null): boolean {
+  return value === "1" || value === "true";
+}
+
 function toActionAccountOption(user: ClerkUserForActionPicker): ActionAccountOption {
   const displayName = [user.firstName?.trim() ?? "", user.lastName?.trim() ?? ""]
     .filter(Boolean)
@@ -40,7 +44,7 @@ function toActionAccountOption(user: ClerkUserForActionPicker): ActionAccountOpt
   return {
     id: user.id,
     display_name: displayName || user.username?.trim() || user.id,
-    handle: user.username?.trim() || null,
+    handle: user.username?.trim().replace(/^@+/, "") || null,
   };
 }
 
@@ -48,6 +52,7 @@ async function loadEligibleAccounts(params: {
   currentUserId: string;
   query: string;
   offset: number;
+  includeCurrentUser: boolean;
 }) {
   const client = await clerkClient();
   const accounts: ActionAccountOption[] = [];
@@ -67,7 +72,7 @@ async function loadEligibleAccounts(params: {
 
     for (const user of users) {
       scanOffset += 1;
-      if (user.id === params.currentUserId || seenIds.has(user.id)) {
+      if ((!params.includeCurrentUser && user.id === params.currentUserId) || seenIds.has(user.id)) {
         continue;
       }
       seenIds.add(user.id);
@@ -99,12 +104,14 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = normalizeQuery(searchParams.get("q"));
   const offset = parseOffset(searchParams.get("offset"));
+  const includeCurrentUser = parseIncludeCurrentUser(searchParams.get("includeCurrentUser"));
 
   try {
     const result = await loadEligibleAccounts({
       currentUserId: access.userId,
       query,
       offset,
+      includeCurrentUser,
     });
     return NextResponse.json(result, {
       headers: ACCOUNT_OPTIONS_CACHE_HEADERS,

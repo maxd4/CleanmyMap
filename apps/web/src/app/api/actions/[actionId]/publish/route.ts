@@ -8,6 +8,7 @@ import { loadActionById } from "@/lib/actions/store";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { canPublishPreAction } from "@/lib/actions/publication";
 import { initializeActionRouteVersioning } from "@/lib/actions/route-version-persistence";
+import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
 import type { ActionRow } from "@/types/database";
 
 export const runtime = "nodejs";
@@ -32,6 +33,24 @@ function buildPublicationUpdate(params: {
       ? { preparation_data: preparationData }
       : {}),
   };
+}
+
+function spontaneousOrganizerPublicationError(
+  action: Pick<ActionRow, "organizer_type" | "organizer_name">,
+  organizerIds: string[],
+) {
+  if (
+    action.organizer_type !== "spontaneous" ||
+    organizerIds.length > 0 ||
+    (action.organizer_name?.trim() &&
+      action.organizer_name.trim() !== SPONTANEOUS_PENDING_ORGANIZER_LABEL)
+  ) {
+    return null;
+  }
+  return NextResponse.json(
+    { error: "Sélectionnez un compte utilisateur organisateur avant de publier cette action." },
+    { status: 422 },
+  );
 }
 
 export async function POST(
@@ -97,6 +116,9 @@ export async function POST(
         { status: 422 },
       );
     }
+
+    const spontaneousOrganizerError = spontaneousOrganizerPublicationError(current, organizerIds);
+    if (spontaneousOrganizerError) return spontaneousOrganizerError;
 
     const publishedAt = new Date().toISOString();
     const result = await supabase

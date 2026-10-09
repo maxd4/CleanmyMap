@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { KeyboardEvent, RefObject } from "react";
-import { getStaticOrganizerSuggestions, type OrganizerDirectorySuggestion } from "@/lib/actions/organizer-directory-registry";
+import type { OrganizerDirectorySuggestion } from "@/lib/actions/organizer-directory-registry";
 import { getOrganizerTypeLabel, type OrganizerType } from "@/lib/actions/organizer-type";
+import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
 import type { ActiveRole } from "@/lib/domain-language";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { ActionAccountSelector } from "./action-participant-picker";
 import { cn } from "@/lib/utils";
+import { useOrganizerSuggestions } from "./organizer-combobox-suggestions";
 
 type OrganizerComboboxProps = {
   id: string;
   organizerType: OrganizerType | "";
   organizerId: string | null;
   value: string;
-  onChange: (selection: { id: string | null; name: string }) => void;
+  onChange: (selection: { id: string | null; name: string; accountIds?: string[] }) => void;
+  organizerAccountIds?: string[];
+  currentUserId?: string;
   activeRole?: ActiveRole;
   required?: boolean;
   invalid?: boolean;
@@ -51,39 +56,47 @@ export function getOrganizerComboboxKeyAction(
   return null;
 }
 
-function useOrganizerSuggestions(
-  organizerType: OrganizerType | "",
-  value: string,
-): OrganizerDirectorySuggestion[] {
-  const [remoteSuggestions, setRemoteSuggestions] = useState<OrganizerDirectorySuggestion[]>([]);
-  const [remoteSuggestionsKey, setRemoteSuggestionsKey] = useState("");
-  const remoteQueryKey = `${organizerType}:${value.trim()}`;
+function SpontaneousOrganizerSelector({
+  currentUserId,
+  value,
+  organizerAccountIds,
+  onChange,
+}: Pick<OrganizerComboboxProps, "currentUserId" | "value" | "organizerAccountIds" | "onChange">) {
+  return (
+    <ActionAccountSelector
+      currentUserId={currentUserId ?? ""}
+      value={organizerAccountIds ?? []}
+      selectedLabel={value}
+      pendingLabel={SPONTANEOUS_PENDING_ORGANIZER_LABEL}
+      onChange={() => undefined}
+      onSelectAccount={(user) => onChange({
+        id: null,
+        name: user.display_name?.trim() || user.handle?.trim() || user.id,
+        accountIds: [user.id],
+      })}
+      onOther={() => onChange({
+        id: null,
+        name: SPONTANEOUS_PENDING_ORGANIZER_LABEL,
+        accountIds: [],
+      })}
+    />
+  );
+}
 
-  useEffect(() => {
-    if (!organizerType || organizerType === "spontaneous" || value.trim().length < 2) return;
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      fetch(`/api/actions/organizers?type=${encodeURIComponent(organizerType)}&q=${encodeURIComponent(value.trim())}`, { signal: controller.signal })
-        .then((response) => response.ok ? response.json() : null)
-        .then((payload: { items?: OrganizerDirectorySuggestion[] } | null) => {
-          setRemoteSuggestionsKey(remoteQueryKey);
-          setRemoteSuggestions(payload?.items ?? []);
-        })
-        .catch(() => undefined);
-    }, 120);
-    return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [organizerType, remoteQueryKey, value]);
-
-  return useMemo(() => {
-    if (!organizerType || organizerType === "spontaneous") return [];
-    const seen = new Set<string>();
-    const currentRemoteSuggestions = remoteSuggestionsKey === remoteQueryKey ? remoteSuggestions : [];
-    return [...getStaticOrganizerSuggestions(organizerType, value), ...currentRemoteSuggestions].filter((item) => {
-      if (seen.has(item.id)) return false;
-      seen.add(item.id);
-      return true;
-    }).slice(0, 20);
-  }, [organizerType, remoteQueryKey, remoteSuggestions, remoteSuggestionsKey, value]);
+async function createOrganizerFromCombobox(name: string, organizerType: OrganizerType) {
+  const response = await fetch("/api/actions/organizers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, organizerType }),
+  });
+  const payload = (await response.json()) as {
+    organizer?: { id?: string | null; name?: string };
+    error?: string;
+  };
+  if (!response.ok || !payload.organizer?.id || !payload.organizer.name) {
+    throw new Error(payload.error || "La structure n’a pas pu être ajoutée.");
+  }
+  return { id: payload.organizer.id, name: payload.organizer.name };
 }
 
 export function OrganizerCombobox({
@@ -92,6 +105,8 @@ export function OrganizerCombobox({
   organizerId,
   value,
   onChange,
+  organizerAccountIds = [],
+  currentUserId,
   activeRole,
   required = false,
   invalid = false,
@@ -147,20 +162,8 @@ export function OrganizerCombobox({
     setAddError(null);
     setAddFeedback(null);
     try {
-      const response = await fetch("/api/actions/organizers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, organizerType }),
-      });
-      const payload = (await response.json()) as {
-        organizer?: { id?: string | null; name?: string; organizerType?: string };
-        error?: string;
-      };
-      if (!response.ok || !payload.organizer?.id || !payload.organizer.name) {
-        throw new Error(payload.error || "La structure n’a pas pu être ajoutée.");
-      }
-
-      onChange({ id: payload.organizer.id, name: payload.organizer.name });
+      const organizer = await createOrganizerFromCombobox(name, organizerType);
+      onChange({ id: organizer.id, name: organizer.name });
       setIsAddFormOpen(false);
       setNewOrganizerName("");
       setAddState("success");
@@ -196,6 +199,9 @@ export function OrganizerCombobox({
   }
 
   const spontaneous = organizerType === "spontaneous";
+  if (spontaneous) {
+    return <SpontaneousOrganizerSelector currentUserId={currentUserId} value={value} organizerAccountIds={organizerAccountIds} onChange={onChange} />;
+  }
   const activeOptionId = activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined;
   return (
     <OrganizerComboboxView

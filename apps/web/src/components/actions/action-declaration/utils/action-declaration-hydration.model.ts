@@ -8,6 +8,7 @@ import {
   applyPreparationDataToForm,
 } from "../payload";
 import type { FormState } from "../model";
+import { parseOrganizerAccounts } from "../payload";
 
 export type LoadedActionPhase =
   | "pre_action"
@@ -61,6 +62,9 @@ function buildIdentityFields(
     organizerName:
       action.organizerName ?? action.associationName ?? preparedForm.organizerName,
     organizerType: action.organizerType ?? preparedForm.organizerType,
+    organizerAccounts: parseOrganizerAccounts(
+      action.organizerAccounts?.join(", ") ?? preparedForm.organizerAccounts,
+    ).join(", "),
     participantAccounts: action.participantAccounts ?? preparedForm.participantAccounts,
     groupJoinEnabled: action.groupJoinEnabled,
   };

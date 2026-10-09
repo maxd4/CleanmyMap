@@ -497,7 +497,7 @@ describe("action declaration payload helpers", () => {
     expect(payload.associationName).toBe("Action spontanée");
   });
 
-  it("drops organizer accounts for spontaneous actions", () => {
+  it("preserves selected organizer accounts for spontaneous actions", () => {
     const form = buildBaseForm();
     form.associationName = "Action spontanée";
     form.organizerAccounts = "alice, bob";
@@ -513,7 +513,7 @@ describe("action declaration payload helpers", () => {
     });
 
     expect(payload.associationName).toBe("Action spontanée");
-    expect(payload.organizerAccounts).toBeUndefined();
+    expect(payload.organizerAccounts).toEqual(["alice", "bob"]);
   });
 
   it("normalizes duplicate drawing points before building the payload", () => {

@@ -10,6 +10,7 @@ import {
   resolveActionParticipants,
   resolveDefaultActionOrganizerIds,
 } from "@/lib/actions/participation/organizers";
+import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
 import { createAction } from "@/lib/actions/store";
 import { ActionRouteReconstructionError } from "@/lib/actions/geometry/route-reconstruction-error";
 import {
@@ -146,32 +147,82 @@ async function runActionCreationProgressionSideEffects(params: {
 type OrganizerResolution = Awaited<ReturnType<typeof resolveActionOrganizers>>;
 type ParticipantResolution = Awaited<ReturnType<typeof resolveActionParticipants>>;
 
-async function resolveActionParties(params: {
+type ResolveActionPartiesParams = {
   supabase: SupabaseClient;
   userId: string;
   payload: CreateActionPayload;
   creator: CreatorIdentity;
   isCreatorGlobalAdmin: boolean;
-}): Promise<{
+};
+
+function validateSpontaneousOrganizerSelection(payload: CreateActionPayload) {
+  if (payload.organizerType !== "spontaneous" || (payload.organizerAccounts ?? []).length > 0) {
+    return;
+  }
+  const organizerName = payload.organizerName?.trim() ?? "";
+  if (organizerName !== SPONTANEOUS_PENDING_ORGANIZER_LABEL) {
+    throw validationError(
+      "organizerAccounts",
+      "Sélectionnez un compte utilisateur comme organisateur ou choisissez « Autre ».",
+    );
+  }
+  if (
+    payload.submissionMode !== "quick" &&
+    payload.actionPhase !== "pre_action" &&
+    payload.actionPhase !== "post_action_draft"
+  ) {
+    throw validationError(
+      "organizerAccounts",
+      "Une déclaration finale exige un compte utilisateur organisateur réel.",
+    );
+  }
+}
+
+function resolveOrganizerAccountTokens(
+  params: ResolveActionPartiesParams,
+  isSpontaneousAction: boolean,
+): string[] {
+  const providedOrganizerAccounts = params.payload.organizerAccounts ?? [];
+  if (providedOrganizerAccounts.length > 0 || isSpontaneousAction) {
+    return providedOrganizerAccounts;
+  }
+  return resolveDefaultActionOrganizerIds({
+    creatorUserId: params.userId,
+    creatorIsGlobalAdmin: params.isCreatorGlobalAdmin,
+  });
+}
+
+function buildResolvedActionPayload(
+  payload: CreateActionPayload,
+  isSpontaneousAction: boolean,
+  organizerResolution: OrganizerResolution,
+): CreateActionPayload {
+  if (!isSpontaneousAction) return payload;
+  return {
+    ...payload,
+    organizerId: null,
+    organizerName:
+      organizerResolution.organizers[0]?.displayName ??
+      (payload.organizerName?.trim() === SPONTANEOUS_PENDING_ORGANIZER_LABEL
+        ? SPONTANEOUS_PENDING_ORGANIZER_LABEL
+        : ""),
+    associationName: "Action spontanée",
+  };
+}
+
+async function resolveActionParties(params: ResolveActionPartiesParams): Promise<{
+  payload: CreateActionPayload;
   organizerResolution: OrganizerResolution;
   participantResolution: ParticipantResolution;
 }> {
-  const isSpontaneousAction = params.payload.associationName === "Action spontanée";
-  const providedOrganizerAccounts = params.payload.organizerAccounts ?? [];
-  const organizerAccounts =
-    providedOrganizerAccounts.length > 0
-      ? providedOrganizerAccounts
-      : !isSpontaneousAction
-        ? resolveDefaultActionOrganizerIds({
-            creatorUserId: params.userId,
-            creatorIsGlobalAdmin: params.isCreatorGlobalAdmin,
-          })
-        : [];
+  const isSpontaneousAction = params.payload.organizerType === "spontaneous";
+  validateSpontaneousOrganizerSelection(params.payload);
+  const organizerAccounts = resolveOrganizerAccountTokens(params, isSpontaneousAction);
   const organizerResolution = await resolveActionOrganizers({
     supabase: params.supabase,
     creator: params.creator,
     organizerAccounts,
-    includeCreatorAsPrimary: isSpontaneousAction,
+    includeCreatorAsPrimary: false,
   });
   if (organizerResolution.unresolvedTokens.length > 0) {
     throw new ActionCreationValidationError({
@@ -197,7 +248,11 @@ async function resolveActionParties(params: {
     });
   }
 
-  return { organizerResolution, participantResolution };
+  return {
+    payload: buildResolvedActionPayload(params.payload, isSpontaneousAction, organizerResolution),
+    organizerResolution,
+    participantResolution,
+  };
 }
 
 async function resolveStandardActionContext(params: {
@@ -231,7 +286,7 @@ async function resolveStandardActionContext(params: {
     throw error;
   }
 
-  const { organizerResolution, participantResolution } =
+  const { payload: resolvedPayload, organizerResolution, participantResolution } =
     await resolveActionParties({
       supabase: params.supabase,
       userId: params.userId,
@@ -239,7 +294,16 @@ async function resolveStandardActionContext(params: {
       creator: params.creator,
       isCreatorGlobalAdmin: params.isCreatorGlobalAdmin,
     });
-  return { payload, organizerResolution, participantResolution };
+  return { payload: resolvedPayload, organizerResolution, participantResolution };
+}
+
+function resolveOrganizerRequirement(
+  payload: CreateActionPayload,
+  organizerResolution: OrganizerResolution,
+) {
+  return payload.organizerType === "spontaneous" && organizerResolution.organizers.length === 0
+    ? "optional" as const
+    : undefined;
 }
 
 async function persistStandardActionSubmission(params: {
@@ -255,6 +319,7 @@ async function persistStandardActionSubmission(params: {
       userId: params.userId,
       payload: params.payload,
       organizers: params.organizerResolution.organizers,
+      organizerRequirement: resolveOrganizerRequirement(params.payload, params.organizerResolution),
       manualParticipants: params.participantResolution.participants,
       status: "pending",
     });

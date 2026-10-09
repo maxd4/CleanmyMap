@@ -26,9 +26,6 @@ export function normalizeActionDeclarationFormBeforeSubmit(
   if (normalized.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE) {
     normalized.associationName = "Action spontanée";
   }
-  if (normalized.associationName === "Action spontanée") {
-    normalized.organizerAccounts = "";
-  }
   if (!normalized.locationLabel.trim() && normalized.departureLocationLabel.trim()) {
     normalized.locationLabel = normalized.departureLocationLabel.trim();
   }
@@ -49,6 +46,13 @@ export function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
     issues.push({
       field: "associationName",
       message: "Renseignez un organisateur après avoir choisi le type de structure.",
+    });
+  }
+
+  if (form.organizerType === "spontaneous" && !form.organizerAccounts.trim()) {
+    issues.push({
+      field: "associationName",
+      message: "Sélectionnez un compte utilisateur comme organisateur avant la déclaration finale.",
     });
   }
 

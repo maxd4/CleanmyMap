@@ -125,7 +125,7 @@ function buildContractMetadata(
     associationName: payload.associationName,
     organizerType: payload.organizerType,
     organizerId: payload.organizerId,
-    organizerName: payload.organizerName,
+    organizerName: payload.organizerName?.trim() || undefined,
     organizerAccounts: payload.organizerAccounts,
     participantAccounts: payload.participantAccounts,
     groupJoinEnabled: payload.groupJoinEnabled,
@@ -280,7 +280,11 @@ function buildNormalizedIdentityFields(
     associationName: payload.metadata.associationName,
     organizerType: payload.metadata.organizerType ?? undefined,
     organizerId: payload.metadata.organizerId ?? null,
-    organizerName: payload.metadata.organizerName ?? payload.metadata.associationName,
+    organizerName:
+      payload.metadata.organizerName ??
+      (payload.metadata.organizerType === "spontaneous"
+        ? undefined
+        : payload.metadata.associationName),
     groupJoinEnabled: payload.metadata.groupJoinEnabled,
     actionPhase: payload.metadata.actionPhase ?? undefined,
     preparationData: context.preparationData,

@@ -55,7 +55,9 @@ function buildEditorOrganizerFields(row: ActionRow, metadata: ActionEditorMetada
     associationName: metadata.associationName,
     organizerType: row.organizer_type,
     organizerId: row.organizer_id ?? null,
-    organizerName: row.organizer_name ?? metadata.associationName,
+    organizerName:
+      row.organizer_name ??
+      (row.organizer_type === "spontaneous" ? undefined : metadata.associationName),
     groupJoinEnabled: metadata.groupJoinEnabled,
   };
 }

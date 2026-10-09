@@ -255,14 +255,14 @@ export function sanitizePreActionForm(form: FormState): FormState {
   next.adultCount = next.adultCount.trim();
   next.retiredCount = next.retiredCount.trim();
   next.actorName = next.actorName.trim();
-  const legacyAssociationName = next.associationName.trim();
+  const enteredAssociationName = next.associationName.trim();
   const normalizedAssociation = normalizeAssociationSelectionForPrefill(next.associationName);
   next.associationName = normalizedAssociation ?? next.associationName.trim();
-  next.organizerName = next.organizerName.trim() || legacyAssociationName;
-  next.organizerId = next.organizerId?.trim() || null;
-  if (!next.organizerName && next.organizerType === "spontaneous") {
-    next.organizerName = next.actorName;
+  next.organizerName = next.organizerName.trim();
+  if (next.organizerType !== "spontaneous" && !next.organizerName) {
+    next.organizerName = enteredAssociationName;
   }
+  next.organizerId = next.organizerId?.trim() || null;
   next.durationMinutes = next.durationMinutes.trim();
 
   return next;

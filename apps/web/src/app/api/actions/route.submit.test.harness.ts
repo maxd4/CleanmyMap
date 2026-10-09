@@ -50,6 +50,7 @@ export async function postSubmitPayload(payload: unknown) {
 export function buildQuickPreActionPayload() {
   const form = createInitialFormState("Test User");
   form.organizerType = "spontaneous";
+  form.organizerName = "Organisateur en attente de compte";
   form.actionTitle = "Préparation terrain";
   form.shortDescription = "Préparer une action de nettoyage.";
   form.communeZoneLabel = "Paris 15";
@@ -102,6 +103,7 @@ export function buildSubmitPayload(overrides: Partial<SubmitPayloadInput> = {}) 
     volunteersCount: 4,
     durationMinutes: 45,
     notes: "Formulaire bénévole de test",
+    organizerAccounts: ["user-test-1"],
     submissionMode: "quick",
     ...overrides,
   });
@@ -210,18 +212,18 @@ export function resetSubmitRouteMocks() {
     status: "new",
     notes: "[spot-by:Test User] signalement",
   });
-  resolveActionOrganizersMock.mockResolvedValue({
-    organizers: [
-      {
-        userId: "user-test-1",
-        displayName: "Test User",
-        handle: "test@example.org",
-        isPrimary: true,
-        sourceToken: null,
-      },
-    ],
+  resolveActionOrganizersMock.mockImplementation(async (params: {
+    organizerAccounts?: string[];
+  }) => ({
+    organizers: (params.organizerAccounts ?? []).map((userId, index) => ({
+      userId,
+      displayName: userId === "user-test-1" ? "Test User" : userId,
+      handle: userId === "user-test-1" ? "test@example.org" : userId,
+      isPrimary: index === 0,
+      sourceToken: null,
+    })),
     unresolvedTokens: [],
-  });
+  }));
   resolveActionParticipantsMock.mockResolvedValue({
     participants: [],
     unresolvedTokens: [],

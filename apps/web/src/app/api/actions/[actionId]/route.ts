@@ -41,7 +41,10 @@ import {
   type AdminOverrideErrorStage,
 } from "@/lib/actions/action-update-post-processing";
 import { resolveActionUpdateOrganizer } from "@/lib/actions/action-update-organizer";
-import { validatePatchOrganizerAccounts } from "./route.patch-organizers";
+import {
+  validatePatchOrganizerAccounts,
+  validateSpontaneousOrganizerPatch,
+} from "./route.patch-organizers";
 import { createAdminAuditOnceAppender } from "./route.patch-audit";
 import {
   ensureGpxGeometryContributionEligible,
@@ -54,7 +57,6 @@ import {
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
 export const dynamic = "force-dynamic";
-
 async function loadActionPermissionContext(
   supabase: ReturnType<typeof getSupabaseServerClient>,
   userId: string,
@@ -67,7 +69,6 @@ async function loadActionPermissionContext(
   const organizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, actionId);
   return { identity, permissionIdentity, organizerIds };
 }
-
 async function parsePatchRequest(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
@@ -145,6 +146,8 @@ async function preparePatchMutation({
   moderationOperation: string;
   moderationReason: string | null;
 }> {
+  const spontaneousOrganizerError = validateSpontaneousOrganizerPatch(current, parsed);
+  if (spontaneousOrganizerError) return spontaneousOrganizerError;
   const parsedBody = await resolveActionUpdateOrganizer({ supabase, body: parsed, current });
   const organizerAccountsError = await validatePatchOrganizerAccounts({ supabase, userId, identity, organizerAccounts: parsedBody.organizerAccounts });
   if (organizerAccountsError) return organizerAccountsError;
@@ -264,7 +267,7 @@ async function executePreparedActionUpdate({
     actionId,
     userId,
   });
-  await runActionUpdatePostProcessing({ supabase, actionId, currentOrganizerType: current.organizer_type, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
+  await runActionUpdatePostProcessing({ supabase, actionId, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
   return body;
 }
 
@@ -371,9 +374,12 @@ export async function GET(
     ).catch(() => []);
     const action = {
       ...buildActionEditorPayload(row),
-      organizerAccounts: organizerIds.filter(
-        (organizerId) => organizerId !== row.created_by_clerk_id,
-      ),
+      organizerAccounts:
+        row.organizer_type === "spontaneous"
+          ? organizerIds
+          : organizerIds.filter(
+              (organizerId) => organizerId !== row.created_by_clerk_id,
+            ),
       participantAccounts,
     };
     return NextResponse.json({ status: "ok", action });

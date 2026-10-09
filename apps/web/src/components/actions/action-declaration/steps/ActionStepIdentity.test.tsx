@@ -90,13 +90,14 @@ describe("ActionStepIdentity", () => {
       const form = createInitialFormState("Aperçu local", "action");
       form.organizerType = organizerType;
       form.associationName = organizerType === "spontaneous" ? "Action spontanée" : "";
-      form.organizerName = organizerType === "spontaneous" ? "Aperçu local" : "";
+      form.organizerName = "";
 
        const html = renderIdentity(form);
 
       expect(html).toContain('role="combobox"');
       if (organizerType === "spontaneous") {
-        expect(html).toContain("Nom ou pseudo du référent");
+        expect(html).toContain("Sélectionner un compte utilisateur");
+        expect(html).not.toContain('value="Aperçu local"');
       } else {
         expect(getStaticOrganizerSuggestions(organizerType).every((entry) => entry.organizerType === organizerType)).toBe(true);
         expect(html).not.toContain("World Cleanup Day France");
@@ -144,7 +145,7 @@ describe("ActionStepIdentity", () => {
     const form = createInitialFormState("Aperçu local", "action");
     form.organizerType = "spontaneous";
     form.associationName = "Action spontanée";
-    form.organizerName = "Aperçu local";
+    form.organizerName = "";
     form.volunteersCount = "3";
 
     const html = renderIdentity(form);

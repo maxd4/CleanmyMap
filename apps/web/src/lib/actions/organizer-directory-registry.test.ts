@@ -199,4 +199,19 @@ describe("organizer directory registry", () => {
       legacyAssociationName: "Action spontanée",
     });
   });
+
+  it("does not invent a spontaneous organizer from the actor or the legacy label", async () => {
+    const supabase = { from: () => { throw new Error("catalog must not be accessed"); } } as never;
+
+    await expect(resolveActionOrganizer({
+      supabase,
+      organizerType: "spontaneous",
+      organizerName: "",
+      actorName: "Créateur connecté",
+    })).resolves.toEqual({
+      organizerId: null,
+      organizerName: "",
+      legacyAssociationName: "Action spontanée",
+    });
+  });
 });

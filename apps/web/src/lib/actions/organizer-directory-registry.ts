@@ -3,7 +3,7 @@ import {
   getOrganizerDirectoryEntries,
   ORGANIZER_DIRECTORY,
 } from "./association-options";
-import type { OrganizerType } from "./organizer-type";
+import { type OrganizerType, SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "./organizer-type";
 import type { CreateActionPayload } from "./types";
 
 export type OrganizerDirectorySuggestion = {
@@ -147,10 +147,13 @@ export async function resolveActionOrganizer(params: {
 }): Promise<{ organizerId: string | null; organizerName: string; legacyAssociationName: string }> {
   const enteredName = (params.organizerName ?? "").trim();
   if (params.organizerType === "spontaneous") {
+    void params.actorName;
     if (params.organizerId?.trim()) {
       throw new Error("Validation: une action spontanée ne peut pas référencer une structure.");
     }
-    const name = enteredName || params.actorName?.trim() || "Action spontanée";
+    const name = enteredName === SPONTANEOUS_PENDING_ORGANIZER_LABEL
+      ? SPONTANEOUS_PENDING_ORGANIZER_LABEL
+      : enteredName;
     return { organizerId: null, organizerName: name, legacyAssociationName: "Action spontanée" };
   }
   const selectedId = params.organizerId?.trim();
@@ -270,7 +273,11 @@ export async function resolveCanonicalCreateActionPayload(params: {
     supabase: params.supabase,
     organizerType: params.payload.organizerType,
     organizerId: params.payload.organizerId,
-    organizerName: params.payload.organizerName ?? params.payload.associationName,
+    organizerName:
+      params.payload.organizerName ??
+      (params.payload.organizerType === "spontaneous"
+        ? undefined
+        : params.payload.associationName),
     actorName: params.payload.actorName,
   });
   return {

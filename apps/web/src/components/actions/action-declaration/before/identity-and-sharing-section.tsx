@@ -86,9 +86,7 @@ function IdentityFieldGrid({
   missingOrganizerType: boolean;
   missingAssociation: boolean;
 }) {
-  const organizerName = form.organizerType === "spontaneous"
-    ? form.organizerName || form.actorName
-    : form.organizerName;
+  const organizerName = form.organizerName;
   const creatorDisplayName = userMetadata.displayName?.trim()
     || userMetadata.handle?.trim()
     || userMetadata.username?.trim()
@@ -130,8 +128,16 @@ function IdentityFieldGrid({
           organizerType={form.organizerType}
           organizerId={form.organizerId}
           value={organizerName}
+          organizerAccountIds={parseOrganizerAccounts(form.organizerAccounts)}
+          currentUserId={userMetadata.userId}
           activeRole={userMetadata.activeRole}
-          onChange={({ id, name }) => updateFields?.({ organizerId: id, organizerName: name })}
+          onChange={({ id, name, accountIds }) => updateFields?.({
+            organizerId: id,
+            organizerName: name,
+            ...(form.organizerType === "spontaneous" && accountIds
+              ? { organizerAccounts: accountIds.join(", ") }
+              : {}),
+          })}
           required
           invalid={missingAssociation}
           describedBy={missingAssociation ? "before-organizer-structure-error" : undefined}

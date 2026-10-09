@@ -25,7 +25,7 @@ type HomeCommunityCredibilityProps = {
   errorMessage?: string | null;
 };
 
-export function HomeCommunityCredibility({
+function useHomeCommunityCredibility({
   activity,
   errorMessage,
 }: HomeCommunityCredibilityProps) {
@@ -64,6 +64,13 @@ export function HomeCommunityCredibility({
     duration: 0.65,
     y: 20,
   });
+
+  return { setSectionRefs, visibleActivity, hasActivityError };
+}
+
+export function HomeCommunityCredibility(props: HomeCommunityCredibilityProps) {
+  const { setSectionRefs, visibleActivity, hasActivityError } =
+    useHomeCommunityCredibility(props);
 
   return (
     <section

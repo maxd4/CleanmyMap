@@ -20,7 +20,7 @@ describe("action declaration submission model", () => {
     const result = normalizeActionDeclarationFormBeforeSubmit(form);
 
     expect(result.associationName).toBe("Action spontanée");
-    expect(result.organizerAccounts).toBe("");
+    expect(result.organizerAccounts).toBe("@collectif");
     expect(result.locationLabel).toBe("Quai nord");
     expect(result.arrivalLocationLabel).toBe("");
     expect(result.routeStyle).toBe("souple");

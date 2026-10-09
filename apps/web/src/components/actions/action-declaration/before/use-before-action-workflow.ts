@@ -124,7 +124,10 @@ export function buildBeforeActionFormFromAction({
     organizerType: action.organizerType ?? hydrated.organizerType,
     organizerId: action.organizerId ?? hydrated.organizerId,
     organizerName:
-      action.organizerName ?? action.associationName ?? hydrated.organizerName,
+      action.organizerName ??
+      (action.organizerType === "spontaneous"
+        ? hydrated.organizerName
+        : action.associationName ?? hydrated.organizerName),
     organizerAccounts: parseOrganizerAccounts(
       action.organizerAccounts?.join(", ") ?? hydrated.organizerAccounts,
     ).join(", "),

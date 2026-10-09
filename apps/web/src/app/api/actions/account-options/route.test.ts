@@ -154,6 +154,22 @@ describe("GET /api/actions/account-options", () => {
     });
   });
 
+  it("includes the authenticated account only when the selector requests it", async () => {
+    const getUserListMock = vi.fn().mockResolvedValue({
+      data: [clerkUser("user-current"), clerkUser("user-other")],
+      totalCount: 2,
+    });
+    clerkClientMock.mockResolvedValue({ users: { getUserList: getUserListMock } });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/account-options?includeCurrentUser=1"),
+    );
+    const body = await response.json() as { users?: Array<{ id: string }> };
+
+    expect(body.users?.map((user) => user.id)).toEqual(["user-current", "user-other"]);
+  });
+
   it("returns an empty terminal page when Clerk has no eligible account", async () => {
     const getUserListMock = vi.fn().mockResolvedValue({ data: [], totalCount: 0 });
     clerkClientMock.mockResolvedValue({ users: { getUserList: getUserListMock } });

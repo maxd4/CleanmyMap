@@ -41,9 +41,7 @@ export function buildCreateActionPayloadIdentityFields(
 ): Partial<CreateActionPayload> {
   const { form, declarationMode, linkedEventId } = params;
   const { departureLocationLabel, arrivalLocationLabel, routeTopology, routeLocationLabel } = parts;
-  const organizerAccounts = parts.isSpontaneousAction
-    ? undefined
-    : parseOrganizerAccounts(form.organizerAccounts);
+  const organizerAccounts = parseOrganizerAccounts(form.organizerAccounts);
 
   return {
     actorName: form.actorName.trim() || undefined,
@@ -63,7 +61,7 @@ export function buildCreateActionPayloadIdentityFields(
     routeAdjustmentMessage: form.routeAdjustmentMessage.trim() || undefined,
     recordType: form.recordType,
     notes: appendEventRefToNotes(form.notes.trim() || undefined, linkedEventId),
-    organizerAccounts: organizerAccounts?.length ? organizerAccounts : undefined,
+    organizerAccounts: organizerAccounts.length ? organizerAccounts : undefined,
     participantAccounts: normalizeParticipantAccounts(form.participantAccounts),
     ...(form.placeType ? { placeType: form.placeType } : {}),
     submissionMode: declarationMode,
