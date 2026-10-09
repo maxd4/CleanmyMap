@@ -31,7 +31,7 @@ function attribution(wasteKg: number | null) {
 
 function snapshot(
   attributions: Map<string, ReturnType<typeof attribution>>,
-  revision = "revision-1",
+  revision: string | null = "revision-1",
 ) {
   return { available: true, readStatus: "available" as const, revision, attributions };
 }
@@ -91,6 +91,30 @@ describe("action participant impact notifications", () => {
     });
   });
 
+  it("stores an opaque bounded revision instead of participant identities", async () => {
+    const rawRevision = Array.from({ length: 500 }, (_, index) =>
+      `clerk-participant-${index}:${"2026-10-09T10:00:00.000Z"}`,
+    ).join("|");
+    loadSnapshotMock.mockResolvedValue(
+      snapshot(new Map([["clerk-participant-0", attribution(6)]]), rawRevision),
+    );
+    const { emitActionParticipantImpactNotifications } = await import("./action-participant-impact-notifications");
+
+    await expect(emitActionParticipantImpactNotifications({
+      supabase: createSupabaseMock() as never,
+      actionId: "action-1",
+      previousSnapshot: snapshot(new Map([["clerk-participant-0", attribution(5)]])),
+      persistedRevision: rawRevision,
+    })).resolves.toBe(true);
+
+    const payload = notificationRows[0]?.payload as Record<string, unknown>;
+    expect(payload.revision).toMatch(/^[a-f0-9]{64}$/);
+    expect(payload.eventKey).toMatch(/^action_result_impact:[a-f0-9]{64}$/);
+    expect(String(payload.revision)).not.toContain("clerk-participant-1");
+    expect(String(payload.eventKey)).not.toContain("clerk-participant-1");
+    expect(String(payload.eventKey).length).toBe(85);
+  });
+
   it("deduplicates an identical recalculation and ignores a newly confirmed participant", async () => {
     const previous = snapshot(new Map([["user-1", attribution(5)]]));
     const current = snapshot(new Map([
@@ -133,6 +157,20 @@ describe("action participant impact notifications", () => {
       revision: null,
       attributions: new Map(),
     });
+    const { emitActionParticipantImpactNotifications } = await import("./action-participant-impact-notifications");
+
+    await expect(emitActionParticipantImpactNotifications({
+      supabase: createSupabaseMock() as never,
+      actionId: "action-1",
+      previousSnapshot: snapshot(new Map([["user-1", attribution(5)]])),
+    })).resolves.toBe(false);
+    expect(insertNotificationMock).not.toHaveBeenCalled();
+  });
+
+  it("does not emit when the current projection has no revision", async () => {
+    loadSnapshotMock.mockResolvedValue(
+      snapshot(new Map([["user-1", attribution(6)]]), null),
+    );
     const { emitActionParticipantImpactNotifications } = await import("./action-participant-impact-notifications");
 
     await expect(emitActionParticipantImpactNotifications({

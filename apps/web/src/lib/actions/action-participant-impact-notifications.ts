@@ -67,6 +67,25 @@ function attributionFingerprint(
     .slice(0, 32);
 }
 
+function impactRevisionFingerprint(revision: string): string {
+  return createHash("sha256").update(revision, "utf8").digest("hex");
+}
+
+function impactEventKey(params: {
+  actionId: string;
+  userId: string;
+  revisionFingerprint: string;
+  attributionFingerprint: string;
+}): string {
+  const identity = [
+    params.actionId,
+    params.userId,
+    params.revisionFingerprint,
+    params.attributionFingerprint,
+  ].join(":");
+  return `action_result_impact:${createHash("sha256").update(identity, "utf8").digest("hex")}`;
+}
+
 function attributionChanged(
   previous: ActionParticipantImpactAttribution | undefined,
   current: ActionParticipantImpactAttribution,
@@ -86,7 +105,7 @@ function isUniqueViolation(error: unknown): boolean {
 function actionImpactNotificationPayload(params: {
   actionId: string;
   userId: string;
-  revision: string;
+  revisionFingerprint: string;
   fingerprint: string;
 }) {
   return {
@@ -94,9 +113,14 @@ function actionImpactNotificationPayload(params: {
     subtype: "action_result_impact",
     requestKind: "action_result_impact",
     actionId: params.actionId,
-    revision: params.revision,
+    revision: params.revisionFingerprint,
     attributionFingerprint: params.fingerprint,
-    eventKey: `action_result_impact:${params.actionId}:${params.userId}:${params.revision}:${params.fingerprint}`,
+    eventKey: impactEventKey({
+      actionId: params.actionId,
+      userId: params.userId,
+      revisionFingerprint: params.revisionFingerprint,
+      attributionFingerprint: params.fingerprint,
+    }),
     href: `/sections/rejoindre-une-action?tab=past&actionId=${encodeURIComponent(params.actionId)}`,
   };
 }
@@ -109,8 +133,9 @@ async function insertImpactNotifications(params: {
   revision?: string | null;
 }): Promise<boolean> {
   let inserted = false;
-  const revision = params.revision ?? params.snapshot.revision;
-  if (!revision) return false;
+  const rawRevision = params.revision ?? params.snapshot.revision;
+  if (!rawRevision) return false;
+  const revisionFingerprint = impactRevisionFingerprint(rawRevision);
   for (const userId of params.userIds) {
     const attribution = params.snapshot.attributions.get(userId);
     if (!attribution) continue;
@@ -124,7 +149,7 @@ async function insertImpactNotifications(params: {
       payload: actionImpactNotificationPayload({
         actionId: params.actionId,
         userId,
-        revision,
+        revisionFingerprint,
         fingerprint,
       }),
     });
