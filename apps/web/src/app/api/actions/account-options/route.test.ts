@@ -4,6 +4,8 @@ const clerkClientMock = vi.hoisted(() => vi.fn());
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const unauthorizedJsonResponseMock = vi.hoisted(() => vi.fn());
 const handleApiErrorMock = vi.hoisted(() => vi.fn());
+const verifyRateLimitMock = vi.hoisted(() => vi.fn());
+const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: clerkClientMock,
@@ -19,6 +21,11 @@ vi.mock("@/lib/http/auth-responses", () => ({
 
 vi.mock("@/lib/http/api-errors", () => ({
   handleApiError: handleApiErrorMock,
+}));
+
+vi.mock("@/lib/rate-limit/server", () => ({
+  verifyRateLimit: verifyRateLimitMock,
+  createServerRateLimitResponse: createServerRateLimitResponseMock,
 }));
 
 function clerkUser(id: string, overrides: Record<string, unknown> = {}) {
@@ -40,6 +47,13 @@ describe("GET /api/actions/account-options", () => {
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-current" });
     unauthorizedJsonResponseMock.mockReturnValue(Response.json({ error: "Unauthorized" }, { status: 401 }));
     handleApiErrorMock.mockImplementation(() => Response.json({ error: "server" }, { status: 500 }));
+    verifyRateLimitMock.mockResolvedValue({
+      allowed: true,
+      limit: 60,
+      remaining: 59,
+      reset: Date.now() + 60_000,
+    });
+    createServerRateLimitResponseMock.mockReturnValue(null);
   });
 
   it("asks Clerk for the globally active-sorted first batch and excludes the current account", async () => {
@@ -154,6 +168,23 @@ describe("GET /api/actions/account-options", () => {
     });
   });
 
+  it("bounds a forged pagination offset before calling Clerk", async () => {
+    const getUserListMock = vi.fn().mockResolvedValue({ data: [], totalCount: 0 });
+    clerkClientMock.mockResolvedValue({ users: { getUserList: getUserListMock } });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/account-options?offset=999999999"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(getUserListMock).toHaveBeenCalledWith({
+      orderBy: "-last_active_at",
+      limit: 10,
+      offset: 100_000,
+    });
+  });
+
   it("includes the authenticated account only when the selector requests it", async () => {
     const getUserListMock = vi.fn().mockResolvedValue({
       data: [clerkUser("user-current"), clerkUser("user-other")],
@@ -201,6 +232,28 @@ describe("GET /api/actions/account-options", () => {
     const response = await GET(new Request("http://localhost/api/actions/account-options"));
 
     expect(response.status).toBe(401);
+    expect(clerkClientMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses excessive authenticated lookups before consulting Clerk", async () => {
+    const rateLimitResponse = Response.json(
+      { error: "Trop de tentatives." },
+      { status: 429 },
+    );
+    createServerRateLimitResponseMock.mockReturnValue(rateLimitResponse);
+    verifyRateLimitMock.mockResolvedValue({
+      allowed: false,
+      limit: 60,
+      remaining: 0,
+      reset: Date.now() + 60_000,
+      retryAfter: 60,
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/account-options"));
+
+    expect(response.status).toBe(429);
+    expect(requireAuthenticatedAccessMock).not.toHaveBeenCalled();
     expect(clerkClientMock).not.toHaveBeenCalled();
   });
 });

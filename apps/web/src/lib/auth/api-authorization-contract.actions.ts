@@ -87,8 +87,8 @@ export const actionsAuthorizationContract = {
     GET: {
       expected: "Authenticated minimal Clerk account options for action participant and organizer selectors",
       dimensions: ["authentication"],
-      actual: "requireAuthenticatedAccess + current-account exclusion + minimal public projection",
-      evidence: ["requireAuthenticatedAccess", "loadEligibleAccounts"],
+      actual: "requireAuthenticatedAccess + verifyRateLimit + bounded query/pagination + current-account exclusion + minimal public projection",
+      evidence: ["requireAuthenticatedAccess", "verifyRateLimit", "parseOffset", "loadEligibleAccounts"],
       evidenceScope: "module",
     },
   },

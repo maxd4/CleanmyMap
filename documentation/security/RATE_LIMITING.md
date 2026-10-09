@@ -31,7 +31,11 @@ peuvent être plus strictes que ces profils.
 
 Les handlers actuellement concernés incluent les POST d'actions, chat,
 signalements, événements, contact, métriques pédagogiques, newsletter et
-onboarding partenaires. Les GET de chat et d'événements ne passent pas par
+onboarding partenaires, ainsi que le GET authentifié
+`/api/actions/account-options` utilisé par les sélecteurs d'organisateurs et de
+membres. Cette route applique `verifyRateLimit()` à 60 requêtes par minute,
+borne sa recherche et sa pagination, et ne renvoie qu'une projection Clerk
+publique minimale. Les GET de chat et d'événements ne passent pas par
 `verifyRateLimit()` dans le runtime décrit ici. BotID reste une protection
 anti-automation navigateur distincte sur les routes explicitement configurées ;
 il ne remplace ni AuthN/AuthZ ni le rate limit.
@@ -48,6 +52,7 @@ décrit le coût du runtime, pas une promesse de quota fournisseur.
 
 | Surface | Vercel | Supabase DB/Storage/egress | Email / tiers | Automatisation et garde-fous |
 |---|---|---|---|---|
+| Sélecteurs de comptes Clerk des actions | invocation serveur + attente Clerk, réponse bornée | aucun stockage métier | Clerk `getUserList` | AuthN, 60 requêtes/minute, recherche 120 caractères, offset borné à 100000, 10 comptes/page, projection publique minimale et `private, no-store` |
 | Géocodage adresse, reverse et reconstruction de route | temps CPU + attente réseau | aucun stockage métier direct | Geoplateforme, Nominatim ou routage selon le planner | URL de fournisseur construite côté serveur, coordonnées/requête bornées, timeout et limite serveur par IP/identité |
 | Recommandation d'itinéraire et météo planner | CPU + appels réseau | lectures de contexte et suivi de progression | fournisseur météo/routage | AuthN, rate limit dédié et entrées bornées ; aucune URL de fournisseur reçue du navigateur |
 | Actions, signalements, médias et Chat | CPU + traitement de requête | écritures, pièces jointes Storage et lectures privées | aucun preview de lien Chat | AuthZ domaine, payloads/MIME/tailles bornés, rate limits par identité/IP ; upload Chat direct navigateur → Storage |

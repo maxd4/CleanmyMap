@@ -47,6 +47,17 @@ Les noms et modalités commerciales peuvent évoluer chez le fournisseur. Les
 scripts et dashboards courants restent l'autorité pour les mesures actuelles ;
 ce document ne fige aucun plafond numérique.
 
+Les sélecteurs d'organisateurs et de membres des actions utilisent
+`GET /api/actions/account-options`. Cette route est une lecture authentifiée
+server-side de Clerk, limitée à 10 comptes par page, à 120 caractères de
+recherche et à un offset maximal de 100000, avec un rate limit de 60 requêtes
+par minute. Sa réponse `private, no-store` contient uniquement l'identifiant,
+le nom public et le pseudo ; elle évite de mettre en cache entre sessions des
+données de sélection et ne transmet ni email privé ni activité Clerk. Le coût
+à surveiller est donc principalement l'invocation Vercel et l'appel Clerk,
+avec une taille de réponse bornée ; toute évolution du volume ou de la
+fréquence doit passer par l'audit de quotas existant.
+
 ## Soutenabilité préventive des plans gratuits
 
 CleanMyMap doit pouvoir rester sur les offres gratuites de Vercel, Supabase et

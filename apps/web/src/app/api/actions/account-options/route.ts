@@ -3,9 +3,16 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
+import {
+  createServerRateLimitResponse,
+  verifyRateLimit,
+} from "@/lib/rate-limit/server";
 
 const PAGE_SIZE = 10;
 const MAX_QUERY_LENGTH = 120;
+const MAX_OFFSET = 100_000;
+// Justification Vercel: this authenticated Clerk lookup returns a minimal private projection;
+// no-store prevents account options from being reused across sessions or selector contexts.
 const ACCOUNT_OPTIONS_CACHE_HEADERS = {
   "Cache-Control": "private, no-store",
 };
@@ -25,7 +32,9 @@ export type ActionAccountOption = {
 
 function parseOffset(value: string | null): number {
   const parsed = Number(value ?? "0");
-  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
+  return Number.isSafeInteger(parsed) && parsed >= 0
+    ? Math.min(parsed, MAX_OFFSET)
+    : 0;
 }
 
 function normalizeQuery(value: string | null): string {
@@ -96,6 +105,16 @@ async function loadEligibleAccounts(params: {
 }
 
 export async function GET(request: Request) {
+  const rateLimit = await verifyRateLimit(request, { limit: 60, window: 60 });
+  const rateLimitResponse = createServerRateLimitResponse(
+    rateLimit.allowed,
+    rateLimit.retryAfter,
+    rateLimit,
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const access = await requireAuthenticatedAccess();
   if (!access.ok) {
     return unauthorizedJsonResponse();

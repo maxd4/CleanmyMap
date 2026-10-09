@@ -1,6 +1,13 @@
 {
   "generatedAt": "2026-09-30T17:43:01.000Z",
-  "apiRouteCount": 112,
+  "apiRouteCount": 113,
+  "changeJustification": {
+    "route": "apps/web/src/app/api/actions/account-options/route.ts",
+    "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
+    "reason": "Route authentifiée dédiée aux sélecteurs d'organisateurs et de membres des actions, avec projection publique minimale des comptes Clerk.",
+    "costContract": "GET borné à 10 comptes par page, recherche limitée à 120 caractères, offset limité à 100000, rate limit 60 requêtes par minute et réponse private/no-store ; aucun email ni timestamp Clerk n'est transmis.",
+    "reviewedAt": "2026-10-09"
+  },
   "apiRoutes": [
     "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
     "apps/web/src/app/api/account/active-profile/route.ts",
@@ -18,6 +25,7 @@
     "apps/web/src/app/api/actions/[actionId]/publish/route.ts",
     "apps/web/src/app/api/actions/[actionId]/route-version/route.ts",
     "apps/web/src/app/api/actions/[actionId]/route.ts",
+    "apps/web/src/app/api/actions/account-options/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/import/route.ts",
     "apps/web/src/app/api/actions/map/initial-nearest/route.ts",

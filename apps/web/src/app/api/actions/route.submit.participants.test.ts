@@ -10,6 +10,7 @@ describe("POST /api/actions — participants et organisateurs", () => {
     const payload = buildSubmitPayload({
       associationName: "Association Sans Murs Paris 15",
       organizerType: "association",
+      organizerAccounts: undefined,
     });
 
     const response = await postSubmitPayload(payload);
