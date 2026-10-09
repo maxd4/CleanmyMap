@@ -52,7 +52,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Retraités");
     expect(html).not.toContain("unités opérationnelles");
     expect(html).toContain("Message complémentaire aux participants");
-    expect(html).toContain("Commentaire logistique");
+    expect(html).toContain("Notes logistiques internes");
     expect(html).toContain("Checklist avant départ");
     expect(html).toContain("Présentation");
     expect(html).toContain("Localisation et parcours");

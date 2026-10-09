@@ -11,6 +11,11 @@ import {
   buildPreparationGuidanceFields,
   stripHistoricalDerivedGuidance,
 } from "./payload-preparation-guidance";
+import {
+  normalizeAccessibilityStatus,
+  normalizePreparationChecklist,
+  normalizeSuggestedMaterials,
+} from "../../../lib/actions/preparation-contract";
 
 function buildPreparationRouteFields(
   form: FormState,
@@ -108,8 +113,13 @@ function buildPreparationContentFields(
     ...(form.placeType ? { placeType: form.placeType } : {}),
     ...(form.estimatedDifficulty ? { estimatedDifficulty: form.estimatedDifficulty } : {}),
     ...buildPreparationGuidanceFields(form),
+    accessibilityStatus: form.accessibilityStatus,
+    materialsProvided: form.materialsProvided.trim() || undefined,
+    suggestedMaterials: form.suggestedMaterials.length > 0 ? [...form.suggestedMaterials] : undefined,
     participantMessage: form.participantMessage.trim() || undefined,
     logisticsNotes: form.logisticsNotes.trim() || undefined,
+    preparationChecklist:
+      form.preparationChecklist.length > 0 ? [...form.preparationChecklist] : undefined,
     checklistBeforeDeparture: form.checklistBeforeDeparture.trim() || undefined,
   };
 }
@@ -211,6 +221,8 @@ function buildHydratedDescriptionFields(
     placeType: preparationData.placeType ?? form.placeType,
     estimatedDifficulty: preparationData.estimatedDifficulty ?? form.estimatedDifficulty,
     accessibility: preparationData.accessibility ?? form.accessibility,
+    accessibilityStatus:
+      normalizeAccessibilityStatus(preparationData.accessibilityStatus) ?? form.accessibilityStatus,
     safetyInstructions:
       stripHistoricalDerivedGuidance(
         preparationData.safetyInstructions,
@@ -221,8 +233,13 @@ function buildHydratedDescriptionFields(
         preparationData.recommendedMaterials,
         "recommendedMaterials",
       ) ?? form.recommendedMaterials,
+    materialsProvided: preparationData.materialsProvided ?? form.materialsProvided,
+    suggestedMaterials:
+      normalizeSuggestedMaterials(preparationData.suggestedMaterials) ?? form.suggestedMaterials,
     participantMessage: preparationData.participantMessage ?? form.participantMessage,
     logisticsNotes: preparationData.logisticsNotes ?? form.logisticsNotes,
+    preparationChecklist:
+      normalizePreparationChecklist(preparationData.preparationChecklist) ?? form.preparationChecklist,
     checklistBeforeDeparture: preparationData.checklistBeforeDeparture ?? form.checklistBeforeDeparture,
   };
 }

@@ -1,3 +1,6 @@
+import {
+  ACTION_PREPARATION_CHECKLIST_DEFAULTS,
+} from "@/lib/actions/preparation-contract";
 import type {
  ActionGpxImportMetadata,
  ActionLocationCoordinates,
@@ -12,6 +15,11 @@ import type { OperationalRoute } from "@/lib/route/route-operational";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
 import { estimateButtsWeightKg } from "@/lib/impact/impact-terrain-2026";
+import type {
+  ActionAccessibilityStatus,
+  ActionMaterialSuggestion,
+  ActionPreparationChecklistItem,
+} from "@/lib/actions/preparation-contract";
 
 export type FormState = {
  actorName: string;
@@ -39,10 +47,14 @@ export type FormState = {
  plannedObjective: "" | "repérage" |"nettoyage" |"collecte_mégots" |"action_mixte" |"sensibilisation" |"autre";
  estimatedDifficulty: "" | "facile" |"moderee" |"soutenue";
  accessibility: string;
+ accessibilityStatus: ActionAccessibilityStatus;
  safetyInstructions: string;
  recommendedMaterials: string;
+ materialsProvided: string;
+ suggestedMaterials: ActionMaterialSuggestion[];
  participantMessage: string;
  logisticsNotes: string;
+ preparationChecklist: ActionPreparationChecklistItem[];
  checklistBeforeDeparture: string;
  recordType: ActionRecordType;
  latitude: string;
@@ -126,10 +138,14 @@ export const initialState: FormState = {
  plannedObjective:"",
  estimatedDifficulty:"",
  accessibility:"",
+ accessibilityStatus:"not_evaluated",
  safetyInstructions:"",
  recommendedMaterials:"",
+ materialsProvided:"",
+ suggestedMaterials:[],
  participantMessage:"",
  logisticsNotes:"",
+ preparationChecklist: ACTION_PREPARATION_CHECKLIST_DEFAULTS.map((item) => ({ ...item })),
  checklistBeforeDeparture:"",
  recordType:"action",
  latitude:"",

@@ -521,6 +521,46 @@ describe("action declaration payload helpers", () => {
     expect(payload.preparationData?.recommendedMaterials).not.toContain("dérivé du référentiel");
   });
 
+  it("persists structured preparation without mixing organizer text and derived guidance", () => {
+    const form = buildBaseForm();
+    form.accessibilityStatus = "conditions_reported";
+    form.accessibility = "Accès par la rampe nord.";
+    form.materialsProvided = "Sacs disponibles au départ.";
+    form.suggestedMaterials = ["gloves", "grabbers"];
+    form.preparationChecklist[0].checked = true;
+    form.recommendedMaterials = "Eau et chaussures adaptées.";
+
+    const preparation = buildPreparationDataFromForm(form);
+
+    expect(preparation.accessibilityStatus).toBe("conditions_reported");
+    expect(preparation.materialsProvided).toBe("Sacs disponibles au départ.");
+    expect(preparation.suggestedMaterials).toEqual(["gloves", "grabbers"]);
+    expect(preparation.preparationChecklist?.[0]).toMatchObject({
+      key: "materials_checked",
+      checked: true,
+    });
+    expect(preparation.safetyInstructions).toBeUndefined();
+  });
+
+  it("rehydrates new fields and preserves unchecked historical defaults", () => {
+    const form = buildBaseForm();
+    const hydrated = applyPreparationDataToForm(form, {
+      accessibilityStatus: "to_confirm",
+      materialsProvided: "Pinces sur place.",
+      suggestedMaterials: ["bags"],
+      preparationChecklist: [{ key: "materials_checked", label: "Matériel vérifié", checked: true }],
+      checklistBeforeDeparture: "Ancienne note à relire",
+    });
+
+    expect(hydrated.accessibilityStatus).toBe("to_confirm");
+    expect(hydrated.materialsProvided).toBe("Pinces sur place.");
+    expect(hydrated.suggestedMaterials).toEqual(["bags"]);
+    expect(hydrated.preparationChecklist).toEqual([
+      { key: "materials_checked", label: "Matériel vérifié", checked: true },
+    ]);
+    expect(hydrated.checklistBeforeDeparture).toBe("Ancienne note à relire");
+  });
+
   it("rehydrates historical derived blocks into editable organizer text once", () => {
     const form = buildBaseForm();
     const guidance = formatWasteGuidanceLines(["broken_glass"]);

@@ -27,6 +27,13 @@ function PublicList({ label, values, empty }: { label: string; values: string[];
   );
 }
 
+function accessibilityStatusLabel(value: string | null | undefined, fr: boolean): string {
+  if (value === "conditions_reported") return fr ? "Conditions d'accès renseignées" : "Access conditions reported";
+  if (value === "obstacles_identified") return fr ? "Obstacles identifiés" : "Obstacles identified";
+  if (value === "to_confirm") return fr ? "À confirmer" : "To be confirmed";
+  return fr ? "Accessibilité non évaluée" : "Accessibility not assessed";
+}
+
 export function OrganizerPracticalInformation({
   info,
   fr,
@@ -45,9 +52,11 @@ export function OrganizerPracticalInformation({
         {fr ? "Indications de l’organisateur" : "Organizer information"}
       </div>
       <dl className="space-y-3">
-        <PublicValue label={fr ? "Accessibilité" : "Accessibility"} value={info.accessibility ?? accessibilityMissing} />
+        <PublicValue label={fr ? "État de l'accessibilité" : "Accessibility status"} value={accessibilityStatusLabel(info.accessibilityStatus, fr)} />
+        <PublicValue label={fr ? "Accès, obstacles et conditions" : "Access, obstacles and conditions"} value={info.accessibility ?? accessibilityMissing} />
         <PublicValue label={fr ? "Consignes de sécurité" : "Safety instructions"} value={info.safetyInstructions ?? missing} />
         <PublicValue label={fr ? "Matériel à apporter" : "Equipment to bring"} value={info.materialsToBring ?? materialsMissing} />
+        <PublicList label={fr ? "Suggestions rapides" : "Quick suggestions"} values={info.suggestedMaterials ?? []} empty={materialsMissing} />
         <PublicValue label={fr ? "Matériel fourni" : "Equipment provided"} value={info.materialsProvided ?? materialsMissing} />
         <PublicValue label={fr ? "Message aux participants" : "Message to participants"} value={info.participantMessage ?? missing} />
       </dl>

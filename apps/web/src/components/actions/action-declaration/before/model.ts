@@ -10,6 +10,7 @@ import {
   normalizeAssociationSelectionForPrefill,
 } from "@/lib/actions/association-options";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
+import { buildPreparationSummaryDetails } from "./preparation-summary";
 
 export type SelectOption = {
   value: string;
@@ -80,8 +81,11 @@ function preparationDataFrom(source: PublicationSummarySource): ActionPreparatio
     ...(source.placeType ? { placeType: source.placeType } : {}),
     ...(source.estimatedDifficulty ? { estimatedDifficulty: source.estimatedDifficulty } : {}),
     accessibility: source.accessibility,
+    accessibilityStatus: source.accessibilityStatus,
     safetyInstructions: source.safetyInstructions,
     recommendedMaterials: source.recommendedMaterials,
+    materialsProvided: source.materialsProvided,
+    suggestedMaterials: source.suggestedMaterials,
     participantMessage: source.participantMessage,
     logisticsNotes: source.logisticsNotes,
     checklistBeforeDeparture: source.checklistBeforeDeparture,
@@ -164,16 +168,7 @@ export function buildPublicationSummary(
     preparation.safetyInstructions,
     "Aucune consigne principale renseignée",
   );
-  const preparationDetails = [
-    preparation.recommendedMaterials
-      ? `Matériel : ${preparation.recommendedMaterials.trim()}`
-      : null,
-    preparation.checklistBeforeDeparture
-      ? `Checklist : ${preparation.checklistBeforeDeparture.trim()}`
-      : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const preparationDetails = buildPreparationSummaryDetails(preparation);
   const logisticsNotes = textValue(
     preparation.logisticsNotes,
     "Non renseignée — à vérifier selon le lieu et l'itinéraire",

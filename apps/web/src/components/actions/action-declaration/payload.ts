@@ -20,5 +20,11 @@ export function createInitialFormState(
   actorName: string,
   recordType: FormState["recordType"] = "action",
 ): FormState {
-  return { ...initialState, actorName, recordType };
+  return {
+    ...initialState,
+    actorName,
+    recordType,
+    suggestedMaterials: [...initialState.suggestedMaterials],
+    preparationChecklist: initialState.preparationChecklist.map((item) => ({ ...item })),
+  };
 }

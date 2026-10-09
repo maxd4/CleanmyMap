@@ -57,6 +57,37 @@ describe("action declaration draft storage", () => {
     expect(snapshot?.form.wasteKg).toBe("12");
   });
 
+  it("persists accessibility, material distinctions, suggestions and checklist state", () => {
+    installLocalStorage();
+    const draft = createInitialFormState("Alice");
+    draft.accessibilityStatus = "obstacles_identified";
+    draft.accessibility = "Accès par la rampe nord.";
+    draft.materialsProvided = "Pinces disponibles.";
+    draft.suggestedMaterials = ["gloves", "bags"];
+    draft.preparationChecklist[0].checked = true;
+
+    saveDraft(draft, "2026-05-13T10:45:00.000Z");
+
+    const restored = loadDraftSnapshot(createInitialFormState("Fallback"))?.form;
+    expect(restored?.accessibilityStatus).toBe("obstacles_identified");
+    expect(restored?.materialsProvided).toBe("Pinces disponibles.");
+    expect(restored?.suggestedMaterials).toEqual(["gloves", "bags"]);
+    expect(restored?.preparationChecklist[0]).toMatchObject({ key: "materials_checked", checked: true });
+  });
+
+  it("keeps legacy checklist prose without marking a structured item", () => {
+    const { store } = installLocalStorage();
+    store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify({
+      ...createInitialFormState("Alice"),
+      checklistBeforeDeparture: "Matériel vérifié par téléphone",
+      preparationChecklist: undefined,
+    }));
+
+    const restored = loadDraftSnapshot(createInitialFormState("Fallback"))?.form;
+    expect(restored?.checklistBeforeDeparture).toBe("Matériel vérifié par téléphone");
+    expect(restored?.preparationChecklist.every((item) => !item.checked)).toBe(true);
+  });
+
   it("does not persist or hydrate the removed manual vision fields", () => {
     const { store } = installLocalStorage();
     const draft = createInitialFormState("Alice");

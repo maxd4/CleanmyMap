@@ -17,6 +17,7 @@ import type {
 } from "./route-response-contract";
 import type { ActionPreparationData } from "@/lib/actions/types";
 import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
+import { normalizeActionPreparationContract } from "@/lib/actions/preparation-contract";
 
 const OPERATIONAL_ROUTE_VERSION = "operational-route-v1" as const;
 
@@ -324,10 +325,10 @@ export function normalizeActionPreparationData<T extends {
   const rest = restWithLegacy as Omit<T, "actualRoute" | "operationalRoute" | "creatorRole">;
   const activeRoute = normalizeOperationalRoute(data.routeVersioning?.active?.operationalRoute);
   const normalized = activeRoute ?? operationalRoute ?? normalizeOperationalRoute(actualRoute);
-  return {
+  return normalizeActionPreparationContract({
     ...rest,
     ...(normalized ? { operationalRoute: normalized } : {}),
-  };
+  }) as Omit<T, "actualRoute" | "operationalRoute" | "creatorRole"> & { operationalRoute?: OperationalRoute };
 }
 
 function toPlannerTechnicalStop(stop: RouteStop | PlannerTechnicalStop): PlannerTechnicalStop {

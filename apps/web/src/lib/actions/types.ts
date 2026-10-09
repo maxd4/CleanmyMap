@@ -37,6 +37,11 @@ import type { ActionFormalitiesFacts } from "./formalities-qualification";
 import type { ActionFormalitiesWorkflowState } from "./formalities-workflow";
 import type { RouteGeometryMode, RouteGeometryProvider } from "@/lib/route/route-contract";
 import type { ActionRouteVersioning } from "@/lib/route/route-active-version";
+import type {
+  ActionAccessibilityStatus,
+  ActionMaterialSuggestion,
+  ActionPreparationChecklistItem,
+} from "./preparation-contract";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
@@ -104,8 +109,14 @@ export type ActionPreparationData = {
   placeType?: string;
   estimatedDifficulty?: "facile" | "moderee" | "soutenue";
   accessibility?: string;
+  /** Structured observation state; this is not a PMR certification. */
+  accessibilityStatus?: ActionAccessibilityStatus;
   safetyInstructions?: string;
   recommendedMaterials?: string;
+  /** Organizer-provided equipment, kept separate from volunteer suggestions. */
+  materialsProvided?: string;
+  /** Quick suggestions only; never interpreted as universal requirements. */
+  suggestedMaterials?: ActionMaterialSuggestion[];
   participantMessage?: string;
   /** Legacy read compatibility only; never accepted from new write payloads or mapped to FormState. */
   creatorRole?: "organisateur" | "benevole" | "association" | "etudiant" | "autre";
@@ -118,6 +129,9 @@ export type ActionPreparationData = {
   /** Server-managed qualification trace and per-formality user progress. */
   formalitiesWorkflow?: ActionFormalitiesWorkflowState;
   logisticsNotes?: string;
+  /** Structured checklist for the organizer; items are never auto-checked. */
+  preparationChecklist?: ActionPreparationChecklistItem[];
+  /** Legacy free-text checklist kept for historical compatibility. */
   checklistBeforeDeparture?: string;
   volunteersExpected?: number;
   volunteerParticipation?: ActionVolunteerParticipation | null;

@@ -5,6 +5,7 @@ import type {
 } from "@/lib/actions/types";
 import type { FormState } from "./types";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
+import { restoreDraftFields } from "./draft-storage-preparation";
 
 export const ACTION_DECLARATION_DRAFT_KEY = "cmm_action_draft";
 export const ACTION_DECLARATION_DRAFT_DATE_KEY = "cmm_action_draft_date";
@@ -47,10 +48,14 @@ const FORM_STATE_KEYS = [
   "plannedObjective",
   "estimatedDifficulty",
   "accessibility",
+  "accessibilityStatus",
   "safetyInstructions",
   "recommendedMaterials",
+  "materialsProvided",
+  "suggestedMaterials",
   "participantMessage",
   "logisticsNotes",
+  "preparationChecklist",
   "checklistBeforeDeparture",
   "recordType",
   "latitude",
@@ -275,38 +280,9 @@ export function loadDraftSnapshot(
       return cacheDraftSnapshot(cacheKey, null);
     }
 
-    const next = { ...fallback } as FormState & Record<string, string | boolean>;
+    const next = { ...fallback } as FormState & Record<string, unknown>;
 
-    for (const key of FORM_STATE_KEYS) {
-      const value = parsed[key];
-      if (key === "participantAccounts") {
-        if (
-          Array.isArray(value) &&
-          value.every((token) => typeof token === "string")
-        ) {
-          Object.assign(next, {
-            participantAccounts: value,
-          });
-        }
-        continue;
-      }
-      if (key === "groupJoinEnabled") {
-        if (typeof value === "boolean") {
-          Object.assign(next, { groupJoinEnabled: value });
-        }
-        continue;
-      }
-      if (key === "routeTargetDistanceKmManuallySet") {
-        if (typeof value === "boolean") {
-          Object.assign(next, { routeTargetDistanceKmManuallySet: value });
-        }
-        continue;
-      }
-
-      if (typeof value === "string") {
-        Object.assign(next, { [key]: value });
-      }
-    }
+    restoreDraftFields(next, parsed, FORM_STATE_KEYS);
 
     next.midRouteCoordinates = parseCoordinates(parsed.midRouteCoordinates);
     next.arrivalCoordinates = parseCoordinates(parsed.arrivalCoordinates);

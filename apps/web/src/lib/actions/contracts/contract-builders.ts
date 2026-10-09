@@ -19,6 +19,7 @@ import type {
   RawCigaretteButtsMeasurementInput,
 } from "@/lib/waste/cigarette-butts";
 import type { ActionVolunteerParticipation } from "../volunteer-participation";
+import { normalizeActionPreparationContract } from "../preparation-contract";
 
 export type ActionContractCreatePayload = {
   type: ActionRecordType;
@@ -226,13 +227,13 @@ function normalizePreparationData(params: {
 }): ActionPreparationData {
   const { preparationData, recordType, topology, arrivalLocationLabel } = params;
   return clearActionRouteArrivalForLoop(
-    {
+    normalizeActionPreparationContract({
       ...(preparationData ?? {}),
       ...(recordType !== "action" && arrivalLocationLabel && !preparationData?.zoneCiblePrevue
         ? { zoneCiblePrevue: arrivalLocationLabel }
         : {}),
       routeTopology: topology,
-    },
+    }) as ActionPreparationData,
     { recordType, topology },
   );
 }
