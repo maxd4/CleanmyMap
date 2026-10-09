@@ -1,8 +1,42 @@
 import { describe, expect, it } from "vitest";
 import type { ActionEditorRecord } from "@/lib/actions/http";
-import { buildBeforeActionFormFromAction, buildBeforeActionInitialForm } from "./use-before-action-workflow";
+import { applyPreparationContextToForm, buildBeforeActionFormFromAction, buildBeforeActionInitialForm } from "./use-before-action-workflow";
+import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 
 describe("before-action resume hydration", () => {
+  it("applies only the confirmed weather fields and never invents event timing", () => {
+    const form = {
+      ...buildBeforeActionInitialForm(["Maxence"], "Maxence", "action"),
+      meetingTime: "10:00",
+      eventStartTime: "10:00",
+      eventEndTime: "11:00",
+      durationMinutes: "60",
+    };
+    const context: ActionPreparationContext = {
+      actionId: null,
+      locationLabel: "Paris",
+      actionDate: "2026-10-09",
+      departureTime: "08:30",
+      latitude: "48.85",
+      longitude: "2.35",
+      plannerHandoff: null,
+      confirmedSelection: {
+        actionDate: "2026-10-10",
+        departureTime: "09:00",
+        source: "weather-slot",
+      },
+    };
+
+    const prepared = applyPreparationContextToForm(form, context);
+
+    expect(prepared.actionDate).toBe("2026-10-10");
+    expect(prepared.departureTime).toBe("09:00");
+    expect(prepared.meetingTime).toBe("10:00");
+    expect(prepared.eventStartTime).toBe("10:00");
+    expect(prepared.eventEndTime).toBe("11:00");
+    expect(prepared.durationMinutes).toBe("60");
+  });
+
   it("starts with no forecast or demographic defaults", () => {
     const form = buildBeforeActionInitialForm(["Maxence"], "Maxence", "action");
 

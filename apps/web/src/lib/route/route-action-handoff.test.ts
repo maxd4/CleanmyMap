@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   consumePlannerActionHandoff,
+  peekPlannerActionHandoff,
   ROUTE_ACTION_HANDOFF_STORAGE_KEY,
   writePlannerActionHandoff,
 } from "./route-action-handoff";
@@ -59,6 +60,27 @@ describe("planner action handoff", () => {
     }));
     expect(consumePlannerActionHandoff()).toBeNull();
     expect(storage.has(ROUTE_ACTION_HANDOFF_STORAGE_KEY)).toBe(false);
+  });
+
+  it("can be inspected by preparation without consuming geometry or proof", () => {
+    const storage = installStorage();
+    writePlannerActionHandoff({
+      actionId: "action-42",
+      operationalRoute,
+      routeCalibrationContext: null,
+      plannerProof: null,
+      preparationData: { actionDate: "2026-09-20", departureTime: "09:00" },
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+
+    expect(peekPlannerActionHandoff()).toEqual(expect.objectContaining({
+      actionId: "action-42",
+      operationalRoute,
+      preparationData: { actionDate: "2026-09-20", departureTime: "09:00" },
+    }));
+    expect(storage.has(ROUTE_ACTION_HANDOFF_STORAGE_KEY)).toBe(true);
+    expect(consumePlannerActionHandoff()?.operationalRoute).toEqual(operationalRoute);
+    expect(peekPlannerActionHandoff()).toBeNull();
   });
 
   it("reads a legacy actualRoute handoff and returns the canonical key", () => {

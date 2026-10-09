@@ -65,6 +65,19 @@ describe("buildInterventionWindows", () => {
     expect(windows.avoid.length).toBeGreaterThan(0);
   });
 
+  it("keeps adjacent favorable hours in one continuous local-day window", () => {
+    const windows = buildInterventionWindows([
+      { time: "2026-04-10T08:00", temperature: 20, rain: 0, wind: 10 },
+      { time: "2026-04-10T09:00", temperature: 20, rain: 0, wind: 10 },
+      { time: "2026-04-10T10:00", temperature: 20, rain: 0, wind: 10 },
+      { time: "2026-04-10T11:00", temperature: 20, rain: 0, wind: 10 },
+    ]);
+
+    expect(windows.recommended).toEqual([
+      expect.objectContaining({ from: "2026-04-10T08:00", to: "2026-04-10T11:00", level: "vert" }),
+    ]);
+  });
+
   it("does not create a window across a local day boundary or a missing hour", () => {
     const windows = buildInterventionWindows([
       { time: "2026-10-25T23:00", temperature: 20, rain: 0, wind: 10 },

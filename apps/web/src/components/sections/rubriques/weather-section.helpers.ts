@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import type { WeatherRiskAssessment } from "@/lib/weather/ops-weather";
+import { normalizeClockTime } from "@/lib/actions/time-contract";
 
 export type WeatherRiskLevel = "vert" | "orange" | "rouge";
 
@@ -178,6 +179,11 @@ export function getForecastHourLabel(time: string): string {
         hour12: false,
         timeZone: "Europe/Paris",
       }).format(date);
+}
+
+export function getForecastLocalClockTime(time: string): string | null {
+  const match = /^(?:\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(time);
+  return match ? normalizeClockTime(match[1]) : null;
 }
 
 export function getForecastConditionLabel(

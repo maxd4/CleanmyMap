@@ -10,6 +10,8 @@ import { ConditionsPanel } from "./weather-section.conditions";
 import { PreparationPanel } from "./weather-section.preparation";
 import { useKitData } from "./use-kit-data";
 import { useWeatherData } from "./use-weather-data";
+import type { ActionPreparationContext, PreparationSelection } from "@/lib/actions/action-preparation-context";
+import type { resolvePreparationSelection } from "@/lib/actions/action-preparation-context";
 
 const itemVariants = {
   hidden: { opacity: 1, y: 18 },
@@ -18,10 +20,14 @@ const itemVariants = {
 
 export function WeatherSection({
   draftContext,
+  preparationContext,
+  onPreparationSelection,
   onPreparationValidated,
   initialPreparationValidated,
 }: {
-  draftContext?: { locationLabel?: string; actionDate?: string };
+  draftContext?: { locationLabel?: string; actionDate?: string; departureTime?: string; contextReady?: boolean };
+  preparationContext?: ActionPreparationContext;
+  onPreparationSelection?: (selection: PreparationSelection, decision?: "ask" | "replace" | "preserve") => ReturnType<typeof resolvePreparationSelection>;
   onPreparationValidated?: (validated: boolean) => void;
   initialPreparationValidated?: boolean;
 }) {
@@ -34,6 +40,8 @@ export function WeatherSection({
   const kit = useKitData(fr);
 
   const recommendedWindow = weather.windows.recommended[0] ?? null;
+  const actionLocation = preparationContext?.locationLabel?.trim() ?? draftContext?.locationLabel?.trim() ?? "";
+  const weatherLocationDiffers = Boolean(actionLocation && weather.selectedLocation.label && actionLocation.toLocaleLowerCase() !== weather.selectedLocation.label.trim().toLocaleLowerCase());
 
   return (
     <SectionShell
@@ -61,6 +69,7 @@ export function WeatherSection({
               {weather.selectedLocation.label}
             </p>
             <p className="mt-1 text-sm text-slate-500">{weather.selectedLocation.subtitle}</p>
+            {weatherLocationDiffers ? <p role="note" className="mt-2 text-sm font-semibold text-amber-800">{fr ? `La météo est consultée pour « ${weather.selectedLocation.label} », différent du lieu de l’action « ${actionLocation} ».` : `Weather is checked for “${weather.selectedLocation.label}”, which differs from the action location “${actionLocation}”.`}</p> : null}
           </div>
 
         </div>
@@ -80,10 +89,12 @@ export function WeatherSection({
               isLocationSuggestionsLoading={weather.isLocationSuggestionsLoading}
               selectLocation={weather.selectLocation}
               forecastDays={weather.forecastDays}
+              selectedForecastDay={weather.selectedForecastDay}
               selectedForecastDayIndex={weather.selectedForecastDayIndex}
               forecastSelectionStatus={weather.forecastSelectionStatus}
               setSelectedForecastDayIndex={weather.setSelectedForecastDayIndex}
               windows={weather.windows}
+              onPreparationSelection={onPreparationSelection}
               fr={fr}
             />
           </motion.div>

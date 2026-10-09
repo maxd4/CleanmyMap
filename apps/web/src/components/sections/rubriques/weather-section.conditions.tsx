@@ -57,6 +57,8 @@ function getForecastProps(props: ConditionsPanelProps): WeatherForecastProps {
     selectedForecastDayIndex: props.selectedForecastDayIndex,
     setSelectedForecastDayIndex: props.setSelectedForecastDayIndex,
     windows: props.windows,
+    selectedForecastDay: props.selectedForecastDay,
+    onPreparationSelection: props.onPreparationSelection,
     fr: props.fr,
   };
 }

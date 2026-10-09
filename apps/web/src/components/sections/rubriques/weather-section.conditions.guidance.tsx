@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Leaf, ShieldCheck } from "lucide-react";
+import { CheckCircle2, ShieldCheck } from "lucide-react";
 import type { WeatherSafetyGuidanceProps } from "./weather-section.conditions.types";
 import { LightCard } from "./weather-section.ui";
 
@@ -41,7 +41,6 @@ function WeatherPrudenceCard({ selectedForecastRisk, fr, isWeatherReady, weather
       <div className="mt-6 space-y-5">
         {!isWeatherReady ? <p className="cmm-text-body rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3">{fr ? "Choisis une ville pour afficher des conseils météo exploitables." : "Choose a city to display actionable weather advice."}</p> : null}
         <WeatherSafetyChecklist fr={fr} />
-        <div className="cmm-text-body rounded-[1.5rem] border border-emerald-200 bg-emerald-50/80 px-5 py-4"><div className="flex items-start gap-3"><Leaf size={20} className="mt-0.5 text-emerald-700" /><p className="leading-relaxed">{fr ? "Bon à savoir : éviter les heures les plus chaudes pour préserver votre énergie et la biodiversité." : "Good to know: avoid the hottest hours to preserve your energy and the biodiversity."}</p></div></div>
         <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3"><p className="cmm-text-caption font-black uppercase tracking-[0.26em] text-amber-800/80">{fr ? "Vigilance terrain" : "Field vigilance"}</p><p className="cmm-text-body mt-2 text-amber-950">{fieldVigilance}</p></div>
       </div>
     </LightCard>

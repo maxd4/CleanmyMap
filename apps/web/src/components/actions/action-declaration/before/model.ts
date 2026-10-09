@@ -4,6 +4,7 @@ import {
 } from "../model";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import type { ActionPreparationData, ActionStatus } from "@/lib/actions/types";
+import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 import type { ActiveRole } from "@/lib/domain-language";
 import { normalizeParticipantAccounts, parseOrganizerAccounts } from "../payload";
 import {
@@ -39,6 +40,7 @@ export type ActionBeforeDeclarationFormProps = {
   signUpHref?: string;
   guidedWorkflow?: boolean;
   guidedReadiness?: "unknown" | "ready" | "blocked";
+  preparationContext?: ActionPreparationContext;
 };
 
 export type PublicationSummaryItem = {

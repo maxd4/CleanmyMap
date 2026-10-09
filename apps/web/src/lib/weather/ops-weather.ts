@@ -64,6 +64,18 @@ function maxLevel(levels: WeatherRiskLevel[]): WeatherRiskLevel {
 function riskRank(level: WeatherRiskLevel): number {
   return level === "rouge" ? 2 : level === "orange" ? 1 : 0;
 }
+
+function appendContinuousWindow(
+  windows: InterventionWindow[],
+  window: InterventionWindow,
+): void {
+  const previous = windows.at(-1);
+  if (previous && previous.to === window.from && previous.level === window.level) {
+    previous.to = window.to;
+    return;
+  }
+  windows.push(window);
+}
 function weatherOperationalRuleForLevel(
   level: WeatherRiskLevel,
 ): WeatherOperationalRule {
@@ -234,11 +246,11 @@ export function buildInterventionWindows(hourly: HourlyPoint[]): {
     };
 
     if (windowRisk.level === "rouge") {
-      avoid.push(window);
+      appendContinuousWindow(avoid, window);
     } else {
-      recommended.push(window);
+      appendContinuousWindow(recommended, window);
     }
-    i += 2;
+    i += 1;
   }
 
   return {

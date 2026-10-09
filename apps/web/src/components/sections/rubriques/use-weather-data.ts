@@ -172,7 +172,7 @@ function isDaytimeHour(time: string): boolean {
 }
 
 export function useWeatherData(
-  draftContext?: { locationLabel?: string; actionDate?: string },
+  draftContext?: { locationLabel?: string; actionDate?: string; departureTime?: string; contextReady?: boolean },
 ) {
   const { isLoaded, user } = useUser();
   const [selectedForecastDayIndex, setSelectedForecastDayIndex] = useState(0);
@@ -182,16 +182,22 @@ export function useWeatherData(
   const draftLocationRef = useRef<string | null>(null);
   const draftLocationLabel = draftContext?.locationLabel?.trim() ?? "";
   const draftActionDate = draftContext?.actionDate?.trim() ?? "";
-  const initialLocation = draftLocationLabel
+  const contextReady = draftContext?.contextReady !== false;
+  const preparationContextWithoutLocation = draftContext?.contextReady === true && !draftLocationLabel;
+  const initialLocation = !contextReady
+    ? buildFallbackWeatherLocation("Lieu en cours de chargement", "Contexte de préparation")
+    : preparationContextWithoutLocation
+      ? buildFallbackWeatherLocation("Localisation à préciser", "Lieu de l’action non renseigné")
+    : draftLocationLabel
     ? buildFallbackWeatherLocation(draftLocationLabel, "Lieu du pré-formulaire")
     : DEFAULT_LOCATION;
   const [selectedLocation, setSelectedLocation] = useState<WeatherLocation>(initialLocation);
-  const [locationQuery, setLocationQuery] = useState(draftLocationLabel || DEFAULT_LOCATION.label);
+  const [locationQuery, setLocationQuery] = useState(draftLocationLabel || (preparationContextWithoutLocation ? "" : DEFAULT_LOCATION.label));
   const { locationSuggestions, locationSuggestionsError } =
     useWeatherLocationSuggestions(locationQuery);
 
   const { data, isLoading, error } = useSWR(
-    selectedLocation.resolution === "resolved"
+    contextReady && selectedLocation.resolution === "resolved"
       ? ["section-weather-location", selectedLocation.latitude, selectedLocation.longitude]
       : null,
     async () => {
@@ -235,7 +241,9 @@ export function useWeatherData(
     swrRecentViewOptions,
   );
 
-  const weatherStatus: WeatherDataStatus = selectedLocation.resolution === "unresolved"
+  const weatherStatus: WeatherDataStatus = !contextReady
+    ? "loading"
+    : selectedLocation.resolution === "unresolved"
     ? "empty"
     : error
       ? "error"
@@ -270,6 +278,8 @@ export function useWeatherData(
 
   useEffect(() => {
     if (
+      !contextReady ||
+      preparationContextWithoutLocation ||
       !canApplyDraftWeatherLocation(draftLocationLabel, hasManualLocationRef.current) ||
       draftLocationRef.current === draftLocationLabel
     ) {
@@ -291,10 +301,12 @@ export function useWeatherData(
     return () => {
       isCancelled = true;
     };
-  }, [draftLocationLabel]);
+  }, [contextReady, draftLocationLabel, preparationContextWithoutLocation]);
 
   useEffect(() => {
     if (
+      !contextReady ||
+      preparationContextWithoutLocation ||
       !canApplyAutomaticWeatherLocation({
         draftLocationLabel,
         hasManualLocation: hasManualLocationRef.current,
@@ -331,10 +343,12 @@ export function useWeatherData(
     return () => {
       isCancelled = true;
     };
-  }, [draftLocationLabel]);
+  }, [contextReady, draftLocationLabel, preparationContextWithoutLocation]);
 
   useEffect(() => {
     if (
+      !contextReady ||
+      preparationContextWithoutLocation ||
       !isLoaded ||
       !canApplyAutomaticWeatherLocation({
         draftLocationLabel,
@@ -370,10 +384,12 @@ export function useWeatherData(
     return () => {
       isCancelled = true;
     };
-  }, [draftLocationLabel, isLoaded, user?.publicMetadata, user?.unsafeMetadata]);
+  }, [contextReady, draftLocationLabel, isLoaded, preparationContextWithoutLocation, user?.publicMetadata, user?.unsafeMetadata]);
 
   useEffect(() => {
     if (
+      !contextReady ||
+      preparationContextWithoutLocation ||
       !isLoaded ||
       !canApplyAutomaticWeatherLocation({
         draftLocationLabel,
@@ -433,7 +449,7 @@ export function useWeatherData(
     return () => {
       isCancelled = true;
     };
-  }, [draftLocationLabel, isLoaded]);
+  }, [contextReady, draftLocationLabel, isLoaded, preparationContextWithoutLocation]);
 
   const hourlyPoints: WeatherPoint[] = useMemo(
     () =>
@@ -506,7 +522,7 @@ export function useWeatherData(
     selectedIndex: selectedForecastDayIndex,
     hasManualSelection: hasManualForecastDay,
   });
-  const selectedForecastDay = forecastDays[activeForecastDayIndex] ?? null;
+  const selectedForecastDay = contextReady ? forecastDays[activeForecastDayIndex] ?? null : null;
   const forecastSelectionStatus: "selected" | "unavailable" = selectedForecastDay
     ? "selected"
     : "unavailable";

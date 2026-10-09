@@ -21,6 +21,8 @@ import {
 } from "./model";
 import { applyOrganizerFormUpdates } from "./organizer-form-state";
 import { buildBeforeActionPayload, validateBeforeActionForm, type BeforeValidationField } from "./form-logic";
+import { normalizeClockTime } from "@/lib/actions/time-contract";
+import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 
 type SubmissionState = "idle" | "pending" | "success" | "error";
 type PublicationState = "idle" | "pending" | "success" | "error";
@@ -62,11 +64,13 @@ function usePlannerActionHandoffHydration({
   form,
   setForm,
   onFormChange,
+  preparationContext,
 }: {
   initialActionId?: string | null;
   form: FormState;
   setForm: StateSetter<FormState>;
   onFormChange?: (form: FormState) => void;
+  preparationContext?: ActionPreparationContext;
 }) {
   const hydratedRef = useRef(false);
   useEffect(() => {
@@ -74,15 +78,34 @@ function usePlannerActionHandoffHydration({
     hydratedRef.current = true;
     const handoff = consumePlannerActionHandoff();
     const draft = loadDraftSnapshot(form, form.recordType)?.form;
-    if (!handoff && !draft) return;
+    if (!handoff && !draft && !preparationContext) return;
     const prepared = handoff
       ? mergePlannerHandoffIntoForm(draft ?? form, handoff)
       : sanitizePreActionForm(draft ?? form);
+    const preparedWithContext = applyPreparationContextToForm(prepared, preparationContext);
     // Hydrate after the client boundary so localStorage/sessionStorage never changes SSR markup.
-    setForm(prepared); onFormChange?.(prepared); if (handoff) saveDraft(prepared);
+    setForm(preparedWithContext); onFormChange?.(preparedWithContext); if (handoff) saveDraft(preparedWithContext);
   // The handoff and draft are intentionally consumed once on mount; the current form is the merge base.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialActionId, onFormChange]);
+  }, [initialActionId, onFormChange, preparationContext]);
+}
+
+export function applyPreparationContextToForm(
+  form: FormState,
+  context?: ActionPreparationContext,
+): FormState {
+  if (!context) return form;
+  const selection = context.confirmedSelection;
+  const departureTime = selection?.departureTime
+    ? normalizeClockTime(selection.departureTime)
+    : normalizeClockTime(context.departureTime);
+  return {
+    ...form,
+    actionDate: selection?.actionDate || form.actionDate.trim() || context.actionDate,
+    departureTime: departureTime && (selection?.departureTime || !form.departureTime.trim())
+      ? departureTime
+      : form.departureTime,
+  };
 }
 
 function applyFetchedBeforeAction({
@@ -97,11 +120,13 @@ function applyFetchedBeforeAction({
   setTerminalActionStatus,
   setSubmissionState,
   setIsHydratingAction,
+  preparationContext,
 }: {
   action: Awaited<ReturnType<typeof fetchActionById>>;
   resolvedDefaultActorName: string;
   initialRecordType: "action";
   setIsHydratingAction: StateSetter<boolean>;
+  preparationContext?: ActionPreparationContext;
 } & BeforeActionRecordSetters) {
   if (action.actionPhase !== "pre_action") throw new Error("Cette action n'est plus une pré-action publiable.");
   if (!isResumablePreAction(action)) {
@@ -115,7 +140,10 @@ function applyFetchedBeforeAction({
   });
   const handoff = consumePlannerActionHandoff();
   const matchingHandoff = handoff?.actionId === action.id ? handoff : null;
-  const hydratedForm = mergePlannerHandoffIntoForm(nextForm, matchingHandoff);
+  const hydratedForm = applyPreparationContextToForm(
+    mergePlannerHandoffIntoForm(nextForm, matchingHandoff),
+    preparationContext,
+  );
   setForm(hydratedForm); onFormChange?.(hydratedForm); setCreatedId(action.id); setPublishedAction(action); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState(matchingHandoff ? "idle" : "success"); setIsHydratingAction(false);
 }
 
@@ -277,12 +305,14 @@ export function useBeforeActionHydration({
   setTerminalActionStatus,
   setSubmissionState,
   setErrorMessage,
+  preparationContext,
 }: {
   resolvedDefaultActorName: string;
   initialActionId?: string | null;
   initialRecordType: "action";
   form: FormState;
   setErrorMessage: StateSetter<string | null>;
+  preparationContext?: ActionPreparationContext;
 } & BeforeActionRecordSetters) {
   const [isHydratingAction, setIsHydratingAction] = useState(Boolean(initialActionId));
 
@@ -291,15 +321,15 @@ export function useBeforeActionHydration({
     let active = true;
     fetchActionById(initialActionId).then((action) => {
       if (!active) return;
-      applyFetchedBeforeAction({ action, resolvedDefaultActorName, initialRecordType, setForm, onFormChange, setCreatedId, setPublishedAction, setPublishedAt, setTerminalActionStatus, setSubmissionState, setIsHydratingAction });
+      applyFetchedBeforeAction({ action, resolvedDefaultActorName, initialRecordType, setForm, onFormChange, setCreatedId, setPublishedAction, setPublishedAt, setTerminalActionStatus, setSubmissionState, setIsHydratingAction, preparationContext });
     }).catch((error: unknown) => {
       if (!active) return;
       setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible de reprendre cette pré-action pour le moment."); setSubmissionState("error"); setIsHydratingAction(false);
     });
     return () => { active = false; };
-  }, [initialActionId, initialRecordType, onFormChange, resolvedDefaultActorName, setCreatedId, setErrorMessage, setForm, setPublishedAction, setPublishedAt, setSubmissionState, setTerminalActionStatus]);
+  }, [initialActionId, initialRecordType, onFormChange, preparationContext, resolvedDefaultActorName, setCreatedId, setErrorMessage, setForm, setPublishedAction, setPublishedAt, setSubmissionState, setTerminalActionStatus]);
 
-  usePlannerActionHandoffHydration({ initialActionId, form, setForm, onFormChange });
+  usePlannerActionHandoffHydration({ initialActionId, form, setForm, onFormChange, preparationContext });
 
   return isHydratingAction;
 }

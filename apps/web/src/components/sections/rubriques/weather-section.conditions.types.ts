@@ -1,4 +1,6 @@
 import type { useWeatherData } from "./use-weather-data";
+import type { PreparationSelection } from "@/lib/actions/action-preparation-context";
+import type { resolvePreparationSelection } from "@/lib/actions/action-preparation-context";
 
 type WeatherData = ReturnType<typeof useWeatherData>;
 
@@ -8,6 +10,7 @@ export type ConditionsPanelProps = Pick<
   | "selectedForecastRisk"
   | "forecastDays"
   | "forecastSelectionStatus"
+  | "selectedForecastDay"
   | "locationResolution"
   | "locationQuery"
   | "locationSuggestions"
@@ -20,7 +23,10 @@ export type ConditionsPanelProps = Pick<
   | "setSelectedForecastDayIndex"
   | "weatherStatus"
   | "windows"
-> & { fr: boolean };
+> & {
+  fr: boolean;
+  onPreparationSelection?: (selection: PreparationSelection, decision?: "ask" | "replace" | "preserve") => ReturnType<typeof resolvePreparationSelection>;
+};
 
 export type WeatherLocationAndStateProps = Pick<
   ConditionsPanelProps,
@@ -42,11 +48,14 @@ export type WeatherForecastProps = Pick<
   | "selectedForecastRisk"
   | "forecastDays"
   | "forecastSelectionStatus"
+  | "selectedForecastDay"
   | "selectedForecastDayIndex"
   | "setSelectedForecastDayIndex"
   | "weatherStatus"
   | "windows"
   | "fr"
->;
+> & {
+  onPreparationSelection?: ConditionsPanelProps["onPreparationSelection"];
+};
 
 export type WeatherSafetyGuidanceProps = Pick<ConditionsPanelProps, "selectedForecastRisk" | "weatherStatus" | "fr">;

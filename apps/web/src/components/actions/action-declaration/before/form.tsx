@@ -46,6 +46,7 @@ export function ActionBeforeDeclarationForm({
   signUpHref,
   guidedWorkflow = false,
   guidedReadiness = "unknown",
+  preparationContext,
 }: ActionBeforeDeclarationFormProps) {
   const [shareActionId, setShareActionId] = useState<string | null>(null);
   const {
@@ -71,7 +72,7 @@ export function ActionBeforeDeclarationForm({
     cancelPublication,
     confirmPublish,
     onContinueComplete,
-  } = useBeforeActionForm({ actorNameOptions, defaultActorName, isAuthenticated, userMetadata, linkedEventId, initialActionId, initialRecordType, onPassToComplete, onFormChange, onActionPersisted });
+  } = useBeforeActionForm({ actorNameOptions, defaultActorName, isAuthenticated, userMetadata, linkedEventId, initialActionId, initialRecordType, onPassToComplete, onFormChange, onActionPersisted, preparationContext });
   const actClasses = getBlockClasses("act");
 
   useEffect(() => {

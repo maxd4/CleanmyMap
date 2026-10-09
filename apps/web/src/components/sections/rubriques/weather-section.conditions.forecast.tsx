@@ -1,12 +1,16 @@
 "use client";
 
 import { CalendarDays, CloudRain, Droplets, Wind } from "lucide-react";
+import { useState } from "react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
+import type { PreparationSelection } from "@/lib/actions/action-preparation-context";
 import type { WeatherForecastProps } from "./weather-section.conditions.types";
 import {
   getCurrentWindowLabel,
   getForecastConditionLabel,
   getForecastHourLabel,
+  getForecastLocalClockTime,
   getReportLabel,
   getVigilanceLabel,
 } from "./weather-section.helpers";
@@ -114,17 +118,59 @@ export function WeatherForecasts({
   selectedForecastDayIndex,
   setSelectedForecastDayIndex,
   windows,
+  selectedForecastDay,
+  onPreparationSelection,
   fr,
 }: WeatherForecastProps) {
+  const [pendingSelection, setPendingSelection] = useState<PreparationSelection | null>(null);
   const isWeatherReady = weatherStatus === "ready";
   if (!isWeatherReady) return null;
-  const selectedDay = forecastDays[selectedForecastDayIndex] ?? forecastDays[0] ?? null;
+  const selectedDay = selectedForecastDay;
+  const recommendedWindow = windows.recommended[0] ?? null;
+  const selectPreparation = (selection: PreparationSelection) => {
+    const result = onPreparationSelection?.(selection);
+    if (result?.status === "conflict") setPendingSelection(selection);
+    else setPendingSelection(null);
+  };
 
   return (
     <LightCard className="p-6">
       <div className="flex items-start justify-between gap-4"><div><p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Prévisions horaires" : "Hourly forecast"}</p><h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">{fr ? "7 jours par heure" : "7 days, hourly"}</h3><p className="cmm-text-body mt-2">{fr ? "Chaque jour est déplié en prévisions horaires pour la météo réelle du lieu sélectionné." : "Each day is expanded into hourly forecasts for the real weather of the selected place."}</p></div><CalendarDays size={18} className="text-slate-400" /></div>
       <WeatherForecastSummary currentRisk={currentRisk} selectedForecastRisk={selectedForecastRisk} forecastSelectionStatus={forecastSelectionStatus} recommendedWindows={windows.recommended.slice(0, 3)} fr={fr} />
       <WeatherForecastDayButtons forecastDays={forecastDays} selectedForecastDayIndex={selectedForecastDayIndex} setSelectedForecastDayIndex={setSelectedForecastDayIndex} />
+      {selectedDay ? (
+        <div className="mt-5 space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+          <p className="text-sm font-semibold text-emerald-950">
+            {fr ? "La consultation ne modifie pas l’action. Confirmez ce que vous souhaitez reporter dans le pré-formulaire." : "Consulting the forecast does not change the action. Confirm what to carry into the pre-form."}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <CmmButton type="button" size="sm" tone="secondary" variant="pill" onClick={() => selectPreparation({ actionDate: selectedDay.date, source: "weather-date" })}>
+              {fr ? "Utiliser cette date" : "Use this date"}
+            </CmmButton>
+            {recommendedWindow ? (() => {
+              const departureTime = getForecastLocalClockTime(recommendedWindow.from);
+              return departureTime ? (
+                <CmmButton type="button" size="sm" tone="primary" variant="pill" onClick={() => selectPreparation({ actionDate: selectedDay.date, departureTime, source: "weather-slot" })}>
+                  {fr ? "Retenir ce créneau" : "Keep this slot"}
+                </CmmButton>
+              ) : null;
+            })() : null}
+          </div>
+          {pendingSelection ? (
+            <div role="alert" className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+              <p>{fr ? "Une date ou une heure est déjà renseignée. Que souhaitez-vous conserver ?" : "A date or time is already entered. What would you like to keep?"}</p>
+              <div className="flex flex-wrap gap-2">
+                <CmmButton type="button" size="sm" tone="tertiary" variant="pill" onClick={() => { onPreparationSelection?.(pendingSelection, "preserve"); setPendingSelection(null); }}>
+                  {fr ? "Garder la saisie" : "Keep existing value"}
+                </CmmButton>
+                <CmmButton type="button" size="sm" tone="primary" variant="pill" onClick={() => { onPreparationSelection?.(pendingSelection, "replace"); setPendingSelection(null); }}>
+                  {fr ? "Utiliser le choix météo" : "Use weather choice"}
+                </CmmButton>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <WeatherForecastHourlyCards forecastHours={selectedDay?.hours.slice(0, 24) ?? []} fr={fr} />
     </LightCard>
   );

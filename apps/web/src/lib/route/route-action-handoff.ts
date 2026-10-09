@@ -20,17 +20,9 @@ export function writePlannerActionHandoff(input: PlannerActionHandoff): void {
     // The form remains usable without the optional handoff when storage is unavailable.
   }
 }
-export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
-  if (typeof window === "undefined") return null;
-  let raw: string | null = null;
-  try {
-    raw = window.sessionStorage.getItem(ROUTE_ACTION_HANDOFF_STORAGE_KEY);
-    window.sessionStorage.removeItem(ROUTE_ACTION_HANDOFF_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-  if (!raw) return null;
 
+function parsePlannerActionHandoff(raw: string | null): PlannerActionHandoff | null {
+  if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Partial<PlannerActionHandoff> & {
       actionId?: unknown;
@@ -42,22 +34,10 @@ export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
       parsed.operationalRoute ?? parsed.actualRoute,
     );
     const actionId = parsed.actionId;
-    if (
-      !operationalRoute ||
-      (actionId !== undefined && (typeof actionId !== "string" || actionId.trim().length === 0)) ||
-      (parsed.routeCalibrationContext !== undefined &&
-        parsed.routeCalibrationContext !== null &&
-        !isRouteCalibrationContext(parsed.routeCalibrationContext)) ||
-      !isIsoDateInFuture(parsed.expiresAt) ||
-      (parsed.routeCalibrationContext?.plannerSnapshot !== undefined &&
-        (!isRoutePlannerProofShape(parsed.plannerProof) ||
-          parsed.plannerProof.expiresAt !== parsed.expiresAt)) ||
-      (parsed.preparationData !== undefined &&
-        parsed.preparationData !== null &&
-        !isPlannerPreparationData(parsed.preparationData))
-    ) {
+    if (!isValidPlannerActionHandoff(parsed, operationalRoute)) {
       return null;
     }
+    if (!operationalRoute || !isIsoDateInFuture(parsed.expiresAt)) return null;
     return {
       ...(typeof actionId === "string" ? { actionId } : {}),
       operationalRoute,
@@ -71,6 +51,40 @@ export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
   } catch {
     return null;
   }
+}
+
+function isValidPlannerActionHandoff(
+  parsed: Partial<PlannerActionHandoff> & { actionId?: unknown; preparationData?: unknown },
+  operationalRoute: PlannerActionHandoff["operationalRoute"] | null,
+): boolean {
+  const actionIdIsValid = parsed.actionId === undefined || (typeof parsed.actionId === "string" && parsed.actionId.trim().length > 0);
+  const calibrationIsValid = parsed.routeCalibrationContext === undefined || parsed.routeCalibrationContext === null || isRouteCalibrationContext(parsed.routeCalibrationContext);
+  const proofIsValid = parsed.routeCalibrationContext?.plannerSnapshot === undefined || (isRoutePlannerProofShape(parsed.plannerProof) && parsed.plannerProof.expiresAt === parsed.expiresAt);
+  const preparationIsValid = parsed.preparationData === undefined || parsed.preparationData === null || isPlannerPreparationData(parsed.preparationData);
+  return Boolean(operationalRoute && actionIdIsValid && calibrationIsValid && isIsoDateInFuture(parsed.expiresAt) && proofIsValid && preparationIsValid);
+}
+
+export function peekPlannerActionHandoff(): PlannerActionHandoff | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return parsePlannerActionHandoff(
+      window.sessionStorage.getItem(ROUTE_ACTION_HANDOFF_STORAGE_KEY),
+    );
+  } catch {
+    return null;
+  }
+}
+
+export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
+  if (typeof window === "undefined") return null;
+  let raw: string | null = null;
+  try {
+    raw = window.sessionStorage.getItem(ROUTE_ACTION_HANDOFF_STORAGE_KEY);
+    window.sessionStorage.removeItem(ROUTE_ACTION_HANDOFF_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+  return parsePlannerActionHandoff(raw);
 }
 
 function isPlannerPreparationData(value: unknown): value is ActionPreparationData {
