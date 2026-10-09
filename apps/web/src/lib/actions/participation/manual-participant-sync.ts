@@ -1,6 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ACTIVE_PARTICIPATION_STATUS } from "./group-participation.helpers";
-
 type ManualParticipant = { userId: string };
 
 export async function persistManualParticipantDiff(params: {
@@ -36,14 +34,34 @@ export async function persistManualParticipantDiff(params: {
   if (idsToInsert.length === 0) return;
 
   const joinedAt = new Date().toISOString();
+  const reactivated = await Promise.all(
+    idsToInsert.map(async (participant) => {
+      const result = await params.supabase
+        .from("action_registrations")
+        .update({
+          registered_at: joinedAt,
+          registration_status: "pending",
+          registration_source: "manual_add",
+        })
+        .eq("action_id", params.actionId)
+        .eq("user_id", participant.userId)
+        .eq("registration_source", "manual_add")
+        .eq("registration_status", "cancelled")
+        .select("id");
+      if (result.error) throw new Error(result.error.message);
+      return (result.data ?? []).length > 0;
+    }),
+  );
+  const idsStillToInsert = idsToInsert.filter((_, index) => !reactivated[index]);
+  if (idsStillToInsert.length === 0) return;
   const insertResult = await params.supabase
     .from("action_registrations")
     .insert(
-      idsToInsert.map((participant) => ({
+      idsStillToInsert.map((participant) => ({
         action_id: params.actionId,
         user_id: participant.userId,
         registered_at: joinedAt,
-        registration_status: ACTIVE_PARTICIPATION_STATUS,
+        registration_status: "pending" as const,
         registration_source: "manual_add" as const,
       })),
     );

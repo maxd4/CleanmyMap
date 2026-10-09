@@ -8,7 +8,7 @@ export type NotificationDisplayState =
   | "unavailable";
 
 export type NotificationDecisionDescriptor = {
-  kind: "action_share";
+  kind: "action_share" | "action_invitation";
   requestId: string;
 };
 
@@ -21,9 +21,16 @@ export function getNotificationDecisionDescriptor(
 ): NotificationDecisionDescriptor | null {
   if (!payload || typeof payload !== "object") return null;
   const raw = payload as Record<string, unknown>;
-  if (readString(raw.requestKind) !== "action_share") return null;
-  const requestId = readString(raw.requestId);
-  return requestId ? { kind: "action_share", requestId } : null;
+  const requestKind = readString(raw.requestKind);
+  if (requestKind === "action_share") {
+    const requestId = readString(raw.requestId);
+    return requestId ? { kind: "action_share", requestId } : null;
+  }
+  if (raw.eventType === "action_event" && raw.subtype === "invitation") {
+    const registrationId = readString(raw.registrationId);
+    return registrationId ? { kind: "action_invitation", requestId: registrationId } : null;
+  }
+  return null;
 }
 
 function getPersistedDecisionState(payload: unknown): "treated" | "unavailable" | null {

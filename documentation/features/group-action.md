@@ -9,14 +9,17 @@ Permettre a un bénévole de rejoindre le formulaire visible d'une action publi�
 ## Flux utilisateur
 
 1. Un organisateur crée un formulaire de groupe depuis la déclaration d'action.
-2. Le pré-formulaire conserve les données communes et les membres ajoutés manuellement dans `participantAccounts`, mais pas les champs de récolte finale.
+2. Le pré-formulaire conserve les données communes et les comptes à inviter dans `participantAccounts`, mais pas les champs de récolte finale.
 3. L'action est publiée avec les contrôles de visibilité applicables.
 4. Une pré-action `pending` ou `approved` peut apparaitre dans `Rejoindre une action` si elle est visible, publiée, future et ouverte aux inscriptions.
 5. Le bénévole rejoint ce formulaire existant.
-6. Les membres ajoutés manuellement à l'action sont enregistrés dans `action_registrations` avec la source `manual_add`, sans passer par la file publique.
+6. Les membres ajoutés manuellement à l'action sont enregistrés dans `action_registrations` avec `registration_source = manual_add` et `registration_status = pending`, sans passer par la file publique. Ils ne sont pas confirmés silencieusement.
 7. La demande future est enregistrée dans `action_registrations` avec `registration_status`, `registration_source` et `registered_at`. Un statut `confirmed` signifie uniquement que l'inscription a été acceptée ; il ne confirme pas une présence sur le terrain.
-8. Si le bénévole s'est trompé, il peut annuler une inscription en attente ou confirmée, tout en conservant la trace historique de l'inscription.
-9. Depuis `Actions passées`, un bénévole peut demander son rattachement à une action publique terminée. Le claim crée une ligne distincte dans `action_participants` avec `participation_source = post_action_claim` et `participation_status = pending`, puis passe par la review de l'organisateur ou d'un administrateur autorisé. Une inscription future existante reste intacte.
+8. Après la publication effective, une invitation `manual_add` est émise dans `app_notifications` avec `type = action_event` et `payload.subtype = invitation`. La déduplication est faite par action, destinataire et événement ; une sauvegarde de brouillon ne l'émet pas.
+9. La cloche et le Dashboard affichent l'invitation comme décision « À traiter ». Les boutons acceptent ou refusent via la mutation authentifiée atomique ; le statut réel devient ensuite « Traitée », sans bouton résiduel. « Lu » reste distinct de « Traité ».
+10. Une invitation `pending` ne réserve aucune place confirmée, ne donne pas l'accès de membre confirmé à la discussion et ne contribue ni aux présences terrain, ni aux statistiques, ni à l'XP ou aux badges. Une demande publique `group_form` reste une demande distincte.
+11. Si le bénévole s'est trompé, il peut annuler une inscription en attente ou confirmée, tout en conservant la trace historique de l'inscription.
+12. Depuis `Actions passées`, un bénévole peut demander son rattachement à une action publique terminée. Le claim crée une ligne distincte dans `action_participants` avec `participation_source = post_action_claim` et `participation_status = pending`, puis passe par la review de l'organisateur ou d'un administrateur autorisé. Une inscription future existante reste intacte.
 
 ## Placement dans le bloc Agir
 
@@ -44,6 +47,7 @@ Permettre a un bénévole de rejoindre le formulaire visible d'une action publi�
 - La jonction ne cree pas de nouveau formulaire.
 - Une seule inscription active est conservee par benevole et par action dans `action_registrations`; une inscription et une participation finale peuvent coexister pour le même utilisateur et la même action.
 - L'organisateur peut fermer ou rouvrir les inscriptions apres publication.
+- Le sélecteur « Inviter des membres » prépare des invitations, sans envoi pendant la saisie du brouillon. Les comptes déjà sélectionnés sont conservés jusqu'à la publication ou leur retrait explicite.
 - L'inscription reste tracée dans `action_registrations`, mais la page bénévole permet d'annuler une demande en attente ou une inscription confirmée.
 - Une inscription future suit `registration_status = pending | confirmed | cancelled`; `confirmed` signifie inscription acceptée, jamais présence terrain confirmée.
 - Un claim post-action suit `participation_status = pending → confirmed | cancelled` dans `action_participants`; avec l'unicité `(action_id, user_id)`, un état `cancelled` reste terminal dans ce lot et n'est jamais reconverti silencieusement en `pending`.
@@ -91,14 +95,14 @@ doit donc venir du parcours explicite `post_action_claim`, puis de sa validation
 - Source d'inscription future: table `action_registrations` avec `registration_status`, `registration_source`, `registered_at` et `updated_at`.
 - Source de participation finale: table `action_participants` avec `participation_status`, `participation_source`, `joined_at` et `updated_at`.
 - Identité de création: `actions.created_by_clerk_id`; responsabilité organisationnelle et permissions: `action_organizers`; aucune de ces deux sources ne prouve une présence terrain.
-- Origine d'inscription: `group_form` pour les demandes publiques futures et `manual_add` pour les membres ajoutés directement.
+- Origine d'inscription: `group_form` pour les demandes publiques futures et `manual_add` pour les invitations directes. Les invitations directes commencent toujours en `pending` et passent à `confirmed` ou `cancelled` uniquement par la réponse canonique du destinataire.
 - Origine de participation finale: `admin`, `admin_override`, `import` ou `post_action_claim` selon l'opération qui l'a créée.
 - Source badge, progression et gamification: uniquement `action_participants` avec `participation_status = confirmed`. Un claim confirmé suit cette même source; une inscription future ne la remplace jamais.
 - Source stats et quotes-parts: uniquement les participants finaux confirmés; le dénominateur exclut les inscriptions, les demandes `pending` et les lignes `cancelled`.
 - Source fermeture: metadata de `actions.notes` via `groupJoinEnabled`.
 - Source dérogation: les opérations admin sont journalisées séparément et ne modifient pas le parcours normal.
 - Discussion d'action: le créateur, les organisateurs, les rôles actifs `admin`/`max` et les participants confirmés peuvent lire et écrire avant l'action; après `post_action_complete`, seuls les participants finaux `action_participants` `confirmed` conservent l'accès, avec le créateur, les organisateurs et les admins. Une demande `pending`, notamment un claim post-action, ne donne aucun accès d'écriture. Une action annulée conserve une lecture autorisée mais bloque les nouveaux messages.
-- Audience des notifications de discussion: elle suit les mêmes sources de membres confirmés, exclut l'auteur et les exclusions actives, et produit une notification `action_discussion` idempotente dans `app_notifications` avec `actionId`, `commentId`/`messageId` et `actionPhase`. Une inscription future `pending` n'est pas notifiée.
+- Audience des notifications de discussion: elle suit les mêmes sources de membres confirmés, exclut l'auteur et les exclusions actives, et produit une notification `action_discussion` idempotente dans `app_notifications` avec `actionId`, `commentId`/`messageId` et `actionPhase`. Une inscription future `pending`, y compris une invitation `manual_add`, n'est pas notifiée comme membre confirmé.
 - Architecture de livraison future: la notification métier `action_discussion` est d'abord créée dans `app_notifications`, puis pourra être évaluée par canal. Le canal in-app reste actif par défaut; le futur push mobile sera séparé, explicitement opt-in et piloté par `actionDiscussionPush = off | important_only | all`, sans fournisseur push choisi dans l'état courant.
 - Importance des messages: le contrat futur distingue `normal` et `important`. Seule une marque explicite d'importance, réservée aux annonces organisateur réellement justifiées (lieu, horaire, itinéraire, annulation, sécurité/météo ou message épinglé), peut satisfaire `important_only`; un commentaire libre n'est jamais promu automatiquement.
 

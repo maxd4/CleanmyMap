@@ -35,4 +35,23 @@ describe("notification decision state", () => {
     expect(getNotificationDecisionDescriptor({ requestKind: "other", requestId: "request-1" })).toBeNull();
     expect(getNotificationDecisionDescriptor({ requestKind: "action_share" })).toBeNull();
   });
+
+  it("recognizes only canonical action invitation payloads", () => {
+    const item = notification({
+      type: "action_event",
+      payload: {
+        eventType: "action_event",
+        subtype: "invitation",
+        registrationId: "registration-1",
+      },
+    });
+    expect(getNotificationDecisionDescriptor(item.payload)).toEqual({
+      kind: "action_invitation",
+      requestId: "registration-1",
+    });
+    expect(resolveNotificationDisplayState({
+      notification: item,
+      pendingRequestIds: new Set(["registration-1"]),
+    })).toBe("decision_pending");
+  });
 });

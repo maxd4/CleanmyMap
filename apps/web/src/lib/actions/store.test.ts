@@ -604,7 +604,7 @@ describe("buildInitialActionRegistrationRows", () => {
     });
   });
 
-  it("adds manual participants as confirmed entries without duplicating known accounts", () => {
+  it("adds manual participants as pending invitations without duplicating known accounts", () => {
     const rows = buildInitialActionRegistrationRows({
       actionId: "action-3",
       creatorUserId: "user-creator",
@@ -667,13 +667,13 @@ describe("buildInitialActionRegistrationRows", () => {
       expect.objectContaining({
         action_id: "action-3",
         user_id: "user-manual-1",
-        registration_status: "confirmed",
+        registration_status: "pending",
         registration_source: "manual_add",
       }),
       expect.objectContaining({
         action_id: "action-3",
         user_id: "user-manual-2",
-        registration_status: "confirmed",
+        registration_status: "pending",
         registration_source: "manual_add",
       }),
     ]);

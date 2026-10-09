@@ -311,6 +311,20 @@ export const actionsAuthorizationContract = {
       evidence: ["requireAuthenticatedAccess", "canManageAction", "canPublishPreAction"],
     },
   },
+  "actions/invitations": {
+    GET: {
+      expected: "Authenticated recipient-only read of pending manual action invitations",
+      dimensions: ["authentication", "ownership"],
+      actual: "Clerk auth userId + service-only recipient-scoped pending invitation RPC",
+      evidence: ["auth", "list_pending_action_invitations_for_recipient"],
+    },
+    PATCH: {
+      expected: "Authenticated recipient-only atomic and idempotent invitation decision",
+      dimensions: ["authentication", "ownership"],
+      actual: "Clerk auth userId + recipient-scoped respond_to_action_invitation RPC",
+      evidence: ["auth", "respond_to_action_invitation"],
+    },
+  },
   "actions/[actionId]/public": {
     GET: {
       expected: "Public-safe dynamic action reference projection; inaccessible actions return a neutral not-found response",

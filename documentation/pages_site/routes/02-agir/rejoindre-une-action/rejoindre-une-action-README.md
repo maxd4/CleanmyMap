@@ -100,6 +100,14 @@ action publique terminée. Cette demande de claim est créée dans
 `action_participants` avec `participation_source = post_action_claim` et reste
 en attente de validation selon les permissions existantes.
 
+Une ligne `action_registrations` avec `registration_source = manual_add` et
+`registration_status = pending` est une invitation directe, pas une demande
+publique `group_form`. Elle n'est pas comptée comme inscription confirmée et
+ne donne pas l'accès d'un membre confirmé. Après publication, sa décision est
+présentée dans la cloche et le Dashboard via `action_event` / `invitation` ;
+l'acceptation passe à `confirmed`, le refus à `cancelled`, de manière
+authentifiée, atomique et idempotente.
+
 L'onglet `Actions futures` réutilise exclusivement `/api/actions/group-join`.
 L'onglet `Actions passées` lit les références publiques d'actions terminées,
 publiées et visibles depuis la surface d'actions ; il ne lit pas l'historique

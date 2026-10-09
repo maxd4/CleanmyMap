@@ -67,6 +67,24 @@ async function countActionRegistrationRows(
   return Number(result.count ?? 0);
 }
 
+async function countPublicPendingRegistrationRows(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<number> {
+  const result = await supabase
+    .from("action_registrations")
+    .select("action_id", { count: "exact", head: true })
+    .eq("action_id", actionId)
+    .eq("registration_status", "pending")
+    .eq("registration_source", "group_form");
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return Number(result.count ?? 0);
+}
+
 async function loadActionParticipantDetailsForUser(
   supabase: SupabaseClient,
   params: {
@@ -125,11 +143,23 @@ async function loadActionParticipantSummaryFallback(
     source: "registrations" | "participants";
   },
 ): Promise<ActionParticipantSummary> {
-  const [activeCount, totalCount, details] = await Promise.all([
-    countActionRegistrationRows(supabase, params.actionId, "confirmed", params.source),
-    countActionRegistrationRows(supabase, params.actionId, undefined, params.source),
-    loadActionParticipantDetailsForUser(supabase, params),
-  ]);
+  const activeCount = await countActionRegistrationRows(
+    supabase,
+    params.actionId,
+    "confirmed",
+    params.source,
+  );
+  const [totalCount, details] = params.source === "registrations"
+    ? await Promise.all([
+        countPublicPendingRegistrationRows(supabase, params.actionId).then(
+          (pendingCount) => activeCount + pendingCount,
+        ),
+        loadActionParticipantDetailsForUser(supabase, params),
+      ])
+    : await Promise.all([
+        countActionRegistrationRows(supabase, params.actionId, undefined, params.source),
+        loadActionParticipantDetailsForUser(supabase, params),
+      ]);
 
   return {
     actionId: params.actionId,

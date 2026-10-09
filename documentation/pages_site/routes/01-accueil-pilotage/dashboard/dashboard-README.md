@@ -49,17 +49,19 @@
   ouvertes selon l’état métier canonique, et **Informations** pour les autres
   notifications. Une notification lue peut donc rester « À traiter » tant
   que sa demande métier n’a pas été décidée.
-- Les seuls boutons de décision actuellement exposés sont ceux des demandes
-  de partage d’action, après relecture de `/api/chat/contact-requests` ; cette
-  relecture protège les décisions concurrentes et ne transforme pas une
-  notification en boîte métier distincte.
+- Les boutons de décision sont exposés uniquement pour les événements métier
+  autorisés : demandes de partage d’action et invitations `action_event` de
+  sous-type `invitation`. Le centre recharge respectivement les demandes de
+  partage et les inscriptions `action_registrations` `manual_add` `pending`
+  avant affichage puis avant mutation ; aucune notification ne devient une
+  seconde boîte métier.
 - La pagination suit un curseur stable sur `created_at DESC` puis `id DESC`;
   l’historique complet n’est jamais chargé en une seule requête et aucun
   polling supplémentaire n’est activé dans le Dashboard.
 - La cloche utilise un décompte serveur exact des lignes `read_at IS NULL`,
   indépendant de sa prévisualisation limitée à quatre notifications. Le
-  compteur « À traiter » reste séparé et provient des demandes décisionnelles
-  encore pendantes.
+  compteur « À traiter » reste séparé et provient des demandes de partage et
+  invitations encore pendantes ; il n'est pas déduit de `read_at`.
 - Chaque notification affiche son type et son pictogramme, son état lu/non
   lu, sa décision éventuelle (en attente, traitée ou indisponible), son titre
   et son contenu complets, sa date et son heure ainsi qu’une

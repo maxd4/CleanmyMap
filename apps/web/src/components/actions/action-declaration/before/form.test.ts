@@ -69,7 +69,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Début du créneau global");
     expect(html).toContain("Fin du créneau global");
     expect(html).toContain("Inscriptions des bénévoles");
-    expect(html).toContain("Membres préinscrits");
+    expect(html).toContain("Inviter des membres");
     expect(html).toContain("coordonnées facultatives");
     expect(html).toContain('class="cmm-disclosure"');
     expect(html).toContain('data-cmm-field-control="input"');
@@ -203,9 +203,9 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("@maxence_deroome");
     expect(html).toContain("Organisateurs associés");
     expect(html).toContain("Inscriptions des bénévoles");
-    expect(html).toContain("Membres préinscrits");
+    expect(html).toContain("Inviter des membres");
     expect(html).toContain("Autoriser les demandes d&#x27;inscription");
-    expect(html).toContain("Les membres ajoutés sont préinscrits à l&#x27;action.");
+    expect(html).toContain("Les membres ajoutés recevront une invitation après la publication");
     expect(html).toContain("Rechercher");
     expect(html).toContain('type="search"');
     expect(html).not.toContain('value="legacy-alias"');
@@ -239,6 +239,6 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain('for="before-group-join-enabled"');
     expect(html).toContain(countLabel);
     expect(html).toContain("Les demandes ne deviennent possibles qu&#x27;après sa publication.");
-    expect(html).toContain("Les membres ajoutés sont préinscrits à l&#x27;action.");
+    expect(html).toContain("Les membres ajoutés recevront une invitation après la publication");
   });
 });

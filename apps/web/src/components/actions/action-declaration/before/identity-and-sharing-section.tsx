@@ -222,12 +222,12 @@ function VolunteerRegistrationSection({
         />
 
         <CmmDisclosure
-          summary={<ActionFormDisclosureSummary label="Membres préinscrits" detail={participantAccountIds.length ? `${participantAccountIds.length} membre${participantAccountIds.length > 1 ? "s" : ""}` : "Facultatif"} />}
+          summary={<ActionFormDisclosureSummary label="Inviter des membres" detail={participantAccountIds.length ? `${participantAccountIds.length} membre${participantAccountIds.length > 1 ? "s" : ""}` : "Facultatif"} />}
           tone="emerald"
           size="sm"
         >
           <p className="mb-3 text-xs leading-5 text-emerald-900/68">
-            Les membres ajoutés sont préinscrits à l&apos;action. Leur présence effective devra être confirmée après l&apos;événement.
+            Les membres ajoutés recevront une invitation après la publication de l&apos;action. Leur réponse ne vaut pas présence sur le terrain.
           </p>
           <ActionParticipantPicker
             currentUserId={currentUserId}

@@ -93,7 +93,7 @@ export function buildInitialActionRegistrationRows(params: {
       action_id: params.actionId,
       user_id: participant.userId,
       registered_at: registeredAt,
-      registration_status: "confirmed",
+      registration_status: "pending",
       registration_source: "manual_add",
     });
   }

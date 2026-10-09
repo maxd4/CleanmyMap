@@ -6,7 +6,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type AppNotification = {
   id: string;
-  type: "validation" | "community" | "system" | "security" | "chat" | "action_discussion" | "gamification_reconciliation";
+  type: "validation" | "community" | "system" | "security" | "chat" | "action_discussion" | "gamification_reconciliation" | "action_event";
   title: string;
   content: string;
   read_at: string | null;
@@ -38,6 +38,12 @@ export type NotificationDecisionResponse = {
   messageId: string | null;
   actionId: string | null;
   senderId: string | null;
+};
+
+export type ActionInvitationDecisionResponse = {
+  status: "accepted" | "rejected" | "unavailable";
+  registrationId: string;
+  actionId: string | null;
 };
 
 async function getNotificationsClient(
@@ -149,6 +155,53 @@ export async function respondToNotificationDecision(
     messageId: typeof raw.messageId === "string" ? raw.messageId : null,
     actionId: typeof raw.actionId === "string" ? raw.actionId : null,
     senderId: typeof raw.senderId === "string" ? raw.senderId : null,
+  };
+}
+
+function parseInvitationIds(payload: unknown): string[] {
+  if (!payload || typeof payload !== "object") return [];
+  const invitations = (payload as { invitations?: unknown }).invitations;
+  if (!Array.isArray(invitations)) return [];
+  return invitations.flatMap((invitation) => {
+    if (!invitation || typeof invitation !== "object") return [];
+    const id = (invitation as { registration_id?: unknown }).registration_id;
+    return typeof id === "string" && id.trim() ? [id.trim()] : [];
+  });
+}
+
+export async function loadPendingActionInvitationIds(): Promise<string[]> {
+  const response = await fetch("/api/actions/invitations", {
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  return parseInvitationIds(await readContactRequestsResponse(response));
+}
+
+export async function respondToActionInvitation(
+  registrationId: string,
+  decision: NotificationDecision,
+): Promise<ActionInvitationDecisionResponse> {
+  const response = await fetch("/api/actions/invitations", {
+    method: "PATCH",
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify({ registrationId, decision }),
+  });
+  const payload = await readContactRequestsResponse(response);
+  if (!payload || typeof payload !== "object") {
+    throw new Error("La décision d'invitation n'a pas renvoyé d'état valide.");
+  }
+  const raw = payload as Record<string, unknown>;
+  const status = raw.status;
+  if (status !== "accepted" && status !== "rejected" && status !== "unavailable") {
+    throw new Error("La décision d'invitation n'a pas renvoyé d'état valide.");
+  }
+  return {
+    status,
+    registrationId: typeof raw.registrationId === "string" ? raw.registrationId : registrationId,
+    actionId: typeof raw.actionId === "string" ? raw.actionId : null,
   };
 }
 
