@@ -281,7 +281,12 @@ async function notifyNearbyCommunityEventProfiles(
    type:"community",
    title:"Appel au collectif ! 📣",
    content: `Un nouvel événement est organisé près de chez vous :"${params.title}" (${params.locationLabel}).`,
-   payload: { entityType:"event", id: params.eventId },
+   payload: {
+    entityType:"event",
+    id: params.eventId,
+    optional: true,
+    href: `/sections/community?eventId=${encodeURIComponent(params.eventId)}`,
+   },
   }));
   await supabase.from("app_notifications").insert(notifications);
  } catch (notifError) {

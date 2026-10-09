@@ -20,6 +20,11 @@ describe("notification targets", () => {
     expect(buildNotificationHref({ eventType: "action_event", actionId: "action-2" })).toBe(
       "/sections/rejoindre-une-action?actionId=action-2",
     );
+    expect(buildNotificationHref({
+      entityType: "event",
+      id: "event-1",
+      href: "/sections/community?eventId=event-1",
+    })).toBe("/sections/community?eventId=event-1");
   });
 
   it("rejects external, protocol-relative and unknown destinations", () => {

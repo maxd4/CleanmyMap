@@ -46,6 +46,14 @@ export function isCriticalNotification(notification: AppNotification): boolean {
 
 export function isOptionalInformationNotification(notification: AppNotification): boolean {
   if (isCriticalNotification(notification)) return false;
+  if (
+    notification.type === "system"
+    && notification.payload?.kind === "gamification_level_up"
+  ) return true;
+  if (
+    notification.type === "community"
+    && notification.payload?.optional === true
+  ) return true;
   if (notification.type !== "action_event" || !notification.payload) return false;
   return notification.payload.optional === true
     || [
@@ -55,6 +63,30 @@ export function isOptionalInformationNotification(notification: AppNotification)
       "registration_decision",
       "administrative_requirements",
     ].includes(String(notification.payload.subtype));
+}
+
+/**
+ * A reconciliation keeps the standalone level-up row for history and
+ * compatibility, but its detailed receipt is the single center-of-tracking
+ * solicitation for that same transition.
+ */
+export function isRedundantGamificationLevelUpNotification(
+  notification: AppNotification,
+  notifications: readonly AppNotification[],
+): boolean {
+  if (
+    notification.type !== "system"
+    || notification.payload?.kind !== "gamification_level_up"
+  ) return false;
+
+  const reconciliationId = notification.payload.reconciliationId;
+  if (typeof reconciliationId !== "string" || reconciliationId.length === 0) return false;
+
+  return notifications.some((candidate) =>
+    candidate.type === "gamification_reconciliation"
+    && candidate.payload?.kind === "gamification_reconciliation_receipt"
+    && candidate.payload.reconciliationId === reconciliationId,
+  );
 }
 
 function getActionEventDecisionDescriptor(

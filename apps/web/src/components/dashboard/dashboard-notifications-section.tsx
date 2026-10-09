@@ -18,6 +18,7 @@ import {
   getNotificationDecisionDescriptor,
   getNotificationActionId,
   isOptionalInformationNotification,
+  isRedundantGamificationLevelUpNotification,
   resolveNotificationDisplayState,
   type NotificationDisplayState,
 } from "@/lib/notifications/notification-state";
@@ -202,6 +203,7 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
   );
   const informationNotifications = useMemo(
     () => allNotifications.filter((notification) => {
+      if (isRedundantGamificationLevelUpNotification(notification, allNotifications)) return false;
       if (pendingNotificationIds.has(notification.id) || stateFor(notification) === "decision_pending") return false;
       if (!isOptionalInformationNotification(notification)) return true;
       const actionId = getNotificationActionId(notification.payload);

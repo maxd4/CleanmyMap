@@ -26,6 +26,7 @@ export async function notifyLevelUp(
   userId: string,
   previousLevel: number,
   currentLevel: number,
+  options: { reconciliationId?: string } = {},
 ): Promise<void> {
   if (currentLevel <= previousLevel) return;
 
@@ -35,7 +36,12 @@ export async function notifyLevelUp(
       type: "system",
       title: "Niveau Supérieur ! 🏆",
       content: `Félicitations ! Vous avez atteint le niveau ${currentLevel}. Votre impact sur CleanMyMap grandit !`,
-      payload: { oldLevel: previousLevel, newLevel: currentLevel },
+      payload: {
+        kind: "gamification_level_up",
+        oldLevel: previousLevel,
+        newLevel: currentLevel,
+        ...(options.reconciliationId ? { reconciliationId: options.reconciliationId } : {}),
+      },
     });
     if (error) {
       throw new Error(error.message);

@@ -24,6 +24,7 @@ import {
 import {
   getNotificationDecisionDescriptor,
   isOptionalInformationNotification,
+  isRedundantGamificationLevelUpNotification,
   prioritizeNotificationPreview,
   resolveNotificationDisplayState,
   type NotificationDisplayState,
@@ -125,8 +126,11 @@ function NotificationBellSession({
   const visibleNotifications = useMemo(() => {
     if (!isLoaded || !isSignedIn) return [];
     return notifications.filter((notification) =>
-      !isOptionalInformationNotification(notification)
-      || preferences.informationalEnabled,
+      !isRedundantGamificationLevelUpNotification(notification, notifications)
+      && (
+        !isOptionalInformationNotification(notification)
+        || preferences.informationalEnabled
+      ),
     );
   }, [isLoaded, isSignedIn, notifications, preferences.informationalEnabled]);
 

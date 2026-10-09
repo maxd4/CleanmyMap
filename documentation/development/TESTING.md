@@ -511,6 +511,16 @@ pour une baisse mesurée sur le candidat exact : on abaisse le plafond amélior�
 on n'augmente pas un ceiling et on n'ajoute pas d'exception pour faire passer
 le contrôle.
 
+Lorsqu'un ratchet de longueur de fonction ou de poids de fichier bloque
+`precommit:guard` ou un contrôle de qualité équivalent, la réparation validée
+doit inclure une extraction substantielle vers un nouveau fichier portant une
+responsabilité cohésive, avec migration des consommateurs et tests associés.
+Une condensation, un reformatage ou une réduction artificielle destinée à
+passer juste sous la limite ne constitue pas une correction acceptable. Si
+aucune frontière sûre n'existe, le résultat est `BLOCKED` jusqu'à une décision
+de modularisation ; il ne faut ni relever/abaisser la baseline, ni modifier le
+seuil ou l'exclusion pour obtenir un succès.
+
 ## Dead code et ratchet Knip
 
 La commande informative historique reste disponible :

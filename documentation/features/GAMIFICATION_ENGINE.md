@@ -289,6 +289,15 @@ restent des deltas structurés, sans snapshot exhaustif ; le cleanup explicite
 de rétention supprime les reçus `gamification_reconciliation` de plus de 120
 jours et conserve uniquement un manifeste de comptage.
 
+Un franchissement de niveau issu de cette même réconciliation conserve aussi
+la notification historique `system` produite par le rafraîchissement de profil,
+mais elle porte le même `reconciliationId`. Le centre de suivi présente alors
+le reçu détaillé une seule fois pour éviter une sollicitation redondante ; ni
+le reçu, ni la ligne historique de niveau ne sont supprimés. Un franchissement
+hors réconciliation conserve sa notification autonome. Les gains visibles
+restent dérivés des `progression_events` et des catalogues CURRENT, jamais
+d'un delta de profil isolé.
+
 ## Évolution
 
 Toute modification du moteur doit vérifier ensemble :

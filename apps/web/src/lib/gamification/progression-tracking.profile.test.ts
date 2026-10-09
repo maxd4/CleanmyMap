@@ -205,6 +205,27 @@ it("keeps the resolved previous level when the secondary notification fails", as
   );
 });
 
+it("correlates a reconciliation level-up row with its detailed receipt", async () => {
+  loadUserProgressionStatsMock.mockResolvedValue(completeLevelSixStats());
+  const { notificationInsert, supabase } = createLevelRefreshSupabase({
+    previousLevel: 5,
+    events: [{ status_phase: "validated", xp_awarded: 15 }],
+  });
+
+  await refreshProgressionProfile(supabase, "user-1", {
+    reconciliationId: "reconciliation-1",
+  });
+
+  expect(notificationInsert).toHaveBeenCalledWith(expect.objectContaining({
+    payload: {
+      kind: "gamification_level_up",
+      oldLevel: 5,
+      newLevel: 6,
+      reconciliationId: "reconciliation-1",
+    },
+  }));
+});
+
 it("does not announce when the current level does not change", async () => {
   loadUserProgressionStatsMock.mockResolvedValue(completeLevelSixStats());
   const { notificationInsert, supabase } = createLevelRefreshSupabase({

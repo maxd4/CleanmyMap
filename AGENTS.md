@@ -332,6 +332,23 @@ réellement un algorithme ou un pipeline cohésif et que l'extraction dégradera
 sa cohésion. Toute fonction touchée ne doit pas devenir plus longue ou plus
 complexe sans nécessité contractuelle démontrée.
 
+### Réparation obligatoire lorsqu'un ratchet bloque
+
+Lorsqu'un ratchet de longueur de fonction ou de poids de fichier s'active et
+bloque `precommit:guard` ou un contrôle de qualité équivalent, la correction
+doit modulariser substantiellement la zone concernée : extraire une
+responsabilité cohésive dans un nouveau fichier avec un owner, un contrat et
+des tests adaptés, puis migrer ses consommateurs. Condenser des lignes,
+modifier la mise en forme, raccourcir des noms, déplacer des commentaires ou
+réduire artificiellement le fichier juste sous le seuil est interdit. Une
+fonction ou un bloc monolithique ne doit pas être déplacé intact dans le
+nouveau fichier.
+
+Cette exigence s'applique à toute modification introduite pour débloquer le
+garde-fou, même si le résultat repasse techniquement sous le seuil. Si aucune
+frontière de modularisation réelle et sûre n'est identifiable, le lot doit
+rester bloqué et le rapporter plutôt que contourner le ratchet.
+
 Avant de supprimer ou remplacer un élément, vérifier qu’il ne porte pas encore :
 
 - une connaissance métier ou de sécurité unique ;

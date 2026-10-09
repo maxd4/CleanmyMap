@@ -10,7 +10,6 @@ import type { ProgressionEventType } from "./progression-types";
 import {
   buildGamificationReconciliationPlan,
   loadPersistedGamificationEvents,
-  type GamificationReconciliationProfile,
   type GamificationReconciliationPlan,
 } from "./gamification-reconciliation-plan";
 import {
@@ -19,6 +18,11 @@ import {
   type GamificationReconciliationReasonCategory,
   type GamificationReconciliationReceipt,
 } from "./gamification-reconciliation-receipt";
+import {
+  loadReconciliationProfile,
+  reconciliationIdForPlan,
+  resolveGamificationReceiptPlan,
+} from "./gamification-reconciliation-profile";
 
 export type GamificationReconciliationResult = {
   inserted: number;
@@ -30,19 +34,6 @@ export type GamificationReconciliationResult = {
   plan: GamificationReconciliationPlan;
   receipt: GamificationReconciliationReceipt | null;
 };
-
-async function loadReconciliationProfile(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<GamificationReconciliationProfile | null> {
-  const result = await supabase
-    .from("progression_profiles")
-    .select("current_level, current_applied_rules_revision, last_acknowledged_rules_revision")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (result.error) throw new Error(result.error.message);
-  return result.data as GamificationReconciliationProfile | null;
-}
 
 async function insertExpectedEvents(
   supabase: SupabaseClient,
@@ -134,22 +125,20 @@ export async function reconcileUserGamification(
     persisted,
     profile: profileBefore,
   });
+  const reconciliationId = reconciliationIdForPlan(plan, rules, options.reasonCategory);
 
   const inserted = await insertExpectedEvents(supabase, userId, expected.events, plan);
   const updated = await updateExpectedEvents(supabase, expected.events, plan.eventsToUpdate);
   await removeCurrentEvents(supabase, plan.eventsToRemove);
 
-  if (options.refreshProfile !== false) {
-    const { refreshProgressionProfile } = await import("./progression-tracking");
-    await refreshProgressionProfile(supabase, userId, { reconcileLegacyImpact: false });
-  }
-
-  const profileAfter = options.refreshProfile === false
-    ? profileBefore
-    : await loadReconciliationProfile(supabase, userId);
-  const receiptPlan = profileAfter && profileAfter.current_level !== plan.levelAfter
-    ? { ...plan, levelAfter: profileAfter.current_level }
-    : plan;
+  const receiptPlan = await resolveGamificationReceiptPlan(
+    supabase,
+    userId,
+    plan,
+    profileBefore,
+    options.refreshProfile !== false,
+    reconciliationId,
+  );
   const receipt = buildGamificationReconciliationReceipt(receiptPlan, {
     reasonCategory: options.reasonCategory,
     rules,

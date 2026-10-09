@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { defaultCommunityEventOps, parseCommunityEventDescription } from "@/lib/community/event-ops";
-import { computeCurrentLevel, computePotentialLevel } from "./progression-formulas";
 import {
   fetchActionById,
   fetchSpotById,
@@ -10,18 +9,13 @@ import {
 } from "./progression-data";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import {
-  CURRENT_GAMIFICATION_RULES_REVISION,
   type ProgressionStatusPhase,
 } from "./progression-types";
-import {
-  toFloat,
-  toIsoDate,
-} from "./progression-utils";
-import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
+import { toIsoDate } from "./progression-utils";
 import { logFailure } from "@/lib/logging/failure-log";
 import { rebuildUserGamificationBadges } from "./badges/rebuild";
 import { reconcileMohsImpactProgression } from "./mohs-impact-reconciliation";
-import { loadPreviousLevel, notifyLevelUp } from "./progression-level-refresh";
+import { persistProgressionProfileRefresh } from "./progression-profile-refresh";
 import {
   awardReferralForUsefulContribution,
   removeReferralAwardForRejectedContribution,
@@ -42,81 +36,10 @@ async function syncOrganizersProgression(
   );
 }
 
-function calculateProgressionTotals(
-  rows: Array<{ status_phase: ProgressionStatusPhase; xp_awarded: number }>,
-) {
-  return rows.reduce(
-    (totals, row) => {
-      const xp = toFloat(row.xp_awarded, 0);
-      totals.xpTotal += xp;
-      if (row.status_phase === "pending") totals.xpPending += xp;
-      if (row.status_phase === "validated") totals.xpValidated += xp;
-      return totals;
-    },
-    { xpTotal: 0, xpPending: 0, xpValidated: 0 },
-  );
-}
-
-async function upsertProgressionProfile(
-  supabase: SupabaseClient,
-  userId: string,
-  totals: { xpTotal: number; xpPending: number; xpValidated: number },
-  currentLevel: number,
-  potentialLevel: number,
-) {
-  const upsert = await supabase.from("progression_profiles").upsert(
-    {
-      user_id: userId,
-      xp_total: totals.xpTotal,
-      xp_pending: totals.xpPending,
-      xp_validated: totals.xpValidated,
-      current_level: currentLevel,
-      potential_level: potentialLevel,
-      current_applied_rules_revision: CURRENT_GAMIFICATION_RULES_REVISION,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
-  if (upsert.error) throw new Error(upsert.error.message);
-}
-
-async function announceLevelUp(
-  supabase: SupabaseClient,
-  userId: string,
-  previousLevel: number,
-  currentLevel: number,
-) {
-  if (currentLevel <= previousLevel) return;
-  await broadcastGamificationAnnouncement(supabase, {
-    type: "level_up",
-    userId,
-    previousLevel,
-    newLevel: currentLevel,
-    title: "Niveau Supérieur ! 🏆",
-    message: `Félicitations ! Vous avez atteint le niveau ${currentLevel}. Votre impact sur CleanMyMap grandit !`,
-    icon: "🏆",
-    source: "progression-tracking",
-    dedupeKey: `level_up:${userId}:${currentLevel}`,
-  });
-}
-
-async function finalizeProgressionRefresh(
-  supabase: SupabaseClient,
-  userId: string,
-  totals: { xpTotal: number; xpPending: number; xpValidated: number },
-  currentLevel: number,
-  potentialLevel: number,
-  previousLevel: number,
-): Promise<void> {
-  await notifyLevelUp(supabase, userId, previousLevel, currentLevel);
-  await upsertProgressionProfile(supabase, userId, totals, currentLevel, potentialLevel);
-  await announceLevelUp(supabase, userId, previousLevel, currentLevel);
-}
-
 export async function refreshProgressionProfile(
   supabase: SupabaseClient,
   userId: string,
-  options: { reconcileLegacyImpact?: boolean } = {},
+  options: { reconcileLegacyImpact?: boolean; reconciliationId?: string } = {},
 ): Promise<void> {
   // Reconcile impact badge threshold facts before projecting the profile. The
   // reconciler only writes progression_events; the legacy point ledger remains
@@ -141,12 +64,9 @@ export async function refreshProgressionProfile(
     (eventsResult.data as Array<{ status_phase: ProgressionStatusPhase; xp_awarded: number }>) ??
     [];
 
-  const totals = calculateProgressionTotals(rows);
-
-  const potentialLevel = computePotentialLevel(totals.xpValidated);
-  const currentLevel = computeCurrentLevel(totals.xpValidated, stats);
-  const previousLevel = await loadPreviousLevel(supabase, userId);
-  await finalizeProgressionRefresh(supabase, userId, totals, currentLevel, potentialLevel, previousLevel);
+  await persistProgressionProfileRefresh(supabase, userId, rows, stats, {
+    reconciliationId: options.reconciliationId,
+  });
 }
 
 export async function trackActionCreated(

@@ -123,6 +123,24 @@ Le seuil ne déclenche jamais un split automatique. La décision repose sur la
 cohésion, les responsabilités, le couplage, la testabilité et les contrats.
 Une exception HARD de baseline doit être explicitement ratifiée, justifiée et
 bornée par `maxLines` et `maxBytes`; elle ne peut pas croître silencieusement.
+
+### Ratchet bloquant : extraction substantielle obligatoire
+
+Lorsqu'un ratchet de longueur de fonction ou de poids de fichier bloque
+`precommit:guard` ou un contrôle équivalent, la résolution doit comporter une
+modularisation substantielle de la zone concernée. Extraire une responsabilité
+cohésive vers un nouveau fichier, lui donner un owner et un contrat propres,
+puis migrer les consommateurs et les tests. Il est interdit de traiter ce
+blocage par simple condensation, reformatage, raccourcissement de noms,
+déplacement de commentaires ou toute autre réduction visant seulement à
+repasser juste sous la limite. Le code déplacé ne doit pas rester un monolithe
+intact dans le nouveau fichier.
+
+Cette règle s'applique aux changements ajoutés pour débloquer le garde-fou,
+même si le seuil est finalement franchi de peu. Si aucune frontière sûre et
+réellement cohésive n'est identifiable, le lot reste bloqué jusqu'à une
+décision explicite ; la baseline, le seuil ou la mesure ne doivent pas être
+affaiblis.
 Les entrées numériques `review[]` de la baseline ne sont pas des décisions
 architecturales : un état `IMPROVED` conserve le plafond abaissé après une
 amélioration mesurée.

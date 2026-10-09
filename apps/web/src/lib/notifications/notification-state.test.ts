@@ -8,6 +8,7 @@ import {
   getNotificationDecisionOutcome,
   isCriticalNotification,
   isOptionalInformationNotification,
+  isRedundantGamificationLevelUpNotification,
   prioritizeNotificationPreview,
   resolveNotificationDisplayState,
 } from "./notification-state";
@@ -107,6 +108,44 @@ describe("notification decision state", () => {
     expect(isCriticalNotification(information)).toBe(false);
     expect(isOptionalInformationNotification(cancellation)).toBe(false);
     expect(isCriticalNotification(cancellation)).toBe(true);
+  });
+
+  it("classifies nearby community events as optional information", () => {
+    expect(isOptionalInformationNotification(notification({
+      type: "community",
+      payload: {
+        entityType: "event",
+        id: "event-1",
+        optional: true,
+        href: "/sections/community?eventId=event-1",
+      },
+    }))).toBe(true);
+  });
+
+  it("hides only the correlated level row when a reconciliation receipt is present", () => {
+    const levelUp = notification({
+      type: "system",
+      payload: {
+        kind: "gamification_level_up",
+        oldLevel: 5,
+        newLevel: 6,
+        reconciliationId: "reconciliation-1",
+      },
+    });
+    const receipt = notification({
+      id: "receipt-1",
+      type: "gamification_reconciliation",
+      payload: {
+        kind: "gamification_reconciliation_receipt",
+        reconciliationId: "reconciliation-1",
+      },
+    });
+
+    expect(isRedundantGamificationLevelUpNotification(levelUp, [levelUp, receipt])).toBe(true);
+    expect(isRedundantGamificationLevelUpNotification(
+      { ...levelUp, payload: { ...levelUp.payload, reconciliationId: "other" } },
+      [levelUp, receipt],
+    )).toBe(false);
   });
 
   it("recognizes a public registration request separately from an invitation", () => {
