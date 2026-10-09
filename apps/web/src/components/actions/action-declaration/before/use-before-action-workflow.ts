@@ -105,6 +105,10 @@ export function applyPreparationContextToForm(
     departureTime: departureTime && (selection?.departureTime || !form.departureTime.trim())
       ? departureTime
       : form.departureTime,
+    preparationChecklist: context.preparationChecklist ?? form.preparationChecklist,
+    suggestedMaterials: context.suggestedMaterials ?? form.suggestedMaterials,
+    materialsProvided: context.materialsProvided ?? form.materialsProvided,
+    recommendedMaterials: context.recommendedMaterials ?? form.recommendedMaterials,
   };
 }
 

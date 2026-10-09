@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { fetchActionById } from "@/lib/actions/http";
 import { createInitialFormState } from "./action-declaration/payload";
-import { loadDraftSnapshot } from "./action-declaration/draft-storage";
+import { loadDraftSnapshot, saveDraft } from "./action-declaration/draft-storage";
 import {
   buildActionPreparationContext,
   type ActionPreparationContext,
@@ -24,6 +24,26 @@ export function useActionPreparationContext({
   const [preparationContext, setPreparationContext] = useState<ActionPreparationContext>(() => buildActionPreparationContext({}));
   const [preparationContextReady, setPreparationContextReady] = useState(false);
 
+  const setAndPersistPreparationContext: Dispatch<SetStateAction<ActionPreparationContext>> = useCallback((update) => {
+    setPreparationContext((current) => {
+      const next = typeof update === "function" ? update(current) : update;
+      if (!actionId) {
+        const fallback = createInitialFormState(defaultActorName, "action");
+        const draft = loadDraftSnapshot(fallback, "action")?.form ?? fallback;
+        saveDraft({
+          ...draft,
+          actionDate: next.actionDate || draft.actionDate,
+          departureTime: next.departureTime || draft.departureTime,
+          preparationChecklist: next.preparationChecklist ?? draft.preparationChecklist,
+          suggestedMaterials: next.suggestedMaterials ?? draft.suggestedMaterials,
+          materialsProvided: next.materialsProvided ?? draft.materialsProvided,
+          recommendedMaterials: next.recommendedMaterials ?? draft.recommendedMaterials,
+        });
+      }
+      return next;
+    });
+  }, [actionId, defaultActorName]);
+
   useEffect(() => {
     let active = true;
     const loadContext = async () => {
@@ -40,12 +60,12 @@ export function useActionPreparationContext({
         }
       }
       if (!active) return;
-      setPreparationContext(buildActionPreparationContext({ action, draft, plannerHandoff }));
+      setAndPersistPreparationContext(buildActionPreparationContext({ action, draft, plannerHandoff }));
       setPreparationContextReady(true);
     };
     void loadContext();
     return () => { active = false; };
-  }, [actionId, defaultActorName]);
+  }, [actionId, defaultActorName, setAndPersistPreparationContext]);
 
-  return { preparationContext, setPreparationContext, preparationContextReady };
+  return { preparationContext, setPreparationContext: setAndPersistPreparationContext, preparationContextReady };
 }

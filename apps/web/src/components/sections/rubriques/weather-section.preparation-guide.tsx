@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { ArrowRight, CalendarDays, CheckCircle2, Truck } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { GuideOperationalPanel } from "./guide-section";
 import type {
   PreparationQuickAction,
   PreparationStep,
@@ -26,12 +25,12 @@ export function PreparationGuide({
   prepSteps: PreparationStep[];
   usefulBlocks: UsefulBlock[];
   quickActions: PreparationQuickAction[];
-  kitCard: ReactNode;
+  kitCard?: ReactNode;
 }) {
   return (
     <>
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.92fr_1.05fr_1fr]">
-        {kitCard}
+      <div className={cn("grid grid-cols-1 gap-6", kitCard ? "xl:grid-cols-[0.92fr_1.05fr_1fr]" : "xl:grid-cols-2")}>
+        {kitCard ?? null}
         <LightCard className="border-emerald-100 bg-white/95 p-6">
           <div className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
@@ -241,9 +240,6 @@ export function PreparationGuide({
         })}
       </div>
 
-      <div className="pt-2">
-        <GuideOperationalPanel />
-      </div>
     </>
   );
 }

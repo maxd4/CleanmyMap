@@ -1,6 +1,12 @@
 import type { ActionEditorRecord } from "./http";
 import type { ActionPreparationData } from "./types";
 import type { PlannerActionHandoff } from "@/lib/route/route-operational";
+import {
+  normalizePreparationChecklist,
+  normalizeSuggestedMaterials,
+  type ActionMaterialSuggestion,
+  type ActionPreparationChecklistItem,
+} from "./preparation-contract";
 
 export type PreparationSelection = {
   actionDate: string;
@@ -18,6 +24,10 @@ export type ActionPreparationContext = {
   longitude: string;
   plannerHandoff: PlannerActionHandoff | null;
   confirmedSelection: PreparationSelection | null;
+  preparationChecklist: ActionPreparationChecklistItem[] | null;
+  suggestedMaterials: ActionMaterialSuggestion[] | null;
+  materialsProvided: string | null;
+  recommendedMaterials: string | null;
 };
 
 type DraftPreparationSource = Partial<{
@@ -27,6 +37,10 @@ type DraftPreparationSource = Partial<{
   departureLocationLabel: string;
   latitude: string;
   longitude: string;
+  preparationChecklist: unknown;
+  suggestedMaterials: unknown;
+  materialsProvided: string;
+  recommendedMaterials: string;
 }>;
 
 function text(...values: unknown[]): string {
@@ -84,6 +98,27 @@ function preparationCoordinates(
   };
 }
 
+function firstText(...values: unknown[]): string | null {
+  const value = values.find((candidate) => typeof candidate === "string");
+  return typeof value === "string" ? value : null;
+}
+
+function firstChecklist(...values: unknown[]): ActionPreparationChecklistItem[] | null {
+  for (const value of values) {
+    const normalized = normalizePreparationChecklist(value);
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
+function firstSuggestedMaterials(...values: unknown[]): ActionMaterialSuggestion[] | null {
+  for (const value of values) {
+    const normalized = normalizeSuggestedMaterials(value);
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
 export function buildActionPreparationContext({
   action,
   draft,
@@ -106,6 +141,26 @@ export function buildActionPreparationContext({
     ...coordinates,
     plannerHandoff: matchingHandoff,
     confirmedSelection: null,
+    preparationChecklist: firstChecklist(
+      preparation.preparationChecklist,
+      draft?.preparationChecklist,
+      handoffPreparation.preparationChecklist,
+    ),
+    suggestedMaterials: firstSuggestedMaterials(
+      preparation.suggestedMaterials,
+      draft?.suggestedMaterials,
+      handoffPreparation.suggestedMaterials,
+    ),
+    materialsProvided: firstText(
+      preparation.materialsProvided,
+      draft?.materialsProvided,
+      handoffPreparation.materialsProvided,
+    ),
+    recommendedMaterials: firstText(
+      preparation.recommendedMaterials,
+      draft?.recommendedMaterials,
+      handoffPreparation.recommendedMaterials,
+    ),
   };
 }
 export function resolvePreparationSelection(

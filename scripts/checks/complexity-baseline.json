@@ -3840,15 +3840,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/sections/rubriques/guide-section.tsx",
-      "line": 54,
-      "category": "React/JSX",
-      "ceiling": 216,
-      "status": "LEGACY",
-      "functionIdentity": "named:GuideOperationalPanel#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/sections/rubriques/impact-terrain-2026-methodology-section.tsx",
       "line": 52,
       "category": "React/JSX",

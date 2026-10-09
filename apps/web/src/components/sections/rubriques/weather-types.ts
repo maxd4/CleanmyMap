@@ -23,6 +23,4 @@ export interface WeatherPoint {
   weatherCode: number | null;
 }
 
-export type PackType = "solo" | "team" | "school";
-
 export type WeatherDataStatus = "loading" | "ready" | "error" | "empty";

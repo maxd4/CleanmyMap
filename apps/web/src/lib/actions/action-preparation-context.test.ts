@@ -58,4 +58,22 @@ describe("shared action preparation context", () => {
     expect(replaced.context.departureTime).toBe("09:00");
     expect(replaced.context.confirmedSelection).toEqual(selection);
   });
+
+  it("carries structured preparation data without reading the legacy prose checklist", () => {
+    const context = buildActionPreparationContext({
+      draft: {
+        preparationChecklist: [{ key: "materials_checked", label: "Matériel", checked: true }],
+        suggestedMaterials: ["gloves", "gloves"],
+        materialsProvided: "Pinces sur place",
+        recommendedMaterials: "Eau",
+      },
+    });
+
+    expect(context.preparationChecklist).toEqual([
+      { key: "materials_checked", label: "Matériel", checked: true },
+    ]);
+    expect(context.suggestedMaterials).toEqual(["gloves"]);
+    expect(context.materialsProvided).toBe("Pinces sur place");
+    expect(context.recommendedMaterials).toBe("Eau");
+  });
 });

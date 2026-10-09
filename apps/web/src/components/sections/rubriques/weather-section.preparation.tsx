@@ -1,44 +1,41 @@
 "use client";
 
-import { useState } from "react";
 import type { useWeatherData } from "./use-weather-data";
 import {
+  ACTION_PREPARATION_CHECKLIST_DEFAULTS,
+  type ActionPreparationChecklistItem,
+} from "@/lib/actions/preparation-contract";
+import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
+import {
   buildPreparationHeroStats,
-  buildPreparationKitSections,
   buildPreparationSteps,
   buildQuickActions,
   buildUsefulBlocks,
 } from "./weather-section.preparation.data";
 import { PreparationGuide } from "./weather-section.preparation-guide";
-import {
-  PreparationKitCard,
-  PreparationKitSectionView,
-} from "./weather-section.preparation-kit";
+import { PreparationChecklist, PreparationMaterials, type PreparationContextUpdate } from "./weather-section.preparation-controls";
 import { getDurationLabel, getVigilanceLabel } from "./weather-section.helpers";
-import { CmmButton } from "@/components/ui/cmm-button";
+
+function copyChecklist(context: ActionPreparationContext | undefined): ActionPreparationChecklistItem[] {
+  return (context?.preparationChecklist ?? ACTION_PREPARATION_CHECKLIST_DEFAULTS).map((item) => ({ ...item }));
+}
 
 export function PreparationPanel({
   selectedForecastRisk,
   weatherStatus,
-  selectedLocationLabel,
-  selectedLocationSubtitle,
   recommendedWindow,
-  prepProgress,
-  packItems,
+  preparationContext,
   fr,
   onPreparationValidated,
-  initialPreparationValidated = false,
+  onPreparationContextChange,
 }: {
   selectedForecastRisk: ReturnType<typeof useWeatherData>["selectedForecastRisk"];
   weatherStatus: ReturnType<typeof useWeatherData>["weatherStatus"];
-  selectedLocationLabel: string;
-  selectedLocationSubtitle: string;
   recommendedWindow: { from: string; to: string } | null;
-  prepProgress: number;
-  packItems: string[];
+  preparationContext?: ActionPreparationContext;
   fr: boolean;
   onPreparationValidated?: (validated: boolean) => void;
-  initialPreparationValidated?: boolean;
+  onPreparationContextChange?: (update: PreparationContextUpdate) => void;
 }) {
   const durationLabel = getDurationLabel(selectedForecastRisk, fr);
   const forecastRiskLabel = selectedForecastRisk
@@ -46,82 +43,56 @@ export function PreparationPanel({
     : fr
       ? "Prévision indisponible"
       : "Forecast unavailable";
-  const gearPreview = selectedForecastRisk
-    ? selectedForecastRisk.equipment.slice(0, 2).join(" • ")
-      : packItems.slice(0, 2).join(" • ");
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(
-    () => (initialPreparationValidated ? new Set(packItems) : new Set()),
-  );
-  const checklistItems = packItems.length > 0 ? packItems : (fr
-    ? ["Eau", "Gants", "Pinces", "Sacs", "Premiers secours"]
-    : ["Water", "Gloves", "Tongs", "Bags", "First aid"]);
-  const isChecklistComplete = checklistItems.every((item) => checkedItems.has(item));
+  const suggestedMaterials = preparationContext?.suggestedMaterials ?? [];
+  const checklistItems = copyChecklist(preparationContext);
+  const gearPreview = selectedForecastRisk?.equipment.slice(0, 2).join(" • ")
+    || suggestedMaterials.slice(0, 2).join(" • ")
+    || (fr ? "À préciser" : "To be specified");
+  const updateChecklist = (key: string, checked: boolean) => {
+    const next = checklistItems.map((item) => item.key === key ? { ...item, checked } : item);
+    onPreparationContextChange?.({ preparationChecklist: next });
+    onPreparationValidated?.(next.length > 0 && next.every((item) => item.checked));
+  };
 
   return (
     <div className="space-y-6">
-      <PreparationKitSectionView
-        fr={fr}
-        selectedLocationLabel={selectedLocationLabel}
-        selectedLocationSubtitle={selectedLocationSubtitle}
-        packItems={packItems}
-        heroStats={buildPreparationHeroStats(fr, durationLabel, gearPreview, forecastRiskLabel)}
-      />
+      <div className="rounded-2xl border border-emerald-100 bg-white/95 p-4 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">
+              {fr ? "Préparation de cette action" : "Preparation for this action"}
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              {weatherStatus === "ready"
+                ? (fr ? "Les conseils météo restent indicatifs. La checklist est un aide-mémoire organisateur." : "Weather guidance is indicative. The checklist is an organizer reminder.")
+                : (fr ? "La météo n’est pas disponible ; vous pouvez poursuivre et compléter la préparation." : "Weather is unavailable; you can continue and complete the preparation.")}
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {buildPreparationHeroStats(fr, durationLabel, gearPreview, forecastRiskLabel).map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div key={stat.label} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                <div className="flex items-center gap-2 text-emerald-700"><Icon size={16} /><span className="text-xs font-bold">{stat.label}</span></div>
+                <p className="mt-1 text-sm font-semibold text-slate-800">{stat.value}</p>
+                <p className="mt-1 text-xs text-slate-500">{stat.note}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <PreparationGuide
         fr={fr}
         recommendedWindow={recommendedWindow}
         prepSteps={buildPreparationSteps(fr)}
         usefulBlocks={buildUsefulBlocks(fr)}
         quickActions={buildQuickActions(fr)}
-        kitCard={
-          <PreparationKitCard
-            fr={fr}
-            prepProgress={prepProgress}
-            kitSections={buildPreparationKitSections(fr)}
-          />
-        }
       />
-      <div className="rounded-3xl border border-emerald-200 bg-white/95 p-5 shadow-sm" data-testid="preparation-checklist">
-        <div className="space-y-2">
-          <h3 className="text-lg font-black text-slate-900">
-            {fr ? "Checklist de préparation" : "Preparation checklist"}
-          </h3>
-          <p className="cmm-text-body cmm-text-primary">
-            {weatherStatus === "ready"
-              ? (fr ? "Vérifiez le matériel, l’eau et les consignes avant de continuer." : "Check equipment, water and safety guidance before continuing.")
-              : (fr ? "Météo indisponible : la préparation reste valide sans inventer de prévision." : "Weather unavailable: preparation remains explicit without inventing a forecast.")}
-          </p>
-          <ul className="grid gap-2 sm:grid-cols-2" aria-label={fr ? "Éléments de préparation" : "Preparation items"}>
-            {checklistItems.map((item) => (
-              <li key={item}>
-                <label className="flex min-h-11 items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/50 px-3 py-2 text-sm font-semibold text-slate-800">
-                  <input
-                    type="checkbox"
-                    checked={checkedItems.has(item)}
-                    onChange={(event) => {
-                      const next = new Set(checkedItems);
-                      if (event.target.checked) next.add(item); else next.delete(item);
-                      setCheckedItems(next);
-                      onPreparationValidated?.(next.size === checklistItems.length);
-                    }}
-                    className="h-4 w-4 accent-emerald-600"
-                  />
-                  {item}
-                </label>
-              </li>
-            ))}
-          </ul>
-          <CmmButton
-            type="button"
-            tone="primary"
-            variant="pill"
-            size="sm"
-            disabled={!isChecklistComplete}
-            onClick={() => onPreparationValidated?.(true)}
-          >
-            {fr ? "Valider la checklist" : "Validate checklist"}
-          </CmmButton>
-        </div>
-      </div>
+
+      <PreparationChecklist items={checklistItems} fr={fr} onChange={updateChecklist} />
+      <PreparationMaterials context={preparationContext} fr={fr} onChange={(update) => onPreparationContextChange?.(update)} />
     </div>
   );
 }

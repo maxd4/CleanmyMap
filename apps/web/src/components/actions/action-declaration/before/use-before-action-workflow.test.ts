@@ -25,6 +25,10 @@ describe("before-action resume hydration", () => {
         departureTime: "09:00",
         source: "weather-slot",
       },
+      preparationChecklist: null,
+      suggestedMaterials: null,
+      materialsProvided: null,
+      recommendedMaterials: null,
     };
 
     const prepared = applyPreparationContextToForm(form, context);
@@ -44,6 +48,33 @@ describe("before-action resume hydration", () => {
     expect(form.childrenCount).toBe("");
     expect(form.adultCount).toBe("");
     expect(form.retiredCount).toBe("");
+  });
+
+  it("rehydrates structured preparation choices without inventing timing", () => {
+    const form = buildBeforeActionInitialForm(["Maxence"], "Maxence", "action");
+    const prepared = applyPreparationContextToForm(form, {
+      actionId: null,
+      locationLabel: "Paris",
+      actionDate: "",
+      departureTime: "",
+      latitude: "",
+      longitude: "",
+      plannerHandoff: null,
+      confirmedSelection: null,
+      preparationChecklist: [{ key: "materials_checked", label: "Matériel", checked: true }],
+      suggestedMaterials: ["bags"],
+      materialsProvided: "Sacs au départ",
+      recommendedMaterials: "Eau",
+    });
+
+    expect(prepared.preparationChecklist).toEqual([
+      { key: "materials_checked", label: "Matériel", checked: true },
+    ]);
+    expect(prepared.suggestedMaterials).toEqual(["bags"]);
+    expect(prepared.materialsProvided).toBe("Sacs au départ");
+    expect(prepared.recommendedMaterials).toBe("Eau");
+    expect(prepared.meetingTime).toBe("");
+    expect(prepared.durationMinutes).toBe("");
   });
 
   it("rehydrates organizers and participants from the authorized action payload", () => {

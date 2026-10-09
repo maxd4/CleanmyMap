@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildPreparationHeroStats,
-  buildPreparationKitSections,
   buildQuickActions,
   buildUsefulBlocks,
 } from "./weather-section.preparation.data";
@@ -76,9 +75,8 @@ describe("Weather content contract", () => {
 
   it("keeps preparation copy contextual and avoids universal water quantities", () => {
     const heroStats = buildPreparationHeroStats(true, "1 h", "Gants", "Modéré");
-    const kit = buildPreparationKitSections(true);
     const usefulBlocks = buildUsefulBlocks(true);
-    const copy = JSON.stringify({ heroStats, kit, usefulBlocks }).toLowerCase();
+    const copy = JSON.stringify({ heroStats, usefulBlocks }).toLowerCase();
 
     expect(copy).not.toContain("adapté à tous");
     expect(copy).not.toContain("1 l+");

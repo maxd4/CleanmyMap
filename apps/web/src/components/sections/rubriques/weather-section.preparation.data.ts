@@ -6,7 +6,6 @@ import {
   Lightbulb,
   Package,
   Recycle,
-  ShieldCheck,
   Users,
   TriangleAlert,
   type LucideIcon,
@@ -17,13 +16,6 @@ export type PreparationHeroStat = {
   label: string;
   value: string;
   note: string;
-};
-
-export type PreparationKitSection = {
-  icon: LucideIcon;
-  title: string;
-  tone: "emerald" | "blue" | "amber" | "violet";
-  items: Array<{ label: string; qty: string }>;
 };
 
 export type PreparationStep = {
@@ -77,52 +69,6 @@ export function buildPreparationHeroStats(
       label: fr ? "Vigilance du créneau" : "Slot vigilance",
       value: forecastRiskLabel,
       note: fr ? "calculée depuis la prévision du jour choisi" : "calculated from the selected day's forecast",
-    },
-  ];
-}
-
-export function buildPreparationKitSections(fr: boolean): PreparationKitSection[] {
-  return [
-    {
-      icon: ShieldCheck,
-      title: fr ? "Protection" : "Protection",
-      tone: "emerald",
-      items: [
-        { label: fr ? "Gants de protection" : "Protective gloves", qty: "x1 paire" },
-        { label: fr ? "Gilet haute visibilité" : "High-vis vest", qty: "x1" },
-        { label: fr ? "Gel hydroalcoolique" : "Hand sanitizer", qty: "x1" },
-        { label: fr ? "Masque (si besoin)" : "Mask (if needed)", qty: "x1" },
-      ],
-    },
-    {
-      icon: Package,
-      title: fr ? "Collecte" : "Collection",
-      tone: "blue",
-      items: [
-        { label: fr ? "Sacs résistants" : "Strong bags", qty: "x2" },
-        { label: fr ? "Pinces de ramassage" : "Grabbers", qty: "x1" },
-        { label: fr ? "Seau / bac (optionnel)" : "Bucket / bin (optional)", qty: "x1" },
-      ],
-    },
-    {
-      icon: Leaf,
-      title: fr ? "Confort" : "Comfort",
-      tone: "amber",
-      items: [
-        { label: fr ? "Eau" : "Water", qty: fr ? "selon les besoins" : "as needed" },
-        { label: fr ? "Casquette / chapeau" : "Cap / hat", qty: "x1" },
-        { label: fr ? "Crème solaire" : "Sunscreen", qty: "x1" },
-      ],
-    },
-    {
-      icon: Recycle,
-      title: fr ? "Tri / signalement" : "Sorting / reporting",
-      tone: "violet",
-      items: [
-        { label: fr ? "Guide du tri (mémo)" : "Sorting memo", qty: "x1" },
-        { label: fr ? "Sac dédié aux recyclables" : "Separate recyclables bag", qty: "x1" },
-        { label: fr ? "Application ou carnet photos" : "App or photo notebook", qty: "x1" },
-      ],
     },
   ];
 }

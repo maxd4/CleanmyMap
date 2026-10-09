@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { ConditionsPanel } from "./weather-section.conditions";
 import { PreparationPanel } from "./weather-section.preparation";
-import { useKitData } from "./use-kit-data";
 import { useWeatherData } from "./use-weather-data";
 import type { ActionPreparationContext, PreparationSelection } from "@/lib/actions/action-preparation-context";
 import type { resolvePreparationSelection } from "@/lib/actions/action-preparation-context";
@@ -23,13 +22,13 @@ export function WeatherSection({
   preparationContext,
   onPreparationSelection,
   onPreparationValidated,
-  initialPreparationValidated,
+  onPreparationContextChange,
 }: {
   draftContext?: { locationLabel?: string; actionDate?: string; departureTime?: string; contextReady?: boolean };
   preparationContext?: ActionPreparationContext;
   onPreparationSelection?: (selection: PreparationSelection, decision?: "ask" | "replace" | "preserve") => ReturnType<typeof resolvePreparationSelection>;
   onPreparationValidated?: (validated: boolean) => void;
-  initialPreparationValidated?: boolean;
+  onPreparationContextChange?: (update: Partial<Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials">>) => void;
 }) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
@@ -37,8 +36,6 @@ export function WeatherSection({
   const pageFamily = resolvePageFamily(pathname);
 
   const weather = useWeatherData(draftContext);
-  const kit = useKitData(fr);
-
   const recommendedWindow = weather.windows.recommended[0] ?? null;
   const actionLocation = preparationContext?.locationLabel?.trim() ?? draftContext?.locationLabel?.trim() ?? "";
   const weatherLocationDiffers = Boolean(actionLocation && weather.selectedLocation.label && actionLocation.toLocaleLowerCase() !== weather.selectedLocation.label.trim().toLocaleLowerCase());
@@ -103,14 +100,11 @@ export function WeatherSection({
             <PreparationPanel
               selectedForecastRisk={weather.selectedForecastRisk}
               weatherStatus={weather.weatherStatus}
-              selectedLocationLabel={weather.selectedLocation.label}
-              selectedLocationSubtitle={weather.selectedLocation.subtitle}
               recommendedWindow={recommendedWindow}
-              prepProgress={kit.kitProgress}
-              packItems={kit.packItems}
+              preparationContext={preparationContext}
               fr={fr}
               onPreparationValidated={onPreparationValidated}
-              initialPreparationValidated={initialPreparationValidated}
+              onPreparationContextChange={onPreparationContextChange}
             />
           </motion.div>
         </div>
