@@ -5,7 +5,9 @@ import { useCallback, useRef, useState } from "react";
 import { logFailure } from "@/lib/logging/failure-log";
 import {
   loadPendingActionInvitationIds,
+  loadPendingActionRegistrationRequestIds,
   loadPendingNotificationDecisionIds,
+  respondToActionRegistrationRequest,
   respondToActionInvitation,
   respondToNotificationDecision,
   type AppNotification,
@@ -35,11 +37,12 @@ export function useNotificationDecisionState(params: {
 
   const refreshDecisionState = useCallback(async (request: NotificationIdentity) => {
     try {
-      const [shareIds, invitationIds] = await Promise.all([
+      const [shareIds, invitationIds, registrationRequestIds] = await Promise.all([
         loadPendingNotificationDecisionIds(),
         loadPendingActionInvitationIds(),
+        loadPendingActionRegistrationRequestIds(),
       ]);
-      const ids = [...new Set([...shareIds, ...invitationIds])];
+      const ids = [...new Set([...shareIds, ...invitationIds, ...registrationRequestIds])];
       if (!isCurrentRequest(request)) return null;
       setPendingIds(ids);
       setDecisionStateError(false);
@@ -74,7 +77,9 @@ export function useNotificationDecisionState(params: {
 
       const result = descriptor.kind === "action_invitation"
         ? await respondToActionInvitation(descriptor.requestId, decision)
-        : await respondToNotificationDecision(descriptor.requestId, decision);
+        : descriptor.kind === "action_registration_request" && descriptor.actionId
+          ? await respondToActionRegistrationRequest(descriptor.actionId, descriptor.requestId, decision)
+          : await respondToNotificationDecision(descriptor.requestId, decision);
       if (!isCurrentRequest(request)) return;
       if (result.status === "unavailable") {
         setPendingIds([...pendingRequestIdsRef.current].filter((id) => id !== descriptor.requestId));

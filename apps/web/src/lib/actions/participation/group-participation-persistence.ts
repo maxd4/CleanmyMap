@@ -104,6 +104,7 @@ export async function updateParticipationRecordForPhase(params: {
   status: ParticipationStatus;
   source: ParticipationSource;
   recordId: string;
+  expectedStatus?: ParticipationStatus;
 }): Promise<ParticipationRecord> {
   const row = params.useRegistrations
     ? await updateActionRegistrationRecord(params.supabase, {
@@ -112,6 +113,7 @@ export async function updateParticipationRecordForPhase(params: {
         registeredAt: params.joinedAt,
         registrationStatus: params.status,
         registrationSource: params.source as Parameters<typeof updateActionRegistrationRecord>[1]["registrationSource"],
+        expectedRegistrationStatus: params.expectedStatus as Parameters<typeof updateActionRegistrationRecord>[1]["expectedRegistrationStatus"],
       })
     : await updateParticipantRecord(params.supabase, {
         actionId: params.actionId,

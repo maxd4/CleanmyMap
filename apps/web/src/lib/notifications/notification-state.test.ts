@@ -54,4 +54,26 @@ describe("notification decision state", () => {
       pendingRequestIds: new Set(["registration-1"]),
     })).toBe("decision_pending");
   });
+
+  it("recognizes a public registration request separately from an invitation", () => {
+    const item = notification({
+      type: "action_event",
+      payload: {
+        eventType: "action_event",
+        subtype: "registration_request",
+        requestKind: "registration_request",
+        actionId: "action-2",
+        registrationId: "registration-2",
+      },
+    });
+    expect(getNotificationDecisionDescriptor(item.payload)).toEqual({
+      kind: "action_registration_request",
+      requestId: "registration-2",
+      actionId: "action-2",
+    });
+    expect(resolveNotificationDisplayState({
+      notification: item,
+      pendingRequestIds: new Set(["registration-2"]),
+    })).toBe("decision_pending");
+  });
 });

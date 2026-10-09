@@ -46,6 +46,12 @@ export type ActionInvitationDecisionResponse = {
   actionId: string | null;
 };
 
+export type ActionRegistrationRequestDecisionResponse = {
+  status: "accepted" | "rejected" | "unavailable";
+  registrationId: string;
+  actionId: string | null;
+};
+
 async function getNotificationsClient(
   getToken: () => Promise<string | null>,
 ): Promise<SupabaseClient> {
@@ -202,6 +208,69 @@ export async function respondToActionInvitation(
     status,
     registrationId: typeof raw.registrationId === "string" ? raw.registrationId : registrationId,
     actionId: typeof raw.actionId === "string" ? raw.actionId : null,
+  };
+}
+
+function parseRegistrationRequestIds(payload: unknown): string[] {
+  if (!payload || typeof payload !== "object") return [];
+  const requests = (payload as { requests?: unknown }).requests;
+  if (!Array.isArray(requests)) return [];
+  return requests.flatMap((request) => {
+    if (!request || typeof request !== "object") return [];
+    const id = (request as { registration_id?: unknown }).registration_id;
+    return typeof id === "string" && id.trim() ? [id.trim()] : [];
+  });
+}
+
+export async function loadPendingActionRegistrationRequestIds(): Promise<string[]> {
+  const response = await fetch("/api/actions/registration-requests", {
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  return parseRegistrationRequestIds(await readContactRequestsResponse(response));
+}
+
+export async function respondToActionRegistrationRequest(
+  actionId: string,
+  registrationId: string,
+  decision: NotificationDecision,
+): Promise<ActionRegistrationRequestDecisionResponse> {
+  const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/group-join`, {
+    method: "POST",
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify({
+      participantId: registrationId,
+      decision,
+      requestKind: "registration_request",
+    }),
+  });
+  const payload = await readContactRequestsResponse(response);
+  if (!payload || typeof payload !== "object") {
+    throw new Error("La décision d'inscription n'a pas renvoyé d'état valide.");
+  }
+  const raw = payload as Record<string, unknown>;
+  const status = raw.status;
+  if (status === "ok") {
+    const alreadyReviewed = raw.alreadyReviewed === true;
+    const participationStatus = raw.participationStatus;
+    return {
+      status: alreadyReviewed || participationStatus !== "confirmed" && participationStatus !== "cancelled"
+        ? "unavailable"
+        : decision === "accept" ? "accepted" : "rejected",
+      registrationId: typeof raw.participantId === "string" ? raw.participantId : registrationId,
+      actionId: typeof raw.actionId === "string" ? raw.actionId : actionId,
+    };
+  }
+  if (status !== "accepted" && status !== "rejected" && status !== "unavailable") {
+    throw new Error("La décision d'inscription n'a pas renvoyé d'état valide.");
+  }
+  return {
+    status,
+    registrationId: typeof raw.participantId === "string" ? raw.participantId : registrationId,
+    actionId: typeof raw.actionId === "string" ? raw.actionId : actionId,
   };
 }
 

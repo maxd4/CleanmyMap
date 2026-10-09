@@ -20,6 +20,9 @@ Permettre a un bénévole de rejoindre le formulaire visible d'une action publi�
 10. Une invitation `pending` ne réserve aucune place confirmée, ne donne pas l'accès de membre confirmé à la discussion et ne contribue ni aux présences terrain, ni aux statistiques, ni à l'XP ou aux badges. Une demande publique `group_form` reste une demande distincte.
 11. Si le bénévole s'est trompé, il peut annuler une inscription en attente ou confirmée, tout en conservant la trace historique de l'inscription.
 12. Depuis `Actions passées`, un bénévole peut demander son rattachement à une action publique terminée. Le claim crée une ligne distincte dans `action_participants` avec `participation_source = post_action_claim` et `participation_status = pending`, puis passe par la review de l'organisateur ou d'un administrateur autorisé. Une inscription future existante reste intacte.
+13. Une demande `group_form` `pending` génère un événement `action_event` dédupliqué pour le créateur, les organisateurs habilités et les rôles `admin`/`max`, à l'exclusion du demandeur. Elle est distinguée d'une invitation `manual_add` par `payload.subtype = registration_request`.
+14. La carte « Demande d'inscription » expose `✓ Accepter` et `× Refuser`. Chaque clic repasse par l'autorisation serveur et une transition conditionnelle depuis `pending`; une décision concurrente ou un droit révoqué rend la carte indisponible sans seconde mutation.
+15. Une décision effective `confirmed` ou `cancelled` crée une notification `registration_decision` pour le demandeur avec un lien vers l'action. L'annulation de l'action retire la demande de la projection actionnable sans acceptation implicite ni refus fabriqué.
 
 ## Placement dans le bloc Agir
 

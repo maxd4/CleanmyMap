@@ -3,6 +3,8 @@ import type { ActionPhase } from "@/lib/actions/types";
 import { usesRegistrationStore } from "./action-phase";
 import {
   ACTIVE_PARTICIPATION_STATUS,
+  PENDING_PARTICIPATION_STATUS,
+  type ParticipationStatus,
 } from "./group-participation.helpers";
 import { runActionParticipationStep } from "./group-participation-contract";
 import {
@@ -21,6 +23,7 @@ type ReviewActionParticipationParams = {
   participantId: string;
   decision: "accept" | "reject";
   actionPhase?: ActionPhase;
+  requirePending?: boolean;
 };
 
 type ReviewActionParticipationResult = ParticipationMutationResult & {
@@ -74,7 +77,7 @@ async function loadReviewParticipation(
     notFoundError.name = "NotFoundError";
     throw notFoundError;
   }
-  if (existing.status === "cancelled") {
+  if (existing.status === "cancelled" && !params.requirePending) {
     const validationError = new Error(
       "Cette participation a déjà été traitée.",
     );
@@ -92,22 +95,21 @@ async function applyParticipationReview(
 ): Promise<ReviewActionParticipationResult> {
   const nextStatus =
     params.decision === "accept" ? ACTIVE_PARTICIPATION_STATUS : "cancelled";
-  const updatedRecord = await runActionParticipationStep<ParticipationRecord>({
-    stage: "participation_update",
-    partialMutation: false,
-    targetUserId: existing.user_id,
-    operation: () =>
-      updateParticipationRecordForPhase({
-        supabase,
-        useRegistrations,
-        actionId: params.actionId,
-        userId: existing.user_id,
-        joinedAt: existing.joined_at,
-        status: nextStatus,
-        source: existing.source,
-        recordId: params.participantId,
-      }),
-  });
+  let updatedRecord: ParticipationRecord;
+  try {
+    updatedRecord = await updateReviewRecord(supabase, params, useRegistrations, existing, nextStatus);
+  } catch (error) {
+    const current = await readParticipationRecordByIdForPhase({
+      supabase,
+      useRegistrations,
+      actionId: params.actionId,
+      participantId: params.participantId,
+    });
+    if (current && existing.status === PENDING_PARTICIPATION_STATUS && current.status !== PENDING_PARTICIPATION_STATUS) {
+      return buildAlreadyReviewedResult(supabase, params.actionId, useRegistrations, current);
+    }
+    throw error;
+  }
   const participantsCount = await countReviewedParticipants(
     supabase,
     params.actionId,
@@ -128,6 +130,34 @@ async function applyParticipationReview(
   };
 }
 
+async function updateReviewRecord(
+  supabase: SupabaseClient,
+  params: ReviewActionParticipationParams,
+  useRegistrations: boolean,
+  existing: ParticipationRecord,
+  nextStatus: ParticipationStatus,
+): Promise<ParticipationRecord> {
+  return runActionParticipationStep<ParticipationRecord>({
+    stage: "participation_update",
+    partialMutation: false,
+    targetUserId: existing.user_id,
+    operation: () =>
+      updateParticipationRecordForPhase({
+        supabase,
+        useRegistrations,
+        actionId: params.actionId,
+        userId: existing.user_id,
+        joinedAt: existing.joined_at,
+        status: nextStatus,
+        source: existing.source,
+        recordId: params.participantId,
+        expectedStatus: existing.status === PENDING_PARTICIPATION_STATUS
+          ? PENDING_PARTICIPATION_STATUS
+          : undefined,
+      }),
+  });
+}
+
 export async function reviewActionParticipation(
   supabase: SupabaseClient,
   params: ReviewActionParticipationParams,
@@ -142,6 +172,14 @@ export async function reviewActionParticipation(
     params.decision === "accept" &&
     existing.status === ACTIVE_PARTICIPATION_STATUS
   ) {
+    return buildAlreadyReviewedResult(
+      supabase,
+      params.actionId,
+      useRegistrations,
+      existing,
+    );
+  }
+  if (params.requirePending && existing.status !== PENDING_PARTICIPATION_STATUS) {
     return buildAlreadyReviewedResult(
       supabase,
       params.actionId,

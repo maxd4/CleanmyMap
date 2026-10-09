@@ -8,8 +8,9 @@ export type NotificationDisplayState =
   | "unavailable";
 
 export type NotificationDecisionDescriptor = {
-  kind: "action_share" | "action_invitation";
+  kind: "action_share" | "action_invitation" | "action_registration_request";
   requestId: string;
+  actionId?: string;
 };
 
 function readString(value: unknown): string | null {
@@ -29,6 +30,17 @@ export function getNotificationDecisionDescriptor(
   if (raw.eventType === "action_event" && raw.subtype === "invitation") {
     const registrationId = readString(raw.registrationId);
     return registrationId ? { kind: "action_invitation", requestId: registrationId } : null;
+  }
+  if (
+    raw.eventType === "action_event" &&
+    raw.subtype === "registration_request" &&
+    raw.requestKind === "registration_request"
+  ) {
+    const registrationId = readString(raw.registrationId);
+    const actionId = readString(raw.actionId);
+    return registrationId && actionId
+      ? { kind: "action_registration_request", requestId: registrationId, actionId }
+      : null;
   }
   return null;
 }

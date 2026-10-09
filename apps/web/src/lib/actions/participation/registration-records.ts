@@ -114,9 +114,10 @@ export async function updateActionRegistrationRecord(
     registeredAt: string;
     registrationStatus: ActionRegistrationStatus;
     registrationSource: ActionRegistrationSource;
+    expectedRegistrationStatus?: ActionRegistrationStatus;
   },
 ): Promise<ActionRegistrationStatusRow> {
-  const result = await supabase
+  let query = supabase
     .from("action_registrations")
     .update({
       registered_at: params.registeredAt,
@@ -124,9 +125,11 @@ export async function updateActionRegistrationRecord(
       registration_source: params.registrationSource,
     })
     .eq("action_id", params.actionId)
-    .eq("user_id", params.userId)
-    .select(REGISTRATION_STATUS_COLUMNS)
-    .single();
+    .eq("user_id", params.userId);
+  if (params.expectedRegistrationStatus) {
+    query = query.eq("registration_status", params.expectedRegistrationStatus);
+  }
+  const result = await query.select(REGISTRATION_STATUS_COLUMNS).single();
 
   if (result.error) {
     throw new Error(result.error.message);

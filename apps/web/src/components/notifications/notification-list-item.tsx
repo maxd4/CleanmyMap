@@ -142,6 +142,7 @@ function NotificationOpenButton({
   displayState: NotificationDisplayState;
   onClick: (notification: AppNotification) => void;
 }) {
+  const actionEventLabel = getActionEventLabel(notification, locale);
   const titleClass = isUnread
     ? compact ? "text-white" : "text-amber-50"
     : compact ? "text-white/60" : "text-amber-100/62";
@@ -163,6 +164,11 @@ function NotificationOpenButton({
       aria-label={`${locale === "fr" ? "Ouvrir la notification" : "Open notification"} : ${notification.title}`}
       className={`block w-full rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${compact ? "hover:bg-white/[0.07] focus-visible:ring-sky-300/70" : "hover:bg-amber-100/[0.08] focus-visible:ring-amber-200/80"}`}
     >
+      {actionEventLabel ? (
+        <span className={`mb-1 block cmm-text-caption font-black uppercase tracking-[0.14em] ${compact ? "text-emerald-300/80" : "text-emerald-200/80"}`}>
+          {actionEventLabel}
+        </span>
+      ) : null}
       <div className="flex items-start justify-between gap-3">
         <span className={`min-w-0 flex-1 ${compact ? "line-clamp-1" : "break-words"} font-bold tracking-tight cmm-text-caption ${titleClass}`}>
           {notification.title}
@@ -180,6 +186,18 @@ function NotificationOpenButton({
       <NotificationActionHint notification={notification} compact={compact} locale={locale} />
     </button>
   );
+}
+
+function getActionEventLabel(
+  notification: AppNotification,
+  locale: "fr" | "en",
+): string | null {
+  if (notification.type !== "action_event" || !notification.payload) return null;
+  const subtype = notification.payload.subtype;
+  if (subtype === "invitation") return locale === "fr" ? "Invitation de l'organisateur" : "Organizer invitation";
+  if (subtype === "registration_request") return locale === "fr" ? "Demande d'inscription" : "Registration request";
+  if (subtype === "registration_decision") return locale === "fr" ? "Suivi de votre demande" : "Registration update";
+  return null;
 }
 
 function NotificationDecisionActions({

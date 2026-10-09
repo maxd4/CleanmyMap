@@ -325,6 +325,14 @@ export const actionsAuthorizationContract = {
       evidence: ["auth", "respond_to_action_invitation"],
     },
   },
+  "actions/registration-requests": {
+    GET: {
+      expected: "Authenticated creator/organizer or admin/max read of still-pending group_form requests",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "Clerk auth userId + service-only reviewer-scoped pending registration RPC; the projection rechecks the canonical registration and current reviewer rights",
+      evidence: ["auth", "list_pending_action_registration_requests_for_reviewer"],
+    },
+  },
   "actions/[actionId]/public": {
     GET: {
       expected: "Public-safe dynamic action reference projection; inaccessible actions return a neutral not-found response",

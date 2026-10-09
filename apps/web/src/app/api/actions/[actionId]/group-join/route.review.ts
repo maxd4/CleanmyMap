@@ -171,6 +171,65 @@ function getReviewSuccessOperation(
   return `admin_review_${data.decision}`;
 }
 
+type ReviewMutationResult =
+  | Awaited<ReturnType<typeof addActionParticipationByAdmin>>
+  | Awaited<ReturnType<typeof reviewActionParticipation>>;
+
+async function finalizeReviewResult(params: {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  actionId: string;
+  userId: string;
+  data: ReviewInput;
+  access: Extract<Awaited<ReturnType<GroupJoinModerationParams["resolveReviewerAccess"]>>, { ok: true }>;
+  reason: string | null;
+  result: ReviewMutationResult;
+  appendAudit: ModerationAuditAppender;
+  canOverrideActionParticipants: GroupJoinModerationParams["canOverrideActionParticipants"];
+}) {
+  const { actionId, userId, data, access, reason, result, appendAudit, canOverrideActionParticipants } = params;
+  const alreadyReviewed = "alreadyReviewed" in result && result.alreadyReviewed === true;
+  const isPostActionClaim = result.participationSource === POST_ACTION_CLAIM_PARTICIPATION_SOURCE;
+
+  if (!alreadyReviewed && ("participantUserId" in data || data.decision === "accept")) {
+    await rebuildUserGamificationBadges(params.supabase, result.participantUserId).catch(() => null);
+    await refreshProgressionProfile(params.supabase, result.participantUserId).catch(() => null);
+  }
+
+  if (!alreadyReviewed && (isPostActionClaim || canOverrideActionParticipants(access.identity))) {
+    await appendAudit({
+      operationId: `action-group-join-${actionId}-${Date.now()}`,
+      actorUserId: access.identity?.userId ?? userId,
+      targetActionId: actionId,
+      operation: getReviewSuccessOperation(data, result, isPostActionClaim),
+      outcome: "success",
+      reason,
+      previousValue: result.previousValue,
+      newValue: result.newValue,
+      targetUserId: result.participantUserId,
+      details: {
+        participantUserId: result.participantUserId,
+        participationStatus: result.participationStatus,
+        participationSource: result.participationSource,
+        decision: "decision" in data ? data.decision : "accept",
+      },
+    });
+  }
+
+  return NextResponse.json({
+    status: "ok",
+    actionId,
+    participantId: "participantId" in data ? data.participantId : result.participantUserId,
+    participantUserId: result.participantUserId,
+    decision: "decision" in data ? data.decision : "accept",
+    participationStatus: result.participationStatus,
+    participationSource: result.participationSource,
+    alreadyReviewed,
+    joinedAt: result.joinedAt,
+    updatedAt: result.updatedAt,
+    participantsCount: result.participantsCount,
+  });
+}
+
 async function recordReviewError(
   error: unknown,
   context: ReviewAuditContext | null,
@@ -270,63 +329,18 @@ export async function handleGroupJoinReview(
             participantId: parsed.data.participantId,
             decision: parsed.data.decision,
             actionPhase: actionResult.action_phase,
+            requirePending: parsed.data.requestKind === "registration_request",
           });
-
-    const isPostActionClaim =
-      result.participationSource === POST_ACTION_CLAIM_PARTICIPATION_SOURCE;
-
-    if (
-      "participantUserId" in parsed.data || parsed.data.decision === "accept"
-    ) {
-      await rebuildUserGamificationBadges(
-        supabase,
-        result.participantUserId,
-      ).catch(() => null);
-      await refreshProgressionProfile(
-        supabase,
-        result.participantUserId,
-      ).catch(() => null);
-    }
-
-    if (isPostActionClaim || canOverrideActionParticipants(access.identity)) {
-      await appendAdminParticipationAuditOnce({
-        operationId: `action-group-join-${trimmedActionId}-${Date.now()}`,
-        actorUserId: access.identity?.userId ?? userId,
-        targetActionId: trimmedActionId,
-        operation: getReviewSuccessOperation(
-          parsed.data,
-          result,
-          isPostActionClaim,
-        ),
-        outcome: "success",
-        reason,
-        previousValue: result.previousValue,
-        newValue: result.newValue,
-        targetUserId: result.participantUserId,
-        details: {
-          participantUserId: result.participantUserId,
-          participationStatus: result.participationStatus,
-          participationSource: result.participationSource,
-          decision: "decision" in parsed.data ? parsed.data.decision : "accept",
-        },
-      });
-    }
-
-    return NextResponse.json({
-      status: "ok",
+    return finalizeReviewResult({
+      supabase,
       actionId: trimmedActionId,
-      participantId:
-        "participantId" in parsed.data
-          ? parsed.data.participantId
-          : result.participantUserId,
-      participantUserId: result.participantUserId,
-      decision:
-        "decision" in parsed.data ? parsed.data.decision : "accept",
-      participationStatus: result.participationStatus,
-      participationSource: result.participationSource,
-      joinedAt: result.joinedAt,
-      updatedAt: result.updatedAt,
-      participantsCount: result.participantsCount,
+      userId,
+      data: parsed.data,
+      access,
+      reason,
+      result,
+      appendAudit: appendAdminParticipationAuditOnce,
+      canOverrideActionParticipants,
     });
   } catch (error) {
     await recordReviewError(
