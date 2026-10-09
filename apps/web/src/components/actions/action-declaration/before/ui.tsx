@@ -90,37 +90,42 @@ export function GroupJoinPublishCard({
   showHelp: boolean;
   onToggleHelp: () => void;
 }) {
+  const checkboxId = "before-group-join-enabled";
+  const helpId = "before-group-join-help";
+
   return (
-    <div className="rounded-[1.4rem] border border-emerald-200/70 bg-[#ECF8EF] px-4 py-3">
-      <label className="flex cursor-pointer items-start gap-3">
+    <div className="rounded-xl border border-emerald-100/80 bg-white/70 px-3 py-3">
+      <div className="flex items-start gap-3">
         <input
+          id={checkboxId}
           type="checkbox"
           checked={checked}
           onChange={(event) => onChange(event.target.checked)}
-          className="mt-1 h-4 w-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
+          aria-describedby={helpId}
+          className="mt-1 h-4 w-4 shrink-0 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
         />
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-emerald-950">Publier en tant que formulaire de groupe</p>
-            <button
-              type="button"
-              onClick={onToggleHelp}
-              aria-label={showHelp ? "Masquer l'aide" : "Afficher l'aide"}
-              aria-expanded={showHelp}
-              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-50"
-            >
-              <Info size={12} />
-            </button>
-          </div>
-          <p className="text-xs leading-5 text-emerald-900/66">
-            Les autres membres pourront voir l&apos;action et envoyer une demande pour la rejoindre.
+        <div className="min-w-0 flex-1 space-y-1">
+          <label htmlFor={checkboxId} className="block cursor-pointer text-sm font-semibold text-emerald-950">
+            Autoriser les demandes d&apos;inscription
+          </label>
+          <p id={helpId} className="text-xs leading-5 text-emerald-900/66">
+            Ouvrir les inscriptions ne publie pas l&apos;action. Les demandes ne deviennent possibles qu&apos;après sa publication.
           </p>
         </div>
-      </label>
+        <button
+          type="button"
+          onClick={onToggleHelp}
+          aria-label={showHelp ? "Masquer l'aide sur les demandes d'inscription" : "Afficher l'aide sur les demandes d'inscription"}
+          aria-expanded={showHelp}
+          aria-controls="before-group-join-help-details"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+        >
+          <Info size={13} aria-hidden="true" />
+        </button>
+      </div>
       {showHelp ? (
-        <p className="mt-3 rounded-2xl border border-emerald-200/70 bg-white/90 px-3 py-2 text-xs leading-5 text-emerald-900/72">
-          Cette option ne publie pas les champs de récolte finale. Elle rend seulement la préparation visible dans
-          la page Rejoindre une action.
+        <p id="before-group-join-help-details" className="mt-3 rounded-lg border border-emerald-100/80 bg-emerald-50/70 px-3 py-2 text-xs leading-5 text-emerald-900/72">
+          Cette option rend uniquement la préparation visible dans la page Rejoindre une action ; elle ne publie pas les champs de récolte finale.
         </p>
       ) : null}
     </div>

@@ -23,6 +23,7 @@ type ParticipantPickerProps = {
   title?: string;
   description?: string;
   className?: string;
+  compact?: boolean;
 };
 
 type ParticipantPage = {
@@ -228,13 +229,14 @@ export function ActionParticipantPicker({
   title = "Membres de l'action",
   description = "Ajoutez des comptes CleanMyMap déjà existants avant l'envoi.",
   className,
+  compact = false,
 }: ParticipantPickerProps) {
   const pickerRef = useRef<HTMLElement>(null);
   const model = useParticipantPickerModel({ currentUserId, value, onChange, endpoint, includeCurrentUser, pickerRef });
   return (
-    <section ref={pickerRef} className={cn("rounded-[1.4rem] border border-emerald-200/70 bg-[#ECF8EF] px-4 py-4 shadow-sm", className)}>
+    <section ref={pickerRef} className={cn(compact ? "rounded-lg border border-emerald-100/70 bg-transparent px-0 py-0 shadow-none" : "rounded-[1.4rem] border border-emerald-200/70 bg-[#ECF8EF] px-4 py-4 shadow-sm", className)}>
       <PickerHeader title={title} description={description} count={model.selectedIds.length} showHelp={model.showHelp} onToggleHelp={() => model.setShowHelp((current) => !current)} />
-      <div className="mt-4 space-y-3">
+      <div className={cn(compact ? "mt-3 space-y-3" : "mt-4 space-y-3")}>
         <PickerSearch id={model.searchInputId} query={model.query} onChange={model.setQuery} onFocus={model.openMenu} onSearch={model.submitSearch} onClose={() => model.setMenuOpen(false)} />
         {model.menuOpen ? <ParticipantResultsMenu model={model} /> : null}
         <SelectedParticipants users={model.selectedUsers} onRemove={model.removeUser} />

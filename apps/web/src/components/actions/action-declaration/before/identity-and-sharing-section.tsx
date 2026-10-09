@@ -63,11 +63,14 @@ export function IdentityAndSharingSection({
           currentUserId={userMetadata.userId}
         />
 
-        <GroupJoinPublishCard
-          checked={form.groupJoinEnabled}
-          onChange={(next) => updateField("groupJoinEnabled", next)}
-          showHelp={showGroupJoinHelp}
-          onToggleHelp={onToggleGroupJoinHelp}
+        <VolunteerRegistrationSection
+          groupJoinEnabled={form.groupJoinEnabled}
+          participantAccountIds={normalizeParticipantAccounts(form.participantAccounts)}
+          currentUserId={userMetadata.userId}
+          onToggleGroupJoin={(next) => updateField("groupJoinEnabled", next)}
+          showGroupJoinHelp={showGroupJoinHelp}
+          onToggleGroupJoinHelp={onToggleGroupJoinHelp}
+          onParticipantsChange={(next) => updateField("participantAccounts", next)}
         />
       </div>
     </CmmCard>
@@ -158,7 +161,6 @@ function AssociatedAccountsFields({
   currentUserId: string;
 }) {
   const organizerAccountIds = parseOrganizerAccounts(form.organizerAccounts);
-  const participantAccountIds = normalizeParticipantAccounts(form.participantAccounts);
 
   return (
     <>
@@ -179,19 +181,65 @@ function AssociatedAccountsFields({
         </CmmDisclosure>
       ) : null}
 
-      <CmmDisclosure
-        summary={<ActionFormDisclosureSummary label="Participants associés" detail={participantAccountIds.length ? `${participantAccountIds.length} participant${participantAccountIds.length > 1 ? "s" : ""}` : undefined} />}
-        tone="emerald"
-        size="md"
-      >
-        <ActionParticipantPicker
-          currentUserId={currentUserId}
-          value={participantAccountIds}
-          onChange={(next) => updateField("participantAccounts", next)}
-          endpoint="/api/actions/account-options"
-          description="Ajoutez des membres connus avant de publier l'action ou de passer au formulaire complet."
-        />
-      </CmmDisclosure>
     </>
+  );
+}
+
+function VolunteerRegistrationSection({
+  groupJoinEnabled,
+  participantAccountIds,
+  currentUserId,
+  onToggleGroupJoin,
+  showGroupJoinHelp,
+  onToggleGroupJoinHelp,
+  onParticipantsChange,
+}: {
+  groupJoinEnabled: boolean;
+  participantAccountIds: string[];
+  currentUserId: string;
+  onToggleGroupJoin: (next: boolean) => void;
+  showGroupJoinHelp: boolean;
+  onToggleGroupJoinHelp: () => void;
+  onParticipantsChange: (next: string[]) => void;
+}) {
+  return (
+    <section aria-labelledby="before-volunteer-registration-title" className="border-t border-emerald-100/80 pt-5">
+      <div className="space-y-1">
+        <h3 id="before-volunteer-registration-title" className="text-base font-black tracking-tight text-emerald-950">
+          Inscriptions des bénévoles
+        </h3>
+        <p className="cmm-text-body cmm-text-primary max-w-3xl">
+          Choisissez si les demandes publiques sont ouvertes et ajoutez, si besoin, des membres déjà connus.
+        </p>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        <GroupJoinPublishCard
+          checked={groupJoinEnabled}
+          onChange={onToggleGroupJoin}
+          showHelp={showGroupJoinHelp}
+          onToggleHelp={onToggleGroupJoinHelp}
+        />
+
+        <CmmDisclosure
+          summary={<ActionFormDisclosureSummary label="Membres préinscrits" detail={participantAccountIds.length ? `${participantAccountIds.length} membre${participantAccountIds.length > 1 ? "s" : ""}` : "Facultatif"} />}
+          tone="emerald"
+          size="sm"
+        >
+          <p className="mb-3 text-xs leading-5 text-emerald-900/68">
+            Les membres ajoutés sont préinscrits à l&apos;action. Leur présence effective devra être confirmée après l&apos;événement.
+          </p>
+          <ActionParticipantPicker
+            currentUserId={currentUserId}
+            value={participantAccountIds}
+            onChange={onParticipantsChange}
+            endpoint="/api/actions/account-options"
+            title="Ajouter des membres"
+            description="Sélection facultative de comptes CleanMyMap existants."
+            compact
+          />
+        </CmmDisclosure>
+      </div>
+    </section>
   );
 }

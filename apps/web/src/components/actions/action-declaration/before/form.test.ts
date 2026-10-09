@@ -55,15 +55,15 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Date et horaires");
     expect(html).toContain("Début du créneau global");
     expect(html).toContain("Fin du créneau global");
-    expect(html).toContain("Membres de l&#x27;action");
-    expect(html).toContain("Participants associés");
+    expect(html).toContain("Inscriptions des bénévoles");
+    expect(html).toContain("Membres préinscrits");
     expect(html).toContain("Coordonnées avancées");
     expect(html).toContain('class="cmm-disclosure"');
     expect(html).toContain("Obligatoire");
     expect(html).toContain('id="before-action-title"');
     expect(html).toContain('id="before-action-date"');
     expect(html).toContain('id="before-departure-location"');
-    expect(html).toContain("Publier en tant que formulaire de groupe");
+    expect(html).toContain("Autoriser les demandes d&#x27;inscription");
     expect(html).not.toContain("Déchets collectés");
     expect(html).not.toContain("Photos de preuve");
     expect(html).not.toContain("Score d'impact");
@@ -97,10 +97,43 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain('value="Maxence"');
     expect(html).toContain("@maxence_deroome");
     expect(html).toContain("Organisateurs associés");
-    expect(html).toContain("Participants associés");
+    expect(html).toContain("Inscriptions des bénévoles");
+    expect(html).toContain("Membres préinscrits");
+    expect(html).toContain("Autoriser les demandes d&#x27;inscription");
+    expect(html).toContain("Les membres ajoutés sont préinscrits à l&#x27;action.");
     expect(html).toContain("Rechercher");
     expect(html).toContain('type="search"');
     expect(html).not.toContain('value="legacy-alias"');
     expect(html).not.toContain("actorNameOptions");
+  });
+
+  it.each([
+    [false, [], "Facultatif"],
+    [false, ["user-one"], "1 membre"],
+    [true, [], "Facultatif"],
+    [true, ["user-one", "user-two"], "2 membres"],
+  ] as const)("keeps public requests and pre-registered members independent (%s / %s)", (groupJoinEnabled, participantAccounts, countLabel) => {
+    const form = createInitialFormState("legacy-alias", "action");
+    form.groupJoinEnabled = groupJoinEnabled;
+    form.participantAccounts = [...participantAccounts];
+
+    const html = renderToStaticMarkup(
+      React.createElement(IdentityAndSharingSection, {
+        form,
+        updateField: vi.fn(),
+        updateFields: vi.fn(),
+        userMetadata: { userId: "user-creator", displayName: "Maxence" },
+        showGroupJoinHelp: false,
+        onToggleGroupJoinHelp: vi.fn(),
+        hasAttemptedSubmit: false,
+        validationIssueFields: [],
+      } as ComponentProps<typeof IdentityAndSharingSection>),
+    );
+
+    expect(html).toContain('id="before-group-join-enabled"');
+    expect(html).toContain('for="before-group-join-enabled"');
+    expect(html).toContain(countLabel);
+    expect(html).toContain("Les demandes ne deviennent possibles qu&#x27;après sa publication.");
+    expect(html).toContain("Les membres ajoutés sont préinscrits à l&#x27;action.");
   });
 });
