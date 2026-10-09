@@ -34,7 +34,6 @@ describe("sanitizePreActionForm", () => {
 
     expect(form.plannedObjective).toBe("");
     expect(form.estimatedDifficulty).toBe("");
-    expect(form.creatorRole).toBe("");
     expect(form.placeType).toBe("");
     expect(form.preparationState).toBe("brouillon");
   });

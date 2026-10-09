@@ -58,7 +58,6 @@ describe("action declaration payload helpers", () => {
       ...blankForm,
       plannedObjective: "nettoyage" as const,
       estimatedDifficulty: "soutenue" as const,
-      creatorRole: "benevole" as const,
       placeType: "parc",
     };
     const explicitPreparation = buildPreparationDataFromForm(explicitForm);
@@ -66,7 +65,6 @@ describe("action declaration payload helpers", () => {
     expect(explicitPreparation).toMatchObject({
       plannedObjective: "nettoyage",
       estimatedDifficulty: "soutenue",
-      creatorRole: "benevole",
       placeType: "parc",
     });
   });
@@ -74,12 +72,13 @@ describe("action declaration payload helpers", () => {
   it("keeps descriptive choices absent when hydrating a draft without them", () => {
     const form = createInitialFormState("Alice");
     const hydrated = applyPreparationDataToForm(form, {
+      creatorRole: "benevole",
       preparationState: "brouillon",
     });
 
     expect(hydrated.plannedObjective).toBe("");
     expect(hydrated.estimatedDifficulty).toBe("");
-    expect(hydrated.creatorRole).toBe("");
+    expect(hydrated).not.toHaveProperty("creatorRole");
     expect(hydrated.placeType).toBe("");
     expect(hydrated.preparationState).toBe("brouillon");
   });

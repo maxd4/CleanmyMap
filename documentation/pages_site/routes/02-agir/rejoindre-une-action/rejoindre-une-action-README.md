@@ -151,11 +151,13 @@ Une inscription future, même `confirmed`, ne devient pas automatiquement une
 participation finale et n'alimente pas à elle seule les statistiques ou la
 gamification.
 
-Lorsqu'une action atteint `post_action_complete`, les comptes CleanMyMap du
-créateur et des organisateurs sont actuellement initialisés comme participations
-finales `confirmed` dans `public.action_participants`. C'est le comportement
-runtime courant ; il ne transforme pas les inscriptions futures des autres
-comptes en participations finales.
+Lorsqu'une action atteint `post_action_complete`, aucun compte n'est initialisé
+automatiquement dans `public.action_participants` en raison de sa création, de
+son rôle de créateur ou de sa responsabilité d'organisateur. Le créateur et les
+organisateurs peuvent demander leur rattachement par le même
+`post_action_claim` que les autres comptes ; la demande reste en attente de
+validation et ne transforme pas les inscriptions futures en participations
+finales.
 
 ## Contrat de traitement de file
 

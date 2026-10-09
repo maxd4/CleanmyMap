@@ -78,8 +78,8 @@ export const actionsAuthorizationContract = {
     POST: {
       expected: "ACTIVE_ROLE=admin|max may create or reuse a canonical organizer directory entry",
       dimensions: ["authentication", "admin/creator role"],
-      actual: "requireAdminAccess + strict name/type validation + resolveActionOrganizer; the service client remains server-only",
-      evidence: ["requireAdminAccess", "parseJsonBodyWithValidation", "resolveActionOrganizer"],
+      actual: "requireAdminAccess + strict name/type validation + createActionOrganizer; the service client remains server-only",
+      evidence: ["requireAdminAccess", "parseJsonBodyWithValidation", "createActionOrganizer"],
       evidenceScope: "module",
     },
   },

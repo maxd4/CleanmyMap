@@ -71,6 +71,20 @@ describe("createActionSchema", () => {
     expect(parsed.participantAccounts).toEqual(["user-1", "user-2", "user-1"]);
   });
 
+  it("rejects the removed creator role on new action writes", () => {
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        preparationData: { creatorRole: "organisateur" },
+      }).success,
+    ).toBe(false);
+    expect(
+      updateActionSchema.safeParse({
+        preparationData: { creatorRole: "organisateur" },
+      }).success,
+    ).toBe(false);
+  });
+
   it("accepts unknown terrain measurements without manufacturing zeroes", () => {
     const parsed = createActionSchema.parse({
       ...basePayload,

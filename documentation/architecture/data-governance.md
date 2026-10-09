@@ -141,10 +141,18 @@ jamais une présence terrain. Les statistiques, badges, progression,
 gamification et quotes-parts utilisent uniquement les lignes
 `action_participants` dont `participation_status = confirmed`.
 
-Le runtime courant initialise, lors du passage à `post_action_complete`, les
-comptes CleanMyMap correspondant au créateur et aux organisateurs comme
-participations finales `confirmed`. Cette initialisation est distincte d'une
-conversion automatique des inscriptions futures des autres utilisateurs.
+`actions.created_by_clerk_id` identifie le créateur et `action_organizers` porte
+la responsabilité organisationnelle et les permissions associées. Créer,
+organiser, changer de phase ou finaliser une action ne prouve jamais une
+participation terrain : aucun de ces événements n'insère automatiquement une
+ligne finale `confirmed`. Le créateur et les organisateurs peuvent demander
+leur rattachement via `post_action_claim`, comme tout autre compte ; la demande
+reste `pending` jusqu'à la validation du workflow existant.
+
+La migration append-only qui neutralise les anciens callbacks ne supprime ni
+ne reclassifie les lignes historiques. Elle conserve la sauvegarde/restauration,
+les RLS et les triggers indépendants, et ne transforme pas une inscription
+`action_registrations.confirmed` en présence.
 
 ### Signalements et modération
 

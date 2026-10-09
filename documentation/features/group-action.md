@@ -47,6 +47,7 @@ Permettre a un bénévole de rejoindre le formulaire visible d'une action publi�
 - L'inscription reste tracée dans `action_registrations`, mais la page bénévole permet d'annuler une demande en attente ou une inscription confirmée.
 - Une inscription future suit `registration_status = pending | confirmed | cancelled`; `confirmed` signifie inscription acceptée, jamais présence terrain confirmée.
 - Un claim post-action suit `participation_status = pending → confirmed | cancelled` dans `action_participants`; avec l'unicité `(action_id, user_id)`, un état `cancelled` reste terminal dans ce lot et n'est jamais reconverti silencieusement en `pending`.
+- Créer, organiser ou finaliser une action ne constitue jamais une preuve de présence terrain. Le créateur et les organisateurs utilisent le même parcours explicite `post_action_claim` que les autres comptes ; la demande commence en `pending` et n'alimente les statistiques qu'après validation.
 - Le contexte `wasRegisteredBeforeAction` peut être montré au validateur lorsqu'un claim correspond à une inscription antérieure. Il reste informatif: il n'accepte jamais le claim automatiquement et ne constitue pas une preuve de présence.
 - Un claim ne reconstitue pas les effectifs terrain et ne modifie ni `volunteersCount`, ni `volunteerParticipation`, ni `effectiveVolunteerUnits`, ni les résultats collectifs tant qu'il n'est pas confirmé.
 - Seules les lignes `action_participants` dont `participation_status = confirmed` contribuent aux statistiques personnelles, aux badges, à la progression, à la gamification et aux quotes-parts. Les inscriptions `action_registrations`, même confirmées, ainsi que les participations finales `pending` ou `cancelled`, sont exclues.
@@ -79,15 +80,17 @@ pas de `action_participants` la source des demandes futures ni des ajouts
 manuels de pré-action. Une inscription future confirmée et une participation
 finale peuvent donc coexister pour un même compte et une même action.
 
-Lors du passage à `post_action_complete`, le runtime initialise actuellement les
-comptes CleanMyMap du créateur et des organisateurs comme participations finales
-`confirmed` dans `action_participants`, avec les sources dédiées correspondantes.
-Ce comportement est documenté comme état courant et reste une décision produit
-distincte à arbitrer ultérieurement si nécessaire.
+Le passage à `post_action_complete`, la création de l'action et l'ajout ou la
+modification d'un organisateur n'écrivent aucune participation finale. La
+migration append-only qui neutralise les anciens callbacks conserve les
+triggers, les RLS, la restauration et les lignes historiques, mais retire toute
+insertion implicite `confirmed`. Une présence du créateur ou d'un organisateur
+doit donc venir du parcours explicite `post_action_claim`, puis de sa validation.
 
 - Source d'affichage: table `actions`, limitée aux pré-actions `pending` ou `approved` qui sont publiées, visibles, futures et ouvertes aux inscriptions selon le contrat de `Rejoindre une action`.
 - Source d'inscription future: table `action_registrations` avec `registration_status`, `registration_source`, `registered_at` et `updated_at`.
 - Source de participation finale: table `action_participants` avec `participation_status`, `participation_source`, `joined_at` et `updated_at`.
+- Identité de création: `actions.created_by_clerk_id`; responsabilité organisationnelle et permissions: `action_organizers`; aucune de ces deux sources ne prouve une présence terrain.
 - Origine d'inscription: `group_form` pour les demandes publiques futures et `manual_add` pour les membres ajoutés directement.
 - Origine de participation finale: `admin`, `admin_override`, `import` ou `post_action_claim` selon l'opération qui l'a créée.
 - Source badge, progression et gamification: uniquement `action_participants` avec `participation_status = confirmed`. Un claim confirmé suit cette même source; une inscription future ne la remplace jamais.

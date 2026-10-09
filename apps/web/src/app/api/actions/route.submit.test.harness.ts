@@ -65,7 +65,6 @@ export function buildQuickPreActionPayload() {
   form.safetyInstructions = "Gants recommandés.";
   form.recommendedMaterials = "Sacs, pinces, gants";
   form.participantMessage = "Réponse souhaitée avant la veille.";
-  form.creatorRole = "organisateur";
   form.preparationState = "pret_a_partager";
   form.logisticsNotes = "Point de rendez-vous confirmé.";
   form.checklistBeforeDeparture = "Eau, gants, sacs";

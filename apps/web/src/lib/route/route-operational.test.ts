@@ -122,6 +122,14 @@ describe("operational route contract", () => {
     expect(normalized).not.toHaveProperty("actualRoute");
   });
 
+  it("reads legacy creatorRole without carrying it into normalized persistence data", () => {
+    const normalized = normalizeActionPreparationData({
+      creatorRole: "organisateur",
+    });
+
+    expect(normalized).not.toHaveProperty("creatorRole");
+  });
+
   it("uses the server-managed active route for normalized reads", () => {
     const storedRoute = createOperationalRouteFromRecommendation(recommendation);
     const activeRoute = updateOperationalRouteZone(storedRoute, "midpoint", {

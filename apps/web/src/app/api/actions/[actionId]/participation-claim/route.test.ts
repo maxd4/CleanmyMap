@@ -107,6 +107,42 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
   });
 
   it.each([
+    ["creator", "user-1"],
+    ["coorganizer", "organizer-1"],
+    ["volunteer", "user-2"],
+  ])("uses the same explicit pending claim path for a %s", async (_label, userId) => {
+    authMock.mockResolvedValue({ userId });
+    const participants: Parameters<typeof createGroupJoinSupabaseMock>[0]["participants"] = [];
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-1",
+          actionPhase: "post_action_complete",
+          actionDate: "2026-09-13",
+        }),
+        participants,
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/participation-claim", {
+        method: "POST",
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).participationStatus).toBe("pending");
+    expect(participants).toHaveLength(1);
+    expect(participants[0]).toMatchObject({
+      user_id: userId,
+      participation_status: "pending",
+      participation_source: "post_action_claim",
+    });
+  });
+
+  it.each([
     ["future", { actionPhase: "post_action_complete" as const, actionDate: "2099-01-01" }],
     ["pre-action", { actionPhase: "pre_action" as const, actionDate: "2026-09-13" }],
     ["hidden", { actionPhase: "post_action_complete" as const, actionDate: "2026-09-13", moderationVisibility: "hidden" as const }],

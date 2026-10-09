@@ -42,7 +42,6 @@ export type FormState = {
  safetyInstructions: string;
  recommendedMaterials: string;
  participantMessage: string;
- creatorRole: "" | "organisateur" |"benevole" |"association" |"etudiant" |"autre";
  preparationState:"brouillon" |"pret_a_partager" |"action_en_cours" |"a_completer_apres_action";
  logisticsNotes: string;
  checklistBeforeDeparture: string;
@@ -131,7 +130,6 @@ export const initialState: FormState = {
  safetyInstructions:"",
  recommendedMaterials:"",
  participantMessage:"",
- creatorRole:"",
  preparationState:"brouillon",
  logisticsNotes:"",
  checklistBeforeDeparture:"",

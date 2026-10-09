@@ -211,14 +211,6 @@ export const DIFFICULTY_OPTIONS: SelectOption[] = [
   { value: "soutenue", label: "Soutenue" },
 ];
 
-export const CREATOR_ROLE_OPTIONS: SelectOption[] = [
-  { value: "organisateur", label: "Organisateur" },
-  { value: "benevole", label: "Bénévole" },
-  { value: "association", label: "Association" },
-  { value: "etudiant", label: "Étudiant" },
-  { value: "autre", label: "Autre" },
-];
-
 export const PREPARATION_STATE_OPTIONS: SelectOption[] = [
   { value: "brouillon", label: "Brouillon" },
   { value: "pret_a_partager", label: "Prêt à partager" },

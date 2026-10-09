@@ -50,7 +50,6 @@ const FORM_STATE_KEYS = [
   "safetyInstructions",
   "recommendedMaterials",
   "participantMessage",
-  "creatorRole",
   "preparationState",
   "logisticsNotes",
   "checklistBeforeDeparture",

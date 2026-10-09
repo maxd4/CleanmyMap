@@ -105,6 +105,7 @@ export type ActionPreparationData = {
   safetyInstructions?: string;
   recommendedMaterials?: string;
   participantMessage?: string;
+  /** Legacy read compatibility only; never accepted from new write payloads or mapped to FormState. */
   creatorRole?: "organisateur" | "benevole" | "association" | "etudiant" | "autre";
   preparationState?: "brouillon" | "pret_a_partager" | "action_en_cours" | "a_completer_apres_action";
   /** Dedicated administrative validation state; distinct from preparationState. */

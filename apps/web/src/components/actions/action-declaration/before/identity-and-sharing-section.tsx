@@ -10,10 +10,7 @@ import type { FormState } from "../model";
 import type { ActiveRole } from "@/lib/domain-language";
 import { ActionParticipantPicker } from "../../action-participant-picker";
 import { normalizeParticipantAccounts, parseOrganizerAccounts } from "../payload";
-import {
-  CREATOR_ROLE_OPTIONS,
-  PREPARATION_STATE_OPTIONS,
-} from "./model";
+import { PREPARATION_STATE_OPTIONS } from "./model";
 import { FieldShell, GroupJoinPublishCard, SectionLabel, SelectShell } from "./ui";
 import { cn } from "@/lib/utils";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
@@ -142,7 +139,6 @@ function IdentityFieldGrid({
         {missingAssociation ? <span id="before-organizer-structure-error" className="block text-xs font-medium text-rose-700">Renseignez un organisateur.</span> : null}
       </FieldShell>
 
-      <SelectShell label="Rôle du créateur" value={form.creatorRole} onChange={(value) => updateField("creatorRole", value as FormState["creatorRole"])} options={CREATOR_ROLE_OPTIONS} placeholder="Sélectionnez un rôle" />
       <SelectShell label="État de préparation" value={form.preparationState} onChange={(value) => updateField("preparationState", value as FormState["preparationState"])} options={PREPARATION_STATE_OPTIONS} />
     </div>
   );

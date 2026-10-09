@@ -309,9 +309,19 @@ export function normalizeOperationalRoute(value: unknown): OperationalRoute | nu
 export function normalizeActionPreparationData<T extends {
   operationalRoute?: OperationalRoute;
   actualRoute?: unknown;
+  /** Legacy read compatibility only; removed before any normalized persistence. */
+  creatorRole?: unknown;
   routeVersioning?: { active?: { operationalRoute?: unknown } };
-}>(data: T): Omit<T, "actualRoute" | "operationalRoute"> & { operationalRoute?: OperationalRoute } {
-  const { actualRoute, operationalRoute, ...rest } = data;
+}>(data: T): Omit<T, "actualRoute" | "operationalRoute" | "creatorRole"> & { operationalRoute?: OperationalRoute } {
+  // Historical rows may still contain preparation_data.creatorRole. Keep the
+  // read type compatible, but never carry that removed field into a normalized
+  // object that can be persisted by an update or geometry workflow.
+  const sanitizedData = { ...data } as T & {
+    creatorRole?: unknown;
+  };
+  delete sanitizedData.creatorRole;
+  const { actualRoute, operationalRoute, ...restWithLegacy } = sanitizedData;
+  const rest = restWithLegacy as Omit<T, "actualRoute" | "operationalRoute" | "creatorRole">;
   const activeRoute = normalizeOperationalRoute(data.routeVersioning?.active?.operationalRoute);
   const normalized = activeRoute ?? operationalRoute ?? normalizeOperationalRoute(actualRoute);
   return {
