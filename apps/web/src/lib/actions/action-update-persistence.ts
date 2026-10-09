@@ -2,10 +2,7 @@ import type { ActionRow } from "@/types/database";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import { extractActionMetadataFromNotes } from "./metadata";
 import { getTimeContractValidationMessage } from "./time-contract";
-import {
-  hasPendingAdministrativeRequirements,
-  prepareActionUpdateBody,
-} from "./action-update-preparation";
+import { prepareActionUpdateBody } from "./action-update-preparation";
 import { buildActionUpdateFields } from "./action-update-fields";
 import { buildActionUpdateMeasurements } from "./action-update-measurements";
 import {
@@ -47,13 +44,6 @@ export async function prepareActionUpdate(params: {
       throw new ActionUpdateValidationError("preparationData", error.message);
     }
     throw error;
-  }
-
-  if (hasPendingAdministrativeRequirements(current, body)) {
-    throw new ActionUpdateValidationError(
-      "preparationData",
-      "Les démarches administratives doivent être validées avant le démarrage de l'action.",
-    );
   }
 
   const nextActionPhase = body.actionPhase ?? current.action_phase;

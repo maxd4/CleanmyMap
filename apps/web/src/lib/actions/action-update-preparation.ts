@@ -3,7 +3,6 @@ import type { ActionRow } from "@/types/database";
 import type { ActionPreparationData } from "./types";
 import type { ActionUpdateInput } from "./action-update-audit";
 import {
-  normalizeAdministrativeRequirements,
   preserveCanonicalAdministrativeRequirements,
 } from "./administrative-requirements";
 import {
@@ -47,19 +46,4 @@ export function prepareActionUpdateBody(
       : preservedPreparationData;
 
   return { ...parsedBody, preparationData: preparationDataWithLegacyCompatibility };
-}
-
-export function hasPendingAdministrativeRequirements(
-  current: ActionRow,
-  body: ActionUpdateInput,
-): boolean {
-  const nextActionPhase = body.actionPhase ?? current.action_phase;
-
-  return (
-    current.action_phase !== "post_action_complete" &&
-    nextActionPhase === "post_action_complete" &&
-    normalizeAdministrativeRequirements(
-      current.preparation_data?.administrativeRequirements,
-    ).status === "pending"
-  );
 }

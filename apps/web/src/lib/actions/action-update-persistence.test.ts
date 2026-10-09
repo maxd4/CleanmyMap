@@ -227,27 +227,35 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
     });
   });
 
-  it("blocks the real action completion while requirements are pending", async () => {
+  it("allows retrospective completion while requirements remain pending", async () => {
     resolveActionDepartmentForPersistenceMock.mockResolvedValue({
       departmentCode: null,
       departmentName: null,
     });
 
-    await expect(
-      prepareActionUpdate({
-        current: buildCurrent({
-          administrativeRequirements: {
-            status: "pending",
-            validatedAt: null,
-            validatedByUserId: null,
-          },
-        }),
-        parsedBody: ({
-          actionPhase: "post_action_complete",
-          notes: "Finalisation de l'action",
-        } as unknown as ActionUpdateInput),
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({
+        administrativeRequirements: {
+          status: "pending",
+          validatedAt: null,
+          validatedByUserId: null,
+        },
       }),
-    ).rejects.toThrow("Les démarches administratives doivent être validées");
+      parsedBody: ({
+        actionPhase: "post_action_complete",
+        notes: "Finalisation rétrospective de l'action",
+        preparationData: { actionTitle: "Résultats de l'action" },
+      } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.action_phase).toBe("post_action_complete");
+    expect(prepared.updateData.preparation_data).toMatchObject({
+      administrativeRequirements: {
+        status: "pending",
+        validatedAt: null,
+        validatedByUserId: null,
+      },
+    });
   });
 
   it("allows the post-action draft transition while requirements are pending", async () => {
