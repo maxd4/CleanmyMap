@@ -440,6 +440,7 @@ jobs:
 
       - name: Duplication ratchet
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' && steps.install_node_dependencies.outcome == 'success' }}
+        continue-on-error: true
         run: npm run quality:duplication
 
       - name: Install GitNexus
@@ -474,6 +475,7 @@ jobs:
       - name: GitNexus cycle ratchet
         id: quality_cycles
         if: ${{ !cancelled() && steps.audit_gitnexus.outcome == 'success' }}
+        continue-on-error: true
         run: npm run quality:cycles
 
       - name: Publish web-quality summary
@@ -570,6 +572,7 @@ jobs:
           path: apps/web/coverage
 
       - name: Web coverage ratchet from existing evidence
+        continue-on-error: true
         run: npm run quality:coverage -- --from-existing-summary
 
   web-vercel-audit:

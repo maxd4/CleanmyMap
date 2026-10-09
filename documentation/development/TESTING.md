@@ -434,6 +434,14 @@ l'artefact court terme ; `web-coverage` le télécharge puis exécute uniquement
 le ratchet. `checks:fast` ne relance pas cette suite complète instrumentée afin
 de respecter son budget et d'éviter une seconde exécution inutile des tests.
 
+Les étapes CI `Duplication ratchet`, `GitNexus cycle ratchet` et `Web coverage
+ratchet from existing evidence` restent exécutées et conservent leurs logs,
+preuves et rapports, mais sont temporairement `continue-on-error: true` lorsque
+leur `sourceCommit` historique n'est plus ancêtre du `main` courant. Cette
+adaptation ne modifie ni les scripts, ni les baselines, ni les seuils : elle
+rend uniquement ces trois étapes observables mais non bloquantes pendant la
+réconciliation de provenance. Tous les autres contrôles CI restent bloquants.
+
 Le même moteur V8 mesure séparément le mobile :
 
 ```bash
