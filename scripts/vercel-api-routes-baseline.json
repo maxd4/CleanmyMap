@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-30T17:43:01.000Z",
-  "apiRouteCount": 113,
+  "apiRouteCount": 115,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -28,11 +28,13 @@
     "apps/web/src/app/api/actions/account-options/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/import/route.ts",
+    "apps/web/src/app/api/actions/invitations/route.ts",
     "apps/web/src/app/api/actions/map/initial-nearest/route.ts",
     "apps/web/src/app/api/actions/map/pollution-score-references/route.ts",
     "apps/web/src/app/api/actions/map/route.ts",
     "apps/web/src/app/api/actions/organizers/route.ts",
     "apps/web/src/app/api/actions/prefill/route.ts",
+    "apps/web/src/app/api/actions/registration-requests/route.ts",
     "apps/web/src/app/api/actions/route.ts",
     "apps/web/src/app/api/admin/codex-usage/route.ts",
     "apps/web/src/app/api/admin/creator-inbox/route.ts",

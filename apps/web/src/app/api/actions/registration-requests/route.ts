@@ -6,6 +6,7 @@ import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
+// Cache/no-store justification: cette projection privée doit rester dynamique et fraîche par reviewer.
 export const dynamic = "force-dynamic";
 
 /**
@@ -25,6 +26,7 @@ export async function GET() {
     if (error) throw error;
     return NextResponse.json(
       { requests: data ?? [] },
+      // Cache/no-store justification: cette projection privée doit rester fraîche par reviewer.
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {

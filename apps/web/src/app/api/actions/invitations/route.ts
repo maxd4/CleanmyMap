@@ -6,6 +6,7 @@ import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
+// Justification Vercel: les invitations privées restent fraîches par destinataire (no-store).
 export const dynamic = "force-dynamic";
 
 const decisionSchema = z.object({
@@ -30,6 +31,7 @@ export async function GET() {
     if (error) throw error;
     return NextResponse.json(
       { invitations: data ?? [] },
+      // Cache/no-store justification: cette projection privée doit rester fraîche par destinataire.
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
