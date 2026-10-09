@@ -134,4 +134,37 @@ export function registerActionTransitionScenarios({
     expect(trackActionValidationBonusMock).toHaveBeenCalledTimes(1);
     expect(notifyActionValidationMock).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    { status: "approved" as const, progressionMock: "trackActionValidationBonusMock", notificationMock: "notifyActionValidationMock" },
+    { status: "rejected" as const, progressionMock: "trackActionRejectionMock", notificationMock: "notifyActionRejectionMock" },
+  ])(
+    "keeps a persisted $status decision successful when the creator lookup fails",
+    async ({ status, progressionMock, notificationMock }) => {
+      getSupabaseAdminClientMock.mockReturnValue(
+        createActionSupabaseHarness("pending", {
+          creatorReadError: "creator lookup unavailable",
+        }),
+      );
+
+      const { POST } = await import("./route");
+      const response = await POST(
+        new Request("http://localhost/api/admin/moderation", {
+          method: "POST",
+          body: JSON.stringify({
+            entityType: "action",
+            id: "action-1",
+            status,
+            confirmPhrase: "CONFIRMER MODERATION",
+            ...(status === "rejected" ? { reason: "Dossier interne." } : {}),
+            edits: {},
+          }),
+        }),
+      );
+
+      expect(response.status).toBe(200);
+      expect(mocks[progressionMock]).toHaveBeenCalledTimes(1);
+      expect(mocks[notificationMock]).not.toHaveBeenCalled();
+    },
+  );
 }

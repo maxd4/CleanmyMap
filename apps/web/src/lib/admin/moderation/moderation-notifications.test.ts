@@ -85,7 +85,7 @@ describe("moderation notifications", () => {
     });
   });
 
-  it("notifies the action owner with only the public rejection reason", async () => {
+  it("keeps administrative rejection reasons out of the owner notification", async () => {
     const supabase = createSupabaseHarness();
 
     await notifyActionRejection(supabase as never, {
@@ -99,7 +99,7 @@ describe("moderation notifications", () => {
       user_id: "user-1",
       type: "validation",
       title: "Action refusée",
-      content: "Votre action à Quai de Seine a été refusée. Motif : Dossier incomplet à vérifier.",
+      content: "Votre action à Quai de Seine a été refusée.",
       payload: {
         entityType: "action",
         id: "action-1",
@@ -107,6 +107,9 @@ describe("moderation notifications", () => {
         eventKey: "moderation:action:action-1:revision-1:rejected",
       },
     });
+    expect(supabase.notificationInsert.mock.calls[0]?.[0]?.content).not.toContain(
+      "Dossier incomplet à vérifier.",
+    );
   });
 
   it("does not fail a retry when the moderation event is already stored", async () => {

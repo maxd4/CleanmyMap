@@ -10,6 +10,28 @@ import {
 } from "@/lib/admin/moderation/moderation-notifications";
 import { logFailure } from "@/lib/logging/failure-log";
 
+async function loadActionCreatorUserId(
+  supabase: ModerationSupabaseClient,
+  actionId: string,
+): Promise<string | null> {
+  try {
+    const actionDetails = await runSingleActionQuery<{
+      created_by_clerk_id: string | null;
+    }>(supabase, (query) =>
+      query.select("created_by_clerk_id").eq("id", actionId).maybeSingle(),
+    );
+    return actionDetails?.created_by_clerk_id ?? null;
+  } catch (error) {
+    logFailure(
+      "Moderation/Action",
+      "Action creator lookup failed after persisted moderation",
+      error,
+      { actionId },
+    );
+    return null;
+  }
+}
+
 async function runActionRejectionSideEffects(
   supabase: ModerationSupabaseClient,
   params: {
@@ -19,11 +41,7 @@ async function runActionRejectionSideEffects(
     revision: string | null;
   },
 ): Promise<void> {
-  const actionDetails = await runSingleActionQuery<{
-    created_by_clerk_id: string | null;
-  }>(supabase, (query) =>
-    query.select("created_by_clerk_id").eq("id", params.actionId).maybeSingle(),
-  );
+  const creatorUserId = await loadActionCreatorUserId(supabase, params.actionId);
 
   try {
     await trackActionRejection(supabase, { actionId: params.actionId });
@@ -34,6 +52,16 @@ async function runActionRejectionSideEffects(
       error,
       { actionId: params.actionId, actorUserId: params.actorUserId },
     );
+  }
+
+  if (!creatorUserId) {
+    logFailure(
+      "Moderation/Action",
+      "Action rejection notification skipped because the creator identity is unavailable",
+      undefined,
+      { actionId: params.actionId },
+    );
+    return;
   }
 
   if (!params.revision) {
@@ -49,7 +77,7 @@ async function runActionRejectionSideEffects(
   try {
     await notifyActionRejection(supabase, {
       actionId: params.actionId,
-      userId: actionDetails?.created_by_clerk_id ?? null,
+      userId: creatorUserId,
       reason: params.reason,
       revision: params.revision,
     });
@@ -57,6 +85,63 @@ async function runActionRejectionSideEffects(
     logFailure(
       "Moderation/Action",
       "Action rejection notification failed",
+      error,
+      { actionId: params.actionId },
+    );
+  }
+}
+
+async function runActionApprovalSideEffects(
+  supabase: ModerationSupabaseClient,
+  params: {
+    actionId: string;
+    actorUserId: string;
+    revision: string | null;
+  },
+): Promise<void> {
+  const creatorUserId = await loadActionCreatorUserId(supabase, params.actionId);
+
+  try {
+    await trackActionValidationBonus(supabase, { actionId: params.actionId });
+  } catch (error) {
+    logFailure(
+      "Moderation/Action",
+      "Action validation progression failed",
+      error,
+      { actionId: params.actionId, actorUserId: params.actorUserId },
+    );
+  }
+
+  if (!creatorUserId) {
+    logFailure(
+      "Moderation/Action",
+      "Action validation notification skipped because the creator identity is unavailable",
+      undefined,
+      { actionId: params.actionId },
+    );
+    return;
+  }
+
+  if (!params.revision) {
+    logFailure(
+      "Moderation/Action",
+      "Action validation notification skipped because the persisted revision is unavailable",
+      undefined,
+      { actionId: params.actionId },
+    );
+    return;
+  }
+
+  try {
+    await notifyActionValidation(supabase, {
+      actionId: params.actionId,
+      userId: creatorUserId,
+      revision: params.revision,
+    });
+  } catch (error) {
+    logFailure(
+      "Moderation/Action",
+      "Action validation notification failed",
       error,
       { actionId: params.actionId },
     );
@@ -75,47 +160,7 @@ export async function runActionTransitionSideEffects(
   },
 ): Promise<void> {
   if (params.approvalTransition) {
-    const actionDetails = await runSingleActionQuery<{
-      created_by_clerk_id: string | null;
-    }>(supabase, (query) =>
-      query.select("created_by_clerk_id").eq("id", params.actionId).maybeSingle(),
-    );
-
-    try {
-      await trackActionValidationBonus(supabase, { actionId: params.actionId });
-    } catch (error) {
-      logFailure(
-        "Moderation/Action",
-        "Action validation progression failed",
-        error,
-        { actionId: params.actionId, actorUserId: params.actorUserId },
-      );
-    }
-
-    if (!params.revision) {
-      logFailure(
-        "Moderation/Action",
-        "Action validation notification skipped because the persisted revision is unavailable",
-        undefined,
-        { actionId: params.actionId },
-      );
-      return;
-    }
-
-    try {
-      await notifyActionValidation(supabase, {
-        actionId: params.actionId,
-        userId: actionDetails?.created_by_clerk_id ?? null,
-        revision: params.revision,
-      });
-    } catch (error) {
-      logFailure(
-        "Moderation/Action",
-        "Action validation notification failed",
-        error,
-        { actionId: params.actionId },
-      );
-    }
+    await runActionApprovalSideEffects(supabase, params);
     return;
   }
 

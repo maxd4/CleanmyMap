@@ -33,7 +33,7 @@ function snapshot(
   attributions: Map<string, ReturnType<typeof attribution>>,
   revision = "revision-1",
 ) {
-  return { available: true, revision, attributions };
+  return { available: true, readStatus: "available" as const, revision, attributions };
 }
 
 function createSupabaseMock() {
@@ -110,7 +110,29 @@ describe("action participant impact notifications", () => {
   });
 
   it("does not emit a definitive attribution when the projection is unavailable", async () => {
-    loadSnapshotMock.mockResolvedValue({ available: false, revision: null, attributions: new Map() });
+    loadSnapshotMock.mockResolvedValue({
+      available: false,
+      readStatus: "unavailable",
+      revision: null,
+      attributions: new Map(),
+    });
+    const { emitActionParticipantImpactNotifications } = await import("./action-participant-impact-notifications");
+
+    await expect(emitActionParticipantImpactNotifications({
+      supabase: createSupabaseMock() as never,
+      actionId: "action-1",
+      previousSnapshot: snapshot(new Map([["user-1", attribution(5)]])),
+    })).resolves.toBe(false);
+    expect(insertNotificationMock).not.toHaveBeenCalled();
+  });
+
+  it("does not turn a failed projection read into a notification", async () => {
+    loadSnapshotMock.mockResolvedValue({
+      available: false,
+      readStatus: "error",
+      revision: null,
+      attributions: new Map(),
+    });
     const { emitActionParticipantImpactNotifications } = await import("./action-participant-impact-notifications");
 
     await expect(emitActionParticipantImpactNotifications({

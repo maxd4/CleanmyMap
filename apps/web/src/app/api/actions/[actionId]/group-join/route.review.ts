@@ -325,8 +325,6 @@ export async function handleGroupJoinReview(
     );
     if ("response" in actionResolution) return actionResolution.response;
     const actionResult = actionResolution.action;
-    const previousImpactSnapshot: ActionParticipantImpactSnapshot | null =
-      await captureActionParticipantImpactSnapshot(supabase, trimmedActionId);
     const moderation = await prepareReviewModeration({
       action: actionResult,
       actionId: trimmedActionId,
@@ -340,6 +338,8 @@ export async function handleGroupJoinReview(
     if (!moderation.ok) return moderation.response;
     const { access, reason } = moderation;
     adminParticipationAuditContext = moderation.auditContext;
+    const previousImpactSnapshot: ActionParticipantImpactSnapshot | null =
+      await captureActionParticipantImpactSnapshot(supabase, trimmedActionId);
 
     const result =
       "participantUserId" in parsed.data

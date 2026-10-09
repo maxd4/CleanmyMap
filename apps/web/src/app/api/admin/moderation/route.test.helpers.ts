@@ -1,6 +1,9 @@
 import { vi } from "vitest";
 
-export function createActionSupabaseHarness(initialStatus: "pending" | "approved" | "rejected" = "pending") {
+export function createActionSupabaseHarness(
+  initialStatus: "pending" | "approved" | "rejected" = "pending",
+  options: { creatorReadError?: string } = {},
+) {
   let row: Record<string, unknown> = {
     id: "action-1",
     updated_at: "revision-1",
@@ -23,7 +26,9 @@ export function createActionSupabaseHarness(initialStatus: "pending" | "approved
     eq: vi.fn(() => ({
       maybeSingle: vi.fn().mockResolvedValue({
         data:
-          columns === "id"
+          options.creatorReadError && columns === "created_by_clerk_id"
+            ? null
+            : columns === "id"
             ? { id: row.id }
             : columns.includes("moderation_visibility") &&
                 !columns.startsWith("status, moderation_visibility")
@@ -34,7 +39,10 @@ export function createActionSupabaseHarness(initialStatus: "pending" | "approved
                   hidden_reason: row.hidden_reason ?? null,
                 }
               : row,
-        error: null,
+        error:
+          options.creatorReadError && columns === "created_by_clerk_id"
+            ? { message: options.creatorReadError }
+            : null,
       }),
     })),
   }));

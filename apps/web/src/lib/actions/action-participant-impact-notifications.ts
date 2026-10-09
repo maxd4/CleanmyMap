@@ -144,14 +144,17 @@ async function insertImpactNotifications(params: {
 export async function emitActionParticipantImpactNotifications(
   params: ActionParticipantImpactNotificationParams,
 ): Promise<boolean> {
-  if (!params.previousSnapshot?.available) return false;
+  if (
+    !params.previousSnapshot?.available ||
+    params.previousSnapshot.readStatus !== "available"
+  ) return false;
 
   try {
     const currentSnapshot = await loadActionParticipantImpactSnapshot(
       params.supabase,
       params.actionId,
     );
-    if (!currentSnapshot.available) return false;
+    if (!currentSnapshot.available || currentSnapshot.readStatus !== "available") return false;
 
     const changedUserIds = [...currentSnapshot.attributions.entries()]
       .filter(([userId, attribution]) =>

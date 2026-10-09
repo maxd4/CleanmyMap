@@ -82,14 +82,11 @@ export async function notifyActionRejection(
   );
   if (!action) return;
 
-  const reason = params.reason?.trim();
   await insertModerationNotification(supabase, {
     user_id: params.userId,
     type: "validation",
     title: "Action refusée",
-    content: `Votre action à ${action.location_label ?? "ce lieu"} a été refusée.${
-      reason ? ` Motif : ${reason}` : ""
-    }`,
+    content: `Votre action à ${action.location_label ?? "ce lieu"} a été refusée.`,
     payload: {
       entityType: "action",
       id: params.actionId,

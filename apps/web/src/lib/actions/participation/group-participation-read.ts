@@ -34,9 +34,13 @@ import type {
   JoinableActionItem,
 } from "./group-participation-contract";
 import { usesRegistrationStore } from "./action-phase";
+import { loadParticipantImpactAttributions } from "./group-participation-impact-read";
+export {
+  loadActionParticipantImpactSnapshot,
+  type ActionParticipantImpactSnapshot,
+} from "./group-participation-impact-read";
 import {
   INDIVIDUAL_IMPACT_SELECT,
-  allocateActionParticipantImpact,
   toIndividualImpactMeasurement,
   type ActionParticipantImpactAttribution,
 } from "./individual-impact";
@@ -148,167 +152,11 @@ export async function loadJoinableActions(
   );
 }
 
-type ParticipantImpactRow = {
-  id: string;
-  updatedAt: string | null;
-  participationStatus: string;
-  measurement: ReturnType<typeof toIndividualImpactMeasurement>;
-};
-
-function groupParticipantImpactRows(
-  data: unknown,
-): Map<string, ParticipantImpactRow[]> {
-  const rowsByActionId = new Map<string, ParticipantImpactRow[]>();
-  for (const row of (data ?? []) as Array<Record<string, unknown>>) {
-    const actionId = typeof row.action_id === "string" ? row.action_id : null;
-    const id = typeof row.user_id === "string" ? row.user_id : null;
-    if (!actionId || !id) continue;
-    const rows = rowsByActionId.get(actionId) ?? [];
-    rows.push({
-      id,
-      updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
-      participationStatus: String(row.participation_status ?? "confirmed"),
-      measurement: toIndividualImpactMeasurement(row),
-    });
-    rowsByActionId.set(actionId, rows);
-  }
-  return rowsByActionId;
-}
-
-function allocateParticipantImpactRows(
-  actionById: Map<string, ActionPreviewRow>,
-  actionIds: string[],
-  rowsByActionId: Map<string, ParticipantImpactRow[]>,
-): Map<string, ReturnType<typeof allocateActionParticipantImpact>> {
-  const output = new Map<string, ReturnType<typeof allocateActionParticipantImpact>>();
-  for (const actionId of actionIds) {
-    const action = actionById.get(actionId);
-    output.set(actionId, allocateActionParticipantImpact({
-      totalWasteKg: action?.waste_kg ?? null,
-      totalCigaretteButts: action?.cigarette_butts ?? null,
-      participants: rowsByActionId.get(actionId) ?? [],
-    }));
-  }
-  return output;
-}
-
-async function loadParticipantImpactAttributions(
-  supabase: SupabaseClient,
-  actionById: Map<string, ActionPreviewRow>,
-  finalActionIds: string[],
-): Promise<Map<string, ReturnType<typeof allocateActionParticipantImpact>>> {
-  return (await loadParticipantImpactProjection(supabase, actionById, finalActionIds))
-    .attributionsByActionId;
-}
-
-type ParticipantImpactProjection = {
-  attributionsByActionId: Map<
-    string,
-    ReturnType<typeof allocateActionParticipantImpact>
-  >;
-  revisionByActionId: Map<string, string | null>;
-};
-
-function buildParticipantImpactRevision(
-  action: ActionPreviewRow | undefined,
-  rows: ParticipantImpactRow[],
-): string | null {
-  if (!action) return null;
-  const participantRevisions = rows
-    .map((row) => `${row.id}:${row.updatedAt ?? ""}`)
-    .sort();
-  const actionRevision = action.updated_at ?? "";
-  const revision = [actionRevision, ...participantRevisions].join("|");
-  return revision.length > 0 ? revision : null;
-}
-
-async function loadParticipantImpactProjection(
-  supabase: SupabaseClient,
-  actionById: Map<string, ActionPreviewRow>,
-  finalActionIds: string[],
-): Promise<ParticipantImpactProjection> {
-  const empty: ParticipantImpactProjection = {
-    attributionsByActionId: new Map(),
-    revisionByActionId: new Map(),
-  };
-  if (finalActionIds.length === 0) return empty;
-  const result = await supabase
-    .from("action_participants")
-    .select(`user_id, action_id, updated_at, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`)
-    .in("action_id", finalActionIds)
-    .eq("participation_status", ACTIVE_PARTICIPATION_STATUS);
-  if (result.error) return empty;
-  const rowsByActionId = groupParticipantImpactRows(result.data);
-  return {
-    attributionsByActionId: allocateParticipantImpactRows(
-      actionById,
-      finalActionIds,
-      rowsByActionId,
-    ),
-    revisionByActionId: new Map(
-      finalActionIds.map((actionId) => [
-        actionId,
-        buildParticipantImpactRevision(
-          actionById.get(actionId),
-          rowsByActionId.get(actionId) ?? [],
-        ),
-      ]),
-    ),
-  };
-}
-
-export type ActionParticipantImpactSnapshot = {
-  available: boolean;
-  revision: string | null;
-  attributions: Map<string, ActionParticipantImpactAttribution>;
-};
-
-/**
- * Returns the current canonical impact projection for one public final action.
- * The notification layer consumes this projection; it never owns allocation
- * rules or derives a second share from raw measurements.
- */
-export async function loadActionParticipantImpactSnapshot(
-  supabase: SupabaseClient,
-  actionId: string,
-): Promise<ActionParticipantImpactSnapshot> {
-  const action = await runSingleActionQuery<ActionPreviewRow>(supabase, (query) =>
-    query.select(ACTION_PREVIEW_COLUMNS).eq("id", actionId).maybeSingle(),
-  );
-  const available = Boolean(
-    action &&
-      action.status === "approved" &&
-      action.action_phase === "post_action_complete" &&
-      action.published_at &&
-      action.moderation_visibility !== "hidden",
-  );
-  if (!action || !available) {
-    return { available: false, revision: null, attributions: new Map() };
-  }
-
-  const participantImpactProjection = await loadParticipantImpactProjection(
-    supabase,
-    new Map([[action.id, action]]),
-    [action.id],
-  );
-  return {
-    available: true,
-    revision: participantImpactProjection.revisionByActionId.get(action.id) ?? null,
-    attributions:
-      participantImpactProjection.attributionsByActionId.get(action.id) ?? new Map(),
-  };
-}
-
 export type ConfirmedParticipantImpactAttribution = {
   actionId: string;
   actionDate: string;
   userId: string;
-  attribution: ReturnType<typeof allocateActionParticipantImpact> extends Map<
-    string,
-    infer TValue
-  >
-    ? TValue
-    : never;
+  attribution: ActionParticipantImpactAttribution;
 };
 
 /**

@@ -1,5 +1,12 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createGroupJoinAction, createGroupJoinParticipant, createGroupJoinProfile, createGroupJoinSupabaseMock, groupJoinMocks, invokeGroupJoinRoute, seedGroupJoinTestDefaults, type GroupJoinParticipantRow } from "./route.test.helpers";
+
+const captureActionParticipantImpactSnapshotMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@/lib/actions/action-participant-impact-notifications", () => ({
+  captureActionParticipantImpactSnapshot: captureActionParticipantImpactSnapshotMock,
+  emitActionParticipantImpactNotifications: vi.fn(),
+}));
 const { authMock, getCurrentUserIdentityMock, getSupabaseServerClientMock, appendActionModerationAuditMock, rebuildUserGamificationBadgesMock, refreshProgressionProfileMock } = groupJoinMocks;
 
 async function postActionGroupJoin(
@@ -400,6 +407,28 @@ describe("POST /api/actions/:actionId/group-join", () => {
     getCurrentUserIdentityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
     refreshProgressionProfileMock.mockResolvedValue(undefined);
     appendActionModerationAuditMock.mockResolvedValue(undefined);
+  });
+
+  it("does not read the impact projection before a denied review", async () => {
+    authMock.mockResolvedValueOnce({ userId: "outsider-1" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "outsider-1",
+      role: "benevole",
+      activeRole: "benevole",
+    });
+    groupJoinMocks.loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+    const participants = seedApprovedActionParticipants([
+      createPendingParticipant(),
+    ], { createdByClerkId: "owner-1" });
+
+    const response = await postActionGroupJoin({
+      participantId: "participant-1",
+      decision: "accept",
+    });
+
+    expect(response.status).toBe(403);
+    expect(captureActionParticipantImpactSnapshotMock).not.toHaveBeenCalled();
+    expect(participants[0]?.participation_status).toBe("pending");
   });
   it("accepts a pending request", async () => {
     const participants = [createPendingParticipant("participant-1", "user-2", true)];

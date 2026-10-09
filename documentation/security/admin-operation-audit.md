@@ -357,6 +357,11 @@ Lorsqu'un motif est requis :
 - lui appliquer les contraintes du domaine ;
 - ne pas permettre à un objet `details` libre d'écraser le champ canonique.
 
+Pour les décisions de modération Actions, le motif reste dans le journal
+administratif. Il n'est pas recopié dans une notification utilisateur tant
+qu'un contrat produit et d'autorisation ne le qualifie pas explicitement de
+communicable ; la notification de refus reste donc générique.
+
 ## 13. Minimisation des données
 
 Le journal admin n'est pas un second entrepôt métier.
