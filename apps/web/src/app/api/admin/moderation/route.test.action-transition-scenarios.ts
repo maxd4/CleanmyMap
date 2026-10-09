@@ -13,6 +13,7 @@ export function registerActionTransitionScenarios({
     trackActionValidationBonusMock,
     trackActionRejectionMock,
     notifyActionValidationMock,
+    notifyActionRejectionMock,
   } = mocks;
 
   it("runs approval progression and notification once on a real transition", async () => {
@@ -92,6 +93,15 @@ export function registerActionTransitionScenarios({
     expect(trackActionRejectionMock).toHaveBeenCalledWith(
       expect.anything(),
       { actionId: "action-1" },
+    );
+    expect(notifyActionRejectionMock).toHaveBeenCalledTimes(1);
+    expect(notifyActionRejectionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        actionId: "action-1",
+        userId: "creator-1",
+        reason: "Dossier incomplet à vérifier.",
+      },
     );
     expect(notifyActionValidationMock).not.toHaveBeenCalled();
   });

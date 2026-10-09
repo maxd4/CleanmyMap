@@ -8,6 +8,7 @@ import { loadActionById } from "@/lib/actions/store";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { canPublishPreAction } from "@/lib/actions/publication";
 import { initializeActionRouteVersioning } from "@/lib/actions/route-version-persistence";
+import { emitAdministrativeRequirementNotifications } from "@/lib/actions/administrative-requirement-notifications";
 import type { ActionRow } from "@/types/database";
 
 export const runtime = "nodejs";
@@ -137,6 +138,11 @@ export async function POST(
         { status: 409 },
       );
     }
+
+    await emitAdministrativeRequirementNotifications({
+      supabase,
+      actionId: result.data.id,
+    });
 
     return NextResponse.json({
       status: "published",

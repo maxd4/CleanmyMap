@@ -10,6 +10,13 @@ describe("notification targets", () => {
     expect(buildNotificationHref({ entityType: "spot", id: "spot-1" })).toBe(
       "/sections/trash-spotter?spotId=spot-1",
     );
+    expect(
+      buildNotificationHref({
+        entityType: "signalement",
+        id: "spot-2",
+        moderationOutcome: "rejected",
+      }),
+    ).toBe("/sections/trash-spotter?spotId=spot-2");
     expect(buildNotificationHref({ eventType: "action_event", actionId: "action-2" })).toBe(
       "/sections/rejoindre-une-action?actionId=action-2",
     );

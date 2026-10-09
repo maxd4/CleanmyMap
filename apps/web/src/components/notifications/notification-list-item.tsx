@@ -62,6 +62,10 @@ const actionEventStaticLabels: Record<string, { fr: string; en: string }> = {
     fr: "Participation confirmée et résultats disponibles",
     en: "Participation confirmed and results available",
   },
+  administrative_requirements: {
+    fr: "Démarches administratives à finaliser",
+    en: "Administrative steps to complete",
+  },
   post_action_claim: { fr: "Réclamation de participation", en: "Participation claim" },
   post_action_claim_decision: { fr: "Résultat de votre réclamation", en: "Claim review result" },
 };

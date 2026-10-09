@@ -38,7 +38,7 @@ function buildModerationNotificationHref(payload: Record<string, unknown>): stri
     return `/actions/map?actionId=${encodeURIComponent(id)}`;
   }
 
-  if (entityType === "spot") {
+  if (entityType === "spot" || entityType === "signalement") {
     return `/sections/trash-spotter?spotId=${encodeURIComponent(id)}`;
   }
 

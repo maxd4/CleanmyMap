@@ -5,6 +5,7 @@ const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
+const emitAdministrativeRequirementNotificationsMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
@@ -16,6 +17,10 @@ vi.mock("@/lib/actions/participation/organizers", () => ({
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
+}));
+vi.mock("@/lib/actions/administrative-requirement-notifications", () => ({
+  emitAdministrativeRequirementNotifications:
+    emitAdministrativeRequirementNotificationsMock,
 }));
 vi.mock("@/lib/http/auth-responses", () => ({
   unauthorizedJsonResponse: vi.fn(() => new Response("Unauthorized", { status: 401 })),
@@ -32,7 +37,10 @@ function createUpdateClient(result: { data: unknown; error: unknown }) {
     select: vi.fn(() => chain),
     maybeSingle: vi.fn(async () => result),
   };
-  return { from: vi.fn(() => chain) };
+  return {
+    from: vi.fn(() => chain),
+    rpc: vi.fn().mockResolvedValue({ data: 0, error: null }),
+  };
 }
 
 describe("POST /api/actions/:actionId/publish", () => {
@@ -48,6 +56,7 @@ describe("POST /api/actions/:actionId/publish", () => {
       action_phase: "pre_action",
       published_at: null,
     });
+    emitAdministrativeRequirementNotificationsMock.mockResolvedValue(true);
   });
 
   it("publishes a private pre-action without changing moderation status", async () => {
@@ -60,6 +69,10 @@ describe("POST /api/actions/:actionId/publish", () => {
     expect(response.status).toBe(200);
     expect(body.status).toBe("published");
     expect(body.alreadyPublished).toBe(false);
+    expect(emitAdministrativeRequirementNotificationsMock).toHaveBeenCalledWith({
+      supabase: expect.anything(),
+      actionId: "action-1",
+    });
     expect(getSupabaseServerClientMock().from).not.toHaveBeenCalledWith("action_participants");
   });
 
@@ -83,6 +96,7 @@ describe("POST /api/actions/:actionId/publish", () => {
     const body = await response.json();
     expect(response.status).toBe(200);
     expect(body.alreadyPublished).toBe(true);
+    expect(emitAdministrativeRequirementNotificationsMock).not.toHaveBeenCalled();
   });
 
   it.each(["rejected", "cancelled"] as const)(

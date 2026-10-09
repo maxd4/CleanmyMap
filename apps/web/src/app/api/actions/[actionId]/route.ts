@@ -44,6 +44,7 @@ import {
   buildActionChangeEventKey,
   detectActionChangeKinds,
 } from "@/lib/actions/action-change-notifications";
+import { emitAdministrativeRequirementNotificationsIfNeeded } from "@/lib/actions/administrative-requirement-notifications";
 import { emitActionUpdateNotifications } from "@/lib/actions/action-update-notifications";
 import {
   captureActionUpdateParticipantImpactSnapshot,
@@ -236,6 +237,13 @@ async function executePreparedActionUpdate({
     supabase,
     actionId,
     actorUserId: userId,
+    current,
+    updateData: scalarUpdateData,
+    actionWriteSucceeded: state.actionWriteSucceeded,
+  });
+  await emitAdministrativeRequirementNotificationsIfNeeded({
+    supabase,
+    actionId,
     current,
     updateData: scalarUpdateData,
     actionWriteSucceeded: state.actionWriteSucceeded,

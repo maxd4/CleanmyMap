@@ -67,4 +67,25 @@ export function registerSignalementTransitionScenarios({
     expect(trackSpotValidationBonusMock).not.toHaveBeenCalled();
     expect(notifySignalementValidationMock).not.toHaveBeenCalled();
   });
+
+  it("does not invent a signalement rejection transition outside its workflow", async () => {
+    getSupabaseAdminClientMock.mockReturnValue({});
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/moderation", {
+        method: "POST",
+        body: JSON.stringify({
+          entityType: "clean_place",
+          id: "spot-1",
+          status: "rejected",
+          confirmPhrase: "CONFIRMER MODERATION",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(moderateSignalementMock).not.toHaveBeenCalled();
+    expect(notifySignalementValidationMock).not.toHaveBeenCalled();
+  });
 }

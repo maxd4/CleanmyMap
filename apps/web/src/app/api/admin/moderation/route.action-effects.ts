@@ -262,6 +262,7 @@ async function runActionModerationPostUpdateEffects(params: {
       actorUserId,
       approvalTransition: isApprovalTransition,
       rejectionTransition: isRejectionTransition,
+      reason,
     });
   }
 

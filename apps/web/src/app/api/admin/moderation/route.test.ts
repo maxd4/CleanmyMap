@@ -23,6 +23,7 @@ const trackActionValidationBonusMock = vi.hoisted(() => vi.fn());
 const trackActionRejectionMock = vi.hoisted(() => vi.fn());
 const trackSpotValidationBonusMock = vi.hoisted(() => vi.fn());
 const notifyActionValidationMock = vi.hoisted(() => vi.fn());
+const notifyActionRejectionMock = vi.hoisted(() => vi.fn());
 const notifySignalementValidationMock = vi.hoisted(() => vi.fn());
 const recordRepollutionPredictionEvaluationForActionMock = vi.hoisted(() => vi.fn());
 
@@ -57,6 +58,7 @@ vi.mock("@/lib/gamification/progression", () => ({
 
 vi.mock("@/lib/admin/moderation/moderation-notifications", () => ({
   notifyActionValidation: notifyActionValidationMock,
+  notifyActionRejection: notifyActionRejectionMock,
   notifySignalementValidation: notifySignalementValidationMock,
 }));
 
@@ -98,6 +100,7 @@ describe("POST /api/admin/moderation", () => {
     trackActionRejectionMock.mockResolvedValue(undefined);
     trackSpotValidationBonusMock.mockResolvedValue(undefined);
     notifyActionValidationMock.mockResolvedValue(undefined);
+    notifyActionRejectionMock.mockResolvedValue(undefined);
     notifySignalementValidationMock.mockResolvedValue(undefined);
     recordRepollutionPredictionEvaluationForActionMock.mockResolvedValue(undefined);
     invalidatePublicSurfaceSnapshotsByRouteMock.mockResolvedValue(undefined);
@@ -162,6 +165,7 @@ describe("POST /api/admin/moderation", () => {
       trackActionRejectionMock,
       trackSpotValidationBonusMock,
       notifyActionValidationMock,
+      notifyActionRejectionMock,
       notifySignalementValidationMock,
     },
   };
