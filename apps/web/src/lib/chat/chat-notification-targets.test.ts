@@ -93,4 +93,12 @@ describe("chat notification targets", () => {
       commentId: "comment-1",
     })).toBe("/sections/messagerie?channel=action&messageId=comment-1&actionId=11111111-1111-4111-8111-111111111111");
   });
+
+  it("rejects legacy external notification links", () => {
+    expect(buildChatNotificationHref({ href: "https://evil.example" })).toBeNull();
+    expect(buildChatNotificationHref({ href: "//evil.example" })).toBeNull();
+    expect(buildChatNotificationHref({ href: "/sections/messagerie?tab=dm" })).toBe(
+      "/sections/messagerie?tab=dm",
+    );
+  });
 });

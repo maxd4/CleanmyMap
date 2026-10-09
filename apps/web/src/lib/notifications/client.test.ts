@@ -115,6 +115,21 @@ describe("notification client", () => {
     expect(page.nextCursor).toBeNull();
   });
 
+  it("loads the unread count independently from the first page", async () => {
+    const isMock = vi.fn().mockResolvedValue({ data: null, count: 21, error: null });
+    const eqMock = vi.fn(() => ({ is: isMock }));
+    const selectMock = vi.fn(() => ({ eq: eqMock }));
+    getSupabaseBrowserClientMock.mockReturnValue({
+      from: vi.fn(() => ({ select: selectMock })),
+    });
+    getTokenMock.mockResolvedValue("clerk-supabase-token");
+
+    const { loadUnreadNotificationCountForCurrentUser } = await import("./client");
+    await expect(loadUnreadNotificationCountForCurrentUser("user_123", getTokenMock)).resolves.toBe(21);
+    expect(selectMock).toHaveBeenCalledWith("id", { count: "exact", head: true });
+    expect(isMock).toHaveBeenCalledWith("read_at", null);
+  });
+
   it("does not create an anon client when the Clerk token is unavailable", async () => {
     getTokenMock.mockResolvedValue(null);
 

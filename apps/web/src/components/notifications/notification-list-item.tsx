@@ -4,7 +4,8 @@ import { AlertTriangle, Check, MessageSquare, ShieldCheck, UserCheck } from "luc
 import { format, formatDistanceToNow } from "date-fns";
 import { enUS, fr } from "date-fns/locale";
 
-import type { AppNotification } from "@/lib/notifications/client";
+import type { AppNotification, NotificationDecision } from "@/lib/notifications/client";
+import type { NotificationDisplayState } from "@/lib/notifications/notification-state";
 
 function getNotificationIcon(type: AppNotification["type"]) {
   switch (type) {
@@ -28,6 +29,21 @@ type NotificationListItemProps = {
   locale: "fr" | "en";
   onClick: (notification: AppNotification) => void;
   compact?: boolean;
+  displayState?: NotificationDisplayState;
+  decision?: {
+    state: "decision_pending" | "treated" | "unavailable";
+    busy?: boolean;
+    error?: string | null;
+    onDecision: (decision: NotificationDecision) => void;
+  };
+};
+
+const stateLabels: Record<NotificationDisplayState, { fr: string; en: string }> = {
+  unread: { fr: "Non lue", en: "Unread" },
+  read: { fr: "Lue", en: "Read" },
+  decision_pending: { fr: "À traiter", en: "Pending decision" },
+  treated: { fr: "Traitée", en: "Treated" },
+  unavailable: { fr: "Indisponible", en: "Unavailable" },
 };
 
 export function NotificationListItem({
@@ -35,8 +51,10 @@ export function NotificationListItem({
   locale,
   onClick,
   compact = false,
+  displayState = notification.read_at ? "read" : "unread",
+  decision,
 }: NotificationListItemProps) {
-  const isUnread = !notification.read_at;
+  const isUnread = displayState === "unread" || displayState === "decision_pending";
   const createdAt = new Date(notification.created_at);
   const relativeDate = formatDistanceToNow(createdAt, {
     addSuffix: true,
@@ -45,20 +63,15 @@ export function NotificationListItem({
   const absoluteDate = format(
     createdAt,
     locale === "fr" ? "dd/MM/yyyy HH:mm" : "MM/dd/yyyy HH:mm",
-    {
-      locale: locale === "fr" ? fr : enUS,
-    },
+    { locale: locale === "fr" ? fr : enUS },
   );
+  const stateLabel = stateLabels[displayState][locale];
 
   return (
-    <button
-      key={notification.id}
-      type="button"
-      onClick={() => onClick(notification)}
-      className={`relative flex w-full border-b px-3.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${
-        compact
-          ? "border-white/10 hover:bg-white/[0.07] focus-visible:ring-sky-300/70"
-          : "border-amber-200/14 hover:bg-amber-100/[0.08] focus-visible:ring-amber-200/80"
+    <article
+      data-notification-state={displayState}
+      className={`relative flex w-full border-b px-3.5 py-3 transition-colors ${
+        compact ? "border-white/10" : "border-amber-200/14"
       } ${
         compact
           ? isUnread
@@ -88,46 +101,108 @@ export function NotificationListItem({
           {getNotificationIcon(notification.type)}
         </div>
       </div>
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex items-start justify-between gap-3">
-          <span
-            className={`min-w-0 flex-1 ${compact ? "line-clamp-1" : "break-words"} font-bold tracking-tight cmm-text-caption ${
-              isUnread
-                ? compact
-                  ? "text-white"
-                  : "text-amber-50"
-                : compact
-                  ? "text-white/60"
-                  : "text-amber-100/62"
-            }`}
-          >
-            {notification.title}
-          </span>
-          <time
-            dateTime={notification.created_at}
-            className={`shrink-0 cmm-text-caption ${
-              compact ? "text-white/50" : "text-amber-100/58"
-            }`}
-          >
-            {compact ? relativeDate : `${absoluteDate} · ${relativeDate}`}
-          </time>
-        </div>
-        <p
-          className={`${compact ? "line-clamp-2" : "whitespace-pre-wrap break-words"} leading-relaxed cmm-text-caption ${
-            isUnread
-              ? compact
-                ? "text-white/72"
-                : "text-amber-50/82"
-              : compact
-                ? "text-white/54"
-                : "text-amber-100/62"
-          }`}
-        >
-          {notification.content}
-        </p>
-        <NotificationActionHint notification={notification} compact={compact} locale={locale} />
+      <div className="min-w-0 flex-1">
+        <NotificationOpenButton
+          notification={notification}
+          locale={locale}
+          compact={compact}
+          isUnread={isUnread}
+          stateLabel={stateLabel}
+          relativeDate={relativeDate}
+          absoluteDate={absoluteDate}
+          displayState={displayState}
+          onClick={onClick}
+        />
+        <NotificationDecisionActions decision={decision} locale={locale} />
       </div>
+    </article>
+  );
+}
+
+function NotificationOpenButton({
+  notification,
+  locale,
+  compact,
+  isUnread,
+  stateLabel,
+  relativeDate,
+  absoluteDate,
+  displayState,
+  onClick,
+}: {
+  notification: AppNotification;
+  locale: "fr" | "en";
+  compact: boolean;
+  isUnread: boolean;
+  stateLabel: string;
+  relativeDate: string;
+  absoluteDate: string;
+  displayState: NotificationDisplayState;
+  onClick: (notification: AppNotification) => void;
+}) {
+  const titleClass = isUnread
+    ? compact ? "text-white" : "text-amber-50"
+    : compact ? "text-white/60" : "text-amber-100/62";
+  const contentClass = isUnread
+    ? compact ? "text-white/72" : "text-amber-50/82"
+    : compact ? "text-white/54" : "text-amber-100/62";
+  const stateClass = displayState === "decision_pending"
+    ? "border-amber-300/50 text-amber-200"
+    : displayState === "unavailable"
+      ? "border-slate-300/30 text-slate-300/80"
+      : displayState === "treated"
+        ? "border-emerald-300/40 text-emerald-200"
+        : compact ? "border-white/15 text-white/65" : "border-amber-200/25 text-amber-100/75";
+
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(notification)}
+      aria-label={`${locale === "fr" ? "Ouvrir la notification" : "Open notification"} : ${notification.title}`}
+      className={`block w-full rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${compact ? "hover:bg-white/[0.07] focus-visible:ring-sky-300/70" : "hover:bg-amber-100/[0.08] focus-visible:ring-amber-200/80"}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className={`min-w-0 flex-1 ${compact ? "line-clamp-1" : "break-words"} font-bold tracking-tight cmm-text-caption ${titleClass}`}>
+          {notification.title}
+        </span>
+        <time dateTime={notification.created_at} className={`shrink-0 cmm-text-caption ${compact ? "text-white/50" : "text-amber-100/58"}`}>
+          {compact ? relativeDate : `${absoluteDate} · ${relativeDate}`}
+        </time>
+      </div>
+      <p className={`${compact ? "line-clamp-2" : "whitespace-pre-wrap break-words"} leading-relaxed cmm-text-caption ${contentClass}`}>
+        {notification.content}
+      </p>
+      <span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 cmm-text-caption font-bold ${stateClass}`}>
+        {stateLabel}
+      </span>
+      <NotificationActionHint notification={notification} compact={compact} locale={locale} />
     </button>
+  );
+}
+
+function NotificationDecisionActions({
+  decision,
+  locale,
+}: {
+  decision: NotificationListItemProps["decision"];
+  locale: "fr" | "en";
+}) {
+  if (!decision) return null;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      {decision.state === "decision_pending" ? (
+        <>
+          <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("accept")} aria-label={locale === "fr" ? "Accepter la demande" : "Accept request"} className="rounded-lg border border-emerald-300/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:cursor-wait disabled:opacity-60">
+            ✓ {locale === "fr" ? "Accepter" : "Accept"}
+          </button>
+          <button type="button" disabled={decision.busy} onClick={() => decision.onDecision("reject")} aria-label={locale === "fr" ? "Refuser la demande" : "Reject request"} className="rounded-lg border border-rose-300/40 bg-rose-400/15 px-2.5 py-1.5 text-xs font-bold text-rose-100 transition-colors hover:bg-rose-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 disabled:cursor-wait disabled:opacity-60">
+            × {locale === "fr" ? "Refuser" : "Reject"}
+          </button>
+        </>
+      ) : null}
+      {decision.busy ? <span className="text-xs font-semibold opacity-75" role="status">{locale === "fr" ? "Traitement…" : "Processing…"}</span> : null}
+      {decision.error ? <span className="text-xs font-semibold text-rose-200" role="alert">{decision.error}</span> : null}
+    </div>
   );
 }
 

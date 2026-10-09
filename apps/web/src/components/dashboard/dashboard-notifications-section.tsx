@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
@@ -13,8 +14,15 @@ import {
   type AppNotification,
   type NotificationPageCursor,
 } from "@/lib/notifications/client";
+import {
+  getNotificationDecisionDescriptor,
+  resolveNotificationDisplayState,
+  type NotificationDisplayState,
+} from "@/lib/notifications/notification-state";
 import { useNotificationRequestIdentity } from "@/lib/notifications/use-notification-request-identity";
+import { useNotificationDecisionState } from "@/lib/notifications/use-notification-decision-state";
 import { buildNotificationHref } from "@/lib/notifications/notification-targets";
+import type { NotificationIdentity } from "@/lib/notifications/identity";
 
 type NotificationAuthState = Pick<
   ReturnType<typeof useAuth>,
@@ -24,6 +32,49 @@ type NotificationAuthState = Pick<
 function navigateToNotification(router: { push: (href: string) => void }, notification: AppNotification) {
   const href = buildNotificationHref(notification.payload, notification.id);
   if (href) router.push(href);
+}
+
+async function markDashboardNotificationAsRead(params: {
+  notification: AppNotification;
+  userId: string;
+  getToken: NotificationAuthState["getToken"];
+  router: { push: (href: string) => void };
+  markReadInFlightRef: MutableRefObject<ReturnType<ReturnType<typeof useNotificationRequestIdentity>["getRequest"]> | null>;
+  getRequest: ReturnType<typeof useNotificationRequestIdentity>["getRequest"];
+  isCurrentRequest: ReturnType<typeof useNotificationRequestIdentity>["isCurrentRequest"];
+  setAllNotifications: Dispatch<SetStateAction<AppNotification[]>>;
+}): Promise<void> {
+  const { notification, userId, getToken, router, markReadInFlightRef, getRequest, isCurrentRequest, setAllNotifications } = params;
+  const request = getRequest();
+  if (markReadInFlightRef.current && isCurrentRequest(markReadInFlightRef.current)) return;
+  markReadInFlightRef.current = request;
+  try {
+    await markNotificationAsReadForCurrentUser(userId, notification.id, getToken);
+    if (!isCurrentRequest(request)) return;
+    setAllNotifications((previous) => previous.map((item) => item.id === notification.id ? { ...item, read_at: new Date().toISOString() } : item));
+  } catch (err) {
+    if (isCurrentRequest(request)) logFailure("Dashboard notifications", "Mark as read failed", err, { id: notification.id });
+  } finally {
+    if (isCurrentRequest(request) && markReadInFlightRef.current === request) markReadInFlightRef.current = null;
+  }
+  navigateToNotification(router, notification);
+}
+
+function canLoadMoreDashboardNotifications(params: {
+  userId: string | null | undefined;
+  cursor: NotificationPageCursor | null;
+  hasMore: boolean;
+  loadingMore: boolean;
+  inFlight: NotificationIdentity | null;
+  isCurrentRequest: ReturnType<typeof useNotificationRequestIdentity>["isCurrentRequest"];
+}): boolean {
+  return Boolean(
+    params.userId &&
+      params.cursor &&
+      params.hasMore &&
+      !params.loadingMore &&
+      !(params.inFlight && params.isCurrentRequest(params.inFlight)),
+  );
 }
 
 export function DashboardNotificationsSection() {
@@ -36,8 +87,10 @@ export function DashboardNotificationsSection() {
 function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }) {
   const { getToken, isLoaded, isSignedIn, userId } = auth;
   const { locale } = useSitePreferences();
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [loading, setLoading] = useState(false); const router = useRouter();
+  const router = useRouter();
+  const [allNotifications, setAllNotifications] = useState<AppNotification[]>([]);
+  const [view, setView] = useState<"pending" | "information">("pending");
+  const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
   const [nextCursor, setNextCursor] = useState<NotificationPageCursor | null>(null);
@@ -46,242 +99,210 @@ function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }
   const fetchInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
   const loadMoreInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
   const markReadInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
+  const decisionState = useNotificationDecisionState({ getRequest, isCurrentRequest, scope: "Dashboard notifications" });
+  const refreshDecisionState = decisionState.refreshDecisionState;
 
   const fetchNotifications = useCallback(async () => {
     const request = getRequest();
-    if (!request.userId) {
-      return;
-    }
-    if (
-      fetchInFlightRef.current &&
-      isCurrentRequest(fetchInFlightRef.current)
-    ) {
-      return;
-    }
+    if (!request.userId) return;
+    if (fetchInFlightRef.current && isCurrentRequest(fetchInFlightRef.current)) return;
 
     fetchInFlightRef.current = request;
     setLoading(true);
     setError(false);
     try {
-      const page = await loadNotificationsPageForCurrentUser(request.userId, getToken);
-      if (!isCurrentRequest(request)) {
-        return;
-      }
-      setNotifications(page.notifications);
+      const [page] = await Promise.all([
+        loadNotificationsPageForCurrentUser(request.userId, getToken),
+        refreshDecisionState(request),
+      ]);
+      if (!isCurrentRequest(request)) return;
+      setAllNotifications(page.notifications);
       setNextCursor(page.nextCursor);
       setHasMore(page.nextCursor !== null);
     } catch (err) {
-      if (!isCurrentRequest(request)) {
-        return;
-      }
+      if (!isCurrentRequest(request)) return;
       setError(true);
       logFailure("Dashboard notifications", "Fetch failed", err);
     } finally {
       if (isCurrentRequest(request)) {
         setLoading(false);
-        if (fetchInFlightRef.current === request) {
-          fetchInFlightRef.current = null;
-        }
+        if (fetchInFlightRef.current === request) fetchInFlightRef.current = null;
       }
     }
-  }, [getRequest, getToken, isCurrentRequest]);
+  }, [getRequest, getToken, isCurrentRequest, refreshDecisionState]);
 
   const loadMoreNotifications = async () => {
     const request = getRequest();
-    if (
-      !request.userId ||
-      !nextCursor ||
-      !hasMore ||
-      loadingMore ||
-      (loadMoreInFlightRef.current &&
-        isCurrentRequest(loadMoreInFlightRef.current))
-    ) {
-      return;
-    }
+    const currentUserId = request.userId;
+    if (!canLoadMoreDashboardNotifications({
+      userId: currentUserId,
+      cursor: nextCursor,
+      hasMore,
+      loadingMore,
+      inFlight: loadMoreInFlightRef.current,
+      isCurrentRequest,
+    })) return;
 
     const cursor = nextCursor;
+    if (!currentUserId) return;
     loadMoreInFlightRef.current = request;
     setLoadingMore(true);
     setError(false);
     try {
-      const page = await loadNotificationsPageForCurrentUser(request.userId, getToken, cursor);
-      if (!isCurrentRequest(request)) {
-        return;
-      }
-      setNotifications((previous) => appendUniqueNotifications(previous, page.notifications));
+      const page = await loadNotificationsPageForCurrentUser(currentUserId, getToken, cursor);
+      if (!isCurrentRequest(request)) return;
+      setAllNotifications((previous) => appendUniqueNotifications(previous, page.notifications));
       setNextCursor(page.nextCursor);
       setHasMore(page.nextCursor !== null);
+      await refreshDecisionState(request);
     } catch (err) {
-      if (!isCurrentRequest(request)) {
-        return;
-      }
+      if (!isCurrentRequest(request)) return;
       setError(true);
       logFailure("Dashboard notifications", "Load more failed", err);
     } finally {
       if (isCurrentRequest(request)) {
         setLoadingMore(false);
-        if (loadMoreInFlightRef.current === request) {
-          loadMoreInFlightRef.current = null;
-        }
+        if (loadMoreInFlightRef.current === request) loadMoreInFlightRef.current = null;
       }
     }
   };
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !userId) {
-      return;
-    }
+    if (!isLoaded || !isSignedIn || !userId) return;
     void Promise.resolve().then(() => fetchNotifications());
   }, [fetchNotifications, isLoaded, isSignedIn, userId]);
 
-  const visibleNotifications = useMemo(() => (isLoaded && isSignedIn ? notifications : []), [
-    isLoaded,
-    isSignedIn,
-    notifications,
-  ]);
+  const stateFor = useCallback((notification: AppNotification): NotificationDisplayState => {
+    return resolveNotificationDisplayState({
+      notification,
+      pendingRequestIds: decisionState.pendingRequestIds,
+      treatedNotificationIds: decisionState.treatedNotificationIds,
+    });
+  }, [decisionState.pendingRequestIds, decisionState.treatedNotificationIds]);
 
-  const markAsRead = async (notification: AppNotification) => {
-    const request = getRequest();
-    if (
-      !request.userId ||
-      (markReadInFlightRef.current &&
-        isCurrentRequest(markReadInFlightRef.current))
-    ) {
-      return;
-    }
+  const pendingNotifications = useMemo(
+    () => allNotifications.filter((notification) => stateFor(notification) === "decision_pending"),
+    [allNotifications, stateFor],
+  );
+  const informationNotifications = useMemo(
+    () => allNotifications.filter((notification) => stateFor(notification) !== "decision_pending"),
+    [allNotifications, stateFor],
+  );
+  const visibleNotifications = view === "pending" ? pendingNotifications : informationNotifications;
+  const pendingCount = decisionState.pendingRequestIds.size;
 
-    markReadInFlightRef.current = request;
-    try {
-      await markNotificationAsReadForCurrentUser(request.userId, notification.id, getToken);
-      if (!isCurrentRequest(request)) {
-        return;
-      }
-      setNotifications((previous) =>
-        previous.map((item) =>
-          item.id === notification.id
-            ? { ...item, read_at: new Date().toISOString() }
-            : item,
-        ),
-      );
-    } catch (err) {
-      if (!isCurrentRequest(request)) {
-        return;
-      }
-      logFailure("Dashboard notifications", "Mark as read failed", err, {
-        id: notification.id,
-      });
-    } finally {
-      if (
-        isCurrentRequest(request) &&
-        markReadInFlightRef.current === request
-      ) {
-        markReadInFlightRef.current = null;
-      }
-    }
-    navigateToNotification(router, notification);
+  const markAsRead = (notification: AppNotification) => {
+    if (!userId) return;
+    void markDashboardNotificationAsRead({
+      notification, userId, getToken, router, markReadInFlightRef, getRequest,
+      isCurrentRequest, setAllNotifications,
+    });
   };
 
+  return <DashboardNotificationsView isLoaded={isLoaded} locale={locale === "fr" ? "fr" : "en"} view={view} setView={setView} loading={loading} error={error} loadingMore={loadingMore} visibleNotifications={visibleNotifications} pendingCount={pendingCount} hasMore={hasMore} decisionState={decisionState} stateFor={stateFor} onOpen={markAsRead} onLoadMore={loadMoreNotifications} />;
+}
+
+function DashboardNotificationsView({
+  isLoaded,
+  locale,
+  view,
+  setView,
+  loading,
+  error,
+  loadingMore,
+  visibleNotifications,
+  pendingCount,
+  hasMore,
+  decisionState,
+  stateFor,
+  onOpen,
+  onLoadMore,
+}: {
+  isLoaded: boolean;
+  locale: "fr" | "en";
+  view: "pending" | "information";
+  setView: (view: "pending" | "information") => void;
+  loading: boolean;
+  error: boolean;
+  loadingMore: boolean;
+  visibleNotifications: AppNotification[];
+  pendingCount: number;
+  hasMore: boolean;
+  decisionState: ReturnType<typeof useNotificationDecisionState>;
+  stateFor: (notification: AppNotification) => NotificationDisplayState;
+  onOpen: (notification: AppNotification) => void;
+  onLoadMore: () => Promise<void>;
+}) {
   return (
-    <section
-      id="notifications"
-      aria-labelledby="dashboard-notifications-title"
-      className="scroll-mt-28 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.22)_100%)] p-6 shadow-[0_18px_42px_-28px_rgba(124,45,18,0.3)] sm:p-8"
-    >
+    <section id="notifications" aria-labelledby="dashboard-notifications-title" className="scroll-mt-28 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.22)_100%)] p-6 shadow-[0_18px_42px_-28px_rgba(124,45,18,0.3)] sm:p-8">
       <div className="flex items-center justify-between gap-4 border-b border-amber-200/18 pb-4">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100/72">
-            {locale === "fr" ? "Centre de suivi" : "Activity center"}
-          </p>
-          <h2
-            id="dashboard-notifications-title"
-            className="mt-1 text-2xl font-black tracking-tight text-white"
-          >
-            Notifications
-          </h2>
+          <p className="cmm-text-caption font-bold uppercase tracking-[0.3em] text-amber-100/80">{locale === "fr" ? "Centre de suivi" : "Activity center"}</p>
+          <h2 id="dashboard-notifications-title" className="mt-1 text-2xl font-black tracking-tight text-white">Notifications</h2>
         </div>
-        {loading ? (
-          <div
-            className="h-5 w-5 animate-spin rounded-full border-2 border-amber-300 border-t-transparent"
-            role="status"
-            aria-label={locale === "fr" ? "Chargement" : "Loading"}
-          />
-        ) : null}
+        {loading ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-amber-300 border-t-transparent" role="status" aria-label={locale === "fr" ? "Chargement" : "Loading"} /> : null}
       </div>
-
-      {!isLoaded || (loading && visibleNotifications.length === 0) ? (
-        <div className="space-y-3 pt-5" role="status">
-          <div className="h-14 animate-pulse rounded-2xl bg-amber-950/35" />
-          <div className="h-14 animate-pulse rounded-2xl bg-amber-950/35" />
-          <span className="sr-only">{locale === "fr" ? "Chargement des notifications" : "Loading notifications"}</span>
-        </div>
-      ) : error && visibleNotifications.length === 0 ? (
-        <p className="pt-5 text-sm leading-relaxed text-amber-50/78">
-          {locale === "fr"
-            ? "Les notifications sont momentanément indisponibles."
-            : "Notifications are temporarily unavailable."}
-        </p>
-      ) : visibleNotifications.length === 0 ? (
-        <div className="space-y-2 pt-6 text-center">
-          <CheckMark />
-          <p className="text-sm font-semibold text-amber-50">
-            {locale === "fr" ? "Aucune notification" : "No notifications"}
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="pt-2">
-            {visibleNotifications.map((notification) => (
-              <NotificationListItem
-                key={notification.id}
-                notification={notification}
-                locale={locale === "fr" ? "fr" : "en"}
-                onClick={(item) => void markAsRead(item)}
-              />
-            ))}
-          </div>
-          {error ? (
-            <p className="pt-4 text-sm leading-relaxed text-amber-100/78" role="alert">
-              {locale === "fr"
-                ? "Le chargement des notifications a échoué."
-                : "Loading notifications failed."}
-            </p>
-          ) : null}
-          {hasMore ? (
-            <button
-              type="button"
-              onClick={() => void loadMoreNotifications()}
-              disabled={loadingMore}
-              aria-busy={loadingMore}
-              className="mt-5 w-full rounded-2xl border border-amber-200/24 bg-amber-100/[0.08] px-4 py-3 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80 disabled:cursor-wait disabled:opacity-70"
-            >
-              {loadingMore ? "Chargement…" : "Afficher plus"}
-            </button>
-          ) : (
-            <p className="pt-5 text-center text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/54">
-              Fin de l&apos;historique des notifications
-            </p>
-          )}
-        </>
-      )}
+      <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label={locale === "fr" ? "Vues des notifications" : "Notification views"}>
+        <button type="button" role="tab" aria-selected={view === "pending"} onClick={() => setView("pending")} className="rounded-xl border border-amber-200/25 px-3 py-2 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80">À traiter{pendingCount > 0 ? ` (${pendingCount})` : ""}</button>
+        <button type="button" role="tab" aria-selected={view === "information"} onClick={() => setView("information")} className="rounded-xl border border-amber-200/25 px-3 py-2 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80">Informations</button>
+      </div>
+      {decisionState.decisionStateError ? <p className="pt-3 text-sm text-amber-100/75" role="status">Les décisions disponibles n&apos;ont pas pu être actualisées.</p> : null}
+      {!isLoaded || (loading && visibleNotifications.length === 0) ? <DashboardNotificationsLoading locale={locale} /> : error && visibleNotifications.length === 0 ? <p className="pt-5 text-sm leading-relaxed text-amber-50/85">{locale === "fr" ? "Les notifications sont momentanément indisponibles." : "Notifications are temporarily unavailable."}</p> : visibleNotifications.length === 0 ? <div className="space-y-2 pt-6 text-center"><CheckMark /><p className="text-sm font-semibold text-amber-50">{view === "pending" ? "Aucune décision à traiter" : "Aucune notification"}</p></div> : <>
+        <DashboardNotificationList visibleNotifications={visibleNotifications} locale={locale} stateFor={stateFor} decisionState={decisionState} onOpen={onOpen} />
+        {error ? <p className="pt-4 text-sm leading-relaxed text-amber-100/85" role="alert">Le chargement des notifications a échoué.</p> : null}
+        {hasMore ? <button type="button" onClick={() => void onLoadMore()} disabled={loadingMore} aria-busy={loadingMore} className="mt-5 w-full rounded-2xl border border-amber-200/24 bg-amber-100/[0.08] px-4 py-3 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80 disabled:cursor-wait disabled:opacity-70">{loadingMore ? "Chargement…" : "Afficher plus"}</button> : <p className="pt-5 text-center text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/54">Fin de l&apos;historique des notifications</p>}
+      </>}
     </section>
   );
 }
 
-function CheckMark() {
-  return (
-    <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-200/18 bg-amber-100/[0.08] text-amber-100/75">
-      ✓
-    </div>
-  );
+function DashboardNotificationsLoading({ locale }: { locale: "fr" | "en" }) {
+  return <div className="space-y-3 pt-5" role="status"><div className="h-14 animate-pulse rounded-2xl bg-amber-950/35" /><div className="h-14 animate-pulse rounded-2xl bg-amber-950/35" /><span className="sr-only">{locale === "fr" ? "Chargement des notifications" : "Loading notifications"}</span></div>;
 }
 
-export function appendUniqueNotifications(
-  current: AppNotification[],
-  incoming: AppNotification[],
-) {
+function CheckMark() {
+  return <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-200/18 bg-amber-100/[0.08] text-amber-100/75">✓</div>;
+}
+
+export function appendUniqueNotifications(current: AppNotification[], incoming: AppNotification[]) {
   const knownIds = new Set(current.map((notification) => notification.id));
-  return [
-    ...current,
-    ...incoming.filter((notification) => !knownIds.has(notification.id)),
-  ];
+  return [...current, ...incoming.filter((notification) => !knownIds.has(notification.id))];
+}
+
+function DashboardNotificationList({
+  visibleNotifications,
+  locale,
+  stateFor,
+  decisionState,
+  onOpen,
+}: {
+  visibleNotifications: AppNotification[];
+  locale: "fr" | "en";
+  stateFor: (notification: AppNotification) => NotificationDisplayState;
+  decisionState: ReturnType<typeof useNotificationDecisionState>;
+  onOpen: (notification: AppNotification) => void;
+}) {
+  return (
+    <div className="pt-2">
+      {visibleNotifications.map((notification) => {
+        const displayState = stateFor(notification);
+        const notificationDecision = getNotificationDecisionDescriptor(notification.payload);
+        return (
+          <NotificationListItem
+            key={notification.id}
+            notification={notification}
+            locale={locale}
+            displayState={displayState}
+            decision={notificationDecision ? {
+              state: displayState === "decision_pending" || displayState === "treated" || displayState === "unavailable" ? displayState : "unavailable",
+              busy: decisionState.busyDecisionIds.has(notification.id),
+              error: decisionState.decisionErrors[notification.id],
+              onDecision: (choice) => void decisionState.handleDecision(notification, choice),
+            } : undefined}
+            onClick={onOpen}
+          />
+        );
+      })}
+    </div>
+  );
 }

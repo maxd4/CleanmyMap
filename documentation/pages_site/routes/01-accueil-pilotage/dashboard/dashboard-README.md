@@ -45,11 +45,24 @@
 - Elle lit exclusivement `public.app_notifications` via le client existant,
   avec une page initiale de 20 notifications puis des pages supplémentaires
   de 20 éléments.
+- Le centre propose deux vues : **À traiter** pour les décisions encore
+  ouvertes selon l’état métier canonique, et **Informations** pour les autres
+  notifications. Une notification lue peut donc rester « À traiter » tant
+  que sa demande métier n’a pas été décidée.
+- Les seuls boutons de décision actuellement exposés sont ceux des demandes
+  de partage d’action, après relecture de `/api/chat/contact-requests` ; cette
+  relecture protège les décisions concurrentes et ne transforme pas une
+  notification en boîte métier distincte.
 - La pagination suit un curseur stable sur `created_at DESC` puis `id DESC`;
   l’historique complet n’est jamais chargé en une seule requête et aucun
   polling supplémentaire n’est activé dans le Dashboard.
+- La cloche utilise un décompte serveur exact des lignes `read_at IS NULL`,
+  indépendant de sa prévisualisation limitée à quatre notifications. Le
+  compteur « À traiter » reste séparé et provient des demandes décisionnelles
+  encore pendantes.
 - Chaque notification affiche son type et son pictogramme, son état lu/non
-  lu, son titre et son contenu complets, sa date et son heure ainsi qu’une
+  lu, sa décision éventuelle (en attente, traitée ou indisponible), son titre
+  et son contenu complets, sa date et son heure ainsi qu’une
   date relative. Le champ `payload` brut n’est pas affiché.
 - Le bouton `Afficher plus` charge la page suivante jusqu’à l’épuisement de
   l’historique. L’état vide, le chargement, l’erreur et la fin de liste sont

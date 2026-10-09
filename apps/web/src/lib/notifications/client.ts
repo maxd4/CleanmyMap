@@ -31,6 +31,15 @@ export type NotificationsPage = {
   nextCursor: NotificationPageCursor | null;
 };
 
+export type NotificationDecision = "accept" | "reject";
+
+export type NotificationDecisionResponse = {
+  status: "accepted" | "rejected" | "ignored" | "unavailable";
+  messageId: string | null;
+  actionId: string | null;
+  senderId: string | null;
+};
+
 async function getNotificationsClient(
   getToken: () => Promise<string | null>,
 ): Promise<SupabaseClient> {
@@ -48,6 +57,99 @@ export async function loadNotificationsForCurrentUser(
 ): Promise<AppNotification[]> {
   const page = await loadNotificationsPageForCurrentUser(userId, getToken);
   return page.notifications;
+}
+
+export async function loadUnreadNotificationCountForCurrentUser(
+  userId: string,
+  getToken: () => Promise<string | null>,
+): Promise<number> {
+  const supabase = await getNotificationsClient(getToken);
+  const { count, error } = await supabase
+    .from("app_notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .is("read_at", null);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+function parseContactRequestIds(payload: unknown): string[] {
+  if (!payload || typeof payload !== "object") return [];
+  const requests = (payload as { requests?: unknown }).requests;
+  if (!Array.isArray(requests)) return [];
+
+  return requests.flatMap((request) => {
+    if (!request || typeof request !== "object") return [];
+    const id = (request as { id?: unknown }).id;
+    return typeof id === "string" && id.trim().length > 0 ? [id.trim()] : [];
+  });
+}
+
+async function readContactRequestsResponse(response: Response): Promise<unknown> {
+  let payload: unknown = null;
+  try {
+    payload = await response.json();
+  } catch {
+    // Keep the generic error below for non-JSON responses.
+  }
+
+  if (!response.ok) {
+    const message =
+      payload && typeof payload === "object" && typeof (payload as { error?: unknown }).error === "string"
+        ? (payload as { error: string }).error
+        : "La décision de notification n'a pas pu être traitée.";
+    const error = new Error(message);
+    Object.assign(error, { status: response.status });
+    throw error;
+  }
+
+  return payload;
+}
+
+export async function loadPendingNotificationDecisionIds(): Promise<string[]> {
+  const response = await fetch("/api/chat/contact-requests", {
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+  return parseContactRequestIds(await readContactRequestsResponse(response));
+}
+
+export async function respondToNotificationDecision(
+  requestId: string,
+  decision: NotificationDecision,
+): Promise<NotificationDecisionResponse> {
+  const response = await fetch("/api/chat/contact-requests", {
+    method: "PATCH",
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ requestId, decision }),
+  });
+  const payload = await readContactRequestsResponse(response);
+  if (!payload || typeof payload !== "object") {
+    throw new Error("La décision de notification n'a pas renvoyé d'état valide.");
+  }
+
+  const raw = payload as Record<string, unknown>;
+  const status = raw.status;
+  if (status !== "accepted" && status !== "rejected" && status !== "ignored" && status !== "unavailable") {
+    throw new Error("La décision de notification n'a pas renvoyé d'état valide.");
+  }
+
+  return {
+    status,
+    messageId: typeof raw.messageId === "string" ? raw.messageId : null,
+    actionId: typeof raw.actionId === "string" ? raw.actionId : null,
+    senderId: typeof raw.senderId === "string" ? raw.senderId : null,
+  };
 }
 
 export async function loadNotificationsPageForCurrentUser(

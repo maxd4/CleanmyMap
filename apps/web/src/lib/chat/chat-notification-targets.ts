@@ -8,6 +8,8 @@ import type { ActionPhase } from "@/lib/actions/types";
 
 export type ChatNotificationPayload = {
   href?: string;
+  requestId?: string;
+  requestKind?: "action_share";
   channelType?: ChatChannelType;
   messageId?: string;
   commentId?: string;
@@ -74,6 +76,26 @@ function readMessageKind(value: unknown): ChatMessageKind | undefined {
   return isChatMessageKind(messageKind) ? messageKind : undefined;
 }
 
+function readRequestKind(value: unknown): "action_share" | undefined {
+  return readString(value) === "action_share" ? "action_share" : undefined;
+}
+
+function isAllowedChatHref(value: string): boolean {
+  if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(value, "https://cleanmymap.invalid");
+    return (
+      parsed.origin === "https://cleanmymap.invalid" &&
+      (parsed.pathname === "/sections/messagerie" || parsed.pathname === "/sections/feedback")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function normalizeChatNotificationPayload(
   payload: unknown,
 ): ChatNotificationPayload | null {
@@ -90,7 +112,12 @@ export function normalizeChatNotificationPayload(
     : null;
 
   return {
-    href: readString(raw["href"]) ?? undefined,
+    href: (() => {
+      const href = readString(raw["href"]);
+      return href && isAllowedChatHref(href) ? href : undefined;
+    })(),
+    requestId: readString(raw["requestId"]) ?? undefined,
+    requestKind: readRequestKind(raw["requestKind"]),
     channelType,
     messageId: readString(raw["messageId"]) ?? readString(raw["commentId"]) ?? undefined,
     commentId: readString(raw["commentId"]) ?? undefined,

@@ -44,4 +44,24 @@ describe("notification list item", () => {
     expect(markup).toContain("Validation terminée");
     expect(markup).toContain("/");
   });
+
+  it("does not nest decision buttons inside the notification open button", () => {
+    const markup = renderToStaticMarkup(
+      <NotificationListItem
+        notification={{
+          ...notification,
+          type: "chat",
+          payload: { requestKind: "action_share", requestId: "request-1" },
+        }}
+        locale="fr"
+        displayState="decision_pending"
+        decision={{ state: "decision_pending", onDecision: vi.fn() }}
+        onClick={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("Accepter");
+    expect(markup).toContain("Refuser");
+    expect(markup.indexOf("</button><div")).toBeGreaterThan(-1);
+  });
 });
