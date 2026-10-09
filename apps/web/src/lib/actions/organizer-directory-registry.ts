@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  getOrganizerDirectoryEntryByValue,
   getOrganizerDirectoryEntries,
   ORGANIZER_DIRECTORY,
 } from "./association-options";
@@ -93,6 +92,16 @@ function getStaticOrganizerById(id: string | null | undefined) {
   return ORGANIZER_DIRECTORY.find((entry) => entry.id === id.trim()) ?? null;
 }
 
+function getStaticOrganizerByNormalizedName(name: string) {
+  const normalizedName = normalizeOrganizerName(name);
+  if (!normalizedName) return null;
+  return ORGANIZER_DIRECTORY.find(
+    (entry) =>
+      normalizeOrganizerName(entry.name) === normalizedName ||
+      normalizeOrganizerName(entry.value) === normalizedName,
+  ) ?? null;
+}
+
 export async function searchOrganizerDirectory(params: {
   supabase: SupabaseClient;
   organizerType: OrganizerType;
@@ -135,10 +144,12 @@ export async function resolveActionOrganizer(params: {
   organizerId?: string | null;
   organizerName?: string | null;
   actorName?: string | null;
-  createdByClerkId: string;
 }): Promise<{ organizerId: string | null; organizerName: string; legacyAssociationName: string }> {
   const enteredName = (params.organizerName ?? "").trim();
   if (params.organizerType === "spontaneous") {
+    if (params.organizerId?.trim()) {
+      throw new Error("Validation: une action spontanée ne peut pas référencer une structure.");
+    }
     const name = enteredName || params.actorName?.trim() || "Action spontanée";
     return { organizerId: null, organizerName: name, legacyAssociationName: "Action spontanée" };
   }
@@ -152,7 +163,7 @@ export async function resolveActionOrganizer(params: {
   }
   if (selectedId) return resolveSelectedOrganizer(params.supabase, selectedId, params.organizerType);
   if (!enteredName) throw new Error("Renseignez un organisateur pour le type choisi.");
-  return resolveNamedOrganizer(params.supabase, params.organizerType, enteredName, params.createdByClerkId);
+  return resolveNamedOrganizer(params.supabase, params.organizerType, enteredName);
 }
 
 async function resolveSelectedOrganizer(
@@ -176,37 +187,72 @@ async function resolveNamedOrganizer(
   supabase: SupabaseClient,
   organizerType: Exclude<OrganizerType, "spontaneous">,
   enteredName: string,
-  createdByClerkId: string,
 ) {
-  const staticMatch = getOrganizerDirectoryEntryByValue(enteredName);
-  if (staticMatch) {
-    if (staticMatch.organizerType !== organizerType) {
-      throw new Error("L'organisateur saisi ne correspond pas au type choisi.");
-    }
-    return { organizerId: staticMatch.id, organizerName: staticMatch.name, legacyAssociationName: staticMatch.name };
-  }
+  const existing = await findExistingNamedOrganizer(supabase, organizerType, enteredName);
+  if (existing) return existing;
+
+  throw new Error("Validation: sélectionnez une structure existante dans la liste.");
+}
+
+async function findExistingNamedOrganizer(
+  supabase: SupabaseClient,
+  organizerType: Exclude<OrganizerType, "spontaneous">,
+  enteredName: string,
+) {
   const normalizedName = normalizeOrganizerName(enteredName);
   if (!normalizedName) {
     throw new Error("Validation: le nom de l'organisateur doit contenir des caractères lisibles.");
   }
 
+  const normalizedStaticMatch = getStaticOrganizerByNormalizedName(enteredName);
+  if (normalizedStaticMatch) {
+    if (normalizedStaticMatch.organizerType !== organizerType) {
+      throw new Error("L'organisateur saisi ne correspond pas au type choisi.");
+    }
+    return {
+      organizerId: normalizedStaticMatch.id,
+      organizerName: normalizedStaticMatch.name,
+      legacyAssociationName: normalizedStaticMatch.name,
+    };
+  }
+
   const existing = await loadNamedOrganizer(supabase, organizerType, normalizedName);
+  return existing;
+}
+
+export async function createActionOrganizer(params: {
+  supabase: SupabaseClient;
+  organizerType: Exclude<OrganizerType, "spontaneous">;
+  organizerName: string;
+  createdByClerkId: string;
+}): Promise<{ organizerId: string; organizerName: string; legacyAssociationName: string }> {
+  const enteredName = params.organizerName.trim();
+  const normalizedName = normalizeOrganizerName(enteredName);
+  if (!normalizedName) {
+    throw new Error("Validation: le nom de l'organisateur doit contenir des caractères lisibles.");
+  }
+
+  const existing = await findExistingNamedOrganizer(
+    params.supabase,
+    params.organizerType,
+    enteredName,
+  );
   if (existing) return existing;
 
-  const created = await supabase
+  const created = await params.supabase
     .from("organizer_directory_entries")
     .insert({
       id: crypto.randomUUID(),
       name: enteredName,
       normalized_name: normalizedName,
-      organizer_type: organizerType,
-      created_by_clerk_id: createdByClerkId,
+      organizer_type: params.organizerType,
+      created_by_clerk_id: params.createdByClerkId,
     })
     .select("id, name, normalized_name, organizer_type")
     .single();
   if (created.error) {
     if (created.error.code === "23505") {
-      const raced = await loadNamedOrganizer(supabase, organizerType, normalizedName);
+      const raced = await loadNamedOrganizer(params.supabase, params.organizerType, normalizedName);
       if (raced) return raced;
     }
     throw created.error;
@@ -218,7 +264,6 @@ async function resolveNamedOrganizer(
 export async function resolveCanonicalCreateActionPayload(params: {
   supabase: SupabaseClient;
   payload: CreateActionPayload;
-  createdByClerkId: string;
 }): Promise<CreateActionPayload> {
   if (!params.payload.organizerType) return params.payload;
   const resolved = await resolveActionOrganizer({
@@ -227,7 +272,6 @@ export async function resolveCanonicalCreateActionPayload(params: {
     organizerId: params.payload.organizerId,
     organizerName: params.payload.organizerName ?? params.payload.associationName,
     actorName: params.payload.actorName,
-    createdByClerkId: params.createdByClerkId,
   });
   return {
     ...params.payload,

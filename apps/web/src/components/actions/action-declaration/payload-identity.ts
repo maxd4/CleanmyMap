@@ -64,7 +64,8 @@ export function buildCreateActionPayloadIdentityFields(
     recordType: form.recordType,
     notes: appendEventRefToNotes(form.notes.trim() || undefined, linkedEventId),
     organizerAccounts: organizerAccounts?.length ? organizerAccounts : undefined,
-    placeType: form.placeType,
+    participantAccounts: normalizeParticipantAccounts(form.participantAccounts),
+    ...(form.placeType ? { placeType: form.placeType } : {}),
     submissionMode: declarationMode,
   };
 }

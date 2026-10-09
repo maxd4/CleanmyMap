@@ -7,7 +7,9 @@ const recordRepollutionPredictionEvaluationForActionMock = vi.hoisted(() => vi.f
 const loadManualRegistrationIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
+const resolveActionOrganizersMock = vi.hoisted(() => vi.fn());
 const syncActionManualParticipantsMock = vi.hoisted(() => vi.fn());
+const syncActionOrganizersMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const extractActionMetadataFromNotesMock = vi.hoisted(() => vi.fn());
 const appendActionModerationAuditMock = vi.hoisted(() => vi.fn());
@@ -52,7 +54,12 @@ vi.mock("@/lib/actions/participation/registration-records", () => ({
 vi.mock("@/lib/actions/participation/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
   loadCanonicalActionOrganizerIdsForAction: loadCanonicalActionOrganizerIdsForActionMock,
+  resolveActionOrganizers: resolveActionOrganizersMock,
   syncActionManualParticipants: syncActionManualParticipantsMock,
+}));
+
+vi.mock("@/lib/actions/participation/organizer-sync", () => ({
+  syncActionOrganizers: syncActionOrganizersMock,
 }));
 
 vi.mock("@/lib/actions/metadata", () => ({
@@ -128,6 +135,7 @@ export {
   requireAuthenticatedAccessMock,
   resolveActionDepartmentForPersistenceMock,
   syncActionManualParticipantsMock,
+  syncActionOrganizersMock,
   recordGpxGeometryContributionIfPresentMock,
   hasGpxGeometryContributionMock,
   reconcileGeometryContributionProgressionIfNeededMock,
@@ -191,8 +199,16 @@ export function resetPatchRouteMocks() {
   loadManualRegistrationIdsForActionMock.mockResolvedValue(["user-manual-1"]);
   loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
   loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
+  resolveActionOrganizersMock.mockResolvedValue({
+    organizers: [],
+    unresolvedTokens: [],
+  });
   syncActionManualParticipantsMock.mockResolvedValue({
     participants: [],
+    unresolvedTokens: [],
+  });
+  syncActionOrganizersMock.mockResolvedValue({
+    organizers: [],
     unresolvedTokens: [],
   });
   appendActionModerationAuditMock.mockResolvedValue(undefined);

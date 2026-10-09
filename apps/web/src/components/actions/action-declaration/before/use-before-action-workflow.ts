@@ -1,5 +1,10 @@
 import { type FormEvent, type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
-import { createInitialFormState, applyPreparationDataToForm } from "../payload";
+import {
+  createInitialFormState,
+  applyPreparationDataToForm,
+  normalizeParticipantAccounts,
+  parseOrganizerAccounts,
+} from "../payload";
 import { saveDraft, loadDraftSnapshot } from "../draft-storage";
 import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
@@ -86,12 +91,56 @@ function applyFetchedBeforeAction({
     if (action.status !== "rejected" && action.status !== "cancelled") throw new Error("Cette pré-action ne peut pas être reprise dans ce parcours.");
     setCreatedId(action.id); setPublishedAction(action); setPublishedAt(null); setTerminalActionStatus(action.status); setSubmissionState("success"); setIsHydratingAction(false); return;
   }
-  const hydrated = sanitizePreActionForm(applyPreparationDataToForm(createInitialFormState(resolvedDefaultActorName, initialRecordType), action.preparationData));
-  const nextForm = { ...hydrated, actorName: action.actorName ?? hydrated.actorName, associationName: action.associationName ?? hydrated.associationName, organizerType: action.organizerType ?? hydrated.organizerType, organizerId: action.organizerId ?? hydrated.organizerId, organizerName: action.organizerName ?? action.associationName ?? hydrated.organizerName, actionDate: action.actionDate, locationLabel: action.locationLabel, departureLocationLabel: action.departureLocationLabel ?? hydrated.departureLocationLabel, arrivalLocationLabel: action.arrivalLocationLabel ?? hydrated.arrivalLocationLabel, eventStartTime: action.eventStartTime ?? hydrated.eventStartTime, eventEndTime: action.eventEndTime ?? hydrated.eventEndTime, volunteersCount: String(action.volunteersCount), durationMinutes: String(action.durationMinutes), groupJoinEnabled: action.groupJoinEnabled, participantAccounts: action.participantAccounts };
+  const nextForm = buildBeforeActionFormFromAction({
+    action,
+    resolvedDefaultActorName,
+    initialRecordType,
+  });
   const handoff = consumePlannerActionHandoff();
   const matchingHandoff = handoff?.actionId === action.id ? handoff : null;
   const hydratedForm = mergePlannerHandoffIntoForm(nextForm, matchingHandoff);
   setForm(hydratedForm); onFormChange?.(hydratedForm); setCreatedId(action.id); setPublishedAction(action); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState(matchingHandoff ? "idle" : "success"); setIsHydratingAction(false);
+}
+
+export function buildBeforeActionFormFromAction({
+  action,
+  resolvedDefaultActorName,
+  initialRecordType,
+}: {
+  action: Awaited<ReturnType<typeof fetchActionById>>;
+  resolvedDefaultActorName: string;
+  initialRecordType: "action";
+}): FormState {
+  const hydrated = sanitizePreActionForm(
+    applyPreparationDataToForm(
+      createInitialFormState(resolvedDefaultActorName, initialRecordType),
+      action.preparationData,
+    ),
+  );
+  return {
+    ...hydrated,
+    actorName: action.actorName ?? hydrated.actorName,
+    associationName: action.associationName ?? hydrated.associationName,
+    organizerType: action.organizerType ?? hydrated.organizerType,
+    organizerId: action.organizerId ?? hydrated.organizerId,
+    organizerName:
+      action.organizerName ?? action.associationName ?? hydrated.organizerName,
+    organizerAccounts: parseOrganizerAccounts(
+      action.organizerAccounts?.join(", ") ?? hydrated.organizerAccounts,
+    ).join(", "),
+    actionDate: action.actionDate,
+    locationLabel: action.locationLabel,
+    departureLocationLabel:
+      action.departureLocationLabel ?? hydrated.departureLocationLabel,
+    arrivalLocationLabel:
+      action.arrivalLocationLabel ?? hydrated.arrivalLocationLabel,
+    eventStartTime: action.eventStartTime ?? hydrated.eventStartTime,
+    eventEndTime: action.eventEndTime ?? hydrated.eventEndTime,
+    volunteersCount: String(action.volunteersCount),
+    durationMinutes: String(action.durationMinutes),
+    groupJoinEnabled: action.groupJoinEnabled,
+    participantAccounts: normalizeParticipantAccounts(action.participantAccounts),
+  };
 }
 
 export function buildBeforeActionInitialForm(actorNameOptions: string[], defaultActorName: string, initialRecordType: "action"): FormState {

@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
+  createActionOrganizer,
   getStaticOrganizerSuggestions,
   normalizeOrganizerName,
+  resolveCanonicalCreateActionPayload,
   resolveActionOrganizer,
 } from "./organizer-directory-registry";
 
@@ -24,11 +26,55 @@ describe("organizer directory registry", () => {
       supabase,
       organizerType: "association",
       organizerName: "•••",
-      createdByClerkId: "clerk-1",
     })).rejects.toThrow(/validation/i);
   });
 
-  it("creates a normal user-entered organizer", async () => {
+  it("rejects an unknown organizer without inserting it during action resolution", async () => {
+    const insert = vi.fn();
+    const supabase = {
+      from() {
+        return {
+          select() { return this; },
+          eq() { return this; },
+          maybeSingle: async () => ({ data: null, error: null }),
+          insert,
+        };
+      },
+    } as never;
+
+    await expect(resolveActionOrganizer({
+      supabase,
+      organizerType: "association",
+      organizerName: "Collectif Inconnu",
+    })).rejects.toThrow(/structure existante/i);
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown organizer before the canonical action insert", async () => {
+    const insert = vi.fn();
+    const supabase = {
+      from() {
+        return {
+          select() { return this; },
+          eq() { return this; },
+          maybeSingle: async () => ({ data: null, error: null }),
+          insert,
+        };
+      },
+    } as never;
+
+    await expect(resolveCanonicalCreateActionPayload({
+      supabase,
+      payload: {
+        organizerType: "association",
+        organizerId: null,
+        organizerName: "Structure forgée",
+      } as never,
+    })).rejects.toThrow(/structure existante/i);
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("creates a normal user-entered organizer only through the explicit command", async () => {
     const inserted: Record<string, unknown>[] = [];
     const created = {
       id: "created-association",
@@ -54,7 +100,7 @@ describe("organizer directory registry", () => {
       },
     } as never;
 
-    await expect(resolveActionOrganizer({
+    await expect(createActionOrganizer({
       supabase,
       organizerType: "association",
       organizerName: "Collectif Rivière",
@@ -93,7 +139,6 @@ describe("organizer directory registry", () => {
       supabase,
       organizerType: "association",
       organizerName: " Ecole des Ponts ",
-      createdByClerkId: "clerk-1",
     })).resolves.toMatchObject({ organizerId: "persisted-association", organizerName: "École des Ponts" });
     expect(calls).toEqual(["organizer_directory_entries"]);
   });
@@ -127,7 +172,7 @@ describe("organizer directory registry", () => {
       },
     } as never;
 
-    await expect(resolveActionOrganizer({
+    await expect(createActionOrganizer({
       supabase,
       organizerType: "association",
       organizerName: "Collectif Rivière",
@@ -148,7 +193,6 @@ describe("organizer directory registry", () => {
       organizerType: "spontaneous",
       organizerName: "Alice",
       actorName: "Alice",
-      createdByClerkId: "clerk-1",
     })).resolves.toEqual({
       organizerId: null,
       organizerName: "Alice",

@@ -181,6 +181,7 @@ function SupportingParticipation({
           currentUserId={userId}
           value={form.participantAccounts}
           onChange={(next) => updateField("participantAccounts", next)}
+          endpoint="/api/actions/account-options"
           description={
             full
               ? "Ajoutez les participants connus avant l'envoi du formulaire complet."

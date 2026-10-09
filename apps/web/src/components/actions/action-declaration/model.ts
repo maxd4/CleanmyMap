@@ -6,7 +6,6 @@ import type {
  ActionRouteTopology,
  ActionWasteMeasurementMethod,
 } from"@/lib/actions/types";
-import { PLACE_TYPE_OPTIONS } from"@/lib/actions/place-type-options";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { OperationalRoute } from "@/lib/route/route-operational";
@@ -37,13 +36,13 @@ export type FormState = {
  routeTopology: ActionRouteTopology;
  routeStyle:"direct" |"souple";
  routeAdjustmentMessage: string;
- plannedObjective: "repérage" |"nettoyage" |"collecte_mégots" |"action_mixte" |"sensibilisation" |"autre";
- estimatedDifficulty: "facile" |"moderee" |"soutenue";
+ plannedObjective: "" | "repérage" |"nettoyage" |"collecte_mégots" |"action_mixte" |"sensibilisation" |"autre";
+ estimatedDifficulty: "" | "facile" |"moderee" |"soutenue";
  accessibility: string;
  safetyInstructions: string;
  recommendedMaterials: string;
  participantMessage: string;
- creatorRole: "organisateur" |"benevole" |"association" |"etudiant" |"autre";
+ creatorRole: "" | "organisateur" |"benevole" |"association" |"etudiant" |"autre";
  preparationState:"brouillon" |"pret_a_partager" |"action_en_cours" |"a_completer_apres_action";
  logisticsNotes: string;
  checklistBeforeDeparture: string;
@@ -126,13 +125,13 @@ export const initialState: FormState = {
  routeTopology:"loop",
  routeStyle:"souple",
  routeAdjustmentMessage:"",
- plannedObjective:"nettoyage",
- estimatedDifficulty:"moderee",
+ plannedObjective:"",
+ estimatedDifficulty:"",
  accessibility:"",
  safetyInstructions:"",
  recommendedMaterials:"",
  participantMessage:"",
- creatorRole:"organisateur",
+ creatorRole:"",
  preparationState:"brouillon",
  logisticsNotes:"",
  checklistBeforeDeparture:"",
@@ -157,7 +156,7 @@ export const initialState: FormState = {
  wasteMetalKg:"",
  wasteMixteKg:"",
  triQuality:"moyenne",
- placeType: PLACE_TYPE_OPTIONS[0],
+ placeType: "",
  operationalRoute: null,
  gpxImport: null,
  routeCalibrationContext: null,

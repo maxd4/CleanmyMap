@@ -1,6 +1,7 @@
 "use client";
 
 import type { FormState } from "../model";
+import type { ActiveRole } from "@/lib/domain-language";
 import { ActionCollectionSection } from "./action-step-identity.collection";
 import { ActionOrganizerSection } from "./action-step-identity.organizer";
 import { ActionParticipantSection } from "./action-step-identity.participants";
@@ -13,6 +14,7 @@ interface Props {
   updateFields: (updates: Partial<FormState>) => void;
   userMetadata: {
     userId: string;
+    activeRole?: ActiveRole;
     handle?: string;
     displayName?: string;
     username?: string;

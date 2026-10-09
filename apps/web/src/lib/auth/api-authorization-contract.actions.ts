@@ -75,6 +75,22 @@ export const actionsAuthorizationContract = {
       evidence: ["requireAuthenticatedAccess", "searchOrganizerDirectory"],
       evidenceScope: "module",
     },
+    POST: {
+      expected: "ACTIVE_ROLE=admin|max may create or reuse a canonical organizer directory entry",
+      dimensions: ["authentication", "admin/creator role"],
+      actual: "requireAdminAccess + strict name/type validation + resolveActionOrganizer; the service client remains server-only",
+      evidence: ["requireAdminAccess", "parseJsonBodyWithValidation", "resolveActionOrganizer"],
+      evidenceScope: "module",
+    },
+  },
+  "actions/account-options": {
+    GET: {
+      expected: "Authenticated minimal Clerk account options for action participant and organizer selectors",
+      dimensions: ["authentication"],
+      actual: "requireAuthenticatedAccess + current-account exclusion + minimal public projection",
+      evidence: ["requireAuthenticatedAccess", "loadEligibleAccounts"],
+      evidenceScope: "module",
+    },
   },
   actions: {
     GET: {

@@ -3,7 +3,7 @@
   "tool": "knip",
   "toolVersion": "6.37.0",
   "config": "scripts/knip.json",
-  "sourceCommit": "51bb0f55b12b6770866ec5fa8f75c8db693f13db",
+  "sourceCommit": "e2d53b9c32febb10deae36ab942033d35a761b1c",
   "source": "provided Knip audit snapshot",
   "findings": [
     {

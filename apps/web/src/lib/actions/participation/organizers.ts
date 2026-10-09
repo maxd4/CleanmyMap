@@ -49,7 +49,7 @@ export type ActionOrganizerResolution = {
   unresolvedTokens: string[];
 };
 
-type ActionAccountResolutionParams = { supabase: SupabaseClient; creator: { userId: string; displayName: string; handle?: string | null; username?: string | null; email?: string | null } };
+export type ActionAccountResolutionParams = { supabase: SupabaseClient; creator: { userId: string; displayName: string; handle?: string | null; username?: string | null; email?: string | null } };
 
 function normalizeToken(value: string): string {
   return value.trim().replace(/^@+/, "");
@@ -63,7 +63,7 @@ function normalizeComparable(value: string | null | undefined): string {
     .toLowerCase();
 }
 
-function uniqueTokens(tokens: string[]): string[] {
+export function uniqueTokens(tokens: string[]): string[] {
   return [...new Set(tokens.map(normalizeToken).filter((token) => token.length > 0))];
 }
 
@@ -431,7 +431,7 @@ export async function syncActionManualParticipants(params: ActionAccountResoluti
   return resolution;
 }
 
-async function loadActionOrganizerRowsForAction(
+export async function loadActionOrganizerRowsForAction(
   supabase: SupabaseClient,
   actionId: string,
 ): Promise<

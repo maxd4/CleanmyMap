@@ -125,4 +125,34 @@ describe("GET /api/chat/users", () => {
     expect(body.users).toHaveLength(1);
     expect(patterns).toContainEqual({ column: "id", value: "profile-1" });
   }, 15000);
+
+  it("returns distinct CleanMyMap accounts when a search matches several identity fields", async () => {
+    const rows = [
+      { id: "profile-1", handle: "maxence", display_name: "Maxence", avatar_url: null },
+      { id: "profile-1", handle: "maxence_deroome", display_name: "Maxence", avatar_url: null },
+      { id: "profile-2", handle: "maxime", display_name: "Maxime", avatar_url: null },
+    ];
+    const makeQuery = () => {
+      const query: Record<string, unknown> = {
+        select: vi.fn(() => query),
+        neq: vi.fn(() => query),
+        order: vi.fn(() => query),
+        limit: vi.fn(() => query),
+        eq: vi.fn(() => Promise.resolve({ data: rows.slice(0, 1), error: null })),
+        ilike: vi.fn(() => Promise.resolve({ data: rows, error: null })),
+      };
+      return query;
+    };
+
+    getSupabaseClerkRlsClientMock.mockResolvedValue({
+      from: vi.fn(() => makeQuery()),
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/chat/users?q=max"));
+    const body = (await response.json()) as { users?: Array<{ id: string }> };
+
+    expect(response.status).toBe(200);
+    expect(body.users?.map((user) => user.id)).toEqual(["profile-1", "profile-2"]);
+  }, 15000);
 });

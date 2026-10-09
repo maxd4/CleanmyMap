@@ -41,6 +41,8 @@ import {
   type AdminOverrideErrorStage,
 } from "@/lib/actions/action-update-post-processing";
 import { resolveActionUpdateOrganizer } from "@/lib/actions/action-update-organizer";
+import { validatePatchOrganizerAccounts } from "./route.patch-organizers";
+import { createAdminAuditOnceAppender } from "./route.patch-audit";
 import {
   ensureGpxGeometryContributionEligible,
   hasGpxGeometryContribution,
@@ -144,6 +146,8 @@ async function preparePatchMutation({
   moderationReason: string | null;
 }> {
   const parsedBody = await resolveActionUpdateOrganizer({ supabase, body: parsed, current });
+  const organizerAccountsError = await validatePatchOrganizerAccounts({ supabase, userId, identity, organizerAccounts: parsedBody.organizerAccounts });
+  if (organizerAccountsError) return organizerAccountsError;
   const validatedImpactCorrection = current.status === "approved" && hasActionImpactUpdate(parsedBody);
   if (validatedImpactCorrection && !canEditValidatedImpact(identity)) {
     return NextResponse.json(
@@ -260,7 +264,7 @@ async function executePreparedActionUpdate({
     actionId,
     userId,
   });
-  await runActionUpdatePostProcessing({ supabase, actionId, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
+  await runActionUpdatePostProcessing({ supabase, actionId, currentOrganizerType: current.organizer_type, updateData: scalarUpdateData, body, userId, identity, shouldAuditModeration, auditSnapshots: state.auditSnapshots, adminAuditActorUserId, adminAuditTargetUserId, moderationOperation, moderationReason, appendAdminAuditOnce, setErrorStage: (stage) => { state.adminErrorStage = stage; } });
   return body;
 }
 
@@ -291,6 +295,9 @@ async function handlePatchError({
   contributionPersisted: boolean;
   actionId: string;
 }): Promise<Response> {
+  if (error instanceof ActionUpdateValidationError) {
+    return validationErrorResponse({ [error.field]: [error.message] });
+  }
   if (shouldAuditModeration && auditSnapshots) {
     await appendAdminAuditOnce({
       operationId: `action-edit-${actionId}-${Date.now()}`,
@@ -310,17 +317,6 @@ async function handlePatchError({
     });
   }
   return handleApiError(error, "PATCH /api/actions/:actionId");
-}
-
-function createAdminAuditOnceAppender(): (
-  params: Parameters<typeof appendActionModerationAudit>[0],
-) => Promise<void> {
-  let recorded = false;
-  return async (params) => {
-    if (recorded) return;
-    recorded = true;
-    await appendActionModerationAudit(params);
-  };
 }
 
 export async function GET(
@@ -375,6 +371,9 @@ export async function GET(
     ).catch(() => []);
     const action = {
       ...buildActionEditorPayload(row),
+      organizerAccounts: organizerIds.filter(
+        (organizerId) => organizerId !== row.created_by_clerk_id,
+      ),
       participantAccounts,
     };
     return NextResponse.json({ status: "ok", action });

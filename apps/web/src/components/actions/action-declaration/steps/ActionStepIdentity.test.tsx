@@ -63,6 +63,18 @@ describe("ActionStepIdentity", () => {
     expect(html).not.toContain("Lieu propre");
   });
 
+  it("does not visually select a collection place before an explicit choice", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    const blankHtml = renderIdentity(form);
+
+    expect(blankHtml).toContain('aria-pressed="false"');
+    expect(blankHtml).not.toContain('aria-pressed="true"');
+
+    form.placeType = "Bois/Parc/Jardin/Square/Sentier";
+    const selectedHtml = renderIdentity(form);
+    expect(selectedHtml).toContain('aria-pressed="true"');
+  });
+
   it("explains the unified action time and event window", () => {
     const form = createInitialFormState("Aperçu local", "action");
     const html = renderIdentity(form);

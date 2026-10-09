@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { appendActionModerationAuditMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — participants et organisateurs", () => {
   beforeEach(() => {
@@ -14,10 +14,11 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
     });
 
     const body = (await response.json()) as {
-      action?: { participantAccounts?: string[] };
+      action?: { organizerAccounts?: string[]; participantAccounts?: string[] };
     };
 
     expect(response.status).toBe(200);
+    expect(body.action?.organizerAccounts).toEqual([]);
     expect(body.action?.participantAccounts).toEqual(["user-manual-1"]);
     expect(loadManualRegistrationIdsForActionMock).toHaveBeenCalledWith(
       expect.anything(),
@@ -50,6 +51,28 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
       }),
     );
     expect(recordRepollutionPredictionEvaluationForActionMock).not.toHaveBeenCalled();
+  });
+
+  it("transmits associated organizers when an authorized action is resumed", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          organizerAccounts: ["user-associated-1", "user-associated-2"],
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(syncActionOrganizersMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionId: "action-test-1",
+        organizerAccounts: ["user-associated-1", "user-associated-2"],
+      }),
+    );
   });
 
   it("keeps an admin user's finalization of another action pending", async () => {

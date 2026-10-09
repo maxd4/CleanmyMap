@@ -82,6 +82,7 @@ export function ActionCollectionSection({
               key={option.label}
               type="button"
               title={option.sub}
+              aria-pressed={isSelected}
               onClick={() => updateField("placeType", option.value)}
               className={cn(
                 "relative flex flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center",

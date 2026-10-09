@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "bcdbe4811b32e777e9e7fd634ee74a53dec3150c",
+  "sourceCommit": "e2d53b9c32febb10deae36ab942033d35a761b1c",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -2106,7 +2106,7 @@
       "path": "apps/web/src/lib/actions/organizer-directory-registry.ts",
       "line": 112,
       "category": "métier/domain pur",
-      "ceiling": 11,
+      "ceiling": 13,
       "status": "LEGACY",
       "functionIdentity": "named:resolveActionOrganizer#1"
     },

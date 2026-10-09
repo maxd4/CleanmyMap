@@ -1,12 +1,3 @@
-export const PLACE_TYPE_OPTIONS = [
-  "N° Rue/Allée/Villa/Ruelle/Impasse",
-  "Bois/Parc/Jardin/Square/Sentier",
-  "Quai/Pont/Port",
-  "N° Boulevard/Avenue/Place",
-  "Gare/Station/Portique",
-  "Galerie/Passage couvert",
-  "Monument",
-] as const;
 export const PLACE_TYPE_FORM_OPTIONS = [
   { value: "N° Rue/Allée/Villa/Ruelle/Impasse", label: "N° Rue/Allée/Villa/Ruelle/Impasse" },
   { value: "Bois/Parc/Jardin/Square/Sentier", label: "Bois/Parc/Jardin/Square/Sentier" },

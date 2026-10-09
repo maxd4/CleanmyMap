@@ -59,6 +59,7 @@ export type ActionEditorRecord = {
   organizerType?: OrganizerType | null;
   organizerId?: string | null;
   organizerName?: string | null;
+  organizerAccounts?: string[];
   groupJoinEnabled: boolean;
   participantAccounts: string[];
   placeType: string | null;

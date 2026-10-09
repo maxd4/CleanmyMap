@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { getOrganizerComboboxKeyAction } from "./organizer-combobox";
+import { canAddOrganizerForActiveRole, getOrganizerComboboxKeyAction } from "./organizer-combobox";
 
 describe("OrganizerCombobox keyboard contract", () => {
+  it("shows the add capability only for the active admin and max roles", () => {
+    expect(canAddOrganizerForActiveRole("admin")).toBe(true);
+    expect(canAddOrganizerForActiveRole("max")).toBe(true);
+    expect(canAddOrganizerForActiveRole("elu")).toBe(false);
+    expect(canAddOrganizerForActiveRole("benevole")).toBe(false);
+    expect(canAddOrganizerForActiveRole(undefined)).toBe(false);
+  });
+
   it("cycles through suggestions with ArrowDown and ArrowUp", () => {
     expect(getOrganizerComboboxKeyAction("ArrowDown", -1, 3, false)).toEqual({ type: "move", index: 0 });
     expect(getOrganizerComboboxKeyAction("ArrowDown", 2, 3, true)).toEqual({ type: "move", index: 0 });

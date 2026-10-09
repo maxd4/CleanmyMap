@@ -1,8 +1,10 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ComponentProps } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ActionBeforeDeclarationForm } from "./form";
+import { IdentityAndSharingSection } from "./identity-and-sharing-section";
+import { createInitialFormState } from "../payload";
 
 describe("ActionBeforeDeclarationForm", () => {
   it("renders the lightweight pre-action form", () => {
@@ -47,6 +49,10 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Checklist avant départ");
     expect(html).toContain("Localisation du rendez-vous");
     expect(html).toContain("État de préparation");
+    expect(html).toContain("Sélectionnez un type d&#x27;action");
+    expect(html).toContain("Sélectionnez un type de zone");
+    expect(html).toContain("Sélectionnez un niveau");
+    expect(html).toContain("Sélectionnez un rôle");
     expect(html).toContain("Date et horaires");
     expect(html).toContain("Début du créneau global");
     expect(html).toContain("Fin du créneau global");
@@ -63,5 +69,39 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("Photos de preuve");
     expect(html).not.toContain("Score d'impact");
     expect(html).not.toContain("Confirmer et publier");
+  });
+
+  it("keeps the authenticated creator read-only and separates co-organizers from participants", () => {
+    const form = createInitialFormState("legacy-alias", "action");
+    form.organizerType = "association";
+    form.organizerAccounts = "user-organizer, user-organizer";
+    form.participantAccounts = ["user-participant", "user-participant"];
+
+    const html = renderToStaticMarkup(
+      React.createElement(IdentityAndSharingSection, {
+        form,
+        updateField: vi.fn(),
+        updateFields: vi.fn(),
+        userMetadata: {
+          userId: "user-creator",
+          displayName: "Maxence",
+          handle: "maxence_deroome",
+        },
+        showGroupJoinHelp: false,
+        onToggleGroupJoinHelp: vi.fn(),
+        hasAttemptedSubmit: false,
+        validationIssueFields: [],
+      } as ComponentProps<typeof IdentityAndSharingSection>),
+    );
+
+    expect(html).toContain('data-clerk-user-id="user-creator"');
+    expect(html).toContain('value="Maxence"');
+    expect(html).toContain("@maxence_deroome");
+    expect(html).toContain("Organisateurs associés");
+    expect(html).toContain("Participants associés");
+    expect(html).toContain("Rechercher");
+    expect(html).toContain('type="search"');
+    expect(html).not.toContain('value="legacy-alias"');
+    expect(html).not.toContain("actorNameOptions");
   });
 });

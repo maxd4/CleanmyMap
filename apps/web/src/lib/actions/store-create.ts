@@ -222,7 +222,6 @@ export async function createAction(
   params.payload = await resolveCanonicalCreateActionPayload({
     supabase,
     payload: params.payload,
-    createdByClerkId: params.userId,
   });
   const { recordType, routeTopology } = resolveCreateActionRouteTopology(params.payload);
   const preparationData = clearActionRouteArrivalForLoop(

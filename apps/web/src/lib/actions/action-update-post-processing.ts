@@ -4,6 +4,8 @@ import {
   loadCanonicalActionOrganizerIdsForAction,
   syncActionManualParticipants,
 } from "./participation/organizers";
+import { syncActionOrganizers } from "./participation/organizer-sync";
+import { ActionUpdateValidationError } from "./action-update-persistence";
 import type { appendActionModerationAudit } from "./moderation-audit";
 import type { UserIdentity } from "@/lib/authz";
 import type {
@@ -24,6 +26,7 @@ type AuditAppender = (
 export async function runActionUpdatePostProcessing(params: {
   supabase: SupabaseClient;
   actionId: string;
+  currentOrganizerType: string | null | undefined;
   updateData: Record<string, unknown>;
   body: ActionUpdateInput;
   userId: string;
@@ -40,6 +43,7 @@ export async function runActionUpdatePostProcessing(params: {
   const {
     supabase,
     actionId,
+    currentOrganizerType,
     updateData,
     body,
     userId,
@@ -59,46 +63,132 @@ export async function runActionUpdatePostProcessing(params: {
     await recordRepollutionPredictionEvaluationForAction(supabase, actionId);
   }
 
-  if (body.participantAccounts !== undefined) {
-    setErrorStage("participant_sync");
-    const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
-      supabase,
-      actionId,
+  await syncUpdatedOrganizers({ supabase, actionId, currentOrganizerType, body, userId, identity });
+  await syncUpdatedParticipants({ supabase, actionId, body, userId, identity, setErrorStage });
+  await appendPostProcessingAudit({
+    shouldAuditModeration,
+    auditSnapshots,
+    actionId,
+    adminAuditActorUserId,
+    adminAuditTargetUserId,
+    moderationOperation,
+    moderationReason,
+    appendAdminAuditOnce,
+    setErrorStage,
+  });
+}
+
+async function syncUpdatedOrganizers({
+  supabase,
+  actionId,
+  currentOrganizerType,
+  body,
+  userId,
+  identity,
+}: {
+  supabase: SupabaseClient;
+  actionId: string;
+  currentOrganizerType: string | null | undefined;
+  body: ActionUpdateInput;
+  userId: string;
+  identity: UserIdentity | null;
+}) {
+  if (
+    body.organizerAccounts === undefined
+    || body.organizerType === "spontaneous"
+    || currentOrganizerType === "spontaneous"
+  ) return;
+
+  const creator = resolvePostProcessingCreator(userId, identity);
+  const organizerResolution = await syncActionOrganizers({
+    supabase,
+    actionId,
+    creator,
+    organizerAccounts: body.organizerAccounts,
+  });
+  if (organizerResolution.unresolvedTokens.length > 0) {
+    throw new ActionUpdateValidationError(
+      "organizerAccounts",
+      `Comptes organisateurs introuvables: ${organizerResolution.unresolvedTokens.join(", ")}`,
     );
-    const resolvedIdentity = identity ?? {
-      displayName: userId,
-      handle: userId,
-      username: userId,
-      email: null,
-    };
-
-    await syncActionManualParticipants({
-      supabase,
-      actionId,
-      creator: {
-        userId,
-        displayName: resolvedIdentity.displayName?.trim() || userId,
-        handle: resolvedIdentity.handle?.trim() || null,
-        username: resolvedIdentity.username?.trim() || null,
-        email: resolvedIdentity.email?.trim() || null,
-      },
-      participantAccounts: body.participantAccounts ?? [],
-      organizerIds,
-    });
   }
+}
 
-  if (shouldAuditModeration && auditSnapshots) {
-    setErrorStage("post_update");
-    await appendAdminAuditOnce({
-      operationId: `action-edit-${actionId}-${Date.now()}`,
-      actorUserId: adminAuditActorUserId,
-      targetActionId: actionId,
-      operation: moderationOperation,
-      outcome: "success",
-      reason: moderationReason,
-      targetUserId: adminAuditTargetUserId,
-      previousValue: auditSnapshots.previousValue,
-      newValue: auditSnapshots.newValue,
-    });
-  }
+async function syncUpdatedParticipants({
+  supabase,
+  actionId,
+  body,
+  userId,
+  identity,
+  setErrorStage,
+}: {
+  supabase: SupabaseClient;
+  actionId: string;
+  body: ActionUpdateInput;
+  userId: string;
+  identity: UserIdentity | null;
+  setErrorStage: (stage: AdminOverrideErrorStage) => void;
+}) {
+  if (body.participantAccounts === undefined) return;
+  setErrorStage("participant_sync");
+  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, actionId);
+  await syncActionManualParticipants({
+    supabase,
+    actionId,
+    creator: resolvePostProcessingCreator(userId, identity),
+    participantAccounts: body.participantAccounts,
+    organizerIds,
+  });
+}
+
+function resolvePostProcessingCreator(userId: string, identity: UserIdentity | null) {
+  const resolvedIdentity = identity ?? {
+    displayName: userId,
+    handle: userId,
+    username: userId,
+    email: null,
+  };
+  return {
+    userId,
+    displayName: resolvedIdentity.displayName?.trim() || userId,
+    handle: resolvedIdentity.handle?.trim() || null,
+    username: resolvedIdentity.username?.trim() || null,
+    email: resolvedIdentity.email?.trim() || null,
+  };
+}
+
+async function appendPostProcessingAudit({
+  shouldAuditModeration,
+  auditSnapshots,
+  actionId,
+  adminAuditActorUserId,
+  adminAuditTargetUserId,
+  moderationOperation,
+  moderationReason,
+  appendAdminAuditOnce,
+  setErrorStage,
+}: {
+  shouldAuditModeration: boolean;
+  auditSnapshots: ActionAuditSnapshots | null;
+  actionId: string;
+  adminAuditActorUserId: string;
+  adminAuditTargetUserId: string | null;
+  moderationOperation: string;
+  moderationReason: string | null;
+  appendAdminAuditOnce: AuditAppender;
+  setErrorStage: (stage: AdminOverrideErrorStage) => void;
+}) {
+  if (!shouldAuditModeration || !auditSnapshots) return;
+  setErrorStage("post_update");
+  await appendAdminAuditOnce({
+    operationId: `action-edit-${actionId}-${Date.now()}`,
+    actorUserId: adminAuditActorUserId,
+    targetActionId: actionId,
+    operation: moderationOperation,
+    outcome: "success",
+    reason: moderationReason,
+    targetUserId: adminAuditTargetUserId,
+    previousValue: auditSnapshots.previousValue,
+    newValue: auditSnapshots.newValue,
+  });
 }

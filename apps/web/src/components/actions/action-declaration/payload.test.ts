@@ -31,6 +31,59 @@ function buildBaseForm() {
 }
 
 describe("action declaration payload helpers", () => {
+  it("omits unselected descriptive choices while preserving explicit choices", () => {
+    const blankForm = createInitialFormState("Alice");
+    const blankPreparation = buildPreparationDataFromForm(blankForm);
+    const blankPayload = buildCreateActionPayload({
+      form: blankForm,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(blankPreparation).not.toHaveProperty("plannedObjective");
+    expect(blankPreparation).not.toHaveProperty("estimatedDifficulty");
+    expect(blankPreparation).not.toHaveProperty("creatorRole");
+    expect(blankPreparation).not.toHaveProperty("placeType");
+    expect(blankPayload).not.toHaveProperty("placeType");
+    expect(blankPayload.preparationData).not.toHaveProperty("plannedObjective");
+    expect(blankPayload.preparationData).not.toHaveProperty("estimatedDifficulty");
+    expect(blankPayload.preparationData).not.toHaveProperty("creatorRole");
+    expect(blankPayload.preparationData).not.toHaveProperty("placeType");
+
+    const explicitForm = {
+      ...blankForm,
+      plannedObjective: "nettoyage" as const,
+      estimatedDifficulty: "soutenue" as const,
+      creatorRole: "benevole" as const,
+      placeType: "parc",
+    };
+    const explicitPreparation = buildPreparationDataFromForm(explicitForm);
+
+    expect(explicitPreparation).toMatchObject({
+      plannedObjective: "nettoyage",
+      estimatedDifficulty: "soutenue",
+      creatorRole: "benevole",
+      placeType: "parc",
+    });
+  });
+
+  it("keeps descriptive choices absent when hydrating a draft without them", () => {
+    const form = createInitialFormState("Alice");
+    const hydrated = applyPreparationDataToForm(form, {
+      preparationState: "brouillon",
+    });
+
+    expect(hydrated.plannedObjective).toBe("");
+    expect(hydrated.estimatedDifficulty).toBe("");
+    expect(hydrated.creatorRole).toBe("");
+    expect(hydrated.placeType).toBe("");
+    expect(hydrated.preparationState).toBe("brouillon");
+  });
+
   it("derives an editable route target from duration and ignores legacy unproven values", () => {
     expect(deriveRouteTargetDistanceKm(60)).toBe(1);
     expect(deriveRouteTargetDistanceKm(90)).toBe(1.5);

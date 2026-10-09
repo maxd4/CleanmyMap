@@ -1,6 +1,7 @@
 import { Building, Calendar } from "lucide-react";
 import { OrganizerCombobox } from "@/components/actions/organizer-combobox";
 import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
+import type { ActiveRole } from "@/lib/domain-language";
 import type { FormState } from "../model";
 import {
   compactInputCls,
@@ -20,6 +21,7 @@ type OrganizerSectionProps = {
   updateField: UpdateField;
   updateFields: (updates: Partial<FormState>) => void;
   userMetadata: {
+    activeRole?: ActiveRole;
     displayName?: string;
     handle?: string;
     username?: string;
@@ -41,6 +43,7 @@ type OrganizerRenderProps = {
   dateErrorId: string;
   onAssociationChange: (selection: { id: string | null; name: string }) => void;
   onOrganizerTypeChange: (nextType: FormState["organizerType"]) => void;
+  activeRole?: ActiveRole;
 };
 
 function OrganizerSelection({
@@ -49,6 +52,7 @@ function OrganizerSelection({
   missingAssociation,
   associationErrorId,
   onChange,
+  activeRole,
   className,
   errorClassName,
 }: {
@@ -57,6 +61,7 @@ function OrganizerSelection({
   missingAssociation: boolean;
   associationErrorId: string;
   onChange: (selection: { id: string | null; name: string }) => void;
+  activeRole?: ActiveRole;
   className: string;
   errorClassName?: string;
 }) {
@@ -70,6 +75,7 @@ function OrganizerSelection({
           form.organizerName ||
           (form.organizerType === "spontaneous" ? form.actorName : "")
         }
+        activeRole={activeRole}
         onChange={onChange}
         required={isActionMode}
         invalid={missingAssociation}
@@ -136,6 +142,7 @@ function CompactOrganizerSection({
   dateErrorId,
   onAssociationChange,
   onOrganizerTypeChange,
+  activeRole,
 }: OrganizerRenderProps) {
   return (
     <div className="grid gap-3 md:grid-cols-3">
@@ -201,6 +208,7 @@ function CompactOrganizerSection({
           missingAssociation={missingAssociation}
           associationErrorId={associationErrorId}
           onChange={onAssociationChange}
+          activeRole={activeRole}
           className="space-y-1.5"
         />
       ) : null}
@@ -220,6 +228,7 @@ function FullOrganizerSection({
   dateErrorId,
   onAssociationChange,
   onOrganizerTypeChange,
+  activeRole,
 }: OrganizerRenderProps) {
   return (
     <div>
@@ -260,6 +269,7 @@ function FullOrganizerSection({
             missingAssociation={missingAssociation}
             associationErrorId={associationErrorId}
             onChange={onAssociationChange}
+            activeRole={activeRole}
             className="space-y-1"
             errorClassName="pl-1"
           />
@@ -346,6 +356,7 @@ export function ActionOrganizerSection({
     dateErrorId,
     onAssociationChange: handleAssociationChange,
     onOrganizerTypeChange: handleOrganizerTypeChange,
+    activeRole: userMetadata.activeRole,
   } satisfies OrganizerRenderProps;
 
   return variant === "compact" ? (

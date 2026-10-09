@@ -42,7 +42,7 @@ export function buildBeforeActionPayload({
   linkedEventId?: string;
   userMetadata: ActionBeforeDeclarationFormProps["userMetadata"];
 }): CreateActionPayload {
-  return buildCreateActionPayload({
+  const payload = buildCreateActionPayload({
     form,
     declarationMode: "quick",
     isEntrepriseMode: false,
@@ -54,4 +54,12 @@ export function buildBeforeActionPayload({
     visionEstimate: null as ActionVisionEstimate | null,
     userMetadata,
   });
+  return {
+    ...payload,
+    actorName:
+      userMetadata.displayName?.trim() ||
+      userMetadata.handle?.trim() ||
+      userMetadata.username?.trim() ||
+      userMetadata.userId,
+  };
 }

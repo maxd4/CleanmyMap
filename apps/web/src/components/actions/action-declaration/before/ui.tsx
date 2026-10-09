@@ -47,12 +47,14 @@ export function SelectShell({
   value,
   onChange,
   options,
+  placeholder,
   hint,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: SelectOption[];
+  placeholder?: string;
   hint?: string;
 }) {
   return (
@@ -62,6 +64,11 @@ export function SelectShell({
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
       >
+        {placeholder ? (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        ) : null}
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

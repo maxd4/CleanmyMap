@@ -29,6 +29,16 @@ describe("pre-action resume contract", () => {
 });
 
 describe("sanitizePreActionForm", () => {
+  it("starts descriptive choices empty instead of selecting a métier by default", () => {
+    const form = createInitialFormState("Maxence", "action");
+
+    expect(form.plannedObjective).toBe("");
+    expect(form.estimatedDifficulty).toBe("");
+    expect(form.creatorRole).toBe("");
+    expect(form.placeType).toBe("");
+    expect(form.preparationState).toBe("brouillon");
+  });
+
   it("removes final harvest fields while keeping expected waste categories", () => {
     const form = createInitialFormState("Maxence", "action");
 
@@ -71,12 +81,14 @@ describe("sanitizePreActionForm", () => {
       ...form,
       associationName: "Entreprise - Veolia",
       participantAccounts: [" @alice ", "alice", "@bob"],
+      organizerAccounts: " user-organizer, @user-organizer, user-other ",
       volunteersCount: "",
     });
 
     expect(sanitized.associationName).toBe("Entreprise");
     expect(sanitized.organizerName).toBe("Entreprise - Veolia");
     expect(sanitized.participantAccounts).toEqual(["alice", "bob"]);
+    expect(sanitized.organizerAccounts).toBe("user-organizer, user-other");
     expect(sanitized.volunteersCount).toBe("1");
   });
 

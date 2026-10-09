@@ -4,7 +4,8 @@ import {
 } from "../model";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import type { ActionPreparationData, ActionStatus } from "@/lib/actions/types";
-import { normalizeParticipantAccounts } from "../payload";
+import type { ActiveRole } from "@/lib/domain-language";
+import { normalizeParticipantAccounts, parseOrganizerAccounts } from "../payload";
 import {
   normalizeAssociationSelectionForPrefill,
 } from "@/lib/actions/association-options";
@@ -20,6 +21,7 @@ export type ActionBeforeDeclarationFormProps = {
   isAuthenticated: boolean;
   userMetadata: {
     userId: string;
+    activeRole?: ActiveRole;
     handle?: string;
     username?: string;
     displayName?: string;
@@ -69,9 +71,9 @@ function preparationDataFrom(source: PublicationSummarySource): ActionPreparatio
     actionDate: source.actionDate,
     meetingTime: source.meetingTime,
     departureTime: source.departureTime,
-    plannedObjective: source.plannedObjective,
-    placeType: source.placeType,
-    estimatedDifficulty: source.estimatedDifficulty,
+    ...(source.plannedObjective ? { plannedObjective: source.plannedObjective } : {}),
+    ...(source.placeType ? { placeType: source.placeType } : {}),
+    ...(source.estimatedDifficulty ? { estimatedDifficulty: source.estimatedDifficulty } : {}),
     accessibility: source.accessibility,
     safetyInstructions: source.safetyInstructions,
     recommendedMaterials: source.recommendedMaterials,
@@ -254,6 +256,7 @@ export function sanitizePreActionForm(form: FormState): FormState {
   next.safetyInstructions = next.safetyInstructions.trim();
   next.recommendedMaterials = next.recommendedMaterials.trim();
   next.groupJoinEnabled = Boolean(next.groupJoinEnabled);
+  next.organizerAccounts = parseOrganizerAccounts(next.organizerAccounts).join(", ");
   next.participantAccounts = normalizeParticipantAccounts(next.participantAccounts);
   next.volunteersCount = next.volunteersCount.trim() || "1";
   next.childrenCount = next.childrenCount.trim();

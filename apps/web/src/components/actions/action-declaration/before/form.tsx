@@ -97,7 +97,7 @@ export function ActionBeforeDeclarationForm({
         <CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-3"><h2 className="text-3xl font-black tracking-tight text-emerald-950">Préparer une action future</h2><p className="cmm-text-body cmm-text-primary max-w-3xl">Renseignez les informations utiles avant le terrain. Les champs de récolte, de bilan final et de validation restent réservés au formulaire complet.</p></div></CmmCard>
         <form onSubmit={(event) => { void handleSubmit(event); }} className="space-y-6">
           <div className="space-y-6">
-            <IdentityAndSharingSection form={form} updateField={updateField} updateFields={updateFields} actorNameOptions={actorNameOptions} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
+            <IdentityAndSharingSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
             <PlannedActionSection form={form} updateField={updateField} hasAttemptedSubmit={validationIssueFields.length > 0} validationIssueFields={validationIssueFields} />
             <PreparationAndSafetySection form={form} updateField={updateField} />
           </div>

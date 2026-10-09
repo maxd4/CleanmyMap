@@ -83,13 +83,7 @@ export default async function NewActionPage({
   );
   const defaultActorName = actorNameOptions[0] ?? fallbackActorName;
 
-  const userMetadata = {
-    userId: userId ?? "anonymous",
-    handle: identity?.handle,
-    username: identity?.username ?? undefined,
-    displayName: identity?.displayName ?? fallbackActorName,
-    email: undefined,
-  };
+  const userMetadata = buildActionUserMetadata({ userId, identity, fallbackActorName });
 
   const actionCreationShell = (
     <ActionCreationShell
@@ -121,6 +115,25 @@ export default async function NewActionPage({
       {actionCreationShell}
     </div>
   );
+}
+
+function buildActionUserMetadata({
+  userId,
+  identity,
+  fallbackActorName,
+}: {
+  userId: string | null;
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
+  fallbackActorName: string;
+}) {
+  return {
+    userId: userId ?? "anonymous",
+    activeRole: identity?.activeRole,
+    handle: identity?.handle,
+    username: identity?.username ?? undefined,
+    displayName: identity?.displayName ?? fallbackActorName,
+    email: undefined,
+  };
 }
 
 function buildActionReturnUrl({
