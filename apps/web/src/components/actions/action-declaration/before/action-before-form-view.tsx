@@ -32,6 +32,8 @@ export function ActionBeforeFormView({
   signInHref,
   signUpHref,
   persistenceStatus,
+  actionId,
+  onFormalitiesReadiness,
 }: {
   activeSection: "all" | ActionCreationSectionId;
   form: FormState;
@@ -57,6 +59,8 @@ export function ActionBeforeFormView({
   signInHref?: string;
   signUpHref?: string;
   persistenceStatus: BeforeActionPersistenceStatus;
+  actionId: string | null;
+  onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
 }) {
   const actClasses = getBlockClasses("act");
   const sectioned = activeSection !== "all";
@@ -86,6 +90,8 @@ export function ActionBeforeFormView({
               isAuthenticated={isAuthenticated}
               signInHref={signInHref}
               signUpHref={signUpHref}
+              actionId={actionId}
+              onFormalitiesReadiness={onFormalitiesReadiness}
             />
           ) : (
             <>

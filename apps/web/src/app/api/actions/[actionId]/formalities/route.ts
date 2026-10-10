@@ -9,7 +9,6 @@ import {
 } from "@/lib/http/api-errors";
 import { normalizeActionId } from "@/lib/actions/action-id";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { resolveActionTerritory } from "@/lib/geo/action-territory-resolver";
 import { loadActionById } from "@/lib/actions/store";
 import { canManageAction } from "@/lib/actions/permissions";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
@@ -18,7 +17,6 @@ import {
   actionFormalitiesFactsSchema,
   applyFormalitiesWorkflowTransition,
   buildFormalitiesWorkflowState,
-  deriveActionFormalitiesFacts,
   normalizeActionFormalitiesWorkflow,
   type FormalitiesWorkflowTransition,
 } from "@/lib/actions/formalities-workflow";
@@ -26,6 +24,7 @@ import {
   buildFormalitiesTerritoryFingerprint,
 } from "@/lib/actions/formalities-rules";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
+import { deriveActionFormalitiesFactsFromAction } from "@/lib/actions/formalities-action-context";
 
 export const runtime = "nodejs";
 // Justification : cette route dynamique dépend de l'autorisation, des faits de qualification et de l'état persisté de l'action.
@@ -103,50 +102,6 @@ async function loadAuthorizedAction(actionId: string, userId: string) {
   return { kind: "ok" as const, current, supabase };
 }
 
-async function factsFromAction(current: {
-  department_code?: string | null;
-  department_name?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  derived_geometry_kind?: "point" | "polyline" | "polygon" | "multiline" | null;
-  derived_geometry_geojson?: string | null;
-  preparation_data: {
-    plannedObjective?: string | null;
-    formalitiesContext?: unknown;
-  } | null;
-}): Promise<ActionFormalitiesFacts> {
-  const resolvedTerritory = await resolveActionTerritory({
-    latitude: current.latitude,
-    longitude: current.longitude,
-    geometry: {
-      kind: current.derived_geometry_kind,
-      geojson: current.derived_geometry_geojson,
-    },
-    departmentCode: current.department_code,
-    departmentName: current.department_name,
-  });
-  const fallback = deriveActionFormalitiesFacts({
-    departmentCode: current.department_code,
-    departmentName: current.department_name,
-    resolvedTerritory,
-    plannedObjective: current.preparation_data?.plannedObjective,
-  });
-  const parsed = actionFormalitiesFactsSchema.safeParse(
-    current.preparation_data?.formalitiesContext,
-  );
-  if (!parsed.success) {
-    return fallback;
-  }
-
-  return {
-    ...parsed.data,
-    territory:
-      resolvedTerritory || fallback.territory.code !== "FR-unknown"
-        ? fallback.territory
-        : parsed.data.territory,
-  };
-}
-
 function responseFor(params: {
   actionId: string;
   facts: ActionFormalitiesFacts;
@@ -185,7 +140,7 @@ export async function GET(
       );
     }
 
-    const facts = await factsFromAction(current);
+    const facts = await deriveActionFormalitiesFactsFromAction(current);
     const qualification = qualifyActionFormalities(facts);
     const workflow = buildFormalitiesWorkflowState({
       facts,
@@ -236,7 +191,7 @@ export async function PATCH(
       );
     }
 
-    const currentFacts = await factsFromAction(current);
+    const currentFacts = await deriveActionFormalitiesFactsFromAction(current);
     const facts = parsed.facts
       ? { ...parsed.facts, territory: currentFacts.territory }
       : currentFacts;

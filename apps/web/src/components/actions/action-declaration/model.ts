@@ -21,6 +21,7 @@ import type {
   ActionMaterialSuggestion,
   ActionPreparationChecklistItem,
 } from "@/lib/actions/preparation-contract";
+import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
 
 export type FormState = {
  actorName: string;
@@ -50,6 +51,7 @@ export type FormState = {
  estimatedDifficulty: "" | "facile" |"moderee" |"soutenue";
  accessibility: string;
  accessibilityStatus: ActionAccessibilityStatus;
+ formalitiesContext?: ActionFormalitiesFacts | null;
  safetyInstructions: string;
  recommendedMaterials: string;
  materialsProvided: string;
@@ -142,6 +144,7 @@ export const initialState: FormState = {
  estimatedDifficulty:"",
  accessibility:"",
  accessibilityStatus:"not_evaluated",
+ formalitiesContext: null,
  safetyInstructions:"",
  recommendedMaterials:"",
  materialsProvided:"",

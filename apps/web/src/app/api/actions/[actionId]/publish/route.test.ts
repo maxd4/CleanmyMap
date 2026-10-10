@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { deriveActionFormalitiesFacts } from "@/lib/actions/formalities-facts";
+import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
+import { buildFormalitiesWorkflowState } from "@/lib/actions/formalities-workflow";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
@@ -134,5 +137,45 @@ describe("POST /api/actions/:actionId/publish", () => {
     });
 
     expect(response.status).toBe(422);
+  });
+
+  it("does not let the internal administrative attestation bypass a required formality", async () => {
+    const facts = {
+      ...deriveActionFormalitiesFacts({ departmentCode: "75", departmentName: "Paris", plannedObjective: "nettoyage" }),
+      publicSpace: "public_domain" as const,
+      manager: { kind: "paris_city" as const, label: "Ville de Paris" },
+      hasInstallations: true,
+      requiresPhysicalOccupation: true,
+      isPublicRoadwayActivity: false,
+      isItinerant: false,
+      isClaiming: false,
+      localCustomaryUse: false,
+      largeCrowdOrComplexInstallations: false,
+    };
+    const qualification = qualifyActionFormalities(facts);
+    const workflow = buildFormalitiesWorkflowState({ facts, qualification });
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-1",
+      created_by_clerk_id: "owner-1",
+      action_phase: "pre_action",
+      published_at: null,
+      status: "pending",
+      organizer_type: "association",
+      preparation_data: {
+        formalitiesContext: facts,
+        formalitiesWorkflow: workflow,
+        administrativeRequirements: { status: "validated", validatedAt: "2026-10-10T10:00:00.000Z" },
+      },
+    });
+    const supabase = createUpdateClient({ data: { id: "action-1", published_at: null }, error: null });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+    const { POST } = await import("./route");
+
+    const response = await POST(new Request("http://localhost"), { params: Promise.resolve({ actionId: "action-1" }) });
+    const body = await response.json();
+    expect(response.status).toBe(422);
+    expect(body.code).toBe("required_formality_not_ready");
+    expect(body.formalityIds).toContain("paris-city-public-domain-aot");
+    expect(supabase.from).not.toHaveBeenCalled();
   });
 });

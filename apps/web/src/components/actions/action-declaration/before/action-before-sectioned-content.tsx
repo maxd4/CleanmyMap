@@ -31,6 +31,8 @@ type SectionedContentProps = {
   isAuthenticated: boolean;
   signInHref?: string;
   signUpHref?: string;
+  actionId?: string | null;
+  onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
 };
 
 export function ActionBeforeSectionedContent({
@@ -50,6 +52,8 @@ export function ActionBeforeSectionedContent({
   isAuthenticated,
   signInHref,
   signUpHref,
+  actionId,
+  onFormalitiesReadiness,
 }: SectionedContentProps) {
   if (activeSection === "terrain") {
     return (
@@ -91,6 +95,9 @@ export function ActionBeforeSectionedContent({
       isAuthenticated={isAuthenticated}
       signInHref={signInHref}
       signUpHref={signUpHref}
+      actionId={actionId}
+      updateField={updateField}
+      onFormalitiesReadiness={onFormalitiesReadiness}
     />
   );
 }

@@ -3,12 +3,17 @@ import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmPill } from "@/components/ui/cmm-pill";
 import { AdministrativeRequirementsStatus } from "./administrative-requirements-status";
 import { ActionFormalitiesWorkflowPanel } from "./action-formalities-workflow-panel";
+import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
 
 export function ActionCreationLegalPanel({
   actionId,
+  draftFacts,
+  onDraftFactsChange,
   onReadinessChange,
 }: {
   actionId?: string | null;
+  draftFacts?: ActionFormalitiesFacts | null;
+  onDraftFactsChange?: (facts: ActionFormalitiesFacts) => void;
   onReadinessChange?: (readiness: { known: boolean; blocked: boolean }) => void;
 }) {
   return (
@@ -37,7 +42,7 @@ export function ActionCreationLegalPanel({
           démontrée comme requise peut la conditionner. Une simple cleanwalk
           sans installation ne vaut pas automatiquement AOT.
         </p>
-        <ActionFormalitiesWorkflowPanel actionId={actionId} onReadinessChange={onReadinessChange} />
+        <ActionFormalitiesWorkflowPanel actionId={actionId} draftFacts={draftFacts} onDraftFactsChange={onDraftFactsChange} onReadinessChange={onReadinessChange} />
         <div className="border-t border-amber-200/70 pt-4">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-800/70">
             État technique de la pré-action

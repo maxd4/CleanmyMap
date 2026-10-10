@@ -10,6 +10,14 @@ import { canPublishPreAction } from "@/lib/actions/publication";
 import { initializeActionRouteVersioning } from "@/lib/actions/route-version-persistence";
 import { emitAdministrativeRequirementNotifications } from "@/lib/actions/administrative-requirement-notifications";
 import type { ActionRow } from "@/types/database";
+import { deriveActionFormalitiesFactsFromAction } from "@/lib/actions/formalities-action-context";
+import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
+import {
+  buildFormalitiesWorkflowState,
+  isFormalitiesPublicationBlocked,
+  normalizeActionFormalitiesWorkflow,
+} from "@/lib/actions/formalities-workflow";
+import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
 
 export const runtime = "nodejs";
 // Justification Vercel: la publication dépend de l’action et de l’utilisateur courant.
@@ -19,20 +27,50 @@ function buildPublicationUpdate(params: {
   currentPreparationData: ActionRow["preparation_data"];
   publishedAt: string;
   userId: string;
+  formalitiesContext: Awaited<ReturnType<typeof deriveActionFormalitiesFactsFromAction>>;
+  formalitiesWorkflow: ReturnType<typeof buildFormalitiesWorkflowState>;
 }) {
   const preparationData = initializeActionRouteVersioning({
     preparationData: params.currentPreparationData,
     appliedAt: params.publishedAt,
     appliedByUserId: params.userId,
   });
+  const nextPreparationData = {
+    ...preparationData,
+    formalitiesContext: params.formalitiesContext,
+    formalitiesWorkflow: params.formalitiesWorkflow,
+  };
   const shouldPersistPreparationData =
-    !params.currentPreparationData?.routeVersioning && Boolean(preparationData.routeVersioning);
+    !params.currentPreparationData?.routeVersioning ||
+    JSON.stringify(params.currentPreparationData?.formalitiesContext) !==
+      JSON.stringify(params.formalitiesContext) ||
+    JSON.stringify(params.currentPreparationData?.formalitiesWorkflow) !==
+      JSON.stringify(params.formalitiesWorkflow);
   return {
     published_at: params.publishedAt,
     ...(shouldPersistPreparationData
-      ? { preparation_data: preparationData }
+      ? { preparation_data: nextPreparationData }
       : {}),
   };
+}
+
+function requiredFormalitiesNotReady(params: {
+  qualification: ReturnType<typeof qualifyActionFormalities>;
+  workflow: ReturnType<typeof buildFormalitiesWorkflowState>;
+}): string[] {
+  if (!isFormalitiesPublicationBlocked(params.qualification, params.workflow)) {
+    return [];
+  }
+  const progressById = new Map(
+    params.workflow.progress.map((progress) => [progress.formalityId, progress]),
+  );
+  return params.qualification.formalities
+    .filter((formality) => {
+      if (formality.requirementStatus !== "required") return false;
+      const progress = progressById.get(formality.id);
+      return !progress || !progress.active || !progress.validForQualification || progress.userStatus !== "sent";
+    })
+    .map((formality) => formality.id);
 }
 
 function spontaneousOrganizerPublicationError(
@@ -115,6 +153,35 @@ export async function POST(
     const spontaneousOrganizerError = spontaneousOrganizerPublicationError(current, organizerIds);
     if (spontaneousOrganizerError) return spontaneousOrganizerError;
 
+    const formalitiesContext = await deriveActionFormalitiesFactsFromAction(current);
+    const qualification = qualifyActionFormalities(formalitiesContext);
+    const formalitiesWorkflow = buildFormalitiesWorkflowState({
+      facts: formalitiesContext,
+      qualification,
+      previous: normalizeActionFormalitiesWorkflow(
+        current.preparation_data?.formalitiesWorkflow,
+      ),
+      actionDependencies: {
+        locationLabel: current.location_label,
+        actionDate: current.action_date,
+        territoryFingerprint: buildFormalitiesTerritoryFingerprint(formalitiesContext.territory),
+      },
+    });
+    const blockedFormalities = requiredFormalitiesNotReady({
+      qualification,
+      workflow: formalitiesWorkflow,
+    });
+    if (blockedFormalities.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Une formalité démontrée comme requise doit être déclarée envoyée avant la publication.",
+          code: "required_formality_not_ready",
+          formalityIds: blockedFormalities,
+        },
+        { status: 422 },
+      );
+    }
+
     const publishedAt = new Date().toISOString();
     const result = await supabase
       .from("actions")
@@ -122,6 +189,8 @@ export async function POST(
         currentPreparationData: current.preparation_data,
         publishedAt,
         userId: access.userId,
+        formalitiesContext,
+        formalitiesWorkflow,
       }))
       .eq("id", actionId)
       .eq("created_by_clerk_id", current.created_by_clerk_id)

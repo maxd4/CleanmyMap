@@ -38,6 +38,7 @@ export function ActionBeforeDeclarationForm({
   onPassToComplete,
   onFormChange,
   onActionPersisted,
+  onFormalitiesReadiness,
   signInHref,
   signUpHref,
   guidedWorkflow = false,
@@ -93,5 +94,5 @@ export function ActionBeforeDeclarationForm({
     return <><ActionBeforePersistenceStatus status={persistenceStatus} /><ActionBeforePublicationView form={form} publishedAction={publishedAction} createdId={createdId} publishedAt={publishedAt} publicationState={publicationState} publicationError={publicationError} publicationConfirmationOpen={publicationConfirmationOpen} guidedWorkflow={guidedWorkflow} guidedReadiness={guidedReadiness} shareActionId={shareActionId} onRequestPublish={requestPublish} onCancelPublication={cancelPublication} onConfirmPublish={confirmPublish} onContinueComplete={onContinueComplete} onShare={setShareActionId} /></>;
   }
 
-  return <ActionBeforeFormView activeSection={activeSection} form={form} submissionState={submissionState} validationIssues={validationIssues} validationIssueFields={validationIssueFields} errorMessage={errorMessage} userMetadata={userMetadata} updateField={updateField} updateFields={updateFields} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)} invitationStatuses={invitationStatuses} handleSubmit={handleSubmit} guidedReadiness={guidedReadiness} isAuthenticated={isAuthenticated} signInHref={signInHref} signUpHref={signUpHref} persistenceStatus={persistenceStatus} />;
+  return <ActionBeforeFormView activeSection={activeSection} form={form} submissionState={submissionState} validationIssues={validationIssues} validationIssueFields={validationIssueFields} errorMessage={errorMessage} userMetadata={userMetadata} updateField={updateField} updateFields={updateFields} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)} invitationStatuses={invitationStatuses} handleSubmit={handleSubmit} guidedReadiness={guidedReadiness} isAuthenticated={isAuthenticated} signInHref={signInHref} signUpHref={signUpHref} persistenceStatus={persistenceStatus} actionId={createdId} onFormalitiesReadiness={onFormalitiesReadiness} />;
 }

@@ -124,6 +124,7 @@ function buildPreparationContentFields(
     ...(form.estimatedDifficulty ? { estimatedDifficulty: form.estimatedDifficulty } : {}),
     ...buildPreparationGuidanceFields(form),
     accessibilityStatus: form.accessibilityStatus,
+    formalitiesContext: form.formalitiesContext ?? undefined,
     materialsProvided: form.materialsProvided.trim() || undefined,
     suggestedMaterials: form.suggestedMaterials.length > 0 ? [...form.suggestedMaterials] : undefined,
     participantMessage: form.participantMessage.trim() || undefined,
@@ -233,6 +234,7 @@ function buildHydratedDescriptionFields(
     accessibility: preparationData.accessibility ?? form.accessibility,
     accessibilityStatus:
       normalizeAccessibilityStatus(preparationData.accessibilityStatus) ?? form.accessibilityStatus,
+    formalitiesContext: preparationData.formalitiesContext ?? form.formalitiesContext,
     safetyInstructions:
       stripHistoricalDerivedGuidance(
         preparationData.safetyInstructions,

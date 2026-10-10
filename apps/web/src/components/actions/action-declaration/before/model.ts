@@ -37,6 +37,7 @@ export type ActionBeforeDeclarationFormProps = {
   onPassToComplete: (actionId: string) => void | Promise<void>;
   onFormChange?: (form: FormState) => void;
   onActionPersisted?: (actionId: string) => void;
+  onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
   signInHref?: string;
   signUpHref?: string;
   guidedWorkflow?: boolean;

@@ -83,7 +83,8 @@ function ActionFormalityDetails({ formality, status }: { formality: Formality; s
   </>;
 }
 
-function ActionFormalityActions({ formality, progress, status, isSaving, onTransition }: { formality: Formality; progress: ActionFormalitiesWorkflowState["progress"][number] | undefined; status: "not_started" | "prepared" | "sent"; isSaving: boolean; onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void }) {
+function ActionFormalityActions({ formality, progress, status, isSaving, readOnly, onTransition }: { formality: Formality; progress: ActionFormalitiesWorkflowState["progress"][number] | undefined; status: "not_started" | "prepared" | "sent"; isSaving: boolean; readOnly: boolean; onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void }) {
+  if (readOnly) return <p className="text-xs font-semibold text-sky-800">Les démarches seront conservées après l&apos;enregistrement.</p>;
   return <><div className="flex flex-wrap gap-2">{status === "not_started" || !progress?.validForQualification ? <CmmButton tone="secondary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "mark_prepared")} disabled={isSaving}>{progress?.validForQualification === false ? "Requalifier cette démarche" : "Marquer comme préparée"}</CmmButton> : null}{status === "prepared" ? <CmmButton tone="tertiary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "declare_sent")} disabled={isSaving}>Je déclare l&apos;avoir envoyée</CmmButton> : null}</div>{!progress?.validForQualification ? <p className="text-xs font-semibold text-amber-800">Les faits ont changé : cette démarche doit être revue. La preuve existante est conservée.</p> : null}</>;
 }
 
@@ -91,11 +92,13 @@ function ActionFormalityCard({
   formality,
   progress,
   isSaving,
+  readOnly,
   onTransition,
 }: {
   formality: Formality;
   progress: ActionFormalitiesWorkflowState["progress"][number] | undefined;
   isSaving: boolean;
+  readOnly: boolean;
   onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void;
 }) {
   const status = progress?.userStatus ?? "not_started";
@@ -106,7 +109,7 @@ function ActionFormalityCard({
         <h4 className="text-base font-bold text-emerald-950">{formality.competentAuthority.label}</h4>
         {isNationalFallback(formality) ? <NationalFallbackNotice /> : null}
         <ActionFormalityDetails formality={formality} status={status} />
-        <ActionFormalityActions formality={formality} progress={progress} status={status} isSaving={isSaving} onTransition={onTransition} />
+        <ActionFormalityActions formality={formality} progress={progress} status={status} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />
       </div>
     </CmmCard>
   );
@@ -116,11 +119,13 @@ export function ActionFormalitiesQualificationView({
   qualification,
   workflow,
   isSaving,
+  readOnly = false,
   onTransition,
 }: {
   qualification: ActionFormalitiesQualification;
   workflow: ActionFormalitiesWorkflowState;
   isSaving: boolean;
+  readOnly?: boolean;
   onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void;
 }) {
   const progressById = new Map(workflow.progress.map((progress) => [progress.formalityId, progress]));
@@ -128,7 +133,7 @@ export function ActionFormalitiesQualificationView({
   return (
     <div className="space-y-3" aria-live="polite" data-testid="action-formalities-qualification">
       <h3 className="text-lg font-black text-emerald-950">Formalités locales</h3>
-      {qualification.formalities.map((formality) => <ActionFormalityCard key={formality.id} formality={formality} progress={progressById.get(formality.id)} isSaving={isSaving} onTransition={onTransition} />)}
+      {qualification.formalities.map((formality) => <ActionFormalityCard key={formality.id} formality={formality} progress={progressById.get(formality.id)} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />)}
     </div>
   );
 }

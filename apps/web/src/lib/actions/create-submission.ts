@@ -11,7 +11,7 @@ import {
   resolveDefaultActionOrganizerIds,
 } from "@/lib/actions/participation/organizers";
 import { SPONTANEOUS_PENDING_ORGANIZER_LABEL } from "@/lib/actions/organizer-type";
-import { createAction } from "@/lib/actions/store";
+import { createAction, loadActionById } from "@/lib/actions/store";
 import { ActionRouteReconstructionError } from "@/lib/actions/geometry/route-reconstruction-error";
 import {
   createSignalement,
@@ -24,6 +24,16 @@ import {
   PlannerSnapshotTrustError,
   promoteVerifiedPlannerContext,
 } from "@/lib/route/route-planner-trust";
+import { resolveActionTerritory } from "@/lib/geo/action-territory-resolver";
+import {
+  actionFormalitiesFactsSchema,
+  deriveActionFormalitiesFacts,
+} from "@/lib/actions/formalities-facts";
+import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
+import {
+  buildFormalitiesWorkflowState,
+} from "@/lib/actions/formalities-workflow";
+import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
 
 export class ActionCreationValidationError extends Error {
   constructor(public readonly fieldErrors: Record<string, string[]>) {
@@ -328,6 +338,68 @@ async function persistStandardActionSubmission(params: {
       throw new ActionCreationValidationError(error.fieldErrors);
     }
     throw error;
+  }
+
+  if (params.payload.actionPhase === "pre_action") {
+    try {
+      const resolvedTerritory = await resolveActionTerritory({
+        latitude: params.payload.latitude,
+        longitude: params.payload.longitude,
+        geometry: null,
+        departmentCode: params.payload.departmentCode,
+        departmentName: params.payload.departmentName,
+      });
+      const fallbackFacts = deriveActionFormalitiesFacts({
+        departmentCode: params.payload.departmentCode,
+        departmentName: params.payload.departmentName,
+        resolvedTerritory,
+        placeType: params.payload.placeType,
+        plannedObjective: params.payload.preparationData?.plannedObjective,
+      });
+      const providedFacts = actionFormalitiesFactsSchema.safeParse(
+        params.payload.preparationData?.formalitiesContext,
+      );
+      const facts = providedFacts.success
+        ? {
+            ...providedFacts.data,
+            territory:
+              resolvedTerritory || fallbackFacts.territory.code !== "FR-unknown"
+                ? fallbackFacts.territory
+                : providedFacts.data.territory,
+          }
+        : fallbackFacts;
+      const qualification = qualifyActionFormalities(facts);
+      const workflow = buildFormalitiesWorkflowState({
+        facts,
+        qualification,
+        actionDependencies: {
+          locationLabel: params.payload.locationLabel,
+          actionDate: params.payload.actionDate,
+          territoryFingerprint: buildFormalitiesTerritoryFingerprint(facts.territory),
+        },
+      });
+      if (typeof (params.supabase as unknown as { from?: unknown }).from === "function") {
+        const current = await loadActionById(params.supabase, created.id);
+        const result = await params.supabase
+          .from("actions")
+          .update({
+          preparation_data: {
+            ...(current?.preparation_data ?? params.payload.preparationData ?? {}),
+            formalitiesContext: facts,
+            formalitiesWorkflow: workflow,
+          },
+          })
+          .eq("id", created.id);
+        if (result.error) throw result.error;
+      }
+    } catch (error) {
+      logFailure(
+        "Actions/Create",
+        "Initial formalities qualification persistence failed",
+        error,
+        { actionId: created.id },
+      );
+    }
   }
 
   try {

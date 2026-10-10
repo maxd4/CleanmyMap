@@ -174,6 +174,7 @@ function ActionCreationSectionContent({
       guidedReadiness={formalitiesReadiness}
       onFormChange={onFormChange}
       onActionPersisted={onActionPersisted}
+      onFormalitiesReadiness={onFormalitiesReadiness}
       onPassToComplete={onPassToComplete}
     />
   );
@@ -181,7 +182,6 @@ function ActionCreationSectionContent({
   return (
     <div className="space-y-4">
       {form}
-      {activeSection === "verification" ? <ActionCreationLegalPanel actionId={currentActionId} onReadinessChange={onFormalitiesReadiness} /> : null}
       {activeSection === "terrain" ? (
         <div data-active-subsection={initialSubsection ?? "terrain"}>
           <div className="grid gap-4 xl:grid-cols-2">
