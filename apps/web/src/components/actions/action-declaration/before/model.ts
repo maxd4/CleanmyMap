@@ -42,7 +42,7 @@ export type ActionBeforeDeclarationFormProps = {
   guidedWorkflow?: boolean;
   guidedReadiness?: "unknown" | "ready" | "blocked";
   preparationContext?: ActionPreparationContext;
-  activeSection?: "all" | Exclude<ActionCreationSectionId, "terrain">;
+  activeSection?: "all" | ActionCreationSectionId;
 };
 
 export type PublicationSummaryItem = {

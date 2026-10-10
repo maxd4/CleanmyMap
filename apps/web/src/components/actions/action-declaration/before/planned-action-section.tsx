@@ -139,18 +139,13 @@ function SectionHeading({ id, title }: { id: string; title: string }) {
   return <h4 id={id} className="text-base font-black text-emerald-950">{title}</h4>;
 }
 
-function ScheduleFields({
+export function ScheduleFields({
   form,
   updateField,
   hasAttemptedSubmit,
   validationIssueFields,
 }: Pick<BaseSectionProps, "form" | "updateField" | "hasAttemptedSubmit" | "validationIssueFields">) {
   const missingDate = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "actionDate"));
-  const event = deriveEventDurationMinutes(form.eventStartTime, form.eventEndTime);
-  const organization = deriveOrganizationMinutes({
-    actionDurationMinutes: toOptionalNumber(form.durationMinutes),
-    eventDurationMinutes: event.eventDurationMinutes,
-  });
   const temporalIssues = getTimeContractValidationIssues({
     actionDurationMinutes: toOptionalNumber(form.durationMinutes),
     startTime: form.eventStartTime,
@@ -204,32 +199,59 @@ function ScheduleFields({
           <CmmInput type="number" min="0" step="1" value={form.durationMinutes} onChange={(event) => updateField("durationMinutes", event.target.value)} placeholder="Ex. 60" />
         </CmmField>
       </div>
-      <CmmDisclosure summary={<ActionFormDisclosureSummary label="Créneau global" detail={event.status === "available" ? `${form.eventStartTime}–${form.eventEndTime}` : "facultatif"} />} tone="emerald" size="sm">
-        <div className="grid gap-4 md:grid-cols-2">
-          <TimeField
-            id="before-action-event-start"
-            label="Début du créneau global"
-            hint="Début de l’accueil ou de l’organisation, le même jour que l’action."
-            value={form.eventStartTime}
-            field="eventStartTime"
-            updateField={updateField}
-            validationIssueFields={validationIssueFields}
-            message={getTemporalIssueMessage(temporalIssues, "eventStartTime")}
-          />
-          <TimeField
-            id="before-action-event-end"
-            label="Fin du créneau global"
-            hint="Fin de l’organisation et du rangement, le même jour que l’action."
-            value={form.eventEndTime}
-            field="eventEndTime"
-            updateField={updateField}
-            validationIssueFields={validationIssueFields}
-            message={getTemporalIssueMessage(temporalIssues, "eventEndTime")}
-          />
-        </div>
-        <ScheduleFeedback event={event} organization={organization} />
-      </CmmDisclosure>
+      <GlobalTimeDisclosure
+        form={form}
+        updateField={updateField}
+        validationIssueFields={validationIssueFields}
+      />
     </fieldset>
+  );
+}
+
+function GlobalTimeDisclosure({
+  form,
+  updateField,
+  validationIssueFields,
+}: Pick<BaseSectionProps, "form" | "updateField" | "validationIssueFields">) {
+  const event = deriveEventDurationMinutes(form.eventStartTime, form.eventEndTime);
+  const organization = deriveOrganizationMinutes({
+    actionDurationMinutes: toOptionalNumber(form.durationMinutes),
+    eventDurationMinutes: event.eventDurationMinutes,
+  });
+  const temporalIssues = getTimeContractValidationIssues({
+    actionDurationMinutes: toOptionalNumber(form.durationMinutes),
+    startTime: form.eventStartTime,
+    endTime: form.eventEndTime,
+    meetingTime: form.meetingTime,
+    departureTime: form.departureTime,
+  });
+
+  return (
+    <CmmDisclosure summary={<ActionFormDisclosureSummary label="Créneau global" detail={event.status === "available" ? `${form.eventStartTime}–${form.eventEndTime}` : "facultatif"} />} tone="emerald" size="sm">
+      <div className="grid gap-4 md:grid-cols-2">
+        <TimeField
+          id="before-action-event-start"
+          label="Début du créneau global"
+          hint="Début de l’accueil ou de l’organisation, le même jour que l’action."
+          value={form.eventStartTime}
+          field="eventStartTime"
+          updateField={updateField}
+          validationIssueFields={validationIssueFields}
+          message={getTemporalIssueMessage(temporalIssues, "eventStartTime")}
+        />
+        <TimeField
+          id="before-action-event-end"
+          label="Fin du créneau global"
+          hint="Fin de l’organisation et du rangement, le même jour que l’action."
+          value={form.eventEndTime}
+          field="eventEndTime"
+          updateField={updateField}
+          validationIssueFields={validationIssueFields}
+          message={getTemporalIssueMessage(temporalIssues, "eventEndTime")}
+        />
+      </div>
+      <ScheduleFeedback event={event} organization={organization} />
+    </CmmDisclosure>
   );
 }
 
@@ -267,7 +289,7 @@ function TimeField({
   );
 }
 
-function SelectField({
+export function SelectField({
   label,
   value,
   onChange,
@@ -290,14 +312,14 @@ function SelectField({
   );
 }
 
-function hasValidCoordinatePair(latitude: string, longitude: string): boolean {
+export function hasValidCoordinatePair(latitude: string, longitude: string): boolean {
   if (!latitude.trim() || !longitude.trim()) return false;
   const parsedLatitude = Number(latitude);
   const parsedLongitude = Number(longitude);
   return Number.isFinite(parsedLatitude) && parsedLatitude >= -90 && parsedLatitude <= 90 && Number.isFinite(parsedLongitude) && parsedLongitude >= -180 && parsedLongitude <= 180;
 }
 
-function MeetingLocationFields({
+export function MeetingLocationFields({
   form,
   updateFields,
   hasAttemptedSubmit,
@@ -336,7 +358,7 @@ function MeetingLocationFields({
   );
 }
 
-function RouteDestinationField({
+export function RouteDestinationField({
   form,
   updateFields,
   hasAttemptedSubmit,
@@ -369,7 +391,7 @@ function RouteDestinationField({
   );
 }
 
-function VolunteerForecast({
+export function VolunteerForecast({
   form,
   updateField,
   splitDetail,
@@ -436,7 +458,7 @@ function ScheduleFeedback({
   return null;
 }
 
-function ExpectedWasteSection({ form, updateField }: BaseSectionProps) {
+export function ExpectedWasteSection({ form, updateField }: BaseSectionProps) {
   return (
     <CmmDisclosure summary={<ActionFormDisclosureSummary label="Déchets attendus" detail={form.wasteCategories?.length ? `${form.wasteCategories.length} catégorie${form.wasteCategories.length > 1 ? "s" : ""}` : undefined} />} tone="emerald" size="md">
       <div className="space-y-4">

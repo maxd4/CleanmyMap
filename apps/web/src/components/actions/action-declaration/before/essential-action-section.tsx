@@ -1,18 +1,15 @@
 "use client";
 
-import { ClipboardList, Info } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { CmmField, CmmInput, CmmSelect, CmmTextarea } from "@/components/ui/cmm-field";
-import { ActionAddressAutocomplete } from "../action-address-autocomplete";
 import type { FormState } from "../model";
 import { PLANNED_OBJECTIVE_OPTIONS } from "./model";
+import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
+import { MeetingLocationFields, RouteDestinationField, ScheduleFields } from "./planned-action-section";
 import { SectionLabel } from "./ui";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
-import {
-  getTimeContractValidationIssues,
-  formatBusinessDurationMinutes,
-} from "@/lib/actions/time-contract";
-import { toOptionalNumber } from "../payload-numbers";
 
 type EssentialActionSectionProps = Pick<
   BaseSectionProps,
@@ -27,29 +24,6 @@ export function EssentialActionSection({
   validationIssueFields = [],
 }: EssentialActionSectionProps) {
   const missingTitle = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "actionTitle"));
-  const missingDate = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "actionDate"));
-  const missingLocation = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "departureLocationLabel"));
-  const temporalIssues = getTimeContractValidationIssues({
-    actionDurationMinutes: toOptionalNumber(form.durationMinutes),
-    startTime: form.eventStartTime,
-    endTime: form.eventEndTime,
-    meetingTime: form.meetingTime,
-    departureTime: form.departureTime,
-  });
-  const durationInput = form.durationMinutes.trim();
-  const durationIssue = durationInput && toOptionalNumber(durationInput) === undefined
-    ? "La durée estimée doit être un nombre entier positif ou nul."
-    : temporalIssues.find((issue) => issue.field === "durationMinutes")?.message;
-
-  const updateDepartureLocation = (value: string, coordinates?: FormState["midRouteCoordinates"]) => {
-    updateFields?.({
-      departureLocationLabel: value,
-      locationLabel: value,
-      latitude: coordinates ? String(coordinates.latitude) : "",
-      longitude: coordinates ? String(coordinates.longitude) : "",
-    });
-  };
-
   return (
     <CmmCard tone="emerald" variant="glass" size="lg">
       <div className="space-y-6">
@@ -105,94 +79,35 @@ export function EssentialActionSection({
           </div>
         </section>
 
-        <section aria-labelledby="before-essential-schedule" className="space-y-3">
-          <h4 id="before-essential-schedule" className="text-base font-black text-emerald-950">Date et rendez-vous</h4>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <CmmField
-              id="before-action-date"
-              label={<span>Date prévue<RequiredMark /></span>}
-              error={missingDate ? "Indiquez la date prévue avant d’enregistrer." : undefined}
-            >
-              <CmmInput type="date" value={form.actionDate} onChange={(event) => updateField("actionDate", event.target.value)} />
-            </CmmField>
-            <EssentialTimeField
-              id="before-meeting-time"
-              label="Heure de rendez-vous"
-              hint="Accueil au point de rendez-vous."
-              value={form.meetingTime}
-              field="meetingTime"
-              updateField={updateField}
-              validationIssueFields={validationIssueFields}
-              message={temporalIssues.find((issue) => issue.field === "meetingTime")?.message}
-            />
-            <EssentialTimeField
-              id="before-departure-time"
-              label="Heure de départ"
-              hint="Facultative."
-              value={form.departureTime}
-              field="departureTime"
-              updateField={updateField}
-              validationIssueFields={validationIssueFields}
-              message={temporalIssues.find((issue) => issue.field === "departureTime")?.message}
-            />
-            <CmmField
-              id="before-duration-minutes"
-              label="Durée estimée"
-              hint={formatBusinessDurationMinutes(toOptionalNumber(form.durationMinutes)) || "Facultative."}
-              error={hasValidationIssue(validationIssueFields, "durationMinutes") ? durationIssue : undefined}
-            >
-              <CmmInput type="number" min="0" step="1" value={form.durationMinutes} onChange={(event) => updateField("durationMinutes", event.target.value)} placeholder="Ex. 60" />
-            </CmmField>
-          </div>
-        </section>
+        <ScheduleFields
+          form={form}
+          updateField={updateField}
+          hasAttemptedSubmit={hasAttemptedSubmit}
+          validationIssueFields={validationIssueFields}
+        />
 
         <section aria-labelledby="before-essential-location" className="space-y-3">
-          <h4 id="before-essential-location" className="text-base font-black text-emerald-950">Lieu de rendez-vous</h4>
-          <ActionAddressAutocomplete
-            id="before-departure-location"
-            label={<span>Point de rendez-vous<RequiredMark /></span>}
-            placeholder="Ex. Entrée principale, côté métro"
-            value={form.departureLocationLabel}
-            onChange={updateDepartureLocation}
-            helperText="Une adresse libre reste conservée même si elle n’est pas géolocalisée."
-            ariaInvalid={missingLocation}
-            ariaDescribedBy={missingLocation ? "before-departure-location-error" : "before-essential-location-status"}
+          <h4 id="before-essential-location" className="text-base font-black text-emerald-950">Lieu et parcours</h4>
+          <p className="text-xs leading-5 text-emerald-900/65">Le point de rendez-vous reste ici ; la correction de l’arrivée est proposée lorsqu’un parcours départ → arrivée est déjà sélectionné.</p>
+          <MeetingLocationFields
+            form={form}
+            updateField={updateField}
+            updateFields={updateFields}
+            hasAttemptedSubmit={hasAttemptedSubmit}
+            validationIssueFields={validationIssueFields}
           />
-          {missingLocation ? <span id="before-departure-location-error" className="block text-xs font-medium text-rose-700">Indiquez le point de rendez-vous avant d’enregistrer.</span> : null}
-          <p id="before-essential-location-status" className="flex items-start gap-2 px-1 text-xs leading-5 text-emerald-900/65">
-            <Info size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
-            La carte, l’itinéraire optionnel et les coordonnées avancées se trouvent dans « Terrain ».
-          </p>
+          <CmmDisclosure summary={<ActionFormDisclosureSummary label="Arrivée du parcours" detail={form.routeTopology === "point_to_point" ? (form.arrivalLocationLabel.trim() || "à compléter") : "aucune arrivée pour une boucle"} />} tone="emerald" size="sm">
+            <RouteDestinationField
+              form={form}
+              updateField={updateField}
+              updateFields={updateFields}
+              hasAttemptedSubmit={hasAttemptedSubmit}
+              validationIssueFields={validationIssueFields}
+            />
+          </CmmDisclosure>
         </section>
 
       </div>
     </CmmCard>
-  );
-}
-
-function EssentialTimeField({
-  id,
-  label,
-  hint,
-  value,
-  field,
-  updateField,
-  validationIssueFields,
-  message,
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-  value: string;
-  field: "meetingTime" | "departureTime";
-  updateField: BaseSectionProps["updateField"];
-  validationIssueFields: readonly string[];
-  message?: string;
-}) {
-  const hasIssue = hasValidationIssue(validationIssueFields, field);
-  return (
-    <CmmField label={label} hint={hint} error={hasIssue ? message : undefined}>
-      <CmmInput id={id} type="time" value={value} onChange={(event) => updateField(field, event.target.value)} />
-    </CmmField>
   );
 }

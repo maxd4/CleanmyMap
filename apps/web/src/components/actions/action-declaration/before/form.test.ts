@@ -6,6 +6,7 @@ import { ActionBeforeDeclarationForm } from "./form";
 import { IdentityAndSharingSection } from "./identity-and-sharing-section";
 import { PlannedActionSection } from "./planned-action-section";
 import { PreparationAndSafetySection } from "./preparation-and-safety-section";
+import { PreparationPlanningFields } from "./preparation-planning-fields";
 import { createInitialFormState } from "../payload";
 
 describe("ActionBeforeDeclarationForm", () => {
@@ -199,6 +200,31 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("min-h-[132px]");
     expect(html).toContain('data-cmm-field-control="textarea"');
     expect(html).toContain('data-cmm-field-control="select"');
+  });
+
+  it("keeps historical preparation values editable in the team section", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.volunteersCount = "12";
+    form.participantMessage = "Merci d’arriver dix minutes avant.";
+    form.plannedObjective = "nettoyage";
+    form.placeType = "Bois/Parc/Jardin/Square/Sentier";
+    form.estimatedDifficulty = "moderee";
+    form.wasteCategories = ["broken_glass"];
+
+    const html = renderToStaticMarkup(
+      React.createElement(PreparationPlanningFields, {
+        form,
+        updateField: vi.fn(),
+        validationIssueFields: [],
+      }),
+    );
+
+    expect(html).toMatch(/id="before-volunteers-count"[^>]*value="12"/);
+    expect(html).toContain("Merci d’arriver dix minutes avant.");
+    expect(html).toContain("Nettoyage");
+    expect(html).toContain("Bois/Parc/Jardin/Square/Sentier");
+    expect(html).toContain("Modérée");
+    expect(html).toContain("Gants anti-coupure et contenant rigide adapté");
   });
 
   it("keeps historical accessibility text visible when no status has been selected", () => {

@@ -73,7 +73,7 @@ function GpsButton({
   );
 }
 
-function RouteTopologyFieldset({
+export function RouteTopologyFieldset({
   form,
   updateField,
 }: Pick<ActionLocationInputProps, "form" | "updateField">) {

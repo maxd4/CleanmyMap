@@ -101,19 +101,41 @@ test.describe("campaign 1 - public reading and late authentication", () => {
       await expect(page.getByLabel("Heure de départ")).toBeVisible();
       await expect(page.getByLabel("Durée estimée")).toBeVisible();
       await expect(page.getByText("Durée non renseignée", { exact: true })).toBeVisible();
-      await expect(page.getByText("Accueil au point de rendez-vous.", { exact: true })).toBeVisible();
-      await expect(page.getByText("Facultative.", { exact: true })).toBeVisible();
+      await expect(page.getByText("Accueil des bénévoles au point de rendez-vous.", { exact: true })).toBeVisible();
+      await expect(page.getByText("Départ effectif après le rendez-vous.", { exact: true })).toBeVisible();
       await expect(page.getByLabel("Commune ou secteur")).toBeVisible();
-      await expect(page.getByRole("combobox", { name: "Point de rendez-vous" })).toBeVisible();
+      await expect(page.getByRole("combobox", { name: /Point de rendez-vous/ })).toBeVisible();
       await expect(page.getByRole("combobox", { name: "Type d’action" })).toHaveValue("");
+
+      await page.getByText("Créneau global", { exact: true }).click();
+      await expect(page.getByLabel("Début du créneau global")).toBeVisible();
+      await expect(page.getByLabel("Fin du créneau global")).toBeVisible();
+      await page.getByLabel("Début du créneau global").fill("08:30");
+      await page.getByLabel("Fin du créneau global").fill("11:00");
 
       await page.getByRole("button", { name: /Terrain/i }).click();
       await expect(page.getByRole("heading", { name: "Terrain" })).toBeVisible();
+      await expect(page.getByLabel("Point de rendez-vous précis")).toBeVisible();
+      await page.getByLabel("Départ → arrivée").check();
+      await page.getByRole("combobox", { name: "Arrivée" }).fill("Place de la République");
+      await expect(page.getByRole("combobox", { name: "Arrivée" })).toHaveValue("Place de la République");
       await page.getByRole("button", { name: /Équipe et logistique/i }).click();
       await expect(page.getByRole("heading", { name: "Inscriptions des bénévoles" })).toBeVisible();
+      await expect(page.getByLabel("Nombre de bénévoles attendus")).toBeVisible();
+      await page.getByLabel("Nombre de bénévoles attendus").fill("12");
+      await page.getByLabel("Message complémentaire aux participants").fill("Merci d’arriver dix minutes avant.");
       await expect(page.getByRole("heading", { name: "Préparation et sécurité" })).toBeVisible();
       await expect(page.getByText("Matériel à prévoir", { exact: true })).toBeVisible();
       await expect(page.getByText("Accessibilité", { exact: true })).toBeVisible();
+
+      await page.getByRole("button", { name: /Essentiel/i }).click();
+      await page.getByText("Créneau global", { exact: true }).click();
+      await expect(page.getByLabel("Début du créneau global")).toHaveValue("08:30");
+      await page.getByRole("button", { name: /Terrain/i }).click();
+      await expect(page.getByRole("combobox", { name: "Arrivée" })).toHaveValue("Place de la République");
+      await page.getByRole("button", { name: /Équipe et logistique/i }).click();
+      await expect(page.getByLabel("Nombre de bénévoles attendus")).toHaveValue("12");
+      await expect(page.getByLabel("Message complémentaire aux participants")).toHaveValue("Merci d’arriver dix minutes avant.");
 
       const width = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,

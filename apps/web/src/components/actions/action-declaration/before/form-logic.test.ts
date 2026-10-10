@@ -122,6 +122,11 @@ describe("pre-action temporal validation", () => {
       "departureTime",
       "durationMinutes",
     ]);
+
+    form.departureTime = "09:30";
+    form.eventEndTime = "12:00";
+
+    expect(validateBeforeActionForm(form)).toEqual([]);
   });
 
   it("does not validate an absent optional global window as a zero-duration event", () => {

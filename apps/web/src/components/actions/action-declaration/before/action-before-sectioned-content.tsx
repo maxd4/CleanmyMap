@@ -2,6 +2,8 @@ import { ActionBeforeVerificationSection } from "./action-before-verification-se
 import { EssentialActionSection } from "./essential-action-section";
 import { IdentityAndSharingSection } from "./identity-and-sharing-section";
 import { PreparationAndSafetySection } from "./preparation-and-safety-section";
+import { PreparationPlanningFields } from "./preparation-planning-fields";
+import { TerrainActionSection } from "./terrain-action-section";
 import { VolunteerRegistrationPanel } from "./sections";
 import type { ActionCreationSectionId } from "@/lib/actions/action-creation-sections";
 import type { FormState } from "../model";
@@ -9,7 +11,7 @@ import type { ActiveRole } from "@/lib/domain-language";
 import type { BeforeActionFieldUpdater } from "./model";
 
 type SectionedContentProps = {
-  activeSection: Exclude<ActionCreationSectionId, "terrain">;
+  activeSection: ActionCreationSectionId;
   form: FormState;
   updateField: BeforeActionFieldUpdater;
   updateFields: (updates: Partial<FormState>) => void;
@@ -49,6 +51,18 @@ export function ActionBeforeSectionedContent({
   signInHref,
   signUpHref,
 }: SectionedContentProps) {
+  if (activeSection === "terrain") {
+    return (
+      <TerrainActionSection
+        form={form}
+        updateField={updateField}
+        updateFields={updateFields}
+        hasAttemptedSubmit={validationIssueFields.length > 0}
+        validationIssueFields={validationIssueFields}
+      />
+    );
+  }
+
   if (activeSection === "essentiel") {
     return (
       <>
@@ -83,6 +97,11 @@ export function ActionBeforeSectionedContent({
           userMetadata={userMetadata}
           showGroupJoinHelp={showGroupJoinHelp}
           onToggleGroupJoinHelp={onToggleGroupJoinHelp}
+        />
+        <PreparationPlanningFields
+          form={form}
+          updateField={updateField}
+          validationIssueFields={validationIssueFields}
         />
         <PreparationAndSafetySection form={form} updateField={updateField} />
       </>

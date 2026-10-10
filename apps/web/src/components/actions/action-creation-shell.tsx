@@ -163,7 +163,7 @@ function ActionCreationSectionContent({
     <ActionBeforeDeclarationForm
       {...formProps}
       initialActionId={currentActionId}
-      activeSection={activeSection === "terrain" ? "essentiel" : activeSection}
+      activeSection={activeSection}
       preparationContext={preparationContext}
       guidedWorkflow
       guidedReadiness={formalitiesReadiness}
@@ -175,9 +175,7 @@ function ActionCreationSectionContent({
 
   return (
     <div className="space-y-4">
-      <div className={activeSection === "terrain" ? "hidden" : undefined} aria-hidden={activeSection === "terrain" ? true : undefined}>
-        {form}
-      </div>
+      {form}
       {activeSection === "verification" ? <ActionCreationLegalPanel actionId={currentActionId} onReadinessChange={onFormalitiesReadiness} /> : null}
       {activeSection === "terrain" ? (
         <div data-active-subsection={initialSubsection ?? "terrain"}>

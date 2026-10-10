@@ -31,7 +31,7 @@ export function ActionBeforeFormView({
   signUpHref,
   persistenceStatus,
 }: {
-  activeSection: "all" | Exclude<ActionCreationSectionId, "terrain">;
+  activeSection: "all" | ActionCreationSectionId;
   form: FormState;
   submissionState: "idle" | "pending" | "success" | "error";
   validationIssues: string[];
