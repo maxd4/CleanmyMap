@@ -15,7 +15,7 @@ Référence Git observée au moment de la documentation :
 |---|---|
 | Dépôt | `maxd4/CleanmyMap` |
 | Branche | `main` |
-| SHA | `20db7be31c01fda5243c23df06489611336764ab` |
+| SHA | `a255c55adce62556cf5a2a78611fa498ad6b9248` |
 | Date de mesure/documentation | `2026-10-10` |
 | Codex CLI observé | `0.162.0-alpha.17.2` |
 | Modèle visé | `gpt-5.6-luna` |
@@ -155,6 +155,62 @@ L’exécution n’a pas atteint la tâche métier :
 
 Le processus Codex lancé pour cet essai a été arrêté proprement après l’échec
 d’initialisation. Le journal temporaire a été supprimé.
+
+## Prévol de fiabilité du contexte — 2026-10-10
+
+Ce prévol est distinct du benchmark `medium`/`high` et ne produit aucun
+résultat de comparaison de modèle. Il a été exécuté avec `codex-cli
+0.162.0-alpha.17.2`, `gpt-5.6-luna`, `model_reasoning_effort=low`,
+`--ephemeral`, sandbox `read-only` et `approval_policy=never`. Les surcharges
+étaient limitées à cet essai :
+
+| Paramètre | Valeur observée | Statut |
+|---|---|---|
+| `project_doc_max_bytes` | `65536` | `MEASURED` — surcharge acceptée |
+| budget de métadonnées skills | `skills.max_context_tokens=16384` | `MEASURED` — surcharge acceptée, aucun dépassement signalé |
+| `mcp_servers.coros.enabled` | `false` | `MEASURED` — désactivation éphémère |
+| configuration persistante | inchangée | `MEASURED` — aucun fichier utilisateur ou projet modifié |
+
+La première tentative de réglage `skills.context_budget` a été ignorée au
+niveau de l’exécution comme paramètre non reconnu et n’est pas retenue comme
+prévol valide. Le réglage reconnu pour cette version est
+`skills.max_context_tokens`; `4096` restait insuffisant, tandis que `16384`
+a permis le démarrage sans message de dépassement ni suppression globale des
+descriptions de skills.
+
+Résultats du prévol corrigé :
+
+| Vérification | Résultat | Statut |
+|---|---|---|
+| durée murale | `12,476 s` | `MEASURED` |
+| sortie Codex | code de sortie `0` | `MEASURED` |
+| instructions racine | règles racine du dépôt accessibles et lues | `VERIFIED` |
+| instructions scoped | règles scoped documentation et mobile accessibles et lues | `VERIFIED` |
+| skills nécessaires | `cleanmymap-repo` et `cleanmymap-performance` accessibles depuis `.codex/skills` | `VERIFIED` |
+| analyse simple | symbole `startTracking` retrouvé dans `apps/mobile/lib/tracking-service.ts` | `VERIFIED` |
+| MCP pendant le prévol | `MCP_USED=NONE`, aucune mention de COROS dans les événements | `VERIFIED` |
+
+La configuration persistante examinée séparément reste la suivante, sans
+reproduire de secret : le CLI utilise `gpt-5.6-luna`, un effort par défaut
+`high`, une politique d’approbation `never` et un sandbox local
+`danger-full-access`; le projet CleanMyMap est marqué trusted. La configuration
+projet `.codex/config.toml` ne contient que le réglage de résumé de raisonnement.
+`codex mcp get coros` confirme un serveur HTTP COROS configuré mais non
+authentifié (`Not logged in`). `gitnexus` et `node_repl` sont configurés côté
+CLI. Les surfaces Desktop exposent des namespaces MCP différés, mais leur état
+de démarrage complet n’est pas exporté par le CLI et aucun de ces MCP n’a été
+appelé pendant ce prévol.
+
+Les skills CleanMyMap existent dans les deux emplacements locaux `.codex/skills`
+et `.agents/skills`; cette duplication de provenance est observable, mais le
+prévol n’a pas établi un nombre total d’entrées du catalogue ni un nombre
+d’entrées volontairement omises. Ces valeurs restent `NOT_OBSERVABLE`. De
+même, le prévol vérifie l’accessibilité et l’analyse ciblée ; il ne constitue
+pas une preuve d’exhaustivité de tout le contexte Desktop.
+
+**Verdict du prévol : `ENVIRONMENT_READY`.** Le contexte nécessaire démarre
+normalement avec un plafond documentaire de 64 KiB, un budget de skills adapté
+et COROS isolé. Le benchmark `medium`/`high` reste `NOT_RUN`.
 
 ### Exécutions non lancées
 
