@@ -59,7 +59,7 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
     assert.doesNotMatch(job, /if: always\(\)/, jobId);
   }
   const qualityJob = extractJob(workflow, "web-quality");
-  assert.match(qualityJob, /if: needs\.scope\.outputs\.web_code_relevant == 'true' \|\| needs\.scope\.outputs\.mobile_code_relevant == 'true'/);
+  assert.match(qualityJob, /if: github\.event_name == 'workflow_dispatch' && inputs\.validation_mode == 'FULL'/);
   const staticJob = extractJob(workflow, "web-static");
   for (const command of ["npm run check:semgrep", "npm run check:lockfile-policy", "npm run typecheck", "npm run check:utf8-fr", "npm run lint"]) {
     assert.match(staticJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
@@ -67,6 +67,8 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   for (const command of ["npm run quality:top-heavy", "npm run quality:dead-code", "npm run quality:complexity", "npm run quality:duplication", "npm run quality:cycles"]) {
     assert.match(qualityJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
+  assert.doesNotMatch(staticJob, /npm run quality:top-heavy/);
+  assert.match(qualityJob, /github\.event_name == 'workflow_dispatch' && inputs\.validation_mode == 'FULL'/);
   assert.match(qualityJob, /quality:top-heavy/);
   assert.match(qualityJob, /quality:complexity/);
   assert.match(qualityJob, /npm run audit:gitnexus/);
@@ -75,8 +77,10 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.ok(gitNexusInitialization >= 0, "web-quality initializes the GitNexus candidate index");
   assert.ok(gitNexusInitialization < gitNexusAudit, "GitNexus initialization precedes the audit");
   const testsJob = extractJob(workflow, "web-tests");
+  assert.match(testsJob, /npm run test:security/);
+  assert.match(testsJob, /npm run test:regression-gates/);
   assert.match(testsJob, /validation-policy\.mjs --assert-full-suite/);
-  assert.match(testsJob, /npm run test:coverage/);
+  assert.match(testsJob, /github\.event_name == 'workflow_dispatch' && inputs\.validation_mode == 'FULL'/);
   assert.match(testsJob, /actions\/upload-artifact@/);
   assert.match(testsJob, /apps\/web\/coverage/);
   assert.doesNotMatch(testsJob, /quality:coverage/);

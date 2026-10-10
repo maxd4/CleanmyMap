@@ -7,9 +7,7 @@
     }
   },
   "git": {
-    "deploymentEnabled": {
-      "dependabot/**": false
-    }
+    "deploymentEnabled": false
   },
   "rewrites": [
     {
@@ -34,6 +32,5 @@
       "path": "/api/cron/maintenance",
       "schedule": "20 3 * * *"
     }
-  ],
-  "ignoreCommand": "node scripts/ignored-build-step.mjs"
+  ]
 }

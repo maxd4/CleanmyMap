@@ -113,7 +113,7 @@ guards CURRENT.
   arrêter avec le diagnostic exact ; ne jamais contourner le garde ni pousser
   un candidat non validé. Les validations larges relèvent de la CI ou d'une
   préparation explicite de release ;
-- `npm run checks:changed` reste l'alias `WORKTREE` du mode `RAPIDE` de
+- `npm run checks:changed` reste l'alias `WORKTREE` du mode `DEVELOPMENT` de
   développement et ne constitue pas une preuve de publication. Un échec prouvé étranger peut être
   classé `SKIPPED_PARALLEL_CHANTIER` si `STAGED` et `PUSH_CANDIDATE` restent
   verts ; une violation du candidat demeure bloquante ;
@@ -123,19 +123,23 @@ guards CURRENT.
   frontières, ne jamais utiliser `git add -A` et tester au moins un fichier du
   candidat et un fichier étranger hors candidat lorsque pertinent.
 
-## Deux modes canoniques de validation
+## Trois modes canoniques de validation
 
-Le workflow CURRENT destiné à Codex possède exactement deux modes :
+Le workflow CURRENT destiné à Codex possède trois modes clairement séparés :
 
-- `npm run checks:fast` — mode `RAPIDE`, budget dur de 180 secondes ;
-- `npm run checks:full` — mode `COMPLET`, sans budget global, réservé à une
-  préparation immédiate de déploiement Vercel ou à un prompt explicitement
-  dédié à `checks:full` ; il n'est pas une étape de clôture de lot.
+- `DEVELOPMENT` via `npm run checks:fast`, budget dur de 180 secondes, ciblé et
+  préventif par défaut ;
+- `FULL` via `npm run checks:full`, sans budget global, uniquement sur demande
+  explicite ou préparation Vercel ; il couvre tous les domaines sans dépendre
+  du diff ;
+- `RELEASE` via `npm run release:check -- --sha=<sha>`, qui autorise uniquement
+  un SHA disposant d'une preuve FULL verte et d'un worktree propre.
 
-Le planificateur sélectionne les contrôles selon le blast radius du candidat,
-mais ne déclenche jamais `checks:full` implicitement. Hors préparation Vercel ou
-prompt dédié, une demande de `checks:full` ajoutée en fin de lot est
-`NOT_RUN_POLICY`.
+Le planificateur ne déclenche jamais `FULL` implicitement. Les suites Web/mobile
+complètes, couverture globale, duplication, cycles, Knip, mutation, E2E et
+audits distants restent donc disponibles pour FULL sans être ajoutées aux hooks
+ou aux jobs CI ordinaires. Un contrôle différé en DEVELOPMENT est
+`SKIPPED_BY_POLICY`, jamais `PASS`.
 Le rapport doit indiquer `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
 `ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS`, les contrôles `PASSED`, `FAILED` et
 `NOT_RUN`, ainsi que `VERDICT`. Un dépassement est explicitement

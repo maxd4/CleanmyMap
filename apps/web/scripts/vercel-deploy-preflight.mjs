@@ -78,6 +78,16 @@ function readProjectSettings(appDirectory) {
   }
 }
 
+function readVercelConfig(appDirectory) {
+  const configPath = join(appDirectory, "vercel.json");
+  if (!existsSync(configPath)) return { configPath, config: null };
+  try {
+    return { configPath, config: JSON.parse(readFileSync(configPath, "utf8")) };
+  } catch (error) {
+    return { configPath, config: { parseError: error.message } };
+  }
+}
+
 function findSensitivePlaceholders(repoRoot, appDirectory) {
   const candidates = [
     join(repoRoot, ".vercel", ".env.production.local"),
@@ -135,10 +145,15 @@ export function runPreflight({ repoRoot = repositoryRoot(), mode = "source", pla
     checks.push("rootDirectory Vercel = apps/web");
   }
 
-  if (!existsSync(join(resolvedAppRoot, "vercel.json"))) {
+  const { config: vercelConfig } = readVercelConfig(resolvedAppRoot);
+  if (!vercelConfig) {
     errors.push("apps/web/vercel.json est absent");
+  } else if (vercelConfig.parseError) {
+    errors.push(`apps/web/vercel.json est illisible: ${vercelConfig.parseError}`);
+  } else if (vercelConfig.git?.deploymentEnabled !== false) {
+    errors.push("apps/web/vercel.json doit désactiver les déploiements Git automatiques avant RELEASE");
   } else {
-    checks.push("apps/web/vercel.json présent");
+    checks.push("apps/web/vercel.json désactive les déploiements Git automatiques");
   }
 
   if (mode === "prebuilt") {

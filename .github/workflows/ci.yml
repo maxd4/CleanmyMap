@@ -13,6 +13,16 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      validation_mode:
+        description: "DEVELOPMENT garde ciblé ou FULL préproduction"
+        required: true
+        default: DEVELOPMENT
+        type: choice
+        options:
+          - DEVELOPMENT
+          - FULL
 
 env:
   NODE_VERSION_FILE: apps/web/.nvmrc
@@ -394,7 +404,7 @@ jobs:
 
   web-quality:
     needs: scope
-    if: needs.scope.outputs.web_code_relevant == 'true' || needs.scope.outputs.mobile_code_relevant == 'true'
+    if: github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -427,7 +437,7 @@ jobs:
         id: install_node_dependencies
         run: npm ci
 
-      - name: Heavy files policy
+      - name: Heavy files policy (FULL)
         run: npm run quality:top-heavy
 
       - name: Dead-code ratchet
@@ -520,13 +530,17 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Web test policy
-        run: node scripts/checks/validation-policy.mjs --assert-full-suite
+      - name: Web targeted security and regression tests
+        run: npm run test:security && npm run test:regression-gates
 
-      - name: Web Vitest tests, coverage, and evidence
-        run: npm run test:coverage
+      - name: Web full suite, coverage, and evidence (FULL only)
+        if: github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL'
+        run: |
+          node scripts/checks/validation-policy.mjs --assert-full-suite
+          npm run test:coverage
 
-      - name: Upload Web coverage evidence
+      - name: Upload Web coverage evidence (FULL only)
+        if: github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: web-coverage-evidence-${{ github.sha }}
@@ -538,7 +552,7 @@ jobs:
 
   web-coverage:
     needs: [scope, web-tests]
-    if: needs.scope.outputs.web_code_relevant == 'true' && needs.web-tests.result == 'success'
+    if: github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL' && needs.scope.outputs.web_code_relevant == 'true' && needs.web-tests.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -692,10 +706,12 @@ jobs:
       - name: Mobile typecheck
         run: npm run mobile:typecheck
 
-      - name: Mobile Vitest tests
+      - name: Mobile Vitest tests (FULL only)
+        if: github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL'
         run: npm run mobile:test
 
-      - name: Mobile Vitest coverage ratchet
+      - name: Mobile Vitest coverage ratchet (FULL only)
+        if: github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL'
         run: npm run quality:mobile-coverage
 
       - name: Mobile lint

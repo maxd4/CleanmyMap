@@ -231,6 +231,16 @@ test("runner keeps unknown failures as FAIL and accepts only verified foreign pr
       }),
     });
     assert.equal(provenResult, 0);
+
+    const blockedResult = await runValidationMode(options, {
+      repositoryRoot: root,
+      runCheck: async () => ({
+        status: "FAIL",
+        exitCode: 1,
+        output: "CONTROL_STATUS: BLOCKED_ACCESS",
+      }),
+    });
+    assert.equal(blockedResult, 1);
   } finally {
     removeFixture(root);
   }

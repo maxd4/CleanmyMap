@@ -7,6 +7,7 @@ import {
 } from "../checks/validation-policy.mjs";
 import {
   resolveAssociatedWebTestFiles,
+  resolveAssociatedScriptTestFiles,
   resolveMigrationContracts,
 } from "./validation-resolution.mjs";
 import fs from "node:fs";
@@ -154,6 +155,53 @@ function addTargetedVitest(checks, files, estimatedSeconds = 30) {
   });
 }
 
+function addFullCheck(checks, check) {
+  addCheck(checks, {
+    estimatedSeconds: 30,
+    critical: true,
+    ...check,
+  });
+}
+
+function addFullPlanChecks(checks) {
+  const commands = [
+    ["root-file-hygiene", "Hygiène des fichiers racine", npmCommand("check:root-files"), 5],
+    ["environment-contract", "Contrat d'environnement", npmCommand("check:env-contract"), 5],
+    ["documentation-governance", "Gouvernance documentaire", npmCommand("check:doc-governance"), 10],
+    ["stack-documentation-drift", "Dérive stack/documentation", npmCommand("check:stack-doc-drift"), 5],
+    ["github-actions-security", "Sécurité GitHub Actions", npmCommand("check:github-actions"), 5],
+    ["lockfile-policy", "Politique lockfile", npmCommand("check:lockfile-policy"), 5],
+    ["semgrep-architecture", "Garde-fou architectural Semgrep", npmCommand("check:semgrep"), 45],
+    ["security-deception", "Contrat de déception sécurité", npmCommand("check:security-deception"), 5],
+    ["typecheck", "Typecheck web", npmCommand("typecheck"), 35],
+    ["lint", "ESLint web", npmCommand("lint"), 45],
+    ["test:coverage", "Vitest Web complet + couverture", npmCommand("test:coverage"), 240],
+    ["quality:coverage", "Ratchet couverture Web", npmCommand("quality:coverage"), 45],
+    ["test:scripts", "Tests déterministes des scripts", npmCommand("test:scripts"), 60],
+    ["quality:top-heavy", "Qualité des fichiers lourds", npmCommand("quality:top-heavy"), 10],
+    ["quality:complexity", "Ratchet complexité/longueur complet", npmCommand("quality:complexity"), 120],
+    ["quality:dead-code", "Ratchet dead-code Knip", npmCommand("quality:dead-code"), 60],
+    ["quality:duplication", "Ratchet duplication jscpd", npmCommand("quality:duplication"), 60],
+    ["quality:cycles", "Ratchet cycles GitNexus", npmCommand("quality:cycles"), 60],
+    ["quality:mutation", "Mutation testing", npmCommand("quality:mutation"), 180],
+    ["mobile:typecheck", "Typecheck mobile", npmCommand("mobile:typecheck"), 30],
+    ["mobile:test", "Vitest mobile complet", npmCommand("mobile:test"), 60],
+    ["mobile:security", "Tests de sécurité mobile", npmCommand("mobile:security"), 30],
+    ["mobile:lint", "ESLint mobile", npmCommand("mobile:lint"), 30],
+    ["quality:mobile-coverage", "Couverture mobile + ratchet", npmCommand("quality:mobile-coverage"), 60],
+    ["audit:vercel-ci", "Audit Vercel CI", npmCommand("audit:vercel:ci"), 15],
+    ["vercel-deploy-preflight", "Préflight Vercel", npmCommand("vercel:deploy:preflight"), 15],
+    ["build", "Build production", npmCommand("build"), 180],
+    ["test:e2e", "Campagne E2E locale", npmCommand("test:e2e"), 240],
+    ["github-security-full", "Alertes et état GitHub", { executable: "node", args: ["scripts/ci/audit-github-release.mjs"] }, 30],
+    ["supabase-full", "Audit Supabase distant", { executable: "node", args: ["scripts/ci/audit-supabase-release.mjs"] }, 60],
+  ];
+
+  for (const [id, label, command, estimatedSeconds] of commands) {
+    addFullCheck(checks, { id, label, command, estimatedSeconds });
+  }
+}
+
 export function createModeValidationPlan({
   mode = "FAST",
   candidateScope = "WORKTREE",
@@ -210,6 +258,62 @@ export function createModeValidationPlan({
     },
     candidateScope: normalizedScope,
   });
+
+  if (full) {
+    if (normalizedScope === "WORKTREE") {
+      addCheck(checks, {
+        id: "diff-check-staged",
+        label: "Git diff --cached --check",
+        estimatedSeconds: 1,
+        critical: true,
+        command: { executable: "git", args: ["diff", "--cached", "--check"] },
+        candidateScope: "STAGED",
+      });
+    }
+    addFullCheck(checks, {
+      id: "security-secrets",
+      label: "Audit des secrets",
+      estimatedSeconds: 5,
+      command: npmCommand("security:secrets"),
+    });
+    addFullPlanChecks(checks);
+    deduplicated.push(
+      { id: "test:security", status: "ALREADY_PROVEN", reason: "couvert par test:coverage + FULL_SUITE_INCLUDE_GLOBS" },
+      { id: "test:regression-gates", status: "ALREADY_PROVEN", reason: "couvert par test:coverage + FULL_SUITE_INCLUDE_GLOBS" },
+    );
+
+    const domains = Object.freeze({
+      docsRelevant: files.some(isDocumentationFile),
+      pagesSiteRelevant: files.some(isPagesSiteFile),
+      webRelevant: true,
+      webRuntimeRelevant: true,
+      webSourceRelevant: true,
+      motionRelevant: true,
+      buildRelevant: true,
+      scriptsRelevant: true,
+      pythonRelevant: true,
+      supabaseRelevant: true,
+      migrationRelevant: true,
+      securityRelevant: true,
+      semgrepRelevant: true,
+      regressionRelevant: true,
+      githubRelevant: true,
+      mobileRelevant: true,
+      lockfileRelevant: true,
+      dependencyGraphRelevant: true,
+      deadCodeRelevant: true,
+    });
+    return Object.freeze({
+      mode: normalizedMode,
+      candidateScope: normalizedScope,
+      changedFiles: files,
+      domains,
+      budgetSeconds: null,
+      plannedSeconds: checks.reduce((total, check) => total + check.estimatedSeconds, 0),
+      checks: Object.freeze(checks),
+      deduplicated: Object.freeze(deduplicated),
+    });
+  }
 
   if (semgrepRelevant) {
     addCheck(checks, {
@@ -303,13 +407,17 @@ export function createModeValidationPlan({
     });
   }
   if (scriptsRelevant) {
-    addCheck(checks, {
-      id: "scripts-tests",
-      label: "Tests déterministes des scripts",
-      estimatedSeconds: 45,
-      critical: true,
-      command: npmCommand("test:scripts"),
-    });
+    const scriptTests = resolveAssociatedScriptTestFiles(files);
+    if (scriptTests.length > 0) {
+      addCheck(checks, {
+        id: "scripts-tests-targeted",
+        label: "Tests ciblés des scripts",
+        estimatedSeconds: 30,
+        critical: true,
+        command: { executable: "node", args: ["--test", ...scriptTests] },
+        testFiles: scriptTests,
+      });
+    }
   }
   if (pythonRelevant) {
     addCheck(checks, {

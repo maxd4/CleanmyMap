@@ -17,7 +17,7 @@ function createFixture({ functions = [], links = [], sensitive = false } = {}) {
     join(appRoot, ".vercel", "project.json"),
     JSON.stringify({ settings: { rootDirectory: "apps/web" } }),
   );
-  writeFileSync(join(appRoot, "vercel.json"), JSON.stringify({ ignoreCommand: "node scripts/ignored-build-step.mjs" }));
+  writeFileSync(join(appRoot, "vercel.json"), JSON.stringify({ git: { deploymentEnabled: false } }));
 
   for (const name of functions) {
     mkdirSync(join(outputRoot, "functions", name), { recursive: true });
@@ -43,6 +43,18 @@ test("source preflight accepts the canonical monorepo setup", () => {
     const result = runPreflight({ repoRoot: root, mode: "source" });
     assert.equal(result.ok, true);
     assert.deepEqual(result.errors, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("source preflight rejects automatic Git deployments", () => {
+  const root = createFixture();
+  try {
+    writeFileSync(join(root, "apps", "web", "vercel.json"), JSON.stringify({ git: { deploymentEnabled: { main: true } } }));
+    const result = runPreflight({ repoRoot: root, mode: "source" });
+    assert.equal(result.ok, false);
+    assert.match(result.errors.join("\n"), /déploiements Git automatiques/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

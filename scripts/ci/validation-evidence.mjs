@@ -12,6 +12,11 @@ export const VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
   "validation",
   "mode-evidence",
 );
+export const FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
+  "artifacts",
+  "validation",
+  "full",
+);
 
 function normalizePath(file) {
   return String(file).replaceAll("\\", "/").replace(/^\.\//, "");
@@ -27,6 +32,10 @@ function gitHead(repositoryRoot) {
   } catch {
     return "NO_GIT_HEAD";
   }
+}
+
+export function getCandidateSha(repositoryRoot = process.cwd()) {
+  return gitHead(repositoryRoot);
 }
 
 function readStagedFile(repositoryRoot, relativePath) {
@@ -140,6 +149,57 @@ function evidenceRoot(repositoryRoot) {
 
 function evidencePath(repositoryRoot, candidateFingerprint) {
   return path.join(evidenceRoot(repositoryRoot), `${candidateFingerprint}.json`);
+}
+
+function fullEvidencePath(repositoryRoot, candidateSha) {
+  return path.join(repositoryRoot, FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT, `${candidateSha}.json`);
+}
+
+export function writeFullValidationEvidence({
+  repositoryRoot = process.cwd(),
+  candidateSha,
+  candidateFingerprint,
+  plan,
+  passed = [],
+  failed = [],
+  blocked = [],
+  notRun = [],
+  reused = [],
+  preexisting = [],
+  verdict,
+} = {}) {
+  if (!candidateSha || candidateSha === "NO_GIT_HEAD") return;
+  const root = path.join(repositoryRoot, FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT);
+  fs.mkdirSync(root, { recursive: true });
+  fs.writeFileSync(
+    fullEvidencePath(repositoryRoot, candidateSha),
+    `${JSON.stringify({
+      version: VALIDATION_EVIDENCE_VERSION,
+      candidateSha,
+      candidateFingerprint,
+      generatedAt: new Date().toISOString(),
+      mode: plan?.mode,
+      candidateScope: plan?.candidateScope,
+      passed,
+      failed,
+      blocked,
+      notRun,
+      reused,
+      preexisting,
+      verdict,
+      releaseReady: verdict === "PASS" && failed.length === 0 && blocked.length === 0 && notRun.length === 0,
+    }, null, 2)}\n`,
+    "utf8",
+  );
+}
+
+export function readFullValidationEvidence({ repositoryRoot = process.cwd(), candidateSha } = {}) {
+  if (!candidateSha) return null;
+  try {
+    return JSON.parse(fs.readFileSync(fullEvidencePath(repositoryRoot, candidateSha), "utf8"));
+  } catch {
+    return null;
+  }
 }
 
 function sleepSync(milliseconds) {

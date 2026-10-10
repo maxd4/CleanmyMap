@@ -699,11 +699,17 @@ identique sur le même candidat sans raison.
 - Un prompt de correction, refactor, audit, duplication, dead-code, documentation ou maintenance ordinaire ne doit pas inclure `npm run checks:full` par défaut.
 - L’absence de `checks:full` dans un lot normal n’est pas une validation manquante.
 - La validation normale est : preuves ciblées → contrats concernés → sécurité/régression concernée → `checks:fast` uniquement si le blast radius le justifie.
-- `checks:full` est autorisé uniquement :
+- `checks:full` / mode `FULL` est autorisé uniquement :
   1. dans un prompt explicitement dédié à `checks:full` ;
   2. dans une préparation immédiate et explicitement demandée de déploiement Vercel.
-- `checks:full` ne peut jamais être une STOP CONDITION ou un critère de clôture générique d’un lot ordinaire.
+- `checks:full` ne peut jamais être une STOP CONDITION ou un critère de clôture générique d’un lot ordinaire ; `release:check` exige en plus le SHA exact et une preuve FULL persistée.
 - Si un prompt demande `checks:full` hors de ces deux cas, ne pas l’exécuter : retourner `NOT_RUN_POLICY` et poursuivre avec les validations proportionnées.
+
+La politique canonique est donc : `DEVELOPMENT` (`checks:fast`) pour le travail
+courant ciblé, `FULL` (`checks:full`) pour une exécution globale explicitement
+demandée, puis `RELEASE` (`release:check -- --sha=<sha>`) pour vérifier qu'un SHA
+précis possède la preuve FULL requise. `RELEASE` n'est pas une commande de
+déploiement.
 
 Pour toute mutation de code source, exécuter lorsque les outils s'appliquent :
 

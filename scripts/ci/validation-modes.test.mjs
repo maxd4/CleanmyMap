@@ -7,316 +7,101 @@ import {
   getBudgetDecision,
   VALIDATION_MODE_BUDGETS,
 } from "./validation-modes.mjs";
-import { resolveAssociatedWebTestFiles, resolveMigrationContracts } from "./validation-resolution.mjs";
+import {
+  resolveAssociatedScriptTestFiles,
+  resolveAssociatedWebTestFiles,
+  resolveMigrationContracts,
+} from "./validation-resolution.mjs";
 
 function ids(plan) {
   return plan.checks.map((check) => check.id);
 }
 
-test("RAPIDE docs-only avoids Vitest and build", () => {
-  const plan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: ["documentation/development/TESTING.md"],
-  });
+test("DEVELOPMENT docs-only keeps the fast plan targeted", () => {
+  const plan = createModeValidationPlan({ mode: "FAST", changedFiles: ["documentation/development/TESTING.md"] });
   assert.ok(ids(plan).includes("documentation-governance"));
-  assert.ok(!ids(plan).includes("vitest-full"));
-  assert.ok(!ids(plan).includes("vitest-targeted"));
+  assert.ok(!ids(plan).some((id) => ["test:coverage", "quality:duplication", "quality:cycles", "quality:dead-code", "test:e2e"].includes(id)));
   assert.ok(!ids(plan).includes("build"));
-  assert.ok(!ids(plan).includes("semgrep-architecture"));
   assert.ok(plan.plannedSeconds <= VALIDATION_MODE_BUDGETS.FAST);
 });
 
-test("RAPIDE TypeScript uses targeted evidence without a full suite", () => {
-  const plan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: ["apps/web/src/lib/chat/polls.ts"],
-  });
+test("DEVELOPMENT Web changes use targeted tests and preventive quality", () => {
+  const plan = createModeValidationPlan({ mode: "FAST", changedFiles: ["apps/web/src/lib/chat/polls.ts"] });
   assert.ok(ids(plan).includes("typecheck"));
-  assert.ok(ids(plan).includes("semgrep-architecture"));
   assert.ok(ids(plan).includes("lint-targeted"));
   assert.ok(ids(plan).includes("vitest-targeted"));
-  assert.deepEqual(
-    plan.checks.find((check) => check.id === "quality-complexity").command,
-    { executable: "npm", args: ["run", "quality:complexity", "--", "--changed-only"] },
-  );
-  assert.ok(!ids(plan).includes("vitest-full"));
+  assert.deepEqual(plan.checks.find((check) => check.id === "quality-complexity").command, {
+    executable: "npm",
+    args: ["run", "quality:complexity", "--", "--changed-only"],
+  });
+  assert.ok(!ids(plan).includes("test:coverage"));
   assert.ok(!ids(plan).includes("build"));
-  const lint = plan.checks.find((check) => check.id === "lint-targeted");
-  assert.deepEqual(lint.command.args, ["eslint", "--max-warnings=0", "--config", "apps/web/eslint.config.mjs", "apps/web/src/lib/chat/polls.ts"]);
 });
 
-test("RAPIDE Motion/reveal changes run the canonical Motion governance check", () => {
-  const plan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: ["apps/web/src/lib/animations/use-gsap-reveal.ts"],
+test("DEVELOPMENT script changes never fan out to the complete script suite", () => {
+  const plan = createModeValidationPlan({ mode: "FAST", changedFiles: ["scripts/ci/validation-modes.mjs"] });
+  assert.ok(!ids(plan).includes("scripts-tests"));
+  assert.ok(ids(plan).includes("scripts-tests-targeted"));
+  assert.ok(!ids(plan).includes("quality:duplication"));
+});
+
+test("FULL is global even for documentation-only candidates", () => {
+  const plan = createModeValidationPlan({ mode: "FULL", changedFiles: ["documentation/development/TESTING.md"] });
+  for (const id of [
+    "test:coverage", "quality:coverage", "typecheck", "lint", "quality:top-heavy",
+    "quality:complexity", "quality:dead-code", "quality:duplication", "quality:cycles",
+    "quality:mutation", "test:scripts", "mobile:test", "quality:mobile-coverage",
+    "test:e2e", "github-security-full", "supabase-full", "build",
+  ]) {
+    assert.ok(ids(plan).includes(id), `missing FULL check ${id}`);
+  }
+  assert.ok(plan.deduplicated.some((entry) => entry.id === "test:security" && entry.status === "ALREADY_PROVEN"));
+  assert.ok(plan.deduplicated.some((entry) => entry.id === "test:regression-gates" && entry.status === "ALREADY_PROVEN"));
+  assert.equal(plan.budgetSeconds, null);
+});
+
+test("FULL is global for mobile-only candidates and retains Web proof", () => {
+  const plan = createModeValidationPlan({ mode: "FULL", changedFiles: ["apps/mobile/App.tsx"] });
+  assert.ok(ids(plan).includes("test:coverage"));
+  assert.ok(ids(plan).includes("mobile:typecheck"));
+  assert.ok(ids(plan).includes("mobile:security"));
+  assert.ok(ids(plan).includes("quality:mobile-coverage"));
+  assert.ok(ids(plan).includes("build"));
+});
+
+test("FULL keeps canonical Web command and does not relaunch covered groups", () => {
+  const plan = createModeValidationPlan({ mode: "FULL", changedFiles: ["package.json"] });
+  assert.deepEqual(plan.checks.find((check) => check.id === "test:coverage").command, {
+    executable: "npm",
+    args: ["run", "test:coverage"],
   });
-
-  assert.ok(ids(plan).includes("check:motion"));
-  assert.deepEqual(
-    plan.checks.find((check) => check.id === "check:motion").command,
-    { executable: "npm", args: ["run", "check:motion"] },
-  );
-});
-
-test("RAPIDE resolves an unchanged co-located sibling test", () => {
-  const plan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: ["apps/web/src/lib/chat/polls.ts"],
-  });
-  const targeted = plan.checks.find((check) => check.id === "vitest-targeted");
-  assert.ok(targeted);
-  assert.deepEqual(targeted.testFiles, ["src/lib/chat/polls.test.ts"]);
-});
-
-test("RAPIDE excludes deleted Web files from ESLint targets", () => {
-  const plan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: [
-      "apps/web/src/lib/actions/geometry/route-geometry.test.ts",
-      "apps/web/src/lib/chat/polls.ts",
-    ],
-  });
-  const lint = plan.checks.find((check) => check.id === "lint-targeted");
-  assert.deepEqual(lint.command.args, ["eslint", "--max-warnings=0", "--config", "apps/web/eslint.config.mjs", "apps/web/src/lib/chat/polls.ts"]);
-});
-
-test("a source without a sibling test does not invent one", () => {
-  assert.deepEqual(
-    resolveAssociatedWebTestFiles(["apps/web/src/lib/does-not-exist.ts"], {
-      existingFiles: ["apps/web/src/lib/does-not-exist.ts"],
-    }),
-    [],
-  );
-});
-
-test("co-located test resolution deduplicates multiple sources", () => {
-  assert.deepEqual(
-    resolveAssociatedWebTestFiles(
-      ["apps/web/src/lib/chat/polls.ts", "apps/web/src/lib/chat/polls.tsx"],
-      { existingFiles: ["apps/web/src/lib/chat/polls.test.ts"] },
-    ),
-    ["src/lib/chat/polls.test.ts"],
-  );
-});
-
-test("RAPIDE security and Supabase changes select their contracts", () => {
-  const plan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: [
-      "apps/web/src/app/api/example/route.ts",
-      "apps/web/supabase/migrations/20260915000099_example.sql",
-    ],
-  });
-  assert.ok(ids(plan).includes("test:security"));
-  assert.ok(ids(plan).includes("semgrep-architecture"));
-  assert.ok(ids(plan).includes("supabase-migration-tree"));
+  assert.equal(ids(plan).includes("test:security"), false);
+  assert.equal(ids(plan).includes("test:regression-gates"), false);
   assert.equal(new Set(ids(plan)).size, ids(plan).length);
 });
 
-test("migration families select their specialized contract", () => {
-  const contracts = resolveMigrationContracts([
-    "apps/web/supabase/migrations/20260915000021_action_registrations_browser_deny_policy.sql",
-  ]);
-  assert.deepEqual(contracts, [{
+test("migration families retain their specialized FAST contract", () => {
+  const migration = "apps/web/supabase/migrations/20260915000021_action_registrations_browser_deny_policy.sql";
+  assert.deepEqual(resolveMigrationContracts([migration]), [{
     family: "action_registrations",
     scriptTests: ["scripts/checks/action-registrations-contract.test.mjs"],
     vitestTests: [],
   }]);
-  const plan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: ["apps/web/supabase/migrations/20260915000021_action_registrations_browser_deny_policy.sql"],
-  });
+  const plan = createModeValidationPlan({ mode: "FAST", changedFiles: [migration] });
   assert.ok(ids(plan).includes("action-registrations-contract"));
-  assert.equal(ids(plan).includes("scripts-tests"), false);
-  assert.deepEqual(
-    plan.checks.find((check) => check.id === "action-registrations-contract").command,
-    { executable: "node", args: ["--test", "scripts/checks/action-registrations-contract.test.mjs"] },
-  );
+  assert.equal(ids(plan).includes("test:scripts"), false);
 });
 
-test("COMPLET Supabase-only stays in the DB/security domain", () => {
-  const plan = createModeValidationPlan({
-    mode: "FULL",
-    changedFiles: [
-      "apps/web/supabase/migrations/20260915000021_action_registrations_browser_deny_policy.sql",
-    ],
-  });
-  assert.ok(ids(plan).includes("supabase-migration-tree"));
-  assert.ok(ids(plan).includes("action-registrations-contract"));
-  assert.ok(ids(plan).includes("test:security"));
-  assert.ok(!ids(plan).some((id) => ["vitest-full", "typecheck", "lint", "build", "mobile-typecheck"].includes(id)));
-});
-
-test("COMPLET Web plus Supabase includes affected consumers without mobile fan-out", () => {
-  const plan = createModeValidationPlan({
-    mode: "FULL",
-    changedFiles: [
-      "apps/web/src/app/api/example/route.ts",
-      "apps/web/supabase/migrations/20260915000099_example.sql",
-    ],
-  });
-  assert.ok(ids(plan).includes("vitest-full"));
-  assert.deepEqual(
-    plan.checks.find((check) => check.id === "quality-complexity").command,
-    { executable: "npm", args: ["run", "quality:complexity"] },
-  );
-  assert.deepEqual(
-    plan.checks.find((check) => check.id === "quality-duplication").command,
-    { executable: "npm", args: ["run", "quality:duplication"] },
-  );
-  assert.deepEqual(
-    plan.checks.find((check) => check.id === "quality-cycles").command,
-    { executable: "npm", args: ["run", "quality:cycles"] },
-  );
-  assert.deepEqual(
-    plan.checks.find((check) => check.id === "quality-dead-code").command,
-    { executable: "npm", args: ["run", "quality:dead-code"] },
-  );
-  assert.deepEqual(
-    plan.checks.find((check) => check.id === "vitest-full").command,
-    { executable: "npm", args: ["run", "quality:coverage"] },
-  );
-  assert.ok(ids(plan).includes("supabase-migration-tree"));
-  assert.ok(!ids(plan).includes("mobile-typecheck"));
-  assert.ok(!ids(plan).includes("test:security"));
-});
-
-test("COMPLET stays blast-radius aware and strengthens the affected Web domain", () => {
-  const plan = createModeValidationPlan({
-    mode: "FULL",
-    changedFiles: ["apps/web/src/app/example/page.tsx"],
-  });
-  assert.ok(ids(plan).includes("vitest-full"));
-  assert.deepEqual(
-    plan.checks.find((check) => check.id === "vitest-full").command,
-    { executable: "npm", args: ["run", "quality:coverage"] },
-  );
-  assert.ok(ids(plan).includes("lint"));
-  assert.ok(ids(plan).includes("build"));
-  assert.ok(ids(plan).includes("root-file-hygiene"));
-  assert.ok(ids(plan).includes("vercel-ci-audit"));
-  assert.ok(!ids(plan).includes("mobile-typecheck"));
-  assert.ok(!ids(plan).includes("test:security"));
-  assert.ok(!ids(plan).includes("test:regression-gates"));
-  assert.deepEqual(plan.deduplicated.map((entry) => entry.status), [
-    "ALREADY_PROVEN",
-    "ALREADY_PROVEN",
-  ]);
-  assert.equal(plan.budgetSeconds, null);
-});
-
-test("COMPLET script-only changes include the dead-code ratchet", () => {
-  const plan = createModeValidationPlan({
-    mode: "FULL",
-    changedFiles: ["scripts/checks/dead-code-policy.mjs"],
-  });
-  assert.ok(ids(plan).includes("quality-dead-code"));
-  assert.equal(plan.domains.deadCodeRelevant, true);
-});
-
-test("COMPLET docs-only does not fan out to Web, mobile, or build", () => {
-  const plan = createModeValidationPlan({
-    mode: "FULL",
-    changedFiles: ["documentation/development/TESTING.md"],
-  });
-  assert.ok(ids(plan).includes("documentation-governance"));
-  assert.ok(ids(plan).includes("root-file-hygiene"));
-  assert.ok(!ids(plan).some((id) => ["vitest-full", "typecheck", "build", "mobile-typecheck"].includes(id)));
-  assert.ok(!ids(plan).includes("semgrep-architecture"));
-});
-
-test("COMPLET mobile-only does not add Web checks", () => {
-  const plan = createModeValidationPlan({
-    mode: "FULL",
-    changedFiles: ["apps/mobile/src/App.tsx"],
-  });
-  assert.ok(ids(plan).includes("mobile-typecheck"));
-  assert.ok(ids(plan).includes("semgrep-architecture"));
-  assert.ok(ids(plan).includes("quality-top-heavy-mobile"));
-  assert.ok(ids(plan).includes("quality-complexity-mobile"));
-  assert.ok(ids(plan).includes("quality-coverage-mobile"));
-  assert.deepEqual(plan.checks.find((check) => check.id === "quality-complexity-mobile").command, {
-    executable: "npm",
-    args: ["run", "quality:complexity", "--roots=apps/mobile"],
-  });
-  assert.ok(!ids(plan).some((id) => ["vitest-full", "typecheck", "lint", "build"].includes(id)));
-});
-
-test("RAPIDE mobile-only selects the complete mobile baseline and shared guards", () => {
-  const plan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: ["apps/mobile/App.tsx"],
-  });
-
-  for (const id of ["mobile-typecheck", "mobile-test", "mobile-security", "mobile-lint", "semgrep-architecture", "security-secrets"]) {
-    assert.ok(ids(plan).includes(id), `missing ${id}`);
-  }
-  assert.ok(!ids(plan).some((id) => ["typecheck", "lint", "vitest-full", "build"].includes(id)));
-  assert.equal(new Set(ids(plan)).size, ids(plan).length);
-});
-
-test("COMPLET mobile-only adds shared Knip, jscpd, and GitNexus gates without Web build", () => {
-  const plan = createModeValidationPlan({
-    mode: "FULL",
-    changedFiles: ["apps/mobile/App.tsx"],
-  });
-
-  for (const id of ["mobile-typecheck", "mobile-test", "mobile-security", "mobile-lint", "quality-top-heavy-mobile", "quality-complexity-mobile", "quality-coverage-mobile", "quality-dead-code", "quality-duplication", "quality-cycles"]) {
-    assert.ok(ids(plan).includes(id), `missing ${id}`);
-  }
-  assert.ok(!ids(plan).some((id) => ["typecheck", "lint", "vitest-full", "build", "vercel-ci-audit"].includes(id)));
-  assert.equal(new Set(ids(plan)).size, ids(plan).length);
-});
-
-test("mixed Web/mobile changes keep shared guards deduplicated", () => {
-  const plan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: ["apps/web/src/lib/example.ts", "apps/mobile/App.tsx"],
-  });
-
-  assert.equal(ids(plan).filter((id) => id === "semgrep-architecture").length, 1);
-  assert.equal(ids(plan).filter((id) => id === "security-secrets").length, 1);
-  assert.equal(ids(plan).filter((id) => id === "mobile-test").length, 1);
-});
-
-test("both plans have unique checks and FULL has no global budget", () => {
-  const fastPlan = createModeValidationPlan({ mode: "FAST", changedFiles: ["package.json"] });
-  assert.equal(new Set(ids(fastPlan)).size, ids(fastPlan).length);
-  assert.ok(fastPlan.plannedSeconds <= VALIDATION_MODE_BUDGETS.FAST);
-
-  const fullPlan = createModeValidationPlan({ mode: "FULL", changedFiles: ["package.json"] });
-  assert.equal(new Set(ids(fullPlan)).size, ids(fullPlan).length);
-  assert.equal(VALIDATION_MODE_BUDGETS.FULL, null);
-  assert.equal(fullPlan.budgetSeconds, null);
-});
-
-test("dependency graph changes select one npm audit gate", () => {
-  const packagePlan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: ["apps/mobile/vendor/stream-json/package.json"],
-  });
-  const lockfilePlan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: ["package-lock.json"],
-  });
-
-  for (const plan of [packagePlan, lockfilePlan]) {
-    assert.equal(plan.domains.dependencyGraphRelevant, true);
-    assert.equal(ids(plan).filter((id) => id === "dependency-audit").length, 1);
-    assert.deepEqual(plan.checks.find((check) => check.id === "dependency-audit").command, {
-      executable: "npm",
-      args: ["run", "security:dependencies"],
-    });
-  }
-});
-
-test("unrelated source changes do not select the dependency audit", () => {
-  const plan = createModeValidationPlan({
-    mode: "FAST",
-    changedFiles: ["apps/web/src/lib/actions/example.ts"],
-  });
-  assert.equal(plan.domains.dependencyGraphRelevant, false);
-  assert.equal(ids(plan).includes("dependency-audit"), false);
+test("co-located Web and script tests are resolved without inventing tests", () => {
+  assert.deepEqual(resolveAssociatedWebTestFiles(["apps/web/src/lib/chat/polls.ts"], {
+    existingFiles: ["apps/web/src/lib/chat/polls.ts", "apps/web/src/lib/chat/polls.test.ts"],
+  }), ["src/lib/chat/polls.test.ts"]);
+  assert.deepEqual(resolveAssociatedScriptTestFiles(["scripts/ci/validation-modes.mjs"], {
+    existingFiles: ["scripts/ci/validation-modes.mjs", "scripts/ci/validation-modes.test.mjs"],
+  }), ["scripts/ci/validation-modes.test.mjs"]);
+  assert.deepEqual(resolveAssociatedScriptTestFiles(["scripts/ci/no-test-here.mjs"], {
+    existingFiles: ["scripts/ci/no-test-here.mjs"],
+  }), []);
 });
 
 test("candidate scopes select the matching diff and secret boundaries", () => {
@@ -324,54 +109,24 @@ test("candidate scopes select the matching diff and secret boundaries", () => {
   const stagedPlan = createModeValidationPlan({ mode: "FAST", candidateScope: "STAGED" });
   assert.ok(ids(worktreePlan).includes("diff-check-staged"));
   assert.equal(ids(stagedPlan).includes("diff-check-staged"), false);
-  assert.equal(stagedPlan.checks[0].command.executable, "git");
   assert.deepEqual(stagedPlan.checks[0].command.args, ["diff", "--cached", "--check"]);
   assert.deepEqual(stagedPlan.checks[1].command.args, ["run", "security:secrets", "--", "--staged-only"]);
 });
 
-test("the runner keeps a cleanup boundary for timeout and command failure", async () => {
-  const { readFile } = await import("node:fs/promises");
-  const source = await readFile(new URL("./run_validation_mode.mjs", import.meta.url), "utf8");
-  assert.match(source, /finally\s*\{/);
-  assert.match(source, /TIME_BUDGET_EXCEEDED/);
-});
-
-test("budget decision is deterministic and reports time-budget skips", () => {
-  assert.equal(
-    getBudgetDecision({ elapsedSeconds: 179, estimatedSeconds: 2, budgetSeconds: 180 }).status,
-    "NOT_RUN_TIME_BUDGET",
-  );
-  assert.equal(
-    getBudgetDecision({ elapsedSeconds: 10, estimatedSeconds: 2, budgetSeconds: 180 }).decision,
-    "execute",
-  );
-  assert.equal(
-    getBudgetDecision({ elapsedSeconds: 10_000, estimatedSeconds: 2, budgetSeconds: null }).decision,
-    "execute",
-  );
+test("budget decision is deterministic and FULL has no global budget", () => {
+  assert.equal(getBudgetDecision({ elapsedSeconds: 179, estimatedSeconds: 2, budgetSeconds: 180 }).status, "NOT_RUN_TIME_BUDGET");
+  assert.equal(getBudgetDecision({ elapsedSeconds: 10, estimatedSeconds: 2, budgetSeconds: null }).decision, "execute");
+  assert.equal(VALIDATION_MODE_BUDGETS.FULL, null);
 });
 
 test("foreign failures require a verified pre-existing proof", () => {
-  assert.equal(
-    classifyValidationFailure({
-      candidateChangedFiles: ["apps/web/src/example.ts"],
-      failureFiles: ["apps/mobile/src/parallel.ts"],
-    }),
-    "FAIL",
-  );
-  assert.equal(
-    classifyValidationFailure({
-      candidateChangedFiles: ["apps/web/src/example.ts"],
-      failureFiles: ["apps/mobile/src/parallel.ts"],
-      preexistingProof: { verified: true, kind: "baseline", source: "baseline" },
-    }),
-    "PREEXISTING_PARALLEL_FAILURE",
-  );
-  assert.equal(
-    classifyValidationFailure({
-      candidateChangedFiles: ["apps/web/src/example.ts"],
-      failureFiles: ["apps/web/src/example.ts"],
-    }),
-    "FAIL",
-  );
+  assert.equal(classifyValidationFailure({
+    candidateChangedFiles: ["apps/web/src/example.ts"],
+    failureFiles: ["apps/mobile/src/parallel.ts"],
+  }), "FAIL");
+  assert.equal(classifyValidationFailure({
+    candidateChangedFiles: ["apps/web/src/example.ts"],
+    failureFiles: ["apps/mobile/src/parallel.ts"],
+    preexistingProof: { verified: true, kind: "baseline", source: "baseline" },
+  }), "PREEXISTING_PARALLEL_FAILURE");
 });

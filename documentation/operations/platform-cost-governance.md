@@ -203,19 +203,15 @@ preuve de déploiement ni de disponibilité distante.
 ### Déclenchement, mesure et rétention
 
 La signature d'un commit est un signal d'intégrité Git uniquement. Elle ne
-constitue jamais une demande de build ou de déploiement Vercel. Le déclenchement
-de `ignoreCommand` dépend exclusivement de l'impact réel du diff sur le runtime
-web : les documents présents dans la registry documentaire publique peuvent
-déclencher un build ; les autres modifications de `documentation/` ne le
-déclenchent pas.
+constitue jamais une demande de build ou de déploiement Vercel. Les déploiements
+Git automatiques sont désactivés par la configuration canonique ; un déploiement
+ne peut être envisagé qu'après `FULL` puis `RELEASE` sur le SHA exact.
 
 La configuration versionnée `apps/web/vercel.json` désactive les déploiements Git
-automatiques pour les branches Dependabot avec la règle officielle
-`git.deploymentEnabled: { "dependabot/**": false }`. `main` et les branches non
-visées restent activés par défaut ; les previews utiles peuvent donc continuer
-à être créées pour les autres branches. Cette règle réduit uniquement le bruit
-des mises à jour Dependabot et ne modifie ni les mises à jour de sécurité ni la
-configuration Dependabot de GitHub.
+automatiques avec la règle officielle `git.deploymentEnabled: false`. Les
+previews ou productions doivent donc être explicitement demandées et vérifiées
+par le protocole RELEASE ; cette règle ne modifie ni les mises à jour de
+sécurité ni la configuration Dependabot de GitHub.
 
 Après le moratoire, mesurer pendant quelques jours le ratio entre :
 
@@ -228,10 +224,10 @@ Le rapport doit distinguer les Productions des Previews et des déploiements
 le nombre de Productions par commit. Une mesure locale ou API en lecture seule
 ne constitue pas une autorisation de déployer.
 
-Une release gate n'est pas activée par défaut. Si la mesure confirme un rythme
-de Productions durablement excessif, l'activation doit être une décision
-volontaire et documentée : Git continue d'intégrer sur `main`, tandis qu'une
-Production n'est générée qu'au moment d'une publication explicitement demandée.
+La release gate est désormais activée par le protocole `FULL` puis `RELEASE` :
+Git continue d'intégrer sur `main`, tandis qu'une Production n'est générée
+qu'au moment d'une publication explicitement demandée et autorisée pour le SHA
+validé.
 
 La rétention Vercel doit rester agressive en parallèle : fenêtre très courte
 pour les Previews, les déploiements annulés et les erreurs, et petite fenêtre
@@ -247,11 +243,9 @@ La configuration versionnée actuelle est portée par
 
 - le `rootDirectory` Vercel est `apps/web` et les fonctions ciblent la région
   `cdg1` ;
-- `main` et les autres branches restent activés par défaut, tandis que
-  `dependabot/**` est explicitement exclu des déploiements Git ;
+- les déploiements Git automatiques sont désactivés (`deploymentEnabled=false`) ;
 - le seul cron Vercel déclaré est `/api/cron/maintenance`, programmé à
   `20 3 * * *` UTC ; le registre applicatif décide ensuite quels jobs sont dus ;
-- `ignoreCommand` est `node scripts/ignored-build-step.mjs` ;
 - le build expose `NEXT_PUBLIC_SOURCE_MAP=true`, conserve
   `productionBrowserSourceMaps: true` et désactive
   `experimental.serverSourceMaps` ;

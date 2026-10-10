@@ -6,7 +6,9 @@ import {
   cleanupValidationEvidence,
   createCandidateFingerprint,
   createValidationEvidenceKey,
+  getCandidateSha,
   readFastValidationEvidence,
+  writeFullValidationEvidence,
   writeFastValidationEvidence,
 } from "./validation-evidence.mjs";
 import {
@@ -85,6 +87,7 @@ function printReport({
   candidateFingerprint,
   passed,
   failed,
+  blocked,
   notRun,
   timedOut,
   reused,
@@ -106,12 +109,15 @@ function printReport({
   for (const value of preexisting) console.log(`- ${value}`);
   console.log("CHECKS_FAILED:");
   for (const value of failed) console.log(`- ${value}`);
+  console.log("CHECKS_BLOCKED:");
+  for (const value of blocked) console.log(`- ${value}`);
   console.log("CHECKS_NOT_RUN:");
   for (const value of notRun) console.log(`- ${value.id}\n  reason: ${value.reason}`);
+  console.log("CHECKS_DEDUPLICATED:");
   for (const value of plan.deduplicated) console.log(`- ${value.id}: ${value.status} (${value.reason})`);
   if (timedOut) console.log("TIME_BUDGET_EXCEEDED: yes");
   if (cleanupError) console.log(`CLEANUP_FAILED: ${cleanupError.message}`);
-  const verdict = timedOut || failed.length > 0 || cleanupError
+  const verdict = timedOut || failed.length > 0 || blocked.length > 0 || cleanupError
     ? "FAIL"
     : notRun.length > 0
       ? "INCOMPLETE"
@@ -143,6 +149,7 @@ export async function runValidationMode(
   const startedAt = performance.now();
   const passed = [];
   const failed = [];
+  const blocked = [];
   const notRun = [];
   const reused = [];
   const preexisting = [];
@@ -193,6 +200,11 @@ export async function runValidationMode(
         failed.push(`${check.id}: TIME_BUDGET_EXCEEDED`);
         break;
       } else {
+        const blockedStatus = result.output?.match(/CONTROL_STATUS:\s+(BLOCKED_ACCESS|BLOCKED_ENVIRONMENT|BLOCKED_DECISION|NOT_RUN)/)?.[1];
+        if (blockedStatus) {
+          blocked.push(`${check.id}: ${blockedStatus}`);
+          continue;
+        }
         const classification = classifyValidationFailure({
           candidateChangedFiles: changedFiles,
           failureFiles: result.failureFiles ?? [],
@@ -216,18 +228,37 @@ export async function runValidationMode(
   }
 
   const elapsedSeconds = (performance.now() - startedAt) / 1000;
+  const candidateSha = getCandidateSha(repositoryRoot);
   const verdict = printReport({
     plan,
     elapsedSeconds,
     candidateFingerprint,
     passed,
     failed,
+    blocked,
     notRun,
     timedOut,
     reused,
     preexisting,
     cleanupError,
   });
+  if (plan.mode === "FULL") {
+    writeFullValidationEvidence({
+      repositoryRoot,
+      candidateSha,
+      candidateFingerprint,
+      plan,
+      passed,
+      failed,
+      blocked,
+      notRun,
+      reused,
+      preexisting,
+      verdict,
+    });
+    console.log(`CANDIDATE_SHA: ${candidateSha}`);
+    console.log(`RELEASE_READY: ${verdict === "PASS" && candidateSha !== "NO_GIT_HEAD" ? "YES" : "NO"}`);
+  }
   return verdict === "PASS" ? 0 : verdict === "INCOMPLETE" ? 2 : 1;
 }
 

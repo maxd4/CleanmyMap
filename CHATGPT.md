@@ -790,15 +790,20 @@ commit local selon son protocole, sans push tant que le mode reste actif
 Ce protocole est prioritaire sur les instructions de publication incompatibles
 avec le mode explicitement activé.
 Ne pas déclencher d'audit GitHub, de navigateur, de build complet ou de suite
-lourde sans nécessité démontrée par le périmètre.
+lourde en mode `DEVELOPMENT` sans nécessité démontrée par le périmètre.
 
 ChatGPT ne doit pas inclure `npm run checks:full` dans les prompts ordinaires.
 Il doit demander les validations les plus ciblées capables de prouver le lot,
 puis `checks:fast` uniquement lorsque le blast radius le justifie.
 
-`checks:full` est réservé exclusivement :
+Le mode `FULL` (`npm run checks:full`) est réservé exclusivement :
 - à un prompt explicitement consacré à cette commande ;
 - à une préparation immédiate de déploiement Vercel explicitement demandée.
+
+Le mode `RELEASE` (`npm run release:check -- --sha=<sha>`) ne fait que vérifier
+la preuve FULL persistée pour le SHA exact, la propreté du worktree et le
+blocage des déploiements Git Vercel automatiques. Il n'autorise pas à lui seul
+une commande de déploiement non demandée.
 
 L’absence de `checks:full` n’est jamais, à elle seule, un motif pour considérer
 un lot incomplet. ChatGPT ne doit pas utiliser `checks:full` comme STOP CONDITION

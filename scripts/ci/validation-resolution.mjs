@@ -107,6 +107,47 @@ export function resolveAssociatedWebTestFiles(changedFiles = [], { existingFiles
   return [...resolved].sort();
 }
 
+function isScriptTestPath(file) {
+  return /^((?:scripts|apps\/web\/scripts)\/.*)\.(test|spec)\.(?:mjs|js|ts|tsx)$/.test(file);
+}
+
+function getScriptTestCandidates(file) {
+  const extension = path.extname(file);
+  const source = file.slice(0, -extension.length);
+  return [
+    `${source}.test.mjs`,
+    `${source}.test.js`,
+    `${source}.test.ts`,
+    `${source}.test.tsx`,
+  ];
+}
+
+/**
+ * Resolve only directly associated script tests for FAST. FULL owns the
+ * complete script suite; FAST must never fan out to all script tests merely
+ * because one script changed.
+ */
+export function resolveAssociatedScriptTestFiles(changedFiles = [], { existingFiles } = {}) {
+  const normalizedExisting = existingFiles
+    ? new Set([...existingFiles].map((file) => String(file).replaceAll("\\", "/")))
+    : undefined;
+  const resolved = new Set();
+
+  for (const rawFile of changedFiles) {
+    const file = String(rawFile).replaceAll("\\", "/").replace(/^\.\//, "");
+    if (!file.startsWith("scripts/") && !file.startsWith("apps/web/scripts/")) continue;
+    if (isScriptTestPath(file)) {
+      if (fileExists(file, normalizedExisting)) resolved.add(file);
+      continue;
+    }
+    for (const candidate of getScriptTestCandidates(file)) {
+      if (fileExists(candidate, normalizedExisting)) resolved.add(candidate);
+    }
+  }
+
+  return [...resolved].sort();
+}
+
 export function resolveMigrationContracts(changedFiles = []) {
   const matched = new Map();
   for (const rawFile of changedFiles) {

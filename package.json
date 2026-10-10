@@ -106,6 +106,7 @@
     "design-system:board": "node scripts/design/generate-design-system-board.mjs",
     "design-system:board:watch": "node scripts/design/generate-design-system-board.mjs --watch",
     "pre-release:check": "node scripts/ci/pre-release-check.mjs --exit-on-error",
+    "release:check": "node scripts/ci/release-gate.mjs",
     "metrics:cicd": "node scripts/reports/cicd-metrics-report.mjs",
     "metrics:repository-growth": "node scripts/reports/repository-growth.mjs",
     "metrics:jsonl": "node scripts/data/summarize-jsonl.mjs",

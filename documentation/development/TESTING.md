@@ -6,9 +6,9 @@ Guide canonique de validation du dépôt CleanMyMap.
 
 Une commande ne doit jamais être présentée comme « globale » si elle ne couvre qu'une partie du dépôt.
 
-Le workflow Codex distingue exactement deux modes de validation : `RAPIDE` et
-`COMPLET`. Les tests spécialisés restent des briques appelables séparément,
-pas des modes supplémentaires.
+Le workflow CleanMyMap distingue trois modes de validation : `DEVELOPMENT`,
+`FULL` et `RELEASE`. Les tests spécialisés restent des briques appelables
+séparément, pas des modes supplémentaires.
 
 ## Niveau de preuve et contrats exécutés
 
@@ -198,54 +198,79 @@ Ne pas lancer `supabase start`, `supabase status` ou `supabase db reset` dans le
 workflow local canonique ; ces commandes restent réservées à cette CI de replay
 explicitement dédiée.
 
-## Deux modes canoniques
+En FULL, `scripts/ci/audit-supabase-release.mjs` exige un
+`SUPABASE_PROJECT_REF` explicitement fourni, vérifie la visibilité du projet,
+les branches, l'historique des migrations, le dry-run et les advisors security
+et performance. La santé et les logs doivent être observés par une interface
+autorisée puis fournis sous forme d'une preuve JSON liée au même project ref
+via `SUPABASE_HEALTH_LOG_REPORT`. Sans accès ou sans preuve correspondante, le
+résultat est `BLOCKED_ACCESS` et `RELEASE_READY` reste `NO`.
 
-Boucle normale, avec sélection selon le blast radius du `WORKTREE` :
+## Trois modes canoniques
+
+### DEVELOPMENT — défaut
+
+La boucle normale sélectionne selon le blast radius du `WORKTREE` :
 
 ```bash
 npm run checks:fast
 ```
 
-Le mode `RAPIDE` est borné à 180 secondes. Il exécute le diff check, l'audit
-des secrets et les contrôles pertinents pour les fichiers concernés : tests
-ciblés, typecheck, lint, sécurité/AuthZ, qualité, gouvernance documentaire,
-pages_site, scripts ou migrations. Les suites lourdes non nécessaires sont
-`NOT_RUN` avec leur raison ; elles ne sont pas relancées par redondance.
+Le mode `DEVELOPMENT` est borné à 180 secondes. Il exécute les tests ciblés,
+typecheck/lint pertinents, les contrôles secrets et sécurité/AuthN/AuthZ/RLS,
+les contrats de migration et les ratchets préventifs directement concernés.
+Il ne lance pas automatiquement les suites Web/mobile complètes, la couverture
+globale, jscpd, GitNexus, Knip, mutation testing, la campagne E2E complète ni
+les audits distants. Un contrôle différé est `SKIPPED_BY_POLICY`, jamais
+`PASS`.
 
-Validation complète réservée à une préparation immédiate de déploiement Vercel
-ou à un prompt explicitement dédié à `checks:full` :
+### FULL — préproduction exhaustive
+
+`FULL` est déclenché uniquement sur demande explicite ou dans une préparation
+Vercel explicitement demandée :
 
 ```bash
 npm run checks:full
 ```
 
-`checks:full` ne fait pas partie de la clôture normale d'un lot. Si la commande
-est demandée uniquement en fin d'un autre lot, elle est `NOT_RUN_POLICY` et ne
-doit pas être exécutée. Le mode `COMPLET` n'a plus de budget global fixe et réutilise la même détection
-des domaines concernés que `RAPIDE` : il ne rend pas automatiquement tous les
-domaines pertinents. Il renforce les preuves à l'intérieur du scope détecté
-(gouvernance, sécurité, typecheck, lint, Vitest Web, quality, migrations, tests
-de scripts/Python ou build de production lorsque le domaine le justifie). Une
-preuve déjà couverte par `RAPIDE` sur le même candidat et la même configuration
-est indiquée `ALREADY_PROVEN` au lieu d'être relancée ; toute modification du
-candidat l'invalide.
+`checks:full` examine tous les domaines, indépendamment des fichiers modifiés :
+suite Web complète avec `test:coverage` puis `quality:coverage`, tests mobile,
+typecheck/lint, scripts/Python, qualité structurelle, sécurité, build, E2E,
+Vercel, GitHub Security et Supabase. `test:security` et
+`test:regression-gates` sont marqués `ALREADY_PROVEN` lorsqu'ils sont couverts
+par la suite Web complète ; une modification du candidat invalide toute preuve
+réutilisée. Les accès distants indisponibles restent `BLOCKED_ACCESS` et ne
+peuvent jamais produire un FULL vert.
+
+### RELEASE — publication contrôlée
+
+Après un FULL vert sur le SHA exact, vérifier :
+
+```bash
+npm run release:check -- --sha=<sha-valide>
+```
+
+La commande exige un worktree propre, une preuve FULL persistée pour le SHA,
+`RELEASE_READY: YES` et `git.deploymentEnabled: false` pour empêcher les
+déploiements Git automatiques. Elle n'exécute aucun déploiement. Une commande
+Vercel explicite reste nécessaire après cette preuve.
 
 Chaque exécution produit un rapport avec `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
-`ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS` (`none` pour `COMPLET`),
+`ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS` (`none` pour `FULL`),
 `CHECKS_PASSED`, `CHECKS_FAILED`,
 `CHECKS_NOT_RUN` et `VERDICT`. `TIME_BUDGET_EXCEEDED` et
 `NOT_RUN_TIME_BUDGET` restent des résultats explicites pour les modes qui ont
 un budget, jamais des succès.
 
 Les alias historiques suivants restent disponibles pour compatibilité ; ils ne
-constituent pas une autorisation implicite de lancer `checks:full` :
+constituent pas une autorisation implicite de lancer `FULL` :
 
 ```bash
 npm run checks:changed
 npm run checks
 ```
 
-Ils convergent respectivement vers `RAPIDE` et `COMPLET`. Les commandes
+Ils convergent respectivement vers `DEVELOPMENT` et `FULL`. Les commandes
 spécialisées restent utiles pour une preuve isolée :
 
 ```bash
@@ -261,10 +286,13 @@ npm run quality:dead-code
 
 La commande canonique `npm run lint` utilise le seuil natif ESLint
 `--max-warnings=0` : tout nouveau warning est bloquant, comme toute erreur.
-Les modes `RAPIDE` et `COMPLET`, ainsi que la CI qui appellent ce lint,
+Les modes `DEVELOPMENT` et `FULL`, ainsi que la CI qui appellent ce lint,
 conservent ce même contrat.
 
-Les scopes Git `WORKTREE`, `STAGED`, `PUSH_CANDIDATE` et
+Les états de contrôle sont `PASS`, `FAIL`, `SKIPPED_BY_POLICY`, `NOT_RUN`,
+`BLOCKED_ACCESS`, `BLOCKED_ENVIRONMENT` et `BLOCKED_DECISION`. Pendant FULL,
+aucun état autre que `PASS` ou `ALREADY_PROVEN` ne peut contribuer à
+`RELEASE_READY: YES`. Les scopes Git `WORKTREE`, `STAGED`, `PUSH_CANDIDATE` et
 `DYNAMIC_CANDIDATE` décrivent le candidat contrôlé ; ils ne constituent pas de
 nouveaux modes.
 
@@ -724,9 +752,9 @@ npm run quality:cycles
 ```
 
 Il exige un rapport complet et stable, plafonne les cycles historiques
-identifiés et échoue sur tout nouveau cycle ou baseline obsolète. Les deux
-gates sont exécutés en `COMPLET` et dans la CI ; ils ne sont pas ajoutés à
-`RAPIDE` pour éviter une analyse globale à chaque changement ciblé.
+identifiés et échoue sur tout nouveau cycle ou baseline obsolète. Ces gates
+sont exécutés en `FULL` et dans la CI FULL ; ils ne sont pas ajoutés à
+`DEVELOPMENT` pour éviter une analyse globale à chaque changement ciblé.
 
 ### Audits qualité et artefacts locaux
 
@@ -944,10 +972,11 @@ npm run mobile:lint
 npm run quality:mobile-coverage
 ```
 
-Pour un changement de code mobile, le mode RAPIDE sélectionne ces quatre
-contrôles mobiles ainsi que les garde-fous communs de secrets et de Semgrep.
-Le mode COMPLET ajoute les contrôles partagés Knip, jscpd et cycles GitNexus.
-Un changement mobile seul ne déclenche pas les validations web de build,
+Pour un changement de code mobile, le mode DEVELOPMENT sélectionne les
+contrôles mobiles pertinents ainsi que les garde-fous communs de secrets et de
+Semgrep. Le mode FULL ajoute systématiquement la validation Web complète, les
+contrôles partagés Knip, jscpd, cycles GitNexus et le build. Un changement
+mobile seul n'autorise donc jamais à déclarer le Web non vérifié en FULL,
 Vercel ou Playwright.
 
 Le mobile est `CURRENT / ACTIVE DEVELOPMENT` depuis le lot M0, mais reste
