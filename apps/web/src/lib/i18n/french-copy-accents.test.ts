@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -12,8 +12,16 @@ const COPY_FILES = [
   "src/app/(app)/reports/page.tsx",
   "src/components/sections/rubriques/open-data-section.tsx",
   "src/components/sections/rubriques/funding-section.tsx",
-  "src/components/sections/rubriques/guide-section.tsx",
   "src/components/sections/rubriques/weather-section.tsx",
+  "src/components/sections/rubriques/weather-section.preparation.tsx",
+  "src/components/sections/rubriques/weather-section.preparation-controls.tsx",
+  "src/components/sections/rubriques/weather-section.conditions.tsx",
+  "src/components/sections/rubriques/weather-section.conditions.guidance.tsx",
+  "src/components/sections/rubriques/weather-section.conditions.forecast.tsx",
+  "src/components/actions/action-declaration/before/preparation-and-safety-section.tsx",
+  "src/components/actions/action-declaration/before/preparation-accessibility-fields.tsx",
+  "src/components/actions/action-declaration/before/preparation-checklist-fields.tsx",
+  "src/components/actions/action-declaration/before/preparation-material-fields.tsx",
   "src/components/sections/rubriques/annuaire/annuaire-section.tsx",
   "src/components/sections/rubriques/climate/climate-section.tsx",
   "src/components/sections/rubriques/annuaire/seed-index.ts",
@@ -87,6 +95,19 @@ function collectHumanStrings(raw: string): string[] {
 }
 
 describe("french copy accent regression guard", () => {
+  it("keeps every controlled copy file present", () => {
+    const missing = COPY_FILES.filter((relativePath) => !existsSync(resolve(process.cwd(), relativePath)));
+
+    expect(missing).toEqual([]);
+  });
+
+  it("detects an unaccented French string in a relevant fixture", () => {
+    const fixtureStrings = collectHumanStrings('const fixture = "La meteo et la securite doivent etre verifiees.";');
+    const detected = fixtureStrings.some((text) => BANNED_UNACCENTED_FORMS.some((pattern) => pattern.test(text)));
+
+    expect(detected).toBe(true);
+  });
+
   it("does not contain banned unaccented French forms in key UI copy files", () => {
     const offenders: string[] = [];
 

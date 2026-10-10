@@ -18,7 +18,7 @@ apps/web/src/components/sections/rubriques/weather-section.tsx
 apps/web/src/components/sections/rubriques/weather-location-picker.tsx
 apps/web/src/components/sections/rubriques/use-weather-data.ts
 apps/web/src/components/sections/rubriques/weather-section.preparation.tsx
-apps/web/src/components/sections/rubriques/use-kit-data.ts
+apps/web/src/components/sections/rubriques/weather-section.preparation-controls.tsx
 ```
 
 ## Objectif utilisateur
