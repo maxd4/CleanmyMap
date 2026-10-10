@@ -127,4 +127,27 @@ describe("ActionDeclarationFormFeedback", () => {
     expect(markup).toContain(">75 min</p>");
     expect(markup).not.toContain(">68 min</p>");
   });
+
+  it("shows missing measurements as unavailable without changing explicit zeroes", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionDeclarationFormFeedback, {
+        submissionState: "success",
+        createdId: "action-123",
+        errorMessage: null,
+        hasAttemptedSubmit: false,
+        validationIssues: [],
+        retentionLoop: null,
+        recordedAction: {
+          ...recordedAction,
+          wasteKg: null,
+          cigaretteButts: 0,
+        },
+      }),
+    );
+
+    expect(markup).toContain(">Non mesuré</p>");
+    expect(markup).toContain(">0</p>");
+    expect(markup).not.toContain("Non mesuré kg");
+    expect(markup).not.toContain("0 kg");
+  });
 });

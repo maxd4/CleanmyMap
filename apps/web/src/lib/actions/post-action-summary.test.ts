@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPostActionSummary } from "./post-action-summary";
+import type { ActionEditorRecord } from "./http";
 
 const action = {
   id: "action-42",
@@ -65,5 +66,45 @@ describe("buildPostActionSummary", () => {
     expect(summary.impactStatus).toBe("provisional");
     expect(summary.action.wasteKg).toBe(4);
     expect(summary.quality.score).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ["null", null],
+    ["undefined", undefined],
+  ] as const)("keeps a missing waste measurement unavailable for %s", (_label, wasteKg) => {
+    const summary = buildPostActionSummary({
+      ...action,
+      wasteKg,
+    } as unknown as ActionEditorRecord);
+
+    expect(summary.action.wasteKg).toBeNull();
+    expect(summary.action.cigaretteButts).toBe(10);
+    expect(summary.impact.find((metric) => metric.id === "co2")?.value).toBeNull();
+    expect(summary.impact.find((metric) => metric.id === "surface")?.value).toBeNull();
+  });
+
+  it("keeps a missing cigarette-butt measurement unavailable while preserving zero", () => {
+    const missing = buildPostActionSummary({ ...action, cigaretteButts: null });
+    const absent = buildPostActionSummary({
+      ...action,
+      cigaretteButts: undefined,
+    } as unknown as ActionEditorRecord);
+    const zero = buildPostActionSummary({ ...action, cigaretteButts: 0 });
+
+    expect(missing.action.cigaretteButts).toBeNull();
+    expect(absent.action.cigaretteButts).toBeNull();
+    expect(missing.impact.find((metric) => metric.id === "water")?.value).toBeNull();
+    expect(zero.action.cigaretteButts).toBe(0);
+    expect(zero.impact.find((metric) => metric.id === "water")?.value).toBe(0);
+  });
+
+  it("preserves positive and explicit zero waste measurements", () => {
+    const zero = buildPostActionSummary({ ...action, wasteKg: 0 });
+    const positive = buildPostActionSummary({ ...action, wasteKg: 2.5 });
+
+    expect(zero.action.wasteKg).toBe(0);
+    expect(zero.impact.find((metric) => metric.id === "co2")?.value).toBe(0);
+    expect(positive.action.wasteKg).toBe(2.5);
+    expect(positive.impact.find((metric) => metric.id === "co2")?.value).toBe(3);
   });
 });

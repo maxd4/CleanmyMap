@@ -26,6 +26,9 @@ export type ActionQualityResult = {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function toFiniteNumber(input: unknown, fallback: number): number {
+  if (input === null || input === undefined) {
+    return fallback;
+  }
   const value = Number(input);
   return Number.isFinite(value) ? value : fallback;
 }

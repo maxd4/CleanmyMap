@@ -1,17 +1,12 @@
 import type { ActionListItem } from "@/lib/actions/types";
 import type { ActionEditorRecord } from "./http";
+import {
+  buildPostActionImpactMetrics,
+  type PostActionImpactMetric,
+} from "./post-action-summary-impact";
 import { evaluateActionQuality } from "./quality/quality";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { resolveEffectiveVolunteerUnits } from "./volunteer-participation";
-
-type PostActionImpactMetric = {
-  id: "co2" | "water" | "surface";
-  label: string;
-  value: number;
-  unit: string;
-  method: string;
-  confidence: number;
-};
 
 export type PostActionSummary = {
   action: {
@@ -19,11 +14,11 @@ export type PostActionSummary = {
     status: ActionEditorRecord["status"];
     locationLabel: string;
     actionDate: string;
-    wasteKg: number;
-    cigaretteButts: number;
+    wasteKg: number | null;
+    cigaretteButts: number | null;
     volunteersCount: number;
     effectiveVolunteerUnits: number | null;
-    durationMinutes: number;
+    durationMinutes: number | null;
   };
   quality: {
     score: number;
@@ -43,9 +38,16 @@ function round(value: number, digits = 1): number {
   return Math.round(value * factor) / factor;
 }
 
-function toNonNegativeNumber(value: unknown): number {
+function roundNullable(value: number | null, digits = 1): number | null {
+  return value === null ? null : round(value, digits);
+}
+
+function toNonNegativeNumber(value: unknown): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
 }
 
 function toActionListItem(action: ActionEditorRecord): ActionListItem {
@@ -72,23 +74,24 @@ export function buildPostActionSummary(
   action: ActionEditorRecord,
 ): PostActionSummary {
   const wasteKg = toNonNegativeNumber(action.wasteKg);
-  const cigaretteButts = Math.trunc(toNonNegativeNumber(action.cigaretteButts));
-  const volunteersCount = Math.max(1, Math.trunc(toNonNegativeNumber(action.volunteersCount)));
+  const cigaretteButtsValue = toNonNegativeNumber(action.cigaretteButts);
+  const cigaretteButts = cigaretteButtsValue === null ? null : Math.trunc(cigaretteButtsValue);
+  const volunteersValue = toNonNegativeNumber(action.volunteersCount);
+  const volunteersCount = Math.max(1, Math.trunc(volunteersValue ?? 0));
   const effectiveVolunteerUnits = resolveEffectiveVolunteerUnits(
     action.volunteerParticipation,
   );
   const operationalVolunteerUnits = effectiveVolunteerUnits ?? volunteersCount;
-  const durationMinutes = Math.trunc(toNonNegativeNumber(action.durationMinutes));
+  const durationValue = toNonNegativeNumber(action.durationMinutes);
+  const durationMinutes = durationValue === null ? null : Math.trunc(durationValue);
   const quality = evaluateActionQuality(toActionListItem(action));
-  const factors = IMPACT_PROXY_CONFIG.factors;
-
   return {
     action: {
       id: action.id,
       status: action.status,
       locationLabel: action.locationLabel,
       actionDate: action.actionDate,
-      wasteKg: round(wasteKg),
+      wasteKg: roundNullable(wasteKg),
       cigaretteButts,
       volunteersCount,
       effectiveVolunteerUnits,
@@ -99,35 +102,13 @@ export function buildPostActionSummary(
       grade: quality.grade,
       rulesVersion: quality.rulesVersion ?? "unknown",
     },
-    impact: [
-      {
-        id: "co2",
-        label: "CO₂e évité",
-        value: round(wasteKg * factors.co2KgPerWasteKg),
-        unit: "kg CO₂e",
-        method: `Proxy ${IMPACT_PROXY_CONFIG.version} · déchets enregistrés × ${factors.co2KgPerWasteKg} kg CO₂e/kg`,
-        confidence: quality.score,
-      },
-      {
-        id: "water",
-        label: "Eau protégée",
-        value: Math.round(cigaretteButts * factors.waterLitersPerCigaretteButt),
-        unit: "L",
-        method: `Proxy ${IMPACT_PROXY_CONFIG.version} · mégots enregistrés × ${factors.waterLitersPerCigaretteButt} L/mégot`,
-        confidence: quality.score,
-      },
-      {
-        id: "surface",
-        label: "Surface nettoyée",
-        value: round(
-          wasteKg * factors.surfaceM2PerWasteKg +
-            durationMinutes * operationalVolunteerUnits * factors.surfaceM2PerVolunteerMinute,
-        ),
-        unit: "m²",
-        method: `Proxy ${IMPACT_PROXY_CONFIG.version} · poids + temps bénévole`,
-        confidence: quality.score,
-      },
-    ],
+    impact: buildPostActionImpactMetrics({
+      wasteKg,
+      cigaretteButts,
+      durationMinutes,
+      operationalVolunteerUnits,
+      qualityScore: quality.score,
+    }),
     impactStatus: action.status === "approved" ? "validated" : "provisional",
     methodology: {
       version: IMPACT_PROXY_CONFIG.version,

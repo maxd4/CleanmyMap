@@ -66,4 +66,40 @@ describe("evaluateActionQuality", () => {
     expect(result.grade).toBe("C");
     expect(result.flags.length).toBeGreaterThan(0);
   });
+
+  it("does not count a missing waste measurement as complete", () => {
+    const result = evaluateActionQuality(
+      buildItem({ waste_kg: null }),
+      new Date("2026-04-02T00:00:00.000Z"),
+    );
+
+    expect(result.breakdown.completeness).toBe(83);
+  });
+
+  it("does not count a missing duration measurement as complete at runtime", () => {
+    const result = evaluateActionQuality(
+      buildItem({ duration_minutes: null } as unknown as Partial<ActionListItem>),
+      new Date("2026-04-02T00:00:00.000Z"),
+    );
+
+    expect(result.breakdown.completeness).toBe(83);
+  });
+
+  it("accepts explicit zero measurements as complete", () => {
+    const result = evaluateActionQuality(
+      buildItem({ waste_kg: 0, duration_minutes: 0 }),
+      new Date("2026-04-02T00:00:00.000Z"),
+    );
+
+    expect(result.breakdown.completeness).toBe(100);
+  });
+
+  it("does not count an explicitly absent optional runtime value as measured", () => {
+    const result = evaluateActionQuality(
+      buildItem({ waste_kg: undefined }),
+      new Date("2026-04-02T00:00:00.000Z"),
+    );
+
+    expect(result.breakdown.completeness).toBe(83);
+  });
 });
