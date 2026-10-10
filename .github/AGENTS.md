@@ -81,8 +81,10 @@ Ajouter les checks documentaires ou de sécurité directement concernés. Ne pas
 valider un workflow uniquement par lecture si le garde-fou local est
 disponible.
 
-Les jobs `push` et `pull_request` restent en mode `DEVELOPMENT` : sécurité,
-typecheck/lint et tests ciblés uniquement. Les suites complètes, couverture,
+Les jobs `push` et `pull_request` restent en mode `DEVELOPMENT` pour les gates
+Web : sécurité, typecheck/lint et tests ciblés. L'exception canonique est
+`mobile-validation`, qui exécute systématiquement sécurité, typecheck, tests,
+couverture et lint mobiles. Les suites Web complètes, couverture Web,
 ratchets structurels, mutation testing et E2E complet ne s'exécutent que dans
 une exécution `workflow_dispatch` avec `validation_mode=FULL`. Un contrôle non
 exécuté doit rester explicitement `SKIPPED_BY_POLICY` ou `NOT_RUN`.

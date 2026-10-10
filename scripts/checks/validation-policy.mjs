@@ -63,7 +63,6 @@ const DEPENDENCY_AUDIT_CONTROL_FILES = new Set([
   "scripts/checks/validation-policy.test.mjs",
   "documentation/security/dependency-advisory-governance.md",
   "scripts/checks/quality-evidence.mjs",
-  "scripts/ci/write-security-evidence.mjs",
   "scripts/ci/write-security-summary.mjs",
   ".github/workflows/ci.yml",
 ]);

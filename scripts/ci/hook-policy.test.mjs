@@ -46,7 +46,6 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
     "web-tests": "web_code_relevant",
     "web-vercel-audit": "build_relevant",
     "web-build": "build_relevant",
-    "mobile-validation": "mobile_code_relevant",
   };
   for (const [jobId, scopeOutput] of Object.entries(jobs)) {
     const job = extractJob(workflow, jobId);
@@ -91,12 +90,16 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.match(extractJob(workflow, "web-vercel-audit"), /npm run audit:vercel:ci/);
   assert.match(extractJob(workflow, "web-build"), /npm run build/);
   const mobileJob = extractJob(workflow, "mobile-validation");
+  assert.match(mobileJob, /^    needs: scope$/m);
+  assert.doesNotMatch(mobileJob, /if: needs\.scope\.outputs\.mobile_code_relevant == 'true'/);
   for (const command of ["npm run mobile:security", "npm run mobile:typecheck", "npm run mobile:test", "npm run quality:mobile-coverage", "npm run mobile:lint"]) {
     assert.match(mobileJob, new RegExp(command.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")), command);
   }
   assert.doesNotMatch(mobileJob, /npm run security:secrets/);
   assert.match(mobileJob, /npm run check:semgrep/);
   assert.match(mobileJob, /web_code_relevant != 'true'/);
+  assert.doesNotMatch(mobileJob, /Mobile Vitest tests \(FULL only\)/);
+  assert.doesNotMatch(mobileJob, /Mobile Vitest coverage ratchet \(FULL only\)/);
   assert.match(workflow, /build_relevant: \$\{\{ steps\.detect-scope\.outputs\.build_relevant \}\}/);
   assert.match(workflow, /validation-policy\.mjs --scope changed --json/);
   assert.equal((workflow.match(/continue-on-error:\s*true/g) ?? []).length, 2);

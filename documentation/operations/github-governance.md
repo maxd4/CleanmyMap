@@ -79,7 +79,7 @@ Checks conservés pour la revue manuelle GitHub :
 - `web-tests`
 - `web-coverage`
 - `web-vercel-audit` et `web-build` lorsque `build_relevant == 'true'`
-- `mobile-validation` lorsque le scope mobile est concerné
+- `mobile-validation` sur chaque `push` vers `main` et chaque Pull Request ciblant `main`
 - `CodeQL`
 - `Vercel`
 
@@ -115,7 +115,7 @@ reproductibles localement, tandis que le runner GitHub, les conditions calculée
 | --- | --- | --- | --- |
 | `ci.yml` / `scope` | Détecte `docs_only`, `web_code_relevant`, `mobile_code_relevant`, `dependencyGraphRelevant`, `dependencyAuditRelevant` et `securityToolingRelevant` depuis le planner `scripts/checks/validation-policy.mjs` et une paire `base/head` | Node.js requis pour le planner; permissions `contents: read`. Le job est indépendant des validations applicatives. | Oui pour le calcul; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `secret-audit` | `npm run security:secrets -- --ref=HEAD` | Job indépendant sur l'arbre candidat ; il produit une evidence non sensible et un résumé séparé. Son échec reste bloquant ; aucun rapport brut de secrets n'est téléversé. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
-| `ci.yml` / `dependency-audit` | `node --test scripts/security/audit-dependencies.test.mjs` puis `npm run security:dependencies` lorsque le graphe ou le contrôleur d'audit est pertinent | Job conditionné par `dependencyAuditRelevant`. Lorsque le graphe et le contrôle sont inchangés, `scope` publie `SKIPPED_BY_SCOPE`, jamais `PASS`; lorsqu'il s'exécute, le test contrôleur précède l'audit npm réel, dont l'échec High/Critical reste bloquant. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
+| `ci.yml` / `dependency-audit` | `node --test scripts/security/audit-dependencies.test.mjs` puis `npm run security:dependencies` | Job exécuté sur chaque `push` vers `main` et chaque Pull Request ciblant `main`, indépendamment du graphe de fichiers ; l'échec High/Critical reste bloquant et la preuve provient uniquement de l'exécution réelle. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-governance` | `npm run check:root-files`; `npm run check:doc-governance`; `npm run check:stack-doc-drift`; `npm run check:github-actions` | Node.js 24.x lu depuis `apps/web/.nvmrc` et `package-lock.json`. `check:github-actions` produit une evidence du nombre de workflows et d'issues de policy ainsi qu'un résumé propre au job. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-static` | `npm run check:semgrep`; `npm run check:lockfile-policy`; `npm run typecheck`; `npm run check:utf8-fr`; `npm run lint`; conditionnellement `node --test scripts/security/workflow-security-contract.test.mjs scripts/security/zap-baseline-contract.test.mjs` lorsque `securityToolingRelevant == true` | Job indépendant après `scope`, avec son propre checkout, Node et `npm ci`. Il participe aussi lorsque `securityToolingRelevant` sélectionne un outil sous `scripts/security/`, et exécute alors les contrats workflow/ZAP ; `audit-dependencies.test.mjs` reste propriétaire de `dependency-audit`, tandis que les fixtures/règles Semgrep restent couvertes par `npm run check:semgrep`. Aucun build Web n'est déclenché par ce seul signal. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-quality` | `npm run quality:top-heavy`; `npm run quality:dead-code`; `npm run quality:complexity`; `npm run quality:duplication`; installation puis `npm run audit:gitnexus`; `npm run quality:cycles`; résumé `node scripts/ci/write-quality-summary.mjs` | Job réservé à `workflow_dispatch` avec `validation_mode=FULL`; les contrôles globaux restent hors de la CI DEVELOPMENT ordinaire. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
@@ -123,15 +123,16 @@ reproductibles localement, tandis que le runner GitHub, les conditions calculée
 | `ci.yml` / `web-coverage` | téléchargement de l'artefact Web; `npm run quality:coverage -- --from-existing-summary` | Le job vérifie directement le ratchet sur l'artefact correspondant ; l'échec est bloquant et il ne relance pas Vitest. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-vercel-audit` | `npm run audit:vercel:ci` lorsque `build_relevant == 'true'` | Job indépendant après `scope`; il est `SKIPPED_SCOPE` sinon. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-build` | `npm run build` lorsque `build_relevant == 'true'` | Job indépendant après `scope`; les variables publiques de build sont injectées uniquement dans ce job. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
-| `ci.yml` / `mobile-validation` | `npm ci`; `npm run check:semgrep` lorsque le Web n'est pas concerné; `node --test apps/mobile/security/*.test.mjs`; `npm run typecheck -w apps/mobile` | Node.js 24.x lu depuis `apps/web/.nvmrc`, `package-lock.json`. Le job est déclenché par le scope mobile et conserve le résumé Semgrep séparé lorsque ce contrôle est réellement exécuté. | Oui. |
+| `ci.yml` / `mobile-validation` | `npm ci`; `npm run check:semgrep` lorsque le Web n'est pas concerné; sécurité mobile; typecheck; tests Vitest; couverture; lint | Node.js 24.x lu depuis `apps/web/.nvmrc`, `package-lock.json`. Le job s'exécute sur chaque `push` vers `main` et chaque Pull Request ciblant `main`; le résumé Semgrep reste séparé lorsque ce contrôle conditionnel est réellement exécuté. | Oui. |
 | `codeql.yml` / `analyze` | Aucun script npm équivalent direct : `actions/checkout`, `github/codeql-action/init`, `autobuild` et `analyze` | Runner GitHub, bundle CodeQL et permission `security-events: write` pour publier les résultats. | Non à l'identique; ce contrôle reste GitHub-dépendant. |
 
 Les modes locaux `DEVELOPMENT`/`FULL`/`RELEASE` restent orchestrés
 séquentiellement. La CI ordinaire conserve les gates statiques, de sécurité,
-typecheck/lint et les tests ciblés ; les suites complètes, couverture globale,
-ratchets structurels et mutation testing sont réservés à une exécution FULL
-explicitement déclenchée. Un job ordinaire ne doit pas présenter un contrôle
-non exécuté comme `PASS`.
+typecheck/lint et les tests ciblés côté Web ; `mobile-validation` exécute
+cependant systématiquement les contrôles mobiles, y compris tests et couverture.
+Les suites Web complètes, couverture Web globale, ratchets structurels et
+mutation testing sont réservés à une exécution FULL explicitement déclenchée.
+Un job ordinaire ne doit pas présenter un contrôle non exécuté comme `PASS`.
 
 Les contrôles de sécurité ne produisent pas de score global cybersécurité. Les
 evidences et résumés exposent uniquement le statut et les compteurs propres à

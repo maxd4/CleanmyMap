@@ -49,7 +49,6 @@ function currentForGate(gate, evidence) {
   if (gate.key === "github-actions-security") return `${display(metrics.workflowCount)} workflows / ${display(metrics.issueCount)} issue(s)`;
   if (gate.key === "semgrep-architectural") return `${display(metrics.blockingFindings ?? evidence.findings)} blocking finding(s)`;
   if (gate.key === "semgrep-fixtures") return `${display(metrics.fixturesPassed)} fixture(s) tested`;
-  if (evidence.status === "SKIPPED_BY_SCOPE") return "dependency graph and dependency-audit control unchanged";
   return `${display(metrics.highCriticalFindings)} high/critical / ${display(metrics.unmitigatedHighCritical)} unmitigated`;
 }
 

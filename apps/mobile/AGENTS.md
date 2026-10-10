@@ -87,8 +87,9 @@ npm run mobile:security
 npm run mobile:lint
 ```
 
-La couverture ratchetée du mobile est mesurée uniquement en FULL et en
-pré-release de code avec :
+La couverture ratchetée du mobile est mesurée par `mobile-validation` sur
+chaque push vers `main` et chaque Pull Request ciblant `main`. Elle reste aussi
+disponible en FULL et en pré-release de code avec :
 
 ```bash
 npm run quality:mobile-coverage

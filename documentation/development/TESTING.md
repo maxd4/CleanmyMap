@@ -336,12 +336,11 @@ findings est `FAIL`, et une fixture en échec ne devient pas un finding
 architectural. CodeQL n'est pas dupliqué dans `ci.yml` : son workflow et son
 SARIF natifs restent la source de preuve CodeQL.
 
-Le planner distingue `dependencyGraphRelevant` et
-`dependencyAuditRelevant`. Le job d'audit advisory s'exécute si le graphe
-npm, le contrôleur, sa politique ou sa preuve changent ; sinon la preuve de
-scope porte `SKIPPED_BY_SCOPE`, jamais `PASS`, avec la raison factuelle
-`dependency graph and dependency-audit control unchanged`. Lorsqu'il
-s'exécute, le job lance d'abord `node --test
+Le planner continue de distinguer `dependencyGraphRelevant` et
+`dependencyAuditRelevant` pour la sélection des contrôles locaux et des autres
+jobs. Sur chaque `push` vers `main` et chaque `pull_request` ciblant `main`, le
+job GitHub `dependency-audit` s'exécute toutefois indépendamment du scope et
+produit uniquement la preuve de son exécution réelle. Il lance d'abord `node --test
 scripts/security/audit-dependencies.test.mjs`, puis le véritable
 `npm run security:dependencies`. Les Job Summaries sont produits dans les
 jobs qui exécutent réellement ces contrôles et les JSON compacts sont
@@ -355,7 +354,10 @@ scripts/security/zap-baseline-contract.test.mjs`. Le test
 `audit-dependencies.test.mjs` reste exécuté par le job `dependency-audit`, et
 les fixtures/règles Semgrep restent couvertes par `npm run check:semgrep`.
 Ce signal ne devient pas `web_code_relevant` et ne déclenche pas de build Web
-sans contrat applicatif modifié.
+sans contrat applicatif modifié. De même, `mobile-validation` s'exécute sur
+chaque `push` vers `main` et chaque `pull_request` ciblant `main`, avec ses
+contrôles sécurité, typecheck, tests, couverture et lint ; `scope` reste
+disponible pour les contrôles conditionnels des autres jobs.
 
 ## Triage des échecs CI
 

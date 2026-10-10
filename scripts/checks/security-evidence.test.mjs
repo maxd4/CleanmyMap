@@ -1,52 +1,9 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import test from "node:test";
 
-import { buildSecuritySummary, collectSecurityEvidence } from "../ci/write-security-summary.mjs";
-import { readQualityEvidence, writeQualityEvidence } from "./quality-evidence.mjs";
+import { buildSecuritySummary } from "../ci/write-security-summary.mjs";
 
 const CANDIDATE_SHA = "0123456789abcdef0123456789abcdef01234567";
-
-function temporaryRepository() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-security-evidence-"));
-}
-
-test("SKIPPED_BY_SCOPE is distinct from PASS and keeps dependency scope explicit", () => {
-  const root = temporaryRepository();
-  writeQualityEvidence({
-    repositoryRoot: root,
-    evidenceRoot: "security-evidence",
-    fileKey: "dependency-advisory",
-    gate: "dependencies",
-    candidateSha: CANDIDATE_SHA,
-    status: "SKIPPED_BY_SCOPE",
-    metrics: {
-      dependencyGraphRelevant: false,
-      dependencyAuditRelevant: false,
-    },
-    details: { reason: "dependency graph and dependency-audit control unchanged" },
-  });
-  writeQualityEvidence({
-    repositoryRoot: root,
-    evidenceRoot: "security-evidence",
-    fileKey: "secret-audit",
-    gate: "secrets",
-    candidateSha: CANDIDATE_SHA,
-    status: "PASS",
-    findings: 0,
-  });
-
-  const evidence = collectSecurityEvidence({
-    repositoryRoot: root,
-    evidenceRoot: "security-evidence",
-  });
-  const summary = buildSecuritySummary({ candidateSha: CANDIDATE_SHA, evidenceByKey: evidence });
-  assert.match(summary, /\| Secrets \| PASS \| 0 finding\(s\) \|/);
-  assert.match(summary, /\| Dependencies \| SKIPPED_BY_SCOPE \| dependency graph and dependency-audit control unchanged \|/);
-  assert.notEqual(readQualityEvidence({ repositoryRoot: root, evidenceRoot: "security-evidence", fileKey: "dependency-advisory" }).executed, true);
-});
 
 test("security summary exposes failures without rendering sensitive evidence fields", () => {
   const summary = buildSecuritySummary({

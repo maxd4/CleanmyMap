@@ -35,14 +35,15 @@ par l'application mobile :
 Cette mitigation remplace l'ancienne acceptation de risque. Il n'y a donc plus
 de date d'expiration ni de renouvellement périodique à maintenir
 pour cette décision locale. Dependabot et CodeQL restent actifs, et le dépôt
-exécute désormais le contrôle de dépendances lorsqu'un changement touche le
-graphe npm, le contrôleur d'audit, sa politique ou sa preuve. Le job exécute
+exécute désormais le contrôle de dépendances sur chaque `push` vers `main` et
+chaque Pull Request ciblant `main`, indépendamment des fichiers modifiés. Le job exécute
 d'abord `node --test scripts/security/audit-dependencies.test.mjs`, puis le
 gate reproductible `npm run security:dependencies`, qui lance exactement
 `npm audit --json` et refuse toute vulnérabilité `High` ou `Critical` qui ne
-correspond pas à une mitigation exacte. Un contrôle non pertinent produit
-`SKIPPED_BY_SCOPE` avec la raison `dependency graph and dependency-audit
-control unchanged`, jamais `PASS`. Il n'existe ni ignore global, ni exception
+correspond pas à une mitigation exacte. Le planner conserve sa distinction
+`dependencyGraphRelevant`/`dependencyAuditRelevant` pour les contrôles locaux,
+mais elle ne peut plus produire une preuve CI `SKIPPED_BY_SCOPE` pour ce job.
+Il n'existe ni ignore global, ni exception
 par package, ni exception par niveau de sévérité.
 
 Le champ diagnostique `RUNTIME_SCOPE` est dérivé du graphe `packages` du

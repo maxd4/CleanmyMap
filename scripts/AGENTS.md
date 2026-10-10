@@ -135,10 +135,12 @@ Le workflow CURRENT destiné à Codex possède trois modes clairement séparés 
 - `RELEASE` via `npm run release:check -- --sha=<sha>`, qui autorise uniquement
   un SHA disposant d'une preuve FULL verte et d'un worktree propre.
 
-Le planificateur ne déclenche jamais `FULL` implicitement. Les suites Web/mobile
-complètes, couverture globale, duplication, cycles, Knip, mutation, E2E et
+Le planificateur ne déclenche jamais `FULL` implicitement. Les suites Web
+complètes, couverture Web globale, duplication, cycles, Knip, mutation, E2E et
 audits distants restent donc disponibles pour FULL sans être ajoutées aux hooks
-ou aux jobs CI ordinaires. Un contrôle différé en DEVELOPMENT est
+ou aux jobs CI ordinaires. Le job CI `mobile-validation` fait exception et
+exécute systématiquement les validations mobiles, y compris tests et couverture,
+sur les pushes et Pull Requests ciblant `main`. Un contrôle différé en DEVELOPMENT est
 `SKIPPED_BY_POLICY`, jamais `PASS`.
 Le rapport doit indiquer `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
 `ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS`, les contrôles `PASSED`, `FAILED` et

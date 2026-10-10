@@ -122,30 +122,6 @@ jobs:
           echo "dependency_audit_relevant=$dependency_audit_relevant" >> "$GITHUB_OUTPUT"
           echo "security_tooling_relevant=$security_tooling_relevant" >> "$GITHUB_OUTPUT"
 
-      - name: Record dependency scope evidence
-        if: steps.detect-scope.outputs.dependency_audit_relevant != 'true'
-        shell: bash
-        env:
-          CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          SECURITY_EVIDENCE_ROOT: artifacts/security-evidence
-        run: node scripts/ci/write-security-evidence.mjs --gate=dependencies --status=SKIPPED_BY_SCOPE --candidate-ref="$CANDIDATE_SHA"
-
-      - name: Dependency security summary (scope skipped)
-        if: ${{ always() && steps.detect-scope.outcome == 'success' && steps.detect-scope.outputs.dependency_audit_relevant != 'true' }}
-        env:
-          CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          SECURITY_EVIDENCE_ROOT: artifacts/security-evidence
-        run: node scripts/ci/write-security-summary.mjs --gates=dependencies
-
-      - name: Upload dependency scope evidence
-        if: ${{ always() && steps.detect-scope.outcome == 'success' && steps.detect-scope.outputs.dependency_audit_relevant != 'true' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: security-dependency-scope-${{ github.run_id }}
-          path: artifacts/security-evidence/dependency-advisory.json
-          if-no-files-found: ignore
-          retention-days: 3
-
   secret-audit:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -193,8 +169,6 @@ jobs:
           retention-days: 3
 
   dependency-audit:
-    needs: scope
-    if: needs.scope.outputs.dependency_audit_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -658,7 +632,6 @@ jobs:
 
   mobile-validation:
     needs: scope
-    if: needs.scope.outputs.mobile_code_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -706,12 +679,10 @@ jobs:
       - name: Mobile typecheck
         run: npm run mobile:typecheck
 
-      - name: Mobile Vitest tests (FULL only)
-        if: github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL'
+      - name: Mobile Vitest tests
         run: npm run mobile:test
 
-      - name: Mobile Vitest coverage ratchet (FULL only)
-        if: github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL'
+      - name: Mobile Vitest coverage ratchet
         run: npm run quality:mobile-coverage
 
       - name: Mobile lint
