@@ -38,7 +38,7 @@ function asArray(value) {
   return [];
 }
 
-export function parseGithubReleaseArgs(argv = []) {
+function parseGithubReleaseArgs(argv = []) {
   const shaArgument = argv.find((arg) => arg.startsWith("--sha="));
   return { sha: shaArgument?.slice("--sha=".length) || currentSha() };
 }

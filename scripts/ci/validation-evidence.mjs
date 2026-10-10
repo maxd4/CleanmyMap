@@ -12,7 +12,7 @@ export const VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
   "validation",
   "mode-evidence",
 );
-export const FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
+const FULL_VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
   "artifacts",
   "validation",
   "full",
@@ -193,7 +193,7 @@ export function writeFullValidationEvidence({
   );
 }
 
-export function readFullValidationEvidence({ repositoryRoot = process.cwd(), candidateSha } = {}) {
+function readFullValidationEvidence({ repositoryRoot = process.cwd(), candidateSha } = {}) {
   if (!candidateSha) return null;
   try {
     return JSON.parse(fs.readFileSync(fullEvidencePath(repositoryRoot, candidateSha), "utf8"));
