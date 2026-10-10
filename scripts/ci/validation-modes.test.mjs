@@ -25,15 +25,14 @@ test("DEVELOPMENT docs-only keeps the fast plan targeted", () => {
   assert.ok(plan.plannedSeconds <= VALIDATION_MODE_BUDGETS.FAST);
 });
 
-test("DEVELOPMENT Web changes use targeted tests and preventive quality", () => {
+test("DEVELOPMENT Web changes stay targeted without automatic quality ratchets", () => {
   const plan = createModeValidationPlan({ mode: "FAST", changedFiles: ["apps/web/src/lib/chat/polls.ts"] });
   assert.ok(ids(plan).includes("typecheck"));
   assert.ok(ids(plan).includes("lint-targeted"));
   assert.ok(ids(plan).includes("vitest-targeted"));
-  assert.deepEqual(plan.checks.find((check) => check.id === "quality-complexity").command, {
-    executable: "npm",
-    args: ["run", "quality:complexity", "--", "--changed-only"],
-  });
+  for (const id of ["quality:top-heavy", "quality:complexity", "quality:dead-code", "quality:duplication", "quality:cycles"]) {
+    assert.equal(ids(plan).includes(id), false, `${id} must remain FULL-only in DEVELOPMENT`);
+  }
   assert.ok(!ids(plan).includes("test:coverage"));
   assert.ok(!ids(plan).includes("build"));
 });

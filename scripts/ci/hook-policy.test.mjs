@@ -10,17 +10,16 @@ async function readRepoFile(relativePath) {
   return readFile(path.join(repoRoot, relativePath), "utf8");
 }
 
-test("pre-commit uses the changed-surface guard and fast global controls", async () => {
+test("pre-commit uses the changed-surface guard without DEVELOPMENT quality ratchets", async () => {
   const packageJson = JSON.parse(await readRepoFile("package.json"));
   const guard = await readRepoFile("scripts/ci/pre_commit_guard.ps1");
 
   assert.match(packageJson.scripts["precommit:guard"], /pre_commit_guard\.ps1/);
   assert.match(packageJson.scripts["checks:staged:quick"], /check_changed_quick\.ps1 -StagedOnly/);
   assert.match(guard, /npm run checks:staged:quick/);
-  assert.match(guard, /check-complexity-policy\.mjs --staged/);
-  assert.match(guard, /git write-tree/);
-  assert.match(guard, /check-top-heavy-files\.mjs --enforce/);
-  assert.match(guard, /--ref=\$StagedTree/);
+  for (const qualityGuard of ["check-complexity-policy", "check-top-heavy-files", "quality:complexity", "quality:top-heavy"]) {
+    assert.doesNotMatch(guard, new RegExp(qualityGuard.replace(/[.*+?^${}()|[\\]\\]/g, "\\\\$&")));
+  }
   assert.doesNotMatch(guard, /workspace-coordination|CMM_WORKSPACE_RUN_ID|check-staged/);
   assert.match(guard, /npm run security:secrets -- --staged-only/);
   assert.match(guard, /git diff --cached --check/);

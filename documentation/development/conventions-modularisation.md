@@ -183,8 +183,11 @@ Après un déplacement :
   fichier et qu'aucun export, wrapper, barrel ou façade n'est devenu inutile ;
 - internaliser les exports inutiles ;
 - supprimer les anciennes façades seulement si aucun contrat ne les exige ;
-- vérifier `quality:complexity`, `quality:dead-code`, `quality:duplication` et
-  `quality:cycles` selon les outils applicables.
+- en `FULL`, vérifier `quality:complexity`, `quality:dead-code`,
+  `quality:duplication`, `quality:cycles` et `quality:top-heavy` sur le
+  candidat final ; pendant `DEVELOPMENT`, aucun de ces contrôles ne se
+  déclenche automatiquement à cause d'une extraction, d'un module, d'un
+  import ou d'un refactor.
 
 ## Politique des fichiers volumineux
 
@@ -229,8 +232,8 @@ bornée par `maxLines` et `maxBytes`; elle ne peut pas croître silencieusement.
 
 ### Ratchet bloquant : extraction substantielle obligatoire
 
-Lorsqu'un ratchet de longueur de fonction ou de poids de fichier bloque
-`precommit:guard` ou un contrôle équivalent, la résolution doit comporter une
+Lorsqu'un ratchet de longueur de fonction ou de poids de fichier bloque un
+contrôle `FULL` ou une vérification ciblée explicitement justifiée, la résolution doit comporter une
 modularisation substantielle de la zone concernée. Extraire une responsabilité
 cohésive vers un nouveau fichier, lui donner un owner et un contrat propres,
 puis migrer les consommateurs et les tests. Il est interdit de traiter ce
@@ -239,11 +242,12 @@ déplacement de commentaires ou toute autre réduction visant seulement à
 repasser juste sous la limite. Le code déplacé ne doit pas rester un monolithe
 intact dans le nouveau fichier.
 
-Cette règle s'applique aux changements ajoutés pour débloquer le garde-fou,
-même si le seuil est finalement franchi de peu. Si aucune frontière sûre et
-réellement cohésive n'est identifiable, le lot reste bloqué jusqu'à une
-décision explicite ; la baseline, le seuil ou la mesure ne doivent pas être
-affaiblis.
+Cette règle s'applique aux changements ajoutés pour débloquer le contrôle,
+même si le seuil est finalement franchi de peu. Elle ne transforme pas un
+contrôle ciblé en obligation systématique de `DEVELOPMENT`. Si aucune frontière
+sûre et réellement cohésive n'est identifiable, le lot reste bloqué jusqu'à
+une décision explicite ; la baseline, le seuil ou la mesure ne doivent pas
+être affaiblis.
 Les entrées numériques `review[]` de la baseline ne sont pas des décisions
 architecturales : un état `IMPROVED` conserve le plafond abaissé après une
 amélioration mesurée.
@@ -431,7 +435,8 @@ Traiter une cible principale à la fois.
    existante.
 6. Extraire d'abord les responsabilités les plus indépendantes.
 7. Garder un point d'entrée lisible qui orchestre sans dupliquer.
-8. Relancer les validations après la dernière modification pertinente.
+8. Relancer les validations ciblées après la dernière modification pertinente ;
+   réserver les ratchets structurels obligatoires au candidat final `FULL`.
 9. Mettre à jour le radar ou le plan seulement si son état factuel a changé.
 
 Il n'existe pas d'ordre obligatoire `types -> config -> hooks -> composants`.

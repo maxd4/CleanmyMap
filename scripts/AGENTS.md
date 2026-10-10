@@ -178,7 +178,7 @@ mesurés ou des roots restent stale ; un fichier seulement repassé sous REVIEW
 reste dans la baseline pour conserver le ratchet. Ne pas ajouter d'exception
 pour contourner un garde-fou.
 
-### Condition d’arrêt des lots de duplication
+### Condition d’arrêt des lots de duplication en FULL
 
 Un lot de duplication ne peut être clôturé qu’après, dans cet ordre :
 
@@ -188,18 +188,20 @@ rapport jscpd courant lu
 → priorité P0–P6 justifiée
 → mutations cohérentes
 → validations de contrats ciblées
-→ quality:duplication sur le candidat final exact
+→ FULL : quality:duplication sur le candidat final exact
 → aucun nouveau fingerprint
 → métriques finales observées
 ```
 
 La règle de qualification et de priorité est canonique dans `AGENTS.md` ; le
 protocole de mesure jscpd et ses ratchets restent dans
-`documentation/development/TESTING.md`. `SKIPPED` ou `NOT_RUN` pour jscpd ne
-constitue pas une validation. Le rapport final doit mesurer le même candidat
-que celui qui sera committé ; un message de commit, une baseline ou une
-justification ne remplace pas cette preuve. Lorsqu’un lot réduit réellement
-runtime ou tests, conserver les métriques avant/après par scope.
+`documentation/development/TESTING.md`. Pendant `DEVELOPMENT`, jscpd n'est pas
+déclenché automatiquement par une extraction, un import ou un refactor et ne
+constitue pas une condition de staging, commit, push ou clôture. Une
+vérification ciblée reste possible si un risque concret est démontré. En
+`FULL`, `SKIPPED` ou `NOT_RUN` pour jscpd ne constitue pas une validation : le
+rapport doit mesurer le même candidat final que celui qui sera committé, et
+toute modification ultérieure impose de l'actualiser.
 
 Ne jamais relever seuil, grâce, baseline ou exclusion pour fermer le lot. Une
 mise à jour de baseline n’est recevable que pour ratifier une amélioration

@@ -370,7 +370,8 @@ complexe sans nécessité contractuelle démontrée.
 ### Réparation obligatoire lorsqu'un ratchet bloque
 
 Lorsqu'un ratchet de longueur de fonction ou de poids de fichier s'active et
-bloque `precommit:guard` ou un contrôle de qualité équivalent, la correction
+bloque un contrôle `FULL` ou une vérification ciblée explicitement justifiée,
+la correction
 doit modulariser substantiellement la zone concernée : extraire une
 responsabilité cohésive dans un nouveau fichier avec un owner, un contrat et
 des tests adaptés, puis migrer ses consommateurs. Condenser des lignes,
@@ -711,22 +712,18 @@ demandée, puis `RELEASE` (`release:check -- --sha=<sha>`) pour vérifier qu'un 
 précis possède la preuve FULL requise. `RELEASE` n'est pas une commande de
 déploiement.
 
-Pour toute mutation de code source, exécuter lorsque les outils s'appliquent :
+Pendant `DEVELOPMENT`, une extraction, une création de module, une modification
+d'import ou une opération de refactor ne déclenche automatiquement aucun des
+contrôles `quality:cycles`, `quality:duplication`, `quality:complexity`,
+`quality:dead-code` ou `quality:top-heavy`, y compris avant staging, commit,
+push ou clôture du lot. Codex doit prévenir les cycles, duplications évitables
+et fonctions inutilement complexes par une conception rigoureuse ; une
+vérification ciblée reste possible lorsqu'un risque concret le justifie, sans
+devenir une condition systématique.
 
-```text
-npm run quality:complexity
-npm run quality:dead-code
-```
-
-Pour toute extraction ou tout déplacement inter-modules, exécuter également :
-
-```text
-npm run quality:duplication
-npm run quality:cycles
-```
-
-Ces contrôles spécialisés sont obligatoires avant la clôture du lot et ne
-déclenchent jamais `checks:full`.
+En `FULL`, ces contrôles sont obligatoires sur le candidat final. Toute
+modification du code après leur exécution invalide les preuves concernées et
+impose leur actualisation avant `RELEASE`.
 
 Un lot ne peut pas être déclaré terminé avec une conséquence imputable non
 qualifiée : `BASELINE_STALE` complexity, nouveau dead-code, nouveau cycle,

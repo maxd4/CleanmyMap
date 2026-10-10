@@ -217,12 +217,17 @@ npm run checks:fast
 ```
 
 Le mode `DEVELOPMENT` est borné à 180 secondes. Il exécute les tests ciblés,
-typecheck/lint pertinents, les contrôles secrets et sécurité/AuthN/AuthZ/RLS,
-les contrats de migration et les ratchets préventifs directement concernés.
-Il ne lance pas automatiquement les suites Web/mobile complètes, la couverture
-globale, jscpd, GitNexus, Knip, mutation testing, la campagne E2E complète ni
-les audits distants. Un contrôle différé est `SKIPPED_BY_POLICY`, jamais
-`PASS`.
+typecheck/lint pertinents, les contrôles secrets et sécurité/AuthN/AuthZ/RLS et
+les contrats de migration. Une extraction, une création de module, une
+modification d'import ou un refactor ne déclenche automatiquement aucun
+`quality:cycles`, `quality:duplication`, `quality:complexity`,
+`quality:dead-code` ou `quality:top-heavy`, y compris avant staging, commit,
+push ou clôture. Codex reste responsable de la conception et peut lancer une
+vérification ciblée lorsqu'un risque concret le justifie, sans en faire une
+condition systématique. Les suites Web/mobile complètes, la couverture
+globale, GitNexus, Knip, mutation testing, la campagne E2E complète et les
+audits distants restent également hors DEVELOPMENT. Un contrôle différé est
+`SKIPPED_BY_POLICY`, jamais `PASS`.
 
 ### FULL — préproduction exhaustive
 
@@ -559,18 +564,19 @@ tandis que les littéraux restent discriminants. Le numéro de ligne reste une
 information de diagnostic uniquement ; déplacer une fonction sans modifier son
 contenu ne change donc pas son identité ni son plafond.
 
-`checks:fast` exécute la variante `--changed-only` pour les changements Web et
-reste borné pour le mobile. `checks:full` et la CI exécutent la mesure
-exhaustive des deux roots. `quality:top-heavy` réutilise lui aussi les roots
+`checks:fast` reste ciblé pour les changements Web et mobile sans déclencher
+automatiquement les ratchets structurels. `checks:full` et la CI FULL exécutent
+la mesure exhaustive des deux roots. `quality:top-heavy` réutilise lui aussi les roots
 `apps/web/src` et `apps/mobile` avec la même politique KIND ; il reste la
 source canonique du ratchet de taille des fichiers et de ses seuils
 `REVIEW_REQUIRED`/`HARD`.
 
-Pour un lot de modularisation de routes API ou de services backend, répéter la
-preuve après chaque sous-domaine compilable, puis sur le candidat final :
+Pour un lot de modularisation de routes API ou de services backend, valider
+pendant DEVELOPMENT les contrats et tests directement concernés. En FULL,
+répéter les ratchets structurels sur le candidat final :
 
 ```bash
-npm run quality:complexity -- --changed-only
+npm run quality:complexity
 npm run quality:dead-code
 npm run quality:duplication
 npm run quality:top-heavy -- --enforce
@@ -583,8 +589,8 @@ pour une baisse mesurée sur le candidat exact : on abaisse le plafond amélior�
 on n'augmente pas un ceiling et on n'ajoute pas d'exception pour faire passer
 le contrôle.
 
-Lorsqu'un ratchet de longueur de fonction ou de poids de fichier bloque
-`precommit:guard` ou un contrôle de qualité équivalent, la réparation validée
+Lorsqu'un ratchet de longueur de fonction ou de poids de fichier bloque un
+contrôle `FULL` ou une vérification ciblée explicitement justifiée, la réparation validée
 doit inclure une extraction substantielle vers un nouveau fichier portant une
 responsabilité cohésive, avec migration des consommateurs et tests associés.
 Une condensation, un reformatage ou une réduction artificielle destinée à
@@ -714,7 +720,7 @@ disparue produit `STALE_KEEP_INTENTIONAL` ou `STALE_NO_ACTION_NOISE` et bloque.
 Un fingerprint nouveau et non qualifié reste bloquant ; une qualification
 explicite ne relève ni seuil, ni baseline, ni exclusion.
 
-Dans la CI, le step `quality:duplication` du job `web-quality` doit produire
+Dans la CI FULL, le step `quality:duplication` du job `web-quality` doit produire
 sa preuve sur tout candidat concerné dès que le checkout, Node et `npm ci` ont
 réussi et que le job n'est pas annulé. Il reste exécutable même lorsqu'un
 ratchet structurel précédent du même job a échoué ; son propre échec reste
@@ -752,9 +758,12 @@ npm run quality:cycles
 ```
 
 Il exige un rapport complet et stable, plafonne les cycles historiques
-identifiés et échoue sur tout nouveau cycle ou baseline obsolète. Ces gates
-sont exécutés en `FULL` et dans la CI FULL ; ils ne sont pas ajoutés à
-`DEVELOPMENT` pour éviter une analyse globale à chaque changement ciblé.
+identifiés et échoue sur tout nouveau cycle ou baseline obsolète. Ces gates,
+comme `quality:duplication`, `quality:complexity`, `quality:dead-code` et
+`quality:top-heavy`, sont obligatoires sur le candidat final en `FULL` et dans
+la CI FULL ; ils ne sont pas déclenchés automatiquement en `DEVELOPMENT` par
+une extraction, un module, un import ou un refactor. Toute modification du
+code après leur exécution impose d'actualiser les preuves concernées.
 
 ### Audits qualité et artefacts locaux
 

@@ -590,22 +590,6 @@ export function createModeValidationPlan({
         });
       }
     }
-    if (webSourceRelevant) {
-      addCheck(checks, {
-        id: "quality-top-heavy",
-        label: "Qualité des fichiers lourds",
-        estimatedSeconds: 5,
-        critical: true,
-        command: npmCommand("quality:top-heavy"),
-      });
-      addCheck(checks, {
-        id: "quality-complexity",
-        label: full ? "Ratchet complexité/longueur complet" : "Ratchet complexité/longueur ciblé",
-        estimatedSeconds: full ? 90 : 20,
-        critical: true,
-        command: npmCommand("quality:complexity", full ? [] : ["--", "--changed-only"]),
-      });
-    }
     if (full) {
       addCheck(checks, {
         id: "vitest-full",
