@@ -29,6 +29,7 @@ import { useActionPreparationContext } from "./action-preparation-context-hook";
 import { useActionCreationPreparationSync } from "./use-action-creation-preparation-sync";
 import { JoinActionTabs } from "@/components/sections/rubriques/rejoindre-une-action.tabs";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { isRouteInterventionMode } from "@/lib/actions/intervention-mode";
 
 type ActionCreationShellProps = Omit<ComponentProps<typeof ActionBeforeDeclarationForm>, "onPassToComplete" | "onFormChange" | "onActionPersisted"> & {
   initialPanel: ActionCreationPanelId;
@@ -132,6 +133,8 @@ function ActionCreationSectionContent({
   preparationContext,
   formalitiesReadiness,
   formProps,
+  formSnapshot,
+  initialPanel,
   localDevAuth,
   onActionPersisted,
   onFormChange,
@@ -149,6 +152,8 @@ function ActionCreationSectionContent({
   preparationContext: ActionPreparationContext;
   formalitiesReadiness: "unknown" | "ready" | "blocked";
   formProps: ActionCreationSectionFormProps;
+  formSnapshot: Partial<FormState>;
+  initialPanel: ActionCreationPanelId;
   localDevAuth: LocalDevAuthState;
   onActionPersisted: (actionId: string) => void;
   onFormChange: (form: FormState) => void;
@@ -184,7 +189,11 @@ function ActionCreationSectionContent({
               <div className="space-y-3">
                 <div className="flex items-center gap-2"><Navigation size={18} className="text-emerald-700" aria-hidden="true" /><h3 className="text-lg font-black text-emerald-950">Carte et itinéraire</h3></div>
                 <p className="cmm-text-body cmm-text-primary">L’itinéraire reste optionnel et réutilise le planificateur existant.</p>
-                <EffectiveAuthStateProvider localDevAuth={localDevAuth}><RouteSection actionId={currentActionId} /></EffectiveAuthStateProvider>
+                {(() => {
+                  const selectedMode = formSnapshot.interventionMode?.mode
+                    ?? (initialPanel === "itineraire" || initialSubsection === "route" ? "itinerary" : "fixed_area");
+                  return isRouteInterventionMode(selectedMode) ? <EffectiveAuthStateProvider localDevAuth={localDevAuth}><RouteSection actionId={currentActionId} /></EffectiveAuthStateProvider> : <p data-testid="fixed-area-route-state" className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950">Mode zone fixe actif : la carte et le rendez-vous suffisent. Le planificateur d’itinéraire reste fermé.</p>;
+                })()}
               </div>
             </CmmCard>
             <CmmCard tone="emerald" variant="glass" size="lg">
@@ -431,7 +440,7 @@ export function ActionCreationShell({ initialPanel, initialSection = "essentiel"
 
   if (initialTab === "after") return <AfterActionCreationView formProps={formProps} actionId={currentActionId} searchParams={actionCreationSearchParams} />;
   if (newNavigationEnabled) {
-    return <ActionCreationSectionsView state={sectionState} fr={fr} formSnapshot={formSnapshot} currentActionId={currentActionId} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToSection} onPrevious={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex - 1])} onNext={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex + 1])} content={<ActionCreationSectionContent activeSection={sectionState.activeSection} currentActionId={currentActionId} initialSubsection={initialSubsection} draftContext={{ locationLabel: preparationContext.locationLabel, actionDate: preparationContext.actionDate, departureTime: preparationContext.departureTime, contextReady: preparationContextReady }} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} formalitiesReadiness={formalitiesReadiness} formProps={formProps} localDevAuth={localDevAuth} onActionPersisted={handleBeforeActionPersisted} onFormChange={handleSectionFormChange} onFormalitiesReadiness={handleFormalitiesReadiness} onPassToComplete={handlePassToComplete} onPreparationValidated={handlePreparationValidated} onPreparationSelection={handlePreparationSelection} onPreparationContextChange={handlePreparationContextChange} />} />;
+    return <ActionCreationSectionsView state={sectionState} fr={fr} formSnapshot={formSnapshot} currentActionId={currentActionId} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToSection} onPrevious={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex - 1])} onNext={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex + 1])} content={<ActionCreationSectionContent activeSection={sectionState.activeSection} currentActionId={currentActionId} initialSubsection={initialSubsection} initialPanel={initialPanel} formSnapshot={formSnapshot} draftContext={{ locationLabel: preparationContext.locationLabel, actionDate: preparationContext.actionDate, departureTime: preparationContext.departureTime, contextReady: preparationContextReady }} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} formalitiesReadiness={formalitiesReadiness} formProps={formProps} localDevAuth={localDevAuth} onActionPersisted={handleBeforeActionPersisted} onFormChange={handleSectionFormChange} onFormalitiesReadiness={handleFormalitiesReadiness} onPassToComplete={handlePassToComplete} onPreparationValidated={handlePreparationValidated} onPreparationSelection={handlePreparationSelection} onPreparationContextChange={handlePreparationContextChange} />} />;
   }
   return <GuidedActionWorkflowView state={workflow} fr={fr} stepContent={<ActionWorkflowStepContent activeStep={activeStep} currentActionId={currentActionId} draftContext={{ locationLabel: preparationContext.locationLabel, actionDate: preparationContext.actionDate, departureTime: preparationContext.departureTime, contextReady: preparationContextReady }} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} formalitiesReadiness={formalitiesReadiness} formProps={formProps} localDevAuth={localDevAuth} onActionPersisted={handleBeforeActionPersisted} onFormChange={handleBeforeFormChange} onFormalitiesReadiness={handleFormalitiesReadiness} onPassToComplete={handlePassToComplete} onPreparationValidated={handlePreparationValidated} onPreparationSelection={handlePreparationSelection} onPreparationContextChange={handlePreparationContextChange} />} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToStep} onNext={() => { setWorkflow((current) => markActionWorkflowStep(current, activeStep)); navigateToStep(ACTION_WORKFLOW_STEPS[stepIndex + 1]); }} />;
 }

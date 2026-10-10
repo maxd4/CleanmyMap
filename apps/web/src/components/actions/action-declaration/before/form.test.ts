@@ -9,8 +9,29 @@ import { PreparationAndSafetySection } from "./preparation-and-safety-section";
 import { PreparationPlanningFields } from "./preparation-planning-fields";
 import { ScheduleFields } from "./planned-action-schedule-fields";
 import { createInitialFormState } from "../payload";
+import { TerrainActionSection } from "./terrain-action-section";
 
 describe("ActionBeforeDeclarationForm", () => {
+  it("offers the three terrain modes and keeps a fixed-area form out of route controls", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.interventionMode = { version: "intervention-mode-v1", mode: "fixed_area" };
+    const html = renderToStaticMarkup(
+      React.createElement(TerrainActionSection, {
+        form,
+        updateField: vi.fn(),
+        updateFields: vi.fn(),
+        hasAttemptedSubmit: false,
+        validationIssueFields: [],
+      }),
+    );
+
+    expect(html).toContain("Collecte sur une zone précise");
+    expect(html).toContain("Cleanwalk itinérante");
+    expect(html).toContain("Plusieurs zones ou groupes");
+    expect(html).toContain("Aucun tracé, distance ou géométrie d’itinéraire n’est requis");
+    expect(html).not.toContain("Type de parcours");
+  });
+
   it("renders the lightweight pre-action form", () => {
     const html = renderToStaticMarkup(
       React.createElement(ActionBeforeDeclarationForm, {

@@ -42,6 +42,7 @@ import type {
   ActionMaterialSuggestion,
   ActionPreparationChecklistItem,
 } from "./preparation-contract";
+import type { ActionInterventionModeSelection } from "./intervention-mode";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
@@ -93,6 +94,8 @@ export type ActionVisionSource = "heuristic" | "hybrid" | "vision";
 export type ActionVisionDensity = "sec" | "humide_dense" | "mouille";
 
 export type ActionPreparationData = {
+  /** Optional, versioned organizer choice; absent on historical actions. */
+  interventionMode?: ActionInterventionModeSelection;
   actionTitle?: string;
   shortDescription?: string;
   communeZoneLabel?: string;

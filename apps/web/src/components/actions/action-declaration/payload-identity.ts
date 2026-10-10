@@ -1,5 +1,6 @@
 import { appendEventRefToNotes } from "../../../lib/actions/event-link";
 import type { CreateActionPayload } from "../../../lib/actions/types";
+import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { buildOrganizerPayloadFields, resolveOrganizerPayload } from "./organizer-payload";
 import type { CreateActionPayloadParams, CreateActionPayloadParts } from "./payload-contract";
 
@@ -42,6 +43,7 @@ export function buildCreateActionPayloadIdentityFields(
   const { form, declarationMode, linkedEventId } = params;
   const { departureLocationLabel, arrivalLocationLabel, routeTopology, routeLocationLabel } = parts;
   const organizerAccounts = parseOrganizerAccounts(form.organizerAccounts);
+  const isFixedArea = normalizeActionInterventionMode(form.interventionMode)?.mode === "fixed_area";
 
   return {
     actorName: form.actorName.trim() || undefined,
@@ -50,13 +52,14 @@ export function buildCreateActionPayloadIdentityFields(
     groupJoinEnabled: form.groupJoinEnabled,
     actionPhase: declarationMode === "quick" ? "pre_action" : "post_action_complete",
     actionDate: form.actionDate,
-    locationLabel: routeLocationLabel,
+    locationLabel: isFixedArea ? departureLocationLabel || form.locationLabel.trim() : routeLocationLabel,
     departureLocationLabel: departureLocationLabel || undefined,
-    arrivalLocationLabel:
-      form.recordType !== "action" || routeTopology === "point_to_point"
+    arrivalLocationLabel: isFixedArea
+      ? undefined
+      : form.recordType !== "action" || routeTopology === "point_to_point"
         ? arrivalLocationLabel || undefined
         : undefined,
-    routeTopology,
+    ...(isFixedArea ? {} : { routeTopology }),
     routeStyle: "souple",
     routeAdjustmentMessage: form.routeAdjustmentMessage.trim() || undefined,
     recordType: form.recordType,

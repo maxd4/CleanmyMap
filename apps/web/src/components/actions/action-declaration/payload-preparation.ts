@@ -16,6 +16,7 @@ import {
   normalizePreparationChecklist,
   normalizeSuggestedMaterials,
 } from "../../../lib/actions/preparation-contract";
+import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 
 function buildPreparationRouteFields(
   form: FormState,
@@ -23,8 +24,16 @@ function buildPreparationRouteFields(
   finalGeometry: FinalActionGeometry | null,
   resolvedTarget: ReturnType<typeof resolveRouteTargetDistance>,
 ) {
+  const interventionMode = normalizeActionInterventionMode(form.interventionMode);
+  if (interventionMode?.mode === "fixed_area") {
+    return {
+      interventionMode,
+      ...buildPreparationLocationFields(form, routeTopology, false),
+    };
+  }
   return {
-    ...buildPreparationLocationFields(form, routeTopology),
+    ...(interventionMode ? { interventionMode } : {}),
+    ...buildPreparationLocationFields(form, routeTopology, true),
     ...buildPreparationDistanceFields(form, resolvedTarget),
     ...buildPreparationGeometryFields(form, routeTopology, finalGeometry),
     routeCalibrationContext: form.routeCalibrationContext ?? undefined,
@@ -35,19 +44,20 @@ function buildPreparationRouteFields(
 function buildPreparationLocationFields(
   form: FormState,
   routeTopology: ReturnType<typeof resolveActionRouteTopology>,
+  includesRoute: boolean,
 ) {
   return {
-    zoneCiblePrevue:
+    ...(includesRoute ? { zoneCiblePrevue:
       form.recordType !== "action"
         ? form.arrivalLocationLabel.trim() || undefined
         : routeTopology === "point_to_point"
           ? form.arrivalLocationLabel.trim() || undefined
-          : undefined,
-    routeTopology,
+          : undefined } : {}),
+    ...(includesRoute ? { routeTopology } : {}),
     actionDate: form.actionDate.trim() || undefined,
     meetingTime: form.meetingTime.trim() || undefined,
     departureTime: form.departureTime.trim() || undefined,
-    durationMinutesDeclared: form.durationMinutes.trim() !== "",
+    ...(includesRoute ? { durationMinutesDeclared: form.durationMinutes.trim() !== "" } : {}),
   };
 }
 
@@ -292,9 +302,12 @@ export function applyPreparationDataToForm(
     routeTargetDistanceKm: preparationData.routeTargetDistanceKm,
     routeTargetDistanceSource: preparationData.routeTargetDistanceSource,
   });
+  const storedInterventionMode = normalizeActionInterventionMode(preparationData.interventionMode);
+  const legacyPlannerRoute = Boolean(preparationData.operationalRoute || preparationData.routeCalibrationContext);
 
   return {
     ...form,
+    interventionMode: storedInterventionMode ?? (legacyPlannerRoute ? null : form.interventionMode),
     ...buildHydratedLocationFields(form, preparationData, routeTopology),
     ...buildHydratedTimingFields(form, preparationData, resolvedTarget),
     midRouteCoordinates: preparationData.midRouteCoordinates ?? form.midRouteCoordinates,

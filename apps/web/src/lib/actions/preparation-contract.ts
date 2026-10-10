@@ -1,3 +1,5 @@
+import { normalizeActionInterventionMode } from "./intervention-mode";
+
 export const ACTION_ACCESSIBILITY_STATUSES = [
   "not_evaluated",
   "conditions_reported",
@@ -76,6 +78,11 @@ export function normalizePreparationChecklist(
 
 export function normalizeActionPreparationContract<T extends object>(data: T): T {
   const next = { ...data } as Record<string, unknown>;
+  if ("interventionMode" in next) {
+    const interventionMode = normalizeActionInterventionMode(next["interventionMode"]);
+    if (interventionMode) next["interventionMode"] = interventionMode;
+    else delete next["interventionMode"];
+  }
   if ("accessibilityStatus" in next) {
     const accessibilityStatus = normalizeAccessibilityStatus(next["accessibilityStatus"]);
     if (accessibilityStatus) next["accessibilityStatus"] = accessibilityStatus;

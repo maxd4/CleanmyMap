@@ -11,6 +11,7 @@ import { resolveActionRouteTopology } from "../../../lib/actions/route-topology"
 import { normalizeActionDrawing } from "../map/layers/actions-map-geometry.utils";
 import type { CreateActionPayloadParams, CreateActionPayloadParts } from "./payload-contract";
 import { toOptionalNumber } from "./payload-numbers";
+import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 
 function getDrawingCentroid(drawing: ActionDrawing): {
   latitude: number;
@@ -58,6 +59,7 @@ export function resolveCreateActionRouteParts(
     arrivalLocationLabel,
     recordType: form.recordType,
   });
+  const isFixedArea = normalizeActionInterventionMode(form.interventionMode)?.mode === "fixed_area";
   const routeLocationLabel =
     routeTopology === "point_to_point" && departureLocationLabel && arrivalLocationLabel
       ? `${departureLocationLabel} → ${arrivalLocationLabel}`
@@ -66,13 +68,13 @@ export function resolveCreateActionRouteParts(
   let longitude = toOptionalNumber(form.longitude) ?? null;
   const normalizedManualDrawing = normalizeActionDrawing(manualDrawing);
   const finalGeometry = resolveFinalActionGeometry({
-    gpxDrawing: form.gpxImport ? normalizedManualDrawing : null,
-    gpxImport: form.gpxImport,
+    gpxDrawing: !isFixedArea && form.gpxImport ? normalizedManualDrawing : null,
+    gpxImport: isFixedArea ? null : form.gpxImport,
     manualDrawing: normalizedManualDrawing,
     manualDrawingSource,
-    operationalRoute: form.operationalRoute,
-    reconstructedDrawing: normalizeActionDrawing(routePreviewDrawing),
-    reconstructedSource: routePreviewSource,
+    operationalRoute: isFixedArea ? null : form.operationalRoute,
+    reconstructedDrawing: isFixedArea ? null : normalizeActionDrawing(routePreviewDrawing),
+    reconstructedSource: isFixedArea ? null : routePreviewSource,
   });
   const normalizedDrawing = finalGeometry?.drawing ?? null;
   const resolvedManualDrawingSource = finalGeometry?.source ?? null;

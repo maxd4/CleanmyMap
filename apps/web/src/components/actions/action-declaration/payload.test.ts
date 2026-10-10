@@ -14,6 +14,7 @@ import {
 import { deriveRouteTargetDistanceKm } from "@/lib/actions/route-target-distance";
 import { formatWasteGuidanceLines } from "@/lib/waste";
 import type { ActionDrawing } from"@/lib/actions/types";
+import { createActionInterventionMode } from "@/lib/actions/intervention-mode";
 
 function buildBaseForm() {
  const form = createInitialFormState("Alice");
@@ -32,6 +33,33 @@ function buildBaseForm() {
 }
 
 describe("action declaration payload helpers", () => {
+  it("keeps a fixed-area collection free of route topology, distance and route geometry", () => {
+    const form = buildBaseForm();
+    form.interventionMode = createActionInterventionMode("fixed_area");
+    form.routeTopology = "point_to_point";
+    form.arrivalLocationLabel = "Arrivée fictive";
+    form.routeTargetDistanceKm = "4";
+    form.operationalRoute = { routes: [{ geometry: { coordinates: [[48.85, 2.35], [48.86, 2.36]] } }] } as never;
+
+    const preparation = buildPreparationDataFromForm(form);
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "quick",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(preparation.interventionMode).toEqual(createActionInterventionMode("fixed_area"));
+    expect(preparation).not.toHaveProperty("routeTopology");
+    expect(preparation).not.toHaveProperty("routeTargetDistanceKm");
+    expect(preparation).not.toHaveProperty("operationalRoute");
+    expect(payload.routeTopology).toBeUndefined();
+    expect(payload.arrivalLocationLabel).toBeUndefined();
+  });
+
   it("omits unselected descriptive choices while preserving explicit choices", () => {
     const blankForm = createInitialFormState("Alice");
     const blankPreparation = buildPreparationDataFromForm(blankForm);

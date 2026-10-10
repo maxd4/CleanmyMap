@@ -25,6 +25,7 @@ import { buildBeforeActionPayload, validateBeforeActionForm, type BeforeValidati
 import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 import { applyPreparationContextToForm, mergePlannerHandoffIntoForm, usePlannerActionHandoffHydration } from "./preparation-hydration";
 import type { BeforeActionPersistenceStatus } from "./persistence-status";
+import { createActionInterventionMode } from "@/lib/actions/intervention-mode";
 export { applyPreparationContextToForm } from "./preparation-hydration";
 
 type SubmissionState = "idle" | "pending" | "success" | "error";
@@ -65,6 +66,7 @@ function createInitialBeforeActionForm(
 ): FormState {
   return {
     ...createInitialFormState(actorName, recordType),
+    interventionMode: createActionInterventionMode(),
     volunteersCount: "",
     childrenCount: "",
     adultCount: "",

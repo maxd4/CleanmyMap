@@ -31,6 +31,7 @@ describe("ActionPreparationData preparation extensions", () => {
 
   it("removes invalid structured values at the server normalization boundary", () => {
     expect(normalizeActionPreparationContract({
+      interventionMode: { version: "unknown", mode: "itinerary" },
       accessibilityStatus: "certified_pmr",
       suggestedMaterials: ["unknown"],
       preparationChecklist: [{ key: "x", label: "ok", checked: false }],

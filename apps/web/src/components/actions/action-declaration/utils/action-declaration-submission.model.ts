@@ -9,6 +9,7 @@ import {
   OTHER_VOLUNTEER_ASSOCIATION_VALUE,
 } from "../payload";
 import type { FormState, ValidationIssue } from "../model";
+import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 
 export function normalizeActionDeclarationFormBeforeSubmit(
   form: FormState,
@@ -20,6 +21,11 @@ export function normalizeActionDeclarationFormBeforeSubmit(
     arrivalLocationLabel: normalized.arrivalLocationLabel,
     recordType: normalized.recordType,
   });
+  const isFixedArea = normalizeActionInterventionMode(normalized.interventionMode)?.mode === "fixed_area";
+  if (isFixedArea) {
+    normalized.arrivalLocationLabel = "";
+    normalized.arrivalCoordinates = null;
+  }
   if (normalized.recordType === "action" && normalized.routeTopology === "loop") {
     normalized.arrivalLocationLabel = "";
   }
@@ -81,6 +87,7 @@ export function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
   });
 
   if (
+    normalizeActionInterventionMode(form.interventionMode)?.mode !== "fixed_area" &&
     form.recordType === "action" &&
     routeTopology === "point_to_point" &&
     !form.arrivalLocationLabel.trim()

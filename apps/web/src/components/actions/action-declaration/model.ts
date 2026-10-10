@@ -11,6 +11,7 @@ import type {
 } from"@/lib/actions/types";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
+import type { ActionInterventionModeSelection } from "@/lib/actions/intervention-mode";
 import type { OperationalRoute } from "@/lib/route/route-operational";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
@@ -42,6 +43,7 @@ export type FormState = {
  midRouteLocationLabel?: string;
  arrivalLocationLabel: string;
  routeTopology: ActionRouteTopology;
+ interventionMode: ActionInterventionModeSelection | null;
  routeStyle:"direct" |"souple";
  routeAdjustmentMessage: string;
  plannedObjective: "" | "repérage" |"nettoyage" |"collecte_mégots" |"action_mixte" |"sensibilisation" |"autre";
@@ -133,6 +135,7 @@ export const initialState: FormState = {
  midRouteLocationLabel:"",
  arrivalLocationLabel:"",
  routeTopology:"loop",
+ interventionMode: null,
  routeStyle:"souple",
  routeAdjustmentMessage:"",
  plannedObjective:"",

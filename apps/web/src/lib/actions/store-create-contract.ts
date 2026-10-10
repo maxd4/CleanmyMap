@@ -29,6 +29,7 @@ import {
   resolvePersistedCigaretteButts,
 } from "./store-notes";
 import { resolveParticipantsCount } from "@/lib/actions/volunteer-participation";
+import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 
 function stripLegacyPreparationState(
   preparationData: ActionPreparationData,
@@ -40,6 +41,10 @@ function stripLegacyPreparationState(
 
 export function resolveCreateActionRouteTopology(payload: CreateActionPayload) {
   const recordType = payload.recordType ?? "action";
+  const interventionMode = normalizeActionInterventionMode(payload.preparationData?.interventionMode);
+  if (interventionMode?.mode === "fixed_area") {
+    return { recordType, routeTopology: undefined };
+  }
   return {
     recordType,
     routeTopology: resolveActionRouteTopology({
@@ -110,8 +115,21 @@ export function buildActionInsertPayload(params: {
   const { recordType, routeTopology } = resolveCreateActionRouteTopology(params.payload);
   const normalizedInputPreparationData = stripLegacyPreparationState(normalizeActionPreparationData({
     ...(params.payload.preparationData ?? {}),
-    routeTopology,
+    ...(routeTopology ? { routeTopology } : {}),
   }));
+  if (routeTopology === undefined) {
+    delete normalizedInputPreparationData.routeTopology;
+    delete normalizedInputPreparationData.routeTargetDistanceKm;
+    delete normalizedInputPreparationData.routeTargetDistanceSource;
+    delete normalizedInputPreparationData.routeTargetDistancePolicyVersion;
+    delete normalizedInputPreparationData.routeCalibrationContext;
+    delete normalizedInputPreparationData.operationalRoute;
+    delete normalizedInputPreparationData.gpxImport;
+    delete normalizedInputPreparationData.routeObservedDistanceKm;
+    delete normalizedInputPreparationData.routeNetworkDistanceKm;
+    delete normalizedInputPreparationData.routeGeometryMode;
+    delete normalizedInputPreparationData.routeGeometryProvider;
+  }
   const activeGeometry = resolveFinalActionGeometry({
     gpxDrawing: normalizedInputPreparationData.gpxImport ? params.payload.manualDrawing : null,
     gpxImport: normalizedInputPreparationData.gpxImport,
@@ -119,8 +137,15 @@ export function buildActionInsertPayload(params: {
     manualDrawingSource: params.payload.geometrySource,
     operationalRoute: normalizedInputPreparationData.operationalRoute,
   });
-  const normalizedPreparationData = clearActionRouteArrivalForLoop(
-    normalizeActionPreparationData({
+  const normalizedPreparationData = routeTopology === undefined
+    ? normalizeActionPreparationData({
+        ...normalizedInputPreparationData,
+        ...(activeGeometry?.source === "gpx_import"
+          ? { gpxImport: undefined, routeObservedDistanceKm: undefined }
+          : {}),
+      })
+    : clearActionRouteArrivalForLoop(
+      normalizeActionPreparationData({
       ...normalizedInputPreparationData,
       ...(activeGeometry?.operationalRoute
         ? { operationalRoute: activeGeometry.operationalRoute }
@@ -130,20 +155,20 @@ export function buildActionInsertPayload(params: {
       ...(activeGeometry?.source === "gpx_import"
         ? {}
         : { gpxImport: undefined, routeObservedDistanceKm: undefined }),
-    }),
-    { recordType, topology: routeTopology },
-  );
-  const resolvedTarget = resolveRouteTargetDistance({
+      }),
+      { recordType, topology: routeTopology },
+    );
+  const resolvedTarget = routeTopology === undefined ? null : resolveRouteTargetDistance({
     durationMinutes: params.payload.durationMinutes,
     routeTargetDistanceKm:
       normalizedPreparationData.routeTargetDistanceKm ?? params.payload.routeTargetDistanceKm,
     routeTargetDistanceSource: normalizedPreparationData.routeTargetDistanceSource,
   });
-  const preparationDataWithTarget = persistResolvedRouteTargetDistance(
-    normalizedPreparationData,
-    resolvedTarget,
-  );
+  const preparationDataWithTarget = resolvedTarget
+    ? persistResolvedRouteTargetDistance(normalizedPreparationData, resolvedTarget)
+    : normalizedPreparationData;
   const preparationDataWithGpx =
+    routeTopology !== undefined &&
     params.payload.geometrySource === "gpx_import" &&
     params.finalDrawing?.kind === "polyline"
       ? (() => {
@@ -163,10 +188,12 @@ export function buildActionInsertPayload(params: {
           };
         })()
       : preparationDataWithTarget;
-  const routeGeometry = params.payload.geometrySource === "gpx_import"
+  const routeGeometry = routeTopology === undefined || params.payload.geometrySource === "gpx_import"
     ? null
     : params.routeGeometry;
-  const preparationDataWithRoute = routeGeometry
+  const preparationDataWithRoute = routeTopology === undefined
+    ? preparationDataWithGpx
+    : routeGeometry
     ? {
         ...preparationDataWithGpx,
         routeNetworkDistanceKm: routeGeometry.distanceKm,

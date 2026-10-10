@@ -8,6 +8,7 @@ import {
 } from "@/lib/actions/volunteer-participation";
 import type { ActionBeforeDeclarationFormProps } from "./model";
 import { toOptionalNumber } from "../payload-numbers";
+import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
 
 export type BeforeValidationField =
   | "actionTitle"
@@ -36,7 +37,8 @@ export function validateBeforeActionForm(form: FormState): BeforeValidationIssue
   if (!form.associationName.trim()) issues.push({ field: "associationName", message: "Sélectionnez une structure ou un cadre d'engagement." });
   if (!form.organizerType) issues.push({ field: "organizerType", message: "Sélectionnez un type de structure avant d'enregistrer le pré-formulaire." });
   if (!form.departureLocationLabel.trim()) issues.push({ field: "departureLocationLabel", message: "Indiquez le point de rendez-vous avant d'enregistrer." });
-  if (form.recordType === "action" && form.routeTopology === "point_to_point" && !form.arrivalLocationLabel.trim()) {
+  const isFixedArea = normalizeActionInterventionMode(form.interventionMode)?.mode === "fixed_area";
+  if (!isFixedArea && form.recordType === "action" && form.routeTopology === "point_to_point" && !form.arrivalLocationLabel.trim()) {
     issues.push({ field: "arrivalLocationLabel", message: "Indiquez l'arrivée pour un parcours départ → arrivée." });
   }
   const durationInput = form.durationMinutes.trim();

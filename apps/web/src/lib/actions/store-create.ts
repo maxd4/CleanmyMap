@@ -224,17 +224,19 @@ export async function createAction(
     payload: params.payload,
   });
   const { recordType, routeTopology } = resolveCreateActionRouteTopology(params.payload);
-  const preparationData = clearActionRouteArrivalForLoop(
-    {
-      ...(params.payload.preparationData ?? {}),
-      routeTopology,
-    },
-    { recordType, topology: routeTopology },
-  );
+  const preparationData = routeTopology === undefined
+    ? { ...(params.payload.preparationData ?? {}) }
+    : clearActionRouteArrivalForLoop(
+      {
+        ...(params.payload.preparationData ?? {}),
+        routeTopology,
+      },
+      { recordType, topology: routeTopology },
+    );
   const payload: CreateActionPayload = {
     ...params.payload,
     recordType,
-    routeTopology,
+    ...(routeTopology ? { routeTopology } : {}),
     arrivalLocationLabel:
       recordType === "action" && routeTopology === "loop"
         ? undefined
@@ -242,17 +244,16 @@ export async function createAction(
     preparationData,
   };
 
-  const resolvedTarget = resolveRouteTargetDistance({
+  const resolvedTarget = routeTopology === undefined ? null : resolveRouteTargetDistance({
     durationMinutes: payload.durationMinutes,
     routeTargetDistanceKm: payload.preparationData?.routeTargetDistanceKm,
     routeTargetDistanceSource: payload.preparationData?.routeTargetDistanceSource,
   });
   const payloadWithRouteTarget: CreateActionPayload = {
     ...payload,
-    preparationData: persistResolvedRouteTargetDistance(
-      payload.preparationData ?? {},
-      resolvedTarget,
-    ),
+    preparationData: resolvedTarget
+      ? persistResolvedRouteTargetDistance(payload.preparationData ?? {}, resolvedTarget)
+      : payload.preparationData,
   };
 
   const resolvedDrawing = await resolveCreateActionDrawing(payloadWithRouteTarget);
