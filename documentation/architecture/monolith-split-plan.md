@@ -3,15 +3,15 @@
 <!-- RADAR:GENERATED:BEGIN -->
 ## A. En-tête snapshot
 
-`RADAR_REF=8c96069f522049cc6d737795f2e17bdf770a005c`<br>
-`RADAR_GENERATED_AT=2026-10-07T17:52:10.324Z`<br>
+`RADAR_REF=2af904b13f93bada5aa7aeebc28993fc2e3b2201`<br>
+`RADAR_GENERATED_AT=2026-10-10T13:03:25.616Z`<br>
 `RADAR_STATUS=CURRENT_AT_GENERATION`
 
 Commandes réellement utilisées :
 
 `node scripts/reports/generate-modularity-radar.mjs --ref=HEAD`
 
-Le snapshot lit l'arbre Git exact de 8c96069f522049cc6d737795f2e17bdf770a005c. Le statut
+Le snapshot lit l'arbre Git exact de 2af904b13f93bada5aa7aeebc28993fc2e3b2201. Le statut
 CURRENT_AT_GENERATION décrit l'instant de génération ; un document commité
 peut donc rester un snapshot reproductible de cette ref sans prétendre suivre
 automatiquement un HEAD ultérieur.
@@ -20,7 +20,8 @@ automatiquement un HEAD ultérieur.
 
 | Mesure factuelle | Valeur |
 | --- | ---: |
-| Fichiers mesurés | 2931 |
+| Fichiers mesurés | 3022 |
+| Surveillance préventive informative (runtime/tests) | 228 |
 | REVIEW architectural (runtime + data/config) | 13 |
 | HARD contrôlé | 0 |
 | Tests volumineux | 0 |
@@ -41,16 +42,19 @@ top-heavy-policy.mjs (../../scripts/checks/top-heavy-policy.mjs) et est
 consommée par le même moteur que quality:top-heavy. Le générateur ne
 redéfinit aucun seuil.
 
-| KIND | REVIEW | HARD | Lecture radar |
-| --- | --- | --- | --- |
-| runtime | >500 lignes ou >40 KiB | >1000 lignes ou >50 KiB | architecture |
-| test | >1000 lignes ou >50 KiB | >1500 lignes ou >80 KiB | lisibilité/cohésion des scénarios |
-| data/config | >800 lignes ou >50 KiB | >1500 lignes ou >80 KiB | architecture |
-| generated | informatif | informatif | provenance générée + régénérabilité obligatoires |
+| KIND | REVIEW | HARD | PRÉVENTIVE | Lecture radar |
+| --- | --- | --- | --- | --- |
+| runtime | >500 lignes ou >40 KiB | >1000 lignes ou >50 KiB | >=300 lignes (informatif) | architecture |
+| test | >1000 lignes ou >50 KiB | >1500 lignes ou >80 KiB | >=600 lignes (informatif) | lisibilité/cohésion des scénarios |
+| data/config | >800 lignes ou >50 KiB | >1500 lignes ou >80 KiB | qualitatif, selon la cohésion | architecture |
+| generated | informatif | informatif | informatif | provenance générée + régénérabilité obligatoires |
 
 Un fichier generated n'est exclu que si sa provenance et sa régénérabilité
 sont démontrées. Un test volumineux reste un signal de lisibilité et de
-cohésion de scénarios, jamais un monolithe runtime par défaut.
+cohésion de scénarios, jamais un monolithe runtime par défaut. La colonne
+préventive est strictement informative : elle ne crée ni REVIEW/HARD, ni
+baseline, ni décision de split ; data/config reste lu selon la cohésion réelle
+du catalogue, sans seuil numérique automatique.
 
 ## D. Priorités architecturales
 
@@ -870,23 +874,58 @@ Les tableaux suivants sont mesurés automatiquement. Une ligne sans décision
 humaine reste REVIEW_REQUIRED, qui est un état d'audit et non une consigne
 de découpage.
 
+### Surveillance préventive — top 25
+
+Les lignes suivantes sont dans une zone de lecture située avant REVIEW pour
+runtime et tests. La distance est calculée séparément pour les lignes et les
+octets ; aucun agrégat numérique global n'est produit. Les signaux affichés sont uniquement
+ceux effectivement attribués par les rapports quality disponibles à la ref.
+
+| PATH | KIND | LINES | KiB | DISTANCE_REVIEW | SIGNAUX_MESURÉS | DÉCISION_EXISTANTE |
+| --- | --- | ---: | ---: | --- | --- | --- |
+| `apps/web/src/components/actions/action-declaration/payload.test.ts` | test | 982 | 32.8 KiB | 18 lignes / 17.2 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts` | test | 809 | 27.6 KiB | 191 lignes / 22.4 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/app/api/route/recommend/route.response.test.ts` | test | 746 | 24.8 KiB | 254 lignes / 25.2 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/app/api/admin/creator-inbox/route.test.ts` | test | 688 | 22.7 KiB | 312 lignes / 27.3 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/environmental-impact-estimator/project-signals.test.ts` | test | 688 | 21.8 KiB | 312 lignes / 28.2 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/actions/store.test.ts` | test | 682 | 19.6 KiB | 318 lignes / 30.4 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/app/api/actions/[actionId]/group-join/route.test.helpers.ts` | test | 669 | 26.4 KiB | 331 lignes / 23.6 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/components/actions/map/layers/map-layers.test.ts` | test | 649 | 18.9 KiB | 351 lignes / 31.1 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.test.ts` | test | 620 | 18.5 KiB | 380 lignes / 31.5 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/governance/governance-monthly-report-store.ts` | runtime | 500 | 15.9 KiB | 0 lignes / 24.1 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/actions/formalities-qualification.ts` | runtime | 498 | 17.2 KiB | 2 lignes / 22.8 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/app/api/chat/route.get.ts` | runtime | 496 | 15.4 KiB | 4 lignes / 24.6 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/actions/pollution/repollution-prediction-evaluation.ts` | runtime | 493 | 15.5 KiB | 7 lignes / 24.5 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/actions/map/map-http.ts` | runtime | 490 | 15.3 KiB | 10 lignes / 24.8 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/components/admin/admin-dashboard-ui.tsx` | runtime | 490 | 13.2 KiB | 10 lignes / 26.8 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-overview.tsx` | runtime | 489 | 21.3 KiB | 11 lignes / 18.7 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/components/reports/admin-workflow/step-confirm.tsx` | runtime | 488 | 16.2 KiB | 12 lignes / 23.8 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/components/admin/environmental-impact-capture-panel.tsx` | runtime | 486 | 21.9 KiB | 14 lignes / 18.1 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/route/route-multi-route.ts` | runtime | 485 | 18.1 KiB | 15 lignes / 21.9 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/actions/metadata.ts` | runtime | 483 | 14.5 KiB | 17 lignes / 25.5 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/environmental-impact-estimator/codex-usage-store.ts` | runtime | 482 | 17.2 KiB | 18 lignes / 22.8 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/pdf-export/report-pdf-theme.ts` | runtime | 482 | 11.6 KiB | 18 lignes / 28.4 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/components/actions/organizer-combobox.tsx` | runtime | 481 | 16.6 KiB | 19 lignes / 23.4 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/lib/learning/gestes-propres/gestes-propres-barometer.ts` | runtime | 479 | 16.8 KiB | 21 lignes / 23.2 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+| `apps/web/src/components/learn/quiz/quiz-session-panel-summary.tsx` | runtime | 477 | 24.7 KiB | 23 lignes / 15.3 KiB | signaux complémentaires non mesurés | NONE_RECORDED |
+
 ### Radar architectural — top 25
 
 | PATH | REF | LINES | BYTES | KIND | SIZE_SIGNAL | CORRELATIONS | DECISION |
 | --- | --- | ---: | ---: | --- | --- | --- | --- |
-| `apps/web/src/lib/actions/pollution/current-place-state.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 647 | 19737 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 615 | 21712 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 613 | 24198 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/route/route-trace.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 605 | 20034 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/ui/button-theme.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 603 | 17967 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/route/route-group-partition.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 596 | 22351 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 590 | 16820 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 588 | 21807 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 578 | 16037 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
-| `apps/web/src/lib/actions/pollution/corridor-history.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 550 | 16245 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 537 | 20096 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/lib/impact/impact-terrain-2026.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 521 | 26764 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
-| `apps/web/src/components/chat/discussion-guidance.ts` | `8c96069f522049cc6d737795f2e17bdf770a005c` | 518 | 20555 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/actions/pollution/current-place-state.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 647 | 19737 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 615 | 21712 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 613 | 24198 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/route/route-trace.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 605 | 20034 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/ui/button-theme.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 603 | 17967 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/route/route-group-partition.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 596 | 22351 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/learning/quiz/quiz-quality-audit.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 590 | 16820 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 588 | 21807 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/components/actions/map/layers/actions-map-geometry.utils.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 578 | 16037 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | DEFERRED_SPLIT |
+| `apps/web/src/lib/actions/pollution/corridor-history.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 550 | 16245 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/geo/municipal-cleaning-serviceability.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 537 | 20096 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/lib/impact/impact-terrain-2026.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 521 | 26764 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
+| `apps/web/src/components/chat/discussion-guidance.ts` | `2af904b13f93bada5aa7aeebc28993fc2e3b2201` | 518 | 20555 | runtime | PRESENT — REVIEW | signaux complémentaires non mesurés | COHESIVE_SINGLE_FILE |
 
 ### Tests volumineux — top 25
 
@@ -921,6 +960,12 @@ automatiquement de la taille.
 - SIZE_SIGNAL vient de quality:top-heavy, de classifyFileKind() et
   de la baseline heavy-files ; ce contrôle reste la source de vérité de la
   taille et de ses plafonds.
+- La surveillance préventive utilise uniquement les seuils indicatifs
+  `>=300` lignes pour runtime et `>=600` lignes pour test, uniquement sous
+  REVIEW. Elle est informative, ne modifie pas `quality:top-heavy --enforce`
+  et ne crée jamais `PROACTIVE_SPLIT`. Data/config n'a pas de seuil numérique
+  préventif automatique : la cohésion du catalogue doit être examinée par un
+  humain.
 - En génération standalone, COMPLEXITY_SIGNAL, DEAD_CODE_SIGNAL,
   DUPLICATION_SIGNAL et CYCLE_SIGNAL proviennent uniquement des cinq rapports
   quality-audits dont les manifests prouvent le même RADAR_REF, une baseline
