@@ -22,13 +22,37 @@ function formatMetric(value: number | null | undefined, suffix = ""): string {
   return typeof value === "number" && Number.isFinite(value) ? `${Math.round(value)}${suffix}` : "—";
 }
 
+function locationsDiffer({
+  actionLocation,
+  actionLatitude,
+  actionLongitude,
+  selectedLocation,
+}: {
+  actionLocation: string;
+  actionLatitude?: string;
+  actionLongitude?: string;
+  selectedLocation: WeatherData["selectedLocation"];
+}): boolean {
+  const actionCoordinates = [Number(actionLatitude), Number(actionLongitude)];
+  const hasActionCoordinates = actionCoordinates.every(Number.isFinite);
+  const hasWeatherCoordinates = selectedLocation.resolution === "resolved" && Number.isFinite(selectedLocation.latitude) && Number.isFinite(selectedLocation.longitude);
+  if (hasActionCoordinates && hasWeatherCoordinates) {
+    return Math.abs(actionCoordinates[0]! - selectedLocation.latitude) > 1e-6 || Math.abs(actionCoordinates[1]! - selectedLocation.longitude) > 1e-6;
+  }
+  return Boolean(actionLocation && selectedLocation.label && actionLocation.toLocaleLowerCase() !== selectedLocation.label.toLocaleLowerCase());
+}
+
 export function PreparationLocationBlock({
   actionLocation,
+  actionLatitude,
+  actionLongitude,
   actionDate,
   weather,
   fr,
 }: {
   actionLocation: string;
+  actionLatitude?: string;
+  actionLongitude?: string;
   actionDate: string;
   weather: Pick<WeatherData, "weatherStatus" | "locationResolution" | "selectedLocation" | "locationQuery" | "setLocationQuery" | "locationSuggestions" | "locationSuggestionsError" | "isLocationSuggestionsLoading" | "selectLocation">;
   fr: boolean;
@@ -40,7 +64,7 @@ export function PreparationLocationBlock({
     fr,
   });
   const StateIcon = weatherState.icon;
-  const locationDiffers = Boolean(actionLocation && weather.selectedLocation.label && actionLocation.toLocaleLowerCase() !== weather.selectedLocation.label.toLocaleLowerCase());
+  const locationDiffers = locationsDiffer({ actionLocation, actionLatitude, actionLongitude, selectedLocation: weather.selectedLocation });
 
   return (
     <CmmCard tone="emerald" variant="outlined" size="md" className="space-y-4" data-testid="preparation-location-block">

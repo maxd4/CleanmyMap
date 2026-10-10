@@ -12,7 +12,7 @@ const handoff = {
     plannerGroupCount: 1,
     routes: [],
     zones: {
-      departure: { label: "Quai nord", coordinate: [2.35, 48.85] as [number, number] },
+      departure: { label: "Quai nord", coordinate: [48.85, 2.35] as [number, number] },
       midpoint: { label: null, coordinate: null },
       arrival: { label: null, coordinate: null },
     },
@@ -45,6 +45,52 @@ describe("shared action preparation context", () => {
     expect(context.latitude).toBe("48.84");
     expect(context.longitude).toBe("2.38");
     expect(context.plannerHandoff).toBe(handoff);
+  });
+
+  it("uses planner coordinates as latitude then longitude and keeps matching preparation data", () => {
+    const context = buildActionPreparationContext({
+      action: { id: "action-42", preparationData: {} } as never,
+      plannerHandoff: {
+        ...handoff,
+        preparationData: { pointDeRendezVous: "Quai nord" },
+      },
+    });
+
+    expect(context.latitude).toBe("48.85");
+    expect(context.longitude).toBe("2.35");
+    expect(context.locationLabel).toBe("Quai nord");
+    expect(context.plannerHandoff).toBeTruthy();
+  });
+
+  it("ignores a handoff from another action, including its preparation fallback", () => {
+    const foreign = {
+      ...handoff,
+      actionId: "action-other",
+      preparationData: { actionDate: "2099-12-31", pointDeRendezVous: "Lieu étranger" },
+    };
+    const context = buildActionPreparationContext({
+      action: { id: "action-42", preparationData: {} } as never,
+      plannerHandoff: foreign,
+    });
+
+    expect(context.plannerHandoff).toBeNull();
+    expect(context.actionDate).toBe("");
+    expect(context.locationLabel).toBe("");
+    expect(context.latitude).toBe("");
+    expect(context.longitude).toBe("");
+  });
+
+  it("does not apply an unbound handoff to an existing action", () => {
+    const unbound = { ...handoff, actionId: undefined };
+    const context = buildActionPreparationContext({
+      action: { id: "action-42", preparationData: {} } as never,
+      plannerHandoff: unbound,
+    });
+
+    expect(context.plannerHandoff).toBeNull();
+    expect(context.actionDate).toBe("");
+    expect(context.latitude).toBe("");
+    expect(context.longitude).toBe("");
   });
 
   it("reports a conflict and only replaces it after an explicit decision", () => {

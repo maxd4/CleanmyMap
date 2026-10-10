@@ -1,7 +1,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { PreparationPanel } from "./weather-section.preparation";
+import { PreparationLocationBlock, PreparationPanel } from "./weather-section.preparation";
 import { buildActionPreparationContext } from "@/lib/actions/action-preparation-context";
 
 describe("PreparationPanel", () => {
@@ -36,5 +36,39 @@ describe("PreparationPanel", () => {
     expect(html).not.toContain("guide-main");
     expect(html).not.toContain("Progression du kit");
     expect(html).not.toContain("x1");
+  });
+
+  it("compares weather and action locations by coordinates when labels differ", () => {
+    const weather = {
+      weatherStatus: "ready" as const,
+      locationResolution: "resolved" as const,
+      selectedLocation: {
+        label: "Nom différent",
+        subtitle: "Lieu géocodé",
+        latitude: 48.85,
+        longitude: 2.35,
+        importance: null,
+        resolution: "resolved" as const,
+      },
+      locationQuery: "Nom différent",
+      setLocationQuery: () => undefined,
+      locationSuggestions: [],
+      locationSuggestionsError: null,
+      isLocationSuggestionsLoading: false,
+      selectLocation: () => undefined,
+    };
+
+    const html = renderToStaticMarkup(
+      React.createElement(PreparationLocationBlock, {
+        actionLocation: "Adresse canonique",
+        actionLatitude: "48.85",
+        actionLongitude: "2.35",
+        actionDate: "2026-10-12",
+        weather,
+        fr: true,
+      }),
+    );
+
+    expect(html).not.toContain("Lieu météo différent");
   });
 });

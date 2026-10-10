@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildFallbackWeatherLocation,
+  buildWeatherLocationFromCoordinates,
   canApplyAutomaticWeatherLocation,
   canApplyDraftWeatherLocation,
   shouldApplyDraftForecastDate,
@@ -14,6 +15,24 @@ describe("weather context precedence", () => {
       label: "Lieu inconnu",
       resolution: "unresolved",
     });
+  });
+
+  it("uses precise action coordinates without requiring a text geocoding result", () => {
+    expect(buildWeatherLocationFromCoordinates({
+      label: "Adresse précise non retrouvée",
+      latitude: "48.85",
+      longitude: "2.35",
+    })).toMatchObject({
+      label: "Adresse précise non retrouvée",
+      latitude: 48.85,
+      longitude: 2.35,
+      resolution: "resolved",
+    });
+    expect(buildWeatherLocationFromCoordinates({
+      label: "Adresse libre",
+      latitude: "",
+      longitude: "",
+    })).toBeNull();
   });
 
   it("gives a pre-form location priority over stored, profile and geolocation sources", () => {

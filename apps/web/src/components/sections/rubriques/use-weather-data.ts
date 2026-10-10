@@ -100,6 +100,33 @@ export function buildFallbackWeatherLocation(label: string, subtitle: string | n
   };
 }
 
+function parseCoordinate(value: string | number | undefined, minimum: number, maximum: number): number | null {
+  const numeric = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : Number.NaN;
+  return Number.isFinite(numeric) && numeric >= minimum && numeric <= maximum ? numeric : null;
+}
+
+export function buildWeatherLocationFromCoordinates({
+  label,
+  latitude,
+  longitude,
+}: {
+  label?: string;
+  latitude?: string | number;
+  longitude?: string | number;
+}): WeatherLocation | null {
+  const validLatitude = parseCoordinate(latitude, -90, 90);
+  const validLongitude = parseCoordinate(longitude, -180, 180);
+  if (validLatitude === null || validLongitude === null) return null;
+  return {
+    label: label?.trim() || "Lieu de l’action",
+    subtitle: "Coordonnées confirmées de l’action",
+    latitude: validLatitude,
+    longitude: validLongitude,
+    importance: null,
+    resolution: "resolved",
+  };
+}
+
 async function resolveWeatherLocationFromLabel(
   label: string,
   subtitle: string | null,
@@ -172,7 +199,7 @@ function isDaytimeHour(time: string): boolean {
 }
 
 export function useWeatherData(
-  draftContext?: { locationLabel?: string; actionDate?: string; departureTime?: string; contextReady?: boolean },
+  draftContext?: { locationLabel?: string; actionDate?: string; departureTime?: string; latitude?: string; longitude?: string; contextReady?: boolean },
 ) {
   const { isLoaded, user } = useUser();
   const [selectedForecastDayIndex, setSelectedForecastDayIndex] = useState(0);
@@ -183,16 +210,27 @@ export function useWeatherData(
   const draftLocationLabel = draftContext?.locationLabel?.trim() ?? "";
   const draftActionDate = draftContext?.actionDate?.trim() ?? "";
   const contextReady = draftContext?.contextReady !== false;
-  const preparationContextWithoutLocation = draftContext?.contextReady === true && !draftLocationLabel;
+  const actionLocation = useMemo(
+    () => buildWeatherLocationFromCoordinates({
+      label: draftLocationLabel,
+      latitude: draftContext?.latitude,
+      longitude: draftContext?.longitude,
+    }),
+    [draftContext?.latitude, draftContext?.longitude, draftLocationLabel],
+  );
+  const hasCanonicalActionLocation = actionLocation !== null;
+  const preparationContextWithoutLocation = draftContext?.contextReady === true && !draftLocationLabel && !hasCanonicalActionLocation;
   const initialLocation = !contextReady
     ? buildFallbackWeatherLocation("Lieu en cours de chargement", "Contexte de préparation")
+    : actionLocation
+      ? actionLocation
     : preparationContextWithoutLocation
       ? buildFallbackWeatherLocation("Localisation à préciser", "Lieu de l’action non renseigné")
     : draftLocationLabel
     ? buildFallbackWeatherLocation(draftLocationLabel, "Lieu du pré-formulaire")
     : DEFAULT_LOCATION;
   const [selectedLocation, setSelectedLocation] = useState<WeatherLocation>(initialLocation);
-  const [locationQuery, setLocationQuery] = useState(draftLocationLabel || (preparationContextWithoutLocation ? "" : DEFAULT_LOCATION.label));
+  const [locationQuery, setLocationQuery] = useState(actionLocation?.label || draftLocationLabel || (preparationContextWithoutLocation ? "" : DEFAULT_LOCATION.label));
   const { locationSuggestions, locationSuggestionsError } =
     useWeatherLocationSuggestions(locationQuery);
 
@@ -279,6 +317,25 @@ export function useWeatherData(
   useEffect(() => {
     if (
       !contextReady ||
+      !hasCanonicalActionLocation ||
+      !actionLocation ||
+      hasManualLocationRef.current ||
+      (selectedLocation.resolution === "resolved" && selectedLocation.latitude === actionLocation.latitude && selectedLocation.longitude === actionLocation.longitude)
+    ) {
+      return;
+    }
+
+    // The preparation context is the canonical source when coordinates are available.
+    // Label geocoding must not replace a confirmed action location.
+    setSelectedLocation(actionLocation);
+    setLocationQuery(actionLocation.label);
+    hasResolvedInitialLocationRef.current = true;
+  }, [actionLocation, contextReady, hasCanonicalActionLocation, selectedLocation.latitude, selectedLocation.longitude, selectedLocation.resolution]);
+
+  useEffect(() => {
+    if (
+      !contextReady ||
+      hasCanonicalActionLocation ||
       preparationContextWithoutLocation ||
       !canApplyDraftWeatherLocation(draftLocationLabel, hasManualLocationRef.current) ||
       draftLocationRef.current === draftLocationLabel
@@ -301,11 +358,12 @@ export function useWeatherData(
     return () => {
       isCancelled = true;
     };
-  }, [contextReady, draftLocationLabel, preparationContextWithoutLocation]);
+  }, [contextReady, draftLocationLabel, hasCanonicalActionLocation, preparationContextWithoutLocation]);
 
   useEffect(() => {
     if (
       !contextReady ||
+      hasCanonicalActionLocation ||
       preparationContextWithoutLocation ||
       !canApplyAutomaticWeatherLocation({
         draftLocationLabel,
@@ -343,11 +401,12 @@ export function useWeatherData(
     return () => {
       isCancelled = true;
     };
-  }, [contextReady, draftLocationLabel, preparationContextWithoutLocation]);
+  }, [contextReady, draftLocationLabel, hasCanonicalActionLocation, preparationContextWithoutLocation]);
 
   useEffect(() => {
     if (
       !contextReady ||
+      hasCanonicalActionLocation ||
       preparationContextWithoutLocation ||
       !isLoaded ||
       !canApplyAutomaticWeatherLocation({
@@ -384,11 +443,12 @@ export function useWeatherData(
     return () => {
       isCancelled = true;
     };
-  }, [contextReady, draftLocationLabel, isLoaded, preparationContextWithoutLocation, user?.publicMetadata, user?.unsafeMetadata]);
+  }, [contextReady, draftLocationLabel, hasCanonicalActionLocation, isLoaded, preparationContextWithoutLocation, user?.publicMetadata, user?.unsafeMetadata]);
 
   useEffect(() => {
     if (
       !contextReady ||
+      hasCanonicalActionLocation ||
       preparationContextWithoutLocation ||
       !isLoaded ||
       !canApplyAutomaticWeatherLocation({
@@ -449,7 +509,7 @@ export function useWeatherData(
     return () => {
       isCancelled = true;
     };
-  }, [contextReady, draftLocationLabel, isLoaded, preparationContextWithoutLocation]);
+  }, [contextReady, draftLocationLabel, hasCanonicalActionLocation, isLoaded, preparationContextWithoutLocation]);
 
   const hourlyPoints: WeatherPoint[] = useMemo(
     () =>

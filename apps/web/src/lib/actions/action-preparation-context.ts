@@ -46,9 +46,16 @@ type DraftPreparationSource = Partial<{
 function text(...values: unknown[]): string {
   return values.find((value): value is string => typeof value === "string" && value.trim().length > 0)?.trim() ?? "";
 }
-function numericText(...values: unknown[]): string {
-  const value = values.find((candidate) => typeof candidate === "number" && Number.isFinite(candidate));
-  return typeof value === "number" ? String(value) : "";
+function coordinateValue(value: unknown, minimum: number, maximum: number): number | null {
+  const numeric = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : Number.NaN;
+  return Number.isFinite(numeric) && numeric >= minimum && numeric <= maximum ? numeric : null;
+}
+
+function coordinatePair(latitude: unknown, longitude: unknown): Pick<ActionPreparationContext, "latitude" | "longitude"> | null {
+  const validLatitude = coordinateValue(latitude, -90, 90);
+  const validLongitude = coordinateValue(longitude, -180, 180);
+  if (validLatitude === null || validLongitude === null) return null;
+  return { latitude: String(validLatitude), longitude: String(validLongitude) };
 }
 function preparationFor(source: ActionEditorRecord | null | undefined): ActionPreparationData {
   return source?.preparationData ?? {};
@@ -59,8 +66,8 @@ function matchingPlannerHandoff(
   handoff: PlannerActionHandoff | null | undefined,
 ): PlannerActionHandoff | null {
   if (!handoff) return null;
-  if (!action?.id || !handoff.actionId || handoff.actionId === action.id) return handoff;
-  return null;
+  if (!action?.id) return handoff;
+  return handoff.actionId === action.id ? handoff : null;
 }
 
 function preparationLocation(
@@ -84,17 +91,17 @@ function preparationCoordinates(
   draft: DraftPreparationSource | null | undefined,
   handoff: PlannerActionHandoff | null,
 ): Pick<ActionPreparationContext, "latitude" | "longitude"> {
-  return {
-    latitude: text(
-      numericText(action?.latitude),
-      draft?.latitude,
-      numericText(handoff?.operationalRoute.zones.departure.coordinate?.[1]),
+  const candidates = [
+    coordinatePair(action?.latitude, action?.longitude),
+    coordinatePair(draft?.latitude, draft?.longitude),
+    coordinatePair(
+      handoff?.operationalRoute.zones.departure.coordinate?.[0],
+      handoff?.operationalRoute.zones.departure.coordinate?.[1],
     ),
-    longitude: text(
-      numericText(action?.longitude),
-      draft?.longitude,
-      numericText(handoff?.operationalRoute.zones.departure.coordinate?.[0]),
-    ),
+  ];
+  return candidates.find((candidate): candidate is Pick<ActionPreparationContext, "latitude" | "longitude"> => candidate !== null) ?? {
+    latitude: "",
+    longitude: "",
   };
 }
 
@@ -129,8 +136,8 @@ export function buildActionPreparationContext({
   plannerHandoff?: PlannerActionHandoff | null;
 }): ActionPreparationContext {
   const preparation = preparationFor(action);
-  const handoffPreparation = plannerHandoff?.preparationData ?? {};
   const matchingHandoff = matchingPlannerHandoff(action, plannerHandoff);
+  const handoffPreparation = matchingHandoff?.preparationData ?? {};
   const coordinates = preparationCoordinates(action, draft, matchingHandoff);
 
   return {
