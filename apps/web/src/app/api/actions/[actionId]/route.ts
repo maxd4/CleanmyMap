@@ -15,7 +15,7 @@ import {
   canManageAction,
 } from "@/lib/actions/permissions";
 import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
-import { loadManualRegistrationIdsForAction } from "@/lib/actions/participation/registration-records";
+import { loadManualInvitationStatusesForAction, loadManualRegistrationIdsForAction } from "@/lib/actions/participation/registration-records";
 import {
   loadCanonicalActionOrganizerIdsForAction,
 } from "@/lib/actions/participation/organizers";
@@ -340,6 +340,10 @@ export async function GET(
       supabase,
       trimmedActionId,
     ).catch(() => []);
+    const manualInvitationStatuses = await loadManualInvitationStatusesForAction(
+      supabase,
+      trimmedActionId,
+    ).catch(() => []);
     const action = {
       ...buildActionEditorPayload(row),
       organizerAccounts:
@@ -349,6 +353,7 @@ export async function GET(
               (organizerId) => organizerId !== row.created_by_clerk_id,
             ),
       participantAccounts,
+      manualInvitationStatuses,
     };
     return NextResponse.json({ status: "ok", action });
   } catch (error) {

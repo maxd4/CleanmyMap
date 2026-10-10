@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { patchAction } from "@/__tests__/support/action-route-helpers";
-import { appendActionModerationAuditMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
+import { appendActionModerationAuditMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualInvitationStatusesForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — participants et organisateurs", () => {
   beforeEach(() => {
@@ -9,19 +9,31 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
 
   it("returns manual participants with the action editor payload", async () => {
     const { GET } = await import("./route");
+    loadManualInvitationStatusesForActionMock.mockResolvedValueOnce([
+      { userId: "user-manual-1", status: "pending" },
+      { userId: "user-refused", status: "rejected" },
+    ]);
 
     const response = await GET(new Request("http://localhost/api/actions/action-test-1"), {
       params: Promise.resolve({ actionId: "action-test-1" }),
     });
 
     const body = (await response.json()) as {
-      action?: { organizerAccounts?: string[]; participantAccounts?: string[] };
+      action?: { organizerAccounts?: string[]; participantAccounts?: string[]; manualInvitationStatuses?: unknown[] };
     };
 
     expect(response.status).toBe(200);
     expect(body.action?.organizerAccounts).toEqual([]);
     expect(body.action?.participantAccounts).toEqual(["user-manual-1"]);
+    expect(body.action?.manualInvitationStatuses).toEqual([
+      { userId: "user-manual-1", status: "pending" },
+      { userId: "user-refused", status: "rejected" },
+    ]);
     expect(loadManualRegistrationIdsForActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "action-test-1",
+    );
+    expect(loadManualInvitationStatusesForActionMock).toHaveBeenCalledWith(
       expect.anything(),
       "action-test-1",
     );

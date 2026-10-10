@@ -22,6 +22,12 @@ export type ParticipantPickerProps = {
   description?: string;
   className?: string;
   compact?: boolean;
+  invitationStatuses?: readonly InvitationStatus[];
+};
+
+export type InvitationStatus = {
+  userId: string;
+  status: "pending" | "accepted" | "rejected" | "withdrawn";
 };
 
 export function labelForUser(user: ChatUserOption | null | undefined): string {

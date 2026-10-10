@@ -9,6 +9,7 @@ import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 import type { FormState } from "../model";
 import type { ActiveRole } from "@/lib/domain-language";
 import { ActionParticipantPicker } from "../../action-participant-picker";
+import type { InvitationStatus } from "../../action-participant-picker-model";
 import { normalizeParticipantAccounts, parseOrganizerAccounts } from "../payload";
 import { FieldShell, GroupJoinPublishCard, SectionLabel } from "./ui";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,8 @@ type IdentityAndSharingSectionProps = BaseSectionProps & {
   showGroupJoinHelp: boolean;
   onToggleGroupJoinHelp: () => void;
   showVolunteerRegistration?: boolean;
+  invitationStatuses?: readonly InvitationStatus[];
+  embedded?: boolean;
 };
 
 export function IdentityAndSharingSection({
@@ -35,15 +38,16 @@ export function IdentityAndSharingSection({
   showGroupJoinHelp,
   onToggleGroupJoinHelp,
   showVolunteerRegistration = true,
+  invitationStatuses,
+  embedded = false,
   hasAttemptedSubmit,
   validationIssueFields,
 }: IdentityAndSharingSectionProps) {
   const missingOrganizerType = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "organizerType"));
   const missingAssociation = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "associationName"));
 
-  return (
-    <CmmCard tone="emerald" variant="glass" size="lg">
-      <div className="space-y-6">
+  const content = (
+    <div className="space-y-6">
         <SectionLabel
           icon={ClipboardList}
           title="Identité et organisation"
@@ -74,11 +78,12 @@ export function IdentityAndSharingSection({
             showGroupJoinHelp={showGroupJoinHelp}
             onToggleGroupJoinHelp={onToggleGroupJoinHelp}
             onParticipantsChange={(next) => updateField("participantAccounts", next)}
+            invitationStatuses={invitationStatuses}
           />
         ) : null}
-      </div>
-    </CmmCard>
+    </div>
   );
+  return embedded ? content : <CmmCard tone="emerald" variant="glass" size="lg">{content}</CmmCard>;
 }
 
 function IdentityFieldGrid({
@@ -195,11 +200,12 @@ export function VolunteerRegistrationPanel({
   userMetadata,
   showGroupJoinHelp,
   onToggleGroupJoinHelp,
-}: Pick<IdentityAndSharingSectionProps, "form" | "updateField" | "userMetadata" | "showGroupJoinHelp" | "onToggleGroupJoinHelp">) {
-  return (
-    <CmmCard tone="emerald" variant="glass" size="lg">
-      <div className="space-y-5">
-        <SectionLabel icon={Users} title="Équipe et inscriptions" subtitle="Demandes d’inscription et membres à inviter avant la publication." />
+  invitationStatuses,
+  embedded = false,
+}: Pick<IdentityAndSharingSectionProps, "form" | "updateField" | "userMetadata" | "showGroupJoinHelp" | "onToggleGroupJoinHelp" | "invitationStatuses" | "embedded">) {
+  const content = (
+    <div className="space-y-5">
+        <SectionLabel icon={Users} title="Inscriptions des bénévoles" subtitle="Demandes d’inscription et membres à inviter avant la publication." />
         <VolunteerRegistrationSection
           groupJoinEnabled={form.groupJoinEnabled}
           participantAccountIds={normalizeParticipantAccounts(form.participantAccounts)}
@@ -208,10 +214,11 @@ export function VolunteerRegistrationPanel({
           showGroupJoinHelp={showGroupJoinHelp}
           onToggleGroupJoinHelp={onToggleGroupJoinHelp}
           onParticipantsChange={(next) => updateField("participantAccounts", next)}
+          invitationStatuses={invitationStatuses}
         />
-      </div>
-    </CmmCard>
+    </div>
   );
+  return embedded ? content : <CmmCard tone="emerald" variant="glass" size="lg">{content}</CmmCard>;
 }
 
 function VolunteerRegistrationSection({
@@ -222,6 +229,7 @@ function VolunteerRegistrationSection({
   showGroupJoinHelp,
   onToggleGroupJoinHelp,
   onParticipantsChange,
+  invitationStatuses,
 }: {
   groupJoinEnabled: boolean;
   participantAccountIds: string[];
@@ -230,6 +238,7 @@ function VolunteerRegistrationSection({
   showGroupJoinHelp: boolean;
   onToggleGroupJoinHelp: () => void;
   onParticipantsChange: (next: string[]) => void;
+  invitationStatuses?: readonly InvitationStatus[];
 }) {
   return (
     <section aria-labelledby="before-volunteer-registration-title" className="border-t border-emerald-100/80 pt-5">
@@ -266,6 +275,7 @@ function VolunteerRegistrationSection({
             title="Ajouter des membres"
             description="Sélection facultative de comptes CleanMyMap existants."
             compact
+            invitationStatuses={invitationStatuses}
           />
         </CmmDisclosure>
       </div>

@@ -7,6 +7,13 @@ export type ActionRegistrationCancellationReason = NonNullable<
   ActionRegistrationRow["registration_cancellation_reason"]
 >;
 
+export type ActionManualInvitationStatus = "pending" | "accepted" | "rejected" | "withdrawn";
+
+export type ActionManualInvitationStatusRecord = {
+  userId: string;
+  status: ActionManualInvitationStatus;
+};
+
 export type ActionRegistrationStatusRow = Pick<
   ActionRegistrationRow,
   | "action_id"
@@ -199,4 +206,34 @@ export async function loadManualRegistrationIdsForAction(
   }
 
   return normalizeRegistrationUserIds(result.data ?? []);
+}
+
+export async function loadManualInvitationStatusesForAction(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<ActionManualInvitationStatusRecord[]> {
+  const result = await supabase
+    .from("action_registrations")
+    .select("user_id, registration_status, registration_cancellation_reason")
+    .eq("action_id", actionId)
+    .eq("registration_source", "manual_add");
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return (result.data ?? [])
+    .map((row) => {
+      const userId = String(row.user_id ?? "").trim();
+      if (!userId) return null;
+      const status: ActionManualInvitationStatus = row.registration_status === "pending"
+        ? "pending"
+        : row.registration_status === "confirmed"
+          ? "accepted"
+          : row.registration_cancellation_reason === "recipient_rejected"
+            ? "rejected"
+            : "withdrawn";
+      return { userId, status } satisfies ActionManualInvitationStatusRecord;
+    })
+    .filter((row): row is ActionManualInvitationStatusRecord => row !== null);
 }

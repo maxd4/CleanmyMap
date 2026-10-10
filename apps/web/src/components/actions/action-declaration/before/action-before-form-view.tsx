@@ -10,6 +10,7 @@ import type { ActionCreationSectionId } from "@/lib/actions/action-creation-sect
 import type { FormState } from "../model";
 import type { BeforeActionFieldUpdater } from "./model";
 import type { ActiveRole } from "@/lib/domain-language";
+import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import { ActionBeforePersistenceStatus, type BeforeActionPersistenceStatus } from "./persistence-status";
 
 export function ActionBeforeFormView({
@@ -24,6 +25,7 @@ export function ActionBeforeFormView({
   updateFields,
   showGroupJoinHelp,
   onToggleGroupJoinHelp,
+  invitationStatuses,
   handleSubmit,
   guidedReadiness,
   isAuthenticated,
@@ -48,6 +50,7 @@ export function ActionBeforeFormView({
   updateFields: (updates: Partial<FormState>) => void;
   showGroupJoinHelp: boolean;
   onToggleGroupJoinHelp: () => void;
+  invitationStatuses: ActionManualInvitationStatusRecord[];
   handleSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   guidedReadiness: "unknown" | "ready" | "blocked";
   isAuthenticated: boolean;
@@ -74,6 +77,7 @@ export function ActionBeforeFormView({
               userMetadata={userMetadata}
               showGroupJoinHelp={showGroupJoinHelp}
               onToggleGroupJoinHelp={onToggleGroupJoinHelp}
+              invitationStatuses={invitationStatuses}
               validationIssues={validationIssues}
               validationIssueFields={validationIssueFields}
               submissionState={submissionState}

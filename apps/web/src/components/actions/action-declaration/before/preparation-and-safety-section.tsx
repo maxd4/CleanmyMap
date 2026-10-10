@@ -16,16 +16,15 @@ import {
   PREPARATION_FIELD_LIMITS,
 } from "./preparation-field-utils";
 
-export function PreparationAndSafetySection({ form, updateField }: BaseSectionProps) {
+export function PreparationAndSafetySection({ form, updateField, embedded = false }: BaseSectionProps & { embedded?: boolean }) {
   const logisticsError = characterLimitError(
     form.logisticsNotes,
     "Les notes logistiques",
     PREPARATION_FIELD_LIMITS.logisticsNotes,
   );
 
-  return (
-    <CmmCard tone="emerald" variant="glass" size="lg">
-      <div className="space-y-5">
+  const content = (
+    <div className="space-y-5">
         <SectionLabel icon={PencilLine} title="Préparation et sécurité" subtitle="Consignes, matériel et accessibilité avant publication." />
 
         <section aria-labelledby="before-security-group" className="space-y-3 border-b border-emerald-100 pb-5">
@@ -72,7 +71,7 @@ export function PreparationAndSafetySection({ form, updateField }: BaseSectionPr
             </CmmField>
           </CmmDisclosure>
         </section>
-      </div>
-    </CmmCard>
+    </div>
   );
+  return embedded ? content : <CmmCard tone="emerald" variant="glass" size="lg">{content}</CmmCard>;
 }

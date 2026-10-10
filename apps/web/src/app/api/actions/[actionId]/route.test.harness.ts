@@ -5,6 +5,7 @@ const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const recordRepollutionPredictionEvaluationForActionMock = vi.hoisted(() => vi.fn());
 const loadManualRegistrationIdsForActionMock = vi.hoisted(() => vi.fn());
+const loadManualInvitationStatusesForActionMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const resolveActionOrganizersMock = vi.hoisted(() => vi.fn());
@@ -50,6 +51,7 @@ vi.mock("@/lib/actions/store-post-processing", () => ({
 
 vi.mock("@/lib/actions/participation/registration-records", () => ({
   loadManualRegistrationIdsForAction: loadManualRegistrationIdsForActionMock,
+  loadManualInvitationStatusesForAction: loadManualInvitationStatusesForActionMock,
 }));
 
 vi.mock("@/lib/actions/participation/organizers", () => ({
@@ -137,6 +139,7 @@ export {
   loadActionByIdMock,
   loadActionOrganizerIdsForActionMock,
   loadManualRegistrationIdsForActionMock,
+  loadManualInvitationStatusesForActionMock,
   recordRepollutionPredictionEvaluationForActionMock,
   requireAuthenticatedAccessMock,
   resolveActionDepartmentForPersistenceMock,
@@ -205,6 +208,7 @@ export function resetPatchRouteMocks() {
     notes: null,
   });
   loadManualRegistrationIdsForActionMock.mockResolvedValue(["user-manual-1"]);
+  loadManualInvitationStatusesForActionMock.mockResolvedValue([]);
   loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
   loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
   resolveActionOrganizersMock.mockResolvedValue({

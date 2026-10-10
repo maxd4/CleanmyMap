@@ -1,14 +1,12 @@
 import { ActionBeforeVerificationSection } from "./action-before-verification-section";
 import { EssentialActionSection } from "./essential-action-section";
-import { IdentityAndSharingSection } from "./identity-and-sharing-section";
-import { PreparationAndSafetySection } from "./preparation-and-safety-section";
-import { PreparationPlanningFields } from "./preparation-planning-fields";
 import { TerrainActionSection } from "./terrain-action-section";
-import { VolunteerRegistrationPanel } from "./sections";
+import { TeamLogisticsSection } from "./sections";
 import type { ActionCreationSectionId } from "@/lib/actions/action-creation-sections";
 import type { FormState } from "../model";
 import type { ActiveRole } from "@/lib/domain-language";
 import type { BeforeActionFieldUpdater } from "./model";
+import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 
 type SectionedContentProps = {
   activeSection: ActionCreationSectionId;
@@ -24,6 +22,7 @@ type SectionedContentProps = {
   };
   showGroupJoinHelp: boolean;
   onToggleGroupJoinHelp: () => void;
+  invitationStatuses: ActionManualInvitationStatusRecord[];
   validationIssues: string[];
   validationIssueFields: readonly string[];
   submissionState: "idle" | "pending" | "success" | "error";
@@ -42,6 +41,7 @@ export function ActionBeforeSectionedContent({
   userMetadata,
   showGroupJoinHelp,
   onToggleGroupJoinHelp,
+  invitationStatuses,
   validationIssues,
   validationIssueFields,
   submissionState,
@@ -73,39 +73,12 @@ export function ActionBeforeSectionedContent({
           hasAttemptedSubmit={validationIssueFields.length > 0}
           validationIssueFields={validationIssueFields}
         />
-        <IdentityAndSharingSection
-          form={form}
-          updateField={updateField}
-          updateFields={updateFields}
-          userMetadata={userMetadata}
-          showGroupJoinHelp={showGroupJoinHelp}
-          onToggleGroupJoinHelp={onToggleGroupJoinHelp}
-          showVolunteerRegistration={false}
-          hasAttemptedSubmit={validationIssueFields.length > 0}
-          validationIssueFields={validationIssueFields}
-        />
       </>
     );
   }
 
   if (activeSection === "equipe") {
-    return (
-      <>
-        <VolunteerRegistrationPanel
-          form={form}
-          updateField={updateField}
-          userMetadata={userMetadata}
-          showGroupJoinHelp={showGroupJoinHelp}
-          onToggleGroupJoinHelp={onToggleGroupJoinHelp}
-        />
-        <PreparationPlanningFields
-          form={form}
-          updateField={updateField}
-          validationIssueFields={validationIssueFields}
-        />
-        <PreparationAndSafetySection form={form} updateField={updateField} />
-      </>
-    );
+    return <TeamLogisticsSection form={form} updateField={updateField} updateFields={updateFields} userMetadata={userMetadata} showGroupJoinHelp={showGroupJoinHelp} onToggleGroupJoinHelp={onToggleGroupJoinHelp} invitationStatuses={invitationStatuses} validationIssueFields={validationIssueFields} />;
   }
 
   return (

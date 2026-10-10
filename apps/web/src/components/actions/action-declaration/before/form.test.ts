@@ -10,6 +10,7 @@ import { PreparationPlanningFields } from "./preparation-planning-fields";
 import { ScheduleFields } from "./planned-action-schedule-fields";
 import { createInitialFormState } from "../payload";
 import { TerrainActionSection } from "./terrain-action-section";
+import { TeamLogisticsSection } from "./team-logistics-section";
 
 describe("ActionBeforeDeclarationForm", () => {
   it("offers the three terrain modes and keeps a fixed-area form out of route controls", () => {
@@ -351,6 +352,43 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain('type="search"');
     expect(html).not.toContain('value="legacy-alias"');
     expect(html).not.toContain("actorNameOptions");
+  });
+
+  it("regroups organizer, registration and operational preparation in one team section", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.organizerType = "association";
+    form.organizerName = "Association locale";
+    form.participantAccounts = ["user-accepted"];
+    form.groupJoinEnabled = false;
+    form.accessibilityStatus = "not_evaluated";
+    const html = renderToStaticMarkup(
+      React.createElement(TeamLogisticsSection, {
+        form,
+        updateField: vi.fn(),
+        updateFields: vi.fn(),
+        userMetadata: { userId: "user-creator", displayName: "Maxence" },
+        showGroupJoinHelp: false,
+        onToggleGroupJoinHelp: vi.fn(),
+        invitationStatuses: [
+          { userId: "user-accepted", status: "accepted" },
+          { userId: "user-refused", status: "rejected" },
+          { userId: "user-withdrawn", status: "withdrawn" },
+        ],
+        validationIssueFields: [],
+      }),
+    );
+
+    expect(html.indexOf("Organisateurs")).toBeLessThan(html.indexOf("Inscriptions des bénévoles"));
+    expect(html.indexOf("Inscriptions des bénévoles")).toBeLessThan(html.indexOf("Prévisions et informations pratiques"));
+    expect(html.indexOf("Prévisions et informations pratiques")).toBeLessThan(html.indexOf("Sécurité et risques"));
+    expect(html).toContain("Acceptée");
+    expect(html).toContain("Refusée");
+    expect(html).toContain("Retirée");
+    expect(html).toContain("Les membres ajoutés recevront une invitation après la publication");
+    expect(html).toContain("Non évaluée");
+    expect(html).toContain("Ces indications sont en lecture seule");
+    expect(html).toContain("Notes logistiques internes");
+    expect(html).toContain("Checklist avant départ");
   });
 
   it.each([

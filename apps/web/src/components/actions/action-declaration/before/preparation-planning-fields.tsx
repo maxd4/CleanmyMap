@@ -15,7 +15,8 @@ export function PreparationPlanningFields({
   form,
   updateField,
   validationIssueFields,
-}: BaseSectionProps) {
+  embedded = false,
+}: BaseSectionProps & { embedded?: boolean }) {
   const volunteerParticipation = normalizeVolunteerParticipationFromForm(form);
   const hasVolunteerCategoryInput = [form.childrenCount, form.adultCount, form.retiredCount]
     .some((value) => value.trim() !== "");
@@ -25,9 +26,8 @@ export function PreparationPlanningFields({
       : `${volunteerParticipation.participantsCount} répartis`
     : "facultatif";
 
-  return (
-    <CmmCard tone="emerald" variant="glass" size="lg">
-      <div className="space-y-5">
+  const content = (
+    <div className="space-y-5">
         <SectionLabel
           icon={ClipboardList}
           title="Prévisions et informations pratiques"
@@ -75,7 +75,7 @@ export function PreparationPlanningFields({
           />
         </div>
         <ExpectedWasteSection form={form} updateField={updateField} />
-      </div>
-    </CmmCard>
+    </div>
   );
+  return embedded ? content : <CmmCard tone="emerald" variant="glass" size="lg">{content}</CmmCard>;
 }

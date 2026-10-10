@@ -9,6 +9,7 @@ import type {
 } from "@/lib/actions/types";
 import type { ActionVolunteerParticipation } from "@/lib/actions/volunteer-participation";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
+import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import { AppError } from "@/lib/errors/app-errors";
 import { createActionError, parseErrorMessage, parseJsonSafely } from "./http-errors";
 
@@ -62,6 +63,7 @@ export type ActionEditorRecord = {
   organizerAccounts?: string[];
   groupJoinEnabled: boolean;
   participantAccounts: string[];
+  manualInvitationStatuses?: ActionManualInvitationStatusRecord[];
   placeType: string | null;
   departureLocationLabel: string | null;
   arrivalLocationLabel: string | null;

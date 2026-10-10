@@ -5,7 +5,7 @@ import type { KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
 import { getAccountPickerKeyAction, type ActionAccountOption, type ParticipantPickerProps } from "./action-participant-picker-model";
 import { useParticipantPickerModel } from "./use-action-participant-picker-model";
-import { ParticipantResultsMenu, PickerHeader, PickerSearch, SelectedParticipants, SingleAccountResults } from "./action-participant-picker-views";
+import { InvitationStatusList, ParticipantResultsMenu, PickerHeader, PickerSearch, SelectedParticipants, SingleAccountResults } from "./action-participant-picker-views";
 
 export function ActionParticipantPicker({
   currentUserId,
@@ -17,6 +17,7 @@ export function ActionParticipantPicker({
   description = "Ajoutez des comptes CleanMyMap déjà existants avant l'envoi.",
   className,
   compact = false,
+  invitationStatuses,
 }: ParticipantPickerProps) {
   const pickerRef = useRef<HTMLElement>(null);
   const model = useParticipantPickerModel({ currentUserId, value, onChange, endpoint, includeCurrentUser, pickerRef });
@@ -26,7 +27,8 @@ export function ActionParticipantPicker({
       <div className={cn(compact ? "mt-3 space-y-3" : "mt-4 space-y-3")}>
         <PickerSearch id={model.searchInputId} query={model.query} onChange={model.setQuery} onFocus={model.openMenu} onSearch={model.submitSearch} onClose={() => model.setMenuOpen(false)} />
         {model.menuOpen ? <ParticipantResultsMenu model={model} /> : null}
-        <SelectedParticipants users={model.selectedUsers} onRemove={model.removeUser} />
+      <SelectedParticipants users={model.selectedUsers} onRemove={model.removeUser} invitationStatuses={invitationStatuses} />
+      {invitationStatuses?.length ? <InvitationStatusList statuses={invitationStatuses} selectedIds={model.selectedIds} /> : null}
       </div>
     </section>
   );

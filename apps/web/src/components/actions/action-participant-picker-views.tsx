@@ -1,6 +1,6 @@
 import { Info, Loader2, Plus, Search, X } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { getPickerSearchKeyAction, labelForUser, type ChatUserOption } from "./action-participant-picker-model";
+import { getPickerSearchKeyAction, labelForUser, type ChatUserOption, type InvitationStatus } from "./action-participant-picker-model";
 import type { ParticipantPickerModel } from "./use-action-participant-picker-model";
 
 export function PickerHeader({ title, description, count, showHelp, onToggleHelp }: { title: string; description: string; count: number; showHelp: boolean; onToggleHelp: () => void }) {
@@ -58,7 +58,21 @@ function SingleAccountResult({ user, selected, onSelect }: { user: ChatUserOptio
   return <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-white px-3 py-2" role="option" aria-selected={selected}><div className="min-w-0"><p className="truncate text-sm font-semibold text-emerald-950">{labelForUser(user)}</p><p className="truncate text-xs text-emerald-900/58">{user.handle ? `@${user.handle}` : user.id}</p></div><button type="button" onClick={() => onSelect(user)} disabled={selected} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50">{selected ? "Sélectionné" : "Sélectionner"}</button></div>;
 }
 
-export function SelectedParticipants({ users, onRemove }: { users: ChatUserOption[]; onRemove: (userId: string) => void }) {
+const INVITATION_STATUS_LABELS: Record<InvitationStatus["status"], string> = {
+  pending: "En attente",
+  accepted: "Acceptée",
+  rejected: "Refusée",
+  withdrawn: "Retirée",
+};
+
+export function SelectedParticipants({ users, onRemove, invitationStatuses = [] }: { users: ChatUserOption[]; onRemove: (userId: string) => void; invitationStatuses?: readonly InvitationStatus[] }) {
   if (users.length === 0) return <p className="text-xs text-emerald-900/58">Aucun membre ajouté pour le moment.</p>;
-  return <div className="space-y-2"><p className="text-xs font-semibold text-emerald-950">Membres sélectionnés</p><div className="flex flex-wrap gap-2">{users.map((user) => <span key={user.id} className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-950"><span className="max-w-[13rem] truncate">{labelForUser(user)}</span><button type="button" onClick={() => onRemove(user.id)} aria-label={`Retirer ${labelForUser(user) || user.id}`} className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"><X size={12} /></button></span>)}</div></div>;
+  const statusByUserId = new Map(invitationStatuses.map((item) => [item.userId, item.status]));
+  return <div className="space-y-2"><p className="text-xs font-semibold text-emerald-950">Membres sélectionnés</p><div className="flex flex-wrap gap-2">{users.map((user) => { const status = statusByUserId.get(user.id); return <span key={user.id} className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-950"><span className="max-w-[13rem] truncate">{labelForUser(user)}</span>{status ? <span className="text-emerald-800/70">{INVITATION_STATUS_LABELS[status]}</span> : null}<button type="button" onClick={() => onRemove(user.id)} aria-label={`Retirer ${labelForUser(user) || user.id}`} className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"><X size={12} /></button></span>; })}</div></div>;
+}
+
+export function InvitationStatusList({ statuses, selectedIds }: { statuses: readonly InvitationStatus[]; selectedIds: readonly string[] }) {
+  const historical = statuses.filter((item) => !selectedIds.includes(item.userId));
+  if (historical.length === 0) return null;
+  return <div className="space-y-2" aria-label="Historique des invitations"><p className="text-xs font-semibold text-emerald-950">Historique des invitations</p><ul className="space-y-1.5">{historical.map((item) => <li key={`${item.userId}-${item.status}`} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs"><span className="font-medium text-slate-800">Compte {item.userId}</span><span className="font-semibold text-slate-600">{INVITATION_STATUS_LABELS[item.status]}</span></li>)}</ul></div>;
 }

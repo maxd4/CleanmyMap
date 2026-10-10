@@ -23,6 +23,7 @@ import {
 import { applyOrganizerFormUpdates } from "./organizer-form-state";
 import { buildBeforeActionPayload, validateBeforeActionForm, type BeforeValidationField } from "./form-logic";
 import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
+import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import { applyPreparationContextToForm, mergePlannerHandoffIntoForm, usePlannerActionHandoffHydration } from "./preparation-hydration";
 import type { BeforeActionPersistenceStatus } from "./persistence-status";
 import { createActionInterventionMode } from "@/lib/actions/intervention-mode";
@@ -36,6 +37,7 @@ type BeforeActionRecordSetters = {
   onFormChange?: (form: FormState) => void;
   setCreatedId: StateSetter<string | null>;
   setPublishedAction: StateSetter<ActionEditorRecord | null>;
+  setInvitationStatuses: StateSetter<ActionManualInvitationStatusRecord[]>;
   setPublishedAt: StateSetter<string | null>;
   setTerminalActionStatus: StateSetter<TerminalPreActionStatus | null>;
   setSubmissionState: StateSetter<SubmissionState>;
@@ -101,6 +103,7 @@ function applyFetchedBeforeAction({
   onFormChange,
   setCreatedId,
   setPublishedAction,
+  setInvitationStatuses,
   setPublishedAt,
   setTerminalActionStatus,
   setSubmissionState,
@@ -121,7 +124,7 @@ function applyFetchedBeforeAction({
   if (action.actionPhase !== "pre_action") throw new Error("Cette action n'est plus une pré-action publiable.");
   if (!isResumablePreAction(action)) {
     if (action.status !== "rejected" && action.status !== "cancelled") throw new Error("Cette pré-action ne peut pas être reprise dans ce parcours.");
-    setCreatedId(action.id); setPublishedAction(action); setPublishedAt(null); setTerminalActionStatus(action.status); setSubmissionState("success"); setIsHydratingAction(false); return;
+    setCreatedId(action.id); setPublishedAction(action); setInvitationStatuses(action.manualInvitationStatuses ?? []); setPublishedAt(null); setTerminalActionStatus(action.status); setSubmissionState("success"); setIsHydratingAction(false); return;
   }
   const nextForm = buildBeforeActionFormFromAction({
     action,
@@ -143,7 +146,7 @@ function applyFetchedBeforeAction({
     ? mergeBeforeActionHydrationWithLocalChanges(initialForm, localDraft, hydratedForm)
     : hydratedForm;
   const preservedForm = mergeBeforeActionHydrationWithLocalChanges(initialForm, currentForm, hydratedWithLocalDraft);
-  setForm(preservedForm); onFormChange?.(preservedForm); setCreatedId(action.id); setPublishedAction(action); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState("idle"); setPersistenceStatus(localDraft || matchingHandoff ? "unsaved" : "account"); setIsHydratingAction(false);
+  setForm(preservedForm); onFormChange?.(preservedForm); setCreatedId(action.id); setPublishedAction(action); setInvitationStatuses(action.manualInvitationStatuses ?? []); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState("idle"); setPersistenceStatus(localDraft || matchingHandoff ? "unsaved" : "account"); setIsHydratingAction(false);
 }
 
 export function buildBeforeActionFormFromAction({
@@ -273,6 +276,7 @@ export function useBeforeActionHydration({
   setCreatedId,
   createdId,
   setPublishedAction,
+  setInvitationStatuses,
   setPublishedAt,
   setTerminalActionStatus,
   setSubmissionState,
@@ -323,6 +327,7 @@ export function useBeforeActionHydration({
         onFormChange: onFormChangeRef.current,
         setCreatedId,
         setPublishedAction,
+        setInvitationStatuses,
         setPublishedAt,
         setTerminalActionStatus,
         setSubmissionState,
@@ -337,7 +342,7 @@ export function useBeforeActionHydration({
       setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible de reprendre cette pré-action pour le moment."); setSubmissionState("error"); setPersistenceStatus("error"); setIsHydratingAction(false);
     });
     return () => { active = false; };
-  }, [createdId, initialActionId, initialRecordType, setCreatedId, setErrorMessage, setForm, setPersistenceStatus, setPublishedAction, setPublishedAt, setSubmissionState, setTerminalActionStatus]);
+  }, [createdId, initialActionId, initialRecordType, setCreatedId, setErrorMessage, setForm, setInvitationStatuses, setPersistenceStatus, setPublishedAction, setPublishedAt, setSubmissionState, setTerminalActionStatus]);
 
   usePlannerActionHandoffHydration({ initialActionId, form, setForm, onFormChange, preparationContext });
 
