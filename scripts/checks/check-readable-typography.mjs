@@ -110,6 +110,36 @@ const allowlist = [
     reason: "environmental estimator signals extraction preserves the historical visual contract",
   },
   {
+    file: "apps/web/src/components/learn/quiz/quiz-session-panel-summary-personal.tsx",
+    rule: "small-text",
+    reason: "quiz personal summary extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/learn/quiz/quiz-session-panel-summary-personal.tsx",
+    rule: "body-color",
+    reason: "quiz personal summary extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/learn/quiz/quiz-session-panel-summary-restart.tsx",
+    rule: "small-text",
+    reason: "quiz restart extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/learn/quiz/quiz-session-panel-summary-review.tsx",
+    rule: "small-text",
+    reason: "quiz review extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/learn/quiz/quiz-session-panel-summary-school.tsx",
+    rule: "small-text",
+    reason: "quiz school summary extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/learn/quiz/quiz-session-panel-summary-school.tsx",
+    rule: "body-color",
+    reason: "quiz school summary extraction preserves the historical visual contract",
+  },
+  {
     file: "apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
     rule: "small-text",
     match: /text-\[10px\].*model\.displayRank/,
