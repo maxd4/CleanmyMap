@@ -102,4 +102,72 @@ describe("evaluateActionQuality", () => {
 
     expect(result.breakdown.completeness).toBe(83);
   });
+
+  it("distinguishes coordinate and geometry evidence", () => {
+    const now = new Date("2026-04-02T00:00:00.000Z");
+    const withCoordinatesAndDrawing = evaluateActionQuality(
+      buildItem({
+        manual_drawing: {
+          kind: "polyline",
+          coordinates: [
+            [48.87, 2.36],
+            [48.88, 2.37],
+          ],
+        },
+      }),
+      now,
+    );
+    const withDrawingOnly = evaluateActionQuality(
+      buildItem({
+        latitude: null,
+        longitude: null,
+        geometry_kind: "polyline",
+      }),
+      now,
+    );
+
+    expect(withCoordinatesAndDrawing.breakdown.geoloc).toBe(100);
+    expect(withCoordinatesAndDrawing.flags).not.toContain(
+      "Trace geometrique manquante",
+    );
+    expect(withDrawingOnly.breakdown.geoloc).toBe(65);
+    expect(withDrawingOnly.flags).toContain("Centroide geoloc manquant");
+  });
+
+  it("flags an invalid observed date instead of treating it as fresh", () => {
+    const result = evaluateActionQuality(
+      buildItem({ action_date: "not-a-date" }),
+      new Date("2026-04-02T00:00:00.000Z"),
+    );
+
+    expect(result.breakdown.freshness).toBe(30);
+    expect(result.flags).toContain("Date action invalide");
+  });
+
+  it.each([
+    [8, 85, ""],
+    [31, 65, "Fraicheur moyenne"],
+    [91, 45, "Donnee ancienne"],
+    [181, 25, "Donnee stale"],
+  ] as const)(
+    "preserves the freshness threshold at %s days",
+    (ageDays, expectedScore, expectedFlag) => {
+      const now = new Date("2026-04-02T00:00:00.000Z");
+      const result = evaluateActionQuality(
+        buildItem({
+          action_date: new Date(
+            now.getTime() - ageDays * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+        }),
+        now,
+      );
+
+      expect(result.breakdown.freshness).toBe(expectedScore);
+      if (expectedFlag) {
+        expect(result.flags).toContain(expectedFlag);
+      } else {
+        expect(result.flags).not.toContain("Fraicheur moyenne");
+      }
+    },
+  );
 });

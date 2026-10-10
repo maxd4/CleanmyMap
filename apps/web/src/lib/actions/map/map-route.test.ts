@@ -167,6 +167,16 @@ describe("parseMapActionsParams", () => {
     expect(params.viewport).toBeUndefined();
   });
 
+  it("keeps an explicit floor date instead of replacing it with the default window", () => {
+    const params = parseMapActionsParams(
+      new URL("http://localhost/api/actions/map?floorDate=2026-01-15T12:00:00.000Z"),
+      () => null,
+    );
+
+    expect(params.floorDate).toBe("2026-01-15");
+    expect(params.days).toBe(30);
+  });
+
   it("fails closed for malformed filters and viewport bounds", () => {
     const params = parseMapActionsParams(
       new URL(
