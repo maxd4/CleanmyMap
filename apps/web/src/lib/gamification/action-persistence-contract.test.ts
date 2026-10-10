@@ -25,7 +25,7 @@ const ACTION_ROW: ActionRow = {
 describe("Gamification action persistence contract", () => {
   it("does not query the phantom manual_drawing column", () => {
     const progressionSource = readFileSync(
-      new URL("./progression-data.ts", import.meta.url),
+      new URL("./progression-action-queries.ts", import.meta.url),
       "utf8",
     );
     const annualResetSource = readFileSync(
