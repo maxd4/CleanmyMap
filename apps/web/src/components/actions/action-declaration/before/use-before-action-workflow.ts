@@ -24,6 +24,7 @@ import { applyOrganizerFormUpdates } from "./organizer-form-state";
 import { buildBeforeActionPayload, validateBeforeActionForm, type BeforeValidationField } from "./form-logic";
 import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 import { applyPreparationContextToForm, mergePlannerHandoffIntoForm, usePlannerActionHandoffHydration } from "./preparation-hydration";
+import type { BeforeActionPersistenceStatus } from "./persistence-status";
 export { applyPreparationContextToForm } from "./preparation-hydration";
 
 type SubmissionState = "idle" | "pending" | "success" | "error";
@@ -37,6 +38,7 @@ type BeforeActionRecordSetters = {
   setPublishedAt: StateSetter<string | null>;
   setTerminalActionStatus: StateSetter<TerminalPreActionStatus | null>;
   setSubmissionState: StateSetter<SubmissionState>;
+  setPersistenceStatus: StateSetter<BeforeActionPersistenceStatus>;
 };
 
 function sameFormValue(current: unknown, next: unknown): boolean {
@@ -90,6 +92,7 @@ function applyFetchedBeforeAction({
   setPublishedAt,
   setTerminalActionStatus,
   setSubmissionState,
+  setPersistenceStatus,
   setIsHydratingAction,
   preparationContext,
   initialForm,
@@ -119,8 +122,16 @@ function applyFetchedBeforeAction({
     mergePlannerHandoffIntoForm(nextForm, matchingHandoff),
     preparationContext,
   );
-  const preservedForm = mergeBeforeActionHydrationWithLocalChanges(initialForm, currentForm, hydratedForm);
-  setForm(preservedForm); onFormChange?.(preservedForm); setCreatedId(action.id); setPublishedAction(action); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState(matchingHandoff ? "idle" : "success"); setIsHydratingAction(false);
+  const localDraft = loadDraftSnapshot(
+    createInitialBeforeActionForm(resolvedDefaultActorName, initialRecordType),
+    initialRecordType,
+    action.id,
+  )?.form;
+  const hydratedWithLocalDraft = localDraft
+    ? mergeBeforeActionHydrationWithLocalChanges(initialForm, localDraft, hydratedForm)
+    : hydratedForm;
+  const preservedForm = mergeBeforeActionHydrationWithLocalChanges(initialForm, currentForm, hydratedWithLocalDraft);
+  setForm(preservedForm); onFormChange?.(preservedForm); setCreatedId(action.id); setPublishedAction(action); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState("idle"); setPersistenceStatus(localDraft || matchingHandoff ? "unsaved" : "account"); setIsHydratingAction(false);
 }
 
 export function buildBeforeActionFormFromAction({
@@ -234,9 +245,9 @@ export function buildBeforeActionFallbackForm(actorNameOptions: string[], defaul
   );
 }
 
-export function buildBeforeActionInitialForm(actorNameOptions: string[], defaultActorName: string, initialRecordType: "action"): FormState {
+export function buildBeforeActionInitialForm(actorNameOptions: string[], defaultActorName: string, initialRecordType: "action", actionId: string | null | undefined = null): FormState {
   const fallback = buildBeforeActionFallbackForm(actorNameOptions, defaultActorName, initialRecordType);
-  const snapshot = loadDraftSnapshot(fallback, initialRecordType);
+  const snapshot = loadDraftSnapshot(fallback, initialRecordType, actionId ?? null);
   return sanitizePreActionForm(snapshot?.form ?? fallback);
 }
 
@@ -253,6 +264,7 @@ export function useBeforeActionHydration({
   setTerminalActionStatus,
   setSubmissionState,
   setErrorMessage,
+  setPersistenceStatus,
   preparationContext,
 }: {
   resolvedDefaultActorName: string;
@@ -298,6 +310,7 @@ export function useBeforeActionHydration({
         setPublishedAt,
         setTerminalActionStatus,
         setSubmissionState,
+        setPersistenceStatus,
         setIsHydratingAction,
         preparationContext: preparationContextRef.current,
         initialForm: initialFormRef.current,
@@ -305,10 +318,10 @@ export function useBeforeActionHydration({
       });
     }).catch((error: unknown) => {
       if (!active) return;
-      setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible de reprendre cette pré-action pour le moment."); setSubmissionState("error"); setIsHydratingAction(false);
+      setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible de reprendre cette pré-action pour le moment."); setSubmissionState("error"); setPersistenceStatus("error"); setIsHydratingAction(false);
     });
     return () => { active = false; };
-  }, [initialActionId, initialRecordType, setCreatedId, setErrorMessage, setForm, setPublishedAction, setPublishedAt, setSubmissionState, setTerminalActionStatus]);
+  }, [initialActionId, initialRecordType, setCreatedId, setErrorMessage, setForm, setPersistenceStatus, setPublishedAction, setPublishedAt, setSubmissionState, setTerminalActionStatus]);
 
   usePlannerActionHandoffHydration({ initialActionId, form, setForm, onFormChange, preparationContext });
 
@@ -320,8 +333,10 @@ export function useBeforeActionFieldUpdates({
   draftActionId,
   linkedEventId,
   submissionState,
+  isAuthenticated,
   setForm,
   onFormChange,
+  setPersistenceStatus,
   setSubmissionState,
   setErrorMessage,
   setValidationIssues,
@@ -331,8 +346,10 @@ export function useBeforeActionFieldUpdates({
   draftActionId?: string | null;
   linkedEventId?: string;
   submissionState: SubmissionState;
+  isAuthenticated: boolean;
   setForm: StateSetter<FormState>;
   onFormChange?: (form: FormState) => void;
+  setPersistenceStatus: StateSetter<BeforeActionPersistenceStatus>;
   setSubmissionState: StateSetter<SubmissionState>;
   setErrorMessage: StateSetter<string | null>;
   setValidationIssues: StateSetter<string[]>;
@@ -351,7 +368,9 @@ export function useBeforeActionFieldUpdates({
       nextForm.arrivalCoordinates = null;
     }
     applyOrganizerFormUpdates(nextForm, form, updates);
-    setForm(nextForm); onFormChange?.(nextForm); saveDraft(nextForm, undefined, null, draftActionId ?? null);
+    setForm(nextForm); onFormChange?.(nextForm);
+    const savedAt = saveDraft(nextForm, undefined, null, draftActionId ?? null);
+    setPersistenceStatus(savedAt ? (draftActionId && isAuthenticated ? "unsaved" : "local") : "error");
     if (submissionState === "error") { setSubmissionState("idle"); setErrorMessage(null); setValidationIssues([]); setValidationIssueFields([]); }
   };
   const updateField: BeforeActionFieldUpdater = (key, value) => updateFields({ [key]: value } as Partial<FormState>);
@@ -366,6 +385,7 @@ export function useBeforeActionSubmission({
   userMetadata,
   isAuthenticated,
   setSubmissionState,
+  setPersistenceStatus,
   setErrorMessage,
   setValidationIssues,
   setValidationIssueFields,
@@ -381,6 +401,7 @@ export function useBeforeActionSubmission({
   userMetadata: ActionBeforeDeclarationFormProps["userMetadata"];
   isAuthenticated: boolean;
   setSubmissionState: StateSetter<SubmissionState>;
+  setPersistenceStatus: StateSetter<BeforeActionPersistenceStatus>;
   setErrorMessage: StateSetter<string | null>;
   setValidationIssues: StateSetter<string[]>;
   setValidationIssueFields: StateSetter<BeforeValidationField[]>;
@@ -404,11 +425,11 @@ export function useBeforeActionSubmission({
       setCreatedId(result.actionId); onActionPersisted?.(result.actionId);
       if (initialActionId) { const canonicalAction = await fetchActionById(result.actionId); setPublishedAction(canonicalAction); setPublishedAt(canonicalAction.publishedAt ?? null); }
       setSubmissionState("success");
-      if (initialActionId) clearDraft(initialActionId);
-      else saveDraft(normalizedForm);
+      setPersistenceStatus("account");
+      clearDraft(initialActionId ?? null);
       await trackFunnel("submit_success", "quick", { source: "action_before_declaration_form", createdId: result.actionId, isAuthenticated });
     } catch (error: unknown) {
-      setSubmissionState("error"); setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible d'enregistrer le pré-formulaire pour le moment.");
+      setSubmissionState("error"); setPersistenceStatus("error"); setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible d'enregistrer le pré-formulaire pour le moment.");
     }
   }
   return handleSubmit;

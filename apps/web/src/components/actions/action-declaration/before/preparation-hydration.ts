@@ -9,6 +9,24 @@ import { sanitizePreActionForm } from "./model";
 
 type StateSetter<T> = Dispatch<SetStateAction<T>>;
 
+function hasPreparationContextData(context: ActionPreparationContext | undefined): boolean {
+  if (!context) return false;
+  return Boolean(
+    context.actionId ||
+      context.locationLabel.trim() ||
+      context.actionDate.trim() ||
+      context.departureTime.trim() ||
+      context.latitude.trim() ||
+      context.longitude.trim() ||
+      context.plannerHandoff ||
+      context.confirmedSelection ||
+      context.preparationChecklist ||
+      context.suggestedMaterials ||
+      context.materialsProvided ||
+      context.recommendedMaterials,
+  );
+}
+
 export function applyPreparationContextToForm(
   form: FormState,
   context?: ActionPreparationContext,
@@ -82,7 +100,7 @@ export function usePlannerActionHandoffHydration({
     const handoff = consumePlannerActionHandoff();
     const currentForm = formRef.current;
     const draft = loadDraftSnapshot(currentForm, currentForm.recordType)?.form;
-    if (!handoff && !draft && !preparationContextRef.current) return;
+    if (!handoff && !draft && !hasPreparationContextData(preparationContextRef.current)) return;
     const prepared = handoff ? mergePlannerHandoffIntoForm(draft ?? currentForm, handoff) : sanitizePreActionForm(draft ?? currentForm);
     const preparedWithContext = applyPreparationContextToForm(prepared, preparationContextRef.current);
     setForm(preparedWithContext);

@@ -10,13 +10,27 @@ import {
 } from "./model";
 import {
   buildBeforeActionFallbackForm,
+  buildBeforeActionInitialForm,
   useBeforeActionFieldUpdates,
   useBeforeActionHydration,
   useBeforeActionPublication,
   useBeforeActionSubmission,
 } from "./use-before-action-workflow";
+import { useBeforeActionPersistence } from "./use-before-action-persistence";
 
 export { persistBeforeAction } from "./use-before-action-workflow";
+
+function buildInitialBeforeFormState(
+  actorNameOptions: string[],
+  defaultActorName: string,
+  initialRecordType: "action",
+  initialActionId: string | null | undefined,
+  fallbackForm: FormState,
+): FormState {
+  return initialActionId
+    ? fallbackForm
+    : buildBeforeActionInitialForm(actorNameOptions, defaultActorName, initialRecordType);
+}
 
 function continueToComplete(
   form: FormState,
@@ -43,7 +57,9 @@ export function useBeforeActionForm({
   preparationContext,
 }: ActionBeforeDeclarationFormProps) {
   const resolvedDefaultActorName = actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? userMetadata.userId;
-  const [form, setForm] = useState<FormState>(() => buildBeforeActionFallbackForm(actorNameOptions, resolvedDefaultActorName, initialRecordType));
+  const fallbackForm = buildBeforeActionFallbackForm(actorNameOptions, resolvedDefaultActorName, initialRecordType);
+  const [form, setForm] = useState<FormState>(() => buildInitialBeforeFormState(actorNameOptions, resolvedDefaultActorName, initialRecordType, initialActionId, fallbackForm));
+  const { persistenceStatus, setPersistenceStatus } = useBeforeActionPersistence({ fallbackForm, initialActionId });
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -57,13 +73,13 @@ export function useBeforeActionForm({
   const [validationIssueFields, setValidationIssueFields] = useState<Array<"actionTitle" | "actionDate" | "associationName" | "organizerType" | "departureLocationLabel" | "arrivalLocationLabel" | "meetingTime" | "departureTime" | "durationMinutes" | "eventStartTime" | "eventEndTime" | "volunteersCount" | "volunteerParticipation">>([]);
   const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
 
-  const isHydratingAction = useBeforeActionHydration({ resolvedDefaultActorName, initialActionId, initialRecordType, form, setForm, onFormChange, setCreatedId, setPublishedAction, setPublishedAt, setTerminalActionStatus, setSubmissionState, setErrorMessage, preparationContext });
-  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: initialActionId, linkedEventId, submissionState, setForm, onFormChange, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
-  const handleSubmit = useBeforeActionSubmission({ form, submissionState, initialActionId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
+  const isHydratingAction = useBeforeActionHydration({ resolvedDefaultActorName, initialActionId, initialRecordType, form, setForm, onFormChange, setCreatedId, setPublishedAction, setPublishedAt, setTerminalActionStatus, setSubmissionState, setErrorMessage, setPersistenceStatus, preparationContext });
+  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: initialActionId, linkedEventId, submissionState, isAuthenticated, setForm, onFormChange, setPersistenceStatus, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
+  const handleSubmit = useBeforeActionSubmission({ form, submissionState, initialActionId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setPersistenceStatus, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
   const { requestPublish, cancelPublication, confirmPublish } = useBeforeActionPublication({ createdId, publishedAt, publicationState, setForm, setPublishedAction, setCreatedId, setPublishedAt, setPublicationState, setPublicationError, setPublicationConfirmationOpen });
   const shareLink = createdId ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}` : null;
   const summaryNote = useMemo(() => buildPreActionSummaryNote(form), [form]);
   const onContinueComplete = () => continueToComplete(form, createdId, initialActionId ?? createdId, onPassToComplete);
 
-  return { form, submissionState, errorMessage, createdId, publishedAction, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction, validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete };
+  return { form, submissionState, errorMessage, createdId, publishedAction, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction, validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete, persistenceStatus };
 }

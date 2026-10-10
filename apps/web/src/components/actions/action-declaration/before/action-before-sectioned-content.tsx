@@ -1,6 +1,6 @@
 import { ActionBeforeVerificationSection } from "./action-before-verification-section";
+import { EssentialActionSection } from "./essential-action-section";
 import { IdentityAndSharingSection } from "./identity-and-sharing-section";
-import { PlannedActionSection } from "./planned-action-section";
 import { PreparationAndSafetySection } from "./preparation-and-safety-section";
 import { VolunteerRegistrationPanel } from "./sections";
 import type { ActionCreationSectionId } from "@/lib/actions/action-creation-sections";
@@ -52,6 +52,13 @@ export function ActionBeforeSectionedContent({
   if (activeSection === "essentiel") {
     return (
       <>
+        <EssentialActionSection
+          form={form}
+          updateField={updateField}
+          updateFields={updateFields}
+          hasAttemptedSubmit={validationIssueFields.length > 0}
+          validationIssueFields={validationIssueFields}
+        />
         <IdentityAndSharingSection
           form={form}
           updateField={updateField}
@@ -60,13 +67,6 @@ export function ActionBeforeSectionedContent({
           showGroupJoinHelp={showGroupJoinHelp}
           onToggleGroupJoinHelp={onToggleGroupJoinHelp}
           showVolunteerRegistration={false}
-          hasAttemptedSubmit={validationIssueFields.length > 0}
-          validationIssueFields={validationIssueFields}
-        />
-        <PlannedActionSection
-          form={form}
-          updateField={updateField}
-          updateFields={updateFields}
           hasAttemptedSubmit={validationIssueFields.length > 0}
           validationIssueFields={validationIssueFields}
         />

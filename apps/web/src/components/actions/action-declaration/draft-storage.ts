@@ -265,11 +265,15 @@ export function saveDraft(
     draftPayload.manualDrawingSource = "gpx_import";
   }
 
-  window.localStorage.setItem(scopedDraftKey(actionId), JSON.stringify(draftPayload));
-  window.localStorage.setItem(scopedDraftDateKey(actionId), savedAt);
-  cachedDraftSnapshot = null;
-  emitDraftChange();
-  return savedAt;
+  try {
+    window.localStorage.setItem(scopedDraftKey(actionId), JSON.stringify(draftPayload));
+    window.localStorage.setItem(scopedDraftDateKey(actionId), savedAt);
+    cachedDraftSnapshot = null;
+    emitDraftChange();
+    return savedAt;
+  } catch {
+    return null;
+  }
 }
 
 export function loadDraftSnapshot(

@@ -10,6 +10,7 @@ import type { ActionCreationSectionId } from "@/lib/actions/action-creation-sect
 import type { FormState } from "../model";
 import type { BeforeActionFieldUpdater } from "./model";
 import type { ActiveRole } from "@/lib/domain-language";
+import { ActionBeforePersistenceStatus, type BeforeActionPersistenceStatus } from "./persistence-status";
 
 export function ActionBeforeFormView({
   activeSection,
@@ -28,6 +29,7 @@ export function ActionBeforeFormView({
   isAuthenticated,
   signInHref,
   signUpHref,
+  persistenceStatus,
 }: {
   activeSection: "all" | Exclude<ActionCreationSectionId, "terrain">;
   form: FormState;
@@ -51,6 +53,7 @@ export function ActionBeforeFormView({
   isAuthenticated: boolean;
   signInHref?: string;
   signUpHref?: string;
+  persistenceStatus: BeforeActionPersistenceStatus;
 }) {
   const actClasses = getBlockClasses("act");
   const sectioned = activeSection !== "all";
@@ -59,6 +62,7 @@ export function ActionBeforeFormView({
     <div className={cn("relative overflow-hidden px-4 py-6 md:px-6 lg:px-8", actClasses.gradientDeep)}>
       <div className="pointer-events-none absolute inset-0"><div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-emerald-200/50 blur-[110px]" /><div className="absolute right-0 top-8 h-80 w-80 rounded-full bg-emerald-100/55 blur-[120px]" /></div>
       <div className="cmm-page-width relative space-y-6">
+        <ActionBeforePersistenceStatus status={persistenceStatus} />
         {sectioned ? null : <CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-3"><h2 className="text-3xl font-black tracking-tight text-emerald-950">Préparer une action future</h2><p className="cmm-text-body cmm-text-primary max-w-3xl">Renseignez les informations utiles avant le terrain. Les champs de récolte, de bilan final et de validation restent réservés au formulaire complet.</p></div></CmmCard>}
         <form onSubmit={(event) => { void handleSubmit(event); }} className="space-y-6">
           {sectioned ? (
