@@ -104,6 +104,27 @@ const scopeJob = ciWorkflow.match(/  scope:[\s\S]*?\n\n  secret-audit:/)?.[0] ??
 assert.match(scopeJob, /dependencyGraphRelevant/);
 assert.match(scopeJob, /dependencyAuditRelevant/);
 assert.match(scopeJob, /securityToolingRelevant/);
+assert.match(scopeJob, /VALIDATION_MODE: \$\{\{ inputs\.validation_mode \}\}/);
+assert.match(scopeJob, /if \[\[ "\$EVENT_NAME" == "workflow_dispatch" \]\]; then/);
+assert.match(scopeJob, /if \[\[ "\$VALIDATION_MODE" == "FULL" \]\]; then/);
+assert.match(scopeJob, /FULL workflow dispatch selects all validation domains without diff filtering/);
+assert.match(scopeJob, /DEVELOPMENT workflow dispatch has no base ref; retaining an explicit empty scope/);
+for (const fullScopeOutput of [
+  "docs_only=false",
+  "web_code_relevant=true",
+  "mobile_code_relevant=true",
+  "build_relevant=true",
+  "dependency_graph_relevant=true",
+  "dependency_audit_relevant=true",
+  "security_tooling_relevant=true",
+]) {
+  assert.match(scopeJob, new RegExp(fullScopeOutput.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")));
+}
+assert.match(scopeJob, /base="\$PR_BASE_SHA"/);
+assert.match(scopeJob, /base="\$EVENT_BEFORE"/);
+assert.match(scopeJob, /git cat-file -e "\$base\^\{commit\}"/);
+assert.match(scopeJob, /git diff --name-only "\$base" "\$head"/);
+assert.ok(scopeJob.indexOf("FULL workflow dispatch selects all validation domains") < scopeJob.indexOf("git diff --name-only"));
 assert.equal((ciWorkflow.match(/npm run check:semgrep/g) ?? []).length, 2);
 assert.doesNotMatch(ciWorkflow.match(/  web-governance:[\s\S]*?\n\n  web-static:/)?.[0] ?? "", /security:secrets/);
 assert.doesNotMatch(ciWorkflow.match(/  mobile-validation:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "", /security:secrets/);
@@ -129,6 +150,7 @@ for (const gate of ["dead-code", "complexity", "duplication", "cycles"]) {
   assert.equal((webQualityJob.match(new RegExp(`npm run quality:${gate}`, "g")) ?? []).length, 1);
 }
 assert.match(webQualityJob, /- name: Publish web-quality summary[\s\S]*?run: node scripts\/ci\/write-quality-summary\.mjs/);
+assert.match(webQualityJob, /COMPLEXITY_CHANGED_FROM: \$\{\{ github\.sha \}\}/);
 assert.match(webQualityJob, /- name: Upload compact web-quality evidence[\s\S]*?path: artifacts\/quality-evidence[\s\S]*?retention-days: 3/);
 assert.match(webQualityJob, /- name: Install GitNexus[\s\S]*?if: \$\{\{ !cancelled\(\)/);
 assert.match(webQualityJob, /- name: GitNexus cycle ratchet[\s\S]*?if: \$\{\{ !cancelled\(\)/);
@@ -170,6 +192,10 @@ for (const block of ciWorkflow.match(/- name: (?:Upload dependency scope|Upload 
   assert.match(block, /path:\s*(?:\|\n\s+)?artifacts\/security-evidence/);
 }
 assert.match(ciWorkflow, /dependency-review:\n    needs: scope\n    if: github\.event_name == 'pull_request'/);
+const webTestsJob = ciWorkflow.match(/  web-tests:[\s\S]*?\n\n  web-coverage:/)?.[0] ?? "";
+assert.match(webTestsJob, /workflow_dispatch' && inputs\.validation_mode == 'FULL'/);
+const webCoverageJob = ciWorkflow.match(/  web-coverage:[\s\S]*?\n\n  web-vercel-audit:/)?.[0] ?? "";
+assert.doesNotMatch(webCoverageJob, /needs\.scope\.outputs\.web_code_relevant/);
 assert.match(ciWorkflow, /uses: actions\/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294/);
 assert.match(ciWorkflow, /fail-on-severity: high/);
 const dependencyReviewJob = ciWorkflow.match(/  dependency-review:[\s\S]*?\n\n  web-governance:/)?.[0] ?? "";

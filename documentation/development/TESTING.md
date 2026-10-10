@@ -247,6 +247,14 @@ par la suite Web complète ; une modification du candidat invalide toute preuve
 réutilisée. Les accès distants indisponibles restent `BLOCKED_ACCESS` et ne
 peuvent jamais produire un FULL vert.
 
+Dans la CI GitHub, `workflow_dispatch` avec `validation_mode=FULL` sélectionne
+explicitement tous les domaines et ne dérive aucun périmètre à partir d'un
+diff ; le checkout et les preuves restent liés à `github.sha`. Les événements
+`push` utilisent `before`/`sha` et les `pull_request` utilisent les SHA base/head
+pour le ciblage DEVELOPMENT. Un `workflow_dispatch` DEVELOPMENT ne disposant
+pas de référence de base conserve un périmètre vide explicite et ne devient pas
+automatiquement FULL.
+
 ### RELEASE — publication contrôlée
 
 Après un FULL vert sur le SHA exact, vérifier :

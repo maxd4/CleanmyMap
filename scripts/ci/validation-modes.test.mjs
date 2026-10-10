@@ -59,6 +59,19 @@ test("FULL is global even for documentation-only candidates", () => {
   assert.equal(plan.budgetSeconds, null);
 });
 
+test("an empty DEVELOPMENT candidate stays targeted while empty FULL remains global", () => {
+  const development = createModeValidationPlan({ mode: "FAST", changedFiles: [] });
+  assert.equal(ids(development).includes("test:coverage"), false);
+  assert.equal(ids(development).includes("quality:duplication"), false);
+  assert.equal(ids(development).includes("quality:cycles"), false);
+
+  const full = createModeValidationPlan({ mode: "FULL", changedFiles: [] });
+  assert.ok(ids(full).includes("test:coverage"));
+  assert.ok(ids(full).includes("quality:duplication"));
+  assert.ok(ids(full).includes("quality:cycles"));
+  assert.equal(full.budgetSeconds, null);
+});
+
 test("FULL is global for mobile-only candidates and retains Web proof", () => {
   const plan = createModeValidationPlan({ mode: "FULL", changedFiles: ["apps/mobile/App.tsx"] });
   assert.ok(ids(plan).includes("test:coverage"));

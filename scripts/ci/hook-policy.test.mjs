@@ -102,6 +102,14 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.doesNotMatch(mobileJob, /Mobile Vitest coverage ratchet \(FULL only\)/);
   assert.match(workflow, /build_relevant: \$\{\{ steps\.detect-scope\.outputs\.build_relevant \}\}/);
   assert.match(workflow, /validation-policy\.mjs --scope changed --json/);
+  const scopeJob = extractJob(workflow, "scope");
+  assert.match(scopeJob, /VALIDATION_MODE: \$\{\{ inputs\.validation_mode \}\}/);
+  assert.match(scopeJob, /FULL workflow dispatch selects all validation domains without diff filtering/);
+  assert.match(scopeJob, /DEVELOPMENT workflow dispatch has no base ref; retaining an explicit empty scope/);
+  assert.ok(scopeJob.indexOf("FULL workflow dispatch selects all validation domains") < scopeJob.indexOf("git diff --name-only"));
+  assert.match(scopeJob, /git cat-file -e "\$base\^\{commit\}"/);
+  assert.match(workflow, /if: github\.event_name == 'workflow_dispatch' && inputs\.validation_mode == 'FULL' && needs\.web-tests\.result == 'success'/);
+  assert.doesNotMatch(extractJob(workflow, "web-coverage"), /needs\.scope\.outputs\.web_code_relevant/);
   assert.equal((workflow.match(/continue-on-error:\s*true/g) ?? []).length, 2);
   const qualityJobForGrace = extractJob(workflow, "web-quality");
   for (const stepName of ["Duplication ratchet", "GitNexus cycle ratchet"]) {
