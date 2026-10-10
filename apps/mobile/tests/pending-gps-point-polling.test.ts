@@ -13,6 +13,24 @@ describe('pending GPS point polling', () => {
     vi.useRealTimers()
   })
 
+  function createDeferredReadPoller() {
+    let resolveRead: ((count: number) => void) | undefined
+    const readCount = vi.fn(
+      () => new Promise<number>((resolve) => {
+        resolveRead = resolve
+      }),
+    )
+    const onCount = vi.fn()
+    const poller = createPendingGpsPointPoller({ readCount, onCount })
+
+    return {
+      onCount,
+      poller,
+      readCount,
+      resolveRead: (count: number) => resolveRead?.(count),
+    }
+  }
+
   it('does not read storage while the mission is inactive', async () => {
     const readCount = vi.fn(async () => 2)
     const onCount = vi.fn()
@@ -72,14 +90,7 @@ describe('pending GPS point polling', () => {
   })
 
   it('stops on a session change and ignores a read that resolves after stop', async () => {
-    let resolveRead: ((count: number) => void) | undefined
-    const readCount = vi.fn(
-      () => new Promise<number>((resolve) => {
-        resolveRead = resolve
-      }),
-    )
-    const onCount = vi.fn()
-    const poller = createPendingGpsPointPoller({ readCount, onCount })
+    const { onCount, poller, resolveRead } = createDeferredReadPoller()
 
     poller.start()
     poller.stop()
@@ -91,14 +102,7 @@ describe('pending GPS point polling', () => {
   })
 
   it('does not update state after unmount', async () => {
-    let resolveRead: ((count: number) => void) | undefined
-    const readCount = vi.fn(
-      () => new Promise<number>((resolve) => {
-        resolveRead = resolve
-      }),
-    )
-    const onCount = vi.fn()
-    const poller = createPendingGpsPointPoller({ readCount, onCount })
+    const { onCount, poller, readCount, resolveRead } = createDeferredReadPoller()
 
     poller.start()
     poller.dispose()
