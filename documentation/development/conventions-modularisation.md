@@ -112,14 +112,75 @@ point d'entrée court → étapes nommées avec responsabilités et contrats pro
 
 ### Write with growth in mind
 
-Ne pas attendre 500 lignes pour modulariser. Dès qu'une nouvelle fonctionnalité
-introduit une responsabilité autonome, créer sa frontière au moment où elle
-apparaît, si cette frontière améliore réellement la cohésion et ne crée pas de
-façade ou de micro-fichier sans owner.
+Ne pas attendre 500 lignes pour modulariser. Avant de créer ou modifier
+substantiellement du code, répondre à cette question :
+
+> Est-ce que j'étends une responsabilité existante, ou est-ce que je crée une
+> responsabilité autonome qui mérite son propre fichier ?
+
+#### Arbre de décision préventif
+
+1. Identifier la responsabilité apportée, l'owner canonique éventuel, les
+   responsabilités déjà présentes dans le fichier envisagé, les dépendances et
+   consommateurs concernés, puis la croissance et la complexité introduites.
+2. **Extension d'une responsabilité existante** : modifier l'owner existant
+   si la logique appartient à son contrat, reste cohésive et ne mélange pas de
+   nouvelle frontière d'effets, de persistance ou de présentation.
+3. **Responsabilité autonome** : créer immédiatement un module dans le domaine
+   et à l'emplacement définitifs lorsque la responsabilité possède ses propres
+   invariants, consommateurs, effets, lifecycle ou tests. Cela peut concerner
+   un calcul métier, une validation spécialisée, une transformation de
+   données, un accès réseau/persistance, une orchestration asynchrone, un hook,
+   une sous-vue ou un contrat de domaine. Une responsabilité autonome peut
+   justifier un module dès quelques dizaines de lignes, notamment autour de
+   50 lignes ; ce repère n'est pas un seuil automatique.
+4. **Fonctionnalité multi-responsabilités** : dessiner les frontières avant
+   l'implémentation. Garder un point d'entrée lisible qui orchestre des
+   modules métier, des frontières d'effets/persistance, des composants de
+   présentation et des tests adaptés aux contrats.
+5. **Frontière artificielle** : rester dans le fichier existant si l'extraction
+   ajouterait davantage d'indirection, d'exports, de couplage ou de navigation
+   que de cohésion, testabilité ou clarté.
+
+Les seuils préventifs (`>=300` lignes runtime et `>=600` lignes de test) sont
+des signaux pour approfondir cette analyse, pas des déclencheurs de création
+de fichier. Une extension cohésive peut rester dans un fichier long ; une
+responsabilité autonome peut être séparée avant REVIEW. Les seuils REVIEW et
+HARD ne changent pas.
+
+#### Frontières et exemples courts
+
+- **Web** : séparer, lorsque les contrats le justifient, modèle/dérivations,
+  hook ou controller d'état/lifecycle, service d'accès réseau/persistance et
+  vue de rendu. Ne pas déplacer une règle serveur sensible vers un composant
+  client ni ajouter `use client` pour faciliter l'extraction.
+- **Tests** : organiser par comportement ou contrat ; ne pas créer un fichier
+  miroir pour chaque fichier runtime. Une fixture propre à un scénario reste
+  proche de celui-ci ; une fixture partagée ou volumineuse peut devenir un
+  module seulement si elle possède un owner clair.
+- **Services et scripts** : conserver l'orchestration courte et déplacer une
+  implémentation spécialisée dans son owner réel. Réutiliser un contrat ou
+  helper canonique plutôt que créer un service parallèle.
+
+Rester dans le fichier existant est préférable pour quelques lignes qui
+étendent directement un owner, pour une constante locale sans consommateur
+indépendant ou pour un JSX sans autonomie sémantique. À l'inverse, agrandir le
+composant principal parce qu'il contient déjà le point d'entrée, écrire un
+monolithe provisoire, déplacer la complexité dans un helper géant, créer un
+barrel ou dupliquer la logique métier pour éviter l'owner canonique sont des
+anti-patterns. Le nombre de fichiers et la réduction brute de lignes ne sont
+pas des objectifs.
 
 Après un déplacement :
 
 - relire la fonction dans son nouveau contexte ;
+- relire les fonctions, méthodes, composants et handlers nouveaux,
+  déplacés ou substantiellement modifiés au niveau du module et de l'unité de
+  logique ;
+- vérifier que chaque frontière a un owner, un contrat, des consommateurs et
+  une couverture adaptés ;
+- vérifier qu'aucune complexité n'a seulement été transférée vers un autre
+  fichier et qu'aucun export, wrapper, barrel ou façade n'est devenu inutile ;
 - internaliser les exports inutiles ;
 - supprimer les anciennes façades seulement si aucun contrat ne les exige ;
 - vérifier `quality:complexity`, `quality:dead-code`, `quality:duplication` et

@@ -640,6 +640,16 @@ la méthode canonique de modularisation à deux niveaux, ou y référencer
 pas demander seulement un split de fichier, une réduction de lignes ou la
 création de sous-modules.
 
+Lorsqu'un lot ajoute une fonctionnalité substantielle, le prompt doit aussi
+demander de décider avant implémentation s'il s'agit d'une extension d'une
+responsabilité existante ou d'une responsabilité autonome qui mérite son propre
+module. Si plusieurs responsabilités autonomes sont identifiées, le prompt
+doit privilégier leurs frontières dès l'origine — point d'entrée, modèle,
+hook/controller, service, effets/persistance, vue et tests selon le domaine —
+plutôt qu'une implémentation monolithique suivie d'un chantier de découpage.
+Cette obligation n'impose ni fichier miroir, ni micro-module, ni nouvelle
+source de vérité lorsque la frontière serait artificielle.
+
 Le prompt doit également demander :
 
 1. la revue des fonctions, méthodes, composants et handlers nouveaux,

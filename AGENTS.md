@@ -316,6 +316,41 @@ Les seuils, statuts et politiques quantitatives sont définis dans
 `documentation/development/conventions-modularisation.md` et les contrôles
 sous `scripts/`.
 
+### Décision préventive avant création ou modification substantielle
+
+Toute nouvelle fonctionnalité ou modification substantielle doit être relue
+avant écriture avec la question suivante :
+
+> Est-ce une extension cohésive d'une responsabilité existante, ou une
+> responsabilité autonome qui mérite son propre module ?
+
+Identifier au minimum la responsabilité apportée, son owner canonique, les
+responsabilités déjà présentes dans le fichier envisagé, les dépendances et
+consommateurs concernés, ainsi que la croissance et la complexité introduites.
+
+- **Extension d'un owner existant** : rester dans le module canonique lorsque
+  la logique appartient réellement à son contrat et reste cohésive.
+- **Responsabilité autonome** : créer directement le module à son emplacement
+  définitif lorsque le changement porte notamment sur un calcul, une
+  validation, une transformation, un accès réseau/persistance, une
+  orchestration d'effets, un hook à lifecycle indépendant, une sous-vue
+  autonome ou un contrat de domaine distinct.
+- **Fonctionnalité multi-responsabilités** : définir d'abord les frontières
+  entre point d'entrée, logique métier, effets/persistance, présentation et
+  tests ; ne pas écrire un monolithe provisoire dans l'intention de le
+  découper ensuite.
+- **Frontière artificielle** : conserver l'extension dans le fichier existant
+  lorsqu'un nouveau module n'apporterait qu'indirection, exports, couplage ou
+  navigation sans gain structurel démontré.
+
+Cette règle est préventive : elle ne crée pas un fichier par fonction, ne
+transforme pas les seuils informatifs en déclencheurs automatiques et ne
+justifie jamais une seconde source de vérité, un barrel ou une façade sans
+consommateur. Les nouvelles frontières doivent rester compatibles avec les
+contrats AuthN/AuthZ, serveur/client, persistance et présentation existants.
+La convention détaillée, ses exemples et sa vérification vivent dans
+`documentation/development/conventions-modularisation.md`.
+
 La réduction de la taille d'un fichier n'est jamais une preuve suffisante de
 modularisation. Toute création, modification substantielle, extraction ou
 déplacement de code est relu à deux niveaux : le module ou fichier, puis les

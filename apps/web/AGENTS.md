@@ -123,6 +123,10 @@ Dans le rapport, classifier tout blocage parmi `AUTH_SESSION`,
 
 ## Modularité préventive web
 
+- avant l'implémentation d'une fonctionnalité substantielle, identifier sa
+  responsabilité, son owner canonique, les responsabilités déjà présentes,
+  les consommateurs et les frontières d'effets ; décider explicitement entre
+  extension cohésive et module autonome ;
 - un composant ou une fonctionnalité web qui combine des dérivations métier
   significatives, de l'état ou des effets et un rendu JSX substantiel doit
   être structuré dès le départ par responsabilités ;
@@ -145,6 +149,13 @@ Dans le rapport, classifier tout blocage parmi `AUTH_SESSION`,
   composent une même fonctionnalité ;
 - ne pas déplacer du JSX dans des composants artificiels qui n'ont aucune
   autonomie sémantique.
+- si plusieurs responsabilités autonomes sont identifiées, décider les
+  frontières model, hook/controller, service et vue avant d'écrire le point
+  d'entrée ; ne pas écrire d'abord un composant monolithique en prévoyant un
+  chantier de découpage ultérieur ;
+- si aucune frontière naturelle n'est démontrée, conserver l'extension dans
+  l'owner existant ; les seuils préventifs restent informatifs et ne créent pas
+  automatiquement de nouveau fichier.
 
 La modularisation utile fait partie de l'implémentation de la fonctionnalité ;
 elle n'est pas un chantier facultatif à reporter après livraison lorsque les
