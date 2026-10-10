@@ -69,7 +69,7 @@ export function ActionBeforeDeclarationForm({
     cancelPublication,
     confirmPublish,
     onContinueComplete,
-    persistenceStatus,
+    persistenceStatus = "clean",
   } = useBeforeActionForm({ actorNameOptions, defaultActorName, isAuthenticated, userMetadata, linkedEventId, initialActionId, initialRecordType, onPassToComplete, onFormChange, onActionPersisted, preparationContext });
 
   useEffect(() => {

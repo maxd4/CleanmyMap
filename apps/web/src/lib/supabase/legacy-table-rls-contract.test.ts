@@ -45,12 +45,20 @@ describe("legacy table RLS contracts", () => {
   });
 
   it("keeps forms compatible with the server-side validation read path", () => {
-    const source = readFileSync(new URL("../gamification/progression-data.ts", import.meta.url), "utf8");
+    const source = readFileSync(new URL("../gamification/progression-action-queries.ts", import.meta.url), "utf8");
 
     expect(source).toMatch(/\.from\(["']forms["']\)/i);
     expect(source).toMatch(
       /select\(\s*"action_id, group_id, status, created_at, validated_by_admin, is_duplicate, is_deleted, is_test"\s*,?\s*\)/i,
     );
+    expect(source).toMatch(/\.in\(\s*"action_id"\s*,\s*approvedActionIds\s*\)/i);
+    expect(source).toMatch(/\.neq\(\s*"status"\s*,\s*"draft"\s*\)/i);
+    expect(source).toMatch(/\.neq\(\s*"status"\s*,\s*"deleted"\s*\)/i);
+    expect(source).toMatch(/\.neq\(\s*"status"\s*,\s*"incomplete"\s*\)/i);
+    expect(source).toMatch(/\.eq\(\s*"validated_by_admin"\s*,\s*true\s*\)/i);
+    expect(source).toMatch(/\.is\(\s*"is_duplicate"\s*,\s*false\s*\)/i);
+    expect(source).toMatch(/\.is\(\s*"is_deleted"\s*,\s*false\s*\)/i);
+    expect(source).toMatch(/\.is\(\s*"is_test"\s*,\s*false\s*\)/i);
     expect(source).not.toMatch(/from\(["']forms["']\)[\s\S]{0,500}\.(?:insert|update|upsert|delete)\(/i);
   });
 

@@ -13,7 +13,6 @@ import { ACTION_MILESTONE_EVENT_TYPES } from "./action-milestones";
 
 const RUNTIME_PROGRESSION_WRITERS = [
   "action-progression-events.ts",
-  "progression-data.ts",
   "progression-event-sync.ts",
   "progression-backfill.ts",
   "progression-tracking.ts",

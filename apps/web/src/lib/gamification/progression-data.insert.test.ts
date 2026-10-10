@@ -36,7 +36,6 @@ describe("insertProgressionEvent", () => {
 
   it("keeps CURRENT XP writers off the compatibility points ledger", () => {
     const currentWriters = [
-      "progression-data.ts",
       "progression-tracking.ts",
       "quiz-progress.ts",
       "quiz-balance-progress.ts",

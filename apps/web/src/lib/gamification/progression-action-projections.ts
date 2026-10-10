@@ -18,7 +18,7 @@ function normalizeAssociationName(raw: string | null | undefined): string {
     .toLowerCase();
 }
 
-export function isSpontaneousActionAssociationName(
+function isSpontaneousActionAssociationName(
   associationName: string | null | undefined,
 ): boolean {
   return normalizeAssociationName(associationName) === SPONTANEOUS_ASSOCIATION_KEY;
@@ -81,10 +81,6 @@ export function actionQualityScoreFromRow(row: ActionRow): number {
 export function parseAssociationNameFromActionNotes(notes: string | null): string {
   const metadata = extractActionMetadataFromNotes(notes);
   return metadata.associationName?.trim() || "Sans association";
-}
-
-export function actionListItemFromRow(row: ActionRow) {
-  return actionRowToListItem(row);
 }
 
 export function completeActionCount(
