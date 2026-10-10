@@ -47,6 +47,37 @@ describe("shared action preparation context", () => {
     expect(context.plannerHandoff).toBe(handoff);
   });
 
+  it("applies an action-scoped local draft only when explicitly requested", () => {
+    const action = {
+      id: "action-42",
+      actionDate: "2026-09-21",
+      locationLabel: "Paris",
+      latitude: 48.84,
+      longitude: 2.38,
+      preparationData: {
+        departureTime: "08:30",
+        materialsProvided: "Pinces sur place",
+        preparationChecklist: [{ key: "briefing", label: "Briefing", checked: false }],
+      },
+    } as never;
+    const draft = {
+      actionDate: "2026-09-22",
+      departureTime: "09:00",
+      materialsProvided: "Pinces apportées",
+      preparationChecklist: [{ key: "briefing", label: "Briefing", checked: true }],
+    };
+
+    const canonical = buildActionPreparationContext({ action, draft });
+    const resumed = buildActionPreparationContext({ action, draft, draftOverridesAction: true });
+
+    expect(canonical.actionDate).toBe("2026-09-21");
+    expect(canonical.materialsProvided).toBe("Pinces sur place");
+    expect(resumed.actionDate).toBe("2026-09-22");
+    expect(resumed.departureTime).toBe("09:00");
+    expect(resumed.materialsProvided).toBe("Pinces apportées");
+    expect(resumed.preparationChecklist?.[0]?.checked).toBe(true);
+  });
+
   it("uses planner coordinates as latitude then longitude and keeps matching preparation data", () => {
     const context = buildActionPreparationContext({
       action: { id: "action-42", preparationData: {} } as never,

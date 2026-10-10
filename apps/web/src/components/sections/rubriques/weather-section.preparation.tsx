@@ -4,7 +4,7 @@ import { CalendarDays, CheckCircle2, CloudRain, MapPin, Thermometer, TriangleAle
 import { useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
-import type { ActionPreparationContext, PreparationSelection } from "@/lib/actions/action-preparation-context";
+import type { ActionPreparationContext, ActionPreparationPersistenceStatus, PreparationSelection } from "@/lib/actions/action-preparation-context";
 import type { resolvePreparationSelection } from "@/lib/actions/action-preparation-context";
 import { ACTION_PREPARATION_CHECKLIST_DEFAULTS, type ActionPreparationChecklistItem } from "@/lib/actions/preparation-contract";
 import type { useWeatherData } from "./use-weather-data";
@@ -20,6 +20,32 @@ function copyChecklist(context: ActionPreparationContext | undefined): ActionPre
 
 function formatMetric(value: number | null | undefined, suffix = ""): string {
   return typeof value === "number" && Number.isFinite(value) ? `${Math.round(value)}${suffix}` : "—";
+}
+
+function persistenceCopy(status: ActionPreparationPersistenceStatus, fr: boolean): string {
+  if (status === "error") return fr ? "Erreur : le brouillon local n’a pas pu être conservé." : "Error: the local draft could not be kept.";
+  if (status === "draft") return fr ? "Brouillon conservé localement. Enregistrez la préparation pour mettre à jour l’action." : "Draft kept locally. Save the preparation to update the action.";
+  return fr ? "Préparation enregistrée dans l’action." : "Preparation saved in the action.";
+}
+
+function PreparationPersistenceNote({ status, fr }: { status: ActionPreparationPersistenceStatus; fr: boolean }) {
+  return <p data-testid="preparation-persistence-status" role={status === "error" ? "alert" : "status"} className={`rounded-xl border px-3 py-2 text-sm font-semibold ${status === "error" ? "border-rose-200 bg-rose-50 text-rose-900" : status === "draft" ? "border-amber-200 bg-amber-50 text-amber-950" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>{persistenceCopy(status, fr)}</p>;
+}
+
+function PreparationWeatherWarnings({
+  selectedForecastRisk,
+  weatherStatus,
+  fr,
+}: {
+  selectedForecastRisk: WeatherData["selectedForecastRisk"];
+  weatherStatus: WeatherData["weatherStatus"];
+  fr: boolean;
+}) {
+  const criticalWarnings = selectedForecastRisk && selectedForecastRisk.level !== "vert" ? selectedForecastRisk.constraints : [];
+  if (criticalWarnings.length === 0) {
+    return <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">{weatherStatus === "ready" ? (fr ? "Aucune consigne météo prioritaire calculée pour le jour sélectionné." : "No priority weather guidance calculated for the selected day.") : (fr ? "Aucune recommandation météo affichée tant que les données ne sont pas disponibles." : "No weather recommendation is shown while data is unavailable.")}</p>;
+  }
+  return <div role={selectedForecastRisk?.level === "rouge" ? "alert" : "note"} className={`rounded-xl border px-3 py-3 ${selectedForecastRisk?.level === "rouge" ? "border-rose-300 bg-rose-50 text-rose-950" : "border-amber-300 bg-amber-50 text-amber-950"}`}><p className="text-sm font-black">{fr ? "Consignes météo prioritaires du jour sélectionné" : "Priority weather guidance for the selected day"}</p><ul className="mt-2 space-y-1 text-sm">{criticalWarnings.map((warning) => <li key={warning} className="flex items-start gap-2"><TriangleAlert size={14} className="mt-0.5 shrink-0" aria-hidden="true" /><span>{warning}</span></li>)}</ul></div>;
 }
 
 function locationsDiffer({
@@ -183,6 +209,7 @@ export function PreparationPanel({
   selectedForecastRisk,
   weatherStatus,
   preparationContext,
+  preparationPersistenceStatus,
   fr,
   onPreparationValidated,
   onPreparationContextChange,
@@ -190,6 +217,7 @@ export function PreparationPanel({
   selectedForecastRisk: WeatherData["selectedForecastRisk"];
   weatherStatus: WeatherData["weatherStatus"];
   preparationContext?: ActionPreparationContext;
+  preparationPersistenceStatus?: ActionPreparationPersistenceStatus;
   fr: boolean;
   onPreparationValidated?: (validated: boolean) => void;
   onPreparationContextChange?: (update: PreparationContextUpdate) => void;
@@ -200,12 +228,12 @@ export function PreparationPanel({
     onPreparationContextChange?.({ preparationChecklist: next });
     onPreparationValidated?.(next.length > 0 && next.every((item) => item.checked));
   };
-  const criticalWarnings = selectedForecastRisk && selectedForecastRisk.level !== "vert" ? selectedForecastRisk.constraints : [];
 
   return (
     <CmmCard tone="emerald" variant="outlined" size="md" className="space-y-4" data-testid="preparation-safety-block">
       <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><CheckCircle2 size={18} aria-hidden="true" /></span><div><h3 className="text-lg font-black text-emerald-950">{fr ? "Matériel et sécurité" : "Equipment and safety"}</h3><p className="mt-1 cmm-text-body cmm-text-primary">{fr ? "Une seule checklist pour préparer l’action ; elle ne constitue pas une certification." : "One checklist for preparing the action; it is not a certification."}</p></div></div>
-      {criticalWarnings.length > 0 ? <div role={selectedForecastRisk?.level === "rouge" ? "alert" : "note"} className={`rounded-xl border px-3 py-3 ${selectedForecastRisk?.level === "rouge" ? "border-rose-300 bg-rose-50 text-rose-950" : "border-amber-300 bg-amber-50 text-amber-950"}`}><p className="text-sm font-black">{fr ? "Consignes météo prioritaires du jour sélectionné" : "Priority weather guidance for the selected day"}</p><ul className="mt-2 space-y-1 text-sm">{criticalWarnings.map((warning) => <li key={warning} className="flex items-start gap-2"><TriangleAlert size={14} className="mt-0.5 shrink-0" aria-hidden="true" /><span>{warning}</span></li>)}</ul></div> : <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">{weatherStatus === "ready" ? (fr ? "Aucune consigne météo prioritaire calculée pour le jour sélectionné." : "No priority weather guidance calculated for the selected day.") : (fr ? "Aucune recommandation météo affichée tant que les données ne sont pas disponibles." : "No weather recommendation is shown while data is unavailable.")}</p>}
+      {preparationPersistenceStatus ? <PreparationPersistenceNote status={preparationPersistenceStatus} fr={fr} /> : null}
+      <PreparationWeatherWarnings selectedForecastRisk={selectedForecastRisk} weatherStatus={weatherStatus} fr={fr} />
       <PreparationChecklist items={checklistItems} fr={fr} onChange={updateChecklist} compact />
       <div className="border-t border-slate-200 pt-4"><PreparationMaterials context={preparationContext} fr={fr} onChange={(update) => onPreparationContextChange?.(update)} compact /></div>
     </CmmCard>

@@ -9,10 +9,13 @@ import { restoreDraftFields } from "./draft-storage-preparation";
 
 export const ACTION_DECLARATION_DRAFT_KEY = "cmm_action_draft";
 export const ACTION_DECLARATION_DRAFT_DATE_KEY = "cmm_action_draft_date";
+const ACTION_DECLARATION_ACTION_DRAFT_KEY_PREFIX = `${ACTION_DECLARATION_DRAFT_KEY}:action:`;
+const ACTION_DECLARATION_ACTION_DRAFT_DATE_KEY_PREFIX = `${ACTION_DECLARATION_DRAFT_DATE_KEY}:action:`;
 
 export type ActionDeclarationDraftSnapshot = {
   form: FormState;
   savedAt: string | null;
+  actionId?: string | null;
   manualDrawing?: ActionDrawing;
   manualDrawingSource?: "gpx_import";
 };
@@ -138,9 +141,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function getDraftSavedAt(): string | null {
+function scopedDraftKey(actionId: string | null): string {
+  return actionId
+    ? `${ACTION_DECLARATION_ACTION_DRAFT_KEY_PREFIX}${encodeURIComponent(actionId)}`
+    : ACTION_DECLARATION_DRAFT_KEY;
+}
+
+function scopedDraftDateKey(actionId: string | null): string {
+  return actionId
+    ? `${ACTION_DECLARATION_ACTION_DRAFT_DATE_KEY_PREFIX}${encodeURIComponent(actionId)}`
+    : ACTION_DECLARATION_DRAFT_DATE_KEY;
+}
+
+function getDraftSavedAtForAction(actionId: string | null): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(ACTION_DECLARATION_DRAFT_DATE_KEY);
+  return window.localStorage.getItem(scopedDraftDateKey(actionId));
 }
 
 const ACTION_DECLARATION_DRAFT_CHANGE_EVENT = "cmm-action-declaration-draft-change";
@@ -153,9 +168,11 @@ function buildDraftSnapshotCacheKey(
   recordTypeOverride: FormState["recordType"] | null,
   saved: string | null,
   savedAt: string | null,
+  actionId: string | null,
 ): string {
   return [
     DRAFT_SNAPSHOT_CACHE_VERSION,
+    actionId ?? "",
     saved ?? "",
     savedAt ?? "",
     JSON.stringify(fallback),
@@ -198,7 +215,9 @@ export function subscribeToDraftChanges(callback: () => void): () => void {
   const handleStorage = (event: StorageEvent) => {
     if (
       event.key === ACTION_DECLARATION_DRAFT_KEY ||
-      event.key === ACTION_DECLARATION_DRAFT_DATE_KEY
+      event.key === ACTION_DECLARATION_DRAFT_DATE_KEY ||
+      event.key?.startsWith(ACTION_DECLARATION_ACTION_DRAFT_KEY_PREFIX) ||
+      event.key?.startsWith(ACTION_DECLARATION_ACTION_DRAFT_DATE_KEY_PREFIX)
     ) {
       callback();
     }
@@ -213,10 +232,10 @@ export function subscribeToDraftChanges(callback: () => void): () => void {
   };
 }
 
-export function clearDraft(): void {
+export function clearDraft(actionId: string | null = null): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(ACTION_DECLARATION_DRAFT_KEY);
-  window.localStorage.removeItem(ACTION_DECLARATION_DRAFT_DATE_KEY);
+  window.localStorage.removeItem(scopedDraftKey(actionId));
+  window.localStorage.removeItem(scopedDraftDateKey(actionId));
   cachedDraftSnapshot = null;
   emitDraftChange();
 }
@@ -225,6 +244,7 @@ export function saveDraft(
   form: FormState,
   savedAt = new Date().toISOString(),
   geometry: ActionDeclarationDraftGeometry = null,
+  actionId: string | null = null,
 ): string | null {
   if (typeof window === "undefined") return null;
   const draftPayload: Record<string, unknown> = {};
@@ -242,8 +262,8 @@ export function saveDraft(
     draftPayload.manualDrawingSource = "gpx_import";
   }
 
-  window.localStorage.setItem(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify(draftPayload));
-  window.localStorage.setItem(ACTION_DECLARATION_DRAFT_DATE_KEY, savedAt);
+  window.localStorage.setItem(scopedDraftKey(actionId), JSON.stringify(draftPayload));
+  window.localStorage.setItem(scopedDraftDateKey(actionId), savedAt);
   cachedDraftSnapshot = null;
   emitDraftChange();
   return savedAt;
@@ -252,19 +272,22 @@ export function saveDraft(
 export function loadDraftSnapshot(
   fallback: FormState,
   recordTypeOverride: FormState["recordType"] | null = null,
+  actionId: string | null = null,
 ): ActionDeclarationDraftSnapshot | null {
   if (typeof window === "undefined") {
     return null;
   }
 
   try {
-    const saved = window.localStorage.getItem(ACTION_DECLARATION_DRAFT_KEY);
-    const savedAt = getDraftSavedAt();
+    const storageKey = scopedDraftKey(actionId);
+    const saved = window.localStorage.getItem(storageKey);
+    const savedAt = getDraftSavedAtForAction(actionId);
     const cacheKey = buildDraftSnapshotCacheKey(
       fallback,
       recordTypeOverride,
       saved,
       savedAt,
+      actionId,
     );
     const cached = getCachedDraftSnapshot(cacheKey);
     if (cached !== undefined) {
@@ -309,6 +332,7 @@ export function loadDraftSnapshot(
     return cacheDraftSnapshot(cacheKey, {
       form: next as FormState,
       savedAt,
+      actionId,
       ...(hasGpxPair && manualDrawing
         ? { manualDrawing, manualDrawingSource: "gpx_import" as const }
         : {}),
@@ -319,6 +343,7 @@ export function loadDraftSnapshot(
       recordTypeOverride,
       null,
       null,
+      actionId,
     );
     return cacheDraftSnapshot(cacheKey, null);
   }

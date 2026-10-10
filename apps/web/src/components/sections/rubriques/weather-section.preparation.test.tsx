@@ -71,4 +71,21 @@ describe("PreparationPanel", () => {
 
     expect(html).not.toContain("Lieu météo différent");
   });
+
+  it("distinguishes a local preparation draft from an action already saved", () => {
+    const context = buildActionPreparationContext({ draft: { materialsProvided: "Pinces" } });
+    const html = renderToStaticMarkup(
+      React.createElement(PreparationPanel, {
+        selectedForecastRisk: null,
+        weatherStatus: "empty",
+        preparationContext: context,
+        preparationPersistenceStatus: "draft",
+        fr: true,
+      }),
+    );
+
+    expect(html).toContain('data-testid="preparation-persistence-status"');
+    expect(html).toContain("Brouillon conservé localement");
+    expect(html).toContain("Enregistrez la préparation");
+  });
 });

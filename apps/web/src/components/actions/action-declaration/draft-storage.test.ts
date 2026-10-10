@@ -57,6 +57,21 @@ describe("action declaration draft storage", () => {
     expect(snapshot?.form.wasteKg).toBe("12");
   });
 
+  it("keeps persisted-action drafts isolated by action id", () => {
+    installLocalStorage();
+    const actionDraft = createInitialFormState("Alice");
+    actionDraft.materialsProvided = "Pinces pour l’action A";
+    const otherActionDraft = createInitialFormState("Alice");
+    otherActionDraft.materialsProvided = "Pinces pour l’action B";
+
+    saveDraft(actionDraft, "2026-05-13T10:45:00.000Z", null, "action-a");
+    saveDraft(otherActionDraft, "2026-05-13T10:46:00.000Z", null, "action-b");
+
+    expect(loadDraftSnapshot(createInitialFormState("Fallback"), "action", "action-a")?.form.materialsProvided).toBe("Pinces pour l’action A");
+    expect(loadDraftSnapshot(createInitialFormState("Fallback"), "action", "action-b")?.form.materialsProvided).toBe("Pinces pour l’action B");
+    expect(loadDraftSnapshot(createInitialFormState("Fallback"), "action")?.form.materialsProvided).toBeUndefined();
+  });
+
   it("persists accessibility, material distinctions, suggestions and checklist state", () => {
     installLocalStorage();
     const draft = createInitialFormState("Alice");

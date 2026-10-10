@@ -15,6 +15,8 @@ export type PreparationSelection = {
   weatherLocationLabel?: string;
 };
 
+export type ActionPreparationPersistenceStatus = "saved" | "draft" | "error";
+
 export type ActionPreparationContext = {
   actionId: string | null;
   locationLabel: string;
@@ -75,14 +77,27 @@ function preparationLocation(
   draft: DraftPreparationSource | null | undefined,
   preparation: ActionPreparationData,
   handoffPreparation: ActionPreparationData,
+  draftOverridesAction = false,
 ): string {
+  const values = draftOverridesAction
+    ? [
+        draft?.departureLocationLabel,
+        draft?.locationLabel,
+        preparation.pointDeRendezVous,
+        action?.departureLocationLabel,
+        action?.locationLabel,
+        handoffPreparation.pointDeRendezVous,
+      ]
+    : [
+        action?.departureLocationLabel,
+        action?.locationLabel,
+        preparation.pointDeRendezVous,
+        draft?.departureLocationLabel,
+        draft?.locationLabel,
+        handoffPreparation.pointDeRendezVous,
+      ];
   return text(
-    action?.departureLocationLabel,
-    action?.locationLabel,
-    preparation.pointDeRendezVous,
-    draft?.departureLocationLabel,
-    draft?.locationLabel,
-    handoffPreparation.pointDeRendezVous,
+    ...values,
   );
 }
 
@@ -90,15 +105,17 @@ function preparationCoordinates(
   action: ActionEditorRecord | null | undefined,
   draft: DraftPreparationSource | null | undefined,
   handoff: PlannerActionHandoff | null,
+  draftOverridesAction = false,
 ): Pick<ActionPreparationContext, "latitude" | "longitude"> {
-  const candidates = [
-    coordinatePair(action?.latitude, action?.longitude),
-    coordinatePair(draft?.latitude, draft?.longitude),
-    coordinatePair(
-      handoff?.operationalRoute.zones.departure.coordinate?.[0],
-      handoff?.operationalRoute.zones.departure.coordinate?.[1],
-    ),
-  ];
+  const actionCoordinates = coordinatePair(action?.latitude, action?.longitude);
+  const draftCoordinates = coordinatePair(draft?.latitude, draft?.longitude);
+  const handoffCoordinates = coordinatePair(
+    handoff?.operationalRoute.zones.departure.coordinate?.[0],
+    handoff?.operationalRoute.zones.departure.coordinate?.[1],
+  );
+  const candidates = draftOverridesAction
+    ? [draftCoordinates, actionCoordinates, handoffCoordinates]
+    : [actionCoordinates, draftCoordinates, handoffCoordinates];
   return candidates.find((candidate): candidate is Pick<ActionPreparationContext, "latitude" | "longitude"> => candidate !== null) ?? {
     latitude: "",
     longitude: "",
@@ -126,48 +143,64 @@ function firstSuggestedMaterials(...values: unknown[]): ActionMaterialSuggestion
   return null;
 }
 
+function orderedPreparationValues<T>(draftOverridesAction: boolean, actionValue: T, draftValue: T, handoffValue: T): T[] {
+  return draftOverridesAction ? [draftValue, actionValue, handoffValue] : [actionValue, draftValue, handoffValue];
+}
+
+function preparationActionDate(
+  action: ActionEditorRecord | null | undefined,
+  draft: DraftPreparationSource | null | undefined,
+  preparation: ActionPreparationData,
+  handoffPreparation: ActionPreparationData,
+  draftOverridesAction: boolean,
+): string {
+  const values = draftOverridesAction
+    ? [draft?.actionDate, action?.actionDate, preparation.actionDate, handoffPreparation.actionDate]
+    : [action?.actionDate, preparation.actionDate, draft?.actionDate, handoffPreparation.actionDate];
+  return text(...values);
+}
+
+function preparationContextDetails(
+  preparation: ActionPreparationData,
+  draft: DraftPreparationSource | null | undefined,
+  handoffPreparation: ActionPreparationData,
+  draftOverridesAction: boolean,
+): Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials"> {
+  const ordered = <T,>(actionValue: T, draftValue: T, handoffValue: T) => orderedPreparationValues(draftOverridesAction, actionValue, draftValue, handoffValue);
+  return {
+    preparationChecklist: firstChecklist(...ordered(preparation.preparationChecklist, draft?.preparationChecklist, handoffPreparation.preparationChecklist)),
+    suggestedMaterials: firstSuggestedMaterials(...ordered(preparation.suggestedMaterials, draft?.suggestedMaterials, handoffPreparation.suggestedMaterials)),
+    materialsProvided: firstText(...ordered(preparation.materialsProvided, draft?.materialsProvided, handoffPreparation.materialsProvided)),
+    recommendedMaterials: firstText(...ordered(preparation.recommendedMaterials, draft?.recommendedMaterials, handoffPreparation.recommendedMaterials)),
+  };
+}
+
 export function buildActionPreparationContext({
   action,
   draft,
   plannerHandoff,
+  draftOverridesAction = false,
 }: {
   action?: ActionEditorRecord | null;
   draft?: DraftPreparationSource | null;
   plannerHandoff?: PlannerActionHandoff | null;
+  draftOverridesAction?: boolean;
 }): ActionPreparationContext {
   const preparation = preparationFor(action);
   const matchingHandoff = matchingPlannerHandoff(action, plannerHandoff);
   const handoffPreparation = matchingHandoff?.preparationData ?? {};
-  const coordinates = preparationCoordinates(action, draft, matchingHandoff);
+  const coordinates = preparationCoordinates(action, draft, matchingHandoff, draftOverridesAction);
+  const details = preparationContextDetails(preparation, draft, handoffPreparation, draftOverridesAction);
 
   return {
     actionId: action?.id ?? matchingHandoff?.actionId ?? null,
-    locationLabel: preparationLocation(action, draft, preparation, handoffPreparation),
-    actionDate: text(action?.actionDate, preparation.actionDate, draft?.actionDate, handoffPreparation.actionDate),
-    departureTime: text(preparation.departureTime, draft?.departureTime, handoffPreparation.departureTime),
+    locationLabel: preparationLocation(action, draft, preparation, handoffPreparation, draftOverridesAction),
+    actionDate: preparationActionDate(action, draft, preparation, handoffPreparation, draftOverridesAction),
+    departureTime: text(...orderedPreparationValues(draftOverridesAction, preparation.departureTime, draft?.departureTime, handoffPreparation.departureTime)),
     ...coordinates,
     plannerHandoff: matchingHandoff,
     confirmedSelection: null,
-    preparationChecklist: firstChecklist(
-      preparation.preparationChecklist,
-      draft?.preparationChecklist,
-      handoffPreparation.preparationChecklist,
-    ),
-    suggestedMaterials: firstSuggestedMaterials(
-      preparation.suggestedMaterials,
-      draft?.suggestedMaterials,
-      handoffPreparation.suggestedMaterials,
-    ),
-    materialsProvided: firstText(
-      preparation.materialsProvided,
-      draft?.materialsProvided,
-      handoffPreparation.materialsProvided,
-    ),
-    recommendedMaterials: firstText(
-      preparation.recommendedMaterials,
-      draft?.recommendedMaterials,
-      handoffPreparation.recommendedMaterials,
-    ),
+    ...details,
   };
 }
 export function resolvePreparationSelection(

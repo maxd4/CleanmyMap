@@ -21,10 +21,11 @@ export { persistBeforeAction } from "./use-before-action-workflow";
 function continueToComplete(
   form: FormState,
   createdId: string | null,
+  actionId: string | null | undefined,
   onPassToComplete: (actionId: string) => void | Promise<void>,
 ): void | Promise<void> {
   if (!createdId) return;
-  saveDraft(sanitizePreActionForm(form));
+  saveDraft(sanitizePreActionForm(form), undefined, null, actionId ?? createdId);
   return onPassToComplete(createdId);
 }
 
@@ -57,12 +58,12 @@ export function useBeforeActionForm({
   const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
 
   const isHydratingAction = useBeforeActionHydration({ resolvedDefaultActorName, initialActionId, initialRecordType, form, setForm, onFormChange, setCreatedId, setPublishedAction, setPublishedAt, setTerminalActionStatus, setSubmissionState, setErrorMessage, preparationContext });
-  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, linkedEventId, submissionState, setForm, onFormChange, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
+  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: initialActionId, linkedEventId, submissionState, setForm, onFormChange, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
   const handleSubmit = useBeforeActionSubmission({ form, submissionState, initialActionId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
   const { requestPublish, cancelPublication, confirmPublish } = useBeforeActionPublication({ createdId, publishedAt, publicationState, setForm, setPublishedAction, setCreatedId, setPublishedAt, setPublicationState, setPublicationError, setPublicationConfirmationOpen });
   const shareLink = createdId ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}` : null;
   const summaryNote = useMemo(() => buildPreActionSummaryNote(form), [form]);
-  const onContinueComplete = () => continueToComplete(form, createdId, onPassToComplete);
+  const onContinueComplete = () => continueToComplete(form, createdId, initialActionId ?? createdId, onPassToComplete);
 
   return { form, submissionState, errorMessage, createdId, publishedAction, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction, validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete };
 }

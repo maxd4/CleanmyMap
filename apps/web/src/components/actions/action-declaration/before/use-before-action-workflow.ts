@@ -5,7 +5,7 @@ import {
   normalizeParticipantAccounts,
   parseOrganizerAccounts,
 } from "../payload";
-import { saveDraft, loadDraftSnapshot } from "../draft-storage";
+import { clearDraft, saveDraft, loadDraftSnapshot } from "../draft-storage";
 import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import { createAction, fetchActionById, publishAction, updateAction, type ActionEditorRecord } from "@/lib/actions/http";
@@ -317,6 +317,7 @@ export function useBeforeActionHydration({
 
 export function useBeforeActionFieldUpdates({
   form,
+  draftActionId,
   linkedEventId,
   submissionState,
   setForm,
@@ -327,6 +328,7 @@ export function useBeforeActionFieldUpdates({
   setValidationIssueFields,
 }: {
   form: FormState;
+  draftActionId?: string | null;
   linkedEventId?: string;
   submissionState: SubmissionState;
   setForm: StateSetter<FormState>;
@@ -349,7 +351,7 @@ export function useBeforeActionFieldUpdates({
       nextForm.arrivalCoordinates = null;
     }
     applyOrganizerFormUpdates(nextForm, form, updates);
-    setForm(nextForm); onFormChange?.(nextForm); saveDraft(nextForm);
+    setForm(nextForm); onFormChange?.(nextForm); saveDraft(nextForm, undefined, null, draftActionId ?? null);
     if (submissionState === "error") { setSubmissionState("idle"); setErrorMessage(null); setValidationIssues([]); setValidationIssueFields([]); }
   };
   const updateField: BeforeActionFieldUpdater = (key, value) => updateFields({ [key]: value } as Partial<FormState>);
@@ -401,7 +403,9 @@ export function useBeforeActionSubmission({
       const result = await persistBeforeAction(initialActionId, payload);
       setCreatedId(result.actionId); onActionPersisted?.(result.actionId);
       if (initialActionId) { const canonicalAction = await fetchActionById(result.actionId); setPublishedAction(canonicalAction); setPublishedAt(canonicalAction.publishedAt ?? null); }
-      setSubmissionState("success"); saveDraft(normalizedForm);
+      setSubmissionState("success");
+      if (initialActionId) clearDraft(initialActionId);
+      else saveDraft(normalizedForm);
       await trackFunnel("submit_success", "quick", { source: "action_before_declaration_form", createdId: result.actionId, isAuthenticated });
     } catch (error: unknown) {
       setSubmissionState("error"); setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible d'enregistrer le pré-formulaire pour le moment.");

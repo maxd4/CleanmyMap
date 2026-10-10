@@ -11,7 +11,7 @@ import { resolvePageFamily } from "@/lib/ui/page-families";
 import { ConditionsPanel } from "./weather-section.conditions";
 import { PreparationForecastBlock, PreparationLocationBlock, PreparationPanel } from "./weather-section.preparation";
 import { useWeatherData } from "./use-weather-data";
-import type { ActionPreparationContext, PreparationSelection } from "@/lib/actions/action-preparation-context";
+import type { ActionPreparationContext, ActionPreparationPersistenceStatus, PreparationSelection } from "@/lib/actions/action-preparation-context";
 import type { resolvePreparationSelection } from "@/lib/actions/action-preparation-context";
 
 type WeatherData = ReturnType<typeof useWeatherData>;
@@ -56,6 +56,7 @@ function PreparationOverview({
   onPreparationSelection,
   onPreparationValidated,
   onPreparationContextChange,
+  preparationPersistenceStatus,
 }: {
   actionLocation: string;
   actionDate: string;
@@ -67,11 +68,12 @@ function PreparationOverview({
   onPreparationSelection?: (selection: PreparationSelection, decision?: "ask" | "replace" | "preserve") => ReturnType<typeof resolvePreparationSelection>;
   onPreparationValidated?: (validated: boolean) => void;
   onPreparationContextChange?: (update: Partial<Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials">>) => void;
+  preparationPersistenceStatus: ActionPreparationPersistenceStatus;
 }) {
   return <div className="space-y-4" data-testid="preparation-overview">
     <PreparationLocationBlock actionLocation={actionLocation} actionLatitude={actionLatitude} actionLongitude={actionLongitude} actionDate={actionDate} weather={weather} fr={fr} />
     <PreparationForecastBlock weather={weather} actionDate={actionDate} onPreparationSelection={onPreparationSelection} fr={fr} />
-    <PreparationPanel selectedForecastRisk={weather.selectedForecastRisk} weatherStatus={weather.weatherStatus} preparationContext={preparationContext} fr={fr} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} />
+    <PreparationPanel selectedForecastRisk={weather.selectedForecastRisk} weatherStatus={weather.weatherStatus} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} fr={fr} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} />
   </div>;
 }
 
@@ -104,6 +106,7 @@ function WeatherSectionView({
   onPreparationSelection,
   onPreparationValidated,
   onPreparationContextChange,
+  preparationPersistenceStatus,
 }: {
   pageFamily: ReturnType<typeof resolvePageFamily>;
   fr: boolean;
@@ -116,11 +119,12 @@ function WeatherSectionView({
   onPreparationSelection?: (selection: PreparationSelection, decision?: "ask" | "replace" | "preserve") => ReturnType<typeof resolvePreparationSelection>;
   onPreparationValidated?: (validated: boolean) => void;
   onPreparationContextChange?: (update: Partial<Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials">>) => void;
+  preparationPersistenceStatus: ActionPreparationPersistenceStatus;
 }) {
   return <SectionShell id="weather" hideHeader>
     <div className="space-y-6 pt-8 text-slate-900">
       <PageHeader family={pageFamily} align="center" title={fr ? "Préparer l’action" : "Prepare the action"} subtitle={fr ? "Vérifiez le lieu et le jour utiles, retenez si besoin un créneau, puis préparez le matériel." : "Check the relevant place and day, keep a slot if useful, then prepare the equipment."} />
-      <PreparationOverview actionLocation={actionLocation} actionDate={actionDate} actionLatitude={actionLatitude} actionLongitude={actionLongitude} preparationContext={preparationContext} weather={weather} fr={fr} onPreparationSelection={onPreparationSelection} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} />
+      <PreparationOverview actionLocation={actionLocation} actionDate={actionDate} actionLatitude={actionLatitude} actionLongitude={actionLongitude} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} weather={weather} fr={fr} onPreparationSelection={onPreparationSelection} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} />
       <WeatherDetailsDisclosure weather={weather} fr={fr} />
     </div>
   </SectionShell>;
@@ -132,12 +136,14 @@ export function WeatherSection({
   onPreparationSelection,
   onPreparationValidated,
   onPreparationContextChange,
+  preparationPersistenceStatus = "saved",
 }: {
   draftContext?: WeatherDraftContext;
   preparationContext?: ActionPreparationContext;
   onPreparationSelection?: (selection: PreparationSelection, decision?: "ask" | "replace" | "preserve") => ReturnType<typeof resolvePreparationSelection>;
   onPreparationValidated?: (validated: boolean) => void;
   onPreparationContextChange?: (update: Partial<Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials">>) => void;
+  preparationPersistenceStatus?: ActionPreparationPersistenceStatus;
 }) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
@@ -155,6 +161,7 @@ export function WeatherSection({
     actionLatitude={context.actionLatitude}
     actionLongitude={context.actionLongitude}
     preparationContext={preparationContext}
+    preparationPersistenceStatus={preparationPersistenceStatus}
     weather={weather}
     onPreparationSelection={onPreparationSelection}
     onPreparationValidated={onPreparationValidated}
