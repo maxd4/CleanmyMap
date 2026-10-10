@@ -201,6 +201,36 @@ const allowlist = [
     rule: "body-color",
     reason: "extracted Pilotage zone explanations preserve the existing visual contract",
   },
+  {
+    file: "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker-header.view.tsx",
+    rule: "small-text",
+    reason: "action export picker header extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker-history.view.tsx",
+    rule: "small-text",
+    reason: "action export picker history extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker-preview.view.tsx",
+    rule: "small-text",
+    reason: "action export picker preview extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker-sharing.view.tsx",
+    rule: "small-text",
+    reason: "action export picker sharing extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker-sharing.view.tsx",
+    rule: "body-color",
+    reason: "action export picker sharing extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/actions/action-declaration/ui/action-declaration-export-picker-targets.view.tsx",
+    rule: "small-text",
+    reason: "action export picker targets extraction preserves the historical visual contract",
+  },
 ];
 
 const smallTextPattern = /text-\[((?:\d+(?:\.\d+)?|\.\d+))(px|rem)\]/g;
