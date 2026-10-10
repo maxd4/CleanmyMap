@@ -27,6 +27,44 @@ const feedbackItem = {
   privateReplyTargetUserId: "user-1",
 };
 
+const promotionItem = {
+  ...feedbackItem,
+  id: "promotion-promotion-1",
+  source: "promotion" as const,
+  sourceRecordId: "promotion-1",
+  title: "Alice · coordinateur",
+  subtitle: "benevole",
+  authorEmail: "alice@example.com",
+  sourceStatus: "pending_owner_review",
+  privateReplyTargetUserId: null,
+};
+
+const partnerItem = {
+  ...feedbackItem,
+  id: "partner-partner-1",
+  source: "partner" as const,
+  sourceRecordId: "partner-1",
+  title: "Association locale",
+  subtitle: "Association",
+  authorEmail: "contact@example.com",
+  sourceStatus: "pending_admin_review",
+  privateReplyTargetUserId: null,
+};
+
+const eventItem = {
+  ...feedbackItem,
+  id: "event-event-1",
+  source: "event" as const,
+  sourceRecordId: "event-1",
+  title: "Événement local",
+  subtitle: "Paris",
+  authorEmail: null,
+  sourceStatus: "created",
+  canDelete: false,
+  hasReplyTarget: false,
+  privateReplyTargetUserId: null,
+};
+
 type InboxCardProps = ComponentProps<typeof InboxItemCard>;
 
 const renderCard = (
@@ -126,5 +164,34 @@ describe("InboxItemCard state actions", () => {
     expect(markup).toContain("Fondement CGU");
     expect(markup).not.toContain("Marquer traité");
     expect(markup).not.toContain("Supprimer");
+  });
+
+  it("isolates promotion review actions without changing their availability", () => {
+    const markup = renderCard(promotionItem, { promotionReason: "Motif valide" });
+
+    expect(markup).toContain("Motif de décision");
+    expect(markup).toContain("Accepter");
+    expect(markup).toContain("Refuser");
+    expect(markup).toContain("Marquer traité");
+    expect(markup).toContain("Marquer répondu");
+  });
+
+  it("isolates partner review actions without changing their availability", () => {
+    const markup = renderCard(partnerItem, { partnerReason: "Motif valide" });
+
+    expect(markup).toContain("Motif de décision");
+    expect(markup).toContain("Accepter");
+    expect(markup).toContain("Refuser");
+    expect(markup).toContain("Marquer traité");
+    expect(markup).toContain("Marquer répondu");
+  });
+
+  it("keeps event items contextual-only and without processing actions", () => {
+    const markup = renderCard(eventItem);
+
+    expect(markup).toContain("Copier le résumé");
+    expect(markup).not.toContain("Motif de traitement");
+    expect(markup).not.toContain("Marquer traité");
+    expect(markup).not.toContain("Marquer répondu");
   });
 });
