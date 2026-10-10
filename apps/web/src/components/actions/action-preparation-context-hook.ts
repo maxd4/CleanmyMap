@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
-import { fetchActionById } from "@/lib/actions/http";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { fetchActionById, type ActionEditorRecord } from "@/lib/actions/http";
 import { createInitialFormState } from "./action-declaration/payload";
 import { loadDraftSnapshot, saveDraft } from "./action-declaration/draft-storage";
 import {
@@ -9,6 +9,16 @@ import {
   type ActionPreparationContext,
 } from "@/lib/actions/action-preparation-context";
 import { peekPlannerActionHandoff } from "@/lib/route/route-action-handoff";
+const preparationActionRequests = new Map<string, Promise<ActionEditorRecord>>();
+
+export function loadPreparationAction(actionId: string): Promise<ActionEditorRecord> {
+  const cached = preparationActionRequests.get(actionId);
+  if (cached) return cached;
+
+  const request = fetchActionById(actionId);
+  preparationActionRequests.set(actionId, request);
+  return request;
+}
 
 export function useActionPreparationContext({
   defaultActorName,
@@ -22,27 +32,10 @@ export function useActionPreparationContext({
   preparationContextReady: boolean;
 } {
   const [preparationContext, setPreparationContext] = useState<ActionPreparationContext>(() => buildActionPreparationContext({}));
-  const [preparationContextReady, setPreparationContextReady] = useState(false);
+  const [loadedActionId, setLoadedActionId] = useState<string | null | undefined>(undefined);
+  const persistedDraftSignatureRef = useRef<string | null>(null);
 
-  const setAndPersistPreparationContext: Dispatch<SetStateAction<ActionPreparationContext>> = useCallback((update) => {
-    setPreparationContext((current) => {
-      const next = typeof update === "function" ? update(current) : update;
-      if (!actionId) {
-        const fallback = createInitialFormState(defaultActorName, "action");
-        const draft = loadDraftSnapshot(fallback, "action")?.form ?? fallback;
-        saveDraft({
-          ...draft,
-          actionDate: next.actionDate || draft.actionDate,
-          departureTime: next.departureTime || draft.departureTime,
-          preparationChecklist: next.preparationChecklist ?? draft.preparationChecklist,
-          suggestedMaterials: next.suggestedMaterials ?? draft.suggestedMaterials,
-          materialsProvided: next.materialsProvided ?? draft.materialsProvided,
-          recommendedMaterials: next.recommendedMaterials ?? draft.recommendedMaterials,
-        });
-      }
-      return next;
-    });
-  }, [actionId, defaultActorName]);
+  const preparationContextReady = loadedActionId === actionId;
 
   useEffect(() => {
     let active = true;
@@ -54,18 +47,42 @@ export function useActionPreparationContext({
       let action: Awaited<ReturnType<typeof fetchActionById>> | null = null;
       if (actionId) {
         try {
-          action = await fetchActionById(actionId);
-        } catch {
-          // The form remains usable with the current draft or a matching route handoff.
-        }
+          action = await loadPreparationAction(actionId);
+        } catch { action = null; }
       }
       if (!active) return;
-      setAndPersistPreparationContext(buildActionPreparationContext({ action, draft, plannerHandoff }));
-      setPreparationContextReady(true);
+      setPreparationContext(buildActionPreparationContext({ action, draft, plannerHandoff }));
+      setLoadedActionId(actionId);
     };
     void loadContext();
     return () => { active = false; };
-  }, [actionId, defaultActorName, setAndPersistPreparationContext]);
+  }, [actionId, defaultActorName]);
 
-  return { preparationContext, setPreparationContext: setAndPersistPreparationContext, preparationContextReady };
+  useEffect(() => {
+    if (actionId || !preparationContextReady) return;
+    const fallback = createInitialFormState(defaultActorName, "action");
+    const draft = loadDraftSnapshot(fallback, "action")?.form ?? fallback;
+    const nextDraft = {
+      ...draft,
+      actionDate: preparationContext.actionDate || draft.actionDate,
+      departureTime: preparationContext.departureTime || draft.departureTime,
+      preparationChecklist: preparationContext.preparationChecklist ?? draft.preparationChecklist,
+      suggestedMaterials: preparationContext.suggestedMaterials ?? draft.suggestedMaterials,
+      materialsProvided: preparationContext.materialsProvided ?? draft.materialsProvided,
+      recommendedMaterials: preparationContext.recommendedMaterials ?? draft.recommendedMaterials,
+    };
+    const signature = JSON.stringify({
+      actionDate: nextDraft.actionDate,
+      departureTime: nextDraft.departureTime,
+      preparationChecklist: nextDraft.preparationChecklist,
+      suggestedMaterials: nextDraft.suggestedMaterials,
+      materialsProvided: nextDraft.materialsProvided,
+      recommendedMaterials: nextDraft.recommendedMaterials,
+    });
+    if (persistedDraftSignatureRef.current === signature) return;
+    saveDraft(nextDraft);
+    persistedDraftSignatureRef.current = signature;
+  }, [actionId, defaultActorName, preparationContext, preparationContextReady]);
+
+  return { preparationContext, setPreparationContext, preparationContextReady };
 }

@@ -9,6 +9,7 @@ import { saveDraft, loadDraftSnapshot } from "../draft-storage";
 import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import { createAction, fetchActionById, publishAction, updateAction, type ActionEditorRecord } from "@/lib/actions/http";
+import { loadPreparationAction } from "../../action-preparation-context-hook";
 import type { FormState } from "../model";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
@@ -21,8 +22,9 @@ import {
 } from "./model";
 import { applyOrganizerFormUpdates } from "./organizer-form-state";
 import { buildBeforeActionPayload, validateBeforeActionForm, type BeforeValidationField } from "./form-logic";
-import { normalizeClockTime } from "@/lib/actions/time-contract";
 import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
+import { applyPreparationContextToForm, mergePlannerHandoffIntoForm, usePlannerActionHandoffHydration } from "./preparation-hydration";
+export { applyPreparationContextToForm } from "./preparation-hydration";
 
 type SubmissionState = "idle" | "pending" | "success" | "error";
 type PublicationState = "idle" | "pending" | "success" | "error";
@@ -36,6 +38,24 @@ type BeforeActionRecordSetters = {
   setTerminalActionStatus: StateSetter<TerminalPreActionStatus | null>;
   setSubmissionState: StateSetter<SubmissionState>;
 };
+
+function sameFormValue(current: unknown, next: unknown): boolean {
+  return JSON.stringify(current ?? null) === JSON.stringify(next ?? null);
+}
+
+export function mergeBeforeActionHydrationWithLocalChanges(
+  initialForm: FormState,
+  currentForm: FormState,
+  hydratedForm: FormState,
+): FormState {
+  const merged = { ...hydratedForm };
+  for (const key of Object.keys(currentForm) as Array<keyof FormState>) {
+    if (!sameFormValue(initialForm[key], currentForm[key])) {
+      merged[key] = currentForm[key] as never;
+    }
+  }
+  return merged;
+}
 
 function createInitialBeforeActionForm(
   actorName: string,
@@ -59,59 +79,6 @@ export async function persistBeforeAction(
   return { actionId: "id" in result ? result.id : result.actionId, created: !actionId };
 }
 
-function usePlannerActionHandoffHydration({
-  initialActionId,
-  form,
-  setForm,
-  onFormChange,
-  preparationContext,
-}: {
-  initialActionId?: string | null;
-  form: FormState;
-  setForm: StateSetter<FormState>;
-  onFormChange?: (form: FormState) => void;
-  preparationContext?: ActionPreparationContext;
-}) {
-  const hydratedRef = useRef(false);
-  useEffect(() => {
-    if (initialActionId || hydratedRef.current) return;
-    hydratedRef.current = true;
-    const handoff = consumePlannerActionHandoff();
-    const draft = loadDraftSnapshot(form, form.recordType)?.form;
-    if (!handoff && !draft && !preparationContext) return;
-    const prepared = handoff
-      ? mergePlannerHandoffIntoForm(draft ?? form, handoff)
-      : sanitizePreActionForm(draft ?? form);
-    const preparedWithContext = applyPreparationContextToForm(prepared, preparationContext);
-    // Hydrate after the client boundary so localStorage/sessionStorage never changes SSR markup.
-    setForm(preparedWithContext); onFormChange?.(preparedWithContext); if (handoff) saveDraft(preparedWithContext);
-  // The handoff and draft are intentionally consumed once on mount; the current form is the merge base.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialActionId, onFormChange, preparationContext]);
-}
-
-export function applyPreparationContextToForm(
-  form: FormState,
-  context?: ActionPreparationContext,
-): FormState {
-  if (!context) return form;
-  const selection = context.confirmedSelection;
-  const departureTime = selection?.departureTime
-    ? normalizeClockTime(selection.departureTime)
-    : normalizeClockTime(context.departureTime);
-  return {
-    ...form,
-    actionDate: selection?.actionDate || form.actionDate.trim() || context.actionDate,
-    departureTime: departureTime && (selection?.departureTime || !form.departureTime.trim())
-      ? departureTime
-      : form.departureTime,
-    preparationChecklist: context.preparationChecklist ?? form.preparationChecklist,
-    suggestedMaterials: context.suggestedMaterials ?? form.suggestedMaterials,
-    materialsProvided: context.materialsProvided ?? form.materialsProvided,
-    recommendedMaterials: context.recommendedMaterials ?? form.recommendedMaterials,
-  };
-}
-
 function applyFetchedBeforeAction({
   action,
   resolvedDefaultActorName,
@@ -125,12 +92,16 @@ function applyFetchedBeforeAction({
   setSubmissionState,
   setIsHydratingAction,
   preparationContext,
+  initialForm,
+  currentForm,
 }: {
   action: Awaited<ReturnType<typeof fetchActionById>>;
   resolvedDefaultActorName: string;
   initialRecordType: "action";
   setIsHydratingAction: StateSetter<boolean>;
   preparationContext?: ActionPreparationContext;
+  initialForm: FormState;
+  currentForm: FormState;
 } & BeforeActionRecordSetters) {
   if (action.actionPhase !== "pre_action") throw new Error("Cette action n'est plus une pré-action publiable.");
   if (!isResumablePreAction(action)) {
@@ -148,7 +119,8 @@ function applyFetchedBeforeAction({
     mergePlannerHandoffIntoForm(nextForm, matchingHandoff),
     preparationContext,
   );
-  setForm(hydratedForm); onFormChange?.(hydratedForm); setCreatedId(action.id); setPublishedAction(action); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState(matchingHandoff ? "idle" : "success"); setIsHydratingAction(false);
+  const preservedForm = mergeBeforeActionHydrationWithLocalChanges(initialForm, currentForm, hydratedForm);
+  setForm(preservedForm); onFormChange?.(preservedForm); setCreatedId(action.id); setPublishedAction(action); setPublishedAt(action.publishedAt ?? null); setTerminalActionStatus(null); setSubmissionState(matchingHandoff ? "idle" : "success"); setIsHydratingAction(false);
 }
 
 export function buildBeforeActionFormFromAction({
@@ -268,34 +240,6 @@ export function buildBeforeActionInitialForm(actorNameOptions: string[], default
   return sanitizePreActionForm(snapshot?.form ?? fallback);
 }
 
-function mergePlannerHandoffIntoForm(form: FormState, handoff: ReturnType<typeof consumePlannerActionHandoff>): FormState {
-  if (!handoff) return form;
-  const preparationData = handoff.preparationData
-    ? { ...handoff.preparationData, operationalRoute: handoff.operationalRoute, routeCalibrationContext: handoff.routeCalibrationContext ?? undefined }
-    : { operationalRoute: handoff.operationalRoute, routeCalibrationContext: handoff.routeCalibrationContext ?? undefined };
-  const prepared = sanitizePreActionForm(applyPreparationDataToForm(form, preparationData));
-  const departureCoordinate = handoff.operationalRoute.zones.departure.coordinate;
-  if (!prepared.latitude.trim() && !prepared.longitude.trim() && departureCoordinate) {
-    prepared.latitude = String(departureCoordinate[0]);
-    prepared.longitude = String(departureCoordinate[1]);
-  }
-  if (prepared.routeTopology === "point_to_point" && !prepared.arrivalCoordinates) {
-    const arrivalCoordinate = handoff.operationalRoute.zones.arrival.coordinate;
-    if (arrivalCoordinate) {
-      prepared.arrivalCoordinates = {
-        latitude: arrivalCoordinate[0],
-        longitude: arrivalCoordinate[1],
-      };
-    }
-  }
-  if (handoff.preparationData?.volunteersExpected !== undefined && !handoff.preparationData.volunteerParticipation) {
-    prepared.childrenCount = "";
-    prepared.adultCount = "";
-    prepared.retiredCount = "";
-  }
-  return prepared;
-}
-
 export function useBeforeActionHydration({
   resolvedDefaultActorName,
   initialActionId,
@@ -319,19 +263,52 @@ export function useBeforeActionHydration({
   preparationContext?: ActionPreparationContext;
 } & BeforeActionRecordSetters) {
   const [isHydratingAction, setIsHydratingAction] = useState(Boolean(initialActionId));
+  const initialFormRef = useRef(form);
+  const currentFormRef = useRef(form);
+  const onFormChangeRef = useRef(onFormChange);
+  const preparationContextRef = useRef(preparationContext);
+  const resolvedDefaultActorNameRef = useRef(resolvedDefaultActorName);
+  const actionIdRef = useRef(initialActionId);
+  useEffect(() => {
+    if (actionIdRef.current !== initialActionId) {
+      actionIdRef.current = initialActionId;
+      initialFormRef.current = form;
+    }
+    currentFormRef.current = form;
+    onFormChangeRef.current = onFormChange;
+    preparationContextRef.current = preparationContext;
+    resolvedDefaultActorNameRef.current = resolvedDefaultActorName;
+  }, [form, initialActionId, onFormChange, preparationContext, resolvedDefaultActorName]);
 
   useEffect(() => {
-    if (!initialActionId) return;
+    if (!initialActionId) {
+      return;
+    }
     let active = true;
-    fetchActionById(initialActionId).then((action) => {
+    loadPreparationAction(initialActionId).then((action) => {
       if (!active) return;
-      applyFetchedBeforeAction({ action, resolvedDefaultActorName, initialRecordType, setForm, onFormChange, setCreatedId, setPublishedAction, setPublishedAt, setTerminalActionStatus, setSubmissionState, setIsHydratingAction, preparationContext });
+      applyFetchedBeforeAction({
+        action,
+        resolvedDefaultActorName: resolvedDefaultActorNameRef.current,
+        initialRecordType,
+        setForm,
+        onFormChange: onFormChangeRef.current,
+        setCreatedId,
+        setPublishedAction,
+        setPublishedAt,
+        setTerminalActionStatus,
+        setSubmissionState,
+        setIsHydratingAction,
+        preparationContext: preparationContextRef.current,
+        initialForm: initialFormRef.current,
+        currentForm: currentFormRef.current,
+      });
     }).catch((error: unknown) => {
       if (!active) return;
       setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible de reprendre cette pré-action pour le moment."); setSubmissionState("error"); setIsHydratingAction(false);
     });
     return () => { active = false; };
-  }, [initialActionId, initialRecordType, onFormChange, preparationContext, resolvedDefaultActorName, setCreatedId, setErrorMessage, setForm, setPublishedAction, setPublishedAt, setSubmissionState, setTerminalActionStatus]);
+  }, [initialActionId, initialRecordType, setCreatedId, setErrorMessage, setForm, setPublishedAction, setPublishedAt, setSubmissionState, setTerminalActionStatus]);
 
   usePlannerActionHandoffHydration({ initialActionId, form, setForm, onFormChange, preparationContext });
 

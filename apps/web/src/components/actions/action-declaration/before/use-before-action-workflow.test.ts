@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ActionEditorRecord } from "@/lib/actions/http";
-import { applyPreparationContextToForm, buildBeforeActionFormFromAction, buildBeforeActionInitialForm } from "./use-before-action-workflow";
+import { applyPreparationContextToForm, buildBeforeActionFormFromAction, buildBeforeActionInitialForm, mergeBeforeActionHydrationWithLocalChanges } from "./use-before-action-workflow";
 import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 
 describe("before-action resume hydration", () => {
@@ -75,6 +75,18 @@ describe("before-action resume hydration", () => {
     expect(prepared.recommendedMaterials).toBe("Eau");
     expect(prepared.meetingTime).toBe("");
     expect(prepared.durationMinutes).toBe("");
+  });
+
+  it("preserves local edits when a late server hydration resolves", () => {
+    const initialForm = buildBeforeActionInitialForm(["Maxence"], "Maxence", "action");
+    const currentForm = { ...initialForm, actionTitle: "Collecte locale", materialsProvided: "Gants à apporter" };
+    const serverForm = { ...initialForm, actionTitle: "Titre enregistré", actionDate: "2026-10-11", materialsProvided: "Gants fournis" };
+
+    const merged = mergeBeforeActionHydrationWithLocalChanges(initialForm, currentForm, serverForm);
+
+    expect(merged.actionTitle).toBe("Collecte locale");
+    expect(merged.materialsProvided).toBe("Gants à apporter");
+    expect(merged.actionDate).toBe("2026-10-11");
   });
 
   it("rehydrates organizers and participants from the authorized action payload", () => {
