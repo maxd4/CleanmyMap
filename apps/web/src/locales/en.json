@@ -53,7 +53,7 @@
     "cards": {
       "waste": {
         "title": "Waste kg: retained value",
-        "desc": "The terrain KPI keeps the declared value when present. Otherwise it uses the cigarette-butt breakdown, then a butt-to-kg fallback. Actions without a metric remain at zero.",
+        "desc": "The terrain KPI keeps the declared value when present. Otherwise it uses the cigarette-butt breakdown, then a butt-to-kg fallback. Actions without a metric remain unmeasured.",
         "source": "SOURCE: ActionDataContract and runtime calculation"
       },
       "butts": {
@@ -67,12 +67,12 @@
         "source": "SOURCE: terrain declaration (ActionDataContract)"
       },
       "water": {
-        "title": "Water preserved",
+        "title": "Potentially preserved water — proxy",
         "desc": "An order-of-magnitude proxy based on removed cigarette butts. It is not a direct measurement of water quality.",
         "source": "SOURCE: {src}"
       },
       "co2": {
-        "title": "Emissions avoided",
+        "title": "Potentially avoided CO₂e — proxy",
         "desc": "A proxy based on retained terrain waste mass. It does not replace a full carbon assessment.",
         "source": "SOURCE: {src}"
       },

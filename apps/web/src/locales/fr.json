@@ -53,7 +53,7 @@
     "cards": {
       "waste": {
         "title": "Déchets kg : valeur retenue",
-        "desc": "Le KPI terrain conserve la valeur déclarée quand elle existe. À défaut, il retient le détail mégots, puis une conversion des mégots en kg. Les actions sans métrique restent à zéro.",
+        "desc": "Le KPI terrain conserve la valeur déclarée quand elle existe. À défaut, il retient le détail mégots, puis une conversion des mégots en kg. Les actions sans métrique restent non mesurées.",
         "source": "SOURCE: contrat ActionDataContract et calcul runtime"
       },
       "butts": {
@@ -67,12 +67,12 @@
         "source": "SOURCE: déclaration terrain (ActionDataContract)"
       },
       "water": {
-        "title": "Eau préservée",
+        "title": "Eau potentiellement préservée — proxy",
         "desc": "Proxy d'ordre de grandeur calculé à partir des mégots retirés. Ce n'est pas une mesure directe de la qualité de l'eau.",
         "source": "SOURCE: {src}"
       },
       "co2": {
-        "title": "Émissions évitées",
+        "title": "CO₂e potentiellement évité — proxy",
         "desc": "Proxy calculé à partir de la masse terrain retenue. Il ne remplace pas un bilan carbone complet.",
         "source": "SOURCE: {src}"
       },

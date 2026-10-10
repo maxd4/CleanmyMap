@@ -198,7 +198,7 @@ export function buildActionImpactMethodology(): ActionImpactMethodology {
       co2e: `co2e_kg = wasteKg * ${factors.co2KgPerWasteKg}`,
       water: `eau_L = butts * ${factors.waterLitersPerCigaretteButt}`,
       euro: `economie_dechets = totalWasteKg * ${STREET_CLEANING_EUROS_PER_WASTE_KG}; heures_action = somme(durationMinutes) / 60; economie_temps = heures_action * ${VOLUNTEER_ACTION_EUROS_PER_HOUR}; economie_min = min(economie_dechets, economie_temps); economie_max = max(economie_dechets, economie_temps)`,
-      surface: `surface_m2 = wasteKg * ${factors.surfaceM2PerWasteKg} + volunteerMinutes * ${factors.surfaceM2PerVolunteerMinute}`,
+      surface: `surface_m2 = wasteKg * ${factors.surfaceM2PerWasteKg} + volunteerUnits * durationMinutes * ${factors.surfaceM2PerVolunteerMinute}`,
     },
   };
 }

@@ -259,5 +259,6 @@ describe("canonical action impact calculation", () => {
     expect(methodology.formulas.surface).toContain(
       String(IMPACT_PROXY_CONFIG.factors.surfaceM2PerWasteKg),
     );
+    expect(methodology.formulas.surface).toContain("volunteerUnits * durationMinutes");
   });
 });

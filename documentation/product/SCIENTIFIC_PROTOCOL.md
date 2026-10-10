@@ -42,29 +42,96 @@ flowchart LR
 
 ## Indicateurs retenus
 
-### Eau preservee
+### Convention de lecture des proxys terrain
 
-Hypothese prudente : un megot peut polluer entre 500 et 1000 litres d'eau.
+Les valeurs de terrain (masse de déchets, nombre de mégots, unités de
+bénévoles et durée) sont des observations ou des déclarations seulement
+lorsqu'elles sont effectivement renseignées et conservées. Une valeur absente
+reste inconnue (`NA`) : elle ne devient pas `0` par conversion numérique. Un
+zéro explicite reste en revanche une mesure ou une déclaration nulle.
 
-Formule de travail :
+Les résultats ci-dessous sont des valeurs dérivées à partir de ces données et
+de facteurs de configuration. Ils sont qualifiés de `PROXY` : ils donnent un
+ordre de grandeur reproductible et une équivalence pédagogique, mais ne
+constituent pas une mesure instrumentale de l'eau, des émissions évitées ou de
+la surface effectivement nettoyée.
 
-`Eau_preservee (L) = Nombre_megots x 500`
+### Eau potentiellement préservée (proxy)
 
-### CO2 evite
+Observation : nombre de mégots retirés, séparé des mesures de masse et de
+volume. Le runtime ne mesure pas directement la qualité de l'eau ni un volume
+traité. Le facteur `500 L/mégot` est une hypothèse de risque hydrique et sa
+validation empirique comme effet causal propre à chaque action n'est pas
+établie dans le dépôt.
 
-L'effet est estime a partir du poids des dechets collectes et d'un coefficient de matiere.
+Formule runtime :
 
-Formule de travail :
+`eau_L = nombre_megots x facteur_eau_L_par_megot`
 
-`CO2_evite (kg) = Poids_dechets (kg) x Coefficient_matiere`
+Le facteur par défaut est `500 L/mégot`. Les conversions en piscines
+(`2 500 000 L`) ou en années de consommation (`55 000 L/an/personne`) sont des
+équivalences pédagogiques et ne signifient pas qu'un volume équivalent d'eau a
+été dépollué ou économisé.
 
-### Surface nettoyee
+### CO2e potentiellement évité (proxy)
 
-La surface est une proxy utile quand le poids seul ne raconte pas toute l'action.
+Observation : masse de déchets retenue en kilogrammes. Le CO2e n'est pas
+mesuré directement sur le terrain. Le facteur `1,2 kgCO2e/kg` est un proxy
+moyen de mix de déchets ; sa validation empirique comme quantité effectivement
+évitée par chaque collecte n'est pas établie dans le dépôt.
 
-Formule de travail :
+Formule runtime :
 
-`Surface (m2) = (Poids (kg) x 15) + (Temps (min) x 2)`
+`CO2e_kg = masse_dechets_kg x facteur_CO2e_kg_par_kg`
+
+Les kilomètres voiture et parts de trajet calculés à partir du CO2e sont des
+équivalences pédagogiques. Ils ne constituent ni un bilan carbone complet ni
+une preuve qu'une émission a réellement été évitée.
+
+### Surface opérationnelle couverte (proxy)
+
+Observations : masse de déchets en kilogrammes, unités de bénévoles et durée
+en minutes. Si une donnée requise est inconnue, le proxy de surface est
+indisponible. La surface obtenue est une approximation opérationnelle, pas une
+mesure géométrique de la zone effectivement nettoyée. Les coefficients sont
+configurables et leur validation empirique générale n'est pas établie dans le
+dépôt.
+
+Formule runtime canonique :
+
+`surface_m2 = masse_dechets_kg x facteur_surface_m2_par_kg + unités_bénévoles x durée_min x facteur_surface_m2_par_unité_bénévole_minute`
+
+Les facteurs par défaut sont `2,5 m2/kg` et `0,12 m2/(unité bénévole x
+minute)`. La formule historique `15 x masse_kg + 2 x durée_min` est conservée
+uniquement comme référence historique non applicable : elle n'est ni exécutée
+par le runtime actuel ni une formule à utiliser pour de nouveaux résultats.
+
+### Version et configuration des proxys
+
+La version méthodologique par défaut est `impact-proxy-2026.04-v1`, exposée par
+`impact-proxy-config.ts` et attachée aux résultats qui utilisent ces facteurs.
+Les valeurs par défaut sont :
+
+| Facteur | Valeur par défaut | Unité |
+| --- | ---: | --- |
+| Eau par mégot | 500 | L/mégot |
+| CO2e par masse | 1,2 | kgCO2e/kg |
+| Surface par masse | 2,5 | m2/kg |
+| Surface par unité bénévole et minute | 0,12 | m2/(unité bénévole x minute) |
+
+Les surcharges d'environnement reconnues sont `IMPACT_PROXY_VERSION`,
+`IMPACT_PROXY_WATER_LITERS_PER_CIGARETTE_BUTT`,
+`IMPACT_PROXY_CO2_KG_PER_WASTE_KG`,
+`IMPACT_PROXY_SURFACE_M2_PER_WASTE_KG` et
+`IMPACT_PROXY_SURFACE_M2_PER_VOLUNTEER_MINUTE`. Une valeur absente, non finie,
+négative ou supérieure à `1 000 000` reprend le défaut correspondant ; `0`
+reste une valeur de configuration valide. La version est utilisée telle
+quelle après trim, avec retour à la version par défaut si elle est vide.
+
+Ces surcharges modifient la méthode exécutée au démarrage du runtime et doivent
+donc être conservées avec la preuve et le contexte de génération. Elles ne
+transforment pas une hypothèse en observation et ne permettent pas à elles
+seules d'affirmer un impact physique réel.
 
 ### Score de pollution
 
