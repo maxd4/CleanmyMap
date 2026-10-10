@@ -1,21 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { authMock, resetApiRouteMocks, serverMock } from "@/__tests__/support/api-route-mocks";
 
-const authMock = vi.hoisted(() => vi.fn());
-const serverMock = vi.hoisted(() => vi.fn());
-
-vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
-vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: serverMock }));
-vi.mock("@/lib/rate-limit/server", () => ({
-  verifyRateLimit: vi.fn(async () => ({ allowed: true, retryAfter: 0 })),
-  createServerRateLimitResponse: vi.fn(() => null),
-}));
-vi.mock("@/lib/http/auth-responses", () => ({
-  unauthorizedJsonResponse: vi.fn(() => new Response("Unauthorized", { status: 401 })),
-}));
-vi.mock("@/lib/http/api-errors", () => ({
-  handleApiError: vi.fn((error: unknown) => new Response(error instanceof Error ? error.message : "error", { status: 500 })),
-  validationErrorResponse: vi.fn(() => new Response("Invalid", { status: 422 })),
-}));
 
 function makeSupabase() {
   const queries = {
@@ -46,9 +31,7 @@ function makeSupabase() {
 
 describe("/api/notifications/preferences", () => {
   beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
-    authMock.mockResolvedValue({ userId: "user-1" });
+    resetApiRouteMocks("user-1");
   });
 
   it("refuses unauthenticated reads without opening Supabase", async () => {

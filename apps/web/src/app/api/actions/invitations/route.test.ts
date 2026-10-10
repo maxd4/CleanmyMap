@@ -1,31 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { authMock, createServerRateLimitResponseMock, resetApiRouteMocks, serverMock, verifyRateLimitMock } from "@/__tests__/support/api-route-mocks";
 
-const authMock = vi.hoisted(() => vi.fn());
-const serverMock = vi.hoisted(() => vi.fn());
-const verifyRateLimitMock = vi.hoisted(() => vi.fn());
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
-
-vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
-vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: serverMock }));
-vi.mock("@/lib/rate-limit/server", () => ({
-  verifyRateLimit: verifyRateLimitMock,
-  createServerRateLimitResponse: createServerRateLimitResponseMock,
-}));
-vi.mock("@/lib/http/auth-responses", () => ({
-  unauthorizedJsonResponse: vi.fn(() => new Response("Unauthorized", { status: 401 })),
-}));
-vi.mock("@/lib/http/api-errors", () => ({
-  handleApiError: vi.fn((error: unknown) => new Response(error instanceof Error ? error.message : "error", { status: 500 })),
-  validationErrorResponse: vi.fn(() => new Response("Invalid", { status: 400 })),
-}));
 
 describe("/api/actions/invitations", () => {
   beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
-    authMock.mockResolvedValue({ userId: "recipient-1" });
-    verifyRateLimitMock.mockResolvedValue({ allowed: true, retryAfter: 0, source: "test" });
-    createServerRateLimitResponseMock.mockReturnValue(null);
+    resetApiRouteMocks("recipient-1");
   });
 
   it("refuses unauthenticated reads", async () => {

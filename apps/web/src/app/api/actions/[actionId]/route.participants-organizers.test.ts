@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { patchAction } from "@/__tests__/support/action-route-helpers";
 import { appendActionModerationAuditMock, getCurrentUserIdentityMock, loadActionByIdMock, loadActionOrganizerIdsForActionMock, loadManualRegistrationIdsForActionMock, recordRepollutionPredictionEvaluationForActionMock, syncActionManualParticipantsMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — participants et organisateurs", () => {
@@ -47,15 +48,7 @@ describe("PATCH /api/actions/:actionId — participants et organisateurs", () =>
       notes: null,
     });
 
-    const { PATCH } = await import("./route");
-
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({ actionPhase: "post_action_complete" }),
-      }),
-      { params: Promise.resolve({ actionId: "action-test-1" }) },
-    );
+    const response = await patchAction({ actionPhase: "post_action_complete" });
 
     expect(response.status).toBe(200);
     expect(updateMock).toHaveBeenCalledWith(

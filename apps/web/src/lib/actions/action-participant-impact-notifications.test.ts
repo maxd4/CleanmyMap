@@ -49,6 +49,15 @@ function createSupabaseMock() {
   return { from: vi.fn(() => query) };
 }
 
+async function emitImpact(previousValue = 5, previousRevision = "revision-1") {
+  const { emitActionParticipantImpactNotifications } = await import("./action-participant-impact-notifications");
+  return emitActionParticipantImpactNotifications({
+    supabase: createSupabaseMock() as never,
+    actionId: "action-1",
+    previousSnapshot: snapshot(new Map([["user-1", attribution(previousValue)]]), previousRevision),
+  });
+}
+
 describe("action participant impact notifications", () => {
   beforeEach(() => {
     loadSnapshotMock.mockReset();
@@ -140,13 +149,7 @@ describe("action participant impact notifications", () => {
       revision: null,
       attributions: new Map(),
     });
-    const { emitActionParticipantImpactNotifications } = await import("./action-participant-impact-notifications");
-
-    await expect(emitActionParticipantImpactNotifications({
-      supabase: createSupabaseMock() as never,
-      actionId: "action-1",
-      previousSnapshot: snapshot(new Map([["user-1", attribution(5)]])),
-    })).resolves.toBe(false);
+    await expect(emitImpact()).resolves.toBe(false);
     expect(insertNotificationMock).not.toHaveBeenCalled();
   });
 
@@ -157,13 +160,7 @@ describe("action participant impact notifications", () => {
       revision: null,
       attributions: new Map(),
     });
-    const { emitActionParticipantImpactNotifications } = await import("./action-participant-impact-notifications");
-
-    await expect(emitActionParticipantImpactNotifications({
-      supabase: createSupabaseMock() as never,
-      actionId: "action-1",
-      previousSnapshot: snapshot(new Map([["user-1", attribution(5)]])),
-    })).resolves.toBe(false);
+    await expect(emitImpact()).resolves.toBe(false);
     expect(insertNotificationMock).not.toHaveBeenCalled();
   });
 
@@ -171,13 +168,7 @@ describe("action participant impact notifications", () => {
     loadSnapshotMock.mockResolvedValue(
       snapshot(new Map([["user-1", attribution(6)]]), null),
     );
-    const { emitActionParticipantImpactNotifications } = await import("./action-participant-impact-notifications");
-
-    await expect(emitActionParticipantImpactNotifications({
-      supabase: createSupabaseMock() as never,
-      actionId: "action-1",
-      previousSnapshot: snapshot(new Map([["user-1", attribution(5)]])),
-    })).resolves.toBe(false);
+    await expect(emitImpact()).resolves.toBe(false);
     expect(insertNotificationMock).not.toHaveBeenCalled();
   });
 

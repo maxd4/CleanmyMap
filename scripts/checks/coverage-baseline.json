@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "a900d227041b1dcd39cf9a971b4fa31d8eb1e643",
-  "measuredAt": "2026-09-18",
+  "sourceCommit": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2",
+  "measuredAt": "2026-10-10",
   "tool": {
     "vitest": "4.1.11",
     "provider": "@vitest/coverage-v8@4.1.11"
@@ -37,49 +37,49 @@
   "scopeFingerprint": "f39357edc99c09ae1903eac2ca0cf8aacb64d390d82656b3f3f18135f37412b1",
   "metrics": {
     "statements": {
-      "total": 46819,
-      "covered": 26619,
-      "pct": 56.86
+      "total": 52116,
+      "covered": 33708,
+      "pct": 64.68
     },
     "branches": {
-      "total": 51450,
-      "covered": 24294,
-      "pct": 47.22
+      "total": 55229,
+      "covered": 29909,
+      "pct": 54.15
     },
     "functions": {
-      "total": 12231,
-      "covered": 6995,
-      "pct": 57.19
+      "total": 14314,
+      "covered": 9395,
+      "pct": 65.64
     },
     "lines": {
-      "total": 44604,
-      "covered": 25600,
-      "pct": 57.39
+      "total": 48601,
+      "covered": 32049,
+      "pct": 65.94
     }
   },
   "domains": {
     "auth-authz": {
-      "files": 26,
+      "files": 39,
       "metrics": {
         "statements": {
-          "total": 695,
-          "covered": 484,
-          "pct": 69.64
+          "total": 712,
+          "covered": 550,
+          "pct": 77.25
         },
         "branches": {
-          "total": 588,
-          "covered": 358,
-          "pct": 60.88
+          "total": 572,
+          "covered": 386,
+          "pct": 67.48
         },
         "functions": {
-          "total": 158,
-          "covered": 120,
-          "pct": 75.95
+          "total": 163,
+          "covered": 138,
+          "pct": 84.66
         },
         "lines": {
-          "total": 688,
-          "covered": 481,
-          "pct": 69.91
+          "total": 686,
+          "covered": 533,
+          "pct": 77.7
         }
       },
       "patterns": [
@@ -90,27 +90,27 @@
       ]
     },
     "actions": {
-      "files": 268,
+      "files": 417,
       "metrics": {
         "statements": {
-          "total": 10224,
-          "covered": 6348,
-          "pct": 62.09
+          "total": 12994,
+          "covered": 8981,
+          "pct": 69.12
         },
         "branches": {
-          "total": 12023,
-          "covered": 6838,
-          "pct": 56.87
+          "total": 14539,
+          "covered": 9005,
+          "pct": 61.94
         },
         "functions": {
-          "total": 2416,
-          "covered": 1474,
-          "pct": 61.01
+          "total": 3271,
+          "covered": 2250,
+          "pct": 68.79
         },
         "lines": {
-          "total": 9857,
-          "covered": 6173,
-          "pct": 62.63
+          "total": 12092,
+          "covered": 8557,
+          "pct": 70.77
         }
       },
       "patterns": [
@@ -120,27 +120,27 @@
       ]
     },
     "formalities": {
-      "files": 2,
+      "files": 3,
       "metrics": {
         "statements": {
-          "total": 178,
-          "covered": 75,
-          "pct": 42.13
+          "total": 197,
+          "covered": 119,
+          "pct": 60.41
         },
         "branches": {
-          "total": 156,
-          "covered": 45,
-          "pct": 28.85
+          "total": 167,
+          "covered": 98,
+          "pct": 58.68
         },
         "functions": {
-          "total": 44,
-          "covered": 15,
-          "pct": 34.09
+          "total": 57,
+          "covered": 26,
+          "pct": 45.61
         },
         "lines": {
-          "total": 168,
-          "covered": 74,
-          "pct": 44.05
+          "total": 175,
+          "covered": 110,
+          "pct": 62.86
         }
       },
       "patterns": [
@@ -149,27 +149,27 @@
       ]
     },
     "route-calculs": {
-      "files": 49,
+      "files": 69,
       "metrics": {
         "statements": {
-          "total": 2212,
-          "covered": 1900,
-          "pct": 85.9
+          "total": 2396,
+          "covered": 2083,
+          "pct": 86.94
         },
         "branches": {
-          "total": 2271,
-          "covered": 1798,
-          "pct": 79.17
+          "total": 2439,
+          "covered": 1949,
+          "pct": 79.91
         },
         "functions": {
-          "total": 646,
-          "covered": 580,
-          "pct": 89.78
+          "total": 727,
+          "covered": 663,
+          "pct": 91.2
         },
         "lines": {
-          "total": 1965,
-          "covered": 1731,
-          "pct": 88.09
+          "total": 2127,
+          "covered": 1897,
+          "pct": 89.19
         }
       },
       "patterns": [
@@ -180,27 +180,27 @@
       ]
     },
     "persistence": {
-      "files": 148,
+      "files": 196,
       "metrics": {
         "statements": {
-          "total": 6538,
-          "covered": 4806,
-          "pct": 73.51
+          "total": 7567,
+          "covered": 6124,
+          "pct": 80.93
         },
         "branches": {
-          "total": 5110,
-          "covered": 3205,
-          "pct": 62.72
+          "total": 5538,
+          "covered": 3881,
+          "pct": 70.08
         },
         "functions": {
-          "total": 1038,
-          "covered": 834,
-          "pct": 80.35
+          "total": 1367,
+          "covered": 1211,
+          "pct": 88.59
         },
         "lines": {
-          "total": 6275,
-          "covered": 4642,
-          "pct": 73.98
+          "total": 7034,
+          "covered": 5777,
+          "pct": 82.13
         }
       },
       "patterns": [

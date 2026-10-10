@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { patchAction } from "@/__tests__/support/action-route-helpers";
 import { appendActionModerationAuditMock, emitActionUpdateNotificationsMock, extractActionMetadataFromNotesMock, getCurrentUserIdentityMock, loadActionByIdMock, requireAuthenticatedAccessMock, resolveActionDepartmentForPersistenceMock, syncActionOrganizersMock, updateMock, resetPatchRouteMocks } from "./route.test.harness";
 
 describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
@@ -7,15 +8,7 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   });
 
   it("keeps a pre-action pending until the harvest is completed", async () => {
-    const { PATCH } = await import("./route");
-
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({ actionPhase: "pre_action" }),
-      }),
-      { params: Promise.resolve({ actionId: "action-test-1" }) },
-    );
+    const response = await patchAction({ actionPhase: "pre_action" });
 
     expect(response.status).toBe(200);
     expect(updateMock).toHaveBeenCalledWith(
@@ -114,17 +107,7 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
   });
 
   it("allows retrospective finalization while administrative requirements are pending", async () => {
-    const { PATCH } = await import("./route");
-
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({
-          actionPhase: "post_action_complete",
-        }),
-      }),
-      { params: Promise.resolve({ actionId: "action-test-1" }) },
-    );
+    const response = await patchAction({ actionPhase: "post_action_complete" });
 
     expect(response.status).toBe(200);
     expect(updateMock).toHaveBeenCalledWith(
@@ -182,15 +165,7 @@ describe("PATCH /api/actions/:actionId — lecture et édition normale", () => {
       created_by_clerk_id: "user-test-1",
       notes: null,
     });
-    const { PATCH } = await import("./route");
-
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({ actionPhase: "post_action_complete" }),
-      }),
-      { params: Promise.resolve({ actionId: "action-test-1" }) },
-    );
+    const response = await patchAction({ actionPhase: "post_action_complete" });
 
     expect(response.status).toBe(200);
     expect(updateMock).toHaveBeenCalledWith(
