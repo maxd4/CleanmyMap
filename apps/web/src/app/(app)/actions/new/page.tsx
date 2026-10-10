@@ -49,6 +49,7 @@ export default async function NewActionPage({
       initialSection={context.initialSection}
       initialSubsection={context.initialSubsection}
       initialTab={context.initialTab}
+      initialSpace={context.initialSpace}
       tabSearchParams={context.params}
       localDevAuth={context.localDevAuth}
       sectionsEnabled={context.sectionsEnabled}

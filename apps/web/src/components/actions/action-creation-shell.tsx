@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, ClipboardList, CloudSun, FileWarning, Map, Navigation, Users } from "lucide-react";
 import { ActionBeforeDeclarationForm } from "./action-declaration/before/form";
 import { ActionDeclarationForm } from "./action-declaration/form";
+import { ActionDayView } from "./action-day-view";
 import { ActionCreationLegalPanel } from "./action-creation-legal-panel";
 import { RouteSection } from "@/components/sections/rubriques/route";
 import { WeatherSection } from "@/components/sections/rubriques/weather-section";
@@ -14,7 +15,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EffectiveAuthStateProvider } from "@/lib/auth/use-effective-auth-state";
 import { INACTIVE_LOCAL_DEV_AUTH, type LocalDevAuthState } from "@/lib/auth/effective-auth-contract";
 import { cn } from "@/lib/utils";
-import { buildActionCreationSectionHref, buildActionCreationTabHref, buildActionWorkflowStepHref, type ActionCreationPanelId, type ActionCreationSectionId, type ActionCreationSubsectionId, type ActionCreationTab } from "@/lib/actions/action-creation-routes";
+import { buildActionCreationSectionHref, buildActionCreationSpaceHref, buildActionCreationTabHref, buildActionWorkflowStepHref, type ActionCreationPanelId, type ActionCreationSectionId, type ActionCreationSpace, type ActionCreationSubsectionId, type ActionCreationTab } from "@/lib/actions/action-creation-routes";
 import { ACTION_CREATION_SECTIONS, ACTION_CREATION_SECTION_LABELS, ACTION_CREATION_SECTION_STATUS_LABELS, createActionCreationSectionState, loadActionCreationSectionState, saveActionCreationSectionState, setActionCreationSectionStatus, type ActionCreationSectionState } from "@/lib/actions/action-creation-sections";
 import { ACTION_WORKFLOW_STEPS, ACTION_WORKFLOW_STEP_LABELS, ACTION_WORKFLOW_STATUS_LABELS, createActionWorkflowState, loadActionWorkflowState, markActionWorkflowStep, saveActionWorkflowState, setActionWorkflowStepStatus, type ActionWorkflowState, type ActionWorkflowStepId } from "@/lib/actions/action-workflow";
 import { updateAction } from "@/lib/actions/http";
@@ -36,6 +37,7 @@ type ActionCreationShellProps = Omit<ComponentProps<typeof ActionBeforeDeclarati
   initialSection?: ActionCreationSectionId;
   initialSubsection?: ActionCreationSubsectionId;
   initialTab?: ActionCreationTab;
+  initialSpace?: ActionCreationSpace;
   tabSearchParams?: Record<string, string | string[] | undefined>;
   localDevAuth?: LocalDevAuthState;
   sectionsEnabled?: boolean;
@@ -49,6 +51,24 @@ const PANEL_TO_STEP: Record<ActionCreationPanelId, ActionWorkflowStepId> = {
 };
 
 type ActionCreationSectionFormProps = Omit<ComponentProps<typeof ActionBeforeDeclarationForm>, "onPassToComplete" | "onFormChange" | "onActionPersisted">;
+
+function ActionLifecycleNavigation({
+  actionId,
+  activeSpace,
+  searchParams,
+  fr,
+}: {
+  actionId: string | null;
+  activeSpace: ActionCreationSpace;
+  searchParams?: Record<string, string | string[] | undefined>;
+  fr: boolean;
+}) {
+  if (!actionId) {
+    return <JoinActionTabs activeTab="before" ariaLabel={fr ? "Onglets du parcours d’action" : "Action flow tabs"} idPrefix="action-creation-tab" tabs={[{ id: "before", label: fr ? "Organiser" : "Organize", panelId: "action-creation-tabpanel-before" }, { id: "after", label: fr ? "Déclarer une action réalisée" : "Report a completed action", panelId: "action-creation-tabpanel-after" }]} buildHref={(tab) => buildActionCreationTabHref(tab as ActionCreationTab, searchParams)} />;
+  }
+
+  return <JoinActionTabs activeTab={activeSpace} ariaLabel={fr ? "Espaces de l’action" : "Action spaces"} idPrefix="action-creation-space" tabs={[{ id: "prepare", label: fr ? "Préparer" : "Prepare", panelId: "action-creation-panel-prepare" }, { id: "day", label: fr ? "Jour J" : "Action day", panelId: "action-creation-panel-day" }, { id: "bilan", label: fr ? "Bilan" : "Review", panelId: "action-creation-panel-bilan" }]} buildHref={(space) => buildActionCreationSpaceHref(space as ActionCreationSpace, { ...(searchParams ?? {}), actionId })} />;
+}
 
 function ActionCreationSectionNavigation({
   state,
@@ -216,6 +236,7 @@ function ActionCreationSectionsView({
   content,
   formSnapshot,
   currentActionId,
+  activeSpace,
   transitionError,
   actionCreationSearchParams,
   onSelect,
@@ -227,6 +248,7 @@ function ActionCreationSectionsView({
   content: ReactNode;
   formSnapshot: Partial<FormState>;
   currentActionId: string | null;
+  activeSpace: ActionCreationSpace;
   transitionError: string | null;
   actionCreationSearchParams?: Record<string, string | string[] | undefined>;
   onSelect: (section: ActionCreationSectionId) => void;
@@ -235,7 +257,7 @@ function ActionCreationSectionsView({
 }) {
   const activeSection = state.activeSection;
   const index = ACTION_CREATION_SECTIONS.indexOf(activeSection);
-  return <div data-testid="action-creation-shell" data-workflow-section={activeSection} className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="pointer-events-none absolute inset-0 exhaustive-only"><div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-emerald-200/45 blur-[110px]" /><div className="absolute right-0 top-8 h-80 w-80 rounded-full bg-emerald-100/50 blur-[120px]" /></div><div className="cmm-page-width relative space-y-5"><CmmCard tone="emerald" variant="glass" size="sm"><PageHeader tone="emerald" title={fr ? "Organiser une action" : "Organize an action"} subtitle={fr ? "Préparez la même action, section par section, puis vérifiez-la avant publication." : "Prepare the same action section by section, then review it before publishing."} className="!gap-2" /></CmmCard><JoinActionTabs activeTab="before" ariaLabel={fr ? "Onglets du parcours d’action" : "Action flow tabs"} idPrefix="action-creation-tab" tabs={[{ id: "before", label: fr ? "Organiser" : "Organize", panelId: "action-creation-tabpanel-before" }, { id: "after", label: fr ? "Déclarer une action réalisée" : "Report a completed action", panelId: "action-creation-tabpanel-after" }]} buildHref={(tab) => buildActionCreationTabHref(tab as ActionCreationTab, actionCreationSearchParams)} /><ActionCreationSectionNavigation state={state} fr={fr} onSelect={onSelect} />{transitionError ? <p role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{transitionError}</p> : null}<div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start"><main aria-labelledby={`action-creation-section-${activeSection}`} className="min-w-0 space-y-4"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700" aria-hidden="true">{activeSection === "terrain" ? <Map size={18} /> : activeSection === "equipe" ? <Users size={18} /> : activeSection === "verification" ? <CheckCircle2 size={18} /> : <ClipboardList size={18} />}</span><div><h2 id={`action-creation-section-${activeSection}`} className="text-xl font-black text-emerald-950">{ACTION_CREATION_SECTION_LABELS[activeSection][fr ? "fr" : "en"]}</h2><p className="cmm-text-body cmm-text-primary mt-1">{ACTION_CREATION_SECTION_LABELS[activeSection].description[fr ? "fr" : "en"]}</p></div></div>{content}<div className="flex flex-wrap justify-between gap-3 rounded-2xl border border-emerald-100 bg-white/85 p-3"><CmmButton type="button" tone="tertiary" variant="pill" size="sm" disabled={index === 0} onClick={onPrevious}><ArrowLeft size={14} />{fr ? "Section précédente" : "Previous section"}</CmmButton>{index < ACTION_CREATION_SECTIONS.length - 1 ? <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={onNext}>{fr ? "Section suivante" : "Next section"}<ArrowRight size={14} /></CmmButton> : null}</div></main><ActionCreationContextPreview fr={fr} actionId={currentActionId} form={formSnapshot} activeSection={activeSection} /></div></div></div>;
+  return <div data-testid="action-creation-shell" data-workflow-section={activeSection} className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="pointer-events-none absolute inset-0 exhaustive-only"><div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-emerald-200/45 blur-[110px]" /><div className="absolute right-0 top-8 h-80 w-80 rounded-full bg-emerald-100/50 blur-[120px]" /></div><div className="cmm-page-width relative space-y-5"><CmmCard tone="emerald" variant="glass" size="sm"><PageHeader tone="emerald" title={fr ? "Organiser une action" : "Organize an action"} subtitle={fr ? "Préparez la même action, section par section, puis vérifiez-la avant publication." : "Prepare the same action section by section, then review it before publishing."} className="!gap-2" /></CmmCard><ActionLifecycleNavigation actionId={currentActionId} activeSpace={activeSpace} fr={fr} searchParams={actionCreationSearchParams} /><ActionCreationSectionNavigation state={state} fr={fr} onSelect={onSelect} />{transitionError ? <p role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{transitionError}</p> : null}<div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start"><main aria-labelledby={`action-creation-section-${activeSection}`} className="min-w-0 space-y-4"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700" aria-hidden="true">{activeSection === "terrain" ? <Map size={18} /> : activeSection === "equipe" ? <Users size={18} /> : activeSection === "verification" ? <CheckCircle2 size={18} /> : <ClipboardList size={18} />}</span><div><h2 id={`action-creation-section-${activeSection}`} className="text-xl font-black text-emerald-950">{ACTION_CREATION_SECTION_LABELS[activeSection][fr ? "fr" : "en"]}</h2><p className="cmm-text-body cmm-text-primary mt-1">{ACTION_CREATION_SECTION_LABELS[activeSection].description[fr ? "fr" : "en"]}</p></div></div>{content}<div className="flex flex-wrap justify-between gap-3 rounded-2xl border border-emerald-100 bg-white/85 p-3"><CmmButton type="button" tone="tertiary" variant="pill" size="sm" disabled={index === 0} onClick={onPrevious}><ArrowLeft size={14} />{fr ? "Section précédente" : "Previous section"}</CmmButton>{index < ACTION_CREATION_SECTIONS.length - 1 ? <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={onNext}>{fr ? "Section suivante" : "Next section"}<ArrowRight size={14} /></CmmButton> : null}</div></main><ActionCreationContextPreview fr={fr} actionId={currentActionId} form={formSnapshot} activeSection={activeSection} /></div></div></div>;
 }
 
 function useActionCreationSectionState(initialActionId: string | null, initialSection: ActionCreationSectionId): [ActionCreationSectionState, Dispatch<SetStateAction<ActionCreationSectionState>>] {
@@ -330,17 +352,35 @@ function AfterActionCreationView({
   formProps,
   actionId,
   searchParams,
+  fr,
 }: {
   formProps: Omit<ComponentProps<typeof ActionBeforeDeclarationForm>, "onPassToComplete" | "onFormChange" | "onActionPersisted">;
   actionId: string | null;
   searchParams?: Record<string, string | string[] | undefined>;
+  fr: boolean;
 }) {
-  return <div data-testid="action-creation-shell" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950">Formulaire</h1></CmmCard><JoinActionTabs activeTab="after" ariaLabel="Onglets du parcours d'action" idPrefix="action-creation-tab" tabs={[{ id: "before", label: "Organiser une action future", panelId: "action-creation-tabpanel-before" }, { id: "after", label: "Déclarer une action déjà réalisée", panelId: "action-creation-tabpanel-after" }]} buildHref={(tab) => buildActionCreationTabHref(tab as ActionCreationTab, searchParams)} /><div role="tabpanel" aria-labelledby="action-creation-tab-after"><ActionDeclarationForm {...formProps} initialActionId={actionId} /></div></div></div>;
+  return <div data-testid="action-creation-shell" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950">Bilan d’une action réalisée</h1></CmmCard><ActionLifecycleNavigation actionId={actionId} activeSpace="bilan" fr={fr} searchParams={searchParams} /><div role="tabpanel" aria-labelledby={actionId ? "action-creation-space-bilan" : "action-creation-tab-after"}><ActionDeclarationForm {...formProps} initialActionId={actionId} /></div></div></div>;
+}
+
+function ActionBilanView({
+  formProps,
+  actionId,
+  searchParams,
+  fr,
+}: {
+  formProps: ActionCreationSectionFormProps;
+  actionId: string;
+  searchParams?: Record<string, string | string[] | undefined>;
+  fr: boolean;
+}) {
+  return <div data-testid="action-bilan-view" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-2"><p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Bilan</p><h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950">Finaliser la même action</h1><p className="cmm-text-body cmm-text-primary">Les photos, mesures, présences confirmées et règles de validation restent ceux du formulaire final existant.</p></div></CmmCard><ActionLifecycleNavigation actionId={actionId} activeSpace="bilan" fr={fr} searchParams={searchParams} /><div role="tabpanel" aria-labelledby="action-creation-space-bilan"><ActionDeclarationForm {...formProps} initialActionId={actionId} /></div></div></div>;
 }
 
 function GuidedActionWorkflowView({
   state,
   fr,
+  currentActionId,
+  activeSpace,
   stepContent,
   transitionError,
   actionCreationSearchParams,
@@ -349,6 +389,8 @@ function GuidedActionWorkflowView({
 }: {
   state: ActionWorkflowState;
   fr: boolean;
+  currentActionId: string | null;
+  activeSpace: ActionCreationSpace;
   stepContent: ReactNode;
   transitionError: string | null;
   actionCreationSearchParams?: Record<string, string | string[] | undefined>;
@@ -358,7 +400,7 @@ function GuidedActionWorkflowView({
   const activeStep = state.activeStep;
   const stepIndex = ACTION_WORKFLOW_STEPS.indexOf(activeStep);
   const icon = activeStep === "itineraire" ? <Navigation size={18} /> : activeStep === "paris" ? <FileWarning size={18} /> : activeStep === "preparation" ? <CloudSun size={18} /> : <ClipboardList size={18} />;
-  return <div data-testid="action-creation-shell" data-workflow-step={activeStep} className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="pointer-events-none absolute inset-0"><div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-emerald-200/45 blur-[110px]" /><div className="absolute right-0 top-8 h-80 w-80 rounded-full bg-emerald-100/50 blur-[120px]" /></div><div className="cmm-page-width relative space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-3"><p className="text-sm font-semibold text-emerald-700">{fr ? "Agir" : "Act"}</p><h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950">{fr ? "Organiser une action" : "Organize an action"}</h1><p className="cmm-text-body cmm-text-primary max-w-3xl">{fr ? "Suivez les étapes, quittez à tout moment et reprenez la même préparation jusqu’au préformulaire prêt à publier." : "Follow the steps, leave at any time, and resume the same preparation until the pre-form is ready to publish."}</p></div></CmmCard><JoinActionTabs activeTab="before" ariaLabel={fr ? "Onglets du parcours d'action" : "Action flow tabs"} idPrefix="action-creation-tab" tabs={[{ id: "before", label: fr ? "Organiser une action future" : "Organize a future action", panelId: "action-creation-tabpanel-before" }, { id: "after", label: fr ? "Déclarer une action déjà réalisée" : "Report a completed action", panelId: "action-creation-tabpanel-after" }]} buildHref={(tab) => buildActionCreationTabHref(tab as ActionCreationTab, actionCreationSearchParams)} /><WorkflowStepper state={state} onSelect={onSelect} fr={fr} />{transitionError ? <p role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{transitionError}</p> : null}<section aria-labelledby={`action-workflow-step-${activeStep}`} className="space-y-4" data-testid={`action-workflow-panel-${activeStep}`}><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">{icon}</span><h2 id={`action-workflow-step-${activeStep}`} className="text-xl font-black text-emerald-950">{ACTION_WORKFLOW_STEP_LABELS[activeStep][fr ? "fr" : "en"]}</h2></div>{stepContent}<div className="flex flex-wrap justify-between gap-3 rounded-2xl border border-emerald-100 bg-white/85 p-3"><CmmButton type="button" tone="tertiary" variant="pill" size="sm" disabled={stepIndex === 0} onClick={() => onSelect(ACTION_WORKFLOW_STEPS[stepIndex - 1])}><ArrowLeft size={14} />{fr ? "Étape précédente" : "Previous step"}</CmmButton>{stepIndex < ACTION_WORKFLOW_STEPS.length - 1 ? <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={onNext}>{fr ? "Étape suivante" : "Next step"}<ArrowRight size={14} /></CmmButton> : null}</div></section></div></div>;
+  return <div data-testid="action-creation-shell" data-workflow-step={activeStep} className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="pointer-events-none absolute inset-0"><div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-emerald-200/45 blur-[110px]" /><div className="absolute right-0 top-8 h-80 w-80 rounded-full bg-emerald-100/50 blur-[120px]" /></div><div className="cmm-page-width relative space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-3"><p className="text-sm font-semibold text-emerald-700">{fr ? "Agir" : "Act"}</p><h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950">{fr ? "Organiser une action" : "Organize an action"}</h1><p className="cmm-text-body cmm-text-primary max-w-3xl">{fr ? "Suivez les étapes, quittez à tout moment et reprenez la même préparation jusqu’au préformulaire prêt à publier." : "Follow the steps, leave at any time, and resume the same preparation until the pre-form is ready to publish."}</p></div></CmmCard>{currentActionId ? <ActionLifecycleNavigation actionId={currentActionId} activeSpace={activeSpace} fr={fr} searchParams={actionCreationSearchParams} /> : <JoinActionTabs activeTab="before" ariaLabel={fr ? "Onglets du parcours d'action" : "Action flow tabs"} idPrefix="action-creation-tab" tabs={[{ id: "before", label: fr ? "Organiser une action future" : "Organize a future action", panelId: "action-creation-tabpanel-before" }, { id: "after", label: fr ? "Déclarer une action déjà réalisée" : "Report a completed action", panelId: "action-creation-tabpanel-after" }]} buildHref={(tab) => buildActionCreationTabHref(tab as ActionCreationTab, actionCreationSearchParams)} />}<WorkflowStepper state={state} onSelect={onSelect} fr={fr} />{transitionError ? <p role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{transitionError}</p> : null}<section aria-labelledby={`action-workflow-step-${activeStep}`} className="space-y-4" data-testid={`action-workflow-panel-${activeStep}`}><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">{icon}</span><h2 id={`action-workflow-step-${activeStep}`} className="text-xl font-black text-emerald-950">{ACTION_WORKFLOW_STEP_LABELS[activeStep][fr ? "fr" : "en"]}</h2></div>{stepContent}<div className="flex flex-wrap justify-between gap-3 rounded-2xl border border-emerald-100 bg-white/85 p-3"><CmmButton type="button" tone="tertiary" variant="pill" size="sm" disabled={stepIndex === 0} onClick={() => onSelect(ACTION_WORKFLOW_STEPS[stepIndex - 1])}><ArrowLeft size={14} />{fr ? "Étape précédente" : "Previous step"}</CmmButton>{stepIndex < ACTION_WORKFLOW_STEPS.length - 1 ? <CmmButton type="button" tone="primary" variant="pill" size="sm" onClick={onNext}>{fr ? "Étape suivante" : "Next step"}<ArrowRight size={14} /></CmmButton> : null}</div></section></div></div>;
 }
 
 function useActionWorkflowState(
@@ -382,7 +424,7 @@ function useActionWorkflowState(
   return [workflow, setWorkflow];
 }
 
-export function ActionCreationShell({ initialPanel, initialSection = "essentiel", initialSubsection, initialTab = "before", tabSearchParams, localDevAuth = INACTIVE_LOCAL_DEV_AUTH, sectionsEnabled = true, ...formProps }: ActionCreationShellProps) {
+export function ActionCreationShell({ initialPanel, initialSection = "essentiel", initialSubsection, initialTab = "before", initialSpace = "prepare", tabSearchParams, localDevAuth = INACTIVE_LOCAL_DEV_AUTH, sectionsEnabled = true, ...formProps }: ActionCreationShellProps) {
   const router = useRouter();
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
@@ -421,7 +463,7 @@ export function ActionCreationShell({ initialPanel, initialSection = "essentiel"
   }, [setSectionState, setWorkflow]);
   const handlePassToComplete = useCallback(async (actionId: string) => {
     setTransitionError(null);
-    try { await updateAction(actionId, { actionPhase: "post_action_draft" }); router.replace(buildActionCreationTabHref("after", { ...(tabSearchParams ?? {}), actionId })); }
+    try { await updateAction(actionId, { actionPhase: "post_action_draft" }); router.replace(buildActionCreationSpaceHref("bilan", { ...(tabSearchParams ?? {}), actionId })); }
     catch (error: unknown) { setTransitionError(error instanceof Error && error.message ? error.message : "Impossible d’ouvrir le formulaire complet pour le moment."); }
   }, [router, tabSearchParams]);
 
@@ -438,9 +480,11 @@ export function ActionCreationShell({ initialPanel, initialSection = "essentiel"
   const stepIndex = ACTION_WORKFLOW_STEPS.indexOf(activeStep);
   const activeSectionIndex = ACTION_CREATION_SECTIONS.indexOf(sectionState.activeSection);
 
-  if (initialTab === "after") return <AfterActionCreationView formProps={formProps} actionId={currentActionId} searchParams={actionCreationSearchParams} />;
+  if (initialSpace === "day" && currentActionId) return <div data-testid="action-day-shell" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><PageHeader tone="emerald" title="Jour J" subtitle="Retrouvez le rendez-vous et le briefing de la même action." className="!gap-2" /></CmmCard><ActionLifecycleNavigation actionId={currentActionId} activeSpace="day" fr={fr} searchParams={actionCreationSearchParams} /><ActionDayView actionId={currentActionId} /></div></div>;
+  if (initialSpace === "bilan" && currentActionId) return <ActionBilanView formProps={formProps} actionId={currentActionId} searchParams={actionCreationSearchParams} fr={fr} />;
+  if (initialTab === "after") return <AfterActionCreationView formProps={formProps} actionId={currentActionId} searchParams={actionCreationSearchParams} fr={fr} />;
   if (newNavigationEnabled) {
-    return <ActionCreationSectionsView state={sectionState} fr={fr} formSnapshot={formSnapshot} currentActionId={currentActionId} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToSection} onPrevious={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex - 1])} onNext={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex + 1])} content={<ActionCreationSectionContent activeSection={sectionState.activeSection} currentActionId={currentActionId} initialSubsection={initialSubsection} initialPanel={initialPanel} formSnapshot={formSnapshot} draftContext={{ locationLabel: preparationContext.locationLabel, actionDate: preparationContext.actionDate, departureTime: preparationContext.departureTime, contextReady: preparationContextReady }} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} formalitiesReadiness={formalitiesReadiness} formProps={formProps} localDevAuth={localDevAuth} onActionPersisted={handleBeforeActionPersisted} onFormChange={handleSectionFormChange} onFormalitiesReadiness={handleFormalitiesReadiness} onPassToComplete={handlePassToComplete} onPreparationValidated={handlePreparationValidated} onPreparationSelection={handlePreparationSelection} onPreparationContextChange={handlePreparationContextChange} />} />;
+    return <ActionCreationSectionsView state={sectionState} fr={fr} activeSpace={initialSpace} formSnapshot={formSnapshot} currentActionId={currentActionId} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToSection} onPrevious={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex - 1])} onNext={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex + 1])} content={<ActionCreationSectionContent activeSection={sectionState.activeSection} currentActionId={currentActionId} initialSubsection={initialSubsection} initialPanel={initialPanel} formSnapshot={formSnapshot} draftContext={{ locationLabel: preparationContext.locationLabel, actionDate: preparationContext.actionDate, departureTime: preparationContext.departureTime, contextReady: preparationContextReady }} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} formalitiesReadiness={formalitiesReadiness} formProps={formProps} localDevAuth={localDevAuth} onActionPersisted={handleBeforeActionPersisted} onFormChange={handleSectionFormChange} onFormalitiesReadiness={handleFormalitiesReadiness} onPassToComplete={handlePassToComplete} onPreparationValidated={handlePreparationValidated} onPreparationSelection={handlePreparationSelection} onPreparationContextChange={handlePreparationContextChange} />} />;
   }
-  return <GuidedActionWorkflowView state={workflow} fr={fr} stepContent={<ActionWorkflowStepContent activeStep={activeStep} currentActionId={currentActionId} draftContext={{ locationLabel: preparationContext.locationLabel, actionDate: preparationContext.actionDate, departureTime: preparationContext.departureTime, contextReady: preparationContextReady }} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} formalitiesReadiness={formalitiesReadiness} formProps={formProps} localDevAuth={localDevAuth} onActionPersisted={handleBeforeActionPersisted} onFormChange={handleBeforeFormChange} onFormalitiesReadiness={handleFormalitiesReadiness} onPassToComplete={handlePassToComplete} onPreparationValidated={handlePreparationValidated} onPreparationSelection={handlePreparationSelection} onPreparationContextChange={handlePreparationContextChange} />} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToStep} onNext={() => { setWorkflow((current) => markActionWorkflowStep(current, activeStep)); navigateToStep(ACTION_WORKFLOW_STEPS[stepIndex + 1]); }} />;
+  return <GuidedActionWorkflowView state={workflow} fr={fr} currentActionId={currentActionId} activeSpace={initialSpace} stepContent={<ActionWorkflowStepContent activeStep={activeStep} currentActionId={currentActionId} draftContext={{ locationLabel: preparationContext.locationLabel, actionDate: preparationContext.actionDate, departureTime: preparationContext.departureTime, contextReady: preparationContextReady }} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} formalitiesReadiness={formalitiesReadiness} formProps={formProps} localDevAuth={localDevAuth} onActionPersisted={handleBeforeActionPersisted} onFormChange={handleBeforeFormChange} onFormalitiesReadiness={handleFormalitiesReadiness} onPassToComplete={handlePassToComplete} onPreparationValidated={handlePreparationValidated} onPreparationSelection={handlePreparationSelection} onPreparationContextChange={handlePreparationContextChange} />} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToStep} onNext={() => { setWorkflow((current) => markActionWorkflowStep(current, activeStep)); navigateToStep(ACTION_WORKFLOW_STEPS[stepIndex + 1]); }} />;
 }

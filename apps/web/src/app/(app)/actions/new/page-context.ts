@@ -2,10 +2,12 @@ import {
   normalizeActionCreationPanel,
   normalizeActionCreationSection,
   normalizeActionCreationSubsection,
+  normalizeActionCreationSpace,
   normalizeActionCreationTab,
   type ActionCreationPanelId,
   type ActionCreationSectionId,
   type ActionCreationSubsectionId,
+  type ActionCreationSpace,
   type ActionCreationTab,
 } from "@/lib/actions/action-creation-routes";
 import { resolveActionResumePhase } from "@/lib/actions/action-resume";
@@ -38,6 +40,7 @@ export type NewActionPageContext = {
   initialSection: ActionCreationSectionId;
   initialSubsection: ActionCreationSubsectionId | undefined;
   initialTab: ActionCreationTab;
+  initialSpace: ActionCreationSpace;
   localDevAuth: Awaited<ReturnType<typeof getLocalDevAuthState>>;
   sectionsEnabled: boolean;
   isAuthenticated: boolean;
@@ -69,6 +72,7 @@ export async function resolveNewActionPageContext(
       ? await resolveActionResumePhase({ actionId, userId, identity })
       : null;
   const tab = normalizeActionCreationTab(requestedTab, { actionId, from, actionPhase, panel });
+  const initialSpace = normalizeActionCreationSpace(params?.["space"], { actionId, tab });
   const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from, panel, section, tab });
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const actionCreationSectionsEnabled = isFeatureEnabled("actionCreationSections");
@@ -89,6 +93,7 @@ export async function resolveNewActionPageContext(
     initialSection: section,
     initialSubsection: subsection,
     initialTab: tab,
+    initialSpace,
     localDevAuth,
     sectionsEnabled: actionCreationSectionsEnabled,
     isAuthenticated,

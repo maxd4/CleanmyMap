@@ -74,7 +74,7 @@ describe("ActionCreationShell", () => {
       actionPhase: "post_action_draft",
     });
     expect(routerReplaceMock).toHaveBeenCalledWith(
-      "/actions/new?tab=after&actionId=action-42",
+      "/actions/new?space=bilan&actionId=action-42",
     );
   });
 
@@ -113,7 +113,8 @@ describe("ActionCreationShell", () => {
       } as ComponentProps<typeof ActionCreationShell>),
     );
 
-    expect(markup).toContain('data-testid="formalities-action-id">action-42</div>');
+    expect(markup).toContain('data-testid="pre-formulaire-engine"');
+    expect(beforeFormPropsMock).toHaveBeenCalledWith(expect.objectContaining({ activeSection: "verification", initialActionId: "action-42" }));
   });
 
   it("exposes the four new sections and opens the requested one", () => {
@@ -202,12 +203,13 @@ describe("ActionCreationShell", () => {
     );
 
     expect(markup).toContain('role="tablist"');
-    expect(markup).toContain('id="action-creation-tab-before"');
-    expect(markup).toContain('id="action-creation-tab-after"');
+    expect(markup).toContain('id="action-creation-space-prepare"');
+    expect(markup).toContain('id="action-creation-space-day"');
+    expect(markup).toContain('id="action-creation-space-bilan"');
     expect(markup).toContain('role="tabpanel"');
-    expect(markup).toContain('aria-labelledby="action-creation-tab-after"');
+    expect(markup).toContain('aria-labelledby="action-creation-space-bilan"');
     expect(markup).toContain(
-      "/actions/new?tab=before&amp;panel=meteo&amp;actionId=action-42&amp;tag=terrain&amp;tag=safety",
+      "/actions/new?space=prepare&amp;tab=before&amp;panel=meteo&amp;actionId=action-42&amp;tag=terrain&amp;tag=safety",
     );
     expect(markup).not.toContain('id="action-creation-panel-itineraire"');
     expect(markup).not.toContain('id="action-creation-panel-meteo"');

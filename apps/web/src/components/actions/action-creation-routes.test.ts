@@ -7,6 +7,8 @@ import {
   buildActionWorkflowStepHref,
   normalizeActionWorkflowStep,
   buildActionCreationSectionHref,
+  buildActionCreationSpaceHref,
+  normalizeActionCreationSpace,
   normalizeActionCreationSection,
   normalizeActionCreationSubsection,
 } from "@/lib/actions/action-creation-routes";
@@ -104,6 +106,15 @@ describe("action creation panel routes", () => {
       }),
     ).toBe(
       "/actions/new?tab=after&panel=meteo&actionId=action-42&from=planner&tag=terrain&tag=safety",
+    );
+  });
+
+  it("maps legacy tabs to contextual spaces without changing the persisted action identity", () => {
+    expect(normalizeActionCreationSpace(undefined, { tab: "before", actionId: "action-42" })).toBe("prepare");
+    expect(normalizeActionCreationSpace(undefined, { tab: "after", actionId: "action-42" })).toBe("bilan");
+    expect(normalizeActionCreationSpace("day", { tab: "before", actionId: "action-42" })).toBe("day");
+    expect(buildActionCreationSpaceHref("day", { actionId: "action-42", section: "terrain", tab: "before" })).toBe(
+      "/actions/new?space=day&actionId=action-42&section=terrain&tab=before",
     );
   });
 });

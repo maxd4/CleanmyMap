@@ -170,6 +170,16 @@ export function ActionCardActions({
         onRequestJoin={onRequestJoin}
         onRequestLeave={onRequestLeave}
       />
+      {authenticated && isPreAction && item.joined ? (
+        <CmmButton
+          href={`/actions/new?space=day&actionId=${encodeURIComponent(item.id)}`}
+          tone="secondary"
+          variant="pill"
+          size="sm"
+        >
+          {fr ? "Ouvrir Jour J" : "Open action day"}
+        </CmmButton>
+      ) : null}
       {onShareAction ? (
         <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>
           {fr ? "Partager dans la messagerie" : "Share in messaging"}

@@ -5,6 +5,7 @@ export type ActionCreationPanelId =
   | "formalites";
 
 export type ActionCreationTab = "before" | "after";
+export type ActionCreationSpace = "prepare" | "day" | "bilan";
 
 export type ActionCreationSectionId =
   | "essentiel"
@@ -25,6 +26,7 @@ export type ActionWorkflowStepId =
   | "preformulaire";
 
 const ACTION_CREATION_ROUTE = "/actions/new";
+export const ACTION_CREATION_SPACES: readonly ActionCreationSpace[] = ["prepare", "day", "bilan"];
 const ACTION_CREATION_SECTION_VALUES: readonly ActionCreationSectionId[] = ["essentiel", "terrain", "equipe", "verification"];
 const ACTION_CREATION_SUBSECTION_VALUES: readonly ActionCreationSubsectionId[] = ["route", "meteo", "formalites", "pre-formulaire"];
 const LEGACY_STEP_TO_SECTION: Record<string, ActionCreationSectionId> = {
@@ -118,6 +120,18 @@ export function normalizeActionCreationTab(
   return context.actionId?.trim() ? "after" : "before";
 }
 
+export function normalizeActionCreationSpace(
+  value: string | string[] | undefined,
+  context: { actionId?: string; tab?: ActionCreationTab } = {},
+): ActionCreationSpace {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  if (ACTION_CREATION_SPACES.includes(candidate as ActionCreationSpace)) {
+    return candidate as ActionCreationSpace;
+  }
+  if (context.tab === "after") return "bilan";
+  return context.actionId?.trim() ? "prepare" : "prepare";
+}
+
 export function buildActionCreationTabHref(
   tab: ActionCreationTab,
   searchParams: Record<string, string | string[] | undefined> = {},
@@ -133,6 +147,22 @@ export function buildActionCreationTabHref(
     }
   }
 
+  return `${ACTION_CREATION_ROUTE}?${params.toString()}`;
+}
+
+export function buildActionCreationSpaceHref(
+  space: ActionCreationSpace,
+  searchParams: Record<string, string | string[] | undefined> = {},
+): string {
+  const params = new URLSearchParams({ space });
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (key === "space" || value === undefined) continue;
+    if (Array.isArray(value)) {
+      value.forEach((item) => params.append(key, item));
+    } else {
+      params.append(key, value);
+    }
+  }
   return `${ACTION_CREATION_ROUTE}?${params.toString()}`;
 }
 

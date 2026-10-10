@@ -355,6 +355,15 @@ export const actionsAuthorizationContract = {
       evidence: ["auth", "list_pending_post_action_claims_for_reviewer"],
     },
   },
+  "actions/[actionId]/day": {
+    GET: {
+      expected: "Authenticated action organizer or confirmed registration recipient read of the operational briefing",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + canManageAction for organizers, otherwise public visibility plus confirmed action_registrations; projection contains no private notes and performs no attendance mutation",
+      evidence: ["requireAuthenticatedAccess", "canManageAction", "isPublicActionReferenceAvailable", "readActionRegistrationRecord"],
+      evidenceScope: "module",
+    },
+  },
   "actions/[actionId]/public": {
     GET: {
       expected: "Public-safe dynamic action reference projection; inaccessible actions return a neutral not-found response",

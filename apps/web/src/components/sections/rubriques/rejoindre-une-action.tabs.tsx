@@ -67,7 +67,7 @@ export function JoinActionTabs({
     <nav
       aria-label={ariaLabel ?? (fr ? "Onglets des actions" : "Action tabs")}
       role="tablist"
-      className="grid w-full grid-cols-2 gap-2 rounded-2xl border border-emerald-100 bg-white p-2 shadow-sm"
+      className={`grid w-full gap-2 rounded-2xl border border-emerald-100 bg-white p-2 shadow-sm ${tabs.length > 2 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2"}`}
     >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
