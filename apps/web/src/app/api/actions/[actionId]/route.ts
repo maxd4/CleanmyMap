@@ -31,9 +31,9 @@ import {
 } from "@/lib/actions/action-update-persistence";
 import {
   runActionUpdatePostProcessing,
-  syncUpdatedOrganizers,
   type AdminOverrideErrorStage,
 } from "@/lib/actions/action-update-post-processing";
+import { syncUpdatedOrganizers } from "@/lib/actions/participation/action-update-participation-sync";
 import {
   preparePatchMutation,
   shouldSyncOrganizersBeforeFinalization,

@@ -1,17 +1,9 @@
 import type { Metadata } from "next";
 import { ActionCreationShell } from "@/components/actions/action-creation-shell";
 import {
-  normalizeActionCreationSection,
-  normalizeActionCreationSubsection,
-  normalizeActionCreationPanel,
-  normalizeActionCreationTab,
-} from "@/lib/actions/action-creation-routes";
-import { getSafeAuthSession } from "@/lib/auth/safe-session";
-import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
-import { getLocalDevAuthState } from "@/lib/auth/local-dev-auth-state.server";
-import { getCurrentUserIdentity } from "@/lib/authz";
-import { isFeatureEnabled } from "@/lib/feature-flags";
-import { resolveActionResumePhase } from "@/lib/actions/action-resume";
+  resolveNewActionPageContext,
+  type NewActionPageSearchParams,
+} from "./page-context";
 
 export const metadata: Metadata = {
   title: "Créer une action",
@@ -38,79 +30,35 @@ export const metadata: Metadata = {
 };
 
 type NewActionPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+  searchParams?: Promise<NewActionPageSearchParams>;
 };
-
-function resolveSingleSearchParam(
-  value: string | string[] | undefined,
-): string | undefined {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-  return value;
-}
 
 export default async function NewActionPage({
   searchParams,
 }: NewActionPageProps) {
-  const params = searchParams ? await searchParams : undefined;
-  const fromEventId = resolveSingleSearchParam(params?.["fromEventId"]);
-  const from = resolveSingleSearchParam(params?.["from"]);
-  const actionId = resolveSingleSearchParam(params?.["actionId"]);
-  const panel = normalizeActionCreationPanel(params?.["panel"]);
-  const section = normalizeActionCreationSection(params?.["section"], { step: params?.["step"], panel, from });
-  const subsection = normalizeActionCreationSubsection(params?.["subsection"], { step: params?.["step"], panel });
-  const requestedTab = resolveSingleSearchParam(params?.["tab"]);
-  const { userId } = await getSafeAuthSession();
-  const localDevAuth = await getLocalDevAuthState();
-  const isAuthenticated = Boolean(userId);
-  const identity = userId ? await getCurrentUserIdentity() : null;
-  const actionPhase =
-    actionId && !requestedTab
-      ? await resolveActionResumePhase({ actionId, userId, identity })
-      : null;
-  const tab = normalizeActionCreationTab(requestedTab, {
-    actionId,
-    from,
-    actionPhase,
-    panel,
-  });
-  const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from, panel, section, tab });
-  const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
-  const actionCreationSectionsEnabled = isFeatureEnabled("actionCreationSections");
-  const fallbackActorName = userId ?? "Visiteur";
-  const actorNameOptions = Array.from(
-    new Set(
-      identity?.actorNameOptions && identity.actorNameOptions.length > 0
-        ? identity.actorNameOptions
-        : [fallbackActorName],
-    ),
-  );
-  const defaultActorName = actorNameOptions[0] ?? fallbackActorName;
-
-  const userMetadata = buildActionUserMetadata({ userId, identity, fallbackActorName });
+  const context = await resolveNewActionPageContext(searchParams);
 
   const actionCreationShell = (
     <ActionCreationShell
-      actorNameOptions={actorNameOptions}
-      defaultActorName={defaultActorName}
-      userMetadata={userMetadata}
-      linkedEventId={fromEventId}
-      initialActionId={actionId ?? null}
-      initialPanel={panel}
-      initialSection={section}
-      initialSubsection={subsection}
-      initialTab={tab}
-      tabSearchParams={params}
-      localDevAuth={localDevAuth}
-      sectionsEnabled={actionCreationSectionsEnabled}
-      isAuthenticated={isAuthenticated}
-      signInHref={buildSignInRedirectHref(returnUrl)}
-      signUpHref={buildSignUpRedirectHref(returnUrl)}
+      actorNameOptions={context.actorNameOptions}
+      defaultActorName={context.defaultActorName}
+      userMetadata={context.userMetadata}
+      linkedEventId={context.fromEventId}
+      initialActionId={context.actionId ?? null}
+      initialPanel={context.initialPanel}
+      initialSection={context.initialSection}
+      initialSubsection={context.initialSubsection}
+      initialTab={context.initialTab}
+      tabSearchParams={context.params}
+      localDevAuth={context.localDevAuth}
+      sectionsEnabled={context.sectionsEnabled}
+      isAuthenticated={context.isAuthenticated}
+      signInHref={context.signInHref}
+      signUpHref={context.signUpHref}
     />
   );
 
-  if (pageTemplateV2Enabled) {
+  if (context.pageTemplateV2Enabled) {
     return (
       <div className="space-y-8">
         {actionCreationShell}
@@ -123,53 +71,4 @@ export default async function NewActionPage({
       {actionCreationShell}
     </div>
   );
-}
-
-function buildActionUserMetadata({
-  userId,
-  identity,
-  fallbackActorName,
-}: {
-  userId: string | null;
-  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
-  fallbackActorName: string;
-}) {
-  return {
-    userId: userId ?? "anonymous",
-    activeRole: identity?.activeRole,
-    handle: identity?.handle,
-    username: identity?.username ?? undefined,
-    displayName: identity?.displayName ?? fallbackActorName,
-    email: undefined,
-  };
-}
-
-function buildActionReturnUrl({
-  fromEventId,
-  actionId,
-  from,
-  panel,
-  section,
-  tab,
-}: {
-  fromEventId?: string;
-  actionId?: string;
-  from?: string;
-  panel: ReturnType<typeof normalizeActionCreationPanel>;
-  section: ReturnType<typeof normalizeActionCreationSection>;
-  tab: ReturnType<typeof normalizeActionCreationTab>;
-}): string {
-  const returnParams = new URLSearchParams();
-  if (panel !== "pre-formulaire") returnParams.set("panel", panel);
-  if (section !== "essentiel") returnParams.set("section", section);
-  if (tab !== "before") returnParams.set("tab", tab);
-  if (fromEventId) returnParams.set("fromEventId", fromEventId);
-  if (actionId) returnParams.set("actionId", actionId);
-  if (from) returnParams.set("from", from);
-  const query = returnParams.toString();
-  return query ? `/actions/new?${query}` : "/actions/new";
-}
-
-function buildSignUpRedirectHref(returnUrl: string): string {
-  return `/sign-up?redirect_url=${encodeURIComponent(returnUrl)}`;
 }
