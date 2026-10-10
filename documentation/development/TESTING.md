@@ -434,13 +434,16 @@ l'artefact court terme ; `web-coverage` le télécharge puis exécute uniquement
 le ratchet. `checks:fast` ne relance pas cette suite complète instrumentée afin
 de respecter son budget et d'éviter une seconde exécution inutile des tests.
 
-Les étapes CI `Duplication ratchet`, `GitNexus cycle ratchet` et `Web coverage
-ratchet from existing evidence` restent exécutées et conservent leurs logs,
-preuves et rapports, mais sont temporairement `continue-on-error: true` lorsque
-leur `sourceCommit` historique n'est plus ancêtre du `main` courant. Cette
-adaptation ne modifie ni les scripts, ni les baselines, ni les seuils : elle
-rend uniquement ces trois étapes observables mais non bloquantes pendant la
-réconciliation de provenance. Tous les autres contrôles CI restent bloquants.
+Les étapes CI `Duplication ratchet` et `GitNexus cycle ratchet` restent
+exécutées avec `continue-on-error: true` afin de conserver leurs logs, preuves
+et rapports même lorsqu'une gate échoue. Le step final de résumé valide ensuite
+chaque preuve : seuls `PASS` et `PASS_WITH_GRACE` rattachés au candidat courant
+et à une baseline ancêtre sont acceptés ; un `FAIL`, une baseline obsolète, une
+preuve manquante, invalide ou rattachée à un autre SHA fait échouer
+`web-quality`. Le job `web-coverage` télécharge la preuve produite par
+`web-tests` et exécute directement le ratchet checker-only ; son échec est
+bloquant et ne relance pas Vitest. Aucun de ces contrôles ne peut donc devenir
+vert par simple masquage de son code de sortie.
 
 Le même moteur V8 mesure séparément le mobile :
 

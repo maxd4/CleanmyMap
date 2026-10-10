@@ -96,7 +96,7 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   assert.match(mobileJob, /web_code_relevant != 'true'/);
   assert.match(workflow, /build_relevant: \$\{\{ steps\.detect-scope\.outputs\.build_relevant \}\}/);
   assert.match(workflow, /validation-policy\.mjs --scope changed --json/);
-  assert.equal((workflow.match(/continue-on-error:\s*true/g) ?? []).length, 3);
+  assert.equal((workflow.match(/continue-on-error:\s*true/g) ?? []).length, 2);
   const qualityJobForGrace = extractJob(workflow, "web-quality");
   for (const stepName of ["Duplication ratchet", "GitNexus cycle ratchet"]) {
     const step = qualityJobForGrace.match(new RegExp(`- name: ${stepName}[\\s\\S]*?(?=\\n      - name:|\\n\\n  [a-z0-9-]+:)`))?.[0] ?? "";
@@ -104,8 +104,12 @@ test("CI exposes independent Web gates with direct scope dependencies", async ()
   }
   assert.match(
     workflow,
-    /- name: Web coverage ratchet from existing evidence[\s\S]*?continue-on-error:\s*true[\s\S]*?run: npm run quality:coverage -- --from-existing-summary/,
+    /- name: Web coverage ratchet from existing evidence[\s\S]*?run: npm run quality:coverage -- --from-existing-summary/,
   );
+  const coverageStep = extractJob(workflow, "web-coverage").match(/- name: Web coverage ratchet from existing evidence[\s\S]*$/)?.[0] ?? "";
+  assert.doesNotMatch(coverageStep, /continue-on-error:\s*true/);
+  const summaryStep = qualityJobForGrace.match(/- name: Publish web-quality summary[\s\S]*?(?=\n      - name:|\n\n  [a-z0-9-]+:)/)?.[0] ?? "";
+  assert.doesNotMatch(summaryStep, /continue-on-error:\s*true/);
   assert.doesNotMatch(workflow, /web-validation:/);
 });
 

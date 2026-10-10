@@ -572,7 +572,6 @@ jobs:
           path: apps/web/coverage
 
       - name: Web coverage ratchet from existing evidence
-        continue-on-error: true
         run: npm run quality:coverage -- --from-existing-summary
 
   web-vercel-audit:

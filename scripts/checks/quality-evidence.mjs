@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 export const QUALITY_EVIDENCE_SCHEMA_VERSION = 1;
 export const QUALITY_EVIDENCE_RELATIVE_ROOT = "artifacts/quality-evidence";
 export const QUALITY_EVIDENCE_STATUSES = Object.freeze(["PASS", "PASS_WITH_GRACE", "FAIL", "SKIPPED_BY_SCOPE", "NOT_RUN"]);
+const QUALITY_EVIDENCE_ACCEPTED_STATUSES = Object.freeze(["PASS", "PASS_WITH_GRACE"]);
 
 function assertCandidateSha(candidateSha) {
   if (!/^[0-9a-f]{40}$/i.test(candidateSha ?? "")) {
@@ -99,4 +100,46 @@ export function readQualityEvidence({ repositoryRoot = process.cwd(), evidenceRo
   } catch {
     return null;
   }
+}
+
+export function validateQualityEvidenceForGate({
+  evidence,
+  candidateSha,
+  repositoryRoot = process.cwd(),
+  gitRunner = (args, cwd) => execFileSync("git", args, { cwd, stdio: "ignore" }),
+}) {
+  const failures = [];
+  try {
+    assertCandidateSha(candidateSha);
+  } catch (error) {
+    failures.push(error instanceof Error ? error.message : String(error));
+    return failures;
+  }
+  if (!evidence || typeof evidence !== "object") {
+    return ["evidence is missing, malformed, or attached to another candidate"];
+  }
+  if (evidence.schemaVersion !== QUALITY_EVIDENCE_SCHEMA_VERSION) {
+    failures.push(`evidence schema version is invalid: ${evidence.schemaVersion ?? "<missing>"}`);
+  }
+  if (evidence.candidateSha !== candidateSha || evidence.executed !== true) {
+    failures.push("evidence is missing, malformed, or attached to another candidate");
+  }
+  if (!QUALITY_EVIDENCE_STATUSES.includes(evidence.status)) {
+    failures.push(`evidence status is invalid: ${evidence.status ?? "<missing>"}`);
+  } else if (!QUALITY_EVIDENCE_ACCEPTED_STATUSES.includes(evidence.status)) {
+    failures.push(`ratchet status is ${evidence.status}`);
+  }
+
+  const sourceCommit = evidence.baseline?.sourceCommit;
+  if (!/^[0-9a-f]{40}$/i.test(sourceCommit ?? "")) {
+    failures.push("baseline sourceCommit is missing or malformed");
+  } else {
+    try {
+      gitRunner(["cat-file", "-e", `${sourceCommit}^{commit}`], repositoryRoot);
+      gitRunner(["merge-base", "--is-ancestor", sourceCommit, candidateSha], repositoryRoot);
+    } catch {
+      failures.push(`baseline ${sourceCommit} is not an ancestor of candidate ${candidateSha}`);
+    }
+  }
+  return failures;
 }

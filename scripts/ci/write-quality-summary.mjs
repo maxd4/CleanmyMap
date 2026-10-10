@@ -9,6 +9,7 @@ import {
   QUALITY_EVIDENCE_STATUSES,
   readQualityEvidence,
   resolveCandidateSha,
+  validateQualityEvidenceForGate,
 } from "../checks/quality-evidence.mjs";
 
 const repositoryRoot = process.cwd();
@@ -34,6 +35,30 @@ function evidenceIsUsable(evidence, candidateSha) {
       && QUALITY_EVIDENCE_STATUSES.includes(evidence.status)
       && evidence.status !== "NOT_RUN",
   );
+}
+
+export function validateQualityEvidence({
+  candidateSha,
+  evidenceByKey,
+  repositoryRoot = process.cwd(),
+  gitRunner,
+}) {
+  const failures = [];
+  if (!/^[0-9a-f]{40}$/i.test(candidateSha ?? "")) {
+    failures.push(`candidate SHA is invalid: ${candidateSha ?? "<missing>"}`);
+    return failures;
+  }
+
+  for (const gate of EXPECTED_GATES) {
+    const evidence = evidenceByKey[gate.key];
+    for (const failure of validateQualityEvidenceForGate({
+      evidence,
+      candidateSha,
+      repositoryRoot,
+      gitRunner,
+    })) failures.push(`${gate.label}: ${failure}`);
+  }
+  return failures;
 }
 
 function rowForGate(gate, evidence, candidateSha) {
@@ -115,20 +140,23 @@ function appendSummary(summaryPath, content) {
 }
 
 async function main() {
+  let candidateSha = "unavailable";
+  let evidence = {};
   try {
-    let candidateSha;
-    try {
-      candidateSha = resolveCandidateSha(repositoryRoot);
-    } catch {
-      candidateSha = "unavailable";
-    }
-    const evidence = candidateSha === "unavailable" ? {} : collectQualityEvidence({});
+    candidateSha = resolveCandidateSha(repositoryRoot);
+    evidence = collectQualityEvidence({});
     appendSummary(process.env.GITHUB_STEP_SUMMARY, buildQualitySummary({ candidateSha, evidenceByKey: evidence }));
+    const failures = validateQualityEvidence({ candidateSha, evidenceByKey: evidence, repositoryRoot });
+    if (failures.length > 0) {
+      console.error("Web quality ratchet summary failed:");
+      for (const failure of failures) console.error(`- ${failure}`);
+      process.exitCode = 1;
+    }
   } catch (error) {
     const fallback = `## Web quality evidence\n\nSummary unavailable: ${error instanceof Error ? error.message : String(error)}\n`;
     try { appendSummary(process.env.GITHUB_STEP_SUMMARY, fallback); } catch { process.stdout.write(fallback); }
+    process.exitCode = 1;
   }
-  process.exitCode = 0;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) await main();
