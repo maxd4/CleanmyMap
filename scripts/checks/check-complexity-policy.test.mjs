@@ -19,7 +19,7 @@ import {
   FUNCTION_IDENTITY_SCHEME_VERSION,
   validateBaselineShape,
 } from "./complexity-policy.mjs";
-import { evaluateMetrics, parseChangedDiffText, resolveChangedFrom } from "./check-complexity-policy.mjs";
+import { assertBaselineFresh, evaluateMetrics, parseChangedDiffText, resolveChangedFrom } from "./check-complexity-policy.mjs";
 import { classifyFileKind as classifyTopHeavyFileKind } from "./top-heavy-measurement.mjs";
 
 test("complexity target blocks new code at 15 for domain and 20 for runtime", () => {
@@ -258,12 +258,25 @@ test("deleted candidate functions are stale until their baseline entries are rem
   assert.equal(clean.stale.length, 0);
 });
 
-test("changed-only uses HEAD while explicit and CI bases keep priority", () => {
+test("FULL comparison prefers the verified baseline source and never silently diffs the candidate against itself", () => {
+  assert.equal(resolveChangedFrom({ changedOnly: false, headParent: "PARENT", baselineSourceCommit: "BASE", currentCommit: "CANDIDATE" }), "BASE");
+  assert.equal(resolveChangedFrom({ changedOnly: false, environmentChangedFrom: "CANDIDATE", headParent: "PARENT", baselineSourceCommit: "BASE", currentCommit: "CANDIDATE" }), "BASE");
+  assert.equal(resolveChangedFrom({ changedOnly: false, changedFromArgument: "HEAD", headParent: "PARENT", baselineSourceCommit: "BASE", currentCommit: "CANDIDATE" }), "BASE");
+  assert.notEqual(resolveChangedFrom({ changedOnly: false, headParent: "PARENT", baselineSourceCommit: "BASE", currentCommit: "CANDIDATE" }), "CANDIDATE");
+});
+
+test("changed-only uses HEAD while explicit non-candidate and CI bases keep priority", () => {
   assert.equal(resolveChangedFrom({ changedOnly: true, stagedOnly: false, headParent: "PARENT", baselineSourceCommit: "BASE" }), "HEAD");
   assert.equal(resolveChangedFrom({ changedOnly: true, stagedOnly: false, changedFromArgument: "ARG", environmentChangedFrom: "ENV", headParent: "PARENT", baselineSourceCommit: "BASE" }), "ARG");
   assert.equal(resolveChangedFrom({ changedOnly: true, stagedOnly: false, environmentChangedFrom: "ENV", headParent: "PARENT", baselineSourceCommit: "BASE" }), "ENV");
-  assert.equal(resolveChangedFrom({ changedOnly: false, stagedOnly: false, headParent: "PARENT", baselineSourceCommit: "BASE" }), "PARENT");
+  assert.equal(resolveChangedFrom({ changedOnly: false, stagedOnly: false, changedFromArgument: "ARG", headParent: "PARENT", baselineSourceCommit: "BASE" }), "ARG");
   assert.equal(resolveChangedFrom({ changedOnly: false, stagedOnly: true, changedFromArgument: "ARG", headParent: "PARENT", baselineSourceCommit: "BASE" }), "HEAD");
+});
+
+test("invalid or incompatible complexity baseline source commits fail closed", () => {
+  const baseline = JSON.parse(fs.readFileSync("scripts/checks/complexity-baseline.json", "utf8"));
+  assert.throws(() => assertBaselineFresh({ ...baseline, sourceCommit: "f".repeat(40) }), /complexity baseline stale/);
+  assert.throws(() => assertBaselineFresh({ ...baseline, sourceCommit: "not-a-commit" }), /sourceCommit/);
 });
 
 test("presentation-only JSX class changes do not trigger the substantial-change ratchet", () => {

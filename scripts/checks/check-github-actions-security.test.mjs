@@ -150,7 +150,8 @@ for (const gate of ["dead-code", "complexity", "duplication", "cycles"]) {
   assert.equal((webQualityJob.match(new RegExp(`npm run quality:${gate}`, "g")) ?? []).length, 1);
 }
 assert.match(webQualityJob, /- name: Publish web-quality summary[\s\S]*?run: node scripts\/ci\/write-quality-summary\.mjs/);
-assert.match(webQualityJob, /COMPLEXITY_CHANGED_FROM: \$\{\{ github\.sha \}\}/);
+assert.doesNotMatch(webQualityJob, /COMPLEXITY_CHANGED_FROM:/);
+assert.match(webQualityJob, /- name: Complexity and function-length policy\n\s+run: npm run quality:complexity/);
 assert.match(webQualityJob, /- name: Upload compact web-quality evidence[\s\S]*?path: artifacts\/quality-evidence[\s\S]*?retention-days: 3/);
 assert.match(webQualityJob, /- name: Install GitNexus[\s\S]*?if: \$\{\{ !cancelled\(\)/);
 assert.match(webQualityJob, /- name: GitNexus cycle ratchet[\s\S]*?if: \$\{\{ !cancelled\(\)/);

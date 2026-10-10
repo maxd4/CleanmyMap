@@ -453,8 +453,6 @@ jobs:
         run: npm run quality:dead-code
 
       - name: Complexity and function-length policy
-        env:
-          COMPLEXITY_CHANGED_FROM: ${{ github.sha }}
         run: npm run quality:complexity
 
       - name: Duplication ratchet

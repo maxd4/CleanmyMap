@@ -28,20 +28,25 @@ const sourceRoots = (process.argv.slice(2).find((argument) => argument.startsWit
   .split(",")
   .map((root) => root.replaceAll("\\", "/").trim())
   .filter(Boolean);
+const GIT_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
 
 function normalizeRepositoryPath(file) {
   return file.replaceAll("\\", "/");
 }
 
 function git(args) {
-  return execFileSync("git", args, { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  return execFileSync("git", args, {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+    maxBuffer: GIT_OUTPUT_MAX_BUFFER,
+  }).trim();
 }
 
 function currentCommit() {
   return git(["rev-parse", "HEAD"]);
 }
 
-function assertBaselineFresh(baseline) {
+export function assertBaselineFresh(baseline) {
   validateBaselineShape(baseline);
   const head = currentCommit();
   try {
@@ -148,12 +153,15 @@ export function resolveChangedFrom({
   environmentChangedFrom,
   headParent,
   baselineSourceCommit,
+  currentCommit,
 }) {
   if (stagedOnly) return "HEAD";
-  if (changedFromArgument) return changedFromArgument;
-  if (environmentChangedFrom) return environmentChangedFrom;
+  const isCandidateReference = (reference) => reference === "HEAD" || reference === currentCommit;
+  const fallbackReference = baselineSourceCommit ?? headParent;
+  if (changedFromArgument && !isCandidateReference(changedFromArgument)) return changedFromArgument;
+  if (environmentChangedFrom && !isCandidateReference(environmentChangedFrom)) return environmentChangedFrom;
   if (changedOnly) return "HEAD";
-  return headParent ?? baselineSourceCommit;
+  return fallbackReference;
 }
 
 function normalizePresentationLine(line) {
@@ -169,6 +177,7 @@ function parseChangedDiff({ from = baselineSourceCommit, to = null } = {}) {
   const diff = execFileSync("git", diffArguments, {
     cwd: repositoryRoot,
     encoding: "utf8",
+    maxBuffer: GIT_OUTPUT_MAX_BUFFER,
   });
   return parseChangedDiffText(diff);
 }
@@ -292,6 +301,7 @@ export async function runComplexityPolicy() {
     environmentChangedFrom: process.env.COMPLEXITY_CHANGED_FROM,
     headParent,
     baselineSourceCommit,
+    currentCommit: currentCommit(),
   });
   const changedDiff = stagedOnly
     ? parseChangedDiff({ from: "HEAD", to: stagedTree })
