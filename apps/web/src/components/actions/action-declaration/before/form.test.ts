@@ -7,6 +7,7 @@ import { IdentityAndSharingSection } from "./identity-and-sharing-section";
 import { PlannedActionSection } from "./planned-action-section";
 import { PreparationAndSafetySection } from "./preparation-and-safety-section";
 import { PreparationPlanningFields } from "./preparation-planning-fields";
+import { ScheduleFields } from "./planned-action-schedule-fields";
 import { createInitialFormState } from "../payload";
 
 describe("ActionBeforeDeclarationForm", () => {
@@ -133,6 +134,22 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Date et horaires principaux");
     expect(html).toContain("Créneau global");
     expect(html).not.toContain("Stockage précis ; affichage métier");
+  });
+
+  it("keeps invalid global hours visible in the extracted schedule section", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.eventStartTime = "25:00";
+    form.eventEndTime = "10:00";
+    const html = renderToStaticMarkup(
+      React.createElement(ScheduleFields, {
+        form,
+        updateField: vi.fn(),
+        hasAttemptedSubmit: false,
+        validationIssueFields: [],
+      }),
+    );
+
+    expect(html).toContain("Les horaires doivent respecter le format HH:MM.");
   });
 
   it("keeps expected waste optional and derives safety guidance from the catalog", () => {

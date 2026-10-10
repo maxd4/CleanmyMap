@@ -8,7 +8,7 @@ import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 import { OperationalRouteEditor } from "../operational-route-editor";
 import { RouteTopologyFieldset } from "../action-location-inputs";
 import type { BaseSectionProps } from "./section-contract";
-import { hasValidCoordinatePair, MeetingLocationFields, RouteDestinationField } from "./planned-action-section";
+import { hasValidCoordinatePair, MeetingLocationFields, RouteDestinationField } from "./planned-action-location-section";
 import { SectionLabel } from "./ui";
 
 export function TerrainActionSection({

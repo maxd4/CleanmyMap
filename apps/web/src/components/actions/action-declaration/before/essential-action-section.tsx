@@ -7,7 +7,8 @@ import { CmmField, CmmInput, CmmSelect, CmmTextarea } from "@/components/ui/cmm-
 import type { FormState } from "../model";
 import { PLANNED_OBJECTIVE_OPTIONS } from "./model";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
-import { MeetingLocationFields, RouteDestinationField, ScheduleFields } from "./planned-action-section";
+import { MeetingLocationFields, RouteDestinationField } from "./planned-action-location-section";
+import { ScheduleFields } from "./planned-action-schedule-fields";
 import { SectionLabel } from "./ui";
 import { hasValidationIssue, RequiredMark, type BaseSectionProps } from "./section-contract";
 

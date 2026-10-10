@@ -8,7 +8,7 @@ describe("waste UX registry wiring", () => {
   it("uses the shared selector in the targeted forms", () => {
     expect(read("components/actions/quick-signalement-form.tsx")).toContain("WasteCategorySelector");
     expect(read("components/actions/quick-signalement-form.tsx")).toContain("TrashSpotterObservationForm");
-    expect(read("components/actions/action-declaration/before/planned-action-section.tsx")).toContain("WasteCategorySelector");
+    expect(read("components/actions/action-declaration/before/planned-action-waste-section.tsx")).toContain("WasteCategorySelector");
     expect(read("components/actions/action-declaration/sections/harvest-waste-section.tsx")).toContain("WasteCategorySelector");
   });
 

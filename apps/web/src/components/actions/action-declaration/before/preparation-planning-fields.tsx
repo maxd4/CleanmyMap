@@ -6,7 +6,8 @@ import { CmmField, CmmTextarea } from "@/components/ui/cmm-field";
 import { PLACE_TYPE_FORM_OPTIONS } from "@/lib/actions/place-type-options";
 import { normalizeVolunteerParticipationFromForm } from "@/lib/actions/volunteer-participation";
 import type { BaseSectionProps } from "./section-contract";
-import { ExpectedWasteSection, SelectField, VolunteerForecast } from "./planned-action-section";
+import { SelectField, VolunteerForecast } from "./planned-action-volunteer-section";
+import { ExpectedWasteSection } from "./planned-action-waste-section";
 import { DIFFICULTY_OPTIONS, PLANNED_OBJECTIVE_OPTIONS } from "./model";
 import { SectionLabel } from "./ui";
 
