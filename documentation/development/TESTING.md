@@ -781,9 +781,14 @@ npm run audit:quality -- cycles
 npm run audit:quality -- all
 ```
 
-Chaque audit exige au début et à la fin un worktree propre avec `HEAD ==
-origin/main`. Une instabilité de cette baseline arrête l’audit et ne produit
-pas de résultat canonique. Les audits sont exécutés séquentiellement ; `all`
+Les audits exigent au début et à la fin `HEAD == origin/main`. Les audits
+`dead-code`, `top-heavy`, `complexity`, `cycles` et `all` exigent en plus un
+worktree propre. L’audit `duplication` peut être exécuté sur le worktree
+courant lorsqu’il est dirty afin de mesurer les changements locaux ; son
+`manifest.json` conserve alors `baselineStable: false` et `worktreeClean: false`
+et cette sortie ne constitue pas une preuve FULL réutilisable pour un candidat
+propre. Toute modification du worktree pendant l’exécution arrête l’audit et
+aucun résultat n’est publié. Les audits sont exécutés séquentiellement ; `all`
 exécute chaque engine une seule fois et conserve les autres résultats lorsqu’un
 engine échoue.
 

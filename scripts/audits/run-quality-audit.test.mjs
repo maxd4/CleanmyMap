@@ -189,6 +189,23 @@ test("all correlates the five current gate results after execution without rerun
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+test("duplication audit accepts a stable dirty worktree and records it as non-clean evidence", async () => {
+  const root = tempRoot();
+  const dirtySnapshot = { ...stableSnapshot, worktree: " M src/dirty.ts", worktreeClean: false, baselineStable: false };
+  try {
+    const result = await runQualityAudit("duplication", {
+      root,
+      snapshot: () => dirtySnapshot,
+      engine: async () => fixtureResult("duplication"),
+    });
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, "artifacts", "quality-audits", sha, "duplication", "manifest.json"), "utf8"));
+    assert.equal(result.status, "PASS");
+    assert.equal(manifest.baselineStable, false);
+    assert.equal(manifest.worktreeClean, false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
 test("unstable start and end snapshots stop without publishing a canonical result", async () => {
   const root = tempRoot();
   try {

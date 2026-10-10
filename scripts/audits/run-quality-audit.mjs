@@ -210,6 +210,8 @@ function makeSummary({ audit, manifest, result, paths }) {
     "",
     `- Audited HEAD: \`${manifest.auditedHead}\``,
     `- origin/main: \`${manifest.originMain}\``,
+    `- Baseline stable: **${manifest.baselineStable ? "yes" : "no"}**`,
+    `- Worktree clean: **${manifest.worktreeClean ? "yes" : "no"}**`,
     `- Status: **${manifest.status}**`,
     `- Attention required: **${manifest.attentionRequired ? "yes" : "no"}**`,
     `- Raw report: \`${path.relative(path.dirname(paths.summary), paths.report).replaceAll("\\", "/")}\``,
@@ -286,6 +288,11 @@ function sameSnapshot(left, right) {
     && left.baselineStable === right.baselineStable;
 }
 
+export function isAuditBaselineStable(audit, snapshot) {
+  return snapshot.auditedHead === snapshot.originMain
+    && (audit === "duplication" || snapshot.worktreeClean);
+}
+
 export async function runQualityAudit(mode, {
   root = REPOSITORY_ROOT,
   snapshot = () => captureRepositorySnapshot({ root }),
@@ -296,8 +303,11 @@ export async function runQualityAudit(mode, {
   if (!AUDIT_MODES.includes(mode)) throw new QualityAuditError(`Mode d'audit inconnu. ${usage()}`, "INVALID_MODE");
   const audits = mode === "all" ? AUDIT_MODES.slice(0, -1) : [mode];
   const start = snapshot();
-  if (!start.baselineStable) {
-    throw new QualityAuditError(`BASELINE_STABLE=false: worktree must be clean and HEAD must equal origin/main. ${usage()}`, "BASELINE_UNSTABLE");
+  if (!isAuditBaselineStable(mode, start)) {
+    const requirement = mode === "duplication"
+      ? "HEAD must equal origin/main"
+      : "worktree must be clean and HEAD must equal origin/main";
+    throw new QualityAuditError(`BASELINE_STABLE=false: ${requirement}. ${usage()}`, "BASELINE_UNSTABLE");
   }
 
   const results = [];
@@ -345,8 +355,8 @@ export async function runQualityAudit(mode, {
       audit: entry.audit,
       auditedHead: start.auditedHead,
       originMain: start.originMain,
-      baselineStable: true,
-      worktreeClean: true,
+      baselineStable: start.baselineStable,
+      worktreeClean: start.worktreeClean,
       status: entry.status,
       attentionRequired: entry.attentionRequired,
       generatedAt,
@@ -370,8 +380,8 @@ export async function runQualityAudit(mode, {
       audit: "all",
       auditedHead: start.auditedHead,
       originMain: start.originMain,
-      baselineStable: true,
-      worktreeClean: true,
+      baselineStable: start.baselineStable,
+      worktreeClean: start.worktreeClean,
       status: overallStatus,
       attentionRequired: overallAttention,
       generatedAt,
