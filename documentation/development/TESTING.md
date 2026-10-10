@@ -800,6 +800,28 @@ la séquence bornée suivante :
 6. fixer le périmètre réel du changement après confrontation aux
    implémentations, consommateurs, tests et documentation.
 
+La décision de fraîcheur est déterministe :
+
+- `INDEX_CURRENT` : `lastCommit` est le SHA candidat, le runner et les
+  métadonnées attendues sont compatibles, et le worktree est propre ; les
+  requêtes contextuelles peuvent orienter l'analyse ;
+- `INDEX_PARTIALLY_STALE` : le SHA indexé est celui du candidat mais des
+  modifications locales existent ; le graphe ne sert qu'à orienter la recherche
+  et toute relation pertinente doit être confirmée dans le code courant ;
+- `INDEX_STALE` : le graphe vise un autre commit ou des métadonnées incompatibles
+  ; une absence de consumer, d'impact ou de cycle ne peut jamais être conclue ;
+- `INDEX_UNAVAILABLE` : index, runner ou MCP indisponible ; utiliser `rg`, Git,
+  TypeScript et les tests ciblés sans bloquer `DEVELOPMENT` pour cette seule
+  raison.
+
+Un index `INDEX_STALE` ou `INDEX_PARTIALLY_STALE` ne déclenche pas `FULL` et ne
+justifie pas une réindexation automatique. Une réindexation est une action
+explicite, réservée à une analyse transversale importante ou au candidat final
+stabilisé de `FULL`, après contrôle de la licence, des processus concurrents et
+de la séparation staged/unstaged. Les états `INDEX_CURRENT` et les preuves
+réutilisées doivent toujours appartenir au même candidat ; aucun `PASS` ne peut
+provenir d'un autre SHA.
+
 Une réindexation locale n'est jamais automatique avant un commit. Elle ne peut
 être envisagée que pour une analyse importante, après vérification de la
 propreté ou de la séparation des changements staged/unstaged, de l'absence de

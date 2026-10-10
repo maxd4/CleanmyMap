@@ -49,10 +49,14 @@ pour une analyse initiale, ~53 secondes pour `status`, ~2 secondes pour les
 cycles), avec une marge explicite ; une durée supérieure à 10 secondes n'est
 donc pas un échec d'environnement. Les statuts publics distinguent
 `RUNNER_MISSING`, `HOST_ENVIRONMENT`, `TIMEOUT`, `MALFORMED_REPORT`,
-`NEW_CYCLE` et `PASS`. L'index `.gitnexus` est réutilisé seulement si son
-commit, sa version GitNexus et ses métadonnées de configuration correspondent
-au candidat courant et que le worktree est propre ; sinon
-`analyze --index-only` est relancé.
+`NEW_CYCLE` et `PASS`. La fraîcheur est classée `INDEX_CURRENT`,
+`INDEX_PARTIALLY_STALE`, `INDEX_STALE` ou `INDEX_UNAVAILABLE`. L'index
+`.gitnexus` et une preuve `analyze/status` ne sont réutilisés que lorsque leur
+commit, leur version, leurs métadonnées de configuration et le `HEAD` courant
+correspondent au même candidat ; une preuve d'un autre commit ne peut jamais
+produire un `PASS`. `analyze --index-only` reste une action explicite d'audit ou
+de préparation FULL, pas une étape automatique de DEVELOPMENT, de staging, de
+commit ou de push.
 
 Les tests Node des scripts se lancent avec :
 

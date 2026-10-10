@@ -7,12 +7,18 @@ import test from "node:test";
 
 import {
   canReuseGitNexusIndex,
+  classifyGitNexusIndex,
   getGitNexusStepTimeoutMs,
   isReusableGitNexusIndex,
   main,
   parseArgs,
   runGitNexusCommand,
 } from "./audit-gitnexus.mjs";
+import {
+  createCandidateFingerprint,
+  createValidationEvidenceKey,
+  writeFastValidationEvidence,
+} from "../ci/validation-evidence.mjs";
 
 test("GitNexus audit accepts only the optional cycles flag", () => {
   assert.deepEqual(parseArgs([]), { cycles: false });
@@ -150,6 +156,128 @@ test("GitNexus index reuse requires the same candidate, version, and index confi
   assert.equal(canReuseGitNexusIndex({ ...metadata, schemaFingerprint: "" }, { candidate: "candidate-a" }), false);
 });
 
+test("GitNexus freshness status is deterministic for current, partial, stale, and unavailable indexes", () => {
+  const metadata = {
+    lastCommit: "candidate-a",
+    runnerIdentity: { cliVersion: "1.6.12" },
+    contentRetention: "full",
+    ftsProfile: "full",
+    schemaFingerprint: "schema-a",
+  };
+  assert.equal(classifyGitNexusIndex({ metadata, candidate: "candidate-a" }), "INDEX_CURRENT");
+  assert.equal(classifyGitNexusIndex({ metadata, candidate: "candidate-a", worktreeDirty: true }), "INDEX_PARTIALLY_STALE");
+  assert.equal(classifyGitNexusIndex({ metadata, candidate: "candidate-b" }), "INDEX_STALE");
+  assert.equal(classifyGitNexusIndex({ metadata: { ...metadata, ftsProfile: "unavailable" }, candidate: "candidate-a" }), "INDEX_STALE");
+  assert.equal(classifyGitNexusIndex({ metadata: null, candidate: "candidate-a" }), "INDEX_UNAVAILABLE");
+  assert.equal(classifyGitNexusIndex({ metadata, candidate: "candidate-a", runnerPresent: false }), "INDEX_UNAVAILABLE");
+  assert.equal(classifyGitNexusIndex({ metadata, candidate: "candidate-a", mcpAvailable: false }), "INDEX_UNAVAILABLE");
+});
+
+test("stale indexed commits never reuse evidence for the current candidate", async (t) => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-stale-evidence-"));
+  fs.writeFileSync(path.join(repoRoot, "README.md"), "fixture\n");
+  fs.writeFileSync(path.join(repoRoot, ".gitignore"), ".gitnexus/\n/artifacts/\n");
+  execFileSync("git", ["init", "-q"], { cwd: repoRoot });
+  execFileSync("git", ["add", "README.md", ".gitignore"], { cwd: repoRoot });
+  execFileSync("git", ["-c", "user.name=fixture", "-c", "user.email=fixture", "commit", "-qm", "fixture"], { cwd: repoRoot });
+  const candidate = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
+  const runnerPath = path.join(repoRoot, ".gitnexus", "run.cjs");
+  fs.mkdirSync(path.dirname(runnerPath), { recursive: true });
+  fs.writeFileSync(runnerPath, "if (process.argv[2] === 'analyze') process.exitCode = 7; else process.stdout.write('status\\n');\n");
+  fs.writeFileSync(path.join(repoRoot, ".gitnexus", "gitnexus.json"), JSON.stringify({
+    lastCommit: "old-index-commit",
+    runnerIdentity: { cliVersion: "1.6.12" },
+    contentRetention: "full",
+    ftsProfile: "full",
+    schemaFingerprint: "schema-a",
+  }));
+  const candidateFingerprint = createCandidateFingerprint({ repositoryRoot: repoRoot, candidateScope: "WORKTREE", changedFiles: [] });
+  const check = { id: "audit:gitnexus:analyze", command: { executable: "node", args: [".gitnexus/run.cjs", "analyze", "--index-only"] } };
+  const evidenceKey = createValidationEvidenceKey({
+    candidateFingerprint,
+    candidateScope: "WORKTREE",
+    check,
+    configuration: {
+      expectedVersion: "1.6.12",
+      indexCommit: "old-index-commit",
+      schemaFingerprint: "schema-a",
+      contentRetention: "full",
+      ftsProfile: "full",
+    },
+  });
+  writeFastValidationEvidence({
+    repositoryRoot: repoRoot,
+    candidateFingerprint,
+    entries: new Map([[evidenceKey, {
+      ...check,
+      indexCommit: "old-index-commit",
+      runnerVersion: "1.6.12",
+    }]]),
+  });
+  t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
+
+  const diagnostics = [];
+  assert.equal(await main([], repoRoot, { writeDiagnostic: (line) => diagnostics.push(line) }), 7);
+  assert.ok(diagnostics.includes("GITNEXUS_INDEX_STATUS: INDEX_STALE"));
+  assert.ok(diagnostics.includes("GITNEXUS_STEP_START: analyze --index-only"));
+  assert.ok(!diagnostics.includes("GITNEXUS_STEP_REUSED: analyze --index-only"));
+  assert.notEqual(candidate, "old-index-commit");
+});
+
+test("partially stale worktrees do not reuse GitNexus evidence as audit proof", async (t) => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-partial-evidence-"));
+  const git = (args) => execFileSync("git", args, { cwd: repoRoot, encoding: "utf8" }).trim();
+  fs.writeFileSync(path.join(repoRoot, "README.md"), "initial\n", "utf8");
+  fs.writeFileSync(path.join(repoRoot, ".gitignore"), ".gitnexus/\n", "utf8");
+  git(["init", "-q"]);
+  git(["config", "user.email", "fixture"]);
+  git(["config", "user.name", "GitNexus Test"]);
+  git(["add", "README.md", ".gitignore"]);
+  git(["commit", "-qm", "initial"]);
+  const candidate = git(["rev-parse", "HEAD"]);
+  const runnerPath = path.join(repoRoot, ".gitnexus", "run.cjs");
+  fs.mkdirSync(path.dirname(runnerPath), { recursive: true });
+  fs.writeFileSync(runnerPath, "process.stdout.write(JSON.stringify({status:'clean',enumeration:'complete',cycles:[]}));\n", "utf8");
+  fs.writeFileSync(path.join(repoRoot, ".gitnexus", "gitnexus.json"), JSON.stringify({
+    lastCommit: candidate,
+    runnerIdentity: { cliVersion: "1.6.12" },
+    contentRetention: "full",
+    ftsProfile: "full",
+    schemaFingerprint: "schema-a",
+  }), "utf8");
+  fs.appendFileSync(path.join(repoRoot, "README.md"), "local change\n", "utf8");
+  const candidateFingerprint = createCandidateFingerprint({ repositoryRoot: repoRoot, candidateScope: "WORKTREE", changedFiles: ["README.md"] });
+  const check = { id: "audit:gitnexus:analyze", command: { executable: "node", args: [".gitnexus/run.cjs", "analyze", "--index-only"] } };
+  const evidenceKey = createValidationEvidenceKey({
+    candidateFingerprint,
+    candidateScope: "WORKTREE",
+    check,
+    configuration: {
+      expectedVersion: "1.6.12",
+      indexCommit: candidate,
+      schemaFingerprint: "schema-a",
+      contentRetention: "full",
+      ftsProfile: "full",
+    },
+  });
+  writeFastValidationEvidence({
+    repositoryRoot: repoRoot,
+    candidateFingerprint,
+    entries: new Map([[evidenceKey, {
+      ...check,
+      indexCommit: candidate,
+      runnerVersion: "1.6.12",
+    }]]),
+  });
+  t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
+
+  const diagnostics = [];
+  assert.equal(await main([], repoRoot, { writeDiagnostic: (line) => diagnostics.push(line) }), 0);
+  assert.ok(diagnostics.includes("GITNEXUS_INDEX_STATUS: INDEX_PARTIALLY_STALE"));
+  assert.ok(diagnostics.includes("GITNEXUS_STEP_START: analyze --index-only"));
+  assert.ok(!diagnostics.includes("GITNEXUS_STEP_REUSED: analyze --index-only"));
+});
+
 test("GitNexus audit reuses a valid index instead of rerunning analyze", async (t) => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-gitnexus-reuse-"));
   fs.writeFileSync(path.join(repoRoot, "README.md"), "fixture\n");
@@ -172,6 +300,7 @@ test("GitNexus audit reuses a valid index instead of rerunning analyze", async (
 
   const diagnostics = [];
   assert.equal(await main([], repoRoot, { writeDiagnostic: (line) => diagnostics.push(line) }), 0);
+  assert.ok(diagnostics.includes("GITNEXUS_INDEX_STATUS: INDEX_CURRENT"));
   assert.ok(diagnostics.includes("GITNEXUS_STEP_REUSED: analyze --index-only"));
   assert.ok(!diagnostics.includes("GITNEXUS_STEP_START: analyze --index-only"));
   assert.ok(diagnostics.includes("GITNEXUS_STEP_START: status"));

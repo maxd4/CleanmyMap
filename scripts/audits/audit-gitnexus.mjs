@@ -19,6 +19,12 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 const runnerRelativePath = ".gitnexus/run.cjs";
 const indexMetadataRelativePath = ".gitnexus/gitnexus.json";
 export const GITNEXUS_EXPECTED_VERSION = "1.6.12";
+export const GITNEXUS_INDEX_STATUSES = Object.freeze([
+  "INDEX_CURRENT",
+  "INDEX_PARTIALLY_STALE",
+  "INDEX_STALE",
+  "INDEX_UNAVAILABLE",
+]);
 // These limits are per GitNexus phase, based on observed runs of this
 // repository: analyze reached ~171 s, status ~53 s, and cycle enumeration
 // ~2 s.  They leave bounded headroom for a healthy runner without treating
@@ -62,7 +68,7 @@ function gitNexusEvidenceKey(repoDirectory, metadata, check) {
 }
 
 function hasReusableGitNexusAnalyzeEvidence(repoDirectory, metadata) {
-  if (!metadata?.lastCommit) return false;
+  if (!metadata?.lastCommit || metadata.lastCommit !== readCurrentHead(repoDirectory)) return false;
   const candidateFingerprint = gitNexusCandidateFingerprint(repoDirectory);
   const entries = readFastValidationEvidence({ repositoryRoot: repoDirectory, candidateFingerprint });
   const entry = entries.get(gitNexusEvidenceKey(repoDirectory, metadata, GITNEXUS_ANALYZE_CHECK));
@@ -75,7 +81,7 @@ function hasReusableGitNexusAnalyzeEvidence(repoDirectory, metadata) {
 }
 
 function hasReusableGitNexusStatusEvidence(repoDirectory, metadata) {
-  if (!metadata?.lastCommit) return false;
+  if (!metadata?.lastCommit || metadata.lastCommit !== readCurrentHead(repoDirectory)) return false;
   const candidateFingerprint = gitNexusCandidateFingerprint(repoDirectory);
   const entries = readFastValidationEvidence({ repositoryRoot: repoDirectory, candidateFingerprint });
   const entry = entries.get(gitNexusEvidenceKey(repoDirectory, metadata, GITNEXUS_STATUS_CHECK));
@@ -175,11 +181,28 @@ export function canReuseGitNexusIndex(
   );
 }
 
+export function classifyGitNexusIndex(
+  {
+    metadata,
+    candidate,
+    expectedVersion = GITNEXUS_EXPECTED_VERSION,
+    worktreeDirty = false,
+    runnerPresent = true,
+    mcpAvailable = true,
+  } = {},
+) {
+  if (!runnerPresent || !mcpAvailable || !metadata || !candidate) return "INDEX_UNAVAILABLE";
+  if (!canReuseGitNexusIndex(metadata, { candidate, expectedVersion })) return "INDEX_STALE";
+  return worktreeDirty ? "INDEX_PARTIALLY_STALE" : "INDEX_CURRENT";
+}
+
 export function isReusableGitNexusIndex(repoDirectory) {
-  if (!isWorktreeClean(repoDirectory)) return false;
-  return canReuseGitNexusIndex(readGitNexusIndexMetadata(repoDirectory), {
+  return classifyGitNexusIndex({
+    metadata: readGitNexusIndexMetadata(repoDirectory),
     candidate: readCurrentHead(repoDirectory),
-  });
+    worktreeDirty: !isWorktreeClean(repoDirectory),
+    runnerPresent: preflightGitNexus(repoDirectory).present,
+  }) === "INDEX_CURRENT";
 }
 
 export function preflightGitNexus(repoDirectory) {
@@ -256,8 +279,16 @@ export async function main(
   const startedAt = performance.now();
   const commands = [];
   const metadataBeforeAnalysis = readGitNexusIndexMetadata(repoDirectory);
-  const reusableIndex = isReusableGitNexusIndex(repoDirectory)
-    || hasReusableGitNexusAnalyzeEvidence(repoDirectory, metadataBeforeAnalysis);
+  const indexStatus = classifyGitNexusIndex({
+    metadata: metadataBeforeAnalysis,
+    candidate: readCurrentHead(repoDirectory),
+    worktreeDirty: !isWorktreeClean(repoDirectory),
+    runnerPresent: preflight.present,
+  });
+  writeDiagnostic(`GITNEXUS_INDEX_STATUS: ${indexStatus}`);
+  const reusableIndex = indexStatus === "INDEX_CURRENT"
+    && (isReusableGitNexusIndex(repoDirectory)
+      || hasReusableGitNexusAnalyzeEvidence(repoDirectory, metadataBeforeAnalysis));
   if (reusableIndex) {
     writeDiagnostic("GITNEXUS_STEP_REUSED: analyze --index-only");
     writeDiagnostic(`REUSED_EVIDENCE_SOURCE: validation-evidence/${gitNexusCandidateFingerprint(repoDirectory)}`);
