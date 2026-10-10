@@ -1,10 +1,12 @@
 interface FeatureFlags {
   pageTemplateV2: boolean
+  actionCreationSections: boolean
   quizServerSync: boolean
 }
 
 const defaultFlags: FeatureFlags = {
   pageTemplateV2: true,
+  actionCreationSections: true,
   quizServerSync: false
 }
 

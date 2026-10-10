@@ -15,8 +15,9 @@
 - **Frontière signalement** : `/sections/trash-spotter` est hors du bloc Agir,
   dans Réseau & Discussions, pour la consultation et le monitoring secondaire.
   La saisie et la boucle propriétaire passent exclusivement par `/signalement`.
-- **Shell de création** : `/actions/new` expose indépendamment le pré-formulaire,
-  l'itinéraire, la météo & les conditions terrain et les formalités juridiques.
+- **Shell de création** : `/actions/new` expose une fiche à quatre sections
+  (`Essentiel`, `Terrain`, `Équipe et logistique`, `Vérifier et publier`) qui
+  compose les mêmes moteurs de pré-formulaire, itinéraire, météo et formalités.
 - **Règle de sens** : une action ou un sondage fournit une aide à l'arbitrage ;
   son résultat ne constitue pas une décision officielle.
 - **Snapshots** : colocalisés sous `screenshots/desktop/` ou `screenshots/mobile/`

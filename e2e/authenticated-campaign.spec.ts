@@ -197,20 +197,22 @@ test("late auth, join persistence, idempotence, leave and reread", async ({ page
 test("public action choice, late auth at submit, and draft restoration", async ({ page }) => {
   await page.goto("/actions/new");
   await dismissCookieConsent(page);
-  await expect(page.getByRole("heading", { name: "Choisissez votre parcours" })).toBeVisible();
-  await page.getByRole("heading", { name: "Déclarer avant l'action" }).click();
-  await expect(page.getByRole("heading", { name: "Préparer le formulaire de groupe" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Organiser une action" })).toBeVisible();
+  await page.getByRole("button", { name: /Essentiel/i }).click();
+  await expect(page.getByRole("heading", { name: "Action prévue" })).toBeVisible();
 
   const title = `E2E local ${Date.now()}`;
-  await page.getByLabel("Titre de l'action").fill(title);
-  await page.getByLabel("Commune ou zone concernée").fill("Paris E2E");
+  await page.getByLabel("Titre de l’action").fill(title);
+  await page.locator("#before-organizer-type").selectOption("spontaneous");
+  await page.getByLabel("Commune ou secteur d’intervention").fill("Paris E2E");
   await page.getByLabel("Point de rendez-vous précis").fill("Point E2E local");
   await page.getByLabel("Date prévue").fill("2030-01-16");
+  await page.getByRole("button", { name: /Vérifier et publier/i }).click();
 
   const submitResponsePromise = page.waitForResponse((response) =>
     response.request().method() === "POST" && new URL(response.url()).pathname === "/api/actions",
   );
-  await page.getByRole("button", { name: "Publier le pré-formulaire" }).click();
+  await page.getByRole("button", { name: "Enregistrer la préparation" }).click();
   const submitResponse = await submitResponsePromise;
   expect(submitResponse.status()).toBe(401);
   await expect(page.getByText("Se connecter et reprendre")).toBeVisible();
@@ -220,10 +222,10 @@ test("public action choice, late auth at submit, and draft restoration", async (
   await page.goto("/");
   await signIn(page);
   await page.goto("/actions/new");
-  await page.getByRole("heading", { name: "Déclarer avant l'action" }).click();
-  await expect(page.getByRole("heading", { name: "Préparer le formulaire de groupe" })).toBeVisible();
-  await expect(page.getByLabel("Titre de l'action")).toHaveValue(title);
-  await expect(page.getByLabel("Commune ou zone concernée")).toHaveValue("Paris E2E");
+  await page.getByRole("button", { name: /Essentiel/i }).click();
+  await expect(page.getByRole("heading", { name: "Action prévue" })).toBeVisible();
+  await expect(page.getByLabel("Titre de l’action")).toHaveValue(title);
+  await expect(page.getByLabel("Commune ou secteur d’intervention")).toHaveValue("Paris E2E");
   await expect(page.getByLabel("Point de rendez-vous précis")).toHaveValue("Point E2E local");
 
   evidence.push({

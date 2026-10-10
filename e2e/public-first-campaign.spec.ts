@@ -80,7 +80,7 @@ test.describe("campaign 1 - public reading and late authentication", () => {
     await page.goto("/actions/new");
     await expect(page.getByRole("heading", { name: "Organiser une action" })).toBeVisible();
 
-    await page.getByRole("button", { name: /4\. Préformulaire/i }).click();
+    await page.getByRole("button", { name: /Essentiel/i }).click();
     await expect(page.getByRole("heading", { name: "Action prévue" })).toBeVisible();
     await expect(page.getByLabel("Titre de l’action")).toBeVisible();
   });
@@ -92,7 +92,7 @@ test.describe("campaign 1 - public reading and late authentication", () => {
     ]) {
       await page.setViewportSize(viewport);
       await page.goto("/actions/new");
-      await page.getByRole("button", { name: /4\. Préformulaire/i }).click();
+      await page.getByRole("button", { name: /Essentiel/i }).click();
 
       await expect(page.getByRole("heading", { name: "Action prévue" })).toBeVisible();
       await expect(page.getByLabel("Titre de l’action")).toBeVisible();

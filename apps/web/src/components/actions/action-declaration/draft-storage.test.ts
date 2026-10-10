@@ -40,6 +40,9 @@ describe("action declaration draft storage", () => {
       shortDescription: "Préparation avant action",
       locationLabel: "Place de la Republique",
       meetingTime: "09:15",
+      organizerType: "spontaneous" as const,
+      organizerId: null,
+      organizerName: "Alice",
       wasteKg: "12",
     };
 
@@ -53,6 +56,9 @@ describe("action declaration draft storage", () => {
     expect(snapshot?.form.shortDescription).toBe("Préparation avant action");
     expect(snapshot?.form.locationLabel).toBe("Place de la Republique");
     expect(snapshot?.form.meetingTime).toBe("09:15");
+    expect(snapshot?.form.organizerType).toBe("spontaneous");
+    expect(snapshot?.form.organizerId).toBeNull();
+    expect(snapshot?.form.organizerName).toBe("Alice");
     expect(snapshot?.form).not.toHaveProperty("preparationState");
     expect(snapshot?.form.wasteKg).toBe("12");
   });

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { ActionCreationShell } from "@/components/actions/action-creation-shell";
 import {
+  normalizeActionCreationSection,
+  normalizeActionCreationSubsection,
   normalizeActionCreationPanel,
   normalizeActionCreationTab,
 } from "@/lib/actions/action-creation-routes";
@@ -56,6 +58,8 @@ export default async function NewActionPage({
   const from = resolveSingleSearchParam(params?.["from"]);
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
   const panel = normalizeActionCreationPanel(params?.["panel"]);
+  const section = normalizeActionCreationSection(params?.["section"], { step: params?.["step"], panel, from });
+  const subsection = normalizeActionCreationSubsection(params?.["subsection"], { step: params?.["step"], panel });
   const requestedTab = resolveSingleSearchParam(params?.["tab"]);
   const { userId } = await getSafeAuthSession();
   const localDevAuth = await getLocalDevAuthState();
@@ -71,8 +75,9 @@ export default async function NewActionPage({
     actionPhase,
     panel,
   });
-  const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from, panel, tab });
+  const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from, panel, section, tab });
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
+  const actionCreationSectionsEnabled = isFeatureEnabled("actionCreationSections");
   const fallbackActorName = userId ?? "Visiteur";
   const actorNameOptions = Array.from(
     new Set(
@@ -93,9 +98,12 @@ export default async function NewActionPage({
       linkedEventId={fromEventId}
       initialActionId={actionId ?? null}
       initialPanel={panel}
+      initialSection={section}
+      initialSubsection={subsection}
       initialTab={tab}
       tabSearchParams={params}
       localDevAuth={localDevAuth}
+      sectionsEnabled={actionCreationSectionsEnabled}
       isAuthenticated={isAuthenticated}
       signInHref={buildSignInRedirectHref(returnUrl)}
       signUpHref={buildSignUpRedirectHref(returnUrl)}
@@ -141,16 +149,19 @@ function buildActionReturnUrl({
   actionId,
   from,
   panel,
+  section,
   tab,
 }: {
   fromEventId?: string;
   actionId?: string;
   from?: string;
   panel: ReturnType<typeof normalizeActionCreationPanel>;
+  section: ReturnType<typeof normalizeActionCreationSection>;
   tab: ReturnType<typeof normalizeActionCreationTab>;
 }): string {
   const returnParams = new URLSearchParams();
   if (panel !== "pre-formulaire") returnParams.set("panel", panel);
+  if (section !== "essentiel") returnParams.set("section", section);
   if (tab !== "before") returnParams.set("tab", tab);
   if (fromEventId) returnParams.set("fromEventId", fromEventId);
   if (actionId) returnParams.set("actionId", actionId);

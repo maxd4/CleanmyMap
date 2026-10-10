@@ -6,6 +6,9 @@ import {
   normalizeActionCreationPanel,
   buildActionWorkflowStepHref,
   normalizeActionWorkflowStep,
+  buildActionCreationSectionHref,
+  normalizeActionCreationSection,
+  normalizeActionCreationSubsection,
 } from "@/lib/actions/action-creation-routes";
 
 describe("action creation panel routes", () => {
@@ -21,6 +24,31 @@ describe("action creation panel routes", () => {
     expect(normalizeActionWorkflowStep("unknown")).toBe("itineraire");
     expect(buildActionWorkflowStepHref("paris", { actionId: "action-42", from: "planner" })).toBe(
       "/actions/new?step=paris&actionId=action-42&from=planner",
+    );
+  });
+
+  it("maps legacy steps and panels to the four UX sections", () => {
+    expect(normalizeActionCreationSection("terrain")).toBe("terrain");
+    expect(normalizeActionCreationSection(undefined, { step: "itineraire" })).toBe("terrain");
+    expect(normalizeActionCreationSection(undefined, { step: "preparation" })).toBe("terrain");
+    expect(normalizeActionCreationSection(undefined, { step: "paris" })).toBe("verification");
+    expect(normalizeActionCreationSection(undefined, { panel: "formalites" })).toBe("verification");
+    expect(normalizeActionCreationSection(undefined)).toBe("essentiel");
+    expect(normalizeActionCreationSubsection(undefined, { step: "itineraire" })).toBe("route");
+    expect(normalizeActionCreationSubsection(undefined, { step: "preparation" })).toBe("meteo");
+    expect(normalizeActionCreationSubsection(undefined, { step: "paris" })).toBe("formalites");
+  });
+
+  it("builds a section deep-link without losing the action identity or source context", () => {
+    expect(
+      buildActionCreationSectionHref("verification", {
+        actionId: "action-42",
+        from: "planner",
+        fromEventId: "event-7",
+        tag: ["review", "publish"],
+      }),
+    ).toBe(
+      "/actions/new?section=verification&actionId=action-42&from=planner&fromEventId=event-7&tag=review&tag=publish",
     );
   });
 

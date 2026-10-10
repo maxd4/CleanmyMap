@@ -12,6 +12,7 @@ import {
 } from "@/lib/actions/association-options";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 import { buildPreparationSummaryDetails } from "./preparation-summary";
+import type { ActionCreationSectionId } from "@/lib/actions/action-creation-sections";
 
 export type SelectOption = {
   value: string;
@@ -41,6 +42,7 @@ export type ActionBeforeDeclarationFormProps = {
   guidedWorkflow?: boolean;
   guidedReadiness?: "unknown" | "ready" | "blocked";
   preparationContext?: ActionPreparationContext;
+  activeSection?: "all" | Exclude<ActionCreationSectionId, "terrain">;
 };
 
 export type PublicationSummaryItem = {

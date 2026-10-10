@@ -24,6 +24,7 @@ vi.mock("./action-declaration/action-declaration-form", () => ({
 vi.mock("@/lib/actions/http", () => ({ updateAction: updateActionMock }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: routerReplaceMock }),
+  usePathname: () => "/actions/new",
 }));
 vi.mock("@/components/ui/site-preferences-provider", () => ({
   useSitePreferences: () => ({ locale: "fr" }),
@@ -107,6 +108,7 @@ describe("ActionCreationShell", () => {
         userMetadata: { userId: "test" },
         initialActionId: "action-42",
         initialPanel: "formalites",
+        initialSection: "verification",
         tabSearchParams: { step: "paris" },
       } as ComponentProps<typeof ActionCreationShell>),
     );
@@ -114,7 +116,7 @@ describe("ActionCreationShell", () => {
     expect(markup).toContain('data-testid="formalities-action-id">action-42</div>');
   });
 
-  it("exposes the four guided steps and opens the requested one", () => {
+  it("exposes the four new sections and opens the requested one", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionCreationShell, {
         actorNameOptions: ["Test"],
@@ -122,19 +124,20 @@ describe("ActionCreationShell", () => {
         isAuthenticated: false,
         userMetadata: { userId: "test" },
         initialPanel: "itineraire",
+        initialSection: "terrain",
         tabSearchParams: { step: "itineraire" },
       } as ComponentProps<typeof ActionCreationShell>),
     );
 
-    expect(markup).toContain('data-testid="action-workflow-stepper"');
-    expect(markup).toContain("Pré-formulaire");
+    expect(markup).toContain('data-testid="action-creation-section-nav"');
+    expect(markup).toContain("Essentiel");
     expect(markup).toContain("Organiser une action");
-    expect(markup).toContain("Itinéraire");
-    expect(markup).toContain("Formalités locales");
-    expect(markup).toContain("Préparation");
-    expect(markup).toContain('data-workflow-step="itineraire"');
+    expect(markup).toContain("Terrain");
+    expect(markup).toContain("Équipe et logistique");
+    expect(markup).toContain("Vérifier et publier");
+    expect(markup).toContain('data-workflow-section="terrain"');
     expect(markup).toContain('data-testid="route-engine"');
-    expect(markup).not.toContain('data-testid="weather-engine"');
+    expect(markup).toContain('data-testid="weather-engine"');
     expect(markup).not.toContain('data-testid="pre-formulaire-engine"');
   });
 
@@ -146,10 +149,29 @@ describe("ActionCreationShell", () => {
         isAuthenticated: false,
         userMetadata: { userId: "test" },
         initialPanel: "pre-formulaire",
+        initialSection: "terrain",
+        initialSubsection: "route",
       } as ComponentProps<typeof ActionCreationShell>),
     );
 
-    expect(markup).toContain('data-workflow-step="itineraire"');
+    expect(markup).toContain('data-workflow-section="terrain"');
+    expect(markup).toContain('data-testid="route-engine"');
+  });
+
+  it("keeps the legacy guided journey available behind the migration flag", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: false,
+        userMetadata: { userId: "test" },
+        initialPanel: "itineraire",
+        sectionsEnabled: false,
+      } as ComponentProps<typeof ActionCreationShell>),
+    );
+
+    expect(markup).not.toContain('data-testid="action-creation-section-nav"');
+    expect(markup).toContain("Itinéraire");
     expect(markup).toContain('data-testid="route-engine"');
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Users } from "lucide-react";
 import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
 import { OrganizerCombobox } from "@/components/actions/organizer-combobox";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -24,6 +24,7 @@ type IdentityAndSharingSectionProps = BaseSectionProps & {
   };
   showGroupJoinHelp: boolean;
   onToggleGroupJoinHelp: () => void;
+  showVolunteerRegistration?: boolean;
 };
 
 export function IdentityAndSharingSection({
@@ -33,6 +34,7 @@ export function IdentityAndSharingSection({
   userMetadata,
   showGroupJoinHelp,
   onToggleGroupJoinHelp,
+  showVolunteerRegistration = true,
   hasAttemptedSubmit,
   validationIssueFields,
 }: IdentityAndSharingSectionProps) {
@@ -63,15 +65,17 @@ export function IdentityAndSharingSection({
           currentUserId={userMetadata.userId}
         />
 
-        <VolunteerRegistrationSection
-          groupJoinEnabled={form.groupJoinEnabled}
-          participantAccountIds={normalizeParticipantAccounts(form.participantAccounts)}
-          currentUserId={userMetadata.userId}
-          onToggleGroupJoin={(next) => updateField("groupJoinEnabled", next)}
-          showGroupJoinHelp={showGroupJoinHelp}
-          onToggleGroupJoinHelp={onToggleGroupJoinHelp}
-          onParticipantsChange={(next) => updateField("participantAccounts", next)}
-        />
+        {showVolunteerRegistration ? (
+          <VolunteerRegistrationSection
+            groupJoinEnabled={form.groupJoinEnabled}
+            participantAccountIds={normalizeParticipantAccounts(form.participantAccounts)}
+            currentUserId={userMetadata.userId}
+            onToggleGroupJoin={(next) => updateField("groupJoinEnabled", next)}
+            showGroupJoinHelp={showGroupJoinHelp}
+            onToggleGroupJoinHelp={onToggleGroupJoinHelp}
+            onParticipantsChange={(next) => updateField("participantAccounts", next)}
+          />
+        ) : null}
       </div>
     </CmmCard>
   );
@@ -182,6 +186,31 @@ function AssociatedAccountsFields({
       ) : null}
 
     </>
+  );
+}
+
+export function VolunteerRegistrationPanel({
+  form,
+  updateField,
+  userMetadata,
+  showGroupJoinHelp,
+  onToggleGroupJoinHelp,
+}: Pick<IdentityAndSharingSectionProps, "form" | "updateField" | "userMetadata" | "showGroupJoinHelp" | "onToggleGroupJoinHelp">) {
+  return (
+    <CmmCard tone="emerald" variant="glass" size="lg">
+      <div className="space-y-5">
+        <SectionLabel icon={Users} title="Équipe et inscriptions" subtitle="Demandes d’inscription et membres à inviter avant la publication." />
+        <VolunteerRegistrationSection
+          groupJoinEnabled={form.groupJoinEnabled}
+          participantAccountIds={normalizeParticipantAccounts(form.participantAccounts)}
+          currentUserId={userMetadata.userId}
+          onToggleGroupJoin={(next) => updateField("groupJoinEnabled", next)}
+          showGroupJoinHelp={showGroupJoinHelp}
+          onToggleGroupJoinHelp={onToggleGroupJoinHelp}
+          onParticipantsChange={(next) => updateField("participantAccounts", next)}
+        />
+      </div>
+    </CmmCard>
   );
 }
 
