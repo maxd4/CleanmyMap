@@ -463,7 +463,7 @@ export async function fetchMapActions(
         .filter(isPublicMapFeedRow)
         .map((row) => toActionContractFromMapFeedRow(row))
     : [];
-  const isTruncated =
+  const sourceIsTruncated =
     Array.isArray(rpcPayload.data) && rpcPayload.data.length >= config.rpcLimit;
 
   const mergedContracts = buildMapContracts(
@@ -472,13 +472,15 @@ export async function fetchMapActions(
     config.scope,
     config.types,
   );
-  const items = buildPublicMapItems(
+  const boundedCandidateItems = buildPublicMapItems(
     mergedContracts,
     pollutionScoreReferences,
     config.impact,
     config.qualityMin,
-    config.limit,
+    config.limit + 1,
   );
+  const isTruncated = sourceIsTruncated || boundedCandidateItems.length > config.limit;
+  const items = boundedCandidateItems.slice(0, config.limit);
 
   return {
     status: "ok",

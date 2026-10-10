@@ -2,6 +2,7 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { MapEmptyState } from "./map-empty-state";
+import { resolveMapEmptyStateMode } from "./map-data-status";
 
 vi.mock("@/components/ui/cmm-button", () => ({
   CmmButton: ({ children }: { children?: React.ReactNode }) =>
@@ -19,6 +20,13 @@ const baseProps = {
 };
 
 describe("MapEmptyState", () => {
+  it("uses a bounded empty state when local filtering finds no visible item", () => {
+    expect(resolveMapEmptyStateMode(3, 0, true)).toBe("truncated");
+    expect(resolveMapEmptyStateMode(3, 0, false)).toBe("filtered");
+    expect(resolveMapEmptyStateMode(3, 1, true)).toBe("filtered");
+    expect(resolveMapEmptyStateMode(0, 0, false)).toBe("empty");
+  });
+
   it("does not present a bounded empty window as proof of perimeter-wide absence", () => {
     const markup = renderToStaticMarkup(
       React.createElement(MapEmptyState, {

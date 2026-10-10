@@ -260,8 +260,7 @@ export async function buildMapActionsRouteResult(
   });
 
   const sourceHealth = resolveMapSourceHealth(result.sourceHealth);
-  const isTruncated = result.isTruncated === true;
-  const items = deps
+  const candidateItems = deps
     .filterActionContractsByScope(
       result.items
         .filter((contract) => isPublicMapContract(contract, now))
@@ -292,8 +291,10 @@ export async function buildMapActionsRouteResult(
         return false;
       }
       return true;
-    })
-    .slice(0, params.limit);
+    });
+  const boundedCandidateItems = candidateItems.slice(0, params.limit + 1);
+  const isTruncated = result.isTruncated === true || boundedCandidateItems.length > params.limit;
+  const items = boundedCandidateItems.slice(0, params.limit);
 
   return {
     body: filterPublicMapResponse({

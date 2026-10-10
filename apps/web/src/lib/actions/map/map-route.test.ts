@@ -449,5 +449,22 @@ describe("buildMapActionsRouteResult", () => {
     );
 
     expect(result.body.items.map((item) => item.id)).toEqual(["kept"]);
+    expect(result.body.isTruncated).toBe(false);
+  });
+
+  it("signals final truncation when admissible items exceed the requested limit", async () => {
+    const deps = buildQualityFilterDeps([
+      { id: "kept-1", status: "approved" },
+      { id: "kept-2", status: "approved" },
+      { id: "kept-3", status: "approved" },
+    ]);
+
+    const result = await buildMapActionsRouteResult(
+      new URL("http://localhost/api/actions/map?limit=2"),
+      deps,
+    );
+
+    expect(result.body.items.map((item) => item.id)).toEqual(["kept-1", "kept-2"]);
+    expect(result.body.isTruncated).toBe(true);
   });
 });

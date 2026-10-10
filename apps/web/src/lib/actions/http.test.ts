@@ -50,6 +50,7 @@ function expectMapActionsFallbackResult(
   expect(result.count).toBe(3);
   expect(result.daysWindow).toBe(15);
   expect(result.partialSource).toBe(false);
+  expect(result.isTruncated).toBe(false);
   expect(result.sourceHealth?.availableSources).toEqual([
     "actions",
     "spots",
@@ -71,6 +72,32 @@ function expectMapActionsFallbackResult(
   expect(action?.contract?.metadata.volunteersCount).toBe(5);
   expect(action?.geometry_source).toBe("gps_tracking");
   expect(action?.contract?.geometry.geometrySource).toBe("gps_tracking");
+}
+
+function buildFallbackMapRow(id: string) {
+  return {
+    source: "actions",
+    entity_type: "action",
+    id,
+    created_at: "2026-06-01T10:00:00.000Z",
+    updated_at: "2026-06-01T11:00:00.000Z",
+    status: "approved",
+    observed_at: "2026-06-01",
+    location_label: `Lieu ${id}`,
+    department_code: null,
+    department_name: null,
+    latitude: 48.8566,
+    longitude: 2.3522,
+    waste_kg: null,
+    cigarette_butts: null,
+    volunteers_count: null,
+    duration_minutes: null,
+    notes: null,
+    derived_geometry_kind: null,
+    derived_geometry_geojson: null,
+    geometry_confidence: null,
+    geometry_source: null,
+  };
 }
 
 describe("createAction", () => {
@@ -401,5 +428,30 @@ describe("fetchMapActions", () => {
     expect(serializedPublic).not.toContain("contributor_clerk_id");
     expect(serializedPublic).not.toContain("mission_id");
     expect(serializedPublic).not.toContain("technical_provenance");
+  });
+
+  it("signals final truncation when fallback projection drops an admissible item", async () => {
+    mocks.getSupabaseBrowserClientMock.mockReturnValue({
+      rpc: mocks.rpcMock.mockResolvedValue({
+        data: [
+          buildFallbackMapRow("fallback-1"),
+          buildFallbackMapRow("fallback-2"),
+          buildFallbackMapRow("fallback-3"),
+        ],
+        error: null,
+      }),
+    });
+    mocks.fetchActionPollutionScoreReferencesMock.mockResolvedValue(null);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 503 })));
+
+    const result = await fetchMapActions({ limit: 2 });
+
+    expect(mocks.rpcMock).toHaveBeenCalledWith(
+      "actions_map_feed",
+      expect.objectContaining({ p_limit: 8 }),
+    );
+    expect(result.items.map((item) => item.id)).toEqual(["fallback-3", "fallback-2"]);
+    expect(result.count).toBe(2);
+    expect(result.isTruncated).toBe(true);
   });
 });

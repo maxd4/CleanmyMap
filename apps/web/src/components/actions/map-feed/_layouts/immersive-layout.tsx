@@ -29,7 +29,7 @@ function resolveImmersiveLayoutState(
   return {
     isEmerald: tone === "emerald",
     hasItems: itemCount > 0,
-    emptyMode: resolveMapEmptyStateMode(allItemCount, isTruncated),
+    emptyMode: resolveMapEmptyStateMode(allItemCount, itemCount, isTruncated),
   };
 }
 

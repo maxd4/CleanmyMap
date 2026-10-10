@@ -3,10 +3,17 @@ import { cn } from "@/lib/utils";
 export type MapEmptyStateMode = "filtered" | "empty" | "truncated";
 
 export function resolveMapEmptyStateMode(
-  itemCount: number,
+  loadedItemCount: number,
+  visibleItemCount: number,
   isTruncated: boolean,
 ): MapEmptyStateMode {
-  return itemCount > 0 ? "filtered" : isTruncated ? "truncated" : "empty";
+  if (visibleItemCount > 0) {
+    return "filtered";
+  }
+  if (isTruncated) {
+    return "truncated";
+  }
+  return loadedItemCount > 0 ? "filtered" : "empty";
 }
 
 export function getMapEmptyStateCopy(

@@ -23,7 +23,7 @@ export function DefaultLayout(props: DefaultLayoutProps) {
   } = props;
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
-  const emptyMode = resolveMapEmptyStateMode(allItems.length, isTruncated);
+  const emptyMode = resolveMapEmptyStateMode(allItems.length, items.length, isTruncated);
 
   return (
     <>
