@@ -159,10 +159,48 @@ function ActionCreationSectionContent({
   onPreparationContextChange: (update: Partial<Pick<ActionPreparationContext, "preparationChecklist" | "suggestedMaterials" | "materialsProvided" | "recommendedMaterials">>) => void;
   preparationPersistenceStatus: ActionPreparationPersistenceStatus;
 }) {
-  if (activeSection === "essentiel") return <ActionBeforeDeclarationForm {...formProps} initialActionId={currentActionId} activeSection="essentiel" preparationContext={preparationContext} guidedWorkflow guidedReadiness={formalitiesReadiness} onFormChange={onFormChange} onActionPersisted={onActionPersisted} onPassToComplete={onPassToComplete} />;
-  if (activeSection === "equipe") return <ActionBeforeDeclarationForm {...formProps} initialActionId={currentActionId} activeSection="equipe" preparationContext={preparationContext} guidedWorkflow guidedReadiness={formalitiesReadiness} onFormChange={onFormChange} onActionPersisted={onActionPersisted} onPassToComplete={onPassToComplete} />;
-  if (activeSection === "verification") return <div className="space-y-4"><ActionCreationLegalPanel actionId={currentActionId} onReadinessChange={onFormalitiesReadiness} /><ActionBeforeDeclarationForm {...formProps} initialActionId={currentActionId} activeSection="verification" preparationContext={preparationContext} guidedWorkflow guidedReadiness={formalitiesReadiness} onFormChange={onFormChange} onActionPersisted={onActionPersisted} onPassToComplete={onPassToComplete} /></div>;
-  return <div className="space-y-4" data-active-subsection={initialSubsection ?? "terrain"}><div className="grid gap-4 xl:grid-cols-2"><CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-3"><div className="flex items-center gap-2"><Navigation size={18} className="text-emerald-700" aria-hidden="true" /><h3 className="text-lg font-black text-emerald-950">Carte et itinéraire</h3></div><p className="cmm-text-body cmm-text-primary">L’itinéraire reste optionnel et réutilise le planificateur existant.</p><EffectiveAuthStateProvider localDevAuth={localDevAuth}><RouteSection actionId={currentActionId} /></EffectiveAuthStateProvider></div></CmmCard><CmmCard tone="emerald" variant="glass" size="lg"><div className="space-y-3"><div className="flex items-center gap-2"><CloudSun size={18} className="text-emerald-700" aria-hidden="true" /><h3 className="text-lg font-black text-emerald-950">Météo et créneau</h3></div><p className="cmm-text-body cmm-text-primary">Les prévisions restent consultatives et ne modifient l’action qu’après un choix explicite.</p><WeatherSection draftContext={draftContext} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} onPreparationSelection={onPreparationSelection} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} /></div></CmmCard></div></div>;
+  const form = (
+    <ActionBeforeDeclarationForm
+      {...formProps}
+      initialActionId={currentActionId}
+      activeSection={activeSection === "terrain" ? "essentiel" : activeSection}
+      preparationContext={preparationContext}
+      guidedWorkflow
+      guidedReadiness={formalitiesReadiness}
+      onFormChange={onFormChange}
+      onActionPersisted={onActionPersisted}
+      onPassToComplete={onPassToComplete}
+    />
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className={activeSection === "terrain" ? "hidden" : undefined} aria-hidden={activeSection === "terrain" ? true : undefined}>
+        {form}
+      </div>
+      {activeSection === "verification" ? <ActionCreationLegalPanel actionId={currentActionId} onReadinessChange={onFormalitiesReadiness} /> : null}
+      {activeSection === "terrain" ? (
+        <div data-active-subsection={initialSubsection ?? "terrain"}>
+          <div className="grid gap-4 xl:grid-cols-2">
+            <CmmCard tone="emerald" variant="glass" size="lg">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2"><Navigation size={18} className="text-emerald-700" aria-hidden="true" /><h3 className="text-lg font-black text-emerald-950">Carte et itinéraire</h3></div>
+                <p className="cmm-text-body cmm-text-primary">L’itinéraire reste optionnel et réutilise le planificateur existant.</p>
+                <EffectiveAuthStateProvider localDevAuth={localDevAuth}><RouteSection actionId={currentActionId} /></EffectiveAuthStateProvider>
+              </div>
+            </CmmCard>
+            <CmmCard tone="emerald" variant="glass" size="lg">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2"><CloudSun size={18} className="text-emerald-700" aria-hidden="true" /><h3 className="text-lg font-black text-emerald-950">Météo et créneau</h3></div>
+                <p className="cmm-text-body cmm-text-primary">Les prévisions restent consultatives et ne modifient l’action qu’après un choix explicite.</p>
+                <WeatherSection draftContext={draftContext} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} onPreparationSelection={onPreparationSelection} onPreparationValidated={onPreparationValidated} onPreparationContextChange={onPreparationContextChange} />
+              </div>
+            </CmmCard>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function ActionCreationSectionsView({

@@ -127,7 +127,7 @@ describe("ActionBeforeDeclarationForm publication flow", () => {
     expect(html).toContain("Annuler");
   });
 
-  it("keeps the guided workflow at a pre-action recap without publication or recruitment controls", () => {
+  it("keeps the guided workflow explicit: save first, then publish after confirmation", () => {
     useBeforeActionFormMock.mockReturnValue(buildHookState({ publishedAt: null, publicationState: "idle" }));
 
     const html = renderToStaticMarkup(
@@ -138,8 +138,9 @@ describe("ActionBeforeDeclarationForm publication flow", () => {
       }),
     );
 
-    expect(html).toContain("Préformulaire prêt à publier");
-    expect(html).not.toContain("Publier cette action");
+    expect(html).toContain("Vérifier avant publication");
+    expect(html).toContain("Publier cette action");
+    expect(html).toContain("La pré-action reste privée");
     expect(html).not.toContain("Partager dans la messagerie");
     expect(html).not.toContain("Rejoindre une action");
   });

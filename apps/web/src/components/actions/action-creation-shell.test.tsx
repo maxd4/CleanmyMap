@@ -138,7 +138,11 @@ describe("ActionCreationShell", () => {
     expect(markup).toContain('data-workflow-section="terrain"');
     expect(markup).toContain('data-testid="route-engine"');
     expect(markup).toContain('data-testid="weather-engine"');
-    expect(markup).not.toContain('data-testid="pre-formulaire-engine"');
+    expect(markup).toContain('data-testid="pre-formulaire-engine"');
+    expect(markup).toContain('class="hidden" aria-hidden="true"');
+    expect(beforeFormPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({ activeSection: "essentiel" }),
+    );
   });
 
   it("starts a new guided preparation on the route step", () => {

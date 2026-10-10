@@ -81,6 +81,16 @@ export async function persistBeforeAction(
   return { actionId: "id" in result ? result.id : result.actionId, created: !actionId };
 }
 
+export function resolveBeforeActionMutationId(
+  initialActionId: string | null | undefined,
+  createdId: string | null,
+): string | null {
+  if (initialActionId && createdId && initialActionId !== createdId) {
+    return initialActionId;
+  }
+  return createdId ?? initialActionId ?? null;
+}
+
 function applyFetchedBeforeAction({
   action,
   resolvedDefaultActorName,
@@ -259,10 +269,12 @@ export function useBeforeActionHydration({
   setForm,
   onFormChange,
   setCreatedId,
+  createdId,
   setPublishedAction,
   setPublishedAt,
   setTerminalActionStatus,
   setSubmissionState,
+  errorMessage,
   setErrorMessage,
   setPersistenceStatus,
   preparationContext,
@@ -271,8 +283,10 @@ export function useBeforeActionHydration({
   initialActionId?: string | null;
   initialRecordType: "action";
   form: FormState;
+  errorMessage: string | null;
   setErrorMessage: StateSetter<string | null>;
   preparationContext?: ActionPreparationContext;
+  createdId: string | null;
 } & BeforeActionRecordSetters) {
   const [isHydratingAction, setIsHydratingAction] = useState(Boolean(initialActionId));
   const initialFormRef = useRef(form);
@@ -293,7 +307,7 @@ export function useBeforeActionHydration({
   }, [form, initialActionId, onFormChange, preparationContext, resolvedDefaultActorName]);
 
   useEffect(() => {
-    if (!initialActionId) {
+    if (!initialActionId || createdId === initialActionId) {
       return;
     }
     let active = true;
@@ -321,11 +335,12 @@ export function useBeforeActionHydration({
       setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible de reprendre cette pré-action pour le moment."); setSubmissionState("error"); setPersistenceStatus("error"); setIsHydratingAction(false);
     });
     return () => { active = false; };
-  }, [initialActionId, initialRecordType, setCreatedId, setErrorMessage, setForm, setPersistenceStatus, setPublishedAction, setPublishedAt, setSubmissionState, setTerminalActionStatus]);
+  }, [createdId, initialActionId, initialRecordType, setCreatedId, setErrorMessage, setForm, setPersistenceStatus, setPublishedAction, setPublishedAt, setSubmissionState, setTerminalActionStatus]);
 
   usePlannerActionHandoffHydration({ initialActionId, form, setForm, onFormChange, preparationContext });
 
-  return isHydratingAction;
+  const isActionSwitching = Boolean(initialActionId && createdId !== initialActionId && !errorMessage);
+  return isHydratingAction || isActionSwitching;
 }
 
 export function useBeforeActionFieldUpdates({
@@ -380,7 +395,7 @@ export function useBeforeActionFieldUpdates({
 export function useBeforeActionSubmission({
   form,
   submissionState,
-  initialActionId,
+  actionId,
   linkedEventId,
   userMetadata,
   isAuthenticated,
@@ -396,7 +411,7 @@ export function useBeforeActionSubmission({
 }: {
   form: FormState;
   submissionState: SubmissionState;
-  initialActionId?: string | null;
+  actionId?: string | null;
   linkedEventId?: string;
   userMetadata: ActionBeforeDeclarationFormProps["userMetadata"];
   isAuthenticated: boolean;
@@ -421,12 +436,12 @@ export function useBeforeActionSubmission({
     const payload = buildBeforeActionPayload({ form: normalizedForm, linkedEventId, userMetadata });
     setSubmissionState("pending"); setErrorMessage(null); setValidationIssues([]); setValidationIssueFields([]);
     try {
-      const result = await persistBeforeAction(initialActionId, payload);
+      const result = await persistBeforeAction(actionId, payload);
       setCreatedId(result.actionId); onActionPersisted?.(result.actionId);
-      if (initialActionId) { const canonicalAction = await fetchActionById(result.actionId); setPublishedAction(canonicalAction); setPublishedAt(canonicalAction.publishedAt ?? null); }
+      if (actionId) { const canonicalAction = await fetchActionById(result.actionId); setPublishedAction(canonicalAction); setPublishedAt(canonicalAction.publishedAt ?? null); }
       setSubmissionState("success");
       setPersistenceStatus("account");
-      clearDraft(initialActionId ?? null);
+      clearDraft(actionId ?? null);
       await trackFunnel("submit_success", "quick", { source: "action_before_declaration_form", createdId: result.actionId, isAuthenticated });
     } catch (error: unknown) {
       setSubmissionState("error"); setPersistenceStatus("error"); setErrorMessage(error instanceof Error && error.message ? error.message : "Impossible d'enregistrer le pré-formulaire pour le moment.");

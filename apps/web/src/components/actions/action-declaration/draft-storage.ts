@@ -237,10 +237,15 @@ export function subscribeToDraftChanges(callback: () => void): () => void {
 
 export function clearDraft(actionId: string | null = null): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(scopedDraftKey(actionId));
-  window.localStorage.removeItem(scopedDraftDateKey(actionId));
-  cachedDraftSnapshot = null;
-  emitDraftChange();
+  try {
+    window.localStorage.removeItem(scopedDraftKey(actionId));
+    window.localStorage.removeItem(scopedDraftDateKey(actionId));
+  } catch {
+    // Clearing a local draft is best effort and must not turn a successful server save into an error.
+  } finally {
+    cachedDraftSnapshot = null;
+    emitDraftChange();
+  }
 }
 
 export function saveDraft(

@@ -15,6 +15,7 @@ import {
   useBeforeActionHydration,
   useBeforeActionPublication,
   useBeforeActionSubmission,
+  resolveBeforeActionMutationId,
 } from "./use-before-action-workflow";
 import { useBeforeActionPersistence } from "./use-before-action-persistence";
 
@@ -72,14 +73,15 @@ export function useBeforeActionForm({
   const [validationIssues, setValidationIssues] = useState<string[]>([]);
   const [validationIssueFields, setValidationIssueFields] = useState<Array<"actionTitle" | "actionDate" | "associationName" | "organizerType" | "departureLocationLabel" | "arrivalLocationLabel" | "meetingTime" | "departureTime" | "durationMinutes" | "eventStartTime" | "eventEndTime" | "volunteersCount" | "volunteerParticipation">>([]);
   const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
+  const persistedActionId = resolveBeforeActionMutationId(initialActionId, createdId);
 
-  const isHydratingAction = useBeforeActionHydration({ resolvedDefaultActorName, initialActionId, initialRecordType, form, setForm, onFormChange, setCreatedId, setPublishedAction, setPublishedAt, setTerminalActionStatus, setSubmissionState, setErrorMessage, setPersistenceStatus, preparationContext });
-  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: initialActionId, linkedEventId, submissionState, isAuthenticated, setForm, onFormChange, setPersistenceStatus, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
-  const handleSubmit = useBeforeActionSubmission({ form, submissionState, initialActionId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setPersistenceStatus, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
+  const isHydratingAction = useBeforeActionHydration({ resolvedDefaultActorName, initialActionId, initialRecordType, form, setForm, onFormChange, setCreatedId, createdId, setPublishedAction, setPublishedAt, setTerminalActionStatus, setSubmissionState, errorMessage, setErrorMessage, setPersistenceStatus, preparationContext });
+  const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: persistedActionId, linkedEventId, submissionState, isAuthenticated, setForm, onFormChange, setPersistenceStatus, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
+  const handleSubmit = useBeforeActionSubmission({ form, submissionState, actionId: persistedActionId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setPersistenceStatus, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
   const { requestPublish, cancelPublication, confirmPublish } = useBeforeActionPublication({ createdId, publishedAt, publicationState, setForm, setPublishedAction, setCreatedId, setPublishedAt, setPublicationState, setPublicationError, setPublicationConfirmationOpen });
   const shareLink = createdId ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}` : null;
   const summaryNote = useMemo(() => buildPreActionSummaryNote(form), [form]);
-  const onContinueComplete = () => continueToComplete(form, createdId, initialActionId ?? createdId, onPassToComplete);
+  const onContinueComplete = () => continueToComplete(form, createdId, persistedActionId, onPassToComplete);
 
   return { form, submissionState, errorMessage, createdId, publishedAction, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction, validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete, persistenceStatus };
 }

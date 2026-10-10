@@ -215,6 +215,18 @@ describe("action declaration draft storage", () => {
     expect(store.has(ACTION_DECLARATION_DRAFT_DATE_KEY)).toBe(false);
   });
 
+  it("does not throw when local storage refuses to clear a draft", () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        removeItem: () => {
+          throw new Error("storage unavailable");
+        },
+      },
+    });
+
+    expect(() => clearDraft()).not.toThrow();
+  });
+
   it("ignores malformed stored drafts instead of restoring fallback silently", () => {
     const { store } = installLocalStorage();
     store.set(ACTION_DECLARATION_DRAFT_KEY, "{not-json");

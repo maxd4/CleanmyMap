@@ -81,7 +81,7 @@ test.describe("campaign 1 - public reading and late authentication", () => {
     await expect(page.getByRole("heading", { name: "Organiser une action" })).toBeVisible();
 
     await page.getByRole("button", { name: /Essentiel/i }).click();
-    await expect(page.getByRole("heading", { name: "Action prévue" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Les informations essentielles" })).toBeVisible();
     await expect(page.getByLabel("Titre de l’action")).toBeVisible();
   });
 
@@ -94,33 +94,26 @@ test.describe("campaign 1 - public reading and late authentication", () => {
       await page.goto("/actions/new");
       await page.getByRole("button", { name: /Essentiel/i }).click();
 
-      await expect(page.getByRole("heading", { name: "Action prévue" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Les informations essentielles" })).toBeVisible();
       await expect(page.getByLabel("Titre de l’action")).toBeVisible();
       await expect(page.getByLabel("Date prévue")).toBeVisible();
       await expect(page.getByLabel("Heure de rendez-vous")).toBeVisible();
       await expect(page.getByLabel("Heure de départ")).toBeVisible();
       await expect(page.getByLabel("Durée estimée")).toBeVisible();
       await expect(page.getByText("Durée non renseignée", { exact: true })).toBeVisible();
-      await expect(page.getByText("Accueil des bénévoles au point de rendez-vous.", { exact: true })).toBeVisible();
-      await expect(page.getByText("Départ effectif après le rendez-vous.", { exact: true })).toBeVisible();
-      await expect(page.getByLabel("Commune ou secteur d’intervention")).toBeVisible();
-      await expect(page.getByRole("combobox", { name: "Point de rendez-vous précis" })).toBeVisible();
-      await expect(page.getByLabel("Nombre de bénévoles attendus")).toBeVisible();
-      await expect(page.getByLabel("Message complémentaire aux participants")).toBeVisible();
-      await expect(page.getByRole("combobox", { name: "Type d’action prévue" })).toHaveValue("");
-      await expect(page.getByRole("combobox", { name: "Type de zone" })).toHaveValue("");
-      await expect(page.getByRole("combobox", { name: "Niveau de difficulté estimé" })).toHaveValue("");
+      await expect(page.getByText("Accueil au point de rendez-vous.", { exact: true })).toBeVisible();
+      await expect(page.getByText("Facultative.", { exact: true })).toBeVisible();
+      await expect(page.getByLabel("Commune ou secteur")).toBeVisible();
+      await expect(page.getByRole("combobox", { name: "Point de rendez-vous" })).toBeVisible();
+      await expect(page.getByRole("combobox", { name: "Type d’action" })).toHaveValue("");
 
-      await page.getByText("Créneau global", { exact: true }).click();
-      await expect(page.getByLabel("Début du créneau global")).toBeVisible();
-      await expect(page.getByLabel("Fin du créneau global")).toBeVisible();
-      await page.getByText("Options avancées", { exact: true }).click();
-      await expect(page.getByLabel("Latitude")).toBeVisible();
-      await expect(page.getByLabel("Longitude")).toBeVisible();
-      await page.getByText("Déchets attendus", { exact: true }).click();
-      await expect(page.getByText(/catégories susceptibles d’être rencontrées/i)).toBeVisible();
-      await page.getByRole("button", { name: /Verre cassé/i }).click();
-      await expect(page.getByText(/Gants anti-coupure et contenant rigide adapté/)).toBeVisible();
+      await page.getByRole("button", { name: /Terrain/i }).click();
+      await expect(page.getByRole("heading", { name: "Terrain" })).toBeVisible();
+      await page.getByRole("button", { name: /Équipe et logistique/i }).click();
+      await expect(page.getByRole("heading", { name: "Inscriptions des bénévoles" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Préparation et sécurité" })).toBeVisible();
+      await expect(page.getByText("Matériel à prévoir", { exact: true })).toBeVisible();
+      await expect(page.getByText("Accessibilité", { exact: true })).toBeVisible();
 
       const width = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,

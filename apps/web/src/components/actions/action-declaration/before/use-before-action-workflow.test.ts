@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { ActionEditorRecord } from "@/lib/actions/http";
-import { applyPreparationContextToForm, buildBeforeActionFormFromAction, buildBeforeActionInitialForm, mergeBeforeActionHydrationWithLocalChanges } from "./use-before-action-workflow";
+import { applyPreparationContextToForm, buildBeforeActionFormFromAction, buildBeforeActionInitialForm, mergeBeforeActionHydrationWithLocalChanges, resolveBeforeActionMutationId } from "./use-before-action-workflow";
 import type { ActionPreparationContext } from "@/lib/actions/action-preparation-context";
 
 describe("before-action resume hydration", () => {
+  it("keeps the first server id as the mutation owner for later saves", () => {
+    expect(resolveBeforeActionMutationId(null, null)).toBeNull();
+    expect(resolveBeforeActionMutationId(null, "action-new")).toBe("action-new");
+    expect(resolveBeforeActionMutationId("action-existing", "action-new")).toBe("action-existing");
+  });
+
   it("applies only the confirmed weather fields and never invents event timing", () => {
     const form = {
       ...buildBeforeActionInitialForm(["Maxence"], "Maxence", "action"),
