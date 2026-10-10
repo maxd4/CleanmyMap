@@ -3,6 +3,10 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const appSource = readFileSync(fileURLToPath(new URL('../App.tsx', import.meta.url)), 'utf8')
+const pendingPollingSource = readFileSync(
+  fileURLToPath(new URL('../lib/pending-gps-point-polling.ts', import.meta.url)),
+  'utf8',
+)
 const mapSource = readFileSync(fileURLToPath(new URL('../screens/mission-active-map.tsx', import.meta.url)), 'utf8')
 
 describe('active mobile mission live map contract', () => {
@@ -34,6 +38,15 @@ describe('active mobile mission live map contract', () => {
     expect(mapSource).toMatch(/pendingGpsPointCount/)
     expect(mapSource).toMatch(/Distance live indicative/)
     expect(mapSource).not.toMatch(/distance_m|duration_s/)
+  })
+
+  it('only polls pending points while the active mission screen is visible', () => {
+    expect(appSource).toContain('usePendingGpsPointCountPolling')
+    expect(pendingPollingSource).toContain('createPendingGpsPointPoller')
+    expect(pendingPollingSource).toContain("if (isVisible) poller?.start()")
+    expect(pendingPollingSource).toContain("else poller?.stop()")
+    expect(pendingPollingSource).toContain('pollerRef.current?.dispose()')
+    expect(appSource).not.toContain('setInterval(() => void refreshPendingGpsPointCount(), 5000)')
   })
 
   it('keeps the field surface map-first with compact status and primary stop action', () => {

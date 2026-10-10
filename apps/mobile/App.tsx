@@ -20,6 +20,7 @@ import {
 } from './lib/tracking-service'
 import { clearStoredForegroundTrack, flushBuffer, getPendingGpsPointCount } from './lib/storage'
 import { reconcilePendingLinkedMissions } from './lib/linked-mission-service'
+import { usePendingGpsPointCountPolling } from './lib/pending-gps-point-polling'
 import { MobileShell } from './screens/mobile-shell'
 import { MissionActiveMap } from './screens/mission-active-map'
 import { MissionCompletionScreen, MissionFinalizationScreen } from './screens/mission-finalization'
@@ -45,6 +46,7 @@ function useRestoreActiveMission({
   setPhase,
   startDurationTimer,
   stopDurationTimer,
+  refreshPendingGpsPointCount,
 }: {
   isLoaded: boolean
   isSignedIn: boolean
@@ -52,6 +54,7 @@ function useRestoreActiveMission({
   setPhase: React.Dispatch<React.SetStateAction<TrackingPhase>>
   startDurationTimer: (startedAt: string) => void
   stopDurationTimer: () => void
+  refreshPendingGpsPointCount: () => Promise<void>
 }) {
   useEffect(() => {
     stopDurationTimer()
@@ -63,7 +66,7 @@ function useRestoreActiveMission({
       void reconcilePendingLinkedMissions()
       // Un retour au premier plan est aussi un point de reprise réseau. Le
       // buffer reste Clerk-only et le storage sérialise les flush concurrents.
-      void flushBuffer()
+      const flushPromise = flushBuffer().catch(() => null)
       const id = await restoreActiveTracking()
       if (!id || cancelled) return
 
@@ -72,6 +75,8 @@ function useRestoreActiveMission({
         setMission(result.data)
         setPhase('tracking')
         startDurationTimer(result.data.started_at ?? new Date().toISOString())
+        await flushPromise
+        if (!cancelled) await refreshPendingGpsPointCount()
       }
     }
 
@@ -85,7 +90,7 @@ function useRestoreActiveMission({
       appStateSubscription.remove()
       stopDurationTimer()
     }
-  }, [isLoaded, isSignedIn, setMission, setPhase, startDurationTimer, stopDurationTimer])
+  }, [isLoaded, isSignedIn, refreshPendingGpsPointCount, setMission, setPhase, startDurationTimer, stopDurationTimer])
 }
 
 function CompanionApp() {
@@ -100,7 +105,6 @@ function CompanionApp() {
   const [completionSummary, setCompletionSummary] = useState<Mission | null>(null)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const bufferTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const stopDurationTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -113,6 +117,18 @@ function CompanionApp() {
     timerRef.current = setInterval(() => setDuration(formatDuration(startedAt)), 1000)
   }, [stopDurationTimer])
 
+  useEffect(() => {
+    setCompletionSummary(null)
+    setFinalizationStage(null)
+    setPhase('idle')
+  }, [isLoaded, isSignedIn, setPhase])
+
+  const refreshPendingGpsPointCount = usePendingGpsPointCountPolling({
+    isVisible: phase === 'tracking' && mission !== null,
+    readCount: getPendingGpsPointCount,
+    onCount: setPendingGpsPointCount,
+  })
+
   useRestoreActiveMission({
     isLoaded,
     isSignedIn: Boolean(isSignedIn),
@@ -120,26 +136,8 @@ function CompanionApp() {
     setPhase,
     startDurationTimer,
     stopDurationTimer,
+    refreshPendingGpsPointCount,
   })
-
-  useEffect(() => {
-    setCompletionSummary(null)
-    setFinalizationStage(null)
-    setPhase('idle')
-  }, [isLoaded, isSignedIn, setPhase])
-
-  useEffect(() => {
-    async function refreshPendingGpsPointCount() {
-      setPendingGpsPointCount(await getPendingGpsPointCount())
-    }
-
-    void refreshPendingGpsPointCount()
-    bufferTimerRef.current = setInterval(() => void refreshPendingGpsPointCount(), 5000)
-
-    return () => {
-      if (bufferTimerRef.current) clearInterval(bufferTimerRef.current)
-    }
-  }, [])
 
   async function handleStartMobileMission() {
     setErrorMsg(null)
@@ -187,6 +185,7 @@ function CompanionApp() {
     stopDurationTimer()
 
     const result = await stopTracking(activeMission.id, setFinalizationStage)
+    await refreshPendingGpsPointCount()
     if (!result.ok) {
       setErrorMsg(result.error)
       setFinalizationStage(null)
