@@ -48,6 +48,17 @@ describe('mobile GPS offline storage', () => {
     expect(await getPendingGpsPointCount()).toBe(1)
   })
 
+  it('keeps the buffer when the Clerk session is unavailable', async () => {
+    await bufferPoint(point)
+
+    await expect(flushBuffer()).resolves.toEqual({
+      ok: false,
+      error: 'Connexion Clerk requise pour synchroniser les données.',
+    })
+
+    expect(await getPendingGpsPointCount()).toBe(1)
+  })
+
 })
 
 it('keeps a point buffered while an earlier replay is in flight', async () => {

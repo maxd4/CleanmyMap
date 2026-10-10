@@ -168,6 +168,19 @@ describe('mobile tracking service', () => {
     expect(state.client.from).not.toHaveBeenCalled()
   })
 
+  it('refuses the permission gate when background GPS permission is denied', async () => {
+    state.client = missionClient()
+    state.backgroundPermission = 'denied'
+
+    const result = await requestTrackingPermissions()
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Permission GPS arrière-plan refusée. Le suivi s'arrêtera si l'écran est éteint.",
+    })
+    expect(state.client.from).not.toHaveBeenCalled()
+  })
+
   it('surfaces a Supabase mission error without inventing mission data', async () => {
     state.client = missionClient({ error: new Error('RLS denied') })
 
@@ -196,6 +209,25 @@ describe('mobile tracking service', () => {
       longitude: 2.3522,
       accuracy_m: null,
       altitude_m: null,
+      recorded_at: expect.any(String),
+    })
+  })
+
+  it('buffers a GPS point when the Clerk session is unavailable', async () => {
+    const result = await saveLocationPoint('mission-1', {
+      latitude: 48.8566,
+      longitude: 2.3522,
+      accuracy: 5,
+      altitude: 35,
+    })
+
+    expect(result).toEqual({ ok: false, error: CLERK_SESSION_REQUIRED_ERROR })
+    expect(bufferPoint).toHaveBeenCalledWith({
+      mission_id: 'mission-1',
+      latitude: 48.8566,
+      longitude: 2.3522,
+      accuracy_m: 5,
+      altitude_m: 35,
       recorded_at: expect.any(String),
     })
   })

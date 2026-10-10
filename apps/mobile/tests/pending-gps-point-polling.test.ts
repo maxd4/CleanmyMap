@@ -113,4 +113,21 @@ describe('pending GPS point polling', () => {
     await vi.advanceTimersByTimeAsync(PENDING_GPS_POINT_POLL_INTERVAL_MS)
     expect(readCount).toHaveBeenCalledOnce()
   })
+
+  it('ignores a transient storage read failure and keeps polling', async () => {
+    const readCount = vi.fn()
+      .mockRejectedValueOnce(new Error('storage unavailable'))
+      .mockResolvedValue(8)
+    const onCount = vi.fn()
+    const poller = createPendingGpsPointPoller({ readCount, onCount })
+
+    poller.start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(onCount).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(PENDING_GPS_POINT_POLL_INTERVAL_MS)
+
+    expect(readCount).toHaveBeenCalledTimes(2)
+    expect(onCount).toHaveBeenLastCalledWith(8)
+  })
 })
