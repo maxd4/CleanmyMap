@@ -18,6 +18,7 @@ import {
   buildActionInsertPayload,
   buildCreateActionGeometry,
 } from "./store-create-contract";
+import type { CreateActionPayload } from "./types";
 import { createRoutePlannerSnapshotInput } from "@/lib/route/route-calibration-test-fixtures";
 
 const routeContext = buildRouteCalibrationContext({
@@ -29,7 +30,7 @@ const routeContext = buildRouteCalibrationContext({
   plannerSnapshot: buildRoutePlannerSnapshot(createRoutePlannerSnapshotInput()),
 });
 
-const payload = {
+const payload: CreateActionPayload = {
   associationName: "Action spontanée",
   organizerType: "association" as const,
   actionDate: "2026-09-02",
@@ -40,6 +41,12 @@ const payload = {
   durationMinutes: 60,
   routeCalibrationContext: routeContext,
   preparationData: {
+    accessibilityStatus: "conditions_reported",
+    materialsProvided: "Sacs disponibles au départ.",
+    suggestedMaterials: ["gloves", "bags"],
+    preparationChecklist: [
+      { key: "materials_checked", label: "Matériel vérifié", checked: true },
+    ],
     operationalRoute: createOperationalRouteFromRecommendation({
       generatedAt: "2026-09-01T09:00:00.000Z",
       groupCount: 1,
@@ -96,6 +103,12 @@ describe("route calibration action handoff", () => {
     });
 
     expect(row.preparation_data.routeCalibrationContext).toEqual(routeContext);
+    expect(row.preparation_data).toMatchObject({
+      accessibilityStatus: "conditions_reported",
+      materialsProvided: "Sacs disponibles au départ.",
+      suggestedMaterials: ["gloves", "bags"],
+      preparationChecklist: [{ key: "materials_checked", checked: true }],
+    });
     expect(row.preparation_data).toHaveProperty("operationalRoute");
     expect(row.preparation_data).not.toHaveProperty("actualRoute");
     expect(row.preparation_data.routeCalibrationContext?.plannerSnapshot).toMatchObject({

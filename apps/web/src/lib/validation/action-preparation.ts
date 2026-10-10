@@ -16,11 +16,41 @@ import {
   wasteCategorySlugSchema,
 } from "./action-measurements";
 import { preparationFormalitiesSchemaFields } from "./action-formalities";
+import {
+  ACTION_ACCESSIBILITY_STATUSES,
+  ACTION_MATERIAL_SUGGESTIONS,
+  isActionMaterialSuggestion,
+} from "@/lib/actions/preparation-contract";
+import type { ActionMaterialSuggestion } from "@/lib/actions/preparation-contract";
 
 export const routeCalibrationContextSchema = z.custom<RouteCalibrationContext>(
   isRouteCalibrationContext,
   "Contexte historique de calibration invalide.",
 );
+
+const accessibilityStatusSchema = z.enum(ACTION_ACCESSIBILITY_STATUSES);
+const materialSuggestionSchema = z.custom<ActionMaterialSuggestion>(
+  isActionMaterialSuggestion,
+  "Suggestion de matériel inconnue.",
+);
+const preparationChecklistItemSchema = z.object({
+  key: z.string().trim().min(1).max(64),
+  label: z.string().trim().min(1).max(120),
+  checked: z.boolean(),
+}).strict();
+const preparationChecklistSchema = z.array(preparationChecklistItemSchema).max(12).superRefine((items, ctx) => {
+  const seen = new Set<string>();
+  items.forEach((item, index) => {
+    if (seen.has(item.key)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [index, "key"],
+        message: "Les identifiants de checklist doivent être uniques.",
+      });
+    }
+    seen.add(item.key);
+  });
+});
 
 export const preparationDataSchema = z
   .object({
@@ -50,11 +80,15 @@ export const preparationDataSchema = z
     placeType: z.string().max(120).optional(),
     estimatedDifficulty: z.enum(["facile", "moderee", "soutenue"]).optional(),
     accessibility: z.string().max(1000).optional(),
+    accessibilityStatus: accessibilityStatusSchema.optional(),
     safetyInstructions: z.string().max(2000).optional(),
     recommendedMaterials: z.string().max(2000).optional(),
+    materialsProvided: z.string().max(2000).optional(),
+    suggestedMaterials: z.array(materialSuggestionSchema).max(ACTION_MATERIAL_SUGGESTIONS.length).optional(),
     participantMessage: z.string().max(2000).optional(),
     ...preparationFormalitiesSchemaFields,
     logisticsNotes: z.string().max(2000).optional(),
+    preparationChecklist: preparationChecklistSchema.optional(),
     checklistBeforeDeparture: z.string().max(2000).optional(),
     volunteersExpected: z.number().int().min(0).max(500).optional(),
     volunteerParticipation: volunteerParticipationSchema,

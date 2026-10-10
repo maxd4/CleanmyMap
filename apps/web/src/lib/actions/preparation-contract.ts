@@ -1,4 +1,4 @@
-const ACTION_ACCESSIBILITY_STATUSES = [
+export const ACTION_ACCESSIBILITY_STATUSES = [
   "not_evaluated",
   "conditions_reported",
   "obstacles_identified",
@@ -33,6 +33,10 @@ const VALID_MATERIAL_SUGGESTIONS = new Set<ActionMaterialSuggestion>(
   ACTION_MATERIAL_SUGGESTIONS.map(({ value }) => value),
 );
 
+export function isActionMaterialSuggestion(value: unknown): value is ActionMaterialSuggestion {
+  return typeof value === "string" && VALID_MATERIAL_SUGGESTIONS.has(value as ActionMaterialSuggestion);
+}
+
 export function normalizeAccessibilityStatus(value: unknown): ActionAccessibilityStatus | undefined {
   return typeof value === "string" && ACTION_ACCESSIBILITY_STATUSES.includes(value as ActionAccessibilityStatus)
     ? value as ActionAccessibilityStatus
@@ -43,7 +47,7 @@ export function normalizeSuggestedMaterials(value: unknown): ActionMaterialSugge
   if (!Array.isArray(value)) return undefined;
   const normalized = value.filter(
     (item): item is ActionMaterialSuggestion =>
-      typeof item === "string" && VALID_MATERIAL_SUGGESTIONS.has(item as ActionMaterialSuggestion),
+      isActionMaterialSuggestion(item),
   );
   return [...new Set(normalized)];
 }
