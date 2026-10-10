@@ -13,11 +13,18 @@ nommé `supabase-vercel-codex`. Le `project ref` doit être confirmé dans
 `apps/web/supabase/config.toml` et dans le Dashboard avant de lancer un audit
 lié. Cette information ne remplace pas une authentification CLI valide.
 
-## État courant — ré-audit linked-only du 27 septembre 2026
+## Snapshot historique — ré-audit linked-only du 27 septembre 2026
 
-Cette section est la référence courante. Les sections datées plus bas sont
-conservées comme historique et ne doivent pas être interprétées comme l'état
-du projet au 20 septembre 2026.
+Cette section conserve le snapshot daté observé le 27 septembre 2026. Elle ne
+constitue pas une référence de l'état courant et ne doit pas être utilisée pour
+déduire l'inventaire actuel du projet. Les mesures et sorties ci-dessous sont
+préservées telles qu'elles ont été observées à cette date.
+
+Pour établir l'état courant, suivre les commandes et contrôles Supabase
+documentés dans le [guide de test](../development/TESTING.md), depuis
+`apps/web`, avec une authentification CLI valide. En particulier, rejouer la
+liste des migrations liées et les advisors linked ; aucun compteur statique de
+ce snapshot ne remplace ces contrôles.
 
 Le projet linked `supabase-vercel-codex` (`trktzkgujgpgsgkoyndn`) est à jour
 sur l'arbre canonique : **170 migrations linked**, la dernière étant
@@ -53,7 +60,7 @@ que `service_role` l'a ; les fonctions restent `SECURITY INVOKER` avec
 `search_path=pg_catalog`. Les RLS et les privilèges de table `actions` n'ont
 pas été modifiés par ce dernier lot.
 
-### Advisors sécurité linked actuels
+### Advisors sécurité linked observés dans le snapshot du 27 septembre 2026
 
 - La preuve distante observée le `2026-09-27T18:09:25.651Z` rapporte :
 
@@ -73,17 +80,19 @@ pas été modifiés par ce dernier lot.
   `public.legal_content_reports`,
   `public.points_ledger`,
   `public.user_badge_totals` et `public.user_points`.
-- Pour ces huit tables, le contrat server-only est explicite : RLS activée,
+- Pour ces huit tables, le contrat server-only observé dans ce snapshot est
+  explicite : RLS activée,
   aucune policy, aucun privilège de table pour `anon` ou `authenticated`, et
   privilèges réservés à `service_role`. Ce lot ne crée aucune policy permissive
   et ne déplace aucune de ces tables pour faire disparaître les INFO. Ces huit
-  INFO sont `INTENTIONAL_CURRENT / server-only`.
+  INFO étaient classées `INTENTIONAL_CURRENT / server-only` dans la sortie
+  observée.
 
 Les trois anciens WARN `SECURITY DEFINER` sur
 `can_insert_action_message_reference(uuid)`, `can_post_action_conversation(uuid)` et
 `can_view_action_conversation(uuid)` sont désormais **RESOLVED** après
 l'application des migrations de hardening et de relocation des helpers. Ils ne
-font plus partie de l'état distant CURRENT ci-dessus.
+ne faisaient plus partie de l'état distant observé par ce snapshot.
 
 La sortie opérationnelle normale du garde est :
 
@@ -154,10 +163,10 @@ RLS sans policy et sans privilège client.
 Le replay linked du 26 septembre 2026 avait répondu
 `403 LegacyDbConfigLoginRoleStatusError` pour l'identité CLI courante
 (`advisors_read` manquant). Cet état est conservé uniquement comme historique ;
-la preuve distante du 27 septembre 2026, documentée dans la section CURRENT,
-confirme désormais **0 ERROR, 0 WARN et exactement ces 8 INFO** après
-application des migrations. Aucune migration distante n'a été appliquée par
-cette mise à jour documentaire.
+la preuve distante du 27 septembre 2026, documentée dans ce snapshot historique,
+rapportait **0 ERROR, 0 WARN et exactement ces 8 INFO** après application des
+migrations. Aucune migration distante n'a été appliquée par cette mise à jour
+documentaire.
 
 La vérification directe du catalogue par `npx supabase db query --linked` est
 restée indisponible pour l'identité CLI réauthentifiée (`403` sur le rôle de
@@ -246,7 +255,8 @@ npm -C apps/web run backend:supabase:advisors:linked
 
 Les paragraphes ci-dessous décrivaient l'état intermédiaire du 27 août 2026,
 avant la preuve linked/prod finale. Ils sont conservés pour la traçabilité ;
-la section « État courant » ci-dessus prévaut désormais.
+le snapshot historique du 27 septembre ci-dessus conserve la preuve ultérieure
+sans établir l'état courant.
 
 Le 27 août 2026, depuis `apps/web` :
 
