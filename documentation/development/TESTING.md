@@ -767,6 +767,52 @@ la CI FULL ; ils ne sont pas déclenchés automatiquement en `DEVELOPMENT` par
 une extraction, un module, un import ou un refactor. Toute modification du
 code après leur exécution impose d'actualiser les preuves concernées.
 
+### GitNexus ciblé pendant DEVELOPMENT
+
+GitNexus est un accélérateur facultatif de découverte et d'analyse d'impact ;
+il ne constitue ni une source de vérité, ni un remplacement de la lecture du
+code, de TypeScript, des tests, des contrats métier ou de la documentation.
+Pour une correction locale simple, ne pas l'imposer. Pour une modification
+transversale, l'utiliser seulement lorsqu'il apporte une valeur concrète, avec
+la séquence bornée suivante :
+
+1. identifier la responsabilité, son owner canonique, les consommateurs et le
+   SHA candidat ;
+2. vérifier l'index utilisé : dépôt, `lastCommit`, version, configuration et
+   fraîcheur par rapport au SHA candidat ;
+3. si l'index est périmé, ne jamais interpréter une absence de résultat comme
+   une absence de dépendance ; privilégier `rg`, les imports, les callers, les
+   contrats et les tests actuels ;
+4. interroger `query` pour retrouver les symboles ou les processus pertinents,
+   puis `context` et `impact` uniquement sur les symboles retenus ; tenir
+   compte des limites FTS et de l'absence éventuelle de recherche vectorielle ;
+5. utiliser `trace` ou `detect_changes` seulement lorsque leur contrat et leur
+   fonctionnement ont été vérifiés pour l'index courant ; leurs résultats
+   restent des signaux à confronter au code réel ;
+6. fixer le périmètre réel du changement après confrontation aux
+   implémentations, consommateurs, tests et documentation.
+
+Une réindexation locale n'est jamais automatique avant un commit. Elle ne peut
+être envisagée que pour une analyse importante, après vérification de la
+propreté ou de la séparation des changements staged/unstaged, de l'absence de
+processus concurrent et de la condition de licence ; elle ne doit jamais
+écraser, restaurer ou modifier les fichiers staged ou unstaged préexistants.
+Les cycles globaux restent contrôlés par `quality:cycles` en `FULL` ; aucune
+requête GitNexus d'impact ne devient un contrôle bloquant de pré-commit ou de
+pré-push.
+
+#### Condition de licence GitNexus
+
+L'intégration observée utilise GitNexus `1.6.12`, identifié comme soumis à la
+licence PolyForm Noncommercial. Aucune autorisation locale, exception ou base
+juridique applicable à l'usage envisagé n'est documentée dans le dépôt. La
+licence AGPL-3.0-only de CleanMyMap ne couvre pas cet outil tiers. Tant qu'une
+base juridique vérifiée n'est pas documentée pour l'usage prévu, le statut est
+`BLOCKED_LICENSE` : ne pas considérer l'installation, le MCP actif ou la
+présence des skills comme une autorisation d'usage commercial. Cette condition
+ne justifie ni un contournement, ni l'ajout d'un second index, hook, plugin ou
+service.
+
 ### Audits qualité et artefacts locaux
 
 Le runner borné `scripts/audits/run-quality-audit.mjs` orchestre les engines

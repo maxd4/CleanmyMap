@@ -725,6 +725,15 @@ En `FULL`, ces contrôles sont obligatoires sur le candidat final. Toute
 modification du code après leur exécution invalide les preuves concernées et
 impose leur actualisation avant `RELEASE`.
 
+GitNexus reste un accélérateur facultatif de découverte pendant `DEVELOPMENT` :
+il ne remplace ni le code actuel, ni les contrats, ni TypeScript, ni les tests,
+et ne crée aucun contrôle bloquant de hook. Pour une modification transversale,
+la procédure ciblée et la vérification de fraîcheur de l'index sont canoniques
+dans `documentation/development/TESTING.md`. En l'absence de base juridique
+vérifiée pour l'usage envisagé de GitNexus `1.6.12` (PolyForm Noncommercial),
+classer l'usage `BLOCKED_LICENSE` et ne pas déduire une autorisation de son
+installation ou du MCP actif.
+
 Un lot ne peut pas être déclaré terminé avec une conséquence imputable non
 qualifiée : `BASELINE_STALE` complexity, nouveau dead-code, nouveau cycle,
 nouvelle duplication actionnable, export ou façade devenue inutile, ou
