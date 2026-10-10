@@ -25,15 +25,6 @@
     {
       "metric": "complexity",
       "path": "apps/web/src/app/(app)/dashboard/page.tsx",
-      "line": 46,
-      "category": "React/JSX",
-      "ceiling": 28,
-      "status": "LEGACY",
-      "functionIdentity": "named:DashboardReferralCard#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/web/src/app/(app)/dashboard/page.tsx",
       "line": 165,
       "category": "React/JSX",
       "ceiling": 24,
