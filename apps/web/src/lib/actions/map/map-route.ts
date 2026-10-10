@@ -29,6 +29,7 @@ type ActionInsightsLike = {
 
 type FetchUnifiedActionContractsResult = {
   items: ActionDataContract[];
+  isTruncated: boolean;
   sourceHealth: ActionMapResponse["sourceHealth"];
 };
 
@@ -125,6 +126,17 @@ export type MapActionsRouteResult = {
 };
 
 const IMPACT_LEVELS: ActionImpactLevel[] = ["faible", "moyen", "fort", "critique"];
+
+function resolveMapSourceHealth(
+  sourceHealth: ActionMapResponse["sourceHealth"],
+): NonNullable<ActionMapResponse["sourceHealth"]> {
+  return sourceHealth ?? {
+    partial: false,
+    failedSources: [],
+    availableSources: [],
+    warnings: [],
+  };
+}
 
 function parseStatusParam(raw: string | null): ActionStatus {
   // This endpoint is a public map projection. Keep the legacy query parameter
@@ -247,12 +259,8 @@ export async function buildMapActionsRouteResult(
     viewport: params.viewport,
   });
 
-  const sourceHealth = result.sourceHealth ?? {
-    partial: false,
-    failedSources: [],
-    availableSources: [],
-    warnings: [],
-  };
+  const sourceHealth = resolveMapSourceHealth(result.sourceHealth);
+  const isTruncated = result.isTruncated === true;
   const items = deps
     .filterActionContractsByScope(
       result.items
@@ -294,6 +302,7 @@ export async function buildMapActionsRouteResult(
       daysWindow: params.floorDate === null ? null : params.days,
       items,
       sourceHealth,
+      isTruncated,
       partialSource: sourceHealth.partial,
     }),
     headers: sourceHealth.partial

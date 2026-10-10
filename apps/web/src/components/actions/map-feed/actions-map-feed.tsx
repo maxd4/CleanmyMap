@@ -18,7 +18,6 @@ import type { MapViewportState } from "@/lib/geo/map-viewport";
 import { HOMEPAGE_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import { useActionsMapViewport } from "./use-actions-map-viewport";
-import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 import { ActionPollutionScoreReferencesProvider } from "@/components/actions/map/scores/action-pollution-score-references-context";
 import type {
   ActionsMapDateScope,
@@ -145,7 +144,7 @@ export function ActionsMapFeedContent({
           <MapCanvas
             items={feedData.items}
             sourceItems={feedData.allItems}
-            sourceCompleteness={feedData.hasPartialSource ? "partial" : "complete"}
+            sourceCompleteness={feedData.sourceCompleteness}
             compact
             presentation="homepage-preview"
             tone="emerald"
@@ -179,8 +178,8 @@ export function ActionsMapFeedContent({
   const layoutProps = {
     items: feedData.items,
     allItems: feedData.allItems,
-    summary: feedData.summary,
     hasPartialSource: feedData.hasPartialSource,
+    isTruncated: feedData.isTruncated,
     partialSourcesLabel: feedData.partialSourcesLabel,
     freshnessLabel: feedData.freshnessLabel,
     isValidating: feedData.isValidating,
@@ -207,9 +206,7 @@ export function ActionsMapFeedContent({
     tone,
     onViewportChange,
     onViewportInteraction,
-    sourceCompleteness: (feedData.hasPartialSource
-      ? "partial"
-      : "complete") as RepollutionDatasetCompleteness,
+    sourceCompleteness: feedData.sourceCompleteness,
     scoreScope,
     onScoreScopeChange,
     displayMode,

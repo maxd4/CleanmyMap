@@ -30,7 +30,7 @@ describe("GET /api/actions/map persistence boundary", () => {
     vi.clearAllMocks();
     parseEntityTypesParamMock.mockReturnValue(null);
     buildMapActionsRouteResultMock.mockResolvedValue({
-      body: { status: "ok", count: 0, items: [], partialSource: false },
+      body: { status: "ok", count: 0, items: [], isTruncated: false, partialSource: false },
     });
     loadOrRefreshPublicSurfaceSnapshotMock.mockResolvedValue({
       payload: {
@@ -46,6 +46,7 @@ describe("GET /api/actions/map persistence boundary", () => {
           },
           { id: "pending", status: "pending" },
         ],
+        isTruncated: false,
         partialSource: false,
       },
     });
@@ -86,6 +87,30 @@ describe("GET /api/actions/map persistence boundary", () => {
     );
 
     expect(response.headers.get("x-data-warning")).toBe("Partial source data");
+  });
+
+  it("propagates bounded results separately from source failures and keeps identities private", async () => {
+    buildMapActionsRouteResultMock.mockResolvedValueOnce({
+      body: {
+        status: "ok",
+        count: 1,
+        items: [{ id: "public-action", status: "approved", created_by_clerk_id: "private-owner" }],
+        isTruncated: true,
+        partialSource: false,
+      },
+    });
+    const { GET } = await import("./route");
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/actions/map?south=12.34&west=56.78&north=12.35&east=56.79&zoom=15",
+      ),
+    );
+    const payload = await response.json();
+
+    expect(payload).toMatchObject({ isTruncated: true, partialSource: false });
+    expect(payload.items[0]).not.toHaveProperty("created_by_clerk_id");
+    expect(response.headers.get("x-data-warning")).toBeNull();
   });
 
   it("surfaces a partial-source warning from a persisted public snapshot", async () => {
@@ -155,7 +180,7 @@ describe("GET /api/actions/map persistence boundary", () => {
     await GET(new Request("http://localhost/api/actions/map?days=30"));
 
     expect(loadOrRefreshPublicSurfaceSnapshotMock.mock.calls[0][0].version).toBe(
-      "public-map-actions-v3",
+      "public-map-actions-v4",
     );
   });
 

@@ -463,6 +463,8 @@ export async function fetchMapActions(
         .filter(isPublicMapFeedRow)
         .map((row) => toActionContractFromMapFeedRow(row))
     : [];
+  const isTruncated =
+    Array.isArray(rpcPayload.data) && rpcPayload.data.length >= config.rpcLimit;
 
   const mergedContracts = buildMapContracts(
     remoteContracts,
@@ -483,6 +485,7 @@ export async function fetchMapActions(
     count: items.length,
     daysWindow: config.floorDate === null ? null : config.days,
     items,
+    isTruncated,
     partialSource: false,
     sourceHealth: buildMapSourceHealth(),
   };

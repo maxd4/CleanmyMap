@@ -64,6 +64,7 @@ export type ActionsMapLayoutCommonProps = Pick<
   items: ActionMapItem[];
   allItems: ActionMapItem[];
   hasPartialSource: boolean;
+  isTruncated: boolean;
   partialSourcesLabel: string;
   freshnessLabel: string | null;
   isValidating: boolean;

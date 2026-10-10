@@ -1,11 +1,17 @@
 import { AlertCircle, RefreshCw, Waypoints } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
+import {
+  getMapEmptyStateCopy,
+  type MapEmptyStateMode,
+} from "./map-data-status";
+import { MapEmptyStateDecorations } from "./map-empty-state-decorations";
 
-type MapEmptyStateProps = {
-  mode: "filtered" | "empty";
+export type MapEmptyStateProps = {
+  mode: MapEmptyStateMode;
   freshnessLabel: string | null;
   hasPartialSource: boolean;
+  isTruncated: boolean;
   partialSourcesLabel: string;
   onResetFilters: () => void;
   onReload: () => void;
@@ -19,6 +25,7 @@ export function MapEmptyState({
   mode,
   freshnessLabel,
   hasPartialSource,
+  isTruncated,
   partialSourcesLabel,
   onResetFilters,
   onReload,
@@ -29,18 +36,7 @@ export function MapEmptyState({
 }: MapEmptyStateProps) {
   const isEmerald = tone === "emerald";
   const hasZoneQuery = zoneQuery.trim().length > 0;
-  const title =
-    mode === "filtered"
-      ? hasZoneQuery
-        ? "Aucune action dans cette zone"
-        : "Aucun point visible avec ces filtres"
-      : "Aucune action remontée sur ce périmètre";
-  const description =
-    mode === "filtered"
-      ? hasZoneQuery
-        ? `La zone "${zoneQuery}" ne renvoie aucun point. Essaie un quartier, un arrondissement ou un libellé plus large.`
-        : "Les filtres actuels masquent toutes les actions. Réinitialise la vue ou relâche un critère pour faire réapparaître les points."
-      : "La requête actuelle ne renvoie aucun point. Vérifie la période, le statut, les catégories visibles ou la source de données.";
+  const { title, description } = getMapEmptyStateCopy(mode, hasZoneQuery, zoneQuery);
 
   return (
     <div
@@ -64,63 +60,13 @@ export function MapEmptyState({
         )}
       />
 
-      <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-        {[
-          { label: "Nouveau", tone: isEmerald ? "emerald" : "sky" },
-          { label: "Validé", tone: "emerald" },
-          { label: "En cours", tone: "amber" },
-          { label: "Résolu", tone: "slate" },
-        ].map((pill) => (
-          <span
-            key={pill.label}
-            className={cn(
-              "rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] backdrop-blur",
-              pill.tone === "emerald"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : pill.tone === "sky"
-                  ? "border-sky-200 bg-sky-50 text-slate-700"
-                  : pill.tone === "amber"
-                    ? "border-amber-200 bg-amber-50 text-amber-800"
-                    : "border-slate-200 bg-white/80 text-slate-600",
-            )}
-          >
-            {pill.label}
-          </span>
-        ))}
-      </div>
-
-      <div className="absolute right-4 top-4 flex flex-col gap-2">
-        {["+", "−"].map((symbol) => (
-          <button
-            key={symbol}
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/80 bg-white/90 text-lg font-black text-slate-700 shadow-sm backdrop-blur"
-          >
-            {symbol}
-          </button>
-        ))}
-      </div>
-
-      <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-white/80 bg-white/92 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700 shadow-sm">
-          Carte vide
-        </span>
-        {hasPartialSource ? (
-          <span className="rounded-full border border-amber-300/40 bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-950">
-            Sources partielles: {partialSourcesLabel}
-          </span>
-        ) : null}
-        {freshnessLabel ? (
-          <span className={cn(
-            "rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
-            isEmerald
-              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border border-sky-200/80 bg-sky-50 text-slate-700",
-          )}>
-            {freshnessLabel}
-          </span>
-        ) : null}
-      </div>
+      <MapEmptyStateDecorations
+        freshnessLabel={freshnessLabel}
+        hasPartialSource={hasPartialSource}
+        isTruncated={isTruncated}
+        partialSourcesLabel={partialSourcesLabel}
+        tone={tone}
+      />
 
       <div className={cn(
         "relative z-10 max-w-xl rounded-[2rem] px-6 py-7 text-center backdrop-blur",
@@ -184,4 +130,14 @@ export function MapEmptyState({
       </div>
     </div>
   );
+}
+
+export function MapEmptyStateFromLayout({
+  layoutProps,
+  mode,
+}: {
+  layoutProps: Omit<MapEmptyStateProps, "mode">;
+  mode: MapEmptyStateMode;
+}) {
+  return <MapEmptyState {...layoutProps} mode={mode} />;
 }

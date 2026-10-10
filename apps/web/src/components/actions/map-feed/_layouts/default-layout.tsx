@@ -1,12 +1,15 @@
 import type { ActionsMapLayoutCommonProps } from "../map-feed.types";
-import { MapEmptyState } from "./map-empty-state";
+import { MapEmptyStateFromLayout } from "./map-empty-state";
 import { MapLoadingState } from "./map-loading-state";
+import { MapTruncationNotice, resolveMapEmptyStateMode } from "./map-data-status";
 type DefaultLayoutProps = ActionsMapLayoutCommonProps;
 
-export function DefaultLayout({
+export function DefaultLayout(props: DefaultLayoutProps) {
+  const {
   items,
   allItems,
   hasPartialSource,
+  isTruncated,
   partialSourcesLabel,
   freshnessLabel,
   isValidating,
@@ -19,7 +22,6 @@ export function DefaultLayout({
   onResetFilters,
   onReload,
   tone = "sky",
-  zoneQuery = "",
   mapExportTargetRef,
   onViewportChange,
   onViewportInteraction,
@@ -38,10 +40,10 @@ export function DefaultLayout({
   onZoneQueryChange,
   onDateScopeChange,
   onCategoryToggle,
-}: DefaultLayoutProps) {
+  } = props;
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
-  const emptyMode = allItems.length > 0 ? "filtered" : "empty";
+  const emptyMode = resolveMapEmptyStateMode(allItems.length, isTruncated);
 
   return (
     <>
@@ -52,6 +54,7 @@ export function DefaultLayout({
               Sources partielles: {partialSourcesLabel}
             </span>
           ) : null}
+          <MapTruncationNotice isTruncated={isTruncated} tone={tone} />
           <h2 className="text-xl font-semibold tracking-[-0.02em] text-slate-950">Carte terrain</h2>
           <p className="mt-1 text-sm text-slate-700">
             Flux géolocalisé depuis Supabase, borné par le viewport et les filtres actifs.
@@ -89,18 +92,7 @@ export function DefaultLayout({
         ) : !MapCanvas ? (
           <MapLoadingState tone={tone} />
         ) : !hasItems ? (
-          <MapEmptyState
-            mode={emptyMode}
-            freshnessLabel={freshnessLabel}
-            hasPartialSource={hasPartialSource}
-            partialSourcesLabel={partialSourcesLabel}
-            onResetFilters={onResetFilters}
-            onReload={onReload}
-            isValidating={isValidating}
-            zoneQuery={zoneQuery}
-            tone={tone}
-            compact={compact}
-          />
+          <MapEmptyStateFromLayout layoutProps={props} mode={emptyMode} />
         ) : (
           <MapCanvas
             items={items}

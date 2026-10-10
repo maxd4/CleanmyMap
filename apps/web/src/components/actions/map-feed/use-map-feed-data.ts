@@ -3,6 +3,7 @@ import useSWR from "swr";
 import { fetchMapActions } from "@/lib/actions/http";
 import type {
   ActionImpactLevel,
+  ActionMapResponse,
   ActionRecordType,
   ActionStatus,
 } from "@/lib/actions/types";
@@ -23,6 +24,13 @@ import type { MapViewportState } from "@/lib/geo/map-viewport";
 import { useActionPollutionScoreReferences } from "@/components/actions/map/scores/action-pollution-score-references-context";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
+import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
+
+function resolveMapSourceCompleteness(
+  data: Pick<ActionMapResponse, "partialSource" | "isTruncated"> | undefined,
+): RepollutionDatasetCompleteness {
+  return data?.partialSource || data?.isTruncated ? "partial" : "complete";
+}
 
 type UseMapFeedDataParams = {
   types: ActionRecordType[] | "all";
@@ -187,6 +195,8 @@ export function useMapFeedData({
     freshnessLabel,
     partialSourcesLabel,
     hasPartialSource: data?.partialSource ?? false,
+    isTruncated: data?.isTruncated ?? false,
+    sourceCompleteness: resolveMapSourceCompleteness(data),
   };
 }
 

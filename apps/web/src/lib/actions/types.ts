@@ -462,6 +462,8 @@ export type ActionMapResponse = {
   count: number;
   daysWindow: number | null;
   items: ActionMapItem[];
+  /** The bounded source window was exhausted before the public filters ran. */
+  isTruncated?: boolean;
   partialSource?: boolean;
   sourceHealth?: {
     partial: boolean;

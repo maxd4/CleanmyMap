@@ -9,6 +9,7 @@ function buildDeps(overrides?: Partial<Parameters<typeof buildMapActionsRouteRes
         status: "approved",
       },
     ],
+    isTruncated: false,
     sourceHealth: {
       partial: false,
       failedSources: [],
@@ -54,6 +55,66 @@ function buildDeps(overrides?: Partial<Parameters<typeof buildMapActionsRouteRes
   } as const;
 
   return deps;
+}
+
+function buildQualityInsights(id: string) {
+  return {
+    qualityScore: id.startsWith("low") ? 40 : 90,
+    qualityGrade: "A",
+    qualityFlags: [],
+    qualityBreakdown: {
+      completeness: 90,
+      coherence: 90,
+      geoloc: 90,
+      traceability: 90,
+      freshness: 90,
+    },
+    toFixPriority: false,
+    impactLevel: id === "wrong-impact" ? "faible" : "critique",
+  };
+}
+
+function buildQualityMapItem(
+  contract: { id: string; status: string },
+  insights: { qualityScore: number; impactLevel: string },
+  includePrivateIdentity = false,
+) {
+  return {
+    id: contract.id,
+    status: contract.status,
+    latitude: 48.8566,
+    longitude: 2.3522,
+    quality_score: insights.qualityScore,
+    impact_level: insights.impactLevel,
+    ...(includePrivateIdentity ? { created_by_clerk_id: "private-owner" } : {}),
+  };
+}
+
+function buildHealthySourceHealth(availableSources: string[] = ["actions"]) {
+  return {
+    partial: false,
+    failedSources: [],
+    availableSources,
+    warnings: [],
+  };
+}
+
+function buildQualityFilterDeps(
+  items: Array<{ id: string; status: string }>,
+  options: { isTruncated?: boolean; includePrivateIdentity?: boolean } = {},
+) {
+  return buildDeps({
+    fetchUnifiedActionContracts: vi.fn().mockResolvedValue({
+      items,
+      isTruncated: options.isTruncated ?? false,
+      sourceHealth: buildHealthySourceHealth(),
+    }),
+    buildActionInsights: vi.fn().mockImplementation((contract: { id: string }) => buildQualityInsights(contract.id)),
+    toActionMapItem: vi.fn().mockImplementation(
+      (contract: { id: string; status: string }, insights: { qualityScore: number; impactLevel: string }) =>
+        buildQualityMapItem(contract, insights, options.includePrivateIdentity),
+    ),
+  });
 }
 
 describe("parseMapActionsParams", () => {
@@ -152,6 +213,7 @@ describe("buildMapActionsRouteResult", () => {
     expect(result.body).toMatchObject({
       status: "ok",
       count: 1,
+      isTruncated: false,
       partialSource: false,
     });
     expect(result.body.items[0]).toMatchObject({
@@ -274,12 +336,7 @@ describe("buildMapActionsRouteResult", () => {
             metadata: { actionPhase: "post_action_complete" },
           },
         ],
-        sourceHealth: {
-          partial: false,
-          failedSources: [],
-          availableSources: ["actions"],
-          warnings: [],
-        },
+        sourceHealth: buildHealthySourceHealth(),
       }),
     });
 
@@ -321,6 +378,24 @@ describe("buildMapActionsRouteResult", () => {
     expect(result.body.partialSource).toBe(true);
   });
 
+  it("signals a bounded source window even when admissible items occur after filtered candidates", async () => {
+    const candidateIds = ["low-1", "wrong-impact", "low-2", "outside-window", "kept-1", "kept-2", "kept-3", "kept-4", "kept-5"];
+    const deps = buildQualityFilterDeps(
+      candidateIds.map((id) => ({ id, status: "approved" })),
+      { isTruncated: true, includePrivateIdentity: true },
+    );
+
+    const result = await buildMapActionsRouteResult(
+      new URL("http://localhost/api/actions/map?limit=2&qualityMin=80&impact=critique"),
+      deps,
+    );
+
+    expect(result.body.items.map((item) => item.id)).toEqual(["outside-window", "kept-1"]);
+    expect(result.body.isTruncated).toBe(true);
+    expect(result.body.partialSource).toBe(false);
+    expect(result.body.items[0]).not.toHaveProperty("created_by_clerk_id");
+  });
+
   it("uses a fail-safe source health value and drops items without coordinates", async () => {
     const deps = buildDeps({
       fetchUnifiedActionContracts: vi.fn().mockResolvedValue({
@@ -352,45 +427,11 @@ describe("buildMapActionsRouteResult", () => {
   });
 
   it("applies quality and impact filters before limiting public items", async () => {
-    const deps = buildDeps({
-      fetchUnifiedActionContracts: vi.fn().mockResolvedValue({
-        items: [
-          { id: "kept", status: "approved" },
-          { id: "wrong-impact", status: "approved" },
-          { id: "low-quality", status: "approved" },
-        ],
-        sourceHealth: {
-          partial: false,
-          failedSources: [],
-          availableSources: ["actions"],
-          warnings: [],
-        },
-      }),
-      buildActionInsights: vi.fn().mockImplementation((contract: { id: string }) => ({
-        qualityScore: contract.id === "low-quality" ? 40 : 90,
-        qualityGrade: "A",
-        qualityFlags: [],
-        qualityBreakdown: {
-          completeness: 90,
-          coherence: 90,
-          geoloc: 90,
-          traceability: 90,
-          freshness: 90,
-        },
-        toFixPriority: false,
-        impactLevel: contract.id === "wrong-impact" ? "faible" : "critique",
-      })),
-      toActionMapItem: vi.fn().mockImplementation(
-        (contract: { id: string; status: string }, insights: { qualityScore: number; impactLevel: string }) => ({
-          id: contract.id,
-          status: contract.status,
-          latitude: 48.8566,
-          longitude: 2.3522,
-          quality_score: insights.qualityScore,
-          impact_level: insights.impactLevel,
-        }),
-      ),
-    });
+    const deps = buildQualityFilterDeps([
+      { id: "kept", status: "approved" },
+      { id: "wrong-impact", status: "approved" },
+      { id: "low-quality", status: "approved" },
+    ]);
 
     const result = await buildMapActionsRouteResult(
       new URL("http://localhost/api/actions/map?qualityMin=80&impact=critique"),
