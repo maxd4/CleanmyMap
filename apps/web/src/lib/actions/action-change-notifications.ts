@@ -3,6 +3,7 @@ import type { ActionPreparationData } from "./types";
 import type { ActionRow } from "@/types/database";
 import { normalizeClockTime } from "./time-contract";
 import { emitActionUpdateNotifications } from "./action-update-notifications";
+import { buildPublicActionPracticalInformation } from "./participation/group-participation-public-projection";
 
 export type ActionChangeKind =
   | "meeting_point"
@@ -69,6 +70,37 @@ function meaningfulTextChanged(current: unknown, next: unknown): boolean {
   return normalizeMeaningfulText(current) !== normalizeMeaningfulText(next);
 }
 
+function normalizeMeaningfulList(value: readonly unknown[] | null | undefined): string[] {
+  return [...new Set((value ?? [])
+    .map(normalizeMeaningfulText)
+    .filter((item): item is string => item !== null))].sort();
+}
+
+function meaningfulListChanged(current: readonly unknown[] | null | undefined, next: readonly unknown[] | null | undefined): boolean {
+  return JSON.stringify(normalizeMeaningfulList(current)) !== JSON.stringify(normalizeMeaningfulList(next));
+}
+
+function publicPreparationChanged(
+  current: ActionPreparationData,
+  next: ActionPreparationData,
+): Pick<Record<ActionChangeKind, boolean>, "safety" | "materials"> {
+  const currentPublic = buildPublicActionPracticalInformation(current);
+  const nextPublic = buildPublicActionPracticalInformation(next);
+
+  return {
+    safety:
+      meaningfulTextChanged(currentPublic.accessibility, nextPublic.accessibility) ||
+      (currentPublic.accessibilityStatus ?? null) !== (nextPublic.accessibilityStatus ?? null) ||
+      meaningfulTextChanged(currentPublic.safetyInstructions, nextPublic.safetyInstructions) ||
+      meaningfulListChanged(currentPublic.derivedSafetyRecommendations, nextPublic.derivedSafetyRecommendations),
+    materials:
+      meaningfulTextChanged(currentPublic.materialsToBring, nextPublic.materialsToBring) ||
+      meaningfulTextChanged(currentPublic.materialsProvided, nextPublic.materialsProvided) ||
+      meaningfulListChanged(currentPublic.suggestedMaterials, nextPublic.suggestedMaterials) ||
+      meaningfulListChanged(currentPublic.derivedMaterials, nextPublic.derivedMaterials),
+  };
+}
+
 function operationalPreparationChanged(
   current: ActionPreparationData,
   next: ActionPreparationData,
@@ -79,8 +111,7 @@ function operationalPreparationChanged(
       normalizeClockTime(current.meetingTime) !== normalizeClockTime(next.meetingTime) ||
       normalizeClockTime(current.departureTime) !== normalizeClockTime(next.departureTime),
     route: valuesDiffer(readNestedRouteValue(current), readNestedRouteValue(next)),
-    safety: meaningfulTextChanged(current.safetyInstructions, next.safetyInstructions),
-    materials: meaningfulTextChanged(current.recommendedMaterials, next.recommendedMaterials),
+    ...publicPreparationChanged(current, next),
   };
 }
 

@@ -1,4 +1,5 @@
 import type { ActionPreparationData } from "@/lib/actions/types";
+import { ACTION_MATERIAL_SUGGESTIONS } from "@/lib/actions/preparation-contract";
 
 export function buildPreparationSummaryDetails(preparation: ActionPreparationData): string {
   const details = [
@@ -8,13 +9,19 @@ export function buildPreparationSummaryDetails(preparation: ActionPreparationDat
     preparation.recommendedMaterials
       ? `À apporter (suggestions) : ${preparation.recommendedMaterials.trim()}`
       : null,
-    preparation.suggestedMaterials && preparation.suggestedMaterials.length > 0
-      ? `Suggestions rapides : ${preparation.suggestedMaterials.join(", ")}`
-      : null,
+    formatSuggestedMaterials(preparation.suggestedMaterials),
     buildChecklistSummary(preparation),
   ];
 
   return details.filter(Boolean).join(" · ");
+}
+
+function formatSuggestedMaterials(values: ActionPreparationData["suggestedMaterials"]): string | null {
+  const labels = (values ?? []).flatMap((value) => {
+    const option = ACTION_MATERIAL_SUGGESTIONS.find((candidate) => candidate.value === value);
+    return option ? [option.label] : [];
+  });
+  return labels.length > 0 ? `Suggestions rapides : ${labels.join(", ")}` : null;
 }
 
 function buildChecklistSummary(preparation: ActionPreparationData): string | null {

@@ -80,6 +80,55 @@ describe("action change notification classification", () => {
     })).toEqual(["materials"]);
   });
 
+  it("notifies for public accessibility changes and ignores private preparation data", () => {
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { accessibilityStatus: "not_evaluated" } }),
+      updateData: { preparation_data: { accessibilityStatus: "conditions_reported" } },
+    })).toEqual(["safety"]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { accessibility: "Accès par la rampe nord." } }),
+      updateData: { preparation_data: { accessibility: "Accès par l'entrée nord." } },
+    })).toEqual(["safety"]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { logisticsNotes: "Note interne", preparationChecklist: [{ key: "briefing", label: "Briefing", checked: false }] } }),
+      updateData: { preparation_data: { logisticsNotes: "Autre note", preparationChecklist: [{ key: "briefing", label: "Briefing", checked: true }] } },
+    })).toEqual([]);
+  });
+
+  it("notifies for provided and suggested materials, not their ordering", () => {
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { materialsProvided: "Pinces disponibles." } }),
+      updateData: { preparation_data: { materialsProvided: "Pinces et sacs disponibles." } },
+    })).toEqual(["materials"]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { materialsProvided: "Pinces disponibles." } }),
+      updateData: { preparation_data: { materialsProvided: "" } },
+    })).toEqual(["materials"]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { suggestedMaterials: ["gloves", "grabbers"] } }),
+      updateData: { preparation_data: { suggestedMaterials: ["grabbers", "gloves"] } },
+    })).toEqual([]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { suggestedMaterials: ["gloves"] } }),
+      updateData: { preparation_data: { suggestedMaterials: ["gloves", "bags"] } },
+    })).toEqual(["materials"]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { suggestedMaterials: ["gloves", "bags"] } }),
+      updateData: { preparation_data: { suggestedMaterials: ["gloves"] } },
+    })).toEqual(["materials"]);
+  });
+
+  it("uses derived public waste guidance instead of raw category changes", () => {
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { expectedWasteCategories: ["plastic"] } }),
+      updateData: { preparation_data: { expectedWasteCategories: ["broken_glass"] } },
+    })).toEqual(["safety", "materials"]);
+    expect(detectActionChangeKinds({
+      current: current({ preparation_data: { expectedWasteCategories: ["plastic"] } }),
+      updateData: { preparation_data: { expectedWasteCategories: ["plastic", "not-a-category"] } },
+    })).toEqual([]);
+  });
+
   it("uses a stable key for retries and separates revisions", () => {
     const first = buildActionChangeEventKey({
       actionId: "action-1",

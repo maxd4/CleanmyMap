@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialFormState } from "../payload";
+import type { ActionMaterialSuggestion } from "@/lib/actions/preparation-contract";
 import {
   actionWorkflowStateLabel,
   buildPublicationSummary,
@@ -107,6 +108,48 @@ describe("sanitizePreActionForm", () => {
 });
 
 describe("buildPublicationSummary", () => {
+  it("keeps the structured checklist and renders canonical material labels", () => {
+    const form = {
+      ...createInitialFormState("Maxence", "action"),
+      actionTitle: "Nettoyage test",
+      actionDate: "2026-09-20",
+      departureLocationLabel: "Place de la mairie",
+      suggestedMaterials: ["gloves", "grabbers"] as ActionMaterialSuggestion[],
+      preparationChecklist: [
+        { key: "materials_checked", label: "Matériel vérifié", checked: true },
+        { key: "briefing", label: "Briefing", checked: false },
+      ],
+    };
+    const formSummary = buildPublicationSummary(form);
+    const persistedSummary = buildPublicationSummary({
+      id: "action-42",
+      actionDate: "2026-09-20",
+      eventStartTime: null,
+      eventEndTime: null,
+      locationLabel: "Place de la mairie",
+      departureLocationLabel: "Place de la mairie",
+      arrivalLocationLabel: "Place de la mairie",
+      volunteersCount: 0,
+      preparationData: {
+        actionTitle: "Nettoyage test",
+        actionDate: "2026-09-20",
+        pointDeRendezVous: "Place de la mairie",
+        suggestedMaterials: ["gloves", "grabbers"],
+        preparationChecklist: [
+          { key: "materials_checked", label: "Matériel vérifié", checked: true },
+          { key: "briefing", label: "Briefing", checked: false },
+        ],
+      },
+    } as never);
+
+    expect(formSummary.find((item) => item.label === "Préparation")?.value)
+      .toContain("Suggestions rapides : Gants, Pinces");
+    expect(formSummary.find((item) => item.label === "Préparation")?.value)
+      .toContain("Checklist : 1/2 vérifiée(s)");
+    expect(persistedSummary.find((item) => item.label === "Préparation"))
+      .toEqual(formSummary.find((item) => item.label === "Préparation"));
+  });
+
   it("derives the read-only action state from canonical persisted fields", () => {
     expect(actionWorkflowStateLabel({
       status: "approved",
