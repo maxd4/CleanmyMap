@@ -850,6 +850,66 @@ GitNexus, mais il n'est pas nécessaire de modifier la licence du projet pour
 utiliser cet outil tiers dans le périmètre autorisé. Aucun second index, hook,
 plugin ou service n'est ajouté.
 
+#### Mesure de valeur GitNexus
+
+Une mesure comparative a été conduite sur `main` au SHA
+`b0807967e7cf8516c3099621ffb86ebdf1bb7a7a`, sans `FULL`, sans modification de
+fonctionnalité et sans rejouer artificiellement l'état historique des commits.
+Les cas retenus sont des changements réels de l'historique :
+
+| Cas | Commit étudié | Responsabilité | Méthode ordinaire | Résultat GitNexus vérifié par le code |
+| --- | --- | --- | --- | --- |
+| A | `2be248e545b8f70e189f971b797ab792aa3760af` | contrat cartographique `/api/actions/map`, DTO, cache, UI et tests | `0,435 s`; 17 fichiers modifiés; 10 fichiers contenant `fetchMapActions`, 13 l'URL de route et 9 `ActionMapResponse` | `NOT_DETECTED` pour la route et `buildMapActionsRouteResult`; aucun consommateur pertinent; route mapping absent |
+| B | `e853005e4f70d0f3eac606d7d1a40d307b423c80` | extraction Chat serveur/client | `0,469 s`; 16 fichiers modifiés; 4 modules `route.post-*`, 19 fichiers avec `useChatShell` | `NOT_DETECTED` pour `POST`; 3 processus `SignalementMedia` hors sujet observés en faux positifs |
+| C | `915df2d7592d3d15c804df6f9fb0cf2e0b404727` | migration RLS Supabase de `action_geometry_contributions` | `0,410 s`; 5 fichiers modifiés; 17 références de table, 2 références RPC et 3 références de policy | `NOT_DETECTED` pour `recordActionGeometryContribution`; 5 processus `POST` hors sujet observés en faux positifs |
+
+Les temps ordinaires mesurent les commandes Git et `rg` de découverte, pas le
+temps de lecture humaine. Les nombres de fichiers sont des ancres retournées
+par les recherches, pas une prétention de mesurer les tokens ou le coût interne
+de Codex. Les relations importantes ont été confirmées dans le code :
+
+- A : `map-http.ts:423` définit `fetchMapActions`,
+  `use-map-feed-data.ts:113` l'appelle, et `app/api/actions/map/route.ts:47`
+  appelle `buildMapActionsRouteResult` ;
+- B : `app/api/chat/route.post.ts:10-24` importe les quatre modules extraits,
+  tandis que `components/chat/chat-shell.tsx:7-107` importe et appelle les
+  hooks de shell ;
+- C : `action-geometry-contribution-workflow.ts:3,114` utilise le propriétaire
+  RPC défini dans `record-action-geometry-contribution.ts:61-65`, et la
+  migration `20261003000010_optimize_action_geometry_contributions_rls.sql:4`
+  modifie explicitement la policy service-only.
+
+La première passe GitNexus a utilisé l'index `13476c59a44df4839155714b9871931b5cf54d6e`,
+classé `INDEX_STALE` avec deux commits de retard. Une réindexation locale
+explicitement déclenchée pour mesurer son coût a pris `132,2 s` de temps mur
+(`44,9 s` annoncées par l'analyseur), pour `66 020` nœuds, `198 091` arêtes,
+`1 507` communautés et `1 068` flux. Elle a rendu l'index courant sur
+`b0807967…`, mais la construction FTS/BM25 a échoué sur
+`Property.property_fts`, avec `embeddings: 0`, et la recherche textuelle a été
+désactivée. Après cette opération, le transport MCP s'est fermé ; les appels
+suivants sont donc `BLOCKED_ACCESS`, et non des preuves d'absence de relations.
+
+Statuts de preuve :
+
+- `CONFIRMED` : les relations décrites ci-dessus sont vérifiées par imports,
+  appels, contrats ou migration dans le checkout courant ;
+- `NOT_DETECTED` : GitNexus n'a pas retrouvé la relation ciblée ; avec FTS
+  désactivé, un index fraîchement écrit mais un MCP indisponible, ce statut ne
+  signifie pas « aucun consumer » ;
+- `FALSE_POSITIVE` : les processus hors domaine listés dans B et C n'étaient
+  pas liés aux fichiers des commits étudiés ;
+- `NOT_COMPARABLE` : un graphe au HEAD ne rejoue pas les consommateurs tels
+  qu'ils existaient avant ou après chacun des commits historiques ;
+- aucun consommateur important n'a été trouvé uniquement par GitNexus dans
+  cette mesure.
+
+Décision : `AUDIT_ONLY`. Les outils ordinaires sont actuellement plus rapides,
+plus explicables et plus fiables pour les trois catégories mesurées. GitNexus
+reste disponible pour `FULL` et pour une analyse ciblée exceptionnelle lorsque
+son index est `INDEX_CURRENT`, que le MCP et les métadonnées sont sains, et que
+chaque relation est ensuite confirmée par le code. Cette mesure ne justifie ni
+un usage généralisé en `DEVELOPMENT`, ni une réindexation avant chaque lot.
+
 ### Audits qualité et artefacts locaux
 
 Le runner borné `scripts/audits/run-quality-audit.mjs` orchestre les engines
