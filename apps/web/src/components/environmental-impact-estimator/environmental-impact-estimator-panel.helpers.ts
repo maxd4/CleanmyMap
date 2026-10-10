@@ -57,6 +57,18 @@ export function formatQuantity(value: number | null, unitLabel: string) {
   }).format(value)} ${unitLabel}`;
 }
 
+export function formatCount(value: number) {
+  return new Intl.NumberFormat("fr-FR", {
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+export function formatProvenanceCount(value: number) {
+  return new Intl.NumberFormat("fr-FR", {
+    maximumFractionDigits: value >= 10 ? 0 : 2,
+  }).format(value);
+}
+
 export function formatProxyMass(value: number | null) {
   if (value === null) {
     return "—";

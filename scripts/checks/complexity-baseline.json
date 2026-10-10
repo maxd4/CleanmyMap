@@ -3021,15 +3021,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/web/src/components/admin/environmental-impact-capture-panel.tsx",
-      "line": 309,
-      "category": "React/JSX",
-      "ceiling": 155,
-      "status": "LEGACY",
-      "functionIdentity": "callback:serviceRiskRows . map:0:#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "apps/web/src/components/admin/feedback-requests-panel.tsx",
       "line": 42,
       "category": "React/JSX",

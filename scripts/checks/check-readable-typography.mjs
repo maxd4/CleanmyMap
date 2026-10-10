@@ -70,6 +70,46 @@ const allowlist = [
     reason: "environmental estimator detail typography preserves the historical visual contract",
   },
   {
+    file: "apps/web/src/components/admin/environmental-impact-capture-panel-service-risk-card.tsx",
+    rule: "small-text",
+    reason: "environmental capture risk-card extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/admin/environmental-impact-capture-panel-service-risks.tsx",
+    rule: "small-text",
+    reason: "environmental capture risk-view extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/admin/environmental-impact-capture-panel-summary.tsx",
+    rule: "small-text",
+    reason: "environmental capture summary extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-overview-data-gaps.tsx",
+    rule: "small-text",
+    reason: "environmental estimator data-gap extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-overview-impact-summary.tsx",
+    rule: "small-text",
+    reason: "environmental estimator impact-summary extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-overview-impact-summary.tsx",
+    rule: "body-color",
+    reason: "environmental estimator impact-summary extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-overview-provenance.tsx",
+    rule: "small-text",
+    reason: "environmental estimator provenance extraction preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-overview-signals.tsx",
+    rule: "small-text",
+    reason: "environmental estimator signals extraction preserves the historical visual contract",
+  },
+  {
     file: "apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
     rule: "small-text",
     match: /text-\[10px\].*model\.displayRank/,
