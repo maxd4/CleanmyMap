@@ -2,6 +2,7 @@ import type { ActionsMapLayoutCommonProps } from "../map-feed.types";
 import { MapEmptyStateFromLayout } from "./map-empty-state";
 import { MapLoadingState } from "./map-loading-state";
 import { MapTruncationNotice, type MapEmptyStateMode } from "./map-data-status";
+import { MapCanvasView } from "./map-canvas-view";
 
 type ImmersiveLayoutIntroProps = Pick<
   ActionsMapLayoutCommonProps,
@@ -71,33 +72,12 @@ export function ImmersiveLayoutMapFrame({
 }: ImmersiveLayoutMapFrameProps) {
   const {
     items,
-    allItems,
     mapCanvasError,
     MapCanvas,
-    selectedActionId,
-    onClearSelection,
-    frameSelectedActionId,
-    onSelectAction,
-    onResetFilters,
     tone,
     compact,
-    mapExportTargetRef,
-    onViewportChange,
-    onViewportInteraction,
-    initialViewport,
-    viewportRequest,
-    viewportRequestKey,
-    recenterViewport,
     isInitialViewportResolved = true,
-    sourceCompleteness = "partial",
-    scoreScope = "global",
-    onScoreScopeChange,
-    displayMode = "projected_today",
-    onDisplayModeChange,
-    filters,
-    onZoneQueryChange,
-    onDateScopeChange,
-    onCategoryToggle,
+    mapExportTargetRef,
   } = layoutProps;
   const hasItems = items.length > 0;
 
@@ -120,33 +100,7 @@ export function ImmersiveLayoutMapFrame({
       ) : !MapCanvas ? (
         <MapLoadingState fullViewport={fullViewport} compact={compact} tone={tone} />
       ) : (
-        <MapCanvas
-          items={items}
-          sourceItems={allItems}
-          sourceCompleteness={sourceCompleteness}
-          selectedActionId={selectedActionId}
-          onSelectAction={onSelectAction}
-          onClearSelection={onClearSelection}
-          frameSelectedActionId={frameSelectedActionId}
-          compact={compact}
-          fullViewport={fullViewport}
-          tone={tone}
-          onViewportChange={onViewportChange}
-          onViewportInteraction={onViewportInteraction}
-          initialViewport={initialViewport}
-          viewportRequest={viewportRequest}
-          viewportRequestKey={viewportRequestKey}
-          recenterViewport={recenterViewport}
-          scoreScope={scoreScope}
-          onScoreScopeChange={onScoreScopeChange}
-          displayMode={displayMode}
-          onDisplayModeChange={onDisplayModeChange}
-          filters={filters}
-          onZoneQueryChange={onZoneQueryChange}
-          onDateScopeChange={onDateScopeChange}
-          onCategoryToggle={onCategoryToggle}
-          onResetFilters={onResetFilters}
-        />
+        <MapCanvasView layoutProps={layoutProps} fullViewport={fullViewport} />
       )}
     </div>
   );

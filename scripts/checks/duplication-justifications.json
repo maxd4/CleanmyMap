@@ -1083,14 +1083,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "2d67436fdff61b4c",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/actions/map-feed/_layouts/default-layout.tsx:120-131 ; symboles: tone, scoreScope, onScoreScopeChange, displayMode et components/actions/map-feed/_layouts/immersive-layout.tsx:151-162 ; symboles: recenterViewport, scoreScope, onScoreScopeChange, displayMode reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/actions/map-feed/_layouts/default-layout.tsx:120-131 et apps/web/src/components/actions/map-feed/_layouts/immersive-layout.tsx:151-162 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "f223f8a99dcdba54",
       "classification": "NO_ACTION_NOISE",
       "reason": "La similarité CURRENT entre components/actions/map-marker-categories.ts:122-134 ; symboles: options, MarkerCategoryResolutionOptions, itemType, mapItemType et components/actions/map/layers/map-layers.shared.ts:153-166 ; symboles: scoreScope, PollutionScoreScope, global, itemType reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",

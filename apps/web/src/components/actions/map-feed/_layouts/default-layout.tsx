@@ -1,6 +1,7 @@
 import type { ActionsMapLayoutCommonProps } from "../map-feed.types";
 import { MapEmptyStateFromLayout } from "./map-empty-state";
 import { MapLoadingState } from "./map-loading-state";
+import { MapCanvasView } from "./map-canvas-view";
 import { MapTruncationNotice, resolveMapEmptyStateMode } from "./map-data-status";
 type DefaultLayoutProps = ActionsMapLayoutCommonProps;
 
@@ -15,31 +16,10 @@ export function DefaultLayout(props: DefaultLayoutProps) {
   isValidating,
   mapCanvasError,
   MapCanvas,
-  selectedActionId,
-  onClearSelection,
-  frameSelectedActionId,
-  onSelectAction,
-  onResetFilters,
   onReload,
   tone = "sky",
   mapExportTargetRef,
-  onViewportChange,
-  onViewportInteraction,
-  initialViewport,
-  viewportRequest,
-  viewportRequestKey,
-  recenterViewport,
   isInitialViewportResolved = true,
-  compact = false,
-  sourceCompleteness = "partial",
-  scoreScope = "global",
-  onScoreScopeChange,
-  displayMode = "projected_today",
-  onDisplayModeChange,
-  filters,
-  onZoneQueryChange,
-  onDateScopeChange,
-  onCategoryToggle,
   } = props;
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
@@ -94,32 +74,7 @@ export function DefaultLayout(props: DefaultLayoutProps) {
         ) : !hasItems ? (
           <MapEmptyStateFromLayout layoutProps={props} mode={emptyMode} />
         ) : (
-          <MapCanvas
-            items={items}
-            sourceItems={allItems}
-            sourceCompleteness={sourceCompleteness}
-            selectedActionId={selectedActionId}
-            onSelectAction={onSelectAction}
-            onClearSelection={onClearSelection}
-            frameSelectedActionId={frameSelectedActionId}
-            compact={compact}
-            onViewportChange={onViewportChange}
-            onViewportInteraction={onViewportInteraction}
-            initialViewport={initialViewport}
-            viewportRequest={viewportRequest}
-            viewportRequestKey={viewportRequestKey}
-            recenterViewport={recenterViewport}
-            tone={tone}
-            scoreScope={scoreScope}
-            onScoreScopeChange={onScoreScopeChange}
-            displayMode={displayMode}
-            onDisplayModeChange={onDisplayModeChange}
-            filters={filters}
-            onZoneQueryChange={onZoneQueryChange}
-            onDateScopeChange={onDateScopeChange}
-            onCategoryToggle={onCategoryToggle}
-            onResetFilters={onResetFilters}
-          />
+          <MapCanvasView layoutProps={props} />
         )}
       </div>
     </>
