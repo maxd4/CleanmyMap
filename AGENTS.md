@@ -729,10 +729,14 @@ GitNexus reste un accélérateur facultatif de découverte pendant `DEVELOPMENT`
 il ne remplace ni le code actuel, ni les contrats, ni TypeScript, ni les tests,
 et ne crée aucun contrôle bloquant de hook. Pour une modification transversale,
 la procédure ciblée et la vérification de fraîcheur de l'index sont canoniques
-dans `documentation/development/TESTING.md`. En l'absence de base juridique
-vérifiée pour l'usage envisagé de GitNexus `1.6.12` (PolyForm Noncommercial),
-classer l'usage `BLOCKED_LICENSE` et ne pas déduire une autorisation de son
-installation ou du MCP actif.
+dans `documentation/development/TESTING.md`. Pour le périmètre actuellement
+déclaré par le porteur du projet — projet étudiant, non commercial et orienté
+protection de l'environnement — l'usage de GitNexus `1.6.12` est qualifié
+`LICENSE_AUTHORIZED_FOR_CURRENT_USE` au titre des usages non commerciaux et des
+catégories éducatives ou de protection de l'environnement prévues par PolyForm
+Noncommercial 1.0.0. Cette qualification n'autorise pas un usage commercial
+ultérieur sans nouvelle vérification ; l'installation ou le MCP actif ne
+constitue pas à lui seul une autorisation.
 
 Un lot ne peut pas être déclaré terminé avec une conséquence imputable non
 qualifiée : `BASELINE_STALE` complexity, nouveau dead-code, nouveau cycle,

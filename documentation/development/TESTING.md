@@ -831,17 +831,24 @@ Les cycles globaux restent contrôlés par `quality:cycles` en `FULL` ; aucune
 requête GitNexus d'impact ne devient un contrôle bloquant de pré-commit ou de
 pré-push.
 
-#### Condition de licence GitNexus
+#### Qualification d'usage GitNexus
 
-L'intégration observée utilise GitNexus `1.6.12`, identifié comme soumis à la
-licence PolyForm Noncommercial. Aucune autorisation locale, exception ou base
-juridique applicable à l'usage envisagé n'est documentée dans le dépôt. La
-licence AGPL-3.0-only de CleanMyMap ne couvre pas cet outil tiers. Tant qu'une
-base juridique vérifiée n'est pas documentée pour l'usage prévu, le statut est
-`BLOCKED_LICENSE` : ne pas considérer l'installation, le MCP actif ou la
-présence des skills comme une autorisation d'usage commercial. Cette condition
-ne justifie ni un contournement, ni l'ajout d'un second index, hook, plugin ou
-service.
+L'intégration observée utilise GitNexus `1.6.12`, soumis à la licence
+[PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0).
+Pour le périmètre déclaré par le porteur du projet — projet étudiant à but non
+lucratif consacré à la protection de l'environnement — l'usage courant est
+qualifié `LICENSE_AUTHORIZED_FOR_CURRENT_USE`. La licence autorise les usages
+non commerciaux et prévoit explicitement un usage permis par les établissements
+éducatifs et les organisations de protection de l'environnement, quelle que
+soit la source du financement ou les obligations qui en découlent.
+
+Cette qualification est limitée à l'usage local de développement et d'analyse
+décrit ici. Elle ne vaut pas autorisation commerciale générale et doit être
+réévaluée si le projet, son opérateur, son financement ou sa finalité change.
+La licence `AGPL-3.0-only` de CleanMyMap reste inchangée : elle ne couvre pas
+GitNexus, mais il n'est pas nécessaire de modifier la licence du projet pour
+utiliser cet outil tiers dans le périmètre autorisé. Aucun second index, hook,
+plugin ou service n'est ajouté.
 
 ### Audits qualité et artefacts locaux
 
