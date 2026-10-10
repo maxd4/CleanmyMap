@@ -91,6 +91,40 @@ test("rendering reuses the policy by KIND and keeps correlation textual", () => 
   assert.doesNotMatch(markdown, /score global|score numérique/);
 });
 
+test("la zone préventive expose la distance REVIEW sans créer une décision de split", () => {
+  const candidate = {
+    ...row("apps/web/src/preventive.ts"),
+    lines: 350,
+    bytes: 10_000,
+    signals: {
+      size: { state: "NONE", detail: "" },
+      complexity: { state: "NONE", detail: "" },
+      cycle: { state: "NONE", detail: "" },
+      deadCode: { state: "NONE", detail: "" },
+      duplication: { state: "NONE", detail: "" },
+      testability: { state: "NOT_MEASURED", detail: "not attributed" },
+    },
+  };
+  const markdown = buildRadarMarkdown({
+    report: {
+      rows: [candidate],
+      radarRows: [candidate],
+      preventive: [candidate],
+      architectural: [],
+      tests: [],
+      generated: [],
+    },
+    refInfo: { requested: "HEAD", resolved: currentRef, status: "CURRENT_AT_GENERATION" },
+    humanBlock: "_Aucune décision humaine enregistrée._",
+    generatedAt: "2026-01-01T00:00:00.000Z",
+    top: 1,
+  });
+  assert.match(markdown, /Surveillance préventive informative \(runtime\/tests\) \| 1/);
+  assert.match(markdown, /preventive\.ts.*runtime.*350.*9\.8 KiB.*150 lignes \/ 30\.2 KiB/);
+  assert.match(markdown, /NONE_RECORDED/);
+  assert.match(markdown, /PROACTIVE_SPLIT établi \| 0/);
+});
+
 test("fresh measurements replace stale machine fields while human rationale survives", () => {
   const candidate = {
     ...row("apps/web/src/app/learn/ressources/learn-ressources-client.data.ts", "data/config"),

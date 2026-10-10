@@ -22,6 +22,7 @@ import {
 } from "../checks/top-heavy-measurement.mjs";
 import {
   FILE_KIND_POLICY,
+  getDistanceToReview,
   isAboveHard,
   isAboveReview,
   isExcludedGeneratedRow,
@@ -289,8 +290,11 @@ export function parseHumanDecisions(humanBlock) {
 
 function formatPolicy() {
   return Object.entries(FILE_KIND_POLICY).map(([kind, policy]) => {
-    if (policy.review === null) return `| ${kind} | informatif | informatif | provenance générée + régénérabilité obligatoires |`;
-    return `| ${kind} | >${policy.review.lines} lignes ou >${policy.review.bytes / 1024} KiB | >${policy.hard.lines} lignes ou >${policy.hard.bytes / 1024} KiB | ${policy.radarSection === "tests" ? "lisibilité/cohésion des scénarios" : "architecture"} |`;
+    if (policy.review === null) return `| ${kind} | informatif | informatif | informatif | provenance générée + régénérabilité obligatoires |`;
+    const preventive = policy.preventive === null
+      ? "qualitatif, selon la cohésion"
+      : `>=${policy.preventive.lines} lignes (informatif)`;
+    return `| ${kind} | >${policy.review.lines} lignes ou >${policy.review.bytes / 1024} KiB | >${policy.hard.lines} lignes ou >${policy.hard.bytes / 1024} KiB | ${preventive} | ${policy.radarSection === "tests" ? "lisibilité/cohésion des scénarios" : "architecture"} |`;
   }).join("\n");
 }
 
@@ -325,6 +329,47 @@ function renderRawTable(rows, limit, humanByFile) {
   for (const row of selected) {
     const decision = humanByFile.get(row.file)?.ARCHITECTURE_DECISION ?? "REVIEW_REQUIRED";
     lines.push(`| \`${row.file}\` | \`${row.ref}\` | ${row.lines} | ${row.bytes} | ${row.kind} | ${signalText(row.signals.size)} | ${compactSignalText(row.signals)} | ${decision} |`);
+  }
+  return lines.join("\n");
+}
+
+function formatKilobytes(bytes) {
+  return `${(bytes / 1024).toFixed(1)} KiB`;
+}
+
+function formatReviewDistance(row) {
+  const distance = getDistanceToReview(row);
+  if (!distance) return "NOT_APPLICABLE";
+  return `${distance.lines} lignes / ${formatKilobytes(distance.bytes)}`;
+}
+
+function renderPreventiveSignals(signals) {
+  const present = [
+    ["complexity", signals.complexity],
+    ["cycle", signals.cycle],
+    ["dead-code", signals.deadCode],
+    ["duplication", signals.duplication],
+    ["testability", signals.testability],
+  ].filter(([, value]) => value.state === "PRESENT")
+    .map(([name, value]) => `${name}: ${value.detail}`)
+    .join("<br>");
+  if (present) return present;
+  return [signals.complexity, signals.cycle, signals.deadCode, signals.duplication, signals.testability]
+    .some((value) => value.state === "NOT_MEASURED")
+    ? "signaux complémentaires non mesurés"
+    : "aucun signal présent dans les mesures";
+}
+
+function renderPreventiveTable(rows, limit, humanByFile) {
+  const selected = rows.slice(0, limit);
+  if (selected.length === 0) return "_Aucun fichier dans la zone préventive mesurée._";
+  const lines = [
+    "| PATH | KIND | LINES | KiB | DISTANCE_REVIEW | SIGNAUX_MESURÉS | DÉCISION_EXISTANTE |",
+    "| --- | --- | ---: | ---: | --- | --- | --- |",
+  ];
+  for (const row of selected) {
+    const decision = humanByFile.get(row.file)?.ARCHITECTURE_DECISION ?? "NONE_RECORDED";
+    lines.push(`| \`${row.file}\` | ${row.kind} | ${row.lines} | ${formatKilobytes(row.bytes)} | ${formatReviewDistance(row)} | ${renderPreventiveSignals(row.signals)} | ${decision} |`);
   }
   return lines.join("\n");
 }
@@ -385,6 +430,7 @@ export function buildRadarMarkdown({ report, refInfo, humanBlock, top = DEFAULT_
   const humanByFile = new Map(humanEntries.map((entry) => [entry.file, entry]));
   const radarByFile = new Map(report.radarRows.map((row) => [row.file, row]));
   const rows = report.rows;
+  const preventive = (report.preventive ?? []).map((row) => report.radarRows.find((candidate) => candidate.file === row.file));
   const architectural = report.architectural.map((row) => report.radarRows.find((candidate) => candidate.file === row.file));
   const tests = report.tests.map((row) => report.radarRows.find((candidate) => candidate.file === row.file));
   const generated = report.generated.map((row) => report.radarRows.find((candidate) => candidate.file === row.file));
@@ -415,6 +461,7 @@ automatiquement un HEAD ultérieur.
 | Mesure factuelle | Valeur |
 | --- | ---: |
 | Fichiers mesurés | ${rows.length} |
+| Surveillance préventive informative (runtime/tests) | ${preventive.length} |
 | REVIEW architectural (runtime + data/config) | ${architectural.length} |
 | HARD contrôlé | ${hard} |
 | Tests volumineux | ${tests.length} |
@@ -435,13 +482,16 @@ top-heavy-policy.mjs (../../scripts/checks/top-heavy-policy.mjs) et est
 consommée par le même moteur que quality:top-heavy. Le générateur ne
 redéfinit aucun seuil.
 
-| KIND | REVIEW | HARD | Lecture radar |
-| --- | --- | --- | --- |
+| KIND | REVIEW | HARD | PRÉVENTIVE | Lecture radar |
+| --- | --- | --- | --- | --- |
 ${formatPolicy()}
 
 Un fichier generated n'est exclu que si sa provenance et sa régénérabilité
 sont démontrées. Un test volumineux reste un signal de lisibilité et de
-cohésion de scénarios, jamais un monolithe runtime par défaut.
+cohésion de scénarios, jamais un monolithe runtime par défaut. La colonne
+préventive est strictement informative : elle ne crée ni REVIEW/HARD, ni
+baseline, ni décision de split ; data/config reste lu selon la cohésion réelle
+du catalogue, sans seuil numérique automatique.
 
 ## D. Priorités architecturales
 
@@ -456,6 +506,15 @@ ${renderPreservedHumanSection(humanBlock)}
 Les tableaux suivants sont mesurés automatiquement. Une ligne sans décision
 humaine reste REVIEW_REQUIRED, qui est un état d'audit et non une consigne
 de découpage.
+
+### Surveillance préventive — top ${top}
+
+Les lignes suivantes sont dans une zone de lecture située avant REVIEW pour
+runtime et tests. La distance est calculée séparément pour les lignes et les
+octets ; aucun agrégat numérique global n'est produit. Les signaux affichés sont uniquement
+ceux effectivement attribués par les rapports quality disponibles à la ref.
+
+${renderPreventiveTable(preventive, top, humanByFile)}
 
 ### Radar architectural — top ${top}
 
@@ -494,6 +553,12 @@ automatiquement de la taille.
 - SIZE_SIGNAL vient de quality:top-heavy, de classifyFileKind() et
   de la baseline heavy-files ; ce contrôle reste la source de vérité de la
   taille et de ses plafonds.
+- La surveillance préventive utilise uniquement les seuils indicatifs
+  \`>=300\` lignes pour runtime et \`>=600\` lignes pour test, uniquement sous
+  REVIEW. Elle est informative, ne modifie pas \`quality:top-heavy --enforce\`
+  et ne crée jamais \`PROACTIVE_SPLIT\`. Data/config n'a pas de seuil numérique
+  préventif automatique : la cohésion du catalogue doit être examinée par un
+  humain.
 - En génération standalone, COMPLEXITY_SIGNAL, DEAD_CODE_SIGNAL,
   DUPLICATION_SIGNAL et CYCLE_SIGNAL proviennent uniquement des cinq rapports
   quality-audits dont les manifests prouvent le même RADAR_REF, une baseline

@@ -9,6 +9,7 @@ import { loadHeavyFilesBaseline } from "./top-heavy-baseline.mjs";
 import { collectMeasuredRows } from "./top-heavy-measurement.mjs";
 import {
   FILE_KIND_POLICY,
+  isInPreventiveZone,
   isAboveHard,
   isAboveReview,
   isExcludedGeneratedRow,
@@ -38,7 +39,9 @@ function formatRow(row) {
 function formatPolicy() {
   return Object.entries(FILE_KIND_POLICY)
     .map(([kind, policy]) => {
-      const generatedNote = kind === "generated" ? "informatif; exclusion seulement si provenance régénérable prouvée" : `REVIEW ${formatThreshold(policy.review)}, HARD ${formatThreshold(policy.hard)}`;
+      const generatedNote = kind === "generated"
+        ? "informatif; exclusion seulement si provenance régénérable prouvée"
+        : `REVIEW ${formatThreshold(policy.review)}, HARD ${formatThreshold(policy.hard)}, ${policy.preventive ? `préventif >=${policy.preventive.lines} lignes (informatif)` : "préventif qualitatif"}`;
       return `${kind}: ${generatedNote}`;
     })
     .join(" | ");
@@ -58,6 +61,7 @@ export function createProximityRows(rows, limit) {
       proximity: proximityScore(row),
     }))
     .filter((row) => row.proximity !== null && !isAboveReview(row))
+    .filter(isInPreventiveZone)
     .sort((left, right) => right.proximity - left.proximity || right.lines - left.lines || left.file.localeCompare(right.file))
     .slice(0, limit);
 }

@@ -27,6 +27,31 @@ Un fichier long et linéaire avec une responsabilité claire peut rester
 acceptable. Un fichier plus court mais dense, multi-responsabilités ou très
 couplé peut justifier une extraction plus tôt.
 
+## Cinq signaux qualitatifs complémentaires
+
+La décision de modulariser repose sur une analyse qualitative, pas sur un seuil
+de lignes isolé. Examiner explicitement les cinq dimensions suivantes :
+
+1. **Cohésion** — plusieurs responsabilités autonomes cohabitent-elles dans le
+   même fichier, ou forment-elles encore un modèle compréhensible et cohésif ?
+2. **Complexité** — les fonctions, composants ou hooks restent-ils lisibles
+   localement, avec des étapes et des décisions nommées ?
+3. **Couplage** — les dépendances sont-elles nombreuses, circulaires ou
+   traversent-elles plusieurs domaines sans frontière claire ?
+4. **Testabilité** — un comportement peut-il être isolé sans charger une grande
+   partie du module, de son cycle de vie ou de ses effets ?
+5. **Évolutivité** — les modifications fréquentes ou la croissance du module
+   augmentent-elles le contexte nécessaire à chaque changement ?
+
+Une extraction devient pertinente lorsqu'elle améliore objectivement au moins
+l'une de ces dimensions sans dégrader les autres. La taille, la proximité d'un
+seuil préventif ou un signal de radar déclenche une lecture ; elle ne démontre
+ni une responsabilité autonome ni une décision `PROACTIVE_SPLIT`.
+
+Les rapports automatiques n'affichent que les signaux qu'ils mesurent
+réellement. La cohésion et l'évolutivité restent des décisions d'analyse
+architecturale tant qu'aucune mesure canonique attribuable n'existe.
+
 ## Modularisation à deux niveaux
 
 Une revue structurelle examine toujours le module et les unités de logique
@@ -110,6 +135,23 @@ Les contrôles déterminent deux seuils par KIND via `classifyFileKind()` :
 | test | `>1000` lignes ou `>50 KiB` | `>1500` lignes ou `>80 KiB` |
 | data/config | `>800` lignes ou `>50 KiB` | `>1500` lignes ou `>80 KiB` |
 | generated | informatif si réellement régénérable | informatif si réellement régénérable |
+
+### Surveillance préventive informative
+
+Le radar ajoute une zone de lecture avant REVIEW, sans créer un nouveau
+contrôle :
+
+| KIND | Surveillance préventive | Portée |
+| --- | --- | --- |
+| runtime | `>=300` lignes | fichiers sous REVIEW uniquement |
+| test | `>=600` lignes | fichiers sous REVIEW uniquement |
+| data/config | selon la cohésion et les responsabilités du catalogue | aucun seuil numérique automatique |
+
+Cette surveillance est strictement informative. Elle ne bloque ni commit ni
+push, ne produit pas `REVIEW` ou `HARD`, ne modifie aucune baseline et ne
+déclenche aucune modularisation automatique. Le poids en KiB reste un signal
+complémentaire de la politique REVIEW/HARD existante ; aucun plafond préventif
+universel de poids n'est ajouté.
 
 `REVIEW_REQUIRED` reste un signal d'audit sans split automatique ; le mode
 `--enforce` interdit tout nouveau REVIEW/HARD et toute croissance au-delà du

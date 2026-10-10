@@ -466,6 +466,7 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
     expect(updateLegalContentReportStateMock).toHaveBeenCalledWith(
       expect.objectContaining({ creatorState: "content_restricted" }),
     );
+    expect(applyCanonicalLegalContentMutationMock).toHaveBeenCalledTimes(1);
     expect(sendAuthorMock).toHaveBeenCalledWith(
       expect.objectContaining({ authorEmail: "author@example.com" }),
     );
@@ -496,7 +497,18 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
     expectInvariantAuditContext(lastAuditDetails());
   });
 
-  it("keeps the admin gate before every decision or mutation", async () => {
+  it("rejects anonymous access before loading or mutating a report", async () => {
+    requireAdminAccessMock.mockResolvedValueOnce({ ok: false, status: 401, error: "Unauthorized" });
+
+    const response = await POST(request(validBody()));
+
+    expect(response.status).toBe(401);
+    expect(getCurrentUserIdentityMock).not.toHaveBeenCalled();
+    expect(getLegalContentReportByIdMock).not.toHaveBeenCalled();
+    expect(applyCanonicalLegalContentMutationMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the non-admin gate before every decision or mutation", async () => {
     requireAdminAccessMock.mockResolvedValueOnce({ ok: false, status: 403, error: "Forbidden" });
 
     const response = await POST(request(validBody()));

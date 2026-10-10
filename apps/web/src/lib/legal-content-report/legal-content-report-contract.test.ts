@@ -8,6 +8,8 @@ const page = readFileSync(new URL("../../app/signaler-contenu-illicite/page.tsx"
 const migration = readFileSync(new URL("../../../supabase/migrations/20260827140000_legal_content_reports.sql", import.meta.url), "utf8");
 const decisionsMigration = readFileSync(new URL("../../../supabase/migrations/20260827150000_legal_content_report_decisions.sql", import.meta.url), "utf8");
 const decisionRoute = readFileSync(new URL("../../app/api/admin/legal-content-reports/decision/route.ts", import.meta.url), "utf8");
+const decisionWorkflow = readFileSync(new URL("./legal-content-report-decision-workflow.ts", import.meta.url), "utf8");
+const decisionEffects = readFileSync(new URL("./legal-content-report-decision-effects.ts", import.meta.url), "utf8");
 
 describe("legal content report public contracts", () => {
   it("keeps the public surface as a POST-only submission without a BotID hard gate", () => {
@@ -63,9 +65,9 @@ describe("legal content report public contracts", () => {
     expect(decisionRoute).toContain("requireAdminAccess");
     expect(decisionRoute).toContain("legalBasis");
     expect(decisionRoute).toContain("termsBasis");
-    expect(decisionRoute).toContain("executionStatus");
-    expect(decisionRoute).toContain("executionErrorCode");
-    expect(decisionRoute).toContain('executionStatus === "applied"');
+    expect(decisionWorkflow).toContain("executionStatus");
+    expect(decisionWorkflow).toContain("executionErrorCode");
+    expect(decisionEffects).toContain('executionStatus: "applied"');
     expect(decisionRoute).toContain('status: \"partial\"');
     expect(decisionsMigration).toContain("legal_content_report_decisions");
     expect(decisionsMigration).toContain("actor_admin_user_id");

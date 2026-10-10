@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   FILE_KIND_POLICY,
+  getDistanceToReview,
+  isInPreventiveZone,
   isAboveHard,
   isAboveReview,
   isExcludedGeneratedRow,
@@ -37,4 +39,35 @@ test("generated n'est exclu que lorsque sa régénérabilité est prouvée", () 
   assert.equal(isAboveHard(generated), false);
   assert.equal(isExcludedGeneratedRow(unverified), false);
   assert.equal(isAboveHard(unverified), true);
+});
+
+test("la surveillance runtime est informative aux bornes 300 et avant REVIEW", () => {
+  assert.equal(isInPreventiveZone(row("runtime", 299, 10_000)), false);
+  assert.equal(isInPreventiveZone(row("runtime", 300, 10_000)), true);
+  assert.equal(isInPreventiveZone(row("runtime", 499, 10_000)), true);
+  assert.equal(isInPreventiveZone(row("runtime", 500, 10_000)), true);
+  assert.equal(isInPreventiveZone(row("runtime", 501, 10_000)), false);
+  assert.deepEqual(getDistanceToReview(row("runtime", 300, 10_000)), { lines: 200, bytes: 40 * 1024 - 10_000 });
+});
+
+test("la surveillance des tests est informative aux bornes 600 et avant REVIEW", () => {
+  assert.equal(isInPreventiveZone(row("test", 599, 10_000)), false);
+  assert.equal(isInPreventiveZone(row("test", 600, 10_000)), true);
+  assert.equal(isInPreventiveZone(row("test", 999, 10_000)), true);
+  assert.equal(isInPreventiveZone(row("test", 1000, 10_000)), true);
+  assert.equal(isInPreventiveZone(row("test", 1001, 10_000)), false);
+});
+
+test("data/config reste surveillé qualitativement sans seuil numérique préventif", () => {
+  assert.equal(FILE_KIND_POLICY["data/config"].preventive, null);
+  assert.equal(isInPreventiveZone(row("data/config", 799, 10_000)), false);
+  assert.equal(isInPreventiveZone(row("data/config", 800, 10_000)), false);
+});
+
+test("les seuils REVIEW/HARD en octets restent indépendants du niveau préventif", () => {
+  const runtimeReviewByBytes = row("runtime", 200, 40 * 1024 + 1);
+  const runtimeHardByBytes = row("runtime", 200, 50 * 1024 + 1);
+  assert.equal(isInPreventiveZone(runtimeReviewByBytes), false);
+  assert.equal(isAboveReview(runtimeReviewByBytes), true);
+  assert.equal(isAboveHard(runtimeHardByBytes), true);
 });

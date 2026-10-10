@@ -22,6 +22,7 @@ import {
 } from "../checks/top-heavy-measurement.mjs";
 import {
   FILE_KIND_POLICY,
+  isInPreventiveZone,
   isAboveHard,
   isAboveReview,
   isExcludedGeneratedRow,
@@ -92,6 +93,9 @@ function formatPolicy() {
 
 export function getRadarGroups(rows) {
   return {
+    preventive: rows
+      .filter(isInPreventiveZone)
+      .sort((a, b) => b.lines - a.lines || b.bytes - a.bytes),
     architectural: rows
       .filter((row) => !isExcludedGeneratedRow(row) && row.kind !== "test" && isAboveReview(row))
       .sort((a, b) => b.lines - a.lines || b.bytes - a.bytes),

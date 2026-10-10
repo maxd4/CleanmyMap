@@ -98,6 +98,23 @@ test("la proximité ne contient que les fichiers encore sous REVIEW", () => {
   });
 });
 
+test("la surveillance préventive runtime/test ne crée aucun dépassement enforce", () => {
+  withFixture({
+    source: makeContent(300),
+    extraFiles: { "apps/web/src/fixture.test.ts": makeContent(600) },
+  }, (root) => {
+    const result = runChecker(root, ["--enforce"]);
+    assert.equal(result.status, 0, result.output);
+    assert.match(result.output, /PASS: 0 fichier\(s\) HARD, 0 fichier\(s\) REVIEW_REQUIRED/);
+
+    const report = runTopHeavyPolicy({ root, args: ["--ref=HEAD"] });
+    assert.deepEqual(report.proximityRows.map((row) => row.file), [
+      "apps/web/src/fixture.test.ts",
+      "apps/web/src/fixture.ts",
+    ]);
+  });
+});
+
 test("un fichier REVIEW qui grossit au-delà de son plafond échoue", () => {
   const baselineSource = makeContent(501);
   withFixture({
