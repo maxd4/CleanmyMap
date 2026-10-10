@@ -15,7 +15,7 @@ Référence Git observée au moment de la documentation :
 |---|---|
 | Dépôt | `maxd4/CleanmyMap` |
 | Branche | `main` |
-| SHA | `a255c55adce62556cf5a2a78611fa498ad6b9248` |
+| SHA | `3caf07e8cd980703e17e0d69ea907e856dc482b1` |
 | Date de mesure/documentation | `2026-10-10` |
 | Codex CLI observé | `0.162.0-alpha.17.2` |
 | Modèle visé | `gpt-5.6-luna` |
@@ -132,9 +132,10 @@ Une donnée absente reste `NOT_OBSERVABLE`. Aucun temps non attribué ne doit
 
 ## Résultats du benchmark Medium vs High
 
-### Exécution réellement tentée
+### Première tentative historique invalidée
 
-Une seule exécution a été tentée avant l’arrêt prévu par le protocole :
+Une première exécution a été tentée avant le prévol corrigé, puis invalidée
+avant l’analyse métier :
 
 | Exécution | Tâche | Effort | Résultat | Durée | Outils tâche | Exactitude |
 |---:|---|---|---|---:|---:|---|
@@ -154,7 +155,10 @@ L’exécution n’a pas atteint la tâche métier :
   échoué faute d’autorisation OAuth disponible.
 
 Le processus Codex lancé pour cet essai a été arrêté proprement après l’échec
-d’initialisation. Le journal temporaire a été supprimé.
+d’initialisation. Le journal temporaire a été supprimé. Deux lancements
+préparatoires supplémentaires ont aussi échoué au niveau du wrapper (prompt
+passé comme argument positionnel, puis avec `--`) ; ils ont renvoyé le code 2
+en moins de 0,1 s et ne sont pas comptés comme des essais du protocole.
 
 ## Prévol de fiabilité du contexte — 2026-10-10
 
@@ -210,9 +214,11 @@ pas une preuve d’exhaustivité de tout le contexte Desktop.
 
 **Verdict du prévol : `ENVIRONMENT_READY`.** Le contexte nécessaire démarre
 normalement avec un plafond documentaire de 64 KiB, un budget de skills adapté
-et COROS isolé. Le benchmark `medium`/`high` reste `NOT_RUN`.
+et COROS isolé. Au moment de ce prévol, le benchmark `medium`/`high` restait
+`NOT_RUN` ; la séquence finale décrite ci-dessous a été exécutée ensuite avec
+les mêmes surcharges éphémères.
 
-### Exécutions non lancées
+### État historique avant la séquence finale
 
 | Exécution | Tâche | Effort | Statut |
 |---:|---|---|---|
@@ -220,15 +226,68 @@ et COROS isolé. Le benchmark `medium`/`high` reste `NOT_RUN`.
 | 3 | A | `high` | `NOT_RUN` — arrêt après échec d’environnement |
 | 4 | B | `medium` | `NOT_RUN` — arrêt après échec d’environnement |
 
-### Comparaison de qualité
+### Comparaison historique avant la séquence finale
 
-`NOT_COMPARABLE`. Aucune analyse A ou B exploitable n’a été produite ; il n’y
-a donc aucune base honnête pour comparer durée, appels, tokens, exactitude,
-exhaustivité ou différences de raisonnement entre `medium` et `high`.
+`NOT_COMPARABLE` à ce stade historique. Aucune analyse A ou B exploitable
+n’avait été produite ; il n’y avait donc aucune base honnête pour comparer
+durée, appels, tokens, exactitude, exhaustivité ou différences de raisonnement
+entre `medium` et `high`.
 
 Les tokens d’entrée, de sortie et de raisonnement, les compactifications, la
 durée totale fiable et le temps cumulé des outils sont `NOT_OBSERVABLE` pour
 cet essai invalide.
+
+### Séquence finale exécutée — 2026-10-10
+
+Les quatre essais demandés ont ensuite été lancés séquentiellement dans l’ordre
+canonique, sur le même SHA et avec les prompts identiques à l’intérieur de
+chaque paire. Chaque processus utilisait `--ephemeral`, le modèle
+`gpt-5.6-luna`, `model_reasoning_effort` explicite, sandbox `read-only`,
+`project_doc_max_bytes=65536`, `skills.max_context_tokens=16384` et
+`mcp_servers.coros.enabled=false`.
+
+| Essai | Tâche | Effort | Durée murale | Commandes shell | Appels MCP observés | Erreurs événementielles | Timeout | Verdict tâche |
+|---:|---|---|---:|---:|---:|---:|---|---|
+| 1 | A | `medium` | 120,255 s | 18 | 0 | 0 | Oui | `INVALID_TIMEOUT` |
+| 2 | B | `high` | 120,142 s | 36 | 0 | 0 | Oui | `INVALID_TIMEOUT` |
+| 3 | A | `high` | 120,135 s | 44 | 0 | 0 | Oui | `INVALID_TIMEOUT` |
+| 4 | B | `medium` | 98,307 s | 26 | 0 | 0 | Non | `EVALUABLE_PARTIAL` |
+
+Les appels MCP sont comptés à partir des événements structurés ; aucun
+événement `function_call` ou appel MCP n’a été observé. Les avertissements
+non bloquants du CLI concernaient les icônes de skills et l’absence de support
+du shell snapshot PowerShell. Aucun test, build, lint, typecheck,
+réindexation QMD/GitNexus ou écriture dans le dépôt n’a été déclenché.
+
+Les essais 1 à 3 ont exécuté des lectures shell mais n’ont pas produit le
+rapport final demandé avant l’expiration de la limite. Ils sont donc invalides
+pour une évaluation de qualité et pour une comparaison de latence utile. Leur
+temps avant première réponse utile, leur temps de raisonnement, leur usage de
+tokens et leurs compactifications sont `NOT_OBSERVABLE`.
+
+L’essai 4 a produit les cinq sections demandées et 46 références de preuve
+détectées dans le rapport. La lecture du code confirme globalement les
+constats sur la préparation, `ActionUpdateValidationError`, la persistance,
+l’ordre des effets et les tests associés. Une affirmation incidente sur la
+présence de modifications locales non liées n’était pas établie par l’état Git
+du candidat et ne doit pas être retenue. La qualité de cet essai est donc
+`EVALUABLE_PARTIAL`, non une preuve d’exhaustivité.
+
+### Tokens et comparabilité
+
+| Essai | Input tokens | Cached input | Output tokens | Reasoning output | Statut |
+|---:|---:|---:|---:|---:|---|
+| A-medium | `NOT_OBSERVABLE` | `NOT_OBSERVABLE` | `NOT_OBSERVABLE` | `NOT_OBSERVABLE` | timeout |
+| B-high | `NOT_OBSERVABLE` | `NOT_OBSERVABLE` | `NOT_OBSERVABLE` | `NOT_OBSERVABLE` | timeout |
+| A-high | `NOT_OBSERVABLE` | `NOT_OBSERVABLE` | `NOT_OBSERVABLE` | `NOT_OBSERVABLE` | timeout |
+| B-medium | 1 015 965 | 938 496 | 6 992 | 1 530 | rapport structuré produit |
+
+Verdict de comparabilité : `NOT_COMPARABLE`. Les quatre processus ont été
+lancés dans l’ordre et avec les contraintes demandées, mais une seule analyse
+est exploitable et aucune paire medium/high n’est complète. Les durées et les
+appels shell observés décrivent ce prévol borné ; ils ne permettent pas de
+conclure que `medium` ou `high` est intrinsèquement plus rapide ou meilleur.
+Le réglage utilisateur par défaut `high` est conservé.
 
 ## Recommandations retenues et rejetées
 
