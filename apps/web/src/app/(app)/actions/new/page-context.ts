@@ -53,6 +53,18 @@ export type NewActionPageContext = {
   pageTemplateV2Enabled: boolean;
 };
 
+type ResolvedActionCreationRoute = {
+  tab: ActionCreationTab;
+  initialSpace: ActionCreationSpace;
+  returnUrl: string;
+};
+
+type ResolvedActionIdentity = {
+  isAuthenticated: boolean;
+  fallbackActorName: string;
+  actorNameOptions: string[];
+};
+
 export async function resolveNewActionPageContext(
   searchParams?: Promise<NewActionPageSearchParams>,
 ): Promise<NewActionPageContext> {
@@ -67,25 +79,22 @@ export async function resolveNewActionPageContext(
   const requestedTab = resolveSingleSearchParam(params?.["tab"]);
   const { userId } = await getSafeAuthSession();
   const localDevAuth = await getLocalDevAuthState();
-  const isAuthenticated = Boolean(userId);
   const identity = userId ? await getCurrentUserIdentity() : null;
-  const actionPhase =
-    actionId && !requestedTab
-      ? await resolveActionResumePhase({ actionId, userId, identity })
-      : null;
-  const tab = normalizeActionCreationTab(requestedTab, { actionId, from, actionPhase, panel });
-  const initialSpace = normalizeActionCreationSpace(params?.["space"], { actionId, tab });
-  const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from, panel, section, tab });
+  const { tab, initialSpace, returnUrl } = await resolveActionCreationRoute({
+    actionId,
+    duplicateFromActionId,
+    from,
+    fromEventId,
+    identity,
+    panel,
+    requestedTab,
+    section,
+    space: params?.["space"],
+    userId,
+  });
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const actionCreationSectionsEnabled = isFeatureEnabled("actionCreationSections");
-  const fallbackActorName = userId ?? "Visiteur";
-  const actorNameOptions = Array.from(
-    new Set(
-      identity?.actorNameOptions && identity.actorNameOptions.length > 0
-        ? identity.actorNameOptions
-        : [fallbackActorName],
-    ),
-  );
+  const { fallbackActorName, actorNameOptions, isAuthenticated } = resolveActionIdentity({ identity, userId });
 
   return {
     params,
@@ -107,6 +116,56 @@ export async function resolveNewActionPageContext(
     signUpHref: buildSignUpRedirectHref(returnUrl),
     pageTemplateV2Enabled,
   };
+}
+
+async function resolveActionCreationRoute({
+  actionId,
+  duplicateFromActionId,
+  from,
+  fromEventId,
+  identity,
+  panel,
+  requestedTab,
+  section,
+  space,
+  userId,
+}: {
+  actionId?: string;
+  duplicateFromActionId?: string;
+  from?: string;
+  fromEventId?: string;
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
+  panel: ActionCreationPanelId;
+  requestedTab?: string;
+  section: ActionCreationSectionId;
+  space: string | string[] | undefined;
+  userId: string | null;
+}): Promise<ResolvedActionCreationRoute> {
+  const actionPhase = actionId && !requestedTab
+    ? await resolveActionResumePhase({ actionId, userId, identity })
+    : null;
+  const tab = normalizeActionCreationTab(requestedTab, { actionId, from, actionPhase, panel });
+  return {
+    tab,
+    initialSpace: normalizeActionCreationSpace(space, { actionId, tab }),
+    returnUrl: buildActionReturnUrl({ fromEventId, actionId, duplicateFromActionId, from, panel, section, tab }),
+  };
+}
+
+function resolveActionIdentity({
+  identity,
+  userId,
+}: {
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
+  userId: string | null;
+}): ResolvedActionIdentity {
+  const fallbackActorName = userId ?? "Visiteur";
+  const actorNameOptions = Array.from(new Set(
+    identity?.actorNameOptions && identity.actorNameOptions.length > 0
+      ? identity.actorNameOptions
+      : [fallbackActorName],
+  ));
+  return { isAuthenticated: Boolean(userId), fallbackActorName, actorNameOptions };
 }
 
 function resolveSingleSearchParam(value: string | string[] | undefined): string | undefined {
@@ -135,6 +194,7 @@ function buildActionUserMetadata({
 function buildActionReturnUrl({
   fromEventId,
   actionId,
+  duplicateFromActionId,
   from,
   panel,
   section,
@@ -142,6 +202,7 @@ function buildActionReturnUrl({
 }: {
   fromEventId?: string;
   actionId?: string;
+  duplicateFromActionId?: string;
   from?: string;
   panel: ActionCreationPanelId;
   section: ActionCreationSectionId;
@@ -153,6 +214,7 @@ function buildActionReturnUrl({
   if (tab !== "before") returnParams.set("tab", tab);
   if (fromEventId) returnParams.set("fromEventId", fromEventId);
   if (actionId) returnParams.set("actionId", actionId);
+  if (duplicateFromActionId) returnParams.set("duplicateFrom", duplicateFromActionId);
   if (from) returnParams.set("from", from);
   const query = returnParams.toString();
   return query ? `/actions/new?${query}` : "/actions/new";

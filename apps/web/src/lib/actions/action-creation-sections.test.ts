@@ -4,6 +4,7 @@ import {
   ACTION_CREATION_SECTION_STATUS_LABELS,
   createActionCreationSectionState,
   setActionCreationSectionStatus,
+  migrateLegacyActionWorkflowState,
 } from "./action-creation-sections";
 
 describe("action creation sections contract", () => {
@@ -31,5 +32,31 @@ describe("action creation sections contract", () => {
     expect(complete.activeSection).toBe("essentiel");
     expect(complete.statuses.terrain).toBe("todo");
     expect(complete.statuses.verification).toBe("review");
+  });
+
+  it("migrates the legacy workflow without losing the action identity or review states", () => {
+    const migrated = migrateLegacyActionWorkflowState({
+      schemaVersion: "action-workflow-v1",
+      actionId: "action-42",
+      activeStep: "paris",
+      statuses: {
+        itineraire: "done",
+        preparation: "review",
+        paris: "done",
+        preformulaire: "done",
+      },
+    });
+
+    expect(migrated).toEqual({
+      schemaVersion: "action-creation-sections-v1",
+      actionId: "action-42",
+      activeSection: "verification",
+      statuses: {
+        essentiel: "done",
+        terrain: "review",
+        equipe: "todo",
+        verification: "done",
+      },
+    });
   });
 });

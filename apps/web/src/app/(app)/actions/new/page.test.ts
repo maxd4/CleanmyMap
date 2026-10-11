@@ -145,6 +145,21 @@ describe("action creation entry point", () => {
     );
   });
 
+  it("keeps the duplication source through an authentication redirect", async () => {
+    const html = renderToStaticMarkup(
+      await NewActionPage({
+        searchParams: Promise.resolve({ duplicateFrom: "source-action-42" }),
+      }),
+    );
+
+    expect(html).toContain(
+      'data-sign-in-href="/sign-in?redirect_url=%2Factions%2Fnew%3FduplicateFrom%3Dsource-action-42"',
+    );
+    expect(html).toContain(
+      'data-sign-up-href="/sign-up?redirect_url=%2Factions%2Fnew%3FduplicateFrom%3Dsource-action-42"',
+    );
+  });
+
   it("maps legacy formalities links to verification without changing the action identity", async () => {
     const html = renderToStaticMarkup(
       await NewActionPage({

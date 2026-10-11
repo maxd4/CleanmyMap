@@ -63,11 +63,53 @@ export const ACTION_CREATION_SECTION_STATUS_LABELS: Record<
 };
 
 const STORAGE_KEY = "cleanmymap.action-creation-sections.v1";
+const LEGACY_STORAGE_KEY = "cleanmymap.action-workflow.v1";
+
+type LegacyActionWorkflowStatus = "todo" | "in_progress" | "done" | "review";
+type LegacyActionWorkflowState = {
+  schemaVersion?: string;
+  actionId?: string | null;
+  activeStep?: string;
+  statuses?: Partial<Record<"itineraire" | "paris" | "preparation" | "preformulaire", LegacyActionWorkflowStatus>>;
+};
 
 function sectionFromLegacyStep(value: unknown): ActionCreationSectionId {
   if (value === "itineraire" || value === "preparation") return "terrain";
   if (value === "paris") return "verification";
   return "essentiel";
+}
+
+function sectionStatusFromLegacyStatus(status: LegacyActionWorkflowStatus | undefined): ActionCreationSectionStatus {
+  if (status === "done") return "done";
+  if (status === "review" || status === "in_progress") return "review";
+  return "todo";
+}
+
+function mergeLegacyStatuses(
+  first: LegacyActionWorkflowStatus | undefined,
+  second: LegacyActionWorkflowStatus | undefined,
+): ActionCreationSectionStatus {
+  const statuses = [sectionStatusFromLegacyStatus(first), sectionStatusFromLegacyStatus(second)];
+  if (statuses.includes("review")) return "review";
+  if (statuses.every((status) => status === "done")) return "done";
+  return "todo";
+}
+
+export function migrateLegacyActionWorkflowState(
+  legacy: LegacyActionWorkflowState,
+): ActionCreationSectionState {
+  return {
+    ...createActionCreationSectionState(
+      legacy.actionId ?? null,
+      sectionFromLegacyStep(legacy.activeStep),
+    ),
+    statuses: {
+      essentiel: sectionStatusFromLegacyStatus(legacy.statuses?.preformulaire),
+      terrain: mergeLegacyStatuses(legacy.statuses?.itineraire, legacy.statuses?.preparation),
+      equipe: "todo",
+      verification: sectionStatusFromLegacyStatus(legacy.statuses?.paris),
+    },
+  };
 }
 
 export function createActionCreationSectionState(
@@ -110,13 +152,11 @@ export function loadActionCreationSectionState(): ActionCreationSectionState | n
       }
     }
 
-    const legacyRaw = window.localStorage.getItem("cleanmymap.action-workflow.v1");
+    const legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!legacyRaw) return null;
-    const legacy = JSON.parse(legacyRaw) as { actionId?: string | null; activeStep?: string };
-    return createActionCreationSectionState(
-      legacy.actionId ?? null,
-      sectionFromLegacyStep(legacy.activeStep),
-    );
+    const migrated = migrateLegacyActionWorkflowState(JSON.parse(legacyRaw) as LegacyActionWorkflowState);
+    saveActionCreationSectionState(migrated);
+    return migrated;
   } catch {
     return null;
   }
