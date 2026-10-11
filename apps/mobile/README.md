@@ -1,4 +1,4 @@
-# Application mobile — CleanMyMap GPS Tracker
+# Application mobile — CleanMyMap
 
 Application mobile Expo/React Native dédiée au suivi GPS des missions terrain.
 
@@ -198,12 +198,13 @@ d'un binaire standalone ; elle est volontairement absente du dépôt. Ces valeur
 ne sont pas des secrets serveur : aucune `service_role` ne doit être fournie à
 l'application mobile.
 
-La configuration native conserve les liens entrants `https://cleanmymap.fr/mission/start`
-et `applinks:cleanmymap.fr`, ainsi que le scheme `companion`. Le shell mobile
-utilise actuellement les ponts web sortants ; l'association Android/iOS du
-domaine (`assetlinks.json` et `apple-app-site-association`) et le parcours
-entrant complet restent à vérifier sur les services et appareils réels avant de
-les qualifier.
+La configuration native conserve uniquement le scheme `companion`, nécessaire
+aux retours de l'authentification hébergée Clerk via le plugin Expo Clerk. Les
+associations HTTPS Android/iOS et le parcours entrant `/mission/start` ne sont
+pas déclarés dans la V1 : aucun routeur mobile ne consomme encore cette URL et
+aucun fichier `assetlinks.json` ou `apple-app-site-association` n'est maintenu
+pour elle. Les ponts vers les surfaces web restent des ouvertures sortantes
+explicites et ne constituent pas du deep linking entrant.
 
 La configuration de localisation est portée par le plugin `expo-location` :
 foreground et background iOS, `ACCESS_BACKGROUND_LOCATION`,
@@ -214,18 +215,87 @@ legacy) ont été supprimées ou migrées vers `expo-splash-screen`.
 `expo-image-picker` demande les photos mais bloque explicitement le microphone ;
 `RECORD_AUDIO` ne fait pas partie des permissions résolues attendues.
 
+## Procédure de release reproductible
+
+Les commandes suivantes s'exécutent depuis `apps/mobile` pour la configuration
+Expo et depuis la racine pour les contrôles du workspace. Elles ne créent pas
+de projet EAS et ne modifient pas les credentials :
+
+```bash
+cd apps/mobile
+npx expo-doctor
+npx expo config --json
+npx expo prebuild --no-install --platform android
+cd ../..
+npm run mobile:typecheck
+npm run mobile:test
+npm run mobile:security
+npm run mobile:lint
+npm run quality:mobile-coverage
+```
+
+La sortie de `expo config --json` doit conserver `name=CleanMyMap`, le slug et
+les identifiants natifs historiques, `scheme=companion`, le target Android 36,
+les cinq permissions GPS attendues, aucune association HTTPS entrante et aucun
+`RECORD_AUDIO`. La présence de `GOOGLE_MAPS_API_KEY` dans l'environnement de
+build est nécessaire pour injecter la clé Android Google Maps ; sa valeur ne
+doit jamais être committée. Sur Windows, la génération/validation du projet
+iOS nécessite macOS ou Linux ; `expo prebuild --platform ios` ne constitue pas
+une preuve iOS depuis cet hôte.
+
+Après rattachement explicite à un projet EAS réel et configuration des variables
+publiques autorisées (`EXPO_PUBLIC_SUPABASE_URL`,
+`EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`,
+`EXPO_PUBLIC_WEB_URL`, `EXPO_PUBLIC_WEB_APP_URL` et `GOOGLE_MAPS_API_KEY`), les
+commandes de build sont :
+
+```bash
+cd apps/mobile
+eas project:info
+eas build --platform android --profile development
+eas build --platform android --profile preview
+eas build --platform android --profile production
+eas build --platform ios --profile production
+eas build:list --limit 10
+```
+
+Le profil `preview` produit l'APK Android interne demandé pour un premier test
+installable. Le profil `production` produit l'AAB Android et l'archive iOS
+signés uniquement si les credentials et autorisations sont réellement
+disponibles. Ne lancer aucun de ces builds si le projet EAS, les variables ou
+les credentials ne sont pas vérifiés ; ne soumettre aucun store depuis cette
+procédure.
+
+### Vérification physique obligatoire
+
+Pour chaque artefact, conserver le lien EAS, l'identifiant du build, le SHA de
+la candidate et les logs. Sur Android réel, vérifier installation, callback
+Clerk, session persistante/changement de compte, refus puis reprise de
+permission, suivi foreground/background, verrouillage, kill/relaunch, offline,
+replay et finalisation serveur, carte/tracé, participation, création et
+publication, signalement avec photo et déconnexion. Sur iOS réel ou runner
+Apple adapté, reprendre les mêmes scénarios et contrôler les justifications
+de localisation/photos, l'absence de microphone, les signatures et le retour
+Clerk. Aucun contrôle statique, test Vitest ou écran Expo Web ne remplace ces
+preuves.
+
 ## État de release M-D
 
 | Contrôle | État | Preuve ou blocage |
 |---|---|---|
 | Versions Expo/RN/Clerk/TypeScript/AsyncStorage | PASS | `npx expo-doctor` : 21/21 |
-| Identifiants, scheme, orientation, icônes et splash | PASS statique | configuration Expo lue ; validation visuelle et appareil à faire |
-| Niveau Android API 36 | PASS de contrat SDK | Expo SDK 57 ; aucun AAB signé encore observé |
-| Projet EAS et credentials | BLOCKED | `eas whoami` est authentifié, mais aucun projet EAS n'est configuré ; aucun `projectId` n'est inventé |
-| Clé Google Maps native | BLOCKED | `GOOGLE_MAPS_API_KEY` est uniquement injectée depuis l'environnement de build ; aucune clé réelle n'est versionnée |
-| Liens Android/iOS de domaine | BLOCKED | configuration locale présente, association distante et test appareil non prouvés |
+| Identifiants, nom, scheme, orientation, icônes et splash | PASS statique | configuration Expo résolue ; dimensions PNG contrôlées ; validation visuelle et appareil à faire |
+| Permissions Android GPS/photo/microphone | PASS de configuration | target 36, GPS foreground/background et service foreground résolus ; `RECORD_AUDIO` bloqué par le plugin photo et absent de la configuration effective |
+| Justifications iOS GPS/photos | PASS de contrat / BLOCKED natif | descriptions présentes dans les plugins ; génération iOS native impossible sur l'hôte Windows |
+| Niveau Android API 36 | PASS de configuration | `expo-build-properties` résout compile/target 36 ; aucun artefact signé encore observé |
+| Projet EAS et credentials | BLOCKED | `eas whoami` est authentifié (`maxdie`), mais `eas project:info` indique qu'aucun projet EAS n'est configuré ; aucun `projectId` n'est inventé |
+| Variables publiques et clé Google Maps | BLOCKED | les variables Supabase/Clerk/Maps locales sont vides et aucun environnement EAS lié n'est disponible ; aucune clé réelle n'est versionnée |
+| Liens Clerk et liens entrants | PASS statique / BLOCKED runtime | callback Clerk `clerk://...hosted-callback` généré côté Android et scheme conservé ; aucun test réel de retour sur appareil |
+| Liens Android/iOS de domaine | NOT_RUN | non déclarés en V1 faute de routeur entrant et de consommateurs vérifiés |
 | Android/iOS signed release | BLOCKED | aucun artefact `.apk`, `.aab` ou `.ipa` produit dans ce lot |
-| Tests natifs GPS, auth, offline et store | BLOCKED | appareil réel, build installable et artefact signé manquants |
+| Tests mobiles ciblés | PASS | typecheck, 22 fichiers/79 tests, sécurité et lint |
+| Couverture ratchetée | FAIL | seuil global historique non atteint : lignes 36,13% vs 49,25% ; baseline inchangée |
+| Tests physiques GPS, auth, offline et store | BLOCKED | appareil réel, build installable et artefact signé manquants |
 
 Le statut demeure `NOT_PRODUCTION_READY`. Les valeurs réelles de Clerk,
 Supabase et Google Maps doivent être fournies par les environnements autorisés,

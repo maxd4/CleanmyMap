@@ -430,51 +430,20 @@ async function startTracking() {
 
 ---
 
-## 8. Deep Link / QR Code
+## 8. Authentification et liens entrants
 
-### Format déclaré par la configuration actuelle
+Le seul lien entrant déclaré par la V1 est le scheme `companion`, conservé pour
+le retour de l'authentification hébergée Clerk. `@clerk/expo` utilise le
+callback natif géré par son plugin (`clerk://...hosted-callback` sur Android et
+le callback lié à l'identifiant bundle sur iOS) ; l'application ne traite pas
+elle-même un token dans une URL.
 
-```
-https://cleanmymap.fr/mission/start?id={mission_id}
-```
-
-### Déclaration Expo (app.json)
-
-```json
-{
-  "expo": {
-    "scheme": "companion",
-    "android": {
-      "intentFilters": [{
-        "action": "VIEW",
-        "autoVerify": true,
-        "data": { "scheme": "https", "host": "cleanmymap.fr", "pathPrefix": "/mission/start" }
-      }]
-    },
-    "ios": {
-      "associatedDomains": ["applinks:cleanmymap.fr"]
-    }
-  }
-}
-```
-
-Cette déclaration prépare les liens entrants. Le shell V1 implémente actuellement
-les ponts sortants vers le web et ne contient pas encore de routeur entrant qui
-extrait `mission_id` et démarre une mission. L'association Android/iOS du domaine
-(`assetlinks.json` et `apple-app-site-association`) ainsi que le parcours entrant
-restent donc à vérifier sur les services et appareils réels.
-
-### QR Code côté site
-
-```typescript
-// Côté Next.js — composant React
-import QRCode from 'qrcode.react';
-
-function MissionQR({ missionId }: { missionId: string }) {
-  const url = `https://cleanmymap.fr/mission/start?id=${missionId}`;
-  return <QRCode value={url} size={200} />;
-}
-```
+Les URLs HTTPS du site, notamment `/mission/start`, restent des liens web
+sortants depuis l'application. Elles ne sont pas déclarées comme App Links ou
+Universal Links dans la V1 car aucun routeur natif ne les consomme. Ne pas
+ajouter `assetlinks.json`, `apple-app-site-association` ou une déclaration
+`intentFilters`/`associatedDomains` avant l'implémentation et les tests réels
+du parcours entrant.
 
 ---
 

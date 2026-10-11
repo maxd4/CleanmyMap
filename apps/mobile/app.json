@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "CleanMyMap GPS",
+    "name": "CleanMyMap",
     "slug": "cleanmymap-companion",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,10 +12,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "fr.cleanmymap.companion",
-      "buildNumber": "1",
-      "associatedDomains": [
-        "applinks:cleanmymap.fr"
-      ]
+      "buildNumber": "1"
     },
     "android": {
       "package": "fr.cleanmymap.companion",
@@ -24,21 +21,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#f8fafc"
       },
-      "predictiveBackGestureEnabled": false,
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "cleanmymap.fr",
-              "pathPrefix": "/mission/start"
-            }
-          ],
-          "category": ["BROWSABLE", "DEFAULT"]
-        }
-      ]
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
