@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import type { FormState } from "../model";
-import { saveDraft } from "../draft-storage";
+import { loadDraftSnapshot, saveDraft } from "../draft-storage";
 import {
   buildPreActionSummaryNote,
   sanitizePreActionForm,
@@ -11,11 +11,11 @@ import {
 } from "./model";
 import {
   buildBeforeActionFallbackForm,
-  buildBeforeActionInitialForm,
   useBeforeActionFieldUpdates,
   useBeforeActionHydration,
   useBeforeActionPublication,
   useBeforeActionSubmission,
+  mergeBeforeActionHydrationWithLocalChanges,
   resolveBeforeActionMutationId,
 } from "./use-before-action-workflow";
 import { useBeforeActionPersistence } from "./use-before-action-persistence";
@@ -24,16 +24,54 @@ import { applyDuplicatePrefillToForm } from "./duplicate-prefill";
 
 export { persistBeforeAction } from "./use-before-action-workflow";
 
-function buildInitialBeforeFormState(
-  actorNameOptions: string[],
-  defaultActorName: string,
-  initialRecordType: "action",
-  initialActionId: string | null | undefined,
-  fallbackForm: FormState,
-): FormState {
-  return initialActionId
-    ? fallbackForm
-    : buildBeforeActionInitialForm(actorNameOptions, defaultActorName, initialRecordType);
+function useBeforeActionDraftHydration({
+  initialActionId,
+  initialRecordType,
+  duplicateFromActionId,
+  fallbackForm,
+  form,
+  setForm,
+  onFormChange,
+}: {
+  initialActionId?: string | null;
+  initialRecordType: "action";
+  duplicateFromActionId?: string | null;
+  fallbackForm: FormState;
+  form: FormState;
+  setForm: Dispatch<SetStateAction<FormState>>;
+  onFormChange?: (form: FormState) => void;
+}) {
+  const fallbackFormRef = useRef(fallbackForm);
+  const currentFormRef = useRef(form);
+  const onFormChangeRef = useRef(onFormChange);
+  const hydratedRef = useRef(false);
+  const [hydrationReady, setHydrationReady] = useState(Boolean(initialActionId));
+
+  useEffect(() => {
+    currentFormRef.current = form;
+    onFormChangeRef.current = onFormChange;
+  }, [form, onFormChange]);
+
+  useEffect(() => {
+    if (initialActionId || duplicateFromActionId || hydratedRef.current) {
+      setHydrationReady(true);
+      return;
+    }
+    hydratedRef.current = true;
+    const snapshot = loadDraftSnapshot(fallbackFormRef.current, initialRecordType, null);
+    if (snapshot) {
+      const nextForm = mergeBeforeActionHydrationWithLocalChanges(
+        fallbackFormRef.current,
+        currentFormRef.current,
+        snapshot.form,
+      );
+      setForm(nextForm);
+      onFormChangeRef.current?.(nextForm);
+    }
+    setHydrationReady(true);
+  }, [duplicateFromActionId, initialActionId, initialRecordType, setForm]);
+
+  return hydrationReady;
 }
 
 function continueToComplete(
@@ -47,7 +85,13 @@ function continueToComplete(
   return onPassToComplete(createdId);
 }
 
-export function useBeforeActionForm({
+type UseBeforeActionFormProps = ActionBeforeDeclarationFormProps;
+
+export function useBeforeActionForm(props: UseBeforeActionFormProps) {
+  return useBeforeActionFormRuntime(props);
+}
+
+function useBeforeActionFormRuntime({
   actorNameOptions,
   defaultActorName,
   isAuthenticated,
@@ -60,10 +104,10 @@ export function useBeforeActionForm({
   onFormChange,
   onActionPersisted,
   preparationContext,
-}: ActionBeforeDeclarationFormProps) {
+}: UseBeforeActionFormProps) {
   const resolvedDefaultActorName = actorNameOptions.includes(defaultActorName) ? defaultActorName : actorNameOptions[0] ?? userMetadata.userId;
   const fallbackForm = buildBeforeActionFallbackForm(actorNameOptions, resolvedDefaultActorName, initialRecordType);
-  const [form, setForm] = useState<FormState>(() => buildInitialBeforeFormState(actorNameOptions, resolvedDefaultActorName, initialRecordType, initialActionId, fallbackForm));
+  const [form, setForm] = useState<FormState>(() => fallbackForm);
   const { persistenceStatus, setPersistenceStatus } = useBeforeActionPersistence({ fallbackForm, initialActionId });
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -81,6 +125,7 @@ export function useBeforeActionForm({
   const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
   const persistedActionId = resolveBeforeActionMutationId(initialActionId, createdId);
 
+  const draftHydrationReady = useBeforeActionDraftHydration({ initialActionId, initialRecordType, duplicateFromActionId, fallbackForm, form, setForm, onFormChange });
   const isHydratingAction = useBeforeActionHydration({ resolvedDefaultActorName, initialActionId, initialRecordType, form, setForm, onFormChange, setCreatedId, createdId, setPublishedAction, setInvitationStatuses, setPublishedAt, setTerminalActionStatus, setSubmissionState, errorMessage, setErrorMessage, setPersistenceStatus, preparationContext });
   useEffect(() => {
     if (!duplicateFromActionId || initialActionId) return;
@@ -107,5 +152,5 @@ export function useBeforeActionForm({
   const summaryNote = useMemo(() => buildPreActionSummaryNote(form), [form]);
   const onContinueComplete = () => continueToComplete(form, createdId, persistedActionId, onPassToComplete);
 
-  return { form, submissionState, errorMessage, createdId, publishedAction, invitationStatuses, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction: isHydratingAction || Boolean(duplicateFromActionId && duplicateLoadedFor !== duplicateFromActionId), validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete, persistenceStatus };
+  return { form, submissionState, errorMessage, createdId, publishedAction, invitationStatuses, terminalActionStatus, publishedAt, publicationState, publicationError, publicationConfirmationOpen, isHydratingAction: !draftHydrationReady || isHydratingAction || Boolean(duplicateFromActionId && duplicateLoadedFor !== duplicateFromActionId), validationIssues, validationIssueFields, showGroupJoinHelp, setShowGroupJoinHelp, shareLink, summaryNote, updateField, updateFields, handleSubmit, requestPublish, cancelPublication, confirmPublish, onContinueComplete, persistenceStatus };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Loader2, Save } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import {
@@ -38,41 +38,34 @@ function factValue(value: boolean | "unknown"): string {
   return value === "unknown" ? "unknown" : value ? "true" : "false";
 }
 
-export function ActionFormalitiesWorkflowPanel({
+function buildDraftFormalitiesData(
+  effectiveDraftFacts: ActionFormalitiesFacts | null,
+): ActionFormalitiesResponse | null {
+  if (!effectiveDraftFacts) return null;
+  const qualification = qualifyActionFormalities(effectiveDraftFacts);
+  const workflow = buildFormalitiesWorkflowState({ facts: effectiveDraftFacts, qualification });
+  return { status: "ok", actionId: "draft", facts: effectiveDraftFacts, qualification, workflow };
+}
+
+function useActionFormalitiesData({
   actionId,
-  draftFacts,
-  onDraftFactsChange,
-  onReadinessChange,
+  draftData,
+  notifyReadiness,
 }: {
   actionId?: string | null;
-  draftFacts?: ActionFormalitiesFacts | null;
-  onDraftFactsChange?: (facts: ActionFormalitiesFacts) => void;
-  onReadinessChange?: (readiness: { known: boolean; blocked: boolean }) => void;
+  draftData: ActionFormalitiesResponse | null;
+  notifyReadiness: (readiness: { known: boolean; blocked: boolean }) => void;
 }) {
   const [data, setData] = useState<ActionFormalitiesResponse | null>(null);
   const [facts, setFacts] = useState<ActionFormalitiesFacts | null>(null);
-  const [draftFactsOverride, setDraftFactsOverride] = useState<ActionFormalitiesFacts | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const effectiveDraftFacts = draftFactsOverride ?? draftFacts ?? null;
-  const draftData = useMemo(() => {
-    if (!effectiveDraftFacts) return null;
-    const qualification = qualifyActionFormalities(effectiveDraftFacts);
-    const workflow = buildFormalitiesWorkflowState({ facts: effectiveDraftFacts, qualification });
-    return { status: "ok" as const, actionId: "draft", facts: effectiveDraftFacts, qualification, workflow };
-  }, [effectiveDraftFacts]);
 
   useEffect(() => {
     if (!actionId) {
-      if (draftData) {
-        onReadinessChange?.({
-          known: true,
-          blocked: isFormalitiesPublicationBlocked(draftData.qualification, draftData.workflow),
-        });
-      } else {
-        onReadinessChange?.({ known: false, blocked: false });
-      }
+      const readiness = draftData
+        ? { known: true, blocked: isFormalitiesPublicationBlocked(draftData.qualification, draftData.workflow) }
+        : { known: false, blocked: false };
+      notifyReadiness(readiness);
       return;
     }
 
@@ -82,7 +75,7 @@ export function ActionFormalitiesWorkflowPanel({
         if (!active) return;
         setData(next);
         setFacts(next.facts);
-        onReadinessChange?.({
+        notifyReadiness({
           known: true,
           blocked: isFormalitiesPublicationBlocked(next.qualification, next.workflow),
         });
@@ -100,22 +93,44 @@ export function ActionFormalitiesWorkflowPanel({
     return () => {
       active = false;
     };
-  }, [actionId, draftData, onReadinessChange]);
+  }, [actionId, draftData, notifyReadiness]);
 
-  const visibleData = actionId ? data : draftData;
-  const visibleFacts = actionId ? facts : effectiveDraftFacts;
-  const hasUnknown = useMemo(() => hasUnknownFacts(visibleFacts), [visibleFacts]);
+  return { data, setData, facts, setFacts, error, setError };
+}
 
-  function updateDraftFacts(next: ActionFormalitiesFacts) {
-    setDraftFactsOverride(next);
-    setFacts(next);
-    if (!actionId) onDraftFactsChange?.(next);
-  }
+function useActionFormalitiesReadiness(
+  onReadinessChange?: (readiness: { known: boolean; blocked: boolean }) => void,
+) {
+  const lastReadinessKey = useRef<string | null>(null);
+  return useCallback((readiness: { known: boolean; blocked: boolean }) => {
+    const key = `${readiness.known}:${readiness.blocked}`;
+    if (lastReadinessKey.current === key) return;
+    lastReadinessKey.current = key;
+    onReadinessChange?.(readiness);
+  }, [onReadinessChange]);
+}
 
-  async function persistFormalitiesUpdate(
+function useActionFormalitiesPersistence({
+  actionId,
+  visibleFacts,
+  notifyReadiness,
+  setData,
+  setFacts,
+  setError,
+}: {
+  actionId?: string | null;
+  visibleFacts: ActionFormalitiesFacts | null;
+  notifyReadiness: (readiness: { known: boolean; blocked: boolean }) => void;
+  setData: Dispatch<SetStateAction<ActionFormalitiesResponse | null>>;
+  setFacts: Dispatch<SetStateAction<ActionFormalitiesFacts | null>>;
+  setError: Dispatch<SetStateAction<string | null>>;
+}) {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const persistFormalitiesUpdate = useCallback(async (
     update: Parameters<typeof updateActionFormalities>[1],
     fallbackMessage: string,
-  ) {
+  ) => {
     if (!actionId || isSaving) return;
     setIsSaving(true);
     setError(null);
@@ -123,7 +138,7 @@ export function ActionFormalitiesWorkflowPanel({
       const next = await updateActionFormalities(actionId, update);
       setData(next);
       setFacts(next.facts);
-      onReadinessChange?.({
+      notifyReadiness({
         known: true,
         blocked: isFormalitiesPublicationBlocked(next.qualification, next.workflow),
       });
@@ -132,24 +147,75 @@ export function ActionFormalitiesWorkflowPanel({
     } finally {
       setIsSaving(false);
     }
-  }
+  }, [actionId, isSaving, notifyReadiness, setData, setError, setFacts]);
 
-  async function saveFacts() {
+  const saveFacts = useCallback(async () => {
     if (!visibleFacts) return;
     await persistFormalitiesUpdate(
       { facts: visibleFacts },
       "Impossible d'enregistrer les faits de qualification.",
     );
-  }
+  }, [persistFormalitiesUpdate, visibleFacts]);
 
-  async function applyTransition(
+  const applyTransition = useCallback(async (
     formalityId: string,
     kind: "mark_prepared" | "declare_sent",
-  ) {
+  ) => {
     await persistFormalitiesUpdate(
       { transition: { formalityId, kind } },
       "Impossible d'enregistrer cet état de formalité.",
     );
+  }, [persistFormalitiesUpdate]);
+
+  return { isSaving, saveFacts, applyTransition };
+}
+
+type ActionFormalitiesWorkflowPanelProps = {
+  actionId?: string | null;
+  draftFacts?: ActionFormalitiesFacts | null;
+  onDraftFactsChange?: (facts: ActionFormalitiesFacts) => void;
+  onReadinessChange?: (readiness: { known: boolean; blocked: boolean }) => void;
+};
+
+export function ActionFormalitiesWorkflowPanel(props: ActionFormalitiesWorkflowPanelProps) {
+  return <ActionFormalitiesWorkflowPanelRuntime {...props} />;
+}
+
+function ActionFormalitiesWorkflowPanelRuntime({
+  actionId,
+  draftFacts,
+  onDraftFactsChange,
+  onReadinessChange,
+}: ActionFormalitiesWorkflowPanelProps) {
+  const [draftFactsOverride, setDraftFactsOverride] = useState<ActionFormalitiesFacts | null>(null);
+
+  const effectiveDraftFacts = draftFactsOverride ?? draftFacts ?? null;
+  const draftData = useMemo(() => buildDraftFormalitiesData(effectiveDraftFacts), [effectiveDraftFacts]);
+
+  const notifyReadiness = useActionFormalitiesReadiness(onReadinessChange);
+
+  const { data, setData, facts, setFacts, error, setError } = useActionFormalitiesData({
+    actionId,
+    draftData,
+    notifyReadiness,
+  });
+
+  const visibleData = actionId ? data : draftData;
+  const visibleFacts = actionId ? facts : effectiveDraftFacts;
+  const hasUnknown = useMemo(() => hasUnknownFacts(visibleFacts), [visibleFacts]);
+  const { isSaving, saveFacts, applyTransition } = useActionFormalitiesPersistence({
+    actionId,
+    visibleFacts,
+    notifyReadiness,
+    setData,
+    setFacts,
+    setError,
+  });
+
+  function updateDraftFacts(next: ActionFormalitiesFacts) {
+    setDraftFactsOverride(next);
+    setFacts(next);
+    if (!actionId) onDraftFactsChange?.(next);
   }
 
   if (!actionId && (!visibleData || !visibleFacts)) {
@@ -160,6 +226,40 @@ export function ActionFormalitiesWorkflowPanel({
   if (isLoading) return <p className="text-sm text-emerald-900/70">Qualification en cours…</p>;
   if (!visibleData || !visibleFacts) return null;
 
+  return <ActionFormalitiesWorkflowContent
+    actionId={actionId}
+    error={error}
+    hasUnknown={hasUnknown}
+    isSaving={isSaving}
+    updateDraftFacts={updateDraftFacts}
+    saveFacts={saveFacts}
+    applyTransition={applyTransition}
+    visibleData={visibleData}
+    visibleFacts={visibleFacts}
+  />;
+}
+
+function ActionFormalitiesWorkflowContent({
+  actionId,
+  error,
+  hasUnknown,
+  isSaving,
+  updateDraftFacts,
+  saveFacts,
+  applyTransition,
+  visibleData,
+  visibleFacts,
+}: {
+  actionId?: string | null;
+  error: string | null;
+  hasUnknown: boolean;
+  isSaving: boolean;
+  updateDraftFacts: (next: ActionFormalitiesFacts) => void;
+  saveFacts: () => Promise<void>;
+  applyTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => Promise<void>;
+  visibleData: ActionFormalitiesResponse;
+  visibleFacts: ActionFormalitiesFacts;
+}) {
   const managerNeedsLabel = visibleFacts.manager.kind === "other_public";
   return (
     <div className="space-y-5" data-testid="action-formalities-workflow">
