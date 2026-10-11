@@ -1,9 +1,12 @@
 "use client";
 
-import { CalendarDays, CheckCircle2, Clock3, MapPin, Navigation, Package, ShieldCheck, Users } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock3, Copy, MapPin, Navigation, Package, Printer, ShieldCheck, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { fetchActionDayBriefing, type ActionDayBriefing } from "@/lib/actions/day-briefing-http";
+import { buildActionDayBriefingText } from "./action-day-briefing";
+import { buildActionIcsHref } from "@/components/sections/rubriques/community/ics";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 function formatRoute(briefing: ActionDayBriefing["action"]): string {
   if (briefing.route.topology === "loop") return "Boucle";
@@ -19,6 +22,7 @@ function mapHref(map: ActionDayBriefing["action"]["map"]): string | null {
 export function ActionDayView({ actionId }: { actionId: string }) {
   const [loadedBriefing, setLoadedBriefing] = useState<ActionDayBriefing | null>(null);
   const [error, setError] = useState<{ actionId: string; message: string } | null>(null);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
   useEffect(() => {
     let active = true;
@@ -34,6 +38,15 @@ export function ActionDayView({ actionId }: { actionId: string }) {
   const briefing = actionBriefing;
   const action = briefing.action;
   const href = mapHref(action.map);
+  const calendarHref = buildActionIcsHref({ id: briefing.actionId, title: action.title, actionDate: action.actionDate, startTime: action.eventStartTime ?? action.meetingTime, endTime: action.eventEndTime, location: action.meetingPoint, description: action.participantMessage ?? action.safetyInstructions });
+  const copyBriefing = async () => {
+    try {
+      await navigator.clipboard.writeText(buildActionDayBriefingText(briefing));
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+  };
   return (
     <div data-testid="action-day-view" className="space-y-4">
       <CmmCard tone="emerald" variant="glass" size="lg">
@@ -45,6 +58,7 @@ export function ActionDayView({ actionId }: { actionId: string }) {
           </div>
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"><p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-emerald-700"><MapPin size={14} />Rendez-vous</p><p className="mt-1 text-sm font-semibold leading-6 text-emerald-950">{action.meetingPoint}</p>{action.locationLabel !== action.meetingPoint ? <p className="mt-1 cmm-text-caption text-emerald-700">Secteur : {action.locationLabel}</p> : null}{href ? <a className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-emerald-800 underline" href={href} target="_blank" rel="noreferrer"><Navigation size={14} />Ouvrir la carte</a> : <p className="mt-2 cmm-text-caption text-emerald-700">Coordonnées non disponibles : l’adresse enregistrée est conservée sans géolocalisation inventée.</p>}</div>
           <div className="rounded-2xl border border-slate-200 bg-white/90 p-4"><p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-slate-600"><Navigation size={14} />Parcours retenu</p><p className="mt-1 text-sm font-semibold text-slate-900">{formatRoute(action)}</p>{action.route.departureLabel || action.route.arrivalLabel ? <p className="mt-1 text-sm text-slate-600">{[action.route.departureLabel, action.route.arrivalLabel].filter(Boolean).join(" → ")}</p> : null}{action.route.hasSelectedOperationalRoute ? <p className="mt-2 text-xs font-semibold text-emerald-700">Itinéraire validé par le planificateur</p> : null}</div>
+          <div className="flex flex-wrap gap-2 border-t border-emerald-100 pt-4 print:hidden"><CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => void copyBriefing()}><Copy size={14} />{copyState === "copied" ? "Briefing copié" : "Copier le briefing"}</CmmButton><CmmButton type="button" tone="tertiary" variant="pill" size="sm" onClick={() => window.print()}><Printer size={14} />Imprimer</CmmButton>{calendarHref ? <CmmButton tone="tertiary" variant="pill" size="sm" asChild><a href={calendarHref} download={`cleanmymap-${briefing.actionId}.ics`}><CalendarDays size={14} />Ajouter à mon calendrier</a></CmmButton> : null}{copyState === "error" ? <span role="status" className="self-center text-xs font-semibold text-amber-800">Copie indisponible sur cet appareil.</span> : null}</div>
         </div>
       </CmmCard>
       <div className="grid gap-4 lg:grid-cols-2">

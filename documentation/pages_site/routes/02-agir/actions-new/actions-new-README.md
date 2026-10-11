@@ -116,6 +116,25 @@ pas être publiés et ne doivent jamais afficher « Action prête et publiée »
 Une action `cancelled` reste en outre un tombstone historique immuable ; son
 identité et ses références existantes sont conservées.
 
+### Réutilisation et partage pratique
+
+Une action administrable expose `Réutiliser cette action`. Le serveur vérifie
+la même relation de créateur, d'organisateur ou de rôle global que pour la
+gestion de l'action avant de retourner un préremplissage borné. La nouvelle
+fiche ne reçoit ni identifiant source, date ou horaire, inscriptions,
+invitations, participations, formalités, résultats, photos, gamification,
+audit, notification ni coche de checklist. Elle reste un brouillon privé
+jusqu'à son enregistrement explicite. Un itinéraire n'est repris que si sa
+géométrie opérationnelle et son contexte planner sont encore valides et
+vérifiés ; sinon le lieu est conservé et un nouveau calcul peut être demandé.
+
+Le briefing `Jour J` est une projection fraîche des informations pratiques
+autorisées de l'action. Il peut être copié, imprimé depuis le navigateur ou
+exporté vers un fichier iCalendar. L'export utilise l'identifiant stable de
+l'action, le fuseau `Europe/Paris` pour les heures confirmées et un événement
+toute la journée lorsqu'aucune heure n'est enregistrée ; aucune heure exemple
+ne doit être inventée et aucune invitation externe n'est envoyée.
+
 
 
 ## Références legacy

@@ -45,6 +45,7 @@ export default async function NewActionPage({
       userMetadata={context.userMetadata}
       linkedEventId={context.fromEventId}
       initialActionId={context.actionId ?? null}
+      duplicateFromActionId={context.duplicateFromActionId ?? null}
       initialPanel={context.initialPanel}
       initialSection={context.initialSection}
       initialSubsection={context.initialSubsection}

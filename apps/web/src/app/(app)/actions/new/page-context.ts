@@ -36,6 +36,7 @@ export type NewActionPageContext = {
   params?: NewActionPageSearchParams;
   fromEventId?: string;
   actionId?: string;
+  duplicateFromActionId?: string;
   initialPanel: ActionCreationPanelId;
   initialSection: ActionCreationSectionId;
   initialSubsection: ActionCreationSubsectionId | undefined;
@@ -59,6 +60,7 @@ export async function resolveNewActionPageContext(
   const fromEventId = resolveSingleSearchParam(params?.["fromEventId"]);
   const from = resolveSingleSearchParam(params?.["from"]);
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
+  const duplicateFromActionId = resolveSingleSearchParam(params?.["duplicateFrom"]);
   const panel = normalizeActionCreationPanel(params?.["panel"]);
   const section = normalizeActionCreationSection(params?.["section"], { step: params?.["step"], panel, from });
   const subsection = normalizeActionCreationSubsection(params?.["subsection"], { step: params?.["step"], panel });
@@ -89,6 +91,7 @@ export async function resolveNewActionPageContext(
     params,
     fromEventId,
     actionId,
+    duplicateFromActionId,
     initialPanel: panel,
     initialSection: section,
     initialSubsection: subsection,

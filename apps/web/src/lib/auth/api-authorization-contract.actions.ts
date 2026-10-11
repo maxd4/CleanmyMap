@@ -364,6 +364,15 @@ export const actionsAuthorizationContract = {
       evidenceScope: "module",
     },
   },
+  "actions/[actionId]/duplicate": {
+    GET: {
+      expected: "Authenticated creator/organizer or admin/max read of a sanitized reuse prefill; terminal actions and outsiders are denied",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + loadActionById + canonical organizer resolution + canManageAction + terminal-state guard before buildActionDuplicatePrefill",
+      evidence: ["requireAuthenticatedAccess", "loadActionById", "loadCanonicalActionOrganizerIdsForAction", "canManageAction", "buildActionDuplicatePrefill"],
+      evidenceScope: "module",
+    },
+  },
   "actions/[actionId]/public": {
     GET: {
       expected: "Public-safe dynamic action reference projection; inaccessible actions return a neutral not-found response",

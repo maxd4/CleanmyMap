@@ -1,6 +1,6 @@
 import { describe, expect, it } from"vitest";
 import type { CommunityEventItem } from"@/lib/community/http";
-import { buildDateAtHour, buildIcsHref, toIcsTimestamp } from"./ics";
+import { buildActionIcsHref, buildDateAtHour, buildIcsHref, toIcsTimestamp } from"./ics";
 
 function makeEvent(overrides: Partial<CommunityEventItem> = {}): CommunityEventItem {
  return {
@@ -54,5 +54,21 @@ describe("community ICS helpers", () => {
  `DTEND:${toIcsTimestamp(buildDateAtHour(event.eventDate, 12, 0))}`,
  );
  expect(decoded).toContain("END:VCALENDAR");
+ });
+
+ it("exports a date-only action without inventing a 09:30 time", () => {
+  const href = buildActionIcsHref({ id: "action/42", title: "Berges; nord, matin", actionDate: "2026-10-25", location: "Quai\nNord" });
+  const decoded = decodeURIComponent(href.replace("data:text/calendar;charset=utf-8,", ""));
+  expect(decoded).toContain("DTSTART;VALUE=DATE:20261025");
+  expect(decoded).not.toContain("09:30");
+  expect(decoded).toContain("SUMMARY:Berges\\; nord\\, matin");
+  expect(decoded).toContain("LOCATION:Quai\\nNord");
+ });
+
+ it("keeps a confirmed local time with an explicit Paris timezone", () => {
+  const href = buildActionIcsHref({ id: "action-42", title: "Action", actionDate: "2026-07-10", startTime: "10:00", endTime: "12:00" });
+  const decoded = decodeURIComponent(href.replace("data:text/calendar;charset=utf-8,", ""));
+  expect(decoded).toContain("DTSTART;TZID=Europe/Paris:20260710T100000");
+  expect(decoded).toContain("DTEND;TZID=Europe/Paris:20260710T120000");
  });
 });

@@ -12,6 +12,9 @@ import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { ActionManualInvitationStatusRecord } from "@/lib/actions/participation/registration-records";
 import { AppError } from "@/lib/errors/app-errors";
 import { createActionError, parseErrorMessage, parseJsonSafely } from "./http-errors";
+import type { ActionDuplicatePrefill } from "./action-duplication";
+
+export type ActionDuplicateResponse = { status: "ok"; prefill: ActionDuplicatePrefill };
 
 export type ActionPrefillResponse = {
   status: "ok";
@@ -131,6 +134,21 @@ export async function fetchActionById(
     });
   }
   return (body as ActionEditorResponse).action;
+}
+
+export async function fetchActionDuplicatePrefill(actionId: string): Promise<ActionDuplicatePrefill> {
+  const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/duplicate`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const body = await parseJsonSafely(response);
+  if (!response.ok) {
+    throw createActionError(response, body, parseErrorMessage(body, "Impossible de réutiliser cette action."));
+  }
+  if (!body || typeof body !== "object" || !("prefill" in body)) {
+    throw new AppError({ kind: "server", message: "La réponse de réutilisation est incomplète." });
+  }
+  return (body as ActionDuplicateResponse).prefill;
 }
 
 export async function updateAction(

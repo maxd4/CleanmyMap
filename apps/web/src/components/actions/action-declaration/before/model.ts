@@ -33,6 +33,7 @@ export type ActionBeforeDeclarationFormProps = {
   };
   linkedEventId?: string;
   initialActionId?: string | null;
+  duplicateFromActionId?: string | null;
   initialRecordType?: "action";
   onPassToComplete: (actionId: string) => void | Promise<void>;
   onFormChange?: (form: FormState) => void;

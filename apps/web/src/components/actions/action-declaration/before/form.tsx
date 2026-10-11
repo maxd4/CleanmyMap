@@ -34,6 +34,7 @@ export function ActionBeforeDeclarationForm({
   userMetadata,
   linkedEventId,
   initialActionId,
+  duplicateFromActionId,
   initialRecordType = "action",
   onPassToComplete,
   onFormChange,
@@ -72,7 +73,7 @@ export function ActionBeforeDeclarationForm({
     confirmPublish,
     onContinueComplete,
     persistenceStatus = "clean",
-  } = useBeforeActionForm({ actorNameOptions, defaultActorName, isAuthenticated, userMetadata, linkedEventId, initialActionId, initialRecordType, onPassToComplete, onFormChange, onActionPersisted, preparationContext });
+  } = useBeforeActionForm({ actorNameOptions, defaultActorName, isAuthenticated, userMetadata, linkedEventId, initialActionId, duplicateFromActionId, initialRecordType, onPassToComplete, onFormChange, onActionPersisted, preparationContext });
 
   useEffect(() => {
     if (validationIssueFields.length === 0) return;
