@@ -127,29 +127,37 @@ describe("ActionCreationShell", () => {
     let renderer!: ReactTestRenderer;
     await act(async () => {
       renderer = create(
-        React.createElement(ActionCreationShell, {
-          actorNameOptions: ["Test"],
-          defaultActorName: "Test",
-          isAuthenticated: false,
-          userMetadata: { userId: "test" },
-          initialActionId: "action-a",
-          initialPanel: "pre-formulaire",
-          initialSection: "terrain",
-        } as ComponentProps<typeof ActionCreationShell>),
+        React.createElement(
+          React.StrictMode,
+          null,
+          React.createElement(ActionCreationShell, {
+            actorNameOptions: ["Test"],
+            defaultActorName: "Test",
+            isAuthenticated: false,
+            userMetadata: { userId: "test" },
+            initialActionId: "action-a",
+            initialPanel: "pre-formulaire",
+            initialSection: "terrain",
+          } as ComponentProps<typeof ActionCreationShell>),
+        ),
       );
     });
 
     await act(async () => {
       renderer.update(
-        React.createElement(ActionCreationShell, {
-          actorNameOptions: ["Test"],
-          defaultActorName: "Test",
-          isAuthenticated: false,
-          userMetadata: { userId: "test" },
-          initialActionId: "action-b",
-          initialPanel: "pre-formulaire",
-          initialSection: "equipe",
-        } as ComponentProps<typeof ActionCreationShell>),
+        React.createElement(
+          React.StrictMode,
+          null,
+          React.createElement(ActionCreationShell, {
+            actorNameOptions: ["Test"],
+            defaultActorName: "Test",
+            isAuthenticated: false,
+            userMetadata: { userId: "test" },
+            initialActionId: "action-b",
+            initialPanel: "pre-formulaire",
+            initialSection: "equipe",
+          } as ComponentProps<typeof ActionCreationShell>),
+        ),
       );
     });
 
