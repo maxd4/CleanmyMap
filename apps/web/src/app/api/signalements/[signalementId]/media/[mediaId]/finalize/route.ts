@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { requireAuthenticatedAccess } from "@/lib/authz";
 import {
   finalizeSignalementMedia,
   SignalementMediaError,
 } from "@/lib/actions/signalement/signalement-media";
 import { handleApiError } from "@/lib/http/api-errors";
 import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 export const runtime = "nodejs";
 // Justification Vercel: la finalisation vérifie la session et l'existence réelle de l'objet Storage.
@@ -28,10 +28,10 @@ function errorResponse(error: unknown) {
 }
 
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ signalementId: string; mediaId: string }> },
 ) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) {
     return unauthorizedJsonResponse();
   }

@@ -106,6 +106,23 @@ une présence `action_participants`; un rattachement passé commence par un
 claim `post_action_claim` `pending`, avec permissions, ownership et audit
 évalués côté serveur. Le mobile ne reçoit jamais `service_role`.
 
+## Extension M-B — création d'actions et signalements terrain
+
+Le shell natif expose désormais les trois parcours Agir. La création reprend
+les quatre sections du contrat web (`Essentiel`, `Terrain`, `Équipe et
+logistique`, `Vérifier et publier`) et appelle les mêmes services de création,
+mise à jour et publication. Le brouillon local n'est qu'une aide de reprise ;
+les droits organisateur, les formalités, les invitations, les statuts et les
+résultats restent décidés par le serveur.
+
+Le signalement natif réutilise `trash_spotter_spots` pour `spot` et
+`clean_place`, ainsi que le contrat média existant pour les preuves facultatives
+et leurs quotas. La passerelle Bearer bornée couvre les routes complémentaires
+Actions/Signalements ; elle tente la session web seulement pour les appels
+cookie, puis vérifie explicitement le JWT Clerk natif avec
+`authenticateRequest`. Une mission GPS reliée reste une mission à réconcilier
+et ne crée jamais une participation finale.
+
 ## Contrat RLS Clerk — LOT 2A réalisé
 
 La migration

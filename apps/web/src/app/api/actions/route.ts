@@ -37,6 +37,7 @@ import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-val
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { isActionStartInFuture } from "@/lib/actions/temporal";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 export const runtime = "nodejs";
 // Justification Vercel: cette route varie selon la requete, le statut Clerk et le scope demande.
@@ -343,7 +344,7 @@ export async function POST(request: Request) {
     return rateLimitResponse;
   }
 
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) {
     return unauthorizedJsonResponse();
   }
@@ -364,7 +365,7 @@ export async function POST(request: Request) {
       ActionCreationValidationError,
       createActionSubmission,
     } = await import("@/lib/actions/create-submission");
-    const identity = await getCurrentUserIdentity();
+    const identity = await getCurrentUserIdentity({ userId });
     const isCreatorGlobalAdmin = canManageActionsGlobally(identity);
     const resolvedIdentity = identity ?? {
       displayName: userId,

@@ -104,7 +104,8 @@ restent limités à la compatibilité d'entrée.
 ### Frontière Clerk native mobile
 
 Les parcours métier natifs de `apps/mobile` utilisent la frontière bornée
-`/api/mobile/actions`. Ils transmettent le token de session Clerk en
+`/api/mobile/actions` et la passerelle dédiée aux mutations Actions/Signalements.
+Ils transmettent le token de session Clerk en
 `Authorization: Bearer`, puis le handler vérifie ce JWT avec
 `clerkClient().authenticateRequest(request, { acceptsToken: "session_token" })`
 avant toute lecture ou mutation. Cette voie est distincte de `auth()` dans les
@@ -116,7 +117,10 @@ Après AuthN, la frontière réutilise les services et gardes AuthZ canoniques :
 ownership de l'utilisateur, rôle actif, relation organisateur/coorganisateur,
 état de publication et audit. Elle ne crée pas de second fournisseur
 d'identité, ne place aucun token dans l'URL et n'expose jamais `service_role` au
-client mobile.
+client mobile. Les mutations de signalement écrivent uniquement
+`trash_spotter_spots` ; les médias passent par les intents, quotas et
+permissions du service Signalement. Une réponse locale partielle ne vaut pas
+confirmation métier.
 
 ### Séparation obligatoire du rôle attribué, du rôle actif et du profil UX
 

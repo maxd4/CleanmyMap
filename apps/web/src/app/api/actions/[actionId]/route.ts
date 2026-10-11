@@ -53,6 +53,7 @@ import {
   captureActionUpdateParticipantImpactSnapshot,
 } from "@/lib/actions/action-participant-impact-notifications";
 import type { ActionParticipantImpactSnapshot } from "@/lib/actions/participation/group-participation-read";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -62,7 +63,7 @@ async function loadActionPermissionContext(
   userId: string,
   actionId: string,
 ) {
-  const identity = await getCurrentUserIdentity();
+  const identity = await getCurrentUserIdentity({ userId });
   const permissionIdentity = identity
     ? { userId, role: identity.role, activeRole: identity.activeRole }
     : null;
@@ -291,10 +292,10 @@ async function handlePatchError({
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) {
     return unauthorizedJsonResponse();
   }
@@ -460,7 +461,7 @@ export async function PATCH(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
 
   // Authorization is enforced by loadAuthorizedPatchAction via canManageAction;

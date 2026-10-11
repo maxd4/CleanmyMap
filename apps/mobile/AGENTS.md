@@ -12,8 +12,8 @@ La V1 mobile est destinée aux bénévoles terrain et reste volontairement petit
 Le site web demeure la surface complète du produit et évolue indépendamment.
 Le frontend mobile ne cherche pas à reproduire le site ; la V1 couvre le mode
 activité GPS live avec carte et tracé temps réel, la reprise/offline, la
-finalisation serveur, les contacts d'urgence et le premier parcours métier
-natif `Rejoindre une action`.
+finalisation serveur, les contacts d'urgence et les trois parcours métier
+natifs du bloc Agir.
 
 Les autres capacités mobiles doivent réutiliser les contrats, données et
 services communs existants. Aucun package partagé générique, second modèle
@@ -27,9 +27,11 @@ Le shell mobile expose uniquement trois destinations persistantes et accessibles
 action`, `Rejoindre une action`, `Organiser une action` et `Signaler un déchet`.
 Le parcours `Rejoindre une action` est natif : liste des actions futures
 publiées, recherche, détail, inscription, suivi, annulation, invitations,
-actions passées éligibles et demande de rattachement. Créer une action et
-signaler un déchet restent préparés dans la navigation, sans être présentés
-comme finalisés dans ce lot.
+actions passées éligibles et demande de rattachement. `Créer une action` reprend
+les quatre sections du contrat web et confirme chaque mutation par le serveur.
+`Signaler un déchet` utilise `trash_spotter_spots`, les catégories, la position
+actuelle ou manuelle, `Mes observations` et les intents média canoniques. Une
+réponse partielle reste reprenable et ne devient jamais un succès métier local.
 
 `Démarrer une action` vérifie les permissions GPS, crée une mission `pending`
 owner-scoped avec le `sub` Clerk via Supabase, puis réutilise `startTracking`
@@ -58,8 +60,11 @@ consommateurs concernés.
   d'identité ;
 - ne jamais embarquer `service_role` dans l'application mobile.
 
-Les appels métier natifs d'actions passent par `/api/mobile/actions` et ses
-sous-routes. Cette frontière vérifie explicitement le JWT Clerk de session
+Les appels natifs de participation passent par `/api/mobile/actions` et ses
+sous-routes. Les mutations de création/édition/publication Actions et de
+signalement réutilisent la passerelle bornée partagée des routes `/api/actions`
+et `/api/spots`, ainsi que les routes de lecture et d'intents `/api/signalements`.
+Cette frontière vérifie explicitement le JWT Clerk de session
 porté par `Authorization: Bearer` avec `clerkClient().authenticateRequest`,
 puis réutilise les services métier et les décisions AuthZ serveur existants.
 `auth()` de Next et un Bearer mobile ne sont donc pas considérés comme
@@ -79,8 +84,10 @@ Les sujets suivants restent hors périmètre V1 et nécessitent une validation
 explicite avant toute évolution :
 
 - background headless ;
-- `mission_actions` et la photo native : évolution future, sans dépendance du
-  runtime V1 ;
+- `mission_actions` reste hors runtime : une mission GPS liée n'est jamais une
+  participation confirmée. Les photos de signalement sont prises en charge via
+  le contrat média existant ; aucune photo de mission ni table `mission_actions`
+  n'est réintroduite ;
 - validation opérationnelle ;
 - évolution future du produit mobile, après validation de chaque lot.
 

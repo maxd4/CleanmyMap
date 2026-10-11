@@ -17,7 +17,8 @@ mobile est officiellement rouverte par le lot M0 pour reprendre son
 développement. La baseline conserve un frontend volontairement réduit et
 réutilise les surfaces web existantes lorsque cela suffit. La V1 fonctionnelle
 couvre le GPS avec carte et tracé, la reprise/offline, la finalisation serveur,
-le contact d'urgence et le parcours natif de participation à une action.
+le contact d'urgence et les trois parcours Agir natifs : participation,
+création/publication d'une action et signalement terrain.
 L'application reste non prête pour la production tant
 que le background headless et l'usage opérationnel réel ne sont pas validés.
 
@@ -43,6 +44,12 @@ La V1 fonctionnelle inclut :
 - les contacts d'urgence ;
 - `Rejoindre une action` avec recherche, détail, inscription future, annulation,
   invitations, suivi et rattachement post-action soumis à validation.
+- `Créer une action` avec reprise locale et serveur, les quatre sections
+  `Essentiel`, `Terrain`, `Équipe et logistique`, `Vérifier et publier`, puis
+  les espaces opérationnels `Préparer` / `Jour J` exposés par l'API canonique.
+- `Signaler un déchet` avec `spot` / `clean_place`, position actuelle ou
+  manuelle, catégories, observations, photos facultatives, reprise média et
+  `Mes observations` (`new`, `validated`, `cleaned`).
 
 Les autres capacités réutilisent au maximum les contrats, données et services
 existants du backend commun. La V1 ne crée ni package `shared` générique, ni
@@ -61,13 +68,17 @@ Le shell expose trois destinations persistantes : `Agir`, `Carte` et `Compte`.
   active restaure les `gps_points` owner-scoped, fusionne son tracé UX local et
   reprend le suivi foreground au retour au premier plan et relance le replay du
   buffer local dès que la session Clerk est disponible. Ce suivi ne réécrit pas
-  les points ni les métriques dans Supabase. Aucun formulaire d'action natif ni
-  upload/photo mobile n'est requis pour cette V1 ; `mission_actions` reste une
-  évolution future du produit ;
+  les points ni les métriques dans Supabase. `mission_actions` reste hors
+  runtime ; une activité GPS peut seulement être reliée à une action éligible
+  via `createLinkedMission` et sa réconciliation serveur ;
 - `Rejoindre une action` est natif et passe par la frontière HTTP mobile
   `/api/mobile/actions` ;
-- `Organiser une action` et `Signaler un déchet` sont préparés dans le shell,
-  mais restent explicitement non finalisés dans ce lot.
+- `Organiser une action` réutilise les validations Actions côté serveur. Le
+  brouillon local est une aide de reprise ; la publication n'est confirmée
+  qu'après réponse serveur.
+- `Signaler un déchet` écrit uniquement dans `trash_spotter_spots`, transmet les
+  photos via les intents média canoniques et n'affiche jamais un statut avant
+  confirmation serveur.
 
 La destination `Carte` ouvre `/actions/map` pour la consultation existante. Le
 mobile n'implémente pas de deuxième messagerie. `Compte` donne accès aux surfaces
@@ -173,9 +184,9 @@ flowchart LR
 Le site et l'application mobile partagent le même produit, le même projet
 Supabase, Clerk et les contrats métier nécessaires.
 
-Le runtime mobile V1 n'utilise pas `mission_actions` et ne porte pas de
-stockage photo terrain. Le contrat serveur et la table restent conservés pour
-les parcours web et une évolution mobile ultérieure.
+Le runtime mobile n'utilise pas `mission_actions`. Les photos de signalement
+passent par les intents et le stockage signé du backend ; le mobile ne crée pas
+une table ou un modèle média parallèle.
 
 Les effets métier restent produits par le backend commun : les missions mobiles
 réutilisent les projections web existantes pour la gamification, l'impact, les
@@ -204,7 +215,8 @@ Le contrat RLS lit le `sub` Clerk et le rapproche de `missions.volunteer_id`.
 Il est porté par la migration additive du LOT 2A. L'application mobile ne doit
 toujours pas être qualifiée de prête pour la production : le background headless
 et l'usage opérationnel réel restent à valider. `mission_actions` et la photo
-native sont volontairement hors V1 et deviennent des évolutions futures. Le
+de mission restent hors runtime. Les preuves photo de signalement utilisent le
+contrat média canonique. Le
 renouvellement Clerk headless est maintenant câblé et couvert par des tests
 automatisés ; il doit encore être confirmé sur development build.
 

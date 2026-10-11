@@ -101,15 +101,25 @@ Le mobile est `CURRENT / ACTIVE DEVELOPMENT` depuis le lot M0, tout en restant
 `NOT_PRODUCTION_READY`. L'identité Clerk et la finalisation des métriques par
 trigger invoker sont finalisées et invariantes. La V1 couvre le GPS avec carte
 et tracé, la reprise/offline, la finalisation serveur et les contacts d'urgence.
-Les limites encore ouvertes sont le background headless, la validation
-opérationnelle, ainsi que `mission_actions` et la photo native comme évolutions
-futures.
+Les limites encore ouvertes sont le background headless et la validation
+opérationnelle sur appareils réels. `mission_actions` reste hors périmètre ;
+une mission GPS liée est seulement réconciliée avec une action éligible et ne
+confirme jamais une présence.
 
 La V1 mobile est destinée aux bénévoles terrain et reste volontairement réduite
-par rapport à la surface web complète. La V1 inclut le GPS live avec carte et
-tracé temps réel et les contacts d'urgence ;
-les autres capacités réutilisent les contrats, données et services communs sans
-gamification parallèle ni second modèle métier mobile.
+par rapport à la surface web complète. Elle inclut le GPS live avec carte et
+tracé temps réel, les contacts d'urgence et les trois parcours Agir natifs :
+participer, créer/publier une action et signaler un déchet. Les écrans de
+création réutilisent `createActionSubmission`, `updateAction` et la publication
+canonique ; les signalements réutilisent `createSignalement`,
+`trash_spotter_spots` et les intents média. Il n'existe pas de second modèle
+Actions, d'indicateur d'impact mobile ou de table `spots` runtime.
+
+Les appels Clerk natifs passent par une frontière Bearer bornée :
+`/api/mobile/actions` pour la participation, et la passerelle partagée des
+routes Actions/Signalements pour les mutations complémentaires. Le serveur
+résout toujours l'identité à partir du JWT, applique ownership/AuthZ/RLS et
+confirme les statuts avant affichage.
 
 Ne pas considérer comme valide un flux où :
 

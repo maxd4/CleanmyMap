@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { getCurrentUserIdentity, requireAuthenticatedAccess } from "@/lib/authz";
+import { getCurrentUserIdentity } from "@/lib/authz";
 import { canManageAction } from "@/lib/actions/permissions";
 import { loadActionById } from "@/lib/actions/store";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
@@ -18,6 +18,7 @@ import {
   normalizeActionFormalitiesWorkflow,
 } from "@/lib/actions/formalities-workflow";
 import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 export const runtime = "nodejs";
 // Justification Vercel: la publication dépend de l’action et de l’utilisateur courant.
@@ -75,10 +76,10 @@ function spontaneousOrganizerPublicationError(
 }
 
 export async function POST(
-  _request: Request,
+  request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) {
     return unauthorizedJsonResponse();
   }
@@ -95,7 +96,7 @@ export async function POST(
       return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
     }
 
-    const identity = await getCurrentUserIdentity();
+    const identity = await getCurrentUserIdentity({ userId: access.userId });
     const permissionIdentity = identity
       ? { userId: access.userId, role: identity.role, activeRole: identity.activeRole }
       : null;

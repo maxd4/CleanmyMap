@@ -12,10 +12,11 @@ les données, l'identité et les projections métier existantes, sans gamificati
 parallèle ni second modèle métier.
 
 La V1 couvre le mode activité GPS live avec carte et tracé temps réel, la
-reprise/offline, la finalisation serveur, les contacts d'urgence et le parcours
-natif `Rejoindre une action`. Les entrées Créer une action et Signaler un déchet
-sont préparées dans le shell mais ne sont pas présentées comme finalisées. La
-photo native ne fait pas partie de cette V1 ;
+reprise/offline, la finalisation serveur, les contacts d'urgence et les trois
+parcours Agir natifs : `Rejoindre une action`, création/publication d'une action
+et signalement terrain. La création réutilise les routes et services Actions
+canoniques ; le signalement utilise `trash_spotter_spots` et les intents média
+existants. La photo de mission ne fait pas partie de cette V1 ;
 `mission_actions` reste une évolution future sans dépendance du runtime mobile.
 
 ## 1. Vue d'ensemble
@@ -145,7 +146,8 @@ retire jamais une contribution GPS valide et peut être rejoué depuis les faits
 canoniques.
 Les sujets encore ouverts et non prêts pour la production sont le background
 headless et la validation opérationnelle de l'application mobile. `mission_actions`
-et la photo native sont hors V1 et relèvent d'une évolution future. La cible
+et la photo de mission sont hors V1 et relèvent d'une évolution future. Les
+preuves photo de signalement restent bornées par le service média serveur. La cible
 `PLAN / TARGET` décrite dans
 [`../../documentation/product/couverture-gps-multi-groupes.md`](../../documentation/product/couverture-gps-multi-groupes.md)
 vise le modèle « une mission GPS par sous-groupe → plusieurs traces pour une
@@ -281,7 +283,8 @@ Cette section conserve la recommandation technique initiale pour référence. El
 ne constitue pas une nouvelle cible : l'identité Clerk, les RLS missions/GPS et
 la finalisation des métriques sont déjà finalisées et invariantes. Les sujets
 encore ouverts sont le background headless et la validation opérationnelle ;
-`mission_actions` reste une évolution future hors V1.
+`mission_actions` reste une évolution future hors V1 ; les preuves photo de
+signalement ne modifient pas ce périmètre et n'introduisent aucune table mobile.
 
 > [!TIP]
 > **Expo (React Native) avec `expo-location` + `expo-task-manager`**

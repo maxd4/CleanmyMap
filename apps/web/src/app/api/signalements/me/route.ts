@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedAccess } from "@/lib/authz";
 import { listMyObservations, clampMyObservationsLimit } from "@/lib/actions/signalement/my-observations";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 export const runtime = "nodejs";
 // Vercel justification: cette lecture authentifiée est spécifique à l’utilisateur et doit rester dynamique.
@@ -17,7 +17,7 @@ function parseLimit(request: Request): number {
 }
 
 export async function GET(request: Request) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) {
     return unauthorizedJsonResponse();
   }

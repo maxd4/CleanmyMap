@@ -55,6 +55,12 @@
       ],
       "@clerk/expo",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "CleanMyMap vous permet d’ajouter une preuve photo à votre signalement."
+        }
+      ],
+      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "CleanMyMap suit votre parcours de nettoyage, même écran éteint.",

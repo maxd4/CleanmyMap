@@ -1,11 +1,12 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, forbiddenResponse } from "@/lib/http/api-errors";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import {
   listSignalementMedia,
   SignalementMediaError,
 } from "@/lib/actions/signalement/signalement-media";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 export const runtime = "nodejs";
 // Justification Vercel: les URLs signées dépendent de la session, du statut du parent et de Storage.
@@ -22,12 +23,14 @@ function errorResponse(error: unknown) {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ signalementId: string }> },
 ) {
   const { signalementId } = await context.params;
   try {
-    const { userId } = await auth();
+    const access = await requireActionRequestAccess(request);
+    if (!access.ok) return unauthorizedJsonResponse();
+    const { userId } = access;
     const items = await listSignalementMedia(getSupabaseServerClient(true), {
       signalementId,
       userId,

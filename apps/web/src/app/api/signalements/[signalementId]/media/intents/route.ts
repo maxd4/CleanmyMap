@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { requireAuthenticatedAccess } from "@/lib/authz";
 import {
   createSignalementMediaUploadIntent,
   SignalementMediaError,
 } from "@/lib/actions/signalement/signalement-media";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth-responses";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 export const runtime = "nodejs";
 // Justification Vercel: l'intention varie selon la session Clerk et le quota média du signalement.
@@ -45,7 +45,7 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ signalementId: string }> },
 ) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) {
     return unauthorizedJsonResponse();
   }

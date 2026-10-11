@@ -13,6 +13,8 @@ import { handleApiError, parseJsonBodyWithValidation } from"@/lib/http/api-error
 import { createSignalement } from "@/lib/actions/signalement/create-signalement";
 import { parsePositiveInteger } from "@/lib/http/query-params";
 import { enforceServerRateLimit } from "@/lib/rate-limit/server";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
+import { wasteCategorySlugSchema } from "@/lib/validation/action-measurements";
 
 export const runtime ="nodejs";
 const SPOTS_CACHE_HEADERS = {
@@ -29,6 +31,7 @@ const createSpotSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   notes: z.string().trim().max(2000).optional(),
+ wasteCategories: z.array(wasteCategorySlugSchema).max(20).optional(),
 });
 
 function parseStatusParam(raw: string | null): SpotStatus | null {
@@ -76,7 +79,7 @@ async function loadCachedSpots(limit: number, status: SpotStatus | null) {
 }
 
 export async function GET(request: Request) {
- const access = await requireAuthenticatedAccess();
+ const access = await requireActionRequestAccess(request);
  if (!access.ok) {
  return unauthorizedJsonResponse();
  }
@@ -119,7 +122,7 @@ export async function POST(request: Request) {
 
  try {
  const supabase = getSupabaseServerClient(true);
- const identity = await getCurrentUserIdentity();
+ const identity = await getCurrentUserIdentity({ userId });
  const actorName = pickTraceableActorName(identity, undefined) ?? userId;
  const inserted = await createSignalement(supabase, {
    userId,
@@ -128,6 +131,7 @@ export async function POST(request: Request) {
    latitude: parsed.data.latitude,
    longitude: parsed.data.longitude,
    notes: parsed.data.notes,
+   wasteCategories: parsed.data.wasteCategories,
    actorName,
    consentGranted: hasAnalyticsConsentCookie(request.headers.get("cookie")),
  });

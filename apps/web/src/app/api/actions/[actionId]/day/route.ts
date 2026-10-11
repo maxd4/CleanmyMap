@@ -3,13 +3,14 @@ import { canManageAction } from "@/lib/actions/permissions";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { readActionRegistrationRecord } from "@/lib/actions/participation/registration-records";
 import { isPublicActionReferenceAvailable } from "@/lib/chat/action-sharing";
-import { getCurrentUserIdentity, requireAuthenticatedAccess } from "@/lib/authz";
+import { getCurrentUserIdentity } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadActionById } from "@/lib/actions/store";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 export const runtime = "nodejs";
 // Justification Vercel: le briefing relit l'action, les permissions et l'inscription courantes ; il ne doit jamais être servi depuis un cache partagé.
@@ -21,8 +22,8 @@ function finiteCoordinate(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-export async function GET(_request: Request, context: DayRouteContext) {
-  const access = await requireAuthenticatedAccess();
+export async function GET(request: Request, context: DayRouteContext) {
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
 
   try {
@@ -32,7 +33,7 @@ export async function GET(_request: Request, context: DayRouteContext) {
     const action = await loadActionById(supabase, normalizedActionId);
     if (!action) return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
 
-    const identity = await getCurrentUserIdentity();
+    const identity = await getCurrentUserIdentity({ userId: access.userId });
     const organizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, normalizedActionId);
     const isOrganizer = canManageAction(
       { userId: access.userId, role: identity?.role ?? null, activeRole: identity?.activeRole ?? null },
