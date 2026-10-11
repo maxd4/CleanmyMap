@@ -280,7 +280,7 @@ jobs:
         run: npm ci
 
       - name: Install architectural Semgrep
-        run: python -m pip install --disable-pip-version-check --no-input semgrep==1.177.0
+        run: python -m pip install --disable-pip-version-check --no-input semgrep==1.180.0
 
       - name: Architectural Semgrep
         id: semgrep
@@ -650,7 +650,7 @@ jobs:
 
       - name: Install architectural Semgrep (mobile-only)
         if: needs.scope.outputs.web_code_relevant != 'true'
-        run: python -m pip install --disable-pip-version-check --no-input semgrep==1.177.0
+        run: python -m pip install --disable-pip-version-check --no-input semgrep==1.180.0
 
       - name: Architectural Semgrep (mobile-only)
         id: semgrep_mobile

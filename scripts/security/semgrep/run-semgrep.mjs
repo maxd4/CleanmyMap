@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 export const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const SEMGREP_CONFIG = path.join(REPOSITORY_ROOT, "scripts", "security", "semgrep", "cleanmymap.yml");
-const REQUIRED_SEMGREP_VERSION = "1.177.0";
+const REQUIRED_SEMGREP_VERSION = "1.180.0";
 
 function findOnPath() {
   const lookup = process.platform === "win32" ? "where.exe" : "which";
@@ -23,18 +23,25 @@ function resolveSemgrep() {
   return configured || findOnPath();
 }
 
+function readSemgrepVersion(executable) {
+  const probes = [["--version"], ["--legacy", "--version"], ["--experimental", "--version"]];
+  const results = probes.map((args) => spawnSync(executable, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
+  const matching = results.find((result) => result.status === 0 && result.stdout.trim() === REQUIRED_SEMGREP_VERSION);
+  return matching ?? results[results.length - 1];
+}
+
 export function runSemgrep(targets, { errorOnFindings = false, excludes = [] } = {}) {
   const executable = resolveSemgrep();
   if (!executable) {
     return {
       status: null,
       stdout: "",
-      stderr: "Semgrep est introuvable. Installez semgrep 1.177.0 ou définissez SEMGREP_BIN.",
+      stderr: "Semgrep est introuvable. Installez semgrep 1.180.0 ou définissez SEMGREP_BIN.",
       error: "HOST_ENVIRONMENT",
     };
   }
 
-  const version = spawnSync(executable, ["--version"], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  const version = readSemgrepVersion(executable);
   if (version.status !== 0 || version.stdout.trim() !== REQUIRED_SEMGREP_VERSION) {
     return {
       status: null,

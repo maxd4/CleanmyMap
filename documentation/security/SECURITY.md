@@ -246,7 +246,7 @@ et s'exécute sans service SaaS avec :
 npm run check:semgrep
 ```
 
-Le garde-fou exige Semgrep `1.177.0` et couvre uniquement les invariants
+Le garde-fou exige Semgrep `1.180.0` et couvre uniquement les invariants
 actuels suivants :
 
 - `SUPABASE_SERVICE_ROLE_KEY` reste absent des composants client web et du
