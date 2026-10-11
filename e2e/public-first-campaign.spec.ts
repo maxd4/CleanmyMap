@@ -63,6 +63,75 @@ async function dismissCookies(page: Page): Promise<void> {
   }
 }
 
+type PublicMapItem = {
+  id: string;
+  action_date: string;
+  location_label: string;
+  latitude: number;
+  longitude: number;
+  waste_kg: number;
+  cigarette_butts: number;
+  status: "approved";
+  created_by_clerk_id: null;
+  record_type: "action";
+  source: "actions";
+};
+
+type PublicMapPayload = {
+  status: "ok";
+  count: number;
+  daysWindow: number | null;
+  items: PublicMapItem[];
+  isTruncated: false;
+  partialSource: false;
+  sourceHealth: {
+    partial: false;
+    failedSources: [];
+    availableSources: ["actions"];
+    warnings: [];
+  };
+};
+
+function buildPublicMapPayload(items: PublicMapItem[]): PublicMapPayload {
+  return {
+    status: "ok",
+    count: items.length,
+    daysWindow: null,
+    items,
+    isTruncated: false,
+    partialSource: false,
+    sourceHealth: {
+      partial: false,
+      failedSources: [],
+      availableSources: ["actions"],
+      warnings: [],
+    },
+  };
+}
+
+async function stubPublicMapResponse(
+  page: Page,
+  payload: PublicMapPayload,
+): Promise<() => number> {
+  let requestCount = 0;
+  await page.route("**/api/actions/map**", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname !== "/api/actions/map") {
+      await route.continue();
+      return;
+    }
+
+    requestCount += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(payload),
+    });
+  });
+
+  return () => requestCount;
+}
+
 test.describe("campaign 1 - public reading and late authentication", () => {
   test("public map renders anonymously", async ({ page }) => {
     await page.goto("/actions/map");
@@ -200,35 +269,64 @@ test.describe("campaign 1 - public reading and late authentication", () => {
     expect(draft).not.toHaveProperty("location");
   });
 
-  test("map exports produce inspectable files matching the public map response", async ({ page }) => {
-    const mapPayloads: Array<{ items?: Array<{ id?: string }>; count?: number }> = [];
-    page.on("response", (response) => {
-      const url = new URL(response.url());
-      if (url.pathname !== "/api/actions/map" || response.status() !== 200) return;
-      void response.json().then((payload: unknown) => {
-        if (payload && typeof payload === "object") {
-          mapPayloads.push(payload as { items?: Array<{ id?: string }>; count?: number });
-        }
-      }).catch(() => undefined);
-    });
+  test("empty public map keeps the export unavailable", async ({ page }) => {
+    const emptyMapPayload = buildPublicMapPayload([]);
+    const getMapRequestCount = await stubPublicMapResponse(page, emptyMapPayload);
 
     await page.goto("/actions/map");
     await dismissCookies(page);
-    const exportButton = page.getByRole("button", { name: "Exporter la vue" });
-    await expect.poll(() => mapPayloads.length, { timeout: 30_000 }).toBeGreaterThan(0);
-    await expect(exportButton).toBeVisible({ timeout: 30_000 });
-    const mapPayload = mapPayloads.at(-1)!;
-    const expectedIds = (mapPayload.items ?? [])
-      .map((item) => item.id)
-      .filter((id): id is string => typeof id === "string" && id.length > 0);
+    await expect.poll(() => getMapRequestCount(), { timeout: 30_000 }).toBeGreaterThan(0);
+    expect(emptyMapPayload.count).toBe(0);
+    const emptyState = page.getByRole("status").filter({ hasText: "Carte vide" });
+    await expect(emptyState).toBeVisible();
+    await expect(emptyState).toContainText("Carte vide");
+    await expect(
+      page.getByRole("heading", { name: "Aucune action remontée sur ce périmètre" }),
+    ).toBeVisible();
 
+    const exportButton = page.getByRole("button", { name: "Exporter la vue" });
+    await expect(exportButton).toBeVisible();
+    await expect(exportButton).toBeDisabled();
+  });
+
+  test("map exports produce inspectable files matching the public map response", async ({ page }) => {
+    const mapPayload = buildPublicMapPayload([
+      {
+        id: "e2e-public-map-1",
+        action_date: "2026-10-01",
+        location_label: "Quai de test, 75020 Paris",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        waste_kg: 12,
+        cigarette_butts: 200,
+        status: "approved",
+        created_by_clerk_id: null,
+        record_type: "action",
+        source: "actions",
+      },
+      {
+        id: "e2e-public-map-2",
+        action_date: "2026-09-30",
+        location_label: "Place de test, 75010 Paris",
+        latitude: 48.86,
+        longitude: 2.36,
+        waste_kg: 4,
+        cigarette_butts: 30,
+        status: "approved",
+        created_by_clerk_id: null,
+        record_type: "action",
+        source: "actions",
+      },
+    ]);
+    const getMapRequestCount = await stubPublicMapResponse(page, mapPayload);
+
+    await page.goto("/actions/map");
+    await dismissCookies(page);
+    await expect.poll(() => getMapRequestCount(), { timeout: 30_000 }).toBeGreaterThan(0);
+
+    const expectedIds = mapPayload.items.map((item) => item.id);
     expect(mapPayload.count).toBe(expectedIds.length);
-    if (expectedIds.length === 0) {
-      await expect(page.getByRole("status")).toBeVisible();
-      await expect(page.getByText("Carte vide", { exact: true })).toBeVisible();
-      await expect(exportButton).toHaveCount(0);
-      return;
-    }
+    const exportButton = page.getByRole("button", { name: "Exporter la vue" });
     await expect(exportButton).toBeVisible();
     await expect(exportButton).toBeEnabled();
 
