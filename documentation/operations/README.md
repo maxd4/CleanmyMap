@@ -53,6 +53,7 @@ Les rapports entièrement générés et reproductibles restent sous `artifacts/`
 
 - [Configuration email](./email-setup.md)
 - `pre-release-security-check.md`
+- [Mobile : état EAS, APK et validation Android](../../apps/mobile/README.md)
 - `../security/CODEX_SECURITY_PLAYBOOK.md`
 - `github-governance.md`
 - `github-vercel-governance-audit.md`
