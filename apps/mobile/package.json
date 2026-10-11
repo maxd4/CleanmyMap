@@ -43,7 +43,7 @@
     "eslint-plugin-react-hooks": "^7.0.0",
     "globals": "^14.0.0",
     "typescript": "~7.0.2",
-    "typescript-eslint": "^8.46.0",
+    "typescript-eslint": "^8.71.1",
     "@vitest/coverage-v8": "4.1.11",
     "vitest": "4.1.11",
     "braces": "file:vendor/braces"
