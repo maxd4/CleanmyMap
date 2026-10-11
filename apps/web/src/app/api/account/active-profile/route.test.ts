@@ -60,6 +60,14 @@ describe("POST /api/account/active-profile", () => {
     expect(clerkClientMock).not.toHaveBeenCalled();
   });
 
+  it("rejects an inter-account target instead of trusting client-supplied ownership", async () => {
+    const response = await post({ activeRole: "scientifique", userId: "another-user" });
+
+    expect(response.status).toBe(400);
+    expect(clerkClientMock).not.toHaveBeenCalled();
+    expect(identityMock).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["web cookie", { ok: true, userId: "web-user" }],
     ["Clerk mobile Bearer", { ok: true, userId: "mobile-user" }],
