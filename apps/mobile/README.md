@@ -164,10 +164,9 @@ configuration autorisées avant toute déclaration de release.
 
 Expo SDK 57 fournit le niveau Android compile/target API 36 et
 `expo-build-properties` le fixe explicitement dans la configuration de build.
-Cette valeur est
-contrôlée par la version SDK utilisée par le build ; elle n'est pas une preuve
-qu'un artefact signé a été produit. Le build doit encore être exécuté avec un
-projet EAS réel et les credentials autorisés.
+La configuration SDK/Android a été confrontée au premier APK `preview`
+signé ; cette preuve n'établit pas encore la conformité des parcours
+natifs, de l'authentification complète ou de la publication store.
 
 ## Candidate de build EAS
 
@@ -282,29 +281,103 @@ de localisation/photos, l'absence de microphone, les signatures et le retour
 Clerk. Aucun contrôle statique, test Vitest ou écran Expo Web ne remplace ces
 preuves.
 
-## État de release M-D
+## État de release mobile — preuves au 11 octobre 2026
 
-| Contrôle | État | Preuve ou blocage |
-|---|---|---|
-| Versions Expo/RN/Clerk/TypeScript/AsyncStorage | PASS | `npx expo-doctor` : 21/21 |
-| Identifiants, nom, scheme, orientation, icônes et splash | PASS statique | configuration Expo résolue ; dimensions PNG contrôlées ; validation visuelle et appareil à faire |
-| Permissions Android GPS/photo/microphone | PASS de configuration | target 36, GPS foreground/background et service foreground résolus ; `RECORD_AUDIO` bloqué par le plugin photo et absent de la configuration effective |
-| Justifications iOS GPS/photos | PASS de contrat / BLOCKED natif | descriptions présentes dans les plugins ; génération iOS native impossible sur l'hôte Windows |
-| Niveau Android API 36 | PASS de configuration | `expo-build-properties` résout compile/target 36 ; aucun artefact signé encore observé |
-| Projet EAS et rattachement | PASS | `eas project:info` confirme `@maxdie/clean-my-map` et `580b0d1c-d5d3-4c42-9b58-4ee7724a6027` ; `eas build:list` ne retourne aucun build |
-| Variables publiques et clé Google Maps | BLOCKED | les variables Supabase/Clerk/Maps locales sont vides et aucun environnement EAS lié n'est disponible ; aucune clé réelle n'est versionnée |
-| Disponibilité store des identifiants | BLOCKED | Google Play renvoie 404 et Apple Lookup `resultCount=0` pour les anciens et nouveaux identifiants ; les consoles développeur et la réservation ne sont pas vérifiées |
-| Liens Clerk et liens entrants | PASS statique / BLOCKED runtime | callback Clerk `clerk://...hosted-callback` généré côté Android et scheme conservé ; aucun test réel de retour sur appareil |
-| Liens Android/iOS de domaine | NOT_RUN | non déclarés en V1 faute de routeur entrant et de consommateurs vérifiés |
-| Android/iOS signed release | BLOCKED | aucun artefact `.apk`, `.aab` ou `.ipa` produit dans ce lot |
-| Tests mobiles ciblés | PASS | typecheck, 22 fichiers/79 tests, sécurité et lint |
-| Couverture ratchetée | FAIL | seuil global historique non atteint : lignes 36,13% vs 49,25% ; baseline inchangée |
-| Tests physiques GPS, auth, offline et store | BLOCKED | appareil réel, build installable et artefact signé manquants |
+### Premier build Android
 
-Le statut demeure `NOT_PRODUCTION_READY`. Les valeurs réelles de Clerk,
-Supabase et Google Maps doivent être fournies par les environnements autorisés,
-jamais committées. Ne pas soumettre ni publier sur un store depuis ce dépôt sans
-approbation explicite et sans les preuves associées à l'artefact exact.
+Le projet EAS `@maxdie/clean-my-map` (projectId
+`580b0d1c-d5d3-4c42-9b58-4ee7724a6027`) a produit un APK
+`preview` **signé et installable** :
+[build `beef5909-cd36-4ce9-971e-d3930680ee79`](https://expo.dev/accounts/maxdie/projects/clean-my-map/builds/beef5909-cd36-4ce9-971e-d3930680ee79),
+source `fff2ce58a55dc36df7c791e4884f0fd937151bd5`,
+version `1.0.0 (1)`, statut `Succeeded`, durée 11 min 49 s.
+L'APK transmis (97 560 669 octets) est une archive intègre ; le bundle
+`assets/index.android.bundle` (5 579 248 octets, Hermes) est présent.
+Il ne s'agit **pas** d'un AAB soumis à Google Play.
+
+EAS a chargé six variables de l'environnement `preview` :
+`EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`,
+`EXPO_PUBLIC_SUPABASE_ANON_KEY`,
+`EXPO_PUBLIC_SUPABASE_URL`,
+`EXPO_PUBLIC_WEB_APP_URL`, `EXPO_PUBLIC_WEB_URL`,
+`GOOGLE_MAPS_API_KEY`. Ce constat n'atteste pas leur valeur ni
+les résultats des appels réseau.
+
+### Diagnostic Android et incident Clerk
+
+Sur appareil réel, ADB a confirmé la présence des deux packages
+`fr.cleanmymap.companion` (historique) et `fr.cleanmymap.app` (EAS).
+Le démarrage explicite de `fr.cleanmymap.app` a chargé Hermes et affiché
+`ReactNativeJS: Running "main"` dans les logs. Un ancien message
+`Unable to load script` ne démontre donc pas l'absence du bundle
+dans ce nouvel APK.
+
+La cause racine du chargement infini `CHARGEMENT...` a été prouvée
+par `ClerkLog` : `code=native_api_disabled`, tandis que
+`useAuth().isLoaded` restait faux. Après activation de **Native API**
+dans l'instance Clerk **Production**, et enregistrement de l'application
+Android `fr.cleanmymap.app`, le **même APK** a atteint l'écran
+de connexion. La capture Clerk montrait le Frontend API
+`clerk.cleanmymap.fr`, une empreinte SHA-256 et l'allowlist
+`clerk://fr.cleanmymap.app.callback`. Le `scheme` Expo reste
+`companion` ; leur compatibilité au retour de l'authentification
+hébergée est **non testée**, et ne doit pas être inférée.
+
+Pour reproduire le diagnostic sous PowerShell avec un Android branché
+en USB et le débogage autorisé :
+
+```powershell
+$adb = "$env:LOCALAPPDATA\CleanMyMap-Tools\platform-tools\adb.exe"
+& $adb devices
+& $adb shell pm list packages | Select-String "cleanmymap"
+& $adb logcat -c
+& $adb shell am force-stop fr.cleanmymap.app
+& $adb shell monkey -p fr.cleanmymap.app -c android.intent.category.LAUNCHER 1
+Start-Sleep -Seconds 30
+$appPid = (& $adb shell pidof fr.cleanmymap.app).Trim()
+if ($appPid) {
+  & $adb logcat -d -v threadtime --pid=$appPid |
+    Select-String "ClerkLog|ReactNativeJS|native_api_disabled" -Context 2,3
+} else {
+  & $adb logcat -d -v threadtime |
+    Select-String "AndroidRuntime|FATAL EXCEPTION|fr.cleanmymap.app" -Context 2,3
+}
+```
+
+### Vérifications restantes et signature
+
+| Contrôle | État |
+|---|---|
+| APK EAS `preview` signé, installé et lancé | **PASS** sur l'artefact daté |
+| Clerk Native API Production et écran de connexion | **PASS** après correction distante |
+| Hosted auth, retour navigateur, session et JWT accepté par les API/RLS | **NOT_RUN** |
+| Tuiles Maps et restrictions Google Cloud effectives | **NOT_RUN** |
+| Missions GPS, permissions, écran verrouillé, offline/replay, finalisation serveur | **NOT_RUN** |
+| Participation, création d'action, signalement/photo, compte | **NOT_RUN** |
+| iOS, publication stores, déclarations de confidentialité, MobSF | **NOT_RUN** |
+| Couverture ratchetée | État historique : 36,13 % des lignes pour un seuil à 49,25 % ; aucun run imputable à cet APK |
+
+Le premier keystore EAS `CleanMyMap-Android-Production` a été utilisé
+pour signer l'APK, **mais ses mots de passe ont été exposés**.
+Sa rotation n'est pas confirmée. Avant toute publication officielle,
+renouveler la signature dans les conditions appropriées, puis actualiser
+les empreintes : SHA-256 chez Clerk et SHA-1 pour les restrictions
+Google Maps Android, en distinguant l'éventuel certificat Google Play
+App Signing. Ne jamais publier de JKS, clé privée ou mot de passe.
+
+Le projet Google Cloud `cleanmymap-prod-fr`, sa facturation liée,
+Maps SDK for Android activé et la création de l'app Play Console ont
+été déclarés, **pas audités comme fonctionnement ou publication**.
+Une alerte de budget n'est pas une limite bloquante de facturation.
+FCM V1 et le compte de service de soumission Google Play étaient absents
+lors du build, sans bloquer ce premier APK autonome.
+
+Les tests terrain d'auth, retour Clerk, cartes, GPS background,
+verrouillage, offline, replay, données serveur et parcours natifs,
+ainsi que l'audit sécurité MobSF et les procédures stores, restent
+nécessaires. **Statut : `CURRENT / ACTIVE DEVELOPMENT —
+NOT_PRODUCTION_READY`.** Aucune validation iOS, AAB ni publication
+store n'est revendiquée.
 
 ## Pourquoi une app native ?
 
