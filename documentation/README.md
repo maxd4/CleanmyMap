@@ -51,6 +51,7 @@ domaines métier.
 | Fonctionnalités | `features/README.md` |
 | Produit | `product/README.md` |
 | Exploitation | `operations/README.md` |
+| Application mobile : EAS, APK et contrôles Android | `../apps/mobile/README.md` |
 | Sécurité | `security/README.md` |
 | Pages et routes | `pages_site/README.md` puis `pages_site/INDEX.md` |
 | SEO | `seo/README.md` |
