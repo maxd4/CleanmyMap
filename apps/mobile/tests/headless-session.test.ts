@@ -23,7 +23,7 @@ vi.mock('@supabase/supabase-js', () => ({
 
 vi.mock('react-native-url-polyfill/auto', () => ({}))
 
-import { getClerkSupabaseAccessToken } from '../lib/supabase'
+import { getClerkSupabaseAccessToken, getClerkUserId } from '../lib/supabase'
 
 describe('mobile headless Clerk session', () => {
   beforeEach(() => {
@@ -55,14 +55,20 @@ describe('mobile headless Clerk session', () => {
     await expect(getClerkSupabaseAccessToken()).resolves.toBeNull()
     expect(state.instance.session.getToken).toHaveBeenCalledOnce()
   })
+
+  it('reads the same Clerk owner used to namespace headless GPS data', async () => {
+    state.instance = createClerkInstance('headless-clerk-jwt', 'user_a')
+    await expect(getClerkUserId()).resolves.toBe('user_a')
+  })
 })
 
-function createClerkInstance(token: string | null = 'headless-clerk-jwt') {
+function createClerkInstance(token: string | null = 'headless-clerk-jwt', userId: string | null = null) {
   return {
     loaded: false,
     load: vi.fn(async function load(this: { loaded: boolean }) {
       this.loaded = true
     }),
     session: { getToken: vi.fn(async () => token) },
+    user: userId ? { id: userId } : null,
   }
 }

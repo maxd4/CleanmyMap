@@ -8,6 +8,7 @@ import {
   updateMobileActivityStatus,
   updateMobileDisplayNameMode,
   updateMobileNotificationPreferences,
+  requestMobileAccountDeletion,
   type MobileAccountPayload,
 } from '../lib/mobile-account-service'
 import { EmergencyContactPanel } from './emergency-contact'
@@ -49,6 +50,9 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [section, setSection] = useState<AccountSection>('profile')
+  const [deletionConfirmation, setDeletionConfirmation] = useState('')
+  const [deletionRequestId, setDeletionRequestId] = useState<string | null>(null)
+  const [deletionNotificationStatus, setDeletionNotificationStatus] = useState<'sent' | 'failed' | null>(null)
 
   const hydrate = useCallback((next: AccountData) => {
     setAccount(next)
@@ -147,6 +151,32 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
     } finally { setSaving(false) }
   }
 
+  function submitDeletionRequest() {
+    if (deletionConfirmation !== 'SUPPRIMER MON COMPTE' || saving) return
+    Alert.alert(
+      'Confirmer la demande',
+      'Cette demande sera enregistrée pour traitement. Elle ne supprime pas immédiatement votre compte ni vos données.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Envoyer la demande', style: 'destructive', onPress: () => void sendDeletionRequest() },
+      ],
+    )
+  }
+
+  async function sendDeletionRequest() {
+    setSaving(true); setError(null); setMessage(null)
+    try {
+      const result = await requestMobileAccountDeletion(deletionConfirmation)
+      setDeletionRequestId(result.requestId)
+      setDeletionNotificationStatus(result.notificationStatus)
+      setMessage(result.message)
+      setDeletionConfirmation('')
+    } catch (value) {
+      if ((value as { status?: number }).status === 401) onSessionExpired()
+      else setError(value instanceof Error ? value.message : 'La demande de suppression n’a pas pu être enregistrée.')
+    } finally { setSaving(false) }
+  }
+
   if (loading) return <View style={styles.state}><ActivityIndicator color="#34d399" /><Text style={styles.helper}>Chargement de votre compte…</Text></View>
   if (!account) return <View style={styles.state}><Text style={styles.error}>{error ?? 'Compte indisponible.'}</Text><TouchableOpacity style={styles.primaryButton} onPress={() => void refresh()} accessibilityRole="button"><Text style={styles.primaryLabel}>Réessayer</Text></TouchableOpacity></View>
 
@@ -232,6 +262,16 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
       <LinkButton label="Réseau CleanMyMap" onPress={() => onOpenWeb('/sections/annuaire')} />
       <LinkButton label="Communauté CleanMyMap" onPress={() => onOpenWeb('/sections/community')} />
       <Text style={styles.helper}>La demande d’effacement passe par le workflow RGPD du site ; cette action ne supprime pas immédiatement le compte.</Text>
+      <View style={styles.deletionPanel}>
+        <Text style={styles.label}>Demander la suppression complète</Text>
+        <Text style={styles.helper}>Saisissez exactement SUPPRIMER MON COMPTE pour confirmer. La demande authentifiée est enregistrée avec un identifiant de suivi ; aucune suppression automatique n’est déclenchée.</Text>
+        <TextInput accessibilityLabel="Confirmation de suppression du compte" value={deletionConfirmation} onChangeText={setDeletionConfirmation} autoCapitalize="characters" placeholder="SUPPRIMER MON COMPTE" placeholderTextColor="#64748b" style={styles.input} />
+        <TouchableOpacity style={styles.dangerButton} disabled={saving || deletionConfirmation !== 'SUPPRIMER MON COMPTE'} onPress={submitDeletionRequest} accessibilityRole="button" accessibilityState={{ disabled: saving || deletionConfirmation !== 'SUPPRIMER MON COMPTE' }}>
+          <Text style={styles.dangerLabel}>{saving ? 'Enregistrement…' : 'Demander la suppression'}</Text>
+        </TouchableOpacity>
+        {deletionRequestId ? <Text style={styles.helper}>Demande enregistrée : {deletionRequestId}. Notification : {deletionNotificationStatus === 'sent' ? 'transmise' : 'en échec, traitement manuel requis'}. Suppression traitée : non confirmée.</Text> : null}
+        <LinkButton label="Demander après désinstallation via le site" onPress={() => onOpenWeb('/contact')} />
+      </View>
     </Card> : null}
 
     <TouchableOpacity style={styles.signOutButton} onPress={() => Alert.alert('Se déconnecter ?', 'La session Clerk sera fermée sur cet appareil.', [{ text: 'Annuler', style: 'cancel' }, { text: 'Se déconnecter', style: 'destructive', onPress: onSignOut }])} accessibilityRole="button"><Text style={styles.signOutLabel}>SE DÉCONNECTER</Text></TouchableOpacity>
@@ -257,5 +297,5 @@ function formatMetric(value: number | null, suffix: string) { return value === n
 
 const styles = StyleSheet.create({
   visibleSection: { display: 'flex' }, hiddenSection: { display: 'none' },
-  root: { paddingBottom: 18 }, state: { alignItems: 'center', gap: 12, paddingVertical: 36 }, sectionMenu: { gap: 8, marginBottom: 16 }, sectionButton: { alignItems: 'center', borderColor: '#334155', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 12 }, sectionButtonSelected: { backgroundColor: '#064e3b', borderColor: '#34d399' }, sectionCopy: { flex: 1 }, sectionLabel: { color: '#e2e8f0', fontSize: 13, fontWeight: '900' }, sectionLabelSelected: { color: '#d1fae5' }, sectionDescription: { color: '#94a3b8', fontSize: 11, lineHeight: 16, marginTop: 2 }, eyebrow: { color: '#34d399', fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 8 }, title: { color: '#f8fafc', fontSize: 30, fontWeight: '900', marginBottom: 12 }, body: { color: '#cbd5e1', fontSize: 14, lineHeight: 21, marginBottom: 16 }, card: { backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: 18, borderWidth: 1, marginBottom: 14, padding: 16 }, cardTitle: { color: '#e2e8f0', fontSize: 17, fontWeight: '900', marginBottom: 14 }, identityName: { color: '#f8fafc', fontSize: 22, fontWeight: '900', marginBottom: 4 }, meta: { color: '#94a3b8', fontSize: 11, lineHeight: 17 }, roleLine: { color: '#d1fae5', fontSize: 12, fontWeight: '800', marginTop: 8 }, helper: { color: '#94a3b8', fontSize: 12, lineHeight: 18, marginTop: 10 }, label: { color: '#a7f3d0', fontSize: 11, fontWeight: '800', marginBottom: 6 }, field: { marginTop: 12 }, input: { backgroundColor: '#020617', borderColor: '#334155', borderRadius: 10, borderWidth: 1, color: '#f8fafc', minHeight: 44, paddingHorizontal: 12, paddingVertical: 10 }, primaryButton: { alignItems: 'center', backgroundColor: '#34d399', borderRadius: 12, justifyContent: 'center', marginTop: 14, padding: 13 }, primaryLabel: { color: '#022c22', fontSize: 12, fontWeight: '900' }, outlineButton: { alignItems: 'center', borderColor: '#475569', borderRadius: 10, borderWidth: 1, flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 10, padding: 12 }, secondaryLabel: { color: '#a7f3d0', fontSize: 12, fontWeight: '800' }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 }, chip: { borderColor: '#475569', borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 9 }, chipSelected: { backgroundColor: '#064e3b', borderColor: '#34d399' }, chipLabel: { color: '#d1fae5', fontSize: 11, fontWeight: '800' }, row: { flexDirection: 'row', gap: 8 }, selectedButton: { backgroundColor: '#064e3b', borderColor: '#34d399', flex: 1 }, stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, stat: { backgroundColor: '#020617', borderColor: '#1e293b', borderRadius: 10, borderWidth: 1, flexGrow: 1, minWidth: '45%', padding: 10 }, statValue: { color: '#34d399', fontSize: 21, fontWeight: '900' }, statLabel: { color: '#94a3b8', fontSize: 10, lineHeight: 15, marginTop: 3 }, metric: { color: '#cbd5e1', fontSize: 12, marginTop: 8 }, listRow: { alignItems: 'center', borderTopColor: '#1e293b', borderTopWidth: 1, flexDirection: 'row', gap: 8, justifyContent: 'space-between', paddingVertical: 11 }, listCopy: { flex: 1 }, itemTitle: { color: '#f8fafc', fontSize: 13, fontWeight: '800' }, status: { color: '#a7f3d0', fontSize: 10, fontWeight: '900', maxWidth: 100, textAlign: 'right', textTransform: 'uppercase' }, switchRow: { alignItems: 'center', borderTopColor: '#1e293b', borderTopWidth: 1, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 }, switchLabel: { color: '#e2e8f0', flex: 1, fontSize: 13, paddingRight: 12 }, switch: { alignItems: 'center', borderColor: '#475569', borderRadius: 12, borderWidth: 1, minWidth: 58, paddingHorizontal: 10, paddingVertical: 8 }, switchOn: { backgroundColor: '#064e3b', borderColor: '#34d399' }, switchText: { color: '#d1fae5', fontSize: 11, fontWeight: '900' }, error: { backgroundColor: '#451a1a', borderRadius: 10, color: '#fecaca', fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 }, success: { backgroundColor: '#064e3b', borderRadius: 10, color: '#d1fae5', fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 }, signOutButton: { alignItems: 'center', marginTop: 6, paddingVertical: 18 }, signOutLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+  root: { paddingBottom: 18 }, state: { alignItems: 'center', gap: 12, paddingVertical: 36 }, sectionMenu: { gap: 8, marginBottom: 16 }, sectionButton: { alignItems: 'center', borderColor: '#334155', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 10, padding: 12 }, sectionButtonSelected: { backgroundColor: '#064e3b', borderColor: '#34d399' }, sectionCopy: { flex: 1 }, sectionLabel: { color: '#e2e8f0', fontSize: 13, fontWeight: '900' }, sectionLabelSelected: { color: '#d1fae5' }, sectionDescription: { color: '#94a3b8', fontSize: 11, lineHeight: 16, marginTop: 2 }, eyebrow: { color: '#34d399', fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 8 }, title: { color: '#f8fafc', fontSize: 30, fontWeight: '900', marginBottom: 12 }, body: { color: '#cbd5e1', fontSize: 14, lineHeight: 21, marginBottom: 16 }, card: { backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: 18, borderWidth: 1, marginBottom: 14, padding: 16 }, cardTitle: { color: '#e2e8f0', fontSize: 17, fontWeight: '900', marginBottom: 14 }, identityName: { color: '#f8fafc', fontSize: 22, fontWeight: '900', marginBottom: 4 }, meta: { color: '#94a3b8', fontSize: 11, lineHeight: 17 }, roleLine: { color: '#d1fae5', fontSize: 12, fontWeight: '800', marginTop: 8 }, helper: { color: '#94a3b8', fontSize: 12, lineHeight: 18, marginTop: 10 }, label: { color: '#a7f3d0', fontSize: 11, fontWeight: '800', marginBottom: 6 }, field: { marginTop: 12 }, input: { backgroundColor: '#020617', borderColor: '#334155', borderRadius: 10, borderWidth: 1, color: '#f8fafc', minHeight: 44, paddingHorizontal: 12, paddingVertical: 10 }, primaryButton: { alignItems: 'center', backgroundColor: '#34d399', borderRadius: 12, justifyContent: 'center', marginTop: 14, padding: 13 }, primaryLabel: { color: '#022c22', fontSize: 12, fontWeight: '900' }, outlineButton: { alignItems: 'center', borderColor: '#475569', borderRadius: 10, borderWidth: 1, flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 10, padding: 12 }, secondaryLabel: { color: '#a7f3d0', fontSize: 12, fontWeight: '800' }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 }, chip: { borderColor: '#475569', borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 9 }, chipSelected: { backgroundColor: '#064e3b', borderColor: '#34d399' }, chipLabel: { color: '#d1fae5', fontSize: 11, fontWeight: '800' }, row: { flexDirection: 'row', gap: 8 }, selectedButton: { backgroundColor: '#064e3b', borderColor: '#34d399', flex: 1 }, stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, stat: { backgroundColor: '#020617', borderColor: '#1e293b', borderRadius: 10, borderWidth: 1, flexGrow: 1, minWidth: '45%', padding: 10 }, statValue: { color: '#34d399', fontSize: 21, fontWeight: '900' }, statLabel: { color: '#94a3b8', fontSize: 10, lineHeight: 15, marginTop: 3 }, metric: { color: '#cbd5e1', fontSize: 12, marginTop: 8 }, listRow: { alignItems: 'center', borderTopColor: '#1e293b', borderTopWidth: 1, flexDirection: 'row', gap: 8, justifyContent: 'space-between', paddingVertical: 11 }, listCopy: { flex: 1 }, itemTitle: { color: '#f8fafc', fontSize: 13, fontWeight: '800' }, status: { color: '#a7f3d0', fontSize: 10, fontWeight: '900', maxWidth: 100, textAlign: 'right', textTransform: 'uppercase' }, switchRow: { alignItems: 'center', borderTopColor: '#1e293b', borderTopWidth: 1, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 }, switchLabel: { color: '#e2e8f0', flex: 1, fontSize: 13, paddingRight: 12 }, switch: { alignItems: 'center', borderColor: '#475569', borderRadius: 12, borderWidth: 1, minWidth: 58, paddingHorizontal: 10, paddingVertical: 8 }, switchOn: { backgroundColor: '#064e3b', borderColor: '#34d399' }, switchText: { color: '#d1fae5', fontSize: 11, fontWeight: '900' }, error: { backgroundColor: '#451a1a', borderRadius: 10, color: '#fecaca', fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 }, success: { backgroundColor: '#064e3b', borderRadius: 10, color: '#d1fae5', fontSize: 12, lineHeight: 18, marginBottom: 12, padding: 12 }, deletionPanel: { borderColor: '#7f1d1d', borderRadius: 12, borderWidth: 1, marginTop: 16, padding: 12 }, dangerButton: { alignItems: 'center', backgroundColor: '#991b1b', borderRadius: 10, marginTop: 10, padding: 13 }, dangerLabel: { color: '#fee2e2', fontSize: 12, fontWeight: '900' }, signOutButton: { alignItems: 'center', marginTop: 6, paddingVertical: 18 }, signOutLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
 })

@@ -21,12 +21,12 @@ describe('mobile foreground display track storage', () => {
   it('keeps the foreground display trace local and separate from the GPS sync buffer', async () => {
     const localTrack = [{ latitude: 48.8566, longitude: 2.3522, recordedAt: '2026-09-28T10:00:00.000Z' }]
 
-    await saveStoredForegroundTrack('mission-1', localTrack)
+    await saveStoredForegroundTrack('user_123', 'mission-1', localTrack)
 
-    await expect(getStoredForegroundTrack('mission-1')).resolves.toEqual(localTrack)
-    expect(await getPendingGpsPointCount()).toBe(0)
+    await expect(getStoredForegroundTrack('user_123', 'mission-1')).resolves.toEqual(localTrack)
+    expect(await getPendingGpsPointCount('user_123')).toBe(0)
 
-    await clearStoredForegroundTrack('mission-1')
-    await expect(getStoredForegroundTrack('mission-1')).resolves.toEqual([])
+    await clearStoredForegroundTrack('user_123', 'mission-1')
+    await expect(getStoredForegroundTrack('user_123', 'mission-1')).resolves.toEqual([])
   })
 })

@@ -218,11 +218,25 @@ Vérifier :
 - export ;
 - suppression.
 
-L'application mobile utilise le même contrat d'identité Clerk que le web. Son
-renouvellement en background headless et sa validation opérationnelle restent
-ouverts avant toute production mobile. `mission_actions` et la photo native sont
-hors V1 et constituent une évolution mobile future ; leurs contrats serveur
-restent gouvernés séparément.
+L'application mobile utilise le même contrat d'identité Clerk que le web. Les
+missions et points GPS restent owner-scoped par `volunteer_id = sub` côté RLS
+et par namespace `userId` dans le stockage local mobile. Le réveil headless
+compare l'identité Clerk restaurée à l'owner du buffer avant un insert ou un
+replay ; une session expirée ne déverrouille pas les données d'un autre compte.
+Les clés locales historiques sans owner vérifiable sont ignorées.
+
+Le mobile affiche un dialogue natif avant les permissions système pour informer
+de la collecte, du suivi en arrière-plan, de l'utilisation serveur et de la
+transmission avec Clerk. Le refus ne contourne aucune permission et permet une
+reprise ultérieure.
+
+La suppression de compte mobile est une demande authentifiée bornée, enregistrée
+dans `contact_requests` et limitée par compte. Elle retourne un identifiant et
+un état de notification ; `deletionProcessed=false` signifie qu'aucune
+suppression n'a été exécutée. Le traitement effectif doit rester audité dans le
+workflow RGPD. `mission_actions` et la photo native sont hors V1 et constituent
+une évolution mobile future ; leurs contrats serveur restent gouvernés
+séparément.
 
 ## Dépendances et CodeQL
 

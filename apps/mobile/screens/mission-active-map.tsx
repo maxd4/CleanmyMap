@@ -62,7 +62,7 @@ function formatDistance(distanceMeters: number): string {
   return `${(distanceMeters / 1000).toFixed(2)} km`
 }
 
-function useMissionForegroundTrack(missionId: string, mapRef: React.MutableRefObject<MapView | null>) {
+function useMissionForegroundTrack(ownerId: string, missionId: string, mapRef: React.MutableRefObject<MapView | null>) {
   const foregroundSubscriptionRef = useRef<Location.LocationSubscription | null>(null)
   const localTrackRef = useRef<ForegroundTrackPoint[]>([])
   const runIdRef = useRef(0)
@@ -86,7 +86,7 @@ function useMissionForegroundTrack(missionId: string, mapRef: React.MutableRefOb
 
     async function restoreTrack(runId: number): Promise<void> {
       const [localPoints, serverResult] = await Promise.all([
-        getStoredForegroundTrack(missionId),
+        getStoredForegroundTrack(ownerId, missionId),
         getMissionTrack(missionId),
       ])
       if (!active || runId !== runIdRef.current) return
@@ -110,7 +110,7 @@ function useMissionForegroundTrack(missionId: string, mapRef: React.MutableRefOb
       localTrackRef.current = mergeTrackPoints(localTrackRef.current, [point])
       setCurrentPosition(coordinate)
       setTrack((previousTrack) => mergeTrackPoints(previousTrack, [point]))
-      void saveStoredForegroundTrack(missionId, localTrackRef.current)
+      void saveStoredForegroundTrack(ownerId, missionId, localTrackRef.current)
       mapRef.current?.animateToRegion(
         {
           ...coordinate,
@@ -181,12 +181,13 @@ function useMissionForegroundTrack(missionId: string, mapRef: React.MutableRefOb
       appStateSubscription.remove()
       stopForegroundSubscription()
     }
-  }, [missionId, mapRef])
+  }, [ownerId, missionId, mapRef])
 
   return { currentPosition, track, gpsStatus, syncMessage }
 }
 
 export function MissionActiveMap({
+  ownerId,
   missionId,
   missionLabel,
   duration,
@@ -194,6 +195,7 @@ export function MissionActiveMap({
   errorMsg,
   onStop,
 }: {
+  ownerId: string
   missionId: string
   missionLabel: string
   duration: string
@@ -202,7 +204,7 @@ export function MissionActiveMap({
   onStop: () => void
 }) {
   const mapRef = useRef<MapView | null>(null)
-  const { currentPosition, track, gpsStatus, syncMessage } = useMissionForegroundTrack(missionId, mapRef)
+  const { currentPosition, track, gpsStatus, syncMessage } = useMissionForegroundTrack(ownerId, missionId, mapRef)
 
   const polylineCoordinates = track.map(({ latitude, longitude }) => ({ latitude, longitude }))
   const liveDistance = calculateTrackDistanceMeters(track)

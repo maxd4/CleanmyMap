@@ -11,11 +11,11 @@ describe('mobile GPS relaunch contract', () => {
   it('restores the persisted mission again when the app returns active', () => {
     expect(appSource).toContain('AppState.addEventListener')
     expect(appSource).toContain('if (nextState === \'active\') void restoreMission()')
-    expect(appSource).toContain('restoreActiveTracking()')
+    expect(appSource).toContain('restoreActiveTracking(userId)')
     expect(appSource).toContain('getMission(id)')
-    expect(appSource).toContain('const flushPromise = flushBuffer()')
+    expect(appSource).toContain('const flushPromise = flushBuffer(userId)')
     expect(appSource).toContain('await refreshPendingGpsPointCount()')
-    expect(mapSource).toContain('getStoredForegroundTrack(missionId)')
+    expect(mapSource).toContain('getStoredForegroundTrack(ownerId, missionId)')
     expect(mapSource).toContain('getMissionTrack(missionId)')
   })
 

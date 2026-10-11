@@ -5,7 +5,7 @@ const storage = vi.hoisted(() => ({ pending: [] as string[] }))
 vi.mock('../lib/supabase', () => ({ getClerkSupabaseAccessToken: getToken }))
 vi.mock('../lib/storage', () => ({
   getPendingLinkedMissionReconciliationIds: vi.fn(async () => storage.pending),
-  removePendingLinkedMissionReconciliation: vi.fn(async (id: string) => {
+  removePendingLinkedMissionReconciliation: vi.fn(async (_ownerId: string, id: string) => {
     storage.pending = storage.pending.filter((pendingId) => pendingId !== id)
   }),
 }))
@@ -53,7 +53,7 @@ describe('linked mission gamification handoff', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const { reconcilePendingLinkedMissions } = await import('../lib/linked-mission-service')
-    await reconcilePendingLinkedMissions()
+    await reconcilePendingLinkedMissions('user_123')
 
     expect(fetchMock).toHaveBeenCalledTimes(3)
     expect(storage.pending).toEqual([])
@@ -66,7 +66,7 @@ describe('linked mission gamification handoff', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 503 })))
 
     const { reconcilePendingLinkedMissions } = await import('../lib/linked-mission-service')
-    await reconcilePendingLinkedMissions()
+    await reconcilePendingLinkedMissions('user_123')
 
     expect(storage.pending).toEqual(['mission-1'])
   })

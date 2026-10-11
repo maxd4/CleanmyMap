@@ -4,6 +4,8 @@ import { createSupabaseMock } from './support/tracking-mocks'
 const state = vi.hoisted(() => ({
   task: null as ((input: { data?: unknown; error?: Error }) => Promise<void>) | null,
   missionId: 'mission-1' as string | null,
+  ownerId: 'user_123' as string | null,
+  contextOwnerId: 'user_123' as string | null,
   client: null as any,
   bufferedPoints: [] as unknown[],
   flushCount: 0,
@@ -19,11 +21,15 @@ vi.mock('expo-location', () => ({}))
 
 vi.mock('../lib/tracking-service', () => ({ GPS_TASK_NAME: 'GPS_TRACKING' }))
 
-vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
+vi.mock('../lib/supabase', () => ({
+  ...createSupabaseMock(() => state.client),
+  getClerkUserId: vi.fn(async () => state.ownerId),
+}))
 
 vi.mock('../lib/storage', () => ({
-  getStoredMissionId: vi.fn(async () => state.missionId),
-  bufferPoint: vi.fn(async (point: unknown) => {
+  getStoredActiveMissionContext: vi.fn(async () => state.missionId && state.contextOwnerId ? { missionId: state.missionId, ownerId: state.contextOwnerId } : null),
+  bufferPoint: vi.fn(async (...args: [string, unknown]) => {
+    const point = args[1]
     state.bufferedPoints.push(point)
   }),
   flushBuffer: vi.fn(async () => {
@@ -59,6 +65,8 @@ function expectGpsPointInsert(insert: ReturnType<typeof vi.fn>) {
 describe('mobile GPS TaskManager task', () => {
   beforeEach(() => {
     state.missionId = 'mission-1'
+    state.ownerId = 'user_123'
+    state.contextOwnerId = 'user_123'
     state.client = null
     state.bufferedPoints.length = 0
     state.flushCount = 0
@@ -105,5 +113,15 @@ describe('mobile GPS TaskManager task', () => {
       recorded_at: '2026-10-02T10:00:00.000Z',
     }])
     expect(state.flushCount).toBe(1)
+  })
+
+  it('does not send owner A points with owner B session', async () => {
+    state.ownerId = 'user_b'
+    const insert = vi.fn(async () => ({ error: null }))
+    await runGpsTaskWithInsert(insert)
+
+    expect(insert).not.toHaveBeenCalled()
+    expect(state.bufferedPoints).toEqual([])
+    expect(state.flushCount).toBe(0)
   })
 })

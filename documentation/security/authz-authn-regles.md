@@ -844,6 +844,19 @@ privilégié. La lecture mission/GPS est directe, sans cache partagé indexé pa
 `missionId`, et aucun partage public n'est autorisé sans future vue sanitizée
 explicite.
 
+## Demande de suppression depuis le mobile
+
+`POST /api/mobile/account/deletion-request` est une capacité de compte, pas un
+endpoint public et pas une suppression directe. Le handler exige le Bearer
+Clerk validé par `requireMobileAuthenticatedAccess`, utilise exclusivement le
+`userId` issu du JWT, applique un quota par identité, valide la confirmation
+explicite et réutilise `contact_requests`. L'identifiant retourné prouve
+l'enregistrement de la demande ; `notificationStatus` décrit uniquement la
+notification et `deletionProcessed=false` interdit d'afficher une suppression
+effectuée. Le traitement et l'audit restent dans le workflow RGPD canonique.
+La page publique `/contact` conserve le même type de demande pour une personne
+ayant désinstallé l'application.
+
 ## Centralisation des permissions
 
 Éviter les comparaisons dispersées de chaînes de rôles.

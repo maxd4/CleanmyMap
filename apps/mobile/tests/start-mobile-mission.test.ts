@@ -42,6 +42,13 @@ vi.mock('expo-task-manager', () => ({
 
 vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
 
+vi.mock('../lib/gps-permission-rationale', () => ({
+  showGpsPermissionRationale: vi.fn(async () => {
+    state.sequence.push('permission-rationale')
+    return true
+  }),
+}))
+
 vi.mock('../lib/storage', () => createTrackingStorageMock({
   ...createMissionIdStorageOptions(state),
 }))
@@ -93,7 +100,7 @@ describe('mobile mission startup', () => {
     expect(result).toEqual({ ok: true, data: activeMission })
     expect(Location.requestForegroundPermissionsAsync).toHaveBeenCalledOnce()
     expect(Location.requestBackgroundPermissionsAsync).toHaveBeenCalledOnce()
-    expect(state.sequence).toEqual(['permission-foreground', 'permission-background', 'insert', 'gps-start', 'update'])
+    expect(state.sequence).toEqual(['permission-rationale', 'permission-foreground', 'permission-background', 'insert', 'gps-start', 'update'])
   })
 
   it('creates a linked mission through the authenticated web boundary', async () => {
@@ -141,6 +148,7 @@ describe('mobile mission startup', () => {
 
     expect(activationResult).toEqual({ ok: false, error: 'Impossible de démarrer la mission : RLS denied' })
     expect(state.sequence).toEqual([
+      'permission-rationale',
       'permission-foreground',
       'permission-background',
       'insert',

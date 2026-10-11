@@ -16,6 +16,7 @@ vi.mock('expo-location', () => ({
 vi.mock('expo-task-manager', () => ({}))
 
 vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
+vi.mock('../lib/gps-permission-rationale', () => ({ showGpsPermissionRationale: vi.fn(async () => true) }))
 
 vi.mock('../lib/storage', () => createTrackingStorageMock())
 

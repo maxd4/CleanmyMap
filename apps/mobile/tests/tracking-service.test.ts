@@ -33,9 +33,15 @@ vi.mock('../lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => state.client),
 }))
 
+vi.mock('../lib/gps-permission-rationale', () => ({
+  showGpsPermissionRationale: vi.fn(async () => true),
+}))
+
 vi.mock('../lib/storage', () => ({
   getStoredMissionId: vi.fn(async () => state.storedMissionId),
-  setStoredMissionId: vi.fn(async (id: string) => {
+  getStoredMissionOwnerId: vi.fn(async () => 'user_123'),
+  setStoredMissionId: vi.fn(async (...args: [string, string]) => {
+    const id = args[1]
     state.storedMissionId = id
   }),
   clearStoredMissionId: vi.fn(async () => {
@@ -130,7 +136,7 @@ describe('mobile tracking service', () => {
   it('restores the persisted active mission identifier', async () => {
     state.storedMissionId = 'mission-1'
 
-    await expect(restoreActiveTracking()).resolves.toBe('mission-1')
+    await expect(restoreActiveTracking('user_123')).resolves.toBe('mission-1')
   })
 
   it('creates an owner-scoped mission without client-owned metrics', async () => {
@@ -203,7 +209,7 @@ describe('mobile tracking service', () => {
     })
 
     expect(result).toEqual({ ok: false, error: 'offline' })
-    expect(bufferPoint).toHaveBeenCalledWith({
+    expect(bufferPoint).toHaveBeenCalledWith('user_123', {
       mission_id: 'mission-1',
       latitude: 48.8566,
       longitude: 2.3522,
@@ -222,7 +228,7 @@ describe('mobile tracking service', () => {
     })
 
     expect(result).toEqual({ ok: false, error: CLERK_SESSION_REQUIRED_ERROR })
-    expect(bufferPoint).toHaveBeenCalledWith({
+    expect(bufferPoint).toHaveBeenCalledWith('user_123', {
       mission_id: 'mission-1',
       latitude: 48.8566,
       longitude: 2.3522,
@@ -241,7 +247,7 @@ describe('mobile tracking service', () => {
     const result = await stopTracking('mission-1')
 
     expect(result).toEqual({ ok: true, data: completedMission })
-    expect(flushBuffer).toHaveBeenCalledOnce()
+    expect(flushBuffer).toHaveBeenCalledWith('user_123')
     expect(state.sequence.indexOf('flush')).toBeLessThan(state.sequence.indexOf('update'))
     expect(client.updatePayloads).toEqual([
       { status: 'completed', ended_at: expect.any(String) },

@@ -137,10 +137,13 @@ export async function checkServerRateLimit(
   request: Request,
   options: ServerRateLimitOptions = {},
   method = request.method,
+  authenticatedUserId?: string,
 ): Promise<ServerRateLimitResult> {
   const pathname = new URL(request.url).pathname;
   const config = getRateLimitConfig(pathname, method);
-  const identity = await getRateLimitIdentity(request);
+  const identity = authenticatedUserId
+    ? { scope: "authenticated" as const, value: authenticatedUserId, key: `authenticated:${authenticatedUserId}` }
+    : await getRateLimitIdentity(request);
   const limit = options.limit ?? config.limit;
   const window = options.window ?? config.window;
   const rateLimitKey = getRateLimitKey(identity.key, pathname, method);
@@ -186,6 +189,19 @@ export async function enforceServerRateLimit(
     result.retryAfter,
     result,
   );
+}
+
+/**
+ * Uses an already authenticated Clerk identity for routes whose bearer token
+ * is validated outside the browser-cookie auth context.
+ */
+export async function enforceServerRateLimitForAuthenticatedUser(
+  request: Request,
+  userId: string,
+  options: ServerRateLimitOptions = {},
+) {
+  const result = await checkServerRateLimit(request, options, request.method, userId);
+  return createServerRateLimitResponse(result.allowed, result.retryAfter, result);
 }
 
 export async function withServerRateLimit<T extends Response>(

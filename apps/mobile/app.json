@@ -64,8 +64,8 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "CleanMyMap suit votre parcours de nettoyage, même écran éteint.",
-          "locationWhenInUsePermission": "CleanMyMap utilise votre position pour enregistrer le parcours.",
+      "locationAlwaysAndWhenInUsePermission": "CleanMyMap collecte les points GPS de votre mission, y compris écran éteint, pour le parcours et les résultats serveur.",
+      "locationWhenInUsePermission": "CleanMyMap collecte votre position pendant la mission pour afficher le parcours et transmettre ses points au service.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true

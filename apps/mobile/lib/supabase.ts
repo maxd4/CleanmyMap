@@ -58,6 +58,16 @@ export async function getClerkSupabaseAccessToken(): Promise<string | null> {
   }
 }
 
+/** Identité Clerk associée au token courant, utilisée par le réveil headless. */
+export async function getClerkUserId(): Promise<string | null> {
+  try {
+    const clerk = await ensureClerkLoaded();
+    return clerk?.user?.id ?? clerk?.session?.user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function requireClerkSupabaseAccessToken(): Promise<string> {
   const token = await getClerkSupabaseAccessToken();
   if (!token) {

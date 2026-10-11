@@ -37,31 +37,33 @@ export function createSupabaseMock(getClient: () => unknown) {
 }
 
 type TrackingStorageOptions = {
-  getStoredMissionId?: () => unknown
-  setStoredMissionId?: (id: string) => unknown
-  clearStoredMissionId?: () => unknown
-  enqueuePendingLinkedMissionReconciliation?: (id: string) => unknown
-  removePendingLinkedMissionReconciliation?: (id: string) => unknown
-  bufferPoint?: (point: unknown) => unknown
-  flushBuffer?: () => unknown
+  getStoredMissionId?: (ownerId: string) => unknown
+  getStoredMissionOwnerId?: (missionId: string) => unknown
+  setStoredMissionId?: (ownerId: string, id: string) => unknown
+  clearStoredMissionId?: (ownerId: string) => unknown
+  enqueuePendingLinkedMissionReconciliation?: (ownerId: string, id: string) => unknown
+  removePendingLinkedMissionReconciliation?: (ownerId: string, id: string) => unknown
+  bufferPoint?: (ownerId: string, point: unknown) => unknown
+  flushBuffer?: (ownerId: string) => unknown
 }
 
 export function createTrackingStorageMock(options: TrackingStorageOptions = {}) {
   return {
-    getStoredMissionId: vi.fn(async () => options.getStoredMissionId?.() ?? null),
-    setStoredMissionId: vi.fn(async (id: string) => options.setStoredMissionId?.(id)),
-    clearStoredMissionId: vi.fn(async () => options.clearStoredMissionId?.()),
-    enqueuePendingLinkedMissionReconciliation: vi.fn(async (id: string) => options.enqueuePendingLinkedMissionReconciliation?.(id)),
-    removePendingLinkedMissionReconciliation: vi.fn(async (id: string) => options.removePendingLinkedMissionReconciliation?.(id)),
-    bufferPoint: vi.fn(async (point: unknown) => options.bufferPoint?.(point)),
-    flushBuffer: vi.fn(async () => options.flushBuffer?.()),
+    getStoredMissionId: vi.fn(async (ownerId: string) => options.getStoredMissionId?.(ownerId) ?? null),
+    getStoredMissionOwnerId: vi.fn(async (missionId: string) => options.getStoredMissionOwnerId?.(missionId) ?? 'user_123'),
+    setStoredMissionId: vi.fn(async (ownerId: string, id: string) => options.setStoredMissionId?.(ownerId, id)),
+    clearStoredMissionId: vi.fn(async (ownerId: string) => options.clearStoredMissionId?.(ownerId)),
+    enqueuePendingLinkedMissionReconciliation: vi.fn(async (ownerId: string, id: string) => options.enqueuePendingLinkedMissionReconciliation?.(ownerId, id)),
+    removePendingLinkedMissionReconciliation: vi.fn(async (ownerId: string, id: string) => options.removePendingLinkedMissionReconciliation?.(ownerId, id)),
+    bufferPoint: vi.fn(async (ownerId: string, point: unknown) => options.bufferPoint?.(ownerId, point)),
+    flushBuffer: vi.fn(async (ownerId: string) => options.flushBuffer?.(ownerId)),
   }
 }
 
 export function createMissionIdStorageOptions(state: { storedMissionId: string | null }) {
   return {
     getStoredMissionId: () => state.storedMissionId,
-    setStoredMissionId: (id: string) => { state.storedMissionId = id },
+    setStoredMissionId: (_ownerId: string, id: string) => { state.storedMissionId = id },
     clearStoredMissionId: () => { state.storedMissionId = null },
   }
 }

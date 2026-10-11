@@ -47,6 +47,7 @@ function useRestoreActiveMission({
   startDurationTimer,
   stopDurationTimer,
   refreshPendingGpsPointCount,
+  userId,
 }: {
   isLoaded: boolean
   isSignedIn: boolean
@@ -55,6 +56,7 @@ function useRestoreActiveMission({
   startDurationTimer: (startedAt: string) => void
   stopDurationTimer: () => void
   refreshPendingGpsPointCount: () => Promise<void>
+  userId: string | null
 }) {
   useEffect(() => {
     stopDurationTimer()
@@ -63,11 +65,12 @@ function useRestoreActiveMission({
 
     let cancelled = false
     async function restoreMission() {
-      void reconcilePendingLinkedMissions()
       // Un retour au premier plan est aussi un point de reprise réseau. Le
       // buffer reste Clerk-only et le storage sérialise les flush concurrents.
-      const flushPromise = flushBuffer().catch(() => null)
-      const id = await restoreActiveTracking()
+      if (!userId) return
+      void reconcilePendingLinkedMissions(userId)
+      const flushPromise = flushBuffer(userId).catch(() => null)
+      const id = await restoreActiveTracking(userId)
       if (!id || cancelled) return
 
       const result = await getMission(id)
@@ -90,7 +93,7 @@ function useRestoreActiveMission({
       appStateSubscription.remove()
       stopDurationTimer()
     }
-  }, [isLoaded, isSignedIn, refreshPendingGpsPointCount, setMission, setPhase, startDurationTimer, stopDurationTimer])
+  }, [isLoaded, isSignedIn, refreshPendingGpsPointCount, setMission, setPhase, startDurationTimer, stopDurationTimer, userId])
 }
 
 function CompanionApp() {
@@ -125,7 +128,7 @@ function CompanionApp() {
 
   const refreshPendingGpsPointCount = usePendingGpsPointCountPolling({
     isVisible: phase === 'tracking' && mission !== null,
-    readCount: getPendingGpsPointCount,
+    readCount: () => userId ? getPendingGpsPointCount(userId) : Promise.resolve(0),
     onCount: setPendingGpsPointCount,
   })
 
@@ -137,6 +140,7 @@ function CompanionApp() {
     startDurationTimer,
     stopDurationTimer,
     refreshPendingGpsPointCount,
+    userId: userId ?? null,
   })
 
   async function handleStartMobileMission() {
@@ -189,7 +193,7 @@ function CompanionApp() {
     setPhase('stopping')
     stopDurationTimer()
 
-    const result = await stopTracking(activeMission.id, setFinalizationStage)
+    const result = await stopTracking(activeMission.id, setFinalizationStage, userId ?? undefined)
     await refreshPendingGpsPointCount()
     if (!result.ok) {
       setErrorMsg(result.error)
@@ -199,7 +203,7 @@ function CompanionApp() {
       return
     }
 
-    await clearStoredForegroundTrack(activeMission.id)
+    if (userId) await clearStoredForegroundTrack(userId, activeMission.id)
     setMission(null)
     setCompletionSummary(result.data)
     setFinalizationStage(null)
@@ -246,6 +250,7 @@ function CompanionApp() {
   if (phase === 'tracking' && mission) {
     return <MissionActiveScreen
       mission={mission}
+      ownerId={userId}
       duration={duration}
       pendingGpsPointCount={pendingGpsPointCount}
       errorMsg={errorMsg}
@@ -264,12 +269,14 @@ function CompanionApp() {
 
 function MissionActiveScreen({
   mission,
+  ownerId,
   duration,
   pendingGpsPointCount,
   errorMsg,
   onStop,
 }: {
   mission: Mission
+  ownerId: string | null
   duration: string
   pendingGpsPointCount: number
   errorMsg: string | null
@@ -280,6 +287,7 @@ function MissionActiveScreen({
       <StatusBar style="light" />
       <MissionActiveMap
         missionId={mission.id}
+        ownerId={ownerId ?? mission.volunteer_id ?? ''}
         missionLabel={mission.label}
         duration={duration}
         pendingGpsPointCount={pendingGpsPointCount}

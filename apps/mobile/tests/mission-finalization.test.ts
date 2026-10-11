@@ -38,6 +38,7 @@ vi.mock('expo-task-manager', () => ({
 }))
 
 vi.mock('../lib/supabase', () => createSupabaseMock(() => state.client))
+vi.mock('../lib/gps-permission-rationale', () => ({ showGpsPermissionRationale: vi.fn(async () => true) }))
 
 vi.mock('../lib/linked-mission-service', () => ({
   createLinkedMission: vi.fn(),
@@ -46,10 +47,10 @@ vi.mock('../lib/linked-mission-service', () => ({
 
 vi.mock('../lib/storage', () => createTrackingStorageMock({
   ...createMissionIdStorageOptions(state),
-  enqueuePendingLinkedMissionReconciliation: (id) => {
+  enqueuePendingLinkedMissionReconciliation: (_ownerId, id) => {
     if (!state.pendingMissionIds.includes(id)) state.pendingMissionIds.push(id)
   },
-  removePendingLinkedMissionReconciliation: (id) => {
+  removePendingLinkedMissionReconciliation: (_ownerId, id) => {
     state.pendingMissionIds = state.pendingMissionIds.filter((pendingId) => pendingId !== id)
   },
   flushBuffer: () => state.flushResult,

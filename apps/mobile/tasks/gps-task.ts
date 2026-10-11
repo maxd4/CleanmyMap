@@ -20,8 +20,8 @@
 
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
-import { getAuthenticatedSupabaseClient } from '../lib/supabase';
-import { getStoredMissionId, bufferPoint, flushBuffer } from '../lib/storage';
+import { getAuthenticatedSupabaseClient, getClerkUserId } from '../lib/supabase';
+import { getStoredActiveMissionContext, bufferPoint, flushBuffer } from '../lib/storage';
 import { GPS_TASK_NAME } from '../lib/tracking-service';
 import type { MissionLocationInsert } from '../types/mission';
 
@@ -48,9 +48,17 @@ TaskManager.defineTask(GPS_TASK_NAME, async ({ data, error }) => {
   if (!data) return;
 
   const { locations } = data as { locations: Location.LocationObject[] };
-  const missionId = await getStoredMissionId();
-  if (!missionId) {
+  const context = await getStoredActiveMissionContext();
+  if (!context) {
     console.warn('[GPS Task] Aucun missionId en storage — tâche ignorée.');
+    return;
+  }
+  const { missionId, ownerId } = context;
+  const currentUserId = await getClerkUserId();
+  if (currentUserId && currentUserId !== ownerId) {
+    // Un compte différent ne doit ni lire ni envoyer le buffer A. Les points
+    // reçus après un changement de session ne sont pas attribués à A.
+    console.warn('[GPS Task] Identité Clerk différente de la mission active — points ignorés.');
     return;
   }
 
@@ -59,7 +67,7 @@ TaskManager.defineTask(GPS_TASK_NAME, async ({ data, error }) => {
     // Un réveil headless sans session Clerk valide ne doit jamais basculer vers
     // Supabase Auth anonyme. Les points restent dans le buffer local.
     for (const loc of locations) {
-      await bufferPoint(toMissionLocationInsert(missionId, loc));
+      await bufferPoint(ownerId, toMissionLocationInsert(missionId, loc));
     }
     return;
   }
@@ -78,12 +86,12 @@ TaskManager.defineTask(GPS_TASK_NAME, async ({ data, error }) => {
     if (insertError) {
       // Hors ligne ou erreur réseau : buffer local
       console.warn('[GPS Task] Insert échoué, buffer:', insertError.message);
-      await bufferPoint(point);
+      await bufferPoint(ownerId, point);
     } else {
       console.log('[GPS Task] Point enregistré');
     }
   }
 
   // Tentative de flush du buffer à chaque réveil
-  await flushBuffer();
+  await flushBuffer(ownerId);
 });

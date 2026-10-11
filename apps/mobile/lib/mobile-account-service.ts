@@ -123,3 +123,16 @@ export async function updateMobileNotificationPreferences(payload: {
     body: JSON.stringify(payload),
   })
 }
+
+export async function requestMobileAccountDeletion(confirmation: string) {
+  return mobileRequest<{
+    status: 'queued'
+    requestId: string
+    notificationStatus: 'sent' | 'failed'
+    deletionProcessed: false
+    message: string
+  }>('/api/mobile/account/deletion-request', {
+    method: 'POST',
+    body: JSON.stringify({ confirmation }),
+  })
+}

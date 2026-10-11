@@ -74,17 +74,35 @@ L'application mobile utilise Clerk comme identité canonique, au même titre que
 
 Les parcours natifs ne donnent pas au client mobile un accès direct aux
 services serveur ni à `service_role`. Il appelle les routes bornées
-`/api/mobile/actions` et `/api/mobile/account`, qui vérifient le header `Authorization: Bearer` avec
+`/api/mobile/actions`, `/api/mobile/account` et
+`/api/mobile/account/deletion-request`, qui vérifient le header `Authorization: Bearer` avec
 `clerkClient().authenticateRequest(request, { acceptsToken: "session_token" })`
 avant de réutiliser les services métier existants. Cette vérification est
 distincte de `auth()` utilisé par les routes web : l'acceptation d'un JWT Clerk
 mobile est prouvée par la frontière dédiée et ses tests, elle n'est pas déduite
-de la seule présence du header.
+de la seule présence du header. Les tests de contrat ne remplacent pas la
+preuve opérationnelle d'un JWT Clerk réel accepté par l'environnement distant.
 
 `/api/mobile/account` est owner-scoped et ne projette que les données du compte
 authentifié. Il réutilise l'identité, l'historique de participation, la
 progression et les préférences canoniques. Les mutations de profil synchronisent
 Clerk et Supabase ; le rôle attribué et le parcours actif restent distincts.
+
+Les clés locales de mission active, de buffer GPS, de tracé foreground et de
+réconciliation sont toutes namespacées par le `userId` Clerk. Le réveil
+headless compare l'identité Clerk restaurée à l'owner stocké avant tout insert
+ou replay ; une session expirée conserve les données du propriétaire sans les
+exposer à la session suivante. Les clés historiques sans owner vérifiable ne
+sont pas lues. Avant les permissions système, un dialogue natif décrit la
+collecte, le suivi en arrière-plan, la transmission avec Clerk et la reprise
+locale ; le refus bloque le démarrage sans effacer les données récupérables.
+
+La suppression de compte reste une demande RGPD, pas une suppression
+automatique. `Compte` appelle `/api/mobile/account/deletion-request`, qui
+authentifie le Bearer Clerk, applique un quota, réutilise `contact_requests`,
+retourne un identifiant de demande et distingue `notificationStatus` de
+`deletionProcessed`. `/contact` reste le point d'entrée public après
+désinstallation.
 
 La projection conserve la frontière métier : les inscriptions futures vivent
 dans `action_registrations`, tandis qu'un rattachement à une action passée crée
@@ -338,8 +356,8 @@ apps/mobile/
 ```typescript
 // tasks/gps-task.ts
 import * as TaskManager from 'expo-task-manager';
-import { supabase } from '../lib/supabase';
-import { getStoredMissionId, bufferPoint, flushBuffer } from '../lib/storage';
+import { getAuthenticatedSupabaseClient, getClerkUserId } from '../lib/supabase';
+import { getStoredActiveMissionContext, bufferPoint, flushBuffer } from '../lib/storage';
 
 const TASK_NAME = 'GPS_TRACKING';
 
@@ -347,8 +365,25 @@ TaskManager.defineTask(TASK_NAME, async ({ data, error }) => {
   if (error || !data) return;
 
   const { locations } = data as { locations: Location.LocationObject[] };
-  const missionId = await getStoredMissionId();
-  if (!missionId) return;
+  const context = await getStoredActiveMissionContext();
+  if (!context) return;
+  const { missionId, ownerId } = context;
+  const currentUserId = await getClerkUserId();
+  if (currentUserId && currentUserId !== ownerId) return;
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) {
+    for (const loc of locations) {
+      await bufferPoint(ownerId, {
+        mission_id: missionId,
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        accuracy_m: loc.coords.accuracy,
+        altitude_m: loc.coords.altitude,
+        recorded_at: new Date(loc.timestamp).toISOString(),
+      });
+    }
+    return;
+  }
 
   for (const loc of locations) {
     const point = {
@@ -361,14 +396,14 @@ TaskManager.defineTask(TASK_NAME, async ({ data, error }) => {
     };
 
     // Tenter l'envoi, sinon buffer local
-    const { error } = await supabase.from('gps_points').insert(point);
+    const { error } = await client.from('gps_points').insert(point);
     if (error) {
-      await bufferPoint(point);
+      await bufferPoint(ownerId, point);
     }
   }
 
   // Tenter de flush les points buffered
-  await flushBuffer();
+  await flushBuffer(ownerId);
 });
 ```
 

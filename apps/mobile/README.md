@@ -108,6 +108,23 @@ réutilisent les contrats web canoniques avec le Bearer Clerk. Les pages web
 surfaces canoniques pour les droits, le contact et la demande d'effacement.
 Le compte permet aussi d'enregistrer un unique contact d'urgence dans le
 SecureStore local.
+Avant toute boîte de permission système, le mobile affiche une explication
+native de la collecte des points, du suivi écran éteint, de leur transmission
+avec la session Clerk et de la reprise locale hors ligne. Un refus interrompt
+le démarrage et permet une nouvelle tentative ultérieure.
+Les identifiants de mission active, index de buffer, points GPS en attente,
+tracés foreground et réconciliations liées sont namespacés par identifiant
+Clerk. Une session expirée ou un changement de compte ne peut donc pas lire ni
+rejouer les données d'un autre compte ; les données du propriétaire restent
+récupérables à sa reconnexion. Les anciennes clés locales sans owner connu sont
+ignorées par conception.
+Dans `Compte > À propos et informations légales`, un utilisateur connecté peut
+confirmer une demande de suppression. La route mobile authentifie le Bearer
+Clerk, limite les abus et enregistre la demande dans `contact_requests` avec un
+identifiant. `notificationStatus=failed` signifie que la demande existe mais
+que la notification doit être reprise ; `deletionProcessed=false` reste affiché
+tant qu'aucun traitement RGPD effectif n'est confirmé. Après désinstallation,
+la même demande reste accessible depuis `/contact` sur le web.
 Pendant une mission active, le bénévole peut confirmer l'ouverture d'un appel
 vers ce contact ou vers le 112 via `tel:` ; aucune position n'est envoyée
 automatiquement.
@@ -137,6 +154,12 @@ Le SDK Expo 57 est aligné sur React Native 0.86.3, React 19.2.3,
 TypeScript 6.0.3 et AsyncStorage 2.2.0. `expo-doctor` doit rester à 21/21
 contrôles passés. Le workspace racine force les mêmes versions React/RN pour
 éviter qu'un peer du web ne réintroduise un doublon dans le binaire natif.
+
+Les tests de contrat de la frontière Bearer couvrent les refus, l'expiration et
+la sélection de l'identité côté serveur, mais ils ne constituent pas une preuve
+d'un JWT Clerk réel accepté par un environnement distant. Cette preuve positive
+reste une validation opérationnelle à exécuter avec une session Clerk et une
+configuration autorisées avant toute déclaration de release.
 
 Expo SDK 57 fournit le niveau Android compile/target API 36 et
 `expo-build-properties` le fixe explicitement dans la configuration de build.

@@ -95,6 +95,11 @@ export default function ContactPage() {
               Remplissez le formulaire pour envoyer la demande depuis le site
               ou ouvrir votre boîte mail afin de modifier le texte avant envoi.
             </p>
+            <p className="cmm-text-caption mt-3 text-slate-600">
+              Cette entrée publique permet aussi de demander la suppression de
+              votre compte après désinstallation de l’application mobile ; une
+              demande enregistrée n’est pas une suppression immédiate.
+            </p>
             <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
               <Shield className="h-4 w-4 text-sky-600" />
               Deux modes disponibles

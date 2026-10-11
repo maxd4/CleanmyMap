@@ -59,6 +59,15 @@ Compte est un hub de sections pour le profil, l'activité et les notifications,
 les préférences, la recherche, l'aide/feedback et les informations légales ; un
 lien vers une surface web est explicitement présenté comme tel et ne devient
 pas un faux réglage natif.
+Avant les dialogues système, le suivi GPS présente une rationale native
+décrivant la collecte, l'arrière-plan, l'usage serveur, la transmission Clerk
+et la reprise hors ligne. Les clés locales de mission, buffer, tracé et
+réconciliation sont owner-scoped par `userId` Clerk ; une identité différente
+ne peut ni lire ni synchroniser les données persistées d'une autre identité.
+Compte expose aussi la demande de suppression via
+`/api/mobile/account/deletion-request`, qui réutilise `contact_requests` et
+retourne séparément l'identifiant, l'état de notification et le traitement
+effectif. La page publique `/contact` reste le relais après désinstallation.
 
 Le workspace `apps/mobile`, son `package.json`, cet `AGENTS.md` et ses contrats
 essentiels restent présents tant qu'une décision d'architecture explicite ne

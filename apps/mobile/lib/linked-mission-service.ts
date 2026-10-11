@@ -86,14 +86,14 @@ export async function reconcileLinkedMission(
 let pendingReconciliationInFlight: Promise<void> | null = null;
 
 /** Replays a bounded batch once when the app meaningfully resumes. */
-export async function reconcilePendingLinkedMissions(): Promise<void> {
+export async function reconcilePendingLinkedMissions(ownerId: string): Promise<void> {
   if (pendingReconciliationInFlight) return pendingReconciliationInFlight;
   pendingReconciliationInFlight = (async () => {
-    const pendingIds = await getPendingLinkedMissionReconciliationIds();
+    const pendingIds = await getPendingLinkedMissionReconciliationIds(ownerId);
     for (const missionId of pendingIds.slice(0, 5)) {
       const result = await reconcileLinkedMission(missionId);
       if (result.ok || result.terminal) {
-        await removePendingLinkedMissionReconciliation(missionId);
+        await removePendingLinkedMissionReconciliation(ownerId, missionId);
       }
     }
   })().finally(() => {

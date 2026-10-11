@@ -9,6 +9,7 @@ import { getAuthenticatedSupabaseClient } from './supabase';
 import { createLinkedMission, reconcileLinkedMission } from './linked-mission-service';
 import {
   getStoredMissionId,
+  getStoredMissionOwnerId,
   setStoredMissionId,
   clearStoredMissionId,
   enqueuePendingLinkedMissionReconciliation,
@@ -16,6 +17,7 @@ import {
   bufferPoint,
   flushBuffer,
 } from './storage';
+import { showGpsPermissionRationale } from './gps-permission-rationale';
 import type {
   Mission,
   MissionLocation,
@@ -79,6 +81,10 @@ async function requestPermissions(): Promise<ServiceResult> {
   }
 
   try {
+    const rationaleAccepted = await showGpsPermissionRationale();
+    if (!rationaleAccepted) {
+      return { ok: false, error: 'Information GPS requise avant de demander les permissions système.' };
+    }
     const { status: fg } = await Location.requestForegroundPermissionsAsync();
     if (fg !== 'granted') {
       return { ok: false, error: 'Permission GPS premier plan refusée.' };
@@ -162,7 +168,7 @@ async function executeMissionQuery(
   return { ok: true, data };
 }
 
-export async function startTracking(missionId: string): Promise<ServiceResult<Mission>> {
+export async function startTracking(missionId: string, ownerId: string): Promise<ServiceResult<Mission>> {
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
@@ -200,7 +206,7 @@ export async function startTracking(missionId: string): Promise<ServiceResult<Mi
   }
 
   try {
-    await setStoredMissionId(missionId);
+    await setStoredMissionId(ownerId, missionId);
   } catch (error) {
     await stopStartedTracking();
     return {
@@ -223,7 +229,7 @@ export async function startMobileMission(
   const missionResult = await createMission(volunteerId, label, actionId);
   if (!missionResult.ok) return missionResult;
 
-  const trackingResult = await startTracking(missionResult.data.id);
+  const trackingResult = await startTracking(missionResult.data.id, volunteerId);
   if (trackingResult.ok) return trackingResult;
 
   await cancelMissionAfterStartFailure(missionResult.data.id);
@@ -268,6 +274,7 @@ export async function createMission(
 export async function stopTracking(
   missionId: string,
   onStageChange?: (stage: MissionFinalizationStage) => void,
+  ownerId?: string,
 ): Promise<ServiceResult<Mission>> {
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
@@ -288,8 +295,15 @@ export async function stopTracking(
     };
   }
 
+  const resolvedOwnerId = ownerId?.trim() || await getStoredMissionOwnerId(missionId);
+  if (!resolvedOwnerId) {
+    const resumeResult = await restartBackgroundTracking();
+    const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
+    return { ok: false, error: `${CLERK_SESSION_REQUIRED_ERROR} Aucun propriétaire local vérifiable.${resumeSuffix}` };
+  }
+
   onStageChange?.('synchronizing');
-  const flushResult = await flushBuffer();
+  const flushResult = await flushBuffer(resolvedOwnerId);
   if (flushResult && !flushResult.ok) {
     const resumeResult = await restartBackgroundTracking();
     const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
@@ -315,13 +329,13 @@ export async function stopTracking(
     return { ok: false, error: `${missionResult.error}.${resumeSuffix}` };
   }
 
-  await clearStoredMissionId();
+  await clearStoredMissionId(resolvedOwnerId);
 
   if (missionResult.data.action_id) {
-    await enqueuePendingLinkedMissionReconciliation(missionResult.data.id);
+    await enqueuePendingLinkedMissionReconciliation(resolvedOwnerId, missionResult.data.id);
     const handoff = await reconcileLinkedMission(missionResult.data.id);
     if (handoff.ok || handoff.terminal) {
-      await removePendingLinkedMissionReconciliation(missionResult.data.id);
+    await removePendingLinkedMissionReconciliation(resolvedOwnerId, missionResult.data.id);
     } else {
       console.warn('[GPS] Mission finalisée; réconciliation gamification différée.', handoff.error);
     }
@@ -334,6 +348,7 @@ export async function saveLocationPoint(
   missionId: string,
   location: { latitude: number; longitude: number; accuracy?: number | null; altitude?: number | null },
   recordedAt?: Date,
+  ownerId?: string,
 ): Promise<ServiceResult> {
   const point: MissionLocation = {
     mission_id: missionId,
@@ -345,8 +360,12 @@ export async function saveLocationPoint(
   };
 
   const client = await getAuthenticatedSupabaseClient();
+  const resolvedOwnerId = ownerId?.trim() || await getStoredMissionOwnerId(missionId);
+  if (!resolvedOwnerId) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
   if (!client) {
-    await bufferPoint(point);
+    await bufferPoint(resolvedOwnerId, point);
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
@@ -359,7 +378,7 @@ export async function saveLocationPoint(
 
   if (error) {
     console.warn('[TrackingService] Insert échoué, mise en buffer :', error.message);
-    await bufferPoint(point);
+    await bufferPoint(resolvedOwnerId, point);
     return { ok: false, error: error.message };
   }
 
@@ -410,6 +429,6 @@ export async function getMissionTrack(missionId: string): Promise<ServiceResult<
   }
 }
 
-export async function restoreActiveTracking(): Promise<string | null> {
-  return await getStoredMissionId();
+export async function restoreActiveTracking(ownerId: string): Promise<string | null> {
+  return await getStoredMissionId(ownerId);
 }
