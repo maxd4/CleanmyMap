@@ -57,7 +57,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "CleanMyMap vous permet d’ajouter une preuve photo à votre signalement."
+          "photosPermission": "CleanMyMap vous permet d’ajouter une preuve photo à votre signalement.",
+          "microphonePermission": false
         }
       ],
       [

@@ -20,7 +20,8 @@ couvre le GPS avec carte et tracé, la reprise/offline, la finalisation serveur,
 le contact d'urgence et les trois parcours Agir natifs : participation,
 création/publication d'une action et signalement terrain.
 L'application reste non prête pour la production tant
-que le background headless et l'usage opérationnel réel ne sont pas validés.
+que le background headless, les appareils réels et les services de distribution
+ne sont pas validés.
 
 Références :
 
@@ -99,8 +100,8 @@ automatiquement.
 
 ```txt
 Expo 57
-React Native 0.87.1
-TypeScript 7
+React Native 0.86.3
+TypeScript 6.0.3
 expo-dev-client (development build)
 expo-splash-screen
 Clerk Expo SDK
@@ -116,10 +117,17 @@ phase (`updates.enabled = false`). Leur activation devra faire l'objet d'une
 décision de déploiement dédiée, avec validation de la stratégie de version et
 de signature.
 
-Le SDK Expo 57 cible officiellement React Native 0.86.x. Le dépôt conserve
-volontairement le pin React Native 0.87.1 déjà établi ; `expo-doctor` signale
-donc cet écart ainsi que les écarts de versions TypeScript/AsyncStorage
-existants. Ce lot ne les masque pas et ne les rétrograde pas arbitrairement.
+Le SDK Expo 57 est aligné sur React Native 0.86.3, React 19.2.3,
+TypeScript 6.0.3 et AsyncStorage 2.2.0. `expo-doctor` doit rester à 21/21
+contrôles passés. Le workspace racine force les mêmes versions React/RN pour
+éviter qu'un peer du web ne réintroduise un doublon dans le binaire natif.
+
+Expo SDK 57 fournit le niveau Android compile/target API 36 et
+`expo-build-properties` le fixe explicitement dans la configuration de build.
+Cette valeur est
+contrôlée par la version SDK utilisée par le build ; elle n'est pas une preuve
+qu'un artefact signé a été produit. Le build doit encore être exécuté avec un
+projet EAS réel et les credentials autorisés.
 
 ## Candidate de build EAS
 
@@ -134,7 +142,8 @@ Le versioning de départ est explicite et local : `version` `1.0.0`,
 incrémenter les compteurs natifs selon les règles des stores ; aucun compteur
 n'est auto-incrémenté ou stocké dans un service distant par cette configuration.
 `eas.json` fixe explicitement `cli.appVersionSource` à `local` ; aucun
-`projectId` EAS n'est requis ou inventé dans le dépôt.
+`projectId` EAS n'est versionné ou inventé dans le dépôt. Un projet Expo/EAS
+réel doit être lié par son propriétaire avant tout build distant.
 
 Les identifiants durables restent inchangés : slug
 `cleanmymap-companion`, scheme `companion`, package Android et bundle iOS
@@ -153,8 +162,9 @@ l'application mobile.
 La configuration native conserve les liens entrants `https://cleanmymap.fr/mission/start`
 et `applinks:cleanmymap.fr`, ainsi que le scheme `companion`. Le shell mobile
 utilise actuellement les ponts web sortants ; l'association Android/iOS du
-domaine et le parcours entrant complet restent à vérifier sur les services et
-appareils réels avant de les qualifier.
+domaine (`assetlinks.json` et `apple-app-site-association`) et le parcours
+entrant complet restent à vérifier sur les services et appareils réels avant de
+les qualifier.
 
 La configuration de localisation est portée par le plugin `expo-location` :
 foreground et background iOS, `ACCESS_BACKGROUND_LOCATION`,
@@ -162,6 +172,26 @@ foreground et background iOS, `ACCESS_BACKGROUND_LOCATION`,
 `fetch` iOS inutile au suivi GPS a été retiré. Les options Expo SDK 57 devenues
 invalides (`newArchEnabled`, `android.edgeToEdgeEnabled` et la clé `splash`
 legacy) ont été supprimées ou migrées vers `expo-splash-screen`.
+`expo-image-picker` demande les photos mais bloque explicitement le microphone ;
+`RECORD_AUDIO` ne fait pas partie des permissions résolues attendues.
+
+## État de release M-D
+
+| Contrôle | État | Preuve ou blocage |
+|---|---|---|
+| Versions Expo/RN/Clerk/TypeScript/AsyncStorage | PASS | `npx expo-doctor` : 21/21 |
+| Identifiants, scheme, orientation, icônes et splash | PASS statique | configuration Expo lue ; validation visuelle et appareil à faire |
+| Niveau Android API 36 | PASS de contrat SDK | Expo SDK 57 ; aucun AAB signé encore observé |
+| Projet EAS et credentials | BLOCKED | `eas whoami` est authentifié, mais aucun projet EAS n'est configuré ; aucun `projectId` n'est inventé |
+| Clé Google Maps native | BLOCKED | `GOOGLE_MAPS_API_KEY` est uniquement injectée depuis l'environnement de build ; aucune clé réelle n'est versionnée |
+| Liens Android/iOS de domaine | BLOCKED | configuration locale présente, association distante et test appareil non prouvés |
+| Android/iOS signed release | BLOCKED | aucun artefact `.apk`, `.aab` ou `.ipa` produit dans ce lot |
+| Tests natifs GPS, auth, offline et store | BLOCKED | appareil réel, build installable et artefact signé manquants |
+
+Le statut demeure `NOT_PRODUCTION_READY`. Les valeurs réelles de Clerk,
+Supabase et Google Maps doivent être fournies par les environnements autorisés,
+jamais committées. Ne pas soumettre ni publier sur un store depuis ce dépôt sans
+approbation explicite et sans les preuves associées à l'artefact exact.
 
 ## Pourquoi une app native ?
 
@@ -397,5 +427,5 @@ La baseline M0 couvre désormais par tests unitaires et contractuels :
 - cohérence identité Clerk → Supabase ;
 - absence d'écriture client directe des métriques dérivées.
 
-Le contrat du shell protège aussi les cinq destinations V1 et les ponts vers les
+Le contrat du shell protège aussi les trois destinations V1 et les ponts vers les
 surfaces web existantes.

@@ -93,6 +93,19 @@ explicite avant toute évolution :
 - validation opérationnelle ;
 - évolution future du produit mobile, après validation de chaque lot.
 
+Le socle de release courant est Expo SDK 57 avec React Native 0.86.3,
+React 19.2.3, TypeScript 6.0.3 et AsyncStorage 2.2.0. Une release native exige
+un contrôle `npx expo-doctor` à 21/21, un projet EAS réel, les credentials
+autorisés, la clé Google Maps fournie par l'environnement et un artefact signé
+vérifié. Aucun `projectId`, certificat, résultat de build ou statut store ne
+doit être inventé ou déduit de la seule configuration du dépôt.
+
+La configuration SDK 57 cible Android API 36 par son contrat Expo. Les
+permissions doivent rester minimales : la preuve photo n'active pas le
+microphone et `RECORD_AUDIO` est bloqué dans la configuration Expo résolue.
+La localisation background reste soumise à la déclaration Play, à la
+confidentialité et à une validation sur appareil réel.
+
 Une évolution sur ces sujets doit d'abord recevoir une décision explicite et
 réaligner les contrats, tests et documentation concernés. Ne pas transformer
 une capacité ouverte en fonctionnalité finalisée par simple modification de ce

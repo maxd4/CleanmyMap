@@ -145,7 +145,7 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
     <Text style={styles.title}>Votre compte</Text>
     <Text style={styles.body}>Les informations affichées viennent des mêmes contrats Clerk et serveur que CleanMyMap Web.</Text>
     {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
-    {message ? <Text style={styles.success} accessibilityRole="status">{message}</Text> : null}
+    {message ? <Text style={styles.success}>{message}</Text> : null}
 
     <Card title="Identité">
       <Text style={styles.identityName}>{account.identity.displayName}</Text>

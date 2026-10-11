@@ -106,6 +106,11 @@ opérationnelle sur appareils réels. `mission_actions` reste hors périmètre ;
 une mission GPS liée est seulement réconciliée avec une action éligible et ne
 confirme jamais une présence.
 
+Le contrat de release mobile repose sur Expo SDK 57 et son niveau Android API
+36 ; il ne vaut pas preuve d'un binaire signé. La
+publication reste bloquée jusqu'à la preuve d'un projet EAS réel, des
+credentials, d'un artefact signé et des validations natives correspondantes.
+
 La V1 mobile est destinée aux bénévoles terrain et reste volontairement réduite
 par rapport à la surface web complète. Elle inclut le GPS live avec carte et
 tracé temps réel, les contacts d'urgence, un espace Compte natif et les trois

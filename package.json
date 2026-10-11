@@ -179,6 +179,8 @@
     "jscpd": "^5.3.0",
     "knip": "6.37.0",
     "playwright": "^1.64.0",
+    "react-native": "0.86.3",
+    "react-test-renderer": "19.2.3",
     "sharp": "^0.35.3",
     "stream-json": "file:apps/mobile/vendor/stream-json",
     "supabase": "^2.116.0",
@@ -191,6 +193,10 @@
     "@tailwindcss/oxide-linux-x64-gnu": "4.3.3"
   },
   "overrides": {
+    "node-forge": "file:apps/mobile/vendor/node-forge",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
     "metro@0.84.5": {
       "image-size": "file:apps/mobile/vendor/image-size"
     },
@@ -231,9 +237,7 @@
     },
     "@expo/cli": {
       "tar": "7.5.22",
-      "undici": "6.27.0"
-    },
-    "@expo/cli@57.0.24": {
+      "undici": "6.27.0",
       "node-forge": "file:apps/mobile/vendor/node-forge"
     },
     "@expo/code-signing-certificates@0.0.6": {

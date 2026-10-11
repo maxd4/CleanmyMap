@@ -103,6 +103,13 @@ function validateManifest(view, findings) {
     return null;
   }
 
+  const mobileManifest = readJson(view, "apps/mobile/package.json");
+  const mobileTypescriptSpecifier = mobileManifest?.devDependencies?.typescript;
+  const mobileTypescriptMajor = readMajor(mobileTypescriptSpecifier);
+  if (mobileManifest && (typeof mobileTypescriptSpecifier !== "string" || mobileTypescriptMajor === null)) {
+    findings.push(finding("apps/mobile/package.json", "mobile manifest must declare a readable TypeScript version"));
+  }
+
   const nextSpecifier = manifest.dependencies?.next;
   const eslintConfigNextSpecifier = manifest.devDependencies?.["eslint-config-next"];
   const typescriptSpecifier = manifest.devDependencies?.typescript;
@@ -145,6 +152,7 @@ function validateManifest(view, findings) {
     nextVersion,
     eslintConfigNextVersion,
     typescriptMajor,
+    mobileTypescriptMajor,
   };
 }
 
@@ -180,11 +188,14 @@ function validateActiveFiles(view, findings, activeDocs) {
       }
     }
 
+    const expectedTypescriptMajor = relativePath.startsWith("apps/mobile/")
+      ? (manifest.mobileTypescriptMajor ?? manifest.typescriptMajor)
+      : manifest.typescriptMajor;
     for (const reference of versionReferences(content, "typescript")) {
-      if (reference.major !== manifest.typescriptMajor) {
+      if (reference.major !== expectedTypescriptMajor) {
         findings.push(finding(
           relativePath,
-          `incompatible TypeScript major ${reference.major}; manifest major is ${manifest.typescriptMajor}`,
+          `incompatible TypeScript major ${reference.major}; manifest major is ${expectedTypescriptMajor}`,
           reference.line,
         ));
       }
@@ -215,10 +226,12 @@ function validateActiveFiles(view, findings, activeDocs) {
 
     for (const rule of [
       { regex: /\bNext\.js\s+15\b/gi, message: `stale Next.js major; current manifest major is ${manifest.nextMajor}` },
-      { regex: /\bTypeScript\s+5\b/gi, message: `stale TypeScript major; current manifest major is ${manifest.typescriptMajor}` },
-      { regex: /\bTypeScript\s+6\b/gi, message: `stale TypeScript major; current manifest major is ${manifest.typescriptMajor}` },
-      { regex: /TypeScript-5-/gi, message: `stale TypeScript badge; current manifest major is ${manifest.typescriptMajor}` },
-      { regex: /TypeScript-6-/gi, message: `stale TypeScript badge; current manifest major is ${manifest.typescriptMajor}` },
+      ...(expectedTypescriptMajor !== 5 ? [{ regex: /\bTypeScript\s+5\b/gi, message: `stale TypeScript major; current manifest major is ${expectedTypescriptMajor}` }] : []),
+      ...(expectedTypescriptMajor !== 6 ? [{ regex: /\bTypeScript\s+6\b/gi, message: `stale TypeScript major; current manifest major is ${expectedTypescriptMajor}` }] : []),
+      ...(expectedTypescriptMajor !== 7 ? [{ regex: /\bTypeScript\s+7\b/gi, message: `stale TypeScript major; current manifest major is ${expectedTypescriptMajor}` }] : []),
+      ...(expectedTypescriptMajor !== 5 ? [{ regex: /TypeScript-5-/gi, message: `stale TypeScript badge; current manifest major is ${expectedTypescriptMajor}` }] : []),
+      ...(expectedTypescriptMajor !== 6 ? [{ regex: /TypeScript-6-/gi, message: `stale TypeScript badge; current manifest is ${expectedTypescriptMajor}` }] : []),
+      ...(expectedTypescriptMajor !== 7 ? [{ regex: /TypeScript-7-/gi, message: `stale TypeScript badge; current manifest is ${expectedTypescriptMajor}` }] : []),
       { regex: /2025-01-XX/g, message: "placeholder date must not remain in active documentation" },
       { regex: /documentation\/repo-docs\/ops\/INCIDENT_RUNBOOK_SHORT\.md/g, message: "stale incident runbook path" },
       { regex: /(^|[^/])src\/report_generator\.py/gm, message: "stale Python runtime path" },

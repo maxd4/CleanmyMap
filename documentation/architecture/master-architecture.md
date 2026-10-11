@@ -101,6 +101,11 @@ contacts d'urgence. Les sujets encore ouverts sont le background headless, la
 validation opérationnelle, ainsi que `mission_actions` et la photo native comme
 évolutions mobiles futures.
 
+Le socle de release courant est Expo SDK 57. Il fournit le contrat Android API
+36, mais le mobile reste `NOT_PRODUCTION_READY` tant qu'un
+projet EAS réel, un artefact signé et les validations appareil, domaines,
+confidentialité et permissions ne sont pas prouvés sur le même SHA.
+
 ## Application web
 
 ### Pages et API

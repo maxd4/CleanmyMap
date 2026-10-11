@@ -21,6 +21,7 @@ const FOCUSED_ACTIVE_DOCS = [
   "documentation/development/api-standard.md",
   "documentation/pages_site/INDEX.md",
   "apps/web/AGENTS.md",
+  "apps/mobile/README.md",
   ".agents/skills/cleanmymap-repo/SKILL.md",
   ".codex/skills/cleanmymap-repo/SKILL.md",
 ];
@@ -50,6 +51,9 @@ function createFixture() {
     dependencies: { next: "16.3.1" },
     devDependencies: { "eslint-config-next": "16.3.1", typescript: "^7" },
   }));
+  writeFile(root, "apps/mobile/package.json", JSON.stringify({
+    devDependencies: { typescript: "6.0.3" },
+  }));
   writeFile(root, "apps/web/src/lib/ui/page-families/families/registry.ts", `
 export const METHODOLOGIE_FAMILY = {
   backdropToneKey: "red",
@@ -73,6 +77,7 @@ export const OTHER_FAMILY = {};
     "documentation/development/api-standard.md": "API contracts by route.",
     "documentation/pages_site/INDEX.md": indexContent,
     "apps/web/AGENTS.md": "Next.js 16.3.1; TypeScript 7; web governance.",
+    "apps/mobile/README.md": "Expo 57; TypeScript 6; mobile release governance.",
     ".agents/skills/cleanmymap-repo/SKILL.md": "Next.js 16; TypeScript 7.",
     ".codex/skills/cleanmymap-repo/SKILL.md": "Next.js 16; TypeScript 7.",
   };

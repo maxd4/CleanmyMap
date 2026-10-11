@@ -199,7 +199,7 @@ export function ActionCreateScreen({ onSessionExpired }: ActionCreateProps) {
       {SECTIONS.map((item, index) => <TouchableOpacity key={item.id} onPress={() => setSection(item.id)} accessibilityRole="tab" accessibilityState={{ selected: section === item.id }} style={[styles.step, section === item.id && styles.stepSelected]}><Text style={[styles.stepNumber, section === item.id && styles.stepNumberSelected]}>{index + 1}</Text><Text style={[styles.stepLabel, section === item.id && styles.stepLabelSelected]}>{item.label}</Text></TouchableOpacity>)}
     </View>
     {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
-    {message ? <Text style={styles.success} accessibilityRole="status">{message}</Text> : null}
+    {message ? <Text style={styles.success}>{message}</Text> : null}
     {section === 'essentiel' ? <Essentiel draft={draft} update={update} onPosition={getCurrentPosition} /> : null}
     {section === 'terrain' ? <Terrain draft={draft} update={update} onPosition={getCurrentPosition} /> : null}
     {section === 'equipe' ? <Equipe draft={draft} update={update} /> : null}

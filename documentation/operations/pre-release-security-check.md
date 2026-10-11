@@ -119,15 +119,21 @@ Regle de lecture :
 
 ### 5. Dégel et pré-release mobile
 
-`apps/mobile` est actuellement `CURRENT / FROZEN`. Aucun scan MobSF n'est donc
-activé dans la CI ou le workflow de développement courant.
+`apps/mobile` est `CURRENT / ACTIVE DEVELOPMENT`, mais aucun artefact de
+distribution signé n'est actuellement produit par le workflow courant. Aucun
+scan MobSF n'est donc activé dans la CI de développement.
 
-Lorsqu'un dégel mobile est explicitement décidé, toute pré-release Android ou
-iOS doit ajouter une étape MobSF sur l'artefact réel destiné à la distribution
+Lorsqu'une pré-release mobile est explicitement autorisée, toute pré-release
+Android ou iOS doit d'abord conserver la preuve du SHA, des versions Expo/RN,
+du projet EAS et des credentials utilisés, puis ajouter une étape MobSF sur
+l'artefact réel destiné à la distribution
 (`.apk`, `.aab` ou `.ipa`). Un scan du seul dépôt source, d'un mock ou d'un
 bundle de développement ne constitue pas cette preuve. Le rapport associé à
 l'artefact doit être archivé selon la procédure de release ; les findings
 bloquants doivent être traités ou acceptés explicitement avant publication.
+La validation appareil, les permissions de localisation background, les liens
+de domaine, Data Safety/App Privacy et le parcours de suppression de compte
+restent obligatoires avant toute qualification store.
 
 Cette exigence est conditionnelle au dégel : elle ne justifie aujourd'hui
 l'installation d'aucun package, service ou workflow MobSF.
