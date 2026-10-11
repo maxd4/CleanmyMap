@@ -20,7 +20,7 @@ import {
 } from "./use-before-action-workflow";
 import { useBeforeActionPersistence } from "./use-before-action-persistence";
 import { fetchActionDuplicatePrefill } from "@/lib/actions/http-action-editor";
-import { applyDuplicatePrefillToForm } from "./duplicate-prefill";
+import { applyDuplicatePrefillPreservingLocalChanges } from "./duplicate-prefill";
 
 export { persistBeforeAction } from "./use-before-action-workflow";
 
@@ -128,27 +128,56 @@ function useBeforeActionFormRuntime({
   const [validationIssueFields, setValidationIssueFields] = useState<Array<"actionTitle" | "actionDate" | "associationName" | "organizerType" | "departureLocationLabel" | "arrivalLocationLabel" | "meetingTime" | "departureTime" | "durationMinutes" | "eventStartTime" | "eventEndTime" | "volunteersCount" | "volunteerParticipation">>([]);
   const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
   const persistedActionId = resolveBeforeActionMutationId(initialActionId, createdId);
+  const currentFormRef = useRef(form);
+  const onFormChangeRef = useRef(onFormChange);
+  const duplicateRequestRef = useRef<{
+    sourceId: string;
+    requestForm: FormState;
+    promise: ReturnType<typeof fetchActionDuplicatePrefill>;
+  } | null>(null);
+  const duplicateSyncSourceRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    currentFormRef.current = form;
+    onFormChangeRef.current = onFormChange;
+  }, [form, onFormChange]);
 
   const draftHydrationReady = useBeforeActionDraftHydration({ initialActionId, initialRecordType, duplicateFromActionId, fallbackForm, form, setForm, onFormChange });
   const isHydratingAction = useBeforeActionHydration({ resolvedDefaultActorName, initialActionId, initialRecordType, form, setForm, onFormChange, setCreatedId, createdId, setPublishedAction, setInvitationStatuses, setPublishedAt, setTerminalActionStatus, setSubmissionState, errorMessage, setErrorMessage, setPersistenceStatus, preparationContext });
   useEffect(() => {
-    if (!duplicateFromActionId || initialActionId) return;
-    let active = true;
-    void fetchActionDuplicatePrefill(duplicateFromActionId).then((prefill) => {
-      if (!active) return;
-      setForm((current) => {
-        const hydrated = applyDuplicatePrefillToForm(current, prefill);
-        onFormChange?.(hydrated);
-        return hydrated;
-      });
-      setDuplicateLoadedFor(duplicateFromActionId);
+    if (!duplicateFromActionId || initialActionId) {
+      duplicateRequestRef.current = null;
+      duplicateSyncSourceRef.current = null;
+      return;
+    }
+
+    const existingRequest = duplicateRequestRef.current;
+    if (existingRequest?.sourceId === duplicateFromActionId) return;
+
+    const request = {
+      sourceId: duplicateFromActionId,
+      requestForm: currentFormRef.current,
+      promise: fetchActionDuplicatePrefill(duplicateFromActionId),
+    };
+    duplicateRequestRef.current = request;
+
+    void request.promise.then((prefill) => {
+      if (duplicateRequestRef.current !== request) return;
+      setForm((current) => applyDuplicatePrefillPreservingLocalChanges(request.requestForm, current, prefill));
+      setDuplicateLoadedFor(request.sourceId);
     }).catch((error: unknown) => {
-      if (!active) return;
+      if (duplicateRequestRef.current !== request) return;
       setErrorMessage(error instanceof Error ? error.message : "Impossible de réutiliser cette action.");
-      setDuplicateLoadedFor(duplicateFromActionId);
+      setDuplicateLoadedFor(request.sourceId);
     });
-    return () => { active = false; };
-  }, [duplicateFromActionId, initialActionId, onFormChange, setErrorMessage]);
+  }, [duplicateFromActionId, initialActionId, setErrorMessage, setForm]);
+
+  useEffect(() => {
+    if (!duplicateFromActionId || initialActionId || duplicateLoadedFor !== duplicateFromActionId) return;
+    if (duplicateSyncSourceRef.current === duplicateFromActionId) return;
+    duplicateSyncSourceRef.current = duplicateFromActionId;
+    onFormChangeRef.current?.(form);
+  }, [duplicateFromActionId, duplicateLoadedFor, form, initialActionId]);
   const { updateField, updateFields } = useBeforeActionFieldUpdates({ form, draftActionId: persistedActionId, linkedEventId, submissionState, isAuthenticated, setForm, onFormChange, setPersistenceStatus, setSubmissionState, setErrorMessage, setValidationIssues, setValidationIssueFields });
   const handleSubmit = useBeforeActionSubmission({ form, submissionState, actionId: persistedActionId, linkedEventId, userMetadata, isAuthenticated, setSubmissionState, setPersistenceStatus, setErrorMessage, setValidationIssues, setValidationIssueFields, setCreatedId, setPublishedAction, setPublishedAt, onActionPersisted });
   const { requestPublish, cancelPublication, confirmPublish } = useBeforeActionPublication({ createdId, publishedAt, publicationState, setForm, setPublishedAction, setCreatedId, setPublishedAt, setPublicationState, setPublicationError, setPublicationConfirmationOpen });

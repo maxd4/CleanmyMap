@@ -1,13 +1,34 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ActionCreationShell } from "./action-creation-shell";
+
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
 
 const beforeFormPropsMock = vi.hoisted(() => vi.fn());
 const completeFormPropsMock = vi.hoisted(() => vi.fn());
 const updateActionMock = vi.hoisted(() => vi.fn(() => Promise.resolve({ id: "action-42" })));
 const routerReplaceMock = vi.hoisted(() => vi.fn());
+const preparationContextHookMock = vi.hoisted(() => vi.fn(({ actionId }: { actionId: string | null }) => ({
+  preparationContext: {
+    actionId,
+    actionDate: "",
+    departureTime: "",
+    locationLabel: "",
+    latitude: "",
+    longitude: "",
+    preparationChecklist: [],
+    suggestedMaterials: [],
+    materialsProvided: "",
+    recommendedMaterials: "",
+  },
+  setPreparationContext: vi.fn(),
+  preparationContextReady: true,
+  preparationPersistenceStatus: "saved",
+  markPreparationPersisted: vi.fn(),
+})));
 
 vi.mock("./action-declaration/before/form", () => ({
   ActionBeforeDeclarationForm: (props: Record<string, unknown>) => {
@@ -28,6 +49,9 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/components/ui/site-preferences-provider", () => ({
   useSitePreferences: () => ({ locale: "fr" }),
+}));
+vi.mock("./action-preparation-context-hook", () => ({
+  useActionPreparationContext: preparationContextHookMock,
 }));
 vi.mock("./action-creation-legal-panel", () => ({
   ActionCreationLegalPanel: ({ actionId }: { actionId?: string | null }) => (
@@ -75,6 +99,65 @@ describe("ActionCreationShell", () => {
     });
     expect(routerReplaceMock).toHaveBeenCalledWith(
       "/actions/new?space=bilan&actionId=action-42",
+    );
+  });
+
+  it("makes the first persisted action resumable before publication", () => {
+    renderToStaticMarkup(
+      React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: false,
+        userMetadata: { userId: "test" },
+        initialPanel: "pre-formulaire",
+      } as ComponentProps<typeof ActionCreationShell>),
+    );
+
+    const beforeProps = beforeFormPropsMock.mock.lastCall?.[0] as {
+      onActionPersisted: (actionId: string) => void;
+    };
+    beforeProps.onActionPersisted("action-created");
+
+    expect(routerReplaceMock).toHaveBeenCalledWith(
+      "/actions/new?section=essentiel&actionId=action-created",
+    );
+  });
+
+  it("switches the form and section identity when the resource changes", async () => {
+    let renderer!: ReactTestRenderer;
+    await act(async () => {
+      renderer = create(
+        React.createElement(ActionCreationShell, {
+          actorNameOptions: ["Test"],
+          defaultActorName: "Test",
+          isAuthenticated: false,
+          userMetadata: { userId: "test" },
+          initialActionId: "action-a",
+          initialPanel: "pre-formulaire",
+          initialSection: "terrain",
+        } as ComponentProps<typeof ActionCreationShell>),
+      );
+    });
+
+    await act(async () => {
+      renderer.update(
+        React.createElement(ActionCreationShell, {
+          actorNameOptions: ["Test"],
+          defaultActorName: "Test",
+          isAuthenticated: false,
+          userMetadata: { userId: "test" },
+          initialActionId: "action-b",
+          initialPanel: "pre-formulaire",
+          initialSection: "equipe",
+        } as ComponentProps<typeof ActionCreationShell>),
+      );
+    });
+
+    expect(beforeFormPropsMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ initialActionId: "action-b", activeSection: "equipe" }),
+    );
+    expect(preparationContextHookMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ actionId: "action-b" }),
     );
   });
 

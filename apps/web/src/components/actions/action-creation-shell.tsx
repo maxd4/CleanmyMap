@@ -266,13 +266,13 @@ function useActionCreationSectionState(initialActionId: string | null, initialSe
   useEffect(() => {
     const saved = loadActionCreationSectionState();
     startTransition(() => {
-      if (saved && saved.actionId === initialActionId) setState((current) => ({ ...saved, activeSection: current.activeSection }));
+      setState(saved && saved.actionId === initialActionId ? saved : createActionCreationSectionState(initialActionId, initialSection));
       setHydrated(true);
     });
-  }, [initialActionId]);
+  }, [initialActionId, initialSection]);
   useEffect(() => {
-    if (hydrated) saveActionCreationSectionState(state);
-  }, [hydrated, state]);
+    if (hydrated && state.actionId === initialActionId) saveActionCreationSectionState(state);
+  }, [hydrated, initialActionId, state]);
   return [state, setState];
 }
 
@@ -410,17 +410,18 @@ function useActionWorkflowState(
 ): [ActionWorkflowState, Dispatch<SetStateAction<ActionWorkflowState>>] {
   const [workflow, setWorkflow] = useState<ActionWorkflowState>(() => createActionWorkflowState(initialActionId, initialWorkflowStep(initialPanel, initialActionId, tabSearchParams)));
   const [workflowHydrated, setWorkflowHydrated] = useState(false);
+  const requestedInitialStep = initialWorkflowStep(initialPanel, initialActionId, tabSearchParams);
 
   useEffect(() => {
     const saved = loadActionWorkflowState();
     startTransition(() => {
-      if (saved && saved.actionId === initialActionId) setWorkflow((current) => ({ ...saved, activeStep: current.activeStep }));
+      setWorkflow(saved && saved.actionId === initialActionId ? saved : createActionWorkflowState(initialActionId, requestedInitialStep));
       setWorkflowHydrated(true);
     });
-  }, [initialActionId]);
+  }, [initialActionId, requestedInitialStep]);
   useEffect(() => {
-    if (workflowHydrated) saveActionWorkflowState(workflow);
-  }, [workflow, workflowHydrated]);
+    if (workflowHydrated && workflow.actionId === initialActionId) saveActionWorkflowState(workflow);
+  }, [initialActionId, workflow, workflowHydrated]);
   return [workflow, setWorkflow];
 }
 
@@ -429,62 +430,74 @@ export function ActionCreationShell({ initialPanel, initialSection = "essentiel"
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
   const initialActionId = formProps.initialActionId ?? null;
-  const [currentActionId, setCurrentActionId] = useState<string | null>(initialActionId);
+  const [createdActionId, setCreatedActionId] = useState<string | null>(null);
+  const currentActionId = initialActionId ?? createdActionId;
   const [workflow, setWorkflow] = useActionWorkflowState(initialActionId, initialPanel, tabSearchParams);
   const [sectionState, setSectionState] = useActionCreationSectionState(initialActionId, initialSection);
-  const [formSnapshot, setFormSnapshot] = useState<Partial<FormState>>({});
-  const { preparationContext, setPreparationContext, preparationContextReady, preparationPersistenceStatus, markPreparationPersisted } = useActionPreparationContext({ defaultActorName: formProps.defaultActorName, actionId: currentActionId });
+  const [formSnapshotState, setFormSnapshotState] = useState<{ actionId: string | null; form: Partial<FormState> }>({ actionId: initialActionId, form: {} });
+  const [formalitiesState, setFormalitiesState] = useState<{ actionId: string | null; readiness: "unknown" | "ready" | "blocked" }>({ actionId: initialActionId, readiness: "unknown" });
+  const [transitionState, setTransitionState] = useState<{ actionId: string | null; error: string | null }>({ actionId: initialActionId, error: null });
+  const formSnapshot = formSnapshotState.actionId === currentActionId ? formSnapshotState.form : {};
+  const formalitiesReadiness = formalitiesState.actionId === currentActionId ? formalitiesState.readiness : "unknown";
+  const transitionError = transitionState.actionId === currentActionId ? transitionState.error : null;
+  const actionIdForRender = currentActionId;
+  const renderedWorkflow = workflow.actionId === actionIdForRender ? workflow : createActionWorkflowState(actionIdForRender, initialWorkflowStep(initialPanel, actionIdForRender, tabSearchParams));
+  const renderedSectionState = sectionState.actionId === actionIdForRender ? sectionState : createActionCreationSectionState(actionIdForRender, initialSection);
+  const { preparationContext, setPreparationContext, preparationContextReady, preparationPersistenceStatus, markPreparationPersisted } = useActionPreparationContext({ defaultActorName: formProps.defaultActorName, actionId: actionIdForRender });
   const { handleBeforeFormChange, handlePreparationSelection, handlePreparationContextChange } = useActionCreationPreparationSync({ preparationContext, setPreparationContext, setWorkflow });
-  const [formalitiesReadiness, setFormalitiesReadiness] = useState<"unknown" | "ready" | "blocked">("unknown");
-  const [transitionError, setTransitionError] = useState<string | null>(null);
+
   const newNavigationEnabled = sectionsEnabled;
 
   const setActiveStep = useCallback((step: ActionWorkflowStepId) => setWorkflow((current) => ({ ...current, activeStep: step })), [setWorkflow]);
   const navigateToStep = useCallback((step: ActionWorkflowStepId) => {
     setActiveStep(step);
-    router.replace(buildActionWorkflowStepHref(step, { ...(tabSearchParams ?? {}), actionId: currentActionId ?? undefined }));
-  }, [currentActionId, router, setActiveStep, tabSearchParams]);
+    router.replace(buildActionWorkflowStepHref(step, { ...(tabSearchParams ?? {}), actionId: actionIdForRender ?? undefined }));
+  }, [actionIdForRender, router, setActiveStep, tabSearchParams]);
 
   const handleBeforeActionPersisted = useCallback((actionId: string) => {
-    setCurrentActionId(actionId);
+    const searchParams = { ...(tabSearchParams ?? {}), actionId };
+    router.replace(newNavigationEnabled
+      ? buildActionCreationSectionHref(sectionState.activeSection, searchParams)
+      : buildActionWorkflowStepHref(workflow.activeStep, searchParams));
+    setCreatedActionId(actionId);
     setPreparationContext((current) => ({ ...current, actionId }));
     setWorkflow((current) => ({ ...current, actionId, activeStep: "preformulaire", statuses: { ...current.statuses, preformulaire: "done" } }));
     setSectionState((current) => setActionCreationSectionStatus({ ...current, actionId }, "essentiel", "done"));
     markPreparationPersisted(actionId);
-  }, [markPreparationPersisted, setPreparationContext, setSectionState, setWorkflow]);
+  }, [markPreparationPersisted, newNavigationEnabled, router, sectionState.activeSection, setPreparationContext, setSectionState, setWorkflow, tabSearchParams, workflow.activeStep]);
   const handlePreparationValidated = useCallback((validated: boolean) => {
     setWorkflow((current) => setActionWorkflowStepStatus(current, "preparation", validated ? "done" : "review"));
     setSectionState((current) => setActionCreationSectionStatus(current, "terrain", validated ? "done" : "review"));
   }, [setSectionState, setWorkflow]);
   const handleFormalitiesReadiness = useCallback((readiness: { known: boolean; blocked: boolean }) => {
-    setFormalitiesReadiness(!readiness.known ? "unknown" : readiness.blocked ? "blocked" : "ready");
+    setFormalitiesState({ actionId: currentActionId, readiness: !readiness.known ? "unknown" : readiness.blocked ? "blocked" : "ready" });
     if (readiness.known) setWorkflow((current) => ({ ...current, statuses: { ...current.statuses, paris: readiness.blocked ? "review" : "done" } }));
     setSectionState((current) => setActionCreationSectionStatus(current, "verification", !readiness.known ? "todo" : readiness.blocked ? "review" : "done"));
-  }, [setSectionState, setWorkflow]);
+  }, [currentActionId, setSectionState, setWorkflow]);
   const handlePassToComplete = useCallback(async (actionId: string) => {
-    setTransitionError(null);
+    setTransitionState({ actionId: currentActionId, error: null });
     try { await updateAction(actionId, { actionPhase: "post_action_draft" }); router.replace(buildActionCreationSpaceHref("bilan", { ...(tabSearchParams ?? {}), actionId })); }
-    catch (error: unknown) { setTransitionError(error instanceof Error && error.message ? error.message : "Impossible d’ouvrir le formulaire complet pour le moment."); }
-  }, [router, tabSearchParams]);
+    catch (error: unknown) { setTransitionState({ actionId: currentActionId, error: error instanceof Error && error.message ? error.message : "Impossible d’ouvrir le formulaire complet pour le moment." }); }
+  }, [currentActionId, router, tabSearchParams]);
 
-  const actionCreationSearchParams = currentActionId ? { ...(tabSearchParams ?? {}), actionId: currentActionId } : tabSearchParams;
+  const actionCreationSearchParams = actionIdForRender ? { ...(tabSearchParams ?? {}), actionId: actionIdForRender } : tabSearchParams;
   const handleSectionFormChange = useCallback((form: FormState) => {
-    setFormSnapshot(form);
+    setFormSnapshotState({ actionId: currentActionId, form });
     handleBeforeFormChange(form);
-  }, [handleBeforeFormChange]);
+  }, [currentActionId, handleBeforeFormChange]);
   const navigateToSection = useCallback((section: ActionCreationSectionId) => {
     setSectionState((current) => ({ ...current, activeSection: section }));
-    router.replace(buildActionCreationSectionHref(section, { ...(tabSearchParams ?? {}), actionId: currentActionId ?? undefined }));
-  }, [currentActionId, router, setSectionState, tabSearchParams]);
-  const activeStep = workflow.activeStep;
+    router.replace(buildActionCreationSectionHref(section, { ...(tabSearchParams ?? {}), actionId: actionIdForRender ?? undefined }));
+  }, [actionIdForRender, router, setSectionState, tabSearchParams]);
+  const activeStep = renderedWorkflow.activeStep;
   const stepIndex = ACTION_WORKFLOW_STEPS.indexOf(activeStep);
-  const activeSectionIndex = ACTION_CREATION_SECTIONS.indexOf(sectionState.activeSection);
+  const activeSectionIndex = ACTION_CREATION_SECTIONS.indexOf(renderedSectionState.activeSection);
 
-  if (initialSpace === "day" && currentActionId) return <div data-testid="action-day-shell" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><PageHeader tone="emerald" title="Jour J" subtitle="Retrouvez le rendez-vous et le briefing de la même action." className="!gap-2" /></CmmCard><ActionLifecycleNavigation actionId={currentActionId} activeSpace="day" fr={fr} searchParams={actionCreationSearchParams} /><ActionDayView actionId={currentActionId} /></div></div>;
-  if (initialSpace === "bilan" && currentActionId) return <ActionBilanView formProps={formProps} actionId={currentActionId} searchParams={actionCreationSearchParams} fr={fr} />;
-  if (initialTab === "after") return <AfterActionCreationView formProps={formProps} actionId={currentActionId} searchParams={actionCreationSearchParams} fr={fr} />;
+  if (initialSpace === "day" && actionIdForRender) return <div data-testid="action-day-shell" className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"><div className="cmm-page-width space-y-4"><CmmCard tone="emerald" variant="glass" size="lg"><PageHeader tone="emerald" title="Jour J" subtitle="Retrouvez le rendez-vous et le briefing de la même action." className="!gap-2" /></CmmCard><ActionLifecycleNavigation actionId={actionIdForRender} activeSpace="day" fr={fr} searchParams={actionCreationSearchParams} /><ActionDayView actionId={actionIdForRender} /></div></div>;
+  if (initialSpace === "bilan" && actionIdForRender) return <ActionBilanView formProps={formProps} actionId={actionIdForRender} searchParams={actionCreationSearchParams} fr={fr} />;
+  if (initialTab === "after") return <AfterActionCreationView formProps={formProps} actionId={actionIdForRender} searchParams={actionCreationSearchParams} fr={fr} />;
   if (newNavigationEnabled) {
-    return <ActionCreationSectionsView state={sectionState} fr={fr} activeSpace={initialSpace} formSnapshot={formSnapshot} currentActionId={currentActionId} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToSection} onPrevious={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex - 1])} onNext={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex + 1])} content={<ActionCreationSectionContent activeSection={sectionState.activeSection} currentActionId={currentActionId} initialSubsection={initialSubsection} initialPanel={initialPanel} formSnapshot={formSnapshot} draftContext={{ locationLabel: preparationContext.locationLabel, actionDate: preparationContext.actionDate, departureTime: preparationContext.departureTime, contextReady: preparationContextReady }} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} formalitiesReadiness={formalitiesReadiness} formProps={formProps} localDevAuth={localDevAuth} onActionPersisted={handleBeforeActionPersisted} onFormChange={handleSectionFormChange} onFormalitiesReadiness={handleFormalitiesReadiness} onPassToComplete={handlePassToComplete} onPreparationValidated={handlePreparationValidated} onPreparationSelection={handlePreparationSelection} onPreparationContextChange={handlePreparationContextChange} />} />;
+    return <ActionCreationSectionsView state={renderedSectionState} fr={fr} activeSpace={initialSpace} formSnapshot={formSnapshot} currentActionId={actionIdForRender} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToSection} onPrevious={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex - 1])} onNext={() => navigateToSection(ACTION_CREATION_SECTIONS[activeSectionIndex + 1])} content={<ActionCreationSectionContent activeSection={renderedSectionState.activeSection} currentActionId={actionIdForRender} initialSubsection={initialSubsection} initialPanel={initialPanel} formSnapshot={formSnapshot} draftContext={{ locationLabel: preparationContext.locationLabel, actionDate: preparationContext.actionDate, departureTime: preparationContext.departureTime, contextReady: preparationContextReady }} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} formalitiesReadiness={formalitiesReadiness} formProps={formProps} localDevAuth={localDevAuth} onActionPersisted={handleBeforeActionPersisted} onFormChange={handleSectionFormChange} onFormalitiesReadiness={handleFormalitiesReadiness} onPassToComplete={handlePassToComplete} onPreparationValidated={handlePreparationValidated} onPreparationSelection={handlePreparationSelection} onPreparationContextChange={handlePreparationContextChange} />} />;
   }
-  return <GuidedActionWorkflowView state={workflow} fr={fr} currentActionId={currentActionId} activeSpace={initialSpace} stepContent={<ActionWorkflowStepContent activeStep={activeStep} currentActionId={currentActionId} draftContext={{ locationLabel: preparationContext.locationLabel, actionDate: preparationContext.actionDate, departureTime: preparationContext.departureTime, contextReady: preparationContextReady }} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} formalitiesReadiness={formalitiesReadiness} formProps={formProps} localDevAuth={localDevAuth} onActionPersisted={handleBeforeActionPersisted} onFormChange={handleBeforeFormChange} onFormalitiesReadiness={handleFormalitiesReadiness} onPassToComplete={handlePassToComplete} onPreparationValidated={handlePreparationValidated} onPreparationSelection={handlePreparationSelection} onPreparationContextChange={handlePreparationContextChange} />} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToStep} onNext={() => { setWorkflow((current) => markActionWorkflowStep(current, activeStep)); navigateToStep(ACTION_WORKFLOW_STEPS[stepIndex + 1]); }} />;
+  return <GuidedActionWorkflowView state={renderedWorkflow} fr={fr} currentActionId={actionIdForRender} activeSpace={initialSpace} stepContent={<ActionWorkflowStepContent activeStep={activeStep} currentActionId={actionIdForRender} draftContext={{ locationLabel: preparationContext.locationLabel, actionDate: preparationContext.actionDate, departureTime: preparationContext.departureTime, contextReady: preparationContextReady }} preparationContext={preparationContext} preparationPersistenceStatus={preparationPersistenceStatus} formalitiesReadiness={formalitiesReadiness} formProps={formProps} localDevAuth={localDevAuth} onActionPersisted={handleBeforeActionPersisted} onFormChange={handleBeforeFormChange} onFormalitiesReadiness={handleFormalitiesReadiness} onPassToComplete={handlePassToComplete} onPreparationValidated={handlePreparationValidated} onPreparationSelection={handlePreparationSelection} onPreparationContextChange={handlePreparationContextChange} />} transitionError={transitionError} actionCreationSearchParams={actionCreationSearchParams} onSelect={navigateToStep} onNext={() => { setWorkflow((current) => markActionWorkflowStep(current, activeStep)); navigateToStep(ACTION_WORKFLOW_STEPS[stepIndex + 1]); }} />;
 }

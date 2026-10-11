@@ -2,6 +2,10 @@ import { ACTION_PREPARATION_CHECKLIST_DEFAULTS } from "@/lib/actions/preparation
 import type { ActionDuplicatePrefill } from "@/lib/actions/action-duplication";
 import type { FormState } from "../model";
 
+function formValueChanged<T>(before: T, after: T): boolean {
+  return JSON.stringify(before) !== JSON.stringify(after);
+}
+
 export function applyDuplicatePrefillToForm(form: FormState, prefill: ActionDuplicatePrefill): FormState {
   return {
     ...form,
@@ -57,4 +61,20 @@ export function applyDuplicatePrefillToForm(form: FormState, prefill: ActionDupl
     plannerProof: null,
     gpxImport: null,
   };
+}
+
+export function applyDuplicatePrefillPreservingLocalChanges(
+  requestForm: FormState,
+  currentForm: FormState,
+  prefill: ActionDuplicatePrefill,
+): FormState {
+  const hydratedForm = applyDuplicatePrefillToForm(requestForm, prefill);
+
+  for (const key of Object.keys(currentForm) as Array<keyof FormState>) {
+    if (formValueChanged(requestForm[key], currentForm[key])) {
+      hydratedForm[key] = currentForm[key] as never;
+    }
+  }
+
+  return hydratedForm;
 }

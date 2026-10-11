@@ -52,7 +52,7 @@ export function useActionPreparationContext({
   preparationPersistenceStatus: ActionPreparationPersistenceStatus;
   markPreparationPersisted: (persistedActionId?: string | null) => void;
 } {
-  const [preparationContext, setPreparationContext] = useState<ActionPreparationContext>(() => buildActionPreparationContext({}));
+  const [preparationContext, setPreparationContextState] = useState<ActionPreparationContext>(() => buildActionPreparationContext({}));
   const [loadedActionId, setLoadedActionId] = useState<string | null | undefined>(undefined);
   const [preparationPersistenceStatus, setPreparationPersistenceStatus] = useState<ActionPreparationPersistenceStatus>("saved");
   const persistedDraftSignatureRef = useRef<string | null>(null);
@@ -60,7 +60,7 @@ export function useActionPreparationContext({
   const preparationContextReady = loadedActionId === actionId;
   const setPreparationContextWithDraftStatus = useCallback<Dispatch<SetStateAction<ActionPreparationContext>>>((update) => {
     setPreparationPersistenceStatus("draft");
-    setPreparationContext(update);
+    setPreparationContextState(update);
   }, []);
 
   useEffect(() => {
@@ -85,7 +85,7 @@ export function useActionPreparationContext({
       persistedDraftSignatureRef.current = actionId || draftSnapshot
         ? preparationDraftSignature(nextContext, draftSnapshot?.form ?? fallback)
         : null;
-      setPreparationContext(nextContext);
+      setPreparationContextState(nextContext);
       setPreparationPersistenceStatus(draftSnapshot ? "draft" : "saved");
       setLoadedActionId(actionId);
     };
@@ -131,10 +131,10 @@ export function useActionPreparationContext({
   };
 
   return {
-    preparationContext,
+    preparationContext: preparationContext.actionId === actionId ? preparationContext : buildActionPreparationContext({}),
     setPreparationContext: setPreparationContextWithDraftStatus,
-    preparationContextReady,
-    preparationPersistenceStatus,
+    preparationContextReady: preparationContextReady && preparationContext.actionId === actionId,
+    preparationPersistenceStatus: preparationContext.actionId === actionId ? preparationPersistenceStatus : "saved",
     markPreparationPersisted,
   };
 }
