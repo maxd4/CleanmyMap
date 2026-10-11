@@ -41,7 +41,7 @@ noms de variables.
 | Tests | Fixtures, mocks et variables injectées par le runner | Pas de lecture implicite de secrets locaux; les tests doivent utiliser des valeurs fictives non sensibles. |
 | GitHub Actions E2E | Clerk Development + Supabase éphémère du runner | Credentials `pk_test_*`/`sk_test_*` fournis par les secrets GitHub; aucun secret de Production et aucun artefact Playwright authentifié publié. |
 | GitHub Codespaces | Environnement interactif Development + vraie session Clerk | Les credentials sont fournis par les secrets/variables Codespaces hors dépôt; `CODESPACES=true` désactive toujours le bypass synthétique. |
-| Expo mobile | Configuration Expo du projet mobile, uniquement variables publiques nécessaires au bundle | Les secrets restent côté API web; aucune clé serveur dans `EXPO_PUBLIC_*`. Le checkout courant ne contient pas de consommateur Expo d’environnement versionné. |
+| Expo mobile | Environnements EAS `development`, `preview`, `production` indépendants de Vercel, et `apps/mobile/.env.example` pour le local | Les `EXPO_PUBLIC_*` sont visibles dans le bundle ; la clé Maps est utilisée par `app.config.js` pendant la génération native Android, jamais depuis une clé serveur. |
 
 ### Localhost humain et Codex
 
@@ -286,6 +286,43 @@ client, mais les tokens Upstash, QStash et Pinecone restent serveur/CI. Ils
 sont configurés séparément pour Development, Preview et Production.
 
 ## Tests et Expo mobile
+
+### EAS et authentification native Clerk
+
+Le projet Expo `@maxdie/clean-my-map` (ID
+`580b0d1c-d5d3-4c42-9b58-4ee7724a6027`) distingue les profils
+`development`, `preview`, `production`. Le premier APK `preview`,
+produit le 11 octobre 2026, a chargé les six variables
+`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`,
+`EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`, `EXPO_PUBLIC_WEB_APP_URL`,
+`EXPO_PUBLIC_WEB_URL`, `GOOGLE_MAPS_API_KEY`. Leur chargement
+ne prouve pas la validité de leur contenu ou des appels réseau.
+
+Les `EXPO_PUBLIC_*` sont accessibles côté client. La clé Maps Android
+est résolue dans `app.config.js` à la compilation : la visibilité
+EAS doit permettre cette résolution (`Sensitive` plutôt que
+`Secret` si ce dernier n'est pas disponible). Restreindre
+la clé au package `fr.cleanmymap.app`, à l'empreinte SHA-1 pertinente
+et au `Maps SDK for Android`. Aucune `service_role`, clé secrète
+Clerk ou mot de passe de signature ne va dans l'APK.
+
+L'instance Clerk associée à `pk_live_` doit être cohérente avec
+les JWT acceptés par le backend web/Supabase. La **Native API**
+Clerk est indispensable à `@clerk/expo` : son refus
+`native_api_disabled` a causé le blocage `CHARGEMENT...`
+sur Android, résolu par activation distante le 11 octobre 2026.
+Cela n'atteste pas le retour du navigateur ni l'acceptation de la
+session Clerk par les API. L'activation de cette surface native
+exige le maintien des protections contre les abus. La redirection
+autorisée `clerk://fr.cleanmymap.app.callback` observée dans
+le dashboard n'est pas une preuve de fonctionnement avec le
+`scheme` Expo `companion`.
+
+Le premier keystore EAS a eu ses mots de passe exposés :
+sa rotation non confirmée, puis la synchronisation des empreintes
+SHA-256 (Clerk), SHA-1 (Maps) et le cas échéant la signature
+Google Play App Signing, sont des prérequis de publication.
+Voir `apps/mobile/README.md` pour la preuve datée.
 
 Les tests doivent injecter leurs variables dans le runner ou utiliser des
 fixtures. Ils ne doivent pas dépendre de la présence accidentelle d’un
