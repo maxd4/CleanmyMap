@@ -101,30 +101,15 @@ assert.match(secretAuditJob, /path: artifacts\/security-evidence\/secret-audit\.
 assert.equal((ciWorkflow.match(/security:secrets/g) ?? []).length, 1);
 assert.equal((ciWorkflow.match(/npm run security:dependencies/g) ?? []).length, 1);
 const scopeJob = ciWorkflow.match(/  scope:[\s\S]*?\n\n  secret-audit:/)?.[0] ?? "";
-assert.match(scopeJob, /dependencyGraphRelevant/);
-assert.match(scopeJob, /dependencyAuditRelevant/);
-assert.match(scopeJob, /securityToolingRelevant/);
 assert.match(scopeJob, /VALIDATION_MODE: \$\{\{ inputs\.validation_mode \}\}/);
-assert.match(scopeJob, /if \[\[ "\$EVENT_NAME" == "workflow_dispatch" \]\]; then/);
-assert.match(scopeJob, /if \[\[ "\$VALIDATION_MODE" == "FULL" \]\]; then/);
-assert.match(scopeJob, /FULL workflow dispatch selects all validation domains without diff filtering/);
-assert.match(scopeJob, /DEVELOPMENT workflow dispatch has no base ref; retaining an explicit empty scope/);
-for (const fullScopeOutput of [
-  "docs_only=false",
-  "web_code_relevant=true",
-  "mobile_code_relevant=true",
-  "build_relevant=true",
-  "dependency_graph_relevant=true",
-  "dependency_audit_relevant=true",
-  "security_tooling_relevant=true",
-]) {
-  assert.match(scopeJob, new RegExp(fullScopeOutput.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")));
-}
-assert.match(scopeJob, /base="\$PR_BASE_SHA"/);
-assert.match(scopeJob, /base="\$EVENT_BEFORE"/);
-assert.match(scopeJob, /git cat-file -e "\$base\^\{commit\}"/);
-assert.match(scopeJob, /git diff --name-only "\$base" "\$head"/);
-assert.ok(scopeJob.indexOf("FULL workflow dispatch selects all validation domains") < scopeJob.indexOf("git diff --name-only"));
+assert.match(scopeJob, /run: node scripts\/ci\/detect-scope\.mjs/);
+const scopeScript = readFileSync(path.join(repositoryRoot, "scripts", "ci", "detect-scope.mjs"), "utf8");
+assert.match(scopeScript, /event === "workflow_dispatch"/);
+assert.match(scopeScript, /event !== "push" && event !== "pull_request"/);
+assert.match(scopeScript, /workflow_dispatch FULL is independent of the diff/);
+assert.match(scopeScript, /has no base SHA/);
+assert.match(scopeScript, /git diff/);
+assert.doesNotMatch(scopeScript, /git rev-list/);
 assert.equal((ciWorkflow.match(/npm run check:semgrep/g) ?? []).length, 2);
 assert.doesNotMatch(ciWorkflow.match(/  web-governance:[\s\S]*?\n\n  web-static:/)?.[0] ?? "", /security:secrets/);
 assert.doesNotMatch(ciWorkflow.match(/  mobile-validation:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "", /security:secrets/);
@@ -202,8 +187,8 @@ assert.match(ciWorkflow, /fail-on-severity: high/);
 const dependencyReviewJob = ciWorkflow.match(/  dependency-review:[\s\S]*?\n\n  web-governance:/)?.[0] ?? "";
 assert.doesNotMatch(dependencyReviewJob, /secrets\./);
 assert.doesNotMatch(dependencyReviewJob, /actions\/checkout@/);
-assert.equal((ciWorkflow.match(/persist-credentials: false/g) ?? []).length, 11);
-assert.equal((ciWorkflow.match(/node-version-file: \$\{\{ env\.NODE_VERSION_FILE \}\}/g) ?? []).length, 10);
+assert.equal((ciWorkflow.match(/persist-credentials: false/g) ?? []).length, 12);
+assert.equal((ciWorkflow.match(/node-version-file: \$\{\{ env\.NODE_VERSION_FILE \}\}/g) ?? []).length, 11);
 assert.equal((ciWorkflow.match(/check-node-version-contract\.mjs/g) ?? []).length, 8);
 assert.doesNotMatch(ciWorkflow, /check:agent-skills/);
 assert.match(ciWorkflow, /check:doc-governance/);

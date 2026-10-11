@@ -50,10 +50,14 @@ test("FULL is global even for documentation-only candidates", () => {
     "test:coverage", "quality:coverage", "typecheck", "lint", "quality:top-heavy",
     "quality:complexity", "quality:dead-code", "quality:duplication", "quality:cycles",
     "quality:mutation", "test:scripts", "mobile:test", "quality:mobile-coverage",
-    "test:e2e", "github-security-full", "supabase-full", "build",
+    "python-tests", "test:e2e", "github-security-full", "supabase-full", "build",
   ]) {
     assert.ok(ids(plan).includes(id), `missing FULL check ${id}`);
   }
+  assert.deepEqual(plan.checks.find((check) => check.id === "python-tests").command, {
+    executable: "python",
+    args: ["-m", "pytest", "-q", "maintenance/python/tests"],
+  });
   assert.ok(plan.deduplicated.some((entry) => entry.id === "test:security" && entry.status === "ALREADY_PROVEN"));
   assert.ok(plan.deduplicated.some((entry) => entry.id === "test:regression-gates" && entry.status === "ALREADY_PROVEN"));
   assert.equal(plan.budgetSeconds, null);

@@ -178,6 +178,7 @@ function addFullPlanChecks(checks) {
     ["test:coverage", "Vitest Web complet + couverture", npmCommand("test:coverage"), 240],
     ["quality:coverage", "Ratchet couverture Web", npmCommand("quality:coverage"), 45],
     ["test:scripts", "Tests déterministes des scripts", npmCommand("test:scripts"), 60],
+    ["python-tests", "Tests Python complets", { executable: "python", args: ["-m", "pytest", "-q", "maintenance/python/tests"] }, 60],
     ["quality:top-heavy", "Qualité des fichiers lourds", npmCommand("quality:top-heavy"), 10],
     ["quality:complexity", "Ratchet complexité/longueur complet", npmCommand("quality:complexity"), 120],
     ["quality:dead-code", "Ratchet dead-code Knip", npmCommand("quality:dead-code"), 60],
