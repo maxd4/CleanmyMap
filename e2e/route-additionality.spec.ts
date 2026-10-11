@@ -31,6 +31,7 @@ test("Comprendre cet itinéraire affiche la justification d'additionnalité", as
         generatedAt: "2026-09-06T00:00:00.000Z",
         engineVersion: "route-planner-v2",
         stops: [{ id: "observed:tree", label: "Pied d'arbre", latitude: 48.86, longitude: 2.35, segmentKm: 0.8, estimatedMinutes: 6, priorityReason: "Signalement observé", score: 82, evidence: { family: "observed", source: "trash_spotter_spots", proof: "validated", observedAt: "2026-09-05T10:00:00.000Z" } }],
+        groupRoutes: [],
         prediction: { status: "unavailable", source: "urban-pressure-model", modelVersion: null, snapshot: null, riskFocus: "all", zonesConsidered: 0, candidatesConsidered: 0, admitted: 0, admittedCandidateIds: [], passedToPlanner: 0, excludedByPreselection: 0, excludedByPlannerBudget: 0, excludedByFinalRoutingBudget: 0, preselectionExcludedCandidateIds: [], preselectionExclusionReasons: {}, finalRoutingBudgetExcludedCandidateIds: [], selected: 0, selectedCandidateIds: [], excludedByCorridor: 0, deduplicated: 0, warnings: [] },
         trace: {
           engineVersion: "route-planner-v2",
@@ -136,9 +137,13 @@ test("Comprendre cet itinéraire affiche la justification d'additionnalité", as
     const signIn = page.getByRole("link", { name: "Se connecter pour calculer" });
     await expect(signIn).toBeVisible();
     await signIn.click();
-    await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Factions\/new%3Fpanel%3Ditineraire$/);
+    await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Factions%2Fnew%3Fpanel%3Ditineraire$/);
     await clerk.signIn({ page, emailAddress: email });
     await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
+    const itineraryMode = page.getByRole("radio", { name: "Cleanwalk itinérante" });
+    await expect(itineraryMode).toBeVisible({ timeout: 30_000 });
+    await page.locator("label").filter({ hasText: "Cleanwalk itinérante" }).click();
+    await expect(itineraryMode).toBeChecked();
   }
   await expect(calculate).toBeVisible({ timeout: 30_000 });
   await calculate.click();
