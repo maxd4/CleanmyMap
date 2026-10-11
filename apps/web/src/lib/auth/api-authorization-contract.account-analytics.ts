@@ -15,9 +15,10 @@ export const accountAnalyticsAuthorizationContract = {
         "Authenticated current account; ACTIVE_ROLE is constrained by the GRANTED_ROLE selection matrix and drives effective capabilities; GRANTED_ROLE=elu may explicitly select ACTIVE_ROLE=admin, gaining normal admin capabilities without changing GRANTED_ROLE",
       dimensions: ["authentication", "ownership"],
       actual:
-        "requireAuthenticatedAccess + getCurrentUserIdentity + getSwitchableProfiles; Clerk update writes only publicMetadata.activeRole",
+        "requireActionRequestAccess accepts the authenticated web cookie or a bounded Clerk session Bearer; getCurrentUserIdentity and getSwitchableProfiles preserve ownership and the GRANTED_ROLE/ACTIVE_ROLE matrix; Clerk update is scoped to access.userId and writes only publicMetadata.activeRole",
       evidence: [
-        "requireAuthenticatedAccess",
+        "requireActionRequestAccess",
+        "access.userId",
         "getCurrentUserIdentity",
         "getSwitchableProfiles",
         "activeRole",
@@ -28,8 +29,8 @@ export const accountAnalyticsAuthorizationContract = {
     PATCH: {
       expected: "Authenticated current account updates only its own activity status",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess + Clerk update scoped to access.userId",
-      evidence: ["requireAuthenticatedAccess", "access.userId", "updateUser"],
+      actual: "requireActionRequestAccess accepts the authenticated web cookie or a bounded Clerk session Bearer; Clerk update is scoped to access.userId",
+      evidence: ["requireActionRequestAccess", "access.userId", "updateUser"],
     },
   },
   "account/promotion-requests": {

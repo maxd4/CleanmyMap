@@ -140,8 +140,8 @@ export const platformAuthorizationContract = {
     GET: {
       expected: "Authenticated bounded global spot read",
       dimensions: ["authentication"],
-      actual: "requireAuthenticatedAccess; public table projection remains globally scoped",
-      evidence: ["requireAuthenticatedAccess", "loadCachedSpots"],
+      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports; public table projection remains globally scoped",
+      evidence: ["requireActionRequestAccess", "loadCachedSpots"],
     },
     POST: {
       expected: "Authenticated signalement creation owned by current user",

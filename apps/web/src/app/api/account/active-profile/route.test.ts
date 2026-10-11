@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authzMock = vi.hoisted(() => vi.fn());
+const actionRequestAccessMock = vi.hoisted(() => vi.fn());
 const identityMock = vi.hoisted(() => vi.fn());
 const devBypassMock = vi.hoisted(() => vi.fn());
 const clerkClientMock = vi.hoisted(() => vi.fn());
@@ -9,6 +10,9 @@ const syncMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: authzMock,
   getCurrentUserIdentity: identityMock,
+}));
+vi.mock("@/lib/auth/action-request-access", () => ({
+  requireActionRequestAccess: actionRequestAccessMock,
 }));
 vi.mock("@/lib/authz-identity", () => ({ getDevAuthBypassSession: devBypassMock }));
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: clerkClientMock }));
@@ -42,7 +46,7 @@ async function post(payload: unknown) {
 
 describe("POST /api/account/active-profile", () => {
   beforeEach(() => {
-    authzMock.mockResolvedValue({ ok: true, userId: "user-1" });
+    actionRequestAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
     identityMock.mockResolvedValue({ role: "benevole", activeRole: "benevole" });
     devBypassMock.mockResolvedValue(null);
   });
@@ -50,10 +54,26 @@ describe("POST /api/account/active-profile", () => {
   afterEach(() => vi.resetAllMocks());
 
   it("requires authentication", async () => {
-    authzMock.mockResolvedValue({ ok: false, status: 401, error: "Unauthorized" });
+    actionRequestAccessMock.mockResolvedValue({ ok: false, status: 401, error: "Unauthorized" });
     const response = await post({ activeRole: "benevole" });
     expect(response.status).toBe(401);
     expect(clerkClientMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["web cookie", { ok: true, userId: "web-user" }],
+    ["Clerk mobile Bearer", { ok: true, userId: "mobile-user" }],
+  ] as const)("uses the already authenticated %s subject for the update", async (_transport, access) => {
+    actionRequestAccessMock.mockResolvedValue(access);
+    identityMock.mockResolvedValue({ role: "benevole", activeRole: "benevole" });
+    const { updateUser } = setupClerk({ role: "benevole" }, access.userId);
+
+    const response = await post({ activeRole: "scientifique" });
+
+    expect(response.status).toBe(200);
+    expect(updateUser).toHaveBeenCalledWith(access.userId, expect.objectContaining({
+      publicMetadata: expect.objectContaining({ activeRole: "scientifique" }),
+    }));
   });
 
   it.each([

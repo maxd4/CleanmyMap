@@ -124,4 +124,28 @@ describe('mobile GPS TaskManager task', () => {
     expect(state.bufferedPoints).toEqual([])
     expect(state.flushCount).toBe(0)
   })
+
+  it('ignores an OS task error or an empty wake without touching storage', async () => {
+    const insert = vi.fn(async () => ({ error: null }))
+    state.client = { from: vi.fn(() => ({ insert })) }
+
+    await state.task?.({ error: new Error('location unavailable') })
+    await state.task?.({})
+
+    expect(insert).not.toHaveBeenCalled()
+    expect(state.bufferedPoints).toEqual([])
+    expect(state.flushCount).toBe(0)
+  })
+
+  it('fails closed when no owner-scoped active mission context is recoverable', async () => {
+    state.missionId = null
+    const insert = vi.fn(async () => ({ error: null }))
+    state.client = { from: vi.fn(() => ({ insert })) }
+
+    await state.task?.({ data: { locations: [location] } })
+
+    expect(insert).not.toHaveBeenCalled()
+    expect(state.bufferedPoints).toEqual([])
+    expect(state.flushCount).toBe(0)
+  })
 })

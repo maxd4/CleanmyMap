@@ -23,7 +23,7 @@ vi.mock('@supabase/supabase-js', () => ({
 
 vi.mock('react-native-url-polyfill/auto', () => ({}))
 
-import { getClerkSupabaseAccessToken, getClerkUserId } from '../lib/supabase'
+import { getAuthenticatedSupabaseClient, getClerkSupabaseAccessToken, getClerkUserId } from '../lib/supabase'
 
 describe('mobile headless Clerk session', () => {
   beforeEach(() => {
@@ -60,15 +60,34 @@ describe('mobile headless Clerk session', () => {
     state.instance = createClerkInstance('headless-clerk-jwt', 'user_a')
     await expect(getClerkUserId()).resolves.toBe('user_a')
   })
+
+  it('falls back to the Clerk session subject when the user object is unavailable', async () => {
+    state.instance = createClerkInstance('headless-clerk-jwt', null, 'user_from_session')
+
+    await expect(getClerkUserId()).resolves.toBe('user_from_session')
+    await expect(getAuthenticatedSupabaseClient()).resolves.toBeTruthy()
+  })
+
+  it('returns no owner or authenticated client when Clerk loading fails', async () => {
+    state.instance = {
+      loaded: false,
+      load: vi.fn(async () => { throw new Error('expired session') }),
+      session: { getToken: vi.fn(async () => 'unreachable') },
+      user: null,
+    }
+
+    await expect(getClerkUserId()).resolves.toBeNull()
+    await expect(getAuthenticatedSupabaseClient()).resolves.toBeNull()
+  })
 })
 
-function createClerkInstance(token: string | null = 'headless-clerk-jwt', userId: string | null = null) {
+function createClerkInstance(token: string | null = 'headless-clerk-jwt', userId: string | null = null, sessionUserId: string | null = null) {
   return {
     loaded: false,
     load: vi.fn(async function load(this: { loaded: boolean }) {
       this.loaded = true
     }),
-    session: { getToken: vi.fn(async () => token) },
+    session: { getToken: vi.fn(async () => token), user: sessionUserId ? { id: sessionUserId } : undefined },
     user: userId ? { id: userId } : null,
   }
 }

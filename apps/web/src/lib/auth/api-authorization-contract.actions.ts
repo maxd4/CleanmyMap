@@ -107,9 +107,9 @@ export const actionsAuthorizationContract = {
     POST: {
       expected: "Authenticated creation owned by current user; every role follows the normal moderation flow",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess + creator ownership + explicit organizer fallback only",
+      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports; creator ownership is resolved from access.userId with explicit organizer fallback only",
       evidence: [
-        "requireAuthenticatedAccess",
+        "requireActionRequestAccess",
         "canManageActionsGlobally",
       ],
     },
@@ -209,15 +209,15 @@ export const actionsAuthorizationContract = {
     GET: {
       expected: "Authenticated creator/organizer or admin/max action-management read",
       dimensions: ["authentication", "business permission", "ownership"],
-      actual: "requireAuthenticatedAccess + canManageAction",
-      evidence: ["requireAuthenticatedAccess", "canManageAction"],
+      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports before canManageAction",
+      evidence: ["requireActionRequestAccess", "canManageAction"],
     },
     PATCH: {
       expected: "Authenticated creator/organizer normal edit; admin/max validated-impact correction is explicit, reasoned and audited",
       dimensions: ["authentication", "business permission", "ownership", "validated impact correction", "audit"],
-      actual: "requireAuthenticatedAccess + canManageAction; approved impact changes require canEditValidatedImpact, a reason and appendActionModerationAudit",
+      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports before canManageAction; approved impact changes require canEditValidatedImpact, a reason and appendActionModerationAudit",
       evidence: [
-        "requireAuthenticatedAccess",
+        "requireActionRequestAccess",
         "canManageAction",
         "canManageActionsGlobally",
         "canEditValidatedImpact",
@@ -307,8 +307,8 @@ export const actionsAuthorizationContract = {
     POST: {
       expected: "Authenticated owner/organizer or explicit admin/max pre-action publication",
       dimensions: ["authentication", "business permission", "ownership"],
-      actual: "requireAuthenticatedAccess + canManageAction, with canPublishPreAction keeping moderation and publication separate",
-      evidence: ["requireAuthenticatedAccess", "canManageAction", "canPublishPreAction"],
+      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports before canManageAction, with canPublishPreAction keeping moderation and publication separate",
+      evidence: ["requireActionRequestAccess", "canManageAction", "canPublishPreAction"],
     },
   },
   "actions/invitations": {
@@ -359,8 +359,8 @@ export const actionsAuthorizationContract = {
     GET: {
       expected: "Authenticated action organizer or confirmed registration recipient read of the operational briefing",
       dimensions: ["authentication", "business permission", "ownership"],
-      actual: "requireAuthenticatedAccess + canManageAction for organizers, otherwise public visibility plus confirmed action_registrations; projection contains no private notes and performs no attendance mutation",
-      evidence: ["requireAuthenticatedAccess", "canManageAction", "isPublicActionReferenceAvailable", "readActionRegistrationRecord"],
+      actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports before canManageAction for organizers; otherwise public visibility plus confirmed action_registrations; projection contains no private notes and performs no attendance mutation",
+      evidence: ["requireActionRequestAccess", "canManageAction", "isPublicActionReferenceAvailable", "readActionRegistrationRecord"],
       evidenceScope: "module",
     },
   },
