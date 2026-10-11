@@ -66,6 +66,10 @@ CleanMyMap est un seul produit et un seul monorepo avec deux applications
 déployables distinctes sous `apps/`. Le web et le mobile partagent Clerk,
 Supabase et les contrats métier nécessaires. Le mobile est
 `CURRENT / ACTIVE DEVELOPMENT` depuis M0, mais reste `NOT_PRODUCTION_READY`.
+Un premier APK EAS `preview` a atteint l'écran de connexion Clerk
+sur Android le 11 octobre 2026 ; les connexions authentifiées,
+le terrain et les stores restent non vérifiés. Les preuves
+datées figurent dans `apps/mobile/README.md`.
 L'identité Clerk et la finalisation des métriques par trigger invoker sont
 finalisées et invariantes ; elles ne constituent plus des lots de conception.
 
@@ -74,7 +78,8 @@ serveur et les contacts d'urgence. Les limites encore ouvertes sont :
 
 - le traitement background headless ;
 - la validation opérationnelle ;
-- `mission_actions` et la photo native, conservés comme évolution mobile future ;
+- `mission_actions` et la photo de mission hors V1 ; les photos de
+  signalement réutilisent déjà le contrat média canonique ;
 - la future évolution produit de l'application mobile.
 
 La V1 mobile est destinée aux bénévoles terrain et reste volontairement réduite
