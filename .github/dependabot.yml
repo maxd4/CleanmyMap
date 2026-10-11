@@ -97,3 +97,24 @@ updates:
           - "*"
     # Les Actions sont groupées par type de mise à jour; aucun automerge n'est
     # configuré dans ce dépôt.
+
+  - package-ecosystem: "pip"
+    directory: "/maintenance/python"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      python-maintenance-version-updates:
+        applies-to: "version-updates"
+        update-types:
+          - "patch"
+          - "minor"
+        patterns:
+          - "*"
+      python-maintenance-security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"

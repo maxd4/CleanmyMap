@@ -13,13 +13,46 @@ maintenance/python/
 └── tests/     tests Python associés
 ```
 
-Les fichiers de dépendances (`requirements.txt`,
-`requirements-dev.txt`) et `pytest.ini` définissent l'environnement de ce
-sous-arbre.
+Les fichiers de dépendances (`requirements.txt`, `requirements-dev.txt`,
+`requirements-lock.txt`) et `pytest.ini` définissent l'environnement de ce
+sous-arbre. Le fichier de contraintes est une résolution testée, pas une
+nouvelle application ou un second gestionnaire de paquets.
 
-L'interpréteur supporté est Python `>=3.10`. Le code CURRENT utilise notamment
-la syntaxe d'annotations union et les génériques intégrés introduits par cette
-version.
+## État de compatibilité Python
+
+| Statut | Version | Preuve |
+|---|---|---|
+| `SUPPORTED` | Python 3.14.x | Installation et suite Python vérifiées sur Python 3.14.3 |
+| `COMPATIBILITY_TESTED` | Python 3.14.3 | `pip check`, imports, compilation et `45 passed` |
+| `NOT_TESTED` | Python 3.15 | Aucun interpréteur 3.15 disponible dans l'environnement de validation |
+| `BLOCKED_ENVIRONMENT` | Python 3.15 | À revalider dès qu'un interpréteur et les wheels nécessaires sont disponibles |
+
+Python 3.10 n'est plus supporté par le cycle courant. Python 3.15 n'est pas
+déclaré supporté tant que son installation et les tests nécessaires n'ont pas
+réussi.
+
+## Installation reproductible
+
+Depuis `maintenance/python/` :
+
+```powershell
+py -3.14 -m venv .venv
+.venv/Scripts/python -m pip install --upgrade pip
+.venv/Scripts/python -m pip install -r requirements-dev.txt -c requirements-lock.txt
+```
+
+`requirements-lock.txt` est régénéré après une mise à jour volontaire des
+versions testées, dans un environnement Python 3.14 propre :
+
+```powershell
+.venv/Scripts/python -m pip install --upgrade pip
+.venv/Scripts/python -m pip install -r requirements-dev.txt
+.venv/Scripts/python -m pip freeze --all | Select-String -NotMatch '^pip==' | Set-Content requirements-lock.txt
+```
+
+La résolution doit ensuite être vérifiée par `pip check`, les imports, la
+compilation et la suite pytest. Le lockfile contient des versions de paquets,
+pas des chemins locaux ni des secrets.
 
 ## Frontières et règles
 

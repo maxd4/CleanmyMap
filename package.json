@@ -170,7 +170,7 @@
   "devDependencies": {
     "@clerk/backend": "^3.17.2",
     "@clerk/testing": "^2.2.31",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.64.0",
     "@supabase/supabase-js": "^2.112.3",
     "@stryker-mutator/core": "10.0.0",
     "@stryker-mutator/vitest-runner": "10.0.0",
@@ -178,7 +178,7 @@
     "jiti": "^2.7.0",
     "jscpd": "^5.3.0",
     "knip": "6.37.0",
-    "playwright": "^1.59.1",
+    "playwright": "^1.64.0",
     "sharp": "^0.35.3",
     "stream-json": "file:apps/mobile/vendor/stream-json",
     "supabase": "^2.116.0",
