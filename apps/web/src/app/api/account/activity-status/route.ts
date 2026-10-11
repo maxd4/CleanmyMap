@@ -1,7 +1,7 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuthenticatedAccess } from "@/lib/authz";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 const activityStatusRequestSchema = z
   .object({
@@ -10,7 +10,7 @@ const activityStatusRequestSchema = z
   .strict();
 
 export async function PATCH(request: Request) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) {
     return NextResponse.json(
       { error: access.error },

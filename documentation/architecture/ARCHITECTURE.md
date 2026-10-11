@@ -108,7 +108,8 @@ confirme jamais une présence.
 
 La V1 mobile est destinée aux bénévoles terrain et reste volontairement réduite
 par rapport à la surface web complète. Elle inclut le GPS live avec carte et
-tracé temps réel, les contacts d'urgence et les trois parcours Agir natifs :
+tracé temps réel, les contacts d'urgence, un espace Compte natif et les trois
+parcours Agir natifs :
 participer, créer/publier une action et signaler un déchet. Les écrans de
 création réutilisent `createActionSubmission`, `updateAction` et la publication
 canonique ; les signalements réutilisent `createSignalement`,
@@ -116,6 +117,7 @@ canonique ; les signalements réutilisent `createSignalement`,
 Actions, d'indicateur d'impact mobile ou de table `spots` runtime.
 
 Les appels Clerk natifs passent par une frontière Bearer bornée :
+`/api/mobile/account` pour la projection et les mutations de compte,
 `/api/mobile/actions` pour la participation, et la passerelle partagée des
 routes Actions/Signalements pour les mutations complémentaires. Le serveur
 résout toujours l'identité à partir du JWT, applique ownership/AuthZ/RLS et

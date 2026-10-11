@@ -15,6 +15,7 @@ vi.mock("@clerk/nextjs/server", () => ({
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
+  requireAuthenticatedAccess: vi.fn().mockResolvedValue({ ok: true, userId: "user-1" }),
 }));
 
 vi.mock("@/lib/authz-identity", () => ({

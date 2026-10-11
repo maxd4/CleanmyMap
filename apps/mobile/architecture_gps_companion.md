@@ -12,7 +12,8 @@ les données, l'identité et les projections métier existantes, sans gamificati
 parallèle ni second modèle métier.
 
 La V1 couvre le mode activité GPS live avec carte et tracé temps réel, la
-reprise/offline, la finalisation serveur, les contacts d'urgence et les trois
+reprise/offline, la finalisation serveur, les contacts d'urgence, l'espace
+Compte natif et les trois
 parcours Agir natifs : `Rejoindre une action`, création/publication d'une action
 et signalement terrain. La création réutilise les routes et services Actions
 canoniques ; le signalement utilise `trash_spotter_spots` et les intents média
@@ -61,16 +62,21 @@ L'application mobile utilise Clerk comme identité canonique, au même titre que
 4. les appels mobiles aux missions et au GPS sont autorisés par les RLS à partir
    du `sub` Clerk transmis dans le JWT.
 
-### Frontière HTTP mobile pour les actions
+### Frontière HTTP mobile pour les actions et le compte
 
-Le parcours natif d'actions ne donne pas au client mobile un accès direct aux
+Les parcours natifs ne donnent pas au client mobile un accès direct aux
 services serveur ni à `service_role`. Il appelle les routes bornées
-`/api/mobile/actions`, qui vérifient le header `Authorization: Bearer` avec
+`/api/mobile/actions` et `/api/mobile/account`, qui vérifient le header `Authorization: Bearer` avec
 `clerkClient().authenticateRequest(request, { acceptsToken: "session_token" })`
 avant de réutiliser les services métier existants. Cette vérification est
 distincte de `auth()` utilisé par les routes web : l'acceptation d'un JWT Clerk
 mobile est prouvée par la frontière dédiée et ses tests, elle n'est pas déduite
 de la seule présence du header.
+
+`/api/mobile/account` est owner-scoped et ne projette que les données du compte
+authentifié. Il réutilise l'identité, l'historique de participation, la
+progression et les préférences canoniques. Les mutations de profil synchronisent
+Clerk et Supabase ; le rôle attribué et le parcours actif restent distincts.
 
 La projection conserve la frontière métier : les inscriptions futures vivent
 dans `action_registrations`, tandis qu'un rattachement à une action passée crée

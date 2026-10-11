@@ -123,6 +123,22 @@ cookie, puis vérifie explicitement le JWT Clerk natif avec
 `authenticateRequest`. Une mission GPS reliée reste une mission à réconcilier
 et ne crée jamais une participation finale.
 
+## Extension M-C — espace Compte natif et cohérence UX
+
+Le shell mobile conserve uniquement `Agir`, `Carte` et `Compte`. Compte
+réutilise la frontière Bearer bornée `/api/mobile/account` pour projeter la
+même identité Clerk, les préférences, l'onboarding, l'historique d'actions,
+les inscriptions, les participations confirmées, les missions GPS, les actions
+organisées, les invitations et les indicateurs calculés par le serveur.
+
+Les écritures de profil synchronisent Clerk et le profil canonique Supabase ;
+les préférences de nom, d'activité et de notifications appellent leurs routes
+web existantes. `POST /api/account/active-profile` reste l'unique contrat de
+changement de parcours actif : il vérifie les profils commutables et ne modifie
+jamais `GRANTED_ROLE`. La confidentialité, les mentions légales, le contact et
+la demande d'effacement restent les surfaces web canoniques ouvertes par des
+ponts ciblés. Le mobile affiche une demande RGPD, pas une suppression immédiate.
+
 ## Contrat RLS Clerk — LOT 2A réalisé
 
 La migration

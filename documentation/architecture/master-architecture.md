@@ -218,7 +218,8 @@ Statut architectural courant :
 Le statut courant du mobile est `CURRENT / ACTIVE DEVELOPMENT`,
 `NOT_PRODUCTION_READY`. L'identité Clerk, les RLS et la finalisation des
 métriques sont finalisées et invariantes. La V1 couvre le GPS avec carte et
-tracé, la reprise/offline, la finalisation serveur et les contacts d'urgence.
+tracé, la reprise/offline, la finalisation serveur, les contacts d'urgence et
+la projection Compte privée `/api/mobile/account`.
 Les sujets ouverts sont le background headless, la validation opérationnelle,
 ainsi que `mission_actions` et la photo native comme évolutions futures.
 

@@ -12,7 +12,7 @@
 - **Objectif utilisateur principal** : Compléter la configuration initiale du compte avec le rôle, le profil actif, la localisation et les préférences d'affichage.
 - **Action principale attendue** : Enregistrer la configuration puis reprendre la route demandée, ou revenir au profil par défaut si la destination est invalide.
 - **Palette attendue** : surface claire lavande/menthe, panneaux slate/indigo
-- **Scope** : parcours authentifié de complétion initiale, prise en compte d'un code de parrainage et redirection sûre vers la destination après enregistrement.
+- **Scope** : parcours authentifié de complétion initiale, prise en compte d'un code de parrainage et redirection sûre vers la destination après enregistrement. L'espace Compte mobile peut compléter les informations Clerk et les préférences de localisation via `/api/mobile/account`, sans créer un second onboarding métier.
 - **Terminée** : oui pour le parcours actuellement livré
 - **Couleurs actuellement détectées** : surface lavande/menthe avec panneaux slate/indigo et accents émeraude du shell partagé.
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.

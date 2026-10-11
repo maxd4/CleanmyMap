@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const shellSource = readFileSync(resolve(__dirname, '../screens/mobile-shell.tsx'), 'utf8')
+const accountSource = readFileSync(resolve(__dirname, '../screens/account.tsx'), 'utf8')
 const profileSource = readFileSync(resolve(__dirname, '../screens/emergency-contact.tsx'), 'utf8')
 const callSource = readFileSync(resolve(__dirname, '../screens/emergency-call-actions.tsx'), 'utf8')
 const appSource = readFileSync(resolve(__dirname, '../App.tsx'), 'utf8')
@@ -11,7 +12,8 @@ const storageSource = readFileSync(resolve(__dirname, '../lib/storage.ts'), 'utf
 
 describe('mobile emergency contact UI contract', () => {
   it('replaces the profile placeholder with a local editable surface', () => {
-    expect(shellSource).toContain('<EmergencyContactPanel />')
+    expect(shellSource).toContain('<AccountScreen')
+    expect(accountSource).toContain('<EmergencyContactPanel />')
     expect(shellSource).not.toContain("Emplacement réservé pour un futur lot")
     expect(profileSource).toContain('saveStoredEmergencyContact')
     expect(profileSource).toContain('clearStoredEmergencyContact')

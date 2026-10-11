@@ -81,9 +81,16 @@ Le shell expose trois destinations persistantes : `Agir`, `Carte` et `Compte`.
   confirmation serveur.
 
 La destination `Carte` ouvre `/actions/map` pour la consultation existante. Le
-mobile n'implémente pas de deuxième messagerie. `Compte` donne accès aux surfaces
-web `/profil` et `/reglages` et
-permet d'enregistrer un unique contact d'urgence dans le SecureStore local.
+mobile n'implémente pas de deuxième messagerie. `Compte` charge une projection
+privée bornée depuis `/api/mobile/account` : identité Clerk, onboarding,
+localisations préférées, rôle attribué/parcours actif, préférences, indicateurs
+serveur, historique, invitations, missions GPS et actions organisées. Les
+mutations de profil, parcours actif, nom affiché, activité et notifications
+réutilisent les contrats web canoniques avec le Bearer Clerk. Les pages web
+`/politique-confidentialite`, `/mentions-legales` et `/contact` restent les
+surfaces canoniques pour les droits, le contact et la demande d'effacement.
+Le compte permet aussi d'enregistrer un unique contact d'urgence dans le
+SecureStore local.
 Pendant une mission active, le bénévole peut confirmer l'ouverture d'un appel
 vers ce contact ou vers le 112 via `tel:` ; aucune position n'est envoyée
 automatiquement.

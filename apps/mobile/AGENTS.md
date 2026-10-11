@@ -40,8 +40,10 @@ grant INSERT et la policy RLS limitent l'écriture mobile à `volunteer_id` et
 `label` ; le client ne contrôle donc ni l'identité effective ni les métriques
   dérivées. La carte live restaure les points `gps_points` owner-scoped, fusionne
   le tracé UX local et reprend le suivi foreground ; ce suivi ne persiste ni
-  points ni métriques dans Supabase. Les autres parcours légers ouvrent, lorsque
-nécessaire, les surfaces web existantes (`/actions/map`, `/profil`, `/reglages`) ;
+  points ni métriques dans Supabase. Le compte est natif et consomme la
+  projection privée `/api/mobile/account`, tandis que les surfaces web
+  `/actions/map`, `/politique-confidentialite`, `/mentions-legales` et `/contact`
+  restent des ponts ciblés lorsque le contrat canonique le demande ;
 le mobile ne crée pas de deuxième messagerie ni de deuxième modèle métier.
 
 Le workspace `apps/mobile`, son `package.json`, cet `AGENTS.md` et ses contrats

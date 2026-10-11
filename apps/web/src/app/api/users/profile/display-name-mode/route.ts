@@ -1,5 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
-import { clerkClient } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { z } from "zod";
@@ -18,6 +17,7 @@ import {
 } from "@/lib/account/display-name-mode-store";
 import { getDevAuthBypassUserId } from "@/lib/auth/dev-auth";
 import type { UserIdentity } from "@/lib/authz";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 const updateDisplayNameModeSchema = z.object({
   displayNameMode: z.enum(["full_name", "pseudo"]),
@@ -28,10 +28,12 @@ const DISPLAY_NAME_MODE_CACHE_HEADERS = {
 };
 type DisplayNameModeResponse = UserIdentity;
 
-export async function GET() {
+export async function GET(request?: Request) {
   const devBypass = await getDevAuthBypassSession();
-  const clerkUserId = devBypass ? null : (await auth()).userId;
-  const userId = devBypass?.userId ?? clerkUserId;
+  const access = request
+    ? await requireActionRequestAccess(request)
+    : await auth().then(({ userId }) => userId ? { ok: true as const, userId } : { ok: false as const });
+  const userId = devBypass?.userId ?? (access?.ok ? access.userId : null);
   if (!userId) return unauthorizedJsonResponse();
 
   const identity = await getCurrentUserIdentity({ userId });
@@ -47,7 +49,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const identity = await getCurrentUserIdentity();
+  const access = await requireActionRequestAccess(request);
+  if (!access.ok) return unauthorizedJsonResponse();
+  const identity = await getCurrentUserIdentity({ userId: access.userId });
   const userId = identity?.userId;
   if (!userId) return unauthorizedJsonResponse();
 

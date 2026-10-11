@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import * as Linking from 'expo-linking'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { MOBILE_DESTINATIONS, MOBILE_SHELL_SURFACE_STORAGE_KEY, MOBILE_WEB_BRIDGE_PATHS, type MobileDestinationId } from './mobile-shell-contract'
-import { EmergencyContactPanel } from './emergency-contact'
+import { AccountScreen } from './account'
 import { ActionJoinScreen } from './action-join'
 import { ActionCreateScreen } from './action-create'
 import { SignalementScreen } from './signalement'
@@ -22,15 +22,15 @@ export function MobileShell({ onSignOut, onSessionExpired, onStartActivity }: Mo
   useEffect(() => { void AsyncStorage.getItem(MOBILE_SHELL_SURFACE_STORAGE_KEY).then((stored) => { if (MOBILE_DESTINATIONS.some((item) => item.id === stored)) setSurface(stored as MobileDestinationId) }) }, [])
   function navigate(nextSurface: MobileDestinationId) { setSurface(nextSurface); void AsyncStorage.setItem(MOBILE_SHELL_SURFACE_STORAGE_KEY, nextSurface) }
 
-  return <View style={styles.root}>
+  return <SafeAreaView style={styles.root}>
     <StatusBar style="light" />
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {surface === 'act' ? <ActScreen onStart={onStartActivity} onSessionExpired={onSessionExpired} /> : null}
       {surface === 'map' ? <MapScreen /> : null}
-      {surface === 'account' ? <AccountScreen onSignOut={onSignOut} /> : null}
+      {surface === 'account' ? <AccountScreen onSignOut={onSignOut} onSessionExpired={onSessionExpired} onOpenWeb={(path) => void openWebPath(path)} /> : null}
     </ScrollView>
     <View style={styles.tabBar} accessibilityRole="tablist">{MOBILE_DESTINATIONS.map((item) => { const selected = surface === item.id; return <TouchableOpacity key={item.id} accessibilityRole="tab" accessibilityLabel={item.label} accessibilityState={{ selected }} style={styles.tab} onPress={() => navigate(item.id)}><Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={22} color={selected ? '#34d399' : '#64748b'} /><Text style={[styles.tabLabel, selected && styles.tabLabelSelected]}>{item.label}</Text></TouchableOpacity> })}</View>
-  </View>
+  </SafeAreaView>
 }
 
 function ActScreen({ onStart, onSessionExpired }: { onStart: () => void; onSessionExpired: () => void }) {
@@ -38,7 +38,6 @@ function ActScreen({ onStart, onSessionExpired }: { onStart: () => void; onSessi
 }
 
 function MapScreen() { return <ScreenFrame eyebrow="CARTE" title="Carte live"><Text style={styles.bodyText}>Retrouvez la carte CleanMyMap et le suivi GPS de votre action en cours.</Text><WebButton path={MOBILE_WEB_BRIDGE_PATHS.map} icon="open-outline" label="Ouvrir la carte CleanMyMap" /><InfoCard icon="map-outline" title="Suivi GPS conservé" description="Le suivi, la reprise hors ligne, la finalisation serveur et le contact d'urgence restent disponibles." /></ScreenFrame> }
-function AccountScreen({ onSignOut }: { onSignOut: () => void }) { return <ScreenFrame eyebrow="COMPTE" title="Votre compte"><Text style={styles.bodyText}>Gérez votre profil et votre contact d'urgence avec la même identité Clerk que sur le web.</Text><WebButton path={MOBILE_WEB_BRIDGE_PATHS.profile} icon="person-outline" label="Ouvrir mon profil web" /><WebButton path={MOBILE_WEB_BRIDGE_PATHS.settings} icon="settings-outline" label="Ouvrir mes réglages" /><EmergencyContactPanel /><TouchableOpacity style={styles.signOutButton} onPress={onSignOut} accessibilityRole="button"><Text style={styles.signOutLabel}>SE DÉCONNECTER</Text></TouchableOpacity></ScreenFrame> }
 function ScreenFrame({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) { return <View><Text style={styles.eyebrow}>{eyebrow}</Text><Text style={styles.title}>{title}</Text><View style={styles.separator} />{children}</View> }
 function PrimaryButton({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) { return <TouchableOpacity style={styles.primaryButton} onPress={onPress} accessibilityRole="button"><Ionicons name={icon} size={20} color="#022c22" /><Text style={styles.primaryButtonLabel}>{label}</Text></TouchableOpacity> }
 function WebButton({ path, icon, label }: { path: string; icon: keyof typeof Ionicons.glyphMap; label: string }) { return <TouchableOpacity style={styles.secondaryButton} onPress={() => void openWebPath(path)} accessibilityRole="button"><Ionicons name={icon} size={20} color="#a7f3d0" /><Text style={styles.secondaryButtonLabel}>{label}</Text></TouchableOpacity> }

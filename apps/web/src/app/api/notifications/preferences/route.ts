@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -6,6 +5,7 @@ import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 
 export const runtime = "nodejs";
 // Vercel justification: authenticated preferences are session-scoped and must not be statically cached.
@@ -51,8 +51,9 @@ export async function GET(request: Request) {
   const rateLimitResponse = createServerRateLimitResponse(rateLimit.allowed, rateLimit.retryAfter, rateLimit);
   if (rateLimitResponse) return rateLimitResponse;
 
-  const { userId } = await auth();
-  if (!userId) return unauthorizedJsonResponse();
+  const access = await requireActionRequestAccess(request);
+  if (!access.ok) return unauthorizedJsonResponse();
+  const { userId } = access;
 
   try {
     // Cache justification: preference data is private to the authenticated user.
@@ -69,8 +70,9 @@ export async function PATCH(request: Request) {
   const rateLimitResponse = createServerRateLimitResponse(rateLimit.allowed, rateLimit.retryAfter, rateLimit);
   if (rateLimitResponse) return rateLimitResponse;
 
-  const { userId } = await auth();
-  if (!userId) return unauthorizedJsonResponse();
+  const access = await requireActionRequestAccess(request);
+  if (!access.ok) return unauthorizedJsonResponse();
+  const { userId } = access;
 
   let body: unknown;
   try {

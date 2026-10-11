@@ -103,8 +103,9 @@ restent limités à la compatibilité d'entrée.
 
 ### Frontière Clerk native mobile
 
-Les parcours métier natifs de `apps/mobile` utilisent la frontière bornée
-`/api/mobile/actions` et la passerelle dédiée aux mutations Actions/Signalements.
+Les parcours métier natifs de `apps/mobile` utilisent les frontières bornées
+`/api/mobile/account` et `/api/mobile/actions`, ainsi que la passerelle dédiée
+aux mutations Actions/Signalements.
 Ils transmettent le token de session Clerk en
 `Authorization: Bearer`, puis le handler vérifie ce JWT avec
 `clerkClient().authenticateRequest(request, { acceptsToken: "session_token" })`
@@ -121,6 +122,15 @@ client mobile. Les mutations de signalement écrivent uniquement
 `trash_spotter_spots` ; les médias passent par les intents, quotas et
 permissions du service Signalement. Une réponse locale partielle ne vaut pas
 confirmation métier.
+
+La projection `/api/mobile/account` reste privée et owner-scoped. Elle réutilise
+`getCurrentUserIdentity`, l'historique de participation, la progression et les
+tables de préférences canoniques ; ses mutations de profil synchronisent Clerk
+et le profil Supabase. Le changement de parcours actif passe exclusivement par
+`POST /api/account/active-profile`, vérifie `getSwitchableProfiles` et n'écrit
+jamais `GRANTED_ROLE`. La demande de suppression reste le workflow RGPD
+canonique de `/contact` : l'application mobile ne prétend pas supprimer le
+compte immédiatement.
 
 ### Séparation obligatoire du rôle attribué, du rôle actif et du profil UX
 

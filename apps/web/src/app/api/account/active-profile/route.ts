@@ -4,8 +4,8 @@ import { z } from "zod";
 import {
   getCurrentUserIdentity,
   getCurrentUserRoleLabel,
-  requireAuthenticatedAccess,
 } from "@/lib/authz";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { getDevAuthBypassSession } from "@/lib/authz-identity";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import {
@@ -36,7 +36,7 @@ const requestSchema = z
   });
 
 export async function POST(request: Request) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) {
     return NextResponse.json(
       { error: access.error },
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const identity = await getCurrentUserIdentity();
+  const identity = await getCurrentUserIdentity({ userId: access.userId });
   const role = identity?.role ?? (await getCurrentUserRoleLabel());
   if (role === "anonymous" || !identity) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

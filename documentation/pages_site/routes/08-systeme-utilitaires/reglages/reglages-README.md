@@ -12,7 +12,7 @@
 - **Objectif utilisateur principal** : Gérer les préférences personnelles d'affichage, de langue, de localisation et de compte.
 - **Action principale attendue** : Modifier une préférence ou une donnée de compte depuis cette surface canonique.
 - **Palette attendue** : sky / slate
-- **Scope** : surface secondaire protégée avec contrôles `SitePreferencesControls` pour la langue et le mode d'affichage, choix du nom affiché, localisation, confidentialité et demande de suppression ; absence de session redirigée vers `/sign-in`.
+- **Scope** : surface secondaire protégée avec contrôles `SitePreferencesControls` pour la langue et le mode d'affichage, choix du nom affiché, localisation, confidentialité et demande de suppression ; absence de session redirigée vers `/sign-in`. L'espace Compte mobile consomme une projection Bearer bornée et réutilise les mutations canoniques de cette surface ; les pages de confidentialité, mentions et contact restent ouvertes depuis le mobile comme ponts ciblés.
 - **Terminée** : oui pour le périmètre actuellement livré
 - **Couleurs actuellement détectées** : sky / slate — fond clair sky et cartes de réglages neutres ; `AccountSettingsSection` et la variante light de `SitePreferencesControls` suivent cette palette.
 - **Exception de couleur documentée** : la variante compacte de `AccountSettingsSection`, réutilisée dans les cartes dashboard/profil, conserve une ambiance ambre pour rester cohérente avec ces surfaces parentes ; elle n'est pas rendue sur `/reglages`.
