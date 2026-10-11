@@ -3,8 +3,9 @@
 Application mobile Expo/React Native dédiée au suivi GPS des missions terrain.
 
 Elle est issue de l'ancien `companion-app`, terme conservé uniquement pour
-l'historique et les identifiants techniques (`cleanmymap-companion`,
-`fr.cleanmymap.companion`). Elle appartient au même produit et au même
+l'historique. L'identité de publication V1 est `CleanMyMap`, avec le projet
+Expo/EAS `clean-my-map` et les identifiants natifs `fr.cleanmymap.app`. Elle
+appartient au même produit et au même
 monorepo que `apps/web` ; elle n'est ni une copie ni un projet indépendant.
 
 ## Statut
@@ -180,15 +181,17 @@ Le versioning de départ est explicite et local : `version` `1.0.0`,
 `android.versionCode` `1` et `ios.buildNumber` `1`. Toute nouvelle release doit
 incrémenter les compteurs natifs selon les règles des stores ; aucun compteur
 n'est auto-incrémenté ou stocké dans un service distant par cette configuration.
-`eas.json` fixe explicitement `cli.appVersionSource` à `local` ; aucun
-`projectId` EAS n'est versionné ou inventé dans le dépôt. Un projet Expo/EAS
-réel doit être lié par son propriétaire avant tout build distant.
+`eas.json` fixe explicitement `cli.appVersionSource` à `local`. Le projet EAS
+existant du propriétaire `maxdie` est maintenant rattaché par son
+`projectId` explicite dans `app.json` ; aucun deuxième projet ne doit être
+créé.
 
-Les identifiants durables restent inchangés : slug
-`cleanmymap-companion`, scheme `companion`, package Android et bundle iOS
-`fr.cleanmymap.companion`, et domaine `cleanmymap.fr`. Le placeholder
-`extra.eas.projectId` a été retiré : le rattachement à un projet Expo réel doit
-être effectué par le propriétaire EAS au premier build, sans inventer d'ID.
+Les identifiants de publication courants sont : slug `clean-my-map`, scheme
+`companion`, package Android et bundle iOS `fr.cleanmymap.app`, et projet EAS
+`580b0d1c-d5d3-4c42-9b58-4ee7724a6027`. Les anciens identifiants
+`cleanmymap-companion` et `fr.cleanmymap.companion` restent documentés dans
+l'ADR comme historique ; la disponibilité des anciens ou nouveaux identifiants
+sur les stores n'est pas déduite du dépôt.
 
 Les profils EAS doivent recevoir les valeurs réelles de
 `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` et
@@ -235,7 +238,7 @@ npm run quality:mobile-coverage
 ```
 
 La sortie de `expo config --json` doit conserver `name=CleanMyMap`, le slug et
-les identifiants natifs historiques, `scheme=companion`, le target Android 36,
+les identifiants natifs courants, `scheme=companion`, le target Android 36,
 les cinq permissions GPS attendues, aucune association HTTPS entrante et aucun
 `RECORD_AUDIO`. La présence de `GOOGLE_MAPS_API_KEY` dans l'environnement de
 build est nécessaire pour injecter la clé Android Google Maps ; sa valeur ne
@@ -243,8 +246,8 @@ doit jamais être committée. Sur Windows, la génération/validation du projet
 iOS nécessite macOS ou Linux ; `expo prebuild --platform ios` ne constitue pas
 une preuve iOS depuis cet hôte.
 
-Après rattachement explicite à un projet EAS réel et configuration des variables
-publiques autorisées (`EXPO_PUBLIC_SUPABASE_URL`,
+Le projet EAS est maintenant rattaché par `app.json`. Après vérification des
+variables publiques autorisées (`EXPO_PUBLIC_SUPABASE_URL`,
 `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`,
 `EXPO_PUBLIC_WEB_URL`, `EXPO_PUBLIC_WEB_APP_URL` et `GOOGLE_MAPS_API_KEY`), les
 commandes de build sont :
@@ -288,8 +291,9 @@ preuves.
 | Permissions Android GPS/photo/microphone | PASS de configuration | target 36, GPS foreground/background et service foreground résolus ; `RECORD_AUDIO` bloqué par le plugin photo et absent de la configuration effective |
 | Justifications iOS GPS/photos | PASS de contrat / BLOCKED natif | descriptions présentes dans les plugins ; génération iOS native impossible sur l'hôte Windows |
 | Niveau Android API 36 | PASS de configuration | `expo-build-properties` résout compile/target 36 ; aucun artefact signé encore observé |
-| Projet EAS et credentials | BLOCKED | `eas whoami` est authentifié (`maxdie`), mais `eas project:info` indique qu'aucun projet EAS n'est configuré ; aucun `projectId` n'est inventé |
+| Projet EAS et rattachement | PASS | `eas project:info` confirme `@maxdie/clean-my-map` et `580b0d1c-d5d3-4c42-9b58-4ee7724a6027` ; `eas build:list` ne retourne aucun build |
 | Variables publiques et clé Google Maps | BLOCKED | les variables Supabase/Clerk/Maps locales sont vides et aucun environnement EAS lié n'est disponible ; aucune clé réelle n'est versionnée |
+| Disponibilité store des identifiants | BLOCKED | Google Play renvoie 404 et Apple Lookup `resultCount=0` pour les anciens et nouveaux identifiants ; les consoles développeur et la réservation ne sont pas vérifiées |
 | Liens Clerk et liens entrants | PASS statique / BLOCKED runtime | callback Clerk `clerk://...hosted-callback` généré côté Android et scheme conservé ; aucun test réel de retour sur appareil |
 | Liens Android/iOS de domaine | NOT_RUN | non déclarés en V1 faute de routeur entrant et de consommateurs vérifiés |
 | Android/iOS signed release | BLOCKED | aucun artefact `.apk`, `.aab` ou `.ipa` produit dans ce lot |

@@ -11,11 +11,12 @@ const dynamicConfig = readFileSync(resolve(mobileRoot, 'app.config.js'), 'utf8')
 
 describe('mobile distributable configuration', () => {
   it('keeps the product name and durable native identifiers stable', () => {
+    expect(appConfig.owner).toBe('maxdie')
     expect(appConfig.name).toBe('CleanMyMap')
-    expect(appConfig.slug).toBe('cleanmymap-companion')
+    expect(appConfig.slug).toBe('clean-my-map')
     expect(appConfig.scheme).toBe('companion')
-    expect(appConfig.android.package).toBe('fr.cleanmymap.companion')
-    expect(appConfig.ios.bundleIdentifier).toBe('fr.cleanmymap.companion')
+    expect(appConfig.android.package).toBe('fr.cleanmymap.app')
+    expect(appConfig.ios.bundleIdentifier).toBe('fr.cleanmymap.app')
     expect(appConfig.version).toBe('1.0.0')
     expect(appConfig.android.versionCode).toBe(1)
     expect(appConfig.ios.buildNumber).toBe('1')
@@ -51,7 +52,7 @@ describe('mobile distributable configuration', () => {
     expect(easConfig.build.development).toMatchObject({ developmentClient: true, distribution: 'internal' })
     expect(easConfig.build.preview).toMatchObject({ distribution: 'internal', android: { buildType: 'apk' } })
     expect(easConfig.build.production).toBeDefined()
-    expect(JSON.stringify(easConfig)).not.toContain('projectId')
+    expect(appConfig.extra.eas.projectId).toBe('580b0d1c-d5d3-4c42-9b58-4ee7724a6027')
   })
 
   it('keeps required runtime dependencies and release assets present', () => {

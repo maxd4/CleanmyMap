@@ -237,8 +237,14 @@ headless, l'usage opérationnel réel et la validation de production ne sont pas
 V1. Toute évolution ultérieure doit préserver les contrats Clerk, RLS et
 métriques serveur ci-dessus.
 
-Les identifiants techniques historiques `cleanmymap-companion` et
-`fr.cleanmymap.companion` restent inchangés ; leur renommage est hors périmètre.
+Les identifiants `cleanmymap-companion` et `fr.cleanmymap.companion` sont les
+identifiants historiques du prototype `companion` et ne sont plus l'identité
+de publication de la V1. La configuration courante utilise le nom public
+`CleanMyMap`, le slug Expo/EAS `clean-my-map`, le package Android et le Bundle
+ID iOS `fr.cleanmymap.app`, ainsi que le projet EAS existant du propriétaire
+`maxdie`. Le scheme `companion` est conservé car il reste nécessaire au retour
+de l'authentification hébergée Clerk ; tout changement de scheme doit être
+précédé d'une validation du callback Clerk.
 
 ## Options
 

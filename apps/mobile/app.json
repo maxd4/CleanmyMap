@@ -1,7 +1,8 @@
 {
   "expo": {
+    "owner": "maxdie",
     "name": "CleanMyMap",
-    "slug": "cleanmymap-companion",
+    "slug": "clean-my-map",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,11 +12,11 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "fr.cleanmymap.companion",
+      "bundleIdentifier": "fr.cleanmymap.app",
       "buildNumber": "1"
     },
     "android": {
-      "package": "fr.cleanmymap.companion",
+      "package": "fr.cleanmymap.app",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -55,6 +56,11 @@
         }
       ]
     ],
-    "scheme": "companion"
+    "scheme": "companion",
+    "extra": {
+      "eas": {
+        "projectId": "580b0d1c-d5d3-4c42-9b58-4ee7724a6027"
+      }
+    }
   }
 }
