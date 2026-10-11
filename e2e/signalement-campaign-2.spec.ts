@@ -179,7 +179,7 @@ test("Gate B: signed upload, controlled failure, retry, Storage object and owner
   await expect(page.getByText("Position Certifiée")).toBeVisible();
   const category = page.locator('button[id^="quick-signalement-waste-"]').first();
   await category.click();
-  const imagePath = path.resolve("apps/web/public/homepage/schema-global-transparent.png");
+  const imagePath = path.resolve("e2e/fixtures/signalement-upload.png");
   const imageBuffer = await readFile(imagePath);
   await page.locator('input[type="file"]').setInputFiles({
     name: `${SIGNALEMENT_E2E_MEDIA_MARKER}.png`,
