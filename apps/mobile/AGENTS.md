@@ -12,7 +12,8 @@ La V1 mobile est destinée aux bénévoles terrain et reste volontairement petit
 Le site web demeure la surface complète du produit et évolue indépendamment.
 Le frontend mobile ne cherche pas à reproduire le site ; la V1 couvre le mode
 activité GPS live avec carte et tracé temps réel, la reprise/offline, la
-finalisation serveur et les contacts d'urgence.
+finalisation serveur, les contacts d'urgence et le premier parcours métier
+natif `Rejoindre une action`.
 
 Les autres capacités mobiles doivent réutiliser les contrats, données et
 services communs existants. Aucun package partagé générique, second modèle
@@ -21,10 +22,14 @@ V1.
 
 ## Shell V1
 
-Le shell mobile expose uniquement cinq destinations : `Accueil`, `Carte`,
-`Agir`, `Messages` et `Profil`. `Agir` présente les quatre entrées terrain
-`Démarrer une action`, `Rejoindre une action`, `Organiser une action` et
-`Signaler un déchet`.
+Le shell mobile expose uniquement trois destinations persistantes et accessibles
+: `Agir`, `Carte` et `Compte`. `Agir` présente les entrées terrain `Démarrer une
+action`, `Rejoindre une action`, `Organiser une action` et `Signaler un déchet`.
+Le parcours `Rejoindre une action` est natif : liste des actions futures
+publiées, recherche, détail, inscription, suivi, annulation, invitations,
+actions passées éligibles et demande de rattachement. Créer une action et
+signaler un déchet restent préparés dans la navigation, sans être présentés
+comme finalisés dans ce lot.
 
 `Démarrer une action` vérifie les permissions GPS, crée une mission `pending`
 owner-scoped avec le `sub` Clerk via Supabase, puis réutilise `startTracking`
@@ -33,11 +38,9 @@ grant INSERT et la policy RLS limitent l'écriture mobile à `volunteer_id` et
 `label` ; le client ne contrôle donc ni l'identité effective ni les métriques
   dérivées. La carte live restaure les points `gps_points` owner-scoped, fusionne
   le tracé UX local et reprend le suivi foreground ; ce suivi ne persiste ni
-  points ni métriques dans Supabase. Les autres parcours légers ouvrent, lorsque nécessaire, les surfaces web existantes
-(`/actions/map`, `/actions/new`,
-`/sections/rejoindre-une-action`, `/signalement`, `/sections/messagerie`,
-`/profil`, `/reglages`) ; le mobile ne crée pas de deuxième messagerie ni de
-deuxième modèle métier.
+  points ni métriques dans Supabase. Les autres parcours légers ouvrent, lorsque
+nécessaire, les surfaces web existantes (`/actions/map`, `/profil`, `/reglages`) ;
+le mobile ne crée pas de deuxième messagerie ni de deuxième modèle métier.
 
 Le workspace `apps/mobile`, son `package.json`, cet `AGENTS.md` et ses contrats
 essentiels restent présents tant qu'une décision d'architecture explicite ne
@@ -54,6 +57,14 @@ consommateurs concernés.
 - ne pas réintroduire Supabase Auth ou une identité anonyme comme fournisseur
   d'identité ;
 - ne jamais embarquer `service_role` dans l'application mobile.
+
+Les appels métier natifs d'actions passent par `/api/mobile/actions` et ses
+sous-routes. Cette frontière vérifie explicitement le JWT Clerk de session
+porté par `Authorization: Bearer` avec `clerkClient().authenticateRequest`,
+puis réutilise les services métier et les décisions AuthZ serveur existants.
+`auth()` de Next et un Bearer mobile ne sont donc pas considérés comme
+interchangeables par hypothèse. Les tests de frontière couvrent l'absence de
+token, l'expiration, l'utilisateur différent et les rôles autorisé/interdit.
 
 ## Contrats finalisés et invariants
 

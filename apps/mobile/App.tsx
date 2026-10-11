@@ -165,6 +165,11 @@ function CompanionApp() {
     startDurationTimer(trackingResult.data.started_at ?? new Date().toISOString())
   }
 
+  async function handleSessionExpired() {
+    setErrorMsg('Votre session Clerk a expiré. Connectez-vous à nouveau pour continuer.')
+    await signOut().catch(() => null)
+  }
+
   function handleStop() {
     if (!mission) return
 
@@ -218,7 +223,7 @@ function CompanionApp() {
   }
 
   if (!isSignedIn) {
-    return <SignedOutScreen />
+    return <SignedOutScreen initialError={errorMsg} />
   }
 
   if (phase === 'stopping' && finalizationStage) {
@@ -248,7 +253,13 @@ function CompanionApp() {
     />
   }
 
-  return <MobileShell onSignOut={() => void signOut()} onStartActivity={handleStartMobileMission} />
+  return (
+    <MobileShell
+      onSignOut={() => void signOut()}
+      onSessionExpired={() => void handleSessionExpired()}
+      onStartActivity={handleStartMobileMission}
+    />
+  )
 }
 
 function MissionActiveScreen({
@@ -278,17 +289,25 @@ function MissionActiveScreen({
     </View>
   )
 }
-function SignedOutScreen() {
+function SignedOutScreen({ initialError }: { initialError?: string | null }) {
   const { startHostedAuth } = useHostedAuth()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialError ?? null)
 
   async function handleSignIn() {
+    await startAuth('sign-in')
+  }
+
+  async function handleSignUp() {
+    await startAuth('sign-up')
+  }
+
+  async function startAuth(mode: 'sign-in' | 'sign-up') {
     setLoading(true)
     setError(null)
 
     try {
-      await startHostedAuth({ mode: 'sign-in' })
+      await startHostedAuth({ mode })
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : 'Connexion Clerk impossible.')
     } finally {
@@ -310,6 +329,9 @@ function SignedOutScreen() {
       ) : null}
       <TouchableOpacity style={styles.hudBtnPrimary} onPress={handleSignIn} disabled={loading}>
         {loading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.hudBtnText}>SE CONNECTER</Text>}
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.hudBtnSecondary} onPress={handleSignUp} disabled={loading}>
+        <Text style={styles.hudBtnSecondaryText}>CRÉER UN COMPTE</Text>
       </TouchableOpacity>
     </View>
   )

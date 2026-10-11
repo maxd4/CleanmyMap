@@ -88,6 +88,24 @@ réalisés et restent invariants ; le comportement background headless et
 l'usage opérationnel réel restent ouverts. `mission_actions` et la photo native
 sont hors V1 et relèvent d'une évolution mobile future.
 
+## Extension M-A — frontière native des actions
+
+Le shell mobile M-A conserve Clerk comme identité commune et ajoute une
+frontière HTTP bornée pour `Rejoindre une action`. Le mobile transmet le JWT de
+session Clerk dans `Authorization: Bearer`; la route `/api/mobile/actions` le
+vérifie explicitement avec `clerkClient().authenticateRequest` en acceptant le
+token `session_token`, puis appelle les services métier existants. La présence
+d'un Bearer n'est donc pas assimilée par hypothèse à la session résolue par
+`auth()` des routes web : cette acceptation est couverte par une frontière et
+des tests dédiés.
+
+Les listes, demandes d'inscription, annulations, invitations, rattachements
+post-action et reviews d'organisateurs réutilisent les contrats serveur. Une
+inscription confirmée reste une ligne `action_registrations` et ne devient pas
+une présence `action_participants`; un rattachement passé commence par un
+claim `post_action_claim` `pending`, avec permissions, ownership et audit
+évalués côté serveur. Le mobile ne reçoit jamais `service_role`.
+
 ## Contrat RLS Clerk — LOT 2A réalisé
 
 La migration

@@ -13,6 +13,11 @@ Permettre a un bénévole de rejoindre le formulaire visible d'une action publi�
 3. L'action est publiée avec les contrôles de visibilité applicables.
 4. Une pré-action `pending` ou `approved` peut apparaitre dans `Rejoindre une action` si elle est visible, publiée, future et ouverte aux inscriptions.
 5. Le bénévole rejoint ce formulaire existant.
+5 bis. Dans l'application mobile native, ce parcours passe par la frontière
+HTTP bornée `/api/mobile/actions`. Le JWT de session Clerk est vérifié côté
+serveur avant de réutiliser les contrats d'actions ; le client mobile ne parle
+pas directement à `service_role` et ne déduit pas l'acceptation d'un Bearer de
+la seule session `auth()` des routes web.
 6. Les membres ajoutés manuellement à l'action sont enregistrés dans `action_registrations` avec `registration_source = manual_add` et `registration_status = pending`, sans passer par la file publique. Ils ne sont pas confirmés silencieusement. Leur identité est conservée, même après retrait ou décision.
 7. La demande future est enregistrée dans `action_registrations` avec `registration_status`, `registration_source` et `registered_at`. Un statut `confirmed` signifie uniquement que l'inscription a été acceptée ; il ne confirme pas une présence sur le terrain.
 8. Après la publication effective, une invitation `manual_add` est émise dans `app_notifications` avec `type = action_event` et `payload.subtype = invitation`. La déduplication est faite par l'identité d'événement versionnée (`registrationId` + `invitationVersion`) ; une sauvegarde de brouillon ne l'émet pas. La livraison utilise l'identité Clerk et ne dépend pas de l'existence préalable d'une ligne `profiles`.

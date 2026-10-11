@@ -16,8 +16,9 @@ Les lots 1, 2A et 2B de l'ADR-004 ont raccordé l'identité Clerk, les RLS
 mobile est officiellement rouverte par le lot M0 pour reprendre son
 développement. La baseline conserve un frontend volontairement réduit et
 réutilise les surfaces web existantes lorsque cela suffit. La V1 fonctionnelle
-couvre le GPS avec carte et tracé, la reprise/offline, la finalisation serveur
-et le contact d'urgence. L'application reste non prête pour la production tant
+couvre le GPS avec carte et tracé, la reprise/offline, la finalisation serveur,
+le contact d'urgence et le parcours natif de participation à une action.
+L'application reste non prête pour la production tant
 que le background headless et l'usage opérationnel réel ne sont pas validés.
 
 Références :
@@ -39,7 +40,9 @@ ne cherche pas à reproduire toutes ses pages ou capacités.
 La V1 fonctionnelle inclut :
 
 - le mode activité GPS live avec carte, restauration du tracé et suivi temps réel ;
-- les contacts d'urgence.
+- les contacts d'urgence ;
+- `Rejoindre une action` avec recherche, détail, inscription future, annulation,
+  invitations, suivi et rattachement post-action soumis à validation.
 
 Les autres capacités réutilisent au maximum les contrats, données et services
 existants du backend commun. La V1 ne crée ni package `shared` générique, ni
@@ -47,8 +50,7 @@ second modèle métier, ni gamification parallèle côté mobile.
 
 ## Shell mobile V1
 
-Le shell expose cinq destinations simples : `Accueil`, `Carte`, `Agir`,
-`Messages` et `Profil`.
+Le shell expose trois destinations persistantes : `Agir`, `Carte` et `Compte`.
 
 `Agir` présente quatre choix :
 
@@ -62,13 +64,14 @@ Le shell expose cinq destinations simples : `Accueil`, `Carte`, `Agir`,
   les points ni les métriques dans Supabase. Aucun formulaire d'action natif ni
   upload/photo mobile n'est requis pour cette V1 ; `mission_actions` reste une
   évolution future du produit ;
-- `Rejoindre une action` ouvre `/sections/rejoindre-une-action` sur le web ;
-- `Organiser une action` ouvre `/actions/new` sur le web ;
-- `Signaler un déchet` ouvre `/signalement` sur le web.
+- `Rejoindre une action` est natif et passe par la frontière HTTP mobile
+  `/api/mobile/actions` ;
+- `Organiser une action` et `Signaler un déchet` sont préparés dans le shell,
+  mais restent explicitement non finalisés dans ce lot.
 
-La destination `Carte` ouvre `/actions/map` pour la consultation existante et
-`Messages` ouvre `/sections/messagerie`. Le mobile n'implémente pas de deuxième
-messagerie. `Profil` donne accès aux surfaces web `/profil` et `/reglages` et
+La destination `Carte` ouvre `/actions/map` pour la consultation existante. Le
+mobile n'implémente pas de deuxième messagerie. `Compte` donne accès aux surfaces
+web `/profil` et `/reglages` et
 permet d'enregistrer un unique contact d'urgence dans le SecureStore local.
 Pendant une mission active, le bénévole peut confirmer l'ouverture d'un appel
 vers ce contact ou vers le 112 via `tel:` ; aucune position n'est envoyée

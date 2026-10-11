@@ -12,8 +12,10 @@ les données, l'identité et les projections métier existantes, sans gamificati
 parallèle ni second modèle métier.
 
 La V1 couvre le mode activité GPS live avec carte et tracé temps réel, la
-reprise/offline, la finalisation serveur et les contacts d'urgence. Les actions
-terrain détaillées et la photo native ne font pas partie de cette V1 ;
+reprise/offline, la finalisation serveur, les contacts d'urgence et le parcours
+natif `Rejoindre une action`. Les entrées Créer une action et Signaler un déchet
+sont préparées dans le shell mais ne sont pas présentées comme finalisées. La
+photo native ne fait pas partie de cette V1 ;
 `mission_actions` reste une évolution future sans dépendance du runtime mobile.
 
 ## 1. Vue d'ensemble
@@ -57,6 +59,24 @@ L'application mobile utilise Clerk comme identité canonique, au même titre que
    Third-Party Auth ; aucune session Supabase Auth n'est créée ou persistée ;
 4. les appels mobiles aux missions et au GPS sont autorisés par les RLS à partir
    du `sub` Clerk transmis dans le JWT.
+
+### Frontière HTTP mobile pour les actions
+
+Le parcours natif d'actions ne donne pas au client mobile un accès direct aux
+services serveur ni à `service_role`. Il appelle les routes bornées
+`/api/mobile/actions`, qui vérifient le header `Authorization: Bearer` avec
+`clerkClient().authenticateRequest(request, { acceptsToken: "session_token" })`
+avant de réutiliser les services métier existants. Cette vérification est
+distincte de `auth()` utilisé par les routes web : l'acceptation d'un JWT Clerk
+mobile est prouvée par la frontière dédiée et ses tests, elle n'est pas déduite
+de la seule présence du header.
+
+La projection conserve la frontière métier : les inscriptions futures vivent
+dans `action_registrations`, tandis qu'un rattachement à une action passée crée
+un claim `action_participants` `post_action_claim` `pending`, soumis à la review
+serveur. Les décisions d'organisateur/coorganisateur, invitations, annulation
+et audit restent côté serveur ; le mobile ne confirme jamais une présence par
+la seule inscription.
 
 ### Tables courantes
 

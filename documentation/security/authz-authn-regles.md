@@ -101,6 +101,23 @@ restent limités à la compatibilité d'entrée.
 
 `service_role` est une identité technique serveur. Ce n'est jamais un rôle utilisateur ni une preuve d'autorisation HTTP.
 
+### Frontière Clerk native mobile
+
+Les parcours métier natifs de `apps/mobile` utilisent la frontière bornée
+`/api/mobile/actions`. Ils transmettent le token de session Clerk en
+`Authorization: Bearer`, puis le handler vérifie ce JWT avec
+`clerkClient().authenticateRequest(request, { acceptsToken: "session_token" })`
+avant toute lecture ou mutation. Cette voie est distincte de `auth()` dans les
+routes web : un header Bearer présent ne constitue jamais, à lui seul, une
+preuve d'identité. Une session absente, expirée, mal formée ou appartenant à un
+autre utilisateur est refusée avant l'accès au service métier.
+
+Après AuthN, la frontière réutilise les services et gardes AuthZ canoniques :
+ownership de l'utilisateur, rôle actif, relation organisateur/coorganisateur,
+état de publication et audit. Elle ne crée pas de second fournisseur
+d'identité, ne place aucun token dans l'URL et n'expose jamais `service_role` au
+client mobile.
+
 ### Séparation obligatoire du rôle attribué, du rôle actif et du profil UX
 
 L'identité courante doit exposer le contrat suivant :
