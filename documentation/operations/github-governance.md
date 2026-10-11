@@ -10,9 +10,14 @@ La maintenance suit `MAIN-ONLY / SINGLE-WRITER` : un seul checkout local
 mutable sur `main`, un seul writer, des lots isolés et aucune publication
 implicite. Les branches distantes attendues sont `main` uniquement.
 
-- Les PR Dependabot de mise à jour de version ne sont pas souhaitées.
-- `open-pull-requests-limit: 0` désactive les version updates mais ne doit pas
-  masquer ni désactiver les security updates.
+- Les mises à jour Dependabot de version sont autorisées dans une veille
+  hebdomadaire bornée, regroupée par familles compatibles et limitée à six PR
+  npm et trois PR GitHub Actions ouvertes simultanément.
+- Les groupes `patch`/`minor` restent séparés entre runtime mobile, runtime Web,
+  runtime partagé et outillage ; les mises à jour majeures restent des PR
+  distinctes pour une revue explicite. Les security updates restent actives et
+  ne sont pas masquées par ces limites.
+- Aucun automerge Dependabot n'est configuré.
 - Le ruleset de `main` interdit la suppression de la branche et les mises à
   jour `non_fast_forward` ; un push fast-forward direct reste permis.
 - Une alerte CodeQL se corrige dans le code, puis doit être vérifiée par un run
@@ -101,7 +106,9 @@ Supabase. Cette documentation ne contient aucune valeur secrète.
 - Garder `permissions: {}` au niveau workflow, puis ouvrir uniquement ce qui est nécessaire au niveau job.
 - Éviter les runs concurrents avec `concurrency` et `cancel-in-progress: true`.
 - Garder un cache npm explicite sur `package-lock.json`.
-- Grouper les mises à jour Dependabot, y compris les security updates, pour limiter le bruit.
+- Grouper les mises à jour Dependabot compatibles, y compris les security
+  updates, pour limiter le bruit sans mélanger tout le monorepo dans une seule
+  PR.
 
 ## Reproductibilité locale des workflows
 

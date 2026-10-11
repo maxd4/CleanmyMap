@@ -4,40 +4,96 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    # Les mises à jour de version sont désactivées; les PR de sécurité restent
-    # indépendantes de cette limite selon le contrat Dependabot.
-    open-pull-requests-limit: 0
+    # Veille hebdomadaire bornée: les security updates restent actives et ne
+    # sont pas bloquées par la limite des PR de version.
+    open-pull-requests-limit: 6
     reviewers:
       - "maxd4"
     labels:
       - "dependencies"
       - "npm"
     groups:
-      workspace-version-updates:
+      npm-mobile-runtime:
         applies-to: "version-updates"
+        update-types:
+          - "patch"
+          - "minor"
         patterns:
-          - "*"
-      workspace-security-updates:
+          - "@clerk/expo"
+          - "@expo/*"
+          - "expo*"
+          - "react-native*"
+      npm-web-runtime:
+        applies-to: "version-updates"
+        update-types:
+          - "patch"
+          - "minor"
+        patterns:
+          - "@clerk/backend"
+          - "@clerk/localizations"
+          - "@clerk/nextjs"
+          - "@sentry/nextjs"
+          - "@upstash/*"
+          - "framer-motion"
+          - "lucide-react"
+          - "next"
+          - "posthog-*"
+          - "resend"
+          - "tailwind-merge"
+          - "zod"
+      npm-shared-runtime:
+        applies-to: "version-updates"
+        update-types:
+          - "patch"
+          - "minor"
+        patterns:
+          - "@supabase/*"
+          - "react"
+          - "react-dom"
+      npm-tooling:
+        applies-to: "version-updates"
+        update-types:
+          - "patch"
+          - "minor"
+        patterns:
+          - "@clerk/testing"
+          - "@playwright/*"
+          - "@stryker-mutator/*"
+          - "eslint"
+          - "eslint-*"
+          - "jiti"
+          - "jscpd"
+          - "knip"
+          - "playwright"
+          - "sharp"
+          - "typescript"
+          - "typescript-eslint"
+          - "vitest"
+      npm-security-updates:
         applies-to: "security-updates"
         patterns:
           - "*"
-    # Le lockfile racine couvre les workspaces `apps/web` et `apps/mobile`, donc un seul bloc npm
-    # suffit pour le monorepo web. Aucune règle ignore n'est ajoutée ici:
-    # aucune dépendance clairement non pertinente n'a été identifiée.
+    # Le lockfile racine couvre les workspaces `apps/web` et `apps/mobile`, donc
+    # un seul bloc npm suffit pour le monorepo. Aucune règle ignore n'est ajoutée.
+    # Les mises à jour majeures restent séparées pour une revue explicite.
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    # Même politique pour les Actions: pas de bruit de versions, sécurité conservée.
-    open-pull-requests-limit: 0
+    # Veille hebdomadaire bornée; les security updates restent actives.
+    open-pull-requests-limit: 3
     labels:
       - "dependencies"
       - "github-actions"
     groups:
-      github-actions:
+      github-actions-version-updates:
         applies-to: "version-updates"
         patterns:
           - "*"
-    # Les Actions sont groupées pour éviter une PR par workflow tout en
-    # conservant une revue unique des mises à jour.
+      github-actions-security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
+    # Les Actions sont groupées par type de mise à jour; aucun automerge n'est
+    # configuré dans ce dépôt.
