@@ -119,9 +119,12 @@ Regle de lecture :
 
 ### 5. Dégel et pré-release mobile
 
-`apps/mobile` est `CURRENT / ACTIVE DEVELOPMENT`, mais aucun artefact de
-distribution signé n'est actuellement produit par le workflow courant. Aucun
-scan MobSF n'est donc activé dans la CI de développement.
+`apps/mobile` reste `CURRENT / ACTIVE DEVELOPMENT`. Un APK Android
+EAS `preview` signé a été construit le 11 octobre 2026 :
+[build `beef5909-cd36-4ce9-971e-d3930680ee79`](https://expo.dev/accounts/maxdie/projects/clean-my-map/builds/beef5909-cd36-4ce9-971e-d3930680ee79)
+au SHA `fff2ce58a55dc36df7c791e4884f0fd937151bd5`.
+Ce n'est ni une release store ni un artefact déjà audité MobSF.
+Aucun scan MobSF permanent n'est activé en CI ordinaire.
 
 Lorsqu'une pré-release mobile est explicitement autorisée, toute pré-release
 Android ou iOS doit d'abord conserver la preuve du SHA, des versions Expo/RN,
@@ -135,8 +138,22 @@ La validation appareil, les permissions de localisation background, les liens
 de domaine, Data Safety/App Privacy et le parcours de suppression de compte
 restent obligatoires avant toute qualification store.
 
-Cette exigence est conditionnelle au dégel : elle ne justifie aujourd'hui
-l'installation d'aucun package, service ou workflow MobSF.
+L'existence de ce premier APK de test ne lève aucun gate de
+pré-release distribuée : le rapport MobSF sur l'artefact destiné
+à la diffusion est toujours requis avant toute autorisation.
+Aucun package ou workflow permanent MobSF ne doit être ajouté
+pour la seule CI ordinaire.
+
+L'initialisation Clerk Android a été débloquée après le refus
+`native_api_disabled` : écran de connexion observé, mais pas
+de connexion complète ni de retour navigateur validés.
+Restent à démontrer JWT/RLS, GPS en premier plan et arrière-plan,
+offline/replay, finalisation serveur, cartes, permissions,
+sécurité, confidentialité, iOS et stores. Les mots de passe
+du premier keystore EAS ont été exposés : rotation avant toute
+publication puis mise à jour SHA-256 chez Clerk et SHA-1
+pour Maps Android ; distinguer Google Play App Signing.
+Voir `apps/mobile/README.md`.
 
 ## Limites
 
