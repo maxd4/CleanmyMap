@@ -23,6 +23,9 @@ function runSupabase(args) {
     cwd: webRoot,
     encoding: "utf8",
     stdio: "pipe",
+    // Windows exposes npx.cmd as a command wrapper; Node cannot pipe it
+    // directly without the platform shell, while Unix npx remains direct.
+    shell: process.platform === "win32",
     windowsHide: true,
   });
 }
