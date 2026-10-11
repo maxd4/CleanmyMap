@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-30T17:43:01.000Z",
-  "apiRouteCount": 118,
+  "apiRouteCount": 120,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -43,6 +43,20 @@
       "reason": "Surface authentifiée des préférences persistées de notifications : informations facultatives, rappels J-1 et masques d'informations par action.",
       "costContract": "GET limité à 30 requêtes/minute et PATCH à 20 requêtes/minute, chacun borné à l'identité Clerk et à une préférence ou un UUID d'action ; deux lectures ciblées au GET et aucune donnée de notification complète ne transitent par la route. Réponse private/no-store, sans email, SMS, push ni polling dédié.",
       "reviewedAt": "2026-10-09"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/day/route.ts",
+      "introducedBy": "c6765debee8f4cbde9d4dcba2ba869ca6adb3021",
+      "reason": "Projection authentifiée du briefing Jour J, avec relecture de l'action, des organisateurs et de l'inscription confirmée avant exposition des informations opérationnelles.",
+      "costContract": "GET borné à un actionId et à l'identité Clerk courante ; les droits organisateur ou bénévole confirmé sont revalidés côté serveur, la réponse ne doit pas être partagée par cache et aucune présence terrain n'est créée.",
+      "reviewedAt": "2026-10-11"
+    },
+    {
+      "route": "apps/web/src/app/api/actions/[actionId]/duplicate/route.ts",
+      "introducedBy": "2e351b0621373f855db19f37647f5cf113707e71",
+      "reason": "Projection authentifiée du préremplissage sélectif d'une action, réservée aux utilisateurs disposant du droit serveur de gestion et de duplication.",
+      "costContract": "GET borné à un actionId et à l'identité Clerk courante ; les états terminaux et les droits organisateur sont vérifiés côté serveur, aucune inscription, invitation, preuve administrative ou donnée de bilan n'est recopiée.",
+      "reviewedAt": "2026-10-11"
     }
   ],
   "apiRoutes": [
@@ -54,6 +68,8 @@
     "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.ts",
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/cancel/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/day/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/duplicate/route.ts",
     "apps/web/src/app/api/actions/[actionId]/formalities/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
     "apps/web/src/app/api/actions/[actionId]/participant-impact/route.ts",

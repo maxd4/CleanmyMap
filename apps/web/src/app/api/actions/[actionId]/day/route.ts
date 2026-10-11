@@ -12,6 +12,7 @@ import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 
 export const runtime = "nodejs";
+// Justification Vercel: le briefing relit l'action, les permissions et l'inscription courantes ; il ne doit jamais être servi depuis un cache partagé.
 export const dynamic = "force-dynamic";
 
 type DayRouteContext = { params: Promise<{ actionId: string }> };

@@ -9,6 +9,7 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
+// Justification Vercel: le préremplissage dépend de l'identité, des droits et de l'état courant de l'action ; il ne doit jamais être partagé par cache.
 export const dynamic = "force-dynamic";
 
 type DuplicateRouteContext = { params: Promise<{ actionId: string }> };
