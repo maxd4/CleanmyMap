@@ -140,11 +140,9 @@ function appendSummary(summaryPath, content) {
 }
 
 async function main() {
-  let candidateSha = "unavailable";
-  let evidence = {};
   try {
-    candidateSha = resolveCandidateSha(repositoryRoot);
-    evidence = collectQualityEvidence({});
+    const candidateSha = resolveCandidateSha(repositoryRoot);
+    const evidence = collectQualityEvidence({});
     appendSummary(process.env.GITHUB_STEP_SUMMARY, buildQualitySummary({ candidateSha, evidenceByKey: evidence }));
     const failures = validateQualityEvidence({ candidateSha, evidenceByKey: evidence, repositoryRoot });
     if (failures.length > 0) {

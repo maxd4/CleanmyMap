@@ -26,7 +26,7 @@ export type ActionWorkflowStepId =
   | "preformulaire";
 
 const ACTION_CREATION_ROUTE = "/actions/new";
-export const ACTION_CREATION_SPACES: readonly ActionCreationSpace[] = ["prepare", "day", "bilan"];
+const ACTION_CREATION_SPACES: readonly ActionCreationSpace[] = ["prepare", "day", "bilan"];
 const ACTION_CREATION_SECTION_VALUES: readonly ActionCreationSectionId[] = ["essentiel", "terrain", "equipe", "verification"];
 const ACTION_CREATION_SUBSECTION_VALUES: readonly ActionCreationSubsectionId[] = ["route", "meteo", "formalites", "pre-formulaire"];
 const LEGACY_STEP_TO_SECTION: Record<string, ActionCreationSectionId> = {
@@ -55,6 +55,21 @@ const LEGACY_PANEL_TO_SUBSECTION: Partial<Record<ActionCreationPanelId, ActionCr
 
 function firstSearchParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function appendSearchParams(
+  params: URLSearchParams,
+  searchParams: Record<string, string | string[] | undefined>,
+  excludedKey: string,
+): void {
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (key === excludedKey || value === undefined) continue;
+    if (Array.isArray(value)) {
+      value.forEach((item) => params.append(key, item));
+    } else {
+      params.append(key, value);
+    }
+  }
 }
 
 export function normalizeActionCreationPanel(
@@ -155,14 +170,7 @@ export function buildActionCreationSpaceHref(
   searchParams: Record<string, string | string[] | undefined> = {},
 ): string {
   const params = new URLSearchParams({ space });
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (key === "space" || value === undefined) continue;
-    if (Array.isArray(value)) {
-      value.forEach((item) => params.append(key, item));
-    } else {
-      params.append(key, value);
-    }
-  }
+  appendSearchParams(params, searchParams, "space");
   return `${ACTION_CREATION_ROUTE}?${params.toString()}`;
 }
 
@@ -171,14 +179,7 @@ export function buildActionCreationSectionHref(
   searchParams: Record<string, string | string[] | undefined> = {},
 ): string {
   const params = new URLSearchParams({ section });
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (key === "section" || value === undefined) continue;
-    if (Array.isArray(value)) {
-      value.forEach((item) => params.append(key, item));
-    } else {
-      params.append(key, value);
-    }
-  }
+  appendSearchParams(params, searchParams, "section");
   return `${ACTION_CREATION_ROUTE}?${params.toString()}`;
 }
 
@@ -188,20 +189,7 @@ export function buildActionCreationPanelHref(
 ): string {
   const params = new URLSearchParams();
   params.set("panel", panel);
-
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (key === "panel" || value === undefined) {
-      continue;
-    }
-
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        params.append(key, item);
-      }
-    } else {
-      params.append(key, value);
-    }
-  }
+  appendSearchParams(params, searchParams, "panel");
 
   return `${ACTION_CREATION_ROUTE}?${params.toString()}`;
 }
@@ -226,13 +214,6 @@ export function buildActionWorkflowStepHref(
   searchParams: Record<string, string | string[] | undefined> = {},
 ): string {
   const params = new URLSearchParams({ step });
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (key === "step" || value === undefined) continue;
-    if (Array.isArray(value)) {
-      value.forEach((item) => params.append(key, item));
-    } else {
-      params.append(key, value);
-    }
-  }
+  appendSearchParams(params, searchParams, "step");
   return `${ACTION_CREATION_ROUTE}?${params.toString()}`;
 }

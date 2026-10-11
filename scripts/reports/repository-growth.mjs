@@ -26,7 +26,6 @@ import {
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const DEFAULT_OUTPUT_DIR = "artifacts/repository-growth";
 const DEFAULT_MONTHS = 12;
-const DAY_MS = 24 * 60 * 60 * 1000;
 const CATEGORY_ORDER = Object.freeze([
   "web_runtime",
   "mobile_runtime",

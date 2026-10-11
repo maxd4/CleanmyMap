@@ -193,15 +193,6 @@ export function writeFullValidationEvidence({
   );
 }
 
-function readFullValidationEvidence({ repositoryRoot = process.cwd(), candidateSha } = {}) {
-  if (!candidateSha) return null;
-  try {
-    return JSON.parse(fs.readFileSync(fullEvidencePath(repositoryRoot, candidateSha), "utf8"));
-  } catch {
-    return null;
-  }
-}
-
 function sleepSync(milliseconds) {
   const signal = new Int32Array(new SharedArrayBuffer(4));
   Atomics.wait(signal, 0, 0, milliseconds);

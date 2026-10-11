@@ -1,4 +1,4 @@
-export const ACTION_INTERVENTION_MODE_VERSION = "intervention-mode-v1" as const;
+const ACTION_INTERVENTION_MODE_VERSION = "intervention-mode-v1" as const;
 
 export const ACTION_INTERVENTION_MODES = [
   "fixed_area",

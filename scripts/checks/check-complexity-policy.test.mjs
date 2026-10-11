@@ -335,7 +335,7 @@ test("complexity baseline metrics never own file length", () => {
   const baseline = JSON.parse(fs.readFileSync("scripts/checks/complexity-baseline.json", "utf8"));
   assert.ok(baseline.entries.length > 0);
   const metricCounts = baseline.entries.reduce((counts, entry) => ({ ...counts, [entry.metric]: (counts[entry.metric] ?? 0) + 1 }), {});
-  assert.deepEqual(metricCounts, { complexity: 303, functionLength: 398 });
+  assert.deepEqual(metricCounts, { complexity: 302, functionLength: 397 });
   assert.ok(baseline.entries.every((entry) => ["complexity", "functionLength"].includes(entry.metric)));
   assert.ok(baseline.entries.every((entry) => typeof entry.functionIdentity === "string"));
   assert.ok(baseline.entries.some((entry) => entry.path.startsWith("apps/mobile/")));
@@ -415,7 +415,7 @@ test("BASELINE_CURRENT_MAIN_TEST: baseline declares the current identity scheme 
   const baseline = JSON.parse(fs.readFileSync("scripts/checks/complexity-baseline.json", "utf8"));
   assert.equal(FUNCTION_IDENTITY_SCHEME_VERSION, 2);
   assert.equal(baseline.functionIdentitySchemeVersion, FUNCTION_IDENTITY_SCHEME_VERSION);
-  assert.equal(baseline.entries.length, 701);
+  assert.equal(baseline.entries.length, 699);
   assert.equal(baseline.entries.some((entry) => entry.path === "src/lib/gamification/badges/listing.ts" && entry.functionIdentity === "named:awardProgressionEventIfMissing#1"), false);
   assert.doesNotThrow(() => validateBaselineShape(baseline));
 });

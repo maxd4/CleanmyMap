@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "e2d53b9c32febb10deae36ab942033d35a761b1c",
+  "sourceCommit": "2316826735c69e0ecf446b0fbf384381c3dd4b50",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -1431,7 +1431,7 @@
       "path": "apps/web/src/lib/actions/store-create-contract.ts",
       "line": 77,
       "category": "runtime/services/orchestration",
-      "ceiling": 30,
+      "ceiling": 40,
       "status": "IMPROVED",
       "functionIdentity": "named:buildActionInsertPayload#1"
     },
@@ -1449,7 +1449,7 @@
       "path": "apps/web/src/lib/actions/store-create.ts",
       "line": 157,
       "category": "runtime/services/orchestration",
-      "ceiling": 17,
+      "ceiling": 22,
       "status": "IMPROVED",
       "functionIdentity": "named:createAction#1"
     },
@@ -2673,7 +2673,7 @@
       "path": "apps/web/src/components/actions/action-creation-shell.tsx",
       "line": 138,
       "category": "React/JSX",
-      "ceiling": 59,
+      "ceiling": 60,
       "status": "IMPROVED",
       "functionIdentity": "named:ActionCreationShell#1"
     },
@@ -4266,7 +4266,7 @@
       "path": "apps/web/src/lib/actions/store-create-contract.ts",
       "line": 90,
       "category": "runtime/services/orchestration",
-      "ceiling": 120,
+      "ceiling": 142,
       "status": "IMPROVED",
       "functionIdentity": "named:buildActionInsertPayload#1"
     },
@@ -5760,7 +5760,7 @@
       "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 119,
       "category": "tests",
-      "ceiling": 90,
+      "ceiling": 117,
       "status": "LEGACY",
       "functionIdentity": "callback:describe:1:'mobile tracking service'#1"
     },
@@ -6228,7 +6228,7 @@
       "path": "apps/mobile/tests/storage.test.ts",
       "line": 19,
       "category": "tests",
-      "ceiling": 19,
+      "ceiling": 27,
       "status": "IMPROVED",
       "functionIdentity": "callback:describe:1:'mobile GPS offline storage'#1"
     },

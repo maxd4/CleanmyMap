@@ -45,7 +45,11 @@ function useBeforeActionDraftHydration({
   const currentFormRef = useRef(form);
   const onFormChangeRef = useRef(onFormChange);
   const hydratedRef = useRef(false);
-  const [hydrationReady, setHydrationReady] = useState(Boolean(initialActionId));
+  // A new form has no remote record to await. Keep its first server render
+  // useful while the effect still restores a local draft after mount.
+  const [hydrationReady, setHydrationReady] = useState(
+    !initialActionId && !duplicateFromActionId,
+  );
 
   useEffect(() => {
     currentFormRef.current = form;

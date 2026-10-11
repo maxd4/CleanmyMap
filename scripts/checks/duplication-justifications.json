@@ -219,22 +219,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "99eabdae708dcf29",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les boutons d’acceptation restent explicites pour les sources promotion et partner : leurs handlers, validations et transitions d’administration sont distincts même si le rendu d’action est proche.",
-      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-item-card.tsx:309-319 et apps/web/src/components/admin/creator-inbox/inbox-item-card.tsx:361-371 ; les callbacks onAcceptPromotion et onAcceptPartner portent deux workflows source distincts.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "a141080c04eeef07",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les boutons de rejet restent répétés afin de conserver la preuve lisible des deux décisions admin ; promotion et partner ont des contrats et des raisons de rejet indépendants.",
-      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-item-card.tsx:322-332 et apps/web/src/components/admin/creator-inbox/inbox-item-card.tsx:374-384 ; les branches sélectionnent des callbacks et des états source différents.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "2506618950d2f553",
       "classification": "KEEP_INTENTIONAL",
       "reason": "La longueur minimale du motif est une garde répétée dans deux décisions promotion accept/reject qui doivent rester auditables séparément ; extraire cette garde masquerait la décision et ses messages propres.",
@@ -357,9 +341,9 @@
       "scope": "tests",
       "fingerprint": "4b0a206b5f9f4486",
       "classification": "NO_ACTION_NOISE",
-      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/administrative-requirements/route.test.ts:1-6 et app/api/actions/[actionId]/publish/route.test.ts:1-6 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
-      "evidence": "app/api/actions/[actionId]/administrative-requirements/route.test.ts:1-6 et app/api/actions/[actionId]/publish/route.test.ts:1-6 ; pair CURRENT relu.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
+      "reason": "Les occurrences CURRENT app/api/actions/[actionId]/administrative-requirements/route.test.ts:1-6 et app/api/actions/[actionId]/route.active-role.test.ts:1-6 relient des consumers de test distincts ; leur recouvrement reste un artefact de scénario et aucune primitive technique commune à extraire n'est démontrée par ces deux suites.",
+      "evidence": "app/api/actions/[actionId]/administrative-requirements/route.test.ts:1-6 et app/api/actions/[actionId]/route.active-role.test.ts:1-6 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
     },
     {
       "scope": "tests",
@@ -1183,22 +1167,6 @@
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les occurrences CURRENT components/learn/quiz/quiz-personal-progress-overview.tsx:288-295 ; symboles: span, className, text, font et components/learn/quiz/quiz-personal-progress-overview.tsx:310-317 ; symboles: span, className, text, font restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
       "evidence": "apps/web/src/components/learn/quiz/quiz-personal-progress-overview.tsx:288-295 et apps/web/src/components/learn/quiz/quiz-personal-progress-overview.tsx:310-317 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "8f252f3e6b10169a",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La similarité CURRENT entre components/learn/quiz/quiz-session-panel-summary.tsx:61-78 ; symboles: className, rounded, border, amber et components/learn/quiz/quiz-session-panel.tsx:152-169 ; symboles: className, rounded, border, amber reste limitée à une forme syntaxique ; les consumers et owners diffèrent, donc aucun owner CURRENT commun ne justifie une abstraction transverse.",
-      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel-summary.tsx:61-78 et apps/web/src/components/learn/quiz/quiz-session-panel.tsx:152-169 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "e3b976e0b3da04bb",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "Les occurrences CURRENT components/learn/quiz/quiz-session-panel-summary.tsx:337-347 ; symboles: span, className, rounded, full et components/learn/quiz/quiz-session-panel-summary.tsx:385-395 ; symboles: span, className, rounded, full restent dans le même consumer mais couvrent des scénarios ou branches séparés ; conserver ces blocs locaux rend l’invariant testé ou le contrat exécuté auditable sans façade partagée.",
-      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel-summary.tsx:337-347 et apps/web/src/components/learn/quiz/quiz-session-panel-summary.tsx:385-395 ; pair CURRENT relu avec les symboles et le consumer distingués dans la raison.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {
@@ -2768,6 +2736,118 @@
       "reason": "Les facts Paris répétés dans deux tests de rendu rendent chaque scénario autonome ; le premier vérifie la qualification et le second la persistance des statuts et détails de workflow, donc les valeurs de contexte communes ne portent pas le même invariant.",
       "evidence": "components/actions/action-formalities-workflow-panel.test.tsx:12-29 et components/actions/action-formalities-workflow-panel.test.tsx:73-90 ; pair CURRENT relu.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "5ef6926b29333a35",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux branches de la coque d’action rendent des surfaces de préparation distinctes selon l’étape active ; conserver leur contrat local évite de masquer la navigation métier derrière une abstraction de rendu commune.",
+      "evidence": "apps/web/src/components/actions/action-creation-shell.tsx:176-186 et apps/web/src/components/actions/action-creation-shell.tsx:334-344 ; branches de rendu de la coque relues.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "435cf988e0e7a9ed",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les contrats de propriétés de deux sous-vues de préparation se recouvrent syntaxiquement mais leurs propriétaires et consommations restent distincts ; aucune règle métier commune ne justifie une façade.",
+      "evidence": "apps/web/src/components/actions/action-declaration/before/action-before-sectioned-content.tsx:13-25 et apps/web/src/components/actions/action-declaration/before/team-logistics-section.tsx:15-27 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e2cfd7c6b62ab3ea",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Le panneau d’inscription est rendu dans deux contextes d’intégration du même composant ; les garder explicites préserve les frontières embedded et carte sans créer une seconde abstraction de formulaire.",
+      "evidence": "apps/web/src/components/actions/action-declaration/before/identity-and-sharing-section.tsx:73-82 et apps/web/src/components/actions/action-declaration/before/identity-and-sharing-section.tsx:209-218 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "d37ce665cfba0492",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les petits titres de sections réutilisent la même présentation visuelle dans des surfaces de saisie distinctes ; aucun invariant métier ou contrat public ne résulte de leur extraction.",
+      "evidence": "apps/web/src/components/actions/action-declaration/before/planned-action-location-section.tsx:62-69 et apps/web/src/components/actions/action-declaration/before/planned-action-presentation-section.tsx:38-45 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "30314083349d29ba",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Le titre est une primitive de présentation locale répétée entre deux sections de formulaire qui portent des champs différents ; l’extraction ne centraliserait aucune connaissance durable.",
+      "evidence": "apps/web/src/components/actions/action-declaration/before/planned-action-location-section.tsx:62-71 et apps/web/src/components/actions/action-declaration/before/planned-action-volunteer-section.tsx:41-50 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "337ec3c6c51d1e9e",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les blocs de participation prévisionnelle ont des propriétaires de formulaire distincts et la similarité concerne uniquement le squelette d’affichage ; aucune divergence métier ne serait empêchée par une extraction générique.",
+      "evidence": "apps/web/src/components/actions/action-declaration/before/planned-action-volunteer-section.tsx:15-22 et apps/web/src/components/actions/action-declaration/before/preparation-planning-fields.tsx:19-27 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4ecf1fb311962f35",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Le formatage de poids est volontairement local aux projections d’administration et d’estimation ; leurs consommateurs et contrats de présentation ne sont pas une source métier partagée.",
+      "evidence": "apps/web/src/components/admin/environmental-impact-capture-panel.formatters.ts:3-13 et apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.formatters.ts:1-10 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "1dd3675ac5adccec",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Le formatage de date apparaît dans des surfaces de projection différentes et reste une convention d’affichage locale ; aucun owner métier commun n’est démontré.",
+      "evidence": "apps/web/src/components/admin/environmental-impact-capture-panel.formatters.ts:13-29 et apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel.helpers.ts:98-114 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "a9e207889ecee9ad",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les tons de risque et leurs seuils sont liés à deux panneaux administratifs distincts ; la similarité est de présentation et ne justifie pas de déplacer la politique de chaque panneau.",
+      "evidence": "apps/web/src/components/admin/environmental-impact-capture-panel.formatters.ts:43-62 et apps/web/src/components/admin/free-plan-services-panel.model.ts:182-201 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "9447f444690121e0",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les cartes de score personnel et scolaire partagent une forme visuelle mais exposent des projections et libellés pédagogiques différents ; leur autonomie rend les deux contrats lisibles.",
+      "evidence": "apps/web/src/components/learn/quiz/quiz-session-panel-summary-personal.tsx:36-48 et apps/web/src/components/learn/quiz/quiz-session-panel-summary-school.tsx:70-82 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "02f5b70a4d279b45",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les imports et mocks communs rendent chaque test de route autonome ; la duplication appartient au harness de tests et ne doit pas déplacer les assertions métier.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.test.ts:1-6 et apps/web/src/app/api/actions/[actionId]/publish/route.test.ts:4-9 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0f8efcd1dc2b9a63",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les suites de routes Jour J et duplication restent indépendantes et répètent uniquement leur installation de mocks ; centraliser ce setup déplacerait le harness sans réduire un invariant runtime.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/day/route.test.ts:1-9 et apps/web/src/app/api/actions/[actionId]/duplicate/route.test.ts:1-9 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "73bf56dcecba798b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux tests réutilisent une préparation de mocks similaire mais vérifient des endpoints différents ; la répétition reste de l’infrastructure de test autonome.",
+      "evidence": "apps/web/src/app/api/actions/[actionId]/day/route.test.ts:9-16 et apps/web/src/app/api/actions/[actionId]/duplicate/route.test.ts:8-15 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "969900b621582e3f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux blocs du test de carte d’inbox représentent des scénarios d’éléments distincts dans le même consumer ; conserver les assertions locales garde chaque décision admin auditable.",
+      "evidence": "apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:170-179 et apps/web/src/components/admin/creator-inbox/inbox-item-card.test.tsx:180-189 ; pair CURRENT relu.",
+      "reviewedRef": "2316826735c69e0ecf446b0fbf384381c3dd4b50"
     }
   ]
 }

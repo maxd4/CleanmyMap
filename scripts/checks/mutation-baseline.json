@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "b63f0a5e26ec169d727688e7d62a4dc87d147aca",
+  "sourceCommit": "2316826735c69e0ecf446b0fbf384381c3dd4b50",
   "tool": "stryker",
   "toolVersion": "10.0.0",
   "runnerVersion": "10.0.0",

@@ -387,15 +387,22 @@ export function isFormalitiesPublicationBlocked(
   qualification: ActionFormalitiesQualification,
   workflow: ActionFormalitiesWorkflowState,
 ): boolean {
+  return getBlockedRequiredFormalityIds(qualification, workflow).length > 0;
+}
+
+export function getBlockedRequiredFormalityIds(
+  qualification: ActionFormalitiesQualification,
+  workflow: ActionFormalitiesWorkflowState,
+): string[] {
   const progressById = new Map(
     workflow.progress.map((progress) => [progress.formalityId, progress]),
   );
-  return qualification.formalities.some((formality) => {
+  return qualification.formalities.filter((formality) => {
     if (formality.requirementStatus !== "required") return false;
     const progress = progressById.get(formality.id);
     return !progress ||
       !progress.active ||
       !progress.validForQualification ||
       progress.userStatus !== "sent";
-  });
+  }).map((formality) => formality.id);
 }

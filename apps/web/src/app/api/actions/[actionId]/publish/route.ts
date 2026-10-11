@@ -14,7 +14,7 @@ import { deriveActionFormalitiesFactsFromAction } from "@/lib/actions/formalitie
 import { qualifyActionFormalities } from "@/lib/actions/formalities-qualification";
 import {
   buildFormalitiesWorkflowState,
-  isFormalitiesPublicationBlocked,
+  getBlockedRequiredFormalityIds,
   normalizeActionFormalitiesWorkflow,
 } from "@/lib/actions/formalities-workflow";
 import { buildFormalitiesTerritoryFingerprint } from "@/lib/actions/formalities-rules";
@@ -58,19 +58,7 @@ function requiredFormalitiesNotReady(params: {
   qualification: ReturnType<typeof qualifyActionFormalities>;
   workflow: ReturnType<typeof buildFormalitiesWorkflowState>;
 }): string[] {
-  if (!isFormalitiesPublicationBlocked(params.qualification, params.workflow)) {
-    return [];
-  }
-  const progressById = new Map(
-    params.workflow.progress.map((progress) => [progress.formalityId, progress]),
-  );
-  return params.qualification.formalities
-    .filter((formality) => {
-      if (formality.requirementStatus !== "required") return false;
-      const progress = progressById.get(formality.id);
-      return !progress || !progress.active || !progress.validForQualification || progress.userStatus !== "sent";
-    })
-    .map((formality) => formality.id);
+  return getBlockedRequiredFormalityIds(params.qualification, params.workflow);
 }
 
 function spontaneousOrganizerPublicationError(

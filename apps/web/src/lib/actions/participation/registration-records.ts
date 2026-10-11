@@ -7,7 +7,7 @@ export type ActionRegistrationCancellationReason = NonNullable<
   ActionRegistrationRow["registration_cancellation_reason"]
 >;
 
-export type ActionManualInvitationStatus = "pending" | "accepted" | "rejected" | "withdrawn";
+type ActionManualInvitationStatus = "pending" | "accepted" | "rejected" | "withdrawn";
 
 export type ActionManualInvitationStatusRecord = {
   userId: string;

@@ -14,7 +14,7 @@ import { AppError } from "@/lib/errors/app-errors";
 import { createActionError, parseErrorMessage, parseJsonSafely } from "./http-errors";
 import type { ActionDuplicatePrefill } from "./action-duplication";
 
-export type ActionDuplicateResponse = { status: "ok"; prefill: ActionDuplicatePrefill };
+type ActionDuplicateResponse = { status: "ok"; prefill: ActionDuplicatePrefill };
 
 export type ActionPrefillResponse = {
   status: "ok";
