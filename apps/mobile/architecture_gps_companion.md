@@ -1,8 +1,8 @@
 # Architecture Technique — Application Compagnon GPS
 
 > Statut courant : `CURRENT / ACTIVE DEVELOPMENT`, `NOT_PRODUCTION_READY`.
-> Le lot M0 protège la baseline existante par des tests sans ajouter de
-> fonctionnalité produit ni refaire l'UI.
+> Le shell V1 est natif et réservé à l'application mobile ; il ne remplace ni
+> `RootLayoutChrome`, ni `HomeFooter`, ni le contrat de rubans du site web.
 
 ## Périmètre V1 et frontières
 
@@ -19,6 +19,14 @@ et signalement terrain. La création réutilise les routes et services Actions
 canoniques ; le signalement utilise `trash_spotter_spots` et les intents média
 existants. La photo de mission ne fait pas partie de cette V1 ;
 `mission_actions` reste une évolution future sans dépendance du runtime mobile.
+
+Le shell expose une seule barre inférieure Lucide (`Agir`, `Carte`, `Compte`).
+Le registre de destinations distingue les entrées courantes des blocs web
+planifiés (`Accueil`, `Réseau`, `Apprendre`) ; ces derniers ne sont pas rendus.
+Agir navigue vers une seule sous-vue à la fois, sans démonter les parcours et
+leurs brouillons lors d'un changement d'onglet. Compte regroupe les utilitaires
+du chrome web dans ses six sections natives ou dans un pont explicitement
+étiqueté vers la surface web canonique.
 
 ## 1. Vue d'ensemble
 

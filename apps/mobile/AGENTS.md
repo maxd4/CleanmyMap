@@ -23,8 +23,16 @@ V1.
 ## Shell V1
 
 Le shell mobile expose uniquement trois destinations persistantes et accessibles
-: `Agir`, `Carte` et `Compte`. `Agir` présente les entrées terrain `Démarrer une
-action`, `Rejoindre une action`, `Organiser une action` et `Signaler un déchet`.
+dans une barre inférieure native unique : `Agir`, `Carte` et `Compte`. Les icônes
+de cette barre viennent exclusivement de `lucide-react-native`, avec la version
+Expo-compatible de `react-native-svg`, et l'inset de la `SafeAreaView` protège
+les appareils à zone sûre. Le registre explicite
+`MOBILE_DESTINATION_REGISTRY` conserve aussi les blocs web futurs sans les
+exposer avant leur implémentation ; la navigation primaire reste plafonnée à
+cinq destinations.
+
+`Agir` présente les entrées terrain `Démarrer une action`, `Rejoindre une
+action`, `Créer une action` et `Signaler un déchet`.
 Le parcours `Rejoindre une action` est natif : liste des actions futures
 publiées, recherche, détail, inscription, suivi, annulation, invitations,
 actions passées éligibles et demande de rattachement. `Créer une action` reprend
@@ -44,7 +52,13 @@ grant INSERT et la policy RLS limitent l'écriture mobile à `volunteer_id` et
   projection privée `/api/mobile/account`, tandis que les surfaces web
   `/actions/map`, `/politique-confidentialite`, `/mentions-legales` et `/contact`
   restent des ponts ciblés lorsque le contrat canonique le demande ;
-le mobile ne crée pas de deuxième messagerie ni de deuxième modèle métier.
+le mobile ne crée pas de deuxième messagerie ni de deuxième modèle métier. Les
+trois parcours Agir sont des sous-vues : un changement d'onglet ou un retour
+arrière conserve les composants montés, leurs états et les brouillons locaux.
+Compte est un hub de sections pour le profil, l'activité et les notifications,
+les préférences, la recherche, l'aide/feedback et les informations légales ; un
+lien vers une surface web est explicitement présenté comme tel et ne devient
+pas un faux réglage natif.
 
 Le workspace `apps/mobile`, son `package.json`, cet `AGENTS.md` et ses contrats
 essentiels restent présents tant qu'une décision d'architecture explicite ne

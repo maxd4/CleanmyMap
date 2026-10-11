@@ -139,6 +139,24 @@ jamais `GRANTED_ROLE`. La confidentialité, les mentions légales, le contact et
 la demande d'effacement restent les surfaces web canoniques ouvertes par des
 ponts ciblés. Le mobile affiche une demande RGPD, pas une suppression immédiate.
 
+## Extension M-D — navigation native et chrome mobile
+
+La décision de chrome web reste inchangée : `RootLayoutChrome`, `HomeFooter` et
+le contrat des rubans appartiennent au site. L'application mobile utilise son
+propre registre borné et une barre inférieure permanente avec trois destinations
+(`Agir`, `Carte`, `Compte`) et des icônes Lucide React Native. Les entrées
+futures `Accueil`, `Réseau` et `Apprendre` restent dans le registre comme
+planifiées mais ne sont pas exposées avant implémentation réelle ; la navigation
+primaire ne dépasse pas cinq destinations.
+
+Agir ouvre désormais les parcours `Rejoindre`, `Créer` et `Signaler` comme des
+sous-vues navigables. Les composants restent montés pendant les changements
+d'onglet afin de conserver les formulaires, appels en cours et brouillons.
+Compte est le hub natif des utilitaires auparavant répartis dans le chrome web :
+profil, activité/notifications, préférences, recherche, aide/feedback et
+informations légales. Les surfaces web restantes sont ouvertes par des ponts
+explicitement étiquetés, sans les présenter comme des réglages natifs.
+
 ## Contrat RLS Clerk — LOT 2A réalisé
 
 La migration

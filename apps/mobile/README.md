@@ -58,9 +58,17 @@ second modèle métier, ni gamification parallèle côté mobile.
 
 ## Shell mobile V1
 
-Le shell expose trois destinations persistantes : `Agir`, `Carte` et `Compte`.
+Le shell expose une seule barre de navigation permanente en bas de l'écran avec
+trois destinations persistantes : `Agir`, `Carte` et `Compte`. Les icônes sont
+Lucide React Native, l'état sélectionné est exposé aux technologies
+d'assistance et la `SafeAreaView` conserve l'accessibilité de la barre sur les
+appareils à encoche ou à barre système. Le registre
+`MOBILE_DESTINATION_REGISTRY` contient également `Accueil`, `Réseau` et
+`Apprendre` comme destinations planifiées, sans les afficher tant que leurs
+parcours natifs ne sont pas réellement implémentés. Il n'y a jamais plus de
+cinq destinations primaires sans accès secondaire explicite.
 
-`Agir` présente quatre choix :
+`Agir` présente quatre choix dans des sous-vues navigables :
 
 - `Démarrer une action` vérifie une seule fois les permissions GPS avant de créer
   une mission `pending` owner-scoped avec le `sub` Clerk, puis réutilise
@@ -81,8 +89,16 @@ Le shell expose trois destinations persistantes : `Agir`, `Carte` et `Compte`.
   photos via les intents média canoniques et n'affiche jamais un statut avant
   confirmation serveur.
 
+Les sous-vues Agir restent montées pendant les changements d'onglet afin de
+préserver les saisies, les chargements et les brouillons. Le bouton de retour
+revient à l'accueil Agir, puis le retour système revient à l'onglet Agir avant
+de quitter le shell. Une mission active quitte ce shell pour conserver la carte
+GPS plein écran et ses interfaces de finalisation.
+
 La destination `Carte` ouvre `/actions/map` pour la consultation existante. Le
-mobile n'implémente pas de deuxième messagerie. `Compte` charge une projection
+mobile n'implémente pas de deuxième messagerie. `Compte` est un hub à sections
+(`Mon profil`, `Activité et notifications`, `Préférences`, `Rechercher`, `Aide
+et feedback`, `À propos et informations légales`) et charge une projection
 privée bornée depuis `/api/mobile/account` : identité Clerk, onboarding,
 localisations préférées, rôle attribué/parcours actif, préférences, indicateurs
 serveur, historique, invitations, missions GPS et actions organisées. Les

@@ -197,6 +197,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-svg": "15.15.4",
     "metro@0.84.5": {
       "image-size": "file:apps/mobile/vendor/image-size"
     },
