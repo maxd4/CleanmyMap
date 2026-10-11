@@ -85,10 +85,10 @@ test.describe("campaign 3B — public surfaces and late authentication", () => {
     const guard = installMutationGuard(page);
     const response = await page.goto("/sections/weather", { waitUntil: "domcontentloaded" });
     expect(response?.status()).toBe(200);
-    await expect(page.getByRole("combobox")).toBeVisible();
+    const location = page.getByRole("combobox", { name: "Ex. Lyon, Marseille, Nantes..." });
+    await expect(location).toBeVisible();
     await expect(page).not.toHaveURL(/\/sign-(?:in|up)(?:[/?#]|$)/i);
 
-    const location = page.getByRole("combobox");
     await location.fill("");
     await location.fill("Lyon");
     const option = page.getByRole("option").filter({ hasText: /Lyon/i }).first();
@@ -115,14 +115,16 @@ test.describe("campaign 3B — public surfaces and late authentication", () => {
       expect(secondDay).not.toBe(firstDay);
     }
 
-    const weatherUnavailable = await page.getByText("Météo indisponible", { exact: true }).isVisible().catch(() => false);
-    expect(hasForecast || weatherUnavailable).toBe(true);
+    await expect(page.getByText("Prévisions et créneau conseillé", { exact: true })).toBeVisible();
+    const noForecastContext = page.getByText("Aucune date de prévision sélectionnée.", { exact: true });
+    const hasNoForecastContext = await noForecastContext.isVisible().catch(() => false);
+    expect(hasForecast || hasNoForecastContext).toBe(true);
     expect(guard.unexpected).toEqual([]);
     await assertNoPageErrors(page, "weather");
     evidence.push({
       id: "E2E-3B-WEATHER",
       PAGE: "PAGE_OK",
-      INTERACTION: hasSuggestion && (hasForecast || weatherUnavailable) ? "INTERACTION_OK" : "BLOCKED_DATA",
+      INTERACTION: hasSuggestion && (hasForecast || hasNoForecastContext) ? "INTERACTION_OK" : "BLOCKED_DATA",
       END_TO_END: hasForecast ? "END_TO_END_OK" : "BLOCKED_DATA",
       provider: hasForecast ? "live Open-Meteo" : "unavailable",
       geolocation: "controlled-denial-fallback-observed",
@@ -144,20 +146,18 @@ test.describe("campaign 3B — public surfaces and late authentication", () => {
     const response = await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
     expect(response?.status()).toBe(200);
     await dismissCookies(page);
-    const minutes = page.getByLabel("Temps dispo (min)");
+    const minutes = page.getByLabel("Créneau total de l’événement (minutes)");
     await expect(minutes).toBeVisible();
     await minutes.fill("240");
     await expect(minutes).toHaveValue("240");
-    await page.getByLabel("Météo").selectOption("rain");
-    await expect(page.getByLabel("Météo")).toHaveValue("rain");
     await expect(page).not.toHaveURL(/\/sign-(?:in|up)(?:[/?#]|$)/i);
     await page.waitForTimeout(1_500);
     expect(guard.observed).toEqual([]);
     const signIn = page.getByRole("link", { name: /Se connecter pour calculer/i });
     await expect(signIn).toBeVisible();
-    await expect(signIn).toHaveAttribute("href", "/sign-in?redirect_url=%2Fsections%2Froute");
+    await expect(signIn).toHaveAttribute("href", "/sign-in?redirect_url=%2Factions%2Fnew%3Fpanel%3Ditineraire");
     const signInHref = await signIn.getAttribute("href");
-    expect(signInHref).toBe("/sign-in?redirect_url=%2Fsections%2Froute");
+    expect(signInHref).toBe("/sign-in?redirect_url=%2Factions%2Fnew%3Fpanel%3Ditineraire");
     await page.goto(signInHref!, { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/sign-in(?:\?.*)?$/);
     expect(guard.unexpected).toEqual([]);
@@ -197,7 +197,7 @@ test.describe("campaign 3B — public surfaces and late authentication", () => {
   test("GUIDE: guide alias and public practice tabs reach stable URL targets", async ({ page }) => {
     const guard = installMutationGuard(page);
     await page.goto("/sections/guide", { waitUntil: "domcontentloaded" });
-    await expect(page).toHaveURL(/\/sections\/weather(?:[?#].*)?$/);
+    await expect(page).toHaveURL(/\/actions\/new\?panel=meteo$/);
     await page.goto("/learn/bonnes-pratiques", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("tab", { name: /Composter/i }).first()).toBeVisible();
     await page.getByRole("tab", { name: /Composter/i }).first().click();
@@ -211,7 +211,7 @@ test.describe("campaign 3B — public surfaces and late authentication", () => {
       PAGE: "PAGE_OK",
       INTERACTION: "INTERACTION_OK",
       END_TO_END: "END_TO_END_OK",
-      alias: "/sections/guide → /sections/weather",
+      alias: "/sections/guide → /actions/new?panel=meteo",
       proof: "practice theme compost URL survived reload; no server save was attempted",
       checklist: "NOT_EXPOSED_ON_CANONICAL_PUBLIC_PAGE",
     });

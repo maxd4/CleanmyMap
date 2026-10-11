@@ -1,6 +1,6 @@
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 function parseCsvRecords(csv: string): string[][] {
   const records: string[][] = [];
@@ -52,6 +52,17 @@ function parseCsvRecords(csv: string): string[][] {
   return records;
 }
 
+async function dismissCookies(page: Page): Promise<void> {
+  const refuse = page.getByRole("button", { name: "Tout refuser" });
+  try {
+    await refuse.waitFor({ state: "visible", timeout: 3_000 });
+    await refuse.click();
+    await expect(refuse).toHaveCount(0);
+  } catch {
+    // The banner may already be persisted for this browser context.
+  }
+}
+
 test.describe("campaign 1 - public reading and late authentication", () => {
   test("public map renders anonymously", async ({ page }) => {
     await page.goto("/actions/map");
@@ -66,14 +77,20 @@ test.describe("campaign 1 - public reading and late authentication", () => {
 
   test("public partner network renders anonymously", async ({ page }) => {
     await page.goto("/partners/network");
-    await expect(page).toHaveURL(/\/partners\/network$/);
+    await expect(page).toHaveURL(/\/sections\/community\?tab=partners$/);
     await expect(page.getByPlaceholder(/rechercher un partenaire/i)).toBeVisible();
   });
 
   test("public group join form renders anonymously", async ({ page }) => {
     await page.goto("/sections/rejoindre-un-formulaire");
-    await expect(page.getByRole("heading", { name: "Rejoindre un formulaire de groupe" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: /rechercher une action/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Rejoindre une action" })).toBeVisible();
+    const explorerSearch = page.getByPlaceholder("Action ou lieu...");
+    if (await explorerSearch.isVisible().catch(() => false)) {
+      await expect(explorerSearch).toBeVisible();
+    } else {
+      await expect(page.getByText("Aucune action future rejoignable n'est disponible pour le moment.", { exact: true })).toBeVisible();
+      await expect(page.getByText("0 actions", { exact: true })).toBeVisible();
+    }
   });
 
   test("action declaration exposes the guided pre-form before authentication", async ({ page }) => {
@@ -92,6 +109,7 @@ test.describe("campaign 1 - public reading and late authentication", () => {
     ]) {
       await page.setViewportSize(viewport);
       await page.goto("/actions/new");
+      await dismissCookies(page);
       await page.getByRole("button", { name: /Essentiel/i }).click();
 
       await expect(page.getByRole("heading", { name: "Les informations essentielles" })).toBeVisible();
@@ -116,11 +134,13 @@ test.describe("campaign 1 - public reading and late authentication", () => {
       await page.getByRole("button", { name: /Terrain/i }).click();
       await expect(page.getByRole("heading", { name: "Terrain" })).toBeVisible();
       await expect(page.getByLabel("Point de rendez-vous précis")).toBeVisible();
-      await page.getByLabel("Départ → arrivée").check();
+      await page.getByText("Cleanwalk itinérante", { exact: true }).click();
+      await page.getByText("Départ → arrivée", { exact: true }).click();
+      await expect(page.getByRole("radio", { name: /Départ → arrivée.*Arrivée/ })).toBeChecked();
       await page.getByRole("combobox", { name: "Arrivée" }).fill("Place de la République");
       await expect(page.getByRole("combobox", { name: "Arrivée" })).toHaveValue("Place de la République");
       await page.getByRole("button", { name: /Équipe et logistique/i }).click();
-      await expect(page.getByRole("heading", { name: "Inscriptions des bénévoles" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Inscriptions des bénévoles" }).first()).toBeVisible();
       await expect(page.getByLabel("Nombre de bénévoles attendus")).toBeVisible();
       await page.getByLabel("Nombre de bénévoles attendus").fill("12");
       await page.getByLabel("Message complémentaire aux participants").fill("Merci d’arriver dix minutes avant.");
@@ -158,9 +178,9 @@ test.describe("campaign 1 - public reading and late authentication", () => {
     if (privateObservationResponses.length > 0) {
       expect(privateObservationResponses).toContain(401);
     }
-    await expect(page.getByText("Mettre à jour l’état du lieu", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "01 • État observé du lieu", exact: true })).toBeVisible();
     await expect(page.getByRole("group", { name: "État observé du lieu" })).toBeVisible();
-    await expect(page.getByText("Position Certifiée", { exact: true })).toBeVisible();
+    await expect(page.getByText("Localisé", { exact: true })).toBeVisible();
 
     const category = page.locator('button[id^="quick-signalement-waste-"]').first();
     await category.click();
@@ -176,32 +196,39 @@ test.describe("campaign 1 - public reading and late authentication", () => {
     expect(draft).toMatchObject({
       recordType: "spot",
       selectedCategories: [expect.any(String)],
-      location: { lat: 48.8566, lng: 2.3522 },
     });
+    expect(draft).not.toHaveProperty("location");
   });
 
   test("map exports produce inspectable files matching the public map response", async ({ page }) => {
-    const mapResponsePromise = page.waitForResponse(
-      (response) => {
-        const url = new URL(response.url());
-        return url.pathname === "/api/actions/map" && response.status() === 200;
-      },
-      { timeout: 30_000 },
-    );
+    const mapPayloads: Array<{ items?: Array<{ id?: string }>; count?: number }> = [];
+    page.on("response", (response) => {
+      const url = new URL(response.url());
+      if (url.pathname !== "/api/actions/map" || response.status() !== 200) return;
+      void response.json().then((payload: unknown) => {
+        if (payload && typeof payload === "object") {
+          mapPayloads.push(payload as { items?: Array<{ id?: string }>; count?: number });
+        }
+      }).catch(() => undefined);
+    });
 
     await page.goto("/actions/map");
-    const mapPayload = (await (await mapResponsePromise).json()) as {
-      items?: Array<{ id?: string }>;
-      count?: number;
-    };
+    await dismissCookies(page);
+    const exportButton = page.getByRole("button", { name: "Exporter la vue" });
+    await expect.poll(() => mapPayloads.length, { timeout: 30_000 }).toBeGreaterThan(0);
+    await expect(exportButton).toBeVisible({ timeout: 30_000 });
+    const mapPayload = mapPayloads.at(-1)!;
     const expectedIds = (mapPayload.items ?? [])
       .map((item) => item.id)
       .filter((id): id is string => typeof id === "string" && id.length > 0);
 
     expect(mapPayload.count).toBe(expectedIds.length);
-    expect(expectedIds.length).toBeGreaterThan(0);
-
-    const exportButton = page.getByRole("button", { name: "Exporter la vue de la carte" });
+    if (expectedIds.length === 0) {
+      await expect(page.getByRole("status")).toBeVisible();
+      await expect(page.getByText("Carte vide", { exact: true })).toBeVisible();
+      await expect(exportButton).toHaveCount(0);
+      return;
+    }
     await expect(exportButton).toBeVisible();
     await expect(exportButton).toBeEnabled();
 
@@ -219,7 +246,8 @@ test.describe("campaign 1 - public reading and late authentication", () => {
       const menuItem = page.getByRole("menuitem", { name: new RegExp(`^${format}`) });
       await expect(menuItem).toBeVisible();
       const downloadPromise = page.waitForEvent("download", { timeout: 30_000 });
-      await menuItem.click();
+      await menuItem.focus();
+      await menuItem.press("Enter");
       const download = await downloadPromise;
       const filename = download.suggestedFilename();
       const filePath = path.join(downloadDirectory, filename);

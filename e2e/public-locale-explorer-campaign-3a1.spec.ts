@@ -1,9 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 
 async function openPreferences(page: Page) {
-  const trigger = page.locator('summary[aria-controls="preferences-menu-panel"]').last();
+  const trigger = page.getByRole("button", { name: /Menu des préférences d['’]affichage et langue/i });
   await expect(trigger).toBeVisible();
-  await trigger.hover();
+  await trigger.click();
   const panel = page.locator("#preferences-menu-panel:visible");
   await expect(panel).toBeVisible();
   return panel;
@@ -72,6 +72,7 @@ test.describe("campaign 3a1 — locale and Explorer", () => {
       () => page.evaluate(() => document.cookie.includes("cleanmymap.locale=en")),
       { timeout: 5_000 },
     ).toBe(true);
+    await page.waitForTimeout(500);
     const stableNavigationCount = mainFrameNavigations;
     await page.waitForTimeout(1_500);
     expect(mainFrameNavigations).toBe(stableNavigationCount);

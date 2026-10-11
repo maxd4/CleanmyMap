@@ -1,3 +1,4 @@
+import { clerk } from "@clerk/testing/playwright";
 import { expect, test } from "@playwright/test";
 
 test("Comprendre cet itinéraire affiche la justification d'additionnalité", async ({ page }) => {
@@ -129,6 +130,16 @@ test("Comprendre cet itinéraire affiche la justification d'additionnalité", as
     await refuseCookies.click();
   }
   const calculate = page.getByRole("button", { name: /Calculer la recommandation/ });
+  if (!(await calculate.isVisible().catch(() => false))) {
+    const email = process.env.E2E_CLERK_USER_EMAIL?.trim();
+    if (!email) throw new Error("E2E_CLERK_USER_EMAIL is required for route additionality.");
+    const signIn = page.getByRole("link", { name: "Se connecter pour calculer" });
+    await expect(signIn).toBeVisible();
+    await signIn.click();
+    await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Factions\/new%3Fpanel%3Ditineraire$/);
+    await clerk.signIn({ page, emailAddress: email });
+    await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
+  }
   await expect(calculate).toBeVisible({ timeout: 30_000 });
   await calculate.click();
   await expect(page.getByText("Comprendre cet itinéraire")).toBeVisible({ timeout: 30_000 });

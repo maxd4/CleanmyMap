@@ -4,11 +4,12 @@ import { runSingleActionQuery } from "@/lib/actions/query";
 type ModerationNotificationClient = SupabaseClient;
 
 function isDuplicateNotificationError(error: unknown): boolean {
-  if (typeof error !== "object" || error === null || !("code" in error)) {
+  const record = typeof error === "object" ? error : undefined;
+  if (!record || !("code" in record)) {
     return false;
   }
 
-  return (error as { code?: unknown }).code === "23505";
+  return (record as { code?: unknown }).code === "23505";
 }
 
 async function insertModerationNotification(

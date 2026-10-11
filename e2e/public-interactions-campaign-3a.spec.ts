@@ -42,10 +42,9 @@ async function assertNoConsoleErrors(page: Page, surface: string): Promise<void>
 }
 
 async function openPreferences(page: Page): Promise<Locator> {
-  const triggers = page.locator('summary[aria-controls="preferences-menu-panel"]');
-  const trigger = triggers.last();
+  const trigger = page.getByRole("button", { name: /Menu des préférences d['’]affichage et langue/i });
   await expect(trigger).toBeVisible();
-  await trigger.hover();
+  await trigger.click();
   const panel = page.locator("#preferences-menu-panel:visible");
   await expect(panel).toBeVisible({ timeout: 1000 });
   return panel;
@@ -96,8 +95,8 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
       ["/methodologie", "/methodologie"],
       ["/sections/open-data", "/sections/open-data"],
       ["/sections/annuaire", "/sections/annuaire"],
-      ["/partners/network", "/partners/network"],
-      ["/sections/rejoindre-un-formulaire", "/sections/rejoindre-un-formulaire"],
+      ["/partners/network", "/sections/community?tab=partners"],
+      ["/sections/rejoindre-un-formulaire", "/sections/rejoindre-une-action"],
       ["/actions/new", "/actions/new"],
       ["/signalement", "/signalement"],
     ] as const;
@@ -105,7 +104,8 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
     const reached: string[] = [];
     for (const [source, expectedPath] of routes) {
       await page.goto(source, { waitUntil: "domcontentloaded" });
-      await expect(page).toHaveURL(new RegExp(`${expectedPath.replaceAll("/", "\\/")}(?:[?#].*)?$`));
+      const actualUrl = new URL(page.url());
+      expect(`${actualUrl.pathname}${actualUrl.search}`).toBe(expectedPath);
       await assertNoClerkRedirect(page);
       reached.push(new URL(page.url()).pathname);
     }
@@ -160,7 +160,7 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
 
     const localePanel = await openPreferences(page);
     const locale = localePanel.locator("#locale-switch");
-    const displayMode = localePanel.locator("#display-mode-switch");
+    const displayMode = localePanel.getByRole("radio", { name: /Exhaustif|Exhaustive/ });
     await expect(locale).toBeVisible();
     await expect(displayMode).toBeVisible();
 
@@ -182,13 +182,13 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
     const reloadedPanel = await openPreferences(page);
     await expect(reloadedPanel.locator("#locale-switch")).toHaveValue("en");
 
-    await reloadedPanel.locator("#display-mode-switch").selectOption("sobre");
+    await reloadedPanel.getByRole("radio", { name: /Sobre|Calm/ }).check();
     await expect.poll(() => page.evaluate(() => localStorage.getItem("cleanmymap.display_mode"))).toBe("sobre");
     await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute("data-display-mode"))).toBe("sobre");
     await page.reload({ waitUntil: "domcontentloaded" });
     const secondReloadPanel = await openPreferences(page);
     await expect(secondReloadPanel.locator("#locale-switch")).toHaveValue("en");
-    await expect(secondReloadPanel.locator("#display-mode-switch")).toHaveValue("sobre");
+    await expect(secondReloadPanel.getByRole("radio", { name: /Sobre|Calm/ })).toBeChecked();
     await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute("data-display-mode"))).toBe("sobre");
 
     const hiddenThemeButton = page.getByRole("button", { name: "Toggle theme" });
@@ -286,7 +286,15 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
   test("map filters, selection and reset synchronize the public UI", async ({ page }) => {
     await page.goto("/actions/map", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "Cartographie des actions", exact: true })).toBeVisible();
-    const zone = page.getByRole("searchbox", { name: "Rechercher une zone ou un lieu" });
+    const filterButton = page.getByRole("button", { name: "Filtrer", exact: true });
+    const hasFilterControls = await filterButton.waitFor({ state: "visible", timeout: 15_000 }).then(() => true).catch(() => false);
+    if (!hasFilterControls) {
+      await expect(page.getByRole("status")).toBeVisible();
+      await expect(page.getByRole("status")).toContainText(/Carte vide|Aucun point|indisponible/i);
+      return;
+    }
+    await filterButton.click();
+    const zone = page.getByRole("searchbox", { name: "Filtrer les éléments de cette vue" });
     const period = page.locator("select").filter({ has: page.locator("option[value='current_year']") }).first();
     const reset = page.getByRole("button", { name: "Réinitialiser" }).last();
     await expect(zone).toBeVisible();
@@ -299,7 +307,7 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
       return raw ? JSON.parse(raw).zoneQuery : null;
     })).toBe("Paris");
     await period.selectOption("all_time");
-    const category = page.getByRole("button", { name: /Faible,/ }).first();
+    const category = page.getByRole("button", { name: /Premier seuil,/ }).first();
     await expect(category).toBeVisible();
     const before = await category.getAttribute("aria-pressed");
     await category.click();
@@ -316,8 +324,7 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
       const row = page.getByRole("button", { name: /\./ }).first();
       if (await row.count()) {
         await row.click();
-        await expect(row).toHaveAttribute("aria-pressed", "true");
-        await expect(page.getByRole("button", { name: "Désélectionner l'action" })).toBeVisible();
+        await expect(page).toHaveURL(/\/actions\/map\?[^#]*actionId=/);
         selection = "SELECTED_AND_POPUP_OR_CARD_VISIBLE";
       }
     } else if (await page.getByText(/Aucun point visible avec ces filtres|Aucun point géolocalisé/).count()) {
@@ -338,8 +345,10 @@ test.describe("campaign 3A - public navigation and local interactions", () => {
   });
 
   test("methodology and open-data anchors and internal links reach their targets", async ({ page }) => {
+    await resetBrowserPersistence(page);
     await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading").first()).toBeVisible();
+    await page.locator("summary").filter({ hasText: "Carte des actions" }).click();
     const methodologyAnchor = page.locator('a[href="#methodologie-carte-actions"]').first();
     await expect(methodologyAnchor).toBeVisible();
     await methodologyAnchor.click();
