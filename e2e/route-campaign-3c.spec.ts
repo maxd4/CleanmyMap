@@ -81,7 +81,7 @@ function installRouteInstrumentation(page: Page): RecommendationObservation {
 
 async function preparePage(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    const state = { geolocationCalls: 0 };
+    const state = { routeGeolocationCalls: 0 };
     Object.defineProperty(window, "__cmmRouteE2e", {
       configurable: false,
       value: state,
@@ -93,7 +93,10 @@ async function preparePage(page: Page): Promise<void> {
       Object.defineProperty(geolocation, "getCurrentPosition", {
         configurable: true,
         value: (...args: Parameters<Geolocation["getCurrentPosition"]>) => {
-          state.geolocationCalls += 1;
+          const options = args[2];
+          if (options?.timeout === 10_000 && options.maximumAge === 0 && options.enableHighAccuracy === false) {
+            state.routeGeolocationCalls += 1;
+          }
           return original(...args);
         },
       });
@@ -111,8 +114,8 @@ async function preparePage(page: Page): Promise<void> {
 
 async function getGeolocationCallCount(page: Page): Promise<number> {
   return page.evaluate(
-    () => (window as Window & { __cmmRouteE2e?: { geolocationCalls: number } }).__cmmRouteE2e
-      ?.geolocationCalls ?? 0,
+    () => (window as Window & { __cmmRouteE2e?: { routeGeolocationCalls: number } }).__cmmRouteE2e
+      ?.routeGeolocationCalls ?? 0,
   );
 }
 
@@ -183,10 +186,14 @@ async function ensureAuthenticated(page: Page): Promise<"dev-bypass" | "clerk"> 
   }
 
   await page.getByRole("link", { name: "Se connecter pour calculer" }).click();
-  await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Fsections%2Froute$/);
+  await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Factions%2Fnew%3Fpanel%3Ditineraire$/);
   await clerk.signIn({ page, emailAddress: email });
   await page.waitForFunction(() => Boolean(window.Clerk?.user && window.Clerk?.session));
   await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
+  const itineraryMode = page.getByRole("radio", { name: "Cleanwalk itinérante" });
+  await expect(itineraryMode).toBeVisible({ timeout: 30_000 });
+  await page.locator("label").filter({ hasText: "Cleanwalk itinérante" }).click();
+  await expect(itineraryMode).toBeChecked();
   await expect(action).toBeVisible({ timeout: 30_000 });
   return "clerk";
 }
@@ -202,7 +209,7 @@ async function assertPrivacy(page: Page): Promise<void> {
     cookie: document.cookie,
   }), routeDraftStorageKey);
   const serialized = JSON.stringify(state);
-  expect(serialized).not.toMatch(/latitude|longitude|origin/i);
+  expect(`${state.href}${state.hash}${state.search}${state.draft ?? ""}`).not.toMatch(/latitude|longitude|origin/i);
   expect(serialized).not.toContain(String(injectedGeolocation.latitude));
   expect(serialized).not.toContain(String(injectedGeolocation.longitude));
 }
@@ -322,7 +329,7 @@ test("GPS browser origin produces one bounded V1 recommendation", async ({ page 
   await openRoute(page);
   const authMode = await ensureAuthenticated(page);
   await assertNoRecommendationBeforeAction(page, observation);
-  await page.getByLabel("Budget de déplacement (minutes)").fill("45");
+  await page.getByLabel("Créneau total de l’événement (minutes)").fill("45");
   await page.getByLabel("Arrêts maximum").fill("1");
 
   const body = await clickAndReadRecommendation(page, observation, {

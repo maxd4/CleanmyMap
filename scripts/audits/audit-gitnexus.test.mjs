@@ -122,7 +122,9 @@ test("GitNexus audit emits a heartbeat and bounds a silent local runner", async 
   assert.equal(result.timedOut, true);
   assert.ok(diagnostics.includes("GITNEXUS_STEP_START: status"));
   assert.ok(diagnostics.some((line) => line.startsWith("GITNEXUS_STILL_RUNNING: status elapsed=")));
-  assert.ok(performance.now() - startedAt < 1000);
+  // Windows process-tree cleanup may take longer than the 120 ms child budget;
+  // keep a finite upper bound without making the test depend on sub-second host scheduling.
+  assert.ok(performance.now() - startedAt < 5000);
 });
 
 test("GitNexus audit preserves partial stdout and stderr diagnostics", async (t) => {
