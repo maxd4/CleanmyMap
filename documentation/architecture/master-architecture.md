@@ -101,10 +101,12 @@ contacts d'urgence. Les sujets encore ouverts sont le background headless, la
 validation opérationnelle, ainsi que `mission_actions` et la photo native comme
 évolutions mobiles futures.
 
-Le socle de release courant est Expo SDK 57. Il fournit le contrat Android API
-36, mais le mobile reste `NOT_PRODUCTION_READY` tant qu'un
-projet EAS réel, un artefact signé et les validations appareil, domaines,
-confidentialité et permissions ne sont pas prouvés sur le même SHA.
+Le socle de release courant est Expo SDK 57 / Android API 36.
+Un premier APK EAS `preview` signé a été obtenu le 11 octobre 2026
+et l'écran de connexion Clerk affiché sur Android après activation
+de Native API. Le statut reste `NOT_PRODUCTION_READY` :
+connexions authentifiées, terrain, sécurité et stores ne sont
+pas validés. Voir `apps/mobile/README.md` pour la preuve datée.
 
 ## Application web
 
@@ -225,8 +227,10 @@ Le statut courant du mobile est `CURRENT / ACTIVE DEVELOPMENT`,
 métriques sont finalisées et invariantes. La V1 couvre le GPS avec carte et
 tracé, la reprise/offline, la finalisation serveur, les contacts d'urgence et
 la projection Compte privée `/api/mobile/account`.
-Les sujets ouverts sont le background headless, la validation opérationnelle,
-ainsi que `mission_actions` et la photo native comme évolutions futures.
+Les sujets ouverts sont la validation du background headless en
+conditions réelles, la validation opérationnelle et `mission_actions`
+hors V1. Les photos de signalement utilisent déjà les intents
+média canoniques ; les photos de mission restent hors runtime.
 
 La V1 est destinée aux bénévoles terrain et reste volontairement réduite ; le
 web demeure la surface complète et indépendante. La V1 inclut le GPS live avec
