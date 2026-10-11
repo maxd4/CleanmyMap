@@ -8,7 +8,7 @@
     "build:clean": "node ../../scripts/dev/clean-dev-cache.mjs && npm run build",
     "start": "next start",
     "lint": "eslint src --max-warnings=0",
-    "typecheck": "next typegen && tsc --noEmit --pretty false",
+    "typecheck": "node ../../scripts/dev/clean-dev-cache.mjs && next typegen && tsc --noEmit --pretty false",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:security": "node ../../scripts/checks/validation-policy.mjs --run-vitest --groups security",
