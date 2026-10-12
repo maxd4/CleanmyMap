@@ -64,6 +64,15 @@ export type SpogomiVolunteerSummary = {
   collection: SpogomiCollection;
 };
 
+export type SpogomiVolunteerContributionStatus =
+  | "identity_unlinked"
+  | "presence_not_confirmed"
+  | "validation_pending"
+  | "certificate_available"
+  | "certificate_reissue_available"
+  | "certificate_current"
+  | "certificate_revoked";
+
 function localDate(startsAt: string, timezone: string): string {
   try {
     return new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(startsAt));
@@ -89,17 +98,19 @@ export function getSpogomiVolunteerMissionLabel(kind: SpogomiRecognitionKind): s
 }
 
 async function loadVolunteerEvents(supabase: SupabaseClient, userId: string, eventId?: string): Promise<SpogomiVolunteerEvent[]> {
-  const events = await readAllSpogomiPages("private SPOGOMI volunteer events", (from, to) => {
-    let query = supabase.from("spogomi_events").select("id, action_id, name, location_label, event_slug, public_visibility, starts_at, official_timezone, state", { count: "exact" });
-    if (eventId) query = query.eq("id", eventId);
-    return query.order("starts_at", { ascending: false }).range(from, to);
-  }, { requireExactCount: true }) as Row[];
-  if (!events.length) return [];
-  const eventIds = events.map((event) => String(event.id));
-  const [participants, attestations, actionParticipants] = await Promise.all([
-    readAllSpogomiPages("private SPOGOMI volunteer participants", (from, to) => supabase.from("spogomi_participants")
+  const participants = await readAllSpogomiPages("private SPOGOMI volunteer participants", (from, to) => {
+    let query = supabase.from("spogomi_participants")
       .select("id, event_id, clerk_id, registration_status, attendance_status, account_link_status", { count: "exact" })
-      .in("event_id", eventIds).eq("clerk_id", userId).range(from, to), { requireExactCount: true }),
+      .eq("clerk_id", userId);
+    if (eventId) query = query.eq("event_id", eventId);
+    return query.range(from, to);
+  }, { requireExactCount: true });
+  const participantRows = participants as Row[];
+  if (!participantRows.length) return [];
+  const eventIds = [...new Set(participantRows.map((participant) => String(participant.event_id)))];
+  const [events, attestations, actionParticipants] = await Promise.all([
+    readAllSpogomiPages("private SPOGOMI volunteer events", (from, to) => supabase.from("spogomi_events").select("id, action_id, name, location_label, event_slug, public_visibility, starts_at, official_timezone, state", { count: "exact" })
+      .in("id", eventIds).order("starts_at", { ascending: false }).range(from, to), { requireExactCount: true }),
     readAllSpogomiPages("private SPOGOMI volunteer attestations", (from, to) => supabase.from("spogomi_recognition_attestations")
       .select("id, event_id, participant_id, kind, status, certified_at, evidence_reference, certification_version", { count: "exact" })
       .in("event_id", eventIds).in("kind", [...SPOGOMI_VOLUNTEER_MISSION_KINDS]).range(from, to), { requireExactCount: true }),
@@ -107,7 +118,7 @@ async function loadVolunteerEvents(supabase: SupabaseClient, userId: string, eve
       .select("id, action_id, participation_status", { count: "exact" }).eq("user_id", userId).eq("participation_status", "confirmed")
       .range(from, to), { requireExactCount: true }),
   ]);
-  const participantByEvent = new Map((participants as Row[]).map((participant) => [String(participant.event_id), participant]));
+  const participantByEvent = new Map(participantRows.map((participant) => [String(participant.event_id), participant]));
   const confirmedActionIds = new Set((actionParticipants as Row[]).map((row) => String(row.action_id)));
   const attestationsByParticipant = new Map<string, Row[]>();
   for (const attestation of attestations as Row[]) {
@@ -142,6 +153,25 @@ async function loadVolunteerEvents(supabase: SupabaseClient, userId: string, eve
 
 function certifiedMissions(event: SpogomiVolunteerEvent): SpogomiVolunteerMission[] {
   return event.missions.filter((mission) => mission.status === "certified" && mission.evidenceReference.trim().length > 0);
+}
+
+export function resolveSpogomiVolunteerContributionStatus({
+  event,
+  certifiedMissions: missions,
+  currentFingerprint,
+  latestCertificate,
+}: {
+  event: Pick<SpogomiVolunteerEvent, "identityVerified" | "attendanceStatus" | "actionParticipationConfirmed">;
+  certifiedMissions: SpogomiVolunteerMission[];
+  currentFingerprint: string | null;
+  latestCertificate: { status: SpogomiVolunteerCertificate["status"]; source_fingerprint: string } | null;
+}): SpogomiVolunteerContributionStatus {
+  if (!event.identityVerified) return "identity_unlinked";
+  if (event.attendanceStatus !== "present" || !event.actionParticipationConfirmed) return "presence_not_confirmed";
+  if (!missions.length) return latestCertificate ? "certificate_revoked" : "validation_pending";
+  if (latestCertificate?.status === "active" && latestCertificate.source_fingerprint === currentFingerprint) return "certificate_current";
+  if (latestCertificate) return "certificate_reissue_available";
+  return "certificate_available";
 }
 
 export async function loadSpogomiVolunteerEventForUser(supabase: SupabaseClient, userId: string, eventId: string): Promise<SpogomiVolunteerEvent | null> {

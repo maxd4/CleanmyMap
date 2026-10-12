@@ -8,7 +8,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import type { SpogomiRecognitionKind } from "@/lib/spogomi/recognition";
 
-type ContributionStatus = "identity_unlinked" | "presence_not_confirmed" | "validation_pending" | "certificate_available" | "certificate_revoked";
+type ContributionStatus = "identity_unlinked" | "presence_not_confirmed" | "validation_pending" | "certificate_available" | "certificate_reissue_available" | "certificate_current" | "certificate_revoked";
 type ContributionResponse = {
   status: ContributionStatus;
   event?: { eventName: string; eventDate: string; locationLabel: string; missions: Array<{ id: string; kind: SpogomiRecognitionKind; certificationVersion: string }> };
@@ -21,6 +21,8 @@ const labels: Record<ContributionStatus, string> = {
   presence_not_confirmed: "Présence non confirmée",
   validation_pending: "Validation en attente",
   certificate_available: "Attestation disponible",
+  certificate_reissue_available: "Nouvelle attestation disponible",
+  certificate_current: "Attestation active",
   certificate_revoked: "Attestation révoquée",
 };
 
@@ -76,7 +78,8 @@ export function SpogomiVolunteerContributionsCard({ eventId, signInHref }: { eve
     {!isLoaded ? <p className="text-sm text-slate-600">Vérification de la session…</p> : !isSignedIn ? <><p className="text-sm text-slate-700">Connectez-vous pour consulter vos missions certifiées.</p><CmmButton href={signInHref} tone="primary">Se connecter</CmmButton></> : !payload ? <p className="text-sm text-slate-600">Chargement de vos contributions…</p> : <>
       <p className="inline-flex rounded-full border border-emerald-200 bg-white/75 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-emerald-800">{labels[payload.status]}</p>
       {payload.event?.missions?.length ? <ul className="space-y-2">{payload.event.missions.map((mission) => <li key={mission.id} className="rounded-xl border border-emerald-100 bg-white/75 px-3 py-2 text-sm font-bold text-slate-900">{missionLabels[mission.kind]}<span className="ml-2 text-xs font-normal text-slate-500">certification {mission.certificationVersion}</span></li>)}</ul> : null}
-      {payload.status === "certificate_available" ? <CmmButton type="button" tone="primary" disabled={busy} loading={busy} onClick={() => void generateCertificate()}><Download size={16} />{busy ? "Génération…" : "Télécharger mon attestation"}</CmmButton> : null}
+      {payload.status === "certificate_available" || payload.status === "certificate_reissue_available" || payload.status === "certificate_current" ? <CmmButton type="button" tone="primary" disabled={busy} loading={busy} onClick={() => void generateCertificate()}><Download size={16} />{busy ? "Génération…" : payload.status === "certificate_reissue_available" ? "Générer une nouvelle attestation" : "Télécharger mon attestation"}</CmmButton> : null}
+      {payload.status === "certificate_reissue_available" ? <p className="text-sm font-semibold text-emerald-800">La version précédente reste invalide. Cette nouvelle émission utilisera uniquement l’état certifié actuel.</p> : null}
       {payload.status === "certificate_revoked" ? <p className="text-sm font-semibold text-rose-700">Une correction ou révocation a invalidé la version précédente. Une nouvelle version ne sera proposée qu’après une nouvelle certification.</p> : null}
       {payload.status === "validation_pending" ? <p className="text-sm text-slate-700">La déclaration ou la présence seule ne suffit pas : l’organisateur doit encore certifier la mission.</p> : null}
       <Link href="/profil/benevole#profile" className="inline-flex min-h-11 items-center text-sm font-black text-emerald-800 underline underline-offset-2">Voir mon bilan personnel</Link>
