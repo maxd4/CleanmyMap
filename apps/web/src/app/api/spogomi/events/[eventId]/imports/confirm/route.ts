@@ -12,6 +12,8 @@ export const dynamic = "force-dynamic";
 
 const mappingSchema = z.object({
   name: z.string().min(1).max(255).optional(),
+  participantLastName: z.string().min(1).max(255).optional(),
+  participantFirstName: z.string().min(1).max(255).optional(),
   group: z.string().min(1).max(255).optional(),
   sourceRowId: z.string().min(1).max(255).optional(),
   ticketReference: z.string().min(1).max(255).optional(),
@@ -19,6 +21,12 @@ const mappingSchema = z.object({
   orderAlternativeReference: z.string().min(1).max(255).optional(),
   ticketStatus: z.string().min(1).max(255).optional(),
   ticketDeleted: z.string().min(1).max(255).optional(),
+}).strict();
+
+const selectionSchema = z.object({
+  sheetName: z.string().min(1).max(255).optional(),
+  headerRow: z.coerce.number().int().min(1).max(60).optional(),
+  acceptedRowNumbers: z.array(z.number().int().min(2).max(10002)).max(10000).optional(),
 }).strict();
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
@@ -46,7 +54,21 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
       if (!parsedMapping.success) return validationErrorResponse({ body: ["La correspondance de colonnes est invalide."] });
       mapping = parsedMapping.data;
     }
-    const result = await confirmRosterImport({ supabase, event, userId: access.userId, file, mapping });
+    let rawAcceptedRowNumbers: unknown;
+    try {
+      rawAcceptedRowNumbers = typeof form.get("acceptedRowNumbers") === "string" && form.get("acceptedRowNumbers") ? JSON.parse(form.get("acceptedRowNumbers") as string) : undefined;
+    } catch {
+      return validationErrorResponse({ body: ["La sélection de lignes est invalide."] });
+    }
+    const rawSelection = {
+      ...(typeof form.get("sheetName") === "string" && form.get("sheetName") ? { sheetName: form.get("sheetName") } : {}),
+      ...(typeof form.get("headerRow") === "string" && form.get("headerRow") ? { headerRow: form.get("headerRow") } : {}),
+      ...(rawAcceptedRowNumbers !== undefined ? { acceptedRowNumbers: rawAcceptedRowNumbers } : {}),
+    };
+    const parsedSelection = selectionSchema.safeParse(rawSelection);
+    if (!parsedSelection.success) return validationErrorResponse({ body: ["La sélection de feuille, d’en-tête ou de lignes est invalide."] });
+    const { sheetName, headerRow, acceptedRowNumbers } = parsedSelection.data;
+    const result = await confirmRosterImport({ supabase, event, userId: access.userId, file, mapping, importOptions: { sheetName, headerRow }, acceptedRowNumbers });
     return NextResponse.json(result, { status: result.alreadyImported ? 200 : 201 });
   } catch (error) {
     return handleApiError(error, "spogomi.roster.confirm");

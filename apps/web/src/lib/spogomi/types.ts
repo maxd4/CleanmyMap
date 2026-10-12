@@ -151,11 +151,41 @@ export type SpogomiParticipantState = {
   clerkId: string | null;
 };
 
-export const SPOGOMI_IMPORT_FORMATS = ["csv", "xlsx"] as const;
+export const SPOGOMI_IMPORT_FORMATS = ["csv", "tsv", "xlsx", "xls", "ods"] as const;
 export type SpogomiImportFormat = (typeof SPOGOMI_IMPORT_FORMATS)[number];
+
+export type SpogomiRosterMappingConfidence = "exact" | "high" | "suggested" | "ambiguous" | "missing";
+
+export type SpogomiRosterColumnDiagnostic = {
+  field: SpogomiRosterColumn;
+  selectedHeader: string | null;
+  confidence: SpogomiRosterMappingConfidence;
+  candidates: string[];
+  required: boolean;
+  status: "recognized" | "optional_absent" | "ambiguous";
+};
+
+export type SpogomiRosterSheetCandidate = {
+  index: number;
+  name: string;
+  headerRow: number | null;
+  recognizedFieldCount: number;
+  confidence: SpogomiRosterMappingConfidence;
+  rowCount: number;
+};
+
+export type SpogomiRosterImportSummary = {
+  created: number;
+  unchanged: number;
+  changed: number;
+  conflicts: number;
+  excluded: number;
+};
 
 export type SpogomiRosterColumn =
   | "name"
+  | "participantLastName"
+  | "participantFirstName"
   | "group"
   | "sourceRowId"
   | "ticketReference"
@@ -191,7 +221,14 @@ export type SpogomiRosterRowError = {
     | "invalid_source_row_id"
     | "ticket_reference_required"
     | "order_reference_required"
-    | "ticket_reference_collision";
+    | "ticket_reference_collision"
+    | "ambiguous_identifier"
+    | "formula_or_active_content"
+    | "row_excluded"
+    | "ambiguous_mapping"
+    | "header_not_found"
+    | "ticket_status_unknown"
+    | "ticket_deletion_unknown";
   message: string;
 };
 
@@ -208,6 +245,17 @@ export type SpogomiRosterPreview = {
   sourceSystem: "manual_roster" | "cachan_ticketing";
   cancelledRowNumbers: number[];
   changedRowNumbers?: number[];
+  encoding: "utf-8" | "windows-1252" | "binary";
+  sheetName: string | null;
+  headerRow: number;
+  sheetCandidates: SpogomiRosterSheetCandidate[];
+  columnDiagnostics: SpogomiRosterColumnDiagnostic[];
+  missingFields: SpogomiRosterColumn[];
+  ambiguousFields: SpogomiRosterColumn[];
+  rowsRead: number;
+  ignoredRowNumbers: number[];
+  requiresExplicitSelection: boolean;
+  importSummary?: SpogomiRosterImportSummary;
   importKey: string;
 };
 

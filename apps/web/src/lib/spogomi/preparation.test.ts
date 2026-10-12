@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { zipSync } from "fflate";
+import * as XLSX from "xlsx";
 import { readFileSync } from "node:fs";
 import { buildDeterministicTeamFormation, previewRosterFile } from "./preparation";
 
@@ -120,13 +120,67 @@ describe("SPOGOMI preparation", () => {
   });
 
   it("reads the first worksheet of a bounded XLSX file", async () => {
-    const workbook = "<workbook xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets><sheet name=\"Roster\" r:id=\"rId1\"/></sheets></workbook>";
-    const relations = "<Relationships><Relationship Id=\"rId1\" Target=\"worksheets/sheet1.xml\"/></Relationships>";
-    const sheet = "<worksheet><sheetData><row><c r=\"A1\" t=\"inlineStr\"><is><t>Nom</t></is></c><c r=\"B1\" t=\"inlineStr\"><is><t>Groupe</t></is></c></row><row><c r=\"A2\" t=\"inlineStr\"><is><t>Grace Hopper</t></is></c><c r=\"B2\" t=\"inlineStr\"><is><t>B</t></is></c></row></sheetData></worksheet>";
-    const bytes = zipSync({ "xl/workbook.xml": new TextEncoder().encode(workbook), "xl/_rels/workbook.xml.rels": new TextEncoder().encode(relations), "xl/worksheets/sheet1.xml": new TextEncoder().encode(sheet) });
-    const safeBuffer = new ArrayBuffer(bytes.byteLength);
-    new Uint8Array(safeBuffer).set(bytes);
-    const preview = await previewRosterFile(new File([safeBuffer], "roster.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["Nom", "Groupe"], ["Grace Hopper", "B"]]), "Roster");
+    const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const preview = await previewRosterFile(new File([bytes], "roster.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
     expect(preview.rows[0]).toMatchObject({ name: "Grace Hopper", groupPreference: "B" });
+  });
+
+  it("reads CSV, TSV, XLSX, XLS and ODS with the same stable ticket references", async () => {
+    const rows = [["N. Billet", "N. de commande", "Statut du billet", "Supprimé"], ["00000000000000000001", "ORDER-1", "Payé", "0"], ["00000000000000000002", "ORDER-1", "Payé", "0"]];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(rows), "Tickets");
+    const inputs: Array<[string, BlobPart, string]> = [
+      ["tickets.csv", rows.map((row) => row.join(";")).join("\r\n"), "text/csv"],
+      ["tickets.tsv", rows.map((row) => row.join("\t")).join("\n"), "text/tab-separated-values"],
+      ["tickets.xlsx", XLSX.write(workbook, { bookType: "xlsx", type: "array" }), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+      ["tickets.xls", XLSX.write(workbook, { bookType: "xls", type: "array" }), "application/vnd.ms-excel"],
+      ["tickets.ods", XLSX.write(workbook, { bookType: "ods", type: "array" }), "application/vnd.oasis.opendocument.spreadsheet"],
+    ];
+    const previews = await Promise.all(inputs.map(([name, content, type]) => previewRosterFile(new File([content], name, { type }))));
+    for (const preview of previews) {
+      expect(preview.rows.map((row) => row.externalReference)).toEqual(["00000000000000000001", "00000000000000000002"]);
+      expect(preview.errors).toEqual([]);
+    }
+    expect(new Set(previews.flatMap((preview) => preview.rows.map((row) => row.externalReference))).size).toBe(2);
+  });
+
+  it("detects preambles, multiline quoted cells, Windows-1252 and ambiguous mappings without guessing", async () => {
+    const utf8 = "Rapport Weezevent\r\nExport du jour\r\nN. Billet;N. de commande;Statut du billet;Supprimé;Nom\r\nT-1;O-1;Payé;0;\"Déclaré\nà revoir\"\r\n";
+    const preview = await previewRosterFile(new File([utf8], "tickets.csv", { type: "text/csv" }));
+    expect(preview.headerRow).toBe(3);
+    expect(preview.rows[0]?.externalReference).toBe("T-1");
+    expect(preview.rows[0]?.name).toBe("Déclaré à revoir");
+    expect(preview.encoding).toBe("utf-8");
+
+    const cp1252 = new Uint8Array([...new TextEncoder().encode("Nom;Groupe\nAda;"), 0xE9, ...new TextEncoder().encode("quipe\n")]);
+    const cp1252Preview = await previewRosterFile(new File([cp1252], "manual.csv", { type: "text/csv" }));
+    expect(cp1252Preview.encoding).toBe("windows-1252");
+    expect(cp1252Preview.rows[0]?.groupPreference).toBe("équipe");
+
+    const ambiguous = await previewRosterFile(new File(["N. Billet;Ticket ID;Statut du billet;Supprimé\nT-1;T-1;Payé;0"], "ambiguous.csv", { type: "text/csv" }));
+    expect(ambiguous.ambiguousFields).toContain("ticketReference");
+    expect(ambiguous.requiresExplicitSelection).toBe(true);
+    expect(ambiguous.errors.some((error) => error.code === "ambiguous_mapping")).toBe(true);
+  });
+
+  it("requires an explicit sheet when multiple workbook sheets are plausible and rejects formulas", async () => {
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["N. Billet", "Statut du billet", "Supprimé"], ["T-1", "Payé", "0"]]), "Tickets");
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["N. Billet", "Statut du billet", "Supprimé"], ["T-2", "Payé", "0"]]), "Copie");
+    const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const preview = await previewRosterFile(new File([bytes], "multi.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    expect(preview.sheetCandidates).toHaveLength(2);
+    expect(preview.requiresExplicitSelection).toBe(true);
+    const selected = await previewRosterFile(new File([bytes], "multi.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), { sheetName: "Copie" });
+    expect(selected.rows[0]?.externalReference).toBe("T-2");
+
+    const formulaWorkbook = XLSX.utils.book_new();
+    const formulaSheet = XLSX.utils.aoa_to_sheet([["Nom", "Groupe"], ["formule", "A"]]);
+    formulaSheet.A2 = { t: "n", v: 1, f: "NOW()" };
+    XLSX.utils.book_append_sheet(formulaWorkbook, formulaSheet, "Roster");
+    const formulaBytes = XLSX.write(formulaWorkbook, { bookType: "xlsx", type: "array" });
+    await expect(previewRosterFile(new File([formulaBytes], "formula.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }))).rejects.toThrow(/formules|actif/i);
   });
 });

@@ -76,7 +76,7 @@ Ne jamais prendre automatiquement `3 × équipes` comme effectif réel. Ne pas d
 
 ## 4. Inscriptions Excel et confidentialité
 
-L'entrée partenaire est un classeur Excel ou CSV de personnes inscrites ou de places vendues. Le mapping Cachan accepte `N. Billet`, `N. de commande`, le statut du billet et la suppression ; une place valide est conservée par billet, même sans occupant identifié. Le nom d'acheteur n'est jamais une clé de déduplication et ne crée jamais plusieurs identités supposées.
+L'entrée partenaire est un fichier CSV/TSV ou un classeur XLSX/XLS/ODS de personnes inscrites ou de places vendues. Le mapping Cachan accepte `N. Billet`, `N. de commande`, le statut du billet et la suppression ; une place valide est conservée par billet, même sans occupant identifié. Le nom d'acheteur n'est jamais une clé de déduplication et ne crée jamais plusieurs identités supposées.
 
 L'import comporte les étapes suivantes : dépôt privé par organisateur autorisé ; lecture serveur bornée ; correspondance explicite des colonnes ; aperçu et signalement des anomalies ; affectation d'identifiants internes ; confirmation ; écriture idempotente ; compte rendu des lignes ajoutées, ignorées, modifiées et rejetées.
 
@@ -347,8 +347,9 @@ La préparation privée est désormais portée par `/spogomi/[eventSlug]/gestion
   vérifient le propriétaire et permettent de reprendre un échec de liaison sans
   créer une seconde action (`PARTIAL_ALLOWED`) ; le type juridique SPOGOMI
   France reste provisoire tant que le répertoire ne le configure pas ;
-- déposer un CSV ou XLSX de roster privé, sélectionner explicitement les
-  colonnes utiles, voir les inconnues, erreurs et doublons probables, puis
+- déposer un CSV, TSV, XLSX, XLS ou ODS de roster privé, sélectionner
+  explicitement la feuille, la ligne d'en-tête et les correspondances ambiguës,
+  voir l'encodage, les inconnues, erreurs, conflits et doublons probables, puis
   confirmer un import idempotent par empreinte de contenu après nouvelle lecture
   serveur du fichier brut et de la correspondance choisie ; les insertions de
   participants sont protégées par un lease, vérifiées exhaustivement par pages
@@ -414,6 +415,31 @@ seconde bloque la recomposition automatique d'une équipe déjà liée à un acc
 à des résultats. Un dry-run ne vaut pas preuve d'application distante ; la
 certification, la consolidation, AuthN/AuthZ, RLS et la liaison Clerk restent
 inchangées.
+
+## 19. Lot 11B livré — CURRENT — import multi-format et aperçu explicable
+
+La même façade d'import lit désormais CSV, TSV, XLSX, XLS et ODS. Les CSV/TSV
+acceptent les champs entre guillemets, les retours à la ligne internes, UTF-8
+avec ou sans BOM, Windows-1252 lorsque l'UTF-8 est invalide, CRLF et LF. Les
+classeurs peuvent contenir plusieurs feuilles et un préambule avant l'en-tête.
+La feuille et l'en-tête ne sont jamais choisis silencieusement lorsque plusieurs
+candidats sont plausibles.
+
+La correspondance repose sur un registre canonique : normalisation exacte,
+synonyme à haute confiance, puis suggestion fuzzy à confirmer. Une ambiguïté
+sur billet, statut ou suppression est visible dans l'aperçu ; l'organisateur
+peut corriger la correspondance et relancer. Les identifiants numériques qui
+risquent un arrondi ou une notation scientifique sont refusés comme identifiants
+de billet. Formules, macros, liens actifs, archives corrompues et archives trop
+volumineuses sont refusés ; les limites de taille et de décompression restent
+server-only.
+
+La confirmation réutilise les identifiants internes et la clé externe de place,
+autorise une sélection explicite des seules lignes admissibles et ne transforme
+pas l'absence d'une place dans un export ultérieur en annulation. Le résumé
+distingue créations, lignes inchangées, changements, conflits et exclusions.
+Les quatre fixtures synthétiques versionnées restent l'oracle ; aucun export
+Weezevent réel, contact, code-barres ou nom réel n'est versionné.
 
 ## 16. Lot 3 livré — CURRENT — surfaces publiques et gestion contextuelle
 
