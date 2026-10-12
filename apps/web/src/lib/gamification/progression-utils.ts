@@ -4,7 +4,7 @@ import { evaluateActionQuality, type ActionQualityGrade } from "@/lib/actions/qu
 import type { ActionDrawing, ActionListItem } from "@/lib/actions/types";
 import { CURRENT_MILESTONES } from "./current-milestones";
 import { CURRENT_INFINITE_PROGRESSIONS } from "./current-progressions";
-import { CURRENT_GAMIFICATION_RULES_VERSION } from "./progression-types";
+import { CURRENT_GAMIFICATION_RULES_REVISION, CURRENT_GAMIFICATION_RULES_VERSION } from "./progression-types";
 import type {
   ActionRow,
   GamificationProgressionDefinition,
@@ -14,6 +14,7 @@ import type {
   MilestoneDefinition,
   ProgressionEventType,
 } from "./progression-types";
+import { CURRENT_SPOGOMI_BADGE_DEFINITIONS } from "./badge-catalog";
 export { CURRENT_MILESTONES } from "./current-milestones";
 export { CURRENT_INFINITE_PROGRESSIONS } from "./current-progressions";
 
@@ -72,9 +73,24 @@ export const NON_GAMIFIED_SIGNALS = [
   defineNonGamifiedSignal({ id: "signal:formalities-free-text", sourceDomain: "formalities free-text fields", description: `Remplissage des champs libres de formalités. Seul le milestone déterministe Formalités préparées peut reconnaître le workflow.` }),
 ] as const satisfies readonly GamificationMechanicDefinition[];
 
+const CURRENT_SPOGOMI_COLLECTION_MECHANICS = CURRENT_SPOGOMI_BADGE_DEFINITIONS.map((definition) => ({
+  id: definition.id,
+  category: "BADGE_ONLY" as const,
+  progressionId: null,
+  xpPolicy: definition.xpPolicy,
+  sourceDomain: definition.sourceDomain,
+  badgeId: definition.id,
+  milestoneId: null,
+  visibility: definition.visibility,
+  rulesVersion: CURRENT_GAMIFICATION_RULES_VERSION,
+  introducedInRulesRevision: CURRENT_GAMIFICATION_RULES_REVISION,
+  description: definition.rule.description,
+})) satisfies readonly GamificationMechanicDefinition[];
+
 export const GAMIFICATION_REGISTRY = [
   ...CURRENT_INFINITE_PROGRESSIONS,
   ...CURRENT_MILESTONES,
+  ...CURRENT_SPOGOMI_COLLECTION_MECHANICS,
   ...NON_GAMIFIED_SIGNALS,
 ] as const satisfies readonly GamificationMechanicDefinition[];
 

@@ -73,6 +73,8 @@ describe("CURRENT gamification registry", () => {
     expect(GAMIFICATION_REGISTRY.every((entry) => entry.rulesVersion)).toBe(true);
     expect(GAMIFICATION_REGISTRY.every((entry) => entry.sourceDomain)).toBe(true);
     expect(GAMIFICATION_REGISTRY.every((entry) => entry.description)).toBe(true);
+    expect(GAMIFICATION_REGISTRY.filter((entry) => entry.id.startsWith("spogomi_") && entry.id !== "spogomi_first_referee")).toHaveLength(10);
+    expect(GAMIFICATION_REGISTRY.filter((entry) => entry.id.startsWith("spogomi_") && entry.id !== "spogomi_first_referee").every((entry) => entry.category === "BADGE_ONLY" && entry.xpPolicy.kind === "none")).toBe(true);
 
     expect(CURRENT_INFINITE_PROGRESSIONS).toHaveLength(9);
     expect(CURRENT_INFINITE_PROGRESSIONS.every((entry) =>
