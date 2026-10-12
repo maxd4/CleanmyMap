@@ -33,6 +33,23 @@ export function validateRegulation(regulation: SpogomiRegulation): SpogomiValida
     }
   }
 
+  if (regulation.rounding) {
+    if (!Number.isInteger(regulation.rounding.decimals) || regulation.rounding.decimals < 0 || regulation.rounding.decimals > 6) {
+      return invalid("rounding_precision_invalid");
+    }
+  }
+  if (regulation.eligibility) {
+    const minimum = regulation.eligibility.minimumPresentParticipants;
+    if (minimum !== null && (!Number.isInteger(minimum) || minimum < 0)) {
+      return invalid("minimum_present_participants_invalid");
+    }
+  }
+  for (const penalty of regulation.penalties ?? []) {
+    if (!penalty.code.trim() || !penalty.label.trim() || !Number.isFinite(penalty.points)) {
+      return invalid("penalty_invalid");
+    }
+  }
+
   return { ok: true };
 }
 
@@ -42,6 +59,10 @@ export function isRegulationReadyForCertification(
   return (
     regulation.status === "complete" &&
     validateRegulation(regulation).ok &&
+    Boolean(regulation.sourceReference?.trim()) &&
+    Boolean(regulation.rounding) &&
+    Boolean(regulation.eligibility) &&
+    Boolean(regulation.tiebreakers?.length) &&
     regulation.categories.every((category) => category.isComplete)
   );
 }
@@ -100,13 +121,22 @@ export function validateResultItem(
     return invalid("measurement_kind_must_match_category");
   }
   if (item.unit !== category.unit) return invalid("measurement_unit_must_match_category");
-  if (!Number.isFinite(item.quantity) || item.quantity < 0) {
+  if (item.quantity !== null && (!Number.isFinite(item.quantity) || item.quantity < 0 || item.quantity > 1_000_000_000_000)) {
     return invalid("quantity_must_be_a_non_negative_finite_number");
   }
-  if (item.measurementKind === "count" && !Number.isInteger(item.quantity)) {
+  if (item.measurementKind === "count" && item.quantity !== null && !Number.isSafeInteger(item.quantity)) {
     return invalid("count_must_be_an_integer");
   }
   if (!item.provenance.trim()) return invalid("measurement_provenance_required");
+  if (item.massGrams !== undefined && item.massGrams !== null && (!Number.isFinite(item.massGrams) || item.massGrams < 0 || item.massGrams > 1_000_000_000)) {
+    return invalid("mass_grams_must_be_non_negative_and_bounded");
+  }
+  if (item.objectCount !== undefined && item.objectCount !== null && (!Number.isSafeInteger(item.objectCount) || item.objectCount < 0)) {
+    return invalid("object_count_must_be_a_non_negative_integer");
+  }
+  if (item.measurementMethod !== undefined && item.measurementMethod !== null && !item.measurementMethod.trim()) {
+    return invalid("measurement_method_required_when_provided");
+  }
   return { ok: true };
 }
 

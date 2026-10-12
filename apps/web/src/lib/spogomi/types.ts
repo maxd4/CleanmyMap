@@ -77,19 +77,68 @@ export type SpogomiCategoryRule = {
   isComplete: boolean;
 };
 
+export type SpogomiRoundingRule = {
+  decimals: number;
+  mode: "half_up" | "down" | "up";
+};
+
+export type SpogomiPenalty = {
+  code: string;
+  label: string;
+  points: number;
+};
+
+export type SpogomiEligibilityRule = {
+  minimumPresentParticipants: number | null;
+  requiresAllCategories: boolean;
+};
+
+export type SpogomiTiebreaker = "sporting_score" | "mass_grams" | "counted_objects";
+
 export type SpogomiRegulation = {
   version: string;
   sourceReference: string | null;
   status: SpogomiRegulationStatus;
   teamSize: SpogomiTeamSizeConfig;
   categories: SpogomiCategoryRule[];
+  rounding?: SpogomiRoundingRule;
+  penalties?: SpogomiPenalty[];
+  eligibility?: SpogomiEligibilityRule;
+  tiebreakers?: SpogomiTiebreaker[];
 };
 
 export type SpogomiResultItemInput = {
   measurementKind: SpogomiMeasurementKind;
   unit: string;
-  quantity: number;
+  quantity: number | null;
+  massGrams?: number | null;
+  objectCount?: number | null;
+  measurementMethod?: string | null;
   provenance: string;
+  arbitrationComment?: string | null;
+};
+
+export type SpogomiCompetitionInput = {
+  regulation: SpogomiRegulation;
+  items: Array<SpogomiResultItemInput & { categoryCode: string }>;
+  presentParticipants: number;
+  appliedPenalties?: SpogomiPenalty[];
+};
+
+export type SpogomiPhysicalTotals = {
+  massGrams: number | null;
+  countedObjects: number | null;
+  presentParticipants: number;
+};
+
+export type SpogomiCompetitionResult = {
+  physicalTotals: SpogomiPhysicalTotals;
+  officialScore: number | null;
+  scoreStatus: "official" | "unavailable";
+  appliedPenalties: SpogomiPenalty[];
+  comparableForButtsPerParticipant: boolean;
+  buttsPerParticipant: number | null;
+  ineligibleReason: string | null;
 };
 
 export type SpogomiParticipantState = {

@@ -67,6 +67,36 @@ describe("SPOGOMI domain invariants", () => {
   it("does not treat null, mass, count or points as interchangeable", () => {
     expect(
       validateResultItem(
+        { measurementKind: "mass", unit: "g", quantity: null, massGrams: 0, provenance: "weighed" },
+        { measurementKind: "mass", unit: "g" },
+      ),
+    ).toEqual({ ok: true });
+    expect(
+      validateResultItem(
+        { measurementKind: "mass", unit: "g", quantity: -1, provenance: "weighed" },
+        { measurementKind: "mass", unit: "g" },
+      ),
+    ).toEqual({ ok: false, reason: "quantity_must_be_a_non_negative_finite_number" });
+    expect(
+      validateResultItem(
+        { measurementKind: "mass", unit: "g", quantity: 1_000_000_000_001, massGrams: -1, provenance: "weighed" },
+        { measurementKind: "mass", unit: "g" },
+      ),
+    ).toEqual({ ok: false, reason: "quantity_must_be_a_non_negative_finite_number" });
+    expect(
+      validateResultItem(
+        { measurementKind: "mass", unit: "g", quantity: 0, massGrams: -1, objectCount: 1.5, provenance: "weighed" },
+        { measurementKind: "mass", unit: "g" },
+      ),
+    ).toEqual({ ok: false, reason: "mass_grams_must_be_non_negative_and_bounded" });
+    expect(
+      validateResultItem(
+        { measurementKind: "mass", unit: "g", quantity: 0, massGrams: 0, objectCount: 1.5, provenance: "weighed" },
+        { measurementKind: "mass", unit: "g" },
+      ),
+    ).toEqual({ ok: false, reason: "object_count_must_be_a_non_negative_integer" });
+    expect(
+      validateResultItem(
         { measurementKind: "count", unit: "count", quantity: 1.5, provenance: "observed" },
         { measurementKind: "count", unit: "count" },
       ),

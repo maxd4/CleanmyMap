@@ -137,6 +137,7 @@ mais ne constituent pas des pages de recherche autonomes.
 | /pilotage | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /sponsor-portal | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /spogomi/[eventSlug]/gestion | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /spogomi/[eventSlug]/equipe | `PRIVATE` | `NOINDEX` | `PARTNER_SESSION` | `NONE` |
 | /partners/dashboard et /partners/onboarding | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /prints/report | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /sections/elus | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
@@ -232,6 +233,7 @@ Il n'existe actuellement aucune page canonique `/learn`. Les pages
 | `/spogomi` | [Découverte SPOGOMI](./routes/02-agir/spogomi/spogomi-README.md) | `public-visible` ; événements explicitement publiés | agir | `apps/web/src/app/(app)/spogomi/page.tsx` |
 | `/spogomi/[eventSlug]` | [Événement SPOGOMI](./routes/02-agir/spogomi-event/spogomi-event-README.md) | `public-visible` ; projection publiée bornée | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/page.tsx` |
 | `/spogomi/[eventSlug]/gestion` | [Gestion SPOGOMI](./routes/02-agir/spogomi-gestion/spogomi-gestion-README.md) | `protected` ; organisateur habilité pour l'événement | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/gestion/page.tsx` |
+| `/spogomi/[eventSlug]/equipe` | [Saisie équipe SPOGOMI](./routes/02-agir/spogomi-team/spogomi-team-README.md) | `partner-session` ; session d'équipe limitée et révocable | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/equipe/page.tsx` |
 
 ### Entrées visibles du bloc
 

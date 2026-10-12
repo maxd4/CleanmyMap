@@ -6,6 +6,9 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { PageHeader } from "@/components/ui/page-header";
 import type { SpogomiRosterPreview } from "@/lib/spogomi/types";
+import { SpogomiTeamAccessLinks } from "./spogomi-team-access-links";
+import { SpogomiResultReviewPanel } from "./spogomi-result-review-panel";
+import { SpogomiReviewerManagement } from "./spogomi-reviewer-management";
 
 const OfficialRouteMap = dynamic(() => import("./spogomi-official-route-map").then((module) => module.SpogomiOfficialRouteMap), { ssr: false });
 
@@ -43,5 +46,8 @@ export function SpogomiPreparationWorkspace({ eventId }: { eventId: string }) {
       <CmmCard tone="amber" variant="glass" className="space-y-4 p-5"><h2 className="cmm-text-h3">Parcours officiel</h2><p className="cmm-text-small">La distance affichée est calculée depuis le fichier de référence. Elle n’est pas une distance observée sur le terrain.</p><input type="file" accept=".gpx,application/gpx+xml" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) { const form = new FormData(); form.set("file", file); void action(`/api/spogomi/events/${eventId}/route-gpx`, { method: "POST", body: form }); } }} />{data.route ? <><p className="cmm-text-small">{data.route.file_name} · {data.route.reference_distance_km} km de référence</p><OfficialRouteMap coordinates={data.route.geometry_geojson.coordinates} /></> : <p className="cmm-text-small">Aucun GPX officiel associé.</p>}</CmmCard>
     </div>
     <CmmCard tone="amber" variant="glass" className="space-y-4 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="cmm-text-h3">Composition des équipes</h2><p className="cmm-text-small">{assignedCount}/{data.participants.length} participants affectés. Les échanges manuels restent possibles avant verrouillage.</p></div><div className="flex gap-2"><CmmButton type="button" tone="important" disabled={busy} onClick={() => void action(`/api/spogomi/events/${eventId}/teams/auto`, { method: "POST" })}>Former automatiquement</CmmButton><CmmButton type="button" tone="critical" disabled={busy} onClick={() => void action(`/api/spogomi/events/${eventId}/teams/lock`, { method: "POST" })}>Verrouiller</CmmButton></div></div><div className="grid gap-3 md:grid-cols-2">{data.participants.map((participant) => <label key={participant.id} className="rounded-xl border border-black/10 bg-white/70 p-3 text-sm">{participant.display_name ?? "Participant sans nom"}{participant.group_preference ? <span className="ml-2 text-slate-500">({participant.group_preference})</span> : null}<select className="mt-2 w-full rounded-lg border border-black/10 bg-white p-2" value={participant.team_id ?? ""} disabled={busy || data.event.state === "composition_locked"} onChange={(event) => void action(`/api/spogomi/events/${eventId}/teams/move`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ participantId: participant.id, teamId: event.target.value || null }) })}><option value="">À affecter</option>{data.teams.map((team) => <option key={team.id} value={team.id}>{team.public_name}</option>)}</select></label>)}</div></CmmCard>
+    <CmmCard tone="amber" variant="glass" className="space-y-4 p-5"><SpogomiTeamAccessLinks eventId={eventId} teams={data.teams} /></CmmCard>
+    <CmmCard tone="slate" variant="glass" className="space-y-4 p-5"><SpogomiReviewerManagement eventId={eventId} /></CmmCard>
+    <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5"><SpogomiResultReviewPanel eventId={eventId} /></CmmCard>
   </div></main>;
 }

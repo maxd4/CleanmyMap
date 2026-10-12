@@ -355,6 +355,47 @@ Fichiers principaux :
 - `apps/web/src/components/spogomi/spogomi-context-link.tsx` ;
 - `apps/web/supabase/migrations/20261012000003_spogomi_public_pages.sql`.
 
+## 17. Lot 4 livré — CURRENT — saisie et certification par équipe
+
+Le formulaire `/spogomi/[eventSlug]/equipe` est une surface privée accessible
+par un lien généré depuis le cockpit organisateur. Le lien porte un secret
+opaque à durée limitée ; seul son hash est conservé. Son échange crée une
+session HttpOnly limitée à l'événement et à l'équipe, et la régénération ou la
+révocation invalide les accès précédents. Les routes appliquent le rate
+limiting avant la résolution du secret. Aucun compte CleanMyMap n'est exigé
+pour la saisie partenaire.
+
+Chaque catégorie du règlement peut conserver séparément la quantité dans son
+unité, la masse brute en grammes, le nombre d'objets réellement comptés, la
+méthode, la provenance et un commentaire d'arbitrage. Une valeur vide reste
+inconnue et n'est pas convertie en zéro. La masse n'est jamais convertie en
+nombre de mégots et la résolution du formulaire générique n'est pas réutilisée.
+
+La sauvegarde atomique par équipe est idempotente. Les états sont `draft`,
+`submitted`, `certified`, `rejected` et `superseded`. Une soumission ne certifie
+jamais ; l'organisateur ou l'arbitre habilité décide depuis la revue privée.
+Une correction d'une version certifiée crée une nouvelle version, conserve la
+référence de remplacement et écrit un audit append-only. Les verrous par équipe
+et les prédicats de statut refusent les certifications concurrentes obsolètes.
+Les arbitres sont attribués et révoqués par un organisateur au niveau de
+l'événement ; leur rôle n'est jamais déduit d'un champ envoyé par le client.
+Un participant lié à l'équipe revue ne peut pas certifier cette équipe.
+
+Le moteur pur de `apps/web/src/lib/spogomi/scoring.ts` calcule séparément le
+score sportif, la masse en grammes, le comptage direct et l'effectif présent.
+Il ne produit un score officiel que si la configuration de règlement contient
+une version, une source, les catégories complètes, l'arrondi, l'éligibilité et
+les départages. Sinon les totaux physiques restent disponibles et le score est
+`unavailable`. Le ratio mégots par participant est `non comparable` sans
+comptage direct ou sans effectif présent strictement positif. Aucun transfert
+vers `public.forms`, la gamification ou le bilan collectif CleanMyMap n'est
+effectué dans ce lot.
+
+Les fonctions SQL de sauvegarde et de revue sont server-only et exécutables
+uniquement par `service_role` après contrôle de session équipe ou d'AuthZ
+organisateur côté serveur. La migration locale n'est pas une preuve de son
+application sur Supabase distant.
+
 ## 17 bis. Addendum public vérifié — contrat à intégrer (PLAN)
 
 > **Statut : PLAN documentaire.** Cet addendum intègre des informations
