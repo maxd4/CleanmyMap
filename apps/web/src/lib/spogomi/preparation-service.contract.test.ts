@@ -16,8 +16,11 @@ describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
 
   it("replays roster bytes on confirmation and verifies persisted source rows", () => {
     expect(service).toContain("previewRosterFile(params.file, params.mapping)");
-    expect(service).toContain("importIsComplete");
+    expect(service).toContain("verifyImportedRosterCompleteness");
     expect(service).toContain('onConflict: "event_id,roster_import_id,source_row_number"');
+    expect(service).toContain('.order("source_row_number", { ascending: true })');
+    expect(service).toContain(".range(from, from + IMPORT_VERIFICATION_PAGE_SIZE - 1)");
+    expect(service).toContain("seen.has(row.source_row_number)");
     expect(service).toContain("failed_recoverable");
   });
 });

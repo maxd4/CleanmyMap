@@ -121,6 +121,7 @@ export async function updateSpogomiEvent(params: {
 
 const CREATION_LEASE_MS = 2 * 60 * 1000;
 const IMPORT_LEASE_MS = 2 * 60 * 1000;
+const IMPORT_VERIFICATION_PAGE_SIZE = 1_000;
 const EVENT_SELECT = "id, action_id, created_by_clerk_id, idempotency_key, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility";
 
 type CreationInput = {
@@ -402,12 +403,40 @@ function canonicalImportMapping(mapping: SpogomiRosterColumnMapping): string {
   return JSON.stringify(["name", "group", "sourceRowId"].filter((key) => mapping[key as keyof SpogomiRosterColumnMapping] !== undefined).map((key) => [key, mapping[key as keyof SpogomiRosterColumnMapping]]));
 }
 
-async function importIsComplete(supabase: SupabaseClient, eventId: string, importId: string, rows: Array<{ rowNumber: number; sourceFingerprint: string }>, expectedCount: number) {
-  const persisted = await supabase.from("spogomi_participants").select("source_row_number, source_fingerprint").eq("event_id", eventId).eq("roster_import_id", importId);
-  if (persisted.error) throw persisted.error;
-  if ((persisted.data ?? []).length !== expectedCount) return false;
+export async function verifyImportedRosterCompleteness(
+  supabase: SupabaseClient,
+  eventId: string,
+  importId: string,
+  rows: Array<{ rowNumber: number; sourceFingerprint: string }>,
+  expectedCount: number,
+) {
+  if (rows.length !== expectedCount) return false;
   const expected = new Map(rows.map((row) => [row.rowNumber, row.sourceFingerprint]));
-  return (persisted.data ?? []).every((row) => expected.get(row.source_row_number) === row.source_fingerprint);
+  if (expected.size !== rows.length) return false;
+
+  const persisted: Array<{ source_row_number: number | null; source_fingerprint: string | null }> = [];
+  for (let from = 0; ; from += IMPORT_VERIFICATION_PAGE_SIZE) {
+    const page = await supabase
+      .from("spogomi_participants")
+      .select("source_row_number, source_fingerprint")
+      .eq("event_id", eventId)
+      .eq("roster_import_id", importId)
+      .order("source_row_number", { ascending: true })
+      .range(from, from + IMPORT_VERIFICATION_PAGE_SIZE - 1);
+    if (page.error) throw page.error;
+    const rowsOnPage = (page.data ?? []) as Array<{ source_row_number: number | null; source_fingerprint: string | null }>;
+    persisted.push(...rowsOnPage);
+    if (rowsOnPage.length < IMPORT_VERIFICATION_PAGE_SIZE) break;
+  }
+
+  if (persisted.length !== expectedCount) return false;
+  const seen = new Set<number>();
+  for (const row of persisted) {
+    if (row.source_row_number === null || seen.has(row.source_row_number)) return false;
+    if (expected.get(row.source_row_number) !== row.source_fingerprint) return false;
+    seen.add(row.source_row_number);
+  }
+  return seen.size === expected.size;
 }
 
 export async function confirmRosterImport(params: { supabase: SupabaseClient; event: EventRow; userId: string; file: File; mapping?: SpogomiRosterColumnMapping }) {
@@ -450,7 +479,7 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
   if (!imported) throw conflict("l'import n'a pas pu être réservé.");
   const reservedImport = imported;
   if (reservedImport.status === "confirmed") {
-    if (!(await importIsComplete(supabase, event.id, reservedImport.id, preview.rows, preview.rows.length))) throw conflict("l'import confirmé est incomplet et doit être repris.");
+    if (!(await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, preview.rows, preview.rows.length))) throw conflict("l'import confirmé est incomplet et doit être repris.");
     return { importId: reservedImport.id, importedRows: reservedImport.source_row_count, alreadyImported: true };
   }
   const activeSince = reservedImport.processing_started_at ? Date.parse(reservedImport.processing_started_at) : 0;
@@ -476,7 +505,7 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
   try {
     const inserted = await supabase.from("spogomi_participants").upsert(participantRows, { onConflict: "event_id,roster_import_id,source_row_number", ignoreDuplicates: true });
     if (inserted.error) throw inserted.error;
-    if (!(await importIsComplete(supabase, event.id, reservedImport.id, preview.rows, preview.rows.length))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
+    if (!(await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, preview.rows, preview.rows.length))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
     const confirmed = await supabase.from("spogomi_roster_imports").update({ status: "confirmed", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token).select("id").maybeSingle();
     if (confirmed.error) throw confirmed.error;
     if (!confirmed.data) throw conflict("la confirmation de l'import a été reprise par une autre opération.");

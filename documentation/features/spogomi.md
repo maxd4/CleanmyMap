@@ -293,9 +293,12 @@ La préparation privée est désormais portée par `/spogomi/[eventSlug]/gestion
   colonnes utiles, voir les inconnues, erreurs et doublons probables, puis
   confirmer un import idempotent par empreinte de contenu après nouvelle lecture
   serveur du fichier brut et de la correspondance choisie ; les insertions de
-  participants sont protégées par un lease, vérifiées par ligne et reprenables
-  après un état partiel ou échoué. Aucun compte Clerk, `action_registrations` ou
-  `action_participants` canonique n'est créé par ce parcours ;
+  participants sont protégées par un lease, vérifiées exhaustivement par pages
+  ordonnées (sans dépendre de la limite Supabase par défaut), comparées par
+  numéro de ligne et empreinte, et reprenables après un état partiel ou échoué.
+  Un import incomplet ne passe jamais à `confirmed`. Aucun compte Clerk,
+  `action_registrations` ou `action_participants` canonique n'est créé par ce
+  parcours ;
 - former automatiquement les équipes selon un ordre déterministe, préserver les
   groupes autant que possible, laisser les impossibles dans « À affecter »,
   déplacer manuellement une personne et verrouiller seulement une composition
