@@ -20,7 +20,7 @@ export type {
 
 export type AppNotification = {
   id: string;
-  type: "validation" | "community" | "system" | "security" | "chat" | "action_discussion" | "gamification_reconciliation" | "action_event";
+  type: "validation" | "community" | "system" | "security" | "chat" | "action_discussion" | "gamification_reconciliation" | "gamification_recognition" | "action_event";
   title: string;
   content: string;
   read_at: string | null;

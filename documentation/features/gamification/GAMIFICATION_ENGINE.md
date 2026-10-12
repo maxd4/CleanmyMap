@@ -108,6 +108,13 @@ Le code et les tests priment si une divergence apparaît.
   explicitement l'XP de compatibilité historique non rattachée à une mécanique
   CURRENT ; aucun composant ne recalcule un niveau, un badge ou un prochain
   palier.
+- La collection SPOGOMI répétable reste une projection distincte de `badgeTotal`
+  et de l'XP. `GET /api/gamification/spogomi/collection` lit les occurrences
+  certifiées du compte et les métadonnées publiques de l'événement ; la section
+  `/sections/gamification` les filtre par année, type et événement. Les
+  progressions Terrain et Arbitrage réutilisent les compteurs d'événements
+  actifs exposés par `loadSpogomiCollectionForUser` et leurs paliers `1, 3, 5,
+  10, 25, 50, 75, 100, puis +25` ne sont jamais convertis en XP.
 - La page Gamification sépare visuellement les progressions XP, les jalons avec
   XP et les jalons de reconnaissance `BADGE_ONLY`. Les métriques d'impact
   (poids, mégots, bénévoles, démographie et proxys calculés) restent des

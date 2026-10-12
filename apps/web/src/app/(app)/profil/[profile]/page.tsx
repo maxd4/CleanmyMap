@@ -28,6 +28,9 @@ import { MilestonesPanel } from "@/components/gamification/milestones-panel";
 import { buildCurrentMilestones } from "@/lib/gamification/milestones";
 import { getUserProgression } from "@/lib/gamification/progression";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { loadSpogomiCollectionForUser } from "@/lib/spogomi/recognition-service";
+import { ProfileSpogomiSummary } from "@/components/gamification/profile-spogomi-summary";
+import type { SpogomiCollection } from "@/lib/spogomi/collection";
 import type { UserIdentity } from "@/lib/authz-identity";
 import type { ComponentProps } from "react";
 
@@ -50,6 +53,7 @@ type ProfilePageContentProps = {
   referralLineageView: Awaited<ReturnType<typeof loadCachedReferralLineageView>> | null;
   referralLineageError: string | null;
   referralInviteHref: string;
+  spogomiCollection: SpogomiCollection | null;
 };
 
 function ProfilePageContent({
@@ -65,6 +69,7 @@ function ProfilePageContent({
   referralLineageView,
   referralLineageError,
   referralInviteHref,
+  spogomiCollection,
 }: ProfilePageContentProps) {
   return (
     <SectionShell
@@ -83,6 +88,7 @@ function ProfilePageContent({
 
         <FamilyRubriqueCard withTopBar={true} topBarContent="Progression & badges" className="p-12">
           <ProfileGamificationSummary summary={gamification?.summary} />
+          <ProfileSpogomiSummary collection={spogomiCollection} />
           <InfiniteBadgesPanel totals={infiniteTotals} />
           <MilestonesPanel milestones={infiniteTotals.milestones} />
         </FamilyRubriqueCard>
@@ -173,6 +179,10 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
     getSupabaseServerClient(true),
     userId,
   ).catch(() => null);
+  const spogomiCollection = await loadSpogomiCollectionForUser(
+    getSupabaseServerClient(true),
+    userId,
+  ).catch(() => null);
   const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
     wasteKg: 0,
     butts: 0,
@@ -249,6 +259,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       referralLineageView={referralLineageView}
       referralLineageError={referralLineageError}
       referralInviteHref={referralInviteHref}
+      spogomiCollection={spogomiCollection}
     />
   );
 }

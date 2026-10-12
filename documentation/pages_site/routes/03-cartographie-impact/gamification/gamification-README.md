@@ -63,6 +63,15 @@ La page `/sections/leaderboard` est publique, sans indexation ni URL canonique,
 et sa projection n'expose que le label public, le niveau, l'XP validée et les
 compteurs de badges autorisés.
 
+La section privée contient également la collection « Événements & distinctions ».
+Elle lit `GET /api/gamification/spogomi/collection`, conserve chaque occurrence
+avec sa clé `(user_id, event_id, badge_type_id)`, et propose des filtres par
+année, type et événement. Les progressions « Terrain SPOGOMI » et « Arbitrage
+SPOGOMI » comptent respectivement les événements actifs de collecte et
+d’arbitrage certifié, avec les paliers `1, 3, 5, 10, 25, 50, 75, 100`, puis
+`+25` indéfiniment ; elles ne produisent aucune XP. Le profil affiche un
+résumé distinct, sans modifier `badgeTotal`.
+
 **Contrat SEO** : `ACCESS=PRIVATE`, `SEARCH=NOINDEX`,
 `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Le soft-gate décrit la
 présentation anonyme ; il ne rend pas la progression personnelle indexable.

@@ -6,6 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import { Link2 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { getSpogomiBadgePresentation } from "@/lib/spogomi/collection";
 
 type Props = { eventId: string; signInHref: string };
 
@@ -15,6 +16,12 @@ type LinkResponse = {
   attendanceStatus?: "unknown" | "present" | "absent";
   state?: IdentityState;
   participation?: { status: string; store: string | null };
+  recognition?: SpogomiEventRecognition | null;
+};
+
+type SpogomiEventRecognition = {
+  status: "pending_certification" | "available" | "no_awards";
+  awards: Array<{ id: string; badgeTypeId: string; eventYear: number; eventLocalDate: string; status: "active" | "revoked" | "replaced" }>;
 };
 
 type IdentityState =
@@ -50,6 +57,7 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [identityState, setIdentityState] = useState<IdentityState | null>(null);
   const [isLoadingState, setIsLoadingState] = useState(false);
+  const [recognition, setRecognition] = useState<SpogomiEventRecognition | null>(null);
 
   const loadState = useCallback(async () => {
     if (!isLoaded || !isSignedIn) return;
@@ -59,6 +67,7 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
       const payload = (await response.json().catch(() => ({}))) as LinkResponse;
       if (!response.ok) throw new Error(payload.error ?? "L’état de la liaison n’a pas pu être chargé.");
       setIdentityState(payload.state ?? "identity_unlinked");
+      setRecognition(payload.recognition ?? null);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "L’état de la liaison n’a pas pu être chargé.");
     } finally {
@@ -88,6 +97,7 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
       const payload = (await response.json().catch(() => ({}))) as LinkResponse;
       if (!response.ok) throw new Error(payload.error ?? "La liaison n’a pas pu être vérifiée.");
       setIdentityState(payload.state ?? "identity_verified");
+      setRecognition(payload.recognition ?? null);
       setMessage("Compte lié. La demande de participation reste une étape séparée.");
       setCode("");
     } catch (submitError) {
@@ -110,6 +120,7 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
       const payload = (await response.json().catch(() => ({}))) as LinkResponse;
       if (!response.ok) throw new Error(payload.error ?? "La demande de participation n’a pas pu être envoyée.");
       setIdentityState(payload.state ?? "participation_unavailable");
+      setRecognition(payload.recognition ?? null);
       setMessage(payload.state ? stateMessage(payload.state) : "La demande de participation a été traitée.");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "La demande de participation n’a pas pu être envoyée.");
@@ -166,6 +177,13 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
           {error ? <p role="alert" className="text-sm font-semibold text-rose-700">{error}</p> : null}
         </form>
       )}
+      {identityState && identityState !== "identity_unlinked" && recognition ? (
+        <div className="border-t border-emerald-200/40 pt-4" aria-live="polite">
+          <h3 className="font-black text-emerald-950">Mes distinctions pour cette compétition</h3>
+          {recognition.status === "pending_certification" ? <p className="mt-2 text-sm text-slate-700">Votre liaison est enregistrée. Les badges apparaîtront après certification de l’événement et réconciliation des preuves.</p> : recognition.status === "no_awards" ? <p className="mt-2 text-sm text-slate-700">Aucune distinction certifiée n’est actuellement attribuée pour cette compétition.</p> : <ul className="mt-3 space-y-2">{recognition.awards.map((award) => { const presentation = getSpogomiBadgePresentation(award.badgeTypeId); return <li key={award.id} className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-white/80 px-3 py-2 text-sm font-bold text-slate-900"><span className="h-2.5 w-2.5 rounded-full bg-emerald-600" aria-hidden="true" />{presentation.label}<span className="ml-auto text-xs font-semibold text-slate-500">{presentation.roleOrRank}</span></li>; })}</ul>}
+          <Link href="/sections/gamification#spogomi-collection" className="mt-3 inline-flex min-h-11 items-center text-sm font-black text-emerald-800 underline underline-offset-2">Ouvrir ma collection SPOGOMI</Link>
+        </div>
+      ) : null}
       <p className="text-xs text-slate-600">Une personne sans compte CleanMyMap reste comptée dans le bilan environnemental de l’action, mais ne reçoit pas de crédit personnel.</p>
       <Link href="/politique-confidentialite" className="text-xs font-bold text-emerald-800 underline underline-offset-2">En savoir plus sur la confidentialité</Link>
     </CmmCard>

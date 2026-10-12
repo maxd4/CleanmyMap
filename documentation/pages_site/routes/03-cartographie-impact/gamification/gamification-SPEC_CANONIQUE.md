@@ -990,3 +990,14 @@ attente. Les corrections, révocations et reconstructions sont idempotentes et
 historisées, sans effet sur les mesures physiques ni sur les événements d'un
 autre événement. La lecture est bornée au compte courant ; aucune identité
 privée de roster ou de mineur n'est publiée par défaut.
+
+La section `/sections/gamification` consomme cette collection privée via
+`GET /api/gamification/spogomi/collection`. Elle affiche le nom public de la
+compétition, la date locale, le rôle ou le rang dérivé de l'identité canonique
+du badge et l'état courant (`active`, `révoquée` ou remplacée après correction).
+Les filtres année/type/événement ne regroupent jamais deux occurrences de même
+`badge_type_id` sur des événements distincts. La fiche publique
+`/spogomi/[eventSlug]` ne révèle aucun badge ; après liaison authentifiée,
+`GET /api/spogomi/events/[eventId]/identity-link` expose seulement les badges
+du compte pour cet événement et un état d'attente si l'événement n'est pas
+encore certifié.

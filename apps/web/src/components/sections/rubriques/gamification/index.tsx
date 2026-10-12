@@ -26,6 +26,7 @@ import { GamificationImpactPanel } from "./gamification-impact-panel";
 import { GamificationLevelProgressPanel } from "./gamification-level-progress-panel";
 import { GamificationReconciliationNotice } from "./gamification-reconciliation-notice";
 import { GamificationReconciliationHistory } from "./gamification-reconciliation-history";
+import { GamificationSpogomiCollection } from "./gamification-spogomi-collection";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { method: "GET", cache: "no-store" });
@@ -128,6 +129,8 @@ export function GamificationSection() {
               error={meError}
               locale={locale}
             />
+
+            <GamificationSpogomiCollection locale={locale} />
 
             <div className="grid gap-6 lg:grid-cols-2">
               <CollectionsPanel

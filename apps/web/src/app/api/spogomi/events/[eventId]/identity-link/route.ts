@@ -11,6 +11,7 @@ import {
   resumeSpogomiIdentityParticipation,
   SpogomiIdentityLinkError,
 } from "@/lib/spogomi/identity-link";
+import { loadSpogomiEventRecognitionForUser } from "@/lib/spogomi/recognition-service";
 
 export const runtime = "nodejs";
 // Justification Vercel: identity-link state is sensitive and changes after each verified claim.
@@ -37,7 +38,13 @@ export async function GET(request: Request, context: RouteContext) {
       eventId,
       clerkId: authentication.access.userId,
     });
-    return NextResponse.json({ status: "ok", ...state });
+    const recognition = state.participantId
+      ? await loadSpogomiEventRecognitionForUser(getSupabaseServerClient(true), {
+        eventId,
+        userId: authentication.access.userId,
+      })
+      : null;
+    return NextResponse.json({ status: "ok", ...state, recognition });
   } catch (error) {
     return handleApiError(error, "spogomi.identity-link.read");
   }
@@ -70,10 +77,14 @@ export async function POST(request: Request, context: RouteContext) {
         eventId,
         clerkId: access.userId,
       });
+      const recognition = state.participantId
+        ? await loadSpogomiEventRecognitionForUser(supabase, { eventId, userId: access.userId })
+        : null;
       return NextResponse.json({
         status: "ok",
         linkStatus: link.linkStatus,
         ...state,
+        recognition,
         note: "La liaison du compte ne confirme pas la présence. Utilisez ensuite la demande de participation ; seule la confirmation organisateur déclenche la gamification normale.",
       });
     }
@@ -82,9 +93,13 @@ export async function POST(request: Request, context: RouteContext) {
       eventId,
       clerkId: access.userId,
     });
+    const recognition = state.participantId
+      ? await loadSpogomiEventRecognitionForUser(supabase, { eventId, userId: access.userId })
+      : null;
     return NextResponse.json({
       status: "ok",
       ...state,
+      recognition,
       note: "La liaison du compte ne confirme pas la présence. Seule la confirmation organisateur d’une participation CleanMyMap déclenche la gamification normale.",
     });
   } catch (error) {

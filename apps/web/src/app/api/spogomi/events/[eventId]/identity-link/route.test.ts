@@ -6,6 +6,7 @@ const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const claimSpogomiIdentityLinkMock = vi.hoisted(() => vi.fn());
 const loadSpogomiIdentityStateMock = vi.hoisted(() => vi.fn());
 const resumeSpogomiIdentityParticipationMock = vi.hoisted(() => vi.fn());
+const loadSpogomiEventRecognitionForUserMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: requireAuthenticatedAccessMock }));
 vi.mock("@/lib/rate-limit/server", () => ({ enforceServerRateLimitForAuthenticatedUser: enforceRateLimitMock }));
@@ -15,6 +16,9 @@ vi.mock("@/lib/spogomi/identity-link", () => ({
   loadSpogomiIdentityState: loadSpogomiIdentityStateMock,
   resumeSpogomiIdentityParticipation: resumeSpogomiIdentityParticipationMock,
   SpogomiIdentityLinkError: class SpogomiIdentityLinkError extends Error {},
+}));
+vi.mock("@/lib/spogomi/recognition-service", () => ({
+  loadSpogomiEventRecognitionForUser: loadSpogomiEventRecognitionForUserMock,
 }));
 
 vi.mock("@/lib/http/auth-responses", () => ({
@@ -51,6 +55,7 @@ describe("SPOGOMI identity-link recovery route", () => {
       attendanceStatus: "present",
       participation: { status: "pending", store: "action_registrations" },
     });
+    loadSpogomiEventRecognitionForUserMock.mockResolvedValue({ status: "available", awards: [] });
   });
 
   it("links with the one-time code without requesting participation in the same call", async () => {
