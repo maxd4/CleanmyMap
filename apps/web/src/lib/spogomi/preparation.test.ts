@@ -38,6 +38,46 @@ describe("SPOGOMI preparation", () => {
     expect(result.unassignedParticipantIds).toEqual(["d"]);
   });
 
+  it("decomposes a group of five as 3 + 2 when Casual allows pairs", () => {
+    const result = buildDeterministicTeamFormation({
+      mode: "casual",
+      casualTeamSize: 5,
+      casualTeamBounds: { minMembers: 2, maxMembers: 5 },
+      participants: Array.from({ length: 5 }, (_, index) => ({ id: `p-${index + 1}`, sourceOrder: index + 1, groupPreference: "groupe" })),
+    });
+
+    expect(result.teams.map((team) => team.participantIds)).toEqual([
+      ["p-1", "p-2", "p-3"],
+      ["p-4", "p-5"],
+    ]);
+    expect(result.unassignedParticipantIds).toEqual([]);
+    expect(result.explanation.join(" ")).toMatch(/2/);
+  });
+
+  it("decomposes a group of six as 3 + 3 before regrouping other rests", () => {
+    const result = buildDeterministicTeamFormation({
+      mode: "casual",
+      casualTeamSize: 6,
+      casualTeamBounds: { minMembers: 2, maxMembers: 6 },
+      participants: Array.from({ length: 6 }, (_, index) => ({ id: `p-${index + 1}`, sourceOrder: index + 1, groupPreference: "groupe" })),
+    });
+
+    expect(result.teams.map((team) => team.participantIds)).toEqual([
+      ["p-1", "p-2", "p-3"],
+      ["p-4", "p-5", "p-6"],
+    ]);
+    expect(result.unassignedParticipantIds).toEqual([]);
+  });
+
+  it("leaves every place pending when Casual bounds are unavailable or incoherent", () => {
+    const participants = [
+      { id: "p-1", sourceOrder: 1, groupPreference: null },
+      { id: "p-2", sourceOrder: 2, groupPreference: null },
+    ];
+    expect(buildDeterministicTeamFormation({ mode: "casual", casualTeamSize: null, participants }).reasons).toEqual({ "p-1": "team_size_required", "p-2": "team_size_required" });
+    expect(buildDeterministicTeamFormation({ mode: "casual", casualTeamSize: 2, casualTeamBounds: { minMembers: 4, maxMembers: 2 }, participants }).unassignedParticipantIds).toEqual(["p-1", "p-2"]);
+  });
+
   it("previews CSV headers, unknown columns and duplicate rows without assuming email", async () => {
     const file = new File(["Nom;Groupe;Colonne libre\nAda Lovelace;A;oui\nAda Lovelace;A;non"], "roster.csv", { type: "text/csv" });
     const preview = await previewRosterFile(file);
@@ -101,6 +141,33 @@ describe("SPOGOMI preparation", () => {
       mode: "world_cup",
       casualTeamBounds: { minMembers: null, maxMembers: null },
     })).toThrow(/non conforme/i);
+  });
+
+  it("rejects duplicate team numbers and unknown pending places", () => {
+    const formation = buildDeterministicTeamFormation({
+      mode: "world_cup",
+      casualTeamSize: null,
+      participants: [
+        { id: "a", sourceOrder: 1, groupPreference: null },
+        { id: "b", sourceOrder: 2, groupPreference: null },
+        { id: "c", sourceOrder: 3, groupPreference: null },
+      ],
+    });
+    expect(() => validateProposedTeamFormation({
+      formation: {
+        ...formation,
+        teams: [formation.teams[0]!, { ...formation.teams[0]!, draftKey: "team-1-copy" }],
+      },
+      participantIds: ["a", "b", "c"],
+      mode: "world_cup",
+      casualTeamBounds: { minMembers: null, maxMembers: null },
+    })).toThrow(/apparaît plusieurs fois/i);
+    expect(() => validateProposedTeamFormation({
+      formation: { ...formation, unassignedParticipantIds: ["unknown"] },
+      participantIds: ["a", "b", "c"],
+      mode: "world_cup",
+      casualTeamBounds: { minMembers: null, maxMembers: null },
+    })).toThrow(/attente est inconnue/i);
   });
 
   it("rejects a confirmation mapping that references an unknown or reused column", async () => {
