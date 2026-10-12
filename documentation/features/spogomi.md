@@ -465,8 +465,28 @@ vérification du règlement/état, remplacement de la projection courante,
 conservation des versions précédentes en `superseded`, puis mise à jour de
 l’action existante. La clé de consolidation, le hash SHA-256 des sources, la
 version et la révision rendent une réexécution identique idempotente et une
-correction traçable. Aucune action par équipe ni soumission automatique à
-`public.forms` n’est effectuée.
+correction traçable. L’idempotence porte uniquement sur le hash de la
+projection `is_current` : si une correction B est ensuite remplacée par le
+contenu A déjà présent dans l’historique, A reçoit une nouvelle révision
+courante au lieu de retourner silencieusement l’ancienne ligne. La contrainte
+historique `event_id + source_hash` n’est donc pas une clé d’idempotence.
+Aucune action par équipe ni soumission automatique à `public.forms` n’est
+effectuée.
+
+Avant publication, le serveur charge exhaustivement les catégories, mappings,
+équipes, soumissions, items, participants et référence GPX par pages
+déterministes de 1 000 lignes. Une page en erreur bloque l’aperçu. Une équipe
+certifiée doit posséder exactement un item pour chaque catégorie réglementaire
+attendue ; une soumission certifiée incomplète ne peut pas produire un bilan
+`readyForPublication`.
+
+L’aperçu conserve aussi un snapshot des versions `updated_at` et des
+métadonnées contrôlées de toutes les sources utilisées. La RPC verrouille ces
+collections puis compare le snapshot avant mutation. Une modification de
+l’événement, de l’action cible, des mappings, mesures, certifications,
+présences ou GPX entre l’aperçu et la publication produit un conflit et ne
+modifie ni l’action ni la projection courante. La réexécution concurrente du
+même aperçu retourne uniquement la projection courante déjà concordante.
 
 L’effectif provient des participants `registered` et `present` vérifiés, sans
 remplacer l’événement par les seuls comptes Clerk. Les sous-catégories
@@ -488,7 +508,8 @@ Fichiers principaux :
 - `apps/web/src/lib/spogomi/consolidation.ts` — moteur pur d’agrégation ;
 - `apps/web/src/lib/spogomi/consolidation-service.ts` — lecture, hash et RPC ;
 - `apps/web/src/app/api/spogomi/events/[eventId]/consolidation/route.ts` — aperçu/publication protégés ;
-- `apps/web/supabase/migrations/20261012000007_spogomi_action_consolidation.sql` — mapping, projection, RPC et protection des champs contrôlés.
+- `apps/web/supabase/migrations/20261012000007_spogomi_action_consolidation.sql` — mapping, projection et protection initiale des champs contrôlés ;
+- `apps/web/supabase/migrations/20261012000011_harden_spogomi_consolidation_revisions.sql` — replay des hashes historiques, snapshot transactionnel et remplacement atomique.
 
 ## 17 bis. Addendum public vérifié — contrat à intégrer (PLAN)
 

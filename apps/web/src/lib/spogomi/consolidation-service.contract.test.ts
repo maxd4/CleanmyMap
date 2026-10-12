@@ -28,5 +28,8 @@ describe("SPOGOMI consolidation service STATIC_CONTRACT", () => {
     expect(service).toContain('.range(from, to)');
     expect(service).toContain('.order("team_number", { ascending: true })');
     expect(service).toContain('.order("id", { ascending: true })');
+    expect(service).toContain("updated_at");
+    expect(service).toContain("sourceSnapshot");
+    expect(service).toContain("eventMetadata");
   });
 });

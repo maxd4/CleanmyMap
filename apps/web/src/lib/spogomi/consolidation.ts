@@ -57,6 +57,33 @@ export type SpogomiConsolidationParticipant = {
   registrationStatus: string;
 };
 
+type SpogomiSourceRowSnapshot = {
+  id: string;
+  updatedAt: string;
+};
+
+export type SpogomiConsolidationSourceSnapshot = {
+  event: SpogomiSourceRowSnapshot & {
+    name: string;
+    locationLabel: string;
+    startsAt: string;
+    endsAt: string | null;
+    mappingVersion: string;
+  };
+  action: SpogomiSourceRowSnapshot & {
+    organizerId: string | null;
+    organizerName: string | null;
+    organizerType: string | null;
+  };
+  categories: SpogomiSourceRowSnapshot[];
+  mappings: SpogomiSourceRowSnapshot[];
+  teams: SpogomiSourceRowSnapshot[];
+  submissions: SpogomiSourceRowSnapshot[];
+  items: SpogomiSourceRowSnapshot[];
+  participants: SpogomiSourceRowSnapshot[];
+  route: SpogomiSourceRowSnapshot | null;
+};
+
 export type SpogomiOfficialRouteReference = {
   source: "official_reference";
   fileName: string;
@@ -80,6 +107,18 @@ export type SpogomiConsolidationInput = {
     name: string;
     organizerType: "association";
   } | null;
+  eventMetadata: {
+    name: string;
+    locationLabel: string;
+    startsAt: string;
+    endsAt: string | null;
+  };
+  actionMetadata: {
+    organizerId: string | null;
+    organizerName: string | null;
+    organizerType: string | null;
+  };
+  sourceSnapshot: SpogomiConsolidationSourceSnapshot;
 };
 
 export type SpogomiEnvironmentalCategoryTotal = {
@@ -100,6 +139,7 @@ export type SpogomiExcludedMeasure = {
   categoryCode: string;
   reason:
     | "team_not_certified"
+    | "incomplete_submission"
     | "category_without_mapping"
     | "missing_source_value"
     | "unknown_unit"
@@ -123,6 +163,7 @@ export type SpogomiConsolidationProjection = {
   excludedMeasures: SpogomiExcludedMeasure[];
   officialRoute: SpogomiOfficialRouteReference | null;
   organizer: SpogomiConsolidationInput["organizer"];
+  sourceSnapshot: SpogomiConsolidationSourceSnapshot;
   sourceSubmissionIds: string[];
   action: {
     wasteKg: number | null;
@@ -288,7 +329,12 @@ export function aggregateSpogomiEnvironmentalProjection(input: SpogomiConsolidat
     }
     teamsIncluded += 1;
     sourceSubmissionIds.push(team.certifiedSubmissionId);
+    const expectedCategoryIds = new Set(input.mappings.map((mapping) => mapping.categoryRuleId));
+    const seenCategoryIds = new Set<string>();
+    let hasIncompleteItems = team.items.length !== expectedCategoryIds.size;
     for (const item of team.items) {
+      if (seenCategoryIds.has(item.categoryRuleId)) hasIncompleteItems = true;
+      seenCategoryIds.add(item.categoryRuleId);
       const mapping = mappings.get(item.categoryRuleId);
       if (!mapping || mapping.status === "unmapped") {
         excludedMeasures.push({ teamId: team.teamId, submissionId: team.certifiedSubmissionId, categoryCode: item.categoryCode, reason: "category_without_mapping" });
@@ -331,6 +377,24 @@ export function aggregateSpogomiEnvironmentalProjection(input: SpogomiConsolidat
         hasCigaretteButtsCount = true;
       }
     }
+    for (const categoryRuleId of expectedCategoryIds) {
+      if (seenCategoryIds.has(categoryRuleId)) continue;
+      const mapping = mappings.get(categoryRuleId);
+      excludedMeasures.push({
+        teamId: team.teamId,
+        submissionId: team.certifiedSubmissionId,
+        categoryCode: mapping?.categoryCode ?? categoryRuleId,
+        reason: "incomplete_submission",
+      });
+    }
+    if (hasIncompleteItems && !expectedCategoryIds.size) {
+      excludedMeasures.push({
+        teamId: team.teamId,
+        submissionId: team.certifiedSubmissionId,
+        categoryCode: "*",
+        reason: "incomplete_submission",
+      });
+    }
   }
 
   const participantsPresent = new Set(
@@ -362,6 +426,7 @@ export function aggregateSpogomiEnvironmentalProjection(input: SpogomiConsolidat
     excludedMeasures,
     officialRoute: input.officialRoute,
     organizer: input.organizer,
+    sourceSnapshot: input.sourceSnapshot,
     sourceSubmissionIds: [...new Set(sourceSubmissionIds)].sort(),
     action: { wasteKg: actionWasteKg, cigaretteButts: buttsCount, volunteersCount: participantsPresent },
     consolidation: {

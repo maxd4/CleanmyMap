@@ -78,6 +78,24 @@ function input(overrides: Partial<SpogomiConsolidationInput> = {}): SpogomiConso
       note: "Parcours officiel de référence, non observé sur le terrain.",
     },
     organizer: { id: "org-spogomi", name: "SPOGOMI France", organizerType: "association" },
+    eventMetadata: {
+      name: "Événement SPOGOMI",
+      locationLabel: "Paris",
+      startsAt: "2026-10-12T10:00:00.000Z",
+      endsAt: "2026-10-12T12:00:00.000Z",
+    },
+    actionMetadata: { organizerId: "org-spogomi", organizerName: "SPOGOMI France", organizerType: "association" },
+    sourceSnapshot: {
+      event: { id: "event-1", updatedAt: "2026-10-12T09:00:00.000Z", name: "Événement SPOGOMI", locationLabel: "Paris", startsAt: "2026-10-12T10:00:00.000Z", endsAt: "2026-10-12T12:00:00.000Z", mappingVersion: "spogomi-cleanmymap-v1" },
+      action: { id: "action-1", updatedAt: "2026-10-12T09:00:00.000Z", organizerId: "org-spogomi", organizerName: "SPOGOMI France", organizerType: "association" },
+      categories: [],
+      mappings: [],
+      teams: [],
+      submissions: [],
+      items: [],
+      participants: [],
+      route: null,
+    },
     ...overrides,
   };
 }
@@ -132,6 +150,15 @@ describe("SPOGOMI environmental consolidation engine", () => {
     expect(result.totalWasteMassGrams).toBeNull();
     expect(result.categoriesWithoutMapping).toEqual(["unknown"]);
     expect(result.excludedMeasures).toContainEqual(expect.objectContaining({ reason: "team_not_certified" }));
+  });
+
+  it("blocks a certified team whose source items do not cover every regulation category", () => {
+    const result = aggregateSpogomiEnvironmentalProjection(input({
+      teams: [{ ...input().teams[0], items: [input().teams[0].items[0]] }],
+    }));
+
+    expect(result.readyForPublication).toBe(false);
+    expect(result.excludedMeasures).toContainEqual(expect.objectContaining({ reason: "incomplete_submission" }));
   });
 
   it("does not count nested categories twice when their versioned mapping excludes them from the total", () => {

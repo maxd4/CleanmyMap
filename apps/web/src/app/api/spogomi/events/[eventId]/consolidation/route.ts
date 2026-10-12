@@ -9,6 +9,8 @@ import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service"
 import { buildSpogomiConsolidationPreview, publishSpogomiConsolidation } from "@/lib/spogomi/consolidation-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: this authenticated preview/publication route reads fresh
+// SPOGOMI sources and must not cache a mutable consolidation or its conflicts.
 export const dynamic = "force-dynamic";
 
 const publishSchema = z.object({
