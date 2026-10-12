@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-12T00:00:00.000Z",
-  "apiRouteCount": 146,
+  "apiRouteCount": 149,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -77,6 +77,27 @@
       "introducedBy": "4bb7335ee5bc19208e65882ab663cd37412d0186",
       "reason": "Surface serveur des événements, équipes, résultats, certifications et consolidations SPOGOMI, avec séparation des scores sportifs et des projections environnementales.",
       "costContract": "Routes bornées par l'événement, l'équipe et les capacités métier serveur ; les résultats restent soumis à certification, les projections sont idempotentes et les données privées ne sont pas exposées aux participants non autorisés.",
+      "reviewedAt": "2026-10-12"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/export.xlsx/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Export XLSX authentifié de la restitution SPOGOMI, alimenté par la projection serveur et limité aux valeurs certifiées dans les onglets publiables.",
+      "costContract": "Route organisateur avec contrôle d'accès serveur, réponse private/no-store et génération ponctuelle ; les soumissions non certifiées restent explicitement tracées mais leurs scores et mesures ne sont pas exportés comme officiels.",
+      "reviewedAt": "2026-10-12"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/rankings/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Publication authentifiée des deux classements officiels SPOGOMI après certification complète et vérification transactionnelle de l'instantané des sources.",
+      "costContract": "Mutation POST réservée à l'organisateur, RPC service_role idempotente et atomique, départages issus du règlement versionné, conflit explicite si les sources changent entre calcul et publication.",
+      "reviewedAt": "2026-10-12"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/public/events/[eventSlug]/route.ts",
+      "introducedBy": "WORKTREE-CANDIDATE",
+      "reason": "Projection publique bornée des résultats SPOGOMI publiés, sans roster privé ni métriques d'équipes indisponibles.",
+      "costContract": "Lecture GET publicOnly/no-store et force-dynamic ; chaque valeur numérique est absente lorsque le statut n'est ni provisoire explicitement publié ni couvert par une décision certifiée courante.",
       "reviewedAt": "2026-10-12"
     }
   ],
@@ -201,10 +222,12 @@
     "apps/web/src/app/api/signalements/[signalementId]/media/route.ts",
     "apps/web/src/app/api/signalements/me/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/consolidation/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/export.xlsx/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/identity-link/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/imports/confirm/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/imports/preview/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/participants/[participantId]/identity-code/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/rankings/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/recognition/attestations/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/recognition/reconcile/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/results/route.ts",
@@ -217,6 +240,7 @@
     "apps/web/src/app/api/spogomi/events/[eventId]/teams/move/route.ts",
     "apps/web/src/app/api/spogomi/events/route.ts",
     "apps/web/src/app/api/spogomi/public/by-action/[actionId]/route.ts",
+    "apps/web/src/app/api/spogomi/public/events/[eventSlug]/route.ts",
     "apps/web/src/app/api/spogomi/team-access/route.ts",
     "apps/web/src/app/api/spogomi/team-form/route.ts",
     "apps/web/src/app/api/spots/route.ts",

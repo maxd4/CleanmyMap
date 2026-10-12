@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const visibilityMigration = readFileSync(new URL("../../../supabase/migrations/20261012000014_spogomi_public_results_visibility.sql", import.meta.url), "utf8");
 const rankingMigration = readFileSync(new URL("../../../supabase/migrations/20261012000015_spogomi_official_rankings_publication.sql", import.meta.url), "utf8");
+const idempotenceMigration = readFileSync(new URL("../../../supabase/migrations/20261012000016_spogomi_official_rankings_idempotence.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI result publication migrations STATIC_CONTRACT", () => {
   it("keeps result visibility explicit and hidden by default", () => {
@@ -16,5 +17,15 @@ describe("SPOGOMI result publication migrations STATIC_CONTRACT", () => {
     expect(rankingMigration).toContain("status = 'revoked'");
     expect(rankingMigration).toContain("grant execute on function public.publish_spogomi_official_rankings");
     expect(rankingMigration).toContain("v_event.state <> 'certified'");
+  });
+
+  it("checks the publication source snapshot and preserves replay history", () => {
+    expect(idempotenceMigration).toContain("publish_spogomi_official_rankings_checked");
+    expect(idempotenceMigration).toContain("source_snapshot jsonb");
+    expect(idempotenceMigration).toContain("spogomi_official_ranking_history");
+    expect(idempotenceMigration).toContain("for update");
+    expect(idempotenceMigration).toContain("different SPOGOMI ranking decision already exists for this source snapshot");
+    expect(idempotenceMigration).toContain("v_existing.status = 'revoked'");
+    expect(idempotenceMigration).toContain("action in ('certified', 'revoked', 'reinstated')");
   });
 });

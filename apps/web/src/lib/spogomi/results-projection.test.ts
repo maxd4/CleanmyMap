@@ -46,8 +46,47 @@ describe("SPOGOMI public results projection", () => {
     const projection = buildSpogomiResultsProjection(source(), "2026-10-12T12:00:00Z");
     expect(projection.results.sport.status).toBe("provisional");
     expect(projection.results.sport.entries.map((entry) => entry.rank)).toEqual([1, 2, 3]);
-    expect(projection.results.butts.entries.find((entry) => entry.teamNumber === 1)).toMatchObject({ rank: 1, numerator: 2, denominator: 2 });
-    expect(projection.results.butts.entries.find((entry) => entry.teamNumber === 2)).toMatchObject({ rank: null, status: "unavailable", numerator: null });
-    expect(projection.results.butts.entries.find((entry) => entry.teamNumber === 3)).toMatchObject({ rank: 2, numerator: 4, denominator: 1 });
+    expect(projection.results.butts.entries.find((entry) => entry.teamNumber === 1)).toMatchObject({ rank: 2, numerator: 2, denominator: 2 });
+    const massOnly = projection.results.butts.entries.find((entry) => entry.teamNumber === 2);
+    expect(massOnly).toMatchObject({ rank: null, status: "unavailable" });
+    expect(massOnly).not.toHaveProperty("numerator");
+    expect(projection.results.butts.entries.find((entry) => entry.teamNumber === 3)).toMatchObject({ rank: 1, numerator: 4, denominator: 1 });
+  });
+
+  it("keeps unresolved sports ties equal when the regulation does not configure a further departure", () => {
+    const candidate = source();
+    candidate.event.regulationConfig = { ...(candidate.event.regulationConfig as Record<string, unknown>), tiebreakers: ["sporting_score"] };
+    const projection = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+    expect(projection.results.sport.entries.filter((entry) => entry.teamNumber <= 2).map((entry) => entry.rank)).toEqual([1, 1]);
+  });
+
+  it("does not expose provisional values in certified visibility without a matching official decision", () => {
+    const candidate = source();
+    candidate.event.state = "certified";
+    candidate.event.publicResultsVisibility = "certified";
+    const projection = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+    const entry = projection.results.sport.entries.find((row) => row.teamNumber === 1);
+    expect(entry).toMatchObject({ status: "unavailable", rank: null });
+    expect(entry).not.toHaveProperty("score");
+    expect(entry).not.toHaveProperty("presentParticipants");
+    expect(entry).not.toHaveProperty("ratio");
+    expect("scoreResult" in (entry ?? {})).toBe(false);
+  });
+
+  it("exposes certified values only when the official decision matches the current source snapshot", () => {
+    const candidate = source();
+    candidate.event.state = "certified";
+    candidate.event.publicResultsVisibility = "certified";
+    candidate.teams = candidate.teams.map((team) => ({ ...team, certified_submission_id: `submission-${team.team_number}` }));
+    candidate.submissions = candidate.submissions.map((submission) => ({ ...submission, status: "certified" }));
+    const withoutDecision = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+    candidate.officialRankings = [
+      ...[1, 2, 3].map((teamNumber) => ({ team_id: `team-${teamNumber}`, kind: "points" as const, rank: teamNumber, status: "certified" as const, team_eligible: true, decision_version: "decision-1", source_reference: "official:points", source_snapshot: withoutDecision.publicationSourceSnapshot })),
+      { team_id: "team-3", kind: "butts" as const, rank: 1, status: "certified" as const, team_eligible: true, decision_version: "decision-1", source_reference: "official:butts", source_snapshot: withoutDecision.publicationSourceSnapshot },
+      { team_id: "team-1", kind: "butts" as const, rank: 2, status: "certified" as const, team_eligible: true, decision_version: "decision-1", source_reference: "official:butts", source_snapshot: withoutDecision.publicationSourceSnapshot },
+    ];
+    const projection = buildSpogomiResultsProjection(candidate, "2026-10-12T12:00:00Z");
+    expect(projection.results.sport.entries.find((entry) => entry.teamNumber === 1)).toMatchObject({ status: "certified", score: expect.any(Number) });
+    expect(projection.results.sport.entries.find((entry) => entry.teamNumber === 1)).not.toHaveProperty("scoreResult");
   });
 });

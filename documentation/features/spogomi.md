@@ -788,6 +788,34 @@ page est indisponible ; aucune révocation ne peut donc être déduite d'une
 projection tronquée. Les noms, emails, tokens et identités privées du roster,
 notamment celles des mineurs, ne sont pas exposés.
 
+## 19 bis. Publication officielle et projection minimale — CURRENT
+
+Le classement sportif trie d'abord le score officiel décroissant puis applique
+uniquement l'ordre de départage déclaré par `regulation_config.tiebreakers`.
+Une valeur de départage absente ne départage pas deux équipes ; le numéro
+d'équipe et l'identifiant technique ne servent qu'à stabiliser l'affichage,
+jamais à inventer un vainqueur. Le classement `mégots / participant` trie le
+ratio de comptage direct par participant présent vérifié décroissant et ne
+réutilise pas les départages sportifs. Les égalités restent donc visibles.
+
+Une décision officielle est liée à un instantané vérifiable du règlement, des
+catégories, des équipes, des soumissions, des mesures et des présences. La
+publication verrouille l'événement, compare cet instantané avant toute
+mutation et refuse explicitement une source devenue obsolète. Une répétition
+strictement identique est sans effet ; une nouvelle décision révoque
+atomiquement l'ancienne et chaque transition est conservée dans
+`spogomi_official_ranking_history`. La relecture d'une décision historique
+révoquée est possible sans collision de clé et reste traçable.
+
+La projection publique est distincte de la projection privée organisateur.
+Lorsque le statut est `unavailable`, les champs numériques et les résultats
+internes sont absents du JSON ; ils ne peuvent pas réapparaître via un
+`scoreResult` ou un autre alias. Les valeurs `provisional` sont explicitement
+étiquetées et les valeurs `certified` exigent une décision courante concordante
+avec l'instantané des sources. L'export XLSX conserve la distinction entre
+soumissions certifiées et non certifiées et n'exporte jamais un score officiel
+de brouillon.
+
 ## 20. Sources canoniques liées
 
 - [Participation et formulaire de groupe](./group-action.md)

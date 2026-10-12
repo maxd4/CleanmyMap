@@ -8,6 +8,7 @@ import { loadSpogomiResultsProjection } from "@/lib/spogomi/results-projection-s
 import { buildXlsxWorkbook, safeXlsxFilename } from "@/lib/reports/xlsx-export";
 
 export const runtime = "nodejs";
+// Justification force-dynamic: organizer export reads private current certification and must never be served from a shared cache.
 export const dynamic = "force-dynamic";
 
 function value(value: number | string | null): number | string | null {
@@ -38,12 +39,13 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
     ];
     const rows = [
       { name: "Synthèse", rows: [["Champ", "Valeur"], ["Événement", projection.event.name], ["Mode", projection.event.mode], ["Début", projection.event.startsAt], ["Fin", projection.event.endsAt], ["Équipes", projection.teams.length], ["Équipes certifiées", certifiedTeams.length], ["Participants présents", projection.results.environmental.participantsPresent], ["Masse hors mégots (g)", projection.results.environmental.totalWasteMassGrams], ["Mégots comptés", projection.results.environmental.cigaretteButtsCount], ["Masse mégots (g)", projection.results.environmental.cigaretteButtsMassGrams], ["Révision environnementale", projection.results.environmental.projectionVersion], ["Statut événement", projection.event.state]] },
-      { name: "Équipes", rows: [["N°", "Nom public", "Inscrits", "Présents", "Soumission", "Version", "Rang sportif", "Statut sportif", "Points", "Rang mégots", "Statut mégots", "Mégots", "Mégots / participant"], ...projection.teams.map((team) => [team.teamNumber, team.publicName, team.registeredParticipants, team.presentParticipants, team.submissionStatus, team.submissionVersion, team.sportRank, team.sportStatus, team.sportScore, team.buttsRank, team.buttsStatus, team.buttsCount, team.buttsPerParticipant])] },
+      { name: "Équipes", rows: [["N°", "Nom public", "Inscrits", "Présents", "Soumission", "Version", "Rang sportif", "Statut sportif", "Points certifiés", "Rang mégots", "Statut mégots", "Mégots comptés certifiés", "Mégots / participant certifié"], ...projection.teams.map((team) => [team.teamNumber, team.publicName, team.registeredParticipants, team.presentParticipants, team.submissionStatus, team.submissionVersion, team.sportRank, team.sportStatus, team.sportScore, team.buttsRank, team.buttsStatus, team.buttsCount, team.buttsPerParticipant])] },
       { name: "Catégories", rows: [["Équipe", "Nom public", "Statut soumission", "Code", "Catégorie", "Type", "Unité", "Quantité", "Masse (g)", "Comptage direct", "Mapping CleanMyMap", "Provenance", "Méthode"], ...categoryRows] },
       { name: "Traçabilité", rows: [["Type", "Valeur 1", "Type", "Valeur 2", "Type", "Valeur 3"], ...traceRows] },
     ];
     const bytes = buildXlsxWorkbook(rows);
     const filename = safeXlsxFilename(`spogomi-${projection.event.name}`);
+    // Justification no-store: this private workbook contains organizer-only certification and measurement data.
     return new NextResponse(bytes as BodyInit, { headers: { "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Content-Disposition": `attachment; filename="${filename}"`, "Cache-Control": "no-store" } });
   } catch (error) {
     return handleApiError(error, "spogomi.export.xlsx");
