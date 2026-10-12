@@ -4,11 +4,11 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
-import type { SpogomiGalleryPhoto } from "@/lib/spogomi/photo-gallery";
+import type { SpogomiPublicGalleryPhoto } from "@/lib/spogomi/photo-gallery";
 
 const passthroughImageLoader = ({ src }: { src: string }) => src;
 
-export function SpogomiPhotoGallery({ photos }: { photos: SpogomiGalleryPhoto[] }) {
+export function SpogomiPhotoGallery({ photos }: { photos: SpogomiPublicGalleryPhoto[] }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const activePhoto = activeIndex === null ? null : photos[activeIndex] ?? null;
 

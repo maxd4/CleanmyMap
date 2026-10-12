@@ -3,9 +3,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   buildSpogomiGalleryPhotoInput,
-  parseSpogomiGalleryPhoto,
+  parseSpogomiGalleryEntry,
   resolvePublicSpogomiGallery,
-  type SpogomiGalleryPhoto,
+  type SpogomiGalleryEntry,
+  type SpogomiPublicGalleryPhoto,
 } from "./photo-gallery";
 
 type ActionGalleryRow = {
@@ -19,12 +20,12 @@ type ActionGalleryRow = {
 function isPublicAction(row: Pick<ActionGalleryRow, "status" | "published_at" | "moderation_visibility">): boolean {
   return row.status === "approved" && Boolean(row.published_at) && row.moderation_visibility !== "hidden";
 }
-function storedGallery(value: unknown): SpogomiGalleryPhoto[] {
+function storedGallery(value: unknown): SpogomiGalleryEntry[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
   return value
-    .map(parseSpogomiGalleryPhoto)
-    .filter((photo): photo is SpogomiGalleryPhoto => Boolean(photo))
+    .map(parseSpogomiGalleryEntry)
+    .filter((photo): photo is SpogomiGalleryEntry => Boolean(photo))
     .filter((photo) => !seen.has(photo.id) && seen.add(photo.id));
 }
 
@@ -45,7 +46,7 @@ export async function loadSpogomiGalleryEntries(params: {
   supabase: SupabaseClient;
   actionId: string;
   publicOnly?: boolean;
-}): Promise<SpogomiGalleryPhoto[]> {
+}): Promise<SpogomiGalleryEntry[]> {
   const row = await loadActionGalleryRow(params.supabase, params.actionId);
   if (!row || (params.publicOnly && !isPublicAction(row))) return [];
   return storedGallery(row.preparation_data?.spogomiGallery);
@@ -54,8 +55,32 @@ export async function loadSpogomiGalleryEntries(params: {
 export async function loadPublishedSpogomiGalleryForAction(params: {
   supabase: SupabaseClient;
   actionId: string;
-}): Promise<SpogomiGalleryPhoto[]> {
+}): Promise<SpogomiPublicGalleryPhoto[]> {
   return resolvePublicSpogomiGallery(await loadSpogomiGalleryEntries({ ...params, publicOnly: true }));
+}
+
+async function updateGalleryAtomically<T>(params: {
+  supabase: SupabaseClient;
+  actionId: string;
+  mutate: (gallery: SpogomiGalleryEntry[]) => { next: SpogomiGalleryEntry[]; result: T } | null;
+}): Promise<T | null> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const row = await loadActionGalleryRow(params.supabase, params.actionId);
+    if (!row) throw new Error("Édition SPOGOMI introuvable.");
+    const mutation = params.mutate(storedGallery(row.preparation_data?.spogomiGallery));
+    if (!mutation) return null;
+    let update = params.supabase
+      .from("actions")
+      .update({ preparation_data: { ...(row.preparation_data ?? {}), spogomiGallery: mutation.next } })
+      .eq("id", params.actionId);
+    update = row.preparation_data === null
+      ? update.is("preparation_data", null)
+      : update.eq("preparation_data", JSON.stringify(row.preparation_data));
+    const result = await update.select("id").maybeSingle();
+    if (result.error) throw result.error;
+    if (result.data) return mutation.result;
+  }
+  throw new Error("Conflict: la galerie SPOGOMI a été modifiée concurrentement, réessayez.");
 }
 
 /** Caller must authorize the event with loadSpogomiEventForOrganizer first. */
@@ -63,19 +88,16 @@ export async function upsertSpogomiGalleryPhoto(params: {
   supabase: SupabaseClient;
   actionId: string;
   photo: Parameters<typeof buildSpogomiGalleryPhotoInput>[0];
-}): Promise<SpogomiGalleryPhoto> {
-  const row = await loadActionGalleryRow(params.supabase, params.actionId);
-  if (!row) throw new Error("Édition SPOGOMI introuvable.");
-  const photo = buildSpogomiGalleryPhotoInput(params.photo);
-  const preparationData = row.preparation_data ?? {};
-  const current = storedGallery(preparationData.spogomiGallery);
-  const next = [...current.filter((item) => item.id !== photo.id), photo];
-  const result = await params.supabase
-    .from("actions")
-    .update({ preparation_data: { ...preparationData, spogomiGallery: next } })
-    .eq("id", params.actionId);
-  if (result.error) throw result.error;
-  return photo;
+  actorUserId: string;
+}): Promise<SpogomiGalleryEntry> {
+  const photo = buildSpogomiGalleryPhotoInput(params.photo, { approvedByUserId: params.actorUserId, approvedAt: new Date().toISOString() });
+  const result = await updateGalleryAtomically<SpogomiGalleryEntry>({
+    supabase: params.supabase,
+    actionId: params.actionId,
+    mutate: (current) => ({ next: [...current.filter((item) => item.id !== photo.id), photo], result: photo }),
+  });
+  if (!result) throw new Error("La photo SPOGOMI n’a pas pu être enregistrée.");
+  return result;
 }
 
 /** Caller must authorize the event with loadSpogomiEventForOrganizer first. */
@@ -85,18 +107,20 @@ export async function withdrawSpogomiGalleryPhoto(params: {
   photoId: string;
   withdrawnAt: string;
 }): Promise<boolean> {
-  const row = await loadActionGalleryRow(params.supabase, params.actionId);
-  if (!row) throw new Error("Édition SPOGOMI introuvable.");
-  const current = storedGallery(row.preparation_data?.spogomiGallery);
-  const target = current.find((photo) => photo.id === params.photoId);
-  if (!target) return false;
-  const next = current.map((photo) => photo.id === params.photoId
-    ? { ...photo, status: "withdrawn" as const, withdrawnAt: params.withdrawnAt, publishedAt: photo.publishedAt }
-    : photo);
-  const result = await params.supabase
-    .from("actions")
-    .update({ preparation_data: { ...(row.preparation_data ?? {}), spogomiGallery: next } })
-    .eq("id", params.actionId);
-  if (result.error) throw result.error;
-  return true;
+  const result = await updateGalleryAtomically<boolean>({
+    supabase: params.supabase,
+    actionId: params.actionId,
+    mutate: (current) => {
+      const target = current.find((photo) => photo.id === params.photoId);
+      if (!target || target.status === "draft") return null;
+      return {
+        next: current.map((photo): SpogomiGalleryEntry => {
+          if (photo.id !== params.photoId || photo.status === "draft") return photo;
+          return { ...photo, status: "withdrawn", withdrawnAt: params.withdrawnAt };
+        }),
+        result: true,
+      };
+    },
+  });
+  return result ?? false;
 }

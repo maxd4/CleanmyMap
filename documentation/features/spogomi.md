@@ -937,9 +937,14 @@ La fiche `/spogomi/[eventSlug]` ne rend une galerie que depuis
 l'action. Chaque photo publiée doit porter une URL d'image, une URL source, un
 propriétaire ou fournisseur identifié, un texte alternatif, une approbation de
 diffusion, des droits `authorized`, une revue de protection des sujets et des
-mineurs, ainsi qu'une date d'approbation. Une photo retirée passe à l'état
+mineurs, ainsi qu'une date et un identifiant d'organisateur validateur générés
+côté serveur. Le POST n'accepte une publication que si ces quatre attestations
+positives sont explicitement fournies ; les brouillons peuvent rester
+incomplets et privés. Une photo retirée passe à l'état
 `withdrawn` et disparaît de la projection publique sans supprimer les autres
-preuves de l'action. Le POST/DELETE de `/api/spogomi/events/:eventId/gallery`
+preuves de l'action. Les mutations de galerie utilisent une mise à jour
+conditionnelle bornée pour ne pas écraser les autres clés de
+`preparation_data`. Le POST/DELETE de `/api/spogomi/events/:eventId/gallery`
 réutilise l'autorisation organisateur de l'édition ; participer à l'événement
 ne suffit donc pas pour publier ou retirer une photo. Les pièces jointes du
 salon, les photos d'actions non explicitement approuvées et les photographies

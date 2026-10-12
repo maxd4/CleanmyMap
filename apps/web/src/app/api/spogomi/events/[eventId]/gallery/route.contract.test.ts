@@ -13,9 +13,15 @@ describe("SPOGOMI gallery route authorization contract", () => {
   });
 
   it("requires explicit rights and subject-protection metadata in the server-owned contract", () => {
-    expect(source).toContain("approvedAt");
     expect(source).toContain("sourceUrl");
     expect(source).toContain("ownerName");
     expect(source).toContain("status: z.enum([\"draft\", \"published\"])");
+    expect(source).toContain("rightsStatus");
+    expect(source).toContain("approvedForPublication");
+    expect(source).toContain("subjectProtectionReviewed");
+    expect(source).toContain("minorProtectionReviewed");
+    expect(source).toContain("photo.status !== \"published\"");
+    expect(source).toContain("actorUserId: access.userId");
+    expect(source).not.toContain("approvedAt: z.string");
   });
 });

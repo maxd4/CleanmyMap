@@ -19,9 +19,17 @@ const photoSchema = z.object({
   sourceUrl: z.string().url().refine((value) => value.startsWith("https://") || value.startsWith("http://")),
   ownerName: z.string().trim().min(1).max(200),
   status: z.enum(["draft", "published"]),
-  approvedAt: z.string().trim().min(1).max(80),
-  publishedAt: z.string().trim().max(80).nullable().optional(),
-}).strict();
+  rightsStatus: z.enum(["pending", "authorized"]).nullable().optional(),
+  approvedForPublication: z.boolean().optional(),
+  subjectProtectionReviewed: z.boolean().optional(),
+  minorProtectionReviewed: z.boolean().optional(),
+}).strict().superRefine((photo, context) => {
+  if (photo.status !== "published") return;
+  if (photo.rightsStatus !== "authorized") context.addIssue({ code: "custom", path: ["rightsStatus"], message: "Les droits doivent être explicitement autorisés." });
+  if (photo.approvedForPublication !== true) context.addIssue({ code: "custom", path: ["approvedForPublication"], message: "L'autorisation de diffusion est obligatoire." });
+  if (photo.subjectProtectionReviewed !== true) context.addIssue({ code: "custom", path: ["subjectProtectionReviewed"], message: "La protection des sujets doit être explicitement revue." });
+  if (photo.minorProtectionReviewed !== true) context.addIssue({ code: "custom", path: ["minorProtectionReviewed"], message: "La protection des mineurs doit être explicitement revue." });
+});
 
 async function authorizedEvent(eventId: string, userId: string) {
   return loadSpogomiEventForOrganizer(getSupabaseServerClient(true), eventId, userId);
@@ -54,6 +62,7 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
       supabase: getSupabaseServerClient(true),
       actionId: event.action_id,
       photo: parsed.data,
+      actorUserId: access.userId,
     });
     return NextResponse.json({ photo });
   } catch (error) {

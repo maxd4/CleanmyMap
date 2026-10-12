@@ -8,7 +8,7 @@ import type { SpogomiPublicResults } from "./results-projection";
 import { loadSpogomiOrganizerForAction } from "./partner-impact-service";
 import type { SpogomiPublicOrganizer } from "./partner-impact";
 import { loadPublishedSpogomiGalleryForAction } from "./photo-gallery-service";
-import type { SpogomiGalleryPhoto } from "./photo-gallery";
+import type { SpogomiPublicGalleryPhoto } from "./photo-gallery";
 
 export type SpogomiPublicLifecycle = "upcoming" | "in_progress" | "finished";
 
@@ -42,7 +42,7 @@ export type SpogomiPublicEvent = {
   route: SpogomiPublicRoute | null;
   results: SpogomiPublicResults | null;
   organizer: SpogomiPublicOrganizer | null;
-  gallery: SpogomiGalleryPhoto[];
+  gallery: SpogomiPublicGalleryPhoto[];
 };
 
 type PublicEventRow = {
@@ -116,7 +116,7 @@ function mapEvent(
   route: SpogomiPublicRoute | null = null,
   results: SpogomiPublicResults | null = null,
   organizer: SpogomiPublicOrganizer | null = null,
-  gallery: SpogomiGalleryPhoto[] = [],
+  gallery: SpogomiPublicGalleryPhoto[] = [],
 ): SpogomiPublicEvent | null {
   if (!row.event_slug) return null;
   return {
