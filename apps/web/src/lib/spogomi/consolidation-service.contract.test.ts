@@ -22,4 +22,11 @@ describe("SPOGOMI consolidation service STATIC_CONTRACT", () => {
     expect(service).toContain("action_id");
     expect(service).not.toContain("createAction(");
   });
+
+  it("reads every source page with one shared deterministic pagination owner", () => {
+    expect(service).toContain("readAllSpogomiPages");
+    expect(service).toContain('.range(from, to)');
+    expect(service).toContain('.order("team_number", { ascending: true })');
+    expect(service).toContain('.order("id", { ascending: true })');
+  });
 });

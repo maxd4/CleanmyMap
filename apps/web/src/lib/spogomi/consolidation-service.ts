@@ -16,6 +16,7 @@ import {
   type SpogomiOfficialRouteReference,
   SPOGOMI_ENVIRONMENTAL_MAPPING_VERSION,
 } from "./consolidation";
+import { readAllSpogomiPages } from "./pagination";
 
 type EventRow = {
   id: string;
@@ -168,21 +169,21 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
   if (eventResult.error) throw eventResult.error;
   if (!eventResult.data) throw new Error("SPOGOMI event not found.");
   const event = eventResult.data as EventRow;
-  const [actionResult, categoriesResult, mappingsResult, teamsResult, submissionsResult, itemsResult, participantsResult, routeResult] = await Promise.all([
+  const [actionResult, categories, mappings, teams, submissions, items, participants, routeResult] = await Promise.all([
     supabase.from("actions").select("organizer_id, organizer_name, organizer_type").eq("id", event.action_id).single(),
-    supabase.from("spogomi_category_rules").select("id, code, label, measurement_kind, unit, environmental_category_slug").eq("event_id", event.id).order("display_order"),
-    supabase.from("spogomi_environment_category_mappings").select("category_rule_id, mapping_version, category_code, environmental_category_slug, source_field, source_unit, target_unit, unit_factor_to_target, counts_toward_total, is_megots, mapping_status, exclusion_reason").eq("event_id", event.id).eq("mapping_version", event.environmental_mapping_version),
-    supabase.from("spogomi_teams").select("id, team_number, public_name, certified_submission_id").eq("event_id", event.id).order("team_number"),
-    supabase.from("spogomi_result_submissions").select("id, team_id, status").eq("event_id", event.id),
-    supabase.from("spogomi_result_items").select("submission_id, category_rule_id, quantity, mass_grams, object_count, provenance, measurement_method, source_reference").eq("event_id", event.id),
-    supabase.from("spogomi_participants").select("id, team_id, attendance_status, registration_status").eq("event_id", event.id),
+    readAllSpogomiPages("consolidation categories", (from, to) => supabase.from("spogomi_category_rules").select("id, code, label, measurement_kind, unit, environmental_category_slug").eq("event_id", event.id).order("display_order", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation mappings", (from, to) => supabase.from("spogomi_environment_category_mappings").select("category_rule_id, mapping_version, category_code, environmental_category_slug, source_field, source_unit, target_unit, unit_factor_to_target, counts_toward_total, is_megots, mapping_status, exclusion_reason").eq("event_id", event.id).eq("mapping_version", event.environmental_mapping_version).order("category_rule_id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation teams", (from, to) => supabase.from("spogomi_teams").select("id, team_number, public_name, certified_submission_id").eq("event_id", event.id).order("team_number", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation submissions", (from, to) => supabase.from("spogomi_result_submissions").select("id, team_id, status").eq("event_id", event.id).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation result items", (from, to) => supabase.from("spogomi_result_items").select("id, submission_id, category_rule_id, quantity, mass_grams, object_count, provenance, measurement_method, source_reference").eq("event_id", event.id).order("submission_id", { ascending: true }).order("category_rule_id", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("consolidation participants", (from, to) => supabase.from("spogomi_participants").select("id, team_id, attendance_status, registration_status").eq("event_id", event.id).order("id", { ascending: true }).range(from, to)),
     supabase.from("spogomi_event_routes").select("source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson").eq("event_id", event.id).maybeSingle(),
   ]);
-  for (const result of [actionResult, categoriesResult, mappingsResult, teamsResult, submissionsResult, itemsResult, participantsResult, routeResult]) if (result.error) throw result.error;
+  for (const result of [actionResult, routeResult]) if (result.error) throw result.error;
   const action = actionResult.data as ActionRow;
-  const categories = (categoriesResult.data ?? []) as CategoryRow[];
-  const persisted = new Map(((mappingsResult.data ?? []) as unknown as PersistedMappingRow[]).map((row) => [row.category_rule_id, persistedMapping(row)]));
-  const mappings = categories.map((category) => deriveSpogomiEnvironmentalMapping({
+  const categoryRows = categories as unknown as CategoryRow[];
+  const persisted = new Map(((mappings ?? []) as unknown as PersistedMappingRow[]).map((row) => [row.category_rule_id, persistedMapping(row)]));
+  const mappingRows = categoryRows.map((category) => deriveSpogomiEnvironmentalMapping({
     categoryRuleId: category.id,
     categoryCode: category.code,
     measurementKind: category.measurement_kind,
@@ -191,14 +192,14 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
     mappingVersion: event.environmental_mapping_version || SPOGOMI_ENVIRONMENTAL_MAPPING_VERSION,
     persisted: persisted.get(category.id) ?? null,
   }));
-  const submissions = new Map((submissionsResult.data ?? []).map((row) => [String(row.id), row as { id: string; team_id: string; status: string }]));
-  const rawItems = (itemsResult.data ?? []) as Array<Record<string, unknown>>;
-  const teams = (teamsResult.data ?? []).map((row) => {
+  const submissionsById = new Map((submissions ?? []).map((row) => [String(row.id), row as { id: string; team_id: string; status: string }]));
+  const rawItems = (items ?? []) as Array<Record<string, unknown>>;
+  const teamRows = (teams ?? []).map((row) => {
     const teamId = String(row.id);
     const submissionId = row.certified_submission_id ? String(row.certified_submission_id) : null;
-    const submission = submissionId ? submissions.get(submissionId) : null;
+    const submission = submissionId ? submissionsById.get(submissionId) : null;
     const teamItems: SpogomiConsolidationSourceItem[] = rawItems.filter((item) => String(item.submission_id) === submissionId).map((item) => {
-      const category = categories.find((candidate) => candidate.id === String(item.category_rule_id));
+      const category = categoryRows.find((candidate) => candidate.id === String(item.category_rule_id));
       return {
         categoryRuleId: String(item.category_rule_id),
         categoryCode: category?.code ?? "unknown",
@@ -225,7 +226,7 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
       items: teamItems,
     };
   });
-  const participants = ((participantsResult.data ?? []) as Array<Record<string, unknown>>).map((participant): SpogomiConsolidationParticipant => ({
+  const participantRows = ((participants ?? []) as Array<Record<string, unknown>>).map((participant): SpogomiConsolidationParticipant => ({
     id: String(participant.id),
     teamId: participant.team_id ? String(participant.team_id) : null,
     attendanceStatus: String(participant.attendance_status),
@@ -235,9 +236,9 @@ async function loadConsolidationInput(supabase: SupabaseClient, eventId: string)
     eventId: event.id,
     actionId: event.action_id,
     mappingVersion: event.environmental_mapping_version || SPOGOMI_ENVIRONMENTAL_MAPPING_VERSION,
-    mappings,
-    teams,
-    participants,
+    mappings: mappingRows,
+    teams: teamRows,
+    participants: participantRows,
     officialRoute: asRoute(routeResult.data),
     organizer: resolveSPOGOMIFranceOrganizer(action),
   };

@@ -122,19 +122,22 @@ export type SpogomiCompetitionInput = {
   regulation: SpogomiRegulation;
   items: Array<SpogomiResultItemInput & { categoryCode: string }>;
   presentParticipants: number;
+  submissionStatus?: SpogomiSubmissionStatus;
   appliedPenalties?: SpogomiPenalty[];
 };
 
 export type SpogomiPhysicalTotals = {
   massGrams: number | null;
   countedObjects: number | null;
+  countedButts: number | null;
+  buttMassGrams: number | null;
   presentParticipants: number;
 };
 
 export type SpogomiCompetitionResult = {
   physicalTotals: SpogomiPhysicalTotals;
   officialScore: number | null;
-  scoreStatus: "official" | "unavailable";
+  scoreStatus: "official" | "preview" | "unavailable";
   appliedPenalties: SpogomiPenalty[];
   comparableForButtsPerParticipant: boolean;
   buttsPerParticipant: number | null;

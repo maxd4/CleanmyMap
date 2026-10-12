@@ -117,6 +117,25 @@ Deux tableaux distincts :
 
 Une conversion scientifique de masse de mégots en nombre, lorsqu'autorisée par un autre domaine, est une donnée **dérivée** ; elle ne devient jamais un « comptage observé » dans ce classement sans définition et étiquetage explicites. Une disqualification sportive ne supprime pas automatiquement une collecte physique valide du bilan environnemental.
 
+Le ratio utilise exclusivement les mesures dont la catégorie sportive est reliée
+au slug environnemental canonique `cigarette_butt`. Les autres objets comptés,
+la masse totale, la masse de mégots et l'effectif présent vérifié restent des
+mesures distinctes. Une correspondance absente, un comptage de mégots partiel
+ou un effectif non strictement positif rend le ratio `non comparable`.
+
+La certification exige le règlement courant complet au moment de la mutation
+PostgreSQL : source et version concordantes, catégories et unités cohérentes,
+coefficients confirmés, précision d'arrondi, éligibilité et départages valides.
+Une modification concurrente du règlement impose une nouvelle version et ne
+peut pas rendre silencieusement une certification obsolète. Une valeur calculée
+avant certification reste une `prévisualisation`; seul l'état `certified` porte
+un score officiel.
+
+Les lectures serveur des résultats, participants, soumissions, items et
+projections de consolidation sont paginées par clé et ordre déterministes.
+Toute page en erreur fait échouer la lecture complète plutôt que de publier un
+résultat partiel.
+
 ## 7. Formulaire dédié par équipe et arbitrage
 
 Chaque équipe possède son formulaire SPOGOMI propre, distinct des parcours bénévoles génériques. Accès par session d'équipe à privilèges limités (par exemple invitation vérifiée, secret échangeable et révocable), sans obligation implicite de compte Clerk pour les personnes externes. Le mécanisme doit éviter les liens devinables et les tokens durables exposés dans des logs ou referrers ; accès aux autres équipes interdit.

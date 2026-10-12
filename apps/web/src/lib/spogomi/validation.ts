@@ -37,11 +37,26 @@ export function validateRegulation(regulation: SpogomiRegulation): SpogomiValida
     if (!Number.isInteger(regulation.rounding.decimals) || regulation.rounding.decimals < 0 || regulation.rounding.decimals > 6) {
       return invalid("rounding_precision_invalid");
     }
+    if (!["half_up", "down", "up"].includes(regulation.rounding.mode)) {
+      return invalid("rounding_mode_invalid");
+    }
   }
   if (regulation.eligibility) {
     const minimum = regulation.eligibility.minimumPresentParticipants;
     if (minimum !== null && (!Number.isInteger(minimum) || minimum < 0)) {
       return invalid("minimum_present_participants_invalid");
+    }
+    if (typeof regulation.eligibility.requiresAllCategories !== "boolean") {
+      return invalid("requires_all_categories_invalid");
+    }
+  }
+  if (regulation.tiebreakers) {
+    if (regulation.tiebreakers.length === 0) return invalid("tiebreakers_required");
+    if (new Set(regulation.tiebreakers).size !== regulation.tiebreakers.length) {
+      return invalid("tiebreakers_must_be_unique");
+    }
+    if (regulation.tiebreakers.some((tiebreaker) => !["sporting_score", "mass_grams", "counted_objects"].includes(tiebreaker))) {
+      return invalid("tiebreaker_invalid");
     }
   }
   for (const penalty of regulation.penalties ?? []) {
@@ -63,7 +78,12 @@ export function isRegulationReadyForCertification(
     Boolean(regulation.rounding) &&
     Boolean(regulation.eligibility) &&
     Boolean(regulation.tiebreakers?.length) &&
-    regulation.categories.every((category) => category.isComplete)
+    regulation.categories.every((category) =>
+      category.isComplete &&
+      category.coefficientStatus === "confirmed" &&
+      category.coefficient !== null &&
+      Number.isFinite(category.coefficient),
+    )
   );
 }
 

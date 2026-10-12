@@ -29,4 +29,12 @@ describe("SPOGOMI result services STATIC_CONTRACT", () => {
     expect(access).toContain("session_hash: sha256(sessionToken)");
     expect(access).not.toContain("token: token");
   });
+
+  it("reads review sources exhaustively instead of relying on the default response limit", () => {
+    expect(service).toContain("readAllSpogomiPages");
+    expect(service).toContain('.range(from, to)');
+    expect(service).toContain('"review participants"');
+    expect(service).toContain('"review result items"');
+    expect(service).toContain("registration_status === \"registered\"");
+  });
 });

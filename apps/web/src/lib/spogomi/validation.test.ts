@@ -137,4 +137,28 @@ describe("SPOGOMI domain invariants", () => {
       }),
     ).toEqual({ ok: false, reason: "non_certifiable_previous_status" });
   });
+
+  it("requires confirmed coefficients, complete score parameters and unique official tiebreakers", () => {
+    const ready: SpogomiRegulation = {
+      ...incompleteRegulation,
+      sourceReference: "partner://spogomi/validated",
+      status: "complete",
+      rounding: { decimals: 1, mode: "half_up" },
+      eligibility: { minimumPresentParticipants: 1, requiresAllCategories: true },
+      tiebreakers: ["sporting_score", "mass_grams"],
+      categories: [{
+        ...incompleteRegulation.categories[0],
+        coefficient: 1,
+        coefficientStatus: "confirmed",
+        isComplete: true,
+      }],
+    };
+    expect(isRegulationReadyForCertification(ready)).toBe(true);
+    expect(isRegulationReadyForCertification({
+      ...ready,
+      categories: [{ ...ready.categories[0], coefficientStatus: "unknown" }],
+    })).toBe(false);
+    expect(isRegulationReadyForCertification({ ...ready, tiebreakers: ["mass_grams", "mass_grams"] })).toBe(false);
+    expect(isRegulationReadyForCertification({ ...ready, rounding: undefined })).toBe(false);
+  });
 });

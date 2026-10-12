@@ -21,14 +21,26 @@ function sumNullable(values: Array<number | null | undefined>): number | null {
 
 export function calculateSpogomiCompetitionResult(input: SpogomiCompetitionInput): SpogomiCompetitionResult {
   const { regulation } = input;
+  const buttCategoryCodes = new Set(
+    regulation.categories
+      .filter((category) => category.environmentalCategorySlug === "cigarette_butt")
+      .map((category) => category.code),
+  );
+  const buttItems = input.items.filter((item) => buttCategoryCodes.has(item.categoryCode));
+  const hasCompleteButtCount =
+    buttCategoryCodes.size > 0 &&
+    buttItems.length === buttCategoryCodes.size &&
+    buttItems.every((item) => item.objectCount !== null && item.objectCount !== undefined);
   const physicalTotals: SpogomiPhysicalTotals = {
     massGrams: sumNullable(input.items.map((item) => item.massGrams)),
     countedObjects: sumNullable(input.items.map((item) => item.objectCount)),
+    countedButts: hasCompleteButtCount ? sumNullable(buttItems.map((item) => item.objectCount)) : null,
+    buttMassGrams: sumNullable(buttItems.map((item) => item.massGrams)),
     presentParticipants: input.presentParticipants,
   };
-  const comparableForButtsPerParticipant = physicalTotals.countedObjects !== null && input.presentParticipants > 0;
+  const comparableForButtsPerParticipant = physicalTotals.countedButts !== null && input.presentParticipants > 0;
   const buttsPerParticipant = comparableForButtsPerParticipant
-    ? physicalTotals.countedObjects! / input.presentParticipants
+    ? physicalTotals.countedButts! / input.presentParticipants
     : null;
   const appliedPenalties = input.appliedPenalties ?? [];
 
@@ -69,7 +81,7 @@ export function calculateSpogomiCompetitionResult(input: SpogomiCompetitionInput
   return {
     physicalTotals,
     officialScore: rounded,
-    scoreStatus: "official",
+    scoreStatus: input.submissionStatus === "certified" ? "official" : "preview",
     appliedPenalties,
     comparableForButtsPerParticipant,
     buttsPerParticipant,
