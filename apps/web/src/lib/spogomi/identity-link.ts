@@ -4,6 +4,8 @@ import { createHash, randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { claimFinishedActionParticipation } from "@/lib/actions/participation/post-action-claims";
 import { joinActionParticipation } from "@/lib/actions/participation/group-participation";
+import { readActionRegistrationRecord } from "@/lib/actions/participation/registration-records";
+import { readParticipantRecord } from "@/lib/actions/participation/group-participation.helpers";
 
 const IDENTITY_CODE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -18,6 +20,22 @@ export type SpogomiIdentityLinkResult = {
   participantId: string;
   actionId: string;
   attendanceStatus: "unknown" | "present" | "absent";
+};
+
+export type SpogomiIdentityState =
+  | "identity_unlinked"
+  | "identity_verified"
+  | "participation_unavailable"
+  | "participation_pending"
+  | "participation_confirmed"
+  | "participation_cancelled";
+
+export type SpogomiIdentityStateResult = {
+  state: SpogomiIdentityState;
+  participantId: string | null;
+  actionId: string | null;
+  attendanceStatus: "unknown" | "present" | "absent";
+  participation: SpogomiIdentityParticipation;
 };
 
 export class SpogomiIdentityLinkError extends Error {
@@ -161,4 +179,162 @@ export async function requestCleanMyMapParticipation(
   }
 
   return { status: "unavailable", store: null };
+}
+
+type VerifiedSpogomiIdentity = {
+  participantId: string;
+  actionId: string;
+  attendanceStatus: "unknown" | "present" | "absent";
+  actionPhase: "pre_action" | "post_action_draft" | "post_action_complete" | null;
+};
+
+function createIdentityNotFoundError(): SpogomiIdentityLinkError {
+  return new SpogomiIdentityLinkError(
+    "La liaison SPOGOMI n’est pas disponible pour ce compte.",
+    "not_found",
+  );
+}
+
+async function loadVerifiedSpogomiIdentity(
+  supabase: SupabaseClient,
+  params: { eventId: string; clerkId: string },
+): Promise<VerifiedSpogomiIdentity | null> {
+  const eventResult = await supabase
+    .from("spogomi_events")
+    .select("action_id")
+    .eq("id", params.eventId)
+    .maybeSingle();
+  if (eventResult.error) throw eventResult.error;
+  const actionId = typeof eventResult.data?.action_id === "string"
+    ? eventResult.data.action_id
+    : null;
+  if (!actionId) return null;
+
+  const participantResult = await supabase
+    .from("spogomi_participants")
+    .select("id, clerk_id, account_link_status, attendance_status")
+    .eq("event_id", params.eventId)
+    .eq("clerk_id", params.clerkId)
+    .eq("account_link_status", "verified")
+    .limit(2);
+  if (participantResult.error) throw participantResult.error;
+  const participants = participantResult.data ?? [];
+  if (participants.length !== 1) return null;
+  const participant = participants[0] as {
+    id?: unknown;
+    attendance_status?: unknown;
+  };
+  if (typeof participant.id !== "string") return null;
+
+  const actionResult = await supabase
+    .from("actions")
+    .select("action_phase")
+    .eq("id", actionId)
+    .maybeSingle();
+  if (actionResult.error) throw actionResult.error;
+  const actionPhase = actionResult.data?.action_phase === "pre_action" ||
+    actionResult.data?.action_phase === "post_action_draft" ||
+    actionResult.data?.action_phase === "post_action_complete"
+    ? actionResult.data.action_phase
+    : null;
+  const attendanceStatus = participant.attendance_status === "present" || participant.attendance_status === "absent"
+    ? participant.attendance_status
+    : "unknown";
+
+  return { participantId: participant.id, actionId, attendanceStatus, actionPhase };
+}
+
+async function loadStoredParticipation(
+  supabase: SupabaseClient,
+  identity: VerifiedSpogomiIdentity,
+  clerkId: string,
+): Promise<SpogomiIdentityParticipation> {
+  if (identity.actionPhase === "pre_action" || identity.actionPhase === "post_action_draft") {
+    const record = await readActionRegistrationRecord(supabase, {
+      actionId: identity.actionId,
+      userId: clerkId,
+    });
+    return {
+      status: record?.registration_status ?? "not_requested",
+      store: "action_registrations",
+    };
+  }
+  if (identity.actionPhase === "post_action_complete") {
+    const record = await readParticipantRecord(supabase, {
+      actionId: identity.actionId,
+      userId: clerkId,
+    });
+    return {
+      status: record?.participation_status ?? "not_requested",
+      store: "action_participants",
+    };
+  }
+  return { status: "unavailable", store: null };
+}
+
+function resolveIdentityState(
+  participation: SpogomiIdentityParticipation,
+): SpogomiIdentityState {
+  if (participation.status === "pending") return "participation_pending";
+  if (participation.status === "confirmed") return "participation_confirmed";
+  if (participation.status === "cancelled") return "participation_cancelled";
+  if (participation.status === "unavailable") return "participation_unavailable";
+  return "identity_verified";
+}
+
+function buildIdentityStateResult(
+  identity: VerifiedSpogomiIdentity | null,
+  participation: SpogomiIdentityParticipation,
+): SpogomiIdentityStateResult {
+  if (!identity) {
+    return {
+      state: "identity_unlinked",
+      participantId: null,
+      actionId: null,
+      attendanceStatus: "unknown",
+      participation: { status: "not_requested", store: null },
+    };
+  }
+  return {
+    state: resolveIdentityState(participation),
+    participantId: identity.participantId,
+    actionId: identity.actionId,
+    attendanceStatus: identity.attendanceStatus,
+    participation,
+  };
+}
+
+export async function loadSpogomiIdentityState(
+  supabase: SupabaseClient,
+  params: { eventId: string; clerkId: string },
+): Promise<SpogomiIdentityStateResult> {
+  const identity = await loadVerifiedSpogomiIdentity(supabase, params);
+  if (!identity) return buildIdentityStateResult(null, { status: "not_requested", store: null });
+  return buildIdentityStateResult(
+    identity,
+    await loadStoredParticipation(supabase, identity, params.clerkId),
+  );
+}
+
+export async function resumeSpogomiIdentityParticipation(
+  supabase: SupabaseClient,
+  params: { eventId: string; clerkId: string },
+): Promise<SpogomiIdentityStateResult> {
+  const identity = await loadVerifiedSpogomiIdentity(supabase, params);
+  if (!identity) throw createIdentityNotFoundError();
+
+  const existing = await loadStoredParticipation(supabase, identity, params.clerkId);
+  if (existing.status !== "not_requested") {
+    return buildIdentityStateResult(identity, existing);
+  }
+  if (!identity.actionPhase) {
+    return buildIdentityStateResult(identity, { status: "unavailable", store: null });
+  }
+
+  const participation = await requestCleanMyMapParticipation(supabase, {
+    actionId: identity.actionId,
+    clerkId: params.clerkId,
+    actionPhase: identity.actionPhase,
+  });
+  return buildIdentityStateResult(identity, participation);
 }

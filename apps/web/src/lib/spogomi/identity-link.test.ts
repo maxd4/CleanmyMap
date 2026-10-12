@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 const joinActionParticipationMock = vi.hoisted(() => vi.fn());
 const claimFinishedActionParticipationMock = vi.hoisted(() => vi.fn());
@@ -21,6 +21,11 @@ const claimRoute = readFileSync(
 );
 
 describe("SPOGOMI identity link", () => {
+  beforeEach(() => {
+    joinActionParticipationMock.mockReset();
+    claimFinishedActionParticipationMock.mockReset();
+  });
+
   it("normalizes display separators without weakening the random code", () => {
     const code = generateSpogomiIdentityCode();
     expect(code).toMatch(/^SPOGOMI(?:-[A-F0-9]{5}){4}-[A-F0-9]{10}$/);
@@ -75,9 +80,107 @@ describe("SPOGOMI identity link", () => {
 
   it("never uses a name match and keeps action participation on existing stores", () => {
     expect(claimRoute).toContain("claimSpogomiIdentityLink");
-    expect(claimRoute).toContain("requestCleanMyMapParticipation");
-    expect(claimRoute).toContain("action_phase");
+    expect(claimRoute).toContain("resumeSpogomiIdentityParticipation");
+    expect(claimRoute).toContain("loadSpogomiIdentityState");
+    expect(claimRoute).toContain("code: z.string().trim().min(16).max(100).optional()");
+    expect(claimRoute).toContain("export async function GET");
     expect(claimRoute).not.toContain("display_name");
     expect(claimRoute).not.toContain("action_participants");
+  });
+
+  it("recovers a verified identity without a second code and does not re-request existing participation", async () => {
+    const { resumeSpogomiIdentityParticipation } = await import("./identity-link");
+    const actionRegistration = { registration_status: "pending" };
+    const createChain = (result: unknown, useLimit = false) => {
+      const chain = {
+        select: vi.fn(() => chain),
+        eq: vi.fn(() => chain),
+        limit: vi.fn(async () => useLimit ? { data: result, error: null } : { data: null, error: null }),
+        maybeSingle: vi.fn(async () => useLimit ? { data: null, error: null } : { data: result, error: null }),
+      };
+      return chain;
+    };
+    const supabase = {
+      from: vi.fn((table: string) => table === "spogomi_events"
+        ? createChain({ action_id: "action-1" })
+        : table === "spogomi_participants"
+          ? createChain([{ id: "participant-1", clerk_id: "user-1", account_link_status: "verified", attendance_status: "present" }], true)
+          : table === "actions"
+            ? createChain({ action_phase: "pre_action" })
+            : createChain(actionRegistration)),
+    } as never;
+
+    await expect(resumeSpogomiIdentityParticipation(supabase, { eventId: "event-1", clerkId: "user-1" })).resolves.toMatchObject({
+      state: "participation_pending",
+      participation: { status: "pending", store: "action_registrations" },
+    });
+    expect(joinActionParticipationMock).not.toHaveBeenCalled();
+  });
+
+  it("uses the canonical post-action claim store when the action is complete", async () => {
+    const { resumeSpogomiIdentityParticipation } = await import("./identity-link");
+    claimFinishedActionParticipationMock.mockResolvedValueOnce({ participationStatus: "pending" });
+    const createChain = (result: unknown, useLimit = false) => {
+      const chain = {
+        select: vi.fn(() => chain),
+        eq: vi.fn(() => chain),
+        limit: vi.fn(async () => useLimit ? { data: result, error: null } : { data: null, error: null }),
+        maybeSingle: vi.fn(async () => useLimit ? { data: null, error: null } : { data: result, error: null }),
+      };
+      return chain;
+    };
+    const supabase = {
+      from: vi.fn((table: string) => table === "spogomi_events"
+        ? createChain({ action_id: "action-1" })
+        : table === "spogomi_participants"
+          ? createChain([{ id: "participant-1", attendance_status: "present" }], true)
+          : table === "actions"
+            ? createChain({ action_phase: "post_action_complete" })
+            : createChain(null)),
+    } as never;
+
+    await expect(resumeSpogomiIdentityParticipation(supabase, { eventId: "event-1", clerkId: "user-1" })).resolves.toMatchObject({
+      state: "participation_pending",
+      participation: { store: "action_participants" },
+    });
+    expect(claimFinishedActionParticipationMock).toHaveBeenCalledWith(supabase, { actionId: "action-1", userId: "user-1" });
+  });
+
+  it("does not silently reactivate a cancelled request and denies another account without roster details", async () => {
+    const { resumeSpogomiIdentityParticipation, loadSpogomiIdentityState } = await import("./identity-link");
+    const makeSupabase = (participantRows: unknown[], registrationStatus: string | null) => {
+      const createChain = (result: unknown, useLimit = false) => {
+        const chain = {
+          select: vi.fn(() => chain),
+          eq: vi.fn(() => chain),
+          limit: vi.fn(async () => useLimit ? { data: result, error: null } : { data: null, error: null }),
+          maybeSingle: vi.fn(async () => useLimit ? { data: null, error: null } : { data: result, error: null }),
+        };
+        return chain;
+      };
+      return {
+        from: vi.fn((table: string) => {
+          if (table === "spogomi_events") return createChain({ action_id: "action-1" });
+          if (table === "spogomi_participants") return createChain(participantRows, true);
+          if (table === "actions") return createChain({ action_phase: "pre_action" });
+          return createChain(registrationStatus ? { registration_status: registrationStatus } : null);
+        }),
+      } as never;
+    };
+
+    await expect(resumeSpogomiIdentityParticipation(
+      makeSupabase([{ id: "participant-1", attendance_status: "unknown" }], "cancelled"),
+      { eventId: "event-1", clerkId: "user-1" },
+    )).resolves.toMatchObject({ state: "participation_cancelled" });
+    expect(joinActionParticipationMock).not.toHaveBeenCalled();
+
+    await expect(loadSpogomiIdentityState(
+      makeSupabase([], null),
+      { eventId: "event-1", clerkId: "user-2" },
+    )).resolves.toMatchObject({ state: "identity_unlinked", participantId: null });
+    await expect(resumeSpogomiIdentityParticipation(
+      makeSupabase([], null),
+      { eventId: "event-1", clerkId: "user-2" },
+    )).rejects.toMatchObject({ kind: "not_found" });
   });
 });

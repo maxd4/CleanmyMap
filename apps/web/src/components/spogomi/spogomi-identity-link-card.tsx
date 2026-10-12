@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { Link2 } from "lucide-react";
@@ -13,8 +13,34 @@ type LinkResponse = {
   error?: string;
   linkStatus?: "linked" | "already_linked";
   attendanceStatus?: "unknown" | "present" | "absent";
+  state?: IdentityState;
   participation?: { status: string; store: string | null };
 };
+
+type IdentityState =
+  | "identity_unlinked"
+  | "identity_verified"
+  | "participation_unavailable"
+  | "participation_pending"
+  | "participation_confirmed"
+  | "participation_cancelled";
+
+function stateMessage(state: IdentityState): string {
+  switch (state) {
+    case "identity_verified":
+      return "Identité vérifiée. Votre liaison ne confirme pas votre présence ; vous pouvez maintenant demander votre participation CleanMyMap.";
+    case "participation_unavailable":
+      return "La participation CleanMyMap n’est pas disponible pour cette action ou cette phase.";
+    case "participation_pending":
+      return "Votre demande de participation CleanMyMap est en attente de validation par l’organisateur habilité.";
+    case "participation_confirmed":
+      return "Votre participation CleanMyMap est confirmée ; les mécanismes habituels du site s’appliquent.";
+    case "participation_cancelled":
+      return "Cette demande de participation a été refusée ou annulée. Elle n’est pas réactivée automatiquement.";
+    default:
+      return "Utilisez le code individuel remis par l’organisateur pour vérifier votre identité SPOGOMI.";
+  }
+}
 
 export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
   const { isLoaded, isSignedIn } = useAuth();
@@ -22,6 +48,32 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [identityState, setIdentityState] = useState<IdentityState | null>(null);
+  const [isLoadingState, setIsLoadingState] = useState(false);
+
+  const loadState = useCallback(async () => {
+    if (!isLoaded || !isSignedIn) return;
+    setIsLoadingState(true);
+    try {
+      const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/identity-link`, { cache: "no-store" });
+      const payload = (await response.json().catch(() => ({}))) as LinkResponse;
+      if (!response.ok) throw new Error(payload.error ?? "L’état de la liaison n’a pas pu être chargé.");
+      setIdentityState(payload.state ?? "identity_unlinked");
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "L’état de la liaison n’a pas pu être chargé.");
+    } finally {
+      setIsLoadingState(false);
+    }
+  }, [eventId, isLoaded, isSignedIn]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      return;
+    }
+    const timer = window.setTimeout(() => { void loadState(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [isLoaded, isSignedIn, loadState]);
 
   async function submit() {
     setIsSubmitting(true);
@@ -35,16 +87,32 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
       });
       const payload = (await response.json().catch(() => ({}))) as LinkResponse;
       if (!response.ok) throw new Error(payload.error ?? "La liaison n’a pas pu être vérifiée.");
-      const participation = payload.participation?.status;
-      const participationMessage = participation === "pending"
-        ? "Une demande de participation CleanMyMap est maintenant en attente de validation organisateur."
-        : participation === "confirmed"
-          ? "Votre participation CleanMyMap est déjà confirmée ; les mécanismes habituels du site s’appliquent."
-          : "La liaison ne confirme pas votre présence. La participation CleanMyMap reste soumise à la validation de l’organisateur habilité.";
-      setMessage(`Compte lié. ${participationMessage}`);
+      setIdentityState(payload.state ?? "identity_verified");
+      setMessage("Compte lié. La demande de participation reste une étape séparée.");
       setCode("");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "La liaison n’a pas pu être vérifiée.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function requestParticipation() {
+    setIsSubmitting(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/identity-link`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const payload = (await response.json().catch(() => ({}))) as LinkResponse;
+      if (!response.ok) throw new Error(payload.error ?? "La demande de participation n’a pas pu être envoyée.");
+      setIdentityState(payload.state ?? "participation_unavailable");
+      setMessage(payload.state ? stateMessage(payload.state) : "La demande de participation a été traitée.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "La demande de participation n’a pas pu être envoyée.");
     } finally {
       setIsSubmitting(false);
     }
@@ -65,6 +133,18 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
         <div className="space-y-2">
           <p className="text-sm text-slate-700">Connectez-vous avec Clerk pour saisir votre code.</p>
           <CmmButton href={signInHref} tone="primary">Se connecter</CmmButton>
+        </div>
+      ) : isLoadingState && !identityState ? (
+        <p className="text-sm text-slate-600">Vérification de votre liaison…</p>
+      ) : identityState && identityState !== "identity_unlinked" ? (
+        <div className="space-y-3">
+          <p className="text-sm font-semibold text-slate-800">{stateMessage(identityState)}</p>
+          {identityState === "identity_verified" ? (
+            <CmmButton type="button" tone="primary" disabled={isSubmitting} loading={isSubmitting} onClick={() => void requestParticipation()}>
+              {isSubmitting ? "Demande en cours…" : "Demander ma participation"}
+            </CmmButton>
+          ) : null}
+          {identityState === "participation_unavailable" ? <CmmButton type="button" tone="secondary" disabled={isSubmitting} onClick={() => void loadState()}>Vérifier à nouveau</CmmButton> : null}
         </div>
       ) : (
         <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); void submit(); }}>

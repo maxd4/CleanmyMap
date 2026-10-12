@@ -266,12 +266,17 @@ Cette liaison met à jour uniquement l'identité `spogomi_participants`. Elle ne
 atteste ni la présence ni la participation CleanMyMap. Après liaison, le serveur
 réutilise le parcours canonique de l'action : `action_registrations` en phase
 `pre_action`, `post_action_claim` vers `action_participants` en phase
-`post_action_complete`. Dans les deux cas, la demande reste soumise à la review
-existante de l'organisateur ; seule une ligne `action_participants` avec
-`participation_status = confirmed` déclenche la progression, les badges et les
-statistiques personnelles. Une personne présente sans compte reste dans le
-bilan collectif sans recevoir d'XP, et une correction ne crée pas de second
-crédit.
+`post_action_complete`. La consommation du code et la demande de participation
+sont deux étapes distinctes : le code reste à usage unique, tandis qu'une
+identité déjà vérifiée peut reprendre la demande sans saisir à nouveau le code.
+Une perte réseau entre ces étapes est donc récupérable ; les demandes
+`pending` ou `confirmed` sont retournées sans doublon et une demande
+`cancelled` ou refusée n'est pas réactivée silencieusement. Dans les deux cas,
+la demande reste soumise à la review existante de l'organisateur ; seule une
+ligne `action_participants` avec `participation_status = confirmed` déclenche
+la progression, les badges et les statistiques personnelles. Une personne
+présente sans compte reste dans le bilan collectif sans recevoir d'XP, et une
+correction ne crée pas de second crédit.
 
 La table d'audit privée `spogomi_identity_link_events` conserve les émissions et
 échanges de codes. Les index uniques garantissent qu'une identité SPOGOMI ne

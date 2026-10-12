@@ -7,7 +7,8 @@ import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/ser
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   claimSpogomiIdentityLink,
-  requestCleanMyMapParticipation,
+  loadSpogomiIdentityState,
+  resumeSpogomiIdentityParticipation,
   SpogomiIdentityLinkError,
 } from "@/lib/spogomi/identity-link";
 
@@ -15,20 +16,43 @@ export const runtime = "nodejs";
 // Justification Vercel: identity-link state is sensitive and changes after each verified claim.
 export const dynamic = "force-dynamic";
 
-const bodySchema = z.object({ code: z.string().trim().min(16).max(100) });
+const bodySchema = z.object({ code: z.string().trim().min(16).max(100).optional() });
 type RouteContext = { params: Promise<{ eventId: string }> };
 
-export async function POST(request: Request, context: RouteContext) {
+async function authenticateIdentityLinkRequest(request: Request) {
   const access = await requireAuthenticatedAccess();
-  if (!access.ok) return unauthorizedJsonResponse();
+  if (!access.ok) return { response: unauthorizedJsonResponse() } as const;
   const rateLimited = await enforceServerRateLimitForAuthenticatedUser(request, access.userId, { limit: 8, window: 60 });
-  if (rateLimited) return rateLimited;
+  if (rateLimited) return { response: rateLimited } as const;
+  return { access } as const;
+}
+
+export async function GET(request: Request, context: RouteContext) {
+  const authentication = await authenticateIdentityLinkRequest(request);
+  if ("response" in authentication) return authentication.response;
+
+  try {
+    const { eventId } = await context.params;
+    const state = await loadSpogomiIdentityState(getSupabaseServerClient(true), {
+      eventId,
+      clerkId: authentication.access.userId,
+    });
+    return NextResponse.json({ status: "ok", ...state });
+  } catch (error) {
+    return handleApiError(error, "spogomi.identity-link.read");
+  }
+}
+
+export async function POST(request: Request, context: RouteContext) {
+  const authentication = await authenticateIdentityLinkRequest(request);
+  if ("response" in authentication) return authentication.response;
+  const { access } = authentication;
 
   let payload: unknown;
   try {
     payload = await request.json();
   } catch {
-    return validationErrorResponse({ code: ["Code de liaison invalide."] });
+    return validationErrorResponse({ code: ["Demande de liaison invalide."] });
   }
   const parsed = bodySchema.safeParse(payload);
   if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
@@ -36,31 +60,31 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const { eventId } = await context.params;
     const supabase = getSupabaseServerClient(true);
-    const link = await claimSpogomiIdentityLink(supabase, {
+    if (parsed.data.code) {
+      const link = await claimSpogomiIdentityLink(supabase, {
+        eventId,
+        code: parsed.data.code,
+        clerkId: access.userId,
+      });
+      const state = await loadSpogomiIdentityState(supabase, {
+        eventId,
+        clerkId: access.userId,
+      });
+      return NextResponse.json({
+        status: "ok",
+        linkStatus: link.linkStatus,
+        ...state,
+        note: "La liaison du compte ne confirme pas la présence. Utilisez ensuite la demande de participation ; seule la confirmation organisateur déclenche la gamification normale.",
+      });
+    }
+
+    const state = await resumeSpogomiIdentityParticipation(supabase, {
       eventId,
-      code: parsed.data.code,
       clerkId: access.userId,
     });
-    const action = await supabase
-      .from("actions")
-      .select("action_phase")
-      .eq("id", link.actionId)
-      .maybeSingle();
-    if (action.error) throw action.error;
-
-    const participation = action.data?.action_phase
-      ? await requestCleanMyMapParticipation(supabase, {
-          actionId: link.actionId,
-          clerkId: access.userId,
-          actionPhase: action.data.action_phase as "pre_action" | "post_action_draft" | "post_action_complete",
-        })
-      : { status: "unavailable" as const, store: null };
-
     return NextResponse.json({
       status: "ok",
-      linkStatus: link.linkStatus,
-      attendanceStatus: link.attendanceStatus,
-      participation,
+      ...state,
       note: "La liaison du compte ne confirme pas la présence. Seule la confirmation organisateur d’une participation CleanMyMap déclenche la gamification normale.",
     });
   } catch (error) {
