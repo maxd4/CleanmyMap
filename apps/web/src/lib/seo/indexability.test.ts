@@ -33,6 +33,7 @@ describe("indexability helpers", () => {
     expect(publicSitemapPaths).not.toContain("/sign-up");
 
     expect(publicSitemapPaths).toContain("/actions/map");
+    expect(publicSitemapPaths).toContain("/spogomi");
     expect(publicSitemapPaths).toContain("/actions/new");
     expect(publicSitemapPaths).toContain("/signalement");
     expect(publicSitemapPaths).toContain("/contact");
@@ -62,6 +63,8 @@ describe("indexability helpers", () => {
     expect(isPrivateAppPath(DASHBOARD_ROUTE)).toBe(true);
 
     expect(isPrivateAppPath("/actions/map")).toBe(false);
+    expect(isPrivateAppPath("/spogomi")).toBe(false);
+    expect(isPrivateAppPath("/spogomi/coupe-paris/gestion")).toBe(true);
     expect(isPrivateAppPath("/partners/network")).toBe(false);
     expect(isPrivateAppPath("/learn/ecole")).toBe(false);
     expect(isPublicNoindexPath("/sign-in")).toBe(true);

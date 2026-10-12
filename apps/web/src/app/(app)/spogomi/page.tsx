@@ -1,10 +1,103 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowRight, CalendarDays, MapPin, Trophy } from "lucide-react";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { PageHeader } from "@/components/ui/page-header";
-import { requireAuthenticatedAccess } from "@/lib/authz";
-import { SpogomiCreateForm } from "@/components/spogomi/spogomi-create-form";
+import { listPublishedSpogomiEvents, type SpogomiPublicLifecycle } from "@/lib/spogomi/public-service";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
-export default async function SpogomiPage() {
-  const access = await requireAuthenticatedAccess();
-  if (!access.ok) redirect("/sign-in?redirect_url=/spogomi");
-  return <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-orange-50 px-4 py-10"><div className="cmm-page-width space-y-6"><PageHeader tone="stone" title="Préparer un événement SPOGOMI" subtitle="Brouillon privé pour organisateur autorisé : événement, roster, équipes et parcours officiel." /><SpogomiCreateForm /></div></main>;
+export const metadata: Metadata = {
+  title: "Événements SPOGOMI",
+  description: "Découvrir les événements SPOGOMI publiés et leurs actions CleanMyMap associées.",
+  alternates: { canonical: "/spogomi" },
+  robots: { index: true, follow: true },
+};
+
+const lifecycleLabels: Record<SpogomiPublicLifecycle, string> = {
+  upcoming: "À venir",
+  in_progress: "En cours",
+  finished: "Terminé",
+};
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(new Date(value));
+}
+
+export default async function SpogomiIndexPage() {
+  let events = [] as Awaited<ReturnType<typeof listPublishedSpogomiEvents>>;
+  try {
+    events = await listPublishedSpogomiEvents();
+  } catch {
+    events = [];
+  }
+
+  return (
+    <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10">
+      <div className="cmm-page-width space-y-8">
+        <PageHeader
+          family={resolvePageFamily("/spogomi")}
+          tone="emerald"
+          title="SPOGOMI"
+          subtitle="Des compétitions de collecte associées à une action environnementale CleanMyMap unique."
+        />
+        <section className="grid gap-4 md:grid-cols-2" aria-label="Modes de compétition">
+          <CmmCard tone="emerald" variant="glass" className="space-y-3 p-5">
+            <h2 className="flex items-center gap-2 text-xl font-black text-emerald-950">
+              <Trophy size={20} />
+              Casual
+            </h2>
+            <p className="cmm-text-body text-slate-900">
+              Des équipes dont la taille est configurée pour l’événement. Les règles publiées restent celles de l’organisateur.
+            </p>
+          </CmmCard>
+          <CmmCard tone="amber" variant="glass" className="space-y-3 p-5">
+            <h2 className="flex items-center gap-2 text-xl font-black text-amber-950">
+              <Trophy size={20} />
+              World Cup
+            </h2>
+            <p className="cmm-text-body text-slate-900">
+              Des équipes de trois personnes, avec une composition vérifiable. Aucun résultat sportif n’est affiché avant sa publication effective.
+            </p>
+          </CmmCard>
+        </section>
+        <section className="space-y-4" aria-labelledby="spogomi-events-title">
+          <div>
+            <h2 id="spogomi-events-title" className="text-2xl font-black text-slate-950">Événements publiés</h2>
+            <p className="cmm-text-body mt-1 text-slate-900">
+              Seuls les événements explicitement rendus publics par un organisateur habilité apparaissent ici.
+            </p>
+          </div>
+          {events.length === 0 ? (
+            <CmmCard tone="slate" variant="glass" className="border-dashed p-6">
+              <p className="font-bold text-slate-900">Aucun événement SPOGOMI publié pour le moment.</p>
+              <p className="mt-2 text-sm text-slate-600">Les brouillons et événements privés ne sont pas exposés sur cette page.</p>
+            </CmmCard>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {events.map((event) => (
+                <CmmCard key={event.id} tone="emerald" variant="glass" className="space-y-4 p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-xl font-black text-emerald-950">{event.name}</h3>
+                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.15em] text-emerald-700">{lifecycleLabels[event.lifecycle]}</p>
+                    </div>
+                    <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700">
+                      {event.mode === "world_cup" ? "World Cup" : "Casual"}
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-sm text-slate-700">
+                    <p className="flex items-center gap-2"><CalendarDays size={15} className="text-emerald-700" />{formatDate(event.startsAt)}</p>
+                    <p className="flex items-center gap-2"><MapPin size={15} className="text-emerald-700" />{event.locationLabel}</p>
+                  </div>
+                  <Link href={`/spogomi/${encodeURIComponent(event.slug)}`} className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                    Voir la compétition <ArrowRight size={16} />
+                  </Link>
+                </CmmCard>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
+  );
 }

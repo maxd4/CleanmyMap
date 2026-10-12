@@ -13,6 +13,7 @@ const SITEMAP_PATH_PRIORITY: Record<string, number> = {
   "/actions/new": 0.6,
   "/contact": 0.4,
   "/reports": 0.7,
+  "/spogomi": 0.7,
   "/methodologie": 0.7,
   "/learn/comprendre": 0.55,
   "/learn/bonnes-pratiques": 0.55,

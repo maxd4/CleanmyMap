@@ -8,6 +8,7 @@ import { parseGpxFile } from "@/lib/actions/geometry/gpx";
 import { validateTeamComposition } from "./validation";
 import { buildDeterministicTeamFormation } from "./preparation";
 import type { SpogomiEventMode, SpogomiRosterPreview } from "./types";
+import { normalizeSpogomiEventSlug } from "./public-service";
 
 type EventRow = {
   id: string;
@@ -21,6 +22,8 @@ type EventRow = {
   ends_at: string | null;
   team_size_config: { casual?: { minMembers?: number | null; maxMembers?: number | null } };
   creation_state: string;
+  event_slug: string | null;
+  public_visibility: "private" | "published";
 };
 
 function actionIdentity(identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>): ActionPermissionIdentity {
@@ -37,7 +40,7 @@ async function canManageEvent(supabase: SupabaseClient, event: EventRow): Promis
 }
 
 export async function loadSpogomiEventForOrganizer(supabase: SupabaseClient, eventId: string, userId: string) {
-  const result = await supabase.from("spogomi_events").select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state").eq("id", eventId).maybeSingle();
+  const result = await supabase.from("spogomi_events").select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility").eq("id", eventId).maybeSingle();
   if (result.error) throw result.error;
   if (!result.data) return null;
   const event = result.data as EventRow;
@@ -45,6 +48,74 @@ export async function loadSpogomiEventForOrganizer(supabase: SupabaseClient, eve
   if (!identity || identity.userId !== userId) return false;
   if (!(await canManageEvent(supabase, event))) return false;
   return event;
+}
+
+export async function loadSpogomiEventBySlugForOrganizer(
+  supabase: SupabaseClient,
+  slug: string,
+  userId: string,
+) {
+  const result = await supabase
+    .from("spogomi_events")
+    .select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility")
+    .eq("event_slug", slug)
+    .maybeSingle();
+  if (result.error) throw result.error;
+  if (!result.data) return null;
+  const event = result.data as EventRow;
+  const identity = await getCurrentUserIdentity();
+  if (!identity || identity.userId !== userId) return false;
+  if (!(await canManageEvent(supabase, event))) return false;
+  return event;
+}
+
+export async function updateSpogomiEvent(params: {
+  supabase: SupabaseClient;
+  event: EventRow;
+  input: {
+    name?: string;
+    locationLabel?: string;
+    startsAt?: string;
+    endsAt?: string | null;
+    mode?: SpogomiEventMode;
+    casualTeamSize?: number | null;
+    publicVisibility?: "private" | "published";
+  };
+}) {
+  const { event, input, supabase } = params;
+  const name = input.name?.trim() || event.name;
+  const locationLabel = input.locationLabel?.trim() || event.location_label;
+  if (!name || !locationLabel) throw new Error("Validation: nom et lieu obligatoires.");
+  const startsAt = input.startsAt ?? event.starts_at;
+  const endsAt = input.endsAt === undefined ? event.ends_at : input.endsAt;
+  if (endsAt && Date.parse(endsAt) < Date.parse(startsAt)) {
+    throw new Error("Validation: la fin doit être postérieure au début.");
+  }
+  if (input.publicVisibility === "published" && (!event.event_slug || !startsAt || !locationLabel)) {
+    throw new Error("Validation: un événement publié doit avoir un identifiant, une date et un lieu.");
+  }
+  if (input.publicVisibility === "published" && event.state === "draft") {
+    throw new Error("Validation: un brouillon doit d'abord quitter l'état draft avant publication.");
+  }
+  const casualTeamSize = input.casualTeamSize === undefined
+    ? event.team_size_config?.casual?.maxMembers ?? null
+    : input.casualTeamSize;
+  const result = await supabase
+    .from("spogomi_events")
+    .update({
+      name,
+      location_label: locationLabel,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      mode: input.mode ?? event.mode,
+      team_size_config: { casual: { minMembers: casualTeamSize, maxMembers: casualTeamSize } },
+      public_visibility: input.publicVisibility ?? event.public_visibility,
+    })
+    .eq("id", event.id)
+    .select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility")
+    .single();
+  if (result.error) throw result.error;
+  return result.data as EventRow;
 }
 
 export async function createSpogomiEvent(params: {
@@ -92,7 +163,8 @@ export async function createSpogomiEvent(params: {
     }, { onConflict: "idempotency_key" });
     if (createdAttempt.error) throw createdAttempt.error;
   }
-  const event = await supabase.from("spogomi_events").insert({
+  const baseSlug = normalizeSpogomiEventSlug(input.name);
+  const eventPayload = {
     action_id: actionId,
     created_by_clerk_id: userId,
     idempotency_key: input.idempotencyKey,
@@ -105,7 +177,16 @@ export async function createSpogomiEvent(params: {
     regulation_version: "pending-official-regulation",
     regulation_status: "incomplete",
     creation_state: "ready",
-  }).select("id").single();
+    event_slug: baseSlug,
+    public_visibility: "private" as const,
+  };
+  let event = await supabase.from("spogomi_events").insert(eventPayload).select("id").single();
+  if (event.error?.code === "23505") {
+    event = await supabase.from("spogomi_events").insert({
+      ...eventPayload,
+      event_slug: `${baseSlug}-${actionId.slice(0, 8)}`,
+    }).select("id").single();
+  }
   if (event.error) {
     const raced = await supabase.from("spogomi_events").select("id").eq("idempotency_key", input.idempotencyKey).maybeSingle();
     if (!raced.error && raced.data) {

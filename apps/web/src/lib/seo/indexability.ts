@@ -25,6 +25,7 @@ export const PUBLIC_APP_SITEMAP_PATHS = [
   "/politique-cookies",
   "/reports",
   "/signalement",
+  "/spogomi",
   "/signaler-contenu-illicite",
 ] as const;
 
@@ -144,7 +145,7 @@ function matchesPathPrefix(pathname: string, prefix: string): boolean {
 }
 
 export function isPrivateAppPath(pathname: string): boolean {
-  return PRIVATE_APP_ROUTE_PREFIXES.some((prefix) =>
+  return pathname.includes("/gestion") && pathname.startsWith("/spogomi/") || PRIVATE_APP_ROUTE_PREFIXES.some((prefix) =>
     matchesPathPrefix(pathname, prefix),
   );
 }

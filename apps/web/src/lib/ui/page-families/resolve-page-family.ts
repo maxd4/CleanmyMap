@@ -62,6 +62,10 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
     return "homepage";
   }
 
+  if (isRoute(pathname, "/spogomi")) {
+    return "agir";
+  }
+
   const base = pathname.split("/")[1] ?? "";
 
   if (

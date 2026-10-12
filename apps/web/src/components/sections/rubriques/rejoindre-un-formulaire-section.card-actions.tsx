@@ -2,6 +2,7 @@ import { ClipboardList, ChevronRight, Loader2, X } from "lucide-react";
 import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { getActionDisplayStatus } from "./rejoindre-un-formulaire-section.status";
+import { SpogomiContextLink } from "@/components/spogomi/spogomi-context-link";
 
 function ActionCardLeaveButton({
   item,
@@ -185,6 +186,7 @@ export function ActionCardActions({
           {fr ? "Partager dans la messagerie" : "Share in messaging"}
         </CmmButton>
       ) : null}
+      <SpogomiContextLink actionId={item.id} />
     </div>
   );
 }

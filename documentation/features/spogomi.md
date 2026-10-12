@@ -270,7 +270,7 @@ Chaque lot s'appuie sur le `main` **publié** du lot précédent. Codex exécute
 
 ## 15. Lot 2 livré — CURRENT — préparation organisateur
 
-La route privée `/spogomi` et sa vue d'événement `/spogomi/[eventId]` permettent
+La préparation privée est désormais portée par `/spogomi/[eventSlug]/gestion` et permet
 à un compte authentifié qui possède la relation organisateur canonique de :
 
 - créer un brouillon avec une seule action CleanMyMap liée par `action_id` ; la
@@ -303,7 +303,42 @@ Fichiers principaux :
 - `apps/web/src/app/api/spogomi/` ;
 - `apps/web/supabase/migrations/20261012000002_spogomi_preparation.sql`.
 
-## 16. Points encore à confirmer auprès de SPOGOMI France
+## 16. Lot 3 livré — CURRENT — surfaces publiques et gestion contextuelle
+
+Les trois routes canoniques sont intégrées dans la famille visuelle et documentaire
+**Agir** :
+
+- `/spogomi` présente les modes et ne charge que les événements dont
+  `public_visibility = published` ; les dates réelles servent uniquement à
+  distinguer à venir, en cours et terminé ;
+- `/spogomi/[eventSlug]` expose une projection publique bornée de l'événement,
+  sans roster nominatif, et conserve la provenance `official_reference` du GPX ;
+- `/spogomi/[eventSlug]/gestion` réutilise le cockpit du lot 2 derrière une
+  AuthN/AuthZ serveur liée à l'organisateur de l'action canonique. La publication
+  est explicite et réversible ; un événement privé n'est pas révélé par ses
+  métadonnées ou par le sitemap statique.
+
+`event_slug` est une identité d'URL stable et unique du propriétaire
+`spogomi_events`. Il est normalisé à la création et conserve sa valeur si le nom
+change ; une collision reçoit un suffixe dérivé de l'action canonique. La
+projection publique ne lit aucune table de roster et ne renvoie que les noms
+publics d'équipe, le parcours officiel et un lien vers l'action CleanMyMap
+réellement publiée.
+
+Des liens contextuels conditionnels sont ajoutés depuis la communauté, la liste
+des actions rejoignables et le panneau de la carte. Ils ne créent ni quatrième
+entrée Agir, ni action CleanMyMap supplémentaire, ni point cartographique par
+équipe. Les sections de résultats et de classement restent explicitement vides
+jusqu'aux lots qui les implémenteront.
+
+Fichiers principaux :
+
+- `apps/web/src/lib/spogomi/public-service.ts` ;
+- `apps/web/src/app/(app)/spogomi/` et `apps/web/src/app/api/spogomi/public/` ;
+- `apps/web/src/components/spogomi/spogomi-context-link.tsx` ;
+- `apps/web/supabase/migrations/20261012000003_spogomi_public_pages.sql`.
+
+## 17. Points encore à confirmer auprès de SPOGOMI France
 
 - Règlement complet applicable à chaque mode, catégories, coefficients, unités, arrondis, pénalités, départages et conditions de disqualification.
 - Exemple **anonymisé** et schéma réel du classeur des inscriptions ; qualité des identifiants externes et champs optionnels.
@@ -315,7 +350,7 @@ Fichiers principaux :
 
 Ces incertitudes ne bloquent pas les contrats généraux, mais **interdisent** de figer un barème « officiel », un effectif observé non attesté ou une conversion physique non justifiée.
 
-## 17. Sources canoniques liées
+## 18. Sources canoniques liées
 
 - [Participation et formulaire de groupe](./group-action.md)
 - [Moteur de gamification](./GAMIFICATION_ENGINE.md)

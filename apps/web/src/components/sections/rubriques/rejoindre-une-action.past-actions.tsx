@@ -6,6 +6,7 @@ import type { ActionListItem } from "@/lib/actions/types";
 import type { JoinableActionHistoryItem } from "@/lib/actions/participation/group-participation";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { SpogomiContextLink } from "@/components/spogomi/spogomi-context-link";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 
@@ -158,6 +159,7 @@ function PastActionCardActions({
     <div className="space-y-2 border-t border-slate-100 pt-3">
       {claimState ? <p className="text-sm font-bold text-emerald-800" role="status">{claimStatusLabel(claimState, fr)}</p> : authenticated ? <CmmButton type="button" tone="primary" variant="pill" className="w-full justify-center text-xs" loading={claiming} onClick={() => onRequestClaim(item.id)}>{fr ? "J’ai participé à cette action" : "I participated in this action"}</CmmButton> : <CmmButton href={buildSignInRedirectHref("/sections/rejoindre-une-action?tab=past")} tone="primary" variant="pill" className="w-full justify-center text-xs">{fr ? "J’ai participé à cette action" : "I participated in this action"}</CmmButton>}
       {authenticated && claimState?.participationStatus === "confirmed" ? <CmmButton href={`/sections/messagerie?channel=action&actionId=${encodeURIComponent(item.id)}`} tone="secondary" variant="pill" className="w-full justify-center text-xs">{fr ? "Discussion de l’action" : "Action discussion"}</CmmButton> : null}
+      <SpogomiContextLink actionId={item.id} />
       {claimError ? <p className="text-xs font-semibold text-rose-700" role="alert">{claimError}</p> : null}
     </div>
   );

@@ -14,6 +14,7 @@ import { useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatNumber } from "./action-popup-content.helpers";
 import { SignalementMediaProofs } from "@/components/actions/signalement-media/signalement-media-proofs";
+import { SpogomiContextLink } from "@/components/spogomi/spogomi-context-link";
 
 type ActionPopupContentBodyProps = {
   wasteKg: number;
@@ -32,6 +33,7 @@ type ActionPopupContentBodyProps = {
   joinStatusLabel?: string | null;
   hasPollution: boolean;
   isAction: boolean;
+  actionId?: string | null;
   signalementId?: string | null;
   onViewGeometry?: () => void;
   geometryKind?: "polyline" | "polygon" | "point" | "multiline" | null;
@@ -55,6 +57,7 @@ export function ActionPopupContentBody({
   joinStatusLabel,
   hasPollution,
   isAction,
+  actionId = null,
   signalementId = null,
   onViewGeometry,
   geometryKind,
@@ -229,6 +232,7 @@ export function ActionPopupContentBody({
           <ArrowRight size={15} />
         </CmmButton>
       ) : null}
+      {isAction && actionId ? <SpogomiContextLink actionId={actionId} /> : null}
 
       {updateHref ? (
         <CmmButton

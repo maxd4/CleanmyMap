@@ -20,6 +20,8 @@ describe("page-families resolver", () => {
     );
 
     expect(resolveBasePageFamilyId("/actions/new")).toBe("agir");
+    expect(resolveBasePageFamilyId("/spogomi")).toBe("agir");
+    expect(resolveBasePageFamilyId("/spogomi/coupe-paris/gestion")).toBe("agir");
     expect(resolveBasePageFamilyId("/signalement")).toBe("agir");
     expect(resolveBasePageFamilyId("/actions/map")).toBe(
       "cartographie-impact",

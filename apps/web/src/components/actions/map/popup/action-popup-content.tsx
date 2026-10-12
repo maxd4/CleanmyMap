@@ -265,6 +265,7 @@ function SingleActionPopupContent({
         joinStatusLabel={joinStatusLabel}
         hasPollution={hasPollution}
         isAction={isAction}
+        actionId={isAction ? item.id : null}
         signalementId={isSignalementMapItem(item) ? item.id : null}
         onViewGeometry={onViewGeometry}
         geometryKind={geometryView.kind}

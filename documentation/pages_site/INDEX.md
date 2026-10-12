@@ -136,8 +136,7 @@ mais ne constituent pas des pages de recherche autonomes.
 | /admin et /admin/* | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /pilotage | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /sponsor-portal | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
-| /spogomi et /spogomi/* | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
-| /spogomi/[eventId] | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /spogomi/[eventSlug]/gestion | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /partners/dashboard et /partners/onboarding | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /prints/report | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /sections/elus | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
@@ -222,8 +221,6 @@ Il n'existe actuellement aucune page canonique `/learn`. Les pages
 | `/parcours` | [Parcours](./routes/01-accueil-pilotage/parcours/parcours-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/page.tsx` |
 | `/parcours/[profile]` | [Parcours par profil](./routes/01-accueil-pilotage/parcours-profile/parcours-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/[profile]/page.tsx` |
 | `/pilotage` | [Pilotage](./routes/01-accueil-pilotage/pilotage/pilotage-README.md) | `auth-disabled-gate` ; `clerk-context` ; accès métier `coordinateur` scoped aux actions organisées | pilotage | `apps/web/src/app/(app)/pilotage/page.tsx` |
-| `/spogomi` et `/spogomi/*` | [Préparation SPOGOMI](./routes/01-accueil-pilotage/spogomi-preparation/spogomi-preparation-README.md) | `protected` ; organisateur de l'action liée | préparation événementielle privée | `apps/web/src/app/(app)/spogomi/page.tsx`, `apps/web/src/app/(app)/spogomi/[eventId]/page.tsx` |
-| `/spogomi/[eventId]` | [Préparation d’un événement SPOGOMI](./routes/01-accueil-pilotage/spogomi-event-preparation/spogomi-event-preparation-README.md) | `protected` ; organisateur de l'action liée | préparation événementielle privée | `apps/web/src/app/(app)/spogomi/[eventId]/page.tsx` |
 | `/profil` | [Profil](./routes/01-accueil-pilotage/profil/profil-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/page.tsx` |
 | `/profil/[profile]` | [Profil détaillé](./routes/01-accueil-pilotage/profil-profile/profil-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/[profile]/page.tsx` |
 | `/profil/impact` | [Profil impact](./routes/01-accueil-pilotage/profil-impact/profil-impact-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/impact/page.tsx` |
@@ -231,6 +228,10 @@ Il n'existe actuellement aucune page canonique `/learn`. Les pages
 | `/sections/elus` | [Gouvernance](./routes/01-accueil-pilotage/gouvernance/gouvernance-README.md) | `auth-disabled-gate` | accueil-pilotage | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 
 ## Agir
+
+| `/spogomi` | [Découverte SPOGOMI](./routes/02-agir/spogomi/spogomi-README.md) | `public-visible` ; événements explicitement publiés | agir | `apps/web/src/app/(app)/spogomi/page.tsx` |
+| `/spogomi/[eventSlug]` | [Événement SPOGOMI](./routes/02-agir/spogomi-event/spogomi-event-README.md) | `public-visible` ; projection publiée bornée | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/page.tsx` |
+| `/spogomi/[eventSlug]/gestion` | [Gestion SPOGOMI](./routes/02-agir/spogomi-gestion/spogomi-gestion-README.md) | `protected` ; organisateur habilité pour l'événement | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/gestion/page.tsx` |
 
 ### Entrées visibles du bloc
 
