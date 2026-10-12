@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { PUBLIC_DOCUMENTATION, findPublicDocumentationByDocsPath } from "@/lib/documentation/public-documentation-registry";
 import type { QuizQuestion } from "./quiz-question-contract";
 import { QUIZ_QUESTIONS } from "./quiz-question-bank";
 import { auditQuizSources } from "./quiz-source-audit";
+import { buildQuizSourceMetadata } from "./quiz-source-metadata";
 
 describe("quiz source audit", () => {
   it("lists the requested source hygiene buckets", () => {
@@ -52,7 +54,7 @@ describe("quiz source audit", () => {
         options: ["Parce qu'elle reste éditorialement délicate", "Parce qu'elle est toujours fausse"],
         explanation: "La question reste utile, mais elle demande une relecture avant publication.",
         reasoningType: "terrain",
-        sourceUrl: "/documentation/features/quiz/quiz-authoring-guide.md",
+        sourceUrl: "/docs/features/quiz-authoring-guide.md",
         sourceLabel: "CleanMyMap - Guide pédagogique du quiz",
         sourceType: "interne",
         confidenceLevel: "moyen",
@@ -70,7 +72,7 @@ describe("quiz source audit", () => {
         options: ["Vrai", "Faux"],
         explanation: "C'est une estimation pédagogique, donc une source faible et cadrée.",
         reasoningType: "estimation",
-        sourceUrl: "/documentation/features/quiz/quiz-authoring-guide.md",
+        sourceUrl: "/docs/features/quiz-authoring-guide.md",
         sourceLabel: "CleanMyMap - Ordres de grandeur pédagogiques",
         sourceType: "estimation",
         confidenceLevel: "moyen",
@@ -97,5 +99,24 @@ describe("quiz source audit", () => {
     expect(report.questionsWithoutSource).toHaveLength(0);
     expect(report.questionsWithUnsourcedFigures).toHaveLength(0);
     expect(report.questionsWithLocalRulesNotVariable).toHaveLength(0);
+  });
+
+  it("keeps internal quiz source URLs on registered public documentation routes", () => {
+    const publicDocsPaths = new Set(
+      PUBLIC_DOCUMENTATION.filter((entry) => entry.docsPath).map((entry) => entry.docsPath),
+    );
+
+    for (const question of QUIZ_QUESTIONS) {
+      const sourceUrl = buildQuizSourceMetadata(question).sourceUrl;
+
+      if (!sourceUrl.startsWith("/")) {
+        continue;
+      }
+
+      expect(sourceUrl).toMatch(/^\/docs\//);
+      const docsPath = sourceUrl.replace(/^\/docs\//, "");
+      expect(publicDocsPaths.has(docsPath)).toBe(true);
+      expect(findPublicDocumentationByDocsPath(docsPath)).toBeDefined();
+    }
   });
 });

@@ -149,7 +149,7 @@ const ESTIMATION_SOURCE: QuizSourceMetadata = {
 };
 
 const INTERNAL_METHOD_SOURCE: QuizSourceMetadata = {
-  sourceUrl: "/documentation/features/quiz/quiz-authoring-guide.md",
+  sourceUrl: "/docs/features/quiz-authoring-guide.md",
   sourceLabel: "CleanMyMap - Méthodologie et arbitrages de quiz",
   sourceType: "interne",
   confidenceLevel: "moyen",

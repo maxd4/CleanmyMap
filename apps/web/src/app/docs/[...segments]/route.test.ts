@@ -56,6 +56,17 @@ describe("/docs/[...segments] GET", () => {
     expect(response.status).toBe(404);
   });
 
+  it("does not keep the former physical documentation URL public", async () => {
+    const response = await requestFor([
+      "documentation",
+      "features",
+      "quiz",
+      "quiz-authoring-guide.md",
+    ]);
+
+    expect(response.status).toBe(404);
+  });
+
   it("does not resolve traversal segments through the documentation root", async () => {
     const response = await requestFor(["plans", "..", "operations", "platform-cost-governance.md"]);
 

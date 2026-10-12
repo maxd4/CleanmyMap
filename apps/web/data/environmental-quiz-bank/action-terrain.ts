@@ -20,7 +20,7 @@ export const ACTION_TERRAIN_QUIZ_QUESTIONS: QuizQuestion[] = [
       review: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
       reasoningType: "terrain",
       format: "situations-terrain",
-      sourceUrl: "/documentation/features/quiz/quiz-authoring-guide.md",
+      sourceUrl: "/docs/features/quiz-authoring-guide.md",
       sourceLabel: "CleanMyMap - Guide pédagogique du quiz",
       sourceType: "interne",
       confidenceLevel: "moyen",
