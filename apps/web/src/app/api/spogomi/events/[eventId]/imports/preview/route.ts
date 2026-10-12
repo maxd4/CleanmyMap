@@ -3,7 +3,7 @@ import { requireAuthenticatedAccess } from "@/lib/authz";
 import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
+import { loadSpogomiEventForOrganizer, previewRosterImportChanges } from "@/lib/spogomi/preparation-service";
 import { previewRosterFile } from "@/lib/spogomi/preparation";
 
 export const runtime = "nodejs";
@@ -21,7 +21,7 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof File)) return NextResponse.json({ error: "Fichier CSV ou XLSX requis." }, { status: 422 });
-    const preview = await previewRosterFile(file);
+    const preview = await previewRosterImportChanges(supabase, event, await previewRosterFile(file));
     return NextResponse.json(preview);
   } catch (error) {
     return handleApiError(error, "spogomi.roster.preview");

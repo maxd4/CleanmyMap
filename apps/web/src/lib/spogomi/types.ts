@@ -154,7 +154,14 @@ export type SpogomiParticipantState = {
 export const SPOGOMI_IMPORT_FORMATS = ["csv", "xlsx"] as const;
 export type SpogomiImportFormat = (typeof SPOGOMI_IMPORT_FORMATS)[number];
 
-export type SpogomiRosterColumn = "name" | "group" | "sourceRowId";
+export type SpogomiRosterColumn =
+  | "name"
+  | "group"
+  | "sourceRowId"
+  | "ticketReference"
+  | "orderReference"
+  | "ticketStatus"
+  | "ticketDeleted";
 
 export type SpogomiRosterColumnMapping = Partial<
   Record<SpogomiRosterColumn, string>
@@ -162,9 +169,14 @@ export type SpogomiRosterColumnMapping = Partial<
 
 export type SpogomiRosterRow = {
   rowNumber: number;
-  name: string;
+  name: string | null;
   groupPreference: string | null;
   sourceRowId: string | null;
+  externalReference: string | null;
+  orderReference: string | null;
+  ticketStatus: string | null;
+  ticketDeleted: boolean;
+  sourceSystem: "manual_roster" | "cachan_ticketing";
   sourceFingerprint: string;
 };
 
@@ -174,7 +186,10 @@ export type SpogomiRosterRowError = {
     | "name_required"
     | "name_too_long"
     | "row_too_wide"
-    | "invalid_source_row_id";
+    | "invalid_source_row_id"
+    | "ticket_reference_required"
+    | "order_reference_required"
+    | "ticket_reference_collision";
   message: string;
 };
 
@@ -188,6 +203,9 @@ export type SpogomiRosterPreview = {
   rows: SpogomiRosterRow[];
   errors: SpogomiRosterRowError[];
   probableDuplicateRowNumbers: number[][];
+  sourceSystem: "manual_roster" | "cachan_ticketing";
+  cancelledRowNumbers: number[];
+  changedRowNumbers?: number[];
   importKey: string;
 };
 
@@ -196,12 +214,14 @@ export type SpogomiTeamDraft = {
   teamNumber: number;
   participantIds: string[];
   compositionState: SpogomiTeamCompositionState;
+  explanation: "same_order_trio" | "remainder_repacked";
 };
 
 export type SpogomiTeamFormation = {
   teams: SpogomiTeamDraft[];
   unassignedParticipantIds: string[];
-  reasons: Record<string, "group_exceeds_team_size" | "team_size_required" | "incomplete_team">;
+  reasons: Record<string, "group_exceeds_team_size" | "team_size_required" | "incomplete_team" | "casual_bounds_no_fit">;
+  explanation: string[];
 };
 
 export type SpogomiOfficialRoute = {

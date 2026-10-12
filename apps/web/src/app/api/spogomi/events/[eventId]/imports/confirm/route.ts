@@ -14,6 +14,10 @@ const mappingSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   group: z.string().min(1).max(255).optional(),
   sourceRowId: z.string().min(1).max(255).optional(),
+  ticketReference: z.string().min(1).max(255).optional(),
+  orderReference: z.string().min(1).max(255).optional(),
+  ticketStatus: z.string().min(1).max(255).optional(),
+  ticketDeleted: z.string().min(1).max(255).optional(),
 }).strict();
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {

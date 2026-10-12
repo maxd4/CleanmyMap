@@ -18,7 +18,7 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
     if (!event) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
     const supabase = getSupabaseServerClient(true);
     const [participants, teams, route] = await Promise.all([
-      supabase.from("spogomi_participants").select("id, display_name, group_preference, source_row_number, team_id, attendance_status, registration_status, account_link_status").eq("event_id", event.id).order("source_row_number"),
+      supabase.from("spogomi_participants").select("id, display_name, external_reference, order_reference, identity_status, group_preference, source_row_number, team_id, attendance_status, registration_status, account_link_status").eq("event_id", event.id).order("source_row_number"),
       supabase.from("spogomi_teams").select("id, team_number, public_name, composition_state").eq("event_id", event.id).order("team_number"),
       supabase.from("spogomi_event_routes").select("source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson").eq("event_id", event.id).maybeSingle(),
     ]);

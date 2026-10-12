@@ -11,7 +11,7 @@ Un événement SPOGOMI possède des données sportives par équipe, mais produit
 
 ```text
 Événement SPOGOMI (casual | world_cup)
-  ├── Inscrits importés (personnes externes, présence distincte)
+  ├── Places importées (personnes externes ou anonymes, présence distincte)
   ├── Équipes et membres
   ├── Parcours GPX officiel de référence
   ├── Règlement sportif versionné
@@ -62,7 +62,7 @@ Les futurs composants SPOGOMI doivent consulter la version de ces owners sur `ma
 - `casual` : effectif maximal/minimal paramétrable selon les consignes réelles de l'organisateur ; ne pas imposer un chiffre universel sans règlement applicable.
 - Les noms affichés des deux modes sont des libellés produit ; les règles et pénalités d'un événement officiel ne sont appliquées qu'avec le règlement propre à cet événement.
 - Chaque équipe a une identité et un numéro stables à l'intérieur de l'événement, indépendants de son nom modifiable.
-- Les groupes d'amis préconstitués sont préservés autant que possible. L'affectation automatique est **déterministe**, prévisualisée et manuellement corrigeable. Tout inscrit non affectable demeure dans « À affecter » ; personne fictive n'est créée.
+- Les groupes d'amis ou commandes préconstitués sont préservés autant que possible. L'affectation automatique est **déterministe**, prévisualisée, expliquée et manuellement corrigeable. La proposition privilégie les trios, décompose notamment `5 → 3 + 2` et `6 → 3 + 3`, puis regroupe les restes selon les bornes Casual de l'événement. Tout inscrit ou toute place non affectable demeure dans « À affecter » ; personne fictive n'est créée.
 - L'organisateur verrouille une version de composition avant le démarrage ; toute modification ultérieure doit être tracée.
 
 L'effectif collectif vérifié est :
@@ -76,11 +76,12 @@ Ne jamais prendre automatiquement `3 × équipes` comme effectif réel. Ne pas d
 
 ## 4. Inscriptions Excel et confidentialité
 
-L'entrée partenaire est un classeur Excel ou CSV de personnes inscrites. Son schéma exact reste à confirmer auprès de SPOGOMI France : **aucun en-tête, identifiant ni champ obligatoire externe n'est présumé connu**.
+L'entrée partenaire est un classeur Excel ou CSV de personnes inscrites ou de places vendues. Le mapping Cachan accepte `N. Billet`, `N. de commande`, le statut du billet et la suppression ; une place valide est conservée par billet, même sans occupant identifié. Le nom d'acheteur n'est jamais une clé de déduplication et ne crée jamais plusieurs identités supposées.
 
 L'import comporte les étapes suivantes : dépôt privé par organisateur autorisé ; lecture serveur bornée ; correspondance explicite des colonnes ; aperçu et signalement des anomalies ; affectation d'identifiants internes ; confirmation ; écriture idempotente ; compte rendu des lignes ajoutées, ignorées, modifiées et rejetées.
 
 - Conserver, quand disponible, une clé externe stable permettant le réimport. Sinon construire une stratégie de résolution explicite sans fusionner automatiquement deux homonymes.
+- Pour la billetterie, `external_reference` identifie la place, `order_reference` sert uniquement au regroupement de composition, et les statuts/annulations sont conservés sans suppression implicite. Les collisions de billet, changements, annulations et réactivations sont signalés et historisés.
 - Les données d'inscription externes ne créent **jamais** automatiquement de compte Clerk, d'inscription canonique `action_registrations` ni de participation finale `action_participants`.
 - Distinguer `inscrit`, `membre d'équipe`, `présent attesté`, `compte lié vérifié` et `participation CleanMyMap confirmée`.
 - Minimiser les données importées, restreindre l'accès au roster nominatif, fixer une conservation appropriée, prévoir la suppression et l'export dans les parcours RGPD existants. Ne pas conserver de fichier brut dans un espace public.
@@ -359,7 +360,8 @@ La préparation privée est désormais portée par `/spogomi/[eventSlug]/gestion
 - former automatiquement les équipes selon un ordre déterministe, préserver les
   groupes autant que possible, laisser les impossibles dans « À affecter »,
   déplacer manuellement une personne et verrouiller seulement une composition
-  conforme ;
+  conforme ; cette première surface est complétée par le contrat du lot 11
+  ci-dessous ;
 - importer un GPX officiel en réutilisant `parseGpxFile`. Le parcours est stocké
   dans `spogomi_event_routes` avec la provenance `official_reference` et une
   distance de référence ; il n'est jamais présenté comme une distance observée.
@@ -376,6 +378,37 @@ Fichiers principaux :
 - `apps/web/src/components/spogomi/` et `apps/web/src/app/(app)/spogomi/` ;
 - `apps/web/src/app/api/spogomi/` ;
 - `apps/web/supabase/migrations/20261012000002_spogomi_preparation.sql`.
+
+## 18. Lot 11 livré — CURRENT — billetterie par place et composition sûre
+
+Le cockpit organisateur accepte désormais le mapping synthétique de billetterie
+Cachan : chaque `N. Billet` devient une place distincte, chaque `N. de commande`
+reste un regroupement privé, et l'absence de nom devient l'état explicite
+« place à identifier ». Les doublons d'acheteur ne fusionnent donc jamais des
+places. Les statuts et suppressions sont conservés comme état de billet ; une
+place annulée est retirée de la composition active sans être supprimée.
+
+Les références externes de place sont stables pour les réimports. Un réimport
+identique est idempotent ; un changement de statut, de commande ou d'identité
+est signalé et ajouté à l'historique privé. Une collision de référence dans un
+fichier est bloquante. Le roster, ses correspondances et son historique restent
+server-only, sans donnée de billetterie réelle dans le dépôt.
+
+La formation propose d'abord les trios conservés par commande/groupe, puis
+recompose les restes avec priorité aux trios et aux décompositions `5 → 3 + 2`
+et `6 → 3 + 3`. World Cup exige exactement trois membres par équipe ; Casual
+utilise exclusivement les bornes configurées pour l'événement. L'aperçu expose
+les équipes proposées, les places en attente, les raisons et l'empreinte de
+révision. La confirmation exige cette empreinte et passe par une transaction
+server-only verrouillant l'événement ; les équipes existantes sont réutilisées
+par leur numéro et ne sont jamais supprimées/recréées silencieusement. Les
+accès, résultats et historiques restent ainsi attachés à leurs identifiants.
+
+La migration `20261012000022_spogomi_ticket_roster_and_team_composition.sql`
+ajoute les états de billetterie, l'historique des changements, la révision de
+composition et la RPC atomique de confirmation. Son dry-run ne vaut pas preuve
+d'application distante ; la certification, la consolidation, AuthN/AuthZ, RLS
+et la liaison Clerk restent inchangées.
 
 ## 16. Lot 3 livré — CURRENT — surfaces publiques et gestion contextuelle
 

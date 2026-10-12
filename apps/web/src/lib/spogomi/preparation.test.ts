@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { zipSync } from "fflate";
+import { readFileSync } from "node:fs";
 import { buildDeterministicTeamFormation, previewRosterFile } from "./preparation";
 
 describe("SPOGOMI preparation", () => {
@@ -19,10 +20,11 @@ describe("SPOGOMI preparation", () => {
     expect(result.reasons.d).toBe("incomplete_team");
   });
 
-  it("does not split a group that cannot fit a team", () => {
+  it("splits groups into trios and repacks the remainder inside Casual bounds", () => {
     const result = buildDeterministicTeamFormation({
       mode: "casual",
-      casualTeamSize: 3,
+      casualTeamSize: 2,
+      casualTeamBounds: { minMembers: 2, maxMembers: 4 },
       participants: [
         { id: "a", sourceOrder: 1, groupPreference: "amis" },
         { id: "b", sourceOrder: 2, groupPreference: "amis" },
@@ -30,14 +32,8 @@ describe("SPOGOMI preparation", () => {
         { id: "d", sourceOrder: 4, groupPreference: "amis" },
       ],
     });
-    expect(result.teams).toHaveLength(0);
-    expect(result.unassignedParticipantIds).toEqual(["a", "b", "c", "d"]);
-    expect(Object.values(result.reasons)).toEqual([
-      "group_exceeds_team_size",
-      "group_exceeds_team_size",
-      "group_exceeds_team_size",
-      "group_exceeds_team_size",
-    ]);
+    expect(result.teams.map((team) => team.participantIds)).toEqual([["a", "b", "c"]]);
+    expect(result.unassignedParticipantIds).toEqual(["d"]);
   });
 
   it("previews CSV headers, unknown columns and duplicate rows without assuming email", async () => {
@@ -51,10 +47,50 @@ describe("SPOGOMI preparation", () => {
     expect(retriedPreview.importKey).toBe(preview.importKey);
   });
 
+  it("keeps one anonymous place per synthetic ticket even when the buyer name is absent", async () => {
+    const fixture = readFileSync(new URL("../../../../../documentation/features/spogomi-references/fixtures/cachan_2026_places_SYNTHETIQUES.csv", import.meta.url), "utf8");
+    const preview = await previewRosterFile(new File([fixture], "cachan.csv", { type: "text/csv" }));
+    expect(preview.sourceSystem).toBe("cachan_ticketing");
+    expect(preview.rows).toHaveLength(37);
+    expect(new Set(preview.rows.map((row) => row.externalReference)).size).toBe(37);
+    expect(preview.rows.filter((row) => row.name === null)).toHaveLength(37);
+    expect(preview.errors).toEqual([]);
+    expect(preview.cancelledRowNumbers).toEqual([]);
+  });
+
+  it("proposes the versioned 37-place World Cup and Casual compositions without losing a place", async () => {
+    const fixture = readFileSync(new URL("../../../../../documentation/features/spogomi-references/fixtures/cachan_2026_places_SYNTHETIQUES.csv", import.meta.url), "utf8");
+    const preview = await previewRosterFile(new File([fixture], "cachan.csv", { type: "text/csv" }));
+    const participants = preview.rows.map((row) => ({ id: row.externalReference as string, sourceOrder: row.rowNumber, groupPreference: row.groupPreference }));
+    const worldCup = buildDeterministicTeamFormation({ mode: "world_cup", casualTeamSize: null, participants });
+    const casual = buildDeterministicTeamFormation({ mode: "casual", casualTeamSize: 4, casualTeamBounds: { minMembers: 2, maxMembers: 4 }, participants });
+    expect(worldCup.teams).toHaveLength(12);
+    expect(worldCup.teams.every((team) => team.participantIds.length === 3)).toBe(true);
+    expect(worldCup.unassignedParticipantIds).toHaveLength(1);
+    expect(casual.teams.filter((team) => team.participantIds.length === 3)).toHaveLength(11);
+    expect(casual.teams.filter((team) => team.participantIds.length === 4)).toHaveLength(1);
+    expect(casual.unassignedParticipantIds).toEqual([]);
+  });
+
   it("rejects a confirmation mapping that references an unknown or reused column", async () => {
     const file = new File(["Nom;Groupe\nAda Lovelace;A"], "roster.csv", { type: "text/csv" });
     await expect(previewRosterFile(file, { name: "Colonne absente" })).rejects.toThrow(/colonne absente/i);
     await expect(previewRosterFile(file, { name: "Nom", group: "Nom" })).rejects.toThrow(/deux fois/i);
+  });
+
+  it("signals ticket collisions and preserves cancellations without requiring an occupant name", async () => {
+    const file = new File([
+      "N. Billet;N. de commande;Statut du billet;Supprimé;Nom participant\n" +
+      "TICKET-1;ORDER-1;Payé;Non;\n" +
+      "TICKET-1;ORDER-1;Payé;Non;\n" +
+      "TICKET-2;ORDER-1;Annulé;Oui;\n",
+    ], "cachan.csv", { type: "text/csv" });
+    const preview = await previewRosterFile(file);
+    expect(preview.sourceSystem).toBe("cachan_ticketing");
+    expect(preview.rows).toHaveLength(3);
+    expect(preview.rows.map((row) => row.name)).toEqual([null, null, null]);
+    expect(preview.cancelledRowNumbers).toEqual([4]);
+    expect(preview.errors.filter((error) => error.code === "ticket_reference_collision")).toHaveLength(2);
   });
 
   it("rejects a MIME/extension mismatch before parsing", async () => {
