@@ -243,6 +243,10 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
     classification: "milestone",
     milestoneId: "moderateur_polyvalent",
   },
+  spogomi_first_referee_certified: {
+    classification: "milestone",
+    milestoneId: "spogomi_first_referee",
+  },
 };
 export function currentInfiniteProgressions(): readonly GamificationProgressionDefinition[] {
   return CURRENT_INFINITE_PROGRESSIONS;

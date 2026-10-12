@@ -44,10 +44,38 @@ function milestoneBadgeDefinition(
   };
 }
 
+/** Canonical identities for repeatable SPOGOMI collection instances. */
+export const CURRENT_SPOGOMI_BADGE_DEFINITIONS = [
+  ["spogomi_collector", "Ramasseur SPOGOMI", "Collecte réellement effectuée et présence confirmée."],
+  ["spogomi_referee", "Arbitre SPOGOMI", "Mission d’arbitrage réellement effectuée et certifiée."],
+  ["spogomi_points_bronze", "Équipe — Bronze", "Équipe classée 3e aux points par la projection officielle."],
+  ["spogomi_points_silver", "Équipe — Argent", "Équipe classée 2e aux points par la projection officielle."],
+  ["spogomi_points_gold", "Équipe — Or", "Équipe classée 1re aux points par la projection officielle."],
+  ["spogomi_butts_bronze", "Mégots — Bronze", "Équipe classée 3e au classement mégots officiel."],
+  ["spogomi_butts_silver", "Mégots — Argent", "Équipe classée 2e au classement mégots officiel."],
+  ["spogomi_butts_gold", "Mégots — Or", "Équipe classée 1re au classement mégots officiel."],
+  ["spogomi_double_podium", "Double podium", "Même équipe dans les trois premières places des deux classements officiels."],
+  ["spogomi_organizer", "Organisation SPOGOMI", "Mission effective d’organisation certifiée."],
+].map(([id, label, description]) => ({
+  id,
+  family: `spogomi:${id}`,
+  status: "CURRENT" as const,
+  label,
+  scale: "collection" as const,
+  metric: "spogomi_award_instance",
+  sourceDomain: "spogomi_collection_awards reconstruits depuis les faits certifiés",
+  visibility: "current_user" as const,
+  progressionId: null,
+  rule: { kind: "repeatable_collection" as const, description },
+  xpPolicy: { kind: "none" as const, reason: "Les exemplaires SPOGOMI répétables sont BADGE_ONLY." },
+  aliases: [],
+}));
+
 /** Canonical badge identity catalog for every gamification surface. */
 export const CURRENT_BADGE_DEFINITIONS = [
   ...CURRENT_INFINITE_PROGRESSIONS.map(progressionBadgeDefinition),
   ...CURRENT_MILESTONES.map(milestoneBadgeDefinition),
+  ...CURRENT_SPOGOMI_BADGE_DEFINITIONS,
 ] as const satisfies readonly GamificationBadgeDefinition[];
 
 const LEGACY_BADGE_DEFINITIONS = [

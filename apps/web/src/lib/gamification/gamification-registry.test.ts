@@ -85,7 +85,7 @@ describe("CURRENT gamification registry", () => {
     expect(CURRENT_INFINITE_PROGRESSIONS.find((entry) => entry.id === "cartography"))
       .toMatchObject({ label: "Contribution cartographique", metric: "verified_geometry_contributions" });
 
-    expect(CURRENT_MILESTONES).toHaveLength(15);
+    expect(CURRENT_MILESTONES).toHaveLength(16);
     expect(CURRENT_MILESTONES.every((entry) =>
       (entry.xpAwarded > 0 && entry.category === "XP_MILESTONE") ||
       (entry.xpAwarded === 0 && entry.category === "BADGE_ONLY"),
@@ -107,6 +107,7 @@ describe("CURRENT gamification registry", () => {
         "mobilisateur",
         "parrainage_utile",
         "premiere_trace_utile",
+        "spogomi_first_referee",
       ].sort());
   });
 

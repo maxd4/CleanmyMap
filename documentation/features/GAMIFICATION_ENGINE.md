@@ -298,6 +298,44 @@ hors réconciliation conserve sa notification autonome. Les gains visibles
 restent dérivés des `progression_events` et des catalogues CURRENT, jamais
 d'un delta de profil isolé.
 
+## Collection SPOGOMI répétable
+
+SPOGOMI utilise les propriétaires CURRENT existants avec une extension bornée.
+`progression_events` reste l'unique ledger XP, `progression_profiles` la
+projection globale, `GAMIFICATION_REGISTRY` le registre des mécaniques et
+`badge-catalog.ts` le propriétaire des identités de badges. Les neuf
+progressions infinies ne changent pas.
+
+Les dix distinctions répétables (`spogomi_collector`, `spogomi_referee`, les
+six médailles, `spogomi_double_podium` et `spogomi_organizer`) sont des
+exemplaires de collection, pas des jalons one-shot. Les lignes
+`spogomi_collection_awards` sont une projection reconstructible et privée,
+unique par `(user_id, event_id, badge_type_id)`, avec année locale explicite,
+preuve, version de certification, statut et historique. Elles ne sont pas
+comptées dans `badgeTotal`; les compteurs distincts sont
+`spogomiAwardCount`, `spogomiDistinctBadgeTypes` et
+`spogomiEventsParticipated`.
+
+`spogomi_official_rankings` est un contrat d'entrée de projection certifiée,
+non un moteur de classement. Tant qu'une décision officielle certifiée n'est
+pas présente, aucune médaille ni aucun double podium n'est attribué. Une
+disqualification révoque l'éligibilité sportive sans supprimer les faits
+physiques validés. L'absence, l'identité non vérifiée, une égalité non résolue
+ou un résultat provisoire restent non récompensés.
+
+Le ramassage ne crée pas de bonus XP : seule la participation
+`action_participants.confirmed` alimente le moteur `participation` existant.
+Le premier arbitrage effectivement certifié est le seul jalon XP SPOGOMI
+(`spogomi_first_referee`, `+1 XP`), reconstruit une fois depuis les attestations
+certifiées et réconcilié par le même moteur. Les missions d'arbitrage et
+d'organisation sont des preuves d'activité distinctes des permissions AuthZ
+et de la présence de ramasseur.
+
+La réconciliation est une mutation serveur explicite et idempotente. Un GET de
+collection ne reconstruit rien. Les notifications XP réutilisent le reçu
+CURRENT existant uniquement lorsqu'une réconciliation du ledger produit un
+changement réel.
+
 ## Évolution
 
 Toute modification du moteur doit vérifier ensemble :

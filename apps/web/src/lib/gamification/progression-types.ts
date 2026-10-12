@@ -13,7 +13,7 @@ import type {
 export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
 export const CURRENT_GAMIFICATION_RULES_VERSION = "gamification-2026.10-v1" as const;
-export const CURRENT_GAMIFICATION_RULES_REVISION = 13 as const;
+export const CURRENT_GAMIFICATION_RULES_REVISION = 14 as const;
 
 export type GamificationCategory =
   | "XP_PROGRESSION"
@@ -52,12 +52,14 @@ export type GamificationBadgeScale =
   | "learning"
   | "cartography"
   | "one_shot"
+  | "collection"
   | "mohs"
   | "legacy";
 
 type GamificationBadgeRule =
   | { kind: "infinite_thresholds"; description: string }
   | { kind: "one_shot"; description: string }
+  | { kind: "repeatable_collection"; description: string }
   | { kind: "legacy_compatibility"; description: string };
 
 export type ProgressionEventType =
@@ -100,7 +102,8 @@ export type ProgressionEventType =
   | "moderation_first_case"
   | "moderation_first_participation"
   | "moderation_first_impact_correction"
-  | "moderation_multi_family";
+  | "moderation_multi_family"
+  | "spogomi_first_referee_certified";
 
 export const CURRENT_INFINITE_PROGRESSION_IDS = [
   "participation",
@@ -132,7 +135,8 @@ export type CurrentMilestoneId =
   | "premiere_moderation"
   | "premiere_validation_participation"
   | "premiere_correction_impact_justifiee"
-  | "moderateur_polyvalent";
+  | "moderateur_polyvalent"
+  | "spogomi_first_referee";
 
 type ImpactBadgeId = "mohs_waste" | "mohs_butts";
 

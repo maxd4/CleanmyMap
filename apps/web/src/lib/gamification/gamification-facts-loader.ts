@@ -18,6 +18,7 @@ import type {
   GamificationSourceFact,
 } from "./gamification-reconstruction";
 import { GAMIFICATION_REGISTRY } from "./progression-utils";
+import { loadSpogomiFirstRefereeFact } from "@/lib/spogomi/gamification-facts";
 
 export { buildGeometryContributionFacts } from "./gamification-geometry-facts";
 
@@ -42,6 +43,8 @@ async function loadCurrentGamificationFacts(
   });
   const actionState = await buildActionFacts(supabase, userId, actions, validatedActionIds);
   const facts: GamificationSourceFact[] = [...actionState.facts, ...geometryContributionFacts];
+  const spogomiFirstReferee = await loadSpogomiFirstRefereeFact(supabase, userId);
+  if (spogomiFirstReferee) facts.push(spogomiFirstReferee);
   const participantRows = (participantResult.data ?? []) as unknown[];
   appendCounterFacts(
     facts,

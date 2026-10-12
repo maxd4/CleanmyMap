@@ -679,7 +679,55 @@ des conditions sportives.
 
 Ces incertitudes ne bloquent pas les contrats généraux, mais **interdisent** de figer un barème « officiel », un effectif observé non attesté ou une conversion physique non justifiée.
 
-## 19. Sources canoniques liées
+## 19. Gamification CleanMyMap et collection SPOGOMI
+
+Les faits SPOGOMI restent la source métier : identité reliée et vérifiée,
+présence attestée, activité de ramassage certifiée, mission d'arbitrage ou
+d'organisation certifiée, participation finale confirmée et projection
+officielle du classement. Une permission Clerk, une inscription ou un badge ne
+constitue jamais une preuve de travail, de présence ou de résultat.
+
+Le moteur de reconnaissance distingue deux objets :
+
+- `progression_events` reste l'unique ledger CURRENT de l'XP et
+  `progression_profiles` sa projection. La participation SPOGOMI confirmée
+  rejoint uniquement la progression `participation` existante ; aucun bonus XP
+  n'est lié aux points, masses, mégots ou rangs.
+- Les dix distinctions répétables sont des exemplaires privés dans
+  `spogomi_collection_awards`, reconstruits par le serveur depuis les faits
+  certifiés. Leur unicité logique est `(user_id, event_id, badge_type_id)` :
+  deux événements de 2026 peuvent donc donner deux exemplaires du même type.
+  L'année civile est calculée depuis `starts_at` dans le fuseau officiel de
+  l'événement, jamais depuis le compte ou la date d'attribution.
+
+Le catalogue d'identités reste `badge-catalog.ts`. Les dix types répétables ne
+sont pas ajoutés à `CURRENT_MILESTONES` et ne gonflent pas `badgeTotal`, qui
+conserve son contrat `gradeCount + oneShotCount`. La lecture privée dédiée
+expose `spogomiAwardCount`, `spogomiDistinctBadgeTypes` et
+`spogomiEventsParticipated`, ainsi que les progressions spécialisées
+`spogomi_collector_progress` et `spogomi_referee_progress`. Ces progressions
+ont les seuils 1, 3, 5, 10, 25, 50, 75, 100 puis des paliers de 25 sans état
+`completed` ni limite supérieure.
+
+Le seul jalon XP SPOGOMI est `spogomi_first_referee` (`+1 XP`), enregistré une
+seule fois dans `progression_events` après une mission d'arbitrage réellement
+certifiée. Sa preuve est reconstruite avec une identité logique stable au
+niveau du compte ; une découverte tardive ou une révocation réconcilie le
+ledger sans créer de deuxième crédit. Les médailles et `spogomi_double_podium`
+sont `BADGE_ONLY` et ne sont produites qu'à partir de
+`spogomi_official_rankings` certifié. Aucun rang, départage ou conversion de
+mégots n'est calculé localement. Une correction remplace l'exemplaire de cet
+événement et conserve l'historique d'attribution, de révocation et de
+remplacement.
+
+La mutation est exclusivement serveur via la réconciliation explicite
+`POST /api/spogomi/events/:eventId/recognition/reconcile`, protégée par la
+capacité organisateur et déclenchée après certification de l'événement. La
+lecture `GET /api/gamification/spogomi/collection` est bornée au compte courant
+et n'a aucun effet de bord. Les noms, emails, tokens et identités privées du
+roster, notamment celles des mineurs, ne sont pas exposés.
+
+## 20. Sources canoniques liées
 
 - [Participation et formulaire de groupe](./group-action.md)
 - [Moteur de gamification](./GAMIFICATION_ENGINE.md)

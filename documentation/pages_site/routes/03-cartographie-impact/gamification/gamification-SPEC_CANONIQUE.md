@@ -962,3 +962,31 @@ Cette spec doit rester alignée avec:
 - `apps/web/src/components/gamification/*`
 
 Si un changement métier est fait dans le code, cette spec doit être mise à jour dans la même passe.
+## Collection SPOGOMI privée et répétable
+
+Les distinctions CleanMyMap SPOGOMI ne sont pas des distinctions officielles
+présumées de SPOGOMI France. `spogomi_collector`, `spogomi_referee`, les six
+médailles, `spogomi_double_podium` et `spogomi_organizer` sont des exemplaires
+répétables par événement, conservés dans une projection serveur privée et
+reconstructible. Leur clé logique est `(user_id, event_id, badge_type_id)` ;
+l'année civile issue de la date locale officielle ne participe pas à l'unicité.
+
+`badgeTotal` reste `gradeCount + oneShotCount`. Les exemplaires SPOGOMI sont
+exposés séparément par `spogomiAwardCount`,
+`spogomiDistinctBadgeTypes` et `spogomiEventsParticipated`, avec les deux
+progressions spécialisées sans limite (`collector` et `referee`). Ils ne
+deviennent pas de nouvelles progressions XP CURRENT.
+
+Le seul XP supplémentaire est le jalon global `spogomi_first_referee` à `+1`
+une seule fois. Il est produit par `progression_events` depuis une mission
+d'arbitrage réellement certifiée ; les permissions, l'inscription et le rôle
+attribué ne sont pas des preuves. Le ramassage confirmé utilise uniquement la
+progression `participation` existante et les médailles sont `BADGE_ONLY`.
+
+Les médailles consomment exclusivement une projection officielle certifiée du
+classement. Le code ne calcule ni rang, ni départage, ni conversion de mégots.
+Une égalité non résolue ou un classement provisoire laisse l'attribution en
+attente. Les corrections, révocations et reconstructions sont idempotentes et
+historisées, sans effet sur les mesures physiques ni sur les événements d'un
+autre événement. La lecture est bornée au compte courant ; aucune identité
+privée de roster ou de mineur n'est publiée par défaut.

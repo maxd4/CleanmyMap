@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { GamificationRulesV1 } from "./gamification-rules";
 import { computeExpectedGamificationState } from "./gamification-reconstruction";
+import { GAMIFICATION_RULES_V1 } from "./gamification-rules";
 
 const facts = {
   userId: "user-1",
@@ -110,5 +111,25 @@ describe("computeExpectedGamificationState", () => {
 
     expect(state.events).toEqual([]);
     expect(state.expectedBadges).toEqual([]);
+  });
+
+  it("represents the first certified referee as one CURRENT +1 XP event", () => {
+    const state = computeExpectedGamificationState("user-1", {
+      userId: "user-1",
+      sourceFacts: [{
+        mechanicId: "spogomi_first_referee",
+        eventType: "spogomi_first_referee_certified",
+        sourceTable: "spogomi_recognition_attestations",
+        sourceId: "user-1",
+        occurredOn: "2026-06-01T09:00:00Z",
+        xpAwarded: 1,
+        eligible: true,
+        badgeId: "spogomi_first_referee",
+      }],
+    }, GAMIFICATION_RULES_V1);
+
+    const refereeEvents = state.events.filter((event) => event.milestoneId === "spogomi_first_referee");
+    expect(refereeEvents).toHaveLength(1);
+    expect(refereeEvents[0]).toMatchObject({ xpAwarded: 1, sourceId: "user-1", eventType: "spogomi_first_referee_certified" });
   });
 });
