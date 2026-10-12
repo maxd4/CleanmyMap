@@ -52,6 +52,15 @@ const PRESENTATION_SPECS: Partial<Record<ChatChannelType, readonly TopicPresenta
       starterPrompt: "Pour coordonner ce secteur, je propose...",
       starterPromptEn: "To coordinate this area, I suggest...",
     },
+    {
+      topicIds: ["spogomi"],
+      label: "SPOGOMI",
+      labelEn: "SPOGOMI",
+      description: "Événements, équipes et bénévolat",
+      descriptionEn: "Events, teams and volunteering",
+      starterPrompt: "SPOGOMI : je souhaite échanger au sujet de...",
+      starterPromptEn: "SPOGOMI: I would like to discuss...",
+    },
   ],
   territory: [
     {

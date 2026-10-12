@@ -14,6 +14,13 @@ describe("chat notification targets", () => {
     expect(
       buildChatNotificationHref({
         channelType: "community",
+        topicId: "spogomi",
+      }),
+    ).toBe("/sections/messagerie?channel=community&topicId=spogomi");
+
+    expect(
+      buildChatNotificationHref({
+        channelType: "community",
         topicId: "appel_aux_benevoles",
         messageKind: "poll",
       }),

@@ -64,7 +64,9 @@ describe("public topic deep-link contract", () => {
     expect(buildInitialTopicId("community", "relais_associatif")).toBe(
       "relais_associatif",
     );
+    expect(buildInitialTopicId("community", "spogomi")).toBe("spogomi");
     expect(buildInitialTopicId("territory", "relais_associatif")).toBeNull();
+    expect(buildInitialTopicId("territory", "spogomi")).toBeNull();
     expect(buildInitialTopicId("dm", "relais_associatif")).toBeNull();
   });
 });

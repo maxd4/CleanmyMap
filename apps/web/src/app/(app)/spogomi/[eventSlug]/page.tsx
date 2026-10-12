@@ -50,6 +50,8 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
               <p className="flex items-center gap-2 text-sm text-slate-700"><CalendarDays size={16} className="text-emerald-700" />{formatDate(event.startsAt)}{event.endsAt ? ` → ${formatDate(event.endsAt)}` : ""}</p>
               <p className="flex items-center gap-2 text-sm text-slate-700"><MapPin size={16} className="text-emerald-700" />{event.locationLabel}</p>
               {event.actionHref ? <Link href={event.actionHref} className="inline-flex min-h-11 items-center font-bold text-emerald-800 hover:underline">Voir l’action CleanMyMap associée</Link> : <p className="text-sm text-slate-600">L’action CleanMyMap associée n’est pas publiée dans cette vue.</p>}
+              <Link href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" className="inline-flex min-h-11 items-center font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Discuter avec la communauté</Link>
+              <p className="cmm-text-caption text-slate-700">Ce salon est une discussion communautaire. Le règlement et les résultats officiels sont ceux publiés par l’organisateur habilité.</p>
             </CmmCard>
             <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5">
               <div><h2 className="text-xl font-black text-emerald-950">Équipes</h2><p className="cmm-text-body mt-1 text-slate-900">Seuls les noms publics d’équipe sont affichés. Le roster nominatif reste privé.</p></div>

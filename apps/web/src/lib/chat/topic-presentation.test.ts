@@ -13,6 +13,7 @@ describe("chat topic presentation groups", () => {
       "Mobiliser & relayer",
       "Ressources",
       "Coordination",
+      "SPOGOMI",
     ]);
     expect(groups[0]?.topicIds).toEqual([
       "relais_associatif",
@@ -21,6 +22,10 @@ describe("chat topic presentation groups", () => {
     ]);
     expect(getChatTopicPresentationGroup("community", "appel_aux_benevoles")?.id).toBe(
       "relais_associatif",
+    );
+    expect(getChatTopicPresentationGroup("community", "spogomi")?.topicIds).toEqual(["spogomi"]);
+    expect(getChatTopicPresentationGroup("community", "spogomi")?.description).toBe(
+      "Événements, équipes et bénévolat",
     );
   });
 

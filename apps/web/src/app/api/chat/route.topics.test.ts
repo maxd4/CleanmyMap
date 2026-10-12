@@ -224,6 +224,73 @@ describe("POST /api/chat — topics et territoire", () => {
     expect(invalidResponse.status).toBe(400);
   });
 
+  it("allows the SPOGOMI topic only in the existing community channel", async () => {
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: null,
+        role_label: "member",
+        metadata: null,
+      },
+      messages: [{
+        id: "spogomi-message",
+        created_at: "2026-05-01T10:00:00.000Z",
+        content: "SPOGOMI",
+        channel_type: "community",
+        sender_id: "user-2",
+        recipient_id: null,
+        arrondissement_id: null,
+        zone_name: null,
+        topic_id: "spogomi",
+      }],
+      insertedMessage: {
+        id: "spogomi-inserted",
+        created_at: "2026-05-01T11:00:00.000Z",
+        content: "SPOGOMI",
+        channel_type: "community",
+        sender_id: "user-1",
+        recipient_id: null,
+        arrondissement_id: null,
+        zone_name: null,
+        topic_id: "spogomi",
+      },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+
+    const { GET, POST } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/chat?channelType=community&topicId=spogomi"));
+    expect(response.status).toBe(200);
+    expect((await response.json()).messages.map((message: ChatMessageRow) => message.id)).toEqual(["spogomi-message"]);
+    expect(supabaseMock.messagesQuery.eq).toHaveBeenCalledWith("topic_id", "spogomi");
+
+    const postResponse = await POST(new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ channelType: "community", topicId: "spogomi", content: "Question SPOGOMI" }),
+    }));
+    expect(postResponse.status).toBe(201);
+    expect(supabaseMock.appMessagesTable.insert).toHaveBeenCalledWith(expect.objectContaining({
+      channel_type: "community",
+      topic_id: "spogomi",
+    }));
+
+    for (const channelType of ["territory", "admin_elu", "dm"] as const) {
+      const invalidResponse = await POST(new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType,
+          topicId: "spogomi",
+          content: "Should be rejected",
+          recipientId: channelType === "dm" ? "user-2" : undefined,
+        }),
+      }));
+      expect(invalidResponse.status).toBe(400);
+    }
+  }, 15000);
+
   it("rejects topics on DM, admin and bug-report channels", async () => {
     const { POST } = await import("./route");
     for (const channelType of ["dm", "admin_elu", "bug_report"] as const) {

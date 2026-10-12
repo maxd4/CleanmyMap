@@ -40,6 +40,15 @@ export default async function SpogomiIndexPage() {
           title="SPOGOMI"
           subtitle="Des compétitions de collecte associées à une action environnementale CleanMyMap unique."
         />
+        <CmmCard tone="emerald" variant="glass" className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-black text-emerald-950">Échanger avec la communauté</h2>
+            <p className="cmm-text-body mt-1 text-slate-900">Questions, équipes, bénévolat et préparation dans le salon SPOGOMI.</p>
+          </div>
+          <Link href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+            Discuter avec la communauté <ArrowRight size={16} />
+          </Link>
+        </CmmCard>
         <section className="grid gap-4 md:grid-cols-2" aria-label="Modes de compétition">
           <CmmCard tone="emerald" variant="glass" className="space-y-3 p-5">
             <h2 className="flex items-center gap-2 text-xl font-black text-emerald-950">

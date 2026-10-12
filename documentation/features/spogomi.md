@@ -405,12 +405,23 @@ entrée Agir, ni action CleanMyMap supplémentaire, ni point cartographique par
 équipe. Les sections de résultats et de classement restent explicitement vides
 jusqu'aux lots qui les implémenteront.
 
+Les pages publiques `/spogomi` et `/spogomi/[eventSlug]` proposent aussi le
+topic `spogomi` du canal communautaire existant via la messagerie :
+`/sections/messagerie?tab=discussions&channel=community&topicId=spogomi`. Ce
+topic couvre les échanges sur les événements, les équipes, les questions des
+nouveaux participants, la préparation, la sécurité, le bénévolat et les liens
+internationaux. Il ne crée ni nouveau canal ni conversation d'action parallèle.
+Les messages restent des échanges communautaires et ne valent ni arbitrage, ni
+classement, ni résultat officiel ; le règlement et les résultats de référence
+sont ceux publiés par l'organisateur habilité.
+
 Fichiers principaux :
 
 - `apps/web/src/lib/spogomi/public-service.ts` ;
 - `apps/web/src/app/(app)/spogomi/` et `apps/web/src/app/api/spogomi/public/` ;
 - `apps/web/src/components/spogomi/spogomi-context-link.tsx` ;
-- `apps/web/supabase/migrations/20261012000003_spogomi_public_pages.sql`.
+- `apps/web/supabase/migrations/20261012000003_spogomi_public_pages.sql` ;
+- `apps/web/supabase/migrations/20261012000018_spogomi_community_topic.sql`.
 
 ## 17. Lot 4 livré — CURRENT — saisie et certification par équipe
 

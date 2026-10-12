@@ -16,6 +16,7 @@ describe("chat topic contract", () => {
       "demande_diffusion",
       "besoin_ressources",
       "coordination_secteur",
+      "spogomi",
     ]);
     expect(CHAT_TOPIC_IDS_BY_CHANNEL.territory).toEqual([
       "mon_territoire",
@@ -61,5 +62,9 @@ describe("chat topic contract", () => {
     expect(parseChatTopicIdForChannel("territory", "relais_associatif")).toBeNull();
     expect(parseChatTopicIdForChannel("admin_elu", "relais_associatif")).toBeNull();
     expect(parseChatTopicIdForChannel("admin_elu", "arbitrages")).toBe("arbitrages");
+    expect(isChatTopicAllowedForChannel("community", "spogomi")).toBe(true);
+    expect(parseChatTopicIdForChannel("community", "spogomi")).toBe("spogomi");
+    expect(parseChatTopicIdForChannel("territory", "spogomi")).toBeNull();
+    expect(parseChatTopicIdForChannel("admin_elu", "spogomi")).toBeNull();
   });
 });

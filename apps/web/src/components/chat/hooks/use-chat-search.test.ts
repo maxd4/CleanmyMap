@@ -27,6 +27,21 @@ describe("chat search keys", () => {
     );
   });
 
+  it("keeps SPOGOMI search scoped to the canonical community topic", () => {
+    expect(
+      buildChatSearchKey({
+        activeChannelType: "community",
+        activeTopicId: "spogomi",
+        selectedRecipientId: null,
+        effectiveZone: "",
+        territoryFocus: null,
+        query: "  bénévoles  ",
+      }),
+    ).toBe(
+      "/api/chat/search?channelType=community&q=b%C3%A9n%C3%A9voles&topicId=spogomi",
+    );
+  });
+
   it("does not create a cross-DM search key without a selected peer", () => {
     expect(
       buildChatSearchKey({

@@ -7,6 +7,7 @@ import {
   Megaphone,
   PackageSearch,
   Scale,
+  Trophy,
   Users,
   Workflow,
   type LucideIcon,
@@ -363,6 +364,19 @@ const CHAT_TOPIC_DEFINITIONS: Record<ChatChannelType, ChatTopicDefinition[]> = {
         "Coordination de secteur : voici l'organisation locale à mettre en place sur mon territoire.",
       icon: Workflow,
       accentClassName: "text-pink-500",
+    },
+    {
+      id: "spogomi",
+      label: "SPOGOMI",
+      labelEn: "SPOGOMI",
+      description: "Événements, équipes et bénévolat",
+      descriptionEn: "Events, teams and volunteering",
+      starterPrompt:
+        "SPOGOMI : je cherche des informations sur un événement, une équipe ou une mission bénévole.",
+      starterPromptEn:
+        "SPOGOMI: I am looking for information about an event, a team or a volunteering mission.",
+      icon: Trophy,
+      accentClassName: "text-amber-500",
     },
   ],
   dm: [],

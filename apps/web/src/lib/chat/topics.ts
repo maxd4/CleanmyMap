@@ -7,6 +7,7 @@ export const CHAT_TOPIC_IDS = [
   "demande_diffusion",
   "besoin_ressources",
   "coordination_secteur",
+  "spogomi",
   "arbitrages",
   "priorites",
   "suivi_decisions",
@@ -25,6 +26,7 @@ export const CHAT_TOPIC_IDS_BY_CHANNEL = {
     "demande_diffusion",
     "besoin_ressources",
     "coordination_secteur",
+    "spogomi",
   ],
   territory: ["mon_territoire", "territoires_voisins"],
   admin_elu: [
