@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadCurrentGamificationFacts } from "@/lib/gamification/gamification-facts-loader";
 import { reconcileUserGamification } from "@/lib/gamification/gamification-reconciliation";
+import type { GamificationFacts } from "@/lib/gamification/gamification-reconstruction";
 import {
   buildSpogomiRecognitionProjection,
   type SpogomiAward,
@@ -13,11 +14,38 @@ import {
 } from "./recognition";
 import { readAllSpogomiPages } from "./pagination";
 import { buildSpogomiSpecializedProgress } from "./progress";
-import { loadSpogomiFirstRefereeFact } from "./gamification-facts";
 import type { SpogomiCollection, SpogomiCollectionAward } from "./collection";
 import { logFailure } from "@/lib/logging/failure-log";
 
 type EventRow = { id: string; action_id: string; name: string; event_slug: string | null; starts_at: string; official_timezone: string; state: string; public_visibility: string };
+
+export class SpogomiRecognitionPartialError extends Error {
+  readonly code = "SPOGOMI_RECOGNITION_PARTIAL";
+  readonly eventId: string;
+  readonly affectedUserCount: number;
+  readonly gamificationReconciledUserCount: number;
+  readonly retryable = true;
+
+  constructor(params: { eventId: string; affectedUserCount: number; gamificationReconciledUserCount: number; cause: unknown }) {
+    super("La projection des distinctions SPOGOMI a été enregistrée, mais la réconciliation XP est partielle et doit être rejouée.", { cause: params.cause });
+    this.name = "SpogomiRecognitionPartialError";
+    this.eventId = params.eventId;
+    this.affectedUserCount = params.affectedUserCount;
+    this.gamificationReconciledUserCount = params.gamificationReconciledUserCount;
+  }
+}
+
+export function getSpogomiRecognitionPartialDetails(error: unknown) {
+  if (!(error instanceof SpogomiRecognitionPartialError)) return null;
+  return {
+    status: "partial" as const,
+    eventId: error.eventId,
+    badgesMutationApplied: true,
+    gamificationReconciledUserCount: error.gamificationReconciledUserCount,
+    affectedUserCount: error.affectedUserCount,
+    retryable: error.retryable,
+  };
+}
 
 function localEventDate(startsAt: string, timezone: string): string {
   try {
@@ -73,12 +101,9 @@ async function loadRecognitionSource(params: { supabase: SupabaseClient; eventId
   return { event, participants, missions, rankings, existingAwards: awardsResult as Array<Record<string, unknown>> };
 }
 
-async function reconcileFirstReferee(supabase: SupabaseClient, userId: string): Promise<void> {
-  const facts = await loadCurrentGamificationFacts(supabase, userId);
-  const firstReferee = await loadSpogomiFirstRefereeFact(supabase, userId);
-  const sourceFacts = firstReferee ? [...facts.sourceFacts, firstReferee] : facts.sourceFacts;
+async function reconcileFirstReferee(supabase: SupabaseClient, userId: string, facts: GamificationFacts): Promise<void> {
   await reconcileUserGamification(supabase, userId, {
-    facts: { ...facts, sourceFacts },
+    facts,
     reasonCategory: "data_correction",
   });
 }
@@ -137,17 +162,34 @@ export async function reconcileSpogomiRecognition(params: { supabase: SupabaseCl
     missions: source.missions,
     rankings: source.rankings,
   });
+  const affectedUsers = new Set([
+    ...source.participants.map((participant) => participant.userId).filter((userId): userId is string => Boolean(userId)),
+    ...source.existingAwards.map((award) => typeof award.user_id === "string" ? award.user_id : null).filter((userId): userId is string => Boolean(userId)),
+  ]);
+  const factsByUser = new Map<string, GamificationFacts>();
+  await Promise.all([...affectedUsers].map(async (userId) => {
+    factsByUser.set(userId, await loadCurrentGamificationFacts(params.supabase, userId));
+  }));
   const rpc = await params.supabase.rpc("reconcile_spogomi_collection_awards", {
     p_event_id: params.eventId,
     p_awards: projection.awards,
     p_actor_clerk_id: params.actorClerkId,
   });
   if (rpc.error) throw rpc.error;
-  const affectedUsers = new Set([
-    ...source.participants.map((participant) => participant.userId).filter((userId): userId is string => Boolean(userId)),
-    ...source.existingAwards.map((award) => String(award.user_id)),
-  ]);
-  for (const userId of affectedUsers) await reconcileFirstReferee(params.supabase, userId);
+  let gamificationReconciledUserCount = 0;
+  try {
+    for (const userId of affectedUsers) {
+      await reconcileFirstReferee(params.supabase, userId, factsByUser.get(userId)!);
+      gamificationReconciledUserCount += 1;
+    }
+  } catch (error) {
+    throw new SpogomiRecognitionPartialError({
+      eventId: params.eventId,
+      affectedUserCount: affectedUsers.size,
+      gamificationReconciledUserCount,
+      cause: error,
+    });
+  }
   try {
     await emitSpogomiRecognitionNotifications({
       supabase: params.supabase,
@@ -160,6 +202,7 @@ export async function reconcileSpogomiRecognition(params: { supabase: SupabaseCl
     logFailure("SPOGOMI/Recognition", "Recognition notification write skipped", error, { eventId: source.event.id });
   }
   return {
+    status: "complete" as const,
     eventId: params.eventId,
     awardsReconciled: Number(rpc.data ?? 0),
     awards: projection.awards.length,

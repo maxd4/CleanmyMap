@@ -5,7 +5,7 @@ import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth
 import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
-import { reconcileSpogomiRecognition } from "@/lib/spogomi/recognition-service";
+import { getSpogomiRecognitionPartialDetails, reconcileSpogomiRecognition } from "@/lib/spogomi/recognition-service";
 
 export const runtime = "nodejs";
 
@@ -21,6 +21,7 @@ const inputSchema = z.object({
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse();
+  let attestationMutationApplied = false;
   try {
     const eventId = (await context.params).eventId;
     const event = await loadSpogomiEventForOrganizer(getSupabaseServerClient(true), eventId, access.userId);
@@ -34,11 +35,20 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
       p_actor_clerk_id: access.userId, p_reason: parsed.data.reason ?? null,
     });
     if (result.error) throw result.error;
+    attestationMutationApplied = true;
     const reconciliation = event.state === "certified"
       ? await reconcileSpogomiRecognition({ supabase: getSupabaseServerClient(true), eventId, actorClerkId: access.userId })
       : null;
     return NextResponse.json({ status: "ok", attestation: result.data, reconciliation });
   } catch (error) {
+    const partial = getSpogomiRecognitionPartialDetails(error);
+    if (partial) return NextResponse.json({ error: "L’attestation est enregistrée, mais la réconciliation SPOGOMI est partielle et doit être rejouée.", reconciliation: partial }, { status: 503 });
+    if (attestationMutationApplied) {
+      return NextResponse.json({
+        error: "L’attestation est enregistrée, mais la réconciliation SPOGOMI doit être rejouée.",
+        reconciliation: { status: "partial", attestationMutationApplied: true, badgesMutationApplied: false, retryable: true },
+      }, { status: 503 });
+    }
     return handleApiError(error, "POST /api/spogomi/events/:eventId/recognition/attestations");
   }
 }

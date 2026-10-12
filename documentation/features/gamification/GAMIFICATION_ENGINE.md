@@ -205,6 +205,17 @@ chargées. Une reprise retente l'utilisateur interrompu et ne réécrit pas les
 utilisateurs déjà clôturés. Aucun rebuild global de production n'est exécuté
 par les validations locales.
 
+La réconciliation SPOGOMI suit le même contrat de reprise, avec une frontière
+supplémentaire entre la projection privée des badges et le ledger XP. Les
+lectures paginées des faits gamification de tous les utilisateurs affectés sont
+prévalidées avant l'appel atomique `reconcile_spogomi_collection_awards`, puis
+le même snapshot de faits est réutilisé pour le jalon
+`spogomi_first_referee`. Une erreur de lecture prévisible refuse donc la
+mutation des badges. Si l'XP échoue après la RPC des badges, l'API répond
+explicitement `503` avec `status = partial` et `retryable = true` ; une nouvelle
+exécution rejoue la projection idempotente et la reconstruction XP sans double
+crédit. Il n'existe pas d'atomicité globale entre ces deux opérations distinctes.
+
 Procédure canonique lors d'une évolution :
 
 1. modifier la version et les règles CURRENT ;

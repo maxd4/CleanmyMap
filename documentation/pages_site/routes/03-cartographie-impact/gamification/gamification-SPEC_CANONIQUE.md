@@ -991,6 +991,14 @@ historisées, sans effet sur les mesures physiques ni sur les événements d'un
 autre événement. La lecture est bornée au compte courant ; aucune identité
 privée de roster ou de mineur n'est publiée par défaut.
 
+La réconciliation d'un événement SPOGOMI prévalide les faits paginés nécessaires
+pour chaque utilisateur affecté avant de muter la collection privée et réutilise
+un snapshot unique pour le jalon global `spogomi_first_referee`. Si la
+réconciliation XP est interrompue après la mutation atomique des badges, le
+résultat est explicitement partiel et rejouable ; il n'est pas présenté comme
+une réconciliation complète. Cette frontière ne prétend pas fournir une
+transaction globale entre la RPC des badges et le ledger `progression_events`.
+
 La section `/sections/gamification` consomme cette collection privée via
 `GET /api/gamification/spogomi/collection`. Elle affiche le nom public de la
 compétition, la date locale, le rôle ou le rang dérivé de l'identité canonique

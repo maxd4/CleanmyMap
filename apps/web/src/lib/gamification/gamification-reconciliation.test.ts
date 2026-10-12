@@ -55,6 +55,20 @@ function createSupabase() {
 }
 
 describe("reconcileUserGamification", () => {
+  it("does not credit XP twice when the same canonical facts are reconciled again", async () => {
+    const fixture = createSupabase();
+    const options = {
+      facts,
+      rules: rules("v1", "XP_MILESTONE", 1, "mechanic-a"),
+      refreshProfile: false,
+    } as const;
+
+    await expect(reconcileUserGamification(fixture.supabase, "user-1", options)).resolves.toMatchObject({ inserted: 1, updated: 0, removed: 0 });
+    await expect(reconcileUserGamification(fixture.supabase, "user-1", options)).resolves.toMatchObject({ inserted: 0, updated: 0, removed: 0 });
+    expect(fixture.rows).toHaveLength(1);
+    expect(fixture.rows[0]?.xp_awarded).toBe(1);
+  });
+
   it("updates XP, removes it for BADGE_ONLY, then removes the CURRENT projection", async () => {
     const fixture = createSupabase();
 
