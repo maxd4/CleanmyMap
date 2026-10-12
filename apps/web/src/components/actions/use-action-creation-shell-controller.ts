@@ -1,3 +1,5 @@
+"use client";
+
 import { startTransition, useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 import { useActionPreparationContext } from "./action-preparation-context-hook";

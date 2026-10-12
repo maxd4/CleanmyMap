@@ -29,7 +29,7 @@ const publicLegalSurfaces = [cguPage, cguDocumentation, volunteerCharter, legalD
 describe("contrat documentaire LEGAL-04", () => {
   it("rejette les engagements juridiques et URLs historiques", () => {
     const obsoletePatterns = [
-      /association loi 1901/iu,
+      /(?:CleanMyMap|le projet)\s+(?:est|devient|fonctionne comme|sera)\s+(?:une\s+)?association loi 1901/iu,
       /privacy shield/iu,
       /responsabilité civile professionnelle de l'association/iu,
       /bouton.{0,60}signaler.{0,60}chaque contenu/iu,
@@ -43,6 +43,10 @@ describe("contrat documentaire LEGAL-04", () => {
         expect(source).not.toMatch(pattern);
       }
     }
+
+    expect(legalDocumentation).toMatch(
+      /Plan de transition vers une association loi 1901 relevant de l'ESS[\s\S]*?\*\*PLAN\*\*[\s\S]*?Aucune création ou migration n'est réputée effectuée/iu,
+    );
   });
 
   it("conserve le domaine et les liens du service actuels", () => {

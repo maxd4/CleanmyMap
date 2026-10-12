@@ -52,7 +52,11 @@ describe("mentions légales contract", () => {
       expect(source).toContain("Maxence Deroome");
       expect(source).toMatch(/personne physique éditant à titre\s+non professionnel/iu);
       expect(source).toContain("projet étudiant");
-      expect(source).not.toMatch(/association loi 1901/iu);
+      if (/association loi 1901/iu.test(source)) {
+        expect(source).toMatch(
+          /Plan de transition vers une association loi 1901 relevant de l'ESS[\s\S]*?\*\*PLAN\*\*[\s\S]*?Aucune création ou migration n'est réputée effectuée/iu,
+        );
+      }
       expect(source).not.toMatch(/association en cours de constitution/iu);
       expect(source).not.toMatch(/CleanMyMap\s+est\s+(?:une\s+)?(?:société|entreprise|association)/iu);
     }

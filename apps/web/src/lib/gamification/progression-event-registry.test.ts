@@ -173,6 +173,7 @@ describe("progression event registry", () => {
       "route_recommend_use",
       "sensitive_zone_action",
       "sensitive_zone_milestone",
+      "spogomi_first_referee_certified",
       "spot_create_pending",
       "spot_validation_bonus",
     ].sort());
@@ -269,6 +270,7 @@ describe("progression event registry", () => {
       "premiere_validation_participation",
       "premiere_correction_impact_justifiee",
       "moderateur_polyvalent",
+      "spogomi_first_referee",
     ]);
     expect(currentMilestones().every((milestone) => milestone.oneShot)).toBe(true);
     expect(currentMilestones().every((milestone) => !("infinite" in milestone))).toBe(true);
