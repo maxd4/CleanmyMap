@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 
 const baseMigration = readFileSync(new URL("../../../supabase/migrations/20261012000007_spogomi_action_consolidation.sql", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../../../supabase/migrations/20261012000011_harden_spogomi_consolidation_revisions.sql", import.meta.url), "utf8");
-const contractSource = `${baseMigration}\n${migration}`;
+const geometryMigration = readFileSync(new URL("../../../supabase/migrations/20261012000012_preserve_independent_spogomi_geometry.sql", import.meta.url), "utf8");
+const contractSource = `${baseMigration}\n${migration}\n${geometryMigration}`;
 
 describe("SPOGOMI action consolidation migration STATIC_CONTRACT", () => {
   it("keeps historical hashes replayable while preserving one active projection", () => {
@@ -43,5 +44,18 @@ describe("SPOGOMI action consolidation migration STATIC_CONTRACT", () => {
     expect(contractSource).toContain("spogomiOfficialReference");
     expect(contractSource).toContain("status = 'superseded'");
     expect(contractSource).toContain("set is_current = false");
+  });
+
+  it("preserves independent geometry and proves SPOGOMI ownership before clearing it", () => {
+    expect(geometryMigration).toContain("preserve_spogomi_independent_geometry");
+    expect(geometryMigration).toContain("new.spogomi_projection_source_hash is not distinct from old.spogomi_projection_source_hash");
+    expect(geometryMigration).toContain("old.preparation_data -> 'spogomiOfficialReference'");
+    expect(geometryMigration).toContain("old.geometry_source::text = 'reference'");
+    expect(geometryMigration).toContain("old.derived_geometry_geojson is not distinct from (previous_reference -> 'geometryGeojson')::text");
+    expect(geometryMigration).toContain("new.preparation_data := old.preparation_data");
+    expect(geometryMigration).toContain("if has_existing_geometry and not is_previous_spogomi_reference then");
+    expect(geometryMigration).toContain("new.derived_geometry_kind := old.derived_geometry_kind");
+    expect(geometryMigration).toContain("trg_preserve_spogomi_independent_geometry");
+    expect(geometryMigration).not.toMatch(/create table/i);
   });
 });

@@ -195,6 +195,15 @@ Réutiliser `apps/web/src/lib/actions/geometry/gpx.ts` pour parser et valider, t
 
 Conserver les contraintes de sécurité du parseur et ne pas concaténer des segments disjoints pour inventer un tracé continu.
 
+La consolidation ne possède que la référence officielle qu'elle a effectivement
+installée. Une géométrie déjà présente dans l'action reste préservée lorsqu'elle
+provient d'un suivi GPS, d'un import GPX, d'un dessin manuel ou d'une autre
+source indépendante. La valeur `geometry_source = 'reference'` ne suffit pas à
+établir la propriété SPOGOMI : pour retirer une ancienne référence, le serveur
+doit retrouver la métadonnée `spogomiOfficialReference` et constater que la
+géométrie courante correspond exactement à celle qu'elle décrit. En cas de
+doute, la donnée géographique est conservée.
+
 ## 10. Organisateur, permissions et identités
 
 L'affichage produit peut utiliser **SPOGOMI France** comme libellé public
