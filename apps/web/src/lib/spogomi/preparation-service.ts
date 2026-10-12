@@ -13,8 +13,8 @@ import { normalizeSpogomiEventSlug } from "./public-service";
 import { isCachanTicketCompositionEligible, isCancelledCachanTicket, reconcileCachanTicketRows } from "./ticket-reconciliation";
 import { isCancelledCachanTicketStatus } from "./ticket-status";
 import { teamCompositionFingerprint } from "./team-composition";
-import { verifyImportedRosterCompleteness } from "./import-completeness";
-export { verifyImportedRosterCompleteness } from "./import-completeness";
+import { verifyImportedRosterCompleteness, verifyImportedRosterSelection } from "./import-completeness";
+export { verifyImportedRosterCompleteness, verifyImportedRosterSelection } from "./import-completeness";
 export { SpogomiCompositionProtectionError, lockSpogomiTeams, moveParticipantToTeam } from "./composition-mutation-service";
 
 type EventRow = {
@@ -554,7 +554,7 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
   const reservedImport = imported;
   const allowsPartialProof = reservedImport.source_proof_status === "incomplete";
   if (reservedImport.status === "confirmed") {
-    const selectedAlreadyImported = await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing", allowsPartialProof);
+    const selectedAlreadyImported = await verifyImportedRosterSelection(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing");
     if (selectedAlreadyImported) return { importId: reservedImport.id, importedRows: selectedRows.length, alreadyImported: true };
     if (!allowsPartialProof) throw conflict("l'import confirmé est incomplet et doit être repris.");
   }
@@ -597,7 +597,7 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
       });
       if (inserted.error) throw inserted.error;
     }
-    if (!(await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing", allowsPartialProof))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
+    if (!(await verifyImportedRosterSelection(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing"))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
     const completeProof = await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, eligibleRows, eligibleRows.length, preview.sourceSystem === "cachan_ticketing");
     const confirmed = await supabase.from("spogomi_roster_imports").update({ status: "confirmed", source_proof_status: completeProof ? "complete" : "incomplete", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token).select("id").maybeSingle();
     if (confirmed.error) throw confirmed.error;

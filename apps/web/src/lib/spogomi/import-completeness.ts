@@ -4,20 +4,23 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 const IMPORT_VERIFICATION_PAGE_SIZE = 1_000;
 
-export async function verifyImportedRosterCompleteness(
+type ProofRow = { rowNumber: number; sourceFingerprint: string };
+type PersistedProofRow = { source_row_number: number | null; source_fingerprint: string | null };
+
+async function verifyImportedRosterRows(
   supabase: SupabaseClient,
   eventId: string,
   importId: string,
-  rows: Array<{ rowNumber: number; sourceFingerprint: string }>,
+  rows: ProofRow[],
   expectedCount: number,
   useHistoricalRows = false,
-  allowAdditionalRows = false,
+  mode: "selection" | "document" = "document",
 ) {
   if (rows.length !== expectedCount) return false;
   const expected = new Map(rows.map((row) => [row.rowNumber, row.sourceFingerprint]));
   if (expected.size !== rows.length) return false;
 
-  if (useHistoricalRows) {
+  if (useHistoricalRows && mode === "document") {
     const importRecord = await supabase.from("spogomi_roster_imports")
       .select("status, source_proof_status, source_row_count")
       .eq("id", importId)
@@ -34,7 +37,7 @@ export async function verifyImportedRosterCompleteness(
     }
   }
 
-  const persisted: Array<{ source_row_number: number | null; source_fingerprint: string | null }> = [];
+  const persisted: PersistedProofRow[] = [];
   for (let from = 0; ; from += IMPORT_VERIFICATION_PAGE_SIZE) {
     const page = await supabase
       .from(useHistoricalRows ? "spogomi_roster_import_rows" : "spogomi_participants")
@@ -49,11 +52,11 @@ export async function verifyImportedRosterCompleteness(
     if (rowsOnPage.length < IMPORT_VERIFICATION_PAGE_SIZE) break;
   }
 
-  if ((!allowAdditionalRows && persisted.length !== expectedCount) || (allowAdditionalRows && persisted.length < expectedCount)) return false;
+  if (mode === "document" ? persisted.length !== expectedCount : persisted.length < expectedCount) return false;
   const seen = new Set<number>();
   for (const row of persisted) {
     if (row.source_row_number === null || seen.has(row.source_row_number)) return false;
-    if (allowAdditionalRows && !expected.has(row.source_row_number)) {
+    if (mode === "selection" && !expected.has(row.source_row_number)) {
       seen.add(row.source_row_number);
       continue;
     }
@@ -61,4 +64,26 @@ export async function verifyImportedRosterCompleteness(
     seen.add(row.source_row_number);
   }
   return [...expected.keys()].every((rowNumber) => seen.has(rowNumber));
+}
+
+export function verifyImportedRosterSelection(
+  supabase: SupabaseClient,
+  eventId: string,
+  importId: string,
+  rows: ProofRow[],
+  expectedCount: number,
+  useHistoricalRows = false,
+) {
+  return verifyImportedRosterRows(supabase, eventId, importId, rows, expectedCount, useHistoricalRows, "selection");
+}
+
+export function verifyImportedRosterCompleteness(
+  supabase: SupabaseClient,
+  eventId: string,
+  importId: string,
+  rows: ProofRow[],
+  expectedCount: number,
+  useHistoricalRows = false,
+) {
+  return verifyImportedRosterRows(supabase, eventId, importId, rows, expectedCount, useHistoricalRows, "document");
 }

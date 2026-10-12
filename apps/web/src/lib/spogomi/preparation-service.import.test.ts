@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { confirmRosterImport, verifyImportedRosterCompleteness } from "./preparation-service";
+import { confirmRosterImport, verifyImportedRosterCompleteness, verifyImportedRosterSelection } from "./preparation-service";
 
 type PersistedRow = { source_row_number: number | null; source_fingerprint: string | null };
 
@@ -218,6 +218,11 @@ function partialImportFile() {
   return new File(["Nom;Groupe\nAda Lovelace;A\nGrace Hopper;B\nKatherine Johnson;C"], "roster.csv", { type: "text/csv" });
 }
 
+function importFileWithRows(count: number) {
+  const lines = Array.from({ length: count }, (_, index) => `Participant ${index + 1};Groupe ${index + 1}`);
+  return new File([`Nom;Groupe\n${lines.join("\n")}`], "roster.csv", { type: "text/csv" });
+}
+
 describe("SPOGOMI roster import completeness mock contract", () => {
   it("accepts a confirmed pre-proof import without claiming detailed historical proof", async () => {
     const expected = rows(2);
@@ -263,6 +268,18 @@ describe("SPOGOMI roster import completeness mock contract", () => {
 
     await expect(verifyImportedRosterCompleteness(supabase, "event", "import", expected, expected.length)).resolves.toBe(true);
     expect(ranges).toEqual([[0, 999], [1_000, 1_999], [2_000, 2_999]]);
+  });
+
+  it("verifies a previously imported selection across all historical pages", async () => {
+    const persisted = rows(1_001);
+    const selected = [persisted[0]!, persisted[999]!];
+    const { supabase, ranges } = pagedSupabase([
+      { data: persistedRows(persisted.slice(0, 1_000)), error: null },
+      { data: persistedRows(persisted.slice(1_000)), error: null },
+    ]);
+
+    await expect(verifyImportedRosterSelection(supabase, "event", "import", selected, selected.length)).resolves.toBe(true);
+    expect(ranges).toEqual([[0, 999], [1_000, 1_999]]);
   });
 
   it("rejects a missing row hidden by a duplicate while the persisted count remains correct", async () => {
@@ -315,6 +332,47 @@ describe("SPOGOMI roster import completeness mock contract", () => {
     expect(state.participants).toHaveLength(3);
   });
 
+  it("replays a partial selection after the document proof becomes complete", async () => {
+    const state: FakeImportState = { imports: [], participants: [], nextImportId: 1, failFirstParticipantUpsert: false };
+    const supabase = importSupabase(state);
+    const file = importFileWithRows(20);
+    const first = await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file });
+    const replay = await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file, acceptedRowNumbers: [2, 3, 4, 5, 6] });
+
+    expect(first).toMatchObject({ importedRows: 20, alreadyImported: false });
+    expect(replay).toMatchObject({ importedRows: 5, alreadyImported: true });
+    expect((state.imports[0] as ImportRecord & { source_proof_status?: string }).source_proof_status).toBe("complete");
+    expect(state.participants).toHaveLength(20);
+  });
+
+  it("replays the first subset after a partial import is completed in a later operation", async () => {
+    const state: FakeImportState = { imports: [], participants: [], nextImportId: 1, failFirstParticipantUpsert: false };
+    const supabase = importSupabase(state);
+    const file = importFileWithRows(20);
+    await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file, acceptedRowNumbers: [2, 3, 4, 5, 6] });
+    const completion = await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file, acceptedRowNumbers: Array.from({ length: 15 }, (_, index) => index + 7) });
+    const replay = await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file, acceptedRowNumbers: [2, 3, 4, 5, 6] });
+
+    expect(completion).toMatchObject({ importedRows: 15, alreadyImported: false });
+    expect(replay).toMatchObject({ importedRows: 5, alreadyImported: true });
+    expect((state.imports[0] as ImportRecord & { source_proof_status?: string }).source_proof_status).toBe("complete");
+    expect(state.participants).toHaveLength(20);
+  });
+
+  it("adds only missing rows when a later selection mixes imported and new rows", async () => {
+    const state: FakeImportState = { imports: [], participants: [], nextImportId: 1, failFirstParticipantUpsert: false };
+    const supabase = importSupabase(state);
+    const file = partialImportFile();
+    await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file, acceptedRowNumbers: [2] });
+    const mixed = await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file, acceptedRowNumbers: [2, 3] });
+    const replay = await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file, acceptedRowNumbers: [2] });
+
+    expect(mixed).toMatchObject({ importedRows: 2, alreadyImported: false });
+    expect(replay).toMatchObject({ importedRows: 1, alreadyImported: true });
+    expect(state.participants).toHaveLength(2);
+    expect(new Set(state.participants.map((row) => row.source_row_number)).size).toBe(2);
+  });
+
   it("does not accept a confirmed import whose exhaustive participant read is incomplete", async () => {
     const state: FakeImportState = { imports: [], participants: [], nextImportId: 1, failFirstParticipantUpsert: false };
     const supabase = importSupabase(state);
@@ -323,6 +381,17 @@ describe("SPOGOMI roster import completeness mock contract", () => {
 
     await expect(confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file: importFile() })).rejects.toThrow(/import confirmé est incomplet/i);
     expect(state.imports[0]?.status).toBe("confirmed");
+  });
+
+  it("rejects a complete import when a selected historical fingerprint differs", async () => {
+    const state: FakeImportState = { imports: [], participants: [], nextImportId: 1, failFirstParticipantUpsert: false };
+    const supabase = importSupabase(state);
+    const file = importFileWithRows(20);
+    await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file });
+    state.participants[0]!.source_fingerprint = "fingerprint-tampered";
+
+    await expect(confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file, acceptedRowNumbers: [2, 3, 4, 5, 6] })).rejects.toThrow(/import confirmé est incomplet/i);
+    expect((state.imports[0] as ImportRecord & { source_proof_status?: string }).source_proof_status).toBe("complete");
   });
 
   it("reprises un import après une insertion participante partielle", async () => {
