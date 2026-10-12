@@ -93,6 +93,31 @@ code présent
 
 Une preuve ne justifie que ce qu’elle mesure.
 
+### Cadrage transversal avant intégration
+
+Avant le premier changement d'un lot affectant un contrat métier, l'intégrateur
+vérifie les voies de mutation, les consommateurs, les transitions d'état et les
+dépendances directement pertinentes. Il part des invariants définis avant
+l'implémentation, recherche les contournements par d'autres routes, services,
+imports, RPC, triggers et tâches, puis cible les tests sur les cas normaux et
+contraires. L'exploration reste proportionnée au périmètre ; aucun audit global
+n'est imposé à une modification purement locale.
+
+Le plan de validation distingue les preuves statiques, comportementales et
+l'intégration réelle. Une transaction PostgreSQL, ses triggers, la concurrence
+ou RLS ne sont pas prouvés par des tests de texte ou des mocks : utiliser une
+voie PostgreSQL autorisée si elle est disponible, sinon déclarer
+`DB_SEMANTICS_NOT_EXECUTED` et conserver explicitement le risque non couvert.
+
+Après publication, classer tout constat en régression introduite, défaut
+préexistant critique, amélioration hors périmètre ou hypothèse non démontrée.
+Ne corriger immédiatement que ce qui compromet le contrat du lot ou relève
+d'un risque critique prouvé. Regrouper les défauts de même cause racine,
+respecter la `STOP CONDITION` et ne pas ouvrir un nouveau lot pour chaque
+observation périphérique. La méthode détaillée et sa taxonomie appartiennent
+à `documentation/development/repo-quality-rules.md` ; les preuves et modes
+sont définis dans `documentation/development/TESTING.md`.
+
 ## Modèle d’exécution
 
 Le workflow courant est `MAIN-ONLY / SINGLE-WRITER`.

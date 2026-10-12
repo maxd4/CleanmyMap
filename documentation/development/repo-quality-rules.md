@@ -255,3 +255,95 @@ réécriture d'une migration publiée, ni un élargissement Kaizen. Elle ne cré
 pas une mémoire d'erreurs parallèle et ne permet pas de masquer une preuve
 manquante. Toute protection ajoutée doit rester maintenable et vérifiable dans
 l'environnement réellement disponible.
+
+## 9. Cadrage transversal avant le premier lot et revue après publication
+
+Cette méthode **prévient** les récidives avant l'implémentation. Elle complète
+la boucle réactive de la section 8, sans réouvrir automatiquement les lots clos.
+
+### A. Cartographier le contrat avant le premier prompt
+
+Pour tout lot qui modifie des données persistées, un état métier, une
+permission, une transaction ou un contrat consommé par plusieurs surfaces :
+
+1. déterminer l'owner canonique de chaque donnée et de chaque décision ;
+2. recenser de manière bornée **toutes les voies directement pertinentes de
+   mutation**, y compris import, route API, service, RPC, trigger, tâche ou
+   écriture administrative autorisée, et les consommateurs de ces mutations ;
+3. identifier les transitions d'état autorisées, les garde-fous existants et
+   leurs éventuels contournements par une autre voie ;
+4. définir les effets attendus sur les identités, relations, historiques,
+   résultats, accès, agrégats et projections concernées ;
+5. décider avant le premier prompt du plus petit lot **complet** capable de
+   préserver ces invariants et de sa condition d'arrêt.
+
+L'inventaire n'est ni une campagne de recherche globale ni un livrable
+obligatoire pour une correction de texte ou un changement purement local.
+Le périmètre s'élargit seulement jusqu'aux dépendances nécessaires pour
+prouver le contrat réellement modifié.
+
+### B. Énoncer un invariant vérifiable
+
+Pour chaque invariant significatif, préciser, sous forme concise ou tabulaire :
+
+- **propriétaire** et **état initial** ;
+- **acteur autorisé**, mutation permise/interdite et **transition d'état** ;
+- **effets** sur les consommateurs, identités, relations et historiques ;
+- **contre-exemple** ou scénario négatif prouvant une violation ;
+- **preuve attendue** : `STATIC_CONTRACT`, `EXECUTED_BEHAVIOR` ou
+  `INTEGRATION_PROOF`, selon `TESTING.md` ;
+- **incertitude ou blocage** et décision d'acceptation du risque.
+
+Les tests couvrent les cas normaux **et** adverses réellement pertinents :
+refus, annulation, reprise, idempotence, état obsolète, accès interdit,
+frontière inter-événements et concurrence lorsque le contrat les exige.
+Ne pas créer un deuxième registre permanent d'invariants lorsque la
+spécification métier ou les tests canoniques les portent déjà.
+
+### C. Prévoir le niveau de preuve dès la conception
+
+Si une propriété dépend de PostgreSQL (transaction, contrainte, trigger, RLS,
+course concurrente), prévoir une exécution sur une base isolée autorisée
+avant de la qualifier de prouvée. Vérifier les voies CI éphémères existantes
+et leurs prérequis ; ne pas supposer qu'un workflow existant couvre le
+scénario sans avoir vérifié ses tests et son déclenchement.
+
+Un contrôle de migration, un `--dry-run`, une assertion textuelle ou un mock
+peuvent être utiles, mais ne deviennent jamais `EXECUTED_DB_CONTRACT`.
+Lorsque la preuve n'est pas disponible, rapporter
+`DB_SEMANTICS_NOT_EXECUTED` et qualifier l'incertitude. Cette règle n'ajoute
+pas `checks:full` comme obligation ordinaire et n'autorise aucune migration
+ou mutation distante non approuvée.
+
+### D. Classer chaque constat après publication
+
+Toute observation de revue reçoit d'abord **une** classe principale :
+
+- `INTRODUCED_REGRESSION` : comportement incorrect démontré et imputable au
+  candidat ; à corriger dans le lot lorsque son contrat est compromis ;
+- `PREEXISTING_CRITICAL` : défaut antérieur démontré avec risque élevé
+  (sécurité, perte de données, intégrité, autorisations) ; prioriser avec
+  périmètre et autorisation explicites, sans l'imputer artificiellement au lot ;
+- `OUT_OF_SCOPE_IMPROVEMENT` : amélioration ou dette non bloquante, à différer
+  sans ouvrir automatiquement un prompt ;
+- `UNPROVEN_HYPOTHESIS` : scénario suspect non démontré ; rechercher la
+  preuve proportionnée avant d'en faire un défaut ou une règle durable.
+
+Comparer au `main` **avant et après** le candidat lorsque l'attribution est
+matérielle. Si plusieurs défauts proviennent d'une même cause racine,
+proposer une seule correction cohérente, avec ses consommateurs et tests.
+Un nouveau prompt immédiat exige une preuve nouvelle et une nécessité réelle :
+ne pas utiliser une découverte périphérique pour prolonger un lot satisfait.
+
+### E. Clôturer sur les invariants et les preuves, pas sur la perfection
+
+Clôturer dès que la `STOP CONDITION` du lot est atteinte, que les validations
+requises ont été exécutées et que les limites de preuve sont déclarées.
+Une dette non bloquante reste distincte ; un défaut critique connu ou une
+preuve indispensable manquante ne doit pas être masqué sous le verdict
+`PASS`. Distinguer une réalisation locale testée d'une intégration ou d'un
+état distant réellement observé.
+
+**Boucle cible :** analyse transversale → intégration → validation → clôture.
+La revue d'un lot terminé n'est pas une autorisation générale de lancer une
+nouvelle suite de correctifs.

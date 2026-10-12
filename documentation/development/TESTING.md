@@ -45,6 +45,17 @@ cette exécution n'est pas disponible dans le lot, rapporter
 `DB_SEMANTICS_NOT_EXECUTED`; ne jamais présenter le test statique comme une
 preuve équivalente.
 
+Pour un lot touchant un invariant transactionnel ou RLS, la preuve est planifiée
+**avant le premier prompt** : scénarios positifs et négatifs, permissions,
+reprise, conflits et concurrence pertinents. Préférer l'environnement PostgreSQL
+éphémère déjà autorisé par les workflows du dépôt lorsqu'il peut réellement
+exécuter ces scénarios, en vérifiant ses déclencheurs et secrets requis.
+La présence d'un workflow, sa configuration ou un `db push --dry-run` ne prouve
+pas l'exécution de ces scénarios sur le SHA candidat. En cas d'indisponibilité,
+conserver `DB_SEMANTICS_NOT_EXECUTED` et traiter explicitement la limite de
+preuve dans la décision de clôture, sans déployer ni appliquer une migration
+distante implicitement.
+
 ## Seuils et qualité des assertions
 
 Un test doit protéger un invariant identifiable et non reproduire la structure

@@ -227,6 +227,43 @@ ou une demande explicite de l'utilisateur. Chaque lot ainsi séparé doit rester
 complet, cohérent et clôturable ; une simple réduction de la taille du diff ne
 constitue pas une justification.
 
+### Analyse transversale obligatoire avant le premier prompt
+
+Pour un chantier fonctionnel ou transversal, ChatGPT doit **avant de rédiger le
+premier prompt Codex** :
+
+1. identifier les propriétaires des données et invariants, les voies de lecture
+   et d'écriture, les consommateurs et les transitions d'état pertinentes ;
+2. vérifier les contournements possibles par les autres routes, services,
+   imports, RPC, triggers, tâches et interfaces directement liés au contrat ;
+3. définir ce qui peut changer, par quel acteur, dans quel état et avec quelles
+   conséquences sur l'identité, l'historique et les résultats ;
+4. expliciter les scénarios normaux, les contre-exemples et les cas concurrents
+   pertinents, ainsi que le niveau de preuve requis pour chaque invariant ;
+5. décider du lot cohérent complet, de ses limites et de sa `STOP CONDITION`.
+
+Une inspection ciblée et proportionnée suffit pour une modification locale.
+L'analyse n'autorise ni inventaire exhaustif automatique du dépôt, ni
+multiplication de prompts, ni création de source de vérité documentaire.
+Les contrats et la méthode sont canoniques dans
+`documentation/development/repo-quality-rules.md` ; les niveaux de preuve dans
+`documentation/development/TESTING.md`.
+
+### Revue après commit et maîtrise des prompts correctifs
+
+Sur le `main` publié, comparer chaque constat au périmètre et aux invariants
+du commit audité. Classer strictement : **régression introduite**, **défaut
+préexistant critique**, **amélioration hors périmètre** ou **hypothèse non
+démontrée**. Ne jamais assimiler une possibilité théorique à un défaut prouvé.
+
+Un prompt correctif immédiat exige un défaut démontré nécessitant réellement
+une correction dans le lot (ou un défaut préexistant critique justifiant un
+traitement prioritaire distinct). Regrouper les défauts qui partagent une
+cause racine plutôt que multiplier les correctifs locaux. Si la `STOP CONDITION`
+est satisfaite, clôturer ; réserver les améliorations non bloquantes à un lot
+distinct uniquement lorsque son lancement est justifié. Ne pas produire
+systématiquement un prompt pour toute observation périphérique.
+
 ## 7. Méthode générale de prise de décision
 
 Privilégier :
