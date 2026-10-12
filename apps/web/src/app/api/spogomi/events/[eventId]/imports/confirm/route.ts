@@ -9,21 +9,38 @@ import { loadSpogomiEventForOrganizer, confirmRosterImport } from "@/lib/spogomi
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const rowSchema = z.object({ rowNumber: z.number().int().gt(1), name: z.string().min(1).max(160), groupPreference: z.string().max(120).nullable(), sourceRowId: z.string().max(160).nullable(), sourceFingerprint: z.string().min(1).max(32) });
-const previewSchema = z.object({ format: z.enum(["csv", "xlsx"]), fileName: z.string().min(1).max(255), contentHash: z.string().regex(/^[0-9a-f]{64}$/), mapping: z.record(z.string(), z.string().optional()), importKey: z.string().uuid(), rows: z.array(rowSchema).max(10_000), errors: z.array(z.unknown()).max(10_000) });
+const mappingSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  group: z.string().min(1).max(255).optional(),
+  sourceRowId: z.string().min(1).max(255).optional(),
+}).strict();
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse();
-  const body = await request.json().catch(() => null);
-  const parsed = previewSchema.safeParse(body);
-  if (!parsed.success) return validationErrorResponse({ body: ["Aperçu d'import invalide."] });
   try {
     const supabase = getSupabaseServerClient(true);
     const event = await loadSpogomiEventForOrganizer(supabase, (await context.params).eventId, access.userId);
     if (event === false) return forbiddenJsonResponse();
     if (!event) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
-    const result = await confirmRosterImport({ supabase, event, userId: access.userId, preview: parsed.data as never });
+    const form = await request.formData();
+    const file = form.get("file");
+    if (!(file instanceof File)) return validationErrorResponse({ body: ["Le fichier original est requis pour confirmer l'import."] });
+    const rawMapping = form.get("mapping");
+    let mapping;
+    if (rawMapping !== null) {
+      if (typeof rawMapping !== "string") return validationErrorResponse({ body: ["La correspondance de colonnes est invalide."] });
+      let mappingPayload: unknown;
+      try {
+        mappingPayload = JSON.parse(rawMapping);
+      } catch {
+        return validationErrorResponse({ body: ["La correspondance de colonnes est invalide."] });
+      }
+      const parsedMapping = mappingSchema.safeParse(mappingPayload);
+      if (!parsedMapping.success) return validationErrorResponse({ body: ["La correspondance de colonnes est invalide."] });
+      mapping = parsedMapping.data;
+    }
+    const result = await confirmRosterImport({ supabase, event, userId: access.userId, file, mapping });
     return NextResponse.json(result, { status: result.alreadyImported ? 200 : 201 });
   } catch (error) {
     return handleApiError(error, "spogomi.roster.confirm");

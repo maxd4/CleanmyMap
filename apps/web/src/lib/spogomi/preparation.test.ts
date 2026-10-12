@@ -43,9 +43,18 @@ describe("SPOGOMI preparation", () => {
   it("previews CSV headers, unknown columns and duplicate rows without assuming email", async () => {
     const file = new File(["Nom;Groupe;Colonne libre\nAda Lovelace;A;oui\nAda Lovelace;A;non"], "roster.csv", { type: "text/csv" });
     const preview = await previewRosterFile(file);
+    const retriedPreview = await previewRosterFile(file, preview.mapping);
     expect(preview.mapping).toMatchObject({ name: "Nom", group: "Groupe" });
     expect(preview.unknownHeaders).toEqual(["Colonne libre"]);
     expect(preview.probableDuplicateRowNumbers).toEqual([[2, 3]]);
+    expect(retriedPreview.contentHash).toBe(preview.contentHash);
+    expect(retriedPreview.importKey).toBe(preview.importKey);
+  });
+
+  it("rejects a confirmation mapping that references an unknown or reused column", async () => {
+    const file = new File(["Nom;Groupe\nAda Lovelace;A"], "roster.csv", { type: "text/csv" });
+    await expect(previewRosterFile(file, { name: "Colonne absente" })).rejects.toThrow(/colonne absente/i);
+    await expect(previewRosterFile(file, { name: "Nom", group: "Nom" })).rejects.toThrow(/deux fois/i);
   });
 
   it("rejects a MIME/extension mismatch before parsing", async () => {

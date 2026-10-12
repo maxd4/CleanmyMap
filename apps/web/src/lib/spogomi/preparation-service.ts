@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAction } from "@/lib/actions/store-create";
 import { createActionInterventionMode } from "@/lib/actions/intervention-mode";
@@ -7,7 +7,8 @@ import { canManageAction, type ActionPermissionIdentity } from "@/lib/actions/pe
 import { parseGpxFile } from "@/lib/actions/geometry/gpx";
 import { validateTeamComposition } from "./validation";
 import { buildDeterministicTeamFormation } from "./preparation";
-import type { SpogomiEventMode, SpogomiRosterPreview } from "./types";
+import { previewRosterFile } from "./preparation";
+import type { SpogomiEventMode, SpogomiRosterColumnMapping, SpogomiRosterPreview } from "./types";
 import { normalizeSpogomiEventSlug } from "./public-service";
 
 type EventRow = {
@@ -118,114 +119,350 @@ export async function updateSpogomiEvent(params: {
   return result.data as EventRow;
 }
 
-export async function createSpogomiEvent(params: {
-  supabase: SupabaseClient;
-  userId: string;
-  input: { idempotencyKey: string; name: string; locationLabel: string; mode: SpogomiEventMode; startsAt: string; endsAt?: string | null; casualTeamSize?: number | null };
-}) {
-  const { supabase, userId, input } = params;
-  const attempt = await supabase.from("spogomi_event_creation_attempts").select("*").eq("idempotency_key", input.idempotencyKey).maybeSingle();
-  if (attempt.error) throw attempt.error;
-  if (attempt.data?.event_id) return { eventId: String(attempt.data.event_id), actionId: String(attempt.data.action_id) };
-  if (!/^[a-zA-Z0-9:_-]{8,128}$/.test(input.idempotencyKey)) throw new Error("Validation: clé d'idempotence invalide.");
-  if (!input.name.trim() || !input.locationLabel.trim()) throw new Error("Validation: nom et lieu obligatoires.");
-  const identity = await getCurrentUserIdentity();
-  if (!identity || identity.userId !== userId) throw new Error("Unauthorized");
-  let actionId = attempt.data?.action_id ? String(attempt.data.action_id) : null;
-  if (!actionId) {
-    const created = await createAction(supabase, {
-      userId,
-      payload: {
-        actorName: identity.displayName,
-        actionDate: input.startsAt.slice(0, 10),
-        locationLabel: input.locationLabel.trim(),
-        actionPhase: "pre_action",
-        preparationData: { interventionMode: createActionInterventionMode("fixed_area") },
-        wasteKg: null,
-        cigaretteButts: null,
-        volunteersCount: 0,
-        durationMinutes: 0,
-        eventStartTime: input.startsAt,
-        eventEndTime: input.endsAt ?? null,
-        organizerType: null,
-        organizerName: null,
-      },
-      organizers: [{ userId, displayName: identity.displayName, handle: identity.handle, isPrimary: true, sourceToken: null }],
-      organizerRequirement: "required",
-      status: "pending",
-    });
-    actionId = created.id;
-    const createdAttempt = await supabase.from("spogomi_event_creation_attempts").upsert({
-      idempotency_key: input.idempotencyKey,
-      created_by_clerk_id: userId,
-      action_id: actionId,
-      state: "event_pending",
-    }, { onConflict: "idempotency_key" });
-    if (createdAttempt.error) throw createdAttempt.error;
-  }
-  const baseSlug = normalizeSpogomiEventSlug(input.name);
-  const eventPayload = {
-    action_id: actionId,
-    created_by_clerk_id: userId,
-    idempotency_key: input.idempotencyKey,
-    name: input.name.trim(),
-    location_label: input.locationLabel.trim(),
-    mode: input.mode,
-    starts_at: input.startsAt,
-    ends_at: input.endsAt ?? null,
-    team_size_config: { casual: { minMembers: input.casualTeamSize ?? null, maxMembers: input.casualTeamSize ?? null } },
-    regulation_version: "pending-official-regulation",
-    regulation_status: "incomplete",
-    creation_state: "ready",
-    event_slug: baseSlug,
-    public_visibility: "private" as const,
-  };
-  let event = await supabase.from("spogomi_events").insert(eventPayload).select("id").single();
-  if (event.error?.code === "23505") {
-    event = await supabase.from("spogomi_events").insert({
-      ...eventPayload,
-      event_slug: `${baseSlug}-${actionId.slice(0, 8)}`,
-    }).select("id").single();
-  }
-  if (event.error) {
-    const raced = await supabase.from("spogomi_events").select("id").eq("idempotency_key", input.idempotencyKey).maybeSingle();
-    if (!raced.error && raced.data) {
-      await supabase.from("spogomi_event_creation_attempts").update({ event_id: raced.data.id, state: "ready", last_error_code: null }).eq("idempotency_key", input.idempotencyKey);
-      return { eventId: raced.data.id, actionId };
-    }
-    await supabase.from("spogomi_event_creation_attempts").update({ state: "failed_recoverable", last_error_code: event.error.code ?? "event_insert_failed" }).eq("idempotency_key", input.idempotencyKey);
-    throw new Error("Événement non finalisé : reprise possible avec la même clé d'idempotence.");
-  }
-  await supabase.from("spogomi_event_creation_attempts").update({ event_id: event.data.id, state: "ready", last_error_code: null }).eq("idempotency_key", input.idempotencyKey);
-  return { eventId: event.data.id, actionId };
+const CREATION_LEASE_MS = 2 * 60 * 1000;
+const IMPORT_LEASE_MS = 2 * 60 * 1000;
+const EVENT_SELECT = "id, action_id, created_by_clerk_id, idempotency_key, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility";
+
+type CreationInput = {
+  idempotencyKey: string;
+  name: string;
+  locationLabel: string;
+  mode: SpogomiEventMode;
+  startsAt: string;
+  endsAt?: string | null;
+  casualTeamSize?: number | null;
+};
+
+type CreationAttempt = {
+  id: string;
+  idempotency_key: string;
+  created_by_clerk_id: string;
+  action_id: string | null;
+  event_id: string | null;
+  state: string;
+  intention_fingerprint: string | null;
+  processing_token: string | null;
+  processing_started_at: string | null;
+};
+
+type CreationEvent = Record<string, unknown> & {
+  id: string;
+  action_id: string;
+  created_by_clerk_id: string;
+  idempotency_key: string | null;
+};
+
+type RosterImport = Record<string, unknown> & {
+  id: string;
+  status: string;
+  source_row_count: number;
+  column_mapping: SpogomiRosterColumnMapping;
+  processing_token: string | null;
+  processing_started_at: string | null;
+};
+
+function conflict(message: string): Error {
+  return new Error(`Conflict: ${message}`);
 }
 
-export async function confirmRosterImport(params: {
-  supabase: SupabaseClient;
-  event: EventRow;
-  userId: string;
-  preview: SpogomiRosterPreview;
-}) {
-  const { supabase, event, userId, preview } = params;
-  if (preview.errors.length) throw new Error("Validation: corrigez les lignes invalides avant confirmation.");
-  const existing = await supabase.from("spogomi_roster_imports").select("id, source_row_count").eq("event_id", event.id).eq("content_sha256", preview.contentHash).maybeSingle();
+function canonicalCreationInput(input: CreationInput) {
+  const startsAt = new Date(input.startsAt);
+  const endsAt = input.endsAt ? new Date(input.endsAt) : null;
+  if (Number.isNaN(startsAt.valueOf()) || (endsAt && Number.isNaN(endsAt.valueOf()))) {
+    throw new Error("Validation: dates d'événement invalides.");
+  }
+  if (endsAt && endsAt < startsAt) throw new Error("Validation: la fin doit être postérieure au début.");
+  return {
+    name: input.name.trim(),
+    locationLabel: input.locationLabel.trim(),
+    mode: input.mode,
+    startsAt: startsAt.toISOString(),
+    endsAt: endsAt?.toISOString() ?? null,
+    casualTeamSize: input.casualTeamSize ?? null,
+  };
+}
+
+function creationFingerprint(input: CreationInput): string {
+  return createHash("sha256").update(JSON.stringify(canonicalCreationInput(input))).digest("hex");
+}
+
+function eventMatchesInput(event: Record<string, unknown>, input: CreationInput): boolean {
+  const canonical = canonicalCreationInput(input);
+  const teamSize = (event.team_size_config as { casual?: { maxMembers?: number | null } } | null)?.casual?.maxMembers ?? null;
+  return event.name === canonical.name &&
+    event.location_label === canonical.locationLabel &&
+    event.mode === canonical.mode &&
+    new Date(String(event.starts_at)).toISOString() === canonical.startsAt &&
+    (event.ends_at ? new Date(String(event.ends_at)).toISOString() : null) === canonical.endsAt &&
+    teamSize === canonical.casualTeamSize;
+}
+
+async function loadEventById(supabase: SupabaseClient, eventId: string) {
+  const result = await supabase.from("spogomi_events").select(EVENT_SELECT).eq("id", eventId).maybeSingle();
+  if (result.error) throw result.error;
+  return result.data as CreationEvent | null;
+}
+
+async function loadEventByKey(supabase: SupabaseClient, idempotencyKey: string) {
+  const result = await supabase.from("spogomi_events").select(EVENT_SELECT).eq("idempotency_key", idempotencyKey).maybeSingle();
+  if (result.error) throw result.error;
+  return result.data as CreationEvent | null;
+}
+
+async function assertActionOwnership(
+  supabase: SupabaseClient,
+  actionId: string,
+  userId: string,
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
+  expectedKey: string,
+  expectedFingerprint: string,
+) {
+  const action = await supabase.from("actions").select("id, created_by_clerk_id, preparation_data").eq("id", actionId).maybeSingle();
+  if (action.error) throw action.error;
+  if (!action.data || action.data.created_by_clerk_id !== userId) throw conflict("la tentative de création n'appartient pas à cet organisateur.");
+  const preparationData = (action.data.preparation_data ?? {}) as Record<string, unknown>;
+  if (preparationData.spogomiCreationKey && preparationData.spogomiCreationKey !== expectedKey) {
+    throw conflict("la relation action-événement est incohérente.");
+  }
+  if (preparationData.spogomiCreationFingerprint && preparationData.spogomiCreationFingerprint !== expectedFingerprint) {
+    throw conflict("la clé d'idempotence a reçu des paramètres différents.");
+  }
+  const organizers = await supabase.from("action_organizers").select("organizer_clerk_id").eq("action_id", actionId);
+  if (organizers.error) throw organizers.error;
+  const manageable = canManageAction(actionIdentity(identity), { createdByClerkId: userId }, (organizers.data ?? []).map((row) => String(row.organizer_clerk_id)));
+  if (!manageable) throw conflict("l'action canonique n'est pas gérée par cet organisateur.");
+}
+
+async function assertEventIntegrity(
+  supabase: SupabaseClient,
+  event: CreationEvent,
+  input: CreationInput,
+  userId: string,
+  actionId: string,
+  fingerprint: string,
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
+) {
+  if (event.created_by_clerk_id !== userId || event.idempotency_key !== input.idempotencyKey || event.action_id !== actionId || !eventMatchesInput(event, input)) {
+    throw conflict("la clé d'idempotence a reçu des paramètres ou des relations différents.");
+  }
+  await assertActionOwnership(supabase, actionId, userId, identity, input.idempotencyKey, fingerprint);
+}
+
+async function claimCreationAttempt(
+  supabase: SupabaseClient,
+  input: CreationInput,
+  userId: string,
+  fingerprint: string,
+): Promise<{ attempt: CreationAttempt; token: string }> {
+  const token = randomUUID();
+  const inserted = await supabase.from("spogomi_event_creation_attempts").insert({
+    idempotency_key: input.idempotencyKey,
+    created_by_clerk_id: userId,
+    intention_fingerprint: fingerprint,
+    state: "action_pending",
+    processing_token: token,
+    processing_started_at: new Date().toISOString(),
+  }).select("*").maybeSingle();
+  if (!inserted.error && inserted.data) return { attempt: inserted.data as CreationAttempt, token };
+  if (inserted.error?.code !== "23505") throw inserted.error;
+
+  const existing = await supabase.from("spogomi_event_creation_attempts").select("*").eq("idempotency_key", input.idempotencyKey).maybeSingle();
   if (existing.error) throw existing.error;
-  if (existing.data) return { importId: existing.data.id, importedRows: existing.data.source_row_count, alreadyImported: true };
-  const imported = await supabase.from("spogomi_roster_imports").insert({
-    event_id: event.id,
-    content_sha256: preview.contentHash,
-    import_key: preview.importKey,
-    file_name: preview.fileName,
-    format: preview.format,
-    column_mapping: preview.mapping,
-    source_row_count: preview.rows.length,
-    imported_by_clerk_id: userId,
-    status: "confirmed",
-  }).select("id").single();
-  if (imported.error) throw imported.error;
+  if (!existing.data) throw conflict("la réservation de création n'est plus disponible.");
+  const attempt = existing.data as CreationAttempt;
+  if (attempt.created_by_clerk_id !== userId) throw conflict("la clé d'idempotence est déjà utilisée.");
+  if (attempt.intention_fingerprint && attempt.intention_fingerprint !== fingerprint) throw conflict("la clé d'idempotence a reçu des paramètres différents.");
+  if (!attempt.intention_fingerprint) {
+    if (!attempt.event_id) throw conflict("une ancienne tentative sans empreinte doit être reprise avec une nouvelle clé.");
+    const event = await loadEventById(supabase, attempt.event_id);
+    if (!event || !eventMatchesInput(event, input)) throw conflict("la clé d'idempotence ne peut pas être vérifiée.");
+    const fingerprinted = await supabase.from("spogomi_event_creation_attempts").update({ intention_fingerprint: fingerprint }).eq("id", attempt.id).is("intention_fingerprint", null);
+    if (fingerprinted.error) throw fingerprinted.error;
+  }
+  const activeSince = attempt.processing_started_at ? Date.parse(attempt.processing_started_at) : 0;
+  if (attempt.processing_token && activeSince > Date.now() - CREATION_LEASE_MS) throw conflict("une création est déjà en cours pour cette clé.");
+  const reclaimed = await supabase.from("spogomi_event_creation_attempts").update({
+    processing_token: token,
+    processing_started_at: new Date().toISOString(),
+    state: attempt.action_id ? "event_pending" : "action_pending",
+    last_error_code: null,
+  }).eq("id", attempt.id).or(`processing_started_at.is.null,processing_started_at.lt.${new Date(Date.now() - CREATION_LEASE_MS).toISOString()}`).select("*").maybeSingle();
+  if (reclaimed.error) throw reclaimed.error;
+  if (!reclaimed.data) throw conflict("une création concurrente est en cours pour cette clé.");
+  return { attempt: reclaimed.data as CreationAttempt, token };
+}
+
+async function updateCreationAttempt(supabase: SupabaseClient, attemptId: string, token: string, values: Record<string, unknown>) {
+  const result = await supabase.from("spogomi_event_creation_attempts").update(values).eq("id", attemptId).eq("processing_token", token).select("*").maybeSingle();
+  if (result.error) throw result.error;
+  if (!result.data) throw conflict("la réservation de création a changé pendant l'opération.");
+  return result.data as CreationAttempt;
+}
+
+export async function createSpogomiEvent(params: { supabase: SupabaseClient; userId: string; input: CreationInput }) {
+  const { supabase, userId, input } = params;
+  if (!/^[a-zA-Z0-9:_-]{8,128}$/.test(input.idempotencyKey)) throw new Error("Validation: clé d'idempotence invalide.");
+  const canonical = canonicalCreationInput(input);
+  if (!canonical.name || !canonical.locationLabel) throw new Error("Validation: nom et lieu obligatoires.");
+  const identity = await getCurrentUserIdentity();
+  if (!identity || identity.userId !== userId) throw new Error("Unauthorized");
+  const fingerprint = creationFingerprint(input);
+  const existing = await supabase.from("spogomi_event_creation_attempts").select("*").eq("idempotency_key", input.idempotencyKey).maybeSingle();
+  if (existing.error) throw existing.error;
+  if (existing.data && existing.data.created_by_clerk_id !== userId) throw conflict("la clé d'idempotence est déjà utilisée.");
+  if (existing.data?.intention_fingerprint && existing.data.intention_fingerprint !== fingerprint) throw conflict("la clé d'idempotence a reçu des paramètres différents.");
+  if (existing.data?.event_id && existing.data.state === "ready") {
+    const event = await loadEventById(supabase, String(existing.data.event_id));
+    if (!event) throw conflict("l'événement lié à la tentative est introuvable.");
+    await assertEventIntegrity(supabase, event, input, userId, event.action_id, fingerprint, identity);
+    return { eventId: event.id, actionId: event.action_id };
+  }
+
+  const { attempt, token } = await claimCreationAttempt(supabase, input, userId, fingerprint);
+  try {
+    let actionId = attempt.action_id ? String(attempt.action_id) : null;
+    if (!actionId) {
+      const correlated = await supabase.from("actions").select("id, created_by_clerk_id, preparation_data").contains("preparation_data", { spogomiCreationKey: input.idempotencyKey }).maybeSingle();
+      if (correlated.error) throw correlated.error;
+      actionId = correlated.data?.id ? String(correlated.data.id) : null;
+    }
+    if (!actionId) {
+      const created = await createAction(supabase, {
+        userId,
+        payload: {
+          actorName: identity.displayName,
+          actionDate: canonical.startsAt.slice(0, 10),
+          locationLabel: canonical.locationLabel,
+          actionPhase: "pre_action",
+          preparationData: {
+            interventionMode: createActionInterventionMode("fixed_area"),
+            spogomiCreationKey: input.idempotencyKey,
+            spogomiCreationFingerprint: fingerprint,
+          },
+          wasteKg: null,
+          cigaretteButts: null,
+          volunteersCount: 0,
+          durationMinutes: 0,
+          eventStartTime: canonical.startsAt,
+          eventEndTime: canonical.endsAt,
+          organizerType: null,
+          organizerName: null,
+        },
+        organizers: [{ userId, displayName: identity.displayName, handle: identity.handle, isPrimary: true, sourceToken: null }],
+        organizerRequirement: "required",
+        status: "pending",
+      });
+      actionId = created.id;
+    }
+    await assertActionOwnership(supabase, actionId, userId, identity, input.idempotencyKey, fingerprint);
+    if (!attempt.action_id) await updateCreationAttempt(supabase, attempt.id, token, { action_id: actionId, state: "event_pending" });
+
+    let event = attempt.event_id ? await loadEventById(supabase, String(attempt.event_id)) : await loadEventByKey(supabase, input.idempotencyKey);
+    if (event) await assertEventIntegrity(supabase, event, input, userId, actionId, fingerprint, identity);
+    if (!event) {
+      const baseSlug = normalizeSpogomiEventSlug(canonical.name);
+      const eventPayload = {
+        action_id: actionId,
+        created_by_clerk_id: userId,
+        idempotency_key: input.idempotencyKey,
+        name: canonical.name,
+        location_label: canonical.locationLabel,
+        mode: canonical.mode,
+        starts_at: canonical.startsAt,
+        ends_at: canonical.endsAt,
+        team_size_config: { casual: { minMembers: canonical.casualTeamSize, maxMembers: canonical.casualTeamSize } },
+        regulation_version: "pending-official-regulation",
+        regulation_status: "incomplete",
+        creation_state: "event_pending",
+        event_slug: baseSlug,
+        public_visibility: "private" as const,
+      };
+      let inserted = await supabase.from("spogomi_events").insert(eventPayload).select(EVENT_SELECT).maybeSingle();
+      if (inserted.error?.code === "23505") {
+        const byKey = await loadEventByKey(supabase, input.idempotencyKey);
+        if (byKey) event = byKey;
+        else inserted = await supabase.from("spogomi_events").insert({ ...eventPayload, event_slug: `${baseSlug}-${actionId.slice(0, 8)}` }).select(EVENT_SELECT).maybeSingle();
+      }
+      if (!event && !inserted.error && inserted.data) event = inserted.data as CreationEvent;
+      if (!event && inserted.error) throw new Error("Conflict: événement non finalisé, reprise possible avec la même clé.");
+    }
+    if (!event) throw new Error("Conflict: événement non finalisé, reprise possible avec la même clé.");
+    await assertEventIntegrity(supabase, event, input, userId, actionId, fingerprint, identity);
+    const eventReady = await supabase.from("spogomi_events").update({ creation_state: "ready" }).eq("id", event.id).eq("action_id", actionId);
+    if (eventReady.error) throw eventReady.error;
+    await updateCreationAttempt(supabase, attempt.id, token, { event_id: event.id, action_id: actionId, state: "ready", last_error_code: null, processing_token: null, processing_started_at: null });
+    return { eventId: event.id, actionId };
+  } catch (error) {
+    await supabase.from("spogomi_event_creation_attempts").update({ state: "failed_recoverable", last_error_code: error instanceof Error ? error.name : "creation_failed", processing_token: null, processing_started_at: null }).eq("id", attempt.id).eq("processing_token", token);
+    throw error;
+  }
+}
+
+function canonicalImportMapping(mapping: SpogomiRosterColumnMapping): string {
+  return JSON.stringify(["name", "group", "sourceRowId"].filter((key) => mapping[key as keyof SpogomiRosterColumnMapping] !== undefined).map((key) => [key, mapping[key as keyof SpogomiRosterColumnMapping]]));
+}
+
+async function importIsComplete(supabase: SupabaseClient, eventId: string, importId: string, rows: Array<{ rowNumber: number; sourceFingerprint: string }>, expectedCount: number) {
+  const persisted = await supabase.from("spogomi_participants").select("source_row_number, source_fingerprint").eq("event_id", eventId).eq("roster_import_id", importId);
+  if (persisted.error) throw persisted.error;
+  if ((persisted.data ?? []).length !== expectedCount) return false;
+  const expected = new Map(rows.map((row) => [row.rowNumber, row.sourceFingerprint]));
+  return (persisted.data ?? []).every((row) => expected.get(row.source_row_number) === row.source_fingerprint);
+}
+
+export async function confirmRosterImport(params: { supabase: SupabaseClient; event: EventRow; userId: string; file: File; mapping?: SpogomiRosterColumnMapping }) {
+  const { supabase, event, userId } = params;
+  const preview = await previewRosterFile(params.file, params.mapping);
+  if (preview.errors.length) throw new Error("Validation: corrigez les lignes invalides avant confirmation.");
+  const mappingFingerprint = canonicalImportMapping(preview.mapping);
+  const existing = await supabase.from("spogomi_roster_imports").select("*").eq("event_id", event.id).eq("content_sha256", preview.contentHash).maybeSingle();
+  if (existing.error) throw existing.error;
+  let imported = existing.data as RosterImport | null;
+  if (imported && canonicalImportMapping(imported.column_mapping ?? {}) !== mappingFingerprint) throw conflict("le même fichier a déjà été présenté avec une autre correspondance de colonnes.");
+  const token = randomUUID();
+  let ownsInitialReservation = false;
+  if (!imported) {
+    const created = await supabase.from("spogomi_roster_imports").insert({
+      event_id: event.id,
+      content_sha256: preview.contentHash,
+      import_key: preview.importKey,
+      file_name: preview.fileName,
+      format: preview.format,
+      column_mapping: preview.mapping,
+      source_row_count: preview.rows.length,
+      imported_by_clerk_id: userId,
+      status: "processing",
+      processing_token: token,
+      processing_started_at: new Date().toISOString(),
+    }).select("*").maybeSingle();
+    if (!created.error && created.data) {
+      imported = created.data as RosterImport;
+      ownsInitialReservation = true;
+    }
+    else if (created.error?.code === "23505") {
+      const raced = await supabase.from("spogomi_roster_imports").select("*").eq("event_id", event.id).eq("content_sha256", preview.contentHash).single();
+      if (raced.error) throw raced.error;
+      const racedImport = raced.data as RosterImport;
+      imported = racedImport;
+      if (canonicalImportMapping(racedImport.column_mapping ?? {}) !== mappingFingerprint) throw conflict("le même fichier a déjà été présenté avec une autre correspondance de colonnes.");
+    } else if (created.error) throw created.error;
+  }
+  if (!imported) throw conflict("l'import n'a pas pu être réservé.");
+  const reservedImport = imported;
+  if (reservedImport.status === "confirmed") {
+    if (!(await importIsComplete(supabase, event.id, reservedImport.id, preview.rows, preview.rows.length))) throw conflict("l'import confirmé est incomplet et doit être repris.");
+    return { importId: reservedImport.id, importedRows: reservedImport.source_row_count, alreadyImported: true };
+  }
+  const activeSince = reservedImport.processing_started_at ? Date.parse(reservedImport.processing_started_at) : 0;
+  if (reservedImport.processing_token && reservedImport.processing_token !== token && activeSince > Date.now() - IMPORT_LEASE_MS) throw conflict("un import est déjà en cours pour ce fichier.");
+  if (!ownsInitialReservation) {
+    const claimed = await supabase.from("spogomi_roster_imports").update({ status: "processing", processing_token: token, processing_started_at: new Date().toISOString(), source_row_count: preview.rows.length, column_mapping: preview.mapping, file_name: preview.fileName, format: preview.format }).eq("id", reservedImport.id).or(`processing_token.is.null,processing_started_at.is.null,processing_started_at.lt.${new Date(Date.now() - IMPORT_LEASE_MS).toISOString()}`).select("id").maybeSingle();
+    if (claimed.error) throw claimed.error;
+    if (!claimed.data) throw conflict("un import concurrent est déjà en cours pour ce fichier.");
+  }
   const participantRows = preview.rows.map((row) => ({
     event_id: event.id,
-    roster_import_id: imported.data.id,
+    roster_import_id: reservedImport.id,
     source_row_number: row.rowNumber,
     source_row_id: row.sourceRowId,
     source_fingerprint: row.sourceFingerprint,
@@ -236,12 +473,18 @@ export async function confirmRosterImport(params: {
     attendance_status: "unknown",
     account_link_status: "unlinked",
   }));
-  const inserted = await supabase.from("spogomi_participants").insert(participantRows);
-  if (inserted.error) {
-    await supabase.from("spogomi_roster_imports").update({ status: "failed" }).eq("id", imported.data.id);
-    throw inserted.error;
+  try {
+    const inserted = await supabase.from("spogomi_participants").upsert(participantRows, { onConflict: "event_id,roster_import_id,source_row_number", ignoreDuplicates: true });
+    if (inserted.error) throw inserted.error;
+    if (!(await importIsComplete(supabase, event.id, reservedImport.id, preview.rows, preview.rows.length))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
+    const confirmed = await supabase.from("spogomi_roster_imports").update({ status: "confirmed", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token).select("id").maybeSingle();
+    if (confirmed.error) throw confirmed.error;
+    if (!confirmed.data) throw conflict("la confirmation de l'import a été reprise par une autre opération.");
+    return { importId: reservedImport.id, importedRows: participantRows.length, alreadyImported: false };
+  } catch (error) {
+    await supabase.from("spogomi_roster_imports").update({ status: "failed_recoverable", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token);
+    throw error instanceof Error && error.message.startsWith("Conflict:") ? error : new Error("Conflict: import non finalisé, reprise possible avec le même fichier et la même correspondance.");
   }
-  return { importId: imported.data.id, importedRows: participantRows.length, alreadyImported: false };
 }
 
 export async function autoComposeTeams(supabase: SupabaseClient, event: EventRow) {

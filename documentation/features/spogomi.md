@@ -274,14 +274,18 @@ La préparation privée est désormais portée par `/spogomi/[eventSlug]/gestion
 à un compte authentifié qui possède la relation organisateur canonique de :
 
 - créer un brouillon avec une seule action CleanMyMap liée par `action_id` ; la
-  clé d'idempotence et `spogomi_event_creation_attempts` permettent de reprendre
-  un échec de liaison sans créer une seconde action (`PARTIAL_ALLOWED`) ; le
-  type juridique SPOGOMI France reste provisoire tant que le répertoire ne le
-  configure pas ;
+  réservation serveur, l'empreinte des paramètres et le lease de reprise de
+  `spogomi_event_creation_attempts` empêchent une double création concurrente,
+  vérifient le propriétaire et permettent de reprendre un échec de liaison sans
+  créer une seconde action (`PARTIAL_ALLOWED`) ; le type juridique SPOGOMI
+  France reste provisoire tant que le répertoire ne le configure pas ;
 - déposer un CSV ou XLSX de roster privé, sélectionner explicitement les
   colonnes utiles, voir les inconnues, erreurs et doublons probables, puis
-  confirmer un import idempotent par empreinte de contenu ; aucun compte Clerk,
-  `action_registrations` ou `action_participants` n'est créé par ce parcours ;
+  confirmer un import idempotent par empreinte de contenu après nouvelle lecture
+  serveur du fichier brut et de la correspondance choisie ; les insertions de
+  participants sont protégées par un lease, vérifiées par ligne et reprenables
+  après un état partiel ou échoué. Aucun compte Clerk, `action_registrations` ou
+  `action_participants` canonique n'est créé par ce parcours ;
 - former automatiquement les équipes selon un ordre déterministe, préserver les
   groupes autant que possible, laisser les impossibles dans « À affecter »,
   déplacer manuellement une personne et verrouiller seulement une composition

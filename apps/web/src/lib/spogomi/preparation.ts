@@ -128,6 +128,36 @@ function inferMapping(headers: string[]): SpogomiRosterColumnMapping {
   return mapping;
 }
 
+const ROSTER_MAPPING_KEYS = ["name", "group", "sourceRowId"] as const;
+
+function resolveMapping(headers: string[], mapping?: SpogomiRosterColumnMapping): SpogomiRosterColumnMapping {
+  const candidate = mapping ?? inferMapping(headers);
+  const resolved: SpogomiRosterColumnMapping = {};
+  const seenHeaders = new Set<string>();
+  for (const key of ROSTER_MAPPING_KEYS) {
+    const header = candidate[key];
+    if (header === undefined) continue;
+    if (!headers.includes(header)) throw new Error("Validation: la correspondance référence une colonne absente.");
+    if (seenHeaders.has(header)) throw new Error("Validation: une même colonne ne peut pas être utilisée deux fois.");
+    seenHeaders.add(header);
+    resolved[key] = header;
+  }
+  return resolved;
+}
+
+function canonicalMapping(mapping: SpogomiRosterColumnMapping): string {
+  return JSON.stringify(
+    ROSTER_MAPPING_KEYS
+      .filter((key) => mapping[key] !== undefined)
+      .map((key) => [key, mapping[key]]),
+  );
+}
+
+async function deterministicImportKey(contentHash: string, mapping: SpogomiRosterColumnMapping): Promise<string> {
+  const digest = await sha256Hex(new TextEncoder().encode(`spogomi-roster-v1:${contentHash}:${canonicalMapping(mapping)}`));
+  return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-5${digest.slice(13, 16)}-8${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
+}
+
 function buildRows(rawRows: string[][], mapping: SpogomiRosterColumnMapping) {
   const headers = rawRows[0] ?? [];
   const indexes = Object.fromEntries(Object.entries(mapping).map(([key, header]) => [key, headers.indexOf(header ?? "")])) as Partial<Record<SpogomiRosterColumn, number>>;
@@ -175,7 +205,7 @@ export async function previewRosterFile(file: File, mapping?: SpogomiRosterColum
   if (!rawRows.length || !rawRows[0]?.length) throw new Error("Le fichier ne contient pas d'en-tête exploitable.");
   if (rawRows[0].length > MAX_COLUMNS) throw new Error("Le fichier contient trop de colonnes.");
   const headers = rawRows[0].map(normalizeValue);
-  const resolvedMapping = mapping ?? inferMapping(headers);
+  const resolvedMapping = resolveMapping(headers, mapping);
   const { rows, errors } = buildRows([headers, ...rawRows.slice(1)], resolvedMapping);
   const mappedHeaders = new Set(Object.values(resolvedMapping).filter(Boolean));
   const unknownHeaders = headers.filter((header) => !mappedHeaders.has(header));
@@ -191,7 +221,7 @@ export async function previewRosterFile(file: File, mapping?: SpogomiRosterColum
     rows,
     errors,
     probableDuplicateRowNumbers: [...byFingerprint.values()].filter((group) => group.length > 1),
-    importKey: crypto.randomUUID(),
+    importKey: await deterministicImportKey(await sha256Hex(bytes), resolvedMapping),
   };
 }
 

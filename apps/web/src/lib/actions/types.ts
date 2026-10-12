@@ -172,6 +172,10 @@ export type ActionPreparationData = {
     referenceDistanceKm: number;
     note: string;
   };
+  /** Server-managed SPOGOMI creation correlation; never public action content. */
+  spogomiCreationKey?: string;
+  /** Server-managed fingerprint paired with spogomiCreationKey. */
+  spogomiCreationFingerprint?: string;
   /** Recomputable multi-trace coverage; never an itinerary or summed distance. */
   observedCoverage?: ActionObservedCoverage;
   /** Measured or estimated result of the server-side route provider. */
