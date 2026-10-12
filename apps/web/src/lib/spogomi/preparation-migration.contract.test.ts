@@ -6,6 +6,7 @@ const correctiveMigration = readFileSync(new URL("../../../supabase/migrations/2
 const conflictTargetMigration = readFileSync(new URL("../../../supabase/migrations/20261012000005_spogomi_import_conflict_target.sql", import.meta.url), "utf8");
 const lot11Migration = readFileSync(new URL("../../../supabase/migrations/20261012000022_spogomi_ticket_roster_and_team_composition.sql", import.meta.url), "utf8");
 const lot11aMigration = readFileSync(new URL("../../../supabase/migrations/20261013000001_spogomi_ticket_source_scope_and_safe_rebalance.sql", import.meta.url), "utf8");
+const lot11CorrectiveMigration = readFileSync(new URL("../../../supabase/migrations/20261013000002_spogomi_import_history_and_safe_reconciliation.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -53,5 +54,13 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(lot11aMigration).toContain("spogomi_result_submissions");
     expect(lot11aMigration).toContain("cannot be rebalanced");
     expect(lot11aMigration).toContain("spogomi_team_composition_history");
+  });
+
+  it("keeps confirmed import rows independently from current participant provenance", () => {
+    expect(lot11CorrectiveMigration).toContain("spogomi_roster_import_rows");
+    expect(lot11CorrectiveMigration).toContain("unique (roster_import_id, source_row_number)");
+    expect(lot11CorrectiveMigration).toContain("source_snapshot jsonb");
+    expect(lot11CorrectiveMigration).toContain("ticket_cancellation_conflict");
+    expect(lot11CorrectiveMigration).toMatch(/revoke all on table public\.spogomi_roster_import_rows from public, anon, authenticated/i);
   });
 });

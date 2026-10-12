@@ -387,7 +387,9 @@ Cachan Weezevent : chaque `N. Billet` devient une place distincte, chaque `N. de
 reste un regroupement privé, et l'absence de nom devient l'état explicite
 « place à identifier ». Les doublons d'acheteur ne fusionnent donc jamais des
 places. Les statuts et suppressions sont conservés comme état de billet ; une
-place annulée est retirée de la composition active sans être supprimée.
+place annulée est marquée comme telle sans être supprimée. Si une présence,
+une identité, une liaison ou une décision de participation existe déjà, le
+réimport signale un conflit et ne révoque pas cette décision.
 
 Les références externes de place sont stables pour les réimports et uniques dans
 le couple événement/source. `N. de commande avancé` est conservé comme référence
@@ -407,14 +409,19 @@ server-only verrouillant l'événement ; les équipes existantes sont réutilis�
 par leur numéro et ne sont jamais supprimées/recréées silencieusement. Les
 accès, résultats et historiques restent ainsi attachés à leurs identifiants.
 
-Les migrations `20261012000022_spogomi_ticket_roster_and_team_composition.sql`
-et `20261013000001_spogomi_ticket_source_scope_and_safe_rebalance.sql` ajoutent
+Les migrations `20261012000022_spogomi_ticket_roster_and_team_composition.sql`,
+`20261013000001_spogomi_ticket_source_scope_and_safe_rebalance.sql` et
+`20261013000002_spogomi_import_history_and_safe_reconciliation.sql` ajoutent
 les états de billetterie, l'historique des changements, la révision de composition,
-la portée source de la clé de billet et la RPC atomique de confirmation. La
-seconde bloque la recomposition automatique d'une équipe déjà liée à un accès ou
-à des résultats. Un dry-run ne vaut pas preuve d'application distante ; la
-certification, la consolidation, AuthN/AuthZ, RLS et la liaison Clerk restent
-inchangées.
+la portée source de la clé de billet, la preuve append-only de chaque ligne
+d'import et la RPC atomique de confirmation. La seconde bloque la recomposition
+automatique d'une équipe déjà liée à un accès ou à des résultats ; la dernière
+rend les réimports historiques indépendants de la provenance courante et limite
+la réconciliation aux champs possédés par la billetterie. L'aperçu des équipes
+affiche chaque place, permet les déplacements sans écriture puis confirme
+exactement la proposition contrôlée côté serveur. Un dry-run ne vaut pas preuve
+d'application distante ; la certification, la consolidation, AuthN/AuthZ, RLS et
+la liaison Clerk restent inchangées.
 
 ## 19. Lot 11B livré — CURRENT — import multi-format et aperçu explicable
 

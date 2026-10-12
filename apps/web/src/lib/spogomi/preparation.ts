@@ -1,5 +1,6 @@
 import { parseRosterFile, type SpogomiRosterPreviewOptions } from "./preparation-import";
 import type { SpogomiRosterColumnMapping, SpogomiRosterPreview, SpogomiTeamFormation } from "./types";
+import { validateTeamComposition } from "./validation";
 
 export async function previewRosterFile(file: File, mappingOrOptions?: SpogomiRosterColumnMapping | SpogomiRosterPreviewOptions): Promise<SpogomiRosterPreview> {
   return parseRosterFile(file, mappingOrOptions);
@@ -88,4 +89,48 @@ export function buildDeterministicTeamFormation(input: {
   if (selected?.sizes.length) explanation.push(`Les restes sont regroupés selon les bornes de l'événement : ${selected.sizes.join(" + ")}.`);
   if (unassigned.length) explanation.push(`${unassigned.length} place(s) restent en attente car aucune équipe conforme ne peut être formée.`);
   return { teams, unassignedParticipantIds: unassigned, reasons, explanation };
+}
+
+export function validateProposedTeamFormation(input: {
+  formation: SpogomiTeamFormation;
+  participantIds: string[];
+  mode: "casual" | "world_cup";
+  casualTeamBounds: { minMembers: number | null; maxMembers: number | null };
+}): SpogomiTeamFormation {
+  const participantSet = new Set(input.participantIds);
+  const seen = new Set<string>();
+  const teams = input.formation.teams.map((team) => {
+    if (!Number.isInteger(team.teamNumber) || team.teamNumber < 1) throw new Error("Validation: un numéro d'équipe est invalide.");
+    if (!team.participantIds.length) throw new Error(`Validation: l'équipe ${team.teamNumber} est vide.`);
+    if (team.participantIds.some((participantId) => !participantSet.has(participantId))) throw new Error("Validation: la proposition contient une place inconnue.");
+    if (team.participantIds.some((participantId) => seen.has(participantId))) throw new Error("Validation: une place apparaît plusieurs fois dans la proposition.");
+    for (const participantId of team.participantIds) seen.add(participantId);
+    const bounds = input.mode === "world_cup"
+      ? { minMembers: 3, maxMembers: 3 }
+      : input.casualTeamBounds;
+    const validation = validateTeamComposition(input.mode, team.participantIds.length, {
+      casual: bounds,
+    });
+    if (!validation.ok) throw new Error(`Validation: équipe ${team.teamNumber} non conforme (${validation.reason}).`);
+    return {
+      draftKey: `team-${team.teamNumber}`,
+      teamNumber: team.teamNumber,
+      participantIds: [...team.participantIds],
+      compositionState: "draft" as const,
+      explanation: "remainder_repacked" as const,
+    };
+  });
+  const unassignedParticipantIds = [...input.formation.unassignedParticipantIds];
+  if (unassignedParticipantIds.some((participantId) => !participantSet.has(participantId) || seen.has(participantId))) {
+    throw new Error("Validation: une place en attente est inconnue ou déjà affectée.");
+  }
+  for (const participantId of unassignedParticipantIds) seen.add(participantId);
+  if (seen.size !== participantSet.size) throw new Error("Validation: la proposition ne couvre pas toutes les places.");
+  if (new Set(teams.map((team) => team.teamNumber)).size !== teams.length) throw new Error("Validation: un numéro d'équipe apparaît plusieurs fois.");
+  return {
+    teams,
+    unassignedParticipantIds,
+    reasons: {},
+    explanation: ["Proposition personnalisée contrôlée par le serveur."],
+  };
 }

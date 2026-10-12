@@ -245,6 +245,7 @@ export type SpogomiRosterPreview = {
   sourceSystem: "manual_roster" | "cachan_ticketing";
   cancelledRowNumbers: number[];
   changedRowNumbers?: number[];
+  conflictRowNumbers?: number[];
   encoding: "utf-8" | "windows-1252" | "binary";
   sheetName: string | null;
   headerRow: number;

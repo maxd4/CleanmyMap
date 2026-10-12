@@ -6,11 +6,13 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import { canManageAction, type ActionPermissionIdentity } from "@/lib/actions/permissions";
 import { parseGpxFile } from "@/lib/actions/geometry/gpx";
 import { validateTeamComposition } from "./validation";
-import { buildDeterministicTeamFormation } from "./preparation";
+import { buildDeterministicTeamFormation, validateProposedTeamFormation } from "./preparation";
 import { previewRosterFile } from "./preparation";
 import type { SpogomiEventMode, SpogomiRosterColumnMapping, SpogomiRosterPreview, SpogomiTeamFormation } from "./types";
 import type { SpogomiRosterPreviewOptions } from "./preparation-import";
 import { normalizeSpogomiEventSlug } from "./public-service";
+import { reconcileCachanTicketRows } from "./ticket-reconciliation";
+import { teamCompositionFingerprint } from "./team-composition";
 
 type EventRow = {
   id: string;
@@ -435,24 +437,40 @@ export async function previewRosterImportChanges(
   const references = preview.rows.map((row) => row.externalReference).filter((reference): reference is string => Boolean(reference));
   if (!references.length) return { ...preview, importSummary: { created: 0, unchanged: 0, changed: 0, conflicts: preview.errors.length, excluded: preview.ignoredRowNumbers.length } };
   const existing = await supabase.from("spogomi_participants")
-    .select("id, external_reference, source_system, order_reference, order_alternative_reference, ticket_status, ticket_deleted, display_name")
+    .select("id, external_reference, source_system, order_reference, order_alternative_reference, ticket_status, ticket_deleted, display_name, identity_status, attendance_status, account_link_status, clerk_id, team_id, registration_status")
     .eq("event_id", event.id)
     .eq("source_system", preview.sourceSystem)
     .in("external_reference", references);
   if (existing.error) throw existing.error;
   const byReference = new Map((existing.data ?? []).map((row) => [String(row.external_reference), row]));
   const changedRowNumbers: number[] = [];
+  const conflictRowNumbers: number[] = [];
   let unchanged = 0;
   let created = 0;
   for (const row of preview.rows) {
     const current = row.externalReference ? byReference.get(row.externalReference) : undefined;
     if (!current) created += 1;
-    else if (current.order_reference !== row.orderReference || current.order_alternative_reference !== row.orderAlternativeReference || current.ticket_status !== row.ticketStatus || Boolean(current.ticket_deleted) !== row.ticketDeleted || (current.display_name ?? null) !== row.name) {
-      changedRowNumbers.push(row.rowNumber);
-    } else unchanged += 1;
+    else {
+      const changed = current.order_reference !== row.orderReference ||
+        current.order_alternative_reference !== row.orderAlternativeReference ||
+        current.ticket_status !== row.ticketStatus ||
+        Boolean(current.ticket_deleted) !== row.ticketDeleted ||
+        (current.display_name ?? null) !== row.name;
+      const cancellationChanged = Boolean(current.ticket_deleted) !== row.ticketDeleted ||
+        /annul|cancel|supprim|deleted|refus|refund/i.test(current.ticket_status ?? "") !== /annul|cancel|supprim|deleted|refus|refund/i.test(row.ticketStatus ?? "");
+      const hasHumanDecision = current.attendance_status !== "unknown" ||
+        current.account_link_status === "verified" ||
+        Boolean(current.clerk_id) ||
+        current.identity_status === "identified" ||
+        Boolean(current.team_id) ||
+        current.registration_status !== "registered";
+      if (changed) changedRowNumbers.push(row.rowNumber);
+      else unchanged += 1;
+      if (cancellationChanged && hasHumanDecision) conflictRowNumbers.push(row.rowNumber);
+    }
   }
-  const conflicts = preview.errors.filter((error) => error.code === "ticket_reference_collision" || error.code === "ambiguous_identifier" || error.code === "ambiguous_mapping").length;
-  return { ...preview, changedRowNumbers, importSummary: { created, unchanged, changed: changedRowNumbers.length, conflicts, excluded: preview.ignoredRowNumbers.length } };
+  const conflicts = preview.errors.filter((error) => error.code === "ticket_reference_collision" || error.code === "ambiguous_identifier" || error.code === "ambiguous_mapping").length + conflictRowNumbers.length;
+  return { ...preview, changedRowNumbers, conflictRowNumbers, importSummary: { created, unchanged, changed: changedRowNumbers.length, conflicts, excluded: preview.ignoredRowNumbers.length } };
 }
 
 export async function verifyImportedRosterCompleteness(
@@ -461,6 +479,7 @@ export async function verifyImportedRosterCompleteness(
   importId: string,
   rows: Array<{ rowNumber: number; sourceFingerprint: string }>,
   expectedCount: number,
+  useHistoricalRows = false,
 ) {
   if (rows.length !== expectedCount) return false;
   const expected = new Map(rows.map((row) => [row.rowNumber, row.sourceFingerprint]));
@@ -469,7 +488,7 @@ export async function verifyImportedRosterCompleteness(
   const persisted: Array<{ source_row_number: number | null; source_fingerprint: string | null }> = [];
   for (let from = 0; ; from += IMPORT_VERIFICATION_PAGE_SIZE) {
     const page = await supabase
-      .from("spogomi_participants")
+      .from(useHistoricalRows ? "spogomi_roster_import_rows" : "spogomi_participants")
       .select("source_row_number, source_fingerprint")
       .eq("event_id", eventId)
       .eq("roster_import_id", importId)
@@ -536,7 +555,7 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
   if (!imported) throw conflict("l'import n'a pas pu être réservé.");
   const reservedImport = imported;
   if (reservedImport.status === "confirmed") {
-    if (!(await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length))) throw conflict("l'import confirmé est incomplet et doit être repris.");
+    if (!(await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing"))) throw conflict("l'import confirmé est incomplet et doit être repris.");
     return { importId: reservedImport.id, importedRows: reservedImport.source_row_count, alreadyImported: true };
   }
   const activeSince = reservedImport.processing_started_at ? Date.parse(reservedImport.processing_started_at) : 0;
@@ -565,43 +584,17 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
     attendance_status: "unknown",
     account_link_status: "unlinked",
   }));
-  const priorTicketRows = preview.sourceSystem === "cachan_ticketing"
-    ? await supabase.from("spogomi_participants")
-      .select("id, external_reference, order_reference, order_alternative_reference, ticket_status, ticket_deleted, display_name")
-      .eq("event_id", event.id)
-      .eq("source_system", preview.sourceSystem)
-      .in("external_reference", selectedRows.map((row) => row.externalReference).filter((reference): reference is string => Boolean(reference)))
-    : { data: [], error: null };
-  if (priorTicketRows.error) throw priorTicketRows.error;
-  const priorByReference = new Map((priorTicketRows.data ?? []).map((row) => [String(row.external_reference), row]));
   try {
-    const inserted = await supabase.from("spogomi_participants").upsert(participantRows, {
-      onConflict: preview.sourceSystem === "cachan_ticketing" ? "event_id,source_system,external_reference" : "event_id,roster_import_id,source_row_number",
-      ignoreDuplicates: false,
-    });
-    if (inserted.error) throw inserted.error;
-    if (preview.sourceSystem === "cachan_ticketing" && preview.changedRowNumbers?.length) {
-      const changes = selectedRows.flatMap((row) => {
-        const previous = row.externalReference ? priorByReference.get(row.externalReference) : undefined;
-        if (!previous || !row.externalReference) return [];
-        const snapshots = { previous_snapshot: previous, current_snapshot: row };
-        const kinds = [
-          (Boolean(previous.ticket_deleted) !== row.ticketDeleted || /annul|cancel|supprim|deleted|refus|refund/i.test(previous.ticket_status ?? "") !== /annul|cancel|supprim|deleted|refus|refund/i.test(row.ticketStatus ?? ""))
-            ? (row.ticketDeleted || /annul|cancel|supprim|deleted|refus|refund/i.test(row.ticketStatus ?? "") ? "ticket_cancelled" : "ticket_reactivated")
-            : null,
-          previous.ticket_status !== row.ticketStatus ? "ticket_status_changed" : null,
-          previous.order_reference !== row.orderReference ? "ticket_order_changed" : null,
-          previous.order_alternative_reference !== row.orderAlternativeReference ? "ticket_advanced_order_changed" : null,
-          (previous.display_name ?? null) !== row.name ? "ticket_identity_changed" : null,
-        ].filter((kind): kind is "ticket_status_changed" | "ticket_cancelled" | "ticket_reactivated" | "ticket_order_changed" | "ticket_advanced_order_changed" | "ticket_identity_changed" => Boolean(kind));
-        return kinds.map((change_kind) => ({ event_id: event.id, roster_import_id: reservedImport.id, participant_id: previous.id, change_kind, ...snapshots }));
+    if (preview.sourceSystem === "cachan_ticketing") {
+      await reconcileCachanTicketRows({ supabase, eventId: event.id, rosterImport: reservedImport, rows: selectedRows });
+    } else {
+      const inserted = await supabase.from("spogomi_participants").upsert(participantRows, {
+        onConflict: "event_id,roster_import_id,source_row_number",
+        ignoreDuplicates: false,
       });
-      if (changes.length) {
-        const recorded = await supabase.from("spogomi_roster_import_changes").upsert(changes, { onConflict: "roster_import_id,participant_id,change_kind" });
-        if (recorded.error) throw recorded.error;
-      }
+      if (inserted.error) throw inserted.error;
     }
-    if (!(await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
+    if (!(await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing"))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
     const confirmed = await supabase.from("spogomi_roster_imports").update({ status: "confirmed", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token).select("id").maybeSingle();
     if (confirmed.error) throw confirmed.error;
     if (!confirmed.data) throw conflict("la confirmation de l'import a été reprise par une autre opération.");
@@ -621,23 +614,6 @@ export type SpogomiTeamCompositionPreview = {
   preservedTeamIds: string[];
   explanation: string[];
 };
-
-function teamCompositionFingerprint(input: {
-  event: EventRow;
-  participants: Array<{ id: string; sourceOrder: number; groupPreference: string | null; teamId: string | null; registrationStatus: string }>;
-  teams: Array<{ id: string; teamNumber: number; compositionState: string }>;
-  formation: SpogomiTeamFormation;
-}) {
-  return createHash("sha256").update(JSON.stringify({
-    eventId: input.event.id,
-    revision: input.event.composition_revision ?? 0,
-    mode: input.event.mode,
-    teamSizeConfig: input.event.team_size_config,
-    participants: input.participants.map(({ id, sourceOrder, groupPreference, teamId, registrationStatus }) => ({ id, sourceOrder, groupPreference, teamId, registrationStatus })),
-    teams: input.teams.map(({ id, teamNumber, compositionState }) => ({ id, teamNumber, compositionState })),
-    formation: input.formation,
-  })).digest("hex");
-}
 
 export async function previewSpogomiTeams(supabase: SupabaseClient, event: EventRow): Promise<SpogomiTeamCompositionPreview> {
   if (event.state === "composition_locked") throw new Error("Validation: la composition est déjà verrouillée.");
@@ -687,14 +663,29 @@ export async function confirmSpogomiTeams(params: {
   expectedRevision: number;
   proposalFingerprint: string;
   actorClerkId: string;
+  formation?: SpogomiTeamFormation;
 }) {
   const preview = await previewSpogomiTeams(params.supabase, params.event);
   if (preview.expectedRevision !== params.expectedRevision || preview.proposalFingerprint !== params.proposalFingerprint) {
     throw conflict("la composition a changé depuis l'aperçu ; rechargez la proposition avant confirmation.");
   }
+  const formation = params.formation
+    ? validateProposedTeamFormation({
+      formation: params.formation,
+      participantIds: [
+        ...preview.formation.teams.flatMap((team) => team.participantIds),
+        ...preview.formation.unassignedParticipantIds,
+      ],
+      mode: params.event.mode,
+      casualTeamBounds: {
+        minMembers: params.event.team_size_config?.casual?.minMembers ?? null,
+        maxMembers: params.event.team_size_config?.casual?.maxMembers ?? null,
+      },
+    })
+    : preview.formation;
   const assignments = [
-    ...preview.formation.teams.flatMap((team) => team.participantIds.map((participantId) => ({ participantId, teamNumber: team.teamNumber }))),
-    ...preview.formation.unassignedParticipantIds.map((participantId) => ({ participantId, teamNumber: null })),
+    ...formation.teams.flatMap((team) => team.participantIds.map((participantId) => ({ participantId, teamNumber: team.teamNumber }))),
+    ...formation.unassignedParticipantIds.map((participantId) => ({ participantId, teamNumber: null })),
   ];
   const result = await params.supabase.rpc("spogomi_confirm_team_composition", {
     p_event_id: params.event.id,
@@ -703,13 +694,13 @@ export async function confirmSpogomiTeams(params: {
     p_actor_clerk_id: params.actorClerkId,
   });
   if (result.error) throw result.error;
-  return { ...preview, confirmed: true, confirmation: result.data };
+  return { ...preview, formation, assignedParticipantCount: formation.teams.reduce((total, team) => total + team.participantIds.length, 0), explanation: formation.explanation, confirmed: true, confirmation: result.data };
 }
 
 export async function autoComposeTeams(
   supabase: SupabaseClient,
   event: EventRow,
-  confirmation?: { expectedRevision: number; proposalFingerprint: string; actorClerkId: string },
+  confirmation?: { expectedRevision: number; proposalFingerprint: string; actorClerkId: string; formation?: SpogomiTeamFormation },
 ) {
   if (!confirmation) return previewSpogomiTeams(supabase, event);
   return confirmSpogomiTeams({ supabase, event, ...confirmation });

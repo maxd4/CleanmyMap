@@ -34,7 +34,7 @@ describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
 
   it("keeps the ticket source scope and advanced order reference in the import contract", () => {
     expect(service).toContain("order_alternative_reference");
-    expect(service).toContain("event_id,source_system,external_reference");
+    expect(service).toContain("reconcileCachanTicketRows");
     expect(service).toContain('.eq("source_system", preview.sourceSystem)');
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as XLSX from "xlsx";
 import { readFileSync } from "node:fs";
-import { buildDeterministicTeamFormation, previewRosterFile } from "./preparation";
+import { buildDeterministicTeamFormation, previewRosterFile, validateProposedTeamFormation } from "./preparation";
 
 describe("SPOGOMI preparation", () => {
   it("forms deterministic world cup teams of three and leaves an incomplete tail unassigned", () => {
@@ -70,6 +70,35 @@ describe("SPOGOMI preparation", () => {
     expect(casual.teams.filter((team) => team.participantIds.length === 3)).toHaveLength(11);
     expect(casual.teams.filter((team) => team.participantIds.length === 4)).toHaveLength(1);
     expect(casual.unassignedParticipantIds).toEqual([]);
+  });
+
+  it("validates an edited preview without writing and preserves the displayed team numbers", () => {
+    const formation = buildDeterministicTeamFormation({
+      mode: "world_cup",
+      casualTeamSize: null,
+      participants: [
+        { id: "a", sourceOrder: 1, groupPreference: null },
+        { id: "b", sourceOrder: 2, groupPreference: null },
+        { id: "c", sourceOrder: 3, groupPreference: null },
+        { id: "d", sourceOrder: 4, groupPreference: null },
+        { id: "e", sourceOrder: 5, groupPreference: null },
+        { id: "f", sourceOrder: 6, groupPreference: null },
+      ],
+    });
+    const edited = validateProposedTeamFormation({
+      formation: { ...formation, teams: formation.teams.map((team) => team.teamNumber === 1 ? { ...team, participantIds: ["a", "b", "d"] } : team.teamNumber === 2 ? { ...team, participantIds: ["c", "e", "f"] } : team) },
+      participantIds: ["a", "b", "c", "d", "e", "f"],
+      mode: "world_cup",
+      casualTeamBounds: { minMembers: null, maxMembers: null },
+    });
+    expect(edited.teams.map((team) => team.teamNumber)).toEqual([1, 2]);
+    expect(edited.teams.map((team) => team.participantIds)).toEqual([["a", "b", "d"], ["c", "e", "f"]]);
+    expect(() => validateProposedTeamFormation({
+      formation: { ...edited, teams: [{ ...edited.teams[0], participantIds: ["a", "b"] }, edited.teams[1]] },
+      participantIds: ["a", "b", "c", "d", "e", "f"],
+      mode: "world_cup",
+      casualTeamBounds: { minMembers: null, maxMembers: null },
+    })).toThrow(/non conforme/i);
   });
 
   it("rejects a confirmation mapping that references an unknown or reused column", async () => {
