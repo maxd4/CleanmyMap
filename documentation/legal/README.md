@@ -37,6 +37,10 @@ contributions, de leur affectation et de leur conservation n'est pas déduite
 du seul code. CleanMyMap ne présente pas ces versements comme du mécénat
 fiscal, n'annonce aucune réduction fiscale et ne délivre pas de reçu fiscal.
 
+## Projet de structuration associative / ESS
+
+- [Plan de transition vers une association loi 1901 relevant de l'ESS](association-ess-transition-plan.md) : **PLAN**, démarches, pièces légales, gouvernance, conventions, RGPD et impacts futurs. Aucune création ou migration n'est réputée effectuée.
+
 ## Documents spécialisés
 
 | Document | Rôle | Page publique |
