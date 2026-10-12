@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import * as XLSX from "xlsx";
+import { zipSync } from "fflate";
 import { readFileSync } from "node:fs";
+import { assertArchiveSafe } from "./preparation-import";
 import { buildDeterministicTeamFormation, previewRosterFile, validateProposedTeamFormation } from "./preparation";
 
 describe("SPOGOMI preparation", () => {
@@ -122,6 +124,38 @@ describe("SPOGOMI preparation", () => {
     expect(preview.errors.filter((error) => error.code === "ticket_reference_collision")).toHaveLength(2);
   });
 
+  it("blocks absent, pending and unknown commercial values without activating a place", async () => {
+    const file = new File([
+      "N. Billet;Statut du billet;Supprimé\n" +
+      "TICKET-PAID;Payé;0\n" +
+      "TICKET-REFUNDED;Remboursé;0\n" +
+      "TICKET-PENDING;En attente;0\n" +
+      "TICKET-UNKNOWN;Valeur future;0\n" +
+      "TICKET-MISSING;;0\n",
+    ], "strict-statuses.csv", { type: "text/csv" });
+    const preview = await previewRosterFile(file);
+    expect(preview.cancelledRowNumbers).toEqual([3]);
+    expect(preview.errors.filter((error) => error.code === "ticket_status_pending")).toHaveLength(1);
+    expect(preview.errors.filter((error) => error.code === "ticket_status_unknown")).toHaveLength(1);
+    expect(preview.errors.filter((error) => error.code === "ticket_status_missing")).toHaveLength(1);
+    expect(preview.rows.filter((row) => !preview.errors.some((error) => error.rowNumber === row.rowNumber)).map((row) => row.externalReference)).toEqual(["TICKET-PAID", "TICKET-REFUNDED"]);
+  });
+
+  it("does not coerce blank or unknown Supprimé values to false", async () => {
+    const file = new File([
+      "N. Billet;Statut du billet;Supprimé\n" +
+      "TICKET-BLANK;Payé;\n" +
+      "TICKET-UNKNOWN;Payé;peut-être\n" +
+      "TICKET-NO;Payé;Non\n",
+    ], "strict-deletion.csv", { type: "text/csv" });
+    const preview = await previewRosterFile(file);
+    expect(preview.errors.filter((error) => error.code === "ticket_deletion_missing")).toHaveLength(1);
+    expect(preview.errors.filter((error) => error.code === "ticket_deletion_unknown")).toHaveLength(1);
+    expect(preview.rows.find((row) => row.externalReference === "TICKET-BLANK")?.ticketDeleted).toBeNull();
+    expect(preview.rows.find((row) => row.externalReference === "TICKET-UNKNOWN")?.ticketDeleted).toBeNull();
+    expect(preview.rows.find((row) => row.externalReference === "TICKET-NO")).toMatchObject({ ticketDeleted: false, ticketDeletedRaw: "Non" });
+  });
+
   it("maps the Weezevent Cachan ticket headers without using repeated buyer names", async () => {
     const file = new File([
       'Typologie;"Nom participant";"Prénom participant";"N. de commande";"N. de commande avancé";"N. Billet";"Nom Acheteur";"Statut du billet";Supprimé\n' +
@@ -146,6 +180,18 @@ describe("SPOGOMI preparation", () => {
   it("rejects a MIME/extension mismatch before parsing", async () => {
     const file = new File(["Nom\nAda"], "roster.csv", { type: "application/pdf" });
     await expect(previewRosterFile(file)).rejects.toThrow(/MIME/i);
+  });
+
+  it("accepts an explicit mapping for a totally unrecognized but present header", async () => {
+    const file = new File(["Billet totalement libre;État commercial;Suppression\nT-1;Payé;0\n"], "manual-mapping.csv", { type: "text/csv" });
+    const preview = await previewRosterFile(file, {
+      ticketReference: "Billet totalement libre",
+      ticketStatus: "État commercial",
+      ticketDeleted: "Suppression",
+    });
+    expect(preview.sourceSystem).toBe("cachan_ticketing");
+    expect(preview.rows[0]?.externalReference).toBe("T-1");
+    expect(preview.errors).toEqual([]);
   });
 
   it("reads the first worksheet of a bounded XLSX file", async () => {
@@ -211,5 +257,38 @@ describe("SPOGOMI preparation", () => {
     XLSX.utils.book_append_sheet(formulaWorkbook, formulaSheet, "Roster");
     const formulaBytes = XLSX.write(formulaWorkbook, { bookType: "xlsx", type: "array" });
     await expect(previewRosterFile(new File([formulaBytes], "formula.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }))).rejects.toThrow(/formules|actif/i);
+  });
+
+  it("re-detects a changed sheet and preserves only compatible manual mappings", async () => {
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["Préambule"], ["Billet inconnu", "Statut billet"], ["A-1", "Payé"]]), "Première");
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["Autre préambule"], ["N. Billet", "État commercial"], ["B-1", "Payé"]]), "Seconde");
+    const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const file = new File([bytes], "sheets.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const first = await previewRosterFile(file, { sheetName: "Première", mapping: { ticketReference: "Billet inconnu", ticketStatus: "Statut billet" }, headerRow: 2 });
+    const second = await previewRosterFile(file, { sheetName: "Seconde", mapping: first.mapping, allowIncompatibleMapping: true });
+    expect(second.sheetName).toBe("Seconde");
+    expect(second.headerRow).toBe(2);
+    expect(second.rows[0]?.externalReference).toBe("B-1");
+    expect(second.mapping).toEqual({ ticketReference: "N. Billet" });
+    expect(second.errors.some((error) => error.code === "header_not_found")).toBe(false);
+  });
+
+  it("rejects formula-like text in delimited input", async () => {
+    const preview = await previewRosterFile(new File(["Nom;Groupe\n=HYPERLINK(\"https://example.invalid\");A\n"], "formula.csv", { type: "text/csv" }));
+    expect(preview.errors.some((error) => error.code === "formula_or_active_content")).toBe(true);
+    expect(preview.rows).toHaveLength(0);
+  });
+
+  it("checks ZIP expansion metadata before inflation", () => {
+    const bytes = zipSync({ "xl/workbook.xml": new TextEncoder().encode("<workbook />") });
+    const centralSignature = [0x50, 0x4b, 0x01, 0x02];
+    const offset = bytes.findIndex((_, index) => centralSignature.every((part, partIndex) => bytes[index + partIndex] === part));
+    expect(offset).toBeGreaterThanOrEqual(0);
+    bytes[offset + 24] = 0x01;
+    bytes[offset + 25] = 0x00;
+    bytes[offset + 26] = 0x00;
+    bytes[offset + 27] = 0x02;
+    expect(() => assertArchiveSafe(bytes)).toThrow(/volumineuse/);
   });
 });

@@ -473,19 +473,30 @@ La feuille et l'en-tête ne sont jamais choisis silencieusement lorsque plusieur
 candidats sont plausibles.
 
 La correspondance repose sur un registre canonique : normalisation exacte,
-synonyme à haute confiance, puis suggestion fuzzy à confirmer. Une ambiguïté
-sur billet, statut ou suppression est visible dans l'aperçu ; l'organisateur
-peut corriger la correspondance et relancer. Les identifiants numériques qui
-risquent un arrondi ou une notation scientifique sont refusés comme identifiants
-de billet. Formules, macros, liens actifs, archives corrompues et archives trop
-volumineuses sont refusés ; les limites de taille et de décompression restent
-server-only.
+synonyme à haute confiance, puis suggestion fuzzy à confirmer. Tous les champs
+connus, y compris les champs manquants, sont corrigeables depuis l'aperçu ; un
+changement de feuille réévalue l'en-tête et ne conserve que les correspondances
+encore présentes. Une ambiguïté sur billet, statut ou suppression est visible
+dans l'aperçu. Le statut commercial est classifié strictement : `Payé` et les
+valeurs du contrat reconnues sont admissibles, `Annulé`, `Remboursé` ou
+`Supprimé` sont non admissibles, `En attente`, une absence ou une valeur
+inconnue bloquent la ligne. Une valeur `Supprimé` inconnue ou absente lorsqu'une
+colonne est fournie ne devient jamais implicitement `false`. Les identifiants
+numériques qui risquent un arrondi ou une notation scientifique sont refusés
+comme identifiants de billet. Formules textuelles, formules de classeur,
+macros, liens actifs, archives corrompues et archives trop volumineuses sont
+refusés ; les métadonnées ZIP et le nombre de lignes sont bornés avant les
+allocations coûteuses.
 
 La confirmation réutilise les identifiants internes et la clé externe de place,
-autorise une sélection explicite des seules lignes admissibles et ne transforme
+autorise une sélection paginée de toutes les lignes admissibles et ne transforme
 pas l'absence d'une place dans un export ultérieur en annulation. Le résumé
-distingue créations, lignes inchangées, changements, conflits et exclusions.
-Les quatre fixtures synthétiques versionnées restent l'oracle ; aucun export
+distingue créations, lignes inchangées, changements, conflits et exclusions
+pour les lignes effectivement sélectionnées. Le hash identifie le document,
+non l'ensemble des lignes déjà confirmé : une confirmation partielle conserve
+une preuve `incomplete` et une confirmation ultérieure peut ajouter les lignes
+restantes sans doublon ni destruction des décisions existantes. Les quatre
+fixtures synthétiques versionnées restent l'oracle ; aucun export
 Weezevent réel, contact, code-barres ou nom réel n'est versionné.
 
 ## 16. Lot 3 livré — CURRENT — surfaces publiques et gestion contextuelle

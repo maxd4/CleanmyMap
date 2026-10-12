@@ -2,16 +2,15 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SpogomiRosterRow } from "./types";
+import { isCancelledCachanTicket as isCancelledCachanTicketStatus } from "./ticket-status";
 
 type TicketImport = {
   id: string;
   created_at?: string | null;
 };
 
-const CANCELLATION_PATTERN = /annul|cancel|supprim|deleted|refus|refund/i;
-
-export function isCancelledCachanTicket(status: string | null, deleted: boolean): boolean {
-  return deleted || CANCELLATION_PATTERN.test(status ?? "");
+export function isCancelledCachanTicket(status: string | null, deleted: boolean | null): boolean {
+  return isCancelledCachanTicketStatus(status, deleted);
 }
 
 export function isCachanTicketCompositionEligible(input: {

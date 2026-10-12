@@ -9,6 +9,7 @@ const lot11aMigration = readFileSync(new URL("../../../supabase/migrations/20261
 const lot11CorrectiveMigration = readFileSync(new URL("../../../supabase/migrations/20261013000002_spogomi_import_history_and_safe_reconciliation.sql", import.meta.url), "utf8");
 const compositionLockMigration = readFileSync(new URL("../../../supabase/migrations/20261013000003_spogomi_composition_lock_integrity.sql", import.meta.url), "utf8");
 const ticketReconciliationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000004_spogomi_ticket_reconciliation_atomicity.sql", import.meta.url), "utf8");
+const strictTicketStatusMigration = readFileSync(new URL("../../../supabase/migrations/20261013000005_spogomi_strict_ticket_status.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -93,5 +94,14 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(ticketReconciliationMigration).toContain("grant execute on function public.spogomi_reconcile_cachan_ticket_rows");
     expect(ticketReconciliationMigration).toContain("A cancelled Cachan ticket requires explicit organizer arbitration");
     expect(ticketReconciliationMigration).toContain("SPOGOMI event locking requires an eligible, atomically prepared composition");
+  });
+
+  it("keeps SQL cancellation eligibility aligned with the strict import registry", () => {
+    expect(strictTicketStatusMigration).toContain("spogomi_ticket_is_cancelled");
+    expect(strictTicketStatusMigration).toContain("rembours");
+    expect(strictTicketStatusMigration).toContain("spogomi_reconcile_cachan_ticket_rows_legacy");
+    expect(strictTicketStatusMigration).toContain("ticket_cancellation_conflict");
+    expect(strictTicketStatusMigration).toContain("grant execute on function public.spogomi_reconcile_cachan_ticket_rows");
+    expect(strictTicketStatusMigration).toContain("create temporary table spogomi_ticket_status_prior");
   });
 });

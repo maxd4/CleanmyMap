@@ -11,11 +11,13 @@ import type {
   SpogomiRosterRowError,
   SpogomiRosterSheetCandidate,
 } from "./types";
+import { classifyCachanTicketDeletion, classifyCachanTicketStatus } from "./ticket-status";
 
 export type SpogomiRosterPreviewOptions = {
   mapping?: SpogomiRosterColumnMapping;
   sheetName?: string;
   headerRow?: number;
+  allowIncompatibleMapping?: boolean;
 };
 
 export const MAX_SPOGOMI_FILE_BYTES = 5 * 1024 * 1024;
@@ -197,13 +199,16 @@ function inferMapping(headers: string[]): { mapping: SpogomiRosterColumnMapping;
   return { mapping, diagnostics, ambiguousFields };
 }
 
-function resolveExplicitMapping(headers: string[], mapping: SpogomiRosterColumnMapping): SpogomiRosterColumnMapping {
+function resolveExplicitMapping(headers: string[], mapping: SpogomiRosterColumnMapping, allowIncompatibleMapping = false): SpogomiRosterColumnMapping {
   const resolved: SpogomiRosterColumnMapping = {};
   const seenHeaders = new Set<string>();
   for (const key of MAPPING_KEYS) {
     const header = mapping[key];
     if (header === undefined) continue;
-    if (!headers.includes(header)) throw new Error("Validation: la correspondance référence une colonne absente.");
+    if (!headers.includes(header)) {
+      if (allowIncompatibleMapping) continue;
+      throw new Error("Validation: la correspondance référence une colonne absente.");
+    }
     if (seenHeaders.has(header)) throw new Error("Validation: une même colonne ne peut pas être utilisée deux fois.");
     seenHeaders.add(header);
     resolved[key] = header;
@@ -220,7 +225,51 @@ async function deterministicImportKey(contentHash: string, mapping: SpogomiRoste
   return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-5${digest.slice(13, 16)}-8${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
 }
 
-function assertArchiveSafe(bytes: Uint8Array): void {
+function readLittleEndian16(bytes: Uint8Array, offset: number): number {
+  return bytes[offset] | (bytes[offset + 1] << 8);
+}
+
+function readLittleEndian32(bytes: Uint8Array, offset: number): number {
+  return (bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)) >>> 0;
+}
+
+function assertArchiveMetadataSafe(bytes: Uint8Array): void {
+  const minimumEndOfCentralDirectoryLength = 22;
+  const maximumCommentLength = 0xffff;
+  const searchStart = Math.max(0, bytes.length - minimumEndOfCentralDirectoryLength - maximumCommentLength);
+  let endOfCentralDirectory = -1;
+  for (let offset = bytes.length - minimumEndOfCentralDirectoryLength; offset >= searchStart; offset -= 1) {
+    if (readLittleEndian32(bytes, offset) === 0x06054b50) {
+      endOfCentralDirectory = offset;
+      break;
+    }
+  }
+  if (endOfCentralDirectory < 0) throw new Error("Classeur invalide ou archive corrompue.");
+  const entryCount = readLittleEndian16(bytes, endOfCentralDirectory + 10);
+  const centralDirectorySize = readLittleEndian32(bytes, endOfCentralDirectory + 12);
+  const centralDirectoryOffset = readLittleEndian32(bytes, endOfCentralDirectory + 16);
+  if (entryCount > 100 || centralDirectorySize > bytes.length || centralDirectoryOffset > bytes.length || centralDirectoryOffset + centralDirectorySize > bytes.length) {
+    throw new Error("Classeur refusé : archive trop volumineuse ou structure ZIP non supportée.");
+  }
+  let cursor = centralDirectoryOffset;
+  let expandedBytes = 0;
+  for (let index = 0; index < entryCount; index += 1) {
+    if (cursor + 46 > bytes.length || readLittleEndian32(bytes, cursor) !== 0x02014b50) throw new Error("Classeur invalide ou archive corrompue.");
+    const compressedSize = readLittleEndian32(bytes, cursor + 20);
+    const uncompressedSize = readLittleEndian32(bytes, cursor + 24);
+    const nameLength = readLittleEndian16(bytes, cursor + 28);
+    const extraLength = readLittleEndian16(bytes, cursor + 30);
+    const commentLength = readLittleEndian16(bytes, cursor + 32);
+    if (uncompressedSize > MAX_EXPANDED_ARCHIVE_BYTES || compressedSize > bytes.length) throw new Error("Classeur refusé : archive trop volumineuse après décompression.");
+    expandedBytes += uncompressedSize;
+    if (expandedBytes > MAX_EXPANDED_ARCHIVE_BYTES) throw new Error("Classeur refusé : archive trop volumineuse après décompression.");
+    cursor += 46 + nameLength + extraLength + commentLength;
+  }
+  if (cursor > centralDirectoryOffset + centralDirectorySize) throw new Error("Classeur invalide ou archive corrompue.");
+}
+
+export function assertArchiveSafe(bytes: Uint8Array): void {
+  assertArchiveMetadataSafe(bytes);
   let files: Record<string, Uint8Array>;
   try {
     files = unzipSync(bytes);
@@ -243,7 +292,7 @@ function assertBinaryWorkbookSafe(bytes: Uint8Array): void {
 function workbookRows(bytes: Uint8Array, format: SpogomiImportFormat): { sheets: Array<{ name: string; rows: string[][]; formulaRows: number[] }>; encoding: "binary" } {
   if (format !== "xls") assertArchiveSafe(bytes);
   assertBinaryWorkbookSafe(bytes);
-  const workbook = XLSX.read(bytes, { type: "array", dense: false, cellText: true, cellNF: true, cellDates: false, bookVBA: false, WTF: true });
+  const workbook = XLSX.read(bytes, { type: "array", dense: false, cellText: true, cellNF: true, cellDates: false, bookVBA: false, sheetRows: MAX_ROWS + MAX_HEADER_SCAN_ROWS + 2, WTF: true });
   const sheets = workbook.SheetNames.map((name) => {
     const sheet = workbook.Sheets[name];
     const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: false, defval: "", blankrows: true })
@@ -305,6 +354,11 @@ function buildRows(rawRows: string[][], mapping: SpogomiRosterColumnMapping, mal
       continue;
     }
     if (!values.some((value) => normalizeValue(value))) continue;
+    if (values.some((value) => /^(?:=|\+|@|-?[A-Za-z_][A-Za-z0-9_.]*\()/i.test(normalizeValue(value)))) {
+      errors.push({ rowNumber, code: "formula_or_active_content", message: "Ligne exclue : contenu textuel interprétable comme une formule ou un lien actif." });
+      ignoredRowNumbers.push(rowNumber);
+      continue;
+    }
     const rawName = normalizeValue(indexes.name === undefined ? "" : values[indexes.name]);
     const name = rawName || null;
     const group = normalizeValue(indexes.group === undefined ? "" : values[indexes.group]);
@@ -314,8 +368,16 @@ function buildRows(rawRows: string[][], mapping: SpogomiRosterColumnMapping, mal
     const orderAlternativeReference = normalizeValue(indexes.orderAlternativeReference === undefined ? "" : values[indexes.orderAlternativeReference]);
     const ticketStatus = normalizeValue(indexes.ticketStatus === undefined ? "" : values[indexes.ticketStatus]);
     const rawDeletedValue = normalizeValue(indexes.ticketDeleted === undefined ? "" : values[indexes.ticketDeleted]);
-    const rawDeleted = normalizeHeader(rawDeletedValue);
-    const ticketDeleted = ["1", "oui", "yes", "true", "vrai", "supprime", "deleted", "annule", "cancelled", "canceled"].includes(rawDeleted);
+    const deletionClassification = ticketImport && indexes.ticketDeleted !== undefined
+      ? classifyCachanTicketDeletion(rawDeletedValue)
+      : "absent";
+    const ticketDeleted = deletionClassification === "deleted"
+      ? true
+      : deletionClassification === "not_deleted"
+        ? false
+        : indexes.ticketDeleted === undefined
+          ? false
+          : null;
     if (ticketImport && externalReference.startsWith("__AMBIGUOUS_NUMERIC_ID__")) {
       errors.push({ rowNumber, code: "ambiguous_identifier", message: "Identifiant numérique ambigu : conservez le billet comme texte pour éviter un arrondi ou une notation scientifique." });
       ignoredRowNumbers.push(rowNumber);
@@ -331,7 +393,14 @@ function buildRows(rawRows: string[][], mapping: SpogomiRosterColumnMapping, mal
       ignoredRowNumbers.push(rowNumber);
       continue;
     }
-    if (ticketImport && !ticketStatus) errors.push({ rowNumber, code: "ticket_status_unknown", message: "Statut du billet absent : la ligne doit être revue avant confirmation." });
+    if (ticketImport) {
+      const statusClassification = classifyCachanTicketStatus(ticketStatus);
+      if (statusClassification === "absent") errors.push({ rowNumber, code: "ticket_status_missing", message: "Statut du billet absent : la ligne doit être revue avant confirmation." });
+      else if (statusClassification === "pending") errors.push({ rowNumber, code: "ticket_status_pending", message: `Statut du billet en attente (${ticketStatus}) : la ligne ne peut pas être confirmée comme place admissible.` });
+      else if (statusClassification === "unknown") errors.push({ rowNumber, code: "ticket_status_unknown", message: `Statut du billet inconnu (${ticketStatus}) : la ligne doit être revue avant confirmation.` });
+      if (deletionClassification === "absent" && indexes.ticketDeleted !== undefined) errors.push({ rowNumber, code: "ticket_deletion_missing", message: "La valeur Supprimé est absente : la ligne doit être revue avant confirmation." });
+      else if (deletionClassification === "unknown") errors.push({ rowNumber, code: "ticket_deletion_unknown", message: `La valeur Supprimé est ambiguë (${rawDeletedValue}) : la ligne doit être revue avant confirmation.` });
+    }
     if (name && name.length > MAX_NAME_LENGTH) {
       errors.push({ rowNumber, code: "name_too_long", message: "Le nom du participant est trop long." });
       continue;
@@ -350,6 +419,7 @@ function buildRows(rawRows: string[][], mapping: SpogomiRosterColumnMapping, mal
       orderAlternativeReference: orderAlternativeReference || null,
       ticketStatus: ticketStatus || null,
       ticketDeleted,
+      ticketDeletedRaw: indexes.ticketDeleted === undefined ? null : rawDeletedValue || null,
       sourceSystem: ticketImport ? "cachan_ticketing" : "manual_roster",
       sourceFingerprint: "",
     };
@@ -380,7 +450,7 @@ export async function parseRosterFile(file: File, options?: SpogomiRosterPreview
   assertMime(file, format);
   const bytes = new Uint8Array(await file.arrayBuffer());
   const contentHash = await sha256Hex(bytes);
-  const normalizedOptions = options && ("mapping" in options || "sheetName" in options || "headerRow" in options) ? options as SpogomiRosterPreviewOptions : { mapping: options as SpogomiRosterColumnMapping | undefined };
+  const normalizedOptions = options && ("mapping" in options || "sheetName" in options || "headerRow" in options || "allowIncompatibleMapping" in options) ? options as SpogomiRosterPreviewOptions : { mapping: options as SpogomiRosterColumnMapping | undefined };
   let sheets: Array<{ name: string; rows: string[][]; formulaRows: number[] }>;
   let encoding: "utf-8" | "windows-1252" | "binary";
   let malformedRowNumbers: number[] = [];
@@ -413,10 +483,14 @@ export async function parseRosterFile(file: File, options?: SpogomiRosterPreview
   if (header.headers.length > MAX_COLUMNS) throw new Error("Le fichier contient trop de colonnes.");
   const headers = header.headers.map(normalizeValue);
   const inferred = inferMapping(headers);
-  const resolvedMapping = normalizedOptions.mapping ? resolveExplicitMapping(headers, normalizedOptions.mapping) : inferred.mapping;
+  const resolvedMapping = normalizedOptions.mapping
+    ? normalizedOptions.allowIncompatibleMapping
+      ? { ...inferred.mapping, ...resolveExplicitMapping(headers, normalizedOptions.mapping, true) }
+      : resolveExplicitMapping(headers, normalizedOptions.mapping)
+    : inferred.mapping;
   const mappingDiagnostics = inferred.diagnostics.map((diagnostic) => {
     const explicit = normalizedOptions.mapping?.[diagnostic.field];
-    return explicit ? { ...diagnostic, selectedHeader: explicit, confidence: "exact" as const, candidates: [explicit], status: "recognized" as const } : diagnostic;
+    return explicit && headers.includes(explicit) ? { ...diagnostic, selectedHeader: explicit, confidence: "exact" as const, candidates: [explicit], status: "recognized" as const } : diagnostic;
   });
   const ticketImport = Boolean(resolvedMapping.ticketReference);
   const missingFields = mappingDiagnostics.filter((diagnostic) => diagnostic.required && ticketImport && diagnostic.status === "optional_absent").map(({ field }) => field);
@@ -435,6 +509,6 @@ export async function parseRosterFile(file: File, options?: SpogomiRosterPreview
   for (const [, rowNumbers] of duplicateTicketRows) for (const rowNumber of rowNumbers) errors.push({ rowNumber, code: "ticket_reference_collision", message: "La même référence de billet apparaît plusieurs fois dans le fichier ; aucune place n’est fusionnée." });
   const sourceSystem = resolvedMapping.ticketReference ? "cachan_ticketing" : "manual_roster";
   const requiresExplicitSelection = Boolean(ambiguousFields.length || (candidates.filter((candidate) => candidate.recognizedFieldCount > 0).length > 1 && !normalizedOptions.sheetName)) || Boolean(mappingErrors.length);
-  const content = { format, fileName, contentHash, headers, unknownHeaders: headers.filter((header) => !new Set(Object.values(resolvedMapping).filter(Boolean)).has(header)), mapping: resolvedMapping, rows: built.rows, errors, probableDuplicateRowNumbers: [...byFingerprint.values()].filter((group) => group.length > 1), sourceSystem, cancelledRowNumbers: built.rows.filter((row) => row.ticketDeleted || /annul|cancel|supprim|deleted|refus|refund/i.test(row.ticketStatus ?? "")).map((row) => row.rowNumber), encoding, sheetName: selectedSheet.name, headerRow: header.rowIndex + 1, sheetCandidates: candidates, columnDiagnostics: mappingDiagnostics, missingFields, ambiguousFields, rowsRead: selectedSheet.rows.length - header.rowIndex - 1, ignoredRowNumbers: built.ignoredRowNumbers, requiresExplicitSelection, importKey: "" } satisfies Omit<SpogomiRosterPreview, "importKey"> & { importKey: string };
+  const content = { format, fileName, contentHash, headers, unknownHeaders: headers.filter((header) => !new Set(Object.values(resolvedMapping).filter(Boolean)).has(header)), mapping: resolvedMapping, rows: built.rows, errors, probableDuplicateRowNumbers: [...byFingerprint.values()].filter((group) => group.length > 1), sourceSystem, cancelledRowNumbers: built.rows.filter((row) => row.ticketDeleted || classifyCachanTicketStatus(row.ticketStatus) === "cancelled").map((row) => row.rowNumber), encoding, sheetName: selectedSheet.name, headerRow: header.rowIndex + 1, sheetCandidates: candidates, columnDiagnostics: mappingDiagnostics, missingFields, ambiguousFields, rowsRead: selectedSheet.rows.length - header.rowIndex - 1, ignoredRowNumbers: built.ignoredRowNumbers, requiresExplicitSelection, importKey: "" } satisfies Omit<SpogomiRosterPreview, "importKey"> & { importKey: string };
   return { ...content, importKey: await deterministicImportKey(contentHash, resolvedMapping) };
 }

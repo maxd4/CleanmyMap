@@ -11,6 +11,7 @@ export async function verifyImportedRosterCompleteness(
   rows: Array<{ rowNumber: number; sourceFingerprint: string }>,
   expectedCount: number,
   useHistoricalRows = false,
+  allowAdditionalRows = false,
 ) {
   if (rows.length !== expectedCount) return false;
   const expected = new Map(rows.map((row) => [row.rowNumber, row.sourceFingerprint]));
@@ -48,12 +49,16 @@ export async function verifyImportedRosterCompleteness(
     if (rowsOnPage.length < IMPORT_VERIFICATION_PAGE_SIZE) break;
   }
 
-  if (persisted.length !== expectedCount) return false;
+  if ((!allowAdditionalRows && persisted.length !== expectedCount) || (allowAdditionalRows && persisted.length < expectedCount)) return false;
   const seen = new Set<number>();
   for (const row of persisted) {
     if (row.source_row_number === null || seen.has(row.source_row_number)) return false;
+    if (allowAdditionalRows && !expected.has(row.source_row_number)) {
+      seen.add(row.source_row_number);
+      continue;
+    }
     if (expected.get(row.source_row_number) !== row.source_fingerprint) return false;
     seen.add(row.source_row_number);
   }
-  return seen.size === expected.size;
+  return [...expected.keys()].every((rowNumber) => seen.has(rowNumber));
 }

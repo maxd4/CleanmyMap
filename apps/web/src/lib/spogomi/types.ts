@@ -207,7 +207,8 @@ export type SpogomiRosterRow = {
   orderReference: string | null;
   orderAlternativeReference: string | null;
   ticketStatus: string | null;
-  ticketDeleted: boolean;
+  ticketDeleted: boolean | null;
+  ticketDeletedRaw?: string | null;
   sourceSystem: "manual_roster" | "cachan_ticketing";
   sourceFingerprint: string;
 };
@@ -227,7 +228,10 @@ export type SpogomiRosterRowError = {
     | "row_excluded"
     | "ambiguous_mapping"
     | "header_not_found"
+    | "ticket_status_missing"
+    | "ticket_status_pending"
     | "ticket_status_unknown"
+    | "ticket_deletion_missing"
     | "ticket_deletion_unknown";
   message: string;
 };
@@ -257,6 +261,7 @@ export type SpogomiRosterPreview = {
   ignoredRowNumbers: number[];
   requiresExplicitSelection: boolean;
   importSummary?: SpogomiRosterImportSummary;
+  rowEffects?: Record<string, "created" | "unchanged" | "changed" | "conflict" | "excluded">;
   importKey: string;
 };
 

@@ -47,7 +47,8 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
     }
     const sheetName = form.get("sheetName");
     const headerRow = form.get("headerRow");
-    const options = { mapping, ...(typeof sheetName === "string" && sheetName ? { sheetName } : {}), ...(typeof headerRow === "string" && headerRow ? { headerRow: Number(headerRow) } : {}) };
+    const allowIncompatibleMapping = form.get("allowIncompatibleMapping") === "true";
+    const options = { mapping, ...(typeof sheetName === "string" && sheetName ? { sheetName } : {}), ...(typeof headerRow === "string" && headerRow ? { headerRow: Number(headerRow) } : {}), ...(allowIncompatibleMapping ? { allowIncompatibleMapping: true } : {}) };
     const preview = await previewRosterImportChanges(supabase, event, await previewRosterFile(file, Object.keys(options).length ? options : undefined));
     return NextResponse.json(preview);
   } catch (error) {

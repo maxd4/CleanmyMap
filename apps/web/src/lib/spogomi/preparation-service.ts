@@ -11,6 +11,7 @@ import type { SpogomiEventMode, SpogomiRosterColumnMapping, SpogomiRosterPreview
 import type { SpogomiRosterPreviewOptions } from "./preparation-import";
 import { normalizeSpogomiEventSlug } from "./public-service";
 import { isCachanTicketCompositionEligible, isCancelledCachanTicket, reconcileCachanTicketRows } from "./ticket-reconciliation";
+import { isCancelledCachanTicketStatus } from "./ticket-status";
 import { teamCompositionFingerprint } from "./team-composition";
 import { verifyImportedRosterCompleteness } from "./import-completeness";
 export { verifyImportedRosterCompleteness } from "./import-completeness";
@@ -434,10 +435,11 @@ export async function previewRosterImportChanges(
 ): Promise<SpogomiRosterPreview> {
   if (preview.sourceSystem !== "cachan_ticketing") {
     const errorsByRow = new Set(preview.errors.map((error) => error.rowNumber));
-    return { ...preview, importSummary: { created: preview.rows.filter((row) => !errorsByRow.has(row.rowNumber)).length, unchanged: 0, changed: 0, conflicts: preview.errors.length, excluded: preview.ignoredRowNumbers.length } };
+    const rowEffects: NonNullable<SpogomiRosterPreview["rowEffects"]> = Object.fromEntries(preview.rows.map((row) => [String(row.rowNumber), errorsByRow.has(row.rowNumber) ? "excluded" : "created"]));
+    return { ...preview, rowEffects, importSummary: { created: preview.rows.filter((row) => !errorsByRow.has(row.rowNumber)).length, unchanged: 0, changed: 0, conflicts: preview.errors.length, excluded: preview.ignoredRowNumbers.length } };
   }
   const references = preview.rows.map((row) => row.externalReference).filter((reference): reference is string => Boolean(reference));
-  if (!references.length) return { ...preview, importSummary: { created: 0, unchanged: 0, changed: 0, conflicts: preview.errors.length, excluded: preview.ignoredRowNumbers.length } };
+  if (!references.length) return { ...preview, rowEffects: {}, importSummary: { created: 0, unchanged: 0, changed: 0, conflicts: preview.errors.length, excluded: preview.ignoredRowNumbers.length } };
   const existing = await supabase.from("spogomi_participants")
     .select("id, external_reference, source_system, order_reference, order_alternative_reference, ticket_status, ticket_deleted, display_name, identity_status, attendance_status, account_link_status, clerk_id, team_id, registration_status")
     .eq("event_id", event.id)
@@ -457,11 +459,20 @@ export async function previewRosterImportChanges(
   const protectedCancellationIds = new Set((protectedCancellations.data ?? []).map((row) => String(row.participant_id)));
   const changedRowNumbers: number[] = [];
   const conflictRowNumbers: number[] = [];
+  const errorsByRow = new Set(preview.errors.map((error) => error.rowNumber));
+  const rowEffects: Record<string, "created" | "unchanged" | "changed" | "conflict" | "excluded"> = {};
   let unchanged = 0;
   let created = 0;
   for (const row of preview.rows) {
     const current = row.externalReference ? byReference.get(row.externalReference) : undefined;
-    if (!current) created += 1;
+    if (errorsByRow.has(row.rowNumber)) {
+      rowEffects[String(row.rowNumber)] = "excluded";
+      continue;
+    }
+    if (!current) {
+      created += 1;
+      rowEffects[String(row.rowNumber)] = "created";
+    }
     else {
       const changed = current.order_reference !== row.orderReference ||
         current.order_alternative_reference !== row.orderAlternativeReference ||
@@ -469,7 +480,7 @@ export async function previewRosterImportChanges(
         Boolean(current.ticket_deleted) !== row.ticketDeleted ||
         (current.display_name ?? null) !== row.name;
       const cancellationChanged = Boolean(current.ticket_deleted) !== row.ticketDeleted ||
-        /annul|cancel|supprim|deleted|refus|refund/i.test(current.ticket_status ?? "") !== /annul|cancel|supprim|deleted|refus|refund/i.test(row.ticketStatus ?? "");
+        isCancelledCachanTicketStatus(current.ticket_status) !== isCancelledCachanTicketStatus(row.ticketStatus);
       const hasHumanDecision = current.attendance_status !== "unknown" ||
         current.account_link_status === "verified" ||
         Boolean(current.clerk_id) ||
@@ -481,26 +492,32 @@ export async function previewRosterImportChanges(
       if ((cancellationChanged && hasHumanDecision) || (
         protectedCancellationIds.has(String(current.id)) &&
         isCancelledCachanTicket(current.ticket_status, Boolean(current.ticket_deleted))
-      )) conflictRowNumbers.push(row.rowNumber);
+      )) {
+        conflictRowNumbers.push(row.rowNumber);
+        rowEffects[String(row.rowNumber)] = "conflict";
+      } else if (changed) rowEffects[String(row.rowNumber)] = "changed";
+      else rowEffects[String(row.rowNumber)] = "unchanged";
     }
   }
   const conflicts = preview.errors.filter((error) => error.code === "ticket_reference_collision" || error.code === "ambiguous_identifier" || error.code === "ambiguous_mapping").length + conflictRowNumbers.length;
-  return { ...preview, changedRowNumbers, conflictRowNumbers, importSummary: { created, unchanged, changed: changedRowNumbers.length, conflicts, excluded: preview.ignoredRowNumbers.length } };
+  return { ...preview, changedRowNumbers, conflictRowNumbers, rowEffects, importSummary: { created, unchanged, changed: changedRowNumbers.length, conflicts, excluded: preview.ignoredRowNumbers.length } };
 }
 
 export async function confirmRosterImport(params: { supabase: SupabaseClient; event: EventRow; userId: string; file: File; mapping?: SpogomiRosterColumnMapping; importOptions?: Pick<SpogomiRosterPreviewOptions, "sheetName" | "headerRow">; acceptedRowNumbers?: number[] }) {
   const { supabase, event, userId } = params;
   const preview = await previewRosterImportChanges(supabase, event, await previewRosterFile(params.file, params.importOptions ? { mapping: params.mapping, ...params.importOptions } : params.mapping));
   if (preview.requiresExplicitSelection) throw new Error("Validation: sélectionnez explicitement la feuille et les correspondances ambiguës avant confirmation.");
-  if (preview.sourceSystem === "cachan_ticketing" && preview.conflictRowNumbers?.length) {
-    throw conflict(`les lignes ${preview.conflictRowNumbers.join(", ")} nécessitent une résolution organisateur avant confirmation.`);
-  }
   const errorsByRow = new Set(preview.errors.map((error) => error.rowNumber));
-  const selectedRowNumbers = params.acceptedRowNumbers ?? (preview.errors.length ? [] : preview.rows.map((row) => row.rowNumber));
-  if (!selectedRowNumbers.length && preview.rows.length) throw new Error("Validation: sélectionnez explicitement les lignes admissibles avant confirmation.");
+  const eligibleRows = preview.rows.filter((row) => !errorsByRow.has(row.rowNumber));
+  const selectedRowNumbers = params.acceptedRowNumbers ?? eligibleRows.map((row) => row.rowNumber);
+  if (!selectedRowNumbers.length && eligibleRows.length) throw new Error("Validation: sélectionnez explicitement les lignes admissibles avant confirmation.");
   if (selectedRowNumbers.some((rowNumber) => errorsByRow.has(rowNumber) || !preview.rows.some((row) => row.rowNumber === rowNumber))) throw new Error("Validation: une ligne sélectionnée est invalide ou absente de l’aperçu.");
   const selectedRows = preview.rows.filter((row) => selectedRowNumbers.includes(row.rowNumber));
   if (!selectedRows.length && preview.rows.length) throw new Error("Validation: aucune ligne admissible sélectionnée.");
+  const selectedConflictRows = (preview.conflictRowNumbers ?? []).filter((rowNumber) => selectedRowNumbers.includes(rowNumber));
+  if (preview.sourceSystem === "cachan_ticketing" && selectedConflictRows.length) {
+    throw conflict(`les lignes ${selectedConflictRows.join(", ")} nécessitent une résolution organisateur avant confirmation.`);
+  }
   const existing = await supabase.from("spogomi_roster_imports").select("*").eq("event_id", event.id).eq("content_sha256", preview.contentHash).maybeSingle();
   if (existing.error) throw existing.error;
   let imported = existing.data as RosterImport | null;
@@ -515,7 +532,7 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
       file_name: preview.fileName,
       format: preview.format,
       column_mapping: { ...preview.mapping, __sheetName: preview.sheetName, __headerRow: String(preview.headerRow) },
-      source_row_count: selectedRows.length,
+      source_row_count: eligibleRows.length,
       imported_by_clerk_id: userId,
       status: "processing",
       processing_token: token,
@@ -535,14 +552,16 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
   }
   if (!imported) throw conflict("l'import n'a pas pu être réservé.");
   const reservedImport = imported;
+  const allowsPartialProof = reservedImport.source_proof_status === "incomplete";
   if (reservedImport.status === "confirmed") {
-    if (!(await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing"))) throw conflict("l'import confirmé est incomplet et doit être repris.");
-    return { importId: reservedImport.id, importedRows: reservedImport.source_row_count, alreadyImported: true };
+    const selectedAlreadyImported = await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing", allowsPartialProof);
+    if (selectedAlreadyImported) return { importId: reservedImport.id, importedRows: selectedRows.length, alreadyImported: true };
+    if (!allowsPartialProof) throw conflict("l'import confirmé est incomplet et doit être repris.");
   }
   const activeSince = reservedImport.processing_started_at ? Date.parse(reservedImport.processing_started_at) : 0;
   if (reservedImport.processing_token && reservedImport.processing_token !== token && activeSince > Date.now() - IMPORT_LEASE_MS) throw conflict("un import est déjà en cours pour ce fichier.");
   if (!ownsInitialReservation) {
-    const claimed = await supabase.from("spogomi_roster_imports").update({ status: "processing", processing_token: token, processing_started_at: new Date().toISOString(), source_row_count: selectedRows.length, column_mapping: { ...preview.mapping, __sheetName: preview.sheetName, __headerRow: String(preview.headerRow) }, file_name: preview.fileName, format: preview.format }).eq("id", reservedImport.id).or(`processing_token.is.null,processing_started_at.is.null,processing_started_at.lt.${new Date(Date.now() - IMPORT_LEASE_MS).toISOString()}`).select("id").maybeSingle();
+    const claimed = await supabase.from("spogomi_roster_imports").update({ status: "processing", processing_token: token, processing_started_at: new Date().toISOString(), source_row_count: eligibleRows.length, column_mapping: { ...preview.mapping, __sheetName: preview.sheetName, __headerRow: String(preview.headerRow) }, file_name: preview.fileName, format: preview.format }).eq("id", reservedImport.id).or(`processing_token.is.null,processing_started_at.is.null,processing_started_at.lt.${new Date(Date.now() - IMPORT_LEASE_MS).toISOString()}`).select("id").maybeSingle();
     if (claimed.error) throw claimed.error;
     if (!claimed.data) throw conflict("un import concurrent est déjà en cours pour ce fichier.");
   }
@@ -561,7 +580,7 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
     ticket_deleted: row.ticketDeleted,
     identity_status: row.name ? "identified" : "unknown",
     display_name: row.name,
-    registration_status: row.ticketDeleted || /annul|cancel|supprim|deleted|refus|refund/i.test(row.ticketStatus ?? "") ? "withdrawn" : "registered",
+    registration_status: isCancelledCachanTicket(row.ticketStatus, row.ticketDeleted) ? "withdrawn" : "registered",
     attendance_status: "unknown",
     account_link_status: "unlinked",
   }));
@@ -578,8 +597,9 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
       });
       if (inserted.error) throw inserted.error;
     }
-    if (!(await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing"))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
-    const confirmed = await supabase.from("spogomi_roster_imports").update({ status: "confirmed", source_proof_status: "complete", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token).select("id").maybeSingle();
+    if (!(await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing", allowsPartialProof))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
+    const completeProof = await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, eligibleRows, eligibleRows.length, preview.sourceSystem === "cachan_ticketing");
+    const confirmed = await supabase.from("spogomi_roster_imports").update({ status: "confirmed", source_proof_status: completeProof ? "complete" : "incomplete", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token).select("id").maybeSingle();
     if (confirmed.error) throw confirmed.error;
     if (!confirmed.data) throw conflict("la confirmation de l'import a été reprise par une autre opération.");
     return { importId: reservedImport.id, importedRows: participantRows.length, alreadyImported: false };

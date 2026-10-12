@@ -214,6 +214,10 @@ function importFile() {
   return new File(["Nom;Groupe\nAda Lovelace;A\nGrace Hopper;B"], "roster.csv", { type: "text/csv" });
 }
 
+function partialImportFile() {
+  return new File(["Nom;Groupe\nAda Lovelace;A\nGrace Hopper;B\nKatherine Johnson;C"], "roster.csv", { type: "text/csv" });
+}
+
 describe("SPOGOMI roster import completeness mock contract", () => {
   it("accepts a confirmed pre-proof import without claiming detailed historical proof", async () => {
     const expected = rows(2);
@@ -291,6 +295,24 @@ describe("SPOGOMI roster import completeness mock contract", () => {
     expect(state.imports).toHaveLength(1);
     expect(state.imports[0]?.status).toBe("confirmed");
     expect(state.participants).toHaveLength(2);
+  });
+
+  it("adds previously excluded rows on a later confirmation of the same document", async () => {
+    const state: FakeImportState = { imports: [], participants: [], nextImportId: 1, failFirstParticipantUpsert: false };
+    const supabase = importSupabase(state);
+    const first = await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file: partialImportFile(), acceptedRowNumbers: [2] });
+    expect(first).toMatchObject({ importedRows: 1, alreadyImported: false });
+    expect(state.imports[0]?.status).toBe("confirmed");
+    expect((state.imports[0] as ImportRecord & { source_proof_status?: string }).source_proof_status).toBe("incomplete");
+
+    const second = await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file: partialImportFile(), acceptedRowNumbers: [3, 4] });
+    expect(second).toMatchObject({ importedRows: 2, alreadyImported: false });
+    expect(state.participants).toHaveLength(3);
+    expect((state.imports[0] as ImportRecord & { source_proof_status?: string }).source_proof_status).toBe("complete");
+
+    const replay = await confirmRosterImport({ supabase, event: importEvent(), userId: "organizer", file: partialImportFile(), acceptedRowNumbers: [2, 3, 4] });
+    expect(replay).toMatchObject({ importedRows: 3, alreadyImported: true });
+    expect(state.participants).toHaveLength(3);
   });
 
   it("does not accept a confirmed import whose exhaustive participant read is incomplete", async () => {
