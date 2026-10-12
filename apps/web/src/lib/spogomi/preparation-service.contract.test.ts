@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const service = readFileSync(new URL("./preparation-service.ts", import.meta.url), "utf8");
+const compositionMutationService = readFileSync(new URL("./composition-mutation-service.ts", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
   it("reserves the creation intent before calling the canonical action service", () => {
@@ -36,5 +37,13 @@ describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
     expect(service).toContain("order_alternative_reference");
     expect(service).toContain("reconcileCachanTicketRows");
     expect(service).toContain('.eq("source_system", preview.sourceSystem)');
+  });
+
+  it("routes manual moves and locks through revision-controlled server procedures", () => {
+    expect(compositionMutationService).toContain('rpc("spogomi_move_participant_to_team"');
+    expect(compositionMutationService).toContain('rpc("spogomi_lock_team_composition"');
+    expect(compositionMutationService).toContain("actorClerkId");
+    expect(service).not.toContain('.from("spogomi_participants").update({ team_id');
+    expect(service).not.toContain('.from("spogomi_teams").update({ composition_state: "locked"');
   });
 });

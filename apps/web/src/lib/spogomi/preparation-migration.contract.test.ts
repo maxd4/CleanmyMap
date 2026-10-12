@@ -7,6 +7,7 @@ const conflictTargetMigration = readFileSync(new URL("../../../supabase/migratio
 const lot11Migration = readFileSync(new URL("../../../supabase/migrations/20261012000022_spogomi_ticket_roster_and_team_composition.sql", import.meta.url), "utf8");
 const lot11aMigration = readFileSync(new URL("../../../supabase/migrations/20261013000001_spogomi_ticket_source_scope_and_safe_rebalance.sql", import.meta.url), "utf8");
 const lot11CorrectiveMigration = readFileSync(new URL("../../../supabase/migrations/20261013000002_spogomi_import_history_and_safe_reconciliation.sql", import.meta.url), "utf8");
+const compositionLockMigration = readFileSync(new URL("../../../supabase/migrations/20261013000003_spogomi_composition_lock_integrity.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -62,5 +63,21 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(lot11CorrectiveMigration).toContain("source_snapshot jsonb");
     expect(lot11CorrectiveMigration).toContain("ticket_cancellation_conflict");
     expect(lot11CorrectiveMigration).toMatch(/revoke all on table public\.spogomi_roster_import_rows from public, anon, authenticated/i);
+  });
+
+  it("makes every composition mutation atomic, revision-controlled and protected", () => {
+    expect(compositionLockMigration).toContain("spogomi_team_requires_composition_correction");
+    expect(compositionLockMigration).toContain("spogomi_move_participant_to_team");
+    expect(compositionLockMigration).toContain("spogomi_lock_team_composition");
+    expect(compositionLockMigration).toContain("spogomi_team_composition_mutation_audit");
+    expect(compositionLockMigration).toContain("current_setting('spogomi.composition_write_context'");
+    expect(compositionLockMigration).toContain("before update of team_id");
+    expect(compositionLockMigration).toContain("before update of composition_state");
+    expect(compositionLockMigration).toContain("for update");
+    expect(compositionLockMigration).toContain("spogomi_team_access_grants");
+    expect(compositionLockMigration).toContain("spogomi_result_submissions");
+    expect(compositionLockMigration).toContain("spogomi_team_composition_history");
+    expect(compositionLockMigration).toContain("state not in ('draft', 'registration_open')");
+    expect(compositionLockMigration).not.toContain("delete from public.spogomi_teams");
   });
 });

@@ -5,7 +5,6 @@ import { createActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { canManageAction, type ActionPermissionIdentity } from "@/lib/actions/permissions";
 import { parseGpxFile } from "@/lib/actions/geometry/gpx";
-import { validateTeamComposition } from "./validation";
 import { buildDeterministicTeamFormation, validateProposedTeamFormation } from "./preparation";
 import { previewRosterFile } from "./preparation";
 import type { SpogomiEventMode, SpogomiRosterColumnMapping, SpogomiRosterPreview, SpogomiTeamFormation } from "./types";
@@ -13,6 +12,7 @@ import type { SpogomiRosterPreviewOptions } from "./preparation-import";
 import { normalizeSpogomiEventSlug } from "./public-service";
 import { reconcileCachanTicketRows } from "./ticket-reconciliation";
 import { teamCompositionFingerprint } from "./team-composition";
+export { SpogomiCompositionProtectionError, lockSpogomiTeams, moveParticipantToTeam } from "./composition-mutation-service";
 
 type EventRow = {
   id: string;
@@ -704,37 +704,6 @@ export async function autoComposeTeams(
 ) {
   if (!confirmation) return previewSpogomiTeams(supabase, event);
   return confirmSpogomiTeams({ supabase, event, ...confirmation });
-}
-
-export async function lockSpogomiTeams(supabase: SupabaseClient, event: EventRow) {
-  const teams = await supabase.from("spogomi_teams").select("id, team_number, composition_state").eq("event_id", event.id).order("team_number");
-  if (teams.error) throw teams.error;
-  const participants = await supabase.from("spogomi_participants").select("id, team_id").eq("event_id", event.id).eq("registration_status", "registered");
-  if (participants.error) throw participants.error;
-  const counts = new Map<string, number>();
-  for (const participant of participants.data ?? []) if (participant.team_id) counts.set(participant.team_id, (counts.get(participant.team_id) ?? 0) + 1);
-  for (const team of teams.data ?? []) {
-    const validation = validateTeamComposition(event.mode, counts.get(team.id) ?? 0, { casual: { minMembers: event.team_size_config?.casual?.minMembers ?? null, maxMembers: event.team_size_config?.casual?.maxMembers ?? null } });
-    if (!validation.ok) throw new Error(`Validation: équipe ${team.team_number} non conforme (${validation.reason}).`);
-  }
-  if ((participants.data ?? []).some((participant) => !participant.team_id)) throw new Error("Validation: des participants restent à affecter.");
-  const updated = await supabase.from("spogomi_teams").update({ composition_state: "locked" }).eq("event_id", event.id);
-  if (updated.error) throw updated.error;
-  const eventUpdated = await supabase.from("spogomi_events").update({ state: "composition_locked" }).eq("id", event.id);
-  if (eventUpdated.error) throw eventUpdated.error;
-  return { locked: true, teamCount: teams.data?.length ?? 0 };
-}
-
-export async function moveParticipantToTeam(params: { supabase: SupabaseClient; event: EventRow; participantId: string; teamId: string | null }) {
-  if (params.event.state === "composition_locked") throw new Error("Validation: la composition est verrouillée.");
-  if (params.teamId) {
-    const team = await params.supabase.from("spogomi_teams").select("id").eq("id", params.teamId).eq("event_id", params.event.id).maybeSingle();
-    if (team.error) throw team.error;
-    if (!team.data) throw new Error("Validation: équipe introuvable pour cet événement.");
-  }
-  const updated = await params.supabase.from("spogomi_participants").update({ team_id: params.teamId }).eq("id", params.participantId).eq("event_id", params.event.id);
-  if (updated.error) throw updated.error;
-  return { participantId: params.participantId, teamId: params.teamId };
 }
 
 export async function attachOfficialGpx(params: { supabase: SupabaseClient; event: EventRow; userId: string; file: File }) {

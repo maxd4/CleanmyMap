@@ -423,6 +423,29 @@ exactement la proposition contrôlée côté serveur. Un dry-run ne vaut pas pre
 d'application distante ; la certification, la consolidation, AuthN/AuthZ, RLS et
 la liaison Clerk restent inchangées.
 
+### Verrouillage effectif des compositions
+
+Les déplacements ordinaires passent par la RPC server-only
+`spogomi_move_participant_to_team` et restent limités aux états `draft` et
+`registration_open`. La RPC contrôle la révision courante, vérifie les deux
+équipes concernées et refuse toute équipe verrouillée, vérifiée, porteuse d'un
+accès, d'une soumission, d'un résultat certifié ou d'un historique de
+composition. Une tentative après le démarrage, pendant le jugement, après
+certification ou après archivage indique explicitement qu'une procédure
+d'absence/remplacement versionnée et auditée est requise ; `teams/move` ne peut
+pas servir de contournement.
+
+Le verrouillage est porté par `spogomi_lock_team_composition`, qui verrouille
+l'événement, valide les effectifs puis les équipes et l'état de l'événement
+dans une même transaction contrôlée par `composition_revision`. Des triggers
+refusent aussi les mises à jour directes de `team_id`, de
+`composition_state` ou de l'état `composition_locked` hors de ces procédures.
+L'audit append-only des déplacements et verrouillages conserve l'acteur et la
+révision sans modifier les UUID, numéros, pseudonymes, accès ou résultats.
+
+La migration `20261013000003_spogomi_composition_lock_integrity.sql` est
+forward-only et n'a pas été appliquée à distance par ce lot.
+
 ## 19. Lot 11B livré — CURRENT — import multi-format et aperçu explicable
 
 La même façade d'import lit désormais CSV, TSV, XLSX, XLS et ODS. Les CSV/TSV
