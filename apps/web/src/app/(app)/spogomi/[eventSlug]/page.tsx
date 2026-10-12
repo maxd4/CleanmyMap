@@ -7,6 +7,7 @@ import { SpogomiPublicRouteMap } from "@/components/spogomi/spogomi-public-route
 import { SpogomiIdentityLinkCard } from "@/components/spogomi/spogomi-identity-link-card";
 import { SpogomiVolunteerContributionsCard } from "@/components/spogomi/spogomi-volunteer-contributions-card";
 import { SpogomiPublicResults } from "@/components/spogomi/spogomi-public-results";
+import { SpogomiPhotoGallery } from "@/components/spogomi/spogomi-photo-gallery";
 import { PageHeader } from "@/components/ui/page-header";
 import { loadPublishedSpogomiEventBySlug } from "@/lib/spogomi/public-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -75,6 +76,7 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
             </CmmCard>
             {event.route ? <CmmCard tone="amber" variant="glass" className="space-y-3 p-5"><h2 className="text-xl font-black text-amber-950">Parcours officiel de référence</h2><p className="cmm-text-body text-slate-900">{event.route.fileName} · {event.route.referenceDistanceKm} km calculés depuis le fichier. Cette géométrie ne constitue pas une trace réellement parcourue.</p><SpogomiPublicRouteMap coordinates={event.route.coordinates} /></CmmCard> : <CmmCard tone="slate" variant="glass" className="border-dashed p-5"><p className="font-bold text-slate-900">Aucun parcours officiel publié.</p></CmmCard>}
             <SpogomiPublicResults eventSlug={event.slug} initial={event.results} />
+            <SpogomiPhotoGallery photos={event.gallery} />
           </div>
           <aside className="space-y-4" aria-label="Participation et fonctionnalités">
             <SpogomiIdentityLinkCard eventId={event.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} />

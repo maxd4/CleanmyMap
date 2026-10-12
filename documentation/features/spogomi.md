@@ -912,6 +912,53 @@ Fichiers principaux :
 - `apps/web/src/app/(app)/partners/dashboard/page.tsx` — restitution dans la surface partenaire existante ;
 - `apps/web/src/lib/partners/published-annuaire-entries-store.ts` — jointure explicite avec une fiche acceptée.
 
+## 19 quinquies. Dimension internationale, actualités, agenda et photos — CURRENT
+
+La page `/spogomi` présente une section bilingue `SPOGOMI dans le monde` à
+partir d'un registre éditorial local borné. Les références officielles
+actuellement publiées sont `https://spogomi.or.jp/` et
+`https://en.nf-spogomiwc.com/`, vérifiées le 12 octobre 2026 dans les pages
+officielles consultées. Les liens sont éditoriaux : CleanMyMap ne se présente
+ni comme représentant mondial, ni comme licencié, ni comme partenaire officiel
+de la fédération. Les contenus externes ne sont pas traduits ou recopiés au-delà
+de ce qui est nécessaire pour un titre court et une description de navigation.
+
+Les actualités portent une date et une URL de référence. Les événements
+internationaux externes sont conservés dans le registre éditorial avec leur
+source, leur date de vérification et leur statut `confirmed` ou `planned`.
+L'agenda actuel présente la World Cup 2027 comme prévisionnelle, sans inventer
+de date précise. Un événement externe conserve `cleanMyMapEventId = null` : il
+ne crée ni `actions`, ni inscription, ni participation CleanMyMap. Les filtres
+année/pays ne prétendent pas représenter une couverture mondiale exhaustive et
+retournent un état vide lorsque le registre vérifié ne contient aucun résultat.
+
+La fiche `/spogomi/[eventSlug]` ne rend une galerie que depuis
+`actions.preparation_data.spogomiGallery`, après publication explicite de
+l'action. Chaque photo publiée doit porter une URL d'image, une URL source, un
+propriétaire ou fournisseur identifié, un texte alternatif, une approbation de
+diffusion, des droits `authorized`, une revue de protection des sujets et des
+mineurs, ainsi qu'une date d'approbation. Une photo retirée passe à l'état
+`withdrawn` et disparaît de la projection publique sans supprimer les autres
+preuves de l'action. Le POST/DELETE de `/api/spogomi/events/:eventId/gallery`
+réutilise l'autorisation organisateur de l'édition ; participer à l'événement
+ne suffit donc pas pour publier ou retirer une photo. Les pièces jointes du
+salon, les photos d'actions non explicitement approuvées et les photographies
+trouvées sur Internet ne sont jamais importées automatiquement.
+
+La galerie utilise une grille légère, des images différées, une ouverture
+agrandie accessible, la navigation clavier et un état absent lorsque aucune
+photo autorisée n'est disponible. Elle n'affiche aucun roster, nom de mineur,
+autorisation parentale, token ou dossier d'arbitrage.
+
+Fichiers principaux :
+
+- `apps/web/src/lib/spogomi/international-content.ts` — registre éditorial et agenda externe vérifié ;
+- `apps/web/src/lib/spogomi/photo-gallery.ts` — contrat pur de droits, publication et retrait ;
+- `apps/web/src/lib/spogomi/photo-gallery-service.ts` — lecture publique et écriture organisateur bornée ;
+- `apps/web/src/app/api/spogomi/events/[eventId]/gallery/route.ts` — permissions serveur de galerie ;
+- `apps/web/src/components/spogomi/spogomi-international-content.tsx` — bloc bilingue, actualités et filtres ;
+- `apps/web/src/components/spogomi/spogomi-photo-gallery.tsx` — grille et visionneuse clavier.
+
 ## 20. Sources canoniques liées
 
 - [Participation et formulaire de groupe](./group-action.md)

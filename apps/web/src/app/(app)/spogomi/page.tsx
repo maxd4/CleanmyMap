@@ -3,6 +3,10 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, MapPin, Trophy } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { PageHeader } from "@/components/ui/page-header";
+import { SpogomiInternationalContent } from "@/components/spogomi/spogomi-international-content";
+import { getTranslation } from "@/lib/i18n/server-translation";
+import { getServerLocale } from "@/lib/server-preferences";
+import { SPOGOMI_EXTERNAL_EVENTS, SPOGOMI_INTERNATIONAL_NEWS, SPOGOMI_INTERNATIONAL_SOURCES } from "@/lib/spogomi/international-content";
 import { listPublishedSpogomiEvents, type SpogomiPublicLifecycle } from "@/lib/spogomi/public-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 
@@ -24,6 +28,8 @@ function formatDate(value: string) {
 }
 
 export default async function SpogomiIndexPage() {
+  const locale = await getServerLocale();
+  const { t } = getTranslation("spogomi", locale);
   let events = [] as Awaited<ReturnType<typeof listPublishedSpogomiEvents>>;
   try {
     events = await listPublishedSpogomiEvents();
@@ -69,6 +75,35 @@ export default async function SpogomiIndexPage() {
             </p>
           </CmmCard>
         </section>
+        <SpogomiInternationalContent
+          locale={locale}
+          sources={SPOGOMI_INTERNATIONAL_SOURCES}
+          news={SPOGOMI_INTERNATIONAL_NEWS}
+          externalEvents={SPOGOMI_EXTERNAL_EVENTS}
+          copy={{
+            worldTitle: t("international.worldTitle"),
+            worldDescription: t("international.worldDescription"),
+            casualTitle: t("international.casualTitle"),
+            casualDescription: t("international.casualDescription"),
+            worldCupTitle: t("international.worldCupTitle"),
+            worldCupDescription: t("international.worldCupDescription"),
+            cleanMyMapRole: t("international.cleanMyMapRole"),
+            officialSources: t("international.officialSources"),
+            verifiedOn: t("international.verifiedOn"),
+            newsTitle: t("international.newsTitle"),
+            confirmed: t("international.confirmed"),
+            planned: t("international.planned"),
+            internationalEvents: t("international.eventsTitle"),
+            year: t("international.year"),
+            country: t("international.country"),
+            allYears: t("international.allYears"),
+            allCountries: t("international.allCountries"),
+            externalEvent: t("international.externalEvent"),
+            source: t("international.source"),
+            noExternalEvents: t("international.noExternalEvents"),
+            communityLink: t("international.communityLink"),
+          }}
+        />
         <section className="space-y-4" aria-labelledby="spogomi-events-title">
           <div>
             <h2 id="spogomi-events-title" className="text-2xl font-black text-slate-950">Événements publiés</h2>

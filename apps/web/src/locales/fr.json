@@ -231,5 +231,31 @@
         "close": "Fermer"
       }
     }
+  },
+  "spogomi": {
+    "international": {
+      "worldTitle": "SPOGOMI dans le monde",
+      "worldDescription": "SPOGOMI transforme le ramassage des déchets en compétition internationale : des équipes collectent dans une zone et un temps définis, puis les résultats sont établis selon le règlement de l'édition.",
+      "casualTitle": "Casual",
+      "casualDescription": "Un format local dont la taille des équipes et les modalités sont définies par l'organisateur de l'édition.",
+      "worldCupTitle": "World Cup",
+      "worldCupDescription": "La variante internationale la plus compétitive, organisée autour d'équipes de trois et d'étapes dont le calendrier doit être confirmé par les sources officielles.",
+      "cleanMyMapRole": "CleanMyMap apporte un espace local pour les éditions effectivement organisées avec la plateforme, leurs résultats publiés et leur communauté. Cette présence ne vaut ni représentation mondiale, ni licence, ni partenariat officiel avec la fédération.",
+      "officialSources": "Références officielles vérifiées",
+      "verifiedOn": "Vérifié le",
+      "newsTitle": "Actualités officielles",
+      "confirmed": "Confirmé",
+      "planned": "Prévisionnel",
+      "eventsTitle": "Événements internationaux",
+      "year": "Année",
+      "country": "Pays",
+      "allYears": "Toutes les années",
+      "allCountries": "Tous les pays connus",
+      "externalEvent": "Références externes — elles ne créent pas d'action CleanMyMap.",
+      "cleanMyMapEvent": "Événement CleanMyMap",
+      "source": "Source officielle",
+      "noExternalEvents": "Aucun événement externe vérifié pour ces filtres.",
+      "communityLink": "Ouvrir le salon SPOGOMI"
+    }
   }
 }

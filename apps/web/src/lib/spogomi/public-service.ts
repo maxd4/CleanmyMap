@@ -7,6 +7,8 @@ import { loadSpogomiResultsProjection } from "./results-projection-service";
 import type { SpogomiPublicResults } from "./results-projection";
 import { loadSpogomiOrganizerForAction } from "./partner-impact-service";
 import type { SpogomiPublicOrganizer } from "./partner-impact";
+import { loadPublishedSpogomiGalleryForAction } from "./photo-gallery-service";
+import type { SpogomiGalleryPhoto } from "./photo-gallery";
 
 export type SpogomiPublicLifecycle = "upcoming" | "in_progress" | "finished";
 
@@ -40,6 +42,7 @@ export type SpogomiPublicEvent = {
   route: SpogomiPublicRoute | null;
   results: SpogomiPublicResults | null;
   organizer: SpogomiPublicOrganizer | null;
+  gallery: SpogomiGalleryPhoto[];
 };
 
 type PublicEventRow = {
@@ -113,6 +116,7 @@ function mapEvent(
   route: SpogomiPublicRoute | null = null,
   results: SpogomiPublicResults | null = null,
   organizer: SpogomiPublicOrganizer | null = null,
+  gallery: SpogomiGalleryPhoto[] = [],
 ): SpogomiPublicEvent | null {
   if (!row.event_slug) return null;
   return {
@@ -132,6 +136,7 @@ function mapEvent(
     route,
     results,
     organizer,
+    gallery,
   };
 }
 
@@ -216,6 +221,7 @@ export async function loadPublishedSpogomiEventBySlug(
     route,
     null,
     await loadSpogomiOrganizerForAction({ supabase, actionId: row.action_id, eventTerritory: row.location_label }),
+    await loadPublishedSpogomiGalleryForAction({ supabase, actionId: row.action_id }),
   );
   if (!mapped) return null;
   const projection = await loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true });

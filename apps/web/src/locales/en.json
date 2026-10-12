@@ -231,5 +231,31 @@
         "close": "Close"
       }
     }
+  },
+  "spogomi": {
+    "international": {
+      "worldTitle": "SPOGOMI around the world",
+      "worldDescription": "SPOGOMI turns litter picking into an international competition: teams collect within a defined area and time, then results follow the rules of each edition.",
+      "casualTitle": "Casual",
+      "casualDescription": "A local format whose team size and operating rules are defined by the edition organizer.",
+      "worldCupTitle": "World Cup",
+      "worldCupDescription": "The most competitive international variant, built around teams of three and stages whose schedule must be confirmed by official sources.",
+      "cleanMyMapRole": "CleanMyMap provides a local space for editions actually organized with the platform, their published results, and their community. This does not make CleanMyMap a global representative, licensee, or official federation partner.",
+      "officialSources": "Verified official references",
+      "verifiedOn": "Verified on",
+      "newsTitle": "Official updates",
+      "confirmed": "Confirmed",
+      "planned": "Planned",
+      "eventsTitle": "International events",
+      "year": "Year",
+      "country": "Country",
+      "allYears": "All years",
+      "allCountries": "All known countries",
+      "externalEvent": "External references — they do not create a CleanMyMap action.",
+      "cleanMyMapEvent": "CleanMyMap event",
+      "source": "Official source",
+      "noExternalEvents": "No verified external event matches these filters.",
+      "communityLink": "Open the SPOGOMI community room"
+    }
   }
 }
