@@ -31,4 +31,10 @@ describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
     expect(service).toContain('rpc("spogomi_confirm_team_composition"');
     expect(service).not.toContain('.from("spogomi_teams").delete');
   });
+
+  it("keeps the ticket source scope and advanced order reference in the import contract", () => {
+    expect(service).toContain("order_alternative_reference");
+    expect(service).toContain("event_id,source_system,external_reference");
+    expect(service).toContain('.eq("source_system", preview.sourceSystem)');
+  });
 });

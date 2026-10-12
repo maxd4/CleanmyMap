@@ -5,6 +5,7 @@ const migration = readFileSync(new URL("../../../supabase/migrations/20261012000
 const correctiveMigration = readFileSync(new URL("../../../supabase/migrations/20261012000004_spogomi_idempotence_import_reliability.sql", import.meta.url), "utf8");
 const conflictTargetMigration = readFileSync(new URL("../../../supabase/migrations/20261012000005_spogomi_import_conflict_target.sql", import.meta.url), "utf8");
 const lot11Migration = readFileSync(new URL("../../../supabase/migrations/20261012000022_spogomi_ticket_roster_and_team_composition.sql", import.meta.url), "utf8");
+const lot11aMigration = readFileSync(new URL("../../../supabase/migrations/20261013000001_spogomi_ticket_source_scope_and_safe_rebalance.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -43,5 +44,14 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(lot11Migration).toContain("spogomi_confirm_team_composition");
     expect(lot11Migration).toMatch(/grant execute on function public\.spogomi_confirm_team_composition[\s\S]+to service_role/i);
     expect(lot11Migration).not.toMatch(/delete from public\.spogomi_teams/i);
+  });
+
+  it("scopes ticket uniqueness by source and blocks automatic rebalance of dependent teams", () => {
+    expect(lot11aMigration).toContain("order_alternative_reference");
+    expect(lot11aMigration).toContain("event_id, source_system, external_reference");
+    expect(lot11aMigration).toContain("spogomi_team_access_grants");
+    expect(lot11aMigration).toContain("spogomi_result_submissions");
+    expect(lot11aMigration).toContain("cannot be rebalanced");
+    expect(lot11aMigration).toContain("spogomi_team_composition_history");
   });
 });

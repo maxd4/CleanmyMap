@@ -160,6 +160,7 @@ export type SpogomiRosterColumn =
   | "sourceRowId"
   | "ticketReference"
   | "orderReference"
+  | "orderAlternativeReference"
   | "ticketStatus"
   | "ticketDeleted";
 
@@ -174,6 +175,7 @@ export type SpogomiRosterRow = {
   sourceRowId: string | null;
   externalReference: string | null;
   orderReference: string | null;
+  orderAlternativeReference: string | null;
   ticketStatus: string | null;
   ticketDeleted: boolean;
   sourceSystem: "manual_roster" | "cachan_ticketing";

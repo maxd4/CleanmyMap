@@ -125,6 +125,7 @@ function inferMapping(headers: string[]): SpogomiRosterColumnMapping {
     const normalized = normalizeHeader(header);
     if (!mapping.ticketReference && /^(n billet|numero billet|ticket id|place id|place reference)$/.test(normalized)) mapping.ticketReference = header;
     else if (!mapping.orderReference && /^(n de commande|numero commande|order id|order reference|order group id)$/.test(normalized)) mapping.orderReference = header;
+    else if (!mapping.orderAlternativeReference && /^(n de commande avance|numero commande avance|advanced order id|advanced order reference)$/.test(normalized)) mapping.orderAlternativeReference = header;
     else if (!mapping.ticketStatus && /(statut .*billet|ticket status|statut ticket|registration status)/.test(normalized)) mapping.ticketStatus = header;
     else if (!mapping.ticketDeleted && /(supprime|deleted|annule|cancelled)/.test(normalized)) mapping.ticketDeleted = header;
     else if (!mapping.name && /^(nom|nom complet|participant|prenom nom|full name|person display name)$/.test(normalized)) mapping.name = header;
@@ -134,7 +135,7 @@ function inferMapping(headers: string[]): SpogomiRosterColumnMapping {
   return mapping;
 }
 
-const ROSTER_MAPPING_KEYS = ["name", "group", "sourceRowId", "ticketReference", "orderReference", "ticketStatus", "ticketDeleted"] as const;
+const ROSTER_MAPPING_KEYS = ["name", "group", "sourceRowId", "ticketReference", "orderReference", "orderAlternativeReference", "ticketStatus", "ticketDeleted"] as const;
 
 function resolveMapping(headers: string[], mapping?: SpogomiRosterColumnMapping): SpogomiRosterColumnMapping {
   const candidate = mapping ?? inferMapping(headers);
@@ -182,6 +183,7 @@ function buildRows(rawRows: string[][], mapping: SpogomiRosterColumnMapping) {
     const sourceRowId = normalizeValue(indexes.sourceRowId === undefined ? "" : values[indexes.sourceRowId]);
     const externalReference = normalizeValue(indexes.ticketReference === undefined ? "" : values[indexes.ticketReference]);
     const orderReference = normalizeValue(indexes.orderReference === undefined ? "" : values[indexes.orderReference]);
+    const orderAlternativeReference = normalizeValue(indexes.orderAlternativeReference === undefined ? "" : values[indexes.orderAlternativeReference]);
     const ticketStatus = normalizeValue(indexes.ticketStatus === undefined ? "" : values[indexes.ticketStatus]);
     const rawDeleted = normalizeHeader(normalizeValue(indexes.ticketDeleted === undefined ? "" : values[indexes.ticketDeleted]));
     const ticketDeleted = ["1", "oui", "yes", "true", "vrai", "supprime", "deleted", "annule", "cancelled", "canceled"].includes(rawDeleted);
@@ -201,7 +203,7 @@ function buildRows(rawRows: string[][], mapping: SpogomiRosterColumnMapping) {
       errors.push({ rowNumber, code: "name_too_long", message: "Le nom du participant est trop long." });
       continue;
     }
-    if (sourceRowId.length > MAX_EXTERNAL_REFERENCE_LENGTH || externalReference.length > MAX_EXTERNAL_REFERENCE_LENGTH || orderReference.length > MAX_EXTERNAL_REFERENCE_LENGTH) {
+    if (sourceRowId.length > MAX_EXTERNAL_REFERENCE_LENGTH || externalReference.length > MAX_EXTERNAL_REFERENCE_LENGTH || orderReference.length > MAX_EXTERNAL_REFERENCE_LENGTH || orderAlternativeReference.length > MAX_EXTERNAL_REFERENCE_LENGTH) {
       errors.push({ rowNumber, code: "invalid_source_row_id", message: "La référence de ligne est trop longue." });
       continue;
     }
@@ -212,6 +214,7 @@ function buildRows(rawRows: string[][], mapping: SpogomiRosterColumnMapping) {
       sourceRowId: sourceRowId || externalReference || null,
       externalReference: externalReference || null,
       orderReference: orderReference || null,
+      orderAlternativeReference: orderAlternativeReference || null,
       ticketStatus: ticketStatus || null,
       ticketDeleted,
       sourceSystem: ticketImport ? "cachan_ticketing" : "manual_roster",

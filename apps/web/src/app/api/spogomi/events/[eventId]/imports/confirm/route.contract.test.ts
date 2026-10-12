@@ -8,6 +8,7 @@ describe("SPOGOMI roster confirmation API STATIC_CONTRACT", () => {
     expect(route).toContain("request.formData()");
     expect(route).toContain('form.get("file")');
     expect(route).toContain('form.get("mapping")');
+    expect(route).toContain("orderAlternativeReference");
     expect(route).not.toContain("request.json()");
     expect(route).not.toContain("rows");
     expect(route).not.toContain("contentHash");

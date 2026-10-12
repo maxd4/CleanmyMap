@@ -382,16 +382,18 @@ Fichiers principaux :
 ## 18. Lot 11 livré — CURRENT — billetterie par place et composition sûre
 
 Le cockpit organisateur accepte désormais le mapping synthétique de billetterie
-Cachan : chaque `N. Billet` devient une place distincte, chaque `N. de commande`
+Cachan Weezevent : chaque `N. Billet` devient une place distincte, chaque `N. de commande`
 reste un regroupement privé, et l'absence de nom devient l'état explicite
 « place à identifier ». Les doublons d'acheteur ne fusionnent donc jamais des
 places. Les statuts et suppressions sont conservés comme état de billet ; une
 place annulée est retirée de la composition active sans être supprimée.
 
-Les références externes de place sont stables pour les réimports. Un réimport
-identique est idempotent ; un changement de statut, de commande ou d'identité
-est signalé et ajouté à l'historique privé. Une collision de référence dans un
-fichier est bloquante. Le roster, ses correspondances et son historique restent
+Les références externes de place sont stables pour les réimports et uniques dans
+le couple événement/source. `N. de commande avancé` est conservé comme référence
+de contrôle, sans devenir une clé d'identité. Un réimport identique est idempotent ;
+un changement de statut, de commande, de référence avancée ou d'identité est
+signalé et ajouté à l'historique privé. Une collision de référence dans un fichier
+est bloquante. Le roster, ses correspondances et son historique restent
 server-only, sans donnée de billetterie réelle dans le dépôt.
 
 La formation propose d'abord les trios conservés par commande/groupe, puis
@@ -404,11 +406,14 @@ server-only verrouillant l'événement ; les équipes existantes sont réutilis�
 par leur numéro et ne sont jamais supprimées/recréées silencieusement. Les
 accès, résultats et historiques restent ainsi attachés à leurs identifiants.
 
-La migration `20261012000022_spogomi_ticket_roster_and_team_composition.sql`
-ajoute les états de billetterie, l'historique des changements, la révision de
-composition et la RPC atomique de confirmation. Son dry-run ne vaut pas preuve
-d'application distante ; la certification, la consolidation, AuthN/AuthZ, RLS
-et la liaison Clerk restent inchangées.
+Les migrations `20261012000022_spogomi_ticket_roster_and_team_composition.sql`
+et `20261013000001_spogomi_ticket_source_scope_and_safe_rebalance.sql` ajoutent
+les états de billetterie, l'historique des changements, la révision de composition,
+la portée source de la clé de billet et la RPC atomique de confirmation. La
+seconde bloque la recomposition automatique d'une équipe déjà liée à un accès ou
+à des résultats. Un dry-run ne vaut pas preuve d'application distante ; la
+certification, la consolidation, AuthN/AuthZ, RLS et la liaison Clerk restent
+inchangées.
 
 ## 16. Lot 3 livré — CURRENT — surfaces publiques et gestion contextuelle
 

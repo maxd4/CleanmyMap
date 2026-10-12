@@ -93,6 +93,27 @@ describe("SPOGOMI preparation", () => {
     expect(preview.errors.filter((error) => error.code === "ticket_reference_collision")).toHaveLength(2);
   });
 
+  it("maps the Weezevent Cachan ticket headers without using repeated buyer names", async () => {
+    const file = new File([
+      'Typologie;"Nom participant";"Prénom participant";"N. de commande";"N. de commande avancé";"N. Billet";"Nom Acheteur";"Statut du billet";Supprimé\n' +
+      'SPOGOMI;Déclaré;Un;ORDER-1;ADV-1;TICKET-1;Acheteur répété;Payé;0\n' +
+      'SPOGOMI;Déclaré;Deux;ORDER-1;ADV-1;TICKET-2;Acheteur répété;Payé;0\n',
+    ], "weezevent-cachan.csv", { type: "text/csv" });
+    const preview = await previewRosterFile(file);
+    expect(preview.mapping).toMatchObject({
+      ticketReference: "N. Billet",
+      orderReference: "N. de commande",
+      orderAlternativeReference: "N. de commande avancé",
+      ticketStatus: "Statut du billet",
+      ticketDeleted: "Supprimé",
+    });
+    expect(preview.rows.map((row) => row.externalReference)).toEqual(["TICKET-1", "TICKET-2"]);
+    expect(preview.rows.map((row) => row.orderAlternativeReference)).toEqual(["ADV-1", "ADV-1"]);
+    expect(preview.rows.every((row) => row.name === null)).toBe(true);
+    expect(preview.probableDuplicateRowNumbers).toEqual([]);
+    expect(preview.errors).toEqual([]);
+  });
+
   it("rejects a MIME/extension mismatch before parsing", async () => {
     const file = new File(["Nom\nAda"], "roster.csv", { type: "application/pdf" });
     await expect(previewRosterFile(file)).rejects.toThrow(/MIME/i);

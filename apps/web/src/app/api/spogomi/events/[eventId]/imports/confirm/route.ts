@@ -16,6 +16,7 @@ const mappingSchema = z.object({
   sourceRowId: z.string().min(1).max(255).optional(),
   ticketReference: z.string().min(1).max(255).optional(),
   orderReference: z.string().min(1).max(255).optional(),
+  orderAlternativeReference: z.string().min(1).max(255).optional(),
   ticketStatus: z.string().min(1).max(255).optional(),
   ticketDeleted: z.string().min(1).max(255).optional(),
 }).strict();

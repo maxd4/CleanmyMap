@@ -404,7 +404,7 @@ export async function createSpogomiEvent(params: { supabase: SupabaseClient; use
 }
 
 function canonicalImportMapping(mapping: SpogomiRosterColumnMapping): string {
-  return JSON.stringify(["name", "group", "sourceRowId", "ticketReference", "orderReference", "ticketStatus", "ticketDeleted"].filter((key) => mapping[key as keyof SpogomiRosterColumnMapping] !== undefined).map((key) => [key, mapping[key as keyof SpogomiRosterColumnMapping]]));
+  return JSON.stringify(["name", "group", "sourceRowId", "ticketReference", "orderReference", "orderAlternativeReference", "ticketStatus", "ticketDeleted"].filter((key) => mapping[key as keyof SpogomiRosterColumnMapping] !== undefined).map((key) => [key, mapping[key as keyof SpogomiRosterColumnMapping]]));
 }
 
 export async function previewRosterImportChanges(
@@ -416,18 +416,16 @@ export async function previewRosterImportChanges(
   const references = preview.rows.map((row) => row.externalReference).filter((reference): reference is string => Boolean(reference));
   if (!references.length) return preview;
   const existing = await supabase.from("spogomi_participants")
-    .select("id, external_reference, source_system, order_reference, ticket_status, ticket_deleted, display_name")
+    .select("id, external_reference, source_system, order_reference, order_alternative_reference, ticket_status, ticket_deleted, display_name")
     .eq("event_id", event.id)
+    .eq("source_system", preview.sourceSystem)
     .in("external_reference", references);
   if (existing.error) throw existing.error;
   const byReference = new Map((existing.data ?? []).map((row) => [String(row.external_reference), row]));
   const changedRowNumbers: number[] = [];
   for (const row of preview.rows) {
     const current = row.externalReference ? byReference.get(row.externalReference) : undefined;
-    if (current && current.source_system !== "cachan_ticketing") {
-      throw conflict(`la référence de billet ${row.externalReference} est déjà utilisée par une autre source.`);
-    }
-    if (current && (current.order_reference !== row.orderReference || current.ticket_status !== row.ticketStatus || Boolean(current.ticket_deleted) !== row.ticketDeleted || (current.display_name ?? null) !== row.name)) {
+    if (current && (current.order_reference !== row.orderReference || current.order_alternative_reference !== row.orderAlternativeReference || current.ticket_status !== row.ticketStatus || Boolean(current.ticket_deleted) !== row.ticketDeleted || (current.display_name ?? null) !== row.name)) {
       changedRowNumbers.push(row.rowNumber);
     }
   }
@@ -529,6 +527,7 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
     group_preference: row.groupPreference,
     external_reference: row.externalReference ?? row.sourceRowId,
     order_reference: row.orderReference,
+    order_alternative_reference: row.orderAlternativeReference,
     source_system: row.sourceSystem,
     ticket_status: row.ticketStatus,
     ticket_deleted: row.ticketDeleted,
@@ -540,15 +539,16 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
   }));
   const priorTicketRows = preview.sourceSystem === "cachan_ticketing"
     ? await supabase.from("spogomi_participants")
-      .select("id, external_reference, order_reference, ticket_status, ticket_deleted, display_name")
+      .select("id, external_reference, order_reference, order_alternative_reference, ticket_status, ticket_deleted, display_name")
       .eq("event_id", event.id)
+      .eq("source_system", preview.sourceSystem)
       .in("external_reference", preview.rows.map((row) => row.externalReference).filter((reference): reference is string => Boolean(reference)))
     : { data: [], error: null };
   if (priorTicketRows.error) throw priorTicketRows.error;
   const priorByReference = new Map((priorTicketRows.data ?? []).map((row) => [String(row.external_reference), row]));
   try {
     const inserted = await supabase.from("spogomi_participants").upsert(participantRows, {
-      onConflict: preview.sourceSystem === "cachan_ticketing" ? "event_id,external_reference" : "event_id,roster_import_id,source_row_number",
+      onConflict: preview.sourceSystem === "cachan_ticketing" ? "event_id,source_system,external_reference" : "event_id,roster_import_id,source_row_number",
       ignoreDuplicates: false,
     });
     if (inserted.error) throw inserted.error;
@@ -563,8 +563,9 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
             : null,
           previous.ticket_status !== row.ticketStatus ? "ticket_status_changed" : null,
           previous.order_reference !== row.orderReference ? "ticket_order_changed" : null,
+          previous.order_alternative_reference !== row.orderAlternativeReference ? "ticket_advanced_order_changed" : null,
           (previous.display_name ?? null) !== row.name ? "ticket_identity_changed" : null,
-        ].filter((kind): kind is "ticket_status_changed" | "ticket_cancelled" | "ticket_reactivated" | "ticket_order_changed" | "ticket_identity_changed" => Boolean(kind));
+        ].filter((kind): kind is "ticket_status_changed" | "ticket_cancelled" | "ticket_reactivated" | "ticket_order_changed" | "ticket_advanced_order_changed" | "ticket_identity_changed" => Boolean(kind));
         return kinds.map((change_kind) => ({ event_id: event.id, roster_import_id: reservedImport.id, participant_id: previous.id, change_kind, ...snapshots }));
       });
       if (changes.length) {
