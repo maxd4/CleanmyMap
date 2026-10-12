@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { SpogomiPublicRouteMap } from "@/components/spogomi/spogomi-public-route-map";
 import { SpogomiIdentityLinkCard } from "@/components/spogomi/spogomi-identity-link-card";
+import { SpogomiPublicResults } from "@/components/spogomi/spogomi-public-results";
 import { PageHeader } from "@/components/ui/page-header";
 import { loadPublishedSpogomiEventBySlug } from "@/lib/spogomi/public-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -55,10 +56,11 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
               {event.teams.length ? <div className="grid gap-3 sm:grid-cols-2">{event.teams.map((team) => <div key={team.teamNumber} className="rounded-xl border border-emerald-100 bg-white/75 p-3"><p className="font-bold text-slate-900">{team.publicName}</p><p className="mt-1 text-xs text-slate-500">Équipe {team.teamNumber}</p></div>)}</div> : <p className="rounded-xl border border-dashed border-emerald-200 p-4 text-sm text-slate-600">La composition publique n’est pas encore disponible.</p>}
             </CmmCard>
             {event.route ? <CmmCard tone="amber" variant="glass" className="space-y-3 p-5"><h2 className="text-xl font-black text-amber-950">Parcours officiel de référence</h2><p className="cmm-text-body text-slate-900">{event.route.fileName} · {event.route.referenceDistanceKm} km calculés depuis le fichier. Cette géométrie ne constitue pas une trace réellement parcourue.</p><SpogomiPublicRouteMap coordinates={event.route.coordinates} /></CmmCard> : <CmmCard tone="slate" variant="glass" className="border-dashed p-5"><p className="font-bold text-slate-900">Aucun parcours officiel publié.</p></CmmCard>}
+            <SpogomiPublicResults eventSlug={event.slug} initial={event.results} />
           </div>
           <aside className="space-y-4" aria-label="Participation et fonctionnalités">
             <SpogomiIdentityLinkCard eventId={event.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} />
-            {["Classement sportif|Disponible lorsque les résultats certifiés seront publiés.", "Mégots par participant|La restitution nominative n’est pas exposée dans cette vue.", "Résultats|Aucune valeur provisoire ou fictive n’est affichée."].map((entry) => {
+            {["Classements indépendants|Les points sportifs et le ratio de mégots utilisent des projections séparées.", "Confidentialité|Seuls les noms publics d’équipe et les résultats publiés sont visibles.", "Participation|La liaison à un compte et la confirmation de participation restent séparées du classement."].map((entry) => {
               const [title, description] = entry.split("|");
               return <CmmCard key={title} tone="slate" variant="glass" className="space-y-2 p-4"><h2 className="font-black text-slate-900">{title}</h2><p className="cmm-text-body text-slate-900">{description}</p></CmmCard>;
             })}

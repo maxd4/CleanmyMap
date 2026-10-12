@@ -7,92 +7,22 @@ import {
 } from "./scoring";
 import { isRegulationReadyForCertification } from "./validation";
 import type {
-  SpogomiCategoryRule,
   SpogomiCompetitionInput,
   SpogomiCompetitionResult,
-  SpogomiRegulation,
   SpogomiResultItemInput,
 } from "./types";
 import { loadSpogomiEventForOrganizer } from "./preparation-service";
 import { loadSpogomiTeamSession } from "./team-access";
 import { readAllSpogomiPages } from "./pagination";
+import { toSpogomiResultItemInput } from "./result-input";
+import { buildSpogomiRegulation } from "./regulation";
 
 export type SpogomiReviewerRole = "organizer" | "referee";
 
-type RegulationConfig = {
-  rounding?: SpogomiRegulation["rounding"];
-  penalties?: SpogomiRegulation["penalties"];
-  eligibility?: SpogomiRegulation["eligibility"];
-  tiebreakers?: SpogomiRegulation["tiebreakers"];
-};
+export { buildSpogomiRegulation } from "./regulation";
 
-type EventRegulationRow = {
-  id: string;
-  name: string;
-  event_slug: string | null;
-  mode: "casual" | "world_cup";
-  state: string;
-  regulation_version: string;
-  regulation_status: "incomplete" | "complete";
-  regulation_source_reference: string | null;
-  regulation_config: unknown;
-  team_size_config: unknown;
-};
-
-type CategoryRow = {
-  id: string;
-  event_id: string;
-  regulation_version: string;
-  code: string;
-  label: string;
-  measurement_kind: SpogomiCategoryRule["measurementKind"];
-  unit: string;
-  coefficient: number | string | null;
-  coefficient_status: SpogomiCategoryRule["coefficientStatus"];
-  environmental_category_slug: string | null;
-  display_order: number;
-  is_complete: boolean;
-};
-
-function asConfig(value: unknown): RegulationConfig {
-  return value && typeof value === "object" ? value as RegulationConfig : {};
-}
-
-function asTeamSize(value: unknown): SpogomiRegulation["teamSize"] {
-  const raw = value && typeof value === "object" ? value as { casual?: { minMembers?: unknown; maxMembers?: unknown } } : {};
-  return {
-    casual: {
-      minMembers: typeof raw.casual?.minMembers === "number" ? raw.casual.minMembers : null,
-      maxMembers: typeof raw.casual?.maxMembers === "number" ? raw.casual.maxMembers : null,
-    },
-  };
-}
-
-export function buildSpogomiRegulation(event: EventRegulationRow, categoryRows: CategoryRow[]): SpogomiRegulation {
-  const config = asConfig(event.regulation_config);
-  return {
-    version: event.regulation_version,
-    sourceReference: event.regulation_source_reference,
-    status: event.regulation_status,
-    teamSize: asTeamSize(event.team_size_config),
-    rounding: config.rounding,
-    penalties: config.penalties,
-    eligibility: config.eligibility,
-    tiebreakers: config.tiebreakers,
-    categories: categoryRows
-      .sort((left, right) => left.display_order - right.display_order)
-      .map((category) => ({
-        code: String(category.code),
-        label: String(category.label),
-        measurementKind: category.measurement_kind,
-        unit: String(category.unit),
-        coefficient: category.coefficient === null ? null : Number(category.coefficient),
-        coefficientStatus: category.coefficient_status,
-        environmentalCategorySlug: category.environmental_category_slug,
-        isComplete: Boolean(category.is_complete) && category.regulation_version === event.regulation_version,
-      })),
-  };
-}
+type EventRegulationRow = import("./regulation").SpogomiEventRegulationRow;
+type CategoryRow = import("./regulation").SpogomiCategoryRegulationRow;
 
 export async function resolveSpogomiReviewerRole(params: {
   supabase: SupabaseClient;
@@ -149,20 +79,6 @@ export async function revokeSpogomiReferee(params: {
     .eq("role", "referee")
     .is("revoked_at", null);
   if (result.error) throw result.error;
-}
-
-function toResultItemInput(item: Record<string, unknown>, categoryCode: string): SpogomiResultItemInput & { categoryCode: string } {
-  return {
-    categoryCode,
-    measurementKind: item.measurement_kind as SpogomiResultItemInput["measurementKind"],
-    unit: String(item.unit),
-    quantity: item.quantity === null ? null : Number(item.quantity),
-    massGrams: item.mass_grams === null || item.mass_grams === undefined ? null : Number(item.mass_grams),
-    objectCount: item.object_count === null || item.object_count === undefined ? null : Number(item.object_count),
-    measurementMethod: item.measurement_method === null || item.measurement_method === undefined ? null : String(item.measurement_method),
-    provenance: String(item.provenance ?? ""),
-    arbitrationComment: item.arbitration_comment === null || item.arbitration_comment === undefined ? null : String(item.arbitration_comment),
-  };
 }
 
 export type SpogomiTeamResultForm = {
@@ -345,7 +261,7 @@ export async function loadSpogomiEventResultReviews(params: {
     const latest = submissionRows.filter((submission) => submission.team_id === teamId).sort((left, right) => right.version - left.version || left.id.localeCompare(right.id))[0];
     const teamItems = latest ? itemRows.filter((item) => item.submission_id === latest.id) : [];
     const presentParticipants = participantRows.filter((participant) => participant.team_id === teamId && participant.registration_status === "registered" && participant.attendance_status === "present").length;
-    const engineItems = teamItems.map((item) => toResultItemInput(item, categoryCodes.get(String(item.category_rule_id)) ?? ""));
+    const engineItems = teamItems.map((item) => toSpogomiResultItemInput(item, categoryCodes.get(String(item.category_rule_id)) ?? ""));
     const score = latest ? calculateSpogomiCompetitionResult({ regulation, items: engineItems, presentParticipants, submissionStatus: latest.status as SpogomiCompetitionInput["submissionStatus"] }) : null;
     return {
       teamId,

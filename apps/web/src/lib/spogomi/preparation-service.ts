@@ -25,6 +25,7 @@ type EventRow = {
   creation_state: string;
   event_slug: string | null;
   public_visibility: "private" | "published";
+  public_results_visibility: "hidden" | "provisional" | "certified";
 };
 
 function actionIdentity(identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>): ActionPermissionIdentity {
@@ -41,7 +42,7 @@ async function canManageEvent(supabase: SupabaseClient, event: EventRow): Promis
 }
 
 export async function loadSpogomiEventForOrganizer(supabase: SupabaseClient, eventId: string, userId: string) {
-  const result = await supabase.from("spogomi_events").select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility").eq("id", eventId).maybeSingle();
+  const result = await supabase.from("spogomi_events").select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility").eq("id", eventId).maybeSingle();
   if (result.error) throw result.error;
   if (!result.data) return null;
   const event = result.data as EventRow;
@@ -58,7 +59,7 @@ export async function loadSpogomiEventBySlugForOrganizer(
 ) {
   const result = await supabase
     .from("spogomi_events")
-    .select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility")
+    .select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility")
     .eq("event_slug", slug)
     .maybeSingle();
   if (result.error) throw result.error;
@@ -81,6 +82,7 @@ export async function updateSpogomiEvent(params: {
     mode?: SpogomiEventMode;
     casualTeamSize?: number | null;
     publicVisibility?: "private" | "published";
+    publicResultsVisibility?: "hidden" | "provisional" | "certified";
   };
 }) {
   const { event, input, supabase } = params;
@@ -111,9 +113,10 @@ export async function updateSpogomiEvent(params: {
       mode: input.mode ?? event.mode,
       team_size_config: { casual: { minMembers: casualTeamSize, maxMembers: casualTeamSize } },
       public_visibility: input.publicVisibility ?? event.public_visibility,
+      public_results_visibility: input.publicResultsVisibility ?? event.public_results_visibility,
     })
     .eq("id", event.id)
-    .select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility")
+    .select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility")
     .single();
   if (result.error) throw result.error;
   return result.data as EventRow;
@@ -122,7 +125,7 @@ export async function updateSpogomiEvent(params: {
 const CREATION_LEASE_MS = 2 * 60 * 1000;
 const IMPORT_LEASE_MS = 2 * 60 * 1000;
 const IMPORT_VERIFICATION_PAGE_SIZE = 1_000;
-const EVENT_SELECT = "id, action_id, created_by_clerk_id, idempotency_key, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility";
+const EVENT_SELECT = "id, action_id, created_by_clerk_id, idempotency_key, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility";
 
 type CreationInput = {
   idempotencyKey: string;

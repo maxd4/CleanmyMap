@@ -1,6 +1,6 @@
 # SPOGOMI — intégration événementielle et consolidation CleanMyMap
 
-> **Statut : PLAN — cible fonctionnelle et contrats d'intégration à implémenter.**
+> **Statut : CURRENT PARTIEL — la préparation, la certification, les projections publiques bornées, les deux classements indépendants, la consolidation et l'export XLSX sont livrés sur les contrats explicitement présents dans le dépôt. Les preuves runtime externes et l'intégration partenaire restent à valider en environnement de validation.**
 > Ce document ne prouve ni l'existence des tables et interfaces décrites, ni un partenariat contractualisé, ni la validation d'un règlement officiel SPOGOMI. Après chaque lot, ne passer en `CURRENT` que les comportements réellement livrés et testés.
 >
 > **Périmètre :** événements SPOGOMI organisés avec CleanMyMap, modes `casual` et `world_cup`, inscriptions importées, équipes, mesures, classements, action canonique agrégée et participations confirmées.

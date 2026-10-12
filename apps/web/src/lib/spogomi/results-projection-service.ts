@@ -1,0 +1,61 @@
+import "server-only";
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { readAllSpogomiPages } from "./pagination";
+import {
+  buildSpogomiResultsProjection,
+  type SpogomiResultsSource,
+  type SpogomiExportProjection,
+} from "./results-projection";
+
+function isPublishedAction(row: { status: string | null; published_at: string | null; moderation_visibility: string | null }): boolean {
+  return row.status === "approved" && Boolean(row.published_at) && row.moderation_visibility !== "hidden";
+}
+
+export async function loadSpogomiResultsProjection(params: {
+  supabase: SupabaseClient;
+  eventId: string;
+  publicOnly?: boolean;
+  visibilityOverride?: SpogomiResultsSource["event"]["publicResultsVisibility"];
+}): Promise<SpogomiExportProjection | null> {
+  const eventResult = await params.supabase
+    .from("spogomi_events")
+    .select("id, action_id, name, location_label, mode, state, starts_at, ends_at, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config, public_visibility, public_results_visibility")
+    .eq("id", params.eventId)
+    .maybeSingle();
+  if (eventResult.error) throw eventResult.error;
+  if (!eventResult.data) return null;
+  if (params.publicOnly && (eventResult.data.public_visibility !== "published" || eventResult.data.state === "cancelled")) return null;
+
+  const [actionResult, categories, teams, submissions, items, participants, rankings, consolidation] = await Promise.all([
+    params.supabase.from("actions").select("status, published_at, moderation_visibility").eq("id", eventResult.data.action_id).maybeSingle(),
+    readAllSpogomiPages("public SPOGOMI categories", (from, to) => params.supabase.from("spogomi_category_rules").select("id, event_id, regulation_version, code, label, measurement_kind, unit, coefficient, coefficient_status, environmental_category_slug, display_order, is_complete").eq("event_id", params.eventId).order("display_order", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("public SPOGOMI teams", (from, to) => params.supabase.from("spogomi_teams").select("id, team_number, public_name, certified_submission_id").eq("event_id", params.eventId).order("team_number", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("public SPOGOMI submissions", (from, to) => params.supabase.from("spogomi_result_submissions").select("id, team_id, version, status, submitted_at, updated_at").eq("event_id", params.eventId).order("team_id", { ascending: true }).order("version", { ascending: false }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("public SPOGOMI result items", (from, to) => params.supabase.from("spogomi_result_items").select("id, submission_id, category_rule_id, measurement_kind, unit, quantity, mass_grams, object_count, measurement_method, provenance, source_reference").eq("event_id", params.eventId).order("submission_id", { ascending: true }).order("category_rule_id", { ascending: true }).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("public SPOGOMI participants", (from, to) => params.supabase.from("spogomi_participants").select("id, team_id, registration_status, attendance_status").eq("event_id", params.eventId).order("id", { ascending: true }).range(from, to)),
+    readAllSpogomiPages("public SPOGOMI official rankings", (from, to) => params.supabase.from("spogomi_official_rankings").select("team_id, kind, rank, status, team_eligible, decision_version, source_reference").eq("event_id", params.eventId).order("kind", { ascending: true }).order("rank", { ascending: true }).order("team_id", { ascending: true }).range(from, to)),
+    params.supabase.from("spogomi_action_consolidations").select("projection, published_at").eq("event_id", params.eventId).eq("is_current", true).eq("status", "published").maybeSingle(),
+  ]);
+  if (actionResult.error || consolidation.error) throw actionResult.error ?? consolidation.error;
+  const event = eventResult.data;
+  const source: SpogomiResultsSource = {
+    event: {
+      id: String(event.id), actionId: String(event.action_id), name: String(event.name), locationLabel: String(event.location_label), mode: event.mode,
+      state: String(event.state), startsAt: String(event.starts_at), endsAt: event.ends_at ? String(event.ends_at) : null,
+      regulationVersion: String(event.regulation_version), regulationStatus: event.regulation_status,
+      regulationSourceReference: event.regulation_source_reference ? String(event.regulation_source_reference) : null,
+      regulationConfig: event.regulation_config, teamSizeConfig: event.team_size_config,
+      publicResultsVisibility: params.visibilityOverride ?? event.public_results_visibility ?? "hidden",
+    },
+    categories: categories as unknown as SpogomiResultsSource["categories"],
+    teams: (teams as Array<Record<string, unknown>>).map((team) => ({ id: String(team.id), team_number: Number(team.team_number), public_name: String(team.public_name), certified_submission_id: team.certified_submission_id ? String(team.certified_submission_id) : null })),
+    submissions: submissions as unknown as SpogomiResultsSource["submissions"],
+    items: items as Array<Record<string, unknown>>,
+    participants: participants as unknown as SpogomiResultsSource["participants"],
+    officialRankings: rankings as unknown as SpogomiResultsSource["officialRankings"],
+    consolidation: consolidation.data ? { projection: consolidation.data.projection as Record<string, unknown>, published_at: String(consolidation.data.published_at) } : null,
+    actionIsPublished: Boolean(actionResult.data && isPublishedAction(actionResult.data)),
+  };
+  return buildSpogomiResultsProjection(source);
+}

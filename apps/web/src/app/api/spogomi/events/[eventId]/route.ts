@@ -51,6 +51,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ event
         mode: body.mode === "casual" || body.mode === "world_cup" ? body.mode : undefined,
         casualTeamSize: body.casualTeamSize === null || typeof body.casualTeamSize === "number" ? body.casualTeamSize : undefined,
         publicVisibility: body.publicVisibility === "private" || body.publicVisibility === "published" ? body.publicVisibility : undefined,
+        publicResultsVisibility: body.publicResultsVisibility === "hidden" || body.publicResultsVisibility === "provisional" || body.publicResultsVisibility === "certified" ? body.publicResultsVisibility : undefined,
       },
     });
     return NextResponse.json({ event: updated });

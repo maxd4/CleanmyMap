@@ -3,6 +3,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { SpogomiEventMode, SpogomiEventState } from "./types";
+import { loadSpogomiResultsProjection } from "./results-projection-service";
+import type { SpogomiPublicResults } from "./results-projection";
 
 export type SpogomiPublicLifecycle = "upcoming" | "in_progress" | "finished";
 
@@ -34,6 +36,7 @@ export type SpogomiPublicEvent = {
   actionHref: string | null;
   teams: SpogomiPublicTeam[];
   route: SpogomiPublicRoute | null;
+  results: SpogomiPublicResults | null;
 };
 
 type PublicEventRow = {
@@ -46,6 +49,7 @@ type PublicEventRow = {
   starts_at: string;
   ends_at: string | null;
   action_id: string;
+  public_results_visibility: "hidden" | "provisional" | "certified";
 };
 
 function normalizeSlugPart(value: string): string {
@@ -104,6 +108,7 @@ function mapEvent(
   publishableActionIds: Set<string>,
   teams: SpogomiPublicTeam[] = [],
   route: SpogomiPublicRoute | null = null,
+  results: SpogomiPublicResults | null = null,
 ): SpogomiPublicEvent | null {
   if (!row.event_slug) return null;
   return {
@@ -121,13 +126,14 @@ function mapEvent(
       : null,
     teams,
     route,
+    results,
   };
 }
 
 async function loadPublishedRows(supabase: SupabaseClient, slug?: string): Promise<PublicEventRow[]> {
   let query = supabase
     .from("spogomi_events")
-    .select("id, event_slug, name, location_label, mode, state, starts_at, ends_at, action_id")
+    .select("id, event_slug, name, location_label, mode, state, starts_at, ends_at, action_id, public_results_visibility")
     .eq("public_visibility", "published")
     .neq("state", "cancelled")
     .not("event_slug", "is", null)
@@ -186,7 +192,7 @@ export async function loadPublishedSpogomiEventBySlug(
         coordinates: routeData.geometry_geojson.coordinates,
       }
     : null;
-  return mapEvent(
+  const mapped = mapEvent(
     row,
     actionIds,
     (teamsResult.data ?? []).map((team) => ({
@@ -196,6 +202,17 @@ export async function loadPublishedSpogomiEventBySlug(
     })),
     route,
   );
+  if (!mapped) return null;
+  const projection = await loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true });
+  return { ...mapped, results: projection?.results ?? null };
+}
+
+export async function loadPublishedSpogomiEventResultsBySlug(
+  slug: string,
+  supabase = getSupabaseServerClient(true),
+): Promise<SpogomiPublicResults | null> {
+  const event = await loadPublishedSpogomiEventBySlug(slug, supabase);
+  return event?.results ?? null;
 }
 
 export async function loadPublishedSpogomiEventForAction(
