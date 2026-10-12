@@ -720,6 +720,16 @@ identique sur le même candidat sans raison.
 - `checks:full` ne peut jamais être une STOP CONDITION ou un critère de clôture générique d’un lot ordinaire ; `release:check` exige en plus le SHA exact et une preuve FULL persistée.
 - Si un prompt demande `checks:full` hors de ces deux cas, ne pas l’exécuter : retourner `NOT_RUN_POLICY` et poursuivre avec les validations proportionnées.
 
+### Boucle de prévention des récidives
+
+Toute tâche qui corrige une régression, une erreur de revue, un lot déclaré
+terminé mais incomplet, une validation trompeuse ou insuffisante, une erreur
+répétée de conception, de type, de sécurité, de données ou de test, ou un
+micro-correctif de suivi déclenche dans le même lot la boucle décrite dans
+`documentation/development/repo-quality-rules.md`. Le déclenchement dépend de
+la nature de la demande, pas de ses mots-clés ; il n'ouvre pas automatiquement
+un second chantier.
+
 La politique canonique est donc : `DEVELOPMENT` (`checks:fast`) pour le travail
 courant ciblé, `FULL` (`checks:full`) pour une exécution globale explicitement
 demandée, puis `RELEASE` (`release:check -- --sha=<sha>`) pour vérifier qu'un SHA

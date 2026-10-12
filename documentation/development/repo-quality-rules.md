@@ -112,3 +112,146 @@ La source spécialisée est
   ciblé.
 - Suivre la politique Git canonique du dépôt pour le commit et le push ; ne pas
   la recopier ici.
+
+## 8. Boucle de prévention des récidives après correction
+
+Cette boucle s'applique dans le lot courant lorsqu'une demande corrige une
+régression, une erreur de revue, un lot déclaré terminé mais incomplet, une
+validation trompeuse ou insuffisante, une erreur répétée de conception, de
+type, de sécurité, de données ou de test, ou un micro-correctif de suivi. Elle
+est déclenchée par la nature du problème, même si le prompt n'emploie pas les
+termes « micro-lot » ou « revue ». Elle ne crée pas automatiquement un second
+projet : la prévention reste dans le plus petit lot cohérent qui corrige le
+problème.
+
+### A. Établir la cause racine
+
+Pour chaque correction concernée :
+
+1. vérifier le défaut dans le code, le contrat ou le comportement réel actuel ;
+2. distinguer un défaut prouvé, un risque plausible et une hypothèse non
+   vérifiée ;
+3. identifier la cause racine plutôt que le seul symptôme ;
+4. vérifier les tests et protections qui auraient dû empêcher le défaut ;
+5. identifier l'invariant qui aurait empêché sa réapparition.
+
+Une observation de revue ne devient pas une preuve par sa seule formulation.
+Une hypothèse non confirmée ne doit pas être généralisée ni transformée en
+règle durable.
+
+### B. Corriger et démontrer le comportement
+
+La correction est la plus petite modification cohérente qui rétablit le
+contrat. Lorsque l'infrastructure le permet, elle ajoute ou renforce un test
+de régression et démontre l'échec avant correction puis le succès après
+correction. Le compte rendu distingue les preuves statiques, mockées et
+comportementales.
+
+Pour PostgreSQL, RLS, les transactions, la concurrence et les services
+externes, une inspection statique ou un test mocké ne constitue pas une preuve
+d'exécution comportementale réelle. Une vérification de texte ou de présence
+d'une chaîne ne remplace pas un test du comportement couvert.
+
+### C. Évaluer le risque de récidive sans lancer un audit global
+
+Inspecter uniquement les zones directement analogues et les contrats partagés
+par la correction. Classer le risque avec les catégories suivantes :
+
+- `LOCAL` : le défaut reste limité à la frontière corrigée et aucun contrat
+  partagé n'est exposé ;
+- `GENERALISABLE` : le même invariant peut échouer dans une ou plusieurs zones
+  directement analogues ;
+- `RECURRENT` : le défaut, ou la même classe de défaut, réapparaît alors
+  qu'une correction ou une protection antérieure existait déjà ;
+- `CRITICAL` : le défaut touche notamment AuthN/AuthZ, les secrets, l'intégrité
+  ou la perte de données, une migration, une transaction sensible, ou un autre
+  risque dont l'impact impose une prévention renforcée.
+
+Les catégories peuvent se cumuler lorsqu'elles décrivent des dimensions
+différentes ; `CRITICAL` fixe alors le niveau de prudence. Cette boucle ne
+déclenche pas un audit exhaustif du dépôt par défaut.
+
+### D. Choisir une prévention proportionnée
+
+Choisir, selon le risque établi :
+
+- un test lorsque le comportement est automatisable ;
+- une règle canonique lorsque l'invariant durable manque de propriétaire
+  documentaire ;
+- un garde automatisé lorsque le défaut est répété, critique ou prévenable par
+  un contrôle simple et maintenable ;
+- aucune nouvelle protection lorsque les tests et contrats existants couvrent
+  déjà correctement le cas.
+
+Un défaut documenté et récurrent appelle le renforcement du test ou du garde
+existant, pas une deuxième formulation concurrente. Ne pas créer
+automatiquement un fichier de gouvernance racine, une règle ESLint, une migration, une étape CI
+ou un script : chacune de ces protections doit être justifiée par le risque,
+son propriétaire et une validation exploitable.
+
+### E. Capitaliser au bon endroit
+
+Le propriétaire de la prévention détermine son emplacement :
+
+- contrat de domaine : documentation canonique du domaine et tests associés ;
+- méthode de test ou de validation : documentation qualité/tests et preuve
+  exécutable ;
+- sécurité : documentation sécurité et tests de sécurité ;
+- règle universelle d'exécution : gouvernance racine, uniquement si le
+  processus global change réellement ;
+- retour daté : audit ou historique uniquement lorsqu'il conserve une valeur
+  vérifiable.
+
+Ne pas recopier une même règle dans plusieurs documents. Une erreur locale ne
+justifie pas à elle seule une modification de la gouvernance racine.
+
+### F. Cas de récidive
+
+Lorsqu'une récidive est établie :
+
+1. vérifier que la correction ou protection précédente existe encore ;
+2. expliquer pourquoi elle n'a pas empêché le défaut ;
+3. renforcer le contrat ou le contrôle partagé au bon propriétaire ;
+4. ne pas se limiter à ajouter une seconde phrase dans un autre document.
+
+Si le test précédent ne couvrait jamais le comportement réel, ajouter la
+preuve manquante au niveau adapté au risque, au lieu de présenter la preuve
+statique ou mockée comme suffisante.
+
+### G. Clôture et compte rendu
+
+Toute tâche qui déclenche cette boucle ajoute au compte rendu exactement un
+statut de prévention :
+
+```text
+PREVENTION_RECURRENCE: TEST | CANONICAL_RULE | AUTOMATED_GUARD | EXISTING_PROTECTION_SUFFICIENT | BLOCKED
+```
+
+Le compte rendu précise brièvement la cause racine et la classe de risque, la
+protection choisie et son emplacement, les preuves réellement exécutées et
+leurs limites. Si aucune nouvelle règle n'est nécessaire, il explique pourquoi
+les protections existantes sont suffisantes. `BLOCKED` est réservé à une
+prévention nécessaire mais impossible à établir ou à exécuter dans
+l'environnement autorisé ; il ne masque pas une preuve manquante.
+
+### H. Exemples de périmètre, sans relancer les lots SPOGOMI
+
+Ces exemples illustrent la méthode et ne rouvrent aucun lot SPOGOMI :
+
+- pour une cible SQL `ON CONFLICT`, un test comportemental PostgreSQL prouve
+  l'inférence réelle ; le texte d'un index ou d'une migration ne suffit pas ;
+- pour une pagination, un test dépassant la limite de lecture vérifie la
+  lecture exhaustive et l'invariant associé ; il ne faut pas créer un helper
+  universel si les services existants suffisent ;
+- pour l'idempotence, tester le cycle complet de reprise, le propriétaire et
+  la déduplication côté serveur ; la seule présence d'un UUID ne constitue pas
+  une preuve.
+
+### I. Limites
+
+Cette boucle ne justifie ni un lot indéfini, ni une règle pour une simple faute
+de frappe, ni une campagne globale de tests sans risque démontré, ni la
+réécriture d'une migration publiée, ni un élargissement Kaizen. Elle ne crée
+pas une mémoire d'erreurs parallèle et ne permet pas de masquer une preuve
+manquante. Toute protection ajoutée doit rester maintenable et vérifiable dans
+l'environnement réellement disponible.
