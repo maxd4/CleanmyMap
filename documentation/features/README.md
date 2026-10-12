@@ -20,7 +20,7 @@ doivent pas être utilisés comme contrats courants.
 
 - [Méthodologie de création d'itinéraire](../architecture/methodologie-creation-itineraire.md)
   — contraintes et trace du planner.
-- [Fiche fonctionnelle Où agir](../pages_site/routes/02-agir/ou-agir/ou-agir-README.md)
+- [Fiche fonctionnelle Où agir](../pages_site/routes/02-agir/agir-README.md)
   — entrée produit du parcours.
 
 ### Gamification
@@ -56,6 +56,9 @@ et les composants/tests associés.
 
 ## `PLAN`
 
+- [`spogomi.md`](./spogomi.md) — contrat cible pour les événements SPOGOMI,
+  leurs équipes, les formulaires spécialisés et la consolidation vers une seule
+  action CleanMyMap ; aucune fonctionnalité n'est déclarée livrée par cette fiche.
 - [`reports-parameters-and-objectives.md`](./reports-parameters-and-objectives.md)
   — cible pour les paramètres de génération et les objectifs de `/reports`.
   Cette logique cible n'est pas présentée comme implémentée par ce lot ; les
@@ -82,7 +85,8 @@ et les composants/tests associés.
 | Besoin | Première source | Sources complémentaires |
 |---|---|---|
 | Rejoindre ou gérer une action de groupe | [`group-action.md`](./group-action.md) | code des routes/actions et tests concernés |
-| Créer un itinéraire | [Méthodologie itinéraire](../architecture/methodologie-creation-itineraire.md) | fiche [Où agir](../pages_site/routes/02-agir/ou-agir/ou-agir-README.md), code et tests du planner |
+| Préparer l'intégration SPOGOMI | [`spogomi.md`](./spogomi.md) (`PLAN`) | contrats `actions`, mesures, participation et gamification sur `main` |
+| Créer un itinéraire | [Méthodologie itinéraire](../architecture/methodologie-creation-itineraire.md) | fiche [Où agir](../pages_site/routes/02-agir/agir-README.md), code et tests du planner |
 | Modifier la gamification | [`GAMIFICATION_ENGINE.md`](./GAMIFICATION_ENGINE.md) | spécification gamification, code et tests du moteur |
 | Modifier le Master Pack | [`master-pack.md`](./master-pack.md) | `apps/web/src/lib/reports/master-pack/`, modèle de rapport et tests |
 | Créer une question | [`quiz-authoring-guide.md`](./quiz-authoring-guide.md) | [`quiz-contributor-guide.md`](./quiz-contributor-guide.md), [`quiz-quality-control.md`](./quiz-quality-control.md) |
