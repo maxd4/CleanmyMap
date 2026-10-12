@@ -134,6 +134,20 @@ Lors du push :
   spécialisée ;
 - après publication, vérifier la convergence locale/distante.
 
+### Autorisation ChatGPT Web
+
+ChatGPT Web/Codex est un writer autorisé de ce dépôt. Pour un lot demandé ou
+validé par l’utilisateur, il peut créer le commit isolé correspondant et pousser
+normalement sur `origin/main` après les validations requises. Avant le push, il
+doit vérifier le périmètre staged, l’ascendance non publiée et l’absence de
+divergence distante ; après le push, il doit vérifier la convergence entre
+`HEAD` et `origin/main`.
+
+Cette autorisation ne couvre ni le force-push, ni la réécriture d’historique, ni
+la suppression distante, ni un déploiement ou une autre mutation externe non
+explicitement demandée. Une demande explicite de ne pas committer ou de ne pas
+pousser prévaut sur cette autorisation.
+
 La mécanique détaillée des scopes Git, hooks, candidats de pré-push et
 validations dynamiques appartient à `scripts/AGENTS.md` et
 `documentation/development/TESTING.md`.
