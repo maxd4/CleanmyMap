@@ -164,6 +164,14 @@ export type ActionPreparationData = {
   routeObservedDistanceKm?: number;
   /** Canonical metadata for a validated user-provided GPX trace. */
   gpxImport?: ActionGpxImportMetadata;
+  /** Official SPOGOMI route reference; never an observed ground trace. */
+  spogomiOfficialReference?: {
+    source: "official_reference";
+    fileName: string;
+    pointCount: number;
+    referenceDistanceKm: number;
+    note: string;
+  };
   /** Recomputable multi-trace coverage; never an itinerary or summed distance. */
   observedCoverage?: ActionObservedCoverage;
   /** Measured or estimated result of the server-side route provider. */

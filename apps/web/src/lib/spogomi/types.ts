@@ -1,3 +1,5 @@
+import type { ActionRouteTopology } from "@/lib/actions/types";
+
 export const SPOGOMI_EVENT_MODES = ["casual", "world_cup"] as const;
 export type SpogomiEventMode = (typeof SPOGOMI_EVENT_MODES)[number];
 
@@ -95,4 +97,66 @@ export type SpogomiParticipantState = {
   attendanceStatus: SpogomiAttendanceStatus;
   accountLinkStatus: SpogomiAccountLinkStatus;
   clerkId: string | null;
+};
+
+export const SPOGOMI_IMPORT_FORMATS = ["csv", "xlsx"] as const;
+export type SpogomiImportFormat = (typeof SPOGOMI_IMPORT_FORMATS)[number];
+
+export type SpogomiRosterColumn = "name" | "group" | "sourceRowId";
+
+export type SpogomiRosterColumnMapping = Partial<
+  Record<SpogomiRosterColumn, string>
+>;
+
+export type SpogomiRosterRow = {
+  rowNumber: number;
+  name: string;
+  groupPreference: string | null;
+  sourceRowId: string | null;
+  sourceFingerprint: string;
+};
+
+export type SpogomiRosterRowError = {
+  rowNumber: number;
+  code:
+    | "name_required"
+    | "name_too_long"
+    | "row_too_wide"
+    | "invalid_source_row_id";
+  message: string;
+};
+
+export type SpogomiRosterPreview = {
+  format: SpogomiImportFormat;
+  fileName: string;
+  contentHash: string;
+  headers: string[];
+  unknownHeaders: string[];
+  mapping: SpogomiRosterColumnMapping;
+  rows: SpogomiRosterRow[];
+  errors: SpogomiRosterRowError[];
+  probableDuplicateRowNumbers: number[][];
+  importKey: string;
+};
+
+export type SpogomiTeamDraft = {
+  draftKey: string;
+  teamNumber: number;
+  participantIds: string[];
+  compositionState: SpogomiTeamCompositionState;
+};
+
+export type SpogomiTeamFormation = {
+  teams: SpogomiTeamDraft[];
+  unassignedParticipantIds: string[];
+  reasons: Record<string, "group_exceeds_team_size" | "team_size_required" | "incomplete_team">;
+};
+
+export type SpogomiOfficialRoute = {
+  source: "official_reference";
+  fileName: string;
+  pointCount: number;
+  referenceDistanceKm: number;
+  inferredTopology: ActionRouteTopology;
+  coordinates: [number, number][];
 };

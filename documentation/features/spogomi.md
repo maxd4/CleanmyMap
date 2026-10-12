@@ -257,9 +257,10 @@ Le lot 1 implémente uniquement le socle métier et ses frontières de sécurit�
 - les données du roster restent server-only ; les lectures authentifiées
   autorisées des autres entités passent par `action_organizers`, tandis que les
   écritures attendent une AuthZ serveur existante avant le client privilégié ;
-- il n'y a encore ni interface publique, ni import Excel, ni projection vers
-  `actions`, ni classement, ni attribution de gamification. Ces éléments
-  restent dans le plan des lots suivants et ne sont pas déclarés `CURRENT`.
+- il n'y a ni interface publique d'événement, ni projection de résultats,
+  ni classement, ni attribution de gamification dans ce lot de socle. La
+  préparation privée livrée au lot 2 est décrite ci-dessous ; le reste reste
+  dans le plan des lots suivants.
 
 Cette section `CURRENT` ne remplace pas le contrat `PLAN` précédent : elle ne
 déclare livrées que les frontières et invariants effectivement introduits par
@@ -267,7 +268,42 @@ le lot 1.
 
 Chaque lot s'appuie sur le `main` **publié** du lot précédent. Codex exécute les tests adaptés et n'annonce ni preuve de production ni migration distante sans observation réelle. Les validations et commits suivent la gouvernance du dépôt et `documentation/development/TESTING.md`.
 
-## 14. Points encore à confirmer auprès de SPOGOMI France
+## 15. Lot 2 livré — CURRENT — préparation organisateur
+
+La route privée `/spogomi` et sa vue d'événement `/spogomi/[eventId]` permettent
+à un compte authentifié qui possède la relation organisateur canonique de :
+
+- créer un brouillon avec une seule action CleanMyMap liée par `action_id` ; la
+  clé d'idempotence et `spogomi_event_creation_attempts` permettent de reprendre
+  un échec de liaison sans créer une seconde action (`PARTIAL_ALLOWED`) ; le
+  type juridique SPOGOMI France reste provisoire tant que le répertoire ne le
+  configure pas ;
+- déposer un CSV ou XLSX de roster privé, sélectionner explicitement les
+  colonnes utiles, voir les inconnues, erreurs et doublons probables, puis
+  confirmer un import idempotent par empreinte de contenu ; aucun compte Clerk,
+  `action_registrations` ou `action_participants` n'est créé par ce parcours ;
+- former automatiquement les équipes selon un ordre déterministe, préserver les
+  groupes autant que possible, laisser les impossibles dans « À affecter »,
+  déplacer manuellement une personne et verrouiller seulement une composition
+  conforme ;
+- importer un GPX officiel en réutilisant `parseGpxFile`. Le parcours est stocké
+  dans `spogomi_event_routes` avec la provenance `official_reference` et une
+  distance de référence ; il n'est jamais présenté comme une distance observée.
+
+Le roster nominatif, les correspondances et les mutations restent derrière une
+AuthN/AuthZ serveur ; les API utilisent le client privilégié uniquement après
+le contrôle d'accès métier. Cette livraison ne fournit ni interface publique,
+ni règlement complet, ni score, ni consolidation finale.
+
+Fichiers principaux :
+
+- `apps/web/src/lib/spogomi/preparation.ts` et
+  `apps/web/src/lib/spogomi/preparation-service.ts` ;
+- `apps/web/src/components/spogomi/` et `apps/web/src/app/(app)/spogomi/` ;
+- `apps/web/src/app/api/spogomi/` ;
+- `apps/web/supabase/migrations/20261012000002_spogomi_preparation.sql`.
+
+## 16. Points encore à confirmer auprès de SPOGOMI France
 
 - Règlement complet applicable à chaque mode, catégories, coefficients, unités, arrondis, pénalités, départages et conditions de disqualification.
 - Exemple **anonymisé** et schéma réel du classeur des inscriptions ; qualité des identifiants externes et champs optionnels.
@@ -279,7 +315,7 @@ Chaque lot s'appuie sur le `main` **publié** du lot précédent. Codex exécute
 
 Ces incertitudes ne bloquent pas les contrats généraux, mais **interdisent** de figer un barème « officiel », un effectif observé non attesté ou une conversion physique non justifiée.
 
-## 15. Sources canoniques liées
+## 17. Sources canoniques liées
 
 - [Participation et formulaire de groupe](./group-action.md)
 - [Moteur de gamification](./GAMIFICATION_ENGINE.md)
