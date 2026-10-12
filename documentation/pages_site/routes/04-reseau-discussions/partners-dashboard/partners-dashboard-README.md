@@ -60,6 +60,21 @@
 - Le nombre « À valider » vient indépendamment de `countPartnerOnboardingRequests()` et ne dépend pas des fiches publiées.
 - En l’absence de fiche persistée, le dashboard affiche des compteurs à zéro et un état vide explicite. En cas d’échec de lecture persistée, les KPI concernés affichent `n/a` et une erreur visible.
 
+## Extension SPOGOMI — lot 9
+
+La même surface présente, lorsqu'elles existent, les éditions SPOGOMI
+publiées associées par `actions.organizer_id` à chaque organisateur canonique.
+Les projections environnementales sont celles de la consolidation publiée de
+l'action et les missions sont celles des attestations certifiées. La liste ne
+publie aucun roster ni identifiant personnel.
+
+Les agrégats dédupliquent `actions.id`, séparent participations cumulées,
+bénévoles uniques fiables, kilogrammes mesurés, masse de mégots et comptage
+observé, et indiquent les données manquantes. Ils ne construisent aucun
+classement sportif inter-édition et n'annoncent aucun partenariat officiel.
+Une fiche Annuaire est liée uniquement par `organizerDirectoryId` exact et
+après acceptation/vérification ; le rapprochement par nom est interdit.
+
 ## Séparation avec l’Annuaire public
 
 - `INITIAL_ANNUAIRE_ENTRIES` constitue une source statique/curatée de l’Annuaire public et ne participe pas au pilotage de gouvernance.

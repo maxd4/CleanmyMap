@@ -54,6 +54,21 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
               <Link href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" className="inline-flex min-h-11 items-center font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Discuter avec la communauté</Link>
               <p className="cmm-text-caption text-slate-700">Ce salon est une discussion communautaire. Le règlement et les résultats officiels sont ceux publiés par l’organisateur habilité.</p>
             </CmmCard>
+            {event.organizer ? (
+              <CmmCard tone="slate" variant="glass" className="space-y-3 p-5">
+                <div>
+                  <h2 className="text-xl font-black text-slate-950">Organisateur de l’édition</h2>
+                  <p className="cmm-text-body mt-1">Cette visibilité décrit le rôle dans cette édition ; elle ne constitue pas une annonce de partenariat officiel avec CleanMyMap.</p>
+                </div>
+                <dl className="grid gap-2 text-sm text-slate-700">
+                  <div><dt className="font-bold text-slate-950">Structure vérifiée</dt><dd>{event.organizer.verifiedName}</dd></div>
+                  <div><dt className="font-bold text-slate-950">Rôle</dt><dd>Organisateur local de l’édition</dd></div>
+                  {event.organizer.territory ? <div><dt className="font-bold text-slate-950">Territoire</dt><dd>{event.organizer.territory}</dd></div> : null}
+                </dl>
+                {event.organizer.officialSiteUrl ? <a href={event.organizer.officialSiteUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center font-bold text-emerald-800 hover:underline">Site officiel validé</a> : null}
+                {event.organizer.partnerProfileHref ? <Link href={event.organizer.partnerProfileHref} className="inline-flex min-h-11 items-center font-bold text-emerald-800 hover:underline">Voir la fiche partenaire dans l’Annuaire</Link> : null}
+              </CmmCard>
+            ) : null}
             <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5">
               <div><h2 className="text-xl font-black text-emerald-950">Équipes</h2><p className="cmm-text-body mt-1 text-slate-900">Seuls les noms publics d’équipe sont affichés. Le roster nominatif reste privé.</p></div>
               {event.teams.length ? <div className="grid gap-3 sm:grid-cols-2">{event.teams.map((team) => <div key={team.teamNumber} className="rounded-xl border border-emerald-100 bg-white/75 p-3"><p className="font-bold text-slate-900">{team.publicName}</p><p className="mt-1 text-xs text-slate-500">Équipe {team.teamNumber}</p></div>)}</div> : <p className="rounded-xl border border-dashed border-emerald-200 p-4 text-sm text-slate-600">La composition publique n’est pas encore disponible.</p>}

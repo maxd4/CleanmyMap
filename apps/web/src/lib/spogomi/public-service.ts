@@ -5,6 +5,8 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { SpogomiEventMode, SpogomiEventState } from "./types";
 import { loadSpogomiResultsProjection } from "./results-projection-service";
 import type { SpogomiPublicResults } from "./results-projection";
+import { loadSpogomiOrganizerForAction } from "./partner-impact-service";
+import type { SpogomiPublicOrganizer } from "./partner-impact";
 
 export type SpogomiPublicLifecycle = "upcoming" | "in_progress" | "finished";
 
@@ -37,6 +39,7 @@ export type SpogomiPublicEvent = {
   teams: SpogomiPublicTeam[];
   route: SpogomiPublicRoute | null;
   results: SpogomiPublicResults | null;
+  organizer: SpogomiPublicOrganizer | null;
 };
 
 type PublicEventRow = {
@@ -109,6 +112,7 @@ function mapEvent(
   teams: SpogomiPublicTeam[] = [],
   route: SpogomiPublicRoute | null = null,
   results: SpogomiPublicResults | null = null,
+  organizer: SpogomiPublicOrganizer | null = null,
 ): SpogomiPublicEvent | null {
   if (!row.event_slug) return null;
   return {
@@ -127,6 +131,7 @@ function mapEvent(
     teams,
     route,
     results,
+    organizer,
   };
 }
 
@@ -149,7 +154,15 @@ export async function listPublishedSpogomiEvents(
 ): Promise<SpogomiPublicEvent[]> {
   const rows = await loadPublishedRows(supabase);
   const actionIds = await loadPublicActionHrefs(supabase, rows.map((row) => row.action_id));
-  return rows.map((row) => mapEvent(row, actionIds)).filter((event): event is SpogomiPublicEvent => Boolean(event));
+  const mapped = await Promise.all(rows.map(async (row) => mapEvent(
+    row,
+    actionIds,
+    [],
+    null,
+    null,
+    await loadSpogomiOrganizerForAction({ supabase, actionId: row.action_id, eventTerritory: row.location_label }),
+  )));
+  return mapped.filter((event): event is SpogomiPublicEvent => Boolean(event));
 }
 
 export async function loadPublishedSpogomiEventBySlug(
@@ -201,6 +214,8 @@ export async function loadPublishedSpogomiEventBySlug(
       compositionState: String(team.composition_state),
     })),
     route,
+    null,
+    await loadSpogomiOrganizerForAction({ supabase, actionId: row.action_id, eventTerritory: row.location_label }),
   );
   if (!mapped) return null;
   const projection = await loadSpogomiResultsProjection({ supabase, eventId: row.id, publicOnly: true });

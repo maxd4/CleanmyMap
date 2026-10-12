@@ -117,6 +117,11 @@ export type PublishedAnnuaireEntry = AnnuaireEntryShared & {
   availability: string;
   lastUpdatedAt: string;
   recentActivityAt: string;
+  /**
+   * Explicit bridge to the canonical action organizer registry.
+   * Names are never used to infer this relationship.
+   */
+  organizerDirectoryId?: string;
   associationProfile?: AssociationProfile;
 };
 

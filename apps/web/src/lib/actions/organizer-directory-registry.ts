@@ -92,6 +92,10 @@ function getStaticOrganizerById(id: string | null | undefined) {
   return ORGANIZER_DIRECTORY.find((entry) => entry.id === id.trim()) ?? null;
 }
 
+export function getCanonicalStaticOrganizerById(id: string | null | undefined) {
+  return getStaticOrganizerById(id);
+}
+
 function getStaticOrganizerByNormalizedName(name: string) {
   const normalizedName = normalizeOrganizerName(name);
   if (!normalizedName) return null;

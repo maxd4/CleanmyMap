@@ -1,4 +1,5 @@
 import { hasRecentActivity } from "@/components/sections/rubriques/annuaire/annuaire-helpers";
+import Link from "next/link";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { PublishedAnnuaireReviewPanel } from "@/components/partners/published-annuaire-review-panel";
@@ -13,6 +14,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { cn } from "@/lib/utils";
+import { listPublishedSpogomiPartnerImpacts } from "@/lib/spogomi/partner-impact-service";
 import { ShieldCheck, ClipboardCheck, Users, MapPin, AlertCircle } from "lucide-react";
 
 export default async function PartnersDashboardPage() {
@@ -66,6 +68,14 @@ export default async function PartnersDashboardPage() {
   const coveredZones = new Set(
     acceptedPublishedEntries.flatMap((entry) => entry.coveredArrondissements),
   );
+  let spogomiPartnerImpacts: Awaited<ReturnType<typeof listPublishedSpogomiPartnerImpacts>> = [];
+  let spogomiImpactLoadError: string | null = null;
+  try {
+    spogomiPartnerImpacts = await listPublishedSpogomiPartnerImpacts();
+  } catch (error) {
+    console.error("Published SPOGOMI partner impact load failed", error);
+    spogomiImpactLoadError = "Impacts SPOGOMI indisponibles (configuration persistance).";
+  }
 
   const page = (
     <CmmPageLayout>
@@ -121,6 +131,34 @@ export default async function PartnersDashboardPage() {
           {onboardingLoadError}
         </section>
       )}
+
+      <section className={cn("space-y-5 rounded-[3rem] border p-8", classes.surface, classes.shadow)} aria-labelledby="spogomi-partner-impact-title">
+        <div>
+          <h2 id="spogomi-partner-impact-title" className="text-xl font-black text-white">Éditions SPOGOMI publiées</h2>
+          <p className="cmm-text-body mt-1 text-white/60">Projection des événements publics et de leurs bilans environnementaux certifiés. Les données personnelles et les rosters restent exclus.</p>
+        </div>
+        {spogomiImpactLoadError ? <p className="rounded-xl border border-rose-400/20 bg-rose-400/5 p-4 text-sm text-rose-200">{spogomiImpactLoadError}</p> : spogomiPartnerImpacts.length === 0 ? <p className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">Aucune édition SPOGOMI publiable n’est associée à un organisateur canonique.</p> : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {spogomiPartnerImpacts.map((impact) => {
+              const organizer = impact.events[0]?.organizer;
+              return <article key={organizer?.organizerId ?? impact.events[0]?.actionId} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <h3 className="font-black text-white">{organizer?.verifiedName ?? "Organisateur vérifié"}</h3>
+                <p className="mt-1 text-xs font-bold uppercase tracking-[0.15em] text-white/50">{impact.publishedEditionCount} édition{impact.publishedEditionCount === 1 ? "" : "s"} publiée{impact.publishedEditionCount === 1 ? "" : "s"}</p>
+                <dl className="mt-4 grid gap-2 text-sm text-white/70 sm:grid-cols-2">
+                  <div><dt className="font-bold text-white">Participations terrain</dt><dd>{impact.confirmedTerrainParticipations ?? "Non disponible"}</dd></div>
+                  <div><dt className="font-bold text-white">Déchets mesurés</dt><dd>{impact.totalWasteMassKg === null ? "Non disponible" : `${impact.totalWasteMassKg.toFixed(2)} kg`}</dd></div>
+                  <div><dt className="font-bold text-white">Mégots comptés</dt><dd>{impact.countedCigaretteButts ?? "Non disponible"}</dd></div>
+                  <div><dt className="font-bold text-white">Missions certifiées</dt><dd>{impact.certifiedVolunteerMissionCount}</dd></div>
+                </dl>
+                <div className="mt-4 space-y-2">
+                  {impact.events.map((event) => <Link key={event.eventId} href={event.eventSlug ? `/spogomi/${encodeURIComponent(event.eventSlug)}` : "/spogomi"} className="block rounded-xl border border-white/10 bg-black/10 p-3 text-sm font-bold text-white hover:bg-white/10">{event.name} · {event.locationLabel}</Link>)}
+                </div>
+                {impact.notes.map((note) => <p key={note} className="mt-3 text-xs text-amber-200/80">{note}</p>)}
+              </article>;
+            })}
+          </div>
+        )}
+      </section>
 
       <div className="grid lg:grid-cols-3 gap-10">
         <section className={cn("lg:col-span-2 p-10 rounded-[3rem] border space-y-8", classes.surface, classes.shadow)}>

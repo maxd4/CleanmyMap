@@ -868,6 +868,50 @@ avec l'instantané des sources. L'export XLSX conserve la distinction entre
 soumissions certifiées et non certifiées et n'exporte jamais un score officiel
 de brouillon.
 
+## 19 quater. Organisateurs, Annuaire et impact consolidé — CURRENT
+
+Les événements SPOGOMI réutilisent l'identité canonique `actions.organizer_id`
+du registre organisateur. Le nom n'est jamais utilisé pour fusionner deux
+structures proches. Une fiche de l'Annuaire partenaire n'est jointe que si elle
+porte la référence explicite `organizerDirectoryId`, avec
+`publicationStatus = accepted` et `verificationStatus = verifie`. Une présence
+dans l'Annuaire ou dans le catalogue des organisateurs ne constitue pas, à elle
+seule, un partenariat officiel CleanMyMap.
+
+La page publique d'une édition peut afficher une carte compacte avec le nom
+vérifié, le rôle `Organisateur local de l'édition`, le territoire publié et le
+site officiel validé. Le lien vers l'Annuaire n'apparaît que pour une fiche
+partenaire effectivement acceptée. Le mouvement ou la marque SPOGOMI, une
+organisation internationale, une structure locale, un partenaire opérationnel
+et un éventuel partenaire officiel CleanMyMap restent des notions distinctes ;
+aucune personne morale « SPOGOMI France » n'est créée par défaut.
+
+La surface existante `/partners/dashboard` expose une synthèse des éditions
+SPOGOMI publiques associées à un organisateur canonique. Elle réutilise la
+projection environnementale publiée par la consolidation et les attestations
+de missions certifiées ; elle ne lit ni roster nominatif ni identité privée.
+Chaque `actions.id` est dédupliqué une seule fois. Les participations terrain
+par édition, les identités uniques fiables, les kilogrammes mesurés, la masse
+de mégots et les mégots comptés restent des indicateurs distincts. Une masse
+de mégots n'est jamais convertie en comptage observé et n'est jamais ajoutée
+une seconde fois à la masse totale. Les scores sportifs ne sont pas agrégés.
+
+La projection est recalculée depuis la version courante publiée de chaque
+action et conserve la provenance de la projection (`projectionVersion` et
+`sourceHash`). Une correction tardive actualise donc l'agrégat sans créer une
+nouvelle somme historique. En cas de source absente, incomplète ou d'identités
+non comparables, la valeur reste indisponible et la limite est indiquée ; le
+produit n'affiche pas une unicité de bénévoles déduite d'une addition
+d'effectifs.
+
+Fichiers principaux :
+
+- `apps/web/src/lib/spogomi/partner-impact.ts` — modèle public et agrégation pure ;
+- `apps/web/src/lib/spogomi/partner-impact-service.ts` — lecture des événements, actions, projections et attestations publiables ;
+- `apps/web/src/lib/spogomi/public-service.ts` — carte organisateur de l'édition publique ;
+- `apps/web/src/app/(app)/partners/dashboard/page.tsx` — restitution dans la surface partenaire existante ;
+- `apps/web/src/lib/partners/published-annuaire-entries-store.ts` — jointure explicite avec une fiche acceptée.
+
 ## 20. Sources canoniques liées
 
 - [Participation et formulaire de groupe](./group-action.md)

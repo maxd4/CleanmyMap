@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   countPartnerOnboardingRequests: vi.fn(),
   listPublishedPartnerAnnuaireEntries: vi.fn(),
   canUseSupabaseServerPersistence: vi.fn(),
+  listPublishedSpogomiPartnerImpacts: vi.fn(),
 }));
 
 vi.mock("@/components/sections/rubriques/annuaire/seed-index", () => {
@@ -37,6 +38,10 @@ vi.mock("@/lib/partners/published-annuaire-entries-store", () => ({
 
 vi.mock("@/lib/persistence/runtime-store", () => ({
   canUseSupabaseServerPersistence: mocks.canUseSupabaseServerPersistence,
+}));
+
+vi.mock("@/lib/spogomi/partner-impact-service", () => ({
+  listPublishedSpogomiPartnerImpacts: mocks.listPublishedSpogomiPartnerImpacts,
 }));
 
 vi.mock("@/components/partners/published-annuaire-review-panel", () => ({
@@ -99,6 +104,7 @@ describe("/partners/dashboard persisted governance contract", () => {
     mocks.getCurrentUserRoleLabel.mockResolvedValue("admin");
     mocks.canUseSupabaseServerPersistence.mockReturnValue(true);
     mocks.countPartnerOnboardingRequests.mockResolvedValue(7);
+    mocks.listPublishedSpogomiPartnerImpacts.mockResolvedValue([]);
   });
 
   it("uses accepted persisted entries only and cannot load public seeds", async () => {
