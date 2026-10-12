@@ -227,6 +227,30 @@ Parcours cible sur les surfaces appropriées du produit (les chemins finaux doiv
 - public : événement, GPX de référence, état officiel/provisoire, classement sportif, ratio mégots comparables, bilan collectif et lien vers l'action ;
 - bénévole connecté : revendication d'identité externe, claim de participation, progression CleanMyMap existante.
 
+La liaison d'un compte CleanMyMap est désormais proposée depuis la page publique
+de l'événement, mais elle exige un code individuel remis par l'organisateur.
+Le code est haché côté serveur, à usage unique, expirant et non réutilisable ;
+aucune recherche par nom/prénom, lecture du fichier Excel ou exposition d'email
+ne participe à la décision. L'organisateur habilité peut émettre un code depuis
+son parcours privé, et sa remise reste manuelle/hors bande.
+
+Cette liaison met à jour uniquement l'identité `spogomi_participants`. Elle ne
+atteste ni la présence ni la participation CleanMyMap. Après liaison, le serveur
+réutilise le parcours canonique de l'action : `action_registrations` en phase
+`pre_action`, `post_action_claim` vers `action_participants` en phase
+`post_action_complete`. Dans les deux cas, la demande reste soumise à la review
+existante de l'organisateur ; seule une ligne `action_participants` avec
+`participation_status = confirmed` déclenche la progression, les badges et les
+statistiques personnelles. Une personne présente sans compte reste dans le
+bilan collectif sans recevoir d'XP, et une correction ne crée pas de second
+crédit.
+
+La table d'audit privée `spogomi_identity_link_events` conserve les émissions et
+échanges de codes. Les index uniques garantissent qu'une identité SPOGOMI ne
+peut être liée qu'à un compte et qu'un compte ne peut être lié deux fois au
+même événement. Les scores sportifs et les effectifs SPOGOMI ne sont jamais
+convertis en comptes Clerk ou en crédits individuels.
+
 Les classements SPOGOMI sont **séparés** du classement générique `/api/gamification/leaderboard/public`. Le rafraîchissement public doit être borné, économe en ressources et limiter strictement les champs publiés. Les données fictives utilisées en test ne sont pas des résultats terrain.
 
 Exporter un véritable fichier XLSX avec quatre onglets au minimum :

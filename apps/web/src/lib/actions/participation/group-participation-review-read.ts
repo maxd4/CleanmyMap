@@ -49,8 +49,47 @@ export async function loadActionParticipationReviews(
     supabase,
     rows.map((row) => row.user_id),
   );
+  const spogomiIdentityByUserId = await loadSpogomiIdentityStatuses(
+    supabase,
+    params.actionId,
+    rows.map((row) => row.user_id),
+  );
 
-  return buildParticipationReviewItems(rows, profileMap, registeredBeforeAction);
+  return buildParticipationReviewItems(rows, profileMap, registeredBeforeAction, spogomiIdentityByUserId);
+}
+
+async function loadSpogomiIdentityStatuses(
+  supabase: SupabaseClient,
+  actionId: string,
+  userIds: string[],
+): Promise<Map<string, "verified_present" | "verified_not_present">> {
+  const uniqueUserIds = [...new Set(userIds.filter(Boolean))];
+  if (uniqueUserIds.length === 0) return new Map();
+  try {
+    const eventResult = await supabase
+      .from("spogomi_events")
+      .select("id")
+      .eq("action_id", actionId)
+      .maybeSingle();
+    if (eventResult.error || !eventResult.data?.id) return new Map();
+    const participantResult = await supabase
+      .from("spogomi_participants")
+      .select("clerk_id, attendance_status")
+      .eq("event_id", eventResult.data.id)
+      .eq("account_link_status", "verified")
+      .in("clerk_id", uniqueUserIds);
+    if (participantResult.error) return new Map();
+    return new Map(
+      (participantResult.data ?? []).flatMap((row) => {
+        if (typeof row.clerk_id !== "string" || !row.clerk_id) return [];
+        return [[row.clerk_id, row.attendance_status === "present" ? "verified_present" : "verified_not_present"] as const];
+      }),
+    );
+  } catch {
+    // SPOGOMI is an optional context for the canonical review queue. A missing
+    // or not-yet-applied SPOGOMI schema must not make ordinary review fail.
+    return new Map();
+  }
 }
 
 type ParticipationReviewRow = {
@@ -140,6 +179,7 @@ function buildParticipationReviewItems(
   rows: ParticipationReviewRow[],
   profileMap: Map<string, ParticipantSearchRow>,
   registeredBeforeAction: Set<string>,
+  spogomiIdentityByUserId: Map<string, "verified_present" | "verified_not_present">,
 ): ActionParticipationReviewItem[] {
   return rows.map((row) => {
     const profile = profileMap.get(row.user_id);
@@ -155,6 +195,7 @@ function buildParticipationReviewItems(
       wasRegisteredBeforeAction:
         row.source === POST_ACTION_CLAIM_PARTICIPATION_SOURCE &&
         registeredBeforeAction.has(row.user_id),
+      spogomiIdentityStatus: spogomiIdentityByUserId.get(row.user_id),
       individualImpact: row.individualImpact ?? null,
     };
   });

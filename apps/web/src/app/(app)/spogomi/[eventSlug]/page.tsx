@@ -4,6 +4,7 @@ import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
 import { notFound } from "next/navigation";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { SpogomiPublicRouteMap } from "@/components/spogomi/spogomi-public-route-map";
+import { SpogomiIdentityLinkCard } from "@/components/spogomi/spogomi-identity-link-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { loadPublishedSpogomiEventBySlug } from "@/lib/spogomi/public-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -55,8 +56,9 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
             </CmmCard>
             {event.route ? <CmmCard tone="amber" variant="glass" className="space-y-3 p-5"><h2 className="text-xl font-black text-amber-950">Parcours officiel de référence</h2><p className="cmm-text-body text-slate-900">{event.route.fileName} · {event.route.referenceDistanceKm} km calculés depuis le fichier. Cette géométrie ne constitue pas une trace réellement parcourue.</p><SpogomiPublicRouteMap coordinates={event.route.coordinates} /></CmmCard> : <CmmCard tone="slate" variant="glass" className="border-dashed p-5"><p className="font-bold text-slate-900">Aucun parcours officiel publié.</p></CmmCard>}
           </div>
-          <aside className="space-y-4" aria-label="Fonctionnalités à venir">
-            {["Classement sportif|Disponible lorsque les résultats certifiés seront publiés.", "Mégots par participant|La restitution nominative n’est pas exposée dans ce lot.", "Résultats|Aucune valeur provisoire ou fictive n’est affichée.", "Liaison de compte|La liaison entre roster externe et compte CleanMyMap reste privée."].map((entry) => {
+          <aside className="space-y-4" aria-label="Participation et fonctionnalités">
+            <SpogomiIdentityLinkCard eventId={event.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} />
+            {["Classement sportif|Disponible lorsque les résultats certifiés seront publiés.", "Mégots par participant|La restitution nominative n’est pas exposée dans cette vue.", "Résultats|Aucune valeur provisoire ou fictive n’est affichée."].map((entry) => {
               const [title, description] = entry.split("|");
               return <CmmCard key={title} tone="slate" variant="glass" className="space-y-2 p-4"><h2 className="font-black text-slate-900">{title}</h2><p className="cmm-text-body text-slate-900">{description}</p></CmmCard>;
             })}

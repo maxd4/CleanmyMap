@@ -140,6 +140,8 @@ export type ActionParticipationReviewItem = {
   participationSource: ParticipationSource;
   /** Context-only signal; it never accepts a claim or proves field presence. */
   wasRegisteredBeforeAction: boolean;
+  /** Private reviewer context only; this never changes the review decision. */
+  spogomiIdentityStatus?: "verified_present" | "verified_not_present";
   individualImpact: IndividualImpactMeasurement | null;
   personalImpactAttribution?: ActionParticipantImpactAttribution | null;
 };

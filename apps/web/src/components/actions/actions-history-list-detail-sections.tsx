@@ -108,6 +108,7 @@ export function ActionHistoryGroupJoinSection({
                   <p className="text-sm font-semibold text-slate-900">{request.displayName}</p>
                   <p className="text-xs text-slate-600">{request.handle ? `@${request.handle}` : request.displayName} · {fr ? `depuis ${formatDate(request.joinedAt.slice(0, 10), "fr")}` : `since ${formatDate(request.joinedAt.slice(0, 10), "en")}`}</p>
                   {request.wasRegisteredBeforeAction ? <p className="mt-1 text-xs font-medium text-sky-700">{fr ? "Cette personne était inscrite avant l’action." : "This person was registered before the action."}</p> : null}
+                  {request.spogomiIdentityStatus ? <p className="mt-1 text-xs font-medium text-emerald-700">{fr ? `Identité SPOGOMI vérifiée · ${request.spogomiIdentityStatus === "verified_present" ? "présence attestée" : "présence non attestée"}. Ce contexte n’emporte pas la décision.` : `Verified SPOGOMI identity · ${request.spogomiIdentityStatus === "verified_present" ? "attendance attested" : "attendance not attested"}. This context does not decide the review.`}</p> : null}
                 </div>
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 cmm-text-caption font-bold uppercase tracking-[0.16em] text-amber-800">{fr ? "À traiter" : "To review"}</span>
               </div>
