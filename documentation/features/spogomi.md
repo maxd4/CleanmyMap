@@ -767,19 +767,26 @@ Le seul jalon XP SPOGOMI est `spogomi_first_referee` (`+1 XP`), enregistré une
 seule fois dans `progression_events` après une mission d'arbitrage réellement
 certifiée. Sa preuve est reconstruite avec une identité logique stable au
 niveau du compte ; une découverte tardive ou une révocation réconcilie le
-ledger sans créer de deuxième crédit. Les médailles et `spogomi_double_podium`
-sont `BADGE_ONLY` et ne sont produites qu'à partir de
-`spogomi_official_rankings` certifié. Aucun rang, départage ou conversion de
-mégots n'est calculé localement. Une correction remplace l'exemplaire de cet
-événement et conserve l'historique d'attribution, de révocation et de
-remplacement.
+ledger sans créer de deuxième crédit. Une distinction de mission et ce jalon
+exigent conjointement l'identité vérifiée, l'inscription non retirée, la
+présence attestée, la participation confirmée dans `action_participants` pour
+l'action du même événement, ainsi qu'une mission certifiée et sa preuve non
+révoquée. Les six médailles sont `BADGE_ONLY` et sont produites
+indépendamment depuis leur classement officiel certifié respectif ;
+`spogomi_double_podium` exige les deux classements certifiés. Aucun rang,
+départage ou conversion de mégots n'est calculé localement. Une correction
+remplace l'exemplaire de cet événement et conserve l'historique d'attribution,
+de révocation et de remplacement.
 
 La mutation est exclusivement serveur via la réconciliation explicite
 `POST /api/spogomi/events/:eventId/recognition/reconcile`, protégée par la
 capacité organisateur et déclenchée après certification de l'événement. La
 lecture `GET /api/gamification/spogomi/collection` est bornée au compte courant
-et n'a aucun effet de bord. Les noms, emails, tokens et identités privées du
-roster, notamment celles des mineurs, ne sont pas exposés.
+et lit exhaustivement sa collection privée, sans effet de bord. Les
+réconciliations refusent toute source paginée dont le comptage exact ou une
+page est indisponible ; aucune révocation ne peut donc être déduite d'une
+projection tronquée. Les noms, emails, tokens et identités privées du roster,
+notamment celles des mineurs, ne sont pas exposés.
 
 ## 20. Sources canoniques liées
 

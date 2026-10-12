@@ -9,6 +9,7 @@ import {
   type SpogomiOfficialRanking,
   type SpogomiRecognitionParticipant,
 } from "./recognition";
+import { readAllSpogomiPages } from "./pagination";
 import { buildSpogomiSpecializedProgress } from "./progress";
 import { loadSpogomiFirstRefereeFact } from "./gamification-facts";
 
@@ -34,16 +35,15 @@ async function loadRecognitionSource(params: { supabase: SupabaseClient; eventId
   if (!eventResult.data) throw new Error("SPOGOMI event not found.");
   const event = eventResult.data as EventRow;
   const [participantsResult, attestationsResult, rankingsResult, participationResult, awardsResult] = await Promise.all([
-    params.supabase.from("spogomi_participants").select("id, event_id, team_id, clerk_id, registration_status, attendance_status, account_link_status").eq("event_id", params.eventId),
-    params.supabase.from("spogomi_recognition_attestations").select("id, event_id, participant_id, kind, status, certified_at, evidence_reference, certification_version").eq("event_id", params.eventId),
-    params.supabase.from("spogomi_official_rankings").select("event_id, team_id, kind, rank, status, team_eligible, decision_version, source_reference").eq("event_id", params.eventId),
-    params.supabase.from("action_participants").select("user_id").eq("action_id", event.action_id).eq("participation_status", "confirmed"),
-    params.supabase.from("spogomi_collection_awards").select("user_id").eq("event_id", params.eventId),
+    readAllSpogomiPages("recognition participants", (from, to) => params.supabase.from("spogomi_participants").select("id, event_id, team_id, clerk_id, registration_status, attendance_status, account_link_status", { count: "exact" }).eq("event_id", params.eventId).order("id", { ascending: true }).range(from, to), { requireExactCount: true }),
+    readAllSpogomiPages("recognition attestations", (from, to) => params.supabase.from("spogomi_recognition_attestations").select("id, event_id, participant_id, kind, status, certified_at, evidence_reference, certification_version", { count: "exact" }).eq("event_id", params.eventId).order("id", { ascending: true }).range(from, to), { requireExactCount: true }),
+    readAllSpogomiPages("recognition rankings", (from, to) => params.supabase.from("spogomi_official_rankings").select("id, event_id, team_id, kind, rank, status, team_eligible, decision_version, source_reference", { count: "exact" }).eq("event_id", params.eventId).order("id", { ascending: true }).range(from, to), { requireExactCount: true }),
+    readAllSpogomiPages("confirmed action participants", (from, to) => params.supabase.from("action_participants").select("id, user_id", { count: "exact" }).eq("action_id", event.action_id).eq("participation_status", "confirmed").order("id", { ascending: true }).range(from, to), { requireExactCount: true }),
+    readAllSpogomiPages("existing recognition awards", (from, to) => params.supabase.from("spogomi_collection_awards").select("id, user_id", { count: "exact" }).eq("event_id", params.eventId).order("id", { ascending: true }).range(from, to), { requireExactCount: true }),
   ]);
-  for (const result of [participantsResult, attestationsResult, rankingsResult, participationResult, awardsResult]) if (result.error) throw result.error;
-  const confirmedUsers = new Set((participationResult.data ?? []).map((row) => String(row.user_id)));
-  const rawParticipants = (participantsResult.data ?? []) as Array<Record<string, unknown>>;
-  const rawAttestations = (attestationsResult.data ?? []) as Array<Record<string, unknown>>;
+  const confirmedUsers = new Set(participationResult.map((row) => String(row.user_id)));
+  const rawParticipants = participantsResult as Array<Record<string, unknown>>;
+  const rawAttestations = attestationsResult as Array<Record<string, unknown>>;
   const participants = rawParticipants.map((row): SpogomiRecognitionParticipant => ({
     participantId: String(row.id), eventId: String(row.event_id), teamId: row.team_id ? String(row.team_id) : null,
     userId: row.clerk_id ? String(row.clerk_id) : null,
@@ -60,13 +60,13 @@ async function loadRecognitionSource(params: { supabase: SupabaseClient; eventId
     certifiedAt: row.certified_at ? String(row.certified_at) : null,
     evidenceReference: String(row.evidence_reference), certificationVersion: String(row.certification_version),
   }));
-  const rankings = (rankingsResult.data ?? []).map((row): SpogomiOfficialRanking => ({
+  const rankings = (rankingsResult as Array<Record<string, unknown>>).map((row): SpogomiOfficialRanking => ({
     eventId: String(row.event_id), teamId: String(row.team_id), kind: row.kind as SpogomiOfficialRanking["kind"],
     rank: Number(row.rank), status: row.status as SpogomiOfficialRanking["status"], teamEligible: Boolean(row.team_eligible),
     decisionVersion: String(row.decision_version), sourceReference: String(row.source_reference),
   }));
   // Keep the read intentionally bounded to IDs; no roster names or emails leave the server.
-  return { event, participants, missions, rankings, existingAwardUsers: [...new Set((awardsResult.data ?? []).map((row) => String(row.user_id)))], };
+  return { event, participants, missions, rankings, existingAwardUsers: [...new Set((awardsResult as Array<Record<string, unknown>>).map((row) => String(row.user_id)))], };
 }
 
 async function reconcileFirstReferee(supabase: SupabaseClient, userId: string): Promise<void> {
@@ -111,9 +111,7 @@ export async function reconcileSpogomiRecognition(params: { supabase: SupabaseCl
 }
 
 export async function loadSpogomiCollectionForUser(supabase: SupabaseClient, userId: string) {
-  const result = await supabase.from("spogomi_collection_awards").select("id, event_id, badge_type_id, event_year, event_local_date, awarded_at, proof_reference, certification_reference, ranking_version, status").eq("user_id", userId).eq("status", "active").order("event_local_date", { ascending: false }).order("awarded_at", { ascending: false });
-  if (result.error) throw result.error;
-  const awards = (result.data ?? []) as Array<Record<string, unknown>>;
+  const awards = await readAllSpogomiPages("private recognition collection", (from, to) => supabase.from("spogomi_collection_awards").select("id, event_id, badge_type_id, event_year, event_local_date, awarded_at, proof_reference, certification_reference, ranking_version, status", { count: "exact" }).eq("user_id", userId).eq("status", "active").order("event_local_date", { ascending: false }).order("awarded_at", { ascending: false }).order("id", { ascending: true }).range(from, to), { requireExactCount: true }) as Array<Record<string, unknown>>;
   const collectorEvents = new Set(awards.filter((award) => award.badge_type_id === "spogomi_collector").map((award) => String(award.event_id)));
   const refereeEvents = new Set(awards.filter((award) => award.badge_type_id === "spogomi_referee").map((award) => String(award.event_id)));
   const projection = {

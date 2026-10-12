@@ -76,6 +76,16 @@ function isEligibleCollector(participant: SpogomiRecognitionParticipant): boolea
     !participant.teamDisqualified;
 }
 
+export function isEligibleSpogomiMissionParticipant(
+  participant: Pick<SpogomiRecognitionParticipant, "registrationStatus" | "attendanceStatus" | "identityVerified" | "actionParticipationConfirmed" | "userId">,
+): boolean {
+  return participant.registrationStatus === "registered" &&
+    participant.attendanceStatus === "present" &&
+    participant.identityVerified &&
+    participant.actionParticipationConfirmed &&
+    Boolean(participant.userId);
+}
+
 function medalBadge(kind: SpogomiRankingKind, rank: number): string | null {
   if (rank < 1 || rank > 3) return null;
   const medal = rank === 1 ? "gold" : rank === 2 ? "silver" : "bronze";
@@ -113,7 +123,7 @@ export function buildSpogomiRecognitionProjection(input: {
   rankings: readonly SpogomiOfficialRanking[];
 }): SpogomiRecognitionProjection {
   const awards = new Map<string, SpogomiAward>();
-  const collectors = input.participants.filter(isEligibleCollector);
+  const collectors = input.participants.filter((participant) => participant.eventId === input.eventId && isEligibleCollector(participant));
   const collectorsByTeam = new Map<string, SpogomiRecognitionParticipant[]>();
   for (const participant of collectors) {
     const teamId = participant.teamId!;
@@ -132,12 +142,12 @@ export function buildSpogomiRecognitionProjection(input: {
   }
 
   for (const mission of input.missions.filter((candidate) =>
-    candidate.eventId === input.eventId && candidate.status === "certified" && candidate.evidenceReference.length > 0,
+    candidate.eventId === input.eventId && candidate.status === "certified" && candidate.evidenceReference.trim().length > 0,
   )) {
     const participant = input.participants.find((candidate) => candidate.participantId === mission.participantId);
-    if (!participant?.identityVerified || !participant.userId) continue;
+    if (!participant || !isEligibleSpogomiMissionParticipant(participant)) continue;
     addAward(awards, {
-      userId: participant.userId,
+      userId: participant.userId!,
       eventId: input.eventId,
       badgeTypeId: mission.kind === "referee" ? "spogomi_referee" : "spogomi_organizer",
       proofReference: `spogomi_mission:${mission.missionId}`,
@@ -147,35 +157,34 @@ export function buildSpogomiRecognitionProjection(input: {
     });
   }
 
-  const podiumTeams = new Map<string, { points: SpogomiOfficialRanking; butts: SpogomiOfficialRanking }>();
   for (const teamId of collectorsByTeam.keys()) {
     const points = certifiedRanking(input.rankings, input.eventId, "points", teamId);
     const butts = certifiedRanking(input.rankings, input.eventId, "butts", teamId);
-    if (!points || !butts) continue;
-    podiumTeams.set(teamId, { points, butts });
-  }
-  for (const [teamId, ranking] of podiumTeams) {
     const members = collectorsByTeam.get(teamId) ?? [];
     for (const participant of members) {
-      const pointsBadge = medalBadge("points", ranking.points.rank);
-      const buttsBadge = medalBadge("butts", ranking.butts.rank);
-      if (pointsBadge) addAward(awards, {
-        userId: participant.userId!, eventId: input.eventId, badgeTypeId: pointsBadge,
-        proofReference: `spogomi_ranking:${ranking.points.kind}:${teamId}`,
-        certificationReference: ranking.points.sourceReference,
-        rankingVersion: ranking.points.decisionVersion, occurredOn: input.eventDate,
-      });
-      if (buttsBadge) addAward(awards, {
-        userId: participant.userId!, eventId: input.eventId, badgeTypeId: buttsBadge,
-        proofReference: `spogomi_ranking:${ranking.butts.kind}:${teamId}`,
-        certificationReference: ranking.butts.sourceReference,
-        rankingVersion: ranking.butts.decisionVersion, occurredOn: input.eventDate,
-      });
-      addAward(awards, {
+      if (points) {
+        const pointsBadge = medalBadge("points", points.rank);
+        if (pointsBadge) addAward(awards, {
+          userId: participant.userId!, eventId: input.eventId, badgeTypeId: pointsBadge,
+          proofReference: `spogomi_ranking:${points.kind}:${teamId}`,
+          certificationReference: points.sourceReference,
+          rankingVersion: points.decisionVersion, occurredOn: input.eventDate,
+        });
+      }
+      if (butts) {
+        const buttsBadge = medalBadge("butts", butts.rank);
+        if (buttsBadge) addAward(awards, {
+          userId: participant.userId!, eventId: input.eventId, badgeTypeId: buttsBadge,
+          proofReference: `spogomi_ranking:${butts.kind}:${teamId}`,
+          certificationReference: butts.sourceReference,
+          rankingVersion: butts.decisionVersion, occurredOn: input.eventDate,
+        });
+      }
+      if (points && butts) addAward(awards, {
         userId: participant.userId!, eventId: input.eventId, badgeTypeId: "spogomi_double_podium",
         proofReference: `spogomi_ranking:double_podium:${teamId}`,
-        certificationReference: `${ranking.points.sourceReference};${ranking.butts.sourceReference}`,
-        rankingVersion: `${ranking.points.decisionVersion};${ranking.butts.decisionVersion}`,
+        certificationReference: `${points.sourceReference};${butts.sourceReference}`,
+        rankingVersion: `${points.decisionVersion};${butts.decisionVersion}`,
         occurredOn: input.eventDate,
       });
     }
@@ -184,9 +193,9 @@ export function buildSpogomiRecognitionProjection(input: {
   const firstRefereeByUser = new Map<string, SpogomiRecognitionProjection["firstRefereeProofs"][number]>();
   for (const mission of input.missions.filter((candidate) => candidate.kind === "referee" && candidate.status === "certified")) {
     const participant = input.participants.find((candidate) => candidate.participantId === mission.participantId);
-    if (!participant?.identityVerified || !participant.userId) continue;
+    if (mission.eventId !== input.eventId || mission.status !== "certified" || !participant || !isEligibleSpogomiMissionParticipant(participant)) continue;
     const proof = {
-      userId: participant.userId,
+      userId: participant.userId!,
       missionId: mission.missionId,
       eventId: mission.eventId,
       occurredOn: mission.certifiedAt ?? input.eventDate,

@@ -19,4 +19,19 @@ describe("SPOGOMI exhaustive reads", () => {
       error: { message: "connection interrupted" },
     }))).rejects.toThrow("SPOGOMI interrupted rows read failed: connection interrupted");
   });
+
+  it("fails closed when an exact-count page disappears", async () => {
+    const source = Array.from({ length: SPOGOMI_QUERY_PAGE_SIZE * 2 }, (_, index) => index);
+    await expect(readAllSpogomiPages("missing page", async (from, to) => ({
+      data: from === 0 ? source.slice(from, to + 1) : [],
+      count: source.length,
+      error: null,
+    }), { requireExactCount: true })).rejects.toThrow("SPOGOMI missing page read failed: incomplete paginated result");
+  });
+
+  it("refuses a reconciliation source without an exact count", async () => {
+    await expect(readAllSpogomiPages("unbounded source", async () => ({
+      data: [], count: null, error: null,
+    }), { requireExactCount: true })).rejects.toThrow("SPOGOMI unbounded source read failed: exact row count unavailable");
+  });
 });
