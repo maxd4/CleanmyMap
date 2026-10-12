@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 const visibilityMigration = readFileSync(new URL("../../../supabase/migrations/20261012000014_spogomi_public_results_visibility.sql", import.meta.url), "utf8");
 const rankingMigration = readFileSync(new URL("../../../supabase/migrations/20261012000015_spogomi_official_rankings_publication.sql", import.meta.url), "utf8");
 const idempotenceMigration = readFileSync(new URL("../../../supabase/migrations/20261012000016_spogomi_official_rankings_idempotence.sql", import.meta.url), "utf8");
+const recognitionMigration = readFileSync(new URL("../../../supabase/migrations/20261012000017_spogomi_recognition_notifications.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI result publication migrations STATIC_CONTRACT", () => {
   it("keeps result visibility explicit and hidden by default", () => {
@@ -27,5 +28,16 @@ describe("SPOGOMI result publication migrations STATIC_CONTRACT", () => {
     expect(idempotenceMigration).toContain("different SPOGOMI ranking decision already exists for this source snapshot");
     expect(idempotenceMigration).toContain("v_existing.status = 'revoked'");
     expect(idempotenceMigration).toContain("action in ('certified', 'revoked', 'reinstated')");
+    expect(idempotenceMigration).toContain("regulationConfig");
+    expect(idempotenceMigration).toContain("teamSizeConfig");
+    expect(idempotenceMigration).toContain("spogomi_category_rules where event_id = p_event_id order by id for update");
+    expect(idempotenceMigration).toContain("spogomi_result_items where event_id = p_event_id order by id for update");
+    expect(idempotenceMigration).not.toContain("{event,updatedAt}");
+  });
+
+  it("preserves the complete notification type contract and adds recognition", () => {
+    expect(recognitionMigration).toContain("'action_event'");
+    expect(recognitionMigration).toContain("'gamification_reconciliation'");
+    expect(recognitionMigration).toContain("'gamification_recognition'");
   });
 });

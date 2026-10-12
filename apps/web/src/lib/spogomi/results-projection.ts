@@ -40,7 +40,7 @@ export type SpogomiResultsSource = {
     is_complete: boolean;
     updated_at?: string;
   }>;
-  teams: Array<{ id: string; team_number: number; public_name: string; certified_submission_id: string | null; updated_at?: string }>;
+  teams: Array<{ id: string; team_number: number; public_name: string; composition_state: string; certified_submission_id: string | null; updated_at?: string }>;
   submissions: Array<{ id: string; team_id: string; version: number; status: string; submitted_at: string | null; updated_at: string; regulation_version?: string }>;
   items: Array<Record<string, unknown>>;
   participants: Array<{ id: string; team_id: string | null; registration_status: string; attendance_status: string; updated_at?: string }>;
@@ -55,13 +55,36 @@ export type SpogomiPublicationSourceSnapshot = {
     regulationVersion: string;
     regulationStatus: string;
     regulationSourceReference: string | null;
-    updatedAt: string | null;
+    regulationConfig: unknown;
+    teamSizeConfig: unknown;
   };
-  categories: Array<{ id: string; updatedAt: string | null }>;
-  teams: Array<{ id: string; updatedAt: string | null }>;
-  submissions: Array<{ id: string; updatedAt: string | null }>;
-  items: Array<{ id: string; updatedAt: string | null }>;
-  participants: Array<{ id: string; updatedAt: string | null }>;
+  categories: Array<{
+    id: string;
+    regulationVersion: string;
+    code: string;
+    measurementKind: string;
+    unit: string;
+    coefficient: string | null;
+    coefficientStatus: string;
+    environmentalCategorySlug: string | null;
+    isComplete: boolean;
+  }>;
+  teams: Array<{ id: string; teamNumber: number; compositionState: string; certifiedSubmissionId: string | null }>;
+  submissions: Array<{ id: string; teamId: string; version: number; status: string; submittedAt: string | null; regulationVersion: string }>;
+  items: Array<{
+    id: string;
+    submissionId: string;
+    categoryRuleId: string;
+    measurementKind: string;
+    unit: string;
+    quantity: string | null;
+    massGrams: string | null;
+    objectCount: string | null;
+    measurementMethod: string | null;
+    provenance: string;
+    sourceReference: string | null;
+  }>;
+  participants: Array<{ id: string; teamId: string | null; registrationStatus: string; attendanceStatus: string }>;
 };
 
 export type SpogomiPublicRankingEntry = {
@@ -391,18 +414,60 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
 }
 
 function buildPublicationSourceSnapshot(source: SpogomiResultsSource): SpogomiPublicationSourceSnapshot {
+  const snapshotNumber = (value: unknown): string | null => value === null || value === undefined ? null : String(value);
+
   return {
     event: {
       id: source.event.id,
       regulationVersion: source.event.regulationVersion,
       regulationStatus: source.event.regulationStatus,
       regulationSourceReference: source.event.regulationSourceReference,
-      updatedAt: source.event.updatedAt ?? null,
+      regulationConfig: source.event.regulationConfig,
+      teamSizeConfig: source.event.teamSizeConfig,
     },
-    categories: source.categories.map((row) => ({ id: row.id, updatedAt: row.updated_at ?? null })),
-    teams: source.teams.map((row) => ({ id: row.id, updatedAt: row.updated_at ?? null })),
-    submissions: source.submissions.map((row) => ({ id: row.id, updatedAt: row.updated_at ?? null })),
-    items: source.items.map((row) => ({ id: String(row.id ?? ""), updatedAt: typeof row.updated_at === "string" ? row.updated_at : null })),
-    participants: source.participants.map((row) => ({ id: row.id, updatedAt: row.updated_at ?? null })),
+    categories: source.categories.map((row) => ({
+      id: row.id,
+      regulationVersion: row.regulation_version,
+      code: row.code,
+      measurementKind: row.measurement_kind,
+      unit: row.unit,
+      coefficient: snapshotNumber(row.coefficient),
+      coefficientStatus: row.coefficient_status,
+      environmentalCategorySlug: row.environmental_category_slug,
+      isComplete: row.is_complete,
+    })),
+    teams: source.teams.map((row) => ({
+      id: row.id,
+      teamNumber: row.team_number,
+      compositionState: row.composition_state,
+      certifiedSubmissionId: row.certified_submission_id,
+    })),
+    submissions: source.submissions.map((row) => ({
+      id: row.id,
+      teamId: row.team_id,
+      version: row.version,
+      status: row.status,
+      submittedAt: row.submitted_at,
+      regulationVersion: row.regulation_version ?? "",
+    })),
+    items: source.items.map((row) => ({
+      id: String(row.id ?? ""),
+      submissionId: String(row.submission_id ?? ""),
+      categoryRuleId: String(row.category_rule_id ?? ""),
+      measurementKind: String(row.measurement_kind ?? ""),
+      unit: String(row.unit ?? ""),
+      quantity: snapshotNumber(row.quantity),
+      massGrams: snapshotNumber(row.mass_grams),
+      objectCount: snapshotNumber(row.object_count),
+      measurementMethod: typeof row.measurement_method === "string" ? row.measurement_method : null,
+      provenance: typeof row.provenance === "string" ? row.provenance : "",
+      sourceReference: typeof row.source_reference === "string" ? row.source_reference : null,
+    })),
+    participants: source.participants.map((row) => ({
+      id: row.id,
+      teamId: row.team_id,
+      registrationStatus: row.registration_status,
+      attendanceStatus: row.attendance_status,
+    })),
   };
 }

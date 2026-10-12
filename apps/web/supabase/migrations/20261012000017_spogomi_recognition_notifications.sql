@@ -1,4 +1,6 @@
 -- SPOGOMI lot 8: private, idempotent recap notifications for recognition changes.
+-- Renumbered to 00017 because the applied 00015 ranking migration is immutable
+-- and the checked publication migration occupies 00016.
 
 alter table public.app_notifications
   drop constraint if exists app_notifications_type_check;
@@ -12,6 +14,7 @@ alter table public.app_notifications
     'security',
     'chat',
     'action_discussion',
+    'action_event',
     'gamification_reconciliation',
     'gamification_recognition'
   ));

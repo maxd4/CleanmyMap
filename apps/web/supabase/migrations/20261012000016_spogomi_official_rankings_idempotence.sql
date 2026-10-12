@@ -1,5 +1,5 @@
 -- SPOGOMI lot 9: idempotent official ranking publication with a checked source snapshot.
--- This migration is append-only. Migrations 00009, 00014 and 00015 remain unchanged.
+-- This migration is append-only. Migrations 00009, 00014 and the applied 00015 remain unchanged.
 
 alter table public.spogomi_official_rankings
   add column if not exists source_snapshot jsonb;
@@ -52,8 +52,8 @@ begin
   -- PURPOSE: publish one complete official ranking decision atomically.
   -- IDEMPOTENCY: an identical current decision is a no-op; historical decisions can be reinstated.
   -- ATOMICITY: source verification, revocation and certification share this transaction.
-  -- CONCURRENCY: the event lock serializes publication; a different decision for the same source snapshot conflicts.
-  -- SOURCE_INTEGRITY: every event, category, team, submission, item and participant version is checked before mutation.
+  -- CONCURRENCY: the event and source-row locks serialize publication with source mutations in a deterministic order.
+  -- SOURCE_INTEGRITY: every event, rule, team, submission, item and participant business field is checked before mutation.
   if coalesce(auth.role(), '') <> 'service_role'
      or p_event_id is null
      or length(btrim(coalesce(p_decision_version, ''))) = 0
@@ -90,11 +90,20 @@ begin
     raise exception using errcode = '23514', message = 'Only a certified event with complete rules can publish official rankings';
   end if;
 
+  -- Lock every source relation before comparing it. The order is shared with the
+  -- consolidation mutation path: event, rules, teams, submissions, items, presence.
+  perform 1 from public.spogomi_category_rules where event_id = p_event_id order by id for update;
+  perform 1 from public.spogomi_teams where event_id = p_event_id order by id for update;
+  perform 1 from public.spogomi_result_submissions where event_id = p_event_id order by id for update;
+  perform 1 from public.spogomi_result_items where event_id = p_event_id order by id for update;
+  perform 1 from public.spogomi_participants where event_id = p_event_id order by id for update;
+
   if (p_source_snapshot #>> '{event,id}') is distinct from v_event.id::text
      or (p_source_snapshot #>> '{event,regulationVersion}') is distinct from v_event.regulation_version
      or (p_source_snapshot #>> '{event,regulationStatus}') is distinct from v_event.regulation_status
      or (p_source_snapshot #>> '{event,regulationSourceReference}') is distinct from v_event.regulation_source_reference
-     or v_event.updated_at is distinct from nullif(p_source_snapshot #>> '{event,updatedAt}', '')::timestamptz then
+      or (p_source_snapshot -> 'event' -> 'regulationConfig') is distinct from v_event.regulation_config
+      or (p_source_snapshot -> 'event' -> 'teamSizeConfig') is distinct from v_event.team_size_config then
     raise exception using errcode = '40001', message = 'The SPOGOMI ranking source snapshot changed since calculation';
   end if;
 
@@ -105,7 +114,14 @@ begin
           and not exists (
             select 1 from jsonb_array_elements(p_source_snapshot -> 'categories') captured(value)
              where captured.value ->> 'id' = row_data.id::text
-               and row_data.updated_at is not distinct from nullif(captured.value ->> 'updatedAt', '')::timestamptz
+                and captured.value ->> 'regulationVersion' = row_data.regulation_version
+                and captured.value ->> 'code' = row_data.code
+                and captured.value ->> 'measurementKind' = row_data.measurement_kind
+                and captured.value ->> 'unit' = row_data.unit
+                and captured.value ->> 'coefficient' is not distinct from row_data.coefficient::text
+                and captured.value ->> 'coefficientStatus' = row_data.coefficient_status
+                and captured.value ->> 'environmentalCategorySlug' is not distinct from row_data.environmental_category_slug
+                and (captured.value ->> 'isComplete')::boolean is not distinct from row_data.is_complete
           )
      ) then
     raise exception using errcode = '40001', message = 'The SPOGOMI category source snapshot changed since calculation';
@@ -117,7 +133,9 @@ begin
           and not exists (
             select 1 from jsonb_array_elements(p_source_snapshot -> 'teams') captured(value)
              where captured.value ->> 'id' = row_data.id::text
-               and row_data.updated_at is not distinct from nullif(captured.value ->> 'updatedAt', '')::timestamptz
+                and (captured.value ->> 'teamNumber')::integer = row_data.team_number
+                and captured.value ->> 'compositionState' = row_data.composition_state
+                and captured.value ->> 'certifiedSubmissionId' is not distinct from row_data.certified_submission_id::text
           )
      ) then
     raise exception using errcode = '40001', message = 'The SPOGOMI team source snapshot changed since calculation';
@@ -129,7 +147,11 @@ begin
           and not exists (
             select 1 from jsonb_array_elements(p_source_snapshot -> 'submissions') captured(value)
              where captured.value ->> 'id' = row_data.id::text
-               and row_data.updated_at is not distinct from nullif(captured.value ->> 'updatedAt', '')::timestamptz
+                and captured.value ->> 'teamId' = row_data.team_id::text
+                and (captured.value ->> 'version')::integer = row_data.version
+                and captured.value ->> 'status' = row_data.status
+                and nullif(captured.value ->> 'submittedAt', '')::timestamptz is not distinct from row_data.submitted_at
+                and captured.value ->> 'regulationVersion' = row_data.regulation_version
           )
      ) then
     raise exception using errcode = '40001', message = 'The SPOGOMI submission source snapshot changed since calculation';
@@ -141,7 +163,16 @@ begin
           and not exists (
             select 1 from jsonb_array_elements(p_source_snapshot -> 'items') captured(value)
              where captured.value ->> 'id' = row_data.id::text
-               and row_data.updated_at is not distinct from nullif(captured.value ->> 'updatedAt', '')::timestamptz
+                and captured.value ->> 'submissionId' = row_data.submission_id::text
+                and captured.value ->> 'categoryRuleId' = row_data.category_rule_id::text
+                and captured.value ->> 'measurementKind' = row_data.measurement_kind
+                and captured.value ->> 'unit' = row_data.unit
+                and nullif(captured.value ->> 'quantity', '')::numeric is not distinct from row_data.quantity
+                and nullif(captured.value ->> 'massGrams', '')::numeric is not distinct from row_data.mass_grams
+                and nullif(captured.value ->> 'objectCount', '')::numeric is not distinct from row_data.object_count
+                and captured.value ->> 'measurementMethod' is not distinct from row_data.measurement_method
+                and captured.value ->> 'provenance' = row_data.provenance
+                and captured.value ->> 'sourceReference' is not distinct from row_data.source_reference
           )
      ) then
     raise exception using errcode = '40001', message = 'The SPOGOMI measurement source snapshot changed since calculation';
@@ -153,7 +184,9 @@ begin
           and not exists (
             select 1 from jsonb_array_elements(p_source_snapshot -> 'participants') captured(value)
              where captured.value ->> 'id' = row_data.id::text
-               and row_data.updated_at is not distinct from nullif(captured.value ->> 'updatedAt', '')::timestamptz
+                and captured.value ->> 'teamId' is not distinct from row_data.team_id::text
+                and captured.value ->> 'registrationStatus' = row_data.registration_status
+                and captured.value ->> 'attendanceStatus' = row_data.attendance_status
           )
      ) then
     raise exception using errcode = '40001', message = 'The SPOGOMI presence source snapshot changed since calculation';
@@ -180,7 +213,6 @@ begin
     end if;
   end loop;
 
-  perform 1 from public.spogomi_teams where event_id = p_event_id for update;
   for v_current in
     select * from public.spogomi_official_rankings
      where event_id = p_event_id and status = 'certified'
