@@ -8,6 +8,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { assignSpogomiReferee, revokeSpogomiReferee } from "@/lib/spogomi/result-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: reviewer assignments are sensitive mutable authorization state.
 export const dynamic = "force-dynamic";
 
 const reviewerSchema = z.object({ clerkId: z.string().trim().min(3).max(128) }).strict();

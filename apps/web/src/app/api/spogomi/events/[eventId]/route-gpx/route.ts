@@ -6,6 +6,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { attachOfficialGpx, loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: the official route reference can be replaced and must be resolved dynamically.
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {

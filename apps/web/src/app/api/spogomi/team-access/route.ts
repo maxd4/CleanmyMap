@@ -5,6 +5,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { consumeSpogomiTeamAccessToken, SPOGOMI_TEAM_SESSION_COOKIE } from "@/lib/spogomi/team-access";
 
 export const runtime = "nodejs";
+// Justification Vercel: team access is a short-lived private session and must be evaluated dynamically.
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {

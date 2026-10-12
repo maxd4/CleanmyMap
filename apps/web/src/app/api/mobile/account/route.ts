@@ -17,6 +17,8 @@ import { loadUserProgressionStats } from "@/lib/gamification/progression-user-st
 import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
 
 export const runtime = "nodejs";
+// Justification Vercel: the authenticated mobile account projection is private,
+// mutable and must always reflect the current Clerk/Supabase state.
 export const dynamic = "force-dynamic";
 
 const accountPatchSchema = z.object({
@@ -181,6 +183,7 @@ export async function GET(request: Request) {
   try {
     const projection = await loadAccountProjection(access.userId);
     if (!projection) return unauthorizedJsonResponse();
+    // Justification Vercel: private account data must never be served from a shared cache.
     return NextResponse.json({ status: "ok", ...projection }, {
       headers: { "Cache-Control": "private, no-store" },
     });

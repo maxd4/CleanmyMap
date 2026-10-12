@@ -7,6 +7,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadSpogomiEventResultReviews, resolveSpogomiReviewerRole, reviewSpogomiTeamSubmission } from "@/lib/spogomi/result-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: certified results are mutable until final approval and must be read fresh.
 export const dynamic = "force-dynamic";
 
 const reviewSchema = z.object({
@@ -23,6 +24,7 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
     const result = await loadSpogomiEventResultReviews({ supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, userId: access.userId });
     if (result === false) return forbiddenJsonResponse();
     if (!result) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
+    // Justification Vercel: result review data must not be served from a shared cache.
     return NextResponse.json({ results: result }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return handleApiError(error, "spogomi.results.read");

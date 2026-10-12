@@ -8,6 +8,7 @@ import { loadSpogomiTeamResultForm, saveSpogomiTeamSubmission } from "@/lib/spog
 import { SPOGOMI_TEAM_SESSION_COOKIE } from "@/lib/spogomi/team-access";
 
 export const runtime = "nodejs";
+// Justification Vercel: the team session and competition form are mutable and must always be read fresh.
 export const dynamic = "force-dynamic";
 
 const nullableNumber = z.number().finite().nonnegative().max(1_000_000_000_000).nullable();
@@ -41,6 +42,7 @@ export async function GET(request: Request) {
   try {
     const form = await loadSpogomiTeamResultForm({ supabase: getSupabaseServerClient(true), sessionToken: await getSessionToken() });
     if (!form) return NextResponse.json({ error: "Session d’équipe expirée ou révoquée." }, { status: 401 });
+    // Justification Vercel: the team session contains private event data and must not be cached.
     return NextResponse.json(form, { headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
   } catch (error) {
     return handleApiError(error, "spogomi.team-form.read");
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
       sessionToken: await getSessionToken(),
       input: parsed.data,
     });
+    // Justification Vercel: submitted competition data must be observed without stale reads.
     return NextResponse.json(result, { status: 200, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return handleApiError(error, "spogomi.team-form.save");

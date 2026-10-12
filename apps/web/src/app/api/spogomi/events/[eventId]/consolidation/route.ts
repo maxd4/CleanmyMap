@@ -31,6 +31,7 @@ export async function GET(request: Request, context: { params: Promise<{ eventId
     const event = await authorizedEvent((await context.params).eventId, access.userId);
     if (event === false) return forbiddenJsonResponse();
     if (!event) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
+    // Justification Vercel: consolidation previews and conflicts are mutable and must be read fresh.
     return NextResponse.json(await buildSpogomiConsolidationPreview({ supabase: getSupabaseServerClient(true), eventId: event.id }), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return handleApiError(error, "spogomi.consolidation.preview");

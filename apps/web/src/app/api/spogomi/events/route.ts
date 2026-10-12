@@ -7,6 +7,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createSpogomiEvent } from "@/lib/spogomi/preparation-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: event management reads authenticated mutable SPOGOMI state.
 export const dynamic = "force-dynamic";
 
 const createSchema = z.object({

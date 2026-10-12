@@ -6,6 +6,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { autoComposeTeams, loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: automatic team assignment mutates event state and must be evaluated dynamically.
 export const dynamic = "force-dynamic";
 
 export async function POST(_request: Request, context: { params: Promise<{ eventId: string }> }) {

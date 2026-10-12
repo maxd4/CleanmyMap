@@ -4,6 +4,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPublishedSpogomiEventForAction } from "@/lib/spogomi/public-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: the public event projection reflects certified SPOGOMI state and must be fresh.
 export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request, context: { params: Promise<{ actionId: string }> }) {

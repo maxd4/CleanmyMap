@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-30T17:43:01.000Z",
-  "apiRouteCount": 120,
+  "generatedAt": "2026-10-12T00:00:00.000Z",
+  "apiRouteCount": 146,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -57,6 +57,27 @@
       "reason": "Projection authentifiée du préremplissage sélectif d'une action, réservée aux utilisateurs disposant du droit serveur de gestion et de duplication.",
       "costContract": "GET borné à un actionId et à l'identité Clerk courante ; les états terminaux et les droits organisateur sont vérifiés côté serveur, aucune inscription, invitation, preuve administrative ou donnée de bilan n'est recopiée.",
       "reviewedAt": "2026-10-11"
+    },
+    {
+      "route": "apps/web/src/app/api/gamification/spogomi/collection/route.ts",
+      "introducedBy": "3a5b010d1ed647c81b5b3042a78a20c9f086f072",
+      "reason": "Lecture authentifiée de la collection SPOGOMI répétable, séparée du badgeTotal et de la progression globale CURRENT.",
+      "costContract": "GET strictement borné au compte Clerk courant, réponse privée no-store et aucune mutation lors de la lecture ; les exemplaires sont reconstruits depuis les preuves certifiées du domaine SPOGOMI.",
+      "reviewedAt": "2026-10-12"
+    },
+    {
+      "route": "apps/web/src/app/api/mobile/account/route.ts",
+      "introducedBy": "7b1db6657334f33daebf8f3dae370874d5ce6aa7",
+      "reason": "Surface authentifiée de compte pour le développement de l'application mobile, avec projection Clerk/Supabase et mutations contrôlées.",
+      "costContract": "GET/PATCH bornés à l'identité mobile authentifiée, réponse privée no-store, validation Zod et rate limits existants ; aucun secret Clerk n'est exposé.",
+      "reviewedAt": "2026-10-12"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/route.ts",
+      "introducedBy": "4bb7335ee5bc19208e65882ab663cd37412d0186",
+      "reason": "Surface serveur des événements, équipes, résultats, certifications et consolidations SPOGOMI, avec séparation des scores sportifs et des projections environnementales.",
+      "costContract": "Routes bornées par l'événement, l'équipe et les capacités métier serveur ; les résultats restent soumis à certification, les projections sont idempotentes et les données privées ne sont pas exposées aux participants non autorisés.",
+      "reviewedAt": "2026-10-12"
     }
   ],
   "apiRoutes": [
@@ -141,6 +162,7 @@
     "apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.ts",
     "apps/web/src/app/api/gamification/quiz/progress/route.ts",
     "apps/web/src/app/api/gamification/referrals/route.ts",
+    "apps/web/src/app/api/gamification/spogomi/collection/route.ts",
     "apps/web/src/app/api/gamification/xp_audit/admin/route.ts",
     "apps/web/src/app/api/gamification/xp_audit/me/route.ts",
     "apps/web/src/app/api/geo/address-suggestions/route.ts",
@@ -151,6 +173,12 @@
     "apps/web/src/app/api/manifest/route.ts",
     "apps/web/src/app/api/missions/[missionId]/reconcile/route.ts",
     "apps/web/src/app/api/missions/route.ts",
+    "apps/web/src/app/api/mobile/account/deletion-request/route.ts",
+    "apps/web/src/app/api/mobile/account/route.ts",
+    "apps/web/src/app/api/mobile/actions/[actionId]/review/route.ts",
+    "apps/web/src/app/api/mobile/actions/[actionId]/route.ts",
+    "apps/web/src/app/api/mobile/actions/invitations/route.ts",
+    "apps/web/src/app/api/mobile/actions/route.ts",
     "apps/web/src/app/api/newsletter/subscribe/route.ts",
     "apps/web/src/app/api/notifications/preferences/route.ts",
     "apps/web/src/app/api/partners/onboarding-requests/route.ts",
@@ -172,6 +200,25 @@
     "apps/web/src/app/api/signalements/[signalementId]/media/intents/route.ts",
     "apps/web/src/app/api/signalements/[signalementId]/media/route.ts",
     "apps/web/src/app/api/signalements/me/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/consolidation/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/identity-link/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/imports/confirm/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/imports/preview/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/participants/[participantId]/identity-code/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/recognition/attestations/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/recognition/reconcile/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/results/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/reviewers/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/route-gpx/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/teams/auto/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/teams/lock/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/teams/move/route.ts",
+    "apps/web/src/app/api/spogomi/events/route.ts",
+    "apps/web/src/app/api/spogomi/public/by-action/[actionId]/route.ts",
+    "apps/web/src/app/api/spogomi/team-access/route.ts",
+    "apps/web/src/app/api/spogomi/team-form/route.ts",
     "apps/web/src/app/api/spots/route.ts",
     "apps/web/src/app/api/stripe/webhook/route.ts",
     "apps/web/src/app/api/uptime/route.ts",

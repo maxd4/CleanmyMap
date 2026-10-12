@@ -19,6 +19,7 @@ import { refreshProgressionProfile } from "@/lib/gamification/progression-tracki
 import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild";
 
 export const runtime = "nodejs";
+// Justification Vercel: reviewer data is authenticated, private and mutable during moderation.
 export const dynamic = "force-dynamic";
 
 type ReviewContext = { params: Promise<{ actionId: string }> };
@@ -56,6 +57,7 @@ export async function GET(request: Request, ctx: ReviewContext) {
       loadActionParticipationReviews(context.supabase, { actionId, limit: 50, statuses: ["pending"], actionPhase: context.action.action_phase }),
       loadActionParticipationReviews(context.supabase, { actionId, limit: 50, statuses: ["confirmed"], actionPhase: context.action.action_phase }),
     ]);
+    // Justification Vercel: private review data must not be served from a shared cache.
     return NextResponse.json({ status: "ok", canReview: true, pendingRequests, confirmedParticipants }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return handleApiError(error, "GET /api/mobile/actions/:actionId/review");

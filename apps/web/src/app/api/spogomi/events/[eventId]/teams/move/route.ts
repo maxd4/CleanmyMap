@@ -7,6 +7,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadSpogomiEventForOrganizer, moveParticipantToTeam } from "@/lib/spogomi/preparation-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: team composition is mutable event state and requires fresh authorization.
 export const dynamic = "force-dynamic";
 
 const moveSchema = z.object({ participantId: z.string().uuid(), teamId: z.string().uuid().nullable() });

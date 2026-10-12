@@ -16,6 +16,7 @@ import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
+// Justification Vercel: mobile action data is authenticated, private and mutable during participation workflows.
 export const dynamic = "force-dynamic";
 
 const listQuerySchema = z.object({
@@ -95,13 +96,17 @@ export async function GET(request: Request) {
     ]);
 
     if (invitations.error) throw invitations.error;
+    // Justification Vercel: private mobile action data must not be served from a shared cache.
     return NextResponse.json({
       status: "ok",
       future: future.filter((item) => matchesSearch(item, parsed.data.q)),
       past: past.filter((item) => matchesSearch(item, parsed.data.q)),
       history,
       invitations: invitations.data ?? [],
-    }, { headers: { "Cache-Control": "private, no-store" } });
+    }, {
+      // Justification Vercel: this private projection must not be served from a shared cache.
+      headers: { "Cache-Control": "private, no-store" },
+    });
   } catch (error) {
     return handleApiError(error, "GET /api/mobile/actions");
   }

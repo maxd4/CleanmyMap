@@ -6,6 +6,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadSpogomiEventForOrganizer, updateSpogomiEvent } from "@/lib/spogomi/preparation-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: event metadata and permissions are mutable and must be resolved dynamically.
 export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request, context: { params: Promise<{ eventId: string }> }) {

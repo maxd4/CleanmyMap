@@ -6,6 +6,7 @@ import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { requireMobileAuthenticatedAccess } from "@/lib/auth/mobile-bearer";
 
 export const runtime = "nodejs";
+// Justification Vercel: invitation state is authenticated, private and changes after each decision.
 export const dynamic = "force-dynamic";
 
 const decisionSchema = z.object({
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
       { p_recipient_id: access.userId },
     );
     if (result.error) throw result.error;
+    // Justification Vercel: private invitations must not be served from a shared cache.
     return NextResponse.json({ invitations: result.data ?? [] }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return handleApiError(error, "GET /api/mobile/actions/invitations");

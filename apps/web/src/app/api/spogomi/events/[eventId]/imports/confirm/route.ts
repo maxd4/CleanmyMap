@@ -7,6 +7,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadSpogomiEventForOrganizer, confirmRosterImport } from "@/lib/spogomi/preparation-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: import confirmation mutates certified event data and must not be statically rendered.
 export const dynamic = "force-dynamic";
 
 const mappingSchema = z.object({

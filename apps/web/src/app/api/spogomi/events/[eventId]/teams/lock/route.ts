@@ -6,6 +6,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { lockSpogomiTeams, loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: team locking changes certification state and must not be statically rendered.
 export const dynamic = "force-dynamic";
 
 export async function POST(_request: Request, context: { params: Promise<{ eventId: string }> }) {

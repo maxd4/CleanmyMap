@@ -7,6 +7,7 @@ import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service"
 import { previewRosterFile } from "@/lib/spogomi/preparation";
 
 export const runtime = "nodejs";
+// Justification Vercel: import previews depend on current authenticated event data.
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {

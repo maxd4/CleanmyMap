@@ -8,6 +8,7 @@ import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service"
 import { issueSpogomiIdentityCode, SpogomiIdentityLinkError } from "@/lib/spogomi/identity-link";
 
 export const runtime = "nodejs";
+// Justification Vercel: identity codes are private event credentials and require fresh authorization.
 export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ eventId: string; participantId: string }> };

@@ -12,6 +12,7 @@ import {
 } from "@/lib/spogomi/identity-link";
 
 export const runtime = "nodejs";
+// Justification Vercel: identity-link state is sensitive and changes after each verified claim.
 export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({ code: z.string().trim().min(16).max(100) });

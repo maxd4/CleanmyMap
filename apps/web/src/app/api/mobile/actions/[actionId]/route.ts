@@ -17,6 +17,7 @@ import { isActionStartInFuture } from "@/lib/actions/temporal";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
 
 export const runtime = "nodejs";
+// Justification Vercel: this authenticated mobile action projection changes with workflow state.
 export const dynamic = "force-dynamic";
 
 type ActionRouteContext = { params: Promise<{ actionId: string }> };
@@ -69,6 +70,7 @@ export async function GET(request: Request, ctx: ActionRouteContext) {
   try {
     const result = await resolveAction(getSupabaseServerClient(true), actionId, access.userId);
     if (!result.action) return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
+    // Justification Vercel: the private action projection must not be served from a shared cache.
     return NextResponse.json({ status: "ok", ...result }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return handleApiError(error, "GET /api/mobile/actions/:actionId");
