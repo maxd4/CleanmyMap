@@ -29,6 +29,7 @@ import { buildCurrentMilestones } from "@/lib/gamification/milestones";
 import { getUserProgression } from "@/lib/gamification/progression";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadSpogomiCollectionForUser } from "@/lib/spogomi/recognition-service";
+import { loadSpogomiVolunteerSummaryForUser } from "@/lib/spogomi/volunteer";
 import { ProfileSpogomiSummary } from "@/components/gamification/profile-spogomi-summary";
 import type { SpogomiCollection } from "@/lib/spogomi/collection";
 import type { UserIdentity } from "@/lib/authz-identity";
@@ -54,6 +55,7 @@ type ProfilePageContentProps = {
   referralLineageError: string | null;
   referralInviteHref: string;
   spogomiCollection: SpogomiCollection | null;
+  spogomiVolunteerSummary: Awaited<ReturnType<typeof loadSpogomiVolunteerSummaryForUser>> | null;
 };
 
 function ProfilePageContent({
@@ -70,6 +72,7 @@ function ProfilePageContent({
   referralLineageError,
   referralInviteHref,
   spogomiCollection,
+  spogomiVolunteerSummary,
 }: ProfilePageContentProps) {
   return (
     <SectionShell
@@ -88,7 +91,7 @@ function ProfilePageContent({
 
         <FamilyRubriqueCard withTopBar={true} topBarContent="Progression & badges" className="p-12">
           <ProfileGamificationSummary summary={gamification?.summary} />
-          <ProfileSpogomiSummary collection={spogomiCollection} />
+          <ProfileSpogomiSummary collection={spogomiCollection} volunteerSummary={spogomiVolunteerSummary} />
           <InfiniteBadgesPanel totals={infiniteTotals} />
           <MilestonesPanel milestones={infiniteTotals.milestones} />
         </FamilyRubriqueCard>
@@ -183,6 +186,10 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
     getSupabaseServerClient(true),
     userId,
   ).catch(() => null);
+  const spogomiVolunteerSummary = await loadSpogomiVolunteerSummaryForUser(
+    getSupabaseServerClient(true),
+    userId,
+  ).catch(() => null);
   const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
     wasteKg: 0,
     butts: 0,
@@ -260,6 +267,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       referralLineageError={referralLineageError}
       referralInviteHref={referralInviteHref}
       spogomiCollection={spogomiCollection}
+      spogomiVolunteerSummary={spogomiVolunteerSummary}
     />
   );
 }

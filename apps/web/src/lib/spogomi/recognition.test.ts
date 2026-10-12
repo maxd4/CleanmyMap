@@ -97,4 +97,13 @@ describe("SPOGOMI recognition projection", () => {
     expect(first.awards[0]?.eventId).toBe("paris-2026");
     expect(second.awards[0]?.eventId).toBe("nice-2026");
   });
+
+  it("records non-badge volunteer missions without inventing a new distinction", () => {
+    const projection = buildSpogomiRecognitionProjection({
+      eventId: "event-1", eventDate: "2026-06-01", participants: [participant()],
+      missions: [{ missionId: "safety-1", eventId: "event-1", participantId: "participant-1", kind: "field_safety", status: "certified", certifiedAt: "2026-06-01T12:00:00Z", evidenceReference: "presence:safety", certificationVersion: "v1" }],
+      rankings: [],
+    });
+    expect(projection.awards.map((award) => award.badgeTypeId)).toEqual(["spogomi_collector"]);
+  });
 });

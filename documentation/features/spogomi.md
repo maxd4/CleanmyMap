@@ -799,7 +799,48 @@ page est indisponible ; aucune révocation ne peut donc être déduite d'une
 projection tronquée. Les noms, emails, tokens et identités privées du roster,
 notamment celles des mineurs, ne sont pas exposés.
 
-## 19 bis. Publication officielle et projection minimale — CURRENT
+## 19 bis. Missions bénévoles et attestations personnelles — CURRENT
+
+Les attestations de `spogomi_recognition_attestations` restent l'unique source
+des missions bénévoles certifiées. Elles distinguent la collecte, l'arbitrage,
+l'organisation, le contrôle d'arrivée, la sécurité terrain, la pesée et le tri,
+ainsi que le soutien logistique. Ces valeurs décrivent une mission effectivement
+réalisée et certifiée ; elles ne sont ni de nouveaux rôles Clerk, ni la preuve
+qu'une personne s'est seulement inscrite, ni la preuve qu'elle possédait une
+permission. Une même personne peut avoir plusieurs missions sur une édition si
+chaque décision possède sa preuve, sa version et son historique.
+
+La vue personnelle vérifie côté serveur l'identité reliée, la présence `present`,
+la participation confirmée dans `action_participants`, l'état `certified` de
+l'événement et les attestations non révoquées. Elle affiche séparément le nombre
+d'événements confirmés, les missions certifiées, la chronologie, la collection
+canonique des badges/médailles et les attestations disponibles. Aucun nouveau
+badge ni XP n'est produit par ce lot : le catalogue et la réconciliation de la
+gamification restent les propriétaires des distinctions existantes.
+
+Une attestation téléchargeable est une projection privée, versionnée et
+révocable dans `spogomi_volunteer_certificates`, dérivée des attestations
+certifiées et non un second ledger de contributions. Sa référence opaque est
+personnelle, son historique reste serveur, et une correction ou une révocation
+rend l'ancienne référence invalide avant qu'une nouvelle version puisse être
+émise. Le PDF A4 utilise le moteur CleanMyMap existant et contient l'identité de
+la personne uniquement dans son document privé, l'événement officiel, le lieu
+disponible, les missions certifiées, les versions de certification, la date
+d'émission et la référence unique. Il ne contient ni heures bénévoles,
+qualification, quantité individuelle non mesurée, signature SPOGOMI France,
+tampon fédéral ou validation administrative implicite. Une déclaration seule,
+une présence inconnue ou une validation en attente ne produit jamais de PDF.
+
+Chaque génération et chaque téléchargement passent par Clerk et une
+autorisation serveur limitée au compte courant. Les références, PDF et données
+nominatives ne sont pas publiés dans les URLs publiques, les noms de fichiers
+publics, les journaux ou une galerie. Le partage volontaire reste limité à un
+résumé choisi (édition, mission ou badge, année, lien public de l'événement) ;
+aucun nom, rang individuel ou PDF n'est publié automatiquement. Les résultats
+collectifs restent étiquetés collectifs et ne sont jamais convertis en métrique
+personnelle sans méthode documentée et autorisée.
+
+## 19 ter. Publication officielle et projection minimale — CURRENT
 
 Le classement sportif trie d'abord le score officiel décroissant puis applique
 uniquement l'ordre de départage déclaré par `regulation_config.tiebreakers`.

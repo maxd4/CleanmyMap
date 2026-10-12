@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { SpogomiPublicRouteMap } from "@/components/spogomi/spogomi-public-route-map";
 import { SpogomiIdentityLinkCard } from "@/components/spogomi/spogomi-identity-link-card";
+import { SpogomiVolunteerContributionsCard } from "@/components/spogomi/spogomi-volunteer-contributions-card";
 import { SpogomiPublicResults } from "@/components/spogomi/spogomi-public-results";
 import { PageHeader } from "@/components/ui/page-header";
 import { loadPublishedSpogomiEventBySlug } from "@/lib/spogomi/public-service";
@@ -62,6 +63,7 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
           </div>
           <aside className="space-y-4" aria-label="Participation et fonctionnalités">
             <SpogomiIdentityLinkCard eventId={event.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} />
+            <SpogomiVolunteerContributionsCard eventId={event.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} />
             {["Classements indépendants|Les points sportifs et le ratio de mégots utilisent des projections séparées.", "Confidentialité|Seuls les noms publics d’équipe et les résultats publiés sont visibles.", "Participation|La liaison à un compte et la confirmation de participation restent séparées du classement."].map((entry) => {
               const [title, description] = entry.split("|");
               return <CmmCard key={title} tone="slate" variant="glass" className="space-y-2 p-4"><h2 className="font-black text-slate-900">{title}</h2><p className="cmm-text-body text-slate-900">{description}</p></CmmCard>;

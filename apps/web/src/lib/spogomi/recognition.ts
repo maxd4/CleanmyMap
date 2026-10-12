@@ -4,7 +4,14 @@ export const SPOGOMI_REPEATABLE_BADGE_IDS = CURRENT_SPOGOMI_BADGE_DEFINITIONS.ma
   (definition) => definition.id,
 );
 
-export type SpogomiRecognitionKind = "collector" | "referee" | "organizer";
+export type SpogomiRecognitionKind =
+  | "collector"
+  | "referee"
+  | "organizer"
+  | "finish_control"
+  | "field_safety"
+  | "weighing_sorting"
+  | "logistics_support";
 export type SpogomiRankingKind = "points" | "butts";
 
 export type SpogomiRecognitionParticipant = {
@@ -24,7 +31,7 @@ export type SpogomiMissionProof = {
   missionId: string;
   eventId: string;
   participantId: string;
-  kind: Exclude<SpogomiRecognitionKind, "collector">;
+  kind: SpogomiRecognitionKind;
   status: "certified" | "revoked";
   certifiedAt: string | null;
   evidenceReference: string;
@@ -146,15 +153,22 @@ export function buildSpogomiRecognitionProjection(input: {
   )) {
     const participant = input.participants.find((candidate) => candidate.participantId === mission.participantId);
     if (!participant || !isEligibleSpogomiMissionParticipant(participant)) continue;
-    addAward(awards, {
-      userId: participant.userId!,
-      eventId: input.eventId,
-      badgeTypeId: mission.kind === "referee" ? "spogomi_referee" : "spogomi_organizer",
-      proofReference: `spogomi_mission:${mission.missionId}`,
-      certificationReference: `spogomi_attestation:${mission.missionId}:${mission.certificationVersion}`,
-      rankingVersion: null,
-      occurredOn: mission.certifiedAt ?? input.eventDate,
-    });
+    const badgeTypeId = mission.kind === "referee"
+      ? "spogomi_referee"
+      : mission.kind === "organizer"
+        ? "spogomi_organizer"
+        : null;
+    if (badgeTypeId) {
+      addAward(awards, {
+        userId: participant.userId!,
+        eventId: input.eventId,
+        badgeTypeId,
+        proofReference: `spogomi_mission:${mission.missionId}`,
+        certificationReference: `spogomi_attestation:${mission.missionId}:${mission.certificationVersion}`,
+        rankingVersion: null,
+        occurredOn: mission.certifiedAt ?? input.eventDate,
+      });
+    }
   }
 
   for (const teamId of collectorsByTeam.keys()) {

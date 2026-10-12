@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 
 const inputSchema = z.object({
   participantId: z.string().uuid(),
-  kind: z.enum(["collector", "referee", "organizer"]),
+  kind: z.enum(["collector", "referee", "organizer", "finish_control", "field_safety", "weighing_sorting", "logistics_support"]),
   status: z.enum(["certified", "revoked"]),
   evidenceReference: z.string().trim().min(1).max(500),
   certificationVersion: z.string().trim().min(1).max(120),
