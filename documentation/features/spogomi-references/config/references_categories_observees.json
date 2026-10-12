@@ -1,0 +1,150 @@
+{
+  "status": "SOURCES_OBSERVEES_PAS_REGLEMENT_OFFICIEL",
+  "casual_future_reduced_categories": null,
+  "casual_future_eligibility": {
+    "minimum_present": null,
+    "maximum_members": 4,
+    "minimum_members": 2,
+    "policy": "exemple_demande_utilisateur_pour_repartition_previsionnelle, pas une règle sportive officielle"
+  },
+  "rounding_policy": null,
+  "penalty_policy": null,
+  "tiebreaker_policy": null,
+  "rules": [
+    {
+      "id": "capture_world_cup_2026",
+      "mode": "world_cup",
+      "status": "HISTORICAL_REFERENCE_UNVERIFIED",
+      "origin": "capture_classement_world_cup",
+      "unit": "g",
+      "coefficient_unit": "points_per_kg",
+      "categories": [
+        {
+          "code": "ordures_menageres",
+          "label": "Ordures ménagères",
+          "points_per_kg": 100,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "piles_batteries",
+          "label": "Piles / Batteries",
+          "points_per_kg": 100,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "emballages",
+          "label": "Emballages",
+          "points_per_kg": 250,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "verre",
+          "label": "Verre",
+          "points_per_kg": 120,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "megots",
+          "label": "Mégots",
+          "points_per_kg": 3000,
+          "kind": "mass",
+          "environmental_category_slug": "cigarette_butt"
+        }
+      ]
+    },
+    {
+      "id": "classeur_casual_2026",
+      "mode": "casual",
+      "status": "HISTORICAL_REFERENCE_UNVERIFIED",
+      "origin": "classeur_casual",
+      "unit": "g",
+      "coefficient_unit": "points_per_kg",
+      "categories": [
+        {
+          "code": "ordures_menageres",
+          "label": "Ordures ménagères",
+          "points_per_kg": 100,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "piles_batteries",
+          "label": "Piles / Batteries",
+          "points_per_kg": 100,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "emballages",
+          "label": "Emballages",
+          "points_per_kg": 250,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "verre",
+          "label": "Verre",
+          "points_per_kg": 120,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "megots",
+          "label": "Mégots",
+          "points_per_kg": 3000,
+          "kind": "mass",
+          "environmental_category_slug": "cigarette_butt"
+        }
+      ]
+    },
+    {
+      "id": "pdf_fiche_arbitre",
+      "mode": "source_pdf_historique",
+      "status": "HISTORICAL_REFERENCE_UNVERIFIED",
+      "origin": "fiche_pesee_arbitre",
+      "unit": "g",
+      "coefficient_unit": "points_per_100g",
+      "categories": [
+        {
+          "code": "dechet_recyclable",
+          "label": "Déchet recyclable",
+          "points_per_100g": 25,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "dechet_non_recyclable",
+          "label": "Non recyclable",
+          "points_per_100g": 10,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "verre",
+          "label": "Verre",
+          "points_per_100g": 12,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "aluminium_acier",
+          "label": "Alu / acier",
+          "points_per_100g": 25,
+          "kind": "mass",
+          "environmental_category_slug": null
+        },
+        {
+          "code": "megots",
+          "label": "Mégots",
+          "points_per_100g": 300,
+          "kind": "mass",
+          "environmental_category_slug": "cigarette_butt"
+        }
+      ]
+    }
+  ]
+}

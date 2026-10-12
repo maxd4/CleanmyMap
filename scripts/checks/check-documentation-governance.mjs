@@ -37,7 +37,7 @@ const forbiddenReferences = [
 
 const allowedReferencesByFile = new Map([
   [
-    "documentation/features/master-pack.md",
+    "documentation/features/reports/master-pack.md",
     new Set(["sessions/", "sessions\\"]),
   ],
 ]);

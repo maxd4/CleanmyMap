@@ -1,0 +1,289 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cleanmymap.fr/schemas/spogomi-reference-packet-v1.json",
+  "title": "SPOGOMI - interchange de référence (non runtime)",
+  "description": "Structure de fixtures et d’exports. À mapper vers les types et tables CURRENT; ne définit pas de nouvelle source de vérité.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_ref",
+    "mode",
+    "regulation_ref",
+    "tickets",
+    "teams",
+    "measurements",
+    "penalties",
+    "rankings"
+  ],
+  "properties": {
+    "event_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "enum": [
+        "world_cup",
+        "casual"
+      ]
+    },
+    "regulation_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tickets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ticket"
+      }
+    },
+    "teams": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/team"
+      }
+    },
+    "measurements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/measure"
+      }
+    },
+    "penalties": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/penalty"
+      }
+    },
+    "rankings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ranking"
+      }
+    }
+  },
+  "$defs": {
+    "ticket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "place_id",
+        "order_group_id",
+        "identity_status",
+        "registration_status",
+        "attendance_status"
+      ],
+      "properties": {
+        "place_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order_group_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity_status": {
+          "enum": [
+            "identity_unknown",
+            "identity_confirmed"
+          ]
+        },
+        "registration_status": {
+          "enum": [
+            "registered",
+            "withdrawn"
+          ]
+        },
+        "attendance_status": {
+          "enum": [
+            "unknown",
+            "present",
+            "absent"
+          ]
+        },
+        "person_display_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "team": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "team_id",
+        "public_name",
+        "place_ids",
+        "composition_status"
+      ],
+      "properties": {
+        "team_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "public_name": {
+          "type": "string"
+        },
+        "place_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "composition_status": {
+          "enum": [
+            "proposed",
+            "locked",
+            "verified",
+            "needs_review"
+          ]
+        }
+      }
+    },
+    "measure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "measurement_id",
+        "team_id",
+        "category_code",
+        "mass_grams",
+        "direct_count",
+        "status",
+        "provenance"
+      ],
+      "properties": {
+        "measurement_id": {
+          "type": "string"
+        },
+        "team_id": {
+          "type": "string"
+        },
+        "category_code": {
+          "type": "string"
+        },
+        "mass_grams": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "direct_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "submitted",
+            "certified",
+            "rejected",
+            "superseded"
+          ]
+        },
+        "provenance": {
+          "type": "string"
+        },
+        "certified_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "source_reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "penalty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "team_id",
+        "penalty_code",
+        "points",
+        "status"
+      ],
+      "properties": {
+        "team_id": {
+          "type": "string"
+        },
+        "penalty_code": {
+          "type": "string"
+        },
+        "points": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "proposed",
+            "certified",
+            "revoked"
+          ]
+        },
+        "proof_reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "ranking": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "team_id",
+        "score",
+        "rank",
+        "status"
+      ],
+      "properties": {
+        "team_id": {
+          "type": "string"
+        },
+        "score": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "rank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "status": {
+          "enum": [
+            "unavailable",
+            "preview",
+            "official"
+          ]
+        },
+        "ranking_source_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -71,6 +71,15 @@ describe("public documentation registry", () => {
     ).toEqual(["graphique-impact-co2e", "atelier_DU", "journal_DU", "journal_impact_DU"]);
   });
 
+  it("resolves the quiz documents from their reorganized canonical paths", () => {
+    expect(PUBLIC_DOCUMENTATION.find((entry) => entry.filename === "quiz-authoring-guide.md")?.canonicalPath).toBe(
+      "features/quiz/quiz-authoring-guide.md",
+    );
+    expect(PUBLIC_DOCUMENTATION.find((entry) => entry.filename === "quiz-quality-control.md")?.canonicalPath).toBe(
+      "features/quiz/quiz-quality-control.md",
+    );
+  });
+
   it("resolves only the registered route identifiers", () => {
     expect(findPublicDocumentationByDocsPath("operations/platform-cost-governance.md")).toBeUndefined();
     expect(findPublicDocumentationByDocsPath("../plans/rapport_impact/impact_IA.md")).toBeUndefined();

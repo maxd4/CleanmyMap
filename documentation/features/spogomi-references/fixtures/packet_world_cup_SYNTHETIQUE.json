@@ -1,0 +1,428 @@
+{
+  "event_ref": "FIXTURE-CACHAN-2026",
+  "mode": "world_cup",
+  "regulation_ref": null,
+  "tickets": [
+    {
+      "place_id": "PLACE-001",
+      "order_group_id": "ORD-01",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-002",
+      "order_group_id": "ORD-01",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-003",
+      "order_group_id": "ORD-01",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-004",
+      "order_group_id": "ORD-02",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-005",
+      "order_group_id": "ORD-02",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-006",
+      "order_group_id": "ORD-02",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-007",
+      "order_group_id": "ORD-02",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-008",
+      "order_group_id": "ORD-02",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-009",
+      "order_group_id": "ORD-02",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-010",
+      "order_group_id": "ORD-03",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-011",
+      "order_group_id": "ORD-03",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-012",
+      "order_group_id": "ORD-03",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-013",
+      "order_group_id": "ORD-03",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-014",
+      "order_group_id": "ORD-04",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-015",
+      "order_group_id": "ORD-04",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-016",
+      "order_group_id": "ORD-04",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-017",
+      "order_group_id": "ORD-05",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-018",
+      "order_group_id": "ORD-05",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-019",
+      "order_group_id": "ORD-05",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-020",
+      "order_group_id": "ORD-05",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-021",
+      "order_group_id": "ORD-06",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-022",
+      "order_group_id": "ORD-07",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-023",
+      "order_group_id": "ORD-07",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-024",
+      "order_group_id": "ORD-07",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-025",
+      "order_group_id": "ORD-07",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-026",
+      "order_group_id": "ORD-08",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-027",
+      "order_group_id": "ORD-08",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-028",
+      "order_group_id": "ORD-08",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-029",
+      "order_group_id": "ORD-08",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-030",
+      "order_group_id": "ORD-09",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-031",
+      "order_group_id": "ORD-09",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-032",
+      "order_group_id": "ORD-09",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-033",
+      "order_group_id": "ORD-10",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-034",
+      "order_group_id": "ORD-10",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-035",
+      "order_group_id": "ORD-10",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-036",
+      "order_group_id": "ORD-11",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    },
+    {
+      "place_id": "PLACE-037",
+      "order_group_id": "ORD-11",
+      "identity_status": "identity_unknown",
+      "registration_status": "registered",
+      "attendance_status": "unknown",
+      "person_display_name": null
+    }
+  ],
+  "teams": [
+    {
+      "team_id": "TEAM-01",
+      "public_name": "Équipe 01",
+      "place_ids": [
+        "PLACE-001",
+        "PLACE-002",
+        "PLACE-003"
+      ],
+      "composition_status": "proposed"
+    },
+    {
+      "team_id": "TEAM-02",
+      "public_name": "Équipe 02",
+      "place_ids": [
+        "PLACE-004",
+        "PLACE-005",
+        "PLACE-006"
+      ],
+      "composition_status": "proposed"
+    },
+    {
+      "team_id": "TEAM-03",
+      "public_name": "Équipe 03",
+      "place_ids": [
+        "PLACE-007",
+        "PLACE-008",
+        "PLACE-009"
+      ],
+      "composition_status": "proposed"
+    },
+    {
+      "team_id": "TEAM-04",
+      "public_name": "Équipe 04",
+      "place_ids": [
+        "PLACE-010",
+        "PLACE-011",
+        "PLACE-012"
+      ],
+      "composition_status": "proposed"
+    },
+    {
+      "team_id": "TEAM-05",
+      "public_name": "Équipe 05",
+      "place_ids": [
+        "PLACE-014",
+        "PLACE-015",
+        "PLACE-016"
+      ],
+      "composition_status": "proposed"
+    },
+    {
+      "team_id": "TEAM-06",
+      "public_name": "Équipe 06",
+      "place_ids": [
+        "PLACE-017",
+        "PLACE-018",
+        "PLACE-019"
+      ],
+      "composition_status": "proposed"
+    },
+    {
+      "team_id": "TEAM-07",
+      "public_name": "Équipe 07",
+      "place_ids": [
+        "PLACE-022",
+        "PLACE-023",
+        "PLACE-024"
+      ],
+      "composition_status": "proposed"
+    },
+    {
+      "team_id": "TEAM-08",
+      "public_name": "Équipe 08",
+      "place_ids": [
+        "PLACE-026",
+        "PLACE-027",
+        "PLACE-028"
+      ],
+      "composition_status": "proposed"
+    },
+    {
+      "team_id": "TEAM-09",
+      "public_name": "Équipe 09",
+      "place_ids": [
+        "PLACE-030",
+        "PLACE-031",
+        "PLACE-032"
+      ],
+      "composition_status": "proposed"
+    },
+    {
+      "team_id": "TEAM-10",
+      "public_name": "Équipe 10",
+      "place_ids": [
+        "PLACE-033",
+        "PLACE-034",
+        "PLACE-035"
+      ],
+      "composition_status": "proposed"
+    },
+    {
+      "team_id": "TEAM-11",
+      "public_name": "Équipe 11",
+      "place_ids": [
+        "PLACE-036",
+        "PLACE-037",
+        "PLACE-013"
+      ],
+      "composition_status": "proposed"
+    },
+    {
+      "team_id": "TEAM-12",
+      "public_name": "Équipe 12",
+      "place_ids": [
+        "PLACE-020",
+        "PLACE-021",
+        "PLACE-025"
+      ],
+      "composition_status": "proposed"
+    }
+  ],
+  "measurements": [],
+  "penalties": [],
+  "rankings": []
+}

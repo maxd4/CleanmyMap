@@ -26,14 +26,14 @@ export const PUBLIC_DOCUMENTATION: readonly PublicDocumentationEntry[] = [
   },
   {
     name: "Guide d’authoring du quiz",
-    canonicalPath: "features/quiz-authoring-guide.md",
+    canonicalPath: "features/quiz/quiz-authoring-guide.md",
     docsPath: "features/quiz-authoring-guide.md",
     filename: "quiz-authoring-guide.md",
     kind: "markdown",
   },
   {
     name: "Grille de contrôle qualité du quiz",
-    canonicalPath: "features/quiz-quality-control.md",
+    canonicalPath: "features/quiz/quiz-quality-control.md",
     docsPath: "features/quiz-quality-control.md",
     filename: "quiz-quality-control.md",
     kind: "markdown",

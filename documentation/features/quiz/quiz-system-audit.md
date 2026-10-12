@@ -12,15 +12,15 @@ Cette note synthétise l'audit du système de quiz et liste les points qui doive
 
 ## Corrections sûres appliquées
 
-- Le build de production a été débloqué en sécurisant la lecture de `sourceHealth` dans [apps/web/src/lib/actions/map/map-route.ts](../../apps/web/src/lib/actions/map/map-route.ts).
-- Un test de progression personnelle a été aligné sur le type exporté par le module correspondant dans [apps/web/src/lib/learning/quiz-personal-progress.test.ts](../../apps/web/src/lib/learning/quiz-personal-progress.test.ts).
+- Le build de production a été débloqué en sécurisant la lecture de `sourceHealth` dans [apps/web/src/lib/actions/map/map-route.ts](../../../apps/web/src/lib/actions/map/map-route.ts).
+- Un test de progression personnelle a été aligné sur le type exporté par le module correspondant dans [apps/web/src/lib/learning/quiz-personal-progress.test.ts](../../../apps/web/src/lib/learning/quiz/quiz-personal-progress.test.ts).
 
 ## Performance et quotas Vercel / Supabase
 
-- La banque de questions reste chargée localement depuis `data/environmental-quiz-bank.ts` via [apps/web/src/lib/learning/quiz-question-bank.ts](../../apps/web/src/lib/learning/quiz-question-bank.ts), sans fetch réseau au montage.
-- Le chargement SRS côté utilisateur reste borné à la liste courante de questions et bénéficie désormais d'un cache mémoire court dans [apps/web/src/lib/services/quiz-srs-service.ts](../../apps/web/src/lib/services/quiz-srs-service.ts), ce qui évite les lectures Supabase répétées lors de remounts rapides.
+- La banque de questions reste chargée localement depuis `data/environmental-quiz-bank/` via [apps/web/src/lib/learning/quiz-question-bank.ts](../../../apps/web/src/lib/learning/quiz/quiz-question-bank.ts), sans fetch réseau au montage.
+- Le chargement SRS côté utilisateur reste borné à la liste courante de questions et bénéficie désormais d'un cache mémoire court dans [apps/web/src/lib/services/quiz-srs-service.ts](../../../apps/web/src/lib/services/quiz-srs-service.ts), ce qui évite les lectures Supabase répétées lors de remounts rapides.
 - Le stockage personnel du quiz reste d'abord local (`localStorage`) pour les états anonymes et les progressions non critiques.
-- Les métriques pédagogiques restent limitées à un envoi POST par session terminée via [apps/web/src/lib/learning/quiz-pedagogical-metrics-client.ts](../../apps/web/src/lib/learning/quiz-pedagogical-metrics-client.ts); il n'y a pas de polling.
+- Les métriques pédagogiques restent limitées à un envoi POST par session terminée via [apps/web/src/lib/learning/quiz-pedagogical-metrics-client.ts](../../../apps/web/src/lib/learning/quiz/quiz-pedagogical-metrics-client.ts); il n'y a pas de polling.
 - La synchronisation des bonnes réponses n'est appelée que lorsque la feature flag `quizServerSync` est activée; elle reste désactivée par défaut.
 
 ## Points à valider manuellement

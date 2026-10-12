@@ -1,0 +1,42 @@
+{
+  "pack_id": "spogomi-references-v1",
+  "status": "REFERENCE_SNAPSHOT_NON_CANONICAL",
+  "read_git_main_before_integration": true,
+  "generated_utc": "2026-10-12",
+  "personal_data_in_pack": false,
+  "inputs": [
+    {
+      "key": "capture_classement_world_cup",
+      "original_filename": "image(20261012-173533).png",
+      "format": "capture écran",
+      "sha256": "9ff7ec4f65afcbd36830416df57cb96cb987683a3ba782c536bcdb9cc6623196",
+      "bytes": 584496,
+      "usage": "Référence visuelle World Cup, datée 20/09/26 dans la capture"
+    },
+    {
+      "key": "classeur_casual",
+      "original_filename": "classement et point casual.xlsx",
+      "format": "xlsx",
+      "sha256": "3a45bc20bd0a37006604a38bb487238c8ec06e463a98238b2b1995a43e1850ff",
+      "bytes": 91012,
+      "usage": "Référence Casual fournie, catégories observées à confirmer pour un règlement futur"
+    },
+    {
+      "key": "billetterie_cachan_2026",
+      "original_filename": "spogomi-cachan-2026_20261012.csv",
+      "format": "csv",
+      "sha256": "232a851c3bbf3e9ccc26ea16e83b2d10e2036d21b671fb542e8c5db5bff03b65",
+      "bytes": 13691,
+      "usage": "Billetterie réelle avec données personnelles, jamais distribuée dans le kit"
+    },
+    {
+      "key": "fiche_pesee_arbitre",
+      "original_filename": "fiche des dechets spogomi.pdf",
+      "format": "pdf",
+      "sha256": "67ca0c77f6e4d00477258bae468ff48864ec6ce9ffc6a02963e7dab100419b4e",
+      "bytes": 44275,
+      "usage": "Fiche vierge de pesée à 3 exemplaires sur une page, nomenclature différente"
+    }
+  ],
+  "data_certification": "None of these historical coefficients or cases certifies a rule or a result in CleanMyMap."
+}

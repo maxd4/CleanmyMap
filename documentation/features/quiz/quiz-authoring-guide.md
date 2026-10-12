@@ -6,15 +6,20 @@ Le système de répétition espacée n'est efficace que si la banque contient de
 
 Pour la vue d'ensemble complète, les exemples et la procédure d'ajout, voir [Guide de contribution au quiz](./quiz-contributor-guide.md).
 
-La future banque de questions doit s'appuyer principalement sur 10 formats pédagogiques complémentaires. L'objectif est d'éviter qu'un seul format domine et de forcer des modes de raisonnement différents.
+La banque de questions et ses évolutions s'appuient principalement sur 10 formats pédagogiques complémentaires. L'objectif est d'éviter qu'un seul format domine et de forcer des modes de raisonnement différents.
 
-## Sept portes d'entrée utilisateur
+## Huit portes d'entrée utilisateur
 
 Le quiz doit aussi être accessible selon ce que l'utilisateur veut évaluer. Cette sélection reste distincte des formats internes et des types de raisonnement.
 
 ### Mixte
 - Toutes les questions mélangées dans une même séance
 - Objectif : alterner les contextes, les mécanismes et les formats
+
+### École
+- Séances publiques de 30 ou 60 minutes pour les niveaux de la 6e à la 3e
+- Atelier collectif sans compte, avec niveau choisi avant le lancement
+- Objectif : voter, discuter et révéler la réponse ensemble
 
 ### Terrain
 - Décisions réelles pendant une cleanwalk
@@ -41,7 +46,7 @@ Le quiz doit aussi être accessible selon ce que l'utilisateur veut évaluer. Ce
 - Objectif : éviter les mauvais gestes sur le terrain
 
 Règle:
-- ces sept portes d'entrée ne sont pas des niveaux de difficulté;
+- ces huit portes d'entrée ne sont pas des niveaux de difficulté;
 - elles servent à orienter le joueur vers le bon type de contenu;
 - le reste de la banque se répartit ensuite dans les formats pédagogiques internes.
 
@@ -110,7 +115,7 @@ Le moteur de sélection s'appuie sur plusieurs axes distincts. Ils ne jouent pas
 ### `mode`
 - C'est le filtre principal du pool de questions.
 - Il détermine d'abord quelles questions sont éligibles à la session.
-- Les modes utilisateur restent: `Mixte`, `Terrain`, `Données scientifiques`, `Sensibilisation`, `Habitudes de vie`, `Ordres de grandeur`, `Tri & sécurité`.
+- Les modes utilisateur sont `Mixte`, `École`, `Terrain`, `Données scientifiques`, `Sensibilisation`, `Habitudes de vie`, `Ordres de grandeur` et `Tri & sécurité`.
 
 ### `review`
 - C'est la priorité d'exposition issue du SRS.
@@ -527,4 +532,4 @@ Une question est acceptable seulement si:
 ## Références associées
 
 - [Système de répétition espacée (SRS)](./quiz-srs.md)
-- [Spécification des rappels cognitifs](../product/specification-rappels-cognitifs.md)
+- [Spécification des rappels cognitifs](../../product/specification-rappels-cognitifs.md)

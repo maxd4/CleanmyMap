@@ -791,7 +791,7 @@ notamment celles des mineurs, ne sont pas exposés.
 ## 20. Sources canoniques liées
 
 - [Participation et formulaire de groupe](./group-action.md)
-- [Moteur de gamification](./GAMIFICATION_ENGINE.md)
+- [Moteur de gamification](./gamification/GAMIFICATION_ENGINE.md)
 - [Gouvernance des données](../architecture/data-governance.md)
 - [Protocole scientifique](../product/SCIENTIFIC_PROTOCOL.md)
 - [AuthN/AuthZ](../security/authz-authn-regles.md)

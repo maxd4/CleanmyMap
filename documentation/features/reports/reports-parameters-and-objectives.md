@@ -1,5 +1,8 @@
 # CleanMyMap — Paramètres de génération des rapports d’impact
 
+> Statut documentaire : `PLAN`. Cette fiche décrit une cible et ne transforme
+> pas les paramètres non implémentés en contrat CURRENT.
+
 ## Statut du document
 
 Ce document définit la logique cible des **paramètres de génération** de la page `/reports`.

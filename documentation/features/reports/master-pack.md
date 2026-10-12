@@ -29,4 +29,4 @@ Pack et du Report Model. Ils ne sont pas recopiés dans cette fiche afin d’év
 une divergence documentaire.
 
 Pour le contexte conceptuel et historique, consulter le
-[document historique](../sessions/history/master-pack-concept-historical.md).
+[document historique](../../sessions/history/master-pack-concept-historical.md).

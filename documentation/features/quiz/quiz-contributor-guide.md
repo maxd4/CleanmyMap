@@ -18,6 +18,7 @@ Les modes sont des portes d'entrée pédagogiques. Ils ne sont pas des niveaux d
 | Mode | Ce qu'il couvre | Quand l'utiliser |
 | --- | --- | --- |
 | `mixte` | Mélange de toute la banque pour alterner les contextes et les formats. | Pour une séance équilibrée ou une démonstration rapide. |
+| `ecole` | Séance publique de 30 ou 60 minutes, pour la 6e à la 3e, avec vote et discussion collective. | Pour un atelier en classe sans compte. |
 | `terrain` | Décisions de cleanwalk, gestes pratiques, sécurité et cas limites. | Pour tester un réflexe concret sur site. |
 | `donnees-scientifiques` | Mécanismes, impacts mesurables, relations de cause à effet. | Pour expliquer pourquoi un phénomène existe. |
 | `sensibilisation` | Idées reçues, mythes, intuitions trompeuses. | Pour provoquer un déclic rapide. |
