@@ -4,6 +4,7 @@ import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth
 import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadSpogomiEventForOrganizer, updateSpogomiEvent } from "@/lib/spogomi/preparation-service";
+import { isCachanTicketCompositionEligible } from "@/lib/spogomi/ticket-reconciliation";
 
 export const runtime = "nodejs";
 // Justification Vercel: event metadata and permissions are mutable and must be resolved dynamically.
@@ -18,14 +19,23 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
     if (!event) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
     const supabase = getSupabaseServerClient(true);
     const [participants, teams, route] = await Promise.all([
-      supabase.from("spogomi_participants").select("id, display_name, external_reference, order_reference, identity_status, group_preference, source_row_number, team_id, attendance_status, registration_status, account_link_status").eq("event_id", event.id).order("source_row_number"),
+      supabase.from("spogomi_participants").select("id, display_name, external_reference, order_reference, identity_status, group_preference, source_row_number, team_id, attendance_status, registration_status, account_link_status, source_system, ticket_status, ticket_deleted").eq("event_id", event.id).order("source_row_number"),
       supabase.from("spogomi_teams").select("id, team_number, public_name, composition_state").eq("event_id", event.id).order("team_number"),
       supabase.from("spogomi_event_routes").select("source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson").eq("event_id", event.id).maybeSingle(),
     ]);
     if (participants.error) throw participants.error;
     if (teams.error) throw teams.error;
     if (route.error) throw route.error;
-    return NextResponse.json({ event, participants: participants.data ?? [], teams: teams.data ?? [], route: route.data ?? null });
+    const organizerParticipants = (participants.data ?? []).map((participant) => ({
+      ...participant,
+      composition_eligible: isCachanTicketCompositionEligible({
+        sourceSystem: participant.source_system,
+        ticketStatus: participant.ticket_status,
+        ticketDeleted: Boolean(participant.ticket_deleted),
+        registrationStatus: String(participant.registration_status),
+      }),
+    }));
+    return NextResponse.json({ event, participants: organizerParticipants, teams: teams.data ?? [], route: route.data ?? null });
   } catch (error) {
     return handleApiError(error, "spogomi.event.read");
   }

@@ -8,6 +8,7 @@ const lot11Migration = readFileSync(new URL("../../../supabase/migrations/202610
 const lot11aMigration = readFileSync(new URL("../../../supabase/migrations/20261013000001_spogomi_ticket_source_scope_and_safe_rebalance.sql", import.meta.url), "utf8");
 const lot11CorrectiveMigration = readFileSync(new URL("../../../supabase/migrations/20261013000002_spogomi_import_history_and_safe_reconciliation.sql", import.meta.url), "utf8");
 const compositionLockMigration = readFileSync(new URL("../../../supabase/migrations/20261013000003_spogomi_composition_lock_integrity.sql", import.meta.url), "utf8");
+const ticketReconciliationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000004_spogomi_ticket_reconciliation_atomicity.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -79,5 +80,18 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(compositionLockMigration).toContain("spogomi_team_composition_history");
     expect(compositionLockMigration).toContain("state not in ('draft', 'registration_open')");
     expect(compositionLockMigration).not.toContain("delete from public.spogomi_teams");
+  });
+
+  it("keeps historical proof transition and ticket reconciliation atomic", () => {
+    expect(ticketReconciliationMigration).toContain("source_proof_status");
+    expect(ticketReconciliationMigration).toContain("legacy_unavailable");
+    expect(ticketReconciliationMigration).toContain("spogomi_reconcile_cachan_ticket_rows");
+    expect(ticketReconciliationMigration).toContain("from public.spogomi_events");
+    expect(ticketReconciliationMigration).toContain("for update");
+    expect(ticketReconciliationMigration).toContain("spogomi_roster_import_changes");
+    expect(ticketReconciliationMigration).toContain("spogomi_roster_import_rows");
+    expect(ticketReconciliationMigration).toContain("grant execute on function public.spogomi_reconcile_cachan_ticket_rows");
+    expect(ticketReconciliationMigration).toContain("A cancelled Cachan ticket requires explicit organizer arbitration");
+    expect(ticketReconciliationMigration).toContain("SPOGOMI event locking requires an eligible, atomically prepared composition");
   });
 });

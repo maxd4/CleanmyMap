@@ -399,6 +399,15 @@ signalé et ajouté à l'historique privé. Une collision de référence dans un
 est bloquante. Le roster, ses correspondances et son historique restent
 server-only, sans donnée de billetterie réelle dans le dépôt.
 
+Les champs `ticket_status` et `ticket_deleted` restent la source commerciale
+canonique. Une annulation ou suppression sans décision terrain protégée fait
+passer la place à `withdrawn`, sans effacer son identité, son UUID ou son
+historique ; une réactivation vérifiée peut la rendre `registered`. Une
+annulation qui rencontre une identité confirmée, une présence attestée, une
+liaison Clerk, une affectation ou une autre décision sportive est conservée
+comme conflit explicite. Tant que ce conflit n'est pas arbitré, la place ne peut
+pas être traitée comme active par une nouvelle composition.
+
 La formation propose d'abord les trios conservés par commande/groupe, puis
 recompose les restes avec priorité aux trios et aux décompositions `5 → 3 + 2`
 et `6 → 3 + 3`. World Cup exige exactement trois membres par équipe ; Casual
@@ -410,15 +419,23 @@ par leur numéro et ne sont jamais supprimées/recréées silencieusement. Les
 accès, résultats et historiques restent ainsi attachés à leurs identifiants.
 
 Les migrations `20261012000022_spogomi_ticket_roster_and_team_composition.sql`,
-`20261013000001_spogomi_ticket_source_scope_and_safe_rebalance.sql` et
-`20261013000002_spogomi_import_history_and_safe_reconciliation.sql` ajoutent
+`20261013000001_spogomi_ticket_source_scope_and_safe_rebalance.sql`,
+`20261013000002_spogomi_import_history_and_safe_reconciliation.sql` et
+`20261013000003_spogomi_composition_lock_integrity.sql` et
+`20261013000004_spogomi_ticket_reconciliation_atomicity.sql` ajoutent
 les états de billetterie, l'historique des changements, la révision de composition,
 la portée source de la clé de billet, la preuve append-only de chaque ligne
-d'import et la RPC atomique de confirmation. La seconde bloque la recomposition
-automatique d'une équipe déjà liée à un accès ou à des résultats ; la dernière
+d'import et la RPC atomique de confirmation. La réconciliation des lignes Cachan
+est désormais transactionnelle : participants, changements et preuves de lignes
+réussissent ou échouent ensemble, avec verrou événementiel et reprise idempotente.
+La transition distingue aussi les imports confirmés avant la preuve détaillée
+(`legacy_unavailable`) des imports récents réellement incomplets, sans fabriquer
+de snapshot historique. La seconde bloque la recomposition
+automatique d'une équipe déjà liée à un accès ou à des résultats via
+`20261013000003_spogomi_composition_lock_integrity.sql` ; `20261013000002`
 rend les réimports historiques indépendants de la provenance courante et limite
 la réconciliation aux champs possédés par la billetterie. L'aperçu des équipes
-affiche chaque place, permet les déplacements sans écriture puis confirme
+refuse explicitement les annulations protégées, affiche chaque place, permet les déplacements sans écriture puis confirme
 exactement la proposition contrôlée côté serveur. Un dry-run ne vaut pas preuve
 d'application distante ; la certification, la consolidation, AuthN/AuthZ, RLS et
 la liaison Clerk restent inchangées.

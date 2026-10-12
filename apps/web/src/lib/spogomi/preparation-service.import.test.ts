@@ -36,6 +36,28 @@ function pagedSupabase(pages: Array<{ data: PersistedRow[]; error: Error | null 
   return { supabase, ranges };
 }
 
+function historicalProofSupabase(proof: Record<string, unknown> | null, persisted: PersistedRow[]) {
+  const ranges: Array<[number, number]> = [];
+  const importQuery = {
+    select: () => importQuery,
+    eq: () => importQuery,
+    maybeSingle: () => Promise.resolve({ data: proof, error: null }),
+  };
+  const rowsQuery = {
+    select: () => rowsQuery,
+    eq: () => rowsQuery,
+    order: () => rowsQuery,
+    range: (from: number, to: number) => {
+      ranges.push([from, to]);
+      return Promise.resolve({ data: persisted.slice(from, to + 1), error: null });
+    },
+  };
+  const supabase = {
+    from: (table: string) => table === "spogomi_roster_imports" ? importQuery : rowsQuery,
+  } as unknown as SupabaseClient;
+  return { supabase, ranges };
+}
+
 type ImportRecord = {
   id: string;
   event_id: string;
@@ -193,6 +215,29 @@ function importFile() {
 }
 
 describe("SPOGOMI roster import completeness mock contract", () => {
+  it("accepts a confirmed pre-proof import without claiming detailed historical proof", async () => {
+    const expected = rows(2);
+    const { supabase, ranges } = historicalProofSupabase({
+      status: "confirmed",
+      source_proof_status: "legacy_unavailable",
+      source_row_count: expected.length,
+    }, []);
+
+    await expect(verifyImportedRosterCompleteness(supabase, "event", "import", expected, expected.length, true)).resolves.toBe(true);
+    expect(ranges).toEqual([]);
+  });
+
+  it("rejects a recent import whose detailed proof is genuinely incomplete", async () => {
+    const expected = rows(2);
+    const { supabase } = historicalProofSupabase({
+      status: "failed_recoverable",
+      source_proof_status: "pending",
+      source_row_count: expected.length,
+    }, persistedRows(expected.slice(0, 1)));
+
+    await expect(verifyImportedRosterCompleteness(supabase, "event", "import", expected, expected.length, true)).resolves.toBe(false);
+  });
+
   it("reads and verifies an import containing 1,001 rows", async () => {
     const expected = rows(1_001);
     const { supabase, ranges } = pagedSupabase([

@@ -17,6 +17,7 @@ describe("SPOGOMI composition mutation STATIC_CONTRACT", () => {
     expect(moveRoute).toContain("SpogomiCompositionProtectionError");
     expect(lockRoute).toContain("SpogomiCompositionProtectionError");
     expect(workspace).toContain("Une absence ou un remplacement nécessite une procédure d’arbitrage versionnée");
+    expect(workspace).toContain("Billet annulé ou supprimé : affectation bloquée");
     expect(workspace).toContain("!compositionEditable");
     expect(workspace).toContain("expectedRevision: data.event.composition_revision ?? 0");
   });
