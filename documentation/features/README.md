@@ -56,9 +56,10 @@ et les composants/tests associés.
 
 ## `PLAN`
 
-- [`spogomi.md`](./spogomi.md) — contrat cible pour les événements SPOGOMI,
-  leurs équipes, les formulaires spécialisés et la consolidation vers une seule
-  action CleanMyMap ; aucune fonctionnalité n'est déclarée livrée par cette fiche.
+- [`spogomi.md`](./spogomi.md) — contrat `PLAN` des événements SPOGOMI et
+  section `CURRENT` du lot 1 livré : socle métier, versions, certification et
+  frontières d'accès ; les formulaires, classements et consolidations restent
+  planifiés dans les lots suivants.
 - [`reports-parameters-and-objectives.md`](./reports-parameters-and-objectives.md)
   — cible pour les paramètres de génération et les objectifs de `/reports`.
   Cette logique cible n'est pas présentée comme implémentée par ce lot ; les

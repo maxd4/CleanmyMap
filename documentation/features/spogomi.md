@@ -239,6 +239,32 @@ Les vues et exports doivent consommer les **mêmes projections serveur**, pas re
 | 5. Participation | Liaison Clerk et `post_action_claim`, gamification existante | Seuls les utilisateurs confirmés ont les crédits appropriés |
 | 6. Restitution | Pages, deux classements, XLSX, E2E | Parcours intégral vérifié dans les environnements disponibles |
 
+## 14. Lot 1 livré — CURRENT
+
+Le lot 1 implémente uniquement le socle métier et ses frontières de sécurité :
+
+- `apps/web/src/lib/spogomi/` porte les types et fonctions pures pour les modes,
+  la composition des équipes, la séparation inscription/présence/compte,
+  les catégories mesurées et le blocage d'une certification avec règlement
+  incomplet ; aucun barème numérique n'est codé en dur ;
+- `apps/web/supabase/migrations/20261012000001_spogomi_foundation.sql` ajoute
+  les tables `spogomi_events`, `spogomi_teams`, `spogomi_participants`,
+  `spogomi_category_rules`, `spogomi_result_submissions`,
+  `spogomi_result_items` et `spogomi_result_reviews` ;
+- le lien événement → action est unique, les versions de soumission et les
+  décisions de certification/correction sont traçables, et l'équipe référence
+  explicitement sa soumission certifiée courante ;
+- les données du roster restent server-only ; les lectures authentifiées
+  autorisées des autres entités passent par `action_organizers`, tandis que les
+  écritures attendent une AuthZ serveur existante avant le client privilégié ;
+- il n'y a encore ni interface publique, ni import Excel, ni projection vers
+  `actions`, ni classement, ni attribution de gamification. Ces éléments
+  restent dans le plan des lots suivants et ne sont pas déclarés `CURRENT`.
+
+Cette section `CURRENT` ne remplace pas le contrat `PLAN` précédent : elle ne
+déclare livrées que les frontières et invariants effectivement introduits par
+le lot 1.
+
 Chaque lot s'appuie sur le `main` **publié** du lot précédent. Codex exécute les tests adaptés et n'annonce ni preuve de production ni migration distante sans observation réelle. Les validations et commits suivent la gouvernance du dépôt et `documentation/development/TESTING.md`.
 
 ## 14. Points encore à confirmer auprès de SPOGOMI France

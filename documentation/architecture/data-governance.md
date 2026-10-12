@@ -86,11 +86,41 @@ choix avant de créer une nouvelle persistance.
 | Entité | Table principale | Contrat |
 |---|---|---|
 | Action | `public.actions` | `ActionStatus`, `ActionListItem` et contrats actions |
+| Événement SPOGOMI | `public.spogomi_events` et tables `spogomi_*` | Domaine SPOGOMI versionné, lié à une seule action ; aucune réutilisation de `public.forms` |
 | Signalement `spot` / `clean_place` | `public.trash_spotter_spots` | `SignalementModerationSource`, contrats unifiés |
 | Spot legacy | `public.spots` | archive historique en extinction, sans lecture/écriture runtime |
 | Profil | `public.profiles` | modèle Profile |
 | Mission GPS | `public.missions` | types de `apps/mobile/types/mission.ts` |
 | Point GPS | `public.gps_points` | types mission/location |
+
+## Contrat de gouvernance SPOGOMI
+
+Le domaine SPOGOMI possède un propriétaire de données séparé pour les équipes,
+les inscriptions externes, les mesures et les versions de résultats. La table
+`public.spogomi_events.action_id` est unique et référence l'unique action
+canonique CleanMyMap de l'événement ; `public.forms` reste réservée à ses
+contrats existants et ne doit pas recevoir les formulaires SPOGOMI.
+
+`public.spogomi_participants` distingue l'inscription externe, la présence
+attestée et le rattachement Clerk vérifié. Une présence ou un rattachement ne
+crée pas automatiquement de ligne `action_registrations` ou
+`action_participants` ; seules les voies canoniques de participation finale
+peuvent alimenter la gamification.
+
+Les règles de catégories et le règlement sont versionnés par événement. Une
+mesure conserve son unité, sa nature (`mass`, `count` ou `volume`) et sa
+provenance ; `NULL` reste une valeur inconnue. Les soumissions sont révisées
+et leurs décisions sont conservées dans `spogomi_result_reviews`. Une
+soumission ne peut devenir certifiée que si le règlement et toutes les règles
+de catégories nécessaires sont complets ; le pointeur de certification courant
+de l'équipe ne peut viser qu'une soumission certifiée.
+
+Les tables SPOGOMI sont protégées par RLS. Les données nominatives du roster
+ne sont pas accordées aux rôles `anon` ou `authenticated`. Les lectures
+authentifiées non nominatives sont limitées par la relation canonique
+`action_organizers` ; les écritures et l'accès au roster passent par un handler
+serveur ayant effectué le contrôle AuthN/AuthZ approprié avant l'utilisation
+explicite du client privilégié.
 
 ## Cycle de vie des actions
 
