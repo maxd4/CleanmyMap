@@ -9,6 +9,7 @@ import type { SpogomiRosterPreview } from "@/lib/spogomi/types";
 import { SpogomiTeamAccessLinks } from "./spogomi-team-access-links";
 import { SpogomiResultReviewPanel } from "./spogomi-result-review-panel";
 import { SpogomiReviewerManagement } from "./spogomi-reviewer-management";
+import { SpogomiConsolidationPanel } from "./spogomi-consolidation-panel";
 
 const OfficialRouteMap = dynamic(() => import("./spogomi-official-route-map").then((module) => module.SpogomiOfficialRouteMap), { ssr: false });
 
@@ -49,5 +50,6 @@ export function SpogomiPreparationWorkspace({ eventId }: { eventId: string }) {
     <CmmCard tone="amber" variant="glass" className="space-y-4 p-5"><SpogomiTeamAccessLinks eventId={eventId} teams={data.teams} /></CmmCard>
     <CmmCard tone="slate" variant="glass" className="space-y-4 p-5"><SpogomiReviewerManagement eventId={eventId} /></CmmCard>
     <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5"><SpogomiResultReviewPanel eventId={eventId} /></CmmCard>
+    <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5"><SpogomiConsolidationPanel eventId={eventId} /></CmmCard>
   </div></main>;
 }

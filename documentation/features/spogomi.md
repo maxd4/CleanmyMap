@@ -396,6 +396,57 @@ uniquement par `service_role` après contrôle de session équipe ou d'AuthZ
 organisateur côté serveur. La migration locale n'est pas une preuve de son
 application sur Supabase distant.
 
+## 17 ter. Lot 5 livré — CURRENT — consolidation vers l’action canonique
+
+Le cockpit organisateur expose un aperçu puis une publication explicite du
+bilan environnemental. L’orchestrateur serveur lit uniquement le pointeur
+`spogomi_teams.certified_submission_id` et exige que la soumission courante
+soit `certified`. Les équipes non certifiées, les mesures nulles, les unités
+inconnues et les catégories sans correspondance restent exclues et bloquent la
+publication ; aucune valeur ne devient zéro par défaut.
+
+La correspondance catégorie SPOGOMI → catégorie environnementale est conservée
+dans `spogomi_environment_category_mappings` avec une version, une unité source,
+une unité cible, un facteur explicite, la provenance et le statut de mapping.
+Les masses sont agrégées en grammes avec une précision de trois décimales dans
+les colonnes SPOGOMI dédiées. Les mégots conservent séparément leur masse et
+leur comptage direct ; une masse n’est jamais convertie en nombre. Les
+catégories imbriquées peuvent être marquées `counts_toward_total = false` afin
+d’éviter une double comptabilisation. Les points sportifs, l’XP et la
+gamification ne participent à aucune mesure environnementale.
+
+Chaque événement conserve une seule action cible et une seule projection
+courante. La RPC `consolidate_spogomi_event_to_action` est le propriétaire de
+la mutation `ATOMIC` : verrou transactionnel de l’événement et de l’action,
+vérification du règlement/état, remplacement de la projection courante,
+conservation des versions précédentes en `superseded`, puis mise à jour de
+l’action existante. La clé de consolidation, le hash SHA-256 des sources, la
+version et la révision rendent une réexécution identique idempotente et une
+correction traçable. Aucune action par équipe ni soumission automatique à
+`public.forms` n’est effectuée.
+
+L’effectif provient des participants `registered` et `present` vérifiés, sans
+remplacer l’événement par les seuls comptes Clerk. Les sous-catégories
+démographiques inconnues restent inconnues. Le GPX importé est conservé dans
+la projection comme `official_reference` et affiché explicitement comme
+parcours de référence non observé. L’identité SPOGOMI France n’est importée
+que si elle est résolue dans le registre canonique ; sinon aucune identité
+n’est inventée.
+
+Après une projection courante, le trigger SQL refuse à une édition ordinaire
+de modifier silencieusement les masses, mégots, effectif, date, lieu,
+organisateur, géométrie de référence ou métadonnées de consolidation. La
+consolidation ne publie pas automatiquement l’action CleanMyMap : les phases,
+la modération et les autorisations de publication des actions ordinaires
+restent applicables.
+
+Fichiers principaux :
+
+- `apps/web/src/lib/spogomi/consolidation.ts` — moteur pur d’agrégation ;
+- `apps/web/src/lib/spogomi/consolidation-service.ts` — lecture, hash et RPC ;
+- `apps/web/src/app/api/spogomi/events/[eventId]/consolidation/route.ts` — aperçu/publication protégés ;
+- `apps/web/supabase/migrations/20261012000007_spogomi_action_consolidation.sql` — mapping, projection, RPC et protection des champs contrôlés.
+
 ## 17 bis. Addendum public vérifié — contrat à intégrer (PLAN)
 
 > **Statut : PLAN documentaire.** Cet addendum intègre des informations

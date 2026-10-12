@@ -176,6 +176,21 @@ export type ActionPreparationData = {
   spogomiCreationKey?: string;
   /** Server-managed fingerprint paired with spogomiCreationKey. */
   spogomiCreationFingerprint?: string;
+  /** Server-managed environmental projection from certified SPOGOMI results. */
+  spogomiConsolidation?: {
+    consolidationKey: string;
+    projectionVersion: string;
+    sourceHash: string;
+    projectionRevision: number;
+    teamsIncluded: number;
+    participantsPresent: number;
+    totalWasteMassGrams: number | null;
+    cigaretteButtsMassGrams: number | null;
+    cigaretteButtsCount: number | null;
+    categoriesWithoutMapping: string[];
+    excludedMeasures: string[];
+    officialReferenceOnly: boolean;
+  };
   /** Recomputable multi-trace coverage; never an itinerary or summed distance. */
   observedCoverage?: ActionObservedCoverage;
   /** Measured or estimated result of the server-side route provider. */
