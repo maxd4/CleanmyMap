@@ -15,24 +15,61 @@ import type {
 
 type ReadResult = { data: unknown; error: Error | null };
 
+type QueryCall = {
+  table: string;
+  method: "eq" | "in" | "order";
+  column: string;
+  value?: unknown;
+  values?: unknown[];
+};
+
+function isReadRow(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 function readOnlySupabase(results: Record<string, ReadResult>, rpc?: ReturnType<typeof vi.fn>) {
-  return {
+  const queryCalls: QueryCall[] = [];
+  const client = {
     from(table: string) {
       const result = results[table] ?? { data: [], error: null };
+      let data = result.data;
       const query = {
         select: () => query,
-        eq: () => query,
-        in: () => query,
-        order: () => query,
+        eq: (column: string, value: unknown) => {
+          queryCalls.push({ table, method: "eq", column, value });
+          if (Array.isArray(data) && data.some((row) => isReadRow(row) && column in row)) {
+            data = data.filter((row) => isReadRow(row) && row[column] === value);
+          }
+          return query;
+        },
+        in: (column: string, values: unknown[]) => {
+          queryCalls.push({ table, method: "in", column, values });
+          if (Array.isArray(data) && data.some((row) => isReadRow(row) && column in row)) {
+            data = data.filter((row) => isReadRow(row) && values.includes(row[column]));
+          }
+          return query;
+        },
+        order: (column: string) => {
+          queryCalls.push({ table, method: "order", column });
+          if (Array.isArray(data)) {
+            data = [...data].sort((left, right) => {
+              const leftValue = isReadRow(left) ? left[column] : undefined;
+              const rightValue = isReadRow(right) ? right[column] : undefined;
+              return String(leftValue ?? "").localeCompare(String(rightValue ?? ""), "en", { numeric: true });
+            });
+          }
+          return query;
+        },
         then: <TResult1 = ReadResult, TResult2 = never>(
           onfulfilled?: ((value: ReadResult) => TResult1 | PromiseLike<TResult1>) | null,
           onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
-        ) => Promise.resolve(result).then(onfulfilled, onrejected),
+        ) => Promise.resolve({ ...result, data }).then(onfulfilled, onrejected),
       };
       return query;
     },
     rpc: rpc ?? vi.fn(),
-  } as unknown as SupabaseClient;
+  };
+  return Object.assign(client as unknown as SupabaseClient, { queryCalls: queryCalls });
 }
 
 function rosterRow(overrides: Partial<SpogomiRosterRow> = {}): SpogomiRosterRow {
@@ -196,6 +233,8 @@ describe("SPOGOMI preparation service previews", () => {
           { id: "p-1", group_preference: "ordre", source_row_number: 1, team_id: null, registration_status: "registered", source_system: "cachan_ticketing", ticket_status: "Payé", ticket_deleted: false },
           { id: "p-2", group_preference: "ordre", source_row_number: 2, team_id: null, registration_status: "registered", source_system: "cachan_ticketing", ticket_status: "Payé", ticket_deleted: false },
           { id: "p-3", group_preference: "ordre", source_row_number: 3, team_id: null, registration_status: "registered", source_system: "cachan_ticketing", ticket_status: "Payé", ticket_deleted: false },
+          { id: "p-4", group_preference: "ordre", source_row_number: 4, team_id: null, registration_status: "withdrawn", source_system: "cachan_ticketing", ticket_status: "Payé", ticket_deleted: false },
+          { id: "p-5", group_preference: "ordre", source_row_number: 5, team_id: null, registration_status: "withdrawn", source_system: "cachan_ticketing", ticket_status: "Annulé", ticket_deleted: true },
         ],
         error: null,
       },
@@ -206,8 +245,15 @@ describe("SPOGOMI preparation service previews", () => {
     expect(result.participantCount).toBe(3);
     expect(result.assignedParticipantCount).toBe(3);
     expect(result.formation.teams[0]?.participantIds).toEqual(["p-1", "p-2", "p-3"]);
+    expect(result.formation.unassignedParticipantIds).toEqual([]);
     expect(result.preservedTeamIds).toEqual(["team-existing"]);
     expect(result.explanation.join(" ")).toMatch(/trio/i);
+    expect(supabase.queryCalls).toContainEqual({
+      table: "spogomi_participants",
+      method: "eq",
+      column: "registration_status",
+      value: "registered",
+    });
   });
 
   it("confirms the exact preview and rejects a stale revision", async () => {

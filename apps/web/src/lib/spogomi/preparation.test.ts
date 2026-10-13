@@ -143,7 +143,32 @@ describe("SPOGOMI preparation", () => {
     })).toThrow(/non conforme/i);
   });
 
-  it("rejects duplicate team numbers and unknown pending places", () => {
+  it("rejects duplicate team numbers when all participants are unique", () => {
+    const formation = buildDeterministicTeamFormation({
+      mode: "world_cup",
+      casualTeamSize: null,
+      participants: [
+        { id: "a", sourceOrder: 1, groupPreference: null },
+        { id: "b", sourceOrder: 2, groupPreference: null },
+        { id: "c", sourceOrder: 3, groupPreference: null },
+        { id: "d", sourceOrder: 4, groupPreference: null },
+        { id: "e", sourceOrder: 5, groupPreference: null },
+        { id: "f", sourceOrder: 6, groupPreference: null },
+      ],
+    });
+    expect(formation.teams.map((team) => team.participantIds)).toEqual([["a", "b", "c"], ["d", "e", "f"]]);
+    expect(() => validateProposedTeamFormation({
+      formation: {
+        ...formation,
+        teams: formation.teams.map((team) => ({ ...team, teamNumber: 1 })),
+      },
+      participantIds: ["a", "b", "c", "d", "e", "f"],
+      mode: "world_cup",
+      casualTeamBounds: { minMembers: null, maxMembers: null },
+    })).toThrow("Validation: un numéro d'équipe apparaît plusieurs fois.");
+  });
+
+  it("rejects an unknown pending place independently of duplicate team validation", () => {
     const formation = buildDeterministicTeamFormation({
       mode: "world_cup",
       casualTeamSize: null,
@@ -153,15 +178,6 @@ describe("SPOGOMI preparation", () => {
         { id: "c", sourceOrder: 3, groupPreference: null },
       ],
     });
-    expect(() => validateProposedTeamFormation({
-      formation: {
-        ...formation,
-        teams: [formation.teams[0]!, { ...formation.teams[0]!, draftKey: "team-1-copy" }],
-      },
-      participantIds: ["a", "b", "c"],
-      mode: "world_cup",
-      casualTeamBounds: { minMembers: null, maxMembers: null },
-    })).toThrow(/apparaît plusieurs fois/i);
     expect(() => validateProposedTeamFormation({
       formation: { ...formation, unassignedParticipantIds: ["unknown"] },
       participantIds: ["a", "b", "c"],
