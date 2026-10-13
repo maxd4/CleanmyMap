@@ -97,7 +97,6 @@ async function readLocalSupabaseStatus() {
 }
 
 async function writeWebEnvironment() {
-  assertClerkDevelopmentSecrets();
   await mkdir(path.dirname(webEnvFile), { recursive: true });
   const backendToken = process.env[CLERK_DEV_BACKEND_ENV].trim();
   const publishableKey = process.env[CLERK_DEV_PUBLISHABLE_ENV].trim();
@@ -116,6 +115,7 @@ async function writeWebEnvironment() {
 }
 
 async function runPersistentE2E() {
+  assertClerkDevelopmentSecrets();
   await writeWebEnvironment();
   try {
     const local = await readLocalSupabaseStatus();

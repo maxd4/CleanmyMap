@@ -2,11 +2,26 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
 const root = process.cwd();
 const supabaseDirectory = path.join(root, "apps", "web", "supabase");
 const marker = `synthetic-spogomi-concurrency-${Date.now()}-${randomUUID()}`;
+
+export function assertLocalSupabaseUrl(rawUrl) {
+  const url = String(rawUrl ?? "").trim();
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error("Refusing SPOGOMI concurrency proof against an invalid Supabase URL.");
+  }
+  if (parsed.hostname !== "127.0.0.1" && parsed.hostname !== "localhost") {
+    throw new Error("Refusing SPOGOMI concurrency proof against a non-local database.");
+  }
+  return url;
+}
 
 function localStatus() {
   let output;
@@ -24,20 +39,25 @@ function localStatus() {
   if (!status?.API_URL || !status.SERVICE_ROLE_KEY) {
     throw new Error("DB_SEMANTICS_NOT_EXECUTED: ephemeral Supabase credentials are unavailable.");
   }
-  const hostname = new URL(status.API_URL).hostname;
-  if (hostname !== "127.0.0.1" && hostname !== "localhost") {
-    throw new Error("Refusing SPOGOMI concurrency proof against a non-local database.");
-  }
-  return { url: status.API_URL, key: status.SERVICE_ROLE_KEY };
+  return { url: assertLocalSupabaseUrl(status.API_URL), key: status.SERVICE_ROLE_KEY };
 }
 
-const configured = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? { url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SERVICE_ROLE_KEY }
-  : localStatus();
+export function resolveDestination(env = process.env, fallback = localStatus) {
+  const url = env.SUPABASE_URL?.trim();
+  const key = env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (url || key) {
+    if (!url || !key) {
+      throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be provided together.");
+    }
+    return { url: assertLocalSupabaseUrl(url), key };
+  }
+  const destination = fallback();
+  return { ...destination, url: assertLocalSupabaseUrl(destination.url) };
+}
 
-const sessionA = createClient(configured.url, configured.key, { auth: { persistSession: false } });
-const sessionB = createClient(configured.url, configured.key, { auth: { persistSession: false } });
-const created = { actions: [], events: [], certificates: [] };
+let sessionA;
+let sessionB;
+let created;
 
 async function must(result, label) {
   if (result.error) throw new Error(`${label}: ${result.error.message}`);
@@ -179,8 +199,20 @@ async function concurrentOfficialGpxSync() {
   assert.equal(results.filter((result) => result.error).length, 1, "a stale GPX revision must be rejected");
   const action = await must(await sessionA.from("actions").select("preparation_data").eq("id", actionId).single(), "read synchronized Action");
   assert.equal(action.preparation_data.keepMe, `${marker}-preserved`, "unrelated Action metadata is preserved");
-  const routes = await must(await sessionA.from("spogomi_event_routes").select("file_name, geometry_geojson").eq("event_id", event.id), "read synchronized route");
+  const routes = await must(await sessionA.from("spogomi_event_routes").select("source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson").eq("event_id", event.id), "read synchronized route");
   assert.equal(routes.length, 1, "the route projection remains singular");
+  const persistedRoute = routes[0];
+  assert.deepEqual(
+    action.preparation_data.spogomiOfficialReference,
+    {
+      source: persistedRoute.source,
+      fileName: persistedRoute.file_name,
+      pointCount: persistedRoute.point_count,
+      referenceDistanceKm: persistedRoute.reference_distance_km,
+      note: "Parcours officiel de référence, non observé sur le terrain.",
+    },
+    "the Action official reference must exactly describe the persisted route",
+  );
 }
 
 async function concurrentCertificateReissue() {
@@ -215,12 +247,22 @@ async function cleanup() {
   for (const actionId of created.actions) await sessionA.from("actions").delete().eq("id", actionId);
 }
 
-try {
-  await concurrentCompositionConfirmation();
-  await concurrentMoveAndLock();
-  await concurrentOfficialGpxSync();
-  await concurrentCertificateReissue();
-  process.stdout.write("EXECUTED_DB_CONTRACT: SPOGOMI two-session preparation and certificate concurrency passed.\n");
-} finally {
-  await cleanup();
+async function main() {
+  const configured = resolveDestination();
+  sessionA = createClient(configured.url, configured.key, { auth: { persistSession: false } });
+  sessionB = createClient(configured.url, configured.key, { auth: { persistSession: false } });
+  created = { actions: [], events: [], certificates: [] };
+  try {
+    await concurrentCompositionConfirmation();
+    await concurrentMoveAndLock();
+    await concurrentOfficialGpxSync();
+    await concurrentCertificateReissue();
+    process.stdout.write("EXECUTED_DB_CONTRACT: SPOGOMI two-session preparation and certificate concurrency passed.\n");
+  } finally {
+    await cleanup();
+  }
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  await main();
 }

@@ -20,6 +20,7 @@ on:
       - "e2e/global.teardown.ts"
       - "e2e/run-github-actions-persistent.mjs"
       - "e2e/spogomi-concurrency.mjs"
+      - "scripts/checks/spogomi-concurrency-destination.test.mjs"
       - "apps/web/src/lib/spogomi/**"
       - "apps/web/src/app/api/spogomi/**"
       - "apps/web/supabase/config.toml"
@@ -64,12 +65,6 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
-      - name: Require Clerk Development credentials
-        env:
-          CMM_E2E_CLERK_DEV_BACKEND_TOKEN: ${{ secrets.CMM_E2E_CLERK_DEV_BACKEND_TOKEN }}
-          CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY: ${{ secrets.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY }}
-        run: node e2e/run-github-actions-persistent.mjs require-clerk
-
       - name: Audit canonical Supabase migration tree
         run: npm run audit:supabase-migration-trees
 
@@ -79,6 +74,7 @@ jobs:
           test -f apps/web/supabase/seed.sql
 
       - name: Start ephemeral Supabase
+        id: start_supabase
         run: |
           mkdir -p artifacts/ci
           npx supabase start --workdir apps/web/supabase --yes > artifacts/ci/supabase-start.log 2>&1
@@ -115,13 +111,16 @@ jobs:
       - name: Stop ephemeral Supabase
         if: always()
         run: |
+          if [ "${{ steps.start_supabase.outcome }}" != "success" ]; then
+            echo "Supabase did not start; skipping stop."
+            exit 0
+          fi
           npx supabase stop --workdir apps/web/supabase --no-backup > artifacts/ci/supabase-stop.log 2>&1
 
-      - name: Remove ephemeral credentials and logs
+      - name: Remove ephemeral credentials
         if: always()
         run: |
           rm -f apps/web/.env.local
-          rm -f artifacts/ci/supabase-start.log artifacts/ci/supabase-reset.log artifacts/ci/supabase-stop.log
 
       - name: Stage safe public E2E evidence
         if: always()
@@ -142,3 +141,8 @@ jobs:
           path: artifacts/ci-public-evidence
           if-no-files-found: error
           retention-days: 3
+
+      - name: Remove ephemeral Supabase logs
+        if: always()
+        run: |
+          rm -f artifacts/ci/supabase-start.log artifacts/ci/supabase-reset.log artifacts/ci/supabase-stop.log

@@ -17,6 +17,10 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.match(workflow, /supabase start/);
   assert.match(workflow, /supabase db reset/);
   assert.match(workflow, /supabase stop/);
+  assert.match(workflow, /id: start_supabase/);
+  assert.match(workflow, /Supabase did not start; skipping stop/);
+  assert.doesNotMatch(workflow, /Require Clerk Development credentials/);
+  assert.doesNotMatch(workflow, /run-github-actions-persistent\.mjs require-clerk/);
   assert.match(workflow, /apps\/web\/supabase\/migrations/);
   assert.match(workflow, /apps\/web\/supabase\/seed\.sql/);
   assert.doesNotMatch(workflow, /mgvmuambbxmmkrjjlryo\.supabase\.co/);
@@ -48,6 +52,7 @@ test("missing or production Clerk credentials fail closed without logging values
   }));
 
   const helper = read("e2e/run-github-actions-persistent.mjs");
+  assert.match(helper, /async function runPersistentE2E\(\)\s*\{\s*assertClerkDevelopmentSecrets\(\);/);
   assert.doesNotMatch(helper, /console\.(?:log|error)\([^\n]*(?:TOKEN|KEY|credential)/i);
 });
 
