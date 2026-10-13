@@ -174,7 +174,7 @@ async function upsertVote(request: Request, context: VoteRouteContext) {
       return handleApiError(error, "PUT /api/chat/polls/[messageId]/vote");
     }
 
-    return buildPollVoteResponse(userId, messageId, poll.options);
+    return await buildPollVoteResponse(userId, messageId, poll.options);
   } catch (error) {
     return handleApiError(error, "PUT /api/chat/polls/[messageId]/vote");
   }
@@ -226,7 +226,7 @@ export async function DELETE(_request: Request, context: VoteRouteContext) {
       return handleApiError(error, "DELETE /api/chat/polls/[messageId]/vote");
     }
 
-    return buildPollVoteResponse(userId, messageId, poll.options);
+    return await buildPollVoteResponse(userId, messageId, poll.options);
   } catch (error) {
     return handleApiError(error, "DELETE /api/chat/polls/[messageId]/vote");
   }

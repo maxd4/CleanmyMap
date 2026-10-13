@@ -183,11 +183,11 @@ export const actionsAuthorizationContract = {
     POST: {
       expected: "Authenticated user creates or reuses only their own eligible post-action claim",
       dimensions: ["authentication", "ownership", "business permission", "audit"],
-      actual: "requireAuthenticatedAccess + server-side finished-public action eligibility + user-scoped action_participants mutation + moderation audit",
+      actual: "requireAuthenticatedAccess + server-side finished-public action eligibility + user-scoped action_participants mutation + appendParticipationClaimAudit delegates to appendActionModerationAudit",
       evidence: [
         "requireAuthenticatedAccess",
         "claimFinishedActionParticipation",
-        "appendActionModerationAudit",
+        "appendParticipationClaimAudit",
       ],
     },
   },

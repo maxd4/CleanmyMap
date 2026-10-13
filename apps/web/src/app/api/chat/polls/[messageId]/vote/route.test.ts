@@ -4,11 +4,18 @@ import { createClerkAuthModule, createRateLimitModule, createSupabaseClerkRlsMod
 const authMock = vi.hoisted(() => vi.fn());
 const getSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
+const handleApiErrorMock = vi.hoisted(() =>
+  vi.fn(() => new Response(JSON.stringify({ error: "handled" }), { status: 503 })),
+);
 
 vi.mock("@clerk/nextjs/server", () => createClerkAuthModule(authMock));
 vi.mock("@/lib/supabase/clerk-rls", () => createSupabaseClerkRlsModule(getSupabaseClerkRlsClientMock));
 vi.mock("@/lib/supabase/server", () => createSupabaseServerModule(getSupabaseServerClientMock));
 vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
+vi.mock("@/lib/http/api-errors", () => ({
+  handleApiError: handleApiErrorMock,
+  validationErrorResponse: vi.fn(),
+}));
 
 const MESSAGE_ID = "11111111-1111-4111-8111-111111111111";
 const OPTION_YES = "33333333-3333-4333-8333-333333333333";
@@ -204,6 +211,34 @@ describe("/api/chat/polls/[messageId]/vote", () => {
 
     expect(response.status).toBe(400);
     expect(mock.voteTable.upsert).not.toHaveBeenCalled();
+  });
+
+  it("routes a vote summary rejection through handleApiError", async () => {
+    const { mock, route: { PUT } } = await preparePollRoute();
+    const failure = new Error("vote summary unavailable");
+    mock.summaryRpc.mockRejectedValueOnce(failure);
+
+    const response = await putVote(PUT, OPTION_YES);
+
+    expect(response.status).toBe(503);
+    expect(handleApiErrorMock).toHaveBeenCalledWith(
+      failure,
+      "PUT /api/chat/polls/[messageId]/vote",
+    );
+  });
+
+  it("routes a deletion summary rejection through handleApiError", async () => {
+    const { mock, route: { DELETE } } = await preparePollRoute();
+    const failure = new Error("vote summary unavailable");
+    mock.summaryRpc.mockRejectedValueOnce(failure);
+
+    const response = await deleteVote(DELETE);
+
+    expect(response.status).toBe(503);
+    expect(handleApiErrorMock).toHaveBeenCalledWith(
+      failure,
+      "DELETE /api/chat/polls/[messageId]/vote",
+    );
   });
 
   it("never returns individual voter identities and scopes the selected option to the current user", async () => {
