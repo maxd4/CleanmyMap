@@ -96,9 +96,11 @@ export async function rateLimitMiddleware(
   );
 
   if (!result.allowed) {
-    const identity = await getRateLimitIdentity(request);
-    const ip = await getClientIp(request);
-    logAbuse(identity.key, path, ip);
+    if (result.failure !== "distributed-unavailable") {
+      const identity = await getRateLimitIdentity(request);
+      const ip = await getClientIp(request);
+      logAbuse(identity.key, path, ip);
+    }
     
     response.headers.set("X-RateLimit-Reset", String(result.reset));
     
