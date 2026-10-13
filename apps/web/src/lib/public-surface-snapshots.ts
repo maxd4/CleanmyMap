@@ -239,7 +239,11 @@ export async function requirePersistedPublicSurfaceSnapshot<TPayload>(
     readLatestPublicSurfaceSnapshot<TPayload>(snapshotKey),
 ): Promise<PublicSurfaceSnapshotRecord<TPayload>> {
   const persistedSnapshot = await readSnapshot();
-  if (!persistedSnapshot) {
+  if (
+    !persistedSnapshot ||
+    persistedSnapshot.snapshotKey !== snapshotKey ||
+    persistedSnapshot.snapshotDate !== snapshotDate
+  ) {
     throw new PublicSurfaceSnapshotWriteConflictError(snapshotKey, snapshotDate);
   }
   return persistedSnapshot;

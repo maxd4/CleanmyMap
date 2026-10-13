@@ -81,4 +81,22 @@ describe("runPlatformUsageJob", () => {
       code: "PUBLIC_SURFACE_SNAPSHOT_WRITE_CONFLICT",
     });
   });
+
+  it("ne retourne pas le snapshot d'une semaine précédente après une écriture ignorée", async () => {
+    const writeSnapshot = vi.fn(async () => "ignored_older");
+    const previousWeek = snapshot("2026-08-31");
+
+    await expect(
+      runPlatformUsageJob({
+        now: new Date("2026-09-08T10:00:00.000Z"),
+        captureStorage: async () => ({ id: "storage" }) as never,
+        captureEnvironmentalImpact: async () => ({ id: "impact" }) as never,
+        readSnapshot: async () => previousWeek,
+        writeSnapshot,
+      }),
+    ).rejects.toMatchObject({
+      name: "PublicSurfaceSnapshotWriteConflictError",
+      code: "PUBLIC_SURFACE_SNAPSHOT_WRITE_CONFLICT",
+    });
+  });
 });

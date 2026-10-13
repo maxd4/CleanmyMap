@@ -351,5 +351,53 @@ describe("public surface snapshots", () => {
       code: "PUBLIC_SURFACE_SNAPSHOT_WRITE_CONFLICT",
     });
   });
+
+  it("accepte uniquement le snapshot persistant du couple demandé", async () => {
+    const snapshot = {
+      id: "winner",
+      snapshotKey: "usage",
+      snapshotDate: "2026-10-13",
+      generatedAt: "2026-10-13T10:00:00.000Z",
+      version: "v1",
+      title: "Usage",
+      payload: { source: "winner" },
+      meta: {},
+    };
+
+    await expect(
+      requirePersistedPublicSurfaceSnapshot("usage", "2026-10-13", async () => snapshot),
+    ).resolves.toBe(snapshot);
+  });
+
+  it.each([
+    {
+      name: "une période précédente",
+      snapshotKey: "usage",
+      snapshotDate: "2026-10-12",
+    },
+    {
+      name: "une autre clé",
+      snapshotKey: "impact",
+      snapshotDate: "2026-10-13",
+    },
+  ])("rejette un snapshot relu appartenant à $name", async ({ snapshotKey, snapshotDate }) => {
+    const snapshot = {
+      id: "wrong-winner",
+      snapshotKey,
+      snapshotDate,
+      generatedAt: "2026-10-13T10:00:00.000Z",
+      version: "v1",
+      title: "Snapshot relu",
+      payload: { source: "wrong-winner" },
+      meta: {},
+    };
+
+    await expect(
+      requirePersistedPublicSurfaceSnapshot("usage", "2026-10-13", async () => snapshot),
+    ).rejects.toMatchObject({
+      name: "PublicSurfaceSnapshotWriteConflictError",
+      code: "PUBLIC_SURFACE_SNAPSHOT_WRITE_CONFLICT",
+    });
+  });
 });
 
