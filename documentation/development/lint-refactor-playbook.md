@@ -28,6 +28,37 @@ comportement / sécurité
 → rendu / style
 ```
 
+## Prévention légère des défauts récurrents
+
+Le premier scan SonarQube est une source historique de signaux, pas une liste
+de corrections automatiques. Lorsqu'un diagnostic analogue réapparaît, vérifier
+le comportement et le contrat avant de modifier :
+
+- **Conditions identiques** : supprimer une branche redondante seulement après
+  avoir confirmé que les deux chemins ont réellement la même sémantique.
+- **Tris** : vérifier le type des valeurs ; utiliser un comparateur explicite
+  lorsque l'ordre attendu ne découle pas clairement du type ou du contrat.
+- **Expressions régulières** : examiner le risque de backtracking coûteux,
+  surtout lorsqu'un motif reçoit une entrée externe ou de grande taille ;
+  ajouter des bornes ou un test hostile lorsque le risque est établi.
+- **Exécution dynamique** : éviter `eval`, `Function`, `Invoke-Expression` et
+  équivalents ; lorsqu'une compatibilité l'impose, vérifier la provenance,
+  le format et le périmètre du code ou de la commande interprété.
+- **Scripts et CI** : contrôler les entrées, chemins, versions et dépendances
+  effectivement utilisés par le script ; ne pas confondre un avertissement de
+  chaîne d'outillage avec une vulnérabilité démontrée.
+- **Accessibilité** : préférer un élément HTML sémantique et préserver son
+  nom accessible, son focus et son interaction clavier plutôt que d'ajouter un
+  attribut ARIA uniquement pour faire disparaître un diagnostic.
+- **Faux positifs** : relire la règle, ses hypothèses et le comportement réel ;
+  ne pas modifier un contrat valide, un namespace normatif ou un test reconnu
+  uniquement pour supprimer une alerte.
+
+Cette prévention reste un rappel de revue. Elle ne crée ni seuil, ni scanner,
+ni exception SonarQube supplémentaire ; les corrections suivent le workflow
+ci-dessous et les règles de prévention des récidives de
+[`repo-quality-rules.md`](./repo-quality-rules.md).
+
 ## Workflow
 
 1. Reproduire le diagnostic sur la zone concernée.

@@ -161,6 +161,30 @@ change sans rapprochement fiable, le résultat est `NON_COMPARABLE`.
 - Suivre la politique Git canonique du dépôt pour le commit et le push ; ne pas
   la recopier ici.
 
+### Revue proportionnée au changement
+
+Le niveau de revue dépend du risque et du périmètre réellement touché :
+
+- **Modification simple** : relire les fichiers modifiés et leurs dépendances
+  directement pertinentes, repérer les mauvaises pratiques évidentes dans le
+  code ajouté ou modifié, puis exécuter uniquement les contrôles et tests
+  adaptés au changement.
+- **Modification sensible** : renforcer l'analyse lorsqu'elle touche
+  notamment l'authentification, les autorisations, les données, les imports
+  externes, les transactions, les suppressions ou l'exécution de commandes ;
+  vérifier alors les scénarios négatifs et les invariants métier nécessaires.
+- **Défaut récurrent** : identifier la cause racine, puis réutiliser ou
+  renforcer un contrôle existant seulement si cela apporte une prévention
+  mesurable. Ne pas créer une règle automatisée coûteuse, redondante ou trop
+  sujette aux faux positifs.
+- **Audit global** : réserver les scans complets et les comparatifs SonarQube
+  aux exécutions manuelles ou aux jalons de chantier. Une petite correction,
+  un prompt ou un commit ne requiert pas par défaut une nouvelle analyse
+  SonarQube.
+
+Cette revue complète les règles de la section 8 et les modes de validation de
+[`TESTING.md`](./TESTING.md) ; elle ne crée pas de second protocole.
+
 ## 8. Boucle de prévention des récidives après correction
 
 Cette boucle s'applique dans le lot courant lorsqu'une demande corrige une
