@@ -118,11 +118,34 @@ rétrogradée silencieusement.
    ```
 
    Conserver uniquement l'artefact d'audit prévu par le dépôt et vérifier que
-    `public.profiles.role_label` correspond à `publicMetadata.role` après la
-    contrainte owner, et que `active_role_label` reste compatible. Les deux
-    colonnes sont des projections serveur non modifiables par les clients. Une
-    synchronisation échouée, notamment après révocation, est `BLOCKED`/divergente
-    et doit être reprise idempotemment avant de déclarer la convergence.
+   `public.profiles.role_label` correspond à `publicMetadata.role` après la
+   contrainte owner, que `active_role_label` reste compatible, et que
+   `role_projection_source` vaut `clerk_public_metadata_role` lorsqu'il est
+   renseigné. Relever aussi `role_projection_synced_at` pour vérifier qu'une
+   synchronisation postérieure à la mutation existe. Ces colonnes sont des
+   projections serveur non modifiables par les clients. Une synchronisation
+   échouée, notamment après révocation, est `BLOCKED`/divergente et doit être
+   reprise idempotemment avant de déclarer la convergence.
+
+## Révocation et divergence de projection
+
+Après toute révocation `admin`, `elu` ou `max` :
+
+1. conserver l'audit Clerk avec l'acteur, la cible, le motif, l'ancien rôle,
+   le nouveau rôle et le résultat de synchronisation ;
+2. vérifier que `role_label` et `active_role_label` ne conservent pas l'ancien
+   privilège, que la source est canonique et que l'horodatage est postérieur à
+   la mutation ;
+3. reprendre la synchronisation avec la même opération idempotente si un champ
+   diverge ;
+4. ne déclarer `convergent` qu'après une nouvelle lecture des deux systèmes.
+
+Une projection Supabase obsolète ne peut jamais réattribuer un rôle Clerk,
+mais elle peut rester visible à une policy SQL historique. Les routes sensibles
+doivent donc utiliser la décision Clerk côté serveur et l'incident reste
+ouvert tant que la convergence n'est pas prouvée. Les policies, fonctions et
+triggers PostgreSQL nécessitent une validation d'intégration réelle ; une
+absence de Supabase CLI/Docker est `DB_SEMANTICS_NOT_EXECUTED`, pas un succès.
 
 Si Clerk n'est pas lié, si les scopes manquent, si la clé serveur est absente,
 si l'identité est ambiguë ou si la synchronisation ne peut pas être prouvée,
@@ -170,6 +193,9 @@ Le SQL manuel reste utile pour un contrôle ponctuel.
 - `public.profiles`
   - présence des comptes
   - `role_label`
+  - `active_role_label`
+  - `role_projection_source`
+  - `role_projection_synced_at`
   - `handle`
   - `paris_arrondissement`
 - `public.progression_profiles`

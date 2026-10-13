@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
 
-import { resolveStoredRoleLabel } from "./audit-clerk-supabase.mjs";
+import { resolveStoredActiveRole, resolveStoredRoleLabel } from "./audit-clerk-supabase.mjs";
 
 describe("audit-clerk-supabase canonical role contract", () => {
   it("requires canonical max metadata and the exact owner id", () => {
@@ -38,5 +38,20 @@ describe("audit-clerk-supabase canonical role contract", () => {
       userId: "owner-user",
       imuOwnerUserId: "owner-user",
     }), "benevole");
+  });
+
+  it("keeps active role compatibility separate from granted role attribution", () => {
+    assert.equal(resolveStoredActiveRole({
+      metadataActiveRole: "admin",
+      storedRole: "elu",
+    }), "elu");
+    assert.equal(resolveStoredActiveRole({
+      metadataActiveRole: "admin",
+      storedRole: "admin",
+    }), "admin");
+    assert.equal(resolveStoredActiveRole({
+      metadataActiveRole: "activeProfileLegacyAdmin",
+      storedRole: "admin",
+    }), "admin");
   });
 });

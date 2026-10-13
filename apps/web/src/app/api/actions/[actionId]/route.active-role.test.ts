@@ -141,17 +141,18 @@ describe("PATCH /api/actions/:actionId ACTIVE_ROLE boundaries", () => {
     getSupabaseServerClientMock.mockReturnValue(buildUpdateClient());
   });
 
-  it("allows GRANTED_ROLE=elu with ACTIVE_ROLE=admin to correct validated impact", async () => {
+  it("allows GRANTED_ROLE=admin with ACTIVE_ROLE=admin to correct validated impact", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: true, userId: "admin-1" });
     getCurrentUserIdentityMock.mockResolvedValueOnce({
-      userId: "elu-1",
-      role: "elu",
+      userId: "admin-1",
+      role: "admin",
       activeRole: "admin",
     });
 
     const response = await PATCH(
       new Request("http://localhost/api/actions/action-test-1", {
         method: "PATCH",
-        body: JSON.stringify({ wasteKg: 2, reason: "Correction élu validée" }),
+        body: JSON.stringify({ wasteKg: 2, reason: "Correction admin validée" }),
       }),
       { params: Promise.resolve({ actionId: "action-test-1" }) },
     );
@@ -160,11 +161,11 @@ describe("PATCH /api/actions/:actionId ACTIVE_ROLE boundaries", () => {
     expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ waste_kg: 2 }));
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        actorUserId: "elu-1",
+        actorUserId: "admin-1",
         targetActionId: "action-test-1",
         targetUserId: "creator-1",
         operation: "correct_impact",
-        reason: "Correction élu validée",
+        reason: "Correction admin validée",
         previousValue: expect.objectContaining({ wasteKg: 1 }),
         newValue: expect.objectContaining({ wasteKg: 2 }),
       }),

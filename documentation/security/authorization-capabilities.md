@@ -688,6 +688,24 @@ allowlists et projections Supabase ne peuvent pas accorder un rôle privilégié
 Une synchronisation échouée est une divergence à reprendre et auditer, pas un
 succès convergent.
 
+### Projection Supabase et révocation
+
+`profiles.role_label` et `profiles.active_role_label` sont des projections
+serveur de Clerk, jamais des sources d'attribution. Leur présence dans une
+policy ou une fonction SQL ne transforme pas une valeur ancienne en droit
+durable : après une révocation Clerk, une projection non convergente est un
+incident à bloquer et à reprendre idempotemment. Les clients ne peuvent pas
+écrire ces colonnes ; les mutations sensibles doivent privilégier la décision
+serveur fondée sur Clerk.
+
+L'audit opérationnel doit relever, pour chaque compte privilégié, le rôle
+Clerk attendu, `role_label`, `active_role_label`, la source de projection et
+son horodatage de synchronisation. Tant que l'écart n'est pas résorbé, ne pas
+présenter l'opération comme convergente. La preuve réelle des policies,
+fonctions et triggers PostgreSQL reste distincte des tests unitaires et doit
+être classée `DB_SEMANTICS_NOT_EXECUTED` si aucun environnement autorisé n'est
+disponible.
+
 ## 8. Permissions sur les données
 
 Autoriser une fonctionnalité ne signifie pas autoriser tous les champs disponibles.

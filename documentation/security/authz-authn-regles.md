@@ -462,9 +462,11 @@ section Élu de
 document `CURRENT` ne confère donc aucune permission runtime à
 `actions.moderate_territory`.
 
-Un compte `GRANTED_ROLE=elu` qui sélectionne explicitement
-`ACTIVE_ROLE=admin` utilise les capacités `admin` pendant cette session. En
-`ACTIVE_ROLE=elu`, il perd immédiatement ces capacités globales.
+Un compte `GRANTED_ROLE=elu` ne peut pas sélectionner
+`ACTIVE_ROLE=admin`, y compris lorsqu'une ancienne métadonnée ou une fixture
+interne tente de le faire. Une demande de promotion `elu → admin` reste un
+workflow soumis à l'IMU : la demande n'accorde aucun droit et seule une
+attribution Clerk explicite peut faire évoluer `GRANTED_ROLE`.
 
 ## Permissions sur les actions
 
@@ -944,6 +946,21 @@ auditée. Elle ne doit pas être déduite de la création de l'action.
 ## Supabase et RLS
 
 L'AuthZ applicative ne remplace pas RLS.
+
+`public.profiles.role_label` et `public.profiles.active_role_label` sont des
+projections serveur dérivées de Clerk. Elles sont utiles à la compatibilité
+SQL/RLS, mais ne constituent ni une autorité d'attribution ni un cache
+autorisant durablement un privilège révoqué. Les clients `anon` et
+`authenticated` ne peuvent pas écrire ces colonnes. Les routes sensibles
+doivent d'abord résoudre Clerk côté serveur ; une mutation de rôle Clerk n'est
+considérée convergente qu'après la synchronisation Supabase réussie.
+
+Après une révocation, toute divergence entre Clerk et ces projections est un
+incident `BLOCKED` : suspendre les opérations sensibles dépendant de la
+projection, reprendre la synchronisation idempotente, puis exécuter l'audit
+Clerk/Supabase. En l'absence d'une exécution PostgreSQL/RLS autorisée, le
+contrat reste non prouvé en intégration et doit être marqué
+`DB_SEMANTICS_NOT_EXECUTED`.
 
 Tester selon le domaine :
 

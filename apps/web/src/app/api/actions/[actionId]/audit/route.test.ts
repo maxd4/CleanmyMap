@@ -199,14 +199,14 @@ describe("GET /api/actions/:actionId/audit", () => {
     expect(listAdminOperationAuditMock).not.toHaveBeenCalled();
   });
 
-  it("allows an elected account with ACTIVE_ROLE=admin to read the global audit", async () => {
+  it("allows an admin account with ACTIVE_ROLE=admin to read the global audit", async () => {
     requireAuthenticatedAccessMock.mockResolvedValueOnce({
       ok: true,
-      userId: "elu-1",
+      userId: "admin-1",
     });
     getCurrentUserIdentityMock.mockResolvedValueOnce({
-      userId: "elu-1",
-      role: "elu",
+      userId: "admin-1",
+      role: "admin",
       activeRole: "admin",
     });
     runSingleActionQueryMock.mockResolvedValue({
@@ -236,21 +236,21 @@ describe("GET /api/actions/:actionId/audit", () => {
     expect(listAdminOperationAuditMock).toHaveBeenCalledWith(12, "action-1");
   });
 
-  it("removes global audit access when an elected account returns to ACTIVE_ROLE=elu", async () => {
+  it("removes global audit access when an admin account returns to an open ACTIVE_ROLE", async () => {
     requireAuthenticatedAccessMock.mockResolvedValue({
       ok: true,
-      userId: "elu-1",
+      userId: "admin-1",
     });
     getCurrentUserIdentityMock
       .mockResolvedValueOnce({
-        userId: "elu-1",
-        role: "elu",
+        userId: "admin-1",
+        role: "admin",
         activeRole: "admin",
       })
       .mockResolvedValueOnce({
-        userId: "elu-1",
-        role: "elu",
-        activeRole: "elu",
+        userId: "admin-1",
+        role: "admin",
+        activeRole: "benevole",
       });
     runSingleActionQueryMock.mockResolvedValue({
       created_by_clerk_id: "user-2",

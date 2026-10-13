@@ -294,10 +294,10 @@ describe("action permissions", () => {
     ).toBe(true);
   });
 
-  it("uses active admin capabilities only after an elected user explicitly switches", () => {
+  it("uses active admin capabilities only for an account that obtained admin", () => {
     const identity = {
-      userId: "elu-1",
-      role: "elu" as const,
+      userId: "admin-1",
+      role: "admin" as const,
       activeRole: "admin" as const,
     };
 
@@ -307,10 +307,10 @@ describe("action permissions", () => {
     expect(canEditValidatedImpact(identity)).toBe(true);
 
     expect(
-      canManageActionsGlobally({ ...identity, activeRole: "elu" }),
+      canManageActionsGlobally({ ...identity, activeRole: "benevole" }),
     ).toBe(false);
     expect(
-      canModerateActionsGlobally({ ...identity, activeRole: "elu" }),
+      canModerateActionsGlobally({ ...identity, activeRole: "benevole" }),
     ).toBe(false);
     expect(
       canOverrideActionParticipants({ ...identity, activeRole: "elu" }),

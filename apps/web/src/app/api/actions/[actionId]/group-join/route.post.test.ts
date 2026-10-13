@@ -187,11 +187,11 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   }, 15000);
 
-  it("allows an elected account with ACTIVE_ROLE=admin to use the audited participant override", async () => {
-    authMock.mockResolvedValueOnce({ userId: "elu-1" });
+  it("allows an admin account with ACTIVE_ROLE=admin to use the audited participant override", async () => {
+    authMock.mockResolvedValueOnce({ userId: "admin-1" });
     getCurrentUserIdentityMock.mockResolvedValueOnce({
-      userId: "elu-1",
-      role: "elu",
+      userId: "admin-1",
+      role: "admin",
       activeRole: "admin",
     });
     seedApprovedActionParticipants();
@@ -209,7 +209,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     });
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        actorUserId: "elu-1",
+        actorUserId: "admin-1",
         targetActionId: "action-1",
         targetUserId: "user-2",
         operation: "admin_add_participant",

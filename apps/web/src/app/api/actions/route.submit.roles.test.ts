@@ -71,7 +71,7 @@ describe("POST /api/actions — rôles et modération", () => {
     expectPendingActionCreation();
   }, 15000);
 
-  it("does not auto-approve an elected account after switching to active admin", async () => {
+  it("does not auto-approve an elected account in its compatible active role", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-test-1",
       displayName: "Élu test",
@@ -80,14 +80,14 @@ describe("POST /api/actions — rôles et modération", () => {
       currentLevel: 1,
       actorNameOptions: ["Élu test"],
       role: "elu",
-      activeRole: "admin",
+      activeRole: "elu",
       badges: [],
     });
 
     const payload = buildSubmitPayload({
       actorName: "Élu test",
       locationLabel: "Lieu élu",
-      notes: "Création normale malgré le rôle actif admin.",
+      notes: "Création normale avec le rôle actif élu.",
       submissionMode: "complete",
     });
 

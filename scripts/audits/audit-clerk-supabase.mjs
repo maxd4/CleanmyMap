@@ -143,11 +143,35 @@ function extractLegacyPrivilegedRoles(...metadataSources) {
   return [...roles].sort();
 }
 
-function extractActiveProfile(metadata) {
-  if (!metadata || typeof metadata !== "object") {
-    return null;
+function extractActiveRole(...metadataSources) {
+  for (const metadata of metadataSources) {
+    if (!metadata || typeof metadata !== "object") {
+      continue;
+    }
+    for (const key of ["activeRole", "activeProfile"]) {
+      const role = normalizeRole(metadata[key]);
+      if (role) {
+        return role;
+      }
+    }
   }
-  return normalizeRole(metadata.activeProfile);
+  return null;
+}
+
+export function resolveStoredActiveRole({ metadataActiveRole, storedRole }) {
+  const switchableRoles = {
+    benevole: ["benevole", "coordinateur", "scientifique", "entreprise"],
+    coordinateur: ["benevole", "coordinateur", "scientifique", "entreprise"],
+    scientifique: ["benevole", "coordinateur", "scientifique", "entreprise"],
+    entreprise: ["benevole", "coordinateur", "scientifique", "entreprise"],
+    elu: ["benevole", "coordinateur", "scientifique", "entreprise", "elu"],
+    admin: ["benevole", "coordinateur", "scientifique", "entreprise", "admin"],
+    max: ["benevole", "coordinateur", "scientifique", "entreprise", "elu", "admin", "max"],
+  };
+  const candidate = normalizeRole(metadataActiveRole);
+  return candidate && switchableRoles[storedRole]?.includes(candidate)
+    ? candidate
+    : storedRole;
 }
 
 function extractBadgeIds(metadata) {
@@ -319,8 +343,7 @@ async function fetchClerkUsers(secretKey, limit) {
             unsafeMetadata,
           ),
           primaryEmailVerified: isPrimaryEmailVerified(user),
-          metadataActiveProfile:
-            extractActiveProfile(publicMetadata) ?? extractActiveProfile(privateMetadata),
+          metadataActiveRole: extractActiveRole(publicMetadata, privateMetadata),
           metadataBadgeIds: Array.from(
             new Set([
               ...extractBadgeIds(publicMetadata),
@@ -389,10 +412,20 @@ function buildRowSummary({
       })
     : null;
   const expectedAppProfile = expectedStoredRoleLabel ?? null;
+  const expectedActiveRole = clerkUser
+    ? resolveStoredActiveRole({
+      metadataActiveRole: clerkUser.metadataActiveRole,
+      storedRole: expectedStoredRoleLabel ?? "benevole",
+    })
+    : null;
 
   const roleMatch =
     Boolean(clerkUser && profileRow) &&
     expectedStoredRoleLabel === (profileRow?.role_label ?? null);
+  const activeRoleMatch =
+    clerkUser && profileRow && profileRow?.active_role_label != null
+      ? expectedActiveRole === profileRow.active_role_label
+      : "";
 
   const derivedBadgeIds = expectedAppProfile
     ? [`role_${expectedAppProfile}`, `profile_${expectedAppProfile}`]
@@ -405,7 +438,7 @@ function buildRowSummary({
     status = "missing_profile";
   } else if (!clerkUser && profileRow) {
     status = "orphan_profile";
-  } else if (clerkUser && profileRow && !roleMatch) {
+  } else if (clerkUser && profileRow && (!roleMatch || activeRoleMatch === false)) {
     status = "role_mismatch";
   } else if (!clerkUser && !profileRow) {
     status = progressionEventsCount > 0 || checklistCount > 0 || funnelCount > 0
@@ -424,13 +457,18 @@ function buildRowSummary({
       clerkUser && `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim(),
     clerk_metadata_role: metadataRole ?? "",
     legacy_privileged_metadata: clerkUser?.legacyPrivilegedMetadata ?? [],
-    clerk_active_profile: clerkUser?.metadataActiveProfile ?? "",
+    clerk_active_role: clerkUser?.metadataActiveRole ?? "",
     clerk_metadata_badges: metadataBadgeIds,
     derived_badges: derivedBadgeIds,
     expected_app_profile: expectedAppProfile ?? "",
     expected_role_label: expectedStoredRoleLabel ?? "",
     supabase_role_label: profileRow?.role_label ?? "",
     role_match: clerkUser && profileRow ? roleMatch : "",
+    expected_active_role: expectedActiveRole ?? "",
+    supabase_active_role_label: profileRow?.active_role_label ?? "",
+    active_role_match: activeRoleMatch,
+    supabase_role_projection_source: profileRow?.role_projection_source ?? "",
+    supabase_role_projection_synced_at: profileRow?.role_projection_synced_at ?? "",
     profile_display_name: profileRow?.display_name ?? "",
     profile_handle: profileRow?.handle ?? "",
     profile_arrondissement: profileRow?.paris_arrondissement ?? "",
@@ -460,13 +498,18 @@ function toCsv(rows) {
     "clerk_display_name",
     "clerk_metadata_role",
     "legacy_privileged_metadata",
-    "clerk_active_profile",
+    "clerk_active_role",
     "clerk_metadata_badges",
     "derived_badges",
     "expected_app_profile",
     "expected_role_label",
     "supabase_role_label",
     "role_match",
+    "expected_active_role",
+    "supabase_active_role_label",
+    "active_role_match",
+    "supabase_role_projection_source",
+    "supabase_role_projection_synced_at",
     "profile_display_name",
     "profile_handle",
     "profile_arrondissement",
@@ -525,7 +568,7 @@ async function main() {
       fetchAllRows(supabase, {
         schema: "public",
         table: "profiles",
-        select: "id, display_name, role_label, handle, paris_arrondissement, avatar_url, created_at, updated_at",
+        select: "id, display_name, role_label, active_role_label, role_projection_source, role_projection_synced_at, handle, paris_arrondissement, avatar_url, created_at, updated_at",
         orderColumn: "updated_at",
       }),
       fetchAllRows(supabase, {

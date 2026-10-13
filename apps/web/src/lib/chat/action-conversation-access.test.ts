@@ -126,7 +126,7 @@ describe("action discussion access contract", () => {
     ["future organizer", publicFutureAction, { activeRole: "benevole", isOrganizer: true }, true],
     ["granted admin + active benevole", publicFutureAction, { grantedRole: "admin", activeRole: "benevole" }, false],
     ["granted max + active scientifique", publicFutureAction, { grantedRole: "max", activeRole: "scientifique" }, false],
-    ["granted elu + active admin", publicFutureAction, { grantedRole: "elu", activeRole: "admin" }, true],
+    ["elected account keeps its compatible active role", publicFutureAction, { grantedRole: "elu", activeRole: "elu" }, false],
     ["active admin", publicFutureAction, { activeRole: "admin" }, true],
     ["active max", publicFutureAction, { activeRole: "max" }, true],
     [
