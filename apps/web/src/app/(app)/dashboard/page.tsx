@@ -11,8 +11,6 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import {
   getProfileLabel,
   getProfilePrimaryAction,
-  getSwitchableProfiles,
-  isAdminLikeProfile,
 } from "@/lib/profiles";
 import {
   getServerLocale,
@@ -59,14 +57,11 @@ export default async function DashboardPage() {
   } = await loadDashboardPageData({ userId, clerkReachable, locale });
   const identity = await getCurrentUserIdentity({ userId }).catch(() => null);
   const grantedRole = identity?.role ?? profile;
-  const roleLabel = getProfileLabel(profile, locale);
+  const activeRole = identity?.activeRole ?? profile;
+  const roleLabel = getProfileLabel(activeRole, locale);
   const primaryAction = getProfilePrimaryAction(profile);
   const { t } = getTranslation("dashboard", locale);
   const pageFamily = resolvePageFamily(DASHBOARD_ROUTE);
-  const isAdmin = isAdminLikeProfile(profile);
-  const switchableProfiles = isAdmin
-    ? getSwitchableProfiles(profile)
-    : [profile];
 
   return (
     <AccountCompletionGate state={accountCompletion}>
@@ -168,9 +163,8 @@ export default async function DashboardPage() {
 
           <DashboardProfileSwitcher
             locale={locale}
-            profile={profile}
-            isAdmin={isAdmin}
-            switchableProfiles={switchableProfiles}
+            activeRole={activeRole}
+            grantedRole={grantedRole}
           />
           </CmmPageLayout>
         </DashboardEntrance>

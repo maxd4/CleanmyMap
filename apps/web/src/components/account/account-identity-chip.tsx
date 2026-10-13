@@ -1,19 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useUser } from "@clerk/nextjs";
 import { ChevronDown } from "lucide-react";
-import {
-  getRoleSwitchTargetPath,
-} from "@/lib/account/role-switch-navigation";
 import type { UserIdentity } from "@/lib/authz";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { BadgePictogram, getAccountBadgeIconName } from "@/components/gamification/badge-icon";
 import { BadgeSurface } from "@/components/gamification/badge-surface";
-import { usePathname, useRouter } from "next/navigation";
 import { CmmDropdown } from "@/components/ui/cmm-dropdown";
 import {
-  getProfileEntryPath,
   getProfileLabel,
   type AppProfile,
 } from "@/lib/profiles";
@@ -22,6 +16,7 @@ import {
   getRoleMenuGroups,
 } from "./account-identity-chip.helpers";
 import { AccountEvolutionStatusLink } from "./account-evolution-status-link";
+import { useActiveRoleMutation } from "./use-active-role-mutation";
 import { cn } from "@/lib/utils";
 
 type AccountIdentityChipProps = {
@@ -30,11 +25,8 @@ type AccountIdentityChipProps = {
 
 export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
   const { locale } = useSitePreferences();
-  const router = useRouter();
-  const pathname = usePathname();
-  const { user } = useUser();
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [profileError, setProfileError] = useState<string | null>(null);
+  const { handleActiveRoleMutation, isUpdatingProfile, profileError } =
+    useActiveRoleMutation();
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isBadgeMenuOpen, setIsBadgeMenuOpen] = useState(false);
   const [hasPendingPromotionRequest, setHasPendingPromotionRequest] = useState(false);
@@ -81,50 +73,6 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
       isMounted = false;
     };
   }, []);
-
-  const handleActiveRoleMutation = async (targetRole: AppProfile | null) => {
-    if (!targetRole || isUpdatingProfile) {
-      return;
-    }
-    setIsUpdatingProfile(true);
-    setProfileError(null);
-
-    try {
-      const response = await fetch("/api/account/active-profile", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ activeRole: targetRole }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as
-        | { role?: string; activeRole?: string; profilePath?: string; error?: string }
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.error ?? "Mutation de profil refusée.");
-      }
-
-      if (user) {
-        await user.reload();
-      }
-
-      const profilePath =
-        payload?.profilePath ?? getProfileEntryPath(targetRole);
-      const targetPath = getRoleSwitchTargetPath(pathname, profilePath);
-      if (targetPath) {
-        router.replace(targetPath);
-      }
-      router.refresh();
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Mutation de rôle refusée.";
-      setProfileError(message);
-    } finally {
-      setIsUpdatingProfile(false);
-    }
-  };
 
   return (
     <div className="flex items-center gap-2">

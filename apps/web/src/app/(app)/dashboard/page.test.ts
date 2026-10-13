@@ -45,6 +45,21 @@ vi.mock("@/components/dashboard/dashboard-notifications-section", () => ({
     ),
 }));
 
+vi.mock("@/components/dashboard/dashboard-profile-switcher", () => ({
+  DashboardProfileSwitcher: ({
+    activeRole,
+    grantedRole,
+  }: {
+    activeRole: string;
+    grantedRole: string;
+  }) =>
+    React.createElement("div", {
+      "data-testid": "profile-switcher",
+      "data-active-role": activeRole,
+      "data-granted-role": grantedRole,
+    }),
+}));
+
 vi.mock("@/components/dashboard/dashboard-entrance", () => ({
   DashboardEntrance: ({ children }: { children: React.ReactNode }) =>
     React.createElement("div", { "data-testid": "dashboard-entrance" }, children),
@@ -242,5 +257,21 @@ describe("/dashboard page contract", () => {
     expect(markup).toContain('href="/reglages"');
     expect(markup).toContain("Ouvrir les réglages");
     expect(markup).not.toContain("Demander la suppression de mon compte");
+  });
+
+  it("passes the granted role to the selector when the active role differs", async () => {
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: "max-user", clerkReachable: true });
+    mocks.getCurrentUserIdentity.mockResolvedValue({ role: "max", activeRole: "admin" });
+    mocks.loadAccountCompletionGateState.mockResolvedValue({
+      ...completeAccountState,
+      currentProfile: "admin",
+      role: "max",
+    });
+
+    const markup = renderToStaticMarkup(await DashboardPage());
+
+    expect(markup).toContain('data-testid="profile-switcher"');
+    expect(markup).toContain('data-granted-role="max"');
+    expect(markup).toContain('data-active-role="admin"');
   });
 });

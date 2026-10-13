@@ -3,18 +3,17 @@ import { RolePrimaryActions } from "@/components/navigation/role-primary-actions
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { AccountEvolutionCta } from "@/components/account/account-evolution-cta";
 import { AccountSettingsSection } from "@/components/account/account-settings-section";
+import { RoleProfileSwitcher } from "@/components/account/role-profile-switcher";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
   getProfileLabel,
   getProfileSubtitle,
-  getSwitchableProfiles,
   isAppProfile,
   type AppProfile,
 } from "@/lib/profiles";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
-import { CmmButton } from "@/components/ui/cmm-button";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import { getInfiniteBadgeTotals } from "@/lib/gamification/infinite-badges-server";
 import { InfiniteBadgesPanel } from "@/components/gamification/infinite-badges/InfiniteBadgesPanel";
@@ -45,7 +44,6 @@ type ProfilePageContentProps = {
   profileSubtitle: string;
   grantedRole: UserIdentity["role"];
   activeProfile: UserIdentity["activeRole"];
-  switchableProfiles: ReturnType<typeof getSwitchableProfiles>;
   gamification: Awaited<ReturnType<typeof getUserProgression>> | null;
   infiniteTotals: ComponentProps<typeof InfiniteBadgesPanel>["totals"] & {
     milestones: ComponentProps<typeof MilestonesPanel>["milestones"];
@@ -64,7 +62,6 @@ function ProfilePageContent({
   profileSubtitle,
   grantedRole,
   activeProfile,
-  switchableProfiles,
   gamification,
   infiniteTotals,
   referralSummary,
@@ -110,27 +107,13 @@ function ProfilePageContent({
           />
         </FamilyRubriqueCard>
 
-        {switchableProfiles.length > 1 && (
-          <FamilyRubriqueCard withTopBar={true} topBarContent="Rôles actifs autorisés" className="p-12">
-            <div className="flex flex-wrap gap-4">
-              {switchableProfiles.map((p) => (
-                <CmmButton
-                  key={p}
-                  href={buildProfileRoute(p)}
-                  tone={p === activeProfile ? "primary" : "tertiary"}
-                  variant="pill"
-                  className={
-                    p === activeProfile
-                      ? "rounded-2xl border border-amber-200/30 bg-amber-100/12 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-2xl transition-all hover:-translate-y-1"
-                      : "rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.38)] px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-amber-50/70 transition-all hover:-translate-y-1 hover:bg-[rgba(69,26,3,0.54)] hover:text-white"
-                  }
-                >
-                  {getProfileLabel(p, "fr")}
-                </CmmButton>
-              ))}
-            </div>
-          </FamilyRubriqueCard>
-        )}
+        <RoleProfileSwitcher
+          locale="fr"
+          grantedRole={grantedRole}
+          activeRole={activeProfile}
+          title="Rôles actifs autorisés"
+          className="p-12"
+        />
 
         <FamilyRubriqueCard withTopBar={true} topBarContent="Configuration" className="p-12">
           <AccountSettingsSection compact />
@@ -177,7 +160,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
 
   const profileLabel = getProfileLabel(normalized, "fr");
   const profileSubtitle = getProfileSubtitle(normalized, "fr");
-  const switchableProfiles = getSwitchableProfiles(grantedRole);
   const gamification = await getUserProgression(
     getSupabaseServerClient(true),
     userId,
@@ -259,7 +241,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       profileSubtitle={profileSubtitle}
       grantedRole={grantedRole}
       activeProfile={activeProfile}
-      switchableProfiles={switchableProfiles}
       gamification={gamification}
       infiniteTotals={infiniteTotals}
       referralSummary={referralSummary}
