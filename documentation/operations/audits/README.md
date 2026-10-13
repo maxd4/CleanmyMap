@@ -41,3 +41,12 @@ Les règles et procédures actuelles restent dans les documents canoniques de
 `documentation/operations/`, `documentation/database/`,
 `documentation/security/` et `documentation/architecture/` selon la
 responsabilité concernée.
+
+## Bilans d'exécution des prompts liés aux PR
+
+[`pr-prompt-execution-bilans-2026-10-14.md`](./pr-prompt-execution-bilans-2026-10-14.md)
+conserve le snapshot des quatre lots PR exécutés les 13–14 octobre 2026.
+Chaque entrée relie le prompt, la décision, le SHA, les validations locales,
+les workflows distants et les limites de preuve. Ce registre est un audit
+contextualisé : il ne remplace pas la PR, le code courant, les règles de
+gouvernance ou une preuve de production.

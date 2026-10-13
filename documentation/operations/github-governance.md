@@ -48,6 +48,24 @@ candidat final et ne le relancer qu'après une modification qui invalide sa
 preuve. La fermeture d'une PR ou la suppression d'une branche est une mutation
 distante et nécessite l'autorisation explicite de l'utilisateur.
 
+### Bilan d'exécution des prompts PR
+
+Lorsqu'un lot est déclenché par un prompt citant une PR, conserver un bilan
+lié au SHA dans le dossier d'audits opérationnels. Le bilan doit séparer :
+
+- la proposition de la PR et la candidate réellement intégrée ;
+- les validations locales et les workflows GitHub réellement observés ;
+- les états `PASS`, `FAIL`, `BLOCKED`, `NOT_RUN` et `UNVERIFIED` ;
+- la publication Git (`commit`, branche, convergence) et l'état de la PR ;
+- les preuves qui restent externes : production, fournisseur, appareil réel,
+  PostgreSQL/RLS, déploiement ou ingestion.
+
+Le registre historique et son format sont conservés dans
+[`pr-prompt-execution-bilans-2026-10-14.md`](./audits/pr-prompt-execution-bilans-2026-10-14.md).
+Un bilan ne doit contenir aucun secret, identifiant Production, token ou donnée
+personnelle, et `INTEGRATED` ne signifie ni merge, ni déploiement, ni preuve de
+production.
+
 ### STOP CONDITION
 
 Arrêter le chantier dès que les invariants demandés sont prouvés. Ne pas
