@@ -120,9 +120,16 @@ Le snapshot initial est conservé dans
 Il reste classé `SNAPSHOT / AUDIT` et ne décrit pas l'état courant de `main`.
 Sa couverture est `NON MESURÉE` tant qu'aucun rapport de couverture valide
 n'est importé. Le mode d'analyse souhaité est manuel et non systématique sur
-chaque push ou pull request, afin de contrôler le coût et la charge CI ; les
-réglages réellement actifs sur SonarQube Cloud doivent être distingués de la
-configuration souhaitée et des analyses historiques observées.
+chaque push ou pull request, afin de contrôler le coût et la charge CI. La
+procédure reproductible est le workflow manuel
+[`sonarqube-manual.yml`](../../.github/workflows/sonarqube-manual.yml), qui
+analyse la référence sélectionnée, exécute `npm ci` puis le scanner avec
+`SONAR_TOKEN` fourni par les secrets GitHub. La configuration de périmètre est
+dans [`sonar-project.properties`](../../sonar-project.properties) : les
+inclusions de tests sont disjointes des sources, et les trois `tsconfig.json`
+existants sont réutilisés sans copie ni contournement. Les réglages réellement
+actifs sur SonarQube Cloud doivent être distingués de la configuration
+versionnée et des analyses historiques observées.
 
 Avant toute correction issue d'un finding :
 

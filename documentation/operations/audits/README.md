@@ -27,13 +27,36 @@ conserve le premier snapshot SonarQube Cloud du projet
 Il s'agit d'une preuve historique `SNAPSHOT / AUDIT`, liée à un SHA et à une
 date d'analyse précis, et non d'un état `CURRENT` de `main`.
 
+La configuration reproductible actuelle est portée par
+[`sonar-project.properties`](../../../sonar-project.properties) et le workflow
+manuel [`sonarqube-manual.yml`](../../../.github/workflows/sonarqube-manual.yml).
+Le workflow est déclenchable uniquement par `workflow_dispatch`, analyse la
+référence sélectionnée dans GitHub, installe d'abord le lockfile avec `npm ci`,
+puis transmet uniquement le secret GitHub `SONAR_TOKEN` au scanner. Il ne se
+lance ni sur `push` ni sur `pull_request`.
+
+Le projet SonarQube Cloud doit exister sous la clé `maxd4_CleanmyMap`, et le
+secret de dépôt ou d'organisation `SONAR_TOKEN` doit être configuré dans GitHub
+avant la première exécution. Le workflow ne crée pas le projet, ne modifie pas
+les réglages SonarQube Cloud et ne déclenche pas d'analyse depuis le checkout
+local.
+
+Les sources JS/TS/Python et les tests sont classés dans
+`sonar-project.properties`; les inclusions de tests retirent automatiquement
+ces fichiers du périmètre source afin de conserver une classification
+disjointe. Les trois `tsconfig.json` existants sont réutilisés tels quels et
+les extensions npm sont résolues par les dépendances installées par `npm ci`.
+Les exclusions explicites se limitent aux dépendances et artefacts générés,
+pas aux sources métier, à la couverture ou à la duplication.
+
 La méthode canonique de qualification et de comparaison avant/après se trouve
 dans [`repo-quality-rules.md`](../../development/repo-quality-rules.md).
 Elle distingue SonarQube des audits internes, CodeQL, Semgrep et des tests,
 et interdit de traiter un finding statique comme une preuve autonome
 d'exploitabilité. Aucun rapport « après » n'est créé avant une nouvelle
-analyse SonarQube réelle ; la couverture reste `NON MESURÉE` en l'absence de
-rapport importé.
+analyse SonarQube réelle ; la couverture reste `NON MESURÉE` tant qu'un
+rapport LCOV n'est pas produit puis déclaré explicitement dans la configuration
+de l'analyse.
 
 ## Sources courantes associées
 
