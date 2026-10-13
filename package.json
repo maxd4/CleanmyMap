@@ -171,7 +171,7 @@
     "@clerk/backend": "^3.23.2",
     "@clerk/testing": "2.2.44",
     "@playwright/test": "^1.64.0",
-    "@supabase/supabase-js": "^2.112.3",
+    "@supabase/supabase-js": "^2.117.3",
     "@stryker-mutator/core": "10.0.0",
     "@stryker-mutator/vitest-runner": "10.0.0",
     "jayson": "4.3.0",
