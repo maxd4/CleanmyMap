@@ -83,6 +83,10 @@ jobs:
         run: |
           npx supabase db reset --workdir apps/web/supabase --yes > artifacts/ci/supabase-reset.log 2>&1
 
+      - name: Reload ephemeral PostgREST schema
+        run: |
+          npx supabase db query --workdir apps/web/supabase --local "notify pgrst, 'reload schema';"
+
       - name: Run SPOGOMI business tests
         run: |
           npm run test -w apps/web -- \
