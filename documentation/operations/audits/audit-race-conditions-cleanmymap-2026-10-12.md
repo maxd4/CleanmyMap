@@ -11,7 +11,7 @@
 
 ## Méthode et périmètre
 
-Le dépôt à la baseline comporte 5 639 chemins, 153 handlers `route.ts`, 242 migrations SQL et plus de 1 100 fichiers de tests web. Le recensement de l'arbre, les recherches de patterns (`idempotency`, `FOR UPDATE`, `concurrent`, `inFlight`, `upsert`) et les lectures ciblées ont couvert les frontières métier suivantes : SPA/web API, Supabase, SPOGOMI, Actions et participations, gamification, mobile/GPS, snapshots, chat et CI. Les fichiers spécialisés `AGENTS.md`, les contrats `documentation/architecture/data-governance.md`, `documentation/features/spogomi.md` et `documentation/development/TESTING.md` ont été consultés.
+Le dépôt à la baseline comporte 5 639 chemins, 153 handlers `route.ts`, 242 migrations SQL et plus de 1 100 fichiers de tests web. Le recensement de l'arbre, les recherches de patterns (`idempotency`, `FOR UPDATE`, `concurrent`, `inFlight`, `upsert`) et les lectures ciblées ont couvert les frontières métier suivantes : SPA/web API, Supabase, SPOGOMI, Actions et participations, gamification, mobile/GPS, snapshots, chat et CI. Les consignes spécialisées de gouvernance, les contrats `documentation/architecture/data-governance.md`, `documentation/features/spogomi.md` et `documentation/development/TESTING.md` ont été consultés.
 
 Une recherche textuelle n'est pas une preuve d'absence de race condition. Les systèmes externes, les transactions réelles et la totalité des callers n'ont pas été exécutés. Les priorités expriment le risque de dommage potentiel, pas un incident avéré.
 
