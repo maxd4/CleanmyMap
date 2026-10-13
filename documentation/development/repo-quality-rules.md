@@ -99,6 +99,54 @@ La source spécialisée est
 - Les contraintes spécifiques Vercel, Supabase, assets, cache et quotas restent
   dans leur documentation opérationnelle spécialisée.
 
+## SonarQube Cloud — baseline et protocole de comparaison
+
+SonarQube Cloud est un analyseur externe complémentaire de qualité statique et
+de sécurité. Il n'est ni un service runtime de CleanMyMap, ni une preuve
+directe d'une permission, d'une transaction PostgreSQL ou d'une exploitabilité
+en production. Le projet de référence est
+[`maxd4_CleanmyMap`](https://sonarcloud.io/project/overview?id=maxd4_CleanmyMap).
+
+SonarQube doit être distingué des contrôles internes `audit:quality` et
+`audit:modularity`, de CodeQL, de Semgrep et des tests : ces outils n'ont pas le
+même moteur, le même périmètre ni le même niveau de preuve. Un *Bug*, une
+*Vulnerability*, un *Code Smell* ou un *Security Hotspot* est d'abord un
+signal à qualifier ; un finding statique ne démontre pas à lui seul un défaut
+exploitable. Le *Quality Gate*, la dette conventionnelle et la couverture sont
+des indicateurs contextualisés, pas des autorisations de publication.
+
+Le snapshot initial est conservé dans
+[`CleanMyMap_SonarQube_Bilan_2026-10-13.md`](../operations/audits/CleanMyMap_SonarQube_Bilan_2026-10-13.md).
+Il reste classé `SNAPSHOT / AUDIT` et ne décrit pas l'état courant de `main`.
+Sa couverture est `NON MESURÉE` tant qu'aucun rapport de couverture valide
+n'est importé. Le mode d'analyse souhaité est manuel et non systématique sur
+chaque push ou pull request, afin de contrôler le coût et la charge CI ; les
+réglages réellement actifs sur SonarQube Cloud doivent être distingués de la
+configuration souhaitée et des analyses historiques observées.
+
+Avant toute correction issue d'un finding :
+
+- qualifier la cause racine, l'exposition réelle, les consommateurs et les
+  tests concernés ;
+- ne pas supprimer de tests, exclure un répertoire, affaiblir une règle ou
+  modifier le périmètre uniquement pour améliorer un score ;
+- ne pas additionner bugs, sécurité, dette et code smells comme s'il s'agissait
+  d'une même mesure ;
+- conserver séparément les anomalies résolues, introduites, reclassées,
+  déplacées, non analysées et les faux positifs caractérisés.
+
+Le comparatif avant/après doit utiliser, autant que possible, le même projet,
+la même branche, le même périmètre, les mêmes exclusions, les mêmes règles,
+ainsi que des versions de moteur et de Quality Profile documentées. La
+baseline `AVANT` comprend le SHA, la date, les fichiers, le NCLOC, les bugs,
+les vulnérabilités, les smells, les sévérités, les notes, la dette, la
+duplication, la couverture et le Quality Gate observés dans le snapshot. La
+baseline `APRÈS` ne peut être produite qu'après une nouvelle analyse réelle et
+doit conserver son SHA exact. Une variation de fichiers ou de NCLOC n'est pas
+une correction de dette ; une couverture absente ne se compare pas à une
+couverture future en points de pourcentage. Si le périmètre ou la méthode
+change sans rapprochement fiable, le résultat est `NON_COMPARABLE`.
+
 ## 7. Validation et livraison
 
 - Lancer les contrôles ciblés après une correction, puis les contrôles adaptés
