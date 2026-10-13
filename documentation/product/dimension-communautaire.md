@@ -2,6 +2,14 @@
 
 CleanMyMap peut renforcer son utilite en transformant la participation ponctuelle en reseau local lisible, reconnu et recurrent.
 
+> **Statut documentaire : PLAN / OBJECTIF PRODUIT.** Les intentions, axes,
+> fonctionnalités MVP et indicateurs ci-dessous décrivent une direction à
+> développer ; ils ne constituent pas un inventaire de capacités disponibles
+> ni la preuve d'un impact social. Le leaderboard qualité documenté plus bas
+> est un contrat `CURRENT` distinct, dérivé de données disponibles et de
+> politiques explicites. L'inclusion sociale et les bénéfices liés à
+> l'activité physique restent des objectifs, sans résultat mesuré déclaré.
+
 ## Intentions produit
 
 - Faire revenir les contributeurs grace a une reconnaissance utile, pas decorative.
@@ -54,7 +62,7 @@ masse absente ni transformer le volume en preuve d'utilité à lui seul.
 - Missions courtes recurrentes: relayer, verifier, photographier, signaler, accompagner.
 - Progression par etapes: premier signalement, premiere action, premiere aide, premiere contribution recurrente.
 
-## Fonctionnalites MVP
+## Fonctionnalites MVP proposees
 
 Le minimum viable doit tenir en quelques composants simples.
 
@@ -74,14 +82,14 @@ Le minimum viable doit tenir en quelques composants simples.
 - Badge trop facile a obtenir, donc peu credible.
 - Fiches association transformees en vitrine decorative sans usage operatif.
 
-## Ordre de mise en oeuvre conseille
+## Ordre de mise en oeuvre propose
 
 - D'abord la fiche association utile et la reconnaissance minimale.
 - Ensuite le remerciement post-action et la suggestion de prochaine action.
 - Puis les retours terrain et les bonnes pratiques.
 - Enfin la progression vers les statuts mentor, la dynamique locale et les rappels plus fins.
 
-## Indicateurs utiles
+## Indicateurs proposes
 
 - Taux de retour apres premiere action.
 - Nombre d'associations actives par zone.

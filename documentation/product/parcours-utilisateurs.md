@@ -5,6 +5,14 @@ Il ne définit pas les permissions serveur. La source canonique des frontières
 AuthN/AuthZ, des capacités et des scopes est
 [`documentation/security/authz-authn-regles.md`](../security/authz-authn-regles.md).
 
+Les parcours traduisent la vision produit sans élargir les capacités réelles :
+le web reste la surface complète, tandis que le mobile est en développement
+actif et n'est pas prêt pour la production. Les rapports, l'Open Data et
+SPOGOMI sont consultables selon leurs contrats spécialisés ; leurs extensions
+et bilans non disponibles restent des objectifs ou des plans. L'accueil de
+publics variés et l'inclusion sociale sont des objectifs produit, pas des
+résultats sociaux mesurés.
+
 ## Quatre notions à ne pas confondre
 
 ```txt
@@ -106,6 +114,7 @@ max          → administration de plateforme ; basculer explicitement vers un r
 
 - Bénévoles et citoyens contributeurs
 - Personnes qui coordonnent des actions
+- Collectifs et associations lorsqu'une relation métier les relie réellement
 - Représentants d'entreprises et décideurs publics
 - Structures partenaires, dont les associations et collectivités, lorsqu'elles sont réellement reliées par un contrat métier
 - Acteurs de supervision et de modération

@@ -2,6 +2,22 @@
 
 Point d'entrée de la documentation produit CleanMyMap.
 
+La source de référence pour le positionnement, les publics, la boucle produit
+et les limites déclaratives est [`vision-et-objectifs.md`](./vision-et-objectifs.md).
+Les documents spécialisés décrivent ensuite leur contrat propre : ils ne
+doivent pas transformer un objectif en résultat mesuré, une capacité planifiée
+en fonctionnalité disponible, ni une relation UX en permission serveur.
+
+Repères transversaux à conserver dans toute la documentation produit :
+
+- le web reste la surface fonctionnelle complète ; le mobile est en
+  développement actif et n'est pas prêt pour la production ;
+- l'intégration SPOGOMI est partielle et aucun partenariat officiel n'est
+  démontré sans preuve indépendante ;
+- les bilans spécialisés ne sont pas tous disponibles ;
+- l'inclusion sociale et les bénéfices liés à l'activité physique restent des
+  objectifs, sans résultat social mesuré déclaré.
+
 ## Sources principales
 
 ### Vision et stratégie

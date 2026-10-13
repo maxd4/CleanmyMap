@@ -33,6 +33,11 @@ CleanMyMap rassemble ce parcours dans un même espace local. La plateforme relie
 
 Elle s'adresse notamment aux citoyens, associations, collectivités et acteurs locaux qui veulent agir sur leur territoire avec des informations et des méthodes explicites.
 
+La [vision et les objectifs](./documentation/product/vision-et-objectifs.md)
+décrivent le périmètre de référence : relier repérer, préparer, mobiliser, agir,
+documenter et partager, tout en distinguant les capacités `CURRENT` des
+objectifs et extensions encore en développement.
+
 ## Capacités principales
 
 - **Agir** — signaler, rejoindre, préparer ou organiser une action de terrain.
@@ -40,6 +45,12 @@ Elle s'adresse notamment aux citoyens, associations, collectivités et acteurs l
 - **Réseau & discussions** — échanger avec les bénévoles et les acteurs locaux dans les espaces adaptés.
 - **Apprendre** — accéder à des ressources et parcours pédagogiques sur les déchets et les bonnes pratiques.
 - **Open data & transparence** — consulter les méthodes, les données exposées et les résultats selon leurs contrats réels.
+
+Les limites importantes restent explicites : l'application mobile est en
+développement et n'est pas prête pour la production ; l'intégration SPOGOMI
+est partielle et ne démontre aucun partenariat officiel ; les bilans
+spécialisés ne sont pas tous disponibles ; l'inclusion sociale et les effets
+liés à l'activité physique sont des objectifs, non des résultats mesurés.
 
 <p align="center">
   <img src="./apps/web/public/brand/github-product-overview.webp" alt="Vue réelle de l'accueil CleanMyMap avec la carte des actions et les indicateurs d'impact" />
