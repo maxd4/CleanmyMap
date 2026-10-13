@@ -5,8 +5,8 @@ import {
   formatServiceRiskBandLabel,
   getHealthLabel,
   getHealthTone,
-  getRiskTone,
 } from "./free-plan-services-panel.model";
+import { getRiskTone } from "./environmental-impact-capture-panel.formatters";
 import type { FreePlanServicesPanelRiskCard } from "./free-plan-services-panel.model";
 
 type FreePlanServicesRiskCardsProps = {

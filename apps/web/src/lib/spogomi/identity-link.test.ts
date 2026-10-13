@@ -20,6 +20,27 @@ const claimRoute = readFileSync(
   "utf8",
 );
 
+function createIdentityLinkChain(result: unknown, useLimit = false) {
+  const chain = {
+    select: vi.fn(() => chain),
+    eq: vi.fn(() => chain),
+    limit: vi.fn(async () => useLimit ? { data: result, error: null } : { data: null, error: null }),
+    maybeSingle: vi.fn(async () => useLimit ? { data: null, error: null } : { data: result, error: null }),
+  };
+  return chain;
+}
+
+function makeIdentityLinkSupabase(participantRows: unknown[], registrationStatus: string | null) {
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "spogomi_events") return createIdentityLinkChain({ action_id: "action-1" });
+      if (table === "spogomi_participants") return createIdentityLinkChain(participantRows, true);
+      if (table === "actions") return createIdentityLinkChain({ action_phase: "pre_action" });
+      return createIdentityLinkChain(registrationStatus ? { registration_status: registrationStatus } : null);
+    }),
+  } as never;
+}
+
 describe("SPOGOMI identity link", () => {
   beforeEach(() => {
     joinActionParticipationMock.mockReset();
@@ -91,23 +112,14 @@ describe("SPOGOMI identity link", () => {
   it("recovers a verified identity without a second code and does not re-request existing participation", async () => {
     const { resumeSpogomiIdentityParticipation } = await import("./identity-link");
     const actionRegistration = { registration_status: "pending" };
-    const createChain = (result: unknown, useLimit = false) => {
-      const chain = {
-        select: vi.fn(() => chain),
-        eq: vi.fn(() => chain),
-        limit: vi.fn(async () => useLimit ? { data: result, error: null } : { data: null, error: null }),
-        maybeSingle: vi.fn(async () => useLimit ? { data: null, error: null } : { data: result, error: null }),
-      };
-      return chain;
-    };
     const supabase = {
       from: vi.fn((table: string) => table === "spogomi_events"
-        ? createChain({ action_id: "action-1" })
+        ? createIdentityLinkChain({ action_id: "action-1" })
         : table === "spogomi_participants"
-          ? createChain([{ id: "participant-1", clerk_id: "user-1", account_link_status: "verified", attendance_status: "present" }], true)
+          ? createIdentityLinkChain([{ id: "participant-1", clerk_id: "user-1", account_link_status: "verified", attendance_status: "present" }], true)
           : table === "actions"
-            ? createChain({ action_phase: "pre_action" })
-            : createChain(actionRegistration)),
+            ? createIdentityLinkChain({ action_phase: "pre_action" })
+            : createIdentityLinkChain(actionRegistration)),
     } as never;
 
     await expect(resumeSpogomiIdentityParticipation(supabase, { eventId: "event-1", clerkId: "user-1" })).resolves.toMatchObject({
@@ -120,23 +132,14 @@ describe("SPOGOMI identity link", () => {
   it("uses the canonical post-action claim store when the action is complete", async () => {
     const { resumeSpogomiIdentityParticipation } = await import("./identity-link");
     claimFinishedActionParticipationMock.mockResolvedValueOnce({ participationStatus: "pending" });
-    const createChain = (result: unknown, useLimit = false) => {
-      const chain = {
-        select: vi.fn(() => chain),
-        eq: vi.fn(() => chain),
-        limit: vi.fn(async () => useLimit ? { data: result, error: null } : { data: null, error: null }),
-        maybeSingle: vi.fn(async () => useLimit ? { data: null, error: null } : { data: result, error: null }),
-      };
-      return chain;
-    };
     const supabase = {
       from: vi.fn((table: string) => table === "spogomi_events"
-        ? createChain({ action_id: "action-1" })
+        ? createIdentityLinkChain({ action_id: "action-1" })
         : table === "spogomi_participants"
-          ? createChain([{ id: "participant-1", attendance_status: "present" }], true)
+          ? createIdentityLinkChain([{ id: "participant-1", attendance_status: "present" }], true)
           : table === "actions"
-            ? createChain({ action_phase: "post_action_complete" })
-            : createChain(null)),
+            ? createIdentityLinkChain({ action_phase: "post_action_complete" })
+            : createIdentityLinkChain(null)),
     } as never;
 
     await expect(resumeSpogomiIdentityParticipation(supabase, { eventId: "event-1", clerkId: "user-1" })).resolves.toMatchObject({
@@ -148,38 +151,18 @@ describe("SPOGOMI identity link", () => {
 
   it("does not silently reactivate a cancelled request and denies another account without roster details", async () => {
     const { resumeSpogomiIdentityParticipation, loadSpogomiIdentityState } = await import("./identity-link");
-    const makeSupabase = (participantRows: unknown[], registrationStatus: string | null) => {
-      const createChain = (result: unknown, useLimit = false) => {
-        const chain = {
-          select: vi.fn(() => chain),
-          eq: vi.fn(() => chain),
-          limit: vi.fn(async () => useLimit ? { data: result, error: null } : { data: null, error: null }),
-          maybeSingle: vi.fn(async () => useLimit ? { data: null, error: null } : { data: result, error: null }),
-        };
-        return chain;
-      };
-      return {
-        from: vi.fn((table: string) => {
-          if (table === "spogomi_events") return createChain({ action_id: "action-1" });
-          if (table === "spogomi_participants") return createChain(participantRows, true);
-          if (table === "actions") return createChain({ action_phase: "pre_action" });
-          return createChain(registrationStatus ? { registration_status: registrationStatus } : null);
-        }),
-      } as never;
-    };
-
     await expect(resumeSpogomiIdentityParticipation(
-      makeSupabase([{ id: "participant-1", attendance_status: "unknown" }], "cancelled"),
+      makeIdentityLinkSupabase([{ id: "participant-1", attendance_status: "unknown" }], "cancelled"),
       { eventId: "event-1", clerkId: "user-1" },
     )).resolves.toMatchObject({ state: "participation_cancelled" });
     expect(joinActionParticipationMock).not.toHaveBeenCalled();
 
     await expect(loadSpogomiIdentityState(
-      makeSupabase([], null),
+      makeIdentityLinkSupabase([], null),
       { eventId: "event-1", clerkId: "user-2" },
     )).resolves.toMatchObject({ state: "identity_unlinked", participantId: null });
     await expect(resumeSpogomiIdentityParticipation(
-      makeSupabase([], null),
+      makeIdentityLinkSupabase([], null),
       { eventId: "event-1", clerkId: "user-2" },
     )).rejects.toMatchObject({ kind: "not_found" });
   });

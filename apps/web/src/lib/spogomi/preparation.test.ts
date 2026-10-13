@@ -5,6 +5,10 @@ import { readFileSync } from "node:fs";
 import { assertArchiveSafe } from "./preparation-import";
 import { buildDeterministicTeamFormation, previewRosterFile, validateProposedTeamFormation } from "./preparation";
 
+function worldCupParticipants(count: number) {
+  return Array.from({ length: count }, (_, index) => ({ id: String.fromCharCode(97 + index), sourceOrder: index + 1, groupPreference: null }));
+}
+
 describe("SPOGOMI preparation", () => {
   it("forms deterministic world cup teams of three and leaves an incomplete tail unassigned", () => {
     const result = buildDeterministicTeamFormation({
@@ -118,14 +122,7 @@ describe("SPOGOMI preparation", () => {
     const formation = buildDeterministicTeamFormation({
       mode: "world_cup",
       casualTeamSize: null,
-      participants: [
-        { id: "a", sourceOrder: 1, groupPreference: null },
-        { id: "b", sourceOrder: 2, groupPreference: null },
-        { id: "c", sourceOrder: 3, groupPreference: null },
-        { id: "d", sourceOrder: 4, groupPreference: null },
-        { id: "e", sourceOrder: 5, groupPreference: null },
-        { id: "f", sourceOrder: 6, groupPreference: null },
-      ],
+      participants: worldCupParticipants(6),
     });
     const edited = validateProposedTeamFormation({
       formation: { ...formation, teams: formation.teams.map((team) => team.teamNumber === 1 ? { ...team, participantIds: ["a", "b", "d"] } : team.teamNumber === 2 ? { ...team, participantIds: ["c", "e", "f"] } : team) },
@@ -147,14 +144,7 @@ describe("SPOGOMI preparation", () => {
     const formation = buildDeterministicTeamFormation({
       mode: "world_cup",
       casualTeamSize: null,
-      participants: [
-        { id: "a", sourceOrder: 1, groupPreference: null },
-        { id: "b", sourceOrder: 2, groupPreference: null },
-        { id: "c", sourceOrder: 3, groupPreference: null },
-        { id: "d", sourceOrder: 4, groupPreference: null },
-        { id: "e", sourceOrder: 5, groupPreference: null },
-        { id: "f", sourceOrder: 6, groupPreference: null },
-      ],
+      participants: worldCupParticipants(6),
     });
     expect(formation.teams.map((team) => team.participantIds)).toEqual([["a", "b", "c"], ["d", "e", "f"]]);
     expect(() => validateProposedTeamFormation({
@@ -172,11 +162,7 @@ describe("SPOGOMI preparation", () => {
     const formation = buildDeterministicTeamFormation({
       mode: "world_cup",
       casualTeamSize: null,
-      participants: [
-        { id: "a", sourceOrder: 1, groupPreference: null },
-        { id: "b", sourceOrder: 2, groupPreference: null },
-        { id: "c", sourceOrder: 3, groupPreference: null },
-      ],
+      participants: worldCupParticipants(3),
     });
     expect(() => validateProposedTeamFormation({
       formation: { ...formation, unassignedParticipantIds: ["unknown"] },

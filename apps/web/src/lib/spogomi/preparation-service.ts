@@ -47,14 +47,7 @@ async function canManageEvent(supabase: SupabaseClient, event: EventRow): Promis
 }
 
 export async function loadSpogomiEventForOrganizer(supabase: SupabaseClient, eventId: string, userId: string) {
-  const result = await supabase.from("spogomi_events").select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility, composition_revision").eq("id", eventId).maybeSingle();
-  if (result.error) throw result.error;
-  if (!result.data) return null;
-  const event = result.data as EventRow;
-  const identity = await getCurrentUserIdentity();
-  if (!identity || identity.userId !== userId) return false;
-  if (!(await canManageEvent(supabase, event))) return false;
-  return event;
+  return loadOrganizerEventByFilter(supabase, "id", eventId, userId);
 }
 
 export async function loadSpogomiEventBySlugForOrganizer(
@@ -62,15 +55,24 @@ export async function loadSpogomiEventBySlugForOrganizer(
   slug: string,
   userId: string,
 ) {
+  return loadOrganizerEventByFilter(supabase, "event_slug", slug, userId);
+}
+
+async function loadOrganizerEventByFilter(
+  supabase: SupabaseClient,
+  column: "id" | "event_slug",
+  value: string,
+  userId: string,
+) {
   const result = await supabase
     .from("spogomi_events")
     .select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility, composition_revision")
-    .eq("event_slug", slug)
+    .eq(column, value)
     .maybeSingle();
   if (result.error) throw result.error;
   if (!result.data) return null;
   const event = result.data as EventRow;
-  const identity = await getCurrentUserIdentity();
+  const identity = await getCurrentUserIdentity({ userId });
   if (!identity || identity.userId !== userId) return false;
   if (!(await canManageEvent(supabase, event))) return false;
   return event;

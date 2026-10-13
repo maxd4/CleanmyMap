@@ -595,6 +595,13 @@ faire l’objet d’un lot séparé explicitement demandé et respecter
 `apps/mobile/AGENTS.md`. Dans le lot courant, le finding mobile reste donc
 audité et signalé comme hors périmètre, jamais masqué ni acquis par un ratchet.
 
+Une demande utilisateur explicite qui nomme `apps/mobile` comme surface à
+corriger constitue une autorisation bornée pour ce lot uniquement. Elle permet
+de traiter les findings mobiles directement concernés, après lecture de
+`apps/mobile/AGENTS.md`, sans ouvrir d’autres fichiers mobiles ni modifier une
+baseline, une justification, une exclusion, un seuil ou une grâce pour masquer
+un finding. Les validations mobiles ciblées restent obligatoires.
+
 ## Amélioration opportuniste des ratchets
 
 Lorsqu’un lot touche déjà un fichier contenant un export inutile ou un clone

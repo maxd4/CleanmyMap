@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearRateLimitStore } from "./store";
 import { rateLimitMiddleware } from "./middleware";
+import { configureRateLimitIdentityMocks } from "@/__tests__/support/rate-limit-test-helpers";
 
 const getRateLimitIdentityMock = vi.hoisted(() => vi.fn());
 const getClientIpMock = vi.hoisted(() => vi.fn());
@@ -21,12 +22,7 @@ describe("rateLimitMiddleware", () => {
     vi.setSystemTime(new Date("2026-08-29T00:00:00.000Z"));
     clearRateLimitStore();
     vi.clearAllMocks();
-    getRateLimitIdentityMock.mockResolvedValue({
-      scope: "anonymous",
-      value: "198.51.100.20",
-      key: "anonymous:198.51.100.20",
-    });
-    getClientIpMock.mockResolvedValue("198.51.100.20");
+    configureRateLimitIdentityMocks(getRateLimitIdentityMock, getClientIpMock);
   });
 
   afterEach(() => {

@@ -1,6 +1,6 @@
 import { mobileRequest } from './mobile-api-client'
 
-export type MobileAccountLocation = {
+type MobileAccountLocation = {
   country: 'France'
   level: 'country' | 'region' | 'department' | 'commune' | 'arrondissement'
   label: string
@@ -9,7 +9,7 @@ export type MobileAccountLocation = {
   arrondissementCity: 'Paris' | 'Lyon' | 'Marseille' | null
 } | null
 
-export type MobileAccountHistoryItem = {
+type MobileAccountHistoryItem = {
   id: string
   actionTitle?: string | null
   action_date: string

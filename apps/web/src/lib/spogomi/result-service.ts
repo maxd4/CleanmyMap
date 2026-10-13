@@ -50,9 +50,7 @@ export async function assignSpogomiReferee(params: {
   clerkId: string;
   assignedByClerkId: string;
 }): Promise<unknown> {
-  const event = await loadSpogomiEventForOrganizer(params.supabase, params.eventId, params.assignedByClerkId);
-  if (event !== false && !event) throw new Error("SPOGOMI event not found.");
-  if (event === false) throw new Error("SPOGOMI reviewer assignment is forbidden.");
+  await assertReviewerAssignmentEvent(params, false);
   const result = await params.supabase
     .from("spogomi_event_reviewers")
     .upsert({ event_id: params.eventId, clerk_id: params.clerkId.trim(), role: "referee", assigned_by_clerk_id: params.assignedByClerkId, revoked_at: null }, { onConflict: "event_id,clerk_id,role" })
@@ -68,9 +66,7 @@ export async function revokeSpogomiReferee(params: {
   clerkId: string;
   assignedByClerkId: string;
 }): Promise<void> {
-  const event = await loadSpogomiEventForOrganizer(params.supabase, params.eventId, params.assignedByClerkId);
-  if (event === false) throw new Error("SPOGOMI reviewer assignment is forbidden.");
-  if (!event) throw new Error("SPOGOMI event not found.");
+  await assertReviewerAssignmentEvent(params, true);
   const result = await params.supabase
     .from("spogomi_event_reviewers")
     .update({ revoked_at: new Date().toISOString() })
@@ -79,6 +75,16 @@ export async function revokeSpogomiReferee(params: {
     .eq("role", "referee")
     .is("revoked_at", null);
   if (result.error) throw result.error;
+}
+
+async function assertReviewerAssignmentEvent(
+  params: { supabase: SupabaseClient; eventId: string; assignedByClerkId: string },
+  forbiddenFirst: boolean,
+) {
+  const event = await loadSpogomiEventForOrganizer(params.supabase, params.eventId, params.assignedByClerkId);
+  if (forbiddenFirst && event === false) throw new Error("SPOGOMI reviewer assignment is forbidden.");
+  if (event === null) throw new Error("SPOGOMI event not found.");
+  if (!forbiddenFirst && event === false) throw new Error("SPOGOMI reviewer assignment is forbidden.");
 }
 
 export type SpogomiTeamResultForm = {

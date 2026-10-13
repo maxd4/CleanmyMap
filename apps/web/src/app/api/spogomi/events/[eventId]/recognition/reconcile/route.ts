@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
+import { loadAuthorizedSpogomiEvent } from "@/lib/spogomi/route-auth";
 import { getSpogomiRecognitionPartialDetails, reconcileSpogomiRecognition } from "@/lib/spogomi/recognition-service";
 
 export const runtime = "nodejs";
@@ -13,10 +12,8 @@ export async function POST(_request: Request, context: { params: Promise<{ event
   if (!access.ok) return unauthorizedJsonResponse();
   try {
     const eventId = (await context.params).eventId;
-    const supabase = getSupabaseServerClient(true);
-    const event = await loadSpogomiEventForOrganizer(supabase, eventId, access.userId);
-    if (event === false) return forbiddenJsonResponse();
-    if (!event) return NextResponse.json({ error: "Événement SPOGOMI introuvable." }, { status: 404 });
+    const { supabase, authorized } = await loadAuthorizedSpogomiEvent(eventId, access.userId, "Événement SPOGOMI introuvable.");
+    if ("response" in authorized) return authorized.response;
     return NextResponse.json({ status: "ok", reconciliation: await reconcileSpogomiRecognition({ supabase, eventId, actorClerkId: access.userId }) });
   } catch (error) {
     const partial = getSpogomiRecognitionPartialDetails(error);

@@ -6,6 +6,7 @@ import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
+import { loadNotificationPreferences } from "@/lib/notifications/notification-preferences-server";
 
 export const runtime = "nodejs";
 // Vercel justification: authenticated preferences are session-scoped and must not be statically cached.
@@ -22,33 +23,13 @@ const preferencesPatchSchema = z.object({
   "Une préférence de notification est requise.",
 );
 
-async function readPreferences(userId: string) {
-  const supabase = getSupabaseServerClient(true);
-  const [{ data: preferences, error: preferencesError }, { data: mutes, error: mutesError }] = await Promise.all([
-    supabase
-      .from("notification_preferences")
-      .select("informational_enabled, action_reminders_enabled")
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase
-      .from("notification_information_mutes")
-      .select("action_id")
-      .eq("user_id", userId),
-  ]);
-  if (preferencesError) throw preferencesError;
-  if (mutesError) throw mutesError;
-  return {
-    informationalEnabled: preferences?.informational_enabled !== false,
-    actionRemindersEnabled: preferences?.action_reminders_enabled !== false,
-    mutedInformationActionIds: (mutes ?? []).flatMap((mute) =>
-      typeof mute.action_id === "string" ? [mute.action_id] : [],
-    ),
-  };
+async function preferenceRateLimitResponse(request: Request, options: { limit: number; window: number }) {
+  const rateLimit = await verifyRateLimit(request, options);
+  return createServerRateLimitResponse(rateLimit.allowed, rateLimit.retryAfter, rateLimit);
 }
 
 export async function GET(request: Request) {
-  const rateLimit = await verifyRateLimit(request, { limit: 30, window: 60 });
-  const rateLimitResponse = createServerRateLimitResponse(rateLimit.allowed, rateLimit.retryAfter, rateLimit);
+  const rateLimitResponse = await preferenceRateLimitResponse(request, { limit: 30, window: 60 });
   if (rateLimitResponse) return rateLimitResponse;
 
   const access = await requireActionRequestAccess(request);
@@ -57,7 +38,7 @@ export async function GET(request: Request) {
 
   try {
     // Cache justification: preference data is private to the authenticated user.
-    return NextResponse.json(await readPreferences(userId), {
+    return NextResponse.json(await loadNotificationPreferences(userId), {
       headers: { "Cache-Control": "private, no-store" },
     });
   } catch (error) {
@@ -66,8 +47,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const rateLimit = await verifyRateLimit(request, { limit: 20, window: 60 });
-  const rateLimitResponse = createServerRateLimitResponse(rateLimit.allowed, rateLimit.retryAfter, rateLimit);
+  const rateLimitResponse = await preferenceRateLimitResponse(request, { limit: 20, window: 60 });
   if (rateLimitResponse) return rateLimitResponse;
 
   const access = await requireActionRequestAccess(request);
@@ -114,7 +94,7 @@ export async function PATCH(request: Request) {
       }
     }
     // Cache justification: preference mutations must never be cached or shared.
-    return NextResponse.json(await readPreferences(userId), {
+    return NextResponse.json(await loadNotificationPreferences(userId), {
       headers: { "Cache-Control": "private, no-store" },
     });
   } catch (error) {

@@ -12,6 +12,7 @@ import type {
   SpogomiRosterPreview,
   SpogomiRosterRow,
 } from "./types";
+import { spogomiPreparationEvent } from "./preparation-test-fixtures";
 
 type ReadResult = { data: unknown; error: Error | null };
 
@@ -120,27 +121,6 @@ function preview(
   };
 }
 
-function event(overrides: Record<string, unknown> = {}) {
-  return {
-    id: "event-1",
-    action_id: "action-1",
-    created_by_clerk_id: "organizer-1",
-    name: "SPOGOMI synthétique",
-    location_label: "Cachan",
-    mode: "casual" as const,
-    state: "registration_open",
-    starts_at: "2026-10-20T09:00:00.000Z",
-    ends_at: null,
-    team_size_config: { casual: { minMembers: 2, maxMembers: 4 } },
-    creation_state: "ready",
-    event_slug: "spogomi-synthetic",
-    public_visibility: "private" as const,
-    public_results_visibility: "hidden" as const,
-    composition_revision: 3,
-    ...overrides,
-  } as Parameters<typeof previewSpogomiTeams>[1];
-}
-
 describe("SPOGOMI preparation service previews", () => {
   it("summarizes manual rows without querying ticket reconciliation", async () => {
     const rows = [
@@ -149,7 +129,7 @@ describe("SPOGOMI preparation service previews", () => {
     ];
     const result = await previewRosterImportChanges(
       readOnlySupabase({}),
-      event(),
+      spogomiPreparationEvent({ composition_revision: 3 }),
       preview("manual_roster", rows, [{ rowNumber: 3, code: "name_required", message: "nom requis" }]),
     );
 
@@ -160,7 +140,7 @@ describe("SPOGOMI preparation service previews", () => {
   it("returns an empty ticket effect summary when no external reference is available", async () => {
     const result = await previewRosterImportChanges(
       readOnlySupabase({}),
-      event(),
+      spogomiPreparationEvent({ composition_revision: 3 }),
       preview("cachan_ticketing", [rosterRow({ externalReference: null, sourceRowId: null })]),
     );
 
@@ -188,7 +168,7 @@ describe("SPOGOMI preparation service previews", () => {
         spogomi_participants: { data: existing, error: null },
         spogomi_roster_import_changes: { data: [{ participant_id: "participant-protected" }], error: null },
       }),
-      event(),
+      spogomiPreparationEvent({ composition_revision: 3 }),
       preview("cachan_ticketing", rows, [{ rowNumber: 7, code: "ticket_reference_collision", message: "collision" }]),
     );
 
@@ -217,7 +197,7 @@ describe("SPOGOMI preparation service previews", () => {
           error: null,
         },
       }),
-      event(),
+      spogomiPreparationEvent({ composition_revision: 3 }),
       preview("cachan_ticketing", [rosterRow({ externalReference: "ticket-1", sourceRowId: "ticket-1", ticketStatus: "Payé", ticketDeleted: false })]),
     );
 
@@ -238,7 +218,7 @@ describe("SPOGOMI preparation service previews", () => {
           error: null,
         },
       }),
-      event({ state: "composition_locked" }),
+      spogomiPreparationEvent({ state: "composition_locked", composition_revision: 3 }),
       preview("cachan_ticketing", [rosterRow({ externalReference: "ticket-1", sourceRowId: "ticket-1" })]),
     );
 
@@ -255,7 +235,7 @@ describe("SPOGOMI preparation service previews", () => {
         },
         spogomi_roster_import_changes: { data: [], error: null },
       }),
-      event(),
+      spogomiPreparationEvent({ composition_revision: 3 }),
       preview("cachan_ticketing", [rosterRow({ externalReference: "ticket-1", sourceRowId: "ticket-1", name: "Alice Importée", ticketStatus: "Annulé" })]),
     );
 
@@ -271,17 +251,17 @@ describe("SPOGOMI preparation service previews", () => {
       },
     });
 
-    await expect(previewSpogomiTeams(supabase, event())).rejects.toThrow(/annulée ou supprimée/i);
+    await expect(previewSpogomiTeams(supabase, spogomiPreparationEvent({ composition_revision: 3 }))).rejects.toThrow(/annulée ou supprimée/i);
   });
 
   it("refuses a locked event and a previously locked team", async () => {
-    await expect(previewSpogomiTeams(readOnlySupabase({}), event({ state: "composition_locked" }))).rejects.toThrow(/déjà verrouillée/i);
+    await expect(previewSpogomiTeams(readOnlySupabase({}), spogomiPreparationEvent({ state: "composition_locked", composition_revision: 3 }))).rejects.toThrow(/déjà verrouillée/i);
 
     const supabase = readOnlySupabase({
       spogomi_participants: { data: [], error: null },
       spogomi_teams: { data: [{ id: "team-1", team_number: 1, composition_state: "locked" }], error: null },
     });
-    await expect(previewSpogomiTeams(supabase, event())).rejects.toThrow(/verrouillée ou vérifiée/i);
+    await expect(previewSpogomiTeams(supabase, spogomiPreparationEvent({ composition_revision: 3 }))).rejects.toThrow(/verrouillée ou vérifiée/i);
   });
 
   it("previews only admissible registered places and preserves existing draft team ids", async () => {
@@ -299,7 +279,7 @@ describe("SPOGOMI preparation service previews", () => {
       spogomi_teams: { data: [{ id: "team-existing", team_number: 4, composition_state: "draft" }], error: null },
     });
 
-    const result = await previewSpogomiTeams(supabase, event());
+    const result = await previewSpogomiTeams(supabase, spogomiPreparationEvent({ composition_revision: 3 }));
     expect(result.participantCount).toBe(3);
     expect(result.assignedParticipantCount).toBe(3);
     expect(result.formation.teams[0]?.participantIds).toEqual(["p-1", "p-2", "p-3"]);
@@ -327,7 +307,7 @@ describe("SPOGOMI preparation service previews", () => {
       },
       spogomi_teams: { data: [], error: null },
     }, rpc);
-    const currentEvent = event({ mode: "world_cup", team_size_config: { casual: { minMembers: null, maxMembers: null } } });
+    const currentEvent = spogomiPreparationEvent({ mode: "world_cup", team_size_config: { casual: { minMembers: null, maxMembers: null } }, composition_revision: 3 });
     const proposed = await previewSpogomiTeams(supabase, currentEvent);
     const confirmed = await confirmSpogomiTeams({
       supabase,

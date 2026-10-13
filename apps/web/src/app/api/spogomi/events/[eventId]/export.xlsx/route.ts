@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth-responses";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
 import { loadSpogomiResultsProjection } from "@/lib/spogomi/results-projection-service";
+import { loadAuthorizedSpogomiEvent } from "@/lib/spogomi/route-auth";
 import { buildXlsxWorkbook, safeXlsxFilename } from "@/lib/reports/xlsx-export";
 
 export const runtime = "nodejs";
@@ -20,10 +19,9 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
   if (!access.ok) return unauthorizedJsonResponse();
   try {
     const eventId = (await context.params).eventId;
-    const supabase = getSupabaseServerClient(true);
-    const event = await loadSpogomiEventForOrganizer(supabase, eventId, access.userId);
-    if (event === false) return forbiddenJsonResponse();
-    if (!event) return NextResponse.json({ error: "Événement SPOGOMI introuvable." }, { status: 404 });
+    const { supabase, authorized } = await loadAuthorizedSpogomiEvent(eventId, access.userId, "Événement SPOGOMI introuvable.");
+    if ("response" in authorized) return authorized.response;
+    const { event } = authorized;
     const projection = await loadSpogomiResultsProjection({ supabase, eventId: event.id });
     if (!projection) return NextResponse.json({ error: "Projection SPOGOMI indisponible." }, { status: 404 });
     const certifiedTeams = projection.teams.filter((team) => team.submissionStatus === "certified");

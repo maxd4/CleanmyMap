@@ -2,6 +2,7 @@ import type {
   EnvironmentalImpactDataGapNote,
   EnvironmentalImpactEstimateModel,
 } from "@/lib/environmental-impact-estimator/types";
+export { formatEnvironmentalDate as formatShortDate } from "@/lib/environmental-impact-estimator/format-date";
 
 export type ReductionAction = {
   title: string;
@@ -93,22 +94,6 @@ export function getScopeTone(status: EnvironmentalImpactEstimateModel["site"]["s
     return "text-amber-300";
   }
   return "text-red-300";
-}
-
-export function formatShortDate(value: string | null | undefined) {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("fr-FR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
 }
 
 export function getDataGapScopeLabel(scope: EnvironmentalImpactDataGapNote["scope"]) {

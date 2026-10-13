@@ -1,4 +1,5 @@
 import type { ServiceQuotaState } from "@/lib/environmental-impact-estimator/service-risk";
+export { formatEnvironmentalDate as formatDate } from "@/lib/environmental-impact-estimator/format-date";
 
 export function formatKg(value: number | null | undefined) {
   if (typeof value !== "number" || Number.isNaN(value)) {
@@ -8,22 +9,6 @@ export function formatKg(value: number | null | undefined) {
   return `${new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits: 2,
   }).format(value)} kg CO2e proxy`;
-}
-
-export function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("fr-FR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
 }
 
 export function formatPercent(value: number | null | undefined) {

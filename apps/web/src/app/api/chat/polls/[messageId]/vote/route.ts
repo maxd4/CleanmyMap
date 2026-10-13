@@ -95,6 +95,16 @@ async function loadPollVoteResponse(
   };
 }
 
+async function buildPollVoteResponse(
+  userId: string,
+  messageId: string,
+  options: PollOptionRow[],
+): Promise<NextResponse> {
+  return NextResponse.json(
+    await loadPollVoteResponse(getSupabaseServerClient(true), userId, messageId, options),
+  );
+}
+
 async function guardVoteRequest(request: Request): Promise<Response | null> {
   const rateLimit = await verifyRateLimit(request, { limit: 30, window: 60 });
   return createServerRateLimitResponse(
@@ -164,14 +174,7 @@ async function upsertVote(request: Request, context: VoteRouteContext) {
       return handleApiError(error, "PUT /api/chat/polls/[messageId]/vote");
     }
 
-    return NextResponse.json(
-      await loadPollVoteResponse(
-        getSupabaseServerClient(true),
-        userId,
-        messageId,
-        poll.options,
-      ),
-    );
+    return buildPollVoteResponse(userId, messageId, poll.options);
   } catch (error) {
     return handleApiError(error, "PUT /api/chat/polls/[messageId]/vote");
   }
@@ -223,14 +226,7 @@ export async function DELETE(_request: Request, context: VoteRouteContext) {
       return handleApiError(error, "DELETE /api/chat/polls/[messageId]/vote");
     }
 
-    return NextResponse.json(
-      await loadPollVoteResponse(
-        getSupabaseServerClient(true),
-        userId,
-        messageId,
-        poll.options,
-      ),
-    );
+    return buildPollVoteResponse(userId, messageId, poll.options);
   } catch (error) {
     return handleApiError(error, "DELETE /api/chat/polls/[messageId]/vote");
   }

@@ -2712,6 +2712,414 @@
       "reason": "Les imports et mocks statiques analogues entre inbox et réponse de feedback sont nécessaires à deux frontières API de chat distinctes ; mutualiser ce setup créerait un harness transversal sans sémantique propre et réduirait l'autonomie des suites.",
       "evidence": "app/api/chat/inbox/route.test.ts:2-7 et app/api/chat/route.feedback-reply.test.ts:8-13 ; pair CURRENT relu.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "b4bbade9e5bd6a9a",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "La lecture d'identité est répétée dans deux handlers de profil qui exposent des contrats distincts ; conserver la garde locale rend explicite la frontière serveur de chaque route.",
+      "evidence": "app/api/account/active-profile/route.ts:38-47 et app/api/account/activity-status/route.ts:12-21 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "8a354b26a79cc9b6",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Deux branches du handler de consolidation construisent des réponses d'erreur avec des statuts différents ; leur fusion n'apporterait aucun owner commun.",
+      "evidence": "app/api/spogomi/events/[eventId]/consolidation/route.ts:29-35 et app/api/spogomi/events/[eventId]/consolidation/route.ts:47-52 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "32e5d71b79006d49",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les réponses d'erreur de consolidation et de galerie appartiennent à deux routes SPOGOMI distinctes ; la répétition locale conserve leurs permissions propres.",
+      "evidence": "app/api/spogomi/events/[eventId]/consolidation/route.ts:37-44 et app/api/spogomi/events/[eventId]/gallery/route.ts:43-50 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "319c20f03debe388",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les routes de consolidation et de résultats ont des contrats de lecture différents ; garder l'erreur localisée évite de masquer leur contrôle d'accès.",
+      "evidence": "app/api/spogomi/events/[eventId]/consolidation/route.ts:37-44 et app/api/spogomi/events/[eventId]/results/route.ts:30-37 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "91e8597ea18faf09",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Export XLSX et rankings exposent deux DTO distincts et conservent volontairement leur propre réponse d'erreur côté route.",
+      "evidence": "app/api/spogomi/events/[eventId]/export.xlsx/route.ts:17-24 et app/api/spogomi/events/[eventId]/rankings/route.ts:13-20 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "1edcc7ced2f72428",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les handlers d'export et d'attestation partagent seulement une réponse d'erreur d'autorisation ; les deux politiques et payloads restent indépendants.",
+      "evidence": "app/api/spogomi/events/[eventId]/export.xlsx/route.ts:19-25 et app/api/spogomi/events/[eventId]/recognition/attestations/route.ts:23-29 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "bf0fbe062f3934d7",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les routes galerie et résultats gardent leur réponse d'échec locale afin de préserver des contrats de lecture séparés.",
+      "evidence": "app/api/spogomi/events/[eventId]/gallery/route.ts:32-38 et app/api/spogomi/events/[eventId]/results/route.ts:18-24 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e603506317f04852",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Galerie et reviewers ont des permissions et DTO indépendants ; la construction d'erreur reste volontairement visible dans chaque handler.",
+      "evidence": "app/api/spogomi/events/[eventId]/gallery/route.ts:63-70 et app/api/spogomi/events/[eventId]/reviewers/route.ts:27-34 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "035095276cf2d758",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux branches du flux identity-link convertissent des erreurs de persistance différentes ; leur proximité est du bruit textuel sans abstraction métier sûre.",
+      "evidence": "app/api/spogomi/events/[eventId]/identity-link/route.ts:76-84 et app/api/spogomi/events/[eventId]/identity-link/route.ts:92-100 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "7fb315d158f8a10d",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Import et attestation gardent des gardes d'autorisation explicites dans des mutations sensibles distinctes ; une extraction masquerait la frontière de sécurité.",
+      "evidence": "app/api/spogomi/events/[eventId]/imports/confirm/route.ts:17-22 et app/api/spogomi/events/[eventId]/recognition/attestations/route.ts:17-22 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "29026382c3404258",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Import et composition automatique ont des entrées et permissions différentes ; la validation d'erreur reste attachée au handler qui la consomme.",
+      "evidence": "app/api/spogomi/events/[eventId]/imports/confirm/route.ts:17-27 et app/api/spogomi/events/[eventId]/teams/auto/route.ts:23-33 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "b91d179d81573125",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Le parsing de mapping est centralisé ; la similarité restante correspond aux réponses d'erreur propres aux deux méthodes et ne doit pas masquer leurs contrats.",
+      "evidence": "app/api/spogomi/events/[eventId]/imports/confirm/route.ts:18-29 et app/api/spogomi/events/[eventId]/imports/preview/route.ts:12-23 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "80ab3e857d4abcfd",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Preview et route GPX conservent des contrôles d'accès explicites pour deux ressources SPOGOMI différentes ; la duplication est une preuve locale de frontière serveur.",
+      "evidence": "app/api/spogomi/events/[eventId]/imports/preview/route.ts:7-21 et app/api/spogomi/events/[eventId]/route-gpx/route.ts:5-19 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "9a1c8ad8b7d4e9a5",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les routes participant et équipe ont des ressources et des messages d'erreur différents ; conserver leur validation locale évite de coupler deux contrats publics.",
+      "evidence": "app/api/spogomi/events/[eventId]/participants/[participantId]/identity-code/route.ts:23-29 et app/api/spogomi/events/[eventId]/teams/[teamId]/route.ts:23-28 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "4c6ef0055c136d33",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Rankings et réconciliation utilisent des lectures et autorisations distinctes ; leur gestion d'erreur doit rester identifiable dans chaque endpoint.",
+      "evidence": "app/api/spogomi/events/[eventId]/rankings/route.ts:11-19 et app/api/spogomi/events/[eventId]/recognition/reconcile/route.ts:8-16 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "65aef06272cfdebb",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux opérations reviewers ont des mutations opposées et des contrats de réponse séparés ; le clone est du boilerplate local sans owner commun.",
+      "evidence": "app/api/spogomi/events/[eventId]/reviewers/route.ts:16-23 et app/api/spogomi/events/[eventId]/reviewers/route.ts:31-38 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "a5b8363f965e7923",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "POST et DELETE sur l'accès d'équipe ont des effets et validations opposés ; la duplication de réponse conserve la lisibilité de chaque mutation.",
+      "evidence": "app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:13-21 et app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:32-40 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "ba1792793f8428a4",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les mutations POST et DELETE partagent une forme d'erreur mais pas la sémantique d'accès ; une extraction réduirait la visibilité de la permission concernée.",
+      "evidence": "app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:14-22 et app/api/spogomi/events/[eventId]/teams/[teamId]/access/route.ts:33-41 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "46f83691e69b634f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Lock et move sont deux mutations d'équipe avec des validations indépendantes ; leurs réponses d'erreur doivent rester locales au contrat consommé.",
+      "evidence": "app/api/spogomi/events/[eventId]/teams/lock/route.ts:13-18 et app/api/spogomi/events/[eventId]/teams/move/route.ts:13-18 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e2276e95e0486315",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les catchs de lock et move traduisent des erreurs dans deux mutations distinctes ; leur extraction ne centraliserait aucune règle durable.",
+      "evidence": "app/api/spogomi/events/[eventId]/teams/lock/route.ts:23-28 et app/api/spogomi/events/[eventId]/teams/move/route.ts:23-28 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "435cf988e0e7a9ed",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les sections d'interface portent des libellés et callbacks voisins mais des responsabilités de formulaire distinctes ; aucune extraction cohésive n'est démontrée.",
+      "evidence": "components/actions/action-declaration/before/action-before-sectioned-content.tsx:13-25 et components/actions/action-declaration/before/team-logistics-section.tsx:15-27 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "e2cfd7c6b62ab3ea",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux sections du même composant affichent des champs d'identité différents avec des états distincts ; le clone est du JSX structurel sans owner autonome.",
+      "evidence": "components/actions/action-declaration/before/identity-and-sharing-section.tsx:73-82 et components/actions/action-declaration/before/identity-and-sharing-section.tsx:209-218 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "d37ce665cfba0492",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les champs de localisation et de présentation ont des payloads différents malgré une structure JSX commune ; aucune centralisation sûre n'est démontrée.",
+      "evidence": "components/actions/action-declaration/before/planned-action-location-section.tsx:62-69 et components/actions/action-declaration/before/planned-action-presentation-section.tsx:38-45 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "30314083349d29ba",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Localisation et bénévolat exposent des champs métier différents ; la ressemblance est du bruit de composition de formulaire.",
+      "evidence": "components/actions/action-declaration/before/planned-action-location-section.tsx:62-71 et components/actions/action-declaration/before/planned-action-volunteer-section.tsx:41-50 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "337ec3c6c51d1e9e",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les composants de bénévolat et de préparation partagent une forme de champ mais pas une règle ou un owner de domaine commun.",
+      "evidence": "components/actions/action-declaration/before/planned-action-volunteer-section.tsx:15-22 et components/actions/action-declaration/before/preparation-planning-fields.tsx:19-27 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "9447f444690121e0",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les résumés de quiz personnel et scolaire rendent des indicateurs similaires dans deux parcours pédagogiques indépendants ; une abstraction diminuerait l'autonomie de présentation.",
+      "evidence": "components/learn/quiz/quiz-session-panel-summary-personal.tsx:36-48 et components/learn/quiz/quiz-session-panel-summary-school.tsx:70-82 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "54558d2d2ac81fc6",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux états de la carte identity-link ont volontairement la même structure d'affichage avec des textes et transitions différents ; le clone est du rendu local.",
+      "evidence": "components/spogomi/spogomi-identity-link-card.tsx:87-95 et components/spogomi/spogomi-identity-link-card.tsx:110-118 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "b2f082a389beddbe",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux modules calculent des métriques à partir de données de domaines différents ; la similarité porte sur une boucle de projection sans règle commune.",
+      "evidence": "lib/actions/pollution/pollution-score-reference-snapshot.ts:185-191 et lib/periodic/platform-usage-job.ts:92-98 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "cc3f722bfe64dfb1",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux blocs du service partenaire appartiennent à des étapes distinctes du calcul d'impact et n'ont pas de contrat réutilisable indépendant.",
+      "evidence": "lib/spogomi/partner-impact-service.ts:152-161 et lib/spogomi/partner-impact-service.ts:235-244 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "runtime",
+      "fingerprint": "557abfd22677e9b3",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux projections du service de résultats construisent des lignes voisines mais correspondent à des branches de classement différentes ; aucune extraction ne supprimerait une divergence métier.",
+      "evidence": "lib/spogomi/result-service.ts:94-102 et lib/spogomi/result-service.ts:125-133 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "09d1875fc16fbbe2",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les imports de contrats UI mobile sont identiques par nature, mais les suites restent les preuves indépendantes de deux écrans et ne partagent pas d'assertion métier.",
+      "evidence": "tests/emergency-contact-ui-contract.test.ts:1-7 et tests/mobile-navigation-ui-contract.test.ts:1-7 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4eb4135b3bab9401",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux tests de restauration utilisent un setup de données voisin pour des garanties distinctes de finalisation et de reprise ; un harness partagé masquerait la preuve de chaque scénario.",
+      "evidence": "tests/mission-finalization.test.ts:38-43 et tests/mission-track-restoration.test.ts:16-21 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "bed87dbff9834280",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux assertions du test de stockage couvrent des opérations différentes et doivent rester autonomes pour diagnostiquer chaque contrat.",
+      "evidence": "tests/storage.test.ts:93-100 et tests/storage.test.ts:157-163 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "963fe90702420d65",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux cas de stockage vérifient des chemins d'erreur indépendants ; conserver le setup près de chaque assertion protège la lisibilité de la régression.",
+      "evidence": "tests/storage.test.ts:187-194 et tests/storage.test.ts:211-218 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "02f5b70a4d279b45",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Le boilerplate de route est commun à deux contrats d'actions indépendants ; un helper transversal rendrait les mocks moins explicites sans réduire un risque réel.",
+      "evidence": "app/api/actions/[actionId]/administrative-requirements/route.test.ts:1-6 et app/api/actions/[actionId]/publish/route.test.ts:4-9 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0f8efcd1dc2b9a63",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les imports et mocks communs des routes day et duplicate restent propres à deux tests de contrat API ; aucune fixture métier partagée n'est identifiée.",
+      "evidence": "app/api/actions/[actionId]/day/route.test.ts:1-9 et app/api/actions/[actionId]/duplicate/route.test.ts:1-9 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "73bf56dcecba798b",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les deux tests de route ont un contexte de requête similaire mais des assertions métier séparées ; mutualiser ce fragment créerait une façade de test sans owner.",
+      "evidence": "app/api/actions/[actionId]/day/route.test.ts:9-16 et app/api/actions/[actionId]/duplicate/route.test.ts:8-15 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "d4047568fec6f9c9",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les tests mobile d'action par identifiant et de collection réutilisent le minimum de mock réseau nécessaire à deux handlers différents ; leurs preuves restent indépendantes.",
+      "evidence": "app/api/mobile/actions/[actionId]/route.test.ts:13-18 et app/api/mobile/actions/route.test.ts:12-17 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0f61d935a786f3bf",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Le setup de réponse mobile est textuellement proche entre deux endpoints mais les contrats de collection et de détail sont distincts.",
+      "evidence": "app/api/mobile/actions/[actionId]/route.test.ts:21-26 et app/api/mobile/actions/route.test.ts:20-25 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "776f3dcb8b71379b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux cas identity-link couvrent des réponses opposées du même endpoint ; garder les constructions près de chaque cas protège la preuve de concurrence et d'autorisation.",
+      "evidence": "app/api/spogomi/events/[eventId]/identity-link/route.test.ts:61-67 et app/api/spogomi/events/[eventId]/identity-link/route.test.ts:82-88 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "969900b621582e3f",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux items d'inbox testent des états d'affichage indépendants ; la répétition JSX est nécessaire pour conserver les assertions de chaque état lisibles.",
+      "evidence": "components/admin/creator-inbox/inbox-item-card.test.tsx:170-179 et components/admin/creator-inbox/inbox-item-card.test.tsx:180-189 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "13f922e6bd7854f1",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les mocks d'environnement se ressemblent entre deux suites de projection mais leurs contrats publics sont différents ; aucun harness partagé ne porterait un invariant commun.",
+      "evidence": "lib/environmental-impact-estimator/service-email-events-store.test.ts:5-14 et lib/public-surface-snapshots.test.ts:9-17 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "c22bb3b6b5089f15",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux cas du job d'usage vérifient des agrégations différentes et doivent conserver leur fixture locale pour isoler la régression.",
+      "evidence": "lib/periodic/platform-usage-job.test.ts:69-76 et lib/periodic/platform-usage-job.test.ts:87-94 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "f1735b4e808bec72",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les suites du middleware de rate limit partagent volontairement un setup de réponse pour couvrir séparément le chemin nominal et l'indisponibilité du fournisseur.",
+      "evidence": "lib/rate-limit/middleware.failure.test.ts:10-19 et lib/rate-limit/middleware.test.ts:8-17 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4b9425998b6da22b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux cas de panne rate limit vérifient des réponses distinctes et gardent leurs entrées proches de l'assertion de sécurité correspondante.",
+      "evidence": "lib/rate-limit/middleware.failure.test.ts:34-42 et lib/rate-limit/middleware.failure.test.ts:78-86 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "6a3f5f0acebac9ea",
+      "classification": "NO_ACTION_NOISE",
+      "reason": "Les fixtures de faits de gamification et de reconnaissance ont une forme commune mais protègent deux projections de domaine distinctes.",
+      "evidence": "lib/spogomi/gamification-facts.test.ts:8-14 et lib/spogomi/recognition-service.test.ts:45-51 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "4a970d973f79eab4",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux cas d'import testent des lignes candidates différentes ; conserver les assertions locales évite de confondre les règles de mapping.",
+      "evidence": "lib/spogomi/preparation-service.import.test.ts:342-348 et lib/spogomi/preparation-service.import.test.ts:356-362 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "10b8313ec6ef1f00",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux cas de mise à jour testent des transitions différentes du service de préparation ; le setup répété rend chaque invariant observable.",
+      "evidence": "lib/spogomi/preparation-service.update.test.ts:10-17 et lib/spogomi/preparation-service.update.test.ts:29-36 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "296cbdb40858b25b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les fixtures de préparation couvrent deux politiques de composition ; leur répétition est une preuve indépendante des sorties attendues.",
+      "evidence": "lib/spogomi/preparation.test.ts:50-55 et lib/spogomi/preparation.test.ts:66-71 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "0bfd0ba9069f712b",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les projections de résultats testées correspondent à deux formes de classement et gardent leurs cas indépendants pour éviter un faux partage de fixture.",
+      "evidence": "lib/spogomi/results-projection.test.ts:76-82 et lib/spogomi/results-projection.test.ts:114-120 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+    },
+    {
+      "scope": "tests",
+      "fingerprint": "1baf3d1ec44d7dc4",
+      "classification": "KEEP_INTENTIONAL",
+      "reason": "Les deux cas de validation utilisent le même shape de résultat mais vérifient des erreurs métier différentes ; l'autonomie des assertions est intentionnelle.",
+      "evidence": "lib/spogomi/validation.test.ts:76-82 et lib/spogomi/validation.test.ts:82-88 ; pair CURRENT relu.",
+      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
     }
   ]
 }

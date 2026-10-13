@@ -32,6 +32,12 @@ vi.mock("@/lib/security/validation", () => createPublicValidationModule({
 }));
 
 describe("POST /api/mobile/account/deletion-request", () => {
+  const authenticatedDeletionRequest = () => new Request("http://localhost/api/mobile/account/deletion-request", {
+    method: "POST",
+    headers: { Authorization: "Bearer clerk" },
+    body: JSON.stringify({ confirmation: "SUPPRIMER MON COMPTE" }),
+  });
+
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -69,22 +75,14 @@ describe("POST /api/mobile/account/deletion-request", () => {
   it("applies the authenticated abuse limit before persistence", async () => {
     mocks.rateResponse.mockReturnValue(new Response("rate-limited", { status: 429 }));
     const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost/api/mobile/account/deletion-request", {
-      method: "POST",
-      headers: { Authorization: "Bearer clerk" },
-      body: JSON.stringify({ confirmation: "SUPPRIMER MON COMPTE" }),
-    }));
+    const response = await POST(authenticatedDeletionRequest());
     expect(response.status).toBe(429);
     expect(mocks.append).not.toHaveBeenCalled();
   });
 
   it("returns the request id and keeps deletion explicitly unprocessed", async () => {
     const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost/api/mobile/account/deletion-request", {
-      method: "POST",
-      headers: { Authorization: "Bearer clerk" },
-      body: JSON.stringify({ confirmation: "SUPPRIMER MON COMPTE" }),
-    }));
+    const response = await POST(authenticatedDeletionRequest());
     const body = await response.json();
     expect(response.status).toBe(201);
     expect(body).toMatchObject({ status: "queued", requestId: "request-1", notificationStatus: "sent", deletionProcessed: false });
@@ -95,11 +93,7 @@ describe("POST /api/mobile/account/deletion-request", () => {
   it("reports notification failure without presenting a fake deletion success", async () => {
     mocks.email.mockRejectedValueOnce(new Error("Resend unavailable"));
     const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost/api/mobile/account/deletion-request", {
-      method: "POST",
-      headers: { Authorization: "Bearer clerk" },
-      body: JSON.stringify({ confirmation: "SUPPRIMER MON COMPTE" }),
-    }));
+    const response = await POST(authenticatedDeletionRequest());
     const body = await response.json();
     expect(response.status).toBe(201);
     expect(body).toMatchObject({ requestId: "request-1", notificationStatus: "failed", deletionProcessed: false });

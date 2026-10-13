@@ -6,8 +6,8 @@ const source = readFileSync(new URL("./route.ts", import.meta.url), "utf8");
 describe("SPOGOMI gallery route authorization contract", () => {
   it("keeps gallery mutations behind authentication and organizer capability", () => {
     expect(source).toContain("requireAuthenticatedAccess");
-    expect(source).toContain("loadSpogomiEventForOrganizer");
-    expect(source).toContain("if (event === false) return forbiddenJsonResponse()");
+    expect(source).toContain("loadAuthorizedSpogomiEvent");
+    expect(source).toContain("if (\"response\" in authorized) return authorized.response");
     expect(source).toContain("export async function POST");
     expect(source).toContain("export async function DELETE");
   });

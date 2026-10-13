@@ -15,6 +15,7 @@ import { loadUserParticipationHistory } from "@/lib/actions/participation/group-
 import { getActionTitle } from "@/lib/actions/participation/group-participation.helpers";
 import { loadUserProgressionStats } from "@/lib/gamification/progression-user-stats";
 import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
+import { loadNotificationPreferences } from "@/lib/notifications/notification-preferences-server";
 
 export const runtime = "nodejs";
 // Justification Vercel: the authenticated mobile account projection is private,
@@ -62,28 +63,6 @@ function selectionFromLabel(label: string | null): TerritoryLocationSelection | 
 function locationPayloadFromMetadata(metadata: Record<string, unknown> | null | undefined): LocationPayload {
   const preferences = extractLocationPreferencesFromMetadata(metadata);
   return { residence: preferences.residence, work: preferences.work };
-}
-
-async function loadNotificationPreferences(userId: string) {
-  const supabase = getSupabaseServerClient(true);
-  const [{ data: preferences, error: preferencesError }, { data: mutes, error: mutesError }] = await Promise.all([
-    supabase.from("notification_preferences")
-      .select("informational_enabled, action_reminders_enabled")
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase.from("notification_information_mutes")
-      .select("action_id")
-      .eq("user_id", userId),
-  ]);
-  if (preferencesError) throw preferencesError;
-  if (mutesError) throw mutesError;
-  return {
-    informationalEnabled: preferences?.informational_enabled !== false,
-    actionRemindersEnabled: preferences?.action_reminders_enabled !== false,
-    mutedInformationActionIds: (mutes ?? []).flatMap((mute) =>
-      typeof mute.action_id === "string" ? [mute.action_id] : [],
-    ),
-  };
 }
 
 async function loadAccountMissions(userId: string): Promise<MissionRow[]> {

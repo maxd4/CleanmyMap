@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth-responses";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { autoComposeTeams, loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
+import { autoComposeTeams } from "@/lib/spogomi/preparation-service";
+import { loadAuthorizedSpogomiEvent } from "@/lib/spogomi/route-auth";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -27,10 +27,9 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse();
   try {
-    const supabase = getSupabaseServerClient(true);
-    const event = await loadSpogomiEventForOrganizer(supabase, (await context.params).eventId, access.userId);
-    if (event === false) return forbiddenJsonResponse();
-    if (!event) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
+    const { supabase, authorized } = await loadAuthorizedSpogomiEvent((await context.params).eventId, access.userId);
+    if ("response" in authorized) return authorized.response;
+    const { event } = authorized;
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     const confirm = body.confirm === true;
     if (!confirm) return NextResponse.json(await autoComposeTeams(supabase, event));

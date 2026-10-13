@@ -17,27 +17,7 @@ vi.mock("@/lib/actions/geometry/gpx", () => ({
 }));
 
 import { attachOfficialGpx } from "./preparation-service";
-
-function event(overrides: Record<string, unknown> = {}) {
-  return {
-    id: "event-1",
-    action_id: "action-1",
-    created_by_clerk_id: "organizer-1",
-    name: "SPOGOMI synthétique",
-    location_label: "Cachan",
-    mode: "casual" as const,
-    state: "registration_open",
-    starts_at: "2026-10-20T09:00:00.000Z",
-    ends_at: null,
-    team_size_config: { casual: { minMembers: 2, maxMembers: 4 } },
-    creation_state: "ready",
-    event_slug: "spogomi-synthetic",
-    public_visibility: "private" as const,
-    public_results_visibility: "hidden" as const,
-    composition_revision: 7,
-    ...overrides,
-  } as Parameters<typeof attachOfficialGpx>[0]["event"];
-}
+import { spogomiPreparationEvent } from "./preparation-test-fixtures";
 
 describe("SPOGOMI official GPX synchronization", () => {
   it("delegates route and Action writes to the transactional RPC with the loaded revision", async () => {
@@ -47,7 +27,7 @@ describe("SPOGOMI official GPX synchronization", () => {
     });
     const result = await attachOfficialGpx({
       supabase: { rpc } as never,
-      event: event({ state: "in_progress" }),
+      event: spogomiPreparationEvent({ state: "in_progress" }),
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
     });
@@ -65,7 +45,7 @@ describe("SPOGOMI official GPX synchronization", () => {
     const rpc = vi.fn();
     await expect(attachOfficialGpx({
       supabase: { rpc } as never,
-      event: event({ state: "composition_locked" }),
+      event: spogomiPreparationEvent({ state: "composition_locked" }),
       userId: "organizer-1",
       file: new File(["synthetic gpx"], "upload.gpx", { type: "application/gpx+xml" }),
     })).rejects.toThrow(/après verrouillage/i);

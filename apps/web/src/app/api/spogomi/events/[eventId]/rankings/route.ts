@@ -1,11 +1,10 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth-responses";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
 import { loadSpogomiResultsProjection } from "@/lib/spogomi/results-projection-service";
+import { loadAuthorizedSpogomiEvent } from "@/lib/spogomi/route-auth";
 
 export const runtime = "nodejs";
 // Justification force-dynamic: authenticated publication must read the current certified event and source snapshot.
@@ -16,10 +15,9 @@ export async function POST(_request: Request, context: { params: Promise<{ event
   if (!access.ok) return unauthorizedJsonResponse();
   try {
     const eventId = (await context.params).eventId;
-    const supabase = getSupabaseServerClient(true);
-    const event = await loadSpogomiEventForOrganizer(supabase, eventId, access.userId);
-    if (event === false) return forbiddenJsonResponse();
-    if (!event) return NextResponse.json({ error: "Événement SPOGOMI introuvable." }, { status: 404 });
+    const { supabase, authorized } = await loadAuthorizedSpogomiEvent(eventId, access.userId, "Événement SPOGOMI introuvable.");
+    if ("response" in authorized) return authorized.response;
+    const { event } = authorized;
     if (event.state !== "certified") return NextResponse.json({ error: "L’événement doit être certifié avant publication des classements." }, { status: 409 });
     const projection = await loadSpogomiResultsProjection({ supabase, eventId: event.id, visibilityOverride: "provisional" });
     if (!projection || !projection.results.regulationComplete || projection.teams.some((team) => team.submissionStatus !== "certified")) {

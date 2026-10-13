@@ -76,34 +76,57 @@ function safeDimension(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) && value > 0 && value <= 20_000 ? value : null;
 }
 
-export function parseSpogomiGalleryPhoto(value: unknown): SpogomiGalleryPhoto | null {
+type ParsedGalleryBase = {
+  record: UnknownRecord;
+  id: string;
+  url: string;
+  sourceUrl: string;
+  alt: string;
+  ownerName: string;
+};
+
+function parseGalleryBase(value: unknown): ParsedGalleryBase | null {
   const record = asRecord(value);
   if (!record) return null;
-  const status = record.status;
-  if (status !== "draft" && status !== "published" && status !== "withdrawn") return null;
   const id = nonEmptyString(record.id, 120);
   const url = safeHttpUrl(record.url);
   const sourceUrl = safeHttpUrl(record.sourceUrl);
   const alt = nonEmptyString(record.alt, 300);
   const ownerName = nonEmptyString(record.ownerName, 200);
+  if (!id || !url || !sourceUrl || !alt || !ownerName) return null;
+  return { record, id, url, sourceUrl, alt, ownerName };
+}
+
+function galleryContent(base: ParsedGalleryBase) {
+  return {
+    id: base.id,
+    url: base.url,
+    width: safeDimension(base.record.width),
+    height: safeDimension(base.record.height),
+    alt: base.alt,
+    caption: nonEmptyString(base.record.caption, 500),
+    credit: nonEmptyString(base.record.credit, 300),
+    sourceUrl: base.sourceUrl,
+    ownerName: base.ownerName,
+  };
+}
+
+export function parseSpogomiGalleryPhoto(value: unknown): SpogomiGalleryPhoto | null {
+  const base = parseGalleryBase(value);
+  if (!base) return null;
+  const { record } = base;
+  const status = record.status;
+  if (status !== "draft" && status !== "published" && status !== "withdrawn") return null;
   const approvedAt = nonEmptyString(record.approvedAt, 80);
   const approvedByUserId = nonEmptyString(record.approvedByUserId, 255);
-  if (!id || !url || !sourceUrl || !alt || !ownerName || !approvedAt || !approvedByUserId) return null;
+  if (!approvedAt || !approvedByUserId) return null;
   if (status === "draft") return null;
   if (record.rightsStatus !== "authorized" || record.approvedForPublication !== true) return null;
   if (record.subjectProtectionReviewed !== true || record.minorProtectionReviewed !== true) return null;
   if (status === "published" && !nonEmptyString(record.publishedAt, 80)) return null;
   if (status === "withdrawn" && !nonEmptyString(record.withdrawnAt, 80)) return null;
   return {
-    id,
-    url,
-    width: safeDimension(record.width),
-    height: safeDimension(record.height),
-    alt,
-    caption: nonEmptyString(record.caption, 500),
-    credit: nonEmptyString(record.credit, 300),
-    sourceUrl,
-    ownerName,
+    ...galleryContent(base),
     rightsStatus: "authorized",
     approvedForPublication: true,
     subjectProtectionReviewed: true,
@@ -117,25 +140,12 @@ export function parseSpogomiGalleryPhoto(value: unknown): SpogomiGalleryPhoto | 
 }
 
 function parseSpogomiGalleryDraft(value: unknown): SpogomiGalleryDraft | null {
-  const record = asRecord(value);
-  if (!record || record.status !== "draft") return null;
-  const id = nonEmptyString(record.id, 120);
-  const url = safeHttpUrl(record.url);
-  const sourceUrl = safeHttpUrl(record.sourceUrl);
-  const alt = nonEmptyString(record.alt, 300);
-  const ownerName = nonEmptyString(record.ownerName, 200);
-  if (!id || !url || !sourceUrl || !alt || !ownerName) return null;
+  const base = parseGalleryBase(value);
+  if (!base || base.record.status !== "draft") return null;
+  const { record } = base;
   const rightsStatus = record.rightsStatus === "pending" || record.rightsStatus === "authorized" ? record.rightsStatus : null;
   return {
-    id,
-    url,
-    width: safeDimension(record.width),
-    height: safeDimension(record.height),
-    alt,
-    caption: nonEmptyString(record.caption, 500),
-    credit: nonEmptyString(record.credit, 300),
-    sourceUrl,
-    ownerName,
+    ...galleryContent(base),
     rightsStatus,
     approvedForPublication: record.approvedForPublication === true,
     subjectProtectionReviewed: record.subjectProtectionReviewed === true,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
+import { appendParticipationClaimAudit } from "@/lib/actions/participation/claim-audit";
 import { claimFinishedActionParticipation } from "@/lib/actions/participation/post-action-claims";
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
@@ -53,22 +53,7 @@ export async function POST(_request: Request, ctx: ClaimRouteContext) {
       userId: access.userId,
     });
 
-    await appendActionModerationAudit({
-      operationId: `action-post-claim-${actionId}-${access.userId}-${Date.now()}`,
-      actorUserId: access.userId,
-      targetActionId: actionId,
-      operation: "post_action_claim",
-      outcome: "success",
-      previousValue: claim.previousValue,
-      newValue: claim.newValue,
-      targetUserId: access.userId,
-      details: {
-        requesterUserId: access.userId,
-        participationSource: claim.participationSource,
-        alreadyRequested: claim.alreadyRequested,
-        requestedAt: claim.joinedAt,
-      },
-    });
+    await appendParticipationClaimAudit({ actionId, userId: access.userId, operationIdPrefix: "action-post-claim", claim });
 
     return NextResponse.json({
       status: "ok",

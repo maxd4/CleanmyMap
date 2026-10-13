@@ -19,16 +19,12 @@ vi.mock("./utils", async () => {
 });
 
 import { rateLimitMiddleware } from "./middleware";
+import { configureRateLimitIdentityMocks } from "@/__tests__/support/rate-limit-test-helpers";
 
 describe("rateLimitMiddleware degraded protection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getRateLimitIdentityMock.mockResolvedValue({
-      scope: "anonymous",
-      value: "198.51.100.20",
-      key: "anonymous:198.51.100.20",
-    });
-    getClientIpMock.mockResolvedValue("198.51.100.20");
+    configureRateLimitIdentityMocks(getRateLimitIdentityMock, getClientIpMock);
   });
 
   afterEach(() => {
