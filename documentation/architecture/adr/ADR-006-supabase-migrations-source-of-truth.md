@@ -108,6 +108,39 @@ Après application complète :
 - CLI, tests et docs alignés ;
 - moins de risque d'agent sur le mauvais chemin.
 
+## Immutabilité publiée et correction d'une réécriture historique
+
+Une migration présente sur `main` ou déjà enregistrée dans l'historique d'une
+base est un artefact historique immuable. Son contenu ne doit pas être modifié
+pour corriger après coup une RPC, une fonction, un trigger, un grant ou une
+règle métier. Supabase ne rejoue pas une version déjà enregistrée : une base
+qui a appliqué l'ancien contenu conserverait donc l'ancien contrat, tandis
+qu'une reconstruction complète recevrait le contenu modifié. Ces deux bases
+divergentes sont précisément le défaut que l'append-only doit empêcher.
+
+La procédure obligatoire est la suivante :
+
+1. si le fichier historique a été réécrit par erreur, restaurer exactement un
+   contenu publié retrouvé dans l'historique Git et conserver la preuve des
+   empreintes inspectées ;
+2. créer la prochaine migration disponible dans l'unique arbre canonique ;
+3. porter la correction runtime dans cette migration additive, par exemple
+   avec `CREATE OR REPLACE FUNCTION`, `ALTER`, un nouveau trigger ou une
+   contrainte compatible ;
+4. relire les migrations suivantes afin de vérifier la compatibilité de la
+   nouvelle définition avec leurs triggers, procédures, contraintes et grants ;
+5. valider séparément une reconstruction complète et une mise à niveau depuis
+   la dernière migration historique publiée avant la correction.
+
+La restauration stricte d'une réécriture accidentelle est une réparation
+exceptionnelle et traçable ; elle ne donne pas l'autorisation de modifier une
+migration publiée pour y placer un correctif runtime. Ni `migration repair`, ni
+`db push`, ni une écriture distante ne fait partie de cette procédure sans
+autorisation explicite. Le garde `npm run audit:supabase-migration-trees` et
+les hooks de publication doivent être exécutés sur le candidat exact ; ils
+complètent la revue et ne remplacent pas la vérification de convergence des
+deux historiques.
+
 ## Exception bornée de rejouabilité — `20260913000006`
 
 Le principe append-only reste la règle générale. Une exception locale est

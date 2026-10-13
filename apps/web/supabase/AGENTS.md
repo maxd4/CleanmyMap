@@ -8,10 +8,20 @@ Ces règles concernent la configuration et les migrations du workspace web.
 - `apps/web/supabase/migrations/` est l'unique arbre de migrations éditable et
   canonique ;
 - ne créer ni migration ni copie dans un second arbre ;
-- les migrations sont append-only. Une exception de replay strictement bornée
-  peut corriger localement une migration déjà appliquée uniquement si les
-  conditions et la justification de l'ADR-006 sont respectées ; cette
-  exception ne permet pas la réécriture générale des migrations publiées ;
+- les migrations sont append-only. Une migration déjà publiée sur `main` ou
+  déjà appliquée sur une base est immuable : ne pas modifier son contenu pour
+  corriger une RPC, une fonction, un trigger, un grant ou une règle métier ;
+- une correction de comportement se porte dans la migration forward-only
+  suivante, notamment avec `CREATE OR REPLACE FUNCTION` lorsque le contrat
+  d'une RPC doit évoluer. Une base ayant déjà enregistré l'ancienne migration
+  ne rejouera jamais son nouveau contenu simplement parce que Git a changé le
+  fichier ;
+- une restauration stricte d'une réécriture accidentelle est une réparation
+  traçable, pas une correction runtime : elle doit reprendre exactement un
+  contenu publié retrouvé dans l'historique Git, puis porter le comportement
+  dans une nouvelle migration. Toute exception de replay doit respecter et
+  citer l'ADR-006 ; elle ne permet pas la réécriture générale des migrations
+  publiées ;
 - garder la migration et le code consommateur cohérents : schéma, types,
   routes, RPC, UI et tests doivent évoluer ensemble lorsque nécessaire.
 
@@ -78,6 +88,12 @@ npm run typecheck -w apps/web
 Ajouter les tests de contrat SQL/RPC directement concernés. Toute application
 distante d'une migration reste une opération explicitement autorisée et
 distincte de la validation locale.
+
+Pour une correction qui doit converger avec un historique déjà appliqué,
+vérifier séparément la reconstruction complète et la mise à niveau depuis la
+dernière migration historique publiée. Comparer le contrat final de la RPC,
+des triggers, des contraintes et des grants dans les deux parcours ; un
+contrat statique ou un dry-run ne remplace pas cette preuve PostgreSQL.
 
 ## Workflow distant lié et diagnostic d'accès
 

@@ -209,6 +209,31 @@ Ne pas lancer `supabase start`, `supabase status` ou `supabase db reset` dans le
 workflow local canonique ; ces commandes restent réservées à cette CI de replay
 explicitement dédiée.
 
+### Replay double pour une correction de migration historique
+
+Lorsqu'un correctif doit fonctionner à la fois pour une base reconstruite et
+pour une base qui a déjà appliqué une migration publiée, le plan de preuve
+comporte deux parcours distincts :
+
+1. **reconstruction complète** : appliquer toutes les migrations dans l'ordre
+   canonique sur une base PostgreSQL éphémère autorisée ;
+2. **mise à niveau incrémentale** : partir d'une base contenant le contenu
+   historiquement publié jusqu'à la migration concernée, puis appliquer les
+   migrations suivantes dans l'ordre.
+
+Les deux parcours doivent observer le même contrat final, notamment pour les
+RPC redéfinies, les triggers, les contraintes et les grants. Pour une
+réconciliation transactionnelle, les scénarios minimaux sont : fait nouveau
+après verrouillage historisé dans l'état prévu avec conflit explicite, réimport
+d'une place conservant son identité et ses décisions, annulation/réactivation
+ne modifiant pas silencieusement l'éligibilité protégée, rollback sans écriture
+partielle et refus des rôles non autorisés.
+
+La présence d'un fichier SQL, un test de chaînes, un audit d'arbre ou un
+`db push --dry-run` reste un `STATIC_CONTRACT`. Si PostgreSQL n'est pas
+effectivement exécuté sur les deux parcours, conserver explicitement
+`DB_SEMANTICS_NOT_EXECUTED` ; le dry-run ne valide pas la convergence des bases.
+
 En FULL, `scripts/ci/audit-supabase-release.mjs` exige un
 `SUPABASE_PROJECT_REF` explicitement fourni, vérifie la visibilité du projet,
 les branches, l'historique des migrations, le dry-run et les advisors security
