@@ -61,7 +61,7 @@ describe("/api/mobile/account", () => {
     });
     historyMock.mockResolvedValue([]);
     progressionMock.mockResolvedValue({ totalActions: 0, validatedActions: 0, verifiedContributions: 0, totalKg: 0 });
-    syncMock.mockResolvedValue(null);
+    syncMock.mockResolvedValue({ id: "user-1", role_label: "benevole" });
     serverClientMock.mockReturnValue(makeSupabase());
     clerkClientMock.mockResolvedValue({
       users: {

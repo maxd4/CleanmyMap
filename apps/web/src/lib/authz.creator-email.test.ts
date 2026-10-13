@@ -8,6 +8,7 @@ const creatorEmail = "creator-at-example";
 const envMock = vi.hoisted(() => ({
   CLERK_ADMIN_USER_IDS: "",
   CLERK_MAX_USER_IDS: "",
+  CLERK_IMU_OWNER_USER_ID: "",
   CREATOR_INBOX_EMAIL: "creator-at-example",
 }));
 
@@ -73,7 +74,7 @@ describe("authz creator email isolation", () => {
     });
   });
 
-  it("grants max from CLERK_MAX_USER_IDS regardless of email", async () => {
+  it("rejects max from CLERK_MAX_USER_IDS without canonical Clerk role", async () => {
     envMock.CLERK_MAX_USER_IDS = "user_max";
     authMock.mockResolvedValue({ userId: "user_max" });
     clerkClientMock.mockResolvedValue({
@@ -92,10 +93,28 @@ describe("authz creator email isolation", () => {
 
     const { getCurrentUserRoleLabel } = await import("./authz");
 
+    await expect(getCurrentUserRoleLabel()).resolves.toBe("benevole");
+  });
+
+  it("grants max only for canonical role and exact configured owner id", async () => {
+    envMock.CLERK_IMU_OWNER_USER_ID = "user_max";
+    authMock.mockResolvedValue({ userId: "user_max" });
+    clerkClientMock.mockResolvedValue({
+      users: {
+        getUser: vi.fn().mockResolvedValue({
+          id: "user_max",
+          publicMetadata: { role: "max" },
+          privateMetadata: { role: "admin" },
+        }),
+      },
+    });
+
+    const { getCurrentUserRoleLabel } = await import("./authz");
+
     await expect(getCurrentUserRoleLabel()).resolves.toBe("max");
   });
 
-  it("grants admin from CLERK_ADMIN_USER_IDS regardless of email", async () => {
+  it("grants admin only from canonical public metadata", async () => {
     envMock.CLERK_ADMIN_USER_IDS = "user_admin";
     authMock.mockResolvedValue({ userId: "user_admin" });
     clerkClientMock.mockResolvedValue({
@@ -106,8 +125,8 @@ describe("authz creator email isolation", () => {
             emailAddress: "user-at-example",
             verification: { status: "verified" },
           },
-          publicMetadata: {},
-          privateMetadata: {},
+          publicMetadata: { role: "admin" },
+          privateMetadata: { role: "benevole" },
         }),
       },
     });

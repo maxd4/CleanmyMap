@@ -33,9 +33,9 @@ Date: 2026-04-08
      - `https://clerk.cleanmymap.fr/v1/oauth_callback`
 
 7. **Admin role continuity after Live migration**
-   - Verify admin user has either:
-     - `publicMetadata.role = "admin"`, or
-     - user id listed in `CLERK_ADMIN_USER_IDS` (Vercel Production env).
+   - Verify admin user has the exact Clerk Production value
+     `publicMetadata.role = "admin"`. No allowlist, email, profile or private
+     metadata fallback is valid.
 
 ## Route access matrix
 

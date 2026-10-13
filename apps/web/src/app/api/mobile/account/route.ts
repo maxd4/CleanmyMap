@@ -217,7 +217,16 @@ export async function PATCH(request: Request) {
 
     const updatedUser = await clerk.users.updateUser(access.userId, update);
     const { syncClerkUserToSupabase } = await import("@/lib/auth/sync");
-    await syncClerkUserToSupabase(updatedUser);
+    const syncedProfile = await syncClerkUserToSupabase(updatedUser);
+    if (!syncedProfile) {
+      return NextResponse.json(
+        {
+          error: "Le compte Clerk a été mis à jour, mais sa projection Supabase n'est pas confirmée.",
+          status: "clerk_updated_supabase_sync_pending",
+        },
+        { status: 503 },
+      );
+    }
     return NextResponse.json({ status: "updated", account: await loadAccountProjection(access.userId) }, {
       headers: { "Cache-Control": "private, no-store" },
     });

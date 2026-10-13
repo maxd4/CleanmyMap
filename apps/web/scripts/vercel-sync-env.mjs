@@ -104,7 +104,6 @@ function loadAllowedKeysFromExample(examplePath) {
   const content = readFileSync(examplePath, "utf8");
   const map = parseDotEnv(content);
   const keys = new Set([...map.keys()]);
-  keys.add("CLERK_ADMIN_USER_IDS");
   return keys;
 }
 

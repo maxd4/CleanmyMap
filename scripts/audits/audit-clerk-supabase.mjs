@@ -109,12 +109,38 @@ function normalizeRole(input) {
   return ROLE_ALIASES.get(normalized) ?? null;
 }
 
+function normalizeCanonicalRole(input) {
+  const normalized = typeof input === "string" ? input.trim().toLowerCase() : "";
+  return [
+    "benevole",
+    "coordinateur",
+    "scientifique",
+    "entreprise",
+    "elu",
+    "admin",
+    "max",
+  ].includes(normalized)
+    ? normalized
+    : null;
+}
+
 function extractRole(metadata) {
   if (!metadata || typeof metadata !== "object") {
     return null;
   }
-  const value = metadata.role ?? metadata.profile;
-  return normalizeRole(value);
+  return normalizeCanonicalRole(metadata.role);
+}
+
+function extractLegacyPrivilegedRoles(...metadataSources) {
+  const roles = new Set();
+  for (const metadata of metadataSources) {
+    if (!metadata || typeof metadata !== "object") continue;
+    for (const key of ["profile", "role"]) {
+      const role = normalizeRole(metadata[key]);
+      if (role === "admin" || role === "elu" || role === "max") roles.add(role);
+    }
+  }
+  return [...roles].sort();
 }
 
 function extractActiveProfile(metadata) {
@@ -184,60 +210,17 @@ function csvEscape(value) {
   return `"${text.replaceAll('"', '""')}"`;
 }
 
-export function parseUserIds(raw) {
-  if (!raw) {
-    return new Set();
-  }
-
-  return new Set(
-    raw
-      .split(",")
-      .map((value) => value.trim())
-      .filter((value) => value.length > 0),
-  );
-}
-
-export function parseAdminUserIds(raw) {
-  return parseUserIds(raw);
-}
-
-export function parseMaxUserIds(raw) {
-  return parseUserIds(raw);
-}
-
-function resolveAppProfile({ metadataRole, isAdmin, isMax }) {
-  if (isMax) {
-    return "max";
-  }
-  if (isAdmin) {
-    return "admin";
-  }
-  return normalizeRole(metadataRole) ?? "benevole";
-}
-
 export function resolveStoredRoleLabel({
   metadataRole,
   userId,
-  adminUserIds,
-  maxUserIds,
+  imuOwnerUserId,
 }) {
-  if (typeof userId === "string" && maxUserIds.has(userId.trim())) {
-    return "max";
-  }
-
-  const normalizedRole = normalizeRole(metadataRole);
+  const normalizedRole = normalizeCanonicalRole(metadataRole);
   if (normalizedRole === "max") {
-    return "max";
+    return typeof userId === "string" && userId.trim() === (imuOwnerUserId ?? "").trim()
+      ? "max"
+      : "benevole";
   }
-
-  if (typeof userId === "string" && adminUserIds.has(userId.trim())) {
-    return "admin";
-  }
-
-  if (normalizeRole(metadataRole) === "admin") {
-    return "admin";
-  }
-
   return normalizedRole ?? "benevole";
 }
 
@@ -329,8 +312,12 @@ async function fetchClerkUsers(secretKey, limit) {
           publicMetadata,
           privateMetadata,
           unsafeMetadata,
-          metadataRole:
-            extractRole(publicMetadata) ?? extractRole(privateMetadata),
+          metadataRole: extractRole(publicMetadata),
+          legacyPrivilegedMetadata: extractLegacyPrivilegedRoles(
+            { profile: publicMetadata.profile },
+            privateMetadata,
+            unsafeMetadata,
+          ),
           primaryEmailVerified: isPrimaryEmailVerified(user),
           metadataActiveProfile:
             extractActiveProfile(publicMetadata) ?? extractActiveProfile(privateMetadata),
@@ -398,23 +385,10 @@ function buildRowSummary({
     ? resolveStoredRoleLabel({
       metadataRole,
       userId: id,
-      adminUserIds: context.adminUserIds,
-      maxUserIds: context.maxUserIds,
+      imuOwnerUserId: context.imuOwnerUserId,
       })
     : null;
-  const expectedAppProfile = expectedStoredRoleLabel ?? (clerkUser
-      ? resolveAppProfile({
-          metadataRole,
-          isAdmin: metadataRole === "admin",
-          isMax:
-            resolveStoredRoleLabel({
-              metadataRole,
-              userId: id,
-              adminUserIds: context.adminUserIds,
-              maxUserIds: context.maxUserIds,
-            }) === "max",
-        })
-      : null);
+  const expectedAppProfile = expectedStoredRoleLabel ?? null;
 
   const roleMatch =
     Boolean(clerkUser && profileRow) &&
@@ -449,6 +423,7 @@ function buildRowSummary({
     clerk_display_name:
       clerkUser && `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim(),
     clerk_metadata_role: metadataRole ?? "",
+    legacy_privileged_metadata: clerkUser?.legacyPrivilegedMetadata ?? [],
     clerk_active_profile: clerkUser?.metadataActiveProfile ?? "",
     clerk_metadata_badges: metadataBadgeIds,
     derived_badges: derivedBadgeIds,
@@ -484,6 +459,7 @@ function toCsv(rows) {
     "clerk_username",
     "clerk_display_name",
     "clerk_metadata_role",
+    "legacy_privileged_metadata",
     "clerk_active_profile",
     "clerk_metadata_badges",
     "derived_badges",
@@ -530,11 +506,7 @@ async function main() {
   const clerkSecretKey = resolveEnvValue("CLERK_SECRET_KEY", envFiles);
   const supabaseUrl = resolveEnvValue("NEXT_PUBLIC_SUPABASE_URL", envFiles);
   const serviceRoleKey = resolveEnvValue("SUPABASE_SERVICE_ROLE_KEY", envFiles);
-  const adminUserIds = parseUserIds(resolveEnvValue("CLERK_ADMIN_USER_IDS", envFiles));
-  const maxUserIds = parseMaxUserIds(resolveEnvValue("CLERK_MAX_USER_IDS", envFiles));
-  const allowlistOverlapCount = Array.from(adminUserIds).filter((id) =>
-    maxUserIds.has(id),
-  ).length;
+  const imuOwnerUserId = resolveEnvValue("CLERK_IMU_OWNER_USER_ID", envFiles);
 
   if (!clerkSecretKey) {
     throw new Error("Missing CLERK_SECRET_KEY.");
@@ -612,8 +584,7 @@ async function main() {
         checklistCount: checklistCounts.get(id) ?? 0,
         funnelCount: funnelCounts.get(id) ?? 0,
         context: {
-          adminUserIds,
-          maxUserIds,
+          imuOwnerUserId,
         },
       }),
     );
@@ -645,8 +616,8 @@ async function main() {
       orphanProfiles: findings.orphanProfiles.length,
       roleMismatches: findings.roleMismatches.length,
       legacyActivityOnly: findings.legacyActivityOnly.length,
-      allowlistOverlap: allowlistOverlapCount,
-      maxAllowlistCount: maxUserIds.size,
+      legacyPrivilegedMetadata: rows.filter((row) => row.legacy_privileged_metadata.length > 0).length,
+      imuOwnerConfigured: Boolean(imuOwnerUserId),
     },
   };
 

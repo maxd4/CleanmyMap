@@ -82,10 +82,7 @@ const envSchema = z.object({
   FUNDING_ONPARTICIPE_URL: optionalHttpsUrl,
 
   CLERK_SECRET_KEY: z.string().optional(),
-  CLERK_ADMIN_USER_IDS: z.string().optional(),
-  CLERK_MAX_USER_IDS: z.string().optional(),
   CLERK_IMU_OWNER_USER_ID: z.string().optional(),
-  CLERK_IMU_OWNER_EMAIL: z.preprocess(emptyToUndefined, z.string().email().optional()),
   CLERK_ALLOWED_PARTIES: z.string().optional(),
   CLERK_DOMAIN: z.string().optional(),
   CLERK_IS_SATELLITE: optionalBoolean,

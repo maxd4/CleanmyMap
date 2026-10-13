@@ -30,7 +30,7 @@ function setupClerk(initialPublicMetadata: Record<string, unknown>, userId = "us
     privateMetadata: { role: initialPublicMetadata.role },
   }));
   clerkClientMock.mockResolvedValue({ users: { getUser, updateUser } });
-  syncMock.mockResolvedValue(null);
+  syncMock.mockResolvedValue({ id: userId });
   return { getUser, updateUser };
 }
 
@@ -132,7 +132,6 @@ describe("POST /api/account/active-profile", () => {
   it.each([
     ["elu", "scientifique"],
     ["elu", "elu"],
-    ["elu", "admin"],
     ["admin", "admin"],
     ["max", "admin"],
   ] as const)("allows granted %s to activate %s without changing GRANTED_ROLE", async (role, activeRole) => {
@@ -145,6 +144,15 @@ describe("POST /api/account/active-profile", () => {
     const [, patch] = updateUser.mock.calls[0];
     expect(patch.publicMetadata).toMatchObject({ role, profile: role, activeRole });
     expect(patch).not.toHaveProperty("privateMetadata");
+  });
+
+  it("rejects elu -> ACTIVE_ROLE=admin", async () => {
+    identityMock.mockResolvedValue({ role: "elu", activeRole: "elu" });
+    const { updateUser } = setupClerk({ role: "elu" });
+    const response = await post({ activeRole: "admin" });
+    expect(response.status).toBe(403);
+    expect(updateUser).not.toHaveBeenCalled();
+    expect(syncMock).not.toHaveBeenCalled();
   });
 
   it("rejects admin -> ACTIVE_ROLE=elu", async () => {

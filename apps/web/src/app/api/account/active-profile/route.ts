@@ -90,7 +90,16 @@ export async function POST(request: Request) {
     publicMetadata,
   });
 
-  await syncClerkUserToSupabase(updatedUser);
+  const syncedProfile = await syncClerkUserToSupabase(updatedUser);
+  if (!syncedProfile) {
+    return NextResponse.json(
+      {
+        error: "Le rôle actif Clerk a été enregistré, mais sa projection Supabase n'est pas confirmée.",
+        status: "clerk_updated_supabase_sync_pending",
+      },
+      { status: 503 },
+    );
+  }
 
   return NextResponse.json({
     role,

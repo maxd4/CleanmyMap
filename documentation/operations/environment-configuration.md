@@ -118,8 +118,7 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `CLERK_IS_SATELLITE` | Clerk | CONFIG | O | O | O | O | Vercel / template local | configuration Clerk |
 | `CLERK_SATELLITE_AUTO_SYNC` | Clerk | CONFIG | O | O | O | O | Vercel / template local | synchronisation Clerk |
 | `CLERK_ALLOWED_PARTIES` | Clerk | CONFIG | O | O | O | O | Clerk Dashboard / Vercel | contrôle d’audience |
-| `CLERK_ADMIN_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / gestion opérateur | allowlist AuthZ |
-| `CLERK_MAX_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / gestion opérateur | allowlist AuthZ |
+| `CLERK_IMU_OWNER_USER_ID` | Clerk | CONFIG | O | O | O | O | Vercel / gestion opérateur | identifiant exact du propriétaire IMU ; `max` fail-closed sans lui |
 | `RESEND_API_KEY` | Resend | SECRET | O | O | O | R si email | Resend / Vercel | email serveur |
 | `RESEND_FROM_EMAIL` | Resend | CONFIG | O | O | O | O | Resend / Vercel | expéditeur email |
 | `RESEND_REPLY_TO` | Resend | CONFIG | O | O | O | O | Resend / Vercel | réponse email |
@@ -229,8 +228,10 @@ au contrat.
 - La valeur Production doit être créée ou vérifiée dans Vercel avec
   `NEXT_PUBLIC_CLERK_JS_VERSION=6.31.1` ; cette valeur distante n'est pas
   versionnable dans Git et ne doit pas être remplacée par une prop interne.
-- Les allowlists `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` sont des
-  contrôles AuthZ opératoires; elles ne sont pas des personas UX.
+- `publicMetadata.role` dans Clerk Production est la seule attribution des
+  rôles privilégiés. `CLERK_IMU_OWNER_USER_ID` ne donne pas un rôle à lui seul :
+  il borne le compte dont le rôle canonique `max` est accepté. Les anciennes
+  allowlists ne doivent plus être configurées ni consommées.
 
 ### Supabase
 

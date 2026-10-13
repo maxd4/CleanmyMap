@@ -32,7 +32,7 @@ describe("getRoleMenuGroups", () => {
   });
 
   it("exposes only already granted privileged profiles as obtained targets", () => {
-    expect(getRoleMenuGroups("elu").obtainedProfiles).toEqual(["elu", "admin"]);
+    expect(getRoleMenuGroups("elu").obtainedProfiles).toEqual(["elu"]);
     expect(getRoleMenuGroups("admin").obtainedProfiles).toEqual(["admin"]);
     expect(getRoleMenuGroups("max").obtainedProfiles).toEqual(["elu", "admin", "max"]);
   });

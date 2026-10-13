@@ -7,6 +7,9 @@ const { getSupabaseAdminClientMock } = vi.hoisted(() => ({
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseAdminClient: getSupabaseAdminClientMock,
 }));
+vi.mock("@/lib/env", () => ({
+  env: { CLERK_IMU_OWNER_USER_ID: "user_active_max" },
+}));
 
 import { syncActiveRoleProjectionToSupabase } from "./active-role-projection";
 
@@ -36,7 +39,7 @@ describe("syncActiveRoleProjectionToSupabase", () => {
         id: "user_active_admin",
         username: "active_admin",
         emailAddresses: [],
-        publicMetadata: { role: "max", activeRole: "admin" },
+        publicMetadata: { role: "admin", activeRole: "admin" },
         privateMetadata: {},
         firstName: "Active",
         lastName: "Admin",

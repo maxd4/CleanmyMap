@@ -195,8 +195,8 @@ Pour les actions, cette distinction est obligatoire :
 action_organizers
 = relation organisateur/coorganisateur métier persistée et canonique
 
-GRANTED_ROLE / CLERK_ADMIN_USER_IDS
-= attribution ou allowlist de rôle ; jamais une relation avec une action
+GRANTED_ROLE = rôle canonique Clerk publicMetadata.role
+= attribution de rôle ; jamais une relation avec une action
 
 ACTIVE_ROLE
 = capability globale explicitement prévue par le domaine ; jamais une
@@ -225,7 +225,8 @@ ni le scope, ni l'ownership ou la relation requise par le handler.
 Le rôle actif est résolu après le rôle attribué :
 
 ```txt
-role = résolution Clerk + allowlists d'identifiants + règles d'identité
+role = résolution Clerk de publicMetadata.role uniquement, avec la contrainte
+owner ID exacte pour max
 activeRole = activeRole persisté si valide pour role, sinon role
 activeProfile = alias de lecture de activeRole
 ```
@@ -242,17 +243,14 @@ droits :
 | GRANTED_ROLE | ACTIVE_ROLE sélectionnables |
 |---|---|
 | rôle ouvert | rôles ouverts |
-| `elu` | rôles ouverts + `elu` + `admin` |
+| `elu` | rôles ouverts + `elu` |
 | `admin` | rôles ouverts + `admin` |
 | `max` | rôles ouverts + `elu` + `admin` + `max` |
 
-L'exception produit autorise donc `elu → admin`, mais interdit `admin → elu`.
-`elu` et `admin` restent des rôles distincts : tant que
-`ACTIVE_ROLE=elu`, le compte ne reçoit aucune capacité admin globale. Une
-bascule explicite vers `ACTIVE_ROLE=admin` active les capacités admin normales
-sans modifier `GRANTED_ROLE`. Cette bascule est volontaire et explicite de la
-part de l'utilisateur ; elle ne constitue ni un héritage implicite ni une
-faille de privilège.
+`elu` et `admin` restent des rôles distincts : tant que `ACTIVE_ROLE=elu`, le
+compte ne reçoit aucune capacité admin globale. Une bascule vers
+`ACTIVE_ROLE=admin` n'est possible que pour `GRANTED_ROLE=admin` ou
+`GRANTED_ROLE=max` et ne modifie jamais `GRANTED_ROLE`.
 
 La mutation UX canonique est `POST /api/account/active-profile`. Elle doit
 valider la session, résoudre le `role` côté serveur, vérifier la cible avec
@@ -269,14 +267,16 @@ authentifiées reçoivent `410` et doivent migrer vers la route dédiée.
 Invariants de non-régression :
 
 - aucun `benevole → admin` ou `admin → max` automatique ;
-- `elu → admin` est autorisé comme exception de sélection active ; `admin → elu`
-  est refusé ;
+- `elu → admin` est refusé ; `admin → elu` est refusé ;
 - aucun refresh ou onboarding ne rétrograde silencieusement `admin` ou `max` ;
 - `role=max` est conservé lorsque `activeRole=benevole` ;
 - `role=admin` est conservé lorsque `activeRole=scientifique` ;
 - `activeProfile` ne constitue jamais une preuve de permission ;
-- les privilèges sont portés par les identifiants/allowlists et métadonnées
-  vérifiées, pas par une adresse email codée en dur.
+- `admin` et `elu` proviennent uniquement de `publicMetadata.role` Clerk ;
+- `max` exige `publicMetadata.role=max` et l'égalité exacte avec
+  `CLERK_IMU_OWNER_USER_ID`, sinon il est refusé ;
+- les métadonnées privées, `profile`, `unsafeMetadata`, alias, emails,
+  allowlists et projections Supabase n'attribuent aucun rôle privilégié.
 
 ## Règles durables pour les tests authentifiés
 
@@ -398,9 +398,9 @@ attribution territoriale canonique ; elle reste `TARGET / NOT_IMPLEMENTED` tant
 que le runtime et les tests de séparation territoire A/B ne sont pas complets.
 `ACTIVE_ROLE=admin` reste sur `/admin` pour la supervision/modération et
 `ACTIVE_ROLE=max` reste sur l'administration de plateforme : aucun des deux ne
-reçoit le parcours métier `/pilotage` implicitement. La règle spéciale
-`GRANTED_ROLE=elu → ACTIVE_ROLE=admin` reste inchangée et doit être choisie
-explicitement.
+reçoit le parcours métier `/pilotage` implicitement. `GRANTED_ROLE=elu →
+ACTIVE_ROLE=admin` est refusé ; seuls `admin` et `max` peuvent choisir
+explicitement `ACTIVE_ROLE=admin`.
 
 ## Routes sensibles
 

@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
+import { vi } from "vitest";
 import { __authz_testables, isAdminRole } from "./authz";
 import { resolveIdentityActiveRole } from "./authz-identity";
 
+vi.mock("@/lib/env", () => ({
+  env: { CLERK_IMU_OWNER_USER_ID: "owner" },
+}));
+
 describe("authz helpers", () => {
   it("projects dev-auth bypass roles through the canonical profile resolver", () => {
-    expect(__authz_testables.resolveDevAuthBypassRole("max")).toBe("max");
-    expect(__authz_testables.resolveDevAuthBypassRole("admin")).toBe("admin");
-    expect(__authz_testables.resolveDevAuthBypassRole("invalid")).toBe("benevole");
+    expect(__authz_testables.resolveDevAuthBypassRole("owner", "max")).toBe("max");
+    expect(__authz_testables.resolveDevAuthBypassRole("user", "admin")).toBe("admin");
+    expect(__authz_testables.resolveDevAuthBypassRole("user", "invalid")).toBe("benevole");
   });
 
   it.each([
@@ -66,19 +71,19 @@ describe("authz helpers", () => {
     ).toBe(true);
   });
 
-  it("accepts admin role from private metadata", () => {
+  it("does not accept admin role from private metadata", () => {
     expect(
       isAdminRole({ publicMetadata: {}, privateMetadata: { role: "admin" } }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
-  it("accepts admin role from profile metadata fallback", () => {
+  it("does not accept admin role from profile metadata fallback", () => {
     expect(
       isAdminRole({
         publicMetadata: { profile: "admin" },
         privateMetadata: {},
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("does not treat IMU metadata as admin authorization", () => {

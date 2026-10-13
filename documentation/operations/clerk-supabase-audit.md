@@ -14,9 +14,10 @@ Quand il y a beaucoup de comptes, il faut utiliser l'audit automatisé.
 
 - Clerk stocke les métadonnées utilisateur :
   - `publicMetadata.role`
-  - `publicMetadata.activeProfile`
-  - `privateMetadata.role`
-  - `privateMetadata.activeProfile` si présent pour compatibilité
+  - `publicMetadata.activeRole` pour le choix de capacité compatible
+  - `publicMetadata.activeProfile` comme entrée UX legacy
+  - `profile`, les métadonnées privées et `unsafeMetadata` uniquement pour
+    inventorier une migration ; ils n'accordent aucun rôle privilégié
   - `badges`
 - Supabase stocke la copie métier :
   - `public.profiles`
@@ -30,10 +31,11 @@ role: Role                 // permissions réelles
 activeProfile: AppProfile  // persona/navigation UX
 ```
 
-`role` est résolu avant `activeProfile` et reste la seule source de décision
-AuthZ. Une valeur `activeProfile` absente, invalide ou non commutable pour ce
-`role` retombe sur `activeProfile = role`. Le champ historique `profile` ne doit
-pas être utilisé comme sélecteur UX par un nouveau code.
+`role` est résolu exclusivement depuis `publicMetadata.role`. `admin` et `elu`
+ne peuvent venir d'aucune autre métadonnée ; `max` exige en plus l'identifiant
+exact `CLERK_IMU_OWNER_USER_ID`. Une valeur `activeRole` ou `activeProfile`
+absente, invalide ou non commutable retombe sur un rôle compatible et ne peut
+jamais augmenter `GRANTED_ROLE`.
 
 ## Mutation de profil actif
 
@@ -51,7 +53,7 @@ modifier `role`. En particulier :
 
 - `role=max` reste `max` lorsqu'une persona `benevole` est choisie ;
 - `role=admin` reste `admin` lorsqu'une persona `scientifique` est choisie ;
-- `role=elu` peut choisir `activeProfile=admin` comme exception produit ;
+- `role=elu` ne peut pas choisir `activeProfile=admin` ;
 - `role=admin` ne peut pas choisir `activeProfile=elu` ;
 - `admin → activeProfile=max` est refusé ;
 - `/api/account/profile-role` est une route retirée (`410`) et ne doit plus être
@@ -59,10 +61,12 @@ modifier `role`. En particulier :
 
 ## Réparation contrôlée d'un compte
 
-Cette procédure est réservée à un opérateur autorisé. Elle ne doit jamais
-introduire d'adresse email privilégiée dans le code, les tests, les allowlists
-versionnées ou la documentation. Les adresses sont fournies à l'exécution et
-comparées exactement après normalisation minimale de casse et d'espaces.
+Cette procédure est réservée à l'IMU authentifié et configuré. Elle ne doit
+jamais introduire d'adresse email, d'allowlist secondaire ou d'identifiant
+Production dans le code, les tests ou la documentation. Les comptes
+privilégiés existants doivent être inventoriés avant toute suppression des
+compatibilités ; une entrée legacy est migrée explicitement ou signalée, jamais
+rétrogradée silencieusement.
 
 1. Vérifier l'accès Clerk avant toute écriture :
 
@@ -76,49 +80,53 @@ comparées exactement après normalisation minimale de casse et d'espaces.
    fichier du dépôt ; si elle est fournie dans la session, elle reste
    process-local.
 
-2. Rechercher l'utilisateur par email exact avec l'outil Clerk autorisé. Le
-   résultat doit contenir exactement un utilisateur ; zéro résultat ou plusieurs
-   résultats impose un arrêt. Ne jamais sélectionner un compte par proximité,
-   nom affiché ou identifiant deviné.
+2. Rechercher le compte avec l'outil Clerk autorisé et confirmer son identifiant
+   Clerk exact. Un résultat ambigu impose un arrêt. Ne jamais sélectionner un
+   compte par proximité, nom affiché, email codé en dur ou identifiant deviné.
 
-3. Vérifier les allowlists sans publier leurs valeurs :
+3. Inventorier avant migration les anciennes sources, sans les consommer comme
+   autorité :
 
    ```txt
-   CLERK_ADMIN_USER_IDS
-   CLERK_MAX_USER_IDS
+   publicMetadata.profile
+   privateMetadata.role / profile
+   unsafeMetadata.role / profile
+   anciennes variables d'allowlist si elles existent encore dans l'environnement
    ```
 
-   Contrôler que l'identifiant Clerk retrouvé appartient à la liste attendue,
-   selon le rôle à réparer. Une allowlist absente ne doit pas promouvoir un
-   compte et une liste admin ne doit pas être réutilisée comme liste max.
+   Produire un inventaire borné des comptes concernés. Seul
+   `publicMetadata.role` est ensuite retenu ; `max` est accepté uniquement si
+   `user.id === CLERK_IMU_OWNER_USER_ID` et si cette variable est configurée.
 
 4. Appliquer la réparation dans Clerk en préservant les autres métadonnées :
 
    ```txt
-   compte admin : role=admin, activeProfile=admin
-   compte max   : role=max,   activeProfile=max
+   compte admin : publicMetadata.role=admin
+   compte max   : publicMetadata.role=max + id exact CLERK_IMU_OWNER_USER_ID
    ```
 
-   L'écriture doit être ciblée sur le compte résolu et ne doit pas accepter une
-   adresse email codée en dur comme règle applicative. Vérifier ensuite la
-   réponse Clerk, sans copier de secret ni de données privées dans les logs.
+   L'écriture doit préserver toutes les métadonnées sans rapport avec
+   l'autorisation. Le compte IMU owner est explicitement protégé contre les
+   mutations ordinaires. Vérifier ensuite la réponse Clerk, sans copier de
+   secret ni de données privées dans les logs.
 
 5. Déclencher ou attendre la synchronisation canonique Clerk → Supabase, puis
-   vérifier l'écart de rôle et la présence du compte :
+   vérifier l'écart de rôle, le statut de convergence et la présence du compte :
 
    ```powershell
    npm run data:audit:clerk-supabase
    ```
 
    Conserver uniquement l'artefact d'audit prévu par le dépôt et vérifier que
-   `public.profiles.role_label` correspond au `role` Clerk. Le profil UX doit
-   rester un choix d'interface ; il ne doit pas servir à conclure à une
-   permission Supabase.
+    `public.profiles.role_label` correspond à `publicMetadata.role` après la
+    contrainte owner, et que `active_role_label` reste compatible. Les deux
+    colonnes sont des projections serveur non modifiables par les clients. Une
+    synchronisation échouée, notamment après révocation, est `BLOCKED`/divergente
+    et doit être reprise idempotemment avant de déclarer la convergence.
 
 Si Clerk n'est pas lié, si les scopes manquent, si la clé serveur est absente,
-si l'email ne produit pas exactement un résultat ou si la synchronisation ne
-peut pas être prouvée, classer la réparation `BLOCKED`/`NOT_RUN` et ne pas
-simuler un état final.
+si l'identité est ambiguë ou si la synchronisation ne peut pas être prouvée,
+classer la réparation `BLOCKED`/`NOT_RUN` et ne pas simuler un état final.
 
 ## Mode recommandé pour beaucoup d'utilisateurs
 

@@ -137,7 +137,7 @@ ouvrent respectivement les ensembles suivants :
 | GRANTED_ROLE | ACTIVE_ROLE autorisés |
 |---|---|
 | standard / rôle ouvert | les quatre rôles ouverts |
-| `elu` | rôles ouverts + `elu` + `admin` |
+| `elu` | rôles ouverts + `elu` |
 | `admin` | rôles ouverts + `admin` |
 | `max` | rôles ouverts + `elu` + `admin` + `max` |
 
@@ -147,13 +147,11 @@ session, mais conserve `GRANTED_ROLE=admin` et peut réactiver `admin`. Le champ
 UX historique `activeProfile` est un alias de lecture/migration et ne donne
 aucun droit.
 
-Cette matrice est volontairement asymétrique : `GRANTED_ROLE=elu` peut
-sélectionner `ACTIVE_ROLE=admin`, tandis que `GRANTED_ROLE=admin` ne peut pas
-sélectionner `ACTIVE_ROLE=elu`. Il ne s'agit pas d'une relation d'héritage
-entre les rôles. Un compte `elu` en `ACTIVE_ROLE=elu` conserve uniquement ses
-capacités élu et n'obtient pas les capacités admin globales ; après une
-bascule explicite en `ACTIVE_ROLE=admin`, il reçoit les capacités admin
-normales sans modifier `GRANTED_ROLE`.
+Cette matrice interdit `GRANTED_ROLE=elu → ACTIVE_ROLE=admin` et
+`GRANTED_ROLE=admin → ACTIVE_ROLE=elu`. Il ne s'agit pas d'une relation
+d'héritage entre les rôles. Un compte `elu` conserve uniquement ses capacités
+élu ; seuls `admin` et `max` peuvent activer `admin`, sans modifier
+`GRANTED_ROLE`.
 
 Les rôles métier sont définis dans :
 
@@ -602,7 +600,7 @@ GRANTED_ROLE=elu + ACTIVE_ROLE=elu
 → future capacité territoriale seulement, lorsqu'elle sera implémentée
 
 GRANTED_ROLE=elu + ACTIVE_ROLE=admin
-→ capacités admin globales normales de la session
+→ refus : cette combinaison n'est pas commutable
 ```
 
 La sélection de `ACTIVE_ROLE=admin` ne définit pas le contrat territorial et
@@ -682,8 +680,13 @@ projection `profiles.role_label` de Supabase et écrit un audit. La projection
 `profiles.role_label` porte le `GRANTED_ROLE`; la projection serveur
 `profiles.active_role_label`, alimentée par le même sync Clerk, porte
 `ACTIVE_ROLE` pour les décisions RLS et ne peut pas être écrite par un client.
-`activeRole`, `activeProfile`, `CREATOR_INBOX_EMAIL` et
-`CLERK_ADMIN_USER_IDS` ne sont jamais une preuve autonome d'attribution.
+Le décideur doit être authentifié, être l'identifiant exact de
+`CLERK_IMU_OWNER_USER_ID`, et présenter `GRANTED_ROLE=max` et
+`ACTIVE_ROLE=max`. `publicMetadata.role` est la seule attribution Clerk ; les
+métadonnées privées, `profile`, `unsafeMetadata`, alias, emails, anciennes
+allowlists et projections Supabase ne peuvent pas accorder un rôle privilégié.
+Une synchronisation échouée est une divergence à reprendre et auditer, pas un
+succès convergent.
 
 ## 8. Permissions sur les données
 

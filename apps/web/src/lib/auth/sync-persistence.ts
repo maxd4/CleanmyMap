@@ -39,6 +39,7 @@ export async function upsertSyncedProfile(
     parisArrondissement: number | null;
   },
 ): Promise<SyncedProfileRow | null> {
+  const projectionSyncedAt = new Date().toISOString();
   const { data, error } = await supabase
     .from("profiles")
     .upsert(
@@ -49,6 +50,8 @@ export async function upsertSyncedProfile(
         handle: payload.handle,
         role_label: payload.persistedProfile,
         active_role_label: payload.activeRole,
+        role_projection_source: "clerk_public_metadata_role",
+        role_projection_synced_at: projectionSyncedAt,
         avatar_url: payload.avatarUrl,
         metadata: payload.profileMetadata,
         paris_arrondissement: payload.parisArrondissement,

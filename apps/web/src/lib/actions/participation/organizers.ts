@@ -1,6 +1,5 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { env } from "@/lib/env";
 import { buildFallbackHandle } from "@/lib/auth/identity-handle";
 import { persistManualParticipantDiff } from "./manual-participant-sync";
 
@@ -59,15 +58,6 @@ function normalizeComparable(value: string | null | undefined): string {
 
 export function uniqueTokens(tokens: string[]): string[] {
   return [...new Set(tokens.map(normalizeToken).filter((token) => token.length > 0))];
-}
-
-function parseCsvUserIds(raw: string | undefined): string[] {
-  return uniqueTokens(
-    (raw ?? "")
-      .split(/[,;\n]+/)
-      .map((token) => token.trim())
-      .filter((token) => token.length > 0),
-  );
 }
 
 function buildClerkSearchParams(normalized: string): {
@@ -419,22 +409,16 @@ export async function loadCanonicalActionOrganizerIdsForAction(
 }
 
 /**
- * Creation-only compatibility default. Its result is persisted as an explicit
- * action_organizers relation by create-submission; it must never be used as a
- * read-time ownership or authorization fallback.
+ * No implicit organizer default. Callers must provide an explicit account when
+ * the canonical action_organizers relation is intended to be created; this
+ * helper must never be used as a read-time ownership or authorization fallback.
  */
 export function resolveDefaultActionOrganizerIds(params: {
   creatorUserId: string;
   creatorIsGlobalAdmin: boolean;
 }): string[] {
-  if (params.creatorIsGlobalAdmin) {
-    return [params.creatorUserId];
-  }
-
-  const configuredAdminIds = parseCsvUserIds(env.CLERK_ADMIN_USER_IDS);
-  if (configuredAdminIds.length > 0) {
-    return [configuredAdminIds[0]];
-  }
-
-  return [params.creatorUserId];
+  void params;
+  // No authorization identity may be turned into an implicit organizer.
+  // The caller must provide an explicit account for the canonical relation.
+  return [];
 }

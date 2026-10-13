@@ -148,7 +148,6 @@ describe("active profile separation", () => {
       "scientifique",
       "entreprise",
       "elu",
-      "admin",
     ]);
   });
 
@@ -160,7 +159,7 @@ describe("active profile separation", () => {
       "entreprise",
     ]);
     expect(getSwitchableProfiles("elu")).toContain("elu");
-    expect(getSwitchableProfiles("elu")).toContain("admin");
+    expect(getSwitchableProfiles("elu")).not.toContain("admin");
     expect(getSwitchableProfiles("admin")).not.toContain("elu");
     expect(getSwitchableProfiles("benevole")).not.toContain("max");
   });
@@ -180,7 +179,6 @@ describe("active profile separation", () => {
 
   it.each([
     ["elu", "scientifique"],
-    ["elu", "admin"],
     ["admin", "benevole"],
     ["admin", "admin"],
     ["max", "admin"],

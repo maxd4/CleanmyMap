@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import { env } from "./env";
 import {
   resolveActiveRole,
-  resolveProfile,
   type AppProfile,
   type DisplayNameMode,
 } from "./profiles";
@@ -43,8 +42,6 @@ import {
   shouldUseDevAuthBypass,
 } from "@/lib/auth/dev-auth";
 import {
-  parseAdminUserIds,
-  parseMaxUserIds,
   resolveClerkRole,
 } from "@/lib/auth/role-resolution";
 
@@ -177,10 +174,9 @@ async function buildDevBypassIdentity(devBypass: {
     (await getDisplayNameModeCookieOverride()) ??
     getDisplayNameModeOverride(devBypass.userId) ??
     "full_name";
-  const role = resolveProfile({
-    metadataRole: devBypass.role,
-    isAdmin: devBypass.role === "admin",
-    isMax: devBypass.role === "max",
+  const role = resolveClerkRole({
+    user: { id: devBypass.userId, publicMetadata: { role: devBypass.role } },
+    imuOwnerUserId: env.CLERK_IMU_OWNER_USER_ID,
   });
 
   return {
@@ -332,8 +328,7 @@ function buildResolvedIdentity(params: {
   } = resolveIdentityNames(user, userId, storedProfile);
   const resolvedRole = resolveClerkRole({
     user,
-    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
-    maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
+    imuOwnerUserId: env.CLERK_IMU_OWNER_USER_ID,
   });
   const isMax = resolvedRole === "max";
   const isAdmin = resolvedRole === "admin" || isMax;

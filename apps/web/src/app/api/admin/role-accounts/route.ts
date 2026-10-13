@@ -6,8 +6,7 @@ import { parseJsonBodyWithSchema } from "@/lib/security/validation";
 import { env } from "@/lib/env";
 import { getCurrentUserIdentity, requireCreatorAccess } from "@/lib/authz";
 import {
-  parseAdminUserIds,
-  parseMaxUserIds,
+  isConfiguredImuOwnerUserId,
   resolveClerkRole,
 } from "@/lib/auth/role-resolution";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
@@ -100,6 +99,13 @@ async function applyRoleAccountMutation(params: {
 
   try {
     const client = await clerkClient();
+    if (isConfiguredImuOwnerUserId(data.userId, env.CLERK_IMU_OWNER_USER_ID)) {
+      await appendRoleManagementErrorAudit(auditParams());
+      return NextResponse.json(
+        { error: "Le compte IMU owner ne peut pas être modifié ici." },
+        { status: 403 },
+      );
+    }
     const currentUser = await client.users.getUser(data.userId);
     previousRole = resolveCanonicalTargetRole(currentUser);
 
@@ -116,12 +122,6 @@ async function applyRoleAccountMutation(params: {
       publicMetadata: {
         ...(currentUser.publicMetadata as Record<string, unknown>),
         role: targetRole,
-        profile: targetRole,
-      },
-      privateMetadata: {
-        ...(currentUser.privateMetadata as Record<string, unknown>),
-        role: targetRole,
-        profile: targetRole,
       },
     });
 
@@ -158,8 +158,7 @@ function resolveCanonicalTargetRole(user: {
 }): RoleAccountRecord["roleLabel"] {
   return resolveClerkRole({
     user,
-    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
-    maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
+    imuOwnerUserId: env.CLERK_IMU_OWNER_USER_ID,
   });
 }
 
@@ -167,6 +166,16 @@ export async function GET(request: Request) {
   const access = await requireCreatorAccess();
   if (!access.ok) {
     return adminAccessErrorJsonResponse(access);
+  }
+
+  const identity = await getCurrentUserIdentity();
+  if (
+    !identity ||
+    identity.role !== "max" ||
+    identity.activeRole !== "max" ||
+    !isConfiguredImuOwnerUserId(identity.userId, env.CLERK_IMU_OWNER_USER_ID)
+  ) {
+    return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
 
   const { searchParams } = new URL(request.url);
@@ -190,6 +199,14 @@ export async function POST(request: Request) {
   const identity = await getCurrentUserIdentity();
   if (!identity) {
     return unauthorizedJsonResponse();
+  }
+
+  if (
+    identity.role !== "max" ||
+    identity.activeRole !== "max" ||
+    !isConfiguredImuOwnerUserId(identity.userId, env.CLERK_IMU_OWNER_USER_ID)
+  ) {
+    return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
 
   const parsed = await parseJsonBodyWithSchema(request, mutationSchema);

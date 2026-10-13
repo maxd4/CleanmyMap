@@ -15,7 +15,7 @@ vi.mock("@clerk/nextjs/server", () => ({
 
 vi.mock("@/lib/env", () => ({
   env: {
-    CLERK_ADMIN_USER_IDS: "user-admin-1,user-admin-2",
+    CLERK_IMU_OWNER_USER_ID: "owner-1",
   },
 }));
 
@@ -125,22 +125,22 @@ describe("resolveActionOrganizers", () => {
 });
 
 describe("resolveDefaultActionOrganizerIds", () => {
-  it("uses the current creator when they are admin-like", () => {
+  it("does not invent an organizer from the creator role", () => {
     expect(
       resolveDefaultActionOrganizerIds({
         creatorUserId: "user-admin-1",
         creatorIsGlobalAdmin: true,
       }),
-    ).toEqual(["user-admin-1"]);
+    ).toEqual([]);
   });
 
-  it("falls back to the first configured admin id", () => {
+  it("does not fall back to the legacy admin allowlist", () => {
     expect(
       resolveDefaultActionOrganizerIds({
         creatorUserId: "user-creator",
         creatorIsGlobalAdmin: false,
       }),
-    ).toEqual(["user-admin-1"]);
+    ).toEqual([]);
   });
 });
 

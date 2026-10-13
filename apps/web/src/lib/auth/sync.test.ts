@@ -11,6 +11,10 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseAdminClient: getSupabaseAdminClientMock,
 }));
 
+vi.mock("@/lib/env", () => ({
+  env: { CLERK_IMU_OWNER_USER_ID: "user_max" },
+}));
+
 import { syncClerkUserToSupabase } from "./sync";
 
 type MockState = {
@@ -180,7 +184,7 @@ describe("syncClerkUserToSupabase", () => {
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
-  it("promotes profile metadata admin into the Supabase role label", async () => {
+  it("does not promote profile metadata admin into the Supabase role label", async () => {
     const { supabase, upsert } = createSupabaseMock({
       existingProfile: null,
     });
@@ -200,7 +204,7 @@ describe("syncClerkUserToSupabase", () => {
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        role_label: "admin",
+        role_label: "benevole",
         display_name: "Ada Admin",
         display_name_mode: "full_name",
       }),
@@ -243,7 +247,7 @@ describe("syncClerkUserToSupabase", () => {
   it.each([
     ["admin", "benevole", "benevole"],
     ["max", "scientifique", "scientifique"],
-    ["elu", "admin", "admin"],
+    ["elu", "admin", "elu"],
     ["admin", "elu", "admin"],
   ] as const)("projects GRANTED_ROLE=%s and ACTIVE_ROLE=%s separately", async (grantedRole, activeRole, expectedActiveRole) => {
     const { supabase, upsert } = createSupabaseMock({ existingProfile: null });
@@ -251,7 +255,7 @@ describe("syncClerkUserToSupabase", () => {
 
     await syncClerkUserToSupabase(
       clerkUser({
-        id: `user_${grantedRole}_${activeRole}`,
+        id: grantedRole === "max" ? "user_max" : `user_${grantedRole}_${activeRole}`,
         username: "role_projection",
         publicMetadata: { role: grantedRole, activeRole },
         firstName: "Role",

@@ -40,7 +40,7 @@ Le compte qui exécute `/api/actions/import` est un acteur technique d'ingestion
 et d'audit. Il n'est pas ajouté automatiquement à `action_organizers`. La
 relation organisateur n'est persistée que lorsqu'elle est fournie et résolue par
 le contrat métier ; une source qui ne connaît pas l'organisateur conserve une
-relation absente. `GRANTED_ROLE`, `CLERK_ADMIN_USER_IDS`, `ACTIVE_ROLE` et les
+relation absente. `GRANTED_ROLE`, `publicMetadata.role`, `ACTIVE_ROLE` et les
 fallbacks de création ne deviennent jamais des `organizerIds` de décision
 AuthZ. Les fallbacks de création existants ne s'appliquent qu'au moment où une
 relation explicite est effectivement persistée et ne sont pas des fallbacks de

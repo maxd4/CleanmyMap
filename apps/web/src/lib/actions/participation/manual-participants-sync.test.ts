@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 const clerkClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: clerkClientMock }));
-vi.mock("@/lib/env", () => ({ env: { CLERK_ADMIN_USER_IDS: "" } }));
+vi.mock("@/lib/env", () => ({ env: { CLERK_IMU_OWNER_USER_ID: "" } }));
 
 function createSupabaseMock(profileRows: Array<{ id: string; display_name: string; handle: string }>) {
   const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });

@@ -1,4 +1,3 @@
-import { normalizeProfileRole } from "@/lib/profiles";
 import type { Role } from "@/lib/domain-language";
 
 export type ClerkMetadata = Record<string, unknown> | null | undefined;
@@ -12,77 +11,67 @@ export type ClerkUserForRole = ClerkRoleMetadata & {
   id: string;
 };
 
-function parseUserIds(raw: string | undefined): Set<string> {
-  if (!raw) {
-    return new Set<string>();
-  }
+const CANONICAL_ROLES = new Set<Role>([
+  "benevole",
+  "coordinateur",
+  "scientifique",
+  "entreprise",
+  "elu",
+  "admin",
+  "max",
+]);
 
-  return new Set(
-    raw
-      .split(",")
-      .map((value) => value.trim())
-      .filter((value) => value.length > 0),
-  );
+function normalizeCanonicalRole(value: unknown): Role | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  return CANONICAL_ROLES.has(normalized as Role) ? (normalized as Role) : null;
 }
 
-/** Parses the canonical Clerk user-id allowlist used for admin authorization. */
-export function parseAdminUserIds(raw: string | undefined): Set<string> {
-  return parseUserIds(raw);
-}
-
-export function parseMaxUserIds(raw: string | undefined): Set<string> {
-  return parseUserIds(raw);
-}
-
-export function extractRole(metadata: ClerkMetadata): string | null {
+/** Reads only Clerk publicMetadata.role. Legacy fields are migration inputs, never authority. */
+export function extractRole(metadata: ClerkMetadata): Role | null {
   if (!metadata) {
     return null;
   }
 
-  const roleValue = metadata["role"] ?? metadata["profile"];
-  if (typeof roleValue !== "string") {
-    return null;
-  }
-
-  const normalized = roleValue.trim().toLowerCase();
-  if (!normalized) {
-    return null;
-  }
-
-  return normalizeProfileRole(normalized) ?? normalized;
+  return normalizeCanonicalRole(metadata["role"]);
 }
 
 export function isAdminRole(metadata: ClerkRoleMetadata): boolean {
-  const publicRole = extractRole(metadata.publicMetadata);
-  if (publicRole === "admin") {
-    return true;
-  }
-
-  const privateRole = extractRole(metadata.privateMetadata);
-  return privateRole === "admin";
+  return extractRole(metadata.publicMetadata) === "admin";
 }
 
-export function isMaxRole(metadata: ClerkRoleMetadata): boolean {
-  return (
-    extractRole(metadata.publicMetadata) === "max" ||
-    extractRole(metadata.privateMetadata) === "max"
+export function isMaxRole(params: {
+  user: ClerkUserForRole;
+  imuOwnerUserId: string | undefined;
+}): boolean {
+  const ownerUserId = params.imuOwnerUserId?.trim();
+  return Boolean(
+    ownerUserId &&
+      params.user.id === ownerUserId &&
+      extractRole(params.user.publicMetadata) === "max",
   );
+}
+
+export function isConfiguredImuOwnerUserId(
+  userId: string | null | undefined,
+  imuOwnerUserId: string | undefined,
+): boolean {
+  const ownerUserId = imuOwnerUserId?.trim();
+  return Boolean(ownerUserId && userId && userId === ownerUserId);
 }
 
 export function resolveClerkRole(params: {
   user: ClerkUserForRole;
-  adminUserIds: ReadonlySet<string>;
-  maxUserIds: ReadonlySet<string>;
+  imuOwnerUserId: string | undefined;
 }): Role {
-  if (params.maxUserIds.has(params.user.id) || isMaxRole(params.user)) {
+  const canonicalRole = extractRole(params.user.publicMetadata);
+  if (isMaxRole(params)) {
     return "max";
   }
 
-  if (params.adminUserIds.has(params.user.id) || isAdminRole(params.user)) {
+  if (canonicalRole === "admin") {
     return "admin";
   }
 
-  const metadataRole =
-    extractRole(params.user.publicMetadata) ?? extractRole(params.user.privateMetadata);
-  return normalizeProfileRole(metadataRole) ?? "benevole";
+  return canonicalRole === "max" ? "benevole" : canonicalRole ?? "benevole";
 }

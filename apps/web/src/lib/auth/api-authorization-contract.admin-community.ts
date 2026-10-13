@@ -93,14 +93,14 @@ export const adminCommunityAuthorizationContract = {
     GET: {
       expected: "ACTIVE_ROLE=max",
       dimensions: ["admin/creator role"],
-      actual: "getCurrentUserActiveRole must resolve max",
-      evidence: ["getCurrentUserActiveRole"],
+      actual: "getCurrentUserIdentity must resolve canonical max with activeRole=max and the exact IMU owner id",
+      evidence: ["getCurrentUserIdentity", "isConfiguredImuOwnerUserId"],
     },
     POST: {
       expected: "ACTIVE_ROLE=max plus operation audit",
       dimensions: ["admin/creator role", "audit"],
-      actual: "getCurrentUserActiveRole must resolve max + appendAdminOperationAudit",
-      evidence: ["getCurrentUserActiveRole", "appendAdminOperationAudit"],
+      actual: "getCurrentUserIdentity must resolve canonical max with activeRole=max and the exact IMU owner id + appendAdminOperationAudit",
+      evidence: ["getCurrentUserIdentity", "isConfiguredImuOwnerUserId", "appendAdminOperationAudit"],
     },
   },
   "admin/referrals.csv": {

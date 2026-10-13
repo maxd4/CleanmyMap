@@ -5,15 +5,14 @@ import { z } from "zod";
 import { parseJsonBodyWithSchema } from "@/lib/security/validation";
 import { env } from "@/lib/env";
 import {
-  parseAdminUserIds,
-  parseMaxUserIds,
+  isConfiguredImuOwnerUserId,
   resolveClerkRole,
 } from "@/lib/auth/role-resolution";
-import { getCurrentUserActiveRole, getCurrentUserIdentity } from "@/lib/authz";
+import { getCurrentUserIdentity } from "@/lib/authz";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { sendCreatorInboxEmail } from "@/lib/community/creator-inbox-email";
-import { adminAccessErrorJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import type { AppProfile } from "@/lib/profiles";
 import {
   getPromotionRequestById,
@@ -228,7 +227,10 @@ async function performPromotionAcceptanceMutation(params: {
     const client = await clerkClient();
     const targetUser = await client.users.getUser(requestRecord.submittedByUserId);
     previousRole = resolveCanonicalTargetRole(targetUser);
-    if (previousRole === "max") {
+    if (
+      previousRole === "max" ||
+      isConfiguredImuOwnerUserId(requestRecord.submittedByUserId, env.CLERK_IMU_OWNER_USER_ID)
+    ) {
       return { kind: "owner_protected", previousRole };
     }
 
@@ -237,12 +239,6 @@ async function performPromotionAcceptanceMutation(params: {
       publicMetadata: {
         ...(targetUser.publicMetadata as Record<string, unknown>),
         role: requestRecord.requestedRole,
-        profile: requestRecord.requestedRole,
-      },
-      privateMetadata: {
-        ...(targetUser.privateMetadata as Record<string, unknown>),
-        role: requestRecord.requestedRole,
-        profile: requestRecord.requestedRole,
       },
     });
 
@@ -345,14 +341,18 @@ function resolveCanonicalTargetRole(user: {
 }): AppProfile {
   return resolveClerkRole({
     user,
-    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
-    maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
+    imuOwnerUserId: env.CLERK_IMU_OWNER_USER_ID,
   });
 }
 
 export async function GET() {
-  const role = await getCurrentUserActiveRole().catch(() => "anonymous");
-  if (role !== "max") {
+  const identity = await getCurrentUserIdentity();
+  if (
+    !identity ||
+    identity.role !== "max" ||
+    identity.activeRole !== "max" ||
+    !isConfiguredImuOwnerUserId(identity.userId, env.CLERK_IMU_OWNER_USER_ID)
+  ) {
     return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
 
@@ -367,14 +367,14 @@ export async function GET() {
 export async function POST(request: Request) {
   // API_AUTHORIZATION_CONTRACT: appendAdminOperationAudit is called by the
   // local decision-audit owner below; the handler keeps its guard visible.
-  const role = await getCurrentUserActiveRole().catch(() => "anonymous");
-  if (role !== "max") {
-    return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
-  }
-
   const identity = await getCurrentUserIdentity();
-  if (!identity) {
-    return unauthorizedJsonResponse();
+  if (
+    !identity ||
+    identity.role !== "max" ||
+    identity.activeRole !== "max" ||
+    !isConfiguredImuOwnerUserId(identity.userId, env.CLERK_IMU_OWNER_USER_ID)
+  ) {
+    return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
 
   const parsed = await parseJsonBodyWithSchema(request, reviewSchema);

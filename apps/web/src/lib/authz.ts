@@ -1,7 +1,6 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { env } from "./env";
 import {
-  resolveProfile,
   type AppRoleLabel,
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
@@ -21,8 +20,6 @@ import {
 } from "./authz-identity";
 import {
   extractRole,
-  parseAdminUserIds,
-  parseMaxUserIds,
   resolveClerkRole,
 } from "./auth/role-resolution";
 export { isAdminRole } from "./auth/role-resolution";
@@ -45,18 +42,19 @@ export type AuthenticatedAccessResult =
   | { ok: true; userId: string }
   | { ok: false; status: 401; error: string };
 
-function resolveDevAuthBypassRole(role: string): AppRoleLabel {
-  return resolveProfile({
-    metadataRole: role,
-    isAdmin: role === "admin",
-    isMax: role === "max",
+function resolveDevAuthBypassRole(userId: string, role: string): AppRoleLabel {
+  return resolveClerkRole({
+    user: { id: userId, publicMetadata: { role } },
+    imuOwnerUserId: env.CLERK_IMU_OWNER_USER_ID,
   });
 }
 
 export async function requireAdminAccess(): Promise<AdminAccessResult> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
-    return getEffectiveAccessForSessionRole(devBypass.role as SessionRole).canAccessAdminPage
+    return getEffectiveAccessForSessionRole(
+      resolveDevAuthBypassRole(devBypass.userId, devBypass.role) as SessionRole,
+    ).canAccessAdminPage
       ? { ok: true, userId: devBypass.userId }
       : { ok: false, status: 403, error: "Forbidden" };
   }
@@ -75,7 +73,7 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
 export async function requireCreatorAccess(): Promise<CreatorAccessResult> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
-    return devBypass.role === "max"
+    return resolveDevAuthBypassRole(devBypass.userId, devBypass.role) === "max"
       ? { ok: true, userId: devBypass.userId }
       : { ok: false, status: 403, error: "Forbidden" };
   }
@@ -109,7 +107,7 @@ export async function requireAuthenticatedAccess(): Promise<AuthenticatedAccessR
 export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
-    return resolveDevAuthBypassRole(devBypass.role);
+    return resolveDevAuthBypassRole(devBypass.userId, devBypass.role);
   }
 
   const { userId } = await auth();
@@ -122,8 +120,7 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
     const user = await getClerkUser(client, userId);
     return resolveClerkRole({
       user,
-      adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
-      maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
+      imuOwnerUserId: env.CLERK_IMU_OWNER_USER_ID,
     });
   } catch (error) {
     console.error("Current user role resolution failed", error);
@@ -137,7 +134,7 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
 export async function getCurrentUserActiveRole(): Promise<AppRoleLabel> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
-    return resolveDevAuthBypassRole(devBypass.role);
+    return resolveDevAuthBypassRole(devBypass.userId, devBypass.role);
   }
 
   const identity = await getCurrentUserIdentity();

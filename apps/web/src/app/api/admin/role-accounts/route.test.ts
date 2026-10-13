@@ -12,6 +12,9 @@ const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: clerkClientMock,
 }));
+vi.mock("@/lib/env", () => ({
+  env: { CLERK_IMU_OWNER_USER_ID: "owner-1" },
+}));
 
 vi.mock("@/lib/authz", async () => {
   const actual = await vi.importActual<typeof import("@/lib/authz")>(

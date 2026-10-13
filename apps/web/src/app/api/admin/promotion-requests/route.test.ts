@@ -15,6 +15,9 @@ const sendCreatorInboxEmailMock = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: clerkClientMock,
 }));
+vi.mock("@/lib/env", () => ({
+  env: { CLERK_IMU_OWNER_USER_ID: "reviewer-1" },
+}));
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserActiveRole: getCurrentUserActiveRoleMock,
@@ -156,8 +159,7 @@ describe("GET/POST /api/admin/promotion-requests", () => {
     expect(updateUserMock).toHaveBeenCalledWith(
       "target-user-1",
       expect.objectContaining({
-        publicMetadata: expect.objectContaining({ role: "admin", profile: "admin" }),
-        privateMetadata: expect.objectContaining({ role: "admin", profile: "admin" }),
+        publicMetadata: expect.objectContaining({ role: "admin" }),
       }),
     );
     expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
