@@ -95,6 +95,7 @@ Les tokens vivent dans `apps/web/src/styles/tokens.css`, importé par
 | titre de page desktop | `--cmm-page-header-title-size` |
 | titre hero desktop | `--cmm-home-hero-title-size` |
 | titre impact desktop | `--cmm-home-impact-title-size` |
+| hauteur d’aperçu carte homepage | `--cmm-home-map-preview-height*` |
 | padding carte rubrique desktop | `--cmm-rubrique-card-padding` |
 | padding icône carte rubrique desktop | `--cmm-rubrique-card-icon-padding` |
 
@@ -140,6 +141,12 @@ de texte reste à `16px`, le petit texte à `14px` minimum et les captions à
 `--cmm-page-header-title-size` avec un plafond à `3.6rem`, afin que les très
 grands écrans ajoutent des colonnes et de l'espace horizontal sans agrandir
 proportionnellement la typographie.
+
+La composition autonome de la homepage conserve une hauteur de carte propre à
+son usage, mais celle-ci reste tokenisée (`--cmm-home-map-preview-height*`) et
+est resserrée par la densité `compact`. Les cartes KPI de cette composition
+peuvent donc apparaître plus tôt sans réduire le corps de texte ni modifier
+les données affichées.
 
 Cette densité ne doit jamais être reproduite avec `zoom`, `transform: scale`,
 un wrapper global réduit ou une détection du zoom navigateur.

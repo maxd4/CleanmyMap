@@ -26,6 +26,11 @@ afterEach(() => {
 });
 
 describe("homepage map preview", () => {
+  it("uses the shared density-aware height token instead of a page-local height", () => {
+    expect(source).toContain('className="cmm-home-map-preview relative isolate min-w-0 overflow-hidden"');
+    expect(source).not.toContain("lg:h-[31rem]");
+  });
+
   it("fades only the outer 3.5 percent while keeping the center unmasked", () => {
     expect(source).toContain("#000 3.5%, #000 96.5%");
     expect(source).not.toContain("#000 8%");

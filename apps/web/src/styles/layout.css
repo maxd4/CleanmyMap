@@ -13,6 +13,22 @@
   line-height: var(--leading-tight);
 }
 
+.cmm-home-map-preview {
+  height: var(--cmm-home-map-preview-height);
+}
+
+@media (min-width: 768px) {
+  .cmm-home-map-preview {
+    height: var(--cmm-home-map-preview-height-tablet);
+  }
+}
+
+@media (min-width: 1200px) {
+  .cmm-home-map-preview {
+    height: var(--cmm-home-map-preview-height-desktop);
+  }
+}
+
 .cmm-footer-contact-actions {
   display: grid;
   max-width: 100%;

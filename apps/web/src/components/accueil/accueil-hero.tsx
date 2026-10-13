@@ -61,25 +61,25 @@ export function HomeHero({
 }: HomeHeroProps) {
   return (
     <section data-homepage-section="hero" className="relative isolate overflow-visible text-[#082f24]">
-      <div className="cmm-page-width relative z-10 px-3 pb-3 pt-3 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8 lg:pb-6 lg:pt-6">
-        <div className="grid items-center gap-5 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-7 xl:gap-10">
-          <div className="min-w-0 px-1 py-4 sm:px-3 lg:py-8">
+      <div className="cmm-page-width relative z-10 px-3 pb-3 pt-3 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8 lg:pb-4 lg:pt-4">
+        <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-5 xl:gap-7">
+          <div className="min-w-0 px-1 py-3 sm:px-3 lg:py-4">
             <div className="max-w-[42rem]">
               <p className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.32em] text-emerald-100 sm:text-xs">
                 <span className="h-3 w-3 shrink-0 rounded-full bg-[#26e6a4] shadow-[0_0_18px_rgba(38,230,164,0.92)]" />
                 Des territoires plus propres, ensemble
               </p>
 
-              <h1 className="cmm-home-hero-title mt-5 max-w-none font-black leading-[0.88] tracking-[-0.085em] text-white drop-shadow-[0_12px_26px_rgba(0,37,27,0.18)] lg:whitespace-nowrap">
+              <h1 className="cmm-home-hero-title mt-4 max-w-none font-black leading-[0.88] tracking-[-0.085em] text-white drop-shadow-[0_12px_26px_rgba(0,37,27,0.18)] lg:whitespace-nowrap">
                 CleanMyMap
               </h1>
-              <p className="mt-5 max-w-[37rem] text-[clamp(1.05rem,1.55vw,1.38rem)] leading-[1.42] text-white/90">
+              <p className="mt-4 max-w-[37rem] text-[clamp(1.05rem,1.55vw,1.38rem)] leading-[1.42] text-white/90">
                 Cultivons l&apos;entraide pour dépolluer, cartographier et transformer chaque action terrain en preuve utile.
               </p>
 
               <CmmButtonGroup
                 layout="two-column"
-                className="mt-7 max-w-[38rem] sm:mt-8"
+                className="mt-5 max-w-[38rem] sm:mt-6"
               >
                 {heroActions.map(({ href, icon: Icon, label, tone, width, showArrow }) => (
                   <CmmButton
@@ -87,7 +87,7 @@ export function HomeHero({
                     href={href}
                     tone={tone}
                     variant="pill"
-                    size="lg"
+                    size="md"
                     width={width}
                   >
                     <Icon size={22} strokeWidth={2.2} aria-hidden="true" />
@@ -102,9 +102,9 @@ export function HomeHero({
           <HomeMapPreview />
         </div>
 
-        <section className="relative mt-4 overflow-visible sm:mt-6 lg:mt-7">
-          <div className="relative z-10 flex flex-wrap items-center justify-start gap-3 px-1 sm:gap-4 sm:px-2">
-            <p className="cmm-home-impact-title flex items-center gap-4 font-black leading-none tracking-[-0.055em] text-white">
+        <section className="relative mt-4 overflow-visible sm:mt-5 lg:mt-5">
+          <div className="relative z-10 flex flex-wrap items-center justify-start gap-3 px-1 sm:gap-3 sm:px-2">
+            <p className="cmm-home-impact-title flex items-center gap-3 font-black leading-none tracking-[-0.055em] text-white">
               <span className="h-3 w-3 shrink-0 rounded-full bg-[#26e6a4] shadow-[0_0_15px_rgba(38,230,164,0.7)] sm:h-4 sm:w-4" />
               Impact terrain 2026
             </p>
@@ -119,7 +119,7 @@ export function HomeHero({
             </CmmButton>
           </div>
 
-          <div className="relative z-10 mt-7 grid w-full grid-cols-2 gap-3 px-1 min-[768px]:grid-cols-3 min-[768px]:px-2 min-[1200px]:grid-cols-6 min-[1200px]:gap-4 min-[1200px]:px-3">
+          <div className="relative z-10 mt-5 grid w-full grid-cols-2 gap-3 px-1 min-[768px]:grid-cols-3 min-[768px]:px-2 min-[1200px]:grid-cols-6 min-[1200px]:gap-3 min-[1200px]:px-3">
             {metrics.map((metric) => (
               <HomeImpactKpiCard
                 key={metric.key}

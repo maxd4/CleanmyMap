@@ -125,7 +125,7 @@ function AppNavigationRibbonFrame({
         )}
         style={ribbonChrome}
       >
-        <div className="flex w-full min-w-0 items-center gap-2 px-3 py-2.5 sm:px-5 lg:gap-2 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:px-7 xl:py-3">
+        <div className="flex w-full min-w-0 items-center gap-2 px-3 py-2.5 sm:px-5 lg:gap-2 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:px-7 xl:py-2">
           <p className="sr-only">
             {locale === "fr" ? "Profil actif" : "Active profile"}: {effectiveProfileLabel}
           </p>

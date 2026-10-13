@@ -50,11 +50,11 @@ export function HomeImpactKpiCard({
   const MetricIcon = metricIcons[metric.key as keyof typeof metricIcons];
 
   return (
-    <article className="group relative min-h-[9rem] rounded-[1.15rem] border border-white/65 bg-[rgba(222,249,239,0.62)] p-3 shadow-[0_18px_32px_-24px_rgba(0,68,45,0.35)] backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:bg-[rgba(236,253,245,0.74)] min-[768px]:min-h-[9.5rem] min-[768px]:p-4 min-[1200px]:min-h-[11.25rem] min-[1200px]:rounded-[1.35rem] min-[1200px]:p-5">
+    <article className="group relative min-h-[8rem] rounded-[1rem] border border-white/65 bg-[rgba(222,249,239,0.62)] p-3 shadow-[0_18px_32px_-24px_rgba(0,68,45,0.35)] backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:bg-[rgba(236,253,245,0.74)] min-[768px]:min-h-[8.5rem] min-[768px]:p-3.5 min-[1200px]:min-h-[9.5rem] min-[1200px]:rounded-[1.15rem] min-[1200px]:p-4">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.35rem] bg-[radial-gradient(circle_at_0%_0%,rgba(255,255,255,0.72),transparent_40%)]" />
-      <div className="relative z-10 flex h-full flex-col gap-4 min-[1200px]:gap-6">
+      <div className="relative z-10 flex h-full flex-col gap-3 min-[1200px]:gap-4">
         <div className="flex items-center gap-2 min-[768px]:gap-3">
-          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full min-[768px]:h-10 min-[768px]:w-10 min-[1200px]:h-12 min-[1200px]:w-12 ${style.icon}`} aria-hidden="true">
+          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full min-[768px]:h-10 min-[768px]:w-10 min-[1200px]:h-10 min-[1200px]:w-10 ${style.icon}`} aria-hidden="true">
             {MetricIcon ? <MetricIcon size={22} strokeWidth={2.2} /> : null}
           </span>
           <p className={`min-w-0 flex-1 text-sm font-black leading-tight tracking-[-0.015em] min-[768px]:text-base min-[1200px]:text-lg ${style.label}`}>

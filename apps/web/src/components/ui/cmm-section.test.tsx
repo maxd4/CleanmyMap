@@ -54,6 +54,9 @@ describe("canonical page layout primitives", () => {
       "--cmm-page-header-title-size",
       "--cmm-home-hero-title-size",
       "--cmm-home-impact-title-size",
+      "--cmm-home-map-preview-height",
+      "--cmm-home-map-preview-height-tablet",
+      "--cmm-home-map-preview-height-desktop",
       "--cmm-rubrique-card-padding",
       "--cmm-rubrique-card-icon-padding",
     ]) {

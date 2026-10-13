@@ -36,6 +36,7 @@ describe("HomeHero impact methodology link", () => {
     expect(html).toContain("grid-cols-2 gap-3 px-1 min-[768px]:grid-cols-3");
     expect(html).toContain("h-9 !border !border-[#047957]");
     expect(html).toContain('class="text-[#7c3aed]">Méthodologie</span>');
+    expect(html).toContain('data-cmm-button-size="md"');
     expect(html).toContain("flex flex-wrap items-center justify-start gap-3");
     expect(html).not.toContain("justify-between");
     expect(html).not.toContain("ⓘ");

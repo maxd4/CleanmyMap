@@ -16,7 +16,7 @@ export function HomeMapPreview() {
   return (
     <div
       ref={mapPreviewRef}
-      className="relative isolate h-[20rem] min-w-0 overflow-hidden sm:h-[24rem] lg:h-[31rem]"
+      className="cmm-home-map-preview relative isolate min-w-0 overflow-hidden"
       aria-label="Aperçu de la carte des actions"
       aria-busy={!isNearViewport}
     >
