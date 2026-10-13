@@ -81,7 +81,7 @@ export function SpogomiTeamResultForm({ form }: { form: TeamForm }) {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error ?? "La saisie n’a pas été enregistrée.");
-      const savedId = body?.submission?.id ?? body?.submission?.id;
+      const savedId = body?.submission?.id;
       if (typeof savedId === "string") setSubmissionId(savedId);
       setIdempotencyKey(crypto.randomUUID());
       setMessage(status === "submitted" ? "Résultat soumis. La certification reste réservée à l’organisateur ou à l’arbitre." : "Brouillon enregistré.");

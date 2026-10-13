@@ -6,7 +6,6 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 import {
-  DEFAULT_ROOT,
   NA,
   TOKEN_FIELDS,
   DERIVED_TOKEN_FIELDS,
