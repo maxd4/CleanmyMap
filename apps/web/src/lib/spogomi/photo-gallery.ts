@@ -1,5 +1,3 @@
-export type SpogomiGalleryPhotoStatus = "draft" | "published" | "withdrawn";
-
 export type SpogomiGalleryPhoto = {
   id: string;
   url: string;
@@ -21,7 +19,7 @@ export type SpogomiGalleryPhoto = {
   withdrawnAt: string | null;
 };
 
-export type SpogomiGalleryDraft = {
+type SpogomiGalleryDraft = {
   id: string;
   url: string;
   width: number | null;
@@ -118,7 +116,7 @@ export function parseSpogomiGalleryPhoto(value: unknown): SpogomiGalleryPhoto | 
   };
 }
 
-export function parseSpogomiGalleryDraft(value: unknown): SpogomiGalleryDraft | null {
+function parseSpogomiGalleryDraft(value: unknown): SpogomiGalleryDraft | null {
   const record = asRecord(value);
   if (!record || record.status !== "draft") return null;
   const id = nonEmptyString(record.id, 120);

@@ -23,7 +23,7 @@ export type PublicSurfaceSnapshotRecord<TPayload = unknown> = {
 
 export type PublicSurfaceSnapshotWriteResult = "applied" | "ignored_older";
 
-export class PublicSurfaceSnapshotWriteConflictError extends Error {
+class PublicSurfaceSnapshotWriteConflictError extends Error {
   readonly code = "PUBLIC_SURFACE_SNAPSHOT_WRITE_CONFLICT";
 
   constructor(snapshotKey: string, snapshotDate: string) {

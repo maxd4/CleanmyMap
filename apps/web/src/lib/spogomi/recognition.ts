@@ -1,9 +1,3 @@
-import { CURRENT_SPOGOMI_BADGE_DEFINITIONS } from "@/lib/gamification/badge-catalog";
-
-export const SPOGOMI_REPEATABLE_BADGE_IDS = CURRENT_SPOGOMI_BADGE_DEFINITIONS.map(
-  (definition) => definition.id,
-);
-
 export type SpogomiRecognitionKind =
   | "collector"
   | "referee"
@@ -12,7 +6,7 @@ export type SpogomiRecognitionKind =
   | "field_safety"
   | "weighing_sorting"
   | "logistics_support";
-export type SpogomiRankingKind = "points" | "butts";
+type SpogomiRankingKind = "points" | "butts";
 
 export type SpogomiRecognitionParticipant = {
   participantId: string;

@@ -2,18 +2,19 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const service = readFileSync(new URL("./preparation-service.ts", import.meta.url), "utf8");
+const creationService = readFileSync(new URL("./preparation-creation-service.ts", import.meta.url), "utf8");
 const importCompleteness = readFileSync(new URL("./import-completeness.ts", import.meta.url), "utf8");
 const compositionMutationService = readFileSync(new URL("./composition-mutation-service.ts", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
   it("reserves the creation intent before calling the canonical action service", () => {
-    const reservation = service.indexOf('from("spogomi_event_creation_attempts").insert');
-    const irreversibleAction = service.indexOf("createAction(supabase");
+    const reservation = creationService.indexOf('from("spogomi_event_creation_attempts").insert');
+    const irreversibleAction = creationService.indexOf("createAction(supabase");
     expect(reservation).toBeGreaterThanOrEqual(0);
     expect(irreversibleAction).toBeGreaterThan(reservation);
-    expect(service).toContain("intention_fingerprint");
-    expect(service).toContain("processing_token");
-    expect(service).not.toContain('from("spogomi_event_creation_attempts").upsert');
+    expect(creationService).toContain("intention_fingerprint");
+    expect(creationService).toContain("processing_token");
+    expect(creationService).not.toContain('from("spogomi_event_creation_attempts").upsert');
   });
 
   it("replays roster bytes on confirmation and verifies persisted source rows", () => {

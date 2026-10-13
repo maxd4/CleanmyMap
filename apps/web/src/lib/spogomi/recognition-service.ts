@@ -19,7 +19,7 @@ import { logFailure } from "@/lib/logging/failure-log";
 
 type EventRow = { id: string; action_id: string; name: string; event_slug: string | null; starts_at: string; official_timezone: string; state: string; public_visibility: string };
 
-export class SpogomiRecognitionPartialError extends Error {
+class SpogomiRecognitionPartialError extends Error {
   readonly code = "SPOGOMI_RECOGNITION_PARTIAL";
   readonly eventId: string;
   readonly affectedUserCount: number;

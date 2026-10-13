@@ -1,7 +1,7 @@
 import { CURRENT_SPOGOMI_BADGE_DEFINITIONS } from "@/lib/gamification/badge-catalog";
 import type { SpogomiSpecializedProgress } from "./progress";
 
-export type SpogomiCollectionAwardStatus = "active" | "revoked" | "replaced";
+type SpogomiCollectionAwardStatus = "active" | "revoked" | "replaced";
 
 export type SpogomiCollectionAward = {
   id: string;
@@ -59,8 +59,4 @@ export function getSpogomiBadgePresentation(badgeTypeId: string): SpogomiBadgePr
     tone: "slate" as const,
   };
   return { label: definition?.label ?? badgeTypeId, ...presentation };
-}
-
-export function isActiveSpogomiAward(award: Pick<SpogomiCollectionAward, "status">): boolean {
-  return award.status === "active";
 }

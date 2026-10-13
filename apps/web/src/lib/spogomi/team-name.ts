@@ -1,6 +1,6 @@
 const MAX_SPOGOMI_TEAM_PUBLIC_NAME_LENGTH = 60;
 
-export class SpogomiTeamNameValidationError extends Error {
+class SpogomiTeamNameValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "SpogomiTeamNameValidationError";
@@ -43,5 +43,3 @@ export function normalizeSpogomiTeamPublicName(value: string): string {
 export function spogomiTeamPublicNameKey(value: string): string {
   return normalizeSpogomiTeamPublicName(value).toLocaleLowerCase("fr-FR");
 }
-
-export const SPOGOMI_TEAM_PUBLIC_NAME_MAX_LENGTH = MAX_SPOGOMI_TEAM_PUBLIC_NAME_LENGTH;

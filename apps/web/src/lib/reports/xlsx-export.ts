@@ -1,6 +1,6 @@
 import { zipSync } from "fflate";
 
-export type XlsxCell = string | number | null;
+type XlsxCell = string | number | null;
 export type XlsxSheet = { name: string; rows: XlsxCell[][] };
 
 function xmlEscape(value: string): string {

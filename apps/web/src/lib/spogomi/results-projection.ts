@@ -5,7 +5,7 @@ import { buildSpogomiRegulation } from "./regulation";
 import { toSpogomiResultItemInput } from "./result-input";
 import type { SpogomiCompetitionResult, SpogomiRegulation } from "./types";
 
-export type SpogomiPublicResultsVisibility = "hidden" | "provisional" | "certified";
+type SpogomiPublicResultsVisibility = "hidden" | "provisional" | "certified";
 
 export type SpogomiResultsSource = {
   event: {
@@ -49,7 +49,7 @@ export type SpogomiResultsSource = {
   actionIsPublished: boolean;
 };
 
-export type SpogomiPublicationSourceSnapshot = {
+type SpogomiPublicationSourceSnapshot = {
   event: {
     id: string;
     regulationVersion: string;
@@ -87,7 +87,7 @@ export type SpogomiPublicationSourceSnapshot = {
   participants: Array<{ id: string; teamId: string | null; registrationStatus: string; attendanceStatus: string }>;
 };
 
-export type SpogomiPublicRankingEntry = {
+type SpogomiPublicRankingEntry = {
   teamNumber: number;
   publicName: string;
   rank: number | null;
@@ -129,7 +129,7 @@ export type SpogomiPublicResults = {
   };
 };
 
-export type SpogomiExportTeam = {
+type SpogomiExportTeam = {
   teamId: string;
   teamNumber: number;
   publicName: string;

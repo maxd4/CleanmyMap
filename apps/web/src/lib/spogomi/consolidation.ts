@@ -1,16 +1,16 @@
 import type { WasteCategorySlug } from "@/lib/waste/types";
 
 export const SPOGOMI_ENVIRONMENTAL_MAPPING_VERSION = "spogomi-cleanmymap-v1";
-export const SPOGOMI_CONSOLIDATION_KEY_PREFIX = "spogomi-environmental";
+const SPOGOMI_CONSOLIDATION_KEY_PREFIX = "spogomi-environmental";
 
-export type SpogomiEnvironmentalSourceField =
+type SpogomiEnvironmentalSourceField =
   | "mass_grams"
   | "object_count"
   | "quantity";
 
-export type SpogomiEnvironmentalTargetUnit = "grams" | "count" | "quantity";
+type SpogomiEnvironmentalTargetUnit = "grams" | "count" | "quantity";
 
-export type SpogomiEnvironmentalMappingStatus = "mapped" | "excluded" | "unmapped";
+type SpogomiEnvironmentalMappingStatus = "mapped" | "excluded" | "unmapped";
 
 export type SpogomiEnvironmentalMapping = {
   categoryRuleId: string;
@@ -41,7 +41,7 @@ export type SpogomiConsolidationSourceItem = {
   teamId: string;
 };
 
-export type SpogomiConsolidationSourceTeam = {
+type SpogomiConsolidationSourceTeam = {
   teamId: string;
   teamNumber: number;
   publicName: string;
@@ -121,7 +121,7 @@ export type SpogomiConsolidationInput = {
   sourceSnapshot: SpogomiConsolidationSourceSnapshot;
 };
 
-export type SpogomiEnvironmentalCategoryTotal = {
+type SpogomiEnvironmentalCategoryTotal = {
   categoryCode: string;
   categoryLabel: string;
   environmentalCategorySlug: WasteCategorySlug | null;
@@ -133,7 +133,7 @@ export type SpogomiEnvironmentalCategoryTotal = {
   isMegots: boolean;
 };
 
-export type SpogomiExcludedMeasure = {
+type SpogomiExcludedMeasure = {
   teamId: string;
   submissionId: string | null;
   categoryCode: string;
@@ -305,7 +305,7 @@ function sourceValue(item: SpogomiConsolidationSourceItem, mapping: SpogomiEnvir
     : null;
 }
 
-export function buildSpogomiConsolidationKey(eventId: string, mappingVersion: string): string {
+function buildSpogomiConsolidationKey(eventId: string, mappingVersion: string): string {
   return `${SPOGOMI_CONSOLIDATION_KEY_PREFIX}:${eventId}:${mappingVersion}`;
 }
 

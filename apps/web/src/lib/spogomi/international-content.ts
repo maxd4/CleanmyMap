@@ -31,7 +31,7 @@ export type SpogomiExternalEvent = {
   cleanMyMapEventId: null;
 };
 
-export const SPOGOMI_EDITORIAL_VERIFIED_AT = "2026-10-12";
+const SPOGOMI_EDITORIAL_VERIFIED_AT = "2026-10-12";
 
 export const SPOGOMI_INTERNATIONAL_SOURCES: SpogomiInternationalSource[] = [
   {

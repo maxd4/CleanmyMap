@@ -1,4 +1,4 @@
-export const SPOGOMI_PROGRESS_THRESHOLDS = [1, 3, 5, 10, 25, 50, 75, 100] as const;
+const SPOGOMI_PROGRESS_THRESHOLDS = [1, 3, 5, 10, 25, 50, 75, 100] as const;
 
 export type SpogomiSpecializedProgress = {
   id: "spogomi_collector_progress" | "spogomi_referee_progress";

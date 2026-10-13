@@ -16,7 +16,7 @@ function addContribution(target, field, timestamp, value) {
   target[field].push({ timestamp, value });
 }
 
-export function reconstructCumulativeSeries(records, sourceKey) {
+function reconstructCumulativeSeries(records, sourceKey) {
   const values = Object.fromEntries(TOKEN_FIELDS.map((field) => [field, NA]));
   const contributions = {};
   const stats = Object.fromEntries(TOKEN_FIELDS.map((field) => [field, emptyCounterStats()]));

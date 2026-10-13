@@ -17,7 +17,7 @@ import type { ChatTopicId } from "@/lib/chat/topics";
 
 export type { ChatTopicId } from "@/lib/chat/topics";
 
-type DiscussionLocale = "fr" | "en";
+export type DiscussionLocale = "fr" | "en";
 
 export type DiscussionGuidance = {
   cardTitle: string;
@@ -46,13 +46,13 @@ export type ChatTopicDefinition = {
   accentClassName: string;
 };
 
-type GuidanceOptions = {
+export type GuidanceOptions = {
   locale: DiscussionLocale;
   territoryLabel?: string | null;
   recipientLabel?: string | null;
 };
 
-const GUIDANCE: Record<
+export const GUIDANCE: Record<
   ChatChannelType,
   Record<
     DiscussionLocale,
@@ -318,7 +318,7 @@ const GUIDANCE: Record<
   },
 };
 
-const CHAT_TOPIC_DEFINITIONS: Record<ChatChannelType, ChatTopicDefinition[]> = {
+export const CHAT_TOPIC_DEFINITIONS: Record<ChatChannelType, ChatTopicDefinition[]> = {
   community: [
     {
       id: "relais_associatif",
@@ -449,83 +449,4 @@ const CHAT_TOPIC_DEFINITIONS: Record<ChatChannelType, ChatTopicDefinition[]> = {
   bug_report: [],
   action: [],
 };
-
-export function getDiscussionTopics(channelType: ChatChannelType): ChatTopicDefinition[] {
-  return CHAT_TOPIC_DEFINITIONS[channelType] ?? [];
-}
-
-export function getDiscussionTopic(
-  channelType: ChatChannelType,
-  topicId: ChatTopicId | null | undefined,
-): ChatTopicDefinition | null {
-  if (!topicId) {
-    return null;
-  }
-
-  return getDiscussionTopics(channelType).find((topic) => topic.id === topicId) ?? null;
-}
-
-export function getDiscussionGuidance(
-  channelType: ChatChannelType,
-  options: GuidanceOptions,
-  topicId?: ChatTopicId | null,
-): DiscussionGuidance {
-  const localeData = GUIDANCE[channelType][options.locale];
-  const topic = getDiscussionTopic(channelType, topicId);
-  const topicLabel = topic
-    ? options.locale === "en"
-      ? topic.labelEn ?? topic.label
-      : topic.label
-    : null;
-  const topicDescription = topic
-    ? options.locale === "en"
-      ? topic.descriptionEn ?? topic.description
-      : topic.description
-    : null;
-  const topicStarterPrompt = topic
-    ? options.locale === "en"
-      ? topic.starterPromptEn ?? topic.starterPrompt
-      : topic.starterPrompt
-    : null;
-  let emptyTitle = localeData.emptyTitle;
-  let emptyDescription = localeData.emptyDescription;
-
-  if (channelType === "dm" && options.recipientLabel) {
-    emptyTitle =
-      options.locale === "fr"
-        ? `Aucun message privé avec ${options.recipientLabel}`
-        : `No private messages with ${options.recipientLabel}`;
-    emptyDescription =
-      options.locale === "fr"
-        ? "Votre conversation démarre ici. Envoyez un premier message pour lancer l'échange."
-        : "Your conversation starts here. Send the first message to begin the exchange.";
-  }
-
-  if (channelType === "territory" && options.territoryLabel) {
-    emptyTitle =
-      options.locale === "fr"
-        ? `Aucun message pour ${options.territoryLabel}`
-        : `No messages for ${options.territoryLabel}`;
-    emptyDescription =
-      options.locale === "fr"
-        ? "Partagez ici les sujets liés à votre zone et aux zones limitrophes."
-        : "Share topics tied to your zone and nearby areas here.";
-  }
-
-  return {
-    cardTitle: localeData.cardTitle,
-    cardSummary: topicDescription ?? localeData.cardSummary,
-    visibilityLabel: localeData.visibilityLabel(options),
-    audienceLabel: localeData.audienceLabel(options),
-    purposeTags: topicLabel ? [topicLabel, ...localeData.purposeTags.filter((tag) => tag !== topicLabel)] : localeData.purposeTags,
-    messagePattern: localeData.messagePattern,
-    emptyTitle,
-    emptyDescription,
-    starterTitle: localeData.starterTitle,
-    starterPrompts: topic
-      ? [topicStarterPrompt ?? topic.starterPrompt, ...localeData.starterPrompts.filter((prompt) => prompt !== topicStarterPrompt)]
-      : localeData.starterPrompts,
-    composerHint: localeData.composerHint,
-    channelGoal: topicLabel ?? localeData.channelGoal,
-  };
-}
+export { getDiscussionGuidance, getDiscussionTopic, getDiscussionTopics } from "./discussion-guidance-selectors";

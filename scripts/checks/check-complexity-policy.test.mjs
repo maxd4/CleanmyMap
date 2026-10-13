@@ -62,6 +62,12 @@ test("function-length targets block new code while legacy ceilings remain intact
   assert.equal(evaluateNewMetric("functionLength", "React/JSX", 151).status, "FAIL");
 });
 
+test("categories without a declared target use the legacy ceiling instead of treating null as zero", () => {
+  assert.equal(getComplexityTarget("complexity", "tests"), null);
+  assert.equal(evaluateBaselinedMetric("complexity", "tests", 1, 1, true).status, "PASS");
+  assert.equal(evaluateBaselinedMetric("functionLength", "tests", 4, 4, true).status, "PASS");
+});
+
 function measuredMetric(value, functionIdentity = "named:fixture#1") {
   return {
     metric: "complexity",

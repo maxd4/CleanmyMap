@@ -9,7 +9,7 @@ import type { SpogomiRecognitionKind } from "./recognition";
 
 type Row = Record<string, unknown>;
 
-export const SPOGOMI_VOLUNTEER_MISSION_KINDS: readonly SpogomiRecognitionKind[] = [
+const SPOGOMI_VOLUNTEER_MISSION_KINDS: readonly SpogomiRecognitionKind[] = [
   "collector", "referee", "organizer", "finish_control", "field_safety", "weighing_sorting", "logistics_support",
 ];
 
@@ -79,22 +79,6 @@ function localDate(startsAt: string, timezone: string): string {
   } catch {
     return startsAt.slice(0, 10);
   }
-}
-
-function missionLabel(kind: SpogomiRecognitionKind): string {
-  return {
-    collector: "Collecte terrain",
-    referee: "Arbitrage",
-    organizer: "Organisation",
-    finish_control: "Contrôle d’arrivée",
-    field_safety: "Sécurité terrain",
-    weighing_sorting: "Pesée et tri",
-    logistics_support: "Soutien logistique",
-  }[kind];
-}
-
-export function getSpogomiVolunteerMissionLabel(kind: SpogomiRecognitionKind): string {
-  return missionLabel(kind);
 }
 
 async function loadVolunteerEvents(supabase: SupabaseClient, userId: string, eventId?: string): Promise<SpogomiVolunteerEvent[]> {

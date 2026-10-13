@@ -43,14 +43,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "c630718a07ec151f",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "La répétition conserve la lisibilité des contrôles d'accès à deux surfaces API différentes ; une abstraction commune réduirait l'auditabilité des contrats AuthN/AuthZ propres à chaque ressource.",
-      "evidence": "apps/web/src/app/api/actions/[actionId]/audit/route.ts:55-62 et apps/web/src/app/api/spots/route.ts:78-87 ; les frontières et ressources protégées restent distinctes.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "65e4850ea310062a",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les gardes d'accès restent autonomes aux frontières d'administration et de publication ; leur répétition explicite facilite la revue des politiques AuthN/AuthZ sans moteur générique opaque.",
@@ -119,14 +111,6 @@
       "classification": "NO_ACTION_NOISE",
       "reason": "La répétition est limitée à la forme de types de lignes de signaux dans deux contrats distincts ; extraire ces propriétés ne créerait pas un owner métier et mélangerait les entrées brutes avec le modèle calculé.",
       "evidence": "apps/web/src/lib/environmental-impact-estimator/project-signals-scope.ts:33-44 et apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts:149-160 ; pair CURRENT relu ; la description de séparation existante est conservée.",
-      "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
-    },
-    {
-      "scope": "runtime",
-      "fingerprint": "78d81f911b5daf5c",
-      "classification": "NO_ACTION_NOISE",
-      "reason": "La persistance environnementale et la persistance public-surface partagent une forme Supabase/fichier, mais leurs tables, payloads, normalisations et contrats de lecture ne sont pas identiques ; aucune migration sûre vers public-surface-snapshots.ts n'est démontrée.",
-      "evidence": "apps/web/src/lib/environmental-impact-estimator/snapshot-store.ts:127-140 et apps/web/src/lib/public-surface-snapshots.ts:141-155 ; pair CURRENT relu ; la description de séparation existante est conservée.",
       "reviewedRef": "b7c37c2bf00a00f5dc3e454b453ce0db7edf73a2"
     },
     {

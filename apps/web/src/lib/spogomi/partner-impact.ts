@@ -13,7 +13,7 @@ export type SpogomiPublicOrganizer = {
   officialCleanMyMapPartnership: false;
 };
 
-export type SpogomiPartnerEnvironmentalResult = {
+type SpogomiPartnerEnvironmentalResult = {
   status: "available" | "unavailable";
   totalWasteMassGrams: number | null;
   cigaretteButtsMassGrams: number | null;
@@ -39,7 +39,7 @@ export type SpogomiPartnerEventInput = {
   certifiedMissions: Array<{ id: string; kind: SpogomiRecognitionKind }>;
 };
 
-export type SpogomiPartnerEventSummary = Pick<
+type SpogomiPartnerEventSummary = Pick<
   SpogomiPartnerEventInput,
   "eventId" | "eventSlug" | "name" | "locationLabel" | "mode" | "state" | "startsAt" | "actionId" | "organizer" | "environmental"
 >;

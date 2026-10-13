@@ -201,6 +201,7 @@ export function evaluateBaselinedMetric(
     functionEndLine,
   });
   const targetApplies = changed
+    && target !== null
     && target !== undefined
     && value > target
     && (ceiling <= target || substantiallyChanged);

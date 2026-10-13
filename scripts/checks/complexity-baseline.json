@@ -654,15 +654,6 @@
     },
     {
       "metric": "complexity",
-      "path": "apps/web/src/components/chat/discussion-guidance.ts",
-      "line": 454,
-      "category": "React/JSX",
-      "ceiling": 23,
-      "status": "LEGACY",
-      "functionIdentity": "named:getDiscussionGuidance#1"
-    },
-    {
-      "metric": "complexity",
       "path": "apps/web/src/components/chat/dm-inbox.tsx",
       "line": 56,
       "category": "React/JSX",

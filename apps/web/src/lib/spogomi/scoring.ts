@@ -2,9 +2,7 @@ import { isRegulationReadyForCertification, validateResultItem } from "./validat
 import type {
   SpogomiCompetitionInput,
   SpogomiCompetitionResult,
-  SpogomiPenalty,
   SpogomiPhysicalTotals,
-  SpogomiRegulation,
 } from "./types";
 
 function round(value: number, decimals: number, mode: "half_up" | "down" | "up"): number {
@@ -13,12 +11,10 @@ function round(value: number, decimals: number, mode: "half_up" | "down" | "up")
   if (mode === "up") return Math.ceil(value * factor) / factor;
   return Math.round((value + Number.EPSILON) * factor) / factor;
 }
-
 function sumNullable(values: Array<number | null | undefined>): number | null {
   const present = values.filter((value): value is number => value !== null && value !== undefined);
   return present.length ? present.reduce((total, value) => total + value, 0) : null;
 }
-
 export function calculateSpogomiCompetitionResult(input: SpogomiCompetitionInput): SpogomiCompetitionResult {
   const { regulation } = input;
   const buttCategoryCodes = new Set(
@@ -101,8 +97,4 @@ export function validateCompetitionItems(input: SpogomiCompetitionInput): { ok: 
     return { ok: false, reason: "present_participants_must_be_a_non_negative_integer" };
   }
   return { ok: true };
-}
-
-export function listConfiguredPenalties(regulation: SpogomiRegulation): SpogomiPenalty[] {
-  return regulation.penalties ?? [];
 }

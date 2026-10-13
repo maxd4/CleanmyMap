@@ -9,7 +9,7 @@ import { readParticipantRecord } from "@/lib/actions/participation/group-partici
 
 const IDENTITY_CODE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-export type SpogomiIdentityLinkStatus = "linked" | "already_linked";
+type SpogomiIdentityLinkStatus = "linked" | "already_linked";
 export type SpogomiIdentityParticipation = {
   status: "not_requested" | "pending" | "confirmed" | "cancelled" | "unavailable";
   store: "action_registrations" | "action_participants" | null;
@@ -22,7 +22,7 @@ export type SpogomiIdentityLinkResult = {
   attendanceStatus: "unknown" | "present" | "absent";
 };
 
-export type SpogomiIdentityState =
+type SpogomiIdentityState =
   | "identity_unlinked"
   | "identity_verified"
   | "participation_unavailable"

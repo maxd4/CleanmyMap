@@ -131,7 +131,7 @@ async function loadCertifiedMissions(
   return grouped;
 }
 
-export async function loadSpogomiPartnerImpact(params: {
+async function loadSpogomiPartnerImpact(params: {
   organizerId: string;
   supabase?: SupabaseClient;
 }): Promise<SpogomiPartnerImpact> {

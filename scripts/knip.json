@@ -14,7 +14,9 @@
         "scripts/cleanup/run-backup.js",
         "scripts/cleanup/backup.ts",
         "scripts/media/resize_homepage.js",
-        "documentation/pages_site/screen/capture-canonical-pages.mjs"
+        "documentation/pages_site/screen/capture-canonical-pages.mjs",
+        "apps/web/scripts/backfill-route-style.mjs",
+        "apps/web/scripts/smoke-tests.mjs"
       ],
       "project": [
         "playwright.config.ts",
@@ -25,6 +27,12 @@
       "ignore": ["scripts/security/semgrep/fixtures/**"],
       "ignoreBinaries": ["pwsh"],
       "ignoreDependencies": ["next", "image-size", "jscpd", "stream-json"]
+    },
+    "apps/web": {
+      "ignoreIssues": {
+        "src/lib/learning/quiz/quiz-quality-audit.ts": ["exports"],
+        "src/lib/learning/quiz/quiz-source-audit.ts": ["exports"]
+      }
     },
     "apps/mobile": {
       "entry": [

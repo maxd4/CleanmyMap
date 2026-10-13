@@ -443,23 +443,6 @@ export async function getPublishedPartnerAnnuaireEntryById(
   return store.records.find((record) => record.id === entryId) ?? null;
 }
 
-export async function getAcceptedPartnerAnnuaireEntryByOrganizerDirectoryId(
-  organizerDirectoryId: string,
-): Promise<PublishedPartnerAnnuaireEntry | null> {
-  assertPersistenceAvailable("published_partner_annuaire_entries");
-  const normalizedId = organizerDirectoryId.trim();
-  if (!normalizedId) return null;
-  const store = await readStore();
-  return (
-    store.records.find(
-      (record) =>
-        record.publicationStatus === "accepted" &&
-        record.verificationStatus === "verifie" &&
-        record.organizerDirectoryId === normalizedId,
-    ) ?? null
-  );
-}
-
 export async function updatePublishedPartnerAnnuaireEntryPublicationStatus(params: {
   entryId: string;
   publicationStatus: "accepted" | "rejected";

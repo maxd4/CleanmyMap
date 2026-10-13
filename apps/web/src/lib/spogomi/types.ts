@@ -1,68 +1,33 @@
-import type { ActionRouteTopology } from "@/lib/actions/types";
+export type SpogomiEventMode = "casual" | "world_cup";
+export type SpogomiEventState =
+  | "draft"
+  | "registration_open"
+  | "composition_locked"
+  | "in_progress"
+  | "judging"
+  | "certified"
+  | "archived"
+  | "cancelled";
+type SpogomiRegulationStatus = "incomplete" | "complete";
+type SpogomiTeamCompositionState = "draft" | "locked" | "verified";
+type SpogomiParticipantRegistrationStatus = "registered" | "withdrawn";
+type SpogomiAttendanceStatus = "unknown" | "present" | "absent";
+type SpogomiAccountLinkStatus = "unlinked" | "pending" | "verified" | "rejected";
+export type SpogomiSubmissionStatus =
+  | "draft"
+  | "submitted"
+  | "provisional"
+  | "certified"
+  | "rejected"
+  | "superseded";
+type SpogomiMeasurementKind = "mass" | "count" | "volume";
 
-export const SPOGOMI_EVENT_MODES = ["casual", "world_cup"] as const;
-export type SpogomiEventMode = (typeof SPOGOMI_EVENT_MODES)[number];
-
-export const SPOGOMI_EVENT_STATES = [
-  "draft",
-  "registration_open",
-  "composition_locked",
-  "in_progress",
-  "judging",
-  "certified",
-  "archived",
-  "cancelled",
-] as const;
-export type SpogomiEventState = (typeof SPOGOMI_EVENT_STATES)[number];
-
-export const SPOGOMI_REGULATION_STATUSES = ["incomplete", "complete"] as const;
-export type SpogomiRegulationStatus = (typeof SPOGOMI_REGULATION_STATUSES)[number];
-
-export const SPOGOMI_TEAM_COMPOSITION_STATES = [
-  "draft",
-  "locked",
-  "verified",
-] as const;
-export type SpogomiTeamCompositionState =
-  (typeof SPOGOMI_TEAM_COMPOSITION_STATES)[number];
-
-export const SPOGOMI_PARTICIPANT_REGISTRATION_STATUSES = [
-  "registered",
-  "withdrawn",
-] as const;
-export type SpogomiParticipantRegistrationStatus =
-  (typeof SPOGOMI_PARTICIPANT_REGISTRATION_STATUSES)[number];
-
-export const SPOGOMI_ATTENDANCE_STATUSES = ["unknown", "present", "absent"] as const;
-export type SpogomiAttendanceStatus = (typeof SPOGOMI_ATTENDANCE_STATUSES)[number];
-
-export const SPOGOMI_ACCOUNT_LINK_STATUSES = [
-  "unlinked",
-  "pending",
-  "verified",
-  "rejected",
-] as const;
-export type SpogomiAccountLinkStatus = (typeof SPOGOMI_ACCOUNT_LINK_STATUSES)[number];
-
-export const SPOGOMI_SUBMISSION_STATUSES = [
-  "draft",
-  "submitted",
-  "provisional",
-  "certified",
-  "rejected",
-  "superseded",
-] as const;
-export type SpogomiSubmissionStatus = (typeof SPOGOMI_SUBMISSION_STATUSES)[number];
-
-export const SPOGOMI_MEASUREMENT_KINDS = ["mass", "count", "volume"] as const;
-export type SpogomiMeasurementKind = (typeof SPOGOMI_MEASUREMENT_KINDS)[number];
-
-export type SpogomiCasualTeamSizeConfig = {
+type SpogomiCasualTeamSizeConfig = {
   minMembers: number | null;
   maxMembers: number | null;
 };
 
-export type SpogomiTeamSizeConfig = {
+type SpogomiTeamSizeConfig = {
   casual: SpogomiCasualTeamSizeConfig;
 };
 
@@ -77,23 +42,23 @@ export type SpogomiCategoryRule = {
   isComplete: boolean;
 };
 
-export type SpogomiRoundingRule = {
+type SpogomiRoundingRule = {
   decimals: number;
   mode: "half_up" | "down" | "up";
 };
 
-export type SpogomiPenalty = {
+type SpogomiPenalty = {
   code: string;
   label: string;
   points: number;
 };
 
-export type SpogomiEligibilityRule = {
+type SpogomiEligibilityRule = {
   minimumPresentParticipants: number | null;
   requiresAllCategories: boolean;
 };
 
-export type SpogomiTiebreaker = "sporting_score" | "mass_grams" | "counted_objects";
+type SpogomiTiebreaker = "sporting_score" | "mass_grams" | "counted_objects";
 
 export type SpogomiRegulation = {
   version: string;
@@ -151,8 +116,7 @@ export type SpogomiParticipantState = {
   clerkId: string | null;
 };
 
-export const SPOGOMI_IMPORT_FORMATS = ["csv", "tsv", "xlsx", "xls", "ods"] as const;
-export type SpogomiImportFormat = (typeof SPOGOMI_IMPORT_FORMATS)[number];
+export type SpogomiImportFormat = "csv" | "tsv" | "xlsx" | "xls" | "ods";
 
 export type SpogomiRosterMappingConfidence = "exact" | "high" | "suggested" | "ambiguous" | "missing";
 
@@ -174,7 +138,7 @@ export type SpogomiRosterSheetCandidate = {
   rowCount: number;
 };
 
-export type SpogomiRosterImportSummary = {
+type SpogomiRosterImportSummary = {
   created: number;
   unchanged: number;
   changed: number;
@@ -265,7 +229,7 @@ export type SpogomiRosterPreview = {
   importKey: string;
 };
 
-export type SpogomiTeamDraft = {
+type SpogomiTeamDraft = {
   draftKey: string;
   teamNumber: number;
   participantIds: string[];
@@ -278,13 +242,4 @@ export type SpogomiTeamFormation = {
   unassignedParticipantIds: string[];
   reasons: Record<string, "group_exceeds_team_size" | "team_size_required" | "incomplete_team" | "casual_bounds_no_fit">;
   explanation: string[];
-};
-
-export type SpogomiOfficialRoute = {
-  source: "official_reference";
-  fileName: string;
-  pointCount: number;
-  referenceDistanceKm: number;
-  inferredTopology: ActionRouteTopology;
-  coordinates: [number, number][];
 };

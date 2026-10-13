@@ -12,13 +12,13 @@ import type { SpogomiPublicGalleryPhoto } from "./photo-gallery";
 
 export type SpogomiPublicLifecycle = "upcoming" | "in_progress" | "finished";
 
-export type SpogomiPublicTeam = {
+type SpogomiPublicTeam = {
   teamNumber: number;
   publicName: string;
   compositionState: string;
 };
 
-export type SpogomiPublicRoute = {
+type SpogomiPublicRoute = {
   source: "official_reference";
   fileName: string;
   pointCount: number;
