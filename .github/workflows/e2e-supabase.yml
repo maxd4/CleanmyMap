@@ -85,11 +85,20 @@ jobs:
 
       - name: Restart ephemeral Supabase API after reset
         run: |
-          npx supabase stop --workdir apps/web/supabase --no-backup
-          npx supabase start --workdir apps/web/supabase --yes > artifacts/ci/supabase-restart.log 2>&1
+          rest_container="$(docker ps --format '{{.Names}}' | grep '^supabase_rest_' | head -n 1 || true)"
+          if [ -z "$rest_container" ]; then
+            echo "No local ephemeral Supabase PostgREST container was found."
+            exit 1
+          fi
+          docker restart "$rest_container"
 
       - name: Reload ephemeral PostgREST schema
         run: |
+          rest_container="$(docker ps --format '{{.Names}}' | grep '^supabase_rest_' | head -n 1 || true)"
+          if [ -z "$rest_container" ]; then
+            echo "No local ephemeral Supabase PostgREST container was found."
+            exit 1
+          fi
           for attempt in $(seq 1 30); do
             http_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1:54321/rest/v1/ || true)"
             if [ "$http_status" = "200" ] || [ "$http_status" = "401" ]; then
@@ -105,6 +114,7 @@ jobs:
             npx supabase db query --workdir apps/web/supabase --local "notify pgrst, 'reload schema';"
             sleep 2
           done
+          docker kill --signal=USR1 "$rest_container"
 
       - name: Run SPOGOMI business tests
         run: |
@@ -168,4 +178,4 @@ jobs:
       - name: Remove ephemeral Supabase logs
         if: always()
         run: |
-          rm -f artifacts/ci/supabase-start.log artifacts/ci/supabase-reset.log artifacts/ci/supabase-restart.log artifacts/ci/supabase-stop.log
+          rm -f artifacts/ci/supabase-start.log artifacts/ci/supabase-reset.log artifacts/ci/supabase-stop.log
