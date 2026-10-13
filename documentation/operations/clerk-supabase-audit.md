@@ -37,6 +37,23 @@ exact `CLERK_IMU_OWNER_USER_ID`. Une valeur `activeRole` ou `activeProfile`
 absente, invalide ou non commutable retombe sur un rôle compatible et ne peut
 jamais augmenter `GRANTED_ROLE`.
 
+## Routage des `bug_report`
+
+Le routage des signalements suit une règle distincte de l'attribution des
+rôles : lorsque `CLERK_IMU_OWNER_USER_ID` est configuré et non vide après
+normalisation, le serveur adresse le message à cet identifiant exact et ne
+consulte pas une allowlist ou un profil Supabase pour le remplacer. La variable
+reste serveur uniquement ; elle ne confère aucun rôle à elle seule.
+
+Si cette configuration est absente, le serveur utilise en secours le profil
+Supabase `role_label=admin` le plus récemment mis à jour. Ce chemin est un
+routage de continuité, pas une source d'attribution `admin` ou `max` ; il ne
+doit jamais être utilisé pour décider d'une permission. Si aucun propriétaire
+configuré ni administrateur projeté n'est disponible, le routage échoue fermé
+plutôt que d'inventer un destinataire pour un expéditeur ordinaire. Les tests
+doivent conserver la preuve de ces trois branches, y compris le traitement des
+espaces et valeurs vides.
+
 ## Mutation de profil actif
 
 L'interface doit appeler exclusivement :
