@@ -6,6 +6,7 @@ const state = vi.hoisted(() => ({
   foregroundPermission: 'granted' as string,
   backgroundPermission: 'granted' as string,
   taskRegistered: false,
+  currentUserId: 'user_123' as string | null,
   sequence: [] as string[],
 }))
 
@@ -31,6 +32,7 @@ vi.mock('expo-task-manager', () => ({
 
 vi.mock('../lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => state.client),
+  getClerkUserId: vi.fn(async () => state.currentUserId),
 }))
 
 vi.mock('../lib/gps-permission-rationale', () => ({
@@ -129,6 +131,7 @@ describe('mobile tracking service', () => {
     state.foregroundPermission = 'granted'
     state.backgroundPermission = 'granted'
     state.taskRegistered = false
+    state.currentUserId = 'user_123'
     state.sequence.length = 0
     vi.clearAllMocks()
   })
@@ -199,7 +202,7 @@ describe('mobile tracking service', () => {
     const insertError = new Error('offline')
     state.client = {
       from: vi.fn(() => ({
-        insert: vi.fn(async () => ({ error: insertError })),
+        upsert: vi.fn(async () => ({ error: insertError })),
       })),
     }
 
@@ -215,6 +218,7 @@ describe('mobile tracking service', () => {
       longitude: 2.3522,
       accuracy_m: null,
       altitude_m: null,
+      client_point_id: expect.any(String),
       recorded_at: expect.any(String),
     })
   })
@@ -234,8 +238,25 @@ describe('mobile tracking service', () => {
       longitude: 2.3522,
       accuracy_m: 5,
       altitude_m: 35,
+      client_point_id: expect.any(String),
       recorded_at: expect.any(String),
     })
+  })
+
+  it('refuses a GPS write after the active Clerk identity changes', async () => {
+    state.currentUserId = 'user_other'
+    const upsert = vi.fn(async () => ({ error: null }))
+    state.client = { from: vi.fn(() => ({ upsert })) }
+
+    await expect(saveLocationPoint('mission-1', {
+      latitude: 48.8566,
+      longitude: 2.3522,
+    })).resolves.toEqual({
+      ok: false,
+      error: `${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.`,
+    })
+    expect(upsert).not.toHaveBeenCalled()
+    expect(bufferPoint).not.toHaveBeenCalled()
   })
 
   it('flushes the GPS buffer before completing and never writes derived metrics', async () => {

@@ -22,6 +22,7 @@ import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
 import { getAuthenticatedSupabaseClient, getClerkUserId } from '../lib/supabase';
 import { getStoredActiveMissionContext, bufferPoint, flushBuffer } from '../lib/storage';
+import { createGpsPointId } from '../lib/gps-point-identity';
 import { GPS_TASK_NAME } from '../lib/tracking-service';
 import type { MissionLocationInsert } from '../types/mission';
 
@@ -30,6 +31,7 @@ function toMissionLocationInsert(
   location: Location.LocationObject,
 ): MissionLocationInsert {
   return {
+    client_point_id: createGpsPointId(),
     mission_id: missionId,
     latitude: location.coords.latitude,
     longitude: location.coords.longitude,
@@ -71,13 +73,27 @@ TaskManager.defineTask(GPS_TASK_NAME, async ({ data, error }) => {
     }
     return;
   }
+  const verifiedUserId = await getClerkUserId();
+  if (!verifiedUserId) {
+    for (const loc of locations) {
+      await bufferPoint(ownerId, toMissionLocationInsert(missionId, loc));
+    }
+    return;
+  }
+  if (verifiedUserId !== ownerId) {
+    console.warn('[GPS Task] Identité Clerk devenue obsolète avant émission — points ignorés.');
+    return;
+  }
 
   for (const loc of locations) {
     const point = toMissionLocationInsert(missionId, loc);
 
     let insertError: Error | null = null;
     try {
-      const result = await client.from('gps_points').insert(point);
+      const result = await client.from('gps_points').upsert(point, {
+        onConflict: 'mission_id,client_point_id',
+        ignoreDuplicates: true,
+      });
       insertError = result.error;
     } catch (error) {
       insertError = error instanceof Error ? error : new Error('Session Clerk indisponible.');

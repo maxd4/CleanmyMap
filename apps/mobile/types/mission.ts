@@ -19,6 +19,8 @@ export interface Mission {
 
 export interface MissionLocation {
   id?: number
+  /** Stable client identity; null is retained for historical server rows. */
+  client_point_id?: string | null
   mission_id: string
   latitude: number
   longitude: number
@@ -27,7 +29,9 @@ export interface MissionLocation {
   recorded_at: string
 }
 
-export type MissionLocationInsert = Omit<MissionLocation, 'id'>
+export type MissionLocationInsert = Omit<MissionLocation, 'id' | 'client_point_id'> & {
+  client_point_id: string
+}
 
 export interface ForegroundTrackPoint {
   latitude: number

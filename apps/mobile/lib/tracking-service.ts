@@ -5,7 +5,7 @@
 import Constants from 'expo-constants';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { getAuthenticatedSupabaseClient } from './supabase';
+import { getAuthenticatedSupabaseClient, getClerkUserId } from './supabase';
 import { createLinkedMission, reconcileLinkedMission } from './linked-mission-service';
 import {
   getStoredMissionId,
@@ -18,9 +18,11 @@ import {
   flushBuffer,
 } from './storage';
 import { showGpsPermissionRationale } from './gps-permission-rationale';
+import { createGpsPointId } from './gps-point-identity';
 import type {
   Mission,
   MissionLocation,
+  MissionLocationInsert,
   MissionFinalizationStage,
   ServiceResult,
 } from '../types/mission';
@@ -169,8 +171,14 @@ async function executeMissionQuery(
 }
 
 export async function startTracking(missionId: string, ownerId: string): Promise<ServiceResult<Mission>> {
+  if (await getClerkUserId() !== ownerId.trim()) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+  if (await getClerkUserId() !== ownerId.trim()) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
@@ -247,6 +255,9 @@ export async function createMission(
   if (!normalizedVolunteerId) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
+  if (await getClerkUserId() !== normalizedVolunteerId) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
 
   if (!normalizedLabel) {
     return { ok: false, error: 'Libellé de mission requis.' };
@@ -258,6 +269,9 @@ export async function createMission(
 
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+  if (await getClerkUserId() !== normalizedVolunteerId) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
@@ -276,9 +290,12 @@ export async function stopTracking(
   onStageChange?: (stage: MissionFinalizationStage) => void,
   ownerId?: string,
 ): Promise<ServiceResult<Mission>> {
-  const client = await getAuthenticatedSupabaseClient();
-  if (!client) {
-    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  const resolvedOwnerId = ownerId?.trim() || await getStoredMissionOwnerId(missionId);
+  if (!resolvedOwnerId) {
+    return { ok: false, error: `${CLERK_SESSION_REQUIRED_ERROR} Aucun propriétaire local vérifiable.` };
+  }
+  if (await getClerkUserId() !== resolvedOwnerId) {
+    return { ok: false, error: `${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.` };
   }
 
   try {
@@ -295,11 +312,9 @@ export async function stopTracking(
     };
   }
 
-  const resolvedOwnerId = ownerId?.trim() || await getStoredMissionOwnerId(missionId);
-  if (!resolvedOwnerId) {
-    const resumeResult = await restartBackgroundTracking();
-    const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
-    return { ok: false, error: `${CLERK_SESSION_REQUIRED_ERROR} Aucun propriétaire local vérifiable.${resumeSuffix}` };
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
   onStageChange?.('synchronizing');
@@ -308,6 +323,11 @@ export async function stopTracking(
     const resumeResult = await restartBackgroundTracking();
     const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
     return { ok: false, error: `${flushResult.error}.${resumeSuffix}` };
+  }
+  if (await getClerkUserId() !== resolvedOwnerId) {
+    const resumeResult = await restartBackgroundTracking();
+    const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
+    return { ok: false, error: `${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.${resumeSuffix}` };
   }
 
   onStageChange?.('finalizing');
@@ -333,9 +353,9 @@ export async function stopTracking(
 
   if (missionResult.data.action_id) {
     await enqueuePendingLinkedMissionReconciliation(resolvedOwnerId, missionResult.data.id);
-    const handoff = await reconcileLinkedMission(missionResult.data.id);
+    const handoff = await reconcileLinkedMission(missionResult.data.id, resolvedOwnerId);
     if (handoff.ok || handoff.terminal) {
-    await removePendingLinkedMissionReconciliation(resolvedOwnerId, missionResult.data.id);
+      await removePendingLinkedMissionReconciliation(resolvedOwnerId, missionResult.data.id);
     } else {
       console.warn('[GPS] Mission finalisée; réconciliation gamification différée.', handoff.error);
     }
@@ -350,7 +370,8 @@ export async function saveLocationPoint(
   recordedAt?: Date,
   ownerId?: string,
 ): Promise<ServiceResult> {
-  const point: MissionLocation = {
+  const point: MissionLocationInsert = {
+    client_point_id: createGpsPointId(),
     mission_id: missionId,
     latitude: location.latitude,
     longitude: location.longitude,
@@ -359,19 +380,30 @@ export async function saveLocationPoint(
     recorded_at: (recordedAt ?? new Date()).toISOString(),
   };
 
-  const client = await getAuthenticatedSupabaseClient();
   const resolvedOwnerId = ownerId?.trim() || await getStoredMissionOwnerId(missionId);
   if (!resolvedOwnerId) {
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
+  const currentUserId = await getClerkUserId();
+  if (currentUserId && currentUserId !== resolvedOwnerId) {
+    return { ok: false, error: `${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.` };
+  }
+  const client = await getAuthenticatedSupabaseClient();
   if (!client) {
+    await bufferPoint(resolvedOwnerId, point);
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+  if (currentUserId !== resolvedOwnerId) {
     await bufferPoint(resolvedOwnerId, point);
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
 
   let error: Error | null = null;
   try {
-    error = (await client.from('gps_points').insert(point)).error;
+    error = (await client.from('gps_points').upsert(point, {
+      onConflict: 'mission_id,client_point_id',
+      ignoreDuplicates: true,
+    })).error;
   } catch (requestError) {
     error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
   }
@@ -410,7 +442,7 @@ export async function getMissionTrack(missionId: string): Promise<ServiceResult<
   try {
     const result = await client
       .from('gps_points')
-      .select('id, mission_id, latitude, longitude, accuracy_m, altitude_m, recorded_at')
+      .select('id, client_point_id, mission_id, latitude, longitude, accuracy_m, altitude_m, recorded_at')
       .eq('mission_id', missionId)
       .order('recorded_at', { ascending: true });
 

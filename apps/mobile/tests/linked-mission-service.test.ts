@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const getToken = vi.hoisted(() => vi.fn())
+const getUserId = vi.hoisted(() => vi.fn())
 const storage = vi.hoisted(() => ({ pending: [] as string[] }))
-vi.mock('../lib/supabase', () => ({ getClerkSupabaseAccessToken: getToken }))
+vi.mock('../lib/supabase', () => ({ getClerkSupabaseAccessToken: getToken, getClerkUserId: getUserId }))
 vi.mock('../lib/storage', () => ({
   getPendingLinkedMissionReconciliationIds: vi.fn(async () => storage.pending),
   removePendingLinkedMissionReconciliation: vi.fn(async (_ownerId: string, id: string) => {
@@ -23,6 +24,7 @@ describe('linked mission gamification handoff', () => {
   it('uses the authenticated retryable server handoff without carrying GPS data', async () => {
     vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test/')
     getToken.mockResolvedValue('clerk-bearer')
+    getUserId.mockResolvedValue('user_123')
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ missionId: 'mission-1', actionId: 'action-1' }), { status: 200 }),
     )
@@ -45,6 +47,7 @@ describe('linked mission gamification handoff', () => {
   it('replays several pending missions once and removes successful handoffs', async () => {
     vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
     getToken.mockResolvedValue('clerk-bearer')
+    getUserId.mockResolvedValue('user_123')
     storage.pending = ['mission-1', 'mission-2', 'mission-3']
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ missionId: 'mission-1', actionId: 'action-1' }), { status: 200 }))
@@ -62,6 +65,7 @@ describe('linked mission gamification handoff', () => {
   it('retains a retryable failure for the next meaningful resume', async () => {
     vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
     getToken.mockResolvedValue('clerk-bearer')
+    getUserId.mockResolvedValue('user_123')
     storage.pending = ['mission-1']
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 503 })))
 
@@ -69,5 +73,43 @@ describe('linked mission gamification handoff', () => {
     await reconcilePendingLinkedMissions('user_123')
 
     expect(storage.pending).toEqual(['mission-1'])
+  })
+
+  it('coalesces concurrent replays for the same owner', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
+    getToken.mockResolvedValue('clerk-bearer')
+    getUserId.mockResolvedValue('user_123')
+    storage.pending = ['mission-1']
+    let release!: () => void
+    const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
+      release = () => resolve(new Response(JSON.stringify({ missionId: 'mission-1', actionId: 'action-1' }), { status: 200 }))
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { reconcilePendingLinkedMissions } = await import('../lib/linked-mission-service')
+    const first = reconcilePendingLinkedMissions('user_123')
+    const second = reconcilePendingLinkedMissions('user_123')
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce())
+    release()
+    await Promise.all([first, second])
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(storage.pending).toEqual([])
+  })
+
+  it('refuses a replay explicitly owned by an obsolete Clerk identity', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
+    getToken.mockResolvedValue('clerk-bearer')
+    getUserId.mockResolvedValue('user_b')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { reconcileLinkedMission } = await import('../lib/linked-mission-service')
+    await expect(reconcileLinkedMission('mission-1', 'user_a')).resolves.toEqual({
+      ok: false,
+      error: 'Identité Clerk obsolète : réconciliation interrompue.',
+      terminal: false,
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

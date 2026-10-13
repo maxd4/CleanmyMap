@@ -120,7 +120,7 @@ la seule inscription.
 | `missions` | `action_id` | `uuid` nullable, FK | Relation serveur optionnelle vers l'action ; une mission autonome reste à `NULL` et plusieurs observations peuvent être arbitrées par le serveur |
 | `missions` | `status`, `started_at`, `ended_at` | états et timestamps | Seules ces colonnes sont directement modifiables par le mobile |
 | `missions` | `distance_m`, `duration_s` | `integer` | Métriques dérivées finalisées par le trigger serveur |
-| `gps_points` | `mission_id`, coordonnées et timestamps | schéma GPS | Accès autorisé seulement pour une mission appartenant au `sub` Clerk |
+| `gps_points` | `mission_id`, `client_point_id`, coordonnées et timestamps | schéma GPS | Accès autorisé seulement pour une mission appartenant au `sub` Clerk ; `client_point_id` est stable côté mobile et unique par mission lorsqu'il est présent |
 
 Les policies courantes ciblent le rôle `authenticated` et rapprochent le
 `sub` du JWT Clerk de `missions.volunteer_id`. Les policies de `gps_points`
@@ -164,6 +164,15 @@ publique ne lit jamais ces tables : elle reçoit seulement la géométrie
 `gps_tracking` via le contrat normal de l'action. Ici, le tracking GPS est une
 observation terrain ; une reconstruction réseau reste une hypothèse.
 
+Chaque nouveau point mobile reçoit un `client_point_id` avant toute tentative
+d'insertion. Cette identité accompagne le point dans l'insertion directe, le
+buffer SecureStore/AsyncStorage et les rejeux après redémarrage. La contrainte
+`(mission_id, client_point_id)` est nullable seulement pour préserver les lignes
+historiques ; les rejeux utilisent un upsert idempotent et ne modifient jamais
+les métriques dérivées. Les ajouts et suppressions des files de réconciliation
+sont sérialisés par propriétaire Clerk. Une session devenue différente de la
+propriété persistée ne lit ni ne synchronise le namespace de l'ancien compte.
+
 L'identité Clerk, les RLS missions/GPS, la finalisation des métriques et le
 chargement Clerk headless avec le `tokenCache` SecureStore sont finalisés et
 restent invariants pendant le développement actif. Au retour au premier plan,
@@ -175,7 +184,9 @@ contributions multi-traces, de projection `MultiLineString`, de contribution
 attribuable/idempotente et de progression par action est `CURRENT`. Le handoff
 serveur de réconciliation après finalisation est idempotent ; son échec ne
 retire jamais une contribution GPS valide et peut être rejoué depuis les faits
-canoniques.
+canoniques. Le suivi des réconciliations est owner-scoped : une reprise
+concurrente du même propriétaire est coalescée, mais elle ne peut pas être
+exécutée sous une identité Clerk obsolète.
 Les sujets encore ouverts et non prêts pour la production sont le background
 headless et la validation opérationnelle de l'application mobile. `mission_actions`
 et la photo de mission sont hors V1 et relèvent d'une évolution future. Les

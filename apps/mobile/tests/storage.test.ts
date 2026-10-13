@@ -3,6 +3,7 @@ import { storageTestState as state } from './support/storage-test-setup'
 
 vi.mock('../lib/supabase', () => ({
   getAuthenticatedSupabaseClient: vi.fn(async () => state.client),
+  getClerkUserId: vi.fn(async () => state.currentUserId),
 }))
 
 import {
@@ -20,6 +21,7 @@ import {
 } from '../lib/storage'
 
 const point = {
+  client_point_id: 'point-1',
   mission_id: 'mission-1',
   latitude: 48.8566,
   longitude: 2.3522,
@@ -31,6 +33,7 @@ const ownerId = 'user_123'
 
 beforeEach(() => {
   state.client = null
+  state.currentUserId = 'user_123'
   state.values.clear()
   vi.clearAllMocks()
 })
@@ -63,27 +66,41 @@ describe('mobile GPS offline storage', () => {
     await expect(getStoredActiveMissionContext()).resolves.toBeNull()
   })
 
+  it('serializes reconciliation queue additions per owner without cross-owner loss', async () => {
+    await Promise.all([
+      enqueuePendingLinkedMissionReconciliation('user_a', 'mission-a1'),
+      enqueuePendingLinkedMissionReconciliation('user_a', 'mission-a2'),
+      enqueuePendingLinkedMissionReconciliation('user_b', 'mission-b1'),
+    ])
+
+    await expect(getPendingLinkedMissionReconciliationIds('user_a')).resolves.toEqual(['mission-a1', 'mission-a2'])
+    await expect(getPendingLinkedMissionReconciliationIds('user_b')).resolves.toEqual(['mission-b1'])
+  })
+
   it('keeps an offline point and replays it once Clerk/Supabase is available', async () => {
     await bufferPoint(ownerId, point)
     expect(await getPendingGpsPointCount(ownerId)).toBe(1)
 
-    const insert = vi.fn(async () => ({ error: null }))
-    state.client = { from: vi.fn(() => ({ insert })) }
+    const upsert = vi.fn(async () => ({ error: null }))
+    state.client = { from: vi.fn(() => ({ upsert })) }
 
     await flushBuffer(ownerId)
 
-    expect(insert).toHaveBeenCalledWith([point])
+    expect(upsert).toHaveBeenCalledWith([point], {
+      onConflict: 'mission_id,client_point_id',
+      ignoreDuplicates: true,
+    })
     expect(await getPendingGpsPointCount(ownerId)).toBe(0)
   })
 
   it('does not discard the buffer when Supabase replay fails', async () => {
     await bufferPoint(ownerId, point)
-    const insert = vi.fn(async () => ({ error: new Error('network unavailable') }))
-    state.client = { from: vi.fn(() => ({ insert })) }
+    const upsert = vi.fn(async () => ({ error: new Error('network unavailable') }))
+    state.client = { from: vi.fn(() => ({ upsert })) }
 
     await flushBuffer(ownerId)
 
-    expect(insert).toHaveBeenCalledWith([point])
+    expect(upsert).toHaveBeenCalledWith([point], expect.any(Object))
     expect(await getPendingGpsPointCount(ownerId)).toBe(1)
   })
 
@@ -103,14 +120,15 @@ describe('mobile GPS offline storage', () => {
     expect(await getPendingGpsPointCount('user_a')).toBe(1)
     expect(await getPendingGpsPointCount('user_b')).toBe(0)
 
-    const insert = vi.fn(async () => ({ error: null }))
-    state.client = { from: vi.fn(() => ({ insert })) }
+    const upsert = vi.fn(async () => ({ error: null }))
+    state.client = { from: vi.fn(() => ({ upsert })) }
     await flushBuffer('user_b')
 
-    expect(insert).not.toHaveBeenCalled()
+    expect(upsert).not.toHaveBeenCalled()
     expect(await getPendingGpsPointCount('user_a')).toBe(1)
+    state.currentUserId = 'user_a'
     await flushBuffer('user_a')
-    expect(insert).toHaveBeenCalledWith([point])
+    expect(upsert).toHaveBeenCalledWith([point], expect.any(Object))
   })
 
   it('fails closed for empty or unsafe owner identifiers', async () => {
@@ -126,25 +144,61 @@ describe('mobile GPS offline storage', () => {
     state.values.set('_cmm_gps_buffer_index_user_123', JSON.stringify(['bad-record', 'valid-record']))
     state.values.set('bad-record', '{not-json')
     state.values.set('valid-record', JSON.stringify(point))
-    const insert = vi.fn(async () => ({ error: null }))
-    state.client = { from: vi.fn(() => ({ insert })) }
+    const upsert = vi.fn(async () => ({ error: null }))
+    state.client = { from: vi.fn(() => ({ upsert })) }
 
     await flushBuffer(ownerId)
 
-    expect(insert).toHaveBeenCalledWith([point])
+    expect(upsert).toHaveBeenCalledWith([point], expect.any(Object))
     expect(state.values.has('bad-record')).toBe(false)
     expect(await getPendingGpsPointCount(ownerId)).toBe(0)
   })
 
   it('keeps owner data when the replay request throws before confirmation', async () => {
     await bufferPoint(ownerId, point)
-    const insert = vi.fn(async () => { throw new Error('connection reset') })
-    state.client = { from: vi.fn(() => ({ insert })) }
+    const upsert = vi.fn(async () => { throw new Error('connection reset') })
+    state.client = { from: vi.fn(() => ({ upsert })) }
 
     await expect(flushBuffer(ownerId)).resolves.toEqual({
       ok: false,
       error: 'Synchronisation GPS impossible : connection reset',
     })
+    expect(await getPendingGpsPointCount(ownerId)).toBe(1)
+  })
+
+  it('retries a point after a lost acknowledgement with the same stable identity', async () => {
+    await bufferPoint(ownerId, point)
+    const acceptedPointIds: string[] = []
+    const upsert = vi.fn()
+      .mockImplementationOnce(async (rows: typeof point[]) => {
+        acceptedPointIds.push(rows[0].client_point_id)
+        throw new Error('ack lost after commit')
+      })
+      .mockImplementationOnce(async (rows: typeof point[]) => {
+        acceptedPointIds.push(rows[0].client_point_id)
+        return { error: null }
+      })
+    state.client = { from: vi.fn(() => ({ upsert })) }
+
+    await flushBuffer(ownerId)
+    expect(await getPendingGpsPointCount(ownerId)).toBe(1)
+    await flushBuffer(ownerId)
+
+    expect(acceptedPointIds).toEqual(['point-1', 'point-1'])
+    expect(await getPendingGpsPointCount(ownerId)).toBe(0)
+  })
+
+  it('refuses replay after the Clerk account changes without touching the owner buffer', async () => {
+    await bufferPoint(ownerId, point)
+    state.currentUserId = 'user_other'
+    const upsert = vi.fn(async () => ({ error: null }))
+    state.client = { from: vi.fn(() => ({ upsert })) }
+
+    await expect(flushBuffer(ownerId)).resolves.toEqual({
+      ok: false,
+      error: 'Identité Clerk obsolète : synchronisation interrompue.',
+    })
+    expect(upsert).not.toHaveBeenCalled()
     expect(await getPendingGpsPointCount(ownerId)).toBe(1)
   })
 
@@ -155,29 +209,29 @@ it('keeps a point buffered while an earlier replay is in flight', async () => {
   await bufferPoint(ownerId, point)
 
   let releaseFirstInsert!: () => void
-  const insert = vi.fn()
+  const upsert = vi.fn()
     .mockImplementationOnce(
       () => new Promise<{ error: null }>((resolve) => {
         releaseFirstInsert = () => resolve({ error: null })
       }),
     )
     .mockResolvedValue({ error: null })
-  state.client = { from: vi.fn(() => ({ insert })) }
+  state.client = { from: vi.fn(() => ({ upsert })) }
 
   const firstFlush = flushBuffer(ownerId)
-  await vi.waitFor(() => expect(insert).toHaveBeenCalledOnce())
+  await vi.waitFor(() => expect(upsert).toHaveBeenCalledOnce())
   const concurrentFlush = flushBuffer(ownerId)
 
   await bufferPoint(ownerId, pointB)
   releaseFirstInsert()
   await Promise.all([firstFlush, concurrentFlush])
 
-  expect(insert).toHaveBeenLastCalledWith([point])
+  expect(upsert).toHaveBeenLastCalledWith([point], expect.any(Object))
   expect(await getPendingGpsPointCount(ownerId)).toBe(1)
 
   await flushBuffer(ownerId)
 
-  expect(insert).toHaveBeenCalledTimes(2)
-  expect(insert).toHaveBeenLastCalledWith([pointB])
+  expect(upsert).toHaveBeenCalledTimes(2)
+  expect(upsert).toHaveBeenLastCalledWith([pointB], expect.any(Object))
   expect(await getPendingGpsPointCount(ownerId)).toBe(0)
 })

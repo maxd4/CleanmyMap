@@ -3,6 +3,7 @@ import { createAsyncStorageMock, createSecureStoreMock } from './persistence-moc
 
 export const storageTestState = {
   client: null as unknown,
+  currentUserId: 'user_123' as string | null,
   values: new Map<string, string>(),
 }
 

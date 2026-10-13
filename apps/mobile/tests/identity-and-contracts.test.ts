@@ -28,6 +28,9 @@ const metricsMigration = fileURLToPath(
 const missionInsertMigration = fileURLToPath(
   new URL('../../web/supabase/migrations/20260928000003_mobile_mission_insert_owner_rls.sql', import.meta.url),
 )
+const gpsIdentityMigration = fileURLToPath(
+  new URL('../../web/supabase/migrations/20261013000010_mobile_gps_point_idempotency.sql', import.meta.url),
+)
 
 describe('mobile identity and server contracts', () => {
   beforeEach(() => {
@@ -84,6 +87,15 @@ describe('mobile identity and server contracts', () => {
       /grant insert\s*\(volunteer_id,\s*label\)\s*on table public\.missions\s*to authenticated/i,
     )
     expect(sql).not.toMatch(/grant insert\s*\([^)]*(distance_m|duration_s|created_by)/i)
+  })
+
+  it('keeps historical GPS rows valid while making new mobile retries idempotent', () => {
+    const sql = readFileSync(gpsIdentityMigration, 'utf8')
+
+    expect(sql).toMatch(/add column if not exists client_point_id text/i)
+    expect(sql).toMatch(/check \(client_point_id is null or client_point_id ~ /i)
+    expect(sql).toMatch(/unique \(mission_id, client_point_id\)/i)
+    expect(sql).not.toMatch(/drop policy|disable row level security|grant all privileges on table public\.gps_points to authenticated/i)
   })
 
 })

@@ -124,7 +124,10 @@ tracés foreground et réconciliations liées sont namespacés par identifiant
 Clerk. Une session expirée ou un changement de compte ne peut donc pas lire ni
 rejouer les données d'un autre compte ; les données du propriétaire restent
 récupérables à sa reconnexion. Les anciennes clés locales sans owner connu sont
-ignorées par conception.
+ignorées par conception. Chaque point reçoit aussi un `client_point_id` avant
+l'envoi direct ; le même identifiant est conservé dans le buffer et lors du
+rejeu, avec une unicité par mission côté PostgreSQL pour absorber une perte
+d'acquittement sans doublon.
 Dans `Compte > À propos et informations légales`, un utilisateur connecté peut
 confirmer une demande de suppression. La route mobile authentifie le Bearer
 Clerk, limite les abus et enregistre la demande dans `contact_requests` avec un

@@ -147,7 +147,7 @@ describe('mobile mission finalization', () => {
     const result = await stopTracking('mission-1')
 
     expect(result.ok).toBe(true)
-    expect(reconcileLinkedMission).toHaveBeenCalledWith('mission-1')
+    expect(reconcileLinkedMission).toHaveBeenCalledWith('mission-1', 'user_123')
     expect(state.pendingMissionIds).toEqual([])
   })
 

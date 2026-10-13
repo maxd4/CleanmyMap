@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-import { getAuthenticatedSupabaseClient } from './supabase';
+import { getAuthenticatedSupabaseClient, getClerkUserId } from './supabase';
+import { ensureGpsPointIdentity } from './gps-point-identity';
 import type {
   ForegroundTrackPoint,
   MissionLocationInsert,
@@ -181,16 +182,20 @@ export async function enqueuePendingLinkedMissionReconciliation(ownerId: string,
   if (!normalized) return;
   const key = ownerScopedKey(PENDING_LINKED_MISSION_RECONCILIATIONS_KEY_PREFIX, ownerId);
   if (!key) return;
-  const existing = await getPendingLinkedMissionReconciliationIds(ownerId);
-  if (existing.includes(normalized)) return;
-  await writeIndex(key, [...existing, normalized].slice(0, MAX_PENDING_LINKED_MISSION_RECONCILIATIONS));
+  await withOwnerMutation(ownerId, async () => {
+    const existing = await getPendingLinkedMissionReconciliationIds(ownerId);
+    if (existing.includes(normalized)) return;
+    await writeIndex(key, [...existing, normalized].slice(0, MAX_PENDING_LINKED_MISSION_RECONCILIATIONS));
+  });
 }
 
 export async function removePendingLinkedMissionReconciliation(ownerId: string, missionId: string): Promise<void> {
   const key = ownerScopedKey(PENDING_LINKED_MISSION_RECONCILIATIONS_KEY_PREFIX, ownerId);
   if (!key) return;
-  const remaining = (await getPendingLinkedMissionReconciliationIds(ownerId)).filter((id) => id !== missionId);
-  await writeIndex(key, remaining);
+  await withOwnerMutation(ownerId, async () => {
+    const remaining = (await getPendingLinkedMissionReconciliationIds(ownerId)).filter((id) => id !== missionId);
+    await writeIndex(key, remaining);
+  });
 }
 
 // Tracé foreground UX uniquement. Il reste séparé du buffer GPS afin de ne
@@ -285,11 +290,11 @@ export async function bufferPoint(ownerId: string, point: MissionLocationInsert)
     const indexKey = ownerScopedKey(GPS_BUFFER_INDEX_KEY_PREFIX, ownerId);
     const recordPrefix = ownerScopedKey(GPS_BUFFER_RECORD_PREFIX, ownerId);
     if (!indexKey || !recordPrefix) return;
-    const total = await withGpsBufferMutation(() =>
+    const total = await withGpsBufferMutation(ownerId, () =>
       appendSecureBufferRecord(
         indexKey,
         recordPrefix,
-        point,
+        ensureGpsPointIdentity(point),
       ),
     );
     console.log(`[Storage] Point bufferisé. Total buffer : ${total}`);
@@ -301,36 +306,74 @@ export async function bufferPoint(ownerId: string, point: MissionLocationInsert)
 // Flush
 
 const flushInFlight = new Map<string, Promise<ServiceResult>>();
-let gpsBufferMutationInFlight = Promise.resolve();
+const gpsBufferMutationsInFlight = new Map<string, Promise<void>>();
+const ownerMutationsInFlight = new Map<string, Promise<void>>();
 
-function withGpsBufferMutation<T>(operation: () => Promise<T>): Promise<T> {
-  const mutation = gpsBufferMutationInFlight.then(operation, operation);
-  gpsBufferMutationInFlight = mutation.then(() => undefined, () => undefined);
+function withOwnerMutation<T>(ownerId: string, operation: () => Promise<T>): Promise<T> {
+  const previous = ownerMutationsInFlight.get(ownerId) ?? Promise.resolve();
+  const mutation = previous.then(operation, operation);
+  const settled = mutation.then(() => undefined, () => undefined);
+  ownerMutationsInFlight.set(ownerId, settled);
+  void settled.then(() => {
+    if (ownerMutationsInFlight.get(ownerId) === settled) ownerMutationsInFlight.delete(ownerId);
+  });
+  return mutation;
+}
+
+function withGpsBufferMutation<T>(ownerId: string, operation: () => Promise<T>): Promise<T> {
+  const previous = gpsBufferMutationsInFlight.get(ownerId) ?? Promise.resolve();
+  const mutation = previous.then(operation, operation);
+  const settled = mutation.then(() => undefined, () => undefined);
+  gpsBufferMutationsInFlight.set(ownerId, settled);
+  void settled.then(() => {
+    if (gpsBufferMutationsInFlight.get(ownerId) === settled) gpsBufferMutationsInFlight.delete(ownerId);
+  });
   return mutation;
 }
 
 async function flushBufferOnce(ownerId: string): Promise<ServiceResult> {
   const indexKey = ownerScopedKey(GPS_BUFFER_INDEX_KEY_PREFIX, ownerId);
   if (!indexKey) return { ok: false, error: 'Connexion Clerk requise pour synchroniser les données.' };
+  const currentUserId = await getClerkUserId();
+  if (currentUserId !== ownerId) {
+    return { ok: false, error: 'Identité Clerk obsolète : synchronisation interrompue.' };
+  }
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
     // Sans session Clerk, les données restent persistées localement.
     return { ok: false, error: 'Connexion Clerk requise pour synchroniser les données.' };
   }
+  if (await getClerkUserId() !== ownerId) {
+    return { ok: false, error: 'Identité Clerk obsolète : synchronisation interrompue.' };
+  }
 
   // Flush GPS points
   try {
-    const { keys, records: buffer } = await withGpsBufferMutation(() =>
+    const { keys, records } = await withGpsBufferMutation(ownerId, () =>
       readSecureBufferRecords<MissionLocationInsert>(indexKey),
     );
+    const buffer = records.map((record) => ensureGpsPointIdentity(record));
+    const hasLegacyIdentity = buffer.some((record, index) => !records[index]?.client_point_id);
+    if (hasLegacyIdentity) {
+      await withGpsBufferMutation(ownerId, async () => {
+        await Promise.all(buffer.map((record, index) => (
+          records[index]?.client_point_id
+            ? Promise.resolve()
+            : writeStoredValue(keys[index], JSON.stringify(record))
+        )));
+      });
+    }
     if (buffer.length > 0) {
       console.log(`[Storage] Flush GPS : ${buffer.length} points`);
-      const { error } = await client.from('gps_points').insert(buffer);
+      const { error } = await client.from('gps_points').upsert(buffer, {
+        onConflict: 'mission_id,client_point_id',
+        ignoreDuplicates: true,
+      });
       if (error) {
         return { ok: false, error: `Synchronisation GPS impossible : ${error.message}` };
       }
 
-      await withGpsBufferMutation(async () => {
+      await withGpsBufferMutation(ownerId, async () => {
         const currentKeys = await readIndex(indexKey);
         const flushedKeys = new Set(keys);
         await clearSecureBufferRecords(keys);
