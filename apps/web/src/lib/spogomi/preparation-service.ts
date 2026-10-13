@@ -10,7 +10,7 @@ import { previewRosterFile } from "./preparation";
 import type { SpogomiEventMode, SpogomiRosterColumnMapping, SpogomiRosterPreview, SpogomiTeamFormation } from "./types";
 import type { SpogomiRosterPreviewOptions } from "./preparation-import";
 import { normalizeSpogomiEventSlug } from "./public-service";
-import { isCachanTicketCompositionEligible, isCancelledCachanTicket, reconcileCachanTicketRows } from "./ticket-reconciliation";
+import { hasProtectedSpogomiHumanDecision, isCachanTicketCompositionEligible, isCancelledCachanTicket, readCachanCommercialWithdrawalProofs, reconcileCachanTicketRows } from "./ticket-reconciliation";
 import { isCancelledCachanTicketStatus } from "./ticket-status";
 import { teamCompositionFingerprint } from "./team-composition";
 import { verifyImportedRosterCompleteness, verifyImportedRosterSelection } from "./import-completeness";
@@ -457,6 +457,11 @@ export async function previewRosterImportChanges(
     : { data: [], error: null };
   if (protectedCancellations.error) throw protectedCancellations.error;
   const protectedCancellationIds = new Set((protectedCancellations.data ?? []).map((row) => String(row.participant_id)));
+  const sourceWithdrawalIds = await readCachanCommercialWithdrawalProofs({
+    supabase,
+    eventId: event.id,
+    participants: [...byReference.values()].map((row) => ({ id: String(row.id), ticket_status: row.ticket_status, ticket_deleted: Boolean(row.ticket_deleted) })),
+  });
   const changedRowNumbers: number[] = [];
   const conflictRowNumbers: number[] = [];
   const errorsByRow = new Set(preview.errors.map((error) => error.rowNumber));
@@ -481,12 +486,15 @@ export async function previewRosterImportChanges(
         (current.display_name ?? null) !== row.name;
       const cancellationChanged = Boolean(current.ticket_deleted) !== row.ticketDeleted ||
         isCancelledCachanTicketStatus(current.ticket_status) !== isCancelledCachanTicketStatus(row.ticketStatus);
-      const hasHumanDecision = current.attendance_status !== "unknown" ||
-        current.account_link_status === "verified" ||
-        Boolean(current.clerk_id) ||
-        current.identity_status === "identified" ||
-        Boolean(current.team_id) ||
-        current.registration_status !== "registered";
+      const hasHumanDecision = hasProtectedSpogomiHumanDecision({
+        attendanceStatus: current.attendance_status,
+        accountLinkStatus: current.account_link_status,
+        clerkId: current.clerk_id,
+        identityStatus: current.identity_status,
+        teamId: current.team_id,
+        registrationStatus: current.registration_status,
+        sourceWithdrawalProven: sourceWithdrawalIds.has(String(current.id)),
+      });
       if (changed) changedRowNumbers.push(row.rowNumber);
       else unchanged += 1;
       if ((cancellationChanged && hasHumanDecision) || (
@@ -578,7 +586,7 @@ export async function confirmRosterImport(params: { supabase: SupabaseClient; ev
     source_system: row.sourceSystem,
     ticket_status: row.ticketStatus,
     ticket_deleted: row.ticketDeleted,
-    identity_status: row.name ? "identified" : "unknown",
+    identity_status: preview.sourceSystem === "cachan_ticketing" ? "unknown" : row.name ? "identified" : "unknown",
     display_name: row.name,
     registration_status: isCancelledCachanTicket(row.ticketStatus, row.ticketDeleted) ? "withdrawn" : "registered",
     attendance_status: "unknown",

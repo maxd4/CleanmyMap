@@ -25,6 +25,45 @@ export function isCachanTicketCompositionEligible(input: {
   );
 }
 
+export function hasProtectedSpogomiHumanDecision(input: {
+  attendanceStatus: string | null;
+  accountLinkStatus: string | null;
+  clerkId: string | null;
+  identityStatus: string | null;
+  teamId: string | null;
+  registrationStatus: string | null;
+  sourceWithdrawalProven: boolean;
+}): boolean {
+  return input.attendanceStatus !== "unknown" ||
+    input.accountLinkStatus === "verified" ||
+    Boolean(input.clerkId) ||
+    input.identityStatus === "identified" ||
+    Boolean(input.teamId) ||
+    (input.registrationStatus !== "registered" && !input.sourceWithdrawalProven);
+}
+
+export async function readCachanCommercialWithdrawalProofs(params: {
+  supabase: SupabaseClient;
+  eventId: string;
+  participants: Array<{ id: string; ticket_status: string | null; ticket_deleted: boolean }>;
+}): Promise<Set<string>> {
+  if (!params.participants.length) return new Set();
+  const changes = await params.supabase.from("spogomi_roster_import_changes")
+    .select("participant_id, current_snapshot")
+    .eq("event_id", params.eventId)
+    .eq("change_kind", "ticket_cancelled")
+    .in("participant_id", params.participants.map((participant) => participant.id));
+  if (changes.error) throw changes.error;
+  const currentById = new Map(params.participants.map((participant) => [participant.id, participant]));
+  return new Set((changes.data ?? []).filter((row) => {
+    const current = currentById.get(String(row.participant_id));
+    const snapshot = row.current_snapshot as Record<string, unknown> | null | undefined;
+    return Boolean(current && snapshot) &&
+      snapshot?.ticketStatus === current?.ticket_status &&
+      Boolean(snapshot?.ticketDeleted) === current?.ticket_deleted;
+  }).map((row) => String(row.participant_id)));
+}
+
 function conflict(message: string): Error {
   return new Error(`Conflict: ${message}`);
 }

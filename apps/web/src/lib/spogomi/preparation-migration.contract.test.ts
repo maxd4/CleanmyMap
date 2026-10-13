@@ -10,6 +10,7 @@ const lot11CorrectiveMigration = readFileSync(new URL("../../../supabase/migrati
 const compositionLockMigration = readFileSync(new URL("../../../supabase/migrations/20261013000003_spogomi_composition_lock_integrity.sql", import.meta.url), "utf8");
 const ticketReconciliationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000004_spogomi_ticket_reconciliation_atomicity.sql", import.meta.url), "utf8");
 const strictTicketStatusMigration = readFileSync(new URL("../../../supabase/migrations/20261013000005_spogomi_strict_ticket_status.sql", import.meta.url), "utf8");
+const ticketDecisionConsistencyMigration = readFileSync(new URL("../../../supabase/migrations/20261013000006_spogomi_ticket_decision_consistency.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -103,5 +104,16 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(strictTicketStatusMigration).toContain("ticket_cancellation_conflict");
     expect(strictTicketStatusMigration).toContain("grant execute on function public.spogomi_reconcile_cachan_ticket_rows");
     expect(strictTicketStatusMigration).toContain("create temporary table spogomi_ticket_status_prior");
+  });
+
+  it("keeps commercial references and human-decision protection coherent", () => {
+    expect(ticketDecisionConsistencyMigration).toContain("order_reference, order_alternative_reference");
+    expect(ticketDecisionConsistencyMigration).toContain("identity_status, registration_status");
+    expect(ticketDecisionConsistencyMigration).toContain("'unknown',");
+    expect(ticketDecisionConsistencyMigration).toContain("spogomi_participant_has_human_decision");
+    expect(ticketDecisionConsistencyMigration).toContain("v_source_withdrawal_proven");
+    expect(ticketDecisionConsistencyMigration).toContain("change_kind = 'ticket_cancelled'");
+    expect(ticketDecisionConsistencyMigration).toContain("grant execute on function public.spogomi_reconcile_cachan_ticket_rows");
+    expect(ticketDecisionConsistencyMigration).not.toContain("alter table public.spogomi_participants drop column");
   });
 });

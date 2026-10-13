@@ -205,6 +205,44 @@ describe("SPOGOMI preparation service previews", () => {
     expect(result.importSummary).toEqual({ created: 1, unchanged: 2, changed: 2, conflicts: 3, excluded: 1 });
   });
 
+  it("allows a commercial reactivation when matching cancellation history proves the withdrawal source", async () => {
+    const result = await previewRosterImportChanges(
+      readOnlySupabase({
+        spogomi_participants: {
+          data: [{ id: "participant-1", external_reference: "ticket-1", order_reference: "order-1", order_alternative_reference: null, ticket_status: "Annulé", ticket_deleted: true, display_name: null, identity_status: "unknown", attendance_status: "unknown", account_link_status: "unlinked", clerk_id: null, team_id: null, registration_status: "withdrawn" }],
+          error: null,
+        },
+        spogomi_roster_import_changes: {
+          data: [{ participant_id: "participant-1", change_kind: "ticket_cancelled", current_snapshot: { ticketStatus: "Annulé", ticketDeleted: true } }],
+          error: null,
+        },
+      }),
+      event(),
+      preview("cachan_ticketing", [rosterRow({ externalReference: "ticket-1", sourceRowId: "ticket-1", ticketStatus: "Payé", ticketDeleted: false })]),
+    );
+
+    expect(result.conflictRowNumbers).toEqual([]);
+    expect(result.rowEffects).toEqual({ "2": "changed" });
+    expect(result.importSummary).toMatchObject({ created: 0, unchanged: 0, changed: 1, conflicts: 0 });
+  });
+
+  it("does not treat an imported name as a protected identity decision", async () => {
+    const result = await previewRosterImportChanges(
+      readOnlySupabase({
+        spogomi_participants: {
+          data: [{ id: "participant-1", external_reference: "ticket-1", order_reference: "order-1", order_alternative_reference: null, ticket_status: "Payé", ticket_deleted: false, display_name: "Alice Importée", identity_status: "unknown", attendance_status: "unknown", account_link_status: "unlinked", clerk_id: null, team_id: null, registration_status: "registered" }],
+          error: null,
+        },
+        spogomi_roster_import_changes: { data: [], error: null },
+      }),
+      event(),
+      preview("cachan_ticketing", [rosterRow({ externalReference: "ticket-1", sourceRowId: "ticket-1", name: "Alice Importée", ticketStatus: "Annulé" })]),
+    );
+
+    expect(result.conflictRowNumbers).toEqual([]);
+    expect(result.rowEffects).toEqual({ "2": "changed" });
+  });
+
   it("refuses an active cancelled ticket before proposing any composition", async () => {
     const supabase = readOnlySupabase({
       spogomi_participants: {

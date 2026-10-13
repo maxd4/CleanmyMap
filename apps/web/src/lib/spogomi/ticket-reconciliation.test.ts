@@ -4,7 +4,7 @@ import type { SpogomiRosterRow } from "./types";
 
 vi.mock("server-only", () => ({}));
 
-import { buildTicketParticipantPatch, isCachanTicketCompositionEligible, isCancelledCachanTicket, reconcileCachanTicketRows } from "./ticket-reconciliation";
+import { buildTicketParticipantPatch, hasProtectedSpogomiHumanDecision, isCachanTicketCompositionEligible, isCancelledCachanTicket, reconcileCachanTicketRows } from "./ticket-reconciliation";
 
 describe("SPOGOMI ticket reconciliation", () => {
   it("limits an existing-ticket update to ticket-owned and provenance fields", () => {
@@ -60,6 +60,36 @@ describe("SPOGOMI ticket reconciliation", () => {
       ticketStatus: "Annulé",
       ticketDeleted: true,
       registrationStatus: "registered",
+    })).toBe(true);
+  });
+
+  it("distinguishes commercial withdrawal history from protected human decisions", () => {
+    expect(hasProtectedSpogomiHumanDecision({
+      attendanceStatus: "unknown",
+      accountLinkStatus: "unlinked",
+      clerkId: null,
+      identityStatus: "unknown",
+      teamId: null,
+      registrationStatus: "withdrawn",
+      sourceWithdrawalProven: true,
+    })).toBe(false);
+    expect(hasProtectedSpogomiHumanDecision({
+      attendanceStatus: "unknown",
+      accountLinkStatus: "unlinked",
+      clerkId: null,
+      identityStatus: "unknown",
+      teamId: null,
+      registrationStatus: "withdrawn",
+      sourceWithdrawalProven: false,
+    })).toBe(true);
+    expect(hasProtectedSpogomiHumanDecision({
+      attendanceStatus: "unknown",
+      accountLinkStatus: "unlinked",
+      clerkId: null,
+      identityStatus: "identified",
+      teamId: null,
+      registrationStatus: "registered",
+      sourceWithdrawalProven: true,
     })).toBe(true);
   });
 
