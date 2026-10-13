@@ -37,7 +37,7 @@ vi.mock("./clean-zones", () => ({
   collectEligibleCleanZoneSources: mocks.collectEligibleCleanZoneSources,
 }));
 
-type QueryResult = { data: unknown[]; error: null };
+type QueryResult = { data: unknown[]; error: null; count: number };
 
 function createSupabaseMock(): { from: (table: string) => Record<string, (...args: unknown[]) => unknown> } {
   const rowsByTable: Record<string, unknown[]> = {
@@ -51,13 +51,15 @@ function createSupabaseMock(): { from: (table: string) => Record<string, (...arg
 
   return {
     from: (table) => {
-      const result: QueryResult = { data: rowsByTable[table] ?? [], error: null };
+      const data = rowsByTable[table] ?? [];
+      const result: QueryResult = { data, error: null, count: data.length };
       const chain: Record<string, (...args: unknown[]) => unknown> = {
         select: () => chain,
         eq: () => chain,
         in: () => chain,
         not: () => chain,
         order: () => chain,
+        range: () => Promise.resolve(result),
         limit: () => Promise.resolve(result),
       };
       return chain;

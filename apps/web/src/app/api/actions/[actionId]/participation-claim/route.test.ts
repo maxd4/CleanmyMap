@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createGroupJoinAction,
   createGroupJoinParticipant,
@@ -13,9 +13,23 @@ const {
   authMock,
 } = groupJoinMocks;
 
+const rateLimitMocks = vi.hoisted(() => ({
+  verifyRateLimit: vi.fn(),
+  createServerRateLimitResponse: vi.fn(),
+}));
+
+vi.mock("@/lib/rate-limit/server", () => rateLimitMocks);
+
 describe("POST /api/actions/:actionId/participation-claim", () => {
   beforeEach(() => {
     seedGroupJoinTestDefaults();
+    rateLimitMocks.verifyRateLimit.mockResolvedValue({
+      allowed: true,
+      limit: 10,
+      remaining: 9,
+      reset: Math.floor(Date.now() / 1000) + 60,
+    });
+    rateLimitMocks.createServerRateLimitResponse.mockReturnValue(null);
     authMock.mockResolvedValue({ userId: "user-2" });
     appendActionModerationAuditMock.mockResolvedValue(undefined);
   });

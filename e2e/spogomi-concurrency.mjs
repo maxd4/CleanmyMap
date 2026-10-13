@@ -113,10 +113,6 @@ async function verifySupabaseSchema(client) {
   );
 }
 
-function rpcError(result) {
-  return result.status === "fulfilled" ? null : result.reason;
-}
-
 async function concurrentCompositionConfirmation() {
   const actionId = await createAction(sessionA);
   const event = await createEvent(sessionA, actionId);

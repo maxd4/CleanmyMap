@@ -8,6 +8,7 @@ import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service"
 import { renameSpogomiTeam } from "@/lib/spogomi/team-name-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: team pseudonym changes are authenticated mutable state and must be resolved dynamically.
 export const dynamic = "force-dynamic";
 
 const renameSchema = z.object({

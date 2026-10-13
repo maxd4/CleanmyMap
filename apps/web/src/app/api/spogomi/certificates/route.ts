@@ -16,7 +16,11 @@ export async function POST(request: Request) {
     const parsed = inputSchema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: "Événement SPOGOMI invalide." }, { status: 400 });
     const certificate = await issueSpogomiVolunteerCertificate(getSupabaseServerClient(true), userId, parsed.data.eventId);
-    return NextResponse.json({ status: "ok", certificate: { certificateReference: certificate.certificateReference, eventId: certificate.eventId, issuedAt: certificate.issuedAt } }, { headers: { "Cache-Control": "private, no-store" } });
+    // Justification no-store: issued certificate state is private and must not be shared from cache.
+    return NextResponse.json(
+      { status: "ok", certificate: { certificateReference: certificate.certificateReference, eventId: certificate.eventId, issuedAt: certificate.issuedAt } },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (error) {
     return handleApiError(error, "POST /api/spogomi/certificates");
   }

@@ -8,6 +8,7 @@ import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service"
 import { loadSpogomiGalleryEntries, upsertSpogomiGalleryPhoto, withdrawSpogomiGalleryPhoto } from "@/lib/spogomi/photo-gallery-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: organizer gallery state and publication permissions are mutable and must be resolved dynamically.
 export const dynamic = "force-dynamic";
 
 const photoSchema = z.object({

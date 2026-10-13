@@ -60,6 +60,7 @@ export async function GET(_request: Request, context: { params: Promise<{ certif
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="attestation-spogomi-${certificate.certificateReference}.pdf"`,
+        // Justification no-store: certificate validity can change after its source certification is corrected or revoked.
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
       },
