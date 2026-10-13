@@ -106,6 +106,18 @@ async function currentRevision(client, eventId) {
   return Number(row.composition_revision);
 }
 
+async function waitForSupabaseSchema(client) {
+  let lastError;
+  for (let attempt = 0; attempt < 15; attempt += 1) {
+    const result = await client.from("actions").select("id").limit(1);
+    if (!result.error) return;
+    lastError = result.error;
+    if (!/schema cache|does not exist/i.test(result.error.message)) break;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error(`Ephemeral Supabase schema is not ready after reset: ${lastError?.message ?? "unknown error"}`);
+}
+
 function rpcError(result) {
   return result.status === "fulfilled" ? null : result.reason;
 }
@@ -253,6 +265,7 @@ async function main() {
   sessionB = createClient(configured.url, configured.key, { auth: { persistSession: false } });
   created = { actions: [], events: [], certificates: [] };
   try {
+    await waitForSupabaseSchema(sessionA);
     await concurrentCompositionConfirmation();
     await concurrentMoveAndLock();
     await concurrentOfficialGpxSync();
