@@ -472,6 +472,35 @@ révision sans modifier les UUID, numéros, pseudonymes, accès ou résultats.
 La migration `20261013000003_spogomi_composition_lock_integrity.sql` est
 forward-only et n'a pas été appliquée à distance par ce lot.
 
+### Concurrence de préparation et synchronisation GPX
+
+Les mutations de préparation qui peuvent modifier l'effectif ou l'état de la
+composition se sérialisent sur la ligne courante de `spogomi_events`. Les RPC
+de proposition/confirmation, déplacement et verrouillage contrôlent la
+`composition_revision` après acquisition de ce verrou ; le trigger de cycle de
+vie des places l'acquiert également avant d'autoriser une insertion ou une
+modification commerciale. Ainsi, une importation concurrente est soit observée
+par le verrouillage, soit refusée comme ajout post-verrouillage : elle ne peut
+pas produire une composition officiellement partielle.
+
+L'attachement du GPX officiel passe par
+`spogomi_attach_official_gpx`. La route `spogomi_event_routes` et la référence
+`spogomiOfficialReference` de l'Action sont écrites dans la même transaction,
+après verrouillage de l'événement puis de l'Action. La mise à jour utilise
+`jsonb_set` et ne remplace donc pas les autres métadonnées de préparation ; une
+révision concurrente obsolète est rejetée. Le changement reste limité au
+parcours officiel et ne touche ni la certification publiée dans la migration
+`20261012000021_spogomi_certificate_reissue_concurrency.sql`, ni les
+projections de compétition.
+
+La migration `20261013000009_spogomi_preparation_concurrency.sql` est
+forward-only. La CI Supabase éphémère exécute les tests métier ciblés puis un
+scénario PostgreSQL réel avec deux clients/sessions couvrant confirmation
+concurrente, déplacement/verrouillage, synchronisation GPX/Action et la
+réémission de certificat déjà implémentée. Les tests mockés ne sont pas une
+preuve de sémantique PostgreSQL ; hors environnement CI éphémère autorisé,
+`DB_SEMANTICS_NOT_EXECUTED` doit être conservé.
+
 ### Pseudonymes publics des équipes — Lot 11C
 
 Le pseudonyme public d'une équipe reste porté par `spogomi_teams.public_name`.

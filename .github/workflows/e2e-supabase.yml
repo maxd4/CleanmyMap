@@ -19,6 +19,9 @@ on:
       - "e2e/global.setup.ts"
       - "e2e/global.teardown.ts"
       - "e2e/run-github-actions-persistent.mjs"
+      - "e2e/spogomi-concurrency.mjs"
+      - "apps/web/src/lib/spogomi/**"
+      - "apps/web/src/app/api/spogomi/**"
       - "apps/web/supabase/config.toml"
       - "apps/web/supabase/migrations/**"
       - "apps/web/supabase/seed.sql"
@@ -83,6 +86,17 @@ jobs:
       - name: Apply canonical migrations and seed
         run: |
           npx supabase db reset --workdir apps/web/supabase --yes > artifacts/ci/supabase-reset.log 2>&1
+
+      - name: Run SPOGOMI business tests
+        run: |
+          npm run test -w apps/web -- \
+            src/lib/spogomi/preparation-service.gpx.test.ts \
+            src/lib/spogomi/preparation-migration.contract.test.ts \
+            src/lib/spogomi/composition-lock-routes.contract.test.ts \
+            src/lib/spogomi/preparation-service.preview.test.ts
+
+      - name: Run SPOGOMI PostgreSQL two-session concurrency tests
+        run: node e2e/spogomi-concurrency.mjs
 
       - name: Verify persistent Playwright projects are listable
         run: |

@@ -13,6 +13,7 @@ const strictTicketStatusMigration = readFileSync(new URL("../../../supabase/migr
 const ticketDecisionConsistencyMigration = readFileSync(new URL("../../../supabase/migrations/20261013000006_spogomi_ticket_decision_consistency.sql", import.meta.url), "utf8");
 const postLockMutationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000007_spogomi_post_lock_mutation_guards.sql", import.meta.url), "utf8");
 const teamPublicNameMigration = readFileSync(new URL("../../../supabase/migrations/20261013000008_spogomi_team_public_name_rename.sql", import.meta.url), "utf8");
+const preparationConcurrencyMigration = readFileSync(new URL("../../../supabase/migrations/20261013000009_spogomi_preparation_concurrency.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -147,5 +148,16 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(teamPublicNameMigration).toMatch(/after insert or delete or update of event_id, team_number, composition_state, certified_submission_id/i);
     expect(teamPublicNameMigration).not.toMatch(/set\s+composition_revision\s*=/i);
     expect(teamPublicNameMigration).not.toMatch(/delete\s+from\s+public\.spogomi_(teams|participants|result_submissions)/i);
+  });
+
+  it("serializes participant lifecycle, composition and official GPX/Action writes", () => {
+    expect(preparationConcurrencyMigration).toContain("spogomi_lock_event_for_mutation");
+    expect(preparationConcurrencyMigration).toContain("select * into v_event");
+    expect(preparationConcurrencyMigration).toContain("for update");
+    expect(preparationConcurrencyMigration).toContain("spogomi_attach_official_gpx");
+    expect(preparationConcurrencyMigration).toContain("jsonb_set");
+    expect(preparationConcurrencyMigration).toContain("composition_revision = composition_revision + 1");
+    expect(preparationConcurrencyMigration).toContain("New SPOGOMI places after composition lock");
+    expect(preparationConcurrencyMigration).toMatch(/grant execute on function public\.spogomi_attach_official_gpx[\s\S]+to service_role/i);
   });
 });

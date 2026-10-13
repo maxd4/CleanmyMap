@@ -748,33 +748,18 @@ export async function attachOfficialGpx(params: { supabase: SupabaseClient; even
     inferredTopology: parsed.metadata.inferredTopology,
     coordinates: parsed.drawing.coordinates,
   };
-  const upserted = await params.supabase.from("spogomi_event_routes").upsert({
-    event_id: params.event.id,
-    action_id: params.event.action_id,
-    source: route.source,
-    file_name: route.fileName,
-    point_count: route.pointCount,
-    reference_distance_km: route.referenceDistanceKm,
-    inferred_topology: route.inferredTopology,
-    geometry_geojson: { type: "LineString", coordinates: route.coordinates },
-    imported_by_clerk_id: params.userId,
-  }, { onConflict: "event_id" });
-  if (upserted.error) throw upserted.error;
-  const action = await params.supabase.from("actions").select("preparation_data").eq("id", params.event.action_id).single();
-  if (action.error) throw action.error;
-  const preparationData = (action.data?.preparation_data ?? {}) as Record<string, unknown>;
-  const updatedAction = await params.supabase.from("actions").update({ preparation_data: {
-    ...preparationData,
-    spogomiOfficialReference: {
-      source: "official_reference",
-      fileName: route.fileName,
-      pointCount: route.pointCount,
-      referenceDistanceKm: route.referenceDistanceKm,
-      note: "Parcours officiel de référence, non observé sur le terrain.",
-    },
-  } }).eq("id", params.event.action_id);
-  if (updatedAction.error) throw updatedAction.error;
-  return route;
+  const synchronized = await params.supabase.rpc("spogomi_attach_official_gpx", {
+    p_event_id: params.event.id,
+    p_expected_revision: Number(params.event.composition_revision ?? 0),
+    p_file_name: route.fileName,
+    p_point_count: route.pointCount,
+    p_reference_distance_km: route.referenceDistanceKm,
+    p_inferred_topology: route.inferredTopology,
+    p_geometry_geojson: { type: "LineString", coordinates: route.coordinates },
+    p_actor_clerk_id: params.userId,
+  });
+  if (synchronized.error) throw synchronized.error;
+  return { ...route, synchronization: synchronized.data };
 }
 
 export function hashRosterPreview(preview: SpogomiRosterPreview): string {
