@@ -81,7 +81,7 @@ jobs:
 
       - name: Apply canonical migrations and seed
         run: |
-          npx supabase db reset --workdir apps/web/supabase --yes > artifacts/ci/supabase-reset.log 2>&1
+          npx supabase db reset --local --workdir apps/web/supabase --yes > artifacts/ci/supabase-reset.log 2>&1
 
       - name: Restart ephemeral Supabase API after reset
         run: |

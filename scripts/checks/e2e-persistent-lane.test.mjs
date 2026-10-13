@@ -15,7 +15,7 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   const workflow = read(".github/workflows/e2e-supabase.yml");
   assert.match(workflow, /runs-on:\s+ubuntu-latest/);
   assert.match(workflow, /supabase start/);
-  assert.match(workflow, /supabase db reset/);
+  assert.match(workflow, /supabase db reset --local/);
   assert.match(workflow, /Restart ephemeral Supabase API after reset/);
   assert.match(workflow, /docker restart "\$rest_container"/);
   assert.match(workflow, /curl --silent --show-error --output \/dev\/null --write-out '%\{http_code\}' http:\/\/127\.0\.0\.1:54321\/rest\/v1\//);
