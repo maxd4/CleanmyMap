@@ -173,6 +173,18 @@ les métriques dérivées. Les ajouts et suppressions des files de réconciliati
 sont sérialisés par propriétaire Clerk. Une session devenue différente de la
 propriété persistée ne lit ni ne synchronise le namespace de l'ancien compte.
 
+Le chemin de reprise est donc : produire l'identité du point, tenter l'envoi,
+conserver exactement le même enregistrement local en cas d'échec, puis rejouer
+avec la contrainte d'unicité serveur. Une perte d'acquittement ne crée pas une
+seconde observation ; un point historique sans identité reste lisible mais n'est
+pas utilisé comme modèle pour inventer une identité différente à chaque reprise.
+Avant chaque mutation sensible, le mobile vérifie à nouveau l'identité Clerk
+courante après la résolution du client. Les tests couvrent aussi l'interruption
+entre ces deux étapes, le redémarrage d'un buffer au format historique et la
+concurrence ajout/suppression d'une réconciliation. Ces preuves ne valent pas
+exécution SQL concurrente : la validation PostgreSQL réelle doit être rapportée
+séparément et porte `DB_SEMANTICS_NOT_EXECUTED` lorsqu'elle n'a pas été exécutée.
+
 L'identité Clerk, les RLS missions/GPS, la finalisation des métriques et le
 chargement Clerk headless avec le `tokenCache` SecureStore sont finalisés et
 restent invariants pendant le développement actif. Au retour au premier plan,

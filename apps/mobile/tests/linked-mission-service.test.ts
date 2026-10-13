@@ -112,4 +112,21 @@ describe('linked mission gamification handoff', () => {
     })
     expect(fetchMock).not.toHaveBeenCalled()
   })
+
+  it('stops before the network when Clerk changes while the token is acquired', async () => {
+    vi.stubEnv('EXPO_PUBLIC_WEB_APP_URL', 'https://cleanmymap.test')
+    getUserId
+      .mockResolvedValueOnce('user_123')
+      .mockResolvedValueOnce('user_other')
+    getToken.mockResolvedValue('clerk-bearer')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(reconcileLinkedMission('mission-1', 'user_123')).resolves.toEqual({
+      ok: false,
+      error: 'Identité Clerk obsolète : réconciliation interrompue.',
+      terminal: false,
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
 })

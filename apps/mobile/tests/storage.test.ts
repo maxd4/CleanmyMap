@@ -77,6 +77,17 @@ describe('mobile GPS offline storage', () => {
     await expect(getPendingLinkedMissionReconciliationIds('user_b')).resolves.toEqual(['mission-b1'])
   })
 
+  it('serializes reconciliation additions and removals for one owner', async () => {
+    await enqueuePendingLinkedMissionReconciliation('user_a', 'mission-a1')
+
+    await Promise.all([
+      enqueuePendingLinkedMissionReconciliation('user_a', 'mission-a2'),
+      removePendingLinkedMissionReconciliation('user_a', 'mission-a1'),
+    ])
+
+    await expect(getPendingLinkedMissionReconciliationIds('user_a')).resolves.toEqual(['mission-a2'])
+  })
+
   it('keeps an offline point and replays it once Clerk/Supabase is available', async () => {
     await bufferPoint(ownerId, point)
     expect(await getPendingGpsPointCount(ownerId)).toBe(1)
@@ -185,6 +196,34 @@ describe('mobile GPS offline storage', () => {
     await flushBuffer(ownerId)
 
     expect(acceptedPointIds).toEqual(['point-1', 'point-1'])
+    expect(await getPendingGpsPointCount(ownerId)).toBe(0)
+  })
+
+  it('persists an identity for a legacy buffered point before a restart/retry', async () => {
+    const legacyPoint = { ...point, client_point_id: undefined }
+    state.values.set('_cmm_gps_buffer_index_user_123', JSON.stringify(['legacy-record']))
+    state.values.set('legacy-record', JSON.stringify(legacyPoint))
+    const acceptedPointIds: string[] = []
+    const upsert = vi.fn()
+      .mockImplementationOnce(async (rows: typeof point[]) => {
+        acceptedPointIds.push(rows[0].client_point_id)
+        return { error: new Error('ack lost after commit') }
+      })
+      .mockImplementationOnce(async (rows: typeof point[]) => {
+        acceptedPointIds.push(rows[0].client_point_id)
+        return { error: null }
+      })
+    state.client = { from: vi.fn(() => ({ upsert })) }
+
+    await flushBuffer(ownerId)
+    const persistedAfterFirstAttempt = JSON.parse(state.values.get('legacy-record') ?? '{}') as { client_point_id?: string }
+    expect(persistedAfterFirstAttempt.client_point_id).toEqual(expect.any(String))
+    expect(await getPendingGpsPointCount(ownerId)).toBe(1)
+
+    await flushBuffer(ownerId)
+
+    expect(acceptedPointIds).toHaveLength(2)
+    expect(acceptedPointIds[1]).toBe(acceptedPointIds[0])
     expect(await getPendingGpsPointCount(ownerId)).toBe(0)
   })
 

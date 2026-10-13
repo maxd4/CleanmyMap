@@ -1162,6 +1162,18 @@ par trigger invoker sont finalisés et invariants. La baseline de tests couvre :
 - cohérence identité Clerk → Supabase ;
 - absence d'écriture client directe de `distance_m` et `duration_s`.
 
+Pour les changements de synchronisation GPS, les tests ciblés doivent également
+exercer les branches de concurrence et de reprise, et pas seulement vérifier la
+présence des appels : ajout/suppression owner-scoped sérialisés, coalescence des
+reprises, changement de compte avant émission, identité stable d'un point entre
+envoi direct, buffer et rejeu, perte d'acquittement, redémarrage avec un buffer
+historique et conservation de `client_point_id` lors de la lecture du tracé.
+Les tests unitaires et les assertions statiques de migration prouvent le contrat
+du code, mais ne prouvent ni l'unicité PostgreSQL ni les courses RLS à deux
+sessions. Une preuve SQL réelle doit utiliser l'environnement Supabase
+éphémère autorisé ; à défaut, le compte rendu doit déclarer explicitement
+`DB_SEMANTICS_NOT_EXECUTED`.
+
 Cette lane est une validation de code et de contrats. Elle ne constitue pas un
 test sur téléphone réel, une validation du background headless ou une preuve de
 préparation à la production.

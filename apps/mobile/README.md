@@ -640,5 +640,22 @@ La baseline M0 couvre désormais par tests unitaires et contractuels :
 - cohérence identité Clerk → Supabase ;
 - absence d'écriture client directe des métriques dérivées.
 
+La synchronisation mobile est aussi couverte sur ses branches de reprise :
+
+- les ajouts et suppressions de réconciliations sont sérialisés par propriétaire
+  Clerk, et une reprise concurrente du même propriétaire est coalescée ;
+- un changement de compte avant l'émission réseau ou pendant la résolution du
+  client interrompt l'opération sans lire ni envoyer le namespace précédent ;
+- un point GPS conserve le même `client_point_id` entre envoi direct, buffer,
+  redémarrage et rejeu après perte d'acquittement ; les anciens points sans cet
+  identifiant reçoivent une identité persistée avant leur première reprise ;
+- la lecture du tracé conserve l'identité client des points historiques, tandis
+  que les métriques `distance_m` et `duration_s` restent dérivées côté serveur.
+
+Ces tests unitaires, le contrat SQL statique et les contrôles RLS ne remplacent
+pas une exécution PostgreSQL à deux sessions. Tant que cette exécution n'est pas
+disponible dans l'environnement autorisé, la preuve doit rester marquée
+`DB_SEMANTICS_NOT_EXECUTED`.
+
 Le contrat du shell protège aussi les trois destinations V1 et les ponts vers les
 surfaces web existantes.

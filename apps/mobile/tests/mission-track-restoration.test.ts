@@ -25,6 +25,7 @@ import { getMissionTrack } from '../lib/tracking-service'
 const restoredPoints = [
   {
     id: 2,
+    client_point_id: 'point-2',
     mission_id: 'mission-1',
     latitude: 48.857,
     longitude: 2.353,
@@ -34,6 +35,7 @@ const restoredPoints = [
   },
   {
     id: 1,
+    client_point_id: 'point-1',
     mission_id: 'mission-1',
     latitude: 48.856,
     longitude: 2.352,
@@ -69,6 +71,9 @@ describe('mobile mission track restoration', () => {
       data: [restoredPoints[1], restoredPoints[0]],
     })
     expect(client.from).toHaveBeenCalledWith('gps_points')
+    expect(client.select).toHaveBeenCalledWith(
+      'id, client_point_id, mission_id, latitude, longitude, accuracy_m, altitude_m, recorded_at',
+    )
     expect(client.eq).toHaveBeenCalledWith('mission_id', 'mission-1')
     expect(client.order).toHaveBeenCalledWith('recorded_at', { ascending: true })
     expect(client.update).not.toHaveBeenCalled()

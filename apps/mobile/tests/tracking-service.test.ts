@@ -9,6 +9,8 @@ const state = vi.hoisted(() => ({
   currentUserId: 'user_123' as string | null,
   sequence: [] as string[],
 }))
+const getClient = vi.hoisted(() => vi.fn())
+const getUserId = vi.hoisted(() => vi.fn())
 
 vi.mock('expo-constants', () => ({
   default: { appOwnership: 'standalone', executionEnvironment: 'standalone' },
@@ -31,8 +33,8 @@ vi.mock('expo-task-manager', () => ({
 }))
 
 vi.mock('../lib/supabase', () => ({
-  getAuthenticatedSupabaseClient: vi.fn(async () => state.client),
-  getClerkUserId: vi.fn(async () => state.currentUserId),
+  getAuthenticatedSupabaseClient: getClient,
+  getClerkUserId: getUserId,
 }))
 
 vi.mock('../lib/gps-permission-rationale', () => ({
@@ -133,6 +135,8 @@ describe('mobile tracking service', () => {
     state.taskRegistered = false
     state.currentUserId = 'user_123'
     state.sequence.length = 0
+    getClient.mockImplementation(async () => state.client)
+    getUserId.mockImplementation(async () => state.currentUserId)
     vi.clearAllMocks()
   })
 
@@ -252,6 +256,30 @@ describe('mobile tracking service', () => {
       latitude: 48.8566,
       longitude: 2.3522,
     })).resolves.toEqual({
+      ok: false,
+      error: `${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.`,
+    })
+    expect(upsert).not.toHaveBeenCalled()
+    expect(bufferPoint).not.toHaveBeenCalled()
+  })
+
+  it('refuses a GPS write when Clerk changes while the client is being resolved', async () => {
+    const upsert = vi.fn(async () => ({ error: null }))
+    const client = { from: vi.fn(() => ({ upsert })) }
+    let releaseClient!: () => void
+    getClient.mockImplementationOnce(() => new Promise((resolve) => {
+      releaseClient = () => resolve(client)
+    }))
+
+    const pendingWrite = saveLocationPoint('mission-1', {
+      latitude: 48.8566,
+      longitude: 2.3522,
+    })
+    await vi.waitFor(() => expect(getClient).toHaveBeenCalledOnce())
+    state.currentUserId = 'user_other'
+    releaseClient()
+
+    await expect(pendingWrite).resolves.toEqual({
       ok: false,
       error: `${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.`,
     })

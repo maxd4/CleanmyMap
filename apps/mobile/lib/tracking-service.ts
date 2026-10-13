@@ -393,9 +393,13 @@ export async function saveLocationPoint(
     await bufferPoint(resolvedOwnerId, point);
     return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
   }
-  if (currentUserId !== resolvedOwnerId) {
-    await bufferPoint(resolvedOwnerId, point);
-    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  const verifiedUserId = await getClerkUserId();
+  if (verifiedUserId !== resolvedOwnerId) {
+    if (!verifiedUserId) {
+      await bufferPoint(resolvedOwnerId, point);
+      return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+    }
+    return { ok: false, error: `${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.` };
   }
 
   let error: Error | null = null;
