@@ -125,7 +125,7 @@ Lecture rapide:
 | 21/05/26 | **Séparation Codex / GPT-5.4 mini** | Distinction explicite entre les sessions Codex et le modèle GPT-5.4 mini utilisé pendant le développement du site, avec badge ACV dédié, pour éviter de mélanger développement et production. |
 | 26/05/26 | **Journal hebdomadaire Codex** | Ajout d'un historique spécifique à l'usage Codex — développement du site pour enregistrer les semaines manuellement, reconstruire les périodes passées et convertir ces signaux projet-spécifiques en équivalent CO2e sans moyenne externe. |
 | 21/05/26 | **Deuxième ordre d'impact** | Ajout d'une décomposition lisible du CO2e en CO2 brut, électricité, autres GES, produits chimiques et eau, afin de détailler la structure du graphe et ses priorités de réduction. |
-| 24/05/26 | **Chaîne Sentry post-build sans blocage** | Remplacement du build plugin Sentry par un upload post-build des source maps via `sentry-cli` avec injection des debug IDs. Impact positif: le build n'est plus fragile sur les dépendances natives et les symboles restent récupérables en production. Limite: il faut un `SENTRY_AUTH_TOKEN` et des variables Sentry correctement renseignées, sinon l'upload est sauté. |
+| 24/05/26 | **Chaîne Sentry post-build sans blocage** | Remplacement du build plugin Sentry par un upload post-build des source maps via la CLI v11 `sentry` avec injection des debug IDs. Impact positif: le build n'est plus fragile sur les dépendances natives et les symboles restent récupérables en production. Limite: il faut un `SENTRY_AUTH_TOKEN` et des variables Sentry correctement renseignées, sinon l'upload est sauté. |
 
 ---
 

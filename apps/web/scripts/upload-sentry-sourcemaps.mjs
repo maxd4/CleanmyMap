@@ -22,10 +22,10 @@ function error(message) {
 }
 
 function runSentryCli(args) {
-  const sentryBin =
-    process.env.SENTRY_CLI_BIN?.trim() ||
-    (process.platform === "win32" ? "npx.cmd" : "npx");
-  const result = spawnSync(sentryBin, ["sentry-cli", ...args], {
+  const configuredBin = process.env.SENTRY_CLI_BIN?.trim();
+  const sentryBin = configuredBin || (process.platform === "win32" ? "npx.cmd" : "npx");
+  const command = configuredBin ? [] : ["sentry"];
+  const result = spawnSync(sentryBin, [...command, ...args], {
     cwd: process.cwd(),
     stdio: "inherit",
     env: process.env,
@@ -34,7 +34,7 @@ function runSentryCli(args) {
 
   if (result.status !== 0) {
     const code = result.status ?? 1;
-    throw new Error(`sentry-cli failed with exit code ${code}`);
+    throw new Error(`Sentry CLI failed with exit code ${code}`);
   }
 }
 
@@ -231,16 +231,7 @@ try {
   const injectClientArgs = [
     "sourcemaps",
     "inject",
-    "--org",
-    org,
-    "--project",
-    project,
-    "--auth-token",
-    authToken,
   ];
-  if (release) {
-    injectClientArgs.push("--release", release);
-  }
   injectClientArgs.push(clientStage.stagingRoot);
   runSentryCli(injectClientArgs);
 
@@ -253,15 +244,6 @@ try {
   const clientArgs = [
     "sourcemaps",
     "upload",
-    "--org",
-    org,
-    "--project",
-    project,
-    "--auth-token",
-    authToken,
-    "--validate",
-    "--wait",
-    "--no-sourcemap-reference",
     "--no-rewrite",
     "--url-prefix",
     "~/_next/static",
@@ -292,16 +274,7 @@ if (serverMaps.length > 0) {
       const injectServerArgs = [
         "sourcemaps",
         "inject",
-        "--org",
-        org,
-        "--project",
-        project,
-        "--auth-token",
-        authToken,
       ];
-      if (release) {
-        injectServerArgs.push("--release", release);
-      }
       injectServerArgs.push(serverStage.stagingRoot);
       runSentryCli(injectServerArgs);
 
@@ -314,15 +287,6 @@ if (serverMaps.length > 0) {
       const serverArgs = [
         "sourcemaps",
         "upload",
-        "--org",
-        org,
-        "--project",
-        project,
-        "--auth-token",
-        authToken,
-        "--validate",
-        "--wait",
-        "--no-sourcemap-reference",
         "--no-rewrite",
         "--url-prefix",
         "~/_next/server",

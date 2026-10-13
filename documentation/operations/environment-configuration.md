@@ -138,7 +138,7 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `SENTRY_AUTH_TOKEN` | Sentry | SECRET | O | O | O | O | Sentry / CI | upload sourcemaps |
 | `SENTRY_RELEASE` | Sentry | CONFIG | O | O | O | O | CI/Vercel | release serveur |
 | `SENTRY_ENVIRONMENT` | Sentry | CONFIG | O | O | O | O | Vercel | contexte serveur |
-| `SENTRY_CLI_BIN` | Sentry CLI | L | L | L | L | L | poste/CI | override build |
+| `SENTRY_CLI_BIN` | Sentry CLI v11 | L | L | L | L | L | poste/CI | override build (`sentry`) |
 | `NEXT_PUBLIC_POSTHOG_KEY` | PostHog | PUBLIC | O | O | O | O | PostHog / Vercel | analytics navigateur |
 | `NEXT_PUBLIC_POSTHOG_TOKEN` | PostHog | PUBLIC | O | O | O | O | PostHog / Vercel | analytics legacy |
 | `NEXT_PUBLIC_POSTHOG_HOST` | PostHog | PUBLIC | O | O | O | O | PostHog / Vercel | endpoint analytics |

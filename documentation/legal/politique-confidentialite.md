@@ -101,8 +101,14 @@ les réactiver.
 Sentry n'est pas présenté comme un outil d'analytics soumis au consentement.
 Lorsqu'une DSN est configurée, il sert à l'observabilité, au diagnostic et à la
 sécurité. Les données techniques envoyées peuvent contenir des traces, des
-messages d'erreur et des métadonnées utiles. Aucun masquage ou anonymisation
-spécifique supplémentaire n'est déclaré comme configuré par ce dépôt.
+messages d'erreur et des métadonnées utiles. Le runtime configure explicitement
+la collecte Sentry pour conserver la baseline restrictive du SDK précédent :
+les informations utilisateur, cookies, corps HTTP, données de requête de base
+de données, files d'attente, variables et documents GraphQL, ainsi que les
+entrées/sorties GenAI, sont désactivés ; les en-têtes et paramètres d'URL
+identifiants sont filtrés. Cette configuration ne constitue pas une preuve de
+la rétention ou du traitement ultérieur appliqué par Sentry, qui dépendent aussi
+du compte et des paramètres du fournisseur.
 
 ## 5. Destinataires et prestataires
 

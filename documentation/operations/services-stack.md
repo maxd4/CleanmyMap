@@ -192,8 +192,8 @@ Statut observé au moment de cette passe:
   l'upload des maps navigateur; `experimental.serverSourceMaps` est désactivé
   dans la configuration actuelle, donc aucune map serveur n'est promise par
   cette option;
-- l'upload des source maps est géré après `next build` via `sentry-cli` avec
-  injection des debug IDs; l'étape ne pousse que les bundles JavaScript qui ont
+- l'upload des source maps est géré après `next build` via la CLI v11 `sentry`
+  avec injection des debug IDs; l'étape ne pousse que les bundles JavaScript qui ont
   un `.map` correspondant, exclut les maps CSS tierces, et désactive la
   détection automatique des `sourceMappingURL` ainsi que le rewriting, ce qui
   évite les faux `missing sourcemap!` et les warnings de chunks non résolus;
@@ -203,6 +203,10 @@ Statut observé au moment de cette passe:
   Vercel supplémentaire n'est donc activée sans preuve de compatibilité avec
   le collecteur;
 - si `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` ou `SENTRY_PROJECT` manquent, l'upload est sauté sans bloquer le runtime.
+- les paramètres d'authentification et d'organisation sont fournis à la CLI par
+  l'environnement de build; ils ne sont pas ajoutés aux arguments ni au bundle
+  navigateur. `SENTRY_CLI_BIN`, lorsqu'il est défini, doit pointer vers la CLI
+  v11 `sentry`.
 
 ### Resend
 
