@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { beforeEach, expect, it, vi } from "vitest";
 import { CURRENT_GAMIFICATION_RULES_REVISION } from "./progression-types";
+import { ProgressionProfileConflictError } from "./progression-profile-refresh";
+import { ProgressionProfileReadError } from "./progression-level-refresh";
 
 const loadUserProgressionStatsMock = vi.hoisted(() => vi.fn());
 const broadcastGamificationAnnouncementMock = vi.hoisted(() => vi.fn());
@@ -32,6 +34,10 @@ beforeEach(() => {
 
 function createLevelRefreshSupabase(params: {
   previousLevel: number;
+  previousUpdatedAt?: string;
+  profileSnapshots?: Array<{ current_level: number; updated_at: string } | null>;
+  profileReadError?: Error;
+  rpcStatuses?: Array<"applied" | "conflict">;
   events: Array<{ status_phase: "pending" | "validated"; xp_awarded: number }>;
   notificationFailure?: Error;
 }) {
@@ -56,25 +62,40 @@ function createLevelRefreshSupabase(params: {
   const progressionProfilesChain = {
     select: vi.fn(() => progressionProfilesChain),
     eq: vi.fn(() => progressionProfilesChain),
-    maybeSingle: vi.fn(async () => ({
-      data: { current_level: params.previousLevel },
-      error: null,
-    })),
-  };
-  const supabase = {
-    rpc: vi.fn(async (name: string, args: Record<string, unknown>) => {
-      expect(name).toBe("refresh_gamification_profile");
-      await profileUpsert({
-        user_id: args.p_user_id,
-        xp_total: params.events.reduce((total, event) => total + event.xp_awarded, 0),
-        xp_pending: params.events.filter((event) => event.status_phase === "pending").reduce((total, event) => total + event.xp_awarded, 0),
-        xp_validated: params.events.filter((event) => event.status_phase === "validated").reduce((total, event) => total + event.xp_awarded, 0),
-        current_level: args.p_current_level,
-        potential_level: args.p_potential_level,
-        current_applied_rules_revision: args.p_current_applied_rules_revision,
-      });
-      return { data: { status: "applied", previous_level: params.previousLevel }, error: null };
+    maybeSingle: vi.fn(async () => {
+      if (params.profileReadError) {
+        return { data: null, error: params.profileReadError };
+      }
+      const snapshots = params.profileSnapshots ?? [{
+        current_level: params.previousLevel,
+        updated_at: params.previousUpdatedAt ?? "2026-10-13T10:00:00.000Z",
+      }];
+      const snapshot = snapshots[Math.min(profileReadCount++, snapshots.length - 1)] ?? null;
+      return { data: snapshot, error: null };
     }),
+  };
+  let profileReadCount = 0;
+  let rpcCallCount = 0;
+  const rpc = vi.fn(async (name: string, args: Record<string, unknown>) => {
+    expect(name).toBe("refresh_gamification_profile");
+    const statuses = params.rpcStatuses ?? ["applied"];
+    const status = statuses[Math.min(rpcCallCount++, statuses.length - 1)] ?? "applied";
+    if (status === "conflict") {
+      return { data: { status: "conflict" }, error: null };
+    }
+    await profileUpsert({
+      user_id: args.p_user_id,
+      xp_total: params.events.reduce((total, event) => total + event.xp_awarded, 0),
+      xp_pending: params.events.filter((event) => event.status_phase === "pending").reduce((total, event) => total + event.xp_awarded, 0),
+      xp_validated: params.events.filter((event) => event.status_phase === "validated").reduce((total, event) => total + event.xp_awarded, 0),
+      current_level: args.p_current_level,
+      potential_level: args.p_potential_level,
+      current_applied_rules_revision: args.p_current_applied_rules_revision,
+    });
+    return { data: { status: "applied", previous_level: params.previousLevel }, error: null };
+  });
+  const supabase = {
+    rpc,
     from: vi.fn((table: string) => {
       if (table === "progression_events") return progressionEventsChain;
       if (table === "progression_profiles") {
@@ -90,7 +111,7 @@ function createLevelRefreshSupabase(params: {
     }),
   } as unknown as SupabaseClient;
 
-  return { profileUpsert, notificationInsert, supabase };
+  return { profileUpsert, notificationInsert, rpc, progressionProfilesChain, supabase };
 }
 
 function completeLevelSixStats() {
@@ -145,6 +166,92 @@ it("includes action balance XP in the validated profile total", async () => {
       xp_validated: 3,
       current_applied_rules_revision: CURRENT_GAMIFICATION_RULES_REVISION,
     }));
+});
+
+it("passes the existing profile revision to the atomic refresh RPC", async () => {
+  loadUserProgressionStatsMock.mockResolvedValue(completeLevelSixStats());
+  const { rpc, progressionProfilesChain, supabase } = createLevelRefreshSupabase({
+    previousLevel: 5,
+    previousUpdatedAt: "2026-10-13T11:12:13.000Z",
+    events: [{ status_phase: "validated", xp_awarded: 15 }],
+  });
+
+  await refreshProgressionProfile(supabase, "user-1");
+
+  expect(rpc).toHaveBeenCalledWith("refresh_gamification_profile", expect.objectContaining({
+    p_user_id: "user-1",
+    p_expected_updated_at: "2026-10-13T11:12:13.000Z",
+  }));
+  expect(progressionProfilesChain.select).toHaveBeenCalledWith("current_level, updated_at");
+});
+
+it("allows the atomic refresh RPC to create a genuinely absent profile", async () => {
+  loadUserProgressionStatsMock.mockResolvedValue(completeLevelSixStats());
+  const { rpc, supabase } = createLevelRefreshSupabase({
+    previousLevel: 1,
+    profileSnapshots: [null],
+    events: [{ status_phase: "validated", xp_awarded: 15 }],
+  });
+
+  await refreshProgressionProfile(supabase, "user-1");
+
+  expect(rpc).toHaveBeenCalledWith("refresh_gamification_profile", expect.objectContaining({
+    p_expected_updated_at: null,
+  }));
+});
+
+it("re-reads the profile after a stale revision conflict and then succeeds", async () => {
+  loadUserProgressionStatsMock.mockResolvedValue(completeLevelSixStats());
+  const { rpc, supabase } = createLevelRefreshSupabase({
+    previousLevel: 5,
+    profileSnapshots: [
+      { current_level: 5, updated_at: "2026-10-13T11:12:13.000Z" },
+      { current_level: 5, updated_at: "2026-10-13T11:12:14.000Z" },
+    ],
+    rpcStatuses: ["conflict", "applied"],
+    events: [{ status_phase: "validated", xp_awarded: 15 }],
+  });
+
+  await refreshProgressionProfile(supabase, "user-1");
+
+  expect(rpc).toHaveBeenCalledTimes(2);
+  expect(rpc.mock.calls.map(([, args]) => args.p_expected_updated_at)).toEqual([
+    "2026-10-13T11:12:13.000Z",
+    "2026-10-13T11:12:14.000Z",
+  ]);
+});
+
+it("fails explicitly on a profile read error without attempting the RPC", async () => {
+  loadUserProgressionStatsMock.mockResolvedValue(completeLevelSixStats());
+  const readFailure = new Error("profile read unavailable");
+  const { rpc, supabase } = createLevelRefreshSupabase({
+    previousLevel: 1,
+    profileReadError: readFailure,
+    events: [{ status_phase: "validated", xp_awarded: 15 }],
+  });
+
+  await expect(refreshProgressionProfile(supabase, "user-1")).rejects.toBeInstanceOf(ProgressionProfileReadError);
+
+  expect(rpc).not.toHaveBeenCalled();
+  expect(logFailureMock).toHaveBeenCalledWith(
+    "Gamification/LevelUp",
+    "Previous level read failed",
+    expect.any(ProgressionProfileReadError),
+    { userId: "user-1" },
+  );
+});
+
+it("stops after three persistent profile revision conflicts", async () => {
+  loadUserProgressionStatsMock.mockResolvedValue(completeLevelSixStats());
+  const { rpc, supabase } = createLevelRefreshSupabase({
+    previousLevel: 5,
+    rpcStatuses: ["conflict", "conflict", "conflict"],
+    events: [{ status_phase: "validated", xp_awarded: 15 }],
+  });
+
+  await expect(refreshProgressionProfile(supabase, "user-1")).rejects.toBeInstanceOf(ProgressionProfileConflictError);
+
+  expect(rpc).toHaveBeenCalledTimes(3);
 });
 
 it("counts validated participant tiers in validated XP", async () => {

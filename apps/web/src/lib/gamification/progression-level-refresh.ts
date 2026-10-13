@@ -1,6 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logFailure } from "@/lib/logging/failure-log";
 
+export class ProgressionProfileReadError extends Error {
+  constructor(cause: unknown) {
+    super("La lecture du profil de progression a échoué.", { cause });
+    this.name = "ProgressionProfileReadError";
+  }
+}
+
 export async function loadPreviousLevel(
   supabase: SupabaseClient,
   userId: string,
@@ -8,7 +15,7 @@ export async function loadPreviousLevel(
   try {
     const { data: existingProfile, error } = await supabase
       .from("progression_profiles")
-      .select("current_level")
+      .select("current_level, updated_at")
       .eq("user_id", userId)
       .maybeSingle();
     if (error) {
@@ -17,8 +24,11 @@ export async function loadPreviousLevel(
     const profile = existingProfile as { current_level?: number | null; updated_at?: string | null } | null;
     return { level: profile?.current_level ?? 1, updatedAt: profile?.updated_at ?? null };
   } catch (readError) {
-    logFailure("Gamification/LevelUp", "Previous level read failed", readError, { userId });
-    return { level: 1, updatedAt: null };
+    const explicitReadError = readError instanceof ProgressionProfileReadError
+      ? readError
+      : new ProgressionProfileReadError(readError);
+    logFailure("Gamification/LevelUp", "Previous level read failed", explicitReadError, { userId });
+    throw explicitReadError;
   }
 }
 
