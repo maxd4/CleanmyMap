@@ -7,7 +7,8 @@ describe("SPOGOMI organizer creation contract", () => {
   it("uses the existing authenticated API with user-entered dates and idempotency", () => {
     expect(source).toContain('fetch("/api/spogomi/events"');
     expect(source).toContain('method: "POST"');
-    expect(source).toContain("crypto.randomUUID()");
+    expect(source).toContain("reuseOrCreateSpogomiCreationAttempt");
+    expect(source).toContain("creationAttemptRef.current = null");
     expect(source).toContain("startsAtDate.toISOString()");
     expect(source).toContain("router.refresh()");
     expect(source).not.toContain("publicVisibility");

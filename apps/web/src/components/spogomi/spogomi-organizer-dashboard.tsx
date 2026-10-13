@@ -2,11 +2,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CalendarDays, MapPin, Plus, ShieldCheck } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import type { EventRow } from "@/lib/spogomi/preparation-service";
+import {
+  reuseOrCreateSpogomiCreationAttempt,
+  type SpogomiCreationAttempt,
+  type SpogomiCreationPayload,
+} from "./spogomi-organizer-dashboard.creation";
 
 function formatDate(value: string | null) {
   if (!value) return "Date à préciser";
@@ -23,45 +28,64 @@ export function SpogomiOrganizerDashboard({ initialEvents }: { initialEvents: Ev
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const creationAttemptRef = useRef<SpogomiCreationAttempt | null>(null);
+  const submissionInFlightRef = useRef(false);
 
   async function createEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
+    if (submissionInFlightRef.current) return;
+
+    submissionInFlightRef.current = true;
     setPending(true);
     setMessage(null);
     setError(null);
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const startsAt = String(form.get("startsAt") ?? "");
     const endsAt = String(form.get("endsAt") ?? "");
     const startsAtDate = new Date(startsAt);
     const endsAtDate = endsAt ? new Date(endsAt) : null;
     if (!startsAt || Number.isNaN(startsAtDate.getTime()) || (endsAt && Number.isNaN(endsAtDate?.getTime()))) {
       setError("Saisissez une date de début valide et, si nécessaire, une date de fin valide.");
+      submissionInFlightRef.current = false;
       setPending(false);
       return;
     }
+
+    const payload: SpogomiCreationPayload = {
+      name: String(form.get("name") ?? ""),
+      locationLabel: String(form.get("locationLabel") ?? ""),
+      mode: String(form.get("mode") ?? "casual") as SpogomiCreationPayload["mode"],
+      startsAt: startsAtDate.toISOString(),
+      endsAt: endsAtDate ? endsAtDate.toISOString() : null,
+      casualTeamSize: form.get("casualTeamSize") ? Number(form.get("casualTeamSize")) : null,
+    };
+    const attempt = reuseOrCreateSpogomiCreationAttempt(
+      creationAttemptRef.current,
+      payload,
+      () => crypto.randomUUID(),
+    );
+    creationAttemptRef.current = attempt;
 
     try {
       const response = await fetch("/api/spogomi/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          idempotencyKey: `spogomi-${crypto.randomUUID()}`,
-          name: String(form.get("name") ?? ""),
-          locationLabel: String(form.get("locationLabel") ?? ""),
-          mode: String(form.get("mode") ?? "casual"),
-          startsAt: startsAtDate.toISOString(),
-          endsAt: endsAtDate ? endsAtDate.toISOString() : null,
-          casualTeamSize: form.get("casualTeamSize") ? Number(form.get("casualTeamSize")) : null,
+          idempotencyKey: attempt.idempotencyKey,
+          ...attempt.payload,
         }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error ?? "La compétition n’a pas pu être créée.");
-      event.currentTarget.reset();
+      creationAttemptRef.current = null;
+      formElement.reset();
       setMessage("Compétition créée en privé. Vous pouvez maintenant ouvrir son espace de préparation.");
       router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "La compétition n’a pas pu être créée.");
     } finally {
+      submissionInFlightRef.current = false;
       setPending(false);
     }
   }

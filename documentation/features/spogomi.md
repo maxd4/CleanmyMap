@@ -348,6 +348,12 @@ La préparation privée est désormais portée par `/spogomi/[eventSlug]/gestion
   vérifient le propriétaire et permettent de reprendre un échec de liaison sans
   créer une seconde action (`PARTIAL_ALLOWED`) ; le type juridique SPOGOMI
   France reste provisoire tant que le répertoire ne le configure pas ;
+- créer depuis `/dashboard/spogomi` avec une clé et un payload conservés pour
+  la même intention lors d'une réponse réseau indéterminée ; le formulaire ne
+  se réinitialise et le cockpit ne se rafraîchit qu'après confirmation du
+  serveur ; le catalogue ordinaire part des créations et des relations
+  `action_organizers`, déduplique les événements puis applique `canManageEvent`,
+  tandis que le catalogue global `ACTIVE_ROLE=admin|max` reste paginé ;
 - déposer un CSV, TSV, XLSX, XLS ou ODS de roster privé, sélectionner
   explicitement la feuille, la ligne d'en-tête et les correspondances ambiguës,
   voir l'encodage, les inconnues, erreurs, conflits et doublons probables, puis

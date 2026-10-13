@@ -33,17 +33,19 @@ export type EventRow = {
   composition_revision?: number;
 };
 
+export const SPOGOMI_ORGANIZER_EVENT_SELECT =
+  "id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility, composition_revision";
+
 function actionIdentity(identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>): ActionPermissionIdentity {
   return { userId: identity?.userId ?? "", role: identity?.role ?? null, activeRole: identity?.activeRole ?? null };
 }
 
-async function canManageEvent(supabase: SupabaseClient, event: EventRow): Promise<boolean> {
-  const organizers = await supabase.from("action_organizers").select("organizer_clerk_id").eq("action_id", event.action_id);
-  if (organizers.error) throw organizers.error;
-  const identity = await getCurrentUserIdentity();
-  return canManageAction(actionIdentity(identity), { createdByClerkId: event.created_by_clerk_id }, [
-    ...(organizers.data ?? []).map((row) => String(row.organizer_clerk_id)),
-  ]);
+export function canManageEvent(
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
+  event: Pick<EventRow, "created_by_clerk_id">,
+  organizerIds: string[],
+): boolean {
+  return canManageAction(actionIdentity(identity), { createdByClerkId: event.created_by_clerk_id }, organizerIds);
 }
 
 export async function loadSpogomiEventForOrganizer(supabase: SupabaseClient, eventId: string, userId: string) {
@@ -66,7 +68,7 @@ async function loadOrganizerEventByFilter(
 ) {
   const result = await supabase
     .from("spogomi_events")
-    .select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility, composition_revision")
+    .select(SPOGOMI_ORGANIZER_EVENT_SELECT)
     .eq(column, value)
     .maybeSingle();
   if (result.error) throw result.error;
@@ -74,7 +76,9 @@ async function loadOrganizerEventByFilter(
   const event = result.data as EventRow;
   const identity = await getCurrentUserIdentity({ userId });
   if (!identity || identity.userId !== userId) return false;
-  if (!(await canManageEvent(supabase, event))) return false;
+  const organizers = await supabase.from("action_organizers").select("organizer_clerk_id").eq("action_id", event.action_id);
+  if (organizers.error) throw organizers.error;
+  if (!canManageEvent(identity, event, (organizers.data ?? []).map((row) => String(row.organizer_clerk_id)))) return false;
   return event;
 }
 
