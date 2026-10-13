@@ -105,7 +105,10 @@ jobs:
             fi
             sleep 1
           done
-          npx supabase db query --workdir apps/web/supabase --local "notify pgrst, 'reload schema';"
+          for reload_attempt in $(seq 1 5); do
+            npx supabase db query --workdir apps/web/supabase --local "notify pgrst, 'reload schema';"
+            sleep 2
+          done
 
       - name: Run SPOGOMI business tests
         run: |
