@@ -39,7 +39,7 @@ export default defineConfig({
     {
       name: "local public",
       testMatch:
-        /(?:smoke-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries)\.spec\.ts/,
+        /(?:smoke-public|spogomi-navigation|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries)\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
     {

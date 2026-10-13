@@ -9,6 +9,7 @@ import type { useJoinFormSectionController } from "./rejoindre-un-formulaire-sec
 import { ActionCard, FilterField } from "./rejoindre-un-formulaire-section.shared";
 import { JoinFormPublicQueue } from "./rejoindre-un-formulaire-section-public-queue";
 import { formatCount } from "./rejoindre-un-formulaire-section.format";
+import { SpogomiFutureCard } from "@/components/spogomi/spogomi-future-card";
 import type { LocationFilter, PeriodFilter, StatusFilter } from "./rejoindre-un-formulaire-section.controller";
 import type { JoinableActionSort } from "./rejoindre-un-formulaire-section.utils";
 
@@ -189,7 +190,8 @@ export function JoinFormExplorer(props: ExplorerProps) {
       )}
     </div>
 
-    <div className="space-y-4">
+    <div className="space-y-4"><SpogomiFutureCard />
+
       {loading && (
         <div className="rounded-[1.1rem] border border-emerald-100 bg-white px-4 py-3 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)]">
           <div className="flex items-center gap-3 text-emerald-800">

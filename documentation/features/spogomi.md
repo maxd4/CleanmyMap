@@ -1153,6 +1153,39 @@ Fichiers principaux :
 - `apps/web/src/components/spogomi/spogomi-international-content.tsx` — bloc bilingue, actualités et filtres ;
 - `apps/web/src/components/spogomi/spogomi-photo-gallery.tsx` — grille et visionneuse clavier.
 
+## 19 sexies. Navigation et cockpit organisateur — CURRENT
+
+La carte « Compétitions SPOGOMI » est visible sous « Actions futures » dans le
+composant réellement monté par `JoinActionSection` et renvoie vers `/spogomi`,
+y compris lorsque la liste d'actions est vide ou filtrée. La page publique
+présente uniquement les événements explicitement publiés. Pour une session
+authentifiée, elle expose aussi l'entrée « Mes événements SPOGOMI » vers
+`/dashboard/spogomi` sans charger les brouillons dans la page publique.
+
+Le cockpit privé obtient les événements depuis une lecture serveur puis
+réutilise `loadSpogomiEventForOrganizer`, qui applique `canManageEvent` et les
+relations `action_organizers` avant de transmettre une projection au client.
+Les événements créés depuis le formulaire appellent seulement
+`POST /api/spogomi/events`, utilisent une clé d'idempotence et restent privés
+par défaut. La navigation vers la gestion est réservée aux événements ainsi
+autorisés ; le lien public n'est rendu que lorsque `public_visibility` vaut
+`published`.
+
+Le décompte de la carte reste désactivé tant qu'une source canonique ne fournit
+pas un instant de début exact, confirmé et horodaté. L'agenda éditorial de la
+World Cup 2027 est donc rendu comme prévisionnel, sans date inventée. Les liens
+de saisie équipe restent générés par l'API protégée ; le bouton d'ouverture
+réutilise uniquement l'URL temporaire retournée par le serveur, avec les
+protections de session, d'expiration, de révocation et de referrer existantes.
+
+Fichiers principaux :
+
+- `apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.explorer.tsx` ;
+- `apps/web/src/components/spogomi/spogomi-future-card.tsx` et `spogomi-countdown.tsx` ;
+- `apps/web/src/app/(app)/spogomi/page.tsx` ;
+- `apps/web/src/app/(app)/dashboard/spogomi/page.tsx` ;
+- `apps/web/src/lib/spogomi/organizer-service.ts`.
+
 ## 20. Sources canoniques liées
 
 - [Participation et formulaire de groupe](./group-action.md)

@@ -5,6 +5,7 @@ import { CmmCard } from "@/components/ui/cmm-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { SpogomiInternationalContent } from "@/components/spogomi/spogomi-international-content";
 import { getTranslation } from "@/lib/i18n/server-translation";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getServerLocale } from "@/lib/server-preferences";
 import { SPOGOMI_EXTERNAL_EVENTS, SPOGOMI_INTERNATIONAL_NEWS, SPOGOMI_INTERNATIONAL_SOURCES } from "@/lib/spogomi/international-content";
 import { listPublishedSpogomiEvents, type SpogomiPublicLifecycle } from "@/lib/spogomi/public-service";
@@ -30,6 +31,7 @@ function formatDate(value: string) {
 export default async function SpogomiIndexPage() {
   const locale = await getServerLocale();
   const { t } = getTranslation("spogomi", locale);
+  const { userId } = await getSafeAuthSession();
   let events = [] as Awaited<ReturnType<typeof listPublishedSpogomiEvents>>;
   try {
     events = await listPublishedSpogomiEvents();
@@ -55,6 +57,17 @@ export default async function SpogomiIndexPage() {
             Discuter avec la communauté <ArrowRight size={16} />
           </Link>
         </CmmCard>
+        {userId ? (
+          <CmmCard tone="amber" variant="glass" className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-black text-amber-950">Mes événements SPOGOMI</h2>
+              <p className="cmm-text-body mt-1 text-slate-900">Retrouver les compétitions que votre identité est autorisée à organiser, y compris vos brouillons.</p>
+            </div>
+            <Link href="/dashboard/spogomi" className="inline-flex min-h-11 items-center gap-2 font-bold text-amber-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">
+              Ouvrir mon espace organisateur <ArrowRight size={16} />
+            </Link>
+          </CmmCard>
+        ) : null}
         <section className="grid gap-4 md:grid-cols-2" aria-label="Modes de compétition">
           <CmmCard tone="emerald" variant="glass" className="space-y-3 p-5">
             <h2 className="flex items-center gap-2 text-xl font-black text-emerald-950">

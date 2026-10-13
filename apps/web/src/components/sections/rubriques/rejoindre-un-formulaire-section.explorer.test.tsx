@@ -92,6 +92,9 @@ describe("JoinFormExplorer UX", () => {
     expect(markup).toContain("Recherche");
     expect(markup).toContain("Filtres");
     expect(markup).toContain("Trier");
+    expect(markup).toContain("Compétitions SPOGOMI");
+    expect(markup).toContain('href="/spogomi"');
+    expect(markup).toContain("Date et heure à confirmer");
     expect(markup).toContain('aria-expanded="false"');
     expect(markup).toContain('aria-controls="join-action-filter-panel"');
     expect(markup).not.toContain("Localisation");
@@ -113,6 +116,8 @@ describe("JoinFormExplorer UX", () => {
     expect(markup).not.toContain("Recherche");
     expect(markup).not.toContain("Filtres");
     expect(markup).not.toContain("Trier");
+    expect(markup).toContain("Compétitions SPOGOMI");
+    expect(markup).toContain('href="/spogomi"');
   });
 
   it("ne rend la gestion des inscriptions que pour une cible explicite revue par le serveur", () => {

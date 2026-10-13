@@ -217,6 +217,7 @@ Il n'existe actuellement aucune page canonique `/learn`. Les pages
 | Route | Fiche | Accès | Palette runtime | Source |
 |---|---|---|---|---|
 | `/dashboard` | [Dashboard](./routes/01-accueil-pilotage/dashboard/dashboard-README.md) | `protected` | amber / pilotage | `apps/web/src/app/(app)/dashboard/page.tsx` |
+| `/dashboard/spogomi` | [Espace organisateur SPOGOMI](./routes/01-accueil-pilotage/spogomi-organizer/spogomi-organizer-README.md) | `protected` ; événements filtrés par l'autorisation organisateur | agir | `apps/web/src/app/(app)/dashboard/spogomi/page.tsx` |
 | `/compte/evolution` | [Évolution du compte](./routes/01-accueil-pilotage/compte-evolution/compte-evolution-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/compte/evolution/page.tsx` |
 | `/explorer` | [Sommaire](./routes/01-accueil-pilotage/explorer/explorer-README.md) | `public-visible` | yellow, exception nommée | `apps/web/src/app/(app)/explorer/page.tsx` |
 | `/parcours` | [Parcours](./routes/01-accueil-pilotage/parcours/parcours-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/page.tsx` |
