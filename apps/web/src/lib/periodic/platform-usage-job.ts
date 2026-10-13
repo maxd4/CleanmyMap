@@ -9,6 +9,7 @@ import {
 import {
   getPublicSurfaceSnapshotDate,
   readLatestPublicSurfaceSnapshot,
+  requirePersistedPublicSurfaceSnapshot,
   toPersistedPublicSurfaceSnapshot,
   upsertPublicSurfaceSnapshot,
   type PublicSurfaceSnapshotRecord,
@@ -94,10 +95,12 @@ export async function runPlatformUsageJob(params: {
   const persistedSnapshot = toPersistedPublicSurfaceSnapshot(snapshot);
   const writeResult = await writeSnapshot(persistedSnapshot);
   if (writeResult === "ignored_older") {
-    const latestSnapshot = await readSnapshot();
-    if (latestSnapshot) {
-      return { status: "reused", snapshot: latestSnapshot };
-    }
+    const latestSnapshot = await requirePersistedPublicSurfaceSnapshot(
+      PLATFORM_USAGE_SNAPSHOT_KEY,
+      snapshot.snapshotDate,
+      readSnapshot,
+    );
+    return { status: "reused", snapshot: latestSnapshot };
   }
 
   return { status: "captured", snapshot };

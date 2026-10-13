@@ -6,6 +6,7 @@ const advanceStateMock = vi.hoisted(() => vi.fn());
 const rebuildStateMock = vi.hoisted(() => vi.fn());
 const readLatestSnapshotMock = vi.hoisted(() => vi.fn());
 const upsertSnapshotMock = vi.hoisted(() => vi.fn());
+const requirePersistedSnapshotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/accueil/public-landing-action-summary", () => ({
   buildLandingFloorDate: (now: Date) => now.toISOString().slice(0, 10),
@@ -18,6 +19,7 @@ vi.mock("@/lib/accueil/public-landing-action-summary", () => ({
 vi.mock("@/lib/public-surface-snapshots", () => ({
   getPublicSurfaceSnapshotDate: (value: string) => value.slice(0, 10),
   readLatestPublicSurfaceSnapshot: readLatestSnapshotMock,
+  requirePersistedPublicSurfaceSnapshot: requirePersistedSnapshotMock,
   upsertPublicSurfaceSnapshot: upsertSnapshotMock,
 }));
 
@@ -101,6 +103,7 @@ describe("public monthly impact snapshot", () => {
     rebuildStateMock.mockResolvedValue(undefined);
     readLatestSnapshotMock.mockResolvedValue(existingSnapshot());
     upsertSnapshotMock.mockResolvedValue(undefined);
+    requirePersistedSnapshotMock.mockResolvedValue(existingSnapshot());
   });
 
   it("uses the first day of the UTC month and exposes the full canonical result", () => {
@@ -262,6 +265,17 @@ describe("public monthly impact snapshot", () => {
     expect(upsertSnapshotMock.mock.calls[0]?.[0].snapshotDate).toBe("2026-09-01");
     expect(advanceStateMock).toHaveBeenCalledWith("2026-09-08");
     expect(loadFullAggregateMock).not.toHaveBeenCalled();
+  });
+
+  it("ne retourne pas la reconstruction locale si la persistance la refuse sans gagnant relisible", async () => {
+    const conflict = new Error("no persisted winner");
+    readLatestSnapshotMock.mockResolvedValue(existingSnapshot({ snapshotDate: "2026-08-01" }));
+    upsertSnapshotMock.mockResolvedValue("ignored_older");
+    requirePersistedSnapshotMock.mockRejectedValue(conflict);
+
+    await expect(
+      generateAndPersistPublicImpactSnapshot({ now: NOW }),
+    ).rejects.toBe(conflict);
   });
 
   it("uses the explicit rebuild mode without using the full-scan RPC in the normal path", async () => {

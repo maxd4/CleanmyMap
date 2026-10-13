@@ -2,6 +2,7 @@ import {
   getPublicSurfaceSnapshotDate,
   isPublicSurfaceSnapshotFresh,
   readLatestPublicSurfaceSnapshot,
+  requirePersistedPublicSurfaceSnapshot,
   upsertPublicSurfaceSnapshot,
   type PublicSurfaceSnapshotRecord,
 } from "@/lib/public-surface-snapshots";
@@ -60,11 +61,10 @@ export async function loadOrRefreshPublicSurfaceSnapshot<TPayload>(
 
       const writeResult = await upsertPublicSurfaceSnapshot(snapshot);
       if (writeResult === "ignored_older") {
-        const persistedSnapshot =
-          await readLatestPublicSurfaceSnapshot<TPayload>(params.snapshotKey);
-        if (persistedSnapshot) {
-          return persistedSnapshot;
-        }
+        return requirePersistedPublicSurfaceSnapshot<TPayload>(
+          params.snapshotKey,
+          snapshot.snapshotDate,
+        );
       }
       return {
         id: `${snapshot.snapshotKey}:${snapshot.snapshotDate}`,
@@ -81,6 +81,9 @@ export async function loadOrRefreshPublicSurfaceSnapshot<TPayload>(
       inFlightRefreshes.delete(refreshKey);
     }
   } catch (error) {
+    if (error instanceof Error && error.name === "PublicSurfaceSnapshotWriteConflictError") {
+      throw error;
+    }
     if (existing && existing.version === params.version) {
       return existing;
     }

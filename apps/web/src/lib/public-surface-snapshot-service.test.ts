@@ -4,11 +4,13 @@ const readLatestPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
 const isPublicSurfaceSnapshotFreshMock = vi.hoisted(() => vi.fn());
 const getPublicSurfaceSnapshotDateMock = vi.hoisted(() => vi.fn(() => "2026-08-26"));
 const upsertPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
+const requirePersistedPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/public-surface-snapshots", () => ({
   getPublicSurfaceSnapshotDate: getPublicSurfaceSnapshotDateMock,
   isPublicSurfaceSnapshotFresh: isPublicSurfaceSnapshotFreshMock,
   readLatestPublicSurfaceSnapshot: readLatestPublicSurfaceSnapshotMock,
+  requirePersistedPublicSurfaceSnapshot: requirePersistedPublicSurfaceSnapshotMock,
   upsertPublicSurfaceSnapshot: upsertPublicSurfaceSnapshotMock,
 }));
 
@@ -47,6 +49,7 @@ describe("loadOrRefreshPublicSurfaceSnapshot", () => {
     readLatestPublicSurfaceSnapshotMock.mockResolvedValue(existingSnapshot());
     isPublicSurfaceSnapshotFreshMock.mockReturnValue(false);
     upsertPublicSurfaceSnapshotMock.mockResolvedValue(undefined);
+    requirePersistedPublicSurfaceSnapshotMock.mockResolvedValue(existingSnapshot());
   });
 
   it("réutilise un snapshot frais de la même version", async () => {
@@ -79,16 +82,31 @@ describe("loadOrRefreshPublicSurfaceSnapshot", () => {
       generatedAt: "2026-08-26T12:00:01.000Z",
       payload: "newer-instance",
     };
-    readLatestPublicSurfaceSnapshotMock
-      .mockResolvedValueOnce(existing)
-      .mockResolvedValueOnce(newer);
+    readLatestPublicSurfaceSnapshotMock.mockResolvedValueOnce(existing);
+    requirePersistedPublicSurfaceSnapshotMock.mockResolvedValue(newer);
     upsertPublicSurfaceSnapshotMock.mockResolvedValue("ignored_older");
 
     const result = await loadOrRefreshPublicSurfaceSnapshot(params());
 
     expect(result).toBe(newer);
     expect(result.payload).toBe("newer-instance");
-    expect(readLatestPublicSurfaceSnapshotMock).toHaveBeenCalledTimes(2);
+    expect(readLatestPublicSurfaceSnapshotMock).toHaveBeenCalledTimes(1);
+    expect(requirePersistedPublicSurfaceSnapshotMock).toHaveBeenCalledWith(
+      "test-snapshot",
+      "2026-08-26",
+    );
+  });
+
+  it("ne retourne pas le candidat local quand aucun gagnant persistant ne peut être relu", async () => {
+    const conflict = Object.assign(
+      new Error("no valid persisted winner"),
+      { name: "PublicSurfaceSnapshotWriteConflictError" },
+    );
+    upsertPublicSurfaceSnapshotMock.mockResolvedValue("ignored_older");
+    requirePersistedPublicSurfaceSnapshotMock.mockRejectedValue(conflict);
+
+    await expect(loadOrRefreshPublicSurfaceSnapshot(params())).rejects.toBe(conflict);
+    expect(upsertPublicSurfaceSnapshotMock).toHaveBeenCalledOnce();
   });
 
   it("coalesce les reconstructions concurrentes d'une même clé", async () => {

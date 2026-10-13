@@ -23,6 +23,17 @@ export type PublicSurfaceSnapshotRecord<TPayload = unknown> = {
 
 export type PublicSurfaceSnapshotWriteResult = "applied" | "ignored_older";
 
+export class PublicSurfaceSnapshotWriteConflictError extends Error {
+  readonly code = "PUBLIC_SURFACE_SNAPSHOT_WRITE_CONFLICT";
+
+  constructor(snapshotKey: string, snapshotDate: string) {
+    super(
+      `Public surface snapshot was not persisted because no valid winner exists for ${snapshotKey}:${snapshotDate}.`,
+    );
+    this.name = "PublicSurfaceSnapshotWriteConflictError";
+  }
+}
+
 const INVALIDATED_PUBLIC_SURFACE_SNAPSHOT_VERSION =
   "__public_surface_snapshot_invalidated__";
 
@@ -137,14 +148,17 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
         meta: snapshot.meta,
       };
 
-      const updateResult = await supabase
-        .from("public_surface_snapshots")
-        .update(row)
-        .eq("snapshot_key", snapshot.snapshotKey)
-        .eq("snapshot_date", snapshot.snapshotDate)
-        .lt("generated_at", snapshot.generatedAt)
-        .select("id")
-        .maybeSingle();
+      const updateIfOlder = async () =>
+        supabase
+          .from("public_surface_snapshots")
+          .update(row)
+          .eq("snapshot_key", snapshot.snapshotKey)
+          .eq("snapshot_date", snapshot.snapshotDate)
+          .lt("generated_at", snapshot.generatedAt)
+          .select("id")
+          .maybeSingle();
+
+      const updateResult = await updateIfOlder();
 
       if (updateResult.error) {
         throw new Error(updateResult.error.message);
@@ -167,7 +181,19 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
         throw new Error(insertResult.error.message);
       }
 
-      return insertResult.data ? "applied" : "ignored_older";
+      if (insertResult.data) {
+        return "applied";
+      }
+
+      // Another instance may have inserted an older generation between our
+      // first UPDATE and this INSERT. Re-run the same strict CAS once so the
+      // newer generation wins even when the table was initially empty.
+      const retryUpdateResult = await updateIfOlder();
+      if (retryUpdateResult.error) {
+        throw new Error(retryUpdateResult.error.message);
+      }
+
+      return retryUpdateResult.data ? "applied" : "ignored_older";
     } catch (error) {
       if (!allowLocalFileStoreFallback()) {
         throw error;
@@ -204,6 +230,19 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
 
   await writeStore(nextRecords.slice(0, 365));
   return "applied";
+}
+
+export async function requirePersistedPublicSurfaceSnapshot<TPayload>(
+  snapshotKey: string,
+  snapshotDate: string,
+  readSnapshot: () => Promise<PublicSurfaceSnapshotRecord<TPayload> | null> = () =>
+    readLatestPublicSurfaceSnapshot<TPayload>(snapshotKey),
+): Promise<PublicSurfaceSnapshotRecord<TPayload>> {
+  const persistedSnapshot = await readSnapshot();
+  if (!persistedSnapshot) {
+    throw new PublicSurfaceSnapshotWriteConflictError(snapshotKey, snapshotDate);
+  }
+  return persistedSnapshot;
 }
 
 export async function readLatestPublicSurfaceSnapshot<TPayload>(

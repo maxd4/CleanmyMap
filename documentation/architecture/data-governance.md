@@ -68,11 +68,16 @@ entre instances Vercel.
 L'owner accepte une écriture seulement si son `generated_at` est strictement
 plus récent que la ligne existante pour le couple
 `(snapshot_key, snapshot_date)`. L'insertion initiale utilise la contrainte
-unique existante avec `ignoreDuplicates`, ce qui rend les courses entre deux
-instances déterministes : une reconstruction terminée plus tard ne peut pas
-être remplacée par une reconstruction commencée plus tôt. Lorsqu'une écriture
-est ignorée, le service relit la ligne persistée et renvoie cette version afin
-que la réponse et la persistance restent cohérentes.
+unique existante avec `ignoreDuplicates`. Si cette insertion est ignorée, le
+même `UPDATE` conditionnel strict est retenté une seule fois : une génération
+plus récente peut donc remplacer une génération concurrente plus ancienne,
+même lorsque la table était initialement vide. Une génération plus ancienne ne
+peut toujours pas remplacer une ligne plus récente.
+
+Lorsqu'une écriture est ignorée, l'owner relit uniquement une ligne persistée
+valide et renvoie cette ligne. Si la relecture est vide — notamment parce qu'un
+watermark d'invalidation vient de gagner la course — il lève un échec explicite
+et ne renvoie jamais le snapshot local refusé comme s'il avait été persisté.
 
 Une invalidation de route ne supprime pas la ligne immédiatement : elle pose
 un watermark interne dans la même table, avec une date de génération
@@ -81,6 +86,13 @@ reconstructions déjà en vol ; une reconstruction postérieure peut le remplace
 si sa date est strictement plus récente. La revalidation du cache d'actions
 reste effectuée par le contrat existant. Aucun Redis ni service de coordination
 supplémentaire n'est requis.
+
+Les tests applicatifs couvrent les deux ordres d'insertion initiale, les
+générations identiques, la ligne récente préexistante, l'invalidation entre
+l'`UPDATE` et l'insertion, et les consommateurs Impact, Usage plateforme et
+Références pollution. Ces mocks vérifient l'ordre et le contrat de réponse ;
+ils ne constituent pas à eux seuls une preuve d'atomicité PostgreSQL réelle
+entre instances.
 
 Les quiz anonymes et les brouillons non critiques ne doivent pas devenir une
 nouvelle table par défaut. Supabase devient pertinent pour un suivi connecté

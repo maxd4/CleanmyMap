@@ -6,6 +6,7 @@ const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const readLocalRecordStoreMock = vi.hoisted(() => vi.fn());
 const writeLocalRecordStoreMock = vi.hoisted(() => vi.fn());
 const revalidateUnifiedActionContractsCacheMock = vi.hoisted(() => vi.fn());
+const beforeUpsertMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/persistence/runtime-store", () => ({
   allowLocalFileStoreFallback: allowLocalFileStoreFallbackMock,
@@ -35,6 +36,7 @@ type FakeRow = {
 
 let fakeRow: FakeRow | null = null;
 let nextFakeId = 1;
+const queryEvents: string[] = [];
 
 function createFakeQuery(kind: "read" | "update" | "upsert", value?: Record<string, unknown>, options?: Record<string, unknown>) {
   const equals = new Map<string, unknown>();
@@ -77,11 +79,14 @@ function createFakeQuery(kind: "read" | "update" | "upsert", value?: Record<stri
     }
 
     if (kind === "update") {
+      queryEvents.push("update");
       if (!matches() || !fakeRow) return { data: null, error: null };
       fakeRow = { ...fakeRow, ...(value as Partial<FakeRow>) };
       return { data: { id: fakeRow.id }, error: null };
     }
 
+    queryEvents.push("upsert");
+    beforeUpsertMock();
     if (!fakeRow) {
       fakeRow = {
         ...(value as Omit<FakeRow, "id">),
@@ -152,12 +157,15 @@ import {
   invalidatePublicSurfaceSnapshotsByRoute,
   isPublicSurfaceSnapshotFresh,
   readLatestPublicSurfaceSnapshot,
+  requirePersistedPublicSurfaceSnapshot,
   upsertPublicSurfaceSnapshot,
 } from "./public-surface-snapshots";
 
 beforeEach(() => {
   fakeRow = null;
   nextFakeId = 1;
+  queryEvents.length = 0;
+  beforeUpsertMock.mockReset();
   vi.clearAllMocks();
   getSupabaseServerClientMock.mockReturnValue(fakeSupabaseClient as never);
 });
@@ -205,6 +213,80 @@ describe("public surface snapshots", () => {
     expect(fakeRow?.payload).toEqual({ source: "newer" });
   });
 
+  it.each([
+    {
+      name: "la plus récente arrive après l'ancienne",
+      candidateGeneratedAt: "2026-06-27T10:05:00.000Z",
+      competitorGeneratedAt: "2026-06-27T10:00:00.000Z",
+      expectedResult: "applied",
+    },
+    {
+      name: "la plus ancienne arrive après la récente",
+      candidateGeneratedAt: "2026-06-27T10:00:00.000Z",
+      competitorGeneratedAt: "2026-06-27T10:05:00.000Z",
+      expectedResult: "ignored_older",
+    },
+  ])("résout une course d'insertion initiale quand $name", async ({
+    candidateGeneratedAt,
+    competitorGeneratedAt,
+    expectedResult,
+  }) => {
+    const candidate = {
+      snapshotKey: "initial-race",
+      snapshotDate: "2026-06-27",
+      generatedAt: candidateGeneratedAt,
+      version: "v1",
+      title: "Initial race",
+      payload: { source: "candidate" },
+      meta: {},
+    };
+    const competitor = {
+      ...candidate,
+      generatedAt: competitorGeneratedAt,
+      payload: { source: "competitor" },
+    };
+    beforeUpsertMock.mockImplementationOnce(() => {
+      fakeRow = {
+        id: nextFakeId++,
+        snapshot_key: competitor.snapshotKey,
+        snapshot_date: competitor.snapshotDate,
+        generated_at: competitor.generatedAt,
+        version: competitor.version,
+        title: competitor.title,
+        payload: competitor.payload,
+        meta: competitor.meta,
+      };
+    });
+
+    await expect(upsertPublicSurfaceSnapshot(candidate)).resolves.toBe(expectedResult);
+
+    expect(queryEvents).toEqual(["update", "upsert", "update"]);
+    await expect(readLatestPublicSurfaceSnapshot(candidate.snapshotKey)).resolves.toEqual(
+      expect.objectContaining({
+        generatedAt: "2026-06-27T10:05:00.000Z",
+        payload: { source: expectedResult === "applied" ? "candidate" : "competitor" },
+      }),
+    );
+  });
+
+  it("reste idempotent pour deux générations identiques", async () => {
+    const snapshot = {
+      snapshotKey: "idempotent",
+      snapshotDate: "2026-06-27",
+      generatedAt: "2026-06-27T10:05:00.000Z",
+      version: "v1",
+      title: "Idempotent",
+      payload: { source: "same" },
+      meta: {},
+    };
+
+    await expect(upsertPublicSurfaceSnapshot(snapshot)).resolves.toBe("applied");
+    await expect(upsertPublicSurfaceSnapshot(snapshot)).resolves.toBe("ignored_older");
+
+    expect(fakeRow?.payload).toEqual({ source: "same" });
+    expect(queryEvents).toEqual(["update", "upsert", "update", "upsert", "update"]);
+  });
+
   it("conserve un watermark d'invalidation entre une ancienne reconstruction et la suivante", async () => {
     const invalidationCandidate = new Date(Date.now() - 1_000).toISOString();
     const oldRebuild = {
@@ -231,6 +313,43 @@ describe("public surface snapshots", () => {
     await expect(readLatestPublicSurfaceSnapshot(oldRebuild.snapshotKey)).resolves.toEqual(
       expect.objectContaining({ payload: { source: "rebuilt" } }),
     );
+  });
+
+  it("refuse explicitement une reconstruction si seule l'invalidation gagne la course", async () => {
+    const candidate = {
+      snapshotKey: JSON.stringify({ route: "api/actions", viewport: "global" }),
+      snapshotDate: "2026-06-27",
+      generatedAt: "2026-06-27T10:00:00.000Z",
+      version: "v1",
+      title: "Actions publiques",
+      payload: { source: "old" },
+      meta: {},
+    };
+    beforeUpsertMock.mockImplementationOnce(() => {
+      fakeRow = {
+        id: nextFakeId++,
+        snapshot_key: candidate.snapshotKey,
+        snapshot_date: candidate.snapshotDate,
+        generated_at: "2026-06-27T10:30:00.000Z",
+        version: "__public_surface_snapshot_invalidated__",
+        title: candidate.title,
+        payload: candidate.payload,
+        meta: candidate.meta,
+      };
+    });
+
+    await expect(upsertPublicSurfaceSnapshot(candidate)).resolves.toBe("ignored_older");
+    await expect(readLatestPublicSurfaceSnapshot(candidate.snapshotKey)).resolves.toBeNull();
+    await expect(
+      requirePersistedPublicSurfaceSnapshot(
+        candidate.snapshotKey,
+        candidate.snapshotDate,
+        async () => null,
+      ),
+    ).rejects.toMatchObject({
+      name: "PublicSurfaceSnapshotWriteConflictError",
+      code: "PUBLIC_SURFACE_SNAPSHOT_WRITE_CONFLICT",
+    });
   });
 });
 

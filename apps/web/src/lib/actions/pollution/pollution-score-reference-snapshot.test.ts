@@ -157,4 +157,20 @@ describe("pollution score reference snapshot V2", () => {
     ).rejects.toThrow("Aucune référence globale V2 valide");
     expect(writeSnapshot).not.toHaveBeenCalled();
   });
+
+  it("échoue si une écriture ignorée ne laisse aucune référence persistante relisible", async () => {
+    const writeSnapshot = vi.fn(async () => "ignored_older");
+
+    await expect(
+      runPollutionScoreReferencesJob({
+        now: new Date("2026-09-08T10:00:00.000Z"),
+        loadReferences: async () => references,
+        readSnapshot: async () => null,
+        writeSnapshot,
+      }),
+    ).rejects.toMatchObject({
+      name: "PublicSurfaceSnapshotWriteConflictError",
+      code: "PUBLIC_SURFACE_SNAPSHOT_WRITE_CONFLICT",
+    });
+  });
 });
