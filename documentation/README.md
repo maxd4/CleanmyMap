@@ -49,12 +49,17 @@ domaines métier.
 | Développement | `development/README.md` |
 | Tests et validation | `development/TESTING.md` |
 | Fonctionnalités | `features/README.md` |
+| SPOGOMI | `features/spogomi.md` et `features/spogomi-references/README.md` |
 | Produit | `product/README.md` |
 | Exploitation | `operations/README.md` |
 | Application mobile : EAS, APK et contrôles Android | `../apps/mobile/README.md` |
 | Sécurité | `security/README.md` |
 | Pages et routes | `pages_site/README.md` puis `pages_site/INDEX.md` |
 | SEO | `seo/README.md` |
+
+Les index techniques locaux complètent cette carte : le code SPOGOMI,
+les migrations Supabase et l'orchestration CI renvoient vers leurs propriétaires
+depuis les README de leurs sous-arbres.
 
 ## Règles de classement
 

@@ -75,6 +75,26 @@ CMM_DEV_AUTH_BYPASS_ROLE=max
 
 Il doit rester inactif en production par construction.
 
+Le démarrage local (`npm run dev`) ne pousse ni migration ni variable distante.
+Les contrôles et commandes de validation sont indexés dans
+[`documentation/development/TESTING.md`](../../documentation/development/TESTING.md).
+
+## Opérations privilégiées et distantes
+
+Les commandes ci-dessous ne sont pas des commandes de démarrage et ne doivent
+pas être utilisées pour valider un changement local sans autorisation :
+
+| Commande | Effet | Pré-requis et garde-fou |
+| --- | --- | --- |
+| `npm run backend:supabase:push -w apps/web` | applique les migrations locales à la cible Supabase liée | vérifier la cible et `npx supabase db push --dry-run --workdir .` depuis `apps/web`, puis obtenir l'autorisation explicite de mutation distante |
+| `npm run backend:bootstrap -w apps/web` | peut lier Vercel, pousser Supabase, préparer la branche preview Supabase et synchroniser les variables Vercel `development` | session CLI autorisée, projet/cible vérifiés et autorisation pour chaque effet ; utiliser `--skip-supabase`, `--skip-vercel-link` ou `--skip-vercel-env` pour limiter le périmètre |
+
+Le script `backend:bootstrap` n'est donc pas un dry-run. Il ne doit pas être
+lancé depuis une copie contenant des secrets non vérifiés ni contre une cible
+de production par défaut. Les règles détaillées de séparation local/distant,
+RLS et migrations vivent dans [`apps/web/supabase/AGENTS.md`](supabase/AGENTS.md)
+et dans l'ADR-006.
+
 ## Supabase
 
 Le workspace Supabase actif est :
@@ -83,11 +103,20 @@ Le workspace Supabase actif est :
 apps/web/supabase/
 ```
 
-Commande :
+Commande mutante (cible distante) :
 
 ```bash
 npm run backend:supabase:push -w apps/web
 ```
+
+Prévisualisation locale recommandée depuis `apps/web` :
+
+```bash
+npx supabase db push --dry-run --workdir .
+```
+
+La commande de push utilise `--yes` et applique effectivement les migrations
+sur la cible liée. Aucune migration distante n'est exécutée par ce lot.
 
 L'arbre de migrations canonique est unique et se trouve dans `apps/web/supabase/migrations/`.
 Le miroir historique racine a été supprimé et ne doit pas être recréé. Voir :
@@ -107,13 +136,18 @@ Depuis `apps/web` :
 npm run backend:bootstrap
 ```
 
-Ce flux peut :
+Ce flux peut muter des services distants :
 
 1. vérifier le lien Vercel ;
-2. pousser les migrations ;
-3. synchroniser les variables autorisées.
+2. pousser les migrations Supabase ;
+3. créer ou vérifier la branche preview Supabase ;
+4. synchroniser les variables autorisées vers l'environnement Vercel
+   `development`.
 
-Ne pas pousser automatiquement une variable de test sensible vers la production.
+Les variables et credentials doivent être vérifiés avant exécution ; aucune
+variable de test sensible ne doit être poussée vers la production. Pour un
+diagnostic local, préférer les commandes read-only de la gouvernance Supabase
+et ne pas utiliser ce bootstrap comme validation.
 
 ## Diagnostics
 

@@ -88,6 +88,11 @@ Next.js 16, React 19, TypeScript 7, Tailwind CSS 4, Clerk, Supabase/PostgreSQL, 
 | `documentation/` | Documentation produit, architecture, sécurité, développement et opérations |
 | `scripts/` | Contrôles et outils de maintenance du dépôt |
 
+Les points d'entrée locaux spécialisés sont [`apps/web/src/lib/spogomi/README.md`](./apps/web/src/lib/spogomi/README.md),
+[`apps/web/supabase/README.md`](./apps/web/supabase/README.md) et
+[`scripts/ci/README.md`](./scripts/ci/README.md). Ils orientent vers les
+contrats canoniques sans les recopier.
+
 ## Démarrage minimal
 
 Pré-requis : Node.js 24.x et npm. Depuis la racine :

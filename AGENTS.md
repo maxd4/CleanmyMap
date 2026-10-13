@@ -195,14 +195,16 @@ Un lot ne contient que les changements attribuables à sa responsabilité.
 ### Propreté obligatoire du worktree
 
 Une exécution ne doit jamais se terminer avec un fichier `dirty` ou `untracked`
-laissé dans le worktree. Tout fichier pertinent pour le lot courant doit être
-stagé explicitement et inclus dans son commit. Un fichier untracked dont le
-contenu n'est pas pertinent à publier ne peut être traité par `.gitignore`
-qu'après vérification qu'il s'agit bien d'un artefact non canonique,
-régénérable ou local ; l'entrée `.gitignore` doit elle-même être ciblée et
-committée avec le lot. Ne jamais utiliser `.gitignore` pour masquer du code
-source, une modification utilisateur ou une dette dont la provenance n'est pas
-établie.
+introduit par le lot courant, ni avec un changement pertinent laissé hors du
+commit. Tout fichier pertinent pour le lot courant doit être stagé explicitement
+et inclus dans son commit. Les fichiers `dirty` ou `untracked` préexistants et
+hors périmètre doivent être préservés, signalés et ne constituent pas un
+candidat implicite. Un fichier untracked non pertinent à publier ne peut être
+traité par `.gitignore` qu'après vérification qu'il s'agit bien d'un artefact
+non canonique, régénérable ou local ; l'entrée `.gitignore` doit elle-même être
+ciblée et committée avec le lot. Ne jamais utiliser `.gitignore` pour masquer du
+code source, une modification utilisateur ou une dette dont la provenance n'est
+pas établie.
 
 - préserver les changements dirty, staged et untracked hors périmètre ;
 - les modifications locales non stagées hors périmètre ne bloquent ni le commit

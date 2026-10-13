@@ -33,6 +33,12 @@ documentation/architecture/adr/ADR-004-companion-identity.md
 documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md
 ```
 
+Cette section et les suivantes décrivent l'architecture et les contrats
+actuels du checkout. La section [preuve historique de release mobile](#history--état-de-release-mobile--preuves-au-11-octobre-2026)
+est une preuve datée d'un artefact passé : elle ne constitue pas une preuve de
+release actuelle, de disponibilité store, de rotation des credentials ou de
+fonctionnement des parcours non exécutés.
+
 ## Périmètre V1
 
 La V1 mobile s'adresse aux bénévoles terrain et reste volontairement réduite
@@ -217,6 +223,23 @@ legacy) ont été supprimées ou migrées vers `expo-splash-screen`.
 `expo-image-picker` demande les photos mais bloque explicitement le microphone ;
 `RECORD_AUDIO` ne fait pas partie des permissions résolues attendues.
 
+## Installation et contrôles courants
+
+Depuis la racine du monorepo :
+
+```bash
+npm install
+npm run mobile:typecheck
+npm run mobile:test
+npm run mobile:security
+npm run mobile:lint
+npm run quality:mobile-coverage
+npm start -w apps/mobile
+```
+
+Ces commandes vérifient le code et lancent le serveur Expo ; elles ne créent
+pas de projet EAS et ne publient aucun artefact.
+
 ## Procédure de release reproductible
 
 Les commandes suivantes s'exécutent depuis `apps/mobile` pour la configuration
@@ -281,7 +304,11 @@ de localisation/photos, l'absence de microphone, les signatures et le retour
 Clerk. Aucun contrôle statique, test Vitest ou écran Expo Web ne remplace ces
 preuves.
 
-## État de release mobile — preuves au 11 octobre 2026
+## HISTORY — État de release mobile — preuves au 11 octobre 2026
+
+Les éléments de cette section sont conservés pour la traçabilité de la
+baseline. Ils sont datés, liés à un artefact et séparés du statut `CURRENT`
+ci-dessus. Ils ne doivent pas être recopiés comme preuve d'une nouvelle release.
 
 ### Premier build Android
 
@@ -499,14 +526,6 @@ SUPABASE_SERVICE_ROLE_KEY
 
 dans l'app mobile.
 
-## Installation depuis la racine du monorepo
-
-```bash
-npm install
-npm run mobile:typecheck
-npm start -w apps/mobile
-```
-
 ## GPS background
 
 Expo Go ne suffit pas pour valider le suivi en arrière-plan.
@@ -568,7 +587,7 @@ apps/web/supabase/
 Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 `ADR-006` pour la décision de source de vérité.
 
-## Baseline M0 et contrôles avant production
+## CURRENT — Baseline M0 et contrôles avant production
 
 ```txt
 ☑ Identité mobile alignée avec Clerk côté SDK et token provider (LOT 1)
@@ -591,7 +610,12 @@ Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 □ Usage opérationnel web et validation production
 ```
 
-## Validation actuelle
+## CURRENT — Validation locale disponible
+
+La validation locale ne remplace pas la preuve Clerk Development, appareil
+réel, Supabase autorisé, signature ou store. Les lignes cochées ci-dessus sont
+des contrats/tests du dépôt ; les lignes non exécutées dans la preuve de
+release historique restent `NOT_RUN`.
 
 ```bash
 npm run mobile:typecheck
