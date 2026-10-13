@@ -113,6 +113,15 @@ async function waitForSupabaseSchema(client) {
     if (!result.error) return;
     lastError = result.error;
     if (!/schema cache|does not exist/i.test(result.error.message)) break;
+    try {
+      execFileSync(
+        process.platform === "win32" ? "npx.cmd" : "npx",
+        ["supabase", "db", "query", "--workdir", supabaseDirectory, "--local", "notify pgrst, 'reload schema';"],
+        { cwd: root, encoding: "utf8", stdio: ["ignore", "ignore", "ignore"], shell: process.platform === "win32" },
+      );
+    } catch {
+      // The next read retains the original diagnostic if the local reload is unavailable.
+    }
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   throw new Error(`Ephemeral Supabase schema is not ready after reset: ${lastError?.message ?? "unknown error"}`);
