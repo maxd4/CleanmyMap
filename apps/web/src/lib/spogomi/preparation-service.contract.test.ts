@@ -41,6 +41,7 @@ describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
     expect(service).toContain("source_proof_status");
     expect(service).toContain("conflictRowNumbers");
     expect(service).toContain("ticket_cancellation_conflict");
+    expect(service).toContain("ticket_composition_lock_conflict");
   });
 
   it("routes manual moves and locks through revision-controlled server procedures", () => {
@@ -49,5 +50,13 @@ describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
     expect(compositionMutationService).toContain("actorClerkId");
     expect(service).not.toContain('.from("spogomi_participants").update({ team_id');
     expect(service).not.toContain('.from("spogomi_teams").update({ composition_state: "locked"');
+  });
+
+  it("routes event metadata through the revision-controlled rule boundary", () => {
+    expect(service).toContain('rpc("spogomi_update_event_metadata"');
+    expect(service).toContain("p_expected_revision");
+    expect(service).toContain("const teamSizeConfig = input.casualTeamSize === undefined");
+    expect(service).toContain("...event.team_size_config");
+    expect(service).not.toContain("minMembers: casualTeamSize, maxMembers: casualTeamSize");
   });
 });

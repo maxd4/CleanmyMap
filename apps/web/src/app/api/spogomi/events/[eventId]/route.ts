@@ -53,6 +53,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ event
     const updated = await updateSpogomiEvent({
       supabase,
       event,
+      actorClerkId: access.userId,
       input: {
         name: typeof body.name === "string" ? body.name : undefined,
         locationLabel: typeof body.locationLabel === "string" ? body.locationLabel : undefined,

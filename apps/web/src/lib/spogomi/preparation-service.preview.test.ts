@@ -226,6 +226,26 @@ describe("SPOGOMI preparation service previews", () => {
     expect(result.importSummary).toMatchObject({ created: 0, unchanged: 0, changed: 1, conflicts: 0 });
   });
 
+  it("keeps a post-lock imported place in explicit conflict on replay", async () => {
+    const result = await previewRosterImportChanges(
+      readOnlySupabase({
+        spogomi_participants: {
+          data: [{ id: "participant-1", external_reference: "ticket-1", order_reference: "order-1", order_alternative_reference: null, ticket_status: "Payé", ticket_deleted: false, display_name: null, identity_status: "unknown", attendance_status: "unknown", account_link_status: "unlinked", clerk_id: null, team_id: null, registration_status: "withdrawn" }],
+          error: null,
+        },
+        spogomi_roster_import_changes: {
+          data: [{ participant_id: "participant-1", change_kind: "ticket_composition_lock_conflict", current_snapshot: { ticketStatus: "Payé", ticketDeleted: false } }],
+          error: null,
+        },
+      }),
+      event({ state: "composition_locked" }),
+      preview("cachan_ticketing", [rosterRow({ externalReference: "ticket-1", sourceRowId: "ticket-1" })]),
+    );
+
+    expect(result.conflictRowNumbers).toEqual([2]);
+    expect(result.rowEffects).toEqual({ "2": "conflict" });
+  });
+
   it("does not treat an imported name as a protected identity decision", async () => {
     const result = await previewRosterImportChanges(
       readOnlySupabase({

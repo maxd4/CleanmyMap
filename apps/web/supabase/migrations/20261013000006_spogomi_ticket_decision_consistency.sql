@@ -72,6 +72,8 @@ declare
   v_stale_replay boolean;
   v_has_prior boolean;
   v_has_history boolean;
+  v_composition_protected boolean;
+  v_post_lock_conflict boolean;
   v_registration_status text;
   v_participant_ids jsonb := '{}'::jsonb;
   v_changed_rows jsonb := '[]'::jsonb;
@@ -91,6 +93,14 @@ begin
   if not found then
     raise exception using errcode = 'no_data_found', message = 'SPOGOMI event not found';
   end if;
+  select v_event.state not in ('draft', 'registration_open')
+      or exists (
+        select 1
+          from public.spogomi_teams team
+         where team.event_id = p_event_id
+           and public.spogomi_team_requires_composition_correction(p_event_id, team.id)
+      )
+    into v_composition_protected;
 
   select * into v_import
     from public.spogomi_roster_imports
@@ -100,6 +110,11 @@ begin
   if not found then
     raise exception using errcode = 'no_data_found', message = 'SPOGOMI roster import not found';
   end if;
+
+  -- The event lock serializes ticket reconciliation with composition locking.
+  -- The lifecycle trigger below uses this transaction-local context to allow
+  -- only the source-owned reconciliation path to retain commercial history.
+  perform set_config('spogomi.composition_write_context', 'ticket_reconciliation', true);
 
   if exists (
     select 1
@@ -190,10 +205,16 @@ begin
         v_group_preference, v_name, v_order_reference, v_order_alternative_reference,
         v_ticket_status, v_ticket_deleted,
         'unknown',
-        case when v_new_cancelled then 'withdrawn' else 'registered' end,
+        case when v_new_cancelled or v_composition_protected then 'withdrawn' else 'registered' end,
         'unknown', 'unlinked'
       )
       returning id into v_participant_id;
+      if v_composition_protected then
+        insert into public.spogomi_roster_import_changes(event_id, roster_import_id, participant_id, change_kind, previous_snapshot, current_snapshot)
+        values (p_event_id, p_roster_import_id, v_participant_id, 'ticket_composition_lock_conflict', '{}'::jsonb, v_row)
+        on conflict (roster_import_id, participant_id, change_kind) do nothing;
+        v_conflict_rows := v_conflict_rows || to_jsonb(v_row_number);
+      end if;
       if v_new_cancelled then
         insert into public.spogomi_roster_import_changes(event_id, roster_import_id, participant_id, change_kind, previous_snapshot, current_snapshot)
         values (p_event_id, p_roster_import_id, v_participant_id, 'ticket_cancelled', '{}'::jsonb, v_row)
@@ -222,10 +243,16 @@ begin
         v_source_withdrawal_proven
       );
       v_registration_status := v_prior.registration_status;
+      v_post_lock_conflict := v_composition_protected and v_cancellation_changed;
       if v_cancellation_changed and v_new_cancelled and not v_human_decision then
         v_registration_status := 'withdrawn';
       elsif v_cancellation_changed and not v_new_cancelled and v_prior.registration_status = 'withdrawn' and not v_human_decision then
         v_registration_status := 'registered';
+      end if;
+      if v_post_lock_conflict then
+        -- Commercial facts remain importable, but eligibility cannot change
+        -- after the official composition boundary without arbitration.
+        v_registration_status := v_prior.registration_status;
       end if;
 
       update public.spogomi_participants
@@ -256,6 +283,12 @@ begin
         if v_human_decision and v_new_cancelled then
           insert into public.spogomi_roster_import_changes(event_id, roster_import_id, participant_id, change_kind, previous_snapshot, current_snapshot)
           values (p_event_id, p_roster_import_id, v_participant_id, 'ticket_cancellation_conflict', to_jsonb(v_prior), v_row)
+          on conflict (roster_import_id, participant_id, change_kind) do nothing;
+          v_conflict_rows := v_conflict_rows || to_jsonb(v_row_number);
+        end if;
+        if v_post_lock_conflict then
+          insert into public.spogomi_roster_import_changes(event_id, roster_import_id, participant_id, change_kind, previous_snapshot, current_snapshot)
+          values (p_event_id, p_roster_import_id, v_participant_id, 'ticket_composition_lock_conflict', to_jsonb(v_prior), v_row)
           on conflict (roster_import_id, participant_id, change_kind) do nothing;
           v_conflict_rows := v_conflict_rows || to_jsonb(v_row_number);
         end if;

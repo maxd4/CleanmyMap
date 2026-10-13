@@ -81,6 +81,7 @@ export async function loadSpogomiEventBySlugForOrganizer(
 export async function updateSpogomiEvent(params: {
   supabase: SupabaseClient;
   event: EventRow;
+  actorClerkId: string;
   input: {
     name?: string;
     locationLabel?: string;
@@ -92,7 +93,7 @@ export async function updateSpogomiEvent(params: {
     publicResultsVisibility?: "hidden" | "provisional" | "certified";
   };
 }) {
-  const { event, input, supabase } = params;
+  const { event, input, supabase, actorClerkId } = params;
   const name = input.name?.trim() || event.name;
   const locationLabel = input.locationLabel?.trim() || event.location_label;
   if (!name || !locationLabel) throw new Error("Validation: nom et lieu obligatoires.");
@@ -107,24 +108,30 @@ export async function updateSpogomiEvent(params: {
   if (input.publicVisibility === "published" && event.state === "draft") {
     throw new Error("Validation: un brouillon doit d'abord quitter l'état draft avant publication.");
   }
-  const casualTeamSize = input.casualTeamSize === undefined
-    ? event.team_size_config?.casual?.maxMembers ?? null
-    : input.casualTeamSize;
-  const result = await supabase
-    .from("spogomi_events")
-    .update({
-      name,
-      location_label: locationLabel,
-      starts_at: startsAt,
-      ends_at: endsAt,
-      mode: input.mode ?? event.mode,
-      team_size_config: { casual: { minMembers: casualTeamSize, maxMembers: casualTeamSize } },
-      public_visibility: input.publicVisibility ?? event.public_visibility,
-      public_results_visibility: input.publicResultsVisibility ?? event.public_results_visibility,
-    })
-    .eq("id", event.id)
-    .select("id, action_id, created_by_clerk_id, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility, composition_revision")
-    .single();
+  const currentCasual = event.team_size_config?.casual ?? {};
+  const teamSizeConfig = input.casualTeamSize === undefined
+    ? event.team_size_config
+    : {
+      ...event.team_size_config,
+      casual: {
+        ...currentCasual,
+        minMembers: input.casualTeamSize,
+        maxMembers: input.casualTeamSize,
+      },
+    };
+  const result = await supabase.rpc("spogomi_update_event_metadata", {
+    p_event_id: event.id,
+    p_expected_revision: Number(event.composition_revision ?? 0),
+    p_actor_clerk_id: actorClerkId,
+    p_name: name,
+    p_location_label: locationLabel,
+    p_starts_at: startsAt,
+    p_ends_at: endsAt,
+    p_mode: input.mode ?? event.mode,
+    p_team_size_config: teamSizeConfig,
+    p_public_visibility: input.publicVisibility ?? event.public_visibility,
+    p_public_results_visibility: input.publicResultsVisibility ?? event.public_results_visibility,
+  });
   if (result.error) throw result.error;
   return result.data as EventRow;
 }
@@ -452,7 +459,7 @@ export async function previewRosterImportChanges(
     ? await supabase.from("spogomi_roster_import_changes")
       .select("participant_id")
       .eq("event_id", event.id)
-      .eq("change_kind", "ticket_cancellation_conflict")
+      .in("change_kind", ["ticket_cancellation_conflict", "ticket_composition_lock_conflict"])
       .in("participant_id", existingParticipantIds)
     : { data: [], error: null };
   if (protectedCancellations.error) throw protectedCancellations.error;
@@ -498,8 +505,7 @@ export async function previewRosterImportChanges(
       if (changed) changedRowNumbers.push(row.rowNumber);
       else unchanged += 1;
       if ((cancellationChanged && hasHumanDecision) || (
-        protectedCancellationIds.has(String(current.id)) &&
-        isCancelledCachanTicket(current.ticket_status, Boolean(current.ticket_deleted))
+        protectedCancellationIds.has(String(current.id))
       )) {
         conflictRowNumbers.push(row.rowNumber);
         rowEffects[String(row.rowNumber)] = "conflict";

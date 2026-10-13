@@ -409,6 +409,14 @@ liaison Clerk, une affectation ou une autre décision sportive est conservée
 comme conflit explicite. Tant que ce conflit n'est pas arbitré, la place ne peut
 pas être traitée comme active par une nouvelle composition.
 
+Après le verrouillage de la composition, une nouvelle place Weezevent peut être
+historisée mais reste retirée de la composition admissible et porte un conflit
+requérant un arbitrage versionné. Les réimports d'une place connue conservent
+ses décisions et ne peuvent pas modifier son éligibilité sportive après le
+verrouillage. Les règles `mode` et `team_size_config` sont également protégées
+par une révision transactionnelle ; une mise à jour de nom, lieu, dates ou
+visibilité réutilise exactement les bornes Casual existantes.
+
 La formation propose d'abord les trios conservés par commande/groupe, puis
 recompose les restes avec priorité aux trios et aux décompositions `5 → 3 + 2`
 et `6 → 3 + 3`. World Cup exige exactement trois membres par équipe ; Casual

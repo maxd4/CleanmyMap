@@ -11,6 +11,7 @@ const compositionLockMigration = readFileSync(new URL("../../../supabase/migrati
 const ticketReconciliationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000004_spogomi_ticket_reconciliation_atomicity.sql", import.meta.url), "utf8");
 const strictTicketStatusMigration = readFileSync(new URL("../../../supabase/migrations/20261013000005_spogomi_strict_ticket_status.sql", import.meta.url), "utf8");
 const ticketDecisionConsistencyMigration = readFileSync(new URL("../../../supabase/migrations/20261013000006_spogomi_ticket_decision_consistency.sql", import.meta.url), "utf8");
+const postLockMutationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000007_spogomi_post_lock_mutation_guards.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -112,8 +113,25 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(ticketDecisionConsistencyMigration).toContain("'unknown',");
     expect(ticketDecisionConsistencyMigration).toContain("spogomi_participant_has_human_decision");
     expect(ticketDecisionConsistencyMigration).toContain("v_source_withdrawal_proven");
+    expect(ticketDecisionConsistencyMigration).toContain("v_composition_protected");
     expect(ticketDecisionConsistencyMigration).toContain("change_kind = 'ticket_cancelled'");
     expect(ticketDecisionConsistencyMigration).toContain("grant execute on function public.spogomi_reconcile_cachan_ticket_rows");
     expect(ticketDecisionConsistencyMigration).not.toContain("alter table public.spogomi_participants drop column");
+  });
+
+  it("closes post-lock participant and team-rule mutation paths", () => {
+    expect(postLockMutationMigration).toContain("before insert or update of registration_status, ticket_status, ticket_deleted, team_id");
+    expect(postLockMutationMigration).toContain("ticket_reconciliation");
+    expect(postLockMutationMigration).toContain("spogomi_team_requires_composition_correction");
+    expect(postLockMutationMigration).toContain("New SPOGOMI places after composition lock");
+    expect(postLockMutationMigration).toContain("ticket_composition_lock_conflict");
+    expect(postLockMutationMigration).toContain("guard_spogomi_event_composition_rules");
+    expect(postLockMutationMigration).toContain("spogomi_update_event_metadata");
+    expect(postLockMutationMigration).toContain("p_expected_revision");
+    expect(postLockMutationMigration).toContain("composition_revision = composition_revision + case when v_rules_changed then 1 else 0 end");
+    expect(postLockMutationMigration).toContain("World Cup teams require exactly three members");
+    expect(postLockMutationMigration).toContain("A Casual team is outside the event bounds");
+    expect(postLockMutationMigration).toMatch(/grant execute on function public\.spogomi_update_event_metadata[\s\S]+to service_role/i);
+    expect(postLockMutationMigration).not.toMatch(/drop table public\.spogomi_/i);
   });
 });
