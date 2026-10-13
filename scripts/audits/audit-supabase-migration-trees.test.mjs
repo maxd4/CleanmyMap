@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFileSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -135,6 +136,21 @@ it("allows a traceable historical restoration but rejects an unreviewed rewrite"
       ]),
     })[0],
     /published migration content changed/,
+  );
+});
+
+it("allows only an explicitly hashed bounded migration repair", () => {
+  const name = "20260101000000_published.sql";
+  const content = "bounded repair\n";
+  const hash = createHash("sha256").update(content, "utf8").digest("hex");
+
+  assert.deepEqual(
+    findPublishedMigrationRewriteViolations({
+      baselineMigrations: new Map([[name, { content: "published v1\n" }]]),
+      candidateMigrations: new Map([[name, { content }]]),
+      approvedRewriteHashes: new Map([[name, new Set([hash])]]),
+    }),
+    [],
   );
 });
 

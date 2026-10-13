@@ -52,6 +52,7 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(lot11Migration).toContain("spogomi_team_composition_history");
     expect(lot11Migration).toContain("for update");
     expect(lot11Migration).toContain("spogomi_confirm_team_composition");
+    expect(lot11Migration).toMatch(/create unique index if not exists spogomi_participants_id_event_unique[\s\S]+foreign key \(participant_id, event_id\)[\s\S]+references public\.spogomi_participants\(id, event_id\)/i);
     expect(lot11Migration).toMatch(/grant execute on function public\.spogomi_confirm_team_composition[\s\S]+to service_role/i);
     expect(lot11Migration).not.toMatch(/delete from public\.spogomi_teams/i);
   });
@@ -144,6 +145,7 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(postLockMutationMigration).toContain("spogomi_update_event_metadata");
     expect(postLockMutationMigration).toContain("p_expected_revision");
     expect(postLockMutationMigration).toContain("composition_revision = composition_revision + case when v_rules_changed then 1 else 0 end");
+    expect(postLockMutationMigration).toContain("grant execute on function public.spogomi_update_event_metadata(uuid, bigint, text, text, text, timestamptz, timestamptz, text, jsonb, text, text) to service_role;");
     expect(postLockMutationMigration).toContain("World Cup teams require exactly three members");
     expect(postLockMutationMigration).toContain("A Casual team is outside the event bounds");
     expect(postLockMutationMigration).toMatch(/grant execute on function public\.spogomi_update_event_metadata[\s\S]+to service_role/i);

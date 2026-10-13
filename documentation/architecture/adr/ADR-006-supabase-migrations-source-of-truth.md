@@ -200,6 +200,32 @@ Cette exception ne généralise pas le droit de modifier les migrations
 publiées ; toute autre correction d'une migration historique reste soumise au
 principe append-only et aux conditions du présent ADR.
 
+## Exception de réparation bornée — `20261012000022` et `20261013000007`
+
+Lors de la première application contrôlée de la série de migrations d'octobre
+2026, deux défauts SQL exécutables ont été constatés avant que la série ne soit
+convergente : la clé étrangère `(participant_id, event_id)` de `00022` ne
+disposait pas de clé unique référencée, et `00007` déclarait un `GRANT` avec une
+signature de fonction incomplète. La correction a été vérifiée par le replay
+réel du projet lié ; le même historique distant contient maintenant les
+versions corrigées.
+
+Cette exception est strictement limitée aux deux fichiers et à leurs empreintes
+ci-dessous. Le garde de publication n'accepte ces réécritures que par hash
+exact ; toute autre réécriture d'une migration publiée reste bloquée.
+
+```text
+20261012000022_BEFORE_HASH: a0fe697a92432e13e02ecfe6ebee10b609d92fec350bc115e090f10aee16db42
+20261012000022_AFTER_HASH:  c272820f66ff466d42d9c4dab0fdad685b482f54927fe1df9927233d6e7e9cf4
+20261013000007_BEFORE_HASH: c473128711ab5edf7c0eee826665c41cfb483c428bfe0916209507a8c24a8e80
+20261013000007_AFTER_HASH:  f4ca930cce616753addfd047badb2b96448ad8aed665b92d68f44079fbe11f1d
+```
+
+La série a été appliquée avec `npx supabase db push --linked --yes`, sans
+`migration repair`, DDL manuelle, reset ni écriture hors migration. La
+réconciliation finale de l'historique local/distant et la vérification des
+contraintes, fonctions et privilèges restent obligatoires.
+
 ## Opérations temporaires de benchmark
 
 Une activation ou désactivation temporaire d'extension réalisée pour un

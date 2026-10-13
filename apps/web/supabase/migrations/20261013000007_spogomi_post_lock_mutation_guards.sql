@@ -264,7 +264,7 @@ end;
 $$;
 
 revoke all on function public.spogomi_update_event_metadata(uuid, bigint, text, text, text, timestamptz, timestamptz, text, jsonb, text, text) from public, anon, authenticated;
-grant execute on function public.spogomi_update_event_metadata(uuid, bigint, text, text, timestamptz, timestamptz, text, jsonb, text, text) to service_role;
+grant execute on function public.spogomi_update_event_metadata(uuid, bigint, text, text, text, timestamptz, timestamptz, text, jsonb, text, text) to service_role;
 revoke all on function public.guard_spogomi_participant_lifecycle() from public, anon, authenticated;
 revoke all on function public.guard_spogomi_event_composition_rules() from public, anon, authenticated;
 

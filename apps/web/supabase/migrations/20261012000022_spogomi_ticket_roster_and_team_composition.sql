@@ -19,6 +19,12 @@ drop index if exists public.spogomi_participants_event_external_reference_unique
 create unique index spogomi_participants_event_external_reference_unique
   on public.spogomi_participants(event_id, external_reference);
 
+-- The foundation migration keys participants by id alone. The scoped history
+-- foreign key below also carries event_id, so PostgreSQL needs this matching
+-- unique key before the dependent table is created.
+create unique index if not exists spogomi_participants_id_event_unique
+  on public.spogomi_participants(id, event_id);
+
 create table if not exists public.spogomi_roster_import_changes (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null references public.spogomi_events(id) on delete cascade,

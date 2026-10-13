@@ -23,6 +23,22 @@ const ROLE_ALIASES = new Map(
   Object.entries(JSON.parse(readFileSync(ROLE_ALIASES_PATH, "utf8"))),
 );
 
+const BASE_PROFILE_SELECT = [
+  "id",
+  "display_name",
+  "role_label",
+  "active_role_label",
+  "handle",
+  "paris_arrondissement",
+  "avatar_url",
+  "created_at",
+  "updated_at",
+];
+const OPTIONAL_PROFILE_PROJECTION_COLUMNS = [
+  "role_projection_source",
+  "role_projection_synced_at",
+];
+
 function parseArgs(argv) {
   const options = {
     limit: DEFAULT_PAGE_SIZE,
@@ -393,6 +409,43 @@ async function fetchAllRows(supabase, { schema = "public", table, select, orderC
   return rows;
 }
 
+function isMissingProfileColumnError(error) {
+  return error?.code === "42703"
+    || error?.code === "PGRST204"
+    || /column .* does not exist|could not find the ['\"]?.*['\"]? column/i.test(error?.message ?? "");
+}
+
+export function buildProfileSelect(availableProjectionColumns = OPTIONAL_PROFILE_PROJECTION_COLUMNS) {
+  return [...BASE_PROFILE_SELECT, ...availableProjectionColumns].join(", ");
+}
+
+export async function detectProfileProjectionColumns(supabase) {
+  const available = [];
+  const status = {};
+
+  for (const column of OPTIONAL_PROFILE_PROJECTION_COLUMNS) {
+    const { error } = await supabase
+      .from("profiles")
+      .select(`id, ${column}`)
+      .limit(0);
+
+    if (!error) {
+      available.push(column);
+      status[column] = "present";
+      continue;
+    }
+
+    if (isMissingProfileColumnError(error)) {
+      status[column] = "absent";
+      continue;
+    }
+
+    throw new Error(`profiles.${column} capability probe failed: ${error.message}`);
+  }
+
+  return { available, status };
+}
+
 function buildRowSummary({
   id,
   clerkUser,
@@ -562,13 +615,14 @@ async function main() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  const profileProjection = await detectProfileProjectionColumns(supabase);
   const [clerkResult, profiles, progressionProfiles, progressionEvents, checklistProgress, funnelEvents] =
     await Promise.all([
       fetchClerkUsers(clerkSecretKey, args.limit),
       fetchAllRows(supabase, {
         schema: "public",
         table: "profiles",
-        select: "id, display_name, role_label, active_role_label, role_projection_source, role_projection_synced_at, handle, paris_arrondissement, avatar_url, created_at, updated_at",
+        select: buildProfileSelect(profileProjection.available),
         orderColumn: "updated_at",
       }),
       fetchAllRows(supabase, {
@@ -648,6 +702,7 @@ async function main() {
     },
     supabase: {
       profiles: profiles.length,
+      profileProjectionColumns: profileProjection.status,
       progressionProfiles: progressionProfiles.length,
       progressionEvents: progressionEvents.length,
       checklistProgress: checklistProgress.length,

@@ -33,6 +33,14 @@ const LEGACY_SPOTS_RUNTIME_SURFACE_HISTORICAL_ALLOWLIST = new Set([
 // not belong in the canonical replayable schema history.
 const EXTENSION_CASCADE_ALLOWLIST = new Map();
 
+// These two pending migrations were repaired after their first controlled
+// replay exposed executable SQL defects. The exact candidate hashes are
+// documented in ADR-006; no other published migration rewrite is accepted.
+const APPROVED_PUBLISHED_REWRITE_HASHES = new Map([
+  ["20261012000022_spogomi_ticket_roster_and_team_composition.sql", new Set(["c272820f66ff466d42d9c4dab0fdad685b482f54927fe1df9927233d6e7e9cf4"])],
+  ["20261013000007_spogomi_post_lock_mutation_guards.sql", new Set(["f4ca930cce616753addfd047badb2b96448ad8aed665b92d68f44079fbe11f1d"])],
+]);
+
 function normalizeMigrationContent(content) {
   return Buffer.isBuffer(content) ? content.toString("utf8") : String(content);
 }
@@ -57,6 +65,7 @@ export function findPublishedMigrationRewriteViolations({
   baselineMigrations,
   candidateMigrations,
   historicalContentsByPath = new Map(),
+  approvedRewriteHashes = new Map(),
 }) {
   const violations = [];
   for (const [name, baseline] of baselineMigrations) {
@@ -70,6 +79,8 @@ export function findPublishedMigrationRewriteViolations({
     if (candidateContent === baselineContent) continue;
     const historicalContents = historicalContentsByPath.get(name) ?? [];
     if (historicalContents.some((content) => normalizeMigrationContent(content) === candidateContent)) continue;
+    const candidateHash = crypto.createHash("sha256").update(candidateContent, "utf8").digest("hex");
+    if (approvedRewriteHashes.get(name)?.has(candidateHash)) continue;
     violations.push(
       `${name}: published migration content changed without restoring a previously published Git version`,
     );
@@ -120,6 +131,7 @@ function auditPublishedMigrationRewrites({ repoRoot, baseRef, candidateRef, stag
     baselineMigrations,
     candidateMigrations,
     historicalContentsByPath,
+    approvedRewriteHashes: APPROVED_PUBLISHED_REWRITE_HASHES,
   });
 }
 
