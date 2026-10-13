@@ -637,7 +637,32 @@ Invariants non négociables :
 - valider les entrées non fiables et les permissions côté serveur ;
 - préserver ownership, scope et séparation des privilèges ;
 - ne pas exposer de stack trace ou détail interne sensible au client ;
-- toute mutation distante ou destructive doit être explicitement autorisée.
+- toute mutation distante ou destructive doit être explicitement autorisée,
+  sauf l'application automatique des migrations Supabase canoniques dans le
+  cadre borné ci-dessous.
+
+### Autonomie bornée des migrations Supabase
+
+L'application d'une migration versionnée depuis
+`apps/web/supabase/migrations/` est autorisée sans demander une confirmation
+supplémentaire lorsqu'elle fait partie du workflow normal du dépôt. Elle doit
+être exécutée dès que possible après les contrôles suivants :
+
+- la cible Supabase explicitement liée est identifiée et visible par le CLI ;
+- `npx supabase migration list --linked` a été comparé à l'arbre Git courant ;
+- `npx supabase db push --dry-run` confirme la liste exacte des migrations à
+  appliquer ;
+- aucune divergence d'historique, cible ambiguë, migration en échec non
+  qualifiée ou précondition SQL non résolue n'est ignorée ;
+- les contrôles de sécurité et de schéma pertinents sont exécutés avant puis
+  après l'application ;
+- la convergence de l'historique distant et des objets attendus est vérifiée.
+
+Cette délégation ne couvre pas `migration repair`, une DDL SQL manuelle, un
+reset ou seed destructif, une suppression de données, une modification de
+secret, ni une autre mutation distante hors migration versionnée. Une erreur
+de migration bloque l'automatisation ; elle ne doit pas être contournée par un
+repair ou un push aveugle.
 
 Les décisions d’ouverture ou de restriction des surfaces communautaires suivent
 la doctrine canonique de `CHATGPT.md`, section

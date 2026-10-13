@@ -131,7 +131,7 @@ Le CLI Supabase est le canal canonique des migrations suivies par Git : les
 migrations versionnées vivent exclusivement sous
 `apps/web/supabase/migrations/`, puis sont contrôlées avec l'historique
 local/distant, la cible liée et `db push --dry-run` avant toute application
-explicitement autorisée. Le plugin/MCP reste en lecture seule par défaut pour
+automatique. Le plugin/MCP reste en lecture seule par défaut pour
 l'observation structurée ; ne pas utiliser `apply_migration`, une commande DDL
 MCP, `execute_sql` mutatif ou un autre outil MCP comme substitut du CLI.
 
@@ -146,8 +146,11 @@ npx supabase db push --dry-run
 ```
 
 `db push --dry-run` ne mute rien et ne prouve jamais qu'un vrai `db push` a
-été exécuté. Un vrai `npx supabase db push` reste une mutation distante et
-exige une autorisation explicite.
+été exécuté. Après la réconciliation obligatoire ci-dessus, un vrai
+`npx supabase db push --linked --yes` est le chemin automatique normal des
+migrations canoniques ; il ne nécessite pas une confirmation supplémentaire
+par lot. Cette autonomie ne couvre ni `migration repair`, ni une DDL manuelle,
+ni un reset, ni une mutation distante hors migration versionnée.
 
 Le plugin/MCP est le canal privilégié pour l'observation distante structurée :
 projet, branches, historique, schéma, logs et advisors. Pour un inventaire
@@ -260,7 +263,7 @@ autorisé, et ne doivent pas être utilisés pour contourner un `403`.
 Avant un vrai `db push`, lorsque CLI et MCP sont disponibles, comparer la
 cible projet, le dernier historique distant, les advisors BEFORE et le
 `db push --dry-run`. Un état incompatible est
-`SUPABASE_STATE_DIVERGENCE` et bloque la mutation. Pour un lot SQL autorisé,
+`SUPABASE_STATE_DIVERGENCE` et bloque la mutation. Pour un lot SQL automatique,
 rapporter séparément les advisors `SECURITY_ADVISORS_BEFORE/AFTER` et
 `PERFORMANCE_ADVISORS_BEFORE/AFTER`, ainsi que `NEW_FINDINGS`,
 `RESOLVED_FINDINGS` et `UNCHANGED_FINDINGS`. Un nouvel `ERROR` ou `WARN` causé
@@ -288,7 +291,8 @@ justifie pas à lui seul un `repair`, un reset ou un push.
   d'un runtime en guise de fallback.
 - Les opérations Supabase courantes utilisent `npx supabase` contre le projet
   distant explicitement lié. Les commandes distantes en lecture, dont les
-  advisors avec `--linked`, restent autorisées ; toute mutation distante reste
-  explicite et séparée.
+  advisors avec `--linked`, restent autorisées ; l'application des migrations
+  canoniques suit l'automatisation bornée ci-dessus. Toute autre mutation
+  distante reste explicite et séparée.
 - `apps/web/supabase/config.toml` et l'arbre des migrations restent canoniques.
   Leur conservation ne constitue pas un support du runtime Supabase local.

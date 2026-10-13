@@ -134,12 +134,15 @@ La procédure obligatoire est la suivante :
 
 La restauration stricte d'une réécriture accidentelle est une réparation
 exceptionnelle et traçable ; elle ne donne pas l'autorisation de modifier une
-migration publiée pour y placer un correctif runtime. Ni `migration repair`, ni
-`db push`, ni une écriture distante ne fait partie de cette procédure sans
-autorisation explicite. Le garde `npm run audit:supabase-migration-trees` et
-les hooks de publication doivent être exécutés sur le candidat exact ; ils
-complètent la revue et ne remplacent pas la vérification de convergence des
-deux historiques.
+migration publiée pour y placer un correctif runtime. L'application normale
+des migrations canoniques est automatique dès que la cible, l'historique, le
+dry-run et les contrôles de sécurité ont été réconciliés selon les règles
+Supabase du dépôt ; elle ne nécessite pas une confirmation supplémentaire par
+lot. `migration repair`, une DDL manuelle et toute autre écriture distante
+restent hors de cette délégation. Le garde
+`npm run audit:supabase-migration-trees` et les hooks de publication doivent
+être exécutés sur le candidat exact ; ils complètent la revue et ne remplacent
+pas la vérification de convergence des deux historiques.
 
 ## Exception bornée de rejouabilité — `20260913000006`
 

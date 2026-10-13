@@ -13,8 +13,12 @@ avec `config.toml` et `seed.sql` pour le contexte local versionné.
 - ne jamais désactiver RLS, publier un secret ou créer un second arbre de
   migrations.
 
-Un vrai `npx supabase db push` est une mutation distante distincte de la
-validation locale et exige une autorisation explicite. Le README web décrit
+Un vrai `npx supabase db push --linked --yes` est une mutation distante, mais
+il fait partie du workflow automatique des migrations canoniques après la
+réconciliation de la cible, de l'historique et du dry-run décrite dans
+`AGENTS.md`. Il ne nécessite pas une confirmation supplémentaire par lot.
+`migration repair`, une DDL manuelle, un reset, un seed destructif ou toute
+autre mutation distante restent hors de cette délégation. Le README web décrit
 les scripts `backend:supabase:push` et `backend:bootstrap` ainsi que leurs
 effets ; ce fichier ne les réimplémente pas.
 

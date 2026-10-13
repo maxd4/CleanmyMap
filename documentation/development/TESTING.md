@@ -198,8 +198,11 @@ ne prouve pas qu'une migration est appliquée. Seule la comparaison
 
 `npx supabase db push`, `npx supabase migration repair` et
 `npx supabase db reset` ne corrigent pas un problème d'authentification ou de
-scope ; ne pas les utiliser comme remèdes à un `403`. Une opération qui exige
-un runtime conteneurisé local est `UNSUPPORTED_CONTAINER_RUNTIME` sur le poste
+scope ; ne pas les utiliser comme remèdes à un `403`. Le `db push` des
+migrations canoniques est automatique après les précontrôles de
+réconciliation ; `migration repair`, une DDL manuelle et `db reset` restent
+des opérations séparées et non déléguées. Une opération qui exige un runtime
+conteneurisé local est `UNSUPPORTED_CONTAINER_RUNTIME` sur le poste
 utilisateur.
 
 Un runner CI hébergé et éphémère peut toutefois utiliser ce runtime uniquement
