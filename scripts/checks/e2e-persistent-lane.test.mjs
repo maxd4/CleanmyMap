@@ -14,19 +14,27 @@ const read = (relativePath) => readFileSync(path.join(root, relativePath), "utf8
 test("persistent E2E workflow is hosted, ephemeral, and never targets production Supabase", () => {
   const workflow = read(".github/workflows/e2e-supabase.yml");
   assert.match(workflow, /runs-on:\s+ubuntu-latest/);
-  assert.match(workflow, /supabase start/);
-  assert.match(workflow, /supabase db reset --local/);
-  assert.match(workflow, /Restart ephemeral Supabase API after reset/);
-  assert.match(workflow, /docker restart "\$rest_container"/);
-  assert.match(workflow, /docker kill --signal=USR1 "\$rest_container"/);
-  assert.match(workflow, /curl --silent --show-error --output \/dev\/null --write-out '%\{http_code\}' http:\/\/127\.0\.0\.1:54321\/rest\/v1\//);
-  assert.match(workflow, /Ephemeral PostgREST did not become ready after restart/);
-  assert.match(workflow, /for reload_attempt in \$\(seq 1 5\)/);
-  assert.match(workflow, /sleep 2/);
+  assert.match(workflow, /supabase start --workdir apps\/web --yes/);
+  assert.match(workflow, /supabase db reset --local --workdir apps\/web --yes/);
+  assert.doesNotMatch(workflow, /--workdir apps\/web\/supabase/);
+  assert.equal((workflow.match(/--workdir apps\/web\b/g) ?? []).length, 6, "all Supabase CLI calls must use the apps/web project workdir");
+  assert.match(workflow, /Preflight canonical ephemeral PostgreSQL schema/);
+  assert.match(workflow, /project_id\s*=\s*\\"web\\"/);
+  assert.match(workflow, /to_regclass\('public\.actions'\)/);
+  assert.match(workflow, /to_regclass\('public\.spogomi_events'\)/);
+  assert.match(workflow, /supabase_migrations\.schema_migrations/);
+  assert.match(workflow, /6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71/);
+  assert.match(workflow, /E2E_FIXTURE:group-join:v1/);
+  assert.match(workflow, /Synchronize PostgREST schema after PostgreSQL proof/);
   assert.match(workflow, /notify pgrst, ['"]reload schema/);
+  assert.equal((workflow.match(/notify pgrst, ['"]reload schema/g) ?? []).length, 1, "PostgREST synchronization must be single-shot");
+  assert.doesNotMatch(workflow, /docker restart/);
+  assert.doesNotMatch(workflow, /docker kill --signal=USR1/);
+  assert.doesNotMatch(workflow, /reload_attempt/);
+  assert.doesNotMatch(workflow, /seq 1 5/);
   assert.match(workflow, /supabase stop/);
   assert.match(workflow, /id: start_supabase/);
-  assert.match(workflow, /Supabase did not start; skipping stop/);
+  assert.match(workflow, /No ephemeral Supabase containers exist; skipping stop/);
   assert.doesNotMatch(workflow, /Require Clerk Development credentials/);
   assert.doesNotMatch(workflow, /run-github-actions-persistent\.mjs require-clerk/);
   assert.match(workflow, /apps\/web\/supabase\/migrations/);
@@ -35,6 +43,22 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.doesNotMatch(workflow, /https:\/\/[^\s]+\.supabase\.co/);
   assert.doesNotMatch(workflow, /CLERK_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY/);
   assert.doesNotMatch(workflow, /(?:set -x|printenv|export\s+[^\n]*(?:TOKEN|KEY))/i);
+
+  const preflightPosition = workflow.indexOf("Preflight canonical ephemeral PostgreSQL schema");
+  const browserPosition = workflow.indexOf("Install Playwright browser");
+  assert.ok(preflightPosition >= 0 && browserPosition > preflightPosition, "browser installation must follow the PostgreSQL preflight");
+});
+
+test("Supabase status readers use the apps/web CLI project workdir", () => {
+  const concurrency = read("e2e/spogomi-concurrency.mjs");
+  const persistent = read("e2e/run-github-actions-persistent.mjs");
+  for (const source of [concurrency, persistent]) {
+    assert.match(source, /path\.join\(root, "apps", "web"\)/);
+    assert.match(source, /\["supabase", "status", "--workdir", supabaseDirectory/);
+    assert.doesNotMatch(source, /path\.join\(root, "apps", "web", "supabase"\)/);
+  }
+  assert.doesNotMatch(concurrency, /reload schema/);
+  assert.doesNotMatch(concurrency, /waitForSupabaseSchema/);
 });
 
 test("local persistent runners do not invoke Docker or the Supabase local lifecycle", () => {

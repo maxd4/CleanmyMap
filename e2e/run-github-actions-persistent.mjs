@@ -7,7 +7,7 @@ export const CLERK_DEV_BACKEND_ENV = "CMM_E2E_CLERK_DEV_BACKEND_TOKEN";
 export const CLERK_DEV_PUBLISHABLE_ENV = "CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY";
 
 const root = process.cwd();
-const supabaseDirectory = path.join(root, "apps", "web", "supabase");
+const supabaseDirectory = path.join(root, "apps", "web");
 const webEnvFile = path.join(root, "apps", "web", ".env.local");
 
 export function assertClerkDevelopmentSecrets(env = process.env) {

@@ -62,9 +62,6 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
-
       - name: Audit canonical Supabase migration tree
         run: npm run audit:supabase-migration-trees
 
@@ -77,44 +74,87 @@ jobs:
         id: start_supabase
         run: |
           mkdir -p artifacts/ci
-          npx supabase start --workdir apps/web/supabase --yes > artifacts/ci/supabase-start.log 2>&1
+          npx supabase start --workdir apps/web --yes > artifacts/ci/supabase-start.log 2>&1
 
       - name: Apply canonical migrations and seed
         run: |
-          npx supabase db reset --local --workdir apps/web/supabase --yes > artifacts/ci/supabase-reset.log 2>&1
+          set -o pipefail
+          npx supabase db reset --local --workdir apps/web --yes 2>&1 | tee artifacts/ci/supabase-reset.log
 
-      - name: Restart ephemeral Supabase API after reset
+      - name: Preflight canonical ephemeral PostgreSQL schema
         run: |
-          rest_container="$(docker ps --format '{{.Names}}' | grep '^supabase_rest_' | head -n 1 || true)"
-          if [ -z "$rest_container" ]; then
-            echo "No local ephemeral Supabase PostgREST container was found."
+          set -euo pipefail
+          if ! test -f apps/web/supabase/config.toml; then
+            echo "Preflight failed: canonical apps/web/supabase/config.toml is absent."
             exit 1
           fi
-          docker restart "$rest_container"
-
-      - name: Reload ephemeral PostgREST schema
-        run: |
-          rest_container="$(docker ps --format '{{.Names}}' | grep '^supabase_rest_' | head -n 1 || true)"
-          if [ -z "$rest_container" ]; then
-            echo "No local ephemeral Supabase PostgREST container was found."
+          if ! grep -Eq '^[[:space:]]*project_id[[:space:]]*=[[:space:]]*"web"[[:space:]]*$' apps/web/supabase/config.toml; then
+            echo "Preflight failed: canonical config.toml does not declare project_id = \"web\"."
             exit 1
           fi
-          for attempt in $(seq 1 30); do
-            http_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1:54321/rest/v1/ || true)"
-            if [ "$http_status" = "200" ] || [ "$http_status" = "401" ]; then
-              break
-            fi
-            if [ "$attempt" = "30" ]; then
-              echo "Ephemeral PostgREST did not become ready after restart (HTTP $http_status)."
-              exit 1
-            fi
-            sleep 1
-          done
-          for reload_attempt in $(seq 1 5); do
-            npx supabase db query --workdir apps/web/supabase --local "notify pgrst, 'reload schema';"
-            sleep 2
-          done
-          docker kill --signal=USR1 "$rest_container"
+
+          status_file="$(mktemp)"
+          status_error_file="$(mktemp)"
+          trap 'rm -f "$status_file" "$status_error_file"' EXIT
+          if ! npx supabase status --workdir apps/web --output json > "$status_file" 2> "$status_error_file"; then
+            echo "Canonical Supabase config could not be loaded from apps/web."
+            cat "$status_error_file"
+            exit 1
+          fi
+          STATUS_FILE="$status_file" node --input-type=module - <<'NODE'
+          import { readFileSync } from "node:fs";
+
+          const raw = readFileSync(process.env.STATUS_FILE, "utf8");
+          const start = raw.indexOf("{");
+          if (start < 0) throw new Error("Supabase status did not return JSON for apps/web.");
+          const status = JSON.parse(raw.slice(start));
+          const apiUrl = new URL(status.API_URL ?? "");
+          if (apiUrl.hostname !== "127.0.0.1" && apiUrl.hostname !== "localhost") {
+            throw new Error("Supabase status did not describe a local ephemeral API.");
+          }
+          NODE
+
+          preflight_sql="$(cat <<'SQL'
+          do $$
+          declare
+            migration_count bigint;
+          begin
+            if to_regclass('public.actions') is null then
+              raise exception 'Preflight failed: public.actions is absent after canonical reset';
+            end if;
+            if to_regclass('public.spogomi_events') is null then
+              raise exception 'Preflight failed: public.spogomi_events is absent after canonical reset';
+            end if;
+            if to_regclass('supabase_migrations.schema_migrations') is null then
+              raise exception 'Preflight failed: migration registry is absent after canonical reset';
+            end if;
+            select count(*) into migration_count
+            from supabase_migrations.schema_migrations
+            where version ~ '^[0-9]{14}$';
+            if migration_count = 0 then
+              raise exception 'Preflight failed: no canonical application migration is registered';
+            end if;
+            if not exists (
+              select 1
+              from public.actions
+              where id = '6d7f6c3d-7d66-4c95-9e5a-5d2d9efb0b71'::uuid
+                and notes like 'E2E_FIXTURE:group-join:v1%'
+            ) then
+              raise exception 'Preflight failed: canonical E2E seed fixture is absent';
+            end if;
+            raise notice 'Preflight passed: canonical config, PostgreSQL schema, migrations and seed fixture are present';
+          end
+          $$;
+          SQL
+          )"
+          npx supabase db query --workdir apps/web --local "$preflight_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
+
+      - name: Synchronize PostgREST schema after PostgreSQL proof
+        run: |
+          npx supabase db query --workdir apps/web --local "notify pgrst, 'reload schema';"
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
 
       - name: Run SPOGOMI business tests
         run: |
@@ -144,11 +184,13 @@ jobs:
       - name: Stop ephemeral Supabase
         if: always()
         run: |
-          if [ "${{ steps.start_supabase.outcome }}" != "success" ]; then
-            echo "Supabase did not start; skipping stop."
+          mkdir -p artifacts/ci
+          containers="$(docker ps -a --format '{{.Names}}' 2>/dev/null | grep '^supabase_' || true)"
+          if [ -z "$containers" ]; then
+            echo "No ephemeral Supabase containers exist; skipping stop."
             exit 0
           fi
-          npx supabase stop --workdir apps/web/supabase --no-backup > artifacts/ci/supabase-stop.log 2>&1
+          npx supabase stop --workdir apps/web --no-backup > artifacts/ci/supabase-stop.log 2>&1
 
       - name: Remove ephemeral credentials
         if: always()
