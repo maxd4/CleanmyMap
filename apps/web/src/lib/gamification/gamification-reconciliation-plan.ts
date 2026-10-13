@@ -32,6 +32,7 @@ export type GamificationReconciliationProfile = {
   potential_level: number | null;
   current_applied_rules_revision?: number | null;
   last_acknowledged_rules_revision?: number | null;
+  updated_at?: string | null;
 };
 
 export type GamificationEventChange = {

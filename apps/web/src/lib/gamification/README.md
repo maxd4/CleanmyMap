@@ -79,6 +79,34 @@ demandeur. Cette vérification complète le filtre SQL par
 `app_notifications.user_id` et ne modifie ni le reçu persistant ni le moteur
 de réconciliation.
 
+## Coordination inter-serveurs
+
+Une réconciliation d'un utilisateur est engagée par la RPC PostgreSQL
+`apply_gamification_reconciliation`, ajoutée par la migration
+`20261013000013_gamification_reconciliation_atomicity.sql`. Le serveur conserve
+le moteur de règles et prépare un plan en lecture, puis transmet à la RPC le
+snapshot complet de `progression_events`, les changements attendus et la
+révision `updated_at` du profil lorsqu'il doit être recalculé.
+
+La RPC prend un verrou transactionnel PostgreSQL propre à l'utilisateur,
+vérifie ces deux révisions avant toute écriture, puis applique dans une seule
+transaction le journal CURRENT, le profil, la notification de niveau et le
+reçu. Un snapshot obsolète renvoie explicitement `status=conflict` sans
+écriture partielle ; le serveur recharge alors les faits et retente au plus
+trois fois. Cette coordination fonctionne entre instances et ne repose pas
+sur une `Map`, une promesse partagée ou un autre verrou mémoire.
+
+Les rafraîchissements de profil déclenchés par les autres écritures utilisent
+également `refresh_gamification_profile` : leurs totaux XP sont recalculés dans
+la transaction PostgreSQL et leur `updated_at` est vérifié avant remplacement.
+
+Le reçu de réconciliation et la notification de niveau sont idempotents : un
+retry ou une réponse réseau inversée ne peut pas créer un second reçu pour la
+même réconciliation. Les réconciliations d'utilisateurs différents ne
+partagent pas ce verrou. Le journal `progression_events` reste la source
+canonique ; les faits métier, les événements LEGACY et les règles ne sont ni
+remplacés ni recalculés depuis les notifications.
+
 ## Outil de réconciliation administrative
 
 Le plan de diff en lecture est porté par

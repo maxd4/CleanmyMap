@@ -62,6 +62,19 @@ function createLevelRefreshSupabase(params: {
     })),
   };
   const supabase = {
+    rpc: vi.fn(async (name: string, args: Record<string, unknown>) => {
+      expect(name).toBe("refresh_gamification_profile");
+      await profileUpsert({
+        user_id: args.p_user_id,
+        xp_total: params.events.reduce((total, event) => total + event.xp_awarded, 0),
+        xp_pending: params.events.filter((event) => event.status_phase === "pending").reduce((total, event) => total + event.xp_awarded, 0),
+        xp_validated: params.events.filter((event) => event.status_phase === "validated").reduce((total, event) => total + event.xp_awarded, 0),
+        current_level: args.p_current_level,
+        potential_level: args.p_potential_level,
+        current_applied_rules_revision: args.p_current_applied_rules_revision,
+      });
+      return { data: { status: "applied", previous_level: params.previousLevel }, error: null };
+    }),
     from: vi.fn((table: string) => {
       if (table === "progression_events") return progressionEventsChain;
       if (table === "progression_profiles") {
@@ -125,16 +138,13 @@ it("includes action balance XP in the validated profile total", async () => {
 
   await refreshProgressionProfile(supabase, "user-1");
 
-  expect(profileUpsert).toHaveBeenCalledWith(
-    expect.objectContaining({
+  expect(profileUpsert).toHaveBeenCalledWith(expect.objectContaining({
       user_id: "user-1",
       xp_total: 3,
       xp_pending: 0,
       xp_validated: 3,
       current_applied_rules_revision: CURRENT_GAMIFICATION_RULES_REVISION,
-    }),
-    { onConflict: "user_id" },
-  );
+    }));
 });
 
 it("counts validated participant tiers in validated XP", async () => {
@@ -164,14 +174,11 @@ it("counts validated participant tiers in validated XP", async () => {
 
   await refreshProgressionProfile(supabase, "user-1");
 
-  expect(profileUpsert).toHaveBeenCalledWith(
-    expect.objectContaining({
+  expect(profileUpsert).toHaveBeenCalledWith(expect.objectContaining({
       xp_total: 2,
       xp_pending: 1,
       xp_validated: 1,
-    }),
-    { onConflict: "user_id" },
-  );
+    }));
 });
 
 it("keeps the resolved previous level when the secondary notification fails", async () => {
@@ -184,10 +191,7 @@ it("keeps the resolved previous level when the secondary notification fails", as
 
   await refreshProgressionProfile(supabase, "user-1");
 
-  expect(profileUpsert).toHaveBeenCalledWith(
-    expect.objectContaining({ current_level: 6 }),
-    { onConflict: "user_id" },
-  );
+  expect(profileUpsert).toHaveBeenCalledWith(expect.objectContaining({ current_level: 6 }));
   expect(notificationInsert).toHaveBeenCalledTimes(1);
   expect(broadcastGamificationAnnouncementMock).toHaveBeenCalledWith(
     supabase,

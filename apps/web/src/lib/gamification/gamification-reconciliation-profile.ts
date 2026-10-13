@@ -15,7 +15,7 @@ export async function loadReconciliationProfile(
 ): Promise<GamificationReconciliationProfile | null> {
   const result = await supabase
     .from("progression_profiles")
-    .select("current_level, current_applied_rules_revision, last_acknowledged_rules_revision")
+    .select("current_level, current_applied_rules_revision, last_acknowledged_rules_revision, updated_at")
     .eq("user_id", userId)
     .maybeSingle();
   if (result.error) throw new Error(result.error.message);

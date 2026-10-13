@@ -15,7 +15,7 @@ import { toIsoDate } from "./progression-utils";
 import { logFailure } from "@/lib/logging/failure-log";
 import { rebuildUserGamificationBadges } from "./badges/rebuild";
 import { reconcileMohsImpactProgression } from "./mohs-impact-reconciliation";
-import { persistProgressionProfileRefresh } from "./progression-profile-refresh";
+import { persistProgressionProfileRefresh, ProgressionProfileConflictError } from "./progression-profile-refresh";
 import {
   awardReferralForUsefulContribution,
   removeReferralAwardForRejectedContribution,
@@ -36,7 +36,7 @@ async function syncOrganizersProgression(
   );
 }
 
-export async function refreshProgressionProfile(
+async function refreshProgressionProfileOnce(
   supabase: SupabaseClient,
   userId: string,
   options: { reconcileLegacyImpact?: boolean; reconciliationId?: string } = {},
@@ -67,6 +67,21 @@ export async function refreshProgressionProfile(
   await persistProgressionProfileRefresh(supabase, userId, rows, stats, {
     reconciliationId: options.reconciliationId,
   });
+}
+
+export async function refreshProgressionProfile(
+  supabase: SupabaseClient,
+  userId: string,
+  options: { reconcileLegacyImpact?: boolean; reconciliationId?: string } = {},
+): Promise<void> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await refreshProgressionProfileOnce(supabase, userId, options);
+      return;
+    } catch (error) {
+      if (!(error instanceof ProgressionProfileConflictError) || attempt === 2) throw error;
+    }
+  }
 }
 
 export async function trackActionCreated(

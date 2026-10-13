@@ -4,7 +4,7 @@ import { logFailure } from "@/lib/logging/failure-log";
 export async function loadPreviousLevel(
   supabase: SupabaseClient,
   userId: string,
-): Promise<number> {
+): Promise<{ level: number; updatedAt: string | null }> {
   try {
     const { data: existingProfile, error } = await supabase
       .from("progression_profiles")
@@ -14,10 +14,11 @@ export async function loadPreviousLevel(
     if (error) {
       throw new Error(error.message);
     }
-    return (existingProfile as { current_level?: number | null } | null)?.current_level ?? 1;
+    const profile = existingProfile as { current_level?: number | null; updated_at?: string | null } | null;
+    return { level: profile?.current_level ?? 1, updatedAt: profile?.updated_at ?? null };
   } catch (readError) {
     logFailure("Gamification/LevelUp", "Previous level read failed", readError, { userId });
-    return 1;
+    return { level: 1, updatedAt: null };
   }
 }
 

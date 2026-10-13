@@ -30,29 +30,6 @@ function calculateProgressionTotals(
   );
 }
 
-async function upsertProgressionProfile(
-  supabase: SupabaseClient,
-  userId: string,
-  totals: ProgressionTotals,
-  currentLevel: number,
-  potentialLevel: number,
-): Promise<void> {
-  const upsert = await supabase.from("progression_profiles").upsert(
-    {
-      user_id: userId,
-      xp_total: totals.xpTotal,
-      xp_pending: totals.xpPending,
-      xp_validated: totals.xpValidated,
-      current_level: currentLevel,
-      potential_level: potentialLevel,
-      current_applied_rules_revision: CURRENT_GAMIFICATION_RULES_REVISION,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
-  if (upsert.error) throw new Error(upsert.error.message);
-}
-
 async function announceLevelUp(
   supabase: SupabaseClient,
   userId: string,
@@ -73,18 +50,11 @@ async function announceLevelUp(
   });
 }
 
-async function finalizeProgressionRefresh(
-  supabase: SupabaseClient,
-  userId: string,
-  totals: ProgressionTotals,
-  currentLevel: number,
-  potentialLevel: number,
-  previousLevel: number,
-  options: { reconciliationId?: string },
-): Promise<void> {
-  await notifyLevelUp(supabase, userId, previousLevel, currentLevel, options);
-  await upsertProgressionProfile(supabase, userId, totals, currentLevel, potentialLevel);
-  await announceLevelUp(supabase, userId, previousLevel, currentLevel);
+export class ProgressionProfileConflictError extends Error {
+  constructor() {
+    super("Le profil de progression a changé pendant son recalcul et doit être rejoué.");
+    this.name = "ProgressionProfileConflictError";
+  }
 }
 
 export async function persistProgressionProfileRefresh(
@@ -97,14 +67,20 @@ export async function persistProgressionProfileRefresh(
   const totals = calculateProgressionTotals(rows);
   const potentialLevel = computePotentialLevel(totals.xpValidated);
   const currentLevel = computeCurrentLevel(totals.xpValidated, stats);
-  const previousLevel = await loadPreviousLevel(supabase, userId);
-  await finalizeProgressionRefresh(
-    supabase,
-    userId,
-    totals,
-    currentLevel,
-    potentialLevel,
-    previousLevel,
-    options,
-  );
+  const previousProfile = await loadPreviousLevel(supabase, userId);
+  const result = await supabase.rpc("refresh_gamification_profile", {
+    p_user_id: userId,
+    p_expected_updated_at: previousProfile.updatedAt,
+    p_current_level: currentLevel,
+    p_potential_level: potentialLevel,
+    p_current_applied_rules_revision: CURRENT_GAMIFICATION_RULES_REVISION,
+  });
+  if (result.error) throw new Error(result.error.message);
+  const payload = result.data as { status?: string; previous_level?: number } | null;
+  if (payload?.status === "conflict") throw new ProgressionProfileConflictError();
+  if (payload?.status !== "applied") throw new Error("La RPC de profil de progression a renvoyé une réponse invalide.");
+
+  const previousLevel = Number(payload.previous_level ?? previousProfile.level);
+  await notifyLevelUp(supabase, userId, previousLevel, currentLevel, options);
+  await announceLevelUp(supabase, userId, previousLevel, currentLevel);
 }
