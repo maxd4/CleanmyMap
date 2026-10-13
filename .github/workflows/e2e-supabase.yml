@@ -85,12 +85,8 @@ jobs:
 
       - name: Restart ephemeral Supabase API after reset
         run: |
-          rest_container="$(docker ps --format '{{.Names}}' | grep '^supabase_rest_' | head -n 1 || true)"
-          if [ -z "$rest_container" ]; then
-            echo "No local ephemeral Supabase PostgREST container was found."
-            exit 1
-          fi
-          docker restart "$rest_container"
+          npx supabase stop --workdir apps/web/supabase --no-backup
+          npx supabase start --workdir apps/web/supabase --yes > artifacts/ci/supabase-restart.log 2>&1
 
       - name: Reload ephemeral PostgREST schema
         run: |
@@ -172,4 +168,4 @@ jobs:
       - name: Remove ephemeral Supabase logs
         if: always()
         run: |
-          rm -f artifacts/ci/supabase-start.log artifacts/ci/supabase-reset.log artifacts/ci/supabase-stop.log
+          rm -f artifacts/ci/supabase-start.log artifacts/ci/supabase-reset.log artifacts/ci/supabase-restart.log artifacts/ci/supabase-stop.log
