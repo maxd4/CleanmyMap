@@ -58,7 +58,14 @@ export async function loadOrRefreshPublicSurfaceSnapshot<TPayload>(
         meta: params.meta ?? {},
       };
 
-      await upsertPublicSurfaceSnapshot(snapshot);
+      const writeResult = await upsertPublicSurfaceSnapshot(snapshot);
+      if (writeResult === "ignored_older") {
+        const persistedSnapshot =
+          await readLatestPublicSurfaceSnapshot<TPayload>(params.snapshotKey);
+        if (persistedSnapshot) {
+          return persistedSnapshot;
+        }
+      }
       return {
         id: `${snapshot.snapshotKey}:${snapshot.snapshotDate}`,
         ...snapshot,

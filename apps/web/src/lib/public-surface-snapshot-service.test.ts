@@ -72,6 +72,25 @@ describe("loadOrRefreshPublicSurfaceSnapshot", () => {
     expect(upsertPublicSurfaceSnapshotMock).toHaveBeenCalledOnce();
   });
 
+  it("retourne la version persistée lorsqu'une reconstruction plus ancienne est ignorée", async () => {
+    const existing = existingSnapshot("v1", "stale");
+    const newer = {
+      ...existing,
+      generatedAt: "2026-08-26T12:00:01.000Z",
+      payload: "newer-instance",
+    };
+    readLatestPublicSurfaceSnapshotMock
+      .mockResolvedValueOnce(existing)
+      .mockResolvedValueOnce(newer);
+    upsertPublicSurfaceSnapshotMock.mockResolvedValue("ignored_older");
+
+    const result = await loadOrRefreshPublicSurfaceSnapshot(params());
+
+    expect(result).toBe(newer);
+    expect(result.payload).toBe("newer-instance");
+    expect(readLatestPublicSurfaceSnapshotMock).toHaveBeenCalledTimes(2);
+  });
+
   it("coalesce les reconstructions concurrentes d'une même clé", async () => {
     let resolveBuild!: (payload: string) => void;
     const buildPayload = vi.fn(

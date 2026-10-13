@@ -57,6 +57,31 @@ besoin de partage de la donnée :
 | Données dérivées recalculables | Cache HTTP, ISR, `SWR` ou cache applicatif | Utiliser le cache pour réduire les lectures, jamais comme source de vérité. |
 | Fichiers téléchargeables, images uploadées, PDF et exports réutilisables | Fichier préparé / Storage | Stocker seulement les métadonnées minimales en base si le fichier doit rester utile ou traçable. |
 
+### Snapshots publics dérivés
+
+Les snapshots publics recalculables restent persistés dans
+`public.public_surface_snapshots` et servis par leur owner
+`apps/web/src/lib/public-surface-snapshots.ts`. Le cache et la déduplication
+`inFlightRefreshes` réduisent le coût, mais ne constituent pas une coordination
+entre instances Vercel.
+
+L'owner accepte une écriture seulement si son `generated_at` est strictement
+plus récent que la ligne existante pour le couple
+`(snapshot_key, snapshot_date)`. L'insertion initiale utilise la contrainte
+unique existante avec `ignoreDuplicates`, ce qui rend les courses entre deux
+instances déterministes : une reconstruction terminée plus tard ne peut pas
+être remplacée par une reconstruction commencée plus tôt. Lorsqu'une écriture
+est ignorée, le service relit la ligne persistée et renvoie cette version afin
+que la réponse et la persistance restent cohérentes.
+
+Une invalidation de route ne supprime pas la ligne immédiatement : elle pose
+un watermark interne dans la même table, avec une date de génération
+invalidante. Ce marqueur est exclu des lectures publiques et bloque les
+reconstructions déjà en vol ; une reconstruction postérieure peut le remplacer
+si sa date est strictement plus récente. La revalidation du cache d'actions
+reste effectuée par le contrat existant. Aucun Redis ni service de coordination
+supplémentaire n'est requis.
+
 Les quiz anonymes et les brouillons non critiques ne doivent pas devenir une
 nouvelle table par défaut. Supabase devient pertinent pour un suivi connecté
 réellement utile, stable et justifiable entre appareils. Les formulaires à

@@ -21,6 +21,11 @@ export type PublicSurfaceSnapshotRecord<TPayload = unknown> = {
   meta: Record<string, unknown>;
 };
 
+export type PublicSurfaceSnapshotWriteResult = "applied" | "ignored_older";
+
+const INVALIDATED_PUBLIC_SURFACE_SNAPSHOT_VERSION =
+  "__public_surface_snapshot_invalidated__";
+
 export function toPersistedPublicSurfaceSnapshot<TPayload>(
   snapshot: PublicSurfaceSnapshotRecord<TPayload>,
 ): Omit<PublicSurfaceSnapshotRecord<TPayload>, "id"> {
@@ -106,9 +111,15 @@ export function isPublicSurfaceSnapshotFresh(
   return ageMinutes >= 0 && ageMinutes <= ttlMinutes;
 }
 
+/**
+ * Persists only a strictly newer generation. The conditional update and the
+ * conflict-ignoring insert are both evaluated by the database, so the rule
+ * also holds when two Vercel instances finish the same reconstruction in the
+ * opposite order.
+ */
 export async function upsertPublicSurfaceSnapshot<TPayload>(
   snapshot: Omit<PublicSurfaceSnapshotRecord<TPayload>, "id">,
-): Promise<void> {
+): Promise<PublicSurfaceSnapshotWriteResult> {
   if (!canUseSupabaseServerPersistence() && !allowLocalFileStoreFallback()) {
     throw new Error("Public surface snapshot persistence is unavailable.");
   }
@@ -116,26 +127,47 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
   if (canUseSupabaseServerPersistence()) {
     try {
       const supabase = getSupabaseServerClient(true);
-      const result = await supabase.from("public_surface_snapshots").upsert(
-        {
-          snapshot_key: snapshot.snapshotKey,
-          snapshot_date: snapshot.snapshotDate,
-          generated_at: snapshot.generatedAt,
-          version: snapshot.version,
-          title: snapshot.title,
-          payload: snapshot.payload,
-          meta: snapshot.meta,
-        },
-        { onConflict: "snapshot_key,snapshot_date" },
-      );
+      const row = {
+        snapshot_key: snapshot.snapshotKey,
+        snapshot_date: snapshot.snapshotDate,
+        generated_at: snapshot.generatedAt,
+        version: snapshot.version,
+        title: snapshot.title,
+        payload: snapshot.payload,
+        meta: snapshot.meta,
+      };
 
-      if (!result.error) {
-        return;
+      const updateResult = await supabase
+        .from("public_surface_snapshots")
+        .update(row)
+        .eq("snapshot_key", snapshot.snapshotKey)
+        .eq("snapshot_date", snapshot.snapshotDate)
+        .lt("generated_at", snapshot.generatedAt)
+        .select("id")
+        .maybeSingle();
+
+      if (updateResult.error) {
+        throw new Error(updateResult.error.message);
       }
 
-      if (!allowLocalFileStoreFallback()) {
-        throw new Error("Public surface snapshot persistence failed.");
+      if (updateResult.data) {
+        return "applied";
       }
+
+      const insertResult = await supabase
+        .from("public_surface_snapshots")
+        .upsert(row, {
+          onConflict: "snapshot_key,snapshot_date",
+          ignoreDuplicates: true,
+        })
+        .select("id")
+        .maybeSingle();
+
+      if (insertResult.error) {
+        throw new Error(insertResult.error.message);
+      }
+
+      return insertResult.data ? "applied" : "ignored_older";
     } catch (error) {
       if (!allowLocalFileStoreFallback()) {
         throw error;
@@ -144,6 +176,19 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
   }
 
   const store = await readStore();
+  const current = store.records.find(
+    (entry) =>
+      entry.snapshotKey === snapshot.snapshotKey &&
+      entry.snapshotDate === snapshot.snapshotDate,
+  );
+  if (
+    current &&
+    new Date(snapshot.generatedAt).getTime() <=
+      new Date(current.generatedAt).getTime()
+  ) {
+    return "ignored_older";
+  }
+
   const nextRecords = store.records.filter(
     (entry) =>
       !(
@@ -158,6 +203,7 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
   });
 
   await writeStore(nextRecords.slice(0, 365));
+  return "applied";
 }
 
 export async function readLatestPublicSurfaceSnapshot<TPayload>(
@@ -174,6 +220,7 @@ export async function readLatestPublicSurfaceSnapshot<TPayload>(
         .from("public_surface_snapshots")
         .select("id, snapshot_key, snapshot_date, generated_at, version, title, payload, meta")
         .eq("snapshot_key", snapshotKey)
+        .neq("version", INVALIDATED_PUBLIC_SURFACE_SNAPSHOT_VERSION)
         .order("snapshot_date", { ascending: false })
         .order("generated_at", { ascending: false })
         .limit(1);
@@ -195,7 +242,11 @@ export async function readLatestPublicSurfaceSnapshot<TPayload>(
 
   const store = await readStore();
   const snapshot = store.records
-    .filter((entry) => entry.snapshotKey === snapshotKey)
+    .filter(
+      (entry) =>
+        entry.snapshotKey === snapshotKey &&
+        entry.version !== INVALIDATED_PUBLIC_SURFACE_SNAPSHOT_VERSION,
+    )
     .sort((left, right) => {
       const dateComparison = right.snapshotDate.localeCompare(left.snapshotDate);
       if (dateComparison !== 0) {
@@ -217,6 +268,10 @@ function snapshotKeyMatchesRoute(snapshotKey: string, routes: readonly string[])
   }
 }
 
+/**
+ * Keep an invalidation watermark in the existing row so an in-flight older
+ * reconstruction cannot resurrect the invalidated snapshot after deletion.
+ */
 export async function invalidatePublicSurfaceSnapshotsByRoute(
   routes: readonly string[],
 ): Promise<void> {
@@ -237,10 +292,14 @@ export async function invalidatePublicSurfaceSnapshotsByRoute(
   if (canUseSupabaseServerPersistence()) {
     try {
       const supabase = getSupabaseServerClient(true);
+      const invalidatedAt = new Date().toISOString();
       for (const route of normalizedRoutes) {
         const result = await supabase
           .from("public_surface_snapshots")
-          .delete()
+          .update({
+            generated_at: invalidatedAt,
+            version: INVALIDATED_PUBLIC_SURFACE_SNAPSHOT_VERSION,
+          })
           .like("snapshot_key", `%"route":"${route}"%`);
 
         if (result.error && !allowLocalFileStoreFallback()) {
@@ -258,11 +317,21 @@ export async function invalidatePublicSurfaceSnapshotsByRoute(
   }
 
   const store = await readStore();
-  const records = store.records.filter(
-    (entry) => !snapshotKeyMatchesRoute(entry.snapshotKey, normalizedRoutes),
+  const didInvalidate = store.records.some((entry) =>
+    snapshotKeyMatchesRoute(entry.snapshotKey, normalizedRoutes),
   );
-  if (records.length === store.records.length) {
+  if (!didInvalidate) {
     return;
   }
+  const invalidatedAt = new Date().toISOString();
+  const records = store.records.map((entry) =>
+    snapshotKeyMatchesRoute(entry.snapshotKey, normalizedRoutes)
+      ? {
+          ...entry,
+          generatedAt: invalidatedAt,
+          version: INVALIDATED_PUBLIC_SURFACE_SNAPSHOT_VERSION,
+        }
+      : entry,
+  );
   await writeStore(records);
 }

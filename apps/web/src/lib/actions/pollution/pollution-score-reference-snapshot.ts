@@ -155,7 +155,7 @@ export async function runPollutionScoreReferencesJob(params: {
   readSnapshot?: () => Promise<PublicSurfaceSnapshotRecord<PollutionScoreReferenceSnapshotPayload> | null>;
   writeSnapshot?: (
     snapshot: Omit<PublicSurfaceSnapshotRecord<PollutionScoreReferenceSnapshotPayload>, "id">,
-  ) => Promise<void>;
+  ) => Promise<unknown>;
 } = {}): Promise<{
   status: "captured" | "reused";
   snapshot: PublicSurfaceSnapshotRecord<PollutionScoreReferenceSnapshotPayload>;
@@ -185,7 +185,13 @@ export async function runPollutionScoreReferencesJob(params: {
   const writeSnapshot =
     params.writeSnapshot ?? ((value) => upsertPublicSurfaceSnapshot(value));
   const persistedSnapshot = toPersistedPublicSurfaceSnapshot(snapshot);
-  await writeSnapshot(persistedSnapshot);
+  const writeResult = await writeSnapshot(persistedSnapshot);
+  if (writeResult === "ignored_older") {
+    const latestSnapshot = await readSnapshot();
+    if (latestSnapshot) {
+      return { status: "reused", snapshot: latestSnapshot };
+    }
+  }
   return { status: "captured", snapshot };
 }
 

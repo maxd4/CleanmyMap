@@ -298,7 +298,21 @@ export async function generateAndPersistPublicImpactSnapshot(params: {
     },
   };
 
-  await upsertPublicSurfaceSnapshot(snapshot);
+  const writeResult = await upsertPublicSurfaceSnapshot(snapshot);
+  if (writeResult === "ignored_older") {
+    const latestSnapshot =
+      await readLatestPublicSurfaceSnapshot<PublicImpactSnapshotPayload>(
+        PUBLIC_IMPACT_SNAPSHOT_KEY,
+      );
+    if (latestSnapshot) {
+      return {
+        snapshot: latestSnapshot,
+        persisted: false,
+        reused: true,
+        forced: Boolean(params.force),
+      };
+    }
+  }
 
   return {
     snapshot: {

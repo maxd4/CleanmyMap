@@ -59,7 +59,7 @@ export async function runPlatformUsageJob(params: {
   readSnapshot?: () => Promise<PublicSurfaceSnapshotRecord<PlatformUsageSnapshotPayload> | null>;
   writeSnapshot?: (
     snapshot: Omit<PublicSurfaceSnapshotRecord<PlatformUsageSnapshotPayload>, "id">,
-  ) => Promise<void>;
+  ) => Promise<unknown>;
 } = {}): Promise<PlatformUsageJobResult> {
   const now = params.now ?? new Date();
   const weekStart = getUtcWeekStart(now);
@@ -92,7 +92,13 @@ export async function runPlatformUsageJob(params: {
   const writeSnapshot =
     params.writeSnapshot ?? ((value) => upsertPublicSurfaceSnapshot(value));
   const persistedSnapshot = toPersistedPublicSurfaceSnapshot(snapshot);
-  await writeSnapshot(persistedSnapshot);
+  const writeResult = await writeSnapshot(persistedSnapshot);
+  if (writeResult === "ignored_older") {
+    const latestSnapshot = await readSnapshot();
+    if (latestSnapshot) {
+      return { status: "reused", snapshot: latestSnapshot };
+    }
+  }
 
   return { status: "captured", snapshot };
 }
