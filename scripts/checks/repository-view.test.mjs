@@ -8,6 +8,7 @@ import test from "node:test";
 import {
   createFilesystemRepositoryView,
   createGitRepositoryView,
+  createIndexRepositoryView,
   partitionGitBlobBatches,
 } from "./repository-view.mjs";
 
@@ -101,6 +102,33 @@ test("Git repository view reads bounded blob batches without leaving the ref", (
   const filesystemView = createFilesystemRepositoryView(root);
   assert.equal(filesystemView.readText("README.md"), "dirty README\n");
   assert.equal(filesystemView.exists("documentation/untracked.md"), true);
+});
+
+test("index repository view reads only staged content and ignores dirty/untracked files", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-repository-index-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  execFileSync("git", ["init", "-q"], { cwd: root });
+  writeFile(root, "README.md", "committed\n");
+  writeFile(root, "documentation/active.md", "active\n");
+  execFileSync("git", ["add", "--", "."], { cwd: root });
+  execFileSync("git", [
+    "-c", "user.name=Codex test", "-c", "user.email=codex-test",
+    "commit", "-qm", "index fixture",
+  ], { cwd: root });
+
+  writeFile(root, "README.md", "dirty\n");
+  writeFile(root, "documentation/active.md", "staged\n");
+  writeFile(root, "documentation/untracked.md", "untracked\n");
+  execFileSync("git", ["add", "--", "documentation/active.md"], { cwd: root });
+
+  const indexView = createIndexRepositoryView(root);
+  assert.equal(indexView.readText("README.md"), "committed\n");
+  assert.equal(indexView.readText("documentation/active.md"), "staged\n");
+  assert.equal(indexView.exists("documentation/untracked.md"), false);
+  assert.deepEqual(indexView.listPathsUnder("documentation"), [
+    "documentation/active.md",
+  ]);
 });
 
 test("Git repository view opens trees above 64 MiB and reads blobs lazily from the commit", (t) => {

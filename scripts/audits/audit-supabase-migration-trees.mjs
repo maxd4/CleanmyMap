@@ -1,6 +1,10 @@
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { createRepositoryView, parseRepositoryRef } from "../checks/repository-view.mjs";
+import {
+  createIndexRepositoryView,
+  createRepositoryView,
+  parseRepositoryRef,
+} from "../checks/repository-view.mjs";
 
 const repoRoot = process.cwd();
 const canonicalDir = "apps/web/supabase/migrations";
@@ -29,6 +33,10 @@ const LEGACY_SPOTS_RUNTIME_SURFACE_HISTORICAL_ALLOWLIST = new Set([
 // not belong in the canonical replayable schema history.
 const EXTENSION_CASCADE_ALLOWLIST = new Map();
 
+function normalizeMigrationContent(content) {
+  return Buffer.isBuffer(content) ? content.toString("utf8") : String(content);
+}
+
 function readCanonicalMigrations(view) {
   const files = view
     .listFiles(canonicalDir)
@@ -38,9 +46,9 @@ function readCanonicalMigrations(view) {
 
   return new Map(
     files.map((name) => {
-      const content = view.readBinary(`${canonicalDir}/${name}`);
-      const sha256 = crypto.createHash("sha256").update(content).digest("hex");
-      return [name, { content: content.toString("utf8"), sha256, size: content.length }];
+      const content = normalizeMigrationContent(view.readBinary(`${canonicalDir}/${name}`));
+      const sha256 = crypto.createHash("sha256").update(content, "utf8").digest("hex");
+      return [name, { content, sha256, size: Buffer.byteLength(content, "utf8") }];
     }),
   );
 }
@@ -57,9 +65,11 @@ export function findPublishedMigrationRewriteViolations({
       violations.push(`${name}: published migration deletion is not allowed`);
       continue;
     }
-    if (candidate.content === baseline.content) continue;
+    const baselineContent = normalizeMigrationContent(baseline.content);
+    const candidateContent = normalizeMigrationContent(candidate.content);
+    if (candidateContent === baselineContent) continue;
     const historicalContents = historicalContentsByPath.get(name) ?? [];
-    if (historicalContents.some((content) => content === candidate.content)) continue;
+    if (historicalContents.some((content) => normalizeMigrationContent(content) === candidateContent)) continue;
     violations.push(
       `${name}: published migration content changed without restoring a previously published Git version`,
     );
@@ -81,51 +91,25 @@ function readHistoricalMigrationContents(repoRoot, baseRef, migrationNames) {
     contentsByPath.set(
       name,
       commits.map((commit) =>
-        execFileSync("git", ["show", `${commit}:${path}`], {
+        normalizeMigrationContent(execFileSync("git", ["show", `${commit}:${path}`], {
           cwd: repoRoot,
           encoding: "utf8",
-        }),
+        })),
       ),
     );
   }
   return contentsByPath;
 }
 
-function readStagedCanonicalMigrations(repoRoot) {
-  const names = execFileSync(
-    "git",
-    ["ls-files", "--cached", "--", `${canonicalDir}/`],
-    { cwd: repoRoot, encoding: "utf8" },
-  )
-    .split(/\r?\n/)
-    .map((file) => file.trim().replaceAll("\\", "/"))
-    .filter((file) => file.startsWith(`${canonicalDir}/`) && file.endsWith(".sql"))
-    .map((file) => file.slice(`${canonicalDir}/`.length));
-  const migrations = new Map();
-  for (const name of names) {
-    const path = `${canonicalDir}/${name}`;
-    try {
-      const content = execFileSync("git", ["show", `:${path}`], {
-        cwd: repoRoot,
-        encoding: "utf8",
-      });
-      migrations.set(name, { content, sha256: crypto.createHash("sha256").update(content).digest("hex"), size: Buffer.byteLength(content) });
-    } catch {
-      // Deleted staged migrations remain absent so the immutable-history check reports them.
-    }
-  }
-  return migrations;
-}
-
 function auditPublishedMigrationRewrites({ repoRoot, baseRef, candidateRef, staged }) {
   const baselineMigrations = readCanonicalMigrations(createRepositoryView({ root: repoRoot, ref: baseRef }));
   const candidateMigrations = staged
-    ? readStagedCanonicalMigrations(repoRoot)
+    ? readCanonicalMigrations(createIndexRepositoryView(repoRoot))
     : readCanonicalMigrations(createRepositoryView({ root: repoRoot, ref: candidateRef }));
   const changedMigrationNames = [...baselineMigrations.keys()].filter((name) => {
     const baseline = baselineMigrations.get(name);
     const candidate = candidateMigrations.get(name);
-    return !candidate || candidate.content !== baseline.content;
+    return !candidate || normalizeMigrationContent(candidate.content) !== normalizeMigrationContent(baseline.content);
   });
   const historicalContentsByPath = readHistoricalMigrationContents(
     repoRoot,
@@ -277,7 +261,9 @@ function main() {
     process.exitCode = 2;
     return;
   }
-  const view = createRepositoryView({ root: repoRoot, ref });
+  const view = staged
+    ? createIndexRepositoryView(repoRoot)
+    : createRepositoryView({ root: repoRoot, ref });
   const result = auditMigrationTree(view);
   if (result.error) {
     console.error(result.error);

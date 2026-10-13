@@ -266,6 +266,32 @@ export function createGitRepositoryView(
   });
 }
 
+export function createIndexRepositoryView(
+  root = process.cwd(),
+  { gitExecutor = execFileSync } = {},
+) {
+  const repositoryRoot = path.resolve(root);
+  const indexOutput = gitExecutor("git", ["ls-files", "--cached", "-z", "--"], {
+    cwd: repositoryRoot,
+  });
+  const files = indexOutput
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean)
+    .map(normalizeRepositoryPath);
+
+  return createView({
+    mode: "index",
+    files,
+    readBinary(relativePath) {
+      const normalizedPath = normalizeRepositoryPath(relativePath);
+      return gitExecutor("git", ["show", `:${normalizedPath}`], {
+        cwd: repositoryRoot,
+      });
+    },
+  });
+}
+
 export function createRepositoryView({ root = process.cwd(), ref, ...options } = {}) {
   return ref ? createGitRepositoryView(ref, root, options) : createFilesystemRepositoryView(root);
 }
