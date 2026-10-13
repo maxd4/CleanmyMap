@@ -86,6 +86,16 @@ publique. Une action disposant d'un score valide ne devient donc pas grise sur
 la homepage ; le gris reste réservé à l'indisponibilité réelle du score et le
 chargement possède sa couleur dédiée.
 
+Le navigateur conserve actuellement `/api/actions/map` comme lecture principale
+et `actions_map_feed` comme fallback. Une bascule RPC-first est volontairement
+bloquée : le DTO RPC ne transporte pas encore `action_phase`, `published_at` et
+`event_start_time`, alors que la projection API les conserve pour les
+pré-actions futures publiées. La transformation existante peut donc préserver
+la visibilité, les bornes, les spots, les géométries et la projection
+public-safe, mais pas démontrer la parité complète du DTO, des scores et des
+CTA futurs. Aucun consommateur cartographique ne doit inverser cet ordre avant
+que cette parité soit prouvée sans changement de RLS/AuthZ.
+
 ## Viewport initial public
 
 À l'ouverture, la carte ne présente pas de viewport monde neutre. La référence

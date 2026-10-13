@@ -255,6 +255,7 @@ function NavigationCard({ path }: { path: NavigationPath }) {
               <li key={item.label}>
                 <Link
                   href={item.href}
+                  prefetch={false}
                   className={`group flex min-h-[3.5rem] items-center gap-3 rounded-full px-3 py-2 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-offset-2 ${tone.pill}`}
                 >
                   {content}

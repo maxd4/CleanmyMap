@@ -1,7 +1,10 @@
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { HomeNavigationSchema } from "./accueil-navigation-schema";
+
+const source = readFileSync(new URL("./accueil-navigation-schema.tsx", import.meta.url), "utf8");
 
 describe("HomeNavigationSchema", () => {
   it("keeps the compact navigation section readable without numbered controls", () => {
@@ -25,5 +28,9 @@ describe("HomeNavigationSchema", () => {
     ]) {
       expect(html).toContain(`href="${href}"`);
     }
+  });
+
+  it("does not prefetch homepage destinations that can invoke dynamic or protected routes", () => {
+    expect(source).toContain("prefetch={false}");
   });
 });

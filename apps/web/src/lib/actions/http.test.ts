@@ -275,6 +275,7 @@ describe("fetchMapActions", () => {
       expect.stringContaining("/api/actions/map?"),
       expect.objectContaining({ method: "GET", cache: "no-store" }),
     );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(mocks.rpcMock).not.toHaveBeenCalled();
     expect(result.items).toEqual([apiItem]);
     expect(result.count).toBe(1);
@@ -397,6 +398,7 @@ describe("fetchMapActions", () => {
       expect.stringContaining("/api/actions/map?"),
       expect.objectContaining({ method: "GET", cache: "no-store" }),
     );
+    expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(mocks.getSupabaseBrowserClientMock).toHaveBeenCalledTimes(1);
     expect(mocks.fetchActionPollutionScoreReferencesMock).toHaveBeenCalledTimes(1);
     expect(mocks.rpcMock).toHaveBeenCalledTimes(1);
@@ -453,5 +455,98 @@ describe("fetchMapActions", () => {
     expect(result.items.map((item) => item.id)).toEqual(["fallback-3", "fallback-2"]);
     expect(result.count).toBe(2);
     expect(result.isTruncated).toBe(true);
+  });
+
+  it("keeps the RPC cutover blocked while future pre-action DTO fields are not carried", async () => {
+    const apiFutureItem = {
+      id: "future-action",
+      action_date: "2999-01-01",
+      location_label: "75001 Paris",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      status: "approved",
+      created_by_clerk_id: null,
+      contract: {
+        id: "future-action",
+        type: "action",
+        status: "approved",
+        source: "actions",
+        createdByClerkId: null,
+        publishedAt: "2026-01-01T00:00:00.000Z",
+        location: {
+          label: "75001 Paris",
+          latitude: 48.8566,
+          longitude: 2.3522,
+          departmentCode: null,
+          departmentName: null,
+        },
+        geometry: {
+          kind: "point",
+          geojson: null,
+          confidence: null,
+          geometrySource: null,
+          origin: "stored",
+        },
+        dates: {
+          observedAt: "2999-01-01",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          importedAt: null,
+          validatedAt: null,
+          eventStartTime: "09:00",
+          eventEndTime: null,
+        },
+        metadata: {
+          actorName: null,
+          associationName: null,
+          organizerType: null,
+          groupJoinEnabled: true,
+          actionPhase: "pre_action",
+          preparationData: null,
+          placeType: null,
+          departureLocationLabel: null,
+          arrivalLocationLabel: null,
+          routeStyle: null,
+          routeAdjustmentMessage: null,
+          notes: null,
+          notesPlain: null,
+          submissionMode: null,
+          wasteBreakdown: null,
+          wasteMeasurementMethod: null,
+          wasteCategories: null,
+          photos: null,
+          visionEstimate: null,
+          wasteKg: null,
+          cigaretteButts: null,
+          volunteersCount: 1,
+          durationMinutes: 60,
+          manualDrawing: null,
+        },
+      },
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "ok", count: 1, items: [apiFutureItem] })))
+      .mockResolvedValueOnce(new Response("", { status: 503 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    mocks.getSupabaseBrowserClientMock.mockReturnValue({
+      rpc: mocks.rpcMock.mockResolvedValue({
+        data: [{
+          ...buildFallbackMapRow("future-action"),
+          observed_at: "2999-01-01",
+          notes: "[cmm-meta]{\"groupJoinEnabled\":true}",
+        }],
+        error: null,
+      }),
+    });
+    mocks.fetchActionPollutionScoreReferencesMock.mockResolvedValue(null);
+
+    const apiResult = await fetchMapActions({ floorDate: null, types: ["action"] });
+    const rpcResult = await fetchMapActions({ floorDate: null, types: ["action"] });
+
+    expect(apiResult.items[0]?.contract?.metadata.actionPhase).toBe("pre_action");
+    expect(rpcResult.items[0]?.contract?.metadata.actionPhase).toBe("post_action_complete");
+    expect(rpcResult.items[0]?.status).toBe("approved");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(mocks.rpcMock).toHaveBeenCalledTimes(1);
   });
 });
