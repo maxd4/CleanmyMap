@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { createRepositoryView, parseRepositoryRef } from "../checks/repository-view.mjs";
 
 const repoRoot = process.cwd();
@@ -42,6 +43,100 @@ function readCanonicalMigrations(view) {
       return [name, { content: content.toString("utf8"), sha256, size: content.length }];
     }),
   );
+}
+
+export function findPublishedMigrationRewriteViolations({
+  baselineMigrations,
+  candidateMigrations,
+  historicalContentsByPath = new Map(),
+}) {
+  const violations = [];
+  for (const [name, baseline] of baselineMigrations) {
+    const candidate = candidateMigrations.get(name);
+    if (!candidate) {
+      violations.push(`${name}: published migration deletion is not allowed`);
+      continue;
+    }
+    if (candidate.content === baseline.content) continue;
+    const historicalContents = historicalContentsByPath.get(name) ?? [];
+    if (historicalContents.some((content) => content === candidate.content)) continue;
+    violations.push(
+      `${name}: published migration content changed without restoring a previously published Git version`,
+    );
+  }
+  return violations;
+}
+
+function readHistoricalMigrationContents(repoRoot, baseRef, migrationNames) {
+  const contentsByPath = new Map();
+  for (const name of migrationNames) {
+    const path = `${canonicalDir}/${name}`;
+    const commits = execFileSync("git", ["rev-list", baseRef, "--", path], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    })
+      .split(/\r?\n/)
+      .map((commit) => commit.trim())
+      .filter(Boolean);
+    contentsByPath.set(
+      name,
+      commits.map((commit) =>
+        execFileSync("git", ["show", `${commit}:${path}`], {
+          cwd: repoRoot,
+          encoding: "utf8",
+        }),
+      ),
+    );
+  }
+  return contentsByPath;
+}
+
+function readStagedCanonicalMigrations(repoRoot) {
+  const names = execFileSync(
+    "git",
+    ["ls-files", "--cached", "--", `${canonicalDir}/`],
+    { cwd: repoRoot, encoding: "utf8" },
+  )
+    .split(/\r?\n/)
+    .map((file) => file.trim().replaceAll("\\", "/"))
+    .filter((file) => file.startsWith(`${canonicalDir}/`) && file.endsWith(".sql"))
+    .map((file) => file.slice(`${canonicalDir}/`.length));
+  const migrations = new Map();
+  for (const name of names) {
+    const path = `${canonicalDir}/${name}`;
+    try {
+      const content = execFileSync("git", ["show", `:${path}`], {
+        cwd: repoRoot,
+        encoding: "utf8",
+      });
+      migrations.set(name, { content, sha256: crypto.createHash("sha256").update(content).digest("hex"), size: Buffer.byteLength(content) });
+    } catch {
+      // Deleted staged migrations remain absent so the immutable-history check reports them.
+    }
+  }
+  return migrations;
+}
+
+function auditPublishedMigrationRewrites({ repoRoot, baseRef, candidateRef, staged }) {
+  const baselineMigrations = readCanonicalMigrations(createRepositoryView({ root: repoRoot, ref: baseRef }));
+  const candidateMigrations = staged
+    ? readStagedCanonicalMigrations(repoRoot)
+    : readCanonicalMigrations(createRepositoryView({ root: repoRoot, ref: candidateRef }));
+  const changedMigrationNames = [...baselineMigrations.keys()].filter((name) => {
+    const baseline = baselineMigrations.get(name);
+    const candidate = candidateMigrations.get(name);
+    return !candidate || candidate.content !== baseline.content;
+  });
+  const historicalContentsByPath = readHistoricalMigrationContents(
+    repoRoot,
+    baseRef,
+    changedMigrationNames,
+  );
+  return findPublishedMigrationRewriteViolations({
+    baselineMigrations,
+    candidateMigrations,
+    historicalContentsByPath,
+  });
 }
 
 function stripSqlComments(sql) {
@@ -174,6 +269,14 @@ export function auditMigrationTree(view) {
 
 function main() {
   const ref = parseRepositoryRef();
+  const staged = process.argv.includes("--staged");
+  const baseArgument = process.argv.find((value) => value.startsWith("--base-ref="));
+  const baseRef = baseArgument ? baseArgument.slice("--base-ref=".length) : null;
+  if (staged && (ref || baseRef)) {
+    console.error("Supabase migration audit failed: --staged cannot be combined with Git refs.");
+    process.exitCode = 2;
+    return;
+  }
   const view = createRepositoryView({ root: repoRoot, ref });
   const result = auditMigrationTree(view);
   if (result.error) {
@@ -196,6 +299,21 @@ function main() {
     for (const violation of result.migrationGuardViolations) console.error(`- ${violation}`);
     process.exitCode = 2;
     return;
+  }
+  if (staged || baseRef) {
+    const rewriteViolations = auditPublishedMigrationRewrites({
+      repoRoot,
+      baseRef: staged ? "HEAD" : baseRef,
+      candidateRef: ref,
+      staged,
+    });
+    if (rewriteViolations.length > 0) {
+      console.error("\nPublished Supabase migration rewrite violations:");
+      for (const violation of rewriteViolations) console.error(`- ${violation}`);
+      process.exitCode = 2;
+      return;
+    }
+    console.log(staged ? "- published migration history: staged changes preserve a Git-published version" : "- published migration history: candidate preserves Git-published versions");
   }
   console.log(`\nOnly apps/web/supabase/migrations/ is editable${ref ? ` for ref ${ref}` : ""}.`);
 }

@@ -34,6 +34,7 @@ try {
     Invoke-GuardStep "staged-surface quick checks" { npm run checks:staged:quick }
     Invoke-GuardStep "staged readable typography" { npm run check:readable-typography -- --staged }
     Invoke-GuardStep "staged secret audit" { npm run security:secrets -- --staged-only }
+    Invoke-GuardStep "staged Supabase migration history" { npm run audit:supabase-migration-trees -- --staged }
     Invoke-GuardStep "staged diff check" { git diff --cached --check }
 
     Write-Host ""

@@ -460,6 +460,16 @@ function Invoke-GuardStep {
         Invoke-GuardStep "PUSH_CANDIDATE diff check ($range)" { & git diff --check $range -- }
     }
 
+    foreach ($candidate in $candidates) {
+        if (Test-ZeroSha $candidate.RemoteSha) {
+            Write-SkippedGuardStep "published migration history ($($candidate.LocalSha))" "new remote ref has no published base SHA"
+            continue
+        }
+        Invoke-GuardStep "published migration history ($($candidate.LocalSha))" {
+            node scripts/audits/audit-supabase-migration-trees.mjs "--ref=$($candidate.LocalSha)" "--base-ref=$($candidate.RemoteSha)"
+        }
+    }
+
     $secretArgs = @()
     $secretPairs = @($candidates | ForEach-Object { "$($_.LocalSha)|$($_.Range)" } | Sort-Object -Unique)
     foreach ($pair in $secretPairs) {

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { it } from "node:test";
 import {
   auditMigrationTree,
+  findPublishedMigrationRewriteViolations,
   findLegacySpotsRuntimeSurfaceViolations,
 } from "./audit-supabase-migration-trees.mjs";
 
@@ -56,6 +57,39 @@ it("rejects any other content under the root Supabase namespace", () => {
 
   assert.equal(result.status, 2);
   assert.match(result.error, /root Supabase namespace/);
+});
+
+it("allows a traceable historical restoration but rejects an unreviewed rewrite", () => {
+  const baselineMigrations = new Map([
+    ["20261013000006_spogomi_ticket_decision_consistency.sql", { content: "published bad definition" }],
+  ]);
+  const candidateMigrations = new Map([
+    ["20261013000006_spogomi_ticket_decision_consistency.sql", { content: "published pre-rewrite definition" }],
+  ]);
+
+  assert.deepEqual(
+    findPublishedMigrationRewriteViolations({
+      baselineMigrations,
+      candidateMigrations,
+      historicalContentsByPath: new Map([
+        ["20261013000006_spogomi_ticket_decision_consistency.sql", ["published bad definition", "published pre-rewrite definition"]],
+      ]),
+    }),
+    [],
+  );
+
+  assert.match(
+    findPublishedMigrationRewriteViolations({
+      baselineMigrations,
+      candidateMigrations: new Map([
+        ["20261013000006_spogomi_ticket_decision_consistency.sql", { content: "unreviewed rewrite" }],
+      ]),
+      historicalContentsByPath: new Map([
+        ["20261013000006_spogomi_ticket_decision_consistency.sql", ["published bad definition"]],
+      ]),
+    })[0],
+    /published migration content changed/,
+  );
 });
 
 function normalizeSql(sql) {

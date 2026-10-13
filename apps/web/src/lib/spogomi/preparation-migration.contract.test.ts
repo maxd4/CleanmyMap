@@ -14,6 +14,7 @@ const ticketDecisionConsistencyMigration = readFileSync(new URL("../../../supaba
 const postLockMutationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000007_spogomi_post_lock_mutation_guards.sql", import.meta.url), "utf8");
 const teamPublicNameMigration = readFileSync(new URL("../../../supabase/migrations/20261013000008_spogomi_team_public_name_rename.sql", import.meta.url), "utf8");
 const preparationConcurrencyMigration = readFileSync(new URL("../../../supabase/migrations/20261013000009_spogomi_preparation_concurrency.sql", import.meta.url), "utf8");
+const postLockReconciliationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000011_spogomi_ticket_reconciliation_post_lock_history.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -115,10 +116,21 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(ticketDecisionConsistencyMigration).toContain("'unknown',");
     expect(ticketDecisionConsistencyMigration).toContain("spogomi_participant_has_human_decision");
     expect(ticketDecisionConsistencyMigration).toContain("v_source_withdrawal_proven");
-    expect(ticketDecisionConsistencyMigration).toContain("v_composition_protected");
     expect(ticketDecisionConsistencyMigration).toContain("change_kind = 'ticket_cancelled'");
     expect(ticketDecisionConsistencyMigration).toContain("grant execute on function public.spogomi_reconcile_cachan_ticket_rows");
+    expect(ticketDecisionConsistencyMigration).not.toContain("v_composition_protected");
     expect(ticketDecisionConsistencyMigration).not.toContain("alter table public.spogomi_participants drop column");
+  });
+
+  it("carries post-lock ticket history forward without rewriting 00006", () => {
+    expect(postLockReconciliationMigration).toContain("v_composition_protected");
+    expect(postLockReconciliationMigration).toContain("v_post_lock_conflict");
+    expect(postLockReconciliationMigration).toContain("set_config('spogomi.composition_write_context', 'ticket_reconciliation', true)");
+    expect(postLockReconciliationMigration).toContain("case when v_new_cancelled or v_composition_protected then 'withdrawn' else 'registered' end");
+    expect(postLockReconciliationMigration).toContain("ticket_composition_lock_conflict");
+    expect(postLockReconciliationMigration).toContain("v_registration_status := v_prior.registration_status");
+    expect(postLockReconciliationMigration).toMatch(/revoke all on function public\.spogomi_reconcile_cachan_ticket_rows[\s\S]+grant execute on function public\.spogomi_reconcile_cachan_ticket_rows[\s\S]+to service_role/i);
+    expect(postLockReconciliationMigration).not.toContain("create or replace function public.spogomi_participant_has_human_decision");
   });
 
   it("closes post-lock participant and team-rule mutation paths", () => {
@@ -159,5 +171,13 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(preparationConcurrencyMigration).toContain("composition_revision = composition_revision + 1");
     expect(preparationConcurrencyMigration).toContain("New SPOGOMI places after composition lock");
     expect(preparationConcurrencyMigration).toMatch(/grant execute on function public\.spogomi_attach_official_gpx[\s\S]+to service_role/i);
+  });
+
+  it("keeps the post-lock reconciler ordered after the final lifecycle guard", () => {
+    expect(postLockReconciliationMigration).toContain("SPOGOMI forward-only repair");
+    expect(postLockReconciliationMigration).toContain("spogomi_team_requires_composition_correction");
+    expect(postLockReconciliationMigration).toContain("spogomi.composition_write_context");
+    expect(postLockReconciliationMigration).toContain("security invoker");
+    expect(postLockReconciliationMigration).not.toMatch(/grant execute on function public\.spogomi_reconcile_cachan_ticket_rows[^;]+to (public|anon|authenticated)/i);
   });
 });
