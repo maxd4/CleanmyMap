@@ -6,8 +6,8 @@ interface TokenBucket {
 }
 
 // This is intentionally process-local best effort. Upstash is the primary
-// distributed limiter; this store only protects the current process when
-// Upstash is not configured or temporarily unavailable.
+// distributed limiter; server.ts calls this store only for routes whose
+// policy explicitly permits degraded public-read protection.
 const buckets = new Map<string, TokenBucket>();
 
 const LOCKED_KEYS = new Set<string>();

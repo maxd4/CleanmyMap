@@ -289,11 +289,13 @@ Logs:
 
 ### État OPS-01 — vérification runtime
 
-Le code conserve Upstash Redis comme rate limiter distribué principal et le
-fallback mémoire comme chemin dégradé documenté. Les variables de production
-requises sont `UPSTASH_REDIS_REST_URL` et `UPSTASH_REDIS_REST_TOKEN` ; leurs
-valeurs ne doivent jamais apparaître dans un rapport, un log ou la
-documentation.
+Le code conserve Upstash Redis comme rate limiter distribué principal. Le
+fallback mémoire est un chemin dégradé documenté uniquement pour les lectures
+publiques peu coûteuses ; les mutations, émissions de credentials, uploads et
+traitements coûteux échouent fermement en `503` si Upstash est indisponible.
+Les variables de production requises sont `UPSTASH_REDIS_REST_URL` et
+`UPSTASH_REDIS_REST_TOKEN` ; leurs valeurs ne doivent jamais apparaître dans un
+rapport, un log ou la documentation.
 
 La clôture OPS-01 par smoke runtime n'est pas considérée comme prouvée dans la
 présente séquence : aucune fenêtre de logs Vercel attribuable à une invocation

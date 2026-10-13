@@ -22,6 +22,26 @@ export interface RateLimitOptions {
 
 export type RateLimitRoute = "default" | "auth" | "api" | "read" | "ai" | "write";
 
+/**
+ * The protection class is deliberately independent from the quota profile.
+ * Quotas are compatibility-sensitive; this class only decides what happens
+ * when the distributed anti-abuse store cannot be reached.
+ */
+export type RateLimitProtectionClass =
+  | "public-read"
+  | "mutation"
+  | "credential"
+  | "upload"
+  | "expensive";
+
+export type RateLimitFailureMode = "best-effort" | "fail-closed";
+
+export interface RateLimitPolicy {
+  config: RateLimitConfig;
+  protectionClass: RateLimitProtectionClass;
+  failureMode: RateLimitFailureMode;
+}
+
 export const DEFAULT_RATE_LIMITS: Record<RateLimitRoute, RateLimitConfig> = {
   default: { limit: 100, window: 60, strategy: "sliding-window" },
   auth: { limit: 10, window: 60, strategy: "sliding-window" },

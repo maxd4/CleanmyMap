@@ -34,7 +34,7 @@ describe("rateLimitMiddleware", () => {
   });
 
   it("returns 429 with Retry-After after the local limit is exhausted", async () => {
-    const request = new NextRequest("https://example.com/api/test", { method: "POST" });
+    const request = new NextRequest("https://example.com/api/test", { method: "GET" });
 
     const first = await rateLimitMiddleware(request, request.method, {
       customLimit: 1,

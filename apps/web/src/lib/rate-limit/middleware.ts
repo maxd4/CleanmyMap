@@ -70,17 +70,22 @@ export async function rateLimitMiddleware(
   const result = await checkServerRateLimit(request, { limit, window }, method);
 
   const retryAfterSeconds = result.retryAfter ?? window;
+  const protectionUnavailable = result.failure === "distributed-unavailable";
   const response = NextResponse.json(
     {
-      error: "Trop de tentatives. Réessayez dans quelques instants.",
-      message: "Trop de tentatives. Réessayez dans quelques instants.",
+      error: protectionUnavailable
+        ? "Protection anti-abus temporairement indisponible."
+        : "Trop de tentatives. Réessayez dans quelques instants.",
+      message: protectionUnavailable
+        ? "Protection anti-abus temporairement indisponible."
+        : "Trop de tentatives. Réessayez dans quelques instants.",
       kind: "network",
-      status: "rate_limited",
-      code: "RATE_LIMIT_EXCEEDED",
+      status: protectionUnavailable ? "unavailable" : "rate_limited",
+      code: protectionUnavailable ? "RATE_LIMIT_UNAVAILABLE" : "RATE_LIMIT_EXCEEDED",
       retryAfterSeconds,
     },
     {
-      status: 429,
+      status: protectionUnavailable ? 503 : 429,
       headers: {
         "X-RateLimit-Limit": String(result.limit),
         "X-RateLimit-Remaining": String(result.remaining),

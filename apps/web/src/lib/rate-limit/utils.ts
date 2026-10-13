@@ -4,7 +4,12 @@ import {
   getDevAuthBypassUserId,
   isDevAuthBypassEnabled,
 } from "@/lib/auth/dev-auth";
-import type { RateLimitConfig } from "./types";
+import type {
+  RateLimitConfig,
+  RateLimitFailureMode,
+  RateLimitPolicy,
+  RateLimitProtectionClass,
+} from "./types";
 import { DEFAULT_RATE_LIMITS } from "./types";
 
 function firstHeaderValue(value: string | null): string | null {
@@ -163,4 +168,101 @@ export function getRateLimitConfig(pathname: string, method: string): RateLimitC
   }
 
   return DEFAULT_RATE_LIMITS["default"];
+}
+
+function isPathOrDescendant(pathname: string, path: string): boolean {
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
+
+function matchesAnyPath(pathname: string, paths: readonly string[]): boolean {
+  return paths.some((path) => isPathOrDescendant(pathname, path));
+}
+
+const CREDENTIAL_PATHS = [
+  "/api/auth",
+  "/api/sign",
+  "/api/login",
+  "/api/spogomi/team-access",
+] as const;
+
+const CREDENTIAL_PATTERNS = [
+  /^\/api\/spogomi\/events\/[^/]+\/participants\/[^/]+\/identity-code(?:\/|$)/,
+  /^\/api\/spogomi\/events\/[^/]+\/teams\/[^/]+\/access(?:\/|$)/,
+] as const;
+
+const EXPENSIVE_PATHS = [
+  "/api/ai",
+  "/api/route/recommend",
+  "/api/geo/address-suggestions",
+  "/api/geo/reverse-location",
+  "/api/actions/account-options",
+  "/api/analytics/funnel",
+  "/api/reports",
+] as const;
+
+function matchesCredentialPath(pathname: string): boolean {
+  return (
+    matchesAnyPath(pathname, CREDENTIAL_PATHS) ||
+    CREDENTIAL_PATTERNS.some((pattern) => pattern.test(pathname))
+  );
+}
+
+function matchesUploadPath(pathname: string): boolean {
+  return (
+    isPathOrDescendant(pathname, "/api/actions/import") ||
+    /\/api\/signalements\/[^/]+\/media(?:\/|$)/.test(pathname) ||
+    /\/media(?:\/|$)/.test(pathname) ||
+    /\/imports?(?:\/|$)/.test(pathname) ||
+    isPathOrDescendant(pathname, "/api/spogomi/events") &&
+      /\/(gallery|route-gpx)(?:\/|$)/.test(pathname)
+  );
+}
+
+function matchesExpensivePath(pathname: string): boolean {
+  return (
+    matchesAnyPath(pathname, EXPENSIVE_PATHS) ||
+    /\/export\.xlsx(?:\/|$)/.test(pathname) ||
+    /\/recognition\/reconcile(?:\/|$)/.test(pathname) ||
+    /\/governance-monthly(?:\/|$)/.test(pathname)
+  );
+}
+
+export function getRateLimitProtectionClass(
+  pathname: string,
+  method: string,
+): RateLimitProtectionClass {
+  if (matchesCredentialPath(pathname)) {
+    return "credential";
+  }
+
+  if (matchesUploadPath(pathname)) {
+    return "upload";
+  }
+
+  if (matchesExpensivePath(pathname)) {
+    return "expensive";
+  }
+
+  if (["GET", "HEAD"].includes(method.toUpperCase())) {
+    return "public-read";
+  }
+
+  return "mutation";
+}
+
+export function getRateLimitFailureMode(
+  pathname: string,
+  method: string,
+): RateLimitFailureMode {
+  return getRateLimitProtectionClass(pathname, method) === "public-read"
+    ? "best-effort"
+    : "fail-closed";
+}
+
+export function getRateLimitPolicy(pathname: string, method: string): RateLimitPolicy {
+  return {
+    config: getRateLimitConfig(pathname, method),
+    protectionClass: getRateLimitProtectionClass(pathname, method),
+    failureMode: getRateLimitFailureMode(pathname, method),
+  };
 }

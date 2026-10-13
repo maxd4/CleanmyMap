@@ -9,10 +9,31 @@ client `x-user-id` et les clés arbitraires de payload ne sont pas des preuves.
 La clé comprend la méthode et le pathname.
 
 Quand Upstash est configuré, `verifyRateLimit()` utilise le store distribué
-partagé. Le `Map` local est un fallback best-effort, nettoyé périodiquement ;
-il n'est ni distribué ni une garantie de production multi-instance. Une panne
-Upstash est journalisée sans secret puis bascule sur ce fallback conformément au
-contrat runtime.
+partagé. Le `Map` local est nettoyé périodiquement, reste limité au processus et
+n'est jamais une garantie de production multi-instance. Il n'est autorisé qu'en
+mode best-effort pour les lectures publiques peu coûteuses. Pour les opérations
+qui exigent une garantie anti-abus, une absence de configuration, une erreur ou
+un timeout Upstash refuse la requête en `503 RATE_LIMIT_UNAVAILABLE` : le
+fallback mémoire ne doit pas supprimer silencieusement cette garantie. Le
+journal serveur indique la politique appliquée sans secret.
+
+La classe de protection est indépendante du profil de quota et ne modifie donc
+pas les limites normales :
+
+| Classe | Exemples | Panne/timeout du store distribué |
+|---|---|---|
+| `public-read` | GET/HEAD publics non coûteux | fallback mémoire best-effort, avec sa limite process-local |
+| `mutation` | POST, PUT, PATCH et DELETE | `503 RATE_LIMIT_UNAVAILABLE` |
+| `credential` | auth/sign/login, codes d'identité et accès d'équipe | `503 RATE_LIMIT_UNAVAILABLE` |
+| `upload` | médias de signalement, imports et médias/routes SPOGOMI | `503 RATE_LIMIT_UNAVAILABLE` |
+| `expensive` | IA, recommandation, géocodage, rapports et exports | `503 RATE_LIMIT_UNAVAILABLE` |
+
+Les classes `credential`, `upload` et `expensive` s'appliquent aussi lorsque
+leur méthode est GET/HEAD. Le classement est porté par le helper canonique du
+répertoire `apps/web/src/lib/rate-limit/` ; il ne constitue pas une seconde
+liste de quotas. Le fallback local ne doit jamais être interprété comme une
+protection distribuée : deux instances peuvent chacune accepter leur première
+lecture lorsque Upstash est indisponible.
 
 Profils par défaut :
 
@@ -25,9 +46,12 @@ Profils par défaut :
 | `ai` | 20 | 60 s | sliding window |
 | `write` | 10 | 60 s | sliding window |
 
-Les dépassements renvoient `429`, `RATE_LIMIT_EXCEEDED`, `Retry-After` et,
-si disponibles, les headers de quota. Les options spécifiques d'un handler
-peuvent être plus strictes que ces profils.
+Les dépassements réels de quota renvoient `429`, `RATE_LIMIT_EXCEEDED`,
+`Retry-After` et, si disponibles, les headers de quota. Une protection
+distribuée indisponible renvoie `503`, `RATE_LIMIT_UNAVAILABLE` et
+`Retry-After`; ce statut ne signifie pas que le quota normal est épuisé. Les
+options spécifiques d'un handler peuvent être plus strictes que ces profils,
+mais ne changent pas la politique de panne de la classe de route.
 
 Les handlers actuellement concernés incluent les POST d'actions, chat,
 signalements, événements, contact, métriques pédagogiques, newsletter et

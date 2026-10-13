@@ -9,8 +9,11 @@ vi.mock("@clerk/nextjs/server", () => clerkMocks);
 
 import {
   getRateLimitConfig,
+  getRateLimitFailureMode,
   getRateLimitIdentity,
   getRateLimitKey,
+  getRateLimitPolicy,
+  getRateLimitProtectionClass,
   getTrustedClientIp,
   getTrustedClientIpFromHeaders,
 } from "./utils";
@@ -143,5 +146,35 @@ describe("rate limit client ip extraction", () => {
   it("prioritizes auth and AI profiles over HTTP method", () => {
     expect(getRateLimitConfig("/api/auth/session", "POST")).toBe(DEFAULT_RATE_LIMITS.auth);
     expect(getRateLimitConfig("/api/ai/vision", "GET")).toBe(DEFAULT_RATE_LIMITS.ai);
+  });
+
+  it("classifies cheap public reads as best effort without changing their quota", () => {
+    expect(getRateLimitProtectionClass("/api/actions", "GET")).toBe("public-read");
+    expect(getRateLimitFailureMode("/api/actions", "GET")).toBe("best-effort");
+    expect(getRateLimitPolicy("/api/actions", "GET").config).toBe(DEFAULT_RATE_LIMITS.read);
+  });
+
+  it.each([
+    ["POST", "/api/actions", "mutation"],
+    ["POST", "/api/auth/session", "credential"],
+    ["POST", "/api/signalements/signalement-1/media/intents", "upload"],
+    ["GET", "/api/ai/vision", "expensive"],
+    ["GET", "/api/actions/account-options", "expensive"],
+    ["GET", "/api/reports/actions.csv", "expensive"],
+  ] as const)("classifies %s %s as %s and fails closed", (method, pathname, protectionClass) => {
+    expect(getRateLimitProtectionClass(pathname, method)).toBe(protectionClass);
+    expect(getRateLimitFailureMode(pathname, method)).toBe("fail-closed");
+  });
+
+  it("classifies credential routes issued inside event scopes", () => {
+    expect(
+      getRateLimitProtectionClass(
+        "/api/spogomi/events/event-1/participants/participant-1/identity-code",
+        "POST",
+      ),
+    ).toBe("credential");
+    expect(
+      getRateLimitProtectionClass("/api/spogomi/events/event-1/teams/team-1/access", "POST"),
+    ).toBe("credential");
   });
 });

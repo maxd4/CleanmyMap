@@ -1,7 +1,11 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { getRedisClient } from "@/lib/services/upstash";
 import { checkRateLimit } from "./store";
-import { getRateLimitConfig, getRateLimitIdentity, getRateLimitKey } from "./utils";
+import {
+  getRateLimitIdentity,
+  getRateLimitKey,
+  getRateLimitPolicy,
+} from "./utils";
 
 export interface ServerRateLimitOptions {
   limit?: number;
@@ -14,12 +18,15 @@ export interface ServerRateLimitResult {
   remaining: number;
   reset: number;
   retryAfter?: number;
+  failure?: "distributed-unavailable";
+  failureMode?: "best-effort" | "fail-closed";
+  source?: "distributed" | "local-fallback" | "unavailable";
 }
 
 export type ServerRateLimitResponseMetadata = Pick<
   ServerRateLimitResult,
   "limit" | "remaining" | "reset"
->;
+> & Pick<ServerRateLimitResult, "failure">;
 
 type DistributedRateLimiter = {
   limit: (identifier: string) => Promise<{
@@ -40,14 +47,14 @@ const fallbackLogState = {
   unavailable: false,
 };
 
-function logFallback(reason: "not_configured" | "unavailable"): void {
+function logDistributedUnavailable(reason: "not_configured" | "unavailable"): void {
   const stateKey = reason === "not_configured" ? "notConfigured" : "unavailable";
   if (fallbackLogState[stateKey]) {
     return;
   }
 
   fallbackLogState[stateKey] = true;
-  console.warn("[RateLimit] Upstash unavailable; using local best-effort fallback.", {
+  console.warn("[RateLimit] Upstash unavailable; applying route failure policy.", {
     reason,
   });
 }
@@ -92,18 +99,21 @@ async function checkDistributedRateLimit(options: {
   key: string;
   limit: number;
   window: number;
-}): Promise<ServerRateLimitResult | null> {
+}): Promise<
+  | { status: "available"; result: ServerRateLimitResult }
+  | { status: "unavailable" }
+> {
   let redis: NonNullable<ReturnType<typeof getRedisClient>> | null;
   try {
     redis = getRedisClient();
   } catch {
-    logFallback("unavailable");
-    return null;
+    logDistributedUnavailable("unavailable");
+    return { status: "unavailable" };
   }
 
   if (!redis) {
-    logFallback("not_configured");
-    return null;
+    logDistributedUnavailable("not_configured");
+    return { status: "unavailable" };
   }
 
   try {
@@ -114,22 +124,26 @@ async function checkDistributedRateLimit(options: {
     ).limit(options.key);
 
     if (result.reason === "timeout") {
-      logFallback("unavailable");
-      return null;
+      logDistributedUnavailable("unavailable");
+      return { status: "unavailable" };
     }
 
     return {
-      allowed: result.success,
-      limit: result.limit,
-      remaining: result.remaining,
-      reset: result.reset,
-      retryAfter: result.success
-        ? undefined
-        : retryAfterFromReset(result.reset, options.window),
+      status: "available",
+      result: {
+        allowed: result.success,
+        limit: result.limit,
+        remaining: result.remaining,
+        reset: result.reset,
+        retryAfter: result.success
+          ? undefined
+          : retryAfterFromReset(result.reset, options.window),
+        source: "distributed",
+      },
     };
   } catch {
-    logFallback("unavailable");
-    return null;
+    logDistributedUnavailable("unavailable");
+    return { status: "unavailable" };
   }
 }
 
@@ -140,12 +154,12 @@ export async function checkServerRateLimit(
   authenticatedUserId?: string,
 ): Promise<ServerRateLimitResult> {
   const pathname = new URL(request.url).pathname;
-  const config = getRateLimitConfig(pathname, method);
+  const policy = getRateLimitPolicy(pathname, method);
   const identity = authenticatedUserId
     ? { scope: "authenticated" as const, value: authenticatedUserId, key: `authenticated:${authenticatedUserId}` }
     : await getRateLimitIdentity(request);
-  const limit = options.limit ?? config.limit;
-  const window = options.window ?? config.window;
+  const limit = options.limit ?? policy.config.limit;
+  const window = options.window ?? policy.config.window;
   const rateLimitKey = getRateLimitKey(identity.key, pathname, method);
 
   const distributedResult = await checkDistributedRateLimit({
@@ -153,8 +167,25 @@ export async function checkServerRateLimit(
     limit,
     window,
   });
-  if (distributedResult) {
-    return distributedResult;
+  if (distributedResult.status === "available") {
+    return {
+      ...distributedResult.result,
+      failureMode: policy.failureMode,
+    };
+  }
+
+  if (policy.failureMode === "fail-closed") {
+    const reset = Math.floor(Date.now() / 1000) + window;
+    return {
+      allowed: false,
+      limit,
+      remaining: 0,
+      reset,
+      retryAfter: Math.max(1, window),
+      failure: "distributed-unavailable",
+      failureMode: policy.failureMode,
+      source: "unavailable",
+    };
   }
 
   const localResult = checkRateLimit({
@@ -169,6 +200,8 @@ export async function checkServerRateLimit(
     remaining: localResult.remaining,
     reset: localResult.reset,
     retryAfter: localResult.retryAfter,
+    failureMode: policy.failureMode,
+    source: "local-fallback",
   };
 }
 
@@ -224,15 +257,24 @@ export function createServerRateLimitResponse(
   
   return new Response(
     JSON.stringify({
-      error: "Trop de tentatives. Réessayez dans quelques instants.",
-      message: "Trop de tentatives. Réessayez dans quelques instants.",
+      error:
+        metadata?.failure === "distributed-unavailable"
+          ? "Protection anti-abus temporairement indisponible."
+          : "Trop de tentatives. Réessayez dans quelques instants.",
+      message:
+        metadata?.failure === "distributed-unavailable"
+          ? "Protection anti-abus temporairement indisponible."
+          : "Trop de tentatives. Réessayez dans quelques instants.",
       kind: "network",
-      status: "rate_limited",
-      code: "RATE_LIMIT_EXCEEDED",
+      status: metadata?.failure === "distributed-unavailable" ? "unavailable" : "rate_limited",
+      code:
+        metadata?.failure === "distributed-unavailable"
+          ? "RATE_LIMIT_UNAVAILABLE"
+          : "RATE_LIMIT_EXCEEDED",
       retryAfterSeconds: retryAfter ?? 60,
     }),
     {
-      status: 429,
+      status: metadata?.failure === "distributed-unavailable" ? 503 : 429,
       headers: {
         "Content-Type": "application/json",
         "Retry-After": String(retryAfter ?? 60),
