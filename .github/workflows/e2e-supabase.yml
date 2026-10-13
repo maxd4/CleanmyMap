@@ -94,6 +94,17 @@ jobs:
 
       - name: Reload ephemeral PostgREST schema
         run: |
+          for attempt in $(seq 1 30); do
+            http_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1:54321/rest/v1/ || true)"
+            if [ "$http_status" = "200" ] || [ "$http_status" = "401" ]; then
+              break
+            fi
+            if [ "$attempt" = "30" ]; then
+              echo "Ephemeral PostgREST did not become ready after restart (HTTP $http_status)."
+              exit 1
+            fi
+            sleep 1
+          done
           npx supabase db query --workdir apps/web/supabase --local "notify pgrst, 'reload schema';"
 
       - name: Run SPOGOMI business tests

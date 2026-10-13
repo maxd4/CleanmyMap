@@ -18,6 +18,8 @@ test("persistent E2E workflow is hosted, ephemeral, and never targets production
   assert.match(workflow, /supabase db reset/);
   assert.match(workflow, /Restart ephemeral Supabase API after reset/);
   assert.match(workflow, /docker restart "\$rest_container"/);
+  assert.match(workflow, /curl --silent --show-error --output \/dev\/null --write-out '%\{http_code\}' http:\/\/127\.0\.0\.1:54321\/rest\/v1\//);
+  assert.match(workflow, /Ephemeral PostgREST did not become ready after restart/);
   assert.match(workflow, /notify pgrst, ['"]reload schema/);
   assert.match(workflow, /supabase stop/);
   assert.match(workflow, /id: start_supabase/);
