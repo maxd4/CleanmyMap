@@ -71,7 +71,7 @@ La politique acceptée pour CleanMyMap est :
 Le runtime web actuel suit cette politique :
 
 ```txt
-next: 16.3.8
+next: 16.4.0
 react: 19.2.8
 typescript: ^7
 ```
