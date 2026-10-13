@@ -148,12 +148,12 @@ async function lookupProfileByToken(
 
   const [directId, directHandle] = await Promise.all([
     supabase
-      .from("profiles")
+      .from("public_profiles")
       .select("id, display_name, handle")
       .eq("id", normalized)
       .maybeSingle(),
     supabase
-      .from("profiles")
+      .from("public_profiles")
       .select("id, display_name, handle")
       .eq("handle", normalized)
       .maybeSingle(),
@@ -174,7 +174,7 @@ async function lookupProfileByToken(
   }
 
   const displayNameMatch = await supabase
-    .from("profiles")
+    .from("public_profiles")
     .select("id, display_name, handle")
     .ilike("display_name", normalized)
     .limit(20);

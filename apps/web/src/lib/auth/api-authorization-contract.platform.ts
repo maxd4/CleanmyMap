@@ -199,14 +199,14 @@ export const platformAuthorizationContract = {
     GET: {
       expected: "Authenticated current-user leaderboard preference read",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess current-user gate + RLS profile read",
-      evidence: ["requireAuthenticatedAccess", "userId", "requireSupabaseClerkRlsClient"],
+      actual: "requireAuthenticatedAccess current-user gate + owner-scoped server profile read",
+      evidence: ["requireAuthenticatedAccess", "userId", "getSupabaseServerClient", ".eq(\"id\", userId)"],
     },
     PATCH: {
       expected: "Authenticated current-user leaderboard preference write",
       dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess current-user gate + RLS profile update constrained by id",
-      evidence: ["requireAuthenticatedAccess", "userId", "requireSupabaseClerkRlsClient", ".eq(\"id\", userId)"],
+      actual: "requireAuthenticatedAccess current-user gate + owner-scoped server profile update",
+      evidence: ["requireAuthenticatedAccess", "userId", "getSupabaseServerClient", ".eq(\"id\", userId)"],
     },
   },
 } as const satisfies ApiAuthorizationContract;

@@ -21,7 +21,7 @@ function buildChatUserQuery(
   userId: string,
 ) {
   return supabase
-    .from("profiles")
+    .from("public_profiles")
     .select("id, handle, display_name, avatar_url")
     .neq("id", userId)
     .order("display_name")

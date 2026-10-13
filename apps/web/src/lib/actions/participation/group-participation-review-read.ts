@@ -214,12 +214,12 @@ export async function searchActionParticipationCandidates(
   const cappedLimit = Math.max(1, Math.min(limit, 20));
   const exactQueries = await Promise.all([
     supabase
-      .from("profiles")
+      .from("public_profiles")
       .select("id, display_name, handle")
       .eq("id", term)
       .limit(cappedLimit),
     supabase
-      .from("profiles")
+      .from("public_profiles")
       .select("id, display_name, handle")
       .eq("handle", term)
       .limit(cappedLimit),
@@ -237,7 +237,7 @@ export async function searchActionParticipationCandidates(
 
   const pattern = `%${escapeSearchPattern(term)}%`;
   const partial = await supabase
-    .from("profiles")
+    .from("public_profiles")
     .select("id, display_name, handle")
     .or(`handle.ilike.${pattern},display_name.ilike.${pattern}`)
     .order("display_name", { ascending: true })

@@ -137,11 +137,11 @@ function resolveTerritoryDestination(
 }
 
 async function resolveBugReportDestination(
-  supabase: ChatSupabaseClient,
+  serviceSupabase: ServiceSupabaseClient,
   userId: string,
   activeRole: ActiveRole,
 ): Promise<DestinationPart | Response> {
-  const recipientId = await resolveBugReportRecipientId(supabase, userId, activeRole);
+  const recipientId = await resolveBugReportRecipientId(serviceSupabase, userId, activeRole);
   return recipientId
     ? { recipientId, actionConversationId: null, targetArrondissementId: null, targetZoneName: null }
     : NextResponse.json(
@@ -187,19 +187,17 @@ async function resolveChannelDestination({
     return resolveDmDestination({ supabase, serviceSupabase, userId, data, isExternalActionShare });
   }
   if (data.channelType === "territory") return resolveTerritoryDestination(data, zone);
-  if (data.channelType === "bug_report") return resolveBugReportDestination(supabase, userId, activeRole);
+  if (data.channelType === "bug_report") return resolveBugReportDestination(serviceSupabase, userId, activeRole);
   if (data.channelType === "action") return resolveActionDestination(supabase, data.actionId!);
   return { recipientId: null, actionConversationId: null, targetArrondissementId: null, targetZoneName: null };
 }
 
 export async function resolveChatPostExecutionZone({
-  supabase,
   serviceSupabase,
   userId,
   data,
   sharedAction,
 }: {
-  supabase: ChatSupabaseClient;
   serviceSupabase: ServiceSupabaseClient;
   userId: string;
   data: ValidatedChatPost["data"];
@@ -212,21 +210,21 @@ export async function resolveChatPostExecutionZone({
   if (!quota.allowed) {
     return NextResponse.json(toDiscussionRateLimitErrorPayload(quota), { status: 429 });
   }
-  return resolveChatPostZoneContext({ supabase, userId, data, sharedAction });
+  return resolveChatPostZoneContext({ serviceSupabase, userId, data, sharedAction });
 }
 
 async function resolveChatPostZoneSources({
-  supabase,
+  serviceSupabase,
   userId,
   data,
   sharedAction,
 }: {
-  supabase: ChatSupabaseClient;
+  serviceSupabase: ServiceSupabaseClient;
   userId: string;
   data: ValidatedChatPost["data"];
   sharedAction: SharedAction | null;
 }) {
-  const profile = await loadCurrentProfile(supabase, userId);
+  const profile = await loadCurrentProfile(serviceSupabase, userId);
   const metadataZone = extractZoneContextFromMetadata(profile?.metadata ?? null);
   const requestedZoneName = data.zoneName?.trim() || null;
   const requestedArrondissement = data.arrondissementId ?? null;
@@ -275,17 +273,17 @@ function buildChatPostZoneContext({
 }
 
 async function resolveChatPostZoneContext({
-  supabase,
+  serviceSupabase,
   userId,
   data,
   sharedAction,
 }: {
-  supabase: ChatSupabaseClient;
+  serviceSupabase: ServiceSupabaseClient;
   userId: string;
   data: ValidatedChatPost["data"];
   sharedAction: SharedAction | null;
 }): Promise<ChatPostZoneContext> {
-  const sources = await resolveChatPostZoneSources({ supabase, userId, data, sharedAction });
+  const sources = await resolveChatPostZoneSources({ serviceSupabase, userId, data, sharedAction });
   return buildChatPostZoneContext({
     zoneContext: sources.requestedZoneContext ?? sources.actionZoneContext ?? sources.profileZoneContext,
   });

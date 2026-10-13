@@ -118,6 +118,36 @@ la synchronisation, l'historique, les permissions et la conformité. En cas de
 doute, conserver la donnée dans sa source de vérité serveur et documenter le
 choix avant de créer une nouvelle persistance.
 
+### Projection publique des profils et privilèges PostgreSQL
+
+`public.profiles` reste la source de vérité unique du profil. Sa projection
+publique PostgreSQL est `public.public_profiles` et ne contient que `id`,
+`display_name`, `handle` et `avatar_url`. Ces quatre colonnes sont également
+les seules colonnes lisibles par `anon` et `authenticated` sur la table de
+base, afin de préserver les jointures PostgREST existantes, notamment les
+expéditeurs de messages. La recherche de membres, les avatars, les
+pseudonymes, les messages et les relations publiques utilisent cette surface.
+
+`metadata`, `role_label`, `active_role_label`, `display_name_mode`,
+`paris_arrondissement`, `leaderboard_public_opt_in`, les champs de referral,
+les timestamps internes et la projection Clerk ne sont pas lisibles par
+`anon` ou par un autre compte `authenticated`. Une lecture de ces données doit
+être owner-scoped ou exécutée côté serveur après l'autorisation Clerk
+correspondante, avec le client `service_role` strictement retenu côté serveur.
+La RLS de lignes ne remplace pas cette séparation de colonnes.
+
+Les rôles applicatifs ne possèdent pas `TRUNCATE`, `TRIGGER`, `REFERENCES` ou
+`DELETE` sur les profils. Les tables `newsletter_subscriptions` et
+`notification_preferences` conservent uniquement leurs opérations métier
+respectives ; la migration corrective et son contrat PostgreSQL éphémère
+mesurent les grants effectifs, y compris les privilèges de colonnes.
+
+Les helpers SQL de contexte d'autorisation lisent les projections privées dans
+une fonction `SECURITY DEFINER` à `search_path` fixe, sans exposition de ligne
+de profil ; leur exécution est limitée à `authenticated` et `service_role`.
+Le RPC de filiation, qui renvoie des relations privées, est réservé au
+`service_role` et n'est pas une API publique.
+
 ## Entités principales
 
 | Entité | Table principale | Contrat |

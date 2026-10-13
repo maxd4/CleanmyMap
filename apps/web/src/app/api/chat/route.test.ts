@@ -39,7 +39,10 @@ describe("POST /api/chat — publication et canaux", () => {
     });
 
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue({ service: true });
+    getSupabaseServerClientMock.mockReturnValue({
+      ...supabaseMock.serviceSupabase,
+      from: supabaseMock.supabase.from,
+    });
 
     const { POST } = await import("./route");
     const response = await POST(
@@ -74,7 +77,7 @@ describe("POST /api/chat — publication et canaux", () => {
       expect.objectContaining({ limit: 20, remaining: expect.any(Number) }),
     );
     expect(reserveDiscussionMessageSlotMock).toHaveBeenCalledWith(
-      { service: true },
+      expect.objectContaining({ from: expect.any(Function) }),
       {
         userId: "user-1",
         channel: "discussion_event",
@@ -97,7 +100,7 @@ describe("POST /api/chat — publication et canaux", () => {
       }),
     );
     expect(createChatNotificationsForMessageMock).toHaveBeenCalledWith(
-      { service: true },
+      expect.objectContaining({ from: expect.any(Function) }),
       "message-42",
       "user-1",
     );

@@ -962,6 +962,25 @@ Clerk/Supabase. En l'absence d'une exécution PostgreSQL/RLS autorisée, le
 contrat reste non prouvé en intégration et doit être marqué
 `DB_SEMANTICS_NOT_EXECUTED`.
 
+La confidentialité des profils repose également sur les privilèges de
+colonnes PostgreSQL. La table `public.profiles` conserve les données privées,
+mais `anon` et `authenticated` ne lisent que `id`, `display_name`, `handle` et
+`avatar_url`; la surface publique canonique est la vue minimale
+`public.public_profiles`. `metadata`, `role_label`, `active_role_label`, les
+champs de referral, le consentement de leaderboard et les champs de
+synchronisation Clerk ne doivent donc jamais être récupérés par une requête
+PostgREST directe d'un autre compte. Les routes personnelles et les routes
+administratives doivent effectuer l'autorisation Clerk avant d'utiliser le
+client serveur privilégié, avec un prédicat d'owner ou un scope administratif
+explicite.
+
+Les privilèges `TRUNCATE`, `TRIGGER`, `REFERENCES` et `DELETE` ne font pas
+partie du contrat des rôles applicatifs sur les profils. Les capacités métier
+nécessaires des préférences de notification et de l'inscription newsletter
+restent accordées explicitement, sans réouvrir une lecture anonyme des données
+privées. Le contrat réel est exercé pour `anon`, `authenticated` et
+`service_role` dans l'environnement PostgreSQL éphémère.
+
 Tester selon le domaine :
 
 - anonyme ;

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { requireSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const updateSchema = z.object({
   leaderboardPublicOptIn: z.boolean(),
@@ -17,7 +17,8 @@ export async function GET() {
   const userId = access.userId;
 
   try {
-    const supabase = await requireSupabaseClerkRlsClient();
+    // Clerk authentication and the owner predicate authorize this private read.
+    const supabase = getSupabaseServerClient(true);
     const result = await supabase
       .from("profiles")
       .select("leaderboard_public_opt_in")
@@ -50,7 +51,8 @@ export async function PATCH(request: Request) {
   if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
 
   try {
-    const supabase = await requireSupabaseClerkRlsClient();
+    // Clerk authentication and the owner predicate authorize this private write.
+    const supabase = getSupabaseServerClient(true);
     const result = await supabase
       .from("profiles")
       .update({

@@ -20,6 +20,7 @@ on:
       - "e2e/global.teardown.ts"
       - "e2e/run-github-actions-persistent.mjs"
       - "e2e/spogomi-concurrency.mjs"
+      - "e2e/profile-security.sql"
       - "scripts/checks/spogomi-concurrency-destination.test.mjs"
       - "apps/web/src/lib/spogomi/**"
       - "apps/web/src/app/api/spogomi/**"
@@ -147,7 +148,10 @@ jobs:
           $$;
           SQL
           )"
-          npx supabase db query --workdir apps/web --local "$preflight_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
+          echo "Running SECURITY-01 PostgreSQL role and column privilege contract"
+          profile_security_sql="$(cat e2e/profile-security.sql)"
+          npx supabase db query --workdir apps/web --local "$preflight_sql
+$profile_security_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
 
       - name: Synchronize PostgREST schema after PostgreSQL proof
         run: |

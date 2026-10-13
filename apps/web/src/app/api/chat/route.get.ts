@@ -366,8 +366,9 @@ export async function GET(request: Request) {
       { status: 503 },
     );
   }
+  const serviceSupabase = getSupabaseServerClient(true);
 
-  const accessContext = await loadChatAccessContext(supabase, userId, {
+  const accessContext = await loadChatAccessContext(serviceSupabase, userId, {
     requestedZoneName,
     requestedArrondissement,
     channelType,
@@ -452,7 +453,7 @@ export async function GET(request: Request) {
       pageGroups.some((group) => group.length > CHAT_PAGE_SIZE);
     const messages = await enrichPollVoteSummaries(
       supabase,
-      getSupabaseServerClient(true),
+      serviceSupabase,
       userId,
       sortChatMessages(pageRows),
     );

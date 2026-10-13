@@ -17,7 +17,7 @@ const REFERRAL_EXPORT_CACHE_REVALIDATE_SECONDS = 600;
 function loadCachedReferralProfiles(): Promise<ReferralLineageProfileRow[]> {
   const cached = unstable_cache(
     async () => {
-      const supabase = getSupabaseServerClient(false);
+      const supabase = getSupabaseServerClient(true);
       const profiles: ReferralLineageProfileRow[] = [];
       const pageSize = 1000;
 

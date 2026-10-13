@@ -31,6 +31,7 @@ export const VITEST_GROUPS = Object.freeze({
     "src/lib/botid/protected-routes.test.ts",
     "src/lib/botid/server.test.ts",
     "src/app/api/chat/route.test.ts",
+    "src/lib/supabase/profile-privacy-migration.test.ts",
   ]),
   regression: Object.freeze([
     "src/lib/actions/contracts/contract-regression-gates.test.ts",

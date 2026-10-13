@@ -83,7 +83,6 @@ export async function POST(request: Request) {
     }
 
     const zone = await resolveChatPostExecutionZone({
-      supabase,
       serviceSupabase,
       userId,
       data: parsed.data,

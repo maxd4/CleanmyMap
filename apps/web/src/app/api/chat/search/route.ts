@@ -8,6 +8,7 @@ import {
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError } from "@/lib/http/api-errors";
 import { mergeRowGroupsById, sortByCreatedAtAsc } from "@/lib/chat/postgrest";
 import { escapePostgrestLikePattern } from "@/lib/chat/postgrest";
@@ -168,7 +169,7 @@ function parseSearchRequest(request: Request): SearchRequest | { response: NextR
 }
 
 async function loadSearchAccessContext(
-  supabase: SearchSupabaseClient,
+  serviceSupabase: ReturnType<typeof getSupabaseServerClient>,
   userId: string,
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
   search: SearchRequest,
@@ -177,7 +178,7 @@ async function loadSearchAccessContext(
   zoneContext: Awaited<ReturnType<typeof loadChatAccessContext>>["zoneContext"];
   zoneName: string | null;
 }> {
-  const accessContext = await loadChatAccessContext(supabase, userId, {
+  const accessContext = await loadChatAccessContext(serviceSupabase, userId, {
     requestedZoneName: search.requestedZoneName,
     requestedArrondissement: search.requestedArrondissement,
     channelType: search.channelType,
@@ -344,12 +345,13 @@ export async function GET(request: Request) {
       { status: 503 },
     );
   }
+  const serviceSupabase = getSupabaseServerClient(true);
 
   try {
     // Les garde-fous de canal restent portés par loadChatAccessContext,
     // getTerritoryFilter, buildChatDirectScopeFactories et applyChatTopicFilter;
     // sender_id/recipient_id bornent la propriété des messages.
-    const accessContext = await loadSearchAccessContext(supabase, userId, identity, search);
+    const accessContext = await loadSearchAccessContext(serviceSupabase, userId, identity, search);
     if (accessContext.error) return accessContext.error;
     const { zoneContext, zoneName } = accessContext;
 

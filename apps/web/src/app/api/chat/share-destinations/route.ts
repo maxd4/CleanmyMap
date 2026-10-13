@@ -51,7 +51,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const action = await loadActionById(getSupabaseServerClient(true), actionId);
+    const serviceSupabase = getSupabaseServerClient(true);
+    const action = await loadActionById(serviceSupabase, actionId);
     const shareKind = action ? getPublicActionShareKind(action) : null;
     if (!action || !shareKind) {
       return NextResponse.json(
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
     }
 
     const [profile, dmResult] = await Promise.all([
-      loadCurrentProfile(supabase, userId),
+      loadCurrentProfile(serviceSupabase, userId),
       supabase.rpc("list_my_dm_conversations"),
     ]);
     if (dmResult.error) {

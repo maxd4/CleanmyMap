@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
-const requireRlsMock = vi.hoisted(() => vi.fn());
+const serverClientMock = vi.hoisted(() => vi.fn());
 
 function makeMutationChain(data: unknown, error: Error | null = null) {
   const chain = {
@@ -25,7 +25,7 @@ async function patchPreference(value: boolean) {
 }
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: requireAuthenticatedAccessMock }));
-vi.mock("@/lib/supabase/clerk-rls", () => ({ requireSupabaseClerkRlsClient: requireRlsMock }));
+vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: serverClientMock }));
 
 describe("/api/users/profile/leaderboard-opt-in", () => {
   beforeEach(() => {
@@ -45,7 +45,7 @@ describe("/api/users/profile/leaderboard-opt-in", () => {
       eq: vi.fn(() => chain),
       maybeSingle,
     };
-    requireRlsMock.mockResolvedValue({ from: vi.fn(() => chain) });
+    serverClientMock.mockReturnValue({ from: vi.fn(() => chain) });
     const { GET, PATCH } = await import("./route");
     const before = await GET();
     const after = await PATCH(new Request("http://localhost/api/users/profile/leaderboard-opt-in", { method: "PATCH", body: JSON.stringify({ leaderboardPublicOptIn: true }) }));
@@ -56,7 +56,7 @@ describe("/api/users/profile/leaderboard-opt-in", () => {
 
   it("lets the owner opt out again without exposing private profile fields", async () => {
     const chain = makeMutationChain({ leaderboard_public_opt_in: false });
-    requireRlsMock.mockResolvedValue({ from: vi.fn(() => chain) });
+    serverClientMock.mockReturnValue({ from: vi.fn(() => chain) });
     const response = await patchPreference(false);
     const body = await response.json();
 
@@ -68,7 +68,7 @@ describe("/api/users/profile/leaderboard-opt-in", () => {
 
   it("returns a server error when the profile preference mutation fails", async () => {
     const chain = makeMutationChain(null, new Error("profile write failed"));
-    requireRlsMock.mockResolvedValue({ from: vi.fn(() => chain) });
+    serverClientMock.mockReturnValue({ from: vi.fn(() => chain) });
     const response = await patchPreference(true);
 
     expect(response.status).toBe(500);
@@ -79,6 +79,6 @@ describe("/api/users/profile/leaderboard-opt-in", () => {
     const { GET, PATCH } = await import("./route");
     expect((await GET()).status).toBe(401);
     expect((await PATCH(new Request("http://localhost/api/users/profile/leaderboard-opt-in", { method: "PATCH", body: "{}" }))).status).toBe(401);
-    expect(requireRlsMock).not.toHaveBeenCalled();
+    expect(serverClientMock).not.toHaveBeenCalled();
   });
 });

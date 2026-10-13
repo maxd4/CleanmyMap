@@ -201,7 +201,7 @@ export async function loadParticipantProfilesForUserIds(
   }
 
   const result = await supabase
-    .from("profiles")
+    .from("public_profiles")
     .select("id, display_name, handle")
     .in("id", uniqueUserIds)
     .limit(uniqueUserIds.length);

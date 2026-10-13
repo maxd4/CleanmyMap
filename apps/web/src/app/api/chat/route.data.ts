@@ -123,7 +123,7 @@ export async function enrichPollVoteSummaries(
 }
 
 export async function loadCurrentProfile(
-  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  supabase: ReturnType<typeof getSupabaseServerClient>,
   userId: string,
 ): Promise<CurrentProfileRow | null> {
   const { data, error } = await supabase
@@ -140,11 +140,11 @@ export async function loadCurrentProfile(
 }
 
 export async function loadChatAccessContext(
-  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  serviceSupabase: ReturnType<typeof getSupabaseServerClient>,
   userId: string,
   params: Omit<Parameters<typeof resolveChatAccessContext>[0], "profileMetadata" | "profileArrondissement">,
 ) {
-  const profile = await loadCurrentProfile(supabase, userId);
+  const profile = await loadCurrentProfile(serviceSupabase, userId);
   return resolveChatAccessContext({
     ...params,
     profileMetadata: profile?.metadata,
@@ -199,7 +199,7 @@ export async function loadMessageById(
 }
 
 export async function resolveBugReportRecipientId(
-  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  supabase: ReturnType<typeof getSupabaseServerClient>,
   senderId: string,
   senderRole: string,
 ): Promise<string | null> {
