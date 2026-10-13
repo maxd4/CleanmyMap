@@ -35,6 +35,42 @@ liste de quotas. Le fallback local ne doit jamais être interprété comme une
 protection distribuée : deux instances peuvent chacune accepter leur première
 lecture lorsque Upstash est indisponible.
 
+Le classement est déterminé par la méthode et le pathname, avant l'exécution
+du handler :
+
+- `credential` couvre `/api/auth`, `/api/sign`, `/api/login`, les accès d'équipe
+  et les routes d'émission de codes d'identité ;
+- `upload` couvre les imports d'actions, les médias de signalement et les
+  surfaces d'import, galerie ou route GPX SPOGOMI ;
+- `expensive` couvre l'IA, la recommandation d'itinéraire, le géocodage, les
+  sélecteurs Clerk paginés, l'analytics funnel, les rapports et les exports ;
+- toute méthode `POST`, `PUT`, `PATCH` ou `DELETE` restante est une
+  `mutation` ;
+- un GET/HEAD qui ne relève d'aucune de ces catégories est une lecture
+  `public-read` peu coûteuse pour la politique de panne. Cette étiquette ne
+  remplace jamais AuthN/AuthZ et ne rend pas une donnée privée publique.
+
+Les limites `limit` et `window` fournies par un handler sont conservées. La
+politique de panne ajoute seulement les métadonnées de résultat suivantes :
+
+| Résultat | HTTP | Contrat |
+|---|---:|---|
+| quota distribué disponible et accepté | — | le handler continue |
+| quota distribué épuisé | `429` | `RATE_LIMIT_EXCEEDED`, `Retry-After` et headers de quota |
+| protection distribuée indisponible sur une classe fail-closed | `503` | `RATE_LIMIT_UNAVAILABLE`, `Retry-After`, aucun handler exécuté |
+| protection distribuée indisponible sur `public-read` | — | `source = local-fallback`, sans promesse multi-instance |
+
+Les consommateurs qui utilisent `createServerRateLimitResponse()` doivent lui
+passer le résultat complet de `verifyRateLimit()` ou
+`enforceServerRateLimitForAuthenticatedUser()`. Le champ `failure` distingue
+une indisponibilité (`distributed-unavailable`) d'un quota réellement épuisé ;
+un consommateur ne doit pas convertir le premier cas en `429`.
+
+Le middleware applique la même distinction. Il conserve les chemins techniques
+explicitement exclus (`/api/health`, `/api/uptime`, `/api/email/test`, fichiers
+statiques) ; cette exclusion ne constitue pas une garantie anti-abus pour une
+route métier et ne doit pas être étendue sans contrat séparé.
+
 Profils par défaut :
 
 | Profil | Limite | Fenêtre | Stratégie |
@@ -68,6 +104,39 @@ Les formulaires publics conservent leurs contrôles `honeypot` et `submittedAt`
 lorsqu'ils sont prévus par leur contrat. Les wrappers génériques ne prouvent
 pas qu'une route les utilise.
 
+## CURRENT — tests de non-régression
+
+La suite ciblée `apps/web/src/lib/rate-limit/` couvre :
+
+- le profil et la classe de protection des lectures, mutations, credentials,
+  uploads, exports et traitements coûteux ;
+- l'absence de configuration Upstash, l'erreur réseau et le timeout ;
+- la réponse `503 RATE_LIMIT_UNAVAILABLE` du serveur et du middleware ;
+- la conservation du `429 RATE_LIMIT_EXCEEDED` lorsque le quota distribué est
+  réellement épuisé ;
+- l'atomicité des consommations concurrentes dans un même processus ;
+- la simulation de deux instances : le store distribué partage le compteur,
+  tandis que le fallback mémoire est explicitement limité à chaque processus.
+
+Ces tests sont des tests applicatifs simulés. Ils ne constituent pas une preuve
+de disponibilité d'Upstash, de configuration Vercel ni de comportement sur une
+production réelle multi-instance.
+
+## CURRENT — exploitation et panne
+
+La production doit fournir `UPSTASH_REDIS_REST_URL` et
+`UPSTASH_REDIS_REST_TOKEN` côté serveur. Une absence de configuration est une
+erreur d'exploitation pour les mutations, credentials, uploads et traitements
+coûteux : elle doit être diagnostiquée, pas contournée par une nouvelle variable
+d'environnement ou un élargissement du fallback mémoire.
+
+Les alertes peuvent suivre les réponses `503` portant le code
+`RATE_LIMIT_UNAVAILABLE` et les logs bornés indiquant `not_configured` ou
+`unavailable`. Les logs ne doivent contenir ni token Upstash, ni cookie, ni
+identifiant de session, ni payload utilisateur. Une reprise côté client doit
+respecter le `Retry-After` et ne doit pas transformer une indisponibilité en
+rafale de retries.
+
 ## Audit réseau et quotas — règles durables
 
 La classification suivante est la référence de revue pour les flux qui peuvent
@@ -94,10 +163,11 @@ refuse les redirections si la cible initiale est sensible. Les URLs de contenu
 Chat restent du texte rendu au navigateur : le serveur ne les précharge,
 proxyfie ni ne les enrichit.
 
-Les réponses de fréquence utilisent `429`, `Retry-After` et le contrat
-`RATE_LIMIT_EXCEEDED`. Une limite de taille de corps utilise `413` avant toute
-écriture ou appel tiers. Un quota métier distinct peut également renvoyer
-`429`; il ne remplace pas le rate limit réseau.
+Les dépassements de quota utilisent `429`, `Retry-After` et le contrat
+`RATE_LIMIT_EXCEEDED`. Une protection distribuée indisponible utilise `503`,
+`Retry-After` et `RATE_LIMIT_UNAVAILABLE`. Une limite de taille de corps utilise
+`413` avant toute écriture ou appel tiers. Un quota métier distinct peut
+également renvoyer `429`; il ne remplace pas le rate limit réseau.
 
 ## PLAN — direction de convergence
 

@@ -158,9 +158,12 @@ describe("rate limit client ip extraction", () => {
     ["POST", "/api/actions", "mutation"],
     ["POST", "/api/auth/session", "credential"],
     ["POST", "/api/signalements/signalement-1/media/intents", "upload"],
+    ["GET", "/api/spogomi/events/event-1/gallery", "upload"],
+    ["GET", "/api/spogomi/events/event-1/route-gpx", "upload"],
     ["GET", "/api/ai/vision", "expensive"],
     ["GET", "/api/actions/account-options", "expensive"],
     ["GET", "/api/reports/actions.csv", "expensive"],
+    ["GET", "/api/spogomi/events/event-1/export.xlsx", "expensive"],
   ] as const)("classifies %s %s as %s and fails closed", (method, pathname, protectionClass) => {
     expect(getRateLimitProtectionClass(pathname, method)).toBe(protectionClass);
     expect(getRateLimitFailureMode(pathname, method)).toBe("fail-closed");

@@ -212,7 +212,31 @@ describe("server rate-limit", () => {
     warnSpy.mockRestore();
   });
 
+  it("fails closed on a network error for a mutation instead of using memory", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    distributedLimitMock.mockRejectedValue(new Error("network failure"));
+    const instance = await import("./server");
+
+    const result = await instance.verifyRateLimit(buildRequest("POST"), {
+      limit: 7,
+      window: 17,
+    });
+
+    expect(result).toMatchObject({
+      allowed: false,
+      limit: 7,
+      remaining: 0,
+      retryAfter: 17,
+      failure: "distributed-unavailable",
+      failureMode: "fail-closed",
+      source: "unavailable",
+    });
+    expect(result.reset).toBeGreaterThan(Math.floor(Date.now() / 1000));
+    warnSpy.mockRestore();
+  });
+
   it("keeps concurrent public fallback checks atomic within one instance", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     getRedisClientMock.mockReturnValue(null);
     const { verifyRateLimit } = await import("./server");
 
@@ -224,9 +248,11 @@ describe("server rate-limit", () => {
 
     expect(results.filter((result) => result.allowed)).toHaveLength(3);
     expect(results.filter((result) => !result.allowed)).toHaveLength(5);
+    warnSpy.mockRestore();
   });
 
   it("does not pretend the local fallback is shared across simulated instances", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     getRedisClientMock.mockReturnValue(null);
     const firstInstance = await import("./server");
     const first = await firstInstance.verifyRateLimit(buildRequest("GET"), {
@@ -245,6 +271,7 @@ describe("server rate-limit", () => {
     expect(second.source).toBe("local-fallback");
     expect(first.allowed).toBe(true);
     expect(second.allowed).toBe(true);
+    warnSpy.mockRestore();
   });
 
   it("returns a stable 429 payload", async () => {
