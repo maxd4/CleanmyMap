@@ -10,7 +10,7 @@ import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mj
 export const DEAD_CODE_BASELINE_SCHEMA_VERSION = 1;
 export const DEAD_CODE_JUSTIFICATION_SCHEMA_VERSION = 1;
 export const DEAD_CODE_TOOL = "knip";
-export const DEAD_CODE_TOOL_VERSION = "6.37.0";
+export const DEAD_CODE_TOOL_VERSION = "6.40.0";
 export const DEAD_CODE_CONFIG = "scripts/knip.json";
 
 const ISSUE_TYPES = Object.freeze([
@@ -263,7 +263,7 @@ function parseJsonOutput(output) {
 
 export function runKnipReport({ spawn = spawnSync } = {}) {
   if (!fs.existsSync(knipPath)) {
-    throw new Error("HOST_ENVIRONMENT: Knip 6.37.0 is not installed.");
+    throw new Error("HOST_ENVIRONMENT: Knip 6.40.0 is not installed.");
   }
   const result = spawn(process.execPath, [
     knipPath,

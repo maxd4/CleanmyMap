@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "tool": "knip",
-  "toolVersion": "6.37.0",
+  "toolVersion": "6.40.0",
   "config": "scripts/knip.json",
   "sourceCommit": "e2d53b9c32febb10deae36ab942033d35a761b1c",
   "source": "provided Knip audit snapshot",
