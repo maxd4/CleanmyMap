@@ -15,6 +15,7 @@ const postLockMutationMigration = readFileSync(new URL("../../../supabase/migrat
 const teamPublicNameMigration = readFileSync(new URL("../../../supabase/migrations/20261013000008_spogomi_team_public_name_rename.sql", import.meta.url), "utf8");
 const preparationConcurrencyMigration = readFileSync(new URL("../../../supabase/migrations/20261013000009_spogomi_preparation_concurrency.sql", import.meta.url), "utf8");
 const postLockReconciliationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000011_spogomi_ticket_reconciliation_post_lock_history.sql", import.meta.url), "utf8");
+const teamPublicNameUniquenessMigration = readFileSync(new URL("../../../supabase/migrations/20261013000012_spogomi_team_public_name_uniqueness.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -160,6 +161,18 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(teamPublicNameMigration).toMatch(/after insert or delete or update of event_id, team_number, composition_state, certified_submission_id/i);
     expect(teamPublicNameMigration).not.toMatch(/set\s+composition_revision\s*=/i);
     expect(teamPublicNameMigration).not.toMatch(/delete\s+from\s+public\.spogomi_(teams|participants|result_submissions)/i);
+  });
+
+  it("enforces normalized public-name uniqueness for creation and rename paths", () => {
+    expect(teamPublicNameUniquenessMigration).toContain("existing normalized collisions require explicit resolution");
+    expect(teamPublicNameUniquenessMigration).toContain("create unique index spogomi_teams_event_public_name_key_unique");
+    expect(teamPublicNameUniquenessMigration).toContain("public.spogomi_team_public_name_key(public_name)");
+    expect(teamPublicNameUniquenessMigration).toContain("create or replace function public.spogomi_confirm_team_composition");
+    expect(teamPublicNameUniquenessMigration).toContain("A generated SPOGOMI team public name is already used in this event");
+    expect(teamPublicNameUniquenessMigration).toContain("resolve the collision before confirming composition");
+    expect(teamPublicNameUniquenessMigration).toMatch(/revoke all on function public\.spogomi_confirm_team_composition[\s\S]+grant execute on function public\.spogomi_confirm_team_composition[\s\S]+to service_role/i);
+    expect(teamPublicNameUniquenessMigration).not.toMatch(/delete\s+from\s+public\.spogomi_teams/i);
+    expect(teamPublicNameUniquenessMigration).not.toMatch(/set\s+public_name\s*=/i);
   });
 
   it("serializes participant lifecycle, composition and official GPX/Action writes", () => {

@@ -162,6 +162,111 @@ async function concurrentCompositionConfirmation() {
   assert.deepEqual(finalTeams.map((row) => row.team_number).sort((a, b) => a - b), [1, 2]);
 }
 
+async function teamPublicNameUniqueness() {
+  const actionId = await createAction(sessionA);
+  const event = await createEvent(sessionA, actionId);
+  const initialTeam = await must(await sessionA.from("spogomi_teams").insert({
+    event_id: event.id, team_number: 1, public_name: `${marker} seed`, composition_state: "draft",
+  }).select("id, public_name").single(), "create public-name collision team");
+  const rename = await sessionA.rpc("spogomi_rename_team_public_name", {
+    p_event_id: event.id,
+    p_team_id: initialTeam.id,
+    p_expected_public_name: initialTeam.public_name,
+    p_public_name: "Équipe 2",
+    p_actor_clerk_id: `${marker}-rename`,
+  });
+  assert.equal(rename.error, null, "the seed team must be renamable before composition confirmation");
+
+  const revisionBeforeCollision = await currentRevision(sessionA, event.id);
+  const rows = await participants(sessionA, event.id, 6);
+  const collision = await sessionA.rpc("spogomi_confirm_team_composition", {
+    p_event_id: event.id,
+    p_expected_revision: revisionBeforeCollision,
+    p_assignments: rows.map((row, index) => ({
+      participantId: row.id,
+      teamNumber: index < 3 ? 2 : 3,
+    })),
+    p_actor_clerk_id: `${marker}-collision`,
+  });
+  assert.ok(collision.error, "a generated public-name collision must reject composition confirmation");
+  assert.match(collision.error.message, /generated SPOGOMI team public name is already used/i);
+
+  const teamsAfterCollision = await must(
+    await sessionA.from("spogomi_teams").select("team_number, public_name").eq("event_id", event.id).order("team_number"),
+    "read teams after public-name collision",
+  );
+  assert.deepEqual(teamsAfterCollision, [{ team_number: 1, public_name: "Équipe 2" }]);
+  const participantsAfterCollision = await must(
+    await sessionA.from("spogomi_participants").select("team_id").eq("event_id", event.id),
+    "read participants after public-name collision",
+  );
+  assert.equal(participantsAfterCollision.filter((row) => row.team_id).length, 0, "a rejected composition cannot partially assign participants");
+  assert.equal(await currentRevision(sessionA, event.id), revisionBeforeCollision, "a rejected composition cannot advance the revision");
+  const historyAfterCollision = await must(
+    await sessionA.from("spogomi_team_composition_history").select("event_id").eq("event_id", event.id),
+    "read composition history after public-name collision",
+  );
+  assert.equal(historyAfterCollision.length, 0, "a rejected composition cannot create history");
+
+  const normalizationActionId = await createAction(sessionA);
+  const normalizationEvent = await createEvent(sessionA, normalizationActionId, "casual");
+  const normalizationTeams = await must(await sessionA.from("spogomi_teams").insert([
+    { event_id: normalizationEvent.id, team_number: 1, public_name: "Équipe Cible", composition_state: "draft" },
+    { event_id: normalizationEvent.id, team_number: 2, public_name: "Autre", composition_state: "draft" },
+    { event_id: normalizationEvent.id, team_number: 3, public_name: "Café", composition_state: "draft" },
+    { event_id: normalizationEvent.id, team_number: 4, public_name: "Quatre", composition_state: "draft" },
+  ]).select("id, team_number, public_name"), "create normalization teams");
+  const spacingCaseCollision = await sessionA.rpc("spogomi_rename_team_public_name", {
+    p_event_id: normalizationEvent.id,
+    p_team_id: normalizationTeams.find((team) => team.team_number === 2).id,
+    p_expected_public_name: "Autre",
+    p_public_name: "  équipe   cible ",
+    p_actor_clerk_id: `${marker}-spacing-case`,
+  });
+  assert.ok(spacingCaseCollision.error, "case and whitespace variants must collide");
+  assert.match(spacingCaseCollision.error.message, /already used/i);
+  const unicodeCollision = await sessionA.rpc("spogomi_rename_team_public_name", {
+    p_event_id: normalizationEvent.id,
+    p_team_id: normalizationTeams.find((team) => team.team_number === 4).id,
+    p_expected_public_name: "Quatre",
+    p_public_name: "Cafe\u0301",
+    p_actor_clerk_id: `${marker}-unicode`,
+  });
+  assert.ok(unicodeCollision.error, "NFC-equivalent variants must collide");
+  assert.match(unicodeCollision.error.message, /already used/i);
+
+  const sharedName = `${marker} shared name`;
+  const firstSharedEvent = await createEvent(sessionA, await createAction(sessionA), "casual");
+  const secondSharedEvent = await createEvent(sessionA, await createAction(sessionA), "casual");
+  const sharedTeams = await must(await sessionA.from("spogomi_teams").insert([
+    { event_id: firstSharedEvent.id, team_number: 1, public_name: sharedName, composition_state: "draft" },
+    { event_id: secondSharedEvent.id, team_number: 1, public_name: sharedName, composition_state: "draft" },
+  ]).select("id, event_id, public_name"), "allow same public name across events");
+  assert.equal(sharedTeams.length, 2, "the uniqueness scope must be one event");
+
+  const sharedTeam = sharedTeams.find((team) => team.event_id === firstSharedEvent.id);
+  const revisionBeforeReplay = await currentRevision(sessionA, firstSharedEvent.id);
+  const auditBeforeReplay = await must(
+    await sessionA.from("admin_operations_audit").select("operation_id").eq("target_id", sharedTeam.id).eq("operation_type", "spogomi_team_name_rename"),
+    "read name audit before idempotent replay",
+  );
+  const replay = await sessionA.rpc("spogomi_rename_team_public_name", {
+    p_event_id: firstSharedEvent.id,
+    p_team_id: sharedTeam.id,
+    p_expected_public_name: sharedName,
+    p_public_name: sharedName,
+    p_actor_clerk_id: `${marker}-replay`,
+  });
+  assert.equal(replay.error, null);
+  assert.equal(replay.data.already_processed, true, "an identical rename must be idempotent");
+  assert.equal(await currentRevision(sessionA, firstSharedEvent.id), revisionBeforeReplay, "an identical rename must not change composition_revision");
+  const auditAfterReplay = await must(
+    await sessionA.from("admin_operations_audit").select("operation_id").eq("target_id", sharedTeam.id).eq("operation_type", "spogomi_team_name_rename"),
+    "read name audit after idempotent replay",
+  );
+  assert.equal(auditAfterReplay.length, auditBeforeReplay.length, "an identical rename must not add an audit row");
+}
+
 async function concurrentMoveAndLock() {
   const actionId = await createAction(sessionA);
   const event = await createEvent(sessionA, actionId);
@@ -260,6 +365,7 @@ async function concurrentCertificateReissue() {
 }
 
 async function cleanup() {
+  await sessionA.from("admin_operations_audit").delete().like("actor_user_id", `${marker}%`);
   for (const eventId of created.events) {
     await sessionA.from("spogomi_volunteer_certificate_history").delete().eq("event_id", eventId);
     await sessionA.from("spogomi_volunteer_certificates").delete().eq("event_id", eventId);
@@ -276,10 +382,11 @@ async function main() {
   try {
     await waitForSupabaseSchema(sessionA);
     await concurrentCompositionConfirmation();
+    await teamPublicNameUniqueness();
     await concurrentMoveAndLock();
     await concurrentOfficialGpxSync();
     await concurrentCertificateReissue();
-    process.stdout.write("EXECUTED_DB_CONTRACT: SPOGOMI two-session preparation and certificate concurrency passed.\n");
+    process.stdout.write("EXECUTED_DB_CONTRACT: SPOGOMI composition, public-name uniqueness and certificate concurrency passed.\n");
   } finally {
     await cleanup();
   }
