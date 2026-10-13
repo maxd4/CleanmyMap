@@ -472,6 +472,35 @@ révision sans modifier les UUID, numéros, pseudonymes, accès ou résultats.
 La migration `20261013000003_spogomi_composition_lock_integrity.sql` est
 forward-only et n'a pas été appliquée à distance par ce lot.
 
+### Pseudonymes publics des équipes — Lot 11C
+
+Le pseudonyme public d'une équipe reste porté par `spogomi_teams.public_name`.
+Le cockpit `/spogomi/[eventSlug]/gestion` permet à l'organisateur habilité de
+le modifier ou le corriger à tout moment, y compris après verrouillage,
+certification, publication ou archivage, sans rouvrir l'événement ni toucher
+à la composition, aux résultats, aux accès ou à la consolidation. Le numéro
+d'équipe et l'UUID restent stables ; les projections, formulaires, classements
+et exports qui consomment `public_name` relisent donc le nouveau libellé.
+
+La route `PATCH /api/spogomi/events/[eventId]/teams/[teamId]` exige une session
+et la relation organisateur de l'événement. Elle normalise le texte en NFC,
+réduit les espaces superflus, accepte les accents, refuse les contrôles et les
+valeurs vides ou de plus de 60 caractères, puis rejette les doublons
+insensibles à la casse dans le même événement. Un pseudonyme identique dans un
+autre événement reste permis. La RPC `spogomi_rename_team_public_name`
+verrouille l'événement et l'équipe, compare le pseudonyme attendu, refuse une
+écriture obsolète et journalise le changement réussi dans
+`admin_operations_audit`. Une répétition de la valeur canonique est sans effet
+et sans nouvelle entrée métier ; une mise à jour SQL directe est refusée par le
+garde de la table. La révision de composition n'est pas avancée pour ce
+changement de présentation.
+
+Le contrôle serveur reste propriétaire de la décision : une collision ou une
+écriture concurrente est signalée explicitement dans le cockpit et doit être
+rejouée depuis l'état courant. Cette capacité ne remplace pas une procédure
+d'arbitrage pour les absences ou remplacements et ne permet aucune mutation des
+participants, soumissions, attestations, rangs, certifications ou XP.
+
 ## 19. Lot 11B livré — CURRENT — import multi-format et aperçu explicable
 
 La même façade d'import lit désormais CSV, TSV, XLSX, XLS et ODS. Les CSV/TSV

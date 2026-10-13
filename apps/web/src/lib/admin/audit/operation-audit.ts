@@ -39,7 +39,8 @@ export type AdminOperationAuditEntry = {
     | "import_dry_run"
     | "import_confirm"
     | "role_management"
-    | "admin_operation";
+    | "admin_operation"
+    | "spogomi_team_name_rename";
   outcome: "success" | "error";
   targetId?: string;
   details: Record<string, unknown>;
@@ -53,6 +54,7 @@ const AUDIT_OPERATION_TYPES = [
   "import_confirm",
   "role_management",
   "admin_operation",
+  "spogomi_team_name_rename",
 ] as const;
 
 function isAuditOperationType(

@@ -12,6 +12,7 @@ const ticketReconciliationMigration = readFileSync(new URL("../../../supabase/mi
 const strictTicketStatusMigration = readFileSync(new URL("../../../supabase/migrations/20261013000005_spogomi_strict_ticket_status.sql", import.meta.url), "utf8");
 const ticketDecisionConsistencyMigration = readFileSync(new URL("../../../supabase/migrations/20261013000006_spogomi_ticket_decision_consistency.sql", import.meta.url), "utf8");
 const postLockMutationMigration = readFileSync(new URL("../../../supabase/migrations/20261013000007_spogomi_post_lock_mutation_guards.sql", import.meta.url), "utf8");
+const teamPublicNameMigration = readFileSync(new URL("../../../supabase/migrations/20261013000008_spogomi_team_public_name_rename.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
   it("keeps recovery, private roster and official-route provenance explicit", () => {
@@ -133,5 +134,18 @@ describe("SPOGOMI preparation migration STATIC_CONTRACT", () => {
     expect(postLockMutationMigration).toContain("A Casual team is outside the event bounds");
     expect(postLockMutationMigration).toMatch(/grant execute on function public\.spogomi_update_event_metadata[\s\S]+to service_role/i);
     expect(postLockMutationMigration).not.toMatch(/drop table public\.spogomi_/i);
+  });
+
+  it("keeps public team-name edits canonical, audited and outside composition revisions", () => {
+    expect(teamPublicNameMigration).toContain("spogomi_rename_team_public_name");
+    expect(teamPublicNameMigration).toContain("admin_operations_audit");
+    expect(teamPublicNameMigration).toContain("spogomi_team_name_rename");
+    expect(teamPublicNameMigration).toContain("team_name_write_context");
+    expect(teamPublicNameMigration).toContain("for update");
+    expect(teamPublicNameMigration).toContain("serialization_failure");
+    expect(teamPublicNameMigration).toContain("unique_violation");
+    expect(teamPublicNameMigration).toMatch(/after insert or delete or update of event_id, team_number, composition_state, certified_submission_id/i);
+    expect(teamPublicNameMigration).not.toMatch(/set\s+composition_revision\s*=/i);
+    expect(teamPublicNameMigration).not.toMatch(/delete\s+from\s+public\.spogomi_(teams|participants|result_submissions)/i);
   });
 });
