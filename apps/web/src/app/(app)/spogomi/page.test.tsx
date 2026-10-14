@@ -14,8 +14,19 @@ vi.mock("@/lib/server-preferences", () => ({ getServerLocale: mocks.getServerLoc
 vi.mock("@/lib/i18n/server-translation", () => ({ getTranslation: mocks.getTranslation }));
 vi.mock("@/lib/spogomi/public-service", () => ({ listPublishedSpogomiEvents: mocks.listPublishedSpogomiEvents }));
 vi.mock("@/lib/ui/page-families", () => ({ resolvePageFamily: () => ({ id: "agir" }) }));
-vi.mock("@/components/ui/page-header", () => ({ PageHeader: ({ title }: { title: React.ReactNode }) => React.createElement("h1", null, title) }));
+vi.mock("@/components/ui/page-header", () => ({
+  PageHeader: ({ title, action }: { title: React.ReactNode; action?: React.ReactNode }) =>
+    React.createElement("header", null, React.createElement("h1", null, title), action),
+}));
 vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children }: { children: React.ReactNode }) => React.createElement("div", null, children) }));
+vi.mock("@/components/spogomi/spogomi-orientation-tabs", () => ({
+  SpogomiOrientationTabs: ({ canAccessOrganizerDashboard }: { canAccessOrganizerDashboard: boolean }) =>
+    React.createElement(
+      "div",
+      { "data-testid": "orientation-tabs" },
+      canAccessOrganizerDashboard ? React.createElement("a", { href: "/dashboard/spogomi" }, "Ouvrir l’espace organisateur") : null,
+    ),
+}));
 vi.mock("@/components/spogomi/spogomi-international-content", () => ({ SpogomiInternationalContent: () => React.createElement("div", { "data-testid": "international" }) }));
 
 import SpogomiIndexPage from "./page";
@@ -32,14 +43,17 @@ describe("/spogomi public and private navigation", () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: true });
     const markup = renderToStaticMarkup(await SpogomiIndexPage());
     expect(markup).not.toContain("Mes événements SPOGOMI");
-    expect(markup).toContain("Aucun événement SPOGOMI publié");
+    expect(markup).toContain("Aucune compétition SPOGOMI publiée");
+    expect(markup).toContain('href="#spogomi-events"');
+    expect(markup).toContain('href="/sections/messagerie?tab=discussions&amp;channel=community&amp;topicId=spogomi"');
+    expect(markup).not.toContain('href="/dashboard/spogomi"');
     expect(mocks.listPublishedSpogomiEvents).toHaveBeenCalledTimes(1);
   });
 
   it("adds the organizer entry only after authentication", async () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
     const markup = renderToStaticMarkup(await SpogomiIndexPage());
-    expect(markup).toContain("Mes événements SPOGOMI");
+    expect(markup).toContain("orientation-tabs");
     expect(markup).toContain('href="/dashboard/spogomi"');
   });
 });

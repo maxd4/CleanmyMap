@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, MapPin, Trophy } from "lucide-react";
+import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { SpogomiInternationalContent } from "@/components/spogomi/spogomi-international-content";
+import { SpogomiOrientationTabs } from "@/components/spogomi/spogomi-orientation-tabs";
 import { getTranslation } from "@/lib/i18n/server-translation";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getServerLocale } from "@/lib/server-preferences";
@@ -46,28 +48,52 @@ export default async function SpogomiIndexPage() {
           family={resolvePageFamily("/spogomi")}
           tone="emerald"
           title="SPOGOMI"
-          subtitle="Des compétitions de collecte associées à une action environnementale CleanMyMap unique."
+          subtitle="Trouvez votre rôle et rejoignez une compétition publiée."
+          action={
+            <CmmButtonGroup>
+              <CmmButton href="#spogomi-events" tone="primary">Voir les compétitions</CmmButton>
+              <CmmButton href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" tone="secondary">Ouvrir le salon SPOGOMI</CmmButton>
+            </CmmButtonGroup>
+          }
         />
-        <CmmCard tone="emerald" variant="glass" className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <SpogomiOrientationTabs canAccessOrganizerDashboard={Boolean(userId)} />
+        <section id="spogomi-events" className="scroll-mt-6 space-y-4" aria-labelledby="spogomi-events-title">
           <div>
-            <h2 className="font-black text-emerald-950">Échanger avec la communauté</h2>
-            <p className="cmm-text-body mt-1 text-slate-900">Questions, équipes, bénévolat et préparation dans le salon SPOGOMI.</p>
+            <h2 id="spogomi-events-title" className="text-2xl font-black text-slate-950">Compétitions publiées</h2>
+            <p className="cmm-text-body mt-1 text-slate-900">
+              Seules les compétitions explicitement rendues publiques par un organisateur habilité apparaissent ici.
+            </p>
           </div>
-          <Link href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
-            Discuter avec la communauté <ArrowRight size={16} />
-          </Link>
-        </CmmCard>
-        {userId ? (
-          <CmmCard tone="amber" variant="glass" className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-black text-amber-950">Mes événements SPOGOMI</h2>
-              <p className="cmm-text-body mt-1 text-slate-900">Retrouver les compétitions que votre identité est autorisée à organiser, y compris vos brouillons.</p>
+          {events.length === 0 ? (
+            <CmmCard tone="slate" variant="glass" className="border-dashed p-6">
+              <p className="font-bold text-slate-900">Aucune compétition SPOGOMI publiée pour le moment.</p>
+              <p className="mt-2 text-sm text-slate-600">Les brouillons et compétitions privées ne sont pas exposés sur cette page.</p>
+            </CmmCard>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {events.map((event) => (
+                <CmmCard key={event.id} tone="emerald" variant="glass" className="space-y-4 p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-xl font-black text-emerald-950">{event.name}</h3>
+                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.15em] text-emerald-700">{lifecycleLabels[event.lifecycle]}</p>
+                    </div>
+                    <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700">
+                      {event.mode === "world_cup" ? "World Cup" : "Casual"}
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-sm text-slate-700">
+                    <p className="flex items-center gap-2"><CalendarDays size={15} className="text-emerald-700" />{formatDate(event.startsAt)}</p>
+                    <p className="flex items-center gap-2"><MapPin size={15} className="text-emerald-700" />{event.locationLabel}</p>
+                  </div>
+                  <Link href={`/spogomi/${encodeURIComponent(event.slug)}`} className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                    Voir la compétition <ArrowRight size={16} />
+                  </Link>
+                </CmmCard>
+              ))}
             </div>
-            <Link href="/dashboard/spogomi" className="inline-flex min-h-11 items-center gap-2 font-bold text-amber-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">
-              Ouvrir mon espace organisateur <ArrowRight size={16} />
-            </Link>
-          </CmmCard>
-        ) : null}
+          )}
+        </section>
         <section className="grid gap-4 md:grid-cols-2" aria-label="Modes de compétition">
           <CmmCard tone="emerald" variant="glass" className="space-y-3 p-5">
             <h2 className="flex items-center gap-2 text-xl font-black text-emerald-950">
@@ -117,43 +143,6 @@ export default async function SpogomiIndexPage() {
             communityLink: t("international.communityLink"),
           }}
         />
-        <section className="space-y-4" aria-labelledby="spogomi-events-title">
-          <div>
-            <h2 id="spogomi-events-title" className="text-2xl font-black text-slate-950">Événements publiés</h2>
-            <p className="cmm-text-body mt-1 text-slate-900">
-              Seuls les événements explicitement rendus publics par un organisateur habilité apparaissent ici.
-            </p>
-          </div>
-          {events.length === 0 ? (
-            <CmmCard tone="slate" variant="glass" className="border-dashed p-6">
-              <p className="font-bold text-slate-900">Aucun événement SPOGOMI publié pour le moment.</p>
-              <p className="mt-2 text-sm text-slate-600">Les brouillons et événements privés ne sont pas exposés sur cette page.</p>
-            </CmmCard>
-          ) : (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {events.map((event) => (
-                <CmmCard key={event.id} tone="emerald" variant="glass" className="space-y-4 p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-xl font-black text-emerald-950">{event.name}</h3>
-                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.15em] text-emerald-700">{lifecycleLabels[event.lifecycle]}</p>
-                    </div>
-                    <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700">
-                      {event.mode === "world_cup" ? "World Cup" : "Casual"}
-                    </span>
-                  </div>
-                  <div className="space-y-2 text-sm text-slate-700">
-                    <p className="flex items-center gap-2"><CalendarDays size={15} className="text-emerald-700" />{formatDate(event.startsAt)}</p>
-                    <p className="flex items-center gap-2"><MapPin size={15} className="text-emerald-700" />{event.locationLabel}</p>
-                  </div>
-                  <Link href={`/spogomi/${encodeURIComponent(event.slug)}`} className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
-                    Voir la compétition <ArrowRight size={16} />
-                  </Link>
-                </CmmCard>
-              ))}
-            </div>
-          )}
-        </section>
       </div>
     </main>
   );
