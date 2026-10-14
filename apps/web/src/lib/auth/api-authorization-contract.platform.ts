@@ -108,8 +108,8 @@ export const platformAuthorizationContract = {
     GET: {
       expected: "Any authenticated user may generate the bounded dossier export, subject to the server quota/cache contract",
       dimensions: ["authentication"],
-      actual: "requireAuthenticatedAccess",
-      evidence: ["requireAuthenticatedAccess"],
+      actual: "requireAuthenticatedAccess + authenticated distributed rate limit before the bounded aggregate export; PDF requests never sign a legacy Storage path and keep the browser export flow",
+      evidence: ["requireAuthenticatedAccess", "enforceServerRateLimitForAuthenticatedUser", "buildCachedPdfResponse"],
     },
   },
   "reports/governance-monthly": {

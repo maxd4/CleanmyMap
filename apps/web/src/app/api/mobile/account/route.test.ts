@@ -7,6 +7,7 @@ const serverClientMock = vi.hoisted(() => vi.fn());
 const historyMock = vi.hoisted(() => vi.fn());
 const progressionMock = vi.hoisted(() => vi.fn());
 const syncMock = vi.hoisted(() => vi.fn());
+const enforceServerRateLimitForAuthenticatedUserMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/auth/mobile-bearer", () => ({ requireMobileAuthenticatedAccess: mobileAccessMock }));
 vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: identityMock }));
@@ -16,6 +17,9 @@ vi.mock("@/lib/actions/participation/group-participation", () => ({ loadUserPart
 vi.mock("@/lib/actions/participation/group-participation.helpers", () => ({ getActionTitle: vi.fn(() => null) }));
 vi.mock("@/lib/gamification/progression-user-stats", () => ({ loadUserProgressionStats: progressionMock }));
 vi.mock("@/lib/auth/sync", () => ({ syncClerkUserToSupabase: syncMock }));
+vi.mock("@/lib/rate-limit/server", () => ({
+  enforceServerRateLimitForAuthenticatedUser: enforceServerRateLimitForAuthenticatedUserMock,
+}));
 
 function makeSupabase() {
   const from = vi.fn((table: string) => {
@@ -62,6 +66,7 @@ describe("/api/mobile/account", () => {
     historyMock.mockResolvedValue([]);
     progressionMock.mockResolvedValue({ totalActions: 0, validatedActions: 0, verifiedContributions: 0, totalKg: 0 });
     syncMock.mockResolvedValue({ id: "user-1", role_label: "benevole" });
+    enforceServerRateLimitForAuthenticatedUserMock.mockResolvedValue(null);
     serverClientMock.mockReturnValue(makeSupabase());
     clerkClientMock.mockResolvedValue({
       users: {
@@ -119,5 +124,35 @@ describe("/api/mobile/account", () => {
       }),
     }));
     expect(syncMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects arbitrary role metadata fields before a Clerk mutation", async () => {
+    const clerk = await clerkClientMock();
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/mobile/account", {
+      method: "PATCH",
+      headers: { Authorization: "Bearer clerk" },
+      body: JSON.stringify({ role: "admin", publicMetadata: { role: "admin" } }),
+    }));
+
+    expect(response.status).toBe(422);
+    expect(clerk.users.updateUser).not.toHaveBeenCalled();
+    expect(syncMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the distributed abuse protection is unavailable", async () => {
+    enforceServerRateLimitForAuthenticatedUserMock.mockResolvedValue(
+      new Response(JSON.stringify({ code: "RATE_LIMIT_UNAVAILABLE" }), { status: 503 }),
+    );
+    const clerk = await clerkClientMock();
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/mobile/account", {
+      method: "PATCH",
+      headers: { Authorization: "Bearer clerk" },
+      body: JSON.stringify({ firstName: "Ada" }),
+    }));
+
+    expect(response.status).toBe(503);
+    expect(clerk.users.updateUser).not.toHaveBeenCalled();
   });
 });

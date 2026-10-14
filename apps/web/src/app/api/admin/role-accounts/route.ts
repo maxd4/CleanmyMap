@@ -11,6 +11,7 @@ import {
 } from "@/lib/auth/role-resolution";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { adminAccessErrorJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import {
   getManagedRoleAccountById,
@@ -26,7 +27,7 @@ const mutationSchema = z.object({
   action: z.enum(["assign", "revoke"]),
   role: z.enum(["admin", "elu"]).optional(),
   reason: z.string().trim().min(5).max(500),
-});
+}).strict();
 
 function isAdminLikeRole(role: RoleAccountRecord["roleLabel"]) {
   return role === "admin" || role === "elu";
@@ -178,6 +179,13 @@ export async function GET(request: Request) {
     return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
 
+  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(
+    request,
+    identity.userId,
+    { limit: 30, window: 60 },
+  );
+  if (rateLimitResponse) return rateLimitResponse;
+
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q")?.trim().slice(0, 120) ?? "";
   const accounts = query ? await searchManagedRoleAccounts(query) : await listManagedRoleAccounts();
@@ -208,6 +216,13 @@ export async function POST(request: Request) {
   ) {
     return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
+
+  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(
+    request,
+    identity.userId,
+    { limit: 12, window: 60 },
+  );
+  if (rateLimitResponse) return rateLimitResponse;
 
   const parsed = await parseJsonBodyWithSchema(request, mutationSchema);
   if (!parsed.ok) return parsed.response;

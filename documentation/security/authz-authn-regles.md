@@ -1112,3 +1112,30 @@ apps/web/src/lib/profiles.ts
 apps/web/src/lib/authz.ts
 apps/web/src/lib/actions/permissions.ts
 ```
+
+## Frontière serveur SECURITY-03
+
+Les routes qui utilisent un client Supabase privilégié gardent leur décision
+d'accès HTTP explicite : `service_role` est seulement un moyen technique et ne
+prouve jamais l'identité, la capacité, le scope ou l'ownership de l'appelant.
+Les identifiants, chemins de fichier, filtres et paramètres d'agrégation sont
+donc validés avant chaque lecture ou mutation sensible.
+
+`GET /api/reports/elus-dossier` reste disponible aux comptes connectés pour une
+projection agrégée bornée. Le JSON et le Markdown ne contiennent pas les
+identifiants individuels nécessaires aux traitements internes. Les anciennes
+lignes `reports.file_path` ne sont pas suffisantes pour signer un objet Storage
+privé : faute de métadonnées canoniques liant fichier, scope et payload, la
+route refuse le cache legacy et conserve l'export PDF généré dans le navigateur.
+
+Un `bug_report` est acheminé uniquement vers `CLERK_IMU_OWNER_USER_ID` après
+lecture Clerk fraîche et confirmation du couple identifiant exact +
+`publicMetadata.role=max`. Une panne Clerk, une configuration absente ou un
+rôle non conforme produisent une indisponibilité explicite ; aucune ligne
+`profiles.role_label=admin` et aucun identifiant de l'expéditeur ne peuvent
+devenir un destinataire de remplacement.
+
+Les routes de promotion, de gestion des rôles, de profil actif, de compte
+mobile et d'export coûteux appliquent le rate limit distribué existant avec
+une politique fail-closed. Les lectures publiques restent les seules surfaces
+qui peuvent utiliser le best-effort lorsque leur contrat l'autorise.

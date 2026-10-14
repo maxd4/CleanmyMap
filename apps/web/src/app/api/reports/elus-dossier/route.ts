@@ -1,6 +1,7 @@
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 import { buildElusDossierPayload } from "./route-aggregation";
 import { buildCachedPdfResponse } from "./route-cache";
 import { buildDossierResponse } from "./route-response";
@@ -13,6 +14,13 @@ export async function GET(request: Request) {
   if (!access.ok) {
     return unauthorizedJsonResponse();
   }
+
+  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(
+    request,
+    access.userId,
+    { limit: 5, window: 60 },
+  );
+  if (rateLimitResponse) return rateLimitResponse;
 
   const params = parseElusDossierRequest(new URL(request.url));
   const supabase = getSupabaseAdminClient();

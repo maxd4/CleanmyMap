@@ -8,6 +8,7 @@ import {
 import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { getDevAuthBypassSession } from "@/lib/authz-identity";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
+import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 import {
   getProfileEntryPath,
   getSwitchableProfiles,
@@ -43,6 +44,13 @@ export async function POST(request: Request) {
       { status: access.status },
     );
   }
+
+  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(
+    request,
+    access.userId,
+    { limit: 12, window: 60 },
+  );
+  if (rateLimitResponse) return rateLimitResponse;
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {

@@ -10,6 +10,7 @@ const buildPilotageOverviewFromContractsMock = vi.hoisted(() => vi.fn());
 const buildPersonalImpactMethodologyMock = vi.hoisted(() => vi.fn());
 const evaluateActionQualityMock = vi.hoisted(() => vi.fn());
 const toActionListItemMock = vi.hoisted(() => vi.fn());
+const enforceServerRateLimitForAuthenticatedUserMock = vi.hoisted(() => vi.fn());
 
 function createSupabaseMock(options?: {
   cachedPdf?: Blob | null;
@@ -55,6 +56,9 @@ function createSupabaseMock(options?: {
 
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
+}));
+vi.mock("@/lib/rate-limit/server", () => ({
+  enforceServerRateLimitForAuthenticatedUser: enforceServerRateLimitForAuthenticatedUserMock,
 }));
 
 vi.mock("@/lib/http/auth-responses", () => ({
@@ -111,6 +115,7 @@ describe("GET /api/reports/elus-dossier", () => {
     vi.resetModules();
     vi.clearAllMocks();
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
+    enforceServerRateLimitForAuthenticatedUserMock.mockResolvedValue(null);
     getSupabaseServerClientMock.mockReturnValue(createSupabaseMock());
     fetchUnifiedActionContractsMock.mockResolvedValue({
       items: [contract],
@@ -194,7 +199,7 @@ describe("GET /api/reports/elus-dossier", () => {
     expect(buildPilotageOverviewFromContractsMock).not.toHaveBeenCalled();
   });
 
-  it("serves a cached pdf asset without rebuilding it", async () => {
+  it("does not sign a private PDF from a predictable legacy cache path", async () => {
     getSupabaseServerClientMock.mockReturnValue(
       createSupabaseMock({
         cachedPdf: new Blob(["cached-pdf"], { type: "application/pdf" }),
@@ -206,15 +211,14 @@ describe("GET /api/reports/elus-dossier", () => {
       new Request("http://localhost/api/reports/elus-dossier?format=pdf&days=30"),
     );
 
-    expect(response.status).toBe(302);
-    expect(response.headers.get("Location")).toBe(
-      "https://supabase.test/storage/v1/object/sign/reports/elus-dossier/cache.pdf?token=abc123",
-    );
-    expect(response.headers.get("Cache-Control")).toBe(
-      "private, max-age=300, stale-while-revalidate=86400",
-    );
+    expect(response.status).toBe(409);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await response.json()).toMatchObject({
+      error: expect.stringContaining("généré côté navigateur"),
+    });
+    const client = getSupabaseServerClientMock.mock.results.at(-1)?.value;
+    expect(client.storage.from).not.toHaveBeenCalled();
     expect(fetchUnifiedActionContractsMock).not.toHaveBeenCalled();
-    expect(await response.text()).toBe("");
   });
 
   it("sanitizes malformed numeric fields in JSON output", async () => {

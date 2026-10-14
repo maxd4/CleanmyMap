@@ -81,6 +81,42 @@ describe("POST /api/community/promotion-requests", () => {
     expect(appendPromotionRequestMock).not.toHaveBeenCalled();
   });
 
+  it("rejects client-supplied role metadata and never forwards it to persistence", async () => {
+    const request = new Request("http://localhost/api/community/promotion-requests", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        requestedRole: "elu",
+        motivation: "Je souhaite contribuer au pilotage local.",
+        role: "admin",
+        publicMetadata: { role: "admin" },
+      }),
+    });
+    const { POST } = await import("./route");
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+    expect(appendPromotionRequestMock).not.toHaveBeenCalled();
+    expect(sendCreatorInboxEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an already elevated account without accepting a client-chosen role", async () => {
+    getCurrentUserRoleLabelMock.mockResolvedValue("admin");
+    getCurrentUserIdentityMock.mockResolvedValue({
+      userId: "user-1",
+      displayName: "Admin",
+      email: null,
+      role: "admin",
+    });
+    const { POST } = await import("./route");
+
+    const response = await POST(makeRequest("elu"));
+
+    expect(response.status).toBe(403);
+    expect(appendPromotionRequestMock).not.toHaveBeenCalled();
+  });
+
   it("lets an elu request admin after previous requests are closed", async () => {
     getCurrentUserRoleLabelMock.mockResolvedValue("elu");
     getCurrentUserIdentityMock.mockResolvedValue({

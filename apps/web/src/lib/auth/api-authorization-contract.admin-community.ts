@@ -93,14 +93,14 @@ export const adminCommunityAuthorizationContract = {
     GET: {
       expected: "ACTIVE_ROLE=max",
       dimensions: ["admin/creator role"],
-      actual: "getCurrentUserIdentity must resolve canonical max with activeRole=max and the exact IMU owner id",
-      evidence: ["getCurrentUserIdentity", "isConfiguredImuOwnerUserId"],
+      actual: "getCurrentUserIdentity must resolve canonical max with activeRole=max and the exact IMU owner id; authenticated distributed rate limit is enforced before listing",
+      evidence: ["getCurrentUserIdentity", "isConfiguredImuOwnerUserId", "enforceServerRateLimitForAuthenticatedUser"],
     },
     POST: {
       expected: "ACTIVE_ROLE=max plus operation audit",
       dimensions: ["admin/creator role", "audit"],
-      actual: "getCurrentUserIdentity must resolve canonical max with activeRole=max and the exact IMU owner id + appendAdminOperationAudit",
-      evidence: ["getCurrentUserIdentity", "isConfiguredImuOwnerUserId", "appendAdminOperationAudit"],
+      actual: "getCurrentUserIdentity must resolve canonical max with activeRole=max and the exact IMU owner id + authenticated distributed rate limit + appendAdminOperationAudit",
+      evidence: ["getCurrentUserIdentity", "isConfiguredImuOwnerUserId", "enforceServerRateLimitForAuthenticatedUser", "appendAdminOperationAudit"],
     },
   },
   "admin/referrals.csv": {
@@ -115,14 +115,14 @@ export const adminCommunityAuthorizationContract = {
     GET: {
       expected: "ACTIVE_ROLE=max for the dedicated privileged-role management surface",
       dimensions: ["admin/creator role"],
-      actual: "requireCreatorAccess checks ACTIVE_ROLE=max",
-      evidence: ["requireCreatorAccess"],
+      actual: "requireCreatorAccess checks ACTIVE_ROLE=max and an authenticated distributed rate limit is enforced before listing",
+      evidence: ["requireCreatorAccess", "enforceServerRateLimitForAuthenticatedUser"],
     },
     POST: {
       expected: "ACTIVE_ROLE=max plus operation audit and self-target protection; target role is elu or admin only",
       dimensions: ["admin/creator role", "ownership", "audit"],
-      actual: "requireCreatorAccess checks ACTIVE_ROLE=max + appendAdminOperationAudit",
-      evidence: ["requireCreatorAccess", "appendAdminOperationAudit"],
+      actual: "requireCreatorAccess checks ACTIVE_ROLE=max + authenticated distributed rate limit + appendAdminOperationAudit",
+      evidence: ["requireCreatorAccess", "enforceServerRateLimitForAuthenticatedUser", "appendAdminOperationAudit"],
     },
   },
   "admin/storage-usage": {

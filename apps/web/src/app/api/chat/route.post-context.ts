@@ -21,7 +21,6 @@ import type { ValidatedChatPost } from "./route.post-validation";
 
 type ChatSupabaseClient = NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>;
 type ServiceSupabaseClient = ReturnType<typeof getSupabaseServerClient>;
-type ActiveRole = Parameters<typeof resolveBugReportRecipientId>[2];
 export type SharedAction = {
   location_label: string;
   status: string | null;
@@ -137,11 +136,8 @@ function resolveTerritoryDestination(
 }
 
 async function resolveBugReportDestination(
-  serviceSupabase: ServiceSupabaseClient,
-  userId: string,
-  activeRole: ActiveRole,
 ): Promise<DestinationPart | Response> {
-  const recipientId = await resolveBugReportRecipientId(serviceSupabase, userId, activeRole);
+  const recipientId = await resolveBugReportRecipientId();
   return recipientId
     ? { recipientId, actionConversationId: null, targetArrondissementId: null, targetZoneName: null }
     : NextResponse.json(
@@ -170,7 +166,6 @@ async function resolveChannelDestination({
   supabase,
   serviceSupabase,
   userId,
-  activeRole,
   data,
   zone,
   isExternalActionShare,
@@ -178,7 +173,6 @@ async function resolveChannelDestination({
   supabase: ChatSupabaseClient;
   serviceSupabase: ServiceSupabaseClient;
   userId: string;
-  activeRole: ActiveRole;
   data: ValidatedChatPost["data"];
   zone: ChatPostZoneContext;
   isExternalActionShare: boolean;
@@ -187,7 +181,7 @@ async function resolveChannelDestination({
     return resolveDmDestination({ supabase, serviceSupabase, userId, data, isExternalActionShare });
   }
   if (data.channelType === "territory") return resolveTerritoryDestination(data, zone);
-  if (data.channelType === "bug_report") return resolveBugReportDestination(serviceSupabase, userId, activeRole);
+  if (data.channelType === "bug_report") return resolveBugReportDestination();
   if (data.channelType === "action") return resolveActionDestination(supabase, data.actionId!);
   return { recipientId: null, actionConversationId: null, targetArrondissementId: null, targetZoneName: null };
 }
@@ -293,7 +287,6 @@ export async function resolveChatPostDestination({
   supabase,
   serviceSupabase,
   userId,
-  activeRole,
   validated,
   zone,
   isExternalActionShare,
@@ -301,7 +294,6 @@ export async function resolveChatPostDestination({
   supabase: ChatSupabaseClient;
   serviceSupabase: ServiceSupabaseClient;
   userId: string;
-  activeRole: ActiveRole;
   validated: ValidatedChatPost;
   zone: ChatPostZoneContext;
   isExternalActionShare: boolean;
@@ -324,7 +316,6 @@ export async function resolveChatPostDestination({
     supabase,
     serviceSupabase,
     userId,
-    activeRole,
     data,
     zone,
     isExternalActionShare,

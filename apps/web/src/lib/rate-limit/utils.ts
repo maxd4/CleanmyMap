@@ -200,6 +200,15 @@ const EXPENSIVE_PATHS = [
   "/api/reports",
 ] as const;
 
+// These families contain private account/admin reads as well as mutations.
+// Their GET handlers must not silently fall back to the local limiter when
+// the distributed protection is unavailable.
+const FAIL_CLOSED_PRIVATE_READ_PATHS = [
+  "/api/account",
+  "/api/admin",
+  "/api/mobile",
+] as const;
+
 function matchesCredentialPath(pathname: string): boolean {
   return (
     matchesAnyPath(pathname, CREDENTIAL_PATHS) ||
@@ -254,6 +263,10 @@ export function getRateLimitFailureMode(
   pathname: string,
   method: string,
 ): RateLimitFailureMode {
+  if (matchesAnyPath(pathname, FAIL_CLOSED_PRIVATE_READ_PATHS)) {
+    return "fail-closed";
+  }
+
   return getRateLimitProtectionClass(pathname, method) === "public-read"
     ? "best-effort"
     : "fail-closed";

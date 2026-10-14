@@ -11,6 +11,7 @@ const updateUserMock = vi.hoisted(() => vi.fn());
 const syncClerkUserToSupabaseMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const sendCreatorInboxEmailMock = vi.hoisted(() => vi.fn());
+const enforceServerRateLimitForAuthenticatedUserMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: clerkClientMock,
@@ -40,6 +41,9 @@ vi.mock("@/lib/admin/audit/operation-audit", () => ({
 
 vi.mock("@/lib/community/creator-inbox-email", () => ({
   sendCreatorInboxEmail: sendCreatorInboxEmailMock,
+}));
+vi.mock("@/lib/rate-limit/server", () => ({
+  enforceServerRateLimitForAuthenticatedUser: enforceServerRateLimitForAuthenticatedUserMock,
 }));
 
 const requestRecord = {
@@ -74,6 +78,7 @@ describe("GET/POST /api/admin/promotion-requests", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    enforceServerRateLimitForAuthenticatedUserMock.mockResolvedValue(null);
     getCurrentUserActiveRoleMock.mockResolvedValue("max");
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "reviewer-1",
@@ -108,13 +113,59 @@ describe("GET/POST /api/admin/promotion-requests", () => {
 
   it("keeps GET unchanged", async () => {
     const { GET } = await import("./route");
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/admin/promotion-requests"));
     const body = (await response.json()) as { status?: string; count?: number; items?: unknown[] };
 
     expect(response.status).toBe(200);
     expect(body).toEqual({ status: "ok", count: 1, items: [requestRecord] });
     expect(listPromotionRequestsMock).toHaveBeenCalledWith(200);
     expect(getPromotionRequestByIdMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-owner before reading promotion requests", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "admin-1",
+      role: "admin",
+      activeRole: "admin",
+    });
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/admin/promotion-requests"));
+
+    expect(response.status).toBe(403);
+    expect(listPromotionRequestsMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed before a decision when Upstash protection is unavailable", async () => {
+    enforceServerRateLimitForAuthenticatedUserMock.mockResolvedValue(
+      new Response(JSON.stringify({ code: "RATE_LIMIT_UNAVAILABLE" }), { status: 503 }),
+    );
+    const { POST } = await import("./route");
+
+    const response = await POST(makeRequest({
+      requestId: requestRecord.id,
+      action: "reject",
+      reason: "Decision failure test",
+    }));
+
+    expect(response.status).toBe(503);
+    expect(getPromotionRequestByIdMock).not.toHaveBeenCalled();
+    expect(updatePromotionRequestStatusMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects arbitrary role metadata fields before a promotion decision", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(makeRequest({
+      requestId: requestRecord.id,
+      action: "accept",
+      reason: "Validated after owner review",
+      role: "max",
+      publicMetadata: { role: "max" },
+    }));
+
+    expect(response.status).toBe(400);
+    expect(getPromotionRequestByIdMock).not.toHaveBeenCalled();
+    expect(updateUserMock).not.toHaveBeenCalled();
   });
 
   it.each([

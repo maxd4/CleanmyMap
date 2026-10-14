@@ -3,8 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const envMock = vi.hoisted(() => ({
   CLERK_IMU_OWNER_USER_ID: "owner-production",
 }));
+const clerkClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/env", () => ({ env: envMock }));
+vi.mock("@clerk/nextjs/server", () => ({ clerkClient: clerkClientMock }));
+vi.mock("@/lib/auth/role-resolution", () => ({
+  isMaxRole: vi.fn(({ user, imuOwnerUserId }) =>
+    user.id === imuOwnerUserId && user.publicMetadata?.role === "max",
+  ),
+}));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: vi.fn() }));
 vi.mock("@/lib/supabase/clerk-rls", () => ({ getSupabaseClerkRlsClient: vi.fn() }));
 vi.mock("@/lib/chat/chat-attachment-reading", () => ({
@@ -24,69 +31,51 @@ vi.mock("./route.shared", () => ({
 
 import { resolveBugReportRecipientId } from "./route.data";
 
-function createProfilesSupabase(result: {
-  data: { id: string } | null;
-  error: Error | null;
-}) {
-  const query = {
-    select: vi.fn(() => query),
-    eq: vi.fn(() => query),
-    order: vi.fn(() => query),
-    limit: vi.fn(() => query),
-    maybeSingle: vi.fn().mockResolvedValue(result),
-  };
-
-  return {
-    from: vi.fn(() => query),
-    query,
-  };
-}
-
 describe("resolveBugReportRecipientId", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     envMock.CLERK_IMU_OWNER_USER_ID = "owner-production";
+    clerkClientMock.mockResolvedValue({
+      users: {
+        getUser: vi.fn().mockResolvedValue({
+          id: "owner-production",
+          publicMetadata: { role: "max" },
+        }),
+      },
+    });
   });
 
-  it("routes to the configured owner without consulting a projected profile", async () => {
-    const supabase = createProfilesSupabase({ data: { id: "stale-admin" }, error: null });
-
-    await expect(
-      resolveBugReportRecipientId(supabase as never, "sender-user", "benevole"),
-    ).resolves.toBe("owner-production");
-
-    expect(supabase.from).not.toHaveBeenCalled();
+  it("routes only to the configured Clerk owner after canonical verification", async () => {
+    await expect(resolveBugReportRecipientId()).resolves.toBe("owner-production");
+    expect(clerkClientMock).toHaveBeenCalledOnce();
   });
 
-  it("trims the configured owner and never substitutes the sender", async () => {
+  it("trims the configured owner and never substitutes a projected admin", async () => {
     envMock.CLERK_IMU_OWNER_USER_ID = "  owner-production  ";
-    const supabase = createProfilesSupabase({ data: { id: "stale-admin" }, error: null });
-
-    await expect(
-      resolveBugReportRecipientId(supabase as never, "sender-user", "admin"),
-    ).resolves.toBe("owner-production");
-
-    expect(supabase.from).not.toHaveBeenCalled();
+    await expect(resolveBugReportRecipientId()).resolves.toBe("owner-production");
   });
 
-  it("uses the most recently updated Supabase admin only when the owner is absent", async () => {
+  it("fails closed when the configured identity is not the canonical max owner", async () => {
+    clerkClientMock.mockResolvedValue({
+      users: {
+        getUser: vi.fn().mockResolvedValue({
+          id: "owner-production",
+          publicMetadata: { role: "admin" },
+        }),
+      },
+    });
+
+    await expect(resolveBugReportRecipientId()).resolves.toBeNull();
+  });
+
+  it("does not fall back to a projected admin when the owner is absent", async () => {
     envMock.CLERK_IMU_OWNER_USER_ID = "   ";
-    const supabase = createProfilesSupabase({ data: { id: "projected-admin" }, error: null });
-
-    await expect(
-      resolveBugReportRecipientId(supabase as never, "sender-user", "benevole"),
-    ).resolves.toBe("projected-admin");
-
-    expect(supabase.query.eq).toHaveBeenCalledWith("role_label", "admin");
-    expect(supabase.query.order).toHaveBeenCalledWith("updated_at", { ascending: false });
-    expect(supabase.query.limit).toHaveBeenCalledWith(1);
+    await expect(resolveBugReportRecipientId()).resolves.toBeNull();
+    expect(clerkClientMock).not.toHaveBeenCalled();
   });
 
-  it("fails closed for a regular sender when neither owner nor projected admin exists", async () => {
-    envMock.CLERK_IMU_OWNER_USER_ID = "";
-    const supabase = createProfilesSupabase({ data: null, error: null });
-
-    await expect(
-      resolveBugReportRecipientId(supabase as never, "sender-user", "benevole"),
-    ).resolves.toBeNull();
+  it("fails closed when Clerk cannot confirm the owner", async () => {
+    clerkClientMock.mockRejectedValue(new Error("Clerk unavailable"));
+    await expect(resolveBugReportRecipientId()).resolves.toBeNull();
   });
 });

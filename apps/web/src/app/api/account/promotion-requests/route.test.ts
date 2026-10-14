@@ -2,12 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getSafeAuthSessionMock = vi.hoisted(() => vi.fn());
 const listPromotionRequestsForUserMock = vi.hoisted(() => vi.fn());
+const enforceServerRateLimitForAuthenticatedUserMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/auth/safe-session", () => ({
   getSafeAuthSession: getSafeAuthSessionMock,
 }));
 vi.mock("@/lib/admin/promotion-requests-store", () => ({
   listPromotionRequestsForUser: listPromotionRequestsForUserMock,
+}));
+vi.mock("@/lib/rate-limit/server", () => ({
+  enforceServerRateLimitForAuthenticatedUser: enforceServerRateLimitForAuthenticatedUserMock,
 }));
 
 const ownRequest = {
@@ -31,6 +35,7 @@ describe("GET /api/account/promotion-requests", () => {
     vi.resetModules();
     vi.clearAllMocks();
     getSafeAuthSessionMock.mockResolvedValue({ userId: "user-1", state: "authenticated" });
+    enforceServerRateLimitForAuthenticatedUserMock.mockResolvedValue(null);
     listPromotionRequestsForUserMock.mockResolvedValue([
       ownRequest,
       { ...ownRequest, id: "foreign-id", submittedByUserId: "user-2", status: "accepted" },
@@ -41,7 +46,7 @@ describe("GET /api/account/promotion-requests", () => {
     getSafeAuthSessionMock.mockResolvedValue({ userId: null, state: "anonymous" });
     const { GET } = await import("./route");
 
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/account/promotion-requests"));
 
     expect(response.status).toBe(401);
     expect(listPromotionRequestsForUserMock).not.toHaveBeenCalled();
@@ -50,7 +55,7 @@ describe("GET /api/account/promotion-requests", () => {
   it("binds the read to the current Clerk user and exposes only the safe projection", async () => {
     const { GET } = await import("./route");
 
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/account/promotion-requests"));
     const body = await response.json();
 
     expect(response.status).toBe(200);

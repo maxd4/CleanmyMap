@@ -13,6 +13,7 @@ import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { sendCreatorInboxEmail } from "@/lib/community/creator-inbox-email";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
+import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 import type { AppProfile } from "@/lib/profiles";
 import {
   getPromotionRequestById,
@@ -26,7 +27,7 @@ const reviewSchema = z.object({
   requestId: z.string().trim().min(1),
   action: z.enum(["accept", "reject"]),
   reason: z.string().trim().min(5).max(500),
-});
+}).strict();
 
 type PromotionRequestAuditDetails = {
   operation: "accept_promotion_request" | "reject_promotion_request";
@@ -345,7 +346,7 @@ function resolveCanonicalTargetRole(user: {
   });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const identity = await getCurrentUserIdentity();
   if (
     !identity ||
@@ -355,6 +356,13 @@ export async function GET() {
   ) {
     return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
+
+  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(
+    request,
+    identity.userId,
+    { limit: 30, window: 60 },
+  );
+  if (rateLimitResponse) return rateLimitResponse;
 
   const items = await listPromotionRequests(200);
   return NextResponse.json({
@@ -376,6 +384,13 @@ export async function POST(request: Request) {
   ) {
     return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
+
+  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(
+    request,
+    identity.userId,
+    { limit: 12, window: 60 },
+  );
+  if (rateLimitResponse) return rateLimitResponse;
 
   const parsed = await parseJsonBodyWithSchema(request, reviewSchema);
   if (!parsed.ok) return parsed.response;

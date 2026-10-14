@@ -16,6 +16,7 @@ import { getActionTitle } from "@/lib/actions/participation/group-participation.
 import { loadUserProgressionStats } from "@/lib/gamification/progression-user-stats";
 import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
 import { loadNotificationPreferences } from "@/lib/notifications/notification-preferences-server";
+import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 
 export const runtime = "nodejs";
 // Justification Vercel: the authenticated mobile account projection is private,
@@ -159,6 +160,12 @@ async function loadAccountProjection(userId: string) {
 export async function GET(request: Request) {
   const access = await requireMobileAuthenticatedAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
+  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(
+    request,
+    access.userId,
+    { limit: 30, window: 60 },
+  );
+  if (rateLimitResponse) return rateLimitResponse;
   try {
     const projection = await loadAccountProjection(access.userId);
     if (!projection) return unauthorizedJsonResponse();
@@ -174,6 +181,12 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   const access = await requireMobileAuthenticatedAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
+  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(
+    request,
+    access.userId,
+    { limit: 12, window: 60 },
+  );
+  if (rateLimitResponse) return rateLimitResponse;
   const parsed = accountPatchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
   if (Object.keys(parsed.data).length === 0) {

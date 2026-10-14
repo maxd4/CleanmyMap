@@ -6,6 +6,7 @@ const identityMock = vi.hoisted(() => vi.fn());
 const devBypassMock = vi.hoisted(() => vi.fn());
 const clerkClientMock = vi.hoisted(() => vi.fn());
 const syncMock = vi.hoisted(() => vi.fn());
+const enforceServerRateLimitForAuthenticatedUserMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: authzMock,
@@ -17,6 +18,9 @@ vi.mock("@/lib/auth/action-request-access", () => ({
 vi.mock("@/lib/authz-identity", () => ({ getDevAuthBypassSession: devBypassMock }));
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: clerkClientMock }));
 vi.mock("@/lib/auth/sync", () => ({ syncClerkUserToSupabase: syncMock }));
+vi.mock("@/lib/rate-limit/server", () => ({
+  enforceServerRateLimitForAuthenticatedUser: enforceServerRateLimitForAuthenticatedUserMock,
+}));
 
 function setupClerk(initialPublicMetadata: Record<string, unknown>, userId = "user-1") {
   const getUser = vi.fn().mockResolvedValue({
@@ -49,6 +53,7 @@ describe("POST /api/account/active-profile", () => {
     actionRequestAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
     identityMock.mockResolvedValue({ role: "benevole", activeRole: "benevole" });
     devBypassMock.mockResolvedValue(null);
+    enforceServerRateLimitForAuthenticatedUserMock.mockResolvedValue(null);
   });
 
   afterEach(() => vi.resetAllMocks());
@@ -92,6 +97,29 @@ describe("POST /api/account/active-profile", () => {
     { role: "max", activeRole: "max" },
   ])("rejects invalid payload %j", async (payload) => {
     const response = await post(payload);
+    expect(response.status).toBe(400);
+    expect(clerkClientMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the distributed abuse protection is unavailable", async () => {
+    enforceServerRateLimitForAuthenticatedUserMock.mockResolvedValue(
+      new Response(JSON.stringify({ code: "RATE_LIMIT_UNAVAILABLE" }), { status: 503 }),
+    );
+
+    const response = await post({ activeRole: "scientifique" });
+
+    expect(response.status).toBe(503);
+    expect(clerkClientMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects role and arbitrary metadata fields without calling Clerk", async () => {
+    const response = await post({
+      activeRole: "scientifique",
+      role: "admin",
+      publicMetadata: { role: "admin" },
+      unsafeMetadata: { role: "admin" },
+    });
+
     expect(response.status).toBe(400);
     expect(clerkClientMock).not.toHaveBeenCalled();
   });

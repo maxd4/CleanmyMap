@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 
 export const authMock = vi.fn();
+export const clerkClientMock = vi.fn();
 const getCurrentUserIdentityMock = vi.fn();
 export const getSupabaseClerkRlsClientMock = vi.fn();
 export const getSupabaseServerClientMock = vi.fn();
@@ -13,6 +14,7 @@ export const loadActionByIdMock = vi.fn();
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
+  clerkClient: clerkClientMock,
 }));
 
 vi.mock("@/lib/authz", () => ({
@@ -53,6 +55,14 @@ export function resetChatRouteMocks() {
   vi.clearAllMocks();
 
   authMock.mockResolvedValue({ userId: "user-1" });
+  clerkClientMock.mockResolvedValue({
+    users: {
+      getUser: vi.fn().mockResolvedValue({
+        id: "owner-1",
+        publicMetadata: { role: "max" },
+      }),
+    },
+  });
   getCurrentUserIdentityMock.mockResolvedValue({ role: "member", activeRole: "benevole" });
   verifyRateLimitMock.mockResolvedValue({
     allowed: true,

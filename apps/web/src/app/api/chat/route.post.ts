@@ -107,7 +107,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const destination = await resolveChatPostDestination({ supabase, serviceSupabase, userId, activeRole: identity.activeRole, validated: validatedPost, zone, isExternalActionShare });
+    const destination = await resolveChatPostDestination({ supabase, serviceSupabase, userId, validated: validatedPost, zone, isExternalActionShare });
     if (destination instanceof Response) return destination;
 
     const messageSupabase = parsed.data.channelType === "admin_elu" ? serviceSupabase : supabase;

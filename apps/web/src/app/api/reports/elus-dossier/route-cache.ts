@@ -1,47 +1,18 @@
-import { buildDeliverableHeaders } from "@/lib/reports/http";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
-import {
-  ELUS_DOSSIER_BUCKET,
-  ELUS_DOSSIER_PDF_REDIRECT_CACHE_CONTROL,
-} from "./route-scope";
 
 type SupabaseAdminClient = ReturnType<typeof getSupabaseAdminClient>;
 
 export async function buildCachedPdfResponse(
-  supabase: SupabaseAdminClient,
-  cachedPdfPath: string,
+  _supabase: SupabaseAdminClient,
+  _cachedPdfPath: string,
 ): Promise<Response> {
-  const cachedExport = await supabase
-    .from("reports")
-    .select("file_path")
-    .eq("file_path", cachedPdfPath)
-    .eq("file_kind", "pdf")
-    .order("created_at", { ascending: false })
-    .limit(1);
+  void _supabase;
+  void _cachedPdfPath;
 
-  if (!cachedExport.error && cachedExport.data?.length > 0) {
-    const { filename } = buildDeliverableHeaders({
-      rubrique: "reports_elus_dossier",
-      extension: "pdf",
-      contentType: "application/pdf",
-    });
-    const signedPdf = await supabase.storage.from(ELUS_DOSSIER_BUCKET).createSignedUrl(
-      cachedPdfPath,
-      60 * 60 * 24,
-      { download: filename },
-    );
-
-    if (!signedPdf.error && signedPdf.data?.signedUrl) {
-      return new Response(null, {
-        status: 302,
-        headers: {
-          Location: signedPdf.data.signedUrl,
-          "Cache-Control": ELUS_DOSSIER_PDF_REDIRECT_CACHE_CONTROL,
-        },
-      });
-    }
-  }
-
+  // Legacy `reports.file_path` rows do not bind a PDF to the requested scope,
+  // its aggregate payload, or the caller. Never turn a predictable path into
+  // a signed private Storage URL. The supported PDF contract is the existing
+  // browser-side generation flow.
   return new Response(
     JSON.stringify({
       error:

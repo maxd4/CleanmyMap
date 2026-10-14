@@ -155,6 +155,16 @@ describe("rate limit client ip extraction", () => {
   });
 
   it.each([
+    "/api/account/promotion-requests",
+    "/api/account/active-profile",
+    "/api/admin/promotion-requests",
+    "/api/admin/role-accounts",
+    "/api/mobile/account",
+  ])("keeps private authenticated reads fail-closed for %s", (pathname) => {
+    expect(getRateLimitFailureMode(pathname, "GET")).toBe("fail-closed");
+  });
+
+  it.each([
     ["POST", "/api/actions", "mutation"],
     ["POST", "/api/auth/session", "credential"],
     ["POST", "/api/signalements/signalement-1/media/intents", "upload"],

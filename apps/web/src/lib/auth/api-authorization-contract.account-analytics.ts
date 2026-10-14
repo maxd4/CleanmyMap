@@ -15,9 +15,10 @@ export const accountAnalyticsAuthorizationContract = {
         "Authenticated current account; ACTIVE_ROLE is constrained by the GRANTED_ROLE selection matrix and drives effective capabilities; GRANTED_ROLE=elu cannot select ACTIVE_ROLE=admin",
       dimensions: ["authentication", "ownership"],
       actual:
-        "requireActionRequestAccess accepts the authenticated web cookie or a bounded Clerk session Bearer; getCurrentUserIdentity and getSwitchableProfiles preserve ownership and the GRANTED_ROLE/ACTIVE_ROLE matrix; Clerk update is scoped to access.userId and writes only publicMetadata.activeRole",
+        "requireActionRequestAccess accepts the authenticated web cookie or a bounded Clerk session Bearer; an authenticated distributed rate limit runs before mutation; getCurrentUserIdentity and getSwitchableProfiles preserve ownership and the GRANTED_ROLE/ACTIVE_ROLE matrix; Clerk update is scoped to access.userId and writes only publicMetadata.activeRole",
       evidence: [
         "requireActionRequestAccess",
+        "enforceServerRateLimitForAuthenticatedUser",
         "access.userId",
         "getCurrentUserIdentity",
         "getSwitchableProfiles",

@@ -1,4 +1,6 @@
+import { clerkClient } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
+import { isMaxRole } from "@/lib/auth/role-resolution";
 import {
   normalizeChatPollVoteSummaryRows,
   type ChatPollVoteSummary,
@@ -199,36 +201,19 @@ export async function loadMessageById(
 }
 
 export async function resolveBugReportRecipientId(
-  supabase: ReturnType<typeof getSupabaseServerClient>,
-  senderId: string,
-  senderRole: string,
 ): Promise<string | null> {
   const ownerId = env.CLERK_IMU_OWNER_USER_ID?.trim();
-  if (ownerId) {
-    return ownerId;
+  if (!ownerId) return null;
+
+  try {
+    const client = await clerkClient();
+    const owner = await client.users.getUser(ownerId);
+    return isMaxRole({ user: owner, imuOwnerUserId: ownerId }) ? ownerId : null;
+  } catch {
+    // A bug report must never be routed through a stale Supabase projection
+    // when Clerk cannot confirm the configured owner.
+    return null;
   }
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("role_label", "admin")
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle<{ id: string }>();
-
-  if (error) {
-    throw error;
-  }
-
-  if (data?.id) {
-    return data.id;
-  }
-
-  if (senderRole === "admin" || senderRole === "max") {
-    return senderId;
-  }
-
-  return null;
 }
 
 export async function hasExistingDmConversation(

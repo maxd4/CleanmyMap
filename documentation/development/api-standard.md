@@ -57,3 +57,11 @@ Les opérations critiques — notamment suppression, validation d'action et expo
 de masse — doivent être tracées via
 `apps/web/src/lib/admin/audit/operation-audit.ts`, sans exposer d'informations
 techniques ou sensibles dans l'audit destiné à l'utilisateur.
+
+Pour une route qui emploie `getSupabaseAdminClient()` ou
+`getSupabaseServerClient(true)`, le contrat doit aussi indiquer la relation
+entre l'appelant, le paramètre contrôlé par le client et la projection
+retournée. Un chemin Storage prévisible ou une ligne de cache ne suffit jamais
+à signer un fichier privé. Les exports agrégés doivent conserver une
+projection sans identifiants individuels et les mutations de compte doivent
+écrire uniquement les champs explicitement autorisés par leur schéma serveur.

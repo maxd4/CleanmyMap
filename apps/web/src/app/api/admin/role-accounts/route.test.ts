@@ -8,6 +8,7 @@ const listManagedRoleAccountsMock = vi.hoisted(() => vi.fn());
 const searchManagedRoleAccountsMock = vi.hoisted(() => vi.fn());
 const getManagedRoleAccountByIdMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
+const enforceServerRateLimitForAuthenticatedUserMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: clerkClientMock,
@@ -40,6 +41,9 @@ vi.mock("@/lib/admin/role-management", () => ({
 vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
 }));
+vi.mock("@/lib/rate-limit/server", () => ({
+  enforceServerRateLimitForAuthenticatedUser: enforceServerRateLimitForAuthenticatedUserMock,
+}));
 
 describe("GET/POST /api/admin/role-accounts", () => {
   const roleAccountsGetRequest = (query = "") =>
@@ -51,6 +55,7 @@ describe("GET/POST /api/admin/role-accounts", () => {
     });
 
   beforeEach(() => {
+    enforceServerRateLimitForAuthenticatedUserMock.mockResolvedValue(null);
     requireCreatorAccessMock.mockResolvedValue({ ok: true, userId: "owner-1" });
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "owner-1",
@@ -121,6 +126,18 @@ describe("GET/POST /api/admin/role-accounts", () => {
     expect(body.count).toBe(1);
     expect(body.accounts).toHaveLength(1);
     expect(listManagedRoleAccountsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails closed before listing when distributed abuse protection is unavailable", async () => {
+    enforceServerRateLimitForAuthenticatedUserMock.mockResolvedValue(
+      new Response(JSON.stringify({ code: "RATE_LIMIT_UNAVAILABLE" }), { status: 503 }),
+    );
+    const { GET } = await import("./route");
+
+    const response = await GET(roleAccountsGetRequest());
+
+    expect(response.status).toBe(503);
+    expect(listManagedRoleAccountsMock).not.toHaveBeenCalled();
   });
 
   it("rejects an active admin from direct role management", async () => {
@@ -282,6 +299,22 @@ describe("GET/POST /api/admin/role-accounts", () => {
     expect(response.status).toBe(400);
     expect(clerkClientMock).not.toHaveBeenCalled();
     expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects arbitrary metadata fields instead of treating them as role input", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(roleAccountsPostRequest({
+      userId: "user-2",
+      action: "assign",
+      role: "admin",
+      reason: "Validated admin assignment",
+      publicMetadata: { role: "max" },
+      unsafeMetadata: { role: "max" },
+    }));
+
+    expect(response.status).toBe(400);
+    expect(clerkClientMock).not.toHaveBeenCalled();
+    expect(syncClerkUserToSupabaseMock).not.toHaveBeenCalled();
   });
 
   it.each([undefined, "nope"]) (

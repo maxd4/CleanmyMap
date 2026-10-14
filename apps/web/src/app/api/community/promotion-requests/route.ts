@@ -22,7 +22,7 @@ const payloadSchema = z.object({
   motivation: z.string().trim().min(10).max(1200),
   honeypot: z.string().optional().default(""),
   submittedAt: z.number().int().positive().optional(),
-});
+}).strict();
 
 export async function POST(request: Request) {
   const rateLimitResponse = await enforceServerRateLimit(request, { limit: 3, window: 300 });

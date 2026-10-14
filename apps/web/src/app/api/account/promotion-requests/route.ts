@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { listPromotionRequestsForUser } from "@/lib/admin/promotion-requests-store";
+import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 
 export const runtime = "nodejs";
 
@@ -23,11 +24,18 @@ function toCurrentUserPromotionRequest(
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const { userId } = await getSafeAuthSession();
   if (!userId) {
     return unauthorizedJsonResponse();
   }
+
+  const rateLimitResponse = await enforceServerRateLimitForAuthenticatedUser(
+    request,
+    userId,
+    { limit: 30, window: 60 },
+  );
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const records = await listPromotionRequestsForUser(userId, 50);
