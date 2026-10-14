@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { performance } from "node:perf_hooks";
 import { it } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
@@ -297,3 +298,13 @@ for (const sql of [
     assert.equal(findLegacySpotsRuntimeSurfaceViolations("fixture.sql", normalizeSql(sql)).length, 1);
   });
 }
+
+it("keeps malformed grants rejected without scanning superlinearly", () => {
+  const adversarialSql = normalizeSql(`grant ${"update ".repeat(20_000)} public.spots to anon;`);
+  const startedAt = performance.now();
+  const violations = findLegacySpotsRuntimeSurfaceViolations("fixture.sql", adversarialSql);
+  const elapsedMs = performance.now() - startedAt;
+
+  assert.deepEqual(violations, []);
+  assert.ok(elapsedMs < 1_000, `bounded grant analysis took ${elapsedMs.toFixed(1)}ms`);
+});

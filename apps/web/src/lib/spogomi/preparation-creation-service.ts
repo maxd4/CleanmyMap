@@ -114,6 +114,14 @@ async function loadEventByKey(supabase: SupabaseClient, idempotencyKey: string) 
   return result.data as CreationEvent | null;
 }
 
+async function ensureParentDivisions(supabase: SupabaseClient, event: CreationEvent): Promise<void> {
+  const result = await supabase.rpc("spogomi_ensure_parent_divisions", {
+    p_event_id: event.id,
+    p_mode: String(event.mode),
+  });
+  if (result.error) throw result.error;
+}
+
 async function loadActionForCreation(supabase: SupabaseClient, actionId: string): Promise<CreationAction | null> {
   const result = await supabase
     .from("actions")
@@ -359,8 +367,11 @@ async function ensureEventForAction(params: {
 }): Promise<CreationEvent> {
   const { supabase, input, userId, actionId, attempt, identity, fingerprint, canonical, legacyFingerprint } = params;
   let event = attempt.event_id ? await loadEventById(supabase, String(attempt.event_id)) : await loadEventByKey(supabase, input.idempotencyKey);
-  if (event) await assertEventIntegrity(supabase, event, input, userId, actionId, fingerprint, identity, legacyFingerprint ? [legacyFingerprint] : []);
-  if (event) return event;
+  if (event) {
+    await assertEventIntegrity(supabase, event, input, userId, actionId, fingerprint, identity, legacyFingerprint ? [legacyFingerprint] : []);
+    await ensureParentDivisions(supabase, event);
+    return event;
+  }
 
   const baseSlug = normalizeSpogomiEventSlug(canonical.name);
   const eventPayload = {
@@ -379,6 +390,7 @@ async function ensureEventForAction(params: {
   }
   if (!event && !inserted.error && inserted.data) event = inserted.data as CreationEvent;
   if (!event) throw new Error("Conflict: événement non finalisé, reprise possible avec la même clé.");
+  await ensureParentDivisions(supabase, event);
   return event;
 }
 

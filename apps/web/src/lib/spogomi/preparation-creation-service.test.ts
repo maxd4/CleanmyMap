@@ -29,6 +29,11 @@ class CreationStore {
   from(table: string) {
     return new Query(this, table);
   }
+
+  rpc(name: string) {
+    if (name !== "spogomi_ensure_parent_divisions") throw new Error(`Unexpected RPC ${name}`);
+    return Promise.resolve({ data: [{ id: "division-1", type: "casual" }], error: null });
+  }
 }
 
 class Query implements PromiseLike<{ data: Row | Row[] | null; error: Row | null }> {

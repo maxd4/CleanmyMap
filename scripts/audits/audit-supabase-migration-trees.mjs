@@ -176,15 +176,38 @@ export function findLegacySpotsRuntimeSurfaceViolations(name, normalizedSql) {
     }
   }
 
-  const writeGrantMatch = normalizedSql.match(
-    /\bgrant\s+([^;]+?)\s+on\s+(?:table\s+)?public\.spots\s+to\s+([^;]+)/i,
-  );
-  if (writeGrantMatch) {
-    const privileges = writeGrantMatch[1]
-      .replace(/\s+privileges?/gi, "")
+  for (const statement of normalizedSql.split(";")) {
+    const trimmedStatement = statement.trim();
+    const lowerStatement = trimmedStatement.toLowerCase();
+    if (!lowerStatement.startsWith("grant ")) continue;
+
+    const onIndex = lowerStatement.indexOf(" on ", "grant ".length);
+    if (onIndex < 0) continue;
+
+    const privileges = trimmedStatement
+      .slice("grant ".length, onIndex)
+      .split(/\s+/)
+      .filter((privilege) => !/^privileges?$/i.test(privilege))
+      .join(" ")
       .split(",")
-      .map((privilege) => privilege.trim().replace(/\s*\([^)]*\)\s*$/, "").toLowerCase());
-    const roles = writeGrantMatch[2].toLowerCase();
+      .map((privilege) => {
+        const trimmedPrivilege = privilege.trim();
+        if (!trimmedPrivilege.endsWith(")")) return trimmedPrivilege.toLowerCase();
+
+        const openParenthesis = trimmedPrivilege.lastIndexOf("(");
+        const inner = openParenthesis < 0 ? "" : trimmedPrivilege.slice(openParenthesis + 1, -1);
+        return openParenthesis >= 0 && !inner.includes(")")
+          ? trimmedPrivilege.slice(0, openParenthesis).trim().toLowerCase()
+          : trimmedPrivilege.toLowerCase();
+      });
+
+    let targetStart = onIndex + " on ".length;
+    if (lowerStatement.startsWith("table ", targetStart)) targetStart += "table ".length;
+    if (!lowerStatement.startsWith("public.spots", targetStart)) continue;
+
+    const rolesStart = targetStart + "public.spots".length;
+    if (!/^\s+to\s+/i.test(trimmedStatement.slice(rolesStart))) continue;
+    const roles = trimmedStatement.slice(rolesStart).replace(/^\s+to\s+/i, "").toLowerCase();
     const hasWritePrivilege = privileges.some((privilege) =>
       ["all", "insert", "update", "delete", "truncate", "references", "trigger"].includes(
         privilege,

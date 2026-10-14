@@ -7,15 +7,20 @@
 
 ## 1. Décision centrale
 
-Un événement SPOGOMI possède des données sportives par équipe, mais produit **une seule action environnementale canonique CleanMyMap**.
+Une édition parentale SPOGOMI possède des données sportives par équipe, mais produit **une seule action environnementale canonique CleanMyMap**. Dans le schéma courant, `spogomi_events` est cette édition parente : `action_id` reste unique et aucune division ne crée une action supplémentaire.
+
+Une édition possède une division `casual`, une division `world_cup`, ou les deux. Le mode parent `mixed` est valide uniquement avec exactement ces deux divisions distinctes. Les divisions portent un UUID stable, déterministe à partir de l’édition et de leur type ; une reprise identique réutilise les mêmes lignes.
 
 ```text
-Événement SPOGOMI (casual | world_cup)
-  ├── Places importées (personnes externes ou anonymes, présence distincte)
-  ├── Équipes et membres
-  ├── Parcours GPX officiel de référence
-  ├── Règlement sportif versionné
-  └── Formulaire SPOGOMI dédié par équipe
+Édition parente SPOGOMI (casual | world_cup | mixed)
+  ├── Division(s) typée(s) (casual et/ou world_cup)
+  │     ├── Places importées, uniques au parent et affectées explicitement
+  │     ├── Équipes et membres
+  │     ├── Règlement, catégories et mesures
+  │     ├── Soumissions, certifications et classement séparés
+  │     └── Parcours GPX de référence si fourni
+  └── Une seule action CleanMyMap liée au parent
+        └── Formulaires SPOGOMI dédiés par équipe
         └── Soumissions, arbitrage, mesures physiques et points sportifs
                │
                ▼
@@ -28,6 +33,16 @@ Un événement SPOGOMI possède des données sportives par équipe, mais produit
          └── action_participants.confirmed (comptes Clerk éligibles)
                        └── gamification CleanMyMap existante
 ```
+
+### Contrat canonique des divisions
+
+- `spogomi_divisions(event_id, division_type)` est la source de vérité des divisions ; `division_type` vaut uniquement `casual` ou `world_cup`.
+- Les tables d’équipes, affectations, règlements/catégories, mesures, soumissions, certifications, accès, audits, attestations et classements portent `division_id` et des clés étrangères composites avec `event_id`. Une référence entre deux divisions d’une même édition est donc rejetée par PostgreSQL.
+- Les participants restent une seule ligne au niveau parent (`event_id`, `external_reference`) et doivent recevoir une affectation explicite à une division et, le cas échéant, à une équipe. Une édition `mixed` ne peut jamais déduire une division depuis le parent.
+- Les éditions existantes sont conservées sans réinterprétation : chaque ancien `casual` ou `world_cup` reçoit une seule division de même type, avec un identifiant stable. Le mécanisme de compatibilité ne résout automatiquement une valeur absente que lorsqu’une seule division existe ; il échoue fermé pour une édition mixte.
+- `spogomi_ensure_parent_divisions` verrouille l’édition et effectue les insertions idempotentes dans une transaction. La clé d’idempotence existante continue de protéger la reprise de l’action et de l’édition ; aucune reprise ne crée une seconde action, division ou équipe.
+- Les verrous de composition, règlements, certifications et classements restent portés par les procédures serveur et s’appliquent dans le périmètre d’une division. Le rôle HTTP conserve l’AuthN/AuthZ ; Supabase RLS et les grants ne sont pas élargis aux écritures client.
+- Le choix `mixed` n’est pas encore proposé dans l’interface de création. Il ne le sera qu’après migration de tous les consommateurs de préparation, résultats, projections et exports vers le contexte de division explicite.
 
 **Frontières non négociables :**
 
