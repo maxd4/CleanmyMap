@@ -679,7 +679,8 @@ Chaque acceptation ou attribution directe met à jour Clerk, synchronise la
 projection `profiles.role_label` de Supabase et écrit un audit. La projection
 `profiles.role_label` porte le `GRANTED_ROLE`; la projection serveur
 `profiles.active_role_label`, alimentée par le même sync Clerk, porte
-`ACTIVE_ROLE` pour les décisions RLS et ne peut pas être écrite par un client.
+`ACTIVE_ROLE` pour l'audit et les consommateurs métier, mais ne porte pas une
+décision RLS privilégiée et ne peut pas être écrite par un client.
 Le décideur doit être authentifié, être l'identifiant exact de
 `CLERK_IMU_OWNER_USER_ID`, et présenter `GRANTED_ROLE=max` et
 `ACTIVE_ROLE=max`. `publicMetadata.role` est la seule attribution Clerk ; les
@@ -691,12 +692,22 @@ succès convergent.
 ### Projection Supabase et révocation
 
 `profiles.role_label` et `profiles.active_role_label` sont des projections
-serveur de Clerk, jamais des sources d'attribution. Leur présence dans une
-policy ou une fonction SQL ne transforme pas une valeur ancienne en droit
-durable : après une révocation Clerk, une projection non convergente est un
-incident à bloquer et à reprendre idempotemment. Les clients ne peuvent pas
-écrire ces colonnes ; les mutations sensibles doivent privilégier la décision
-serveur fondée sur Clerk.
+serveur de Clerk, jamais des sources d'attribution. Une policy ou fonction SQL
+ne doit jamais transformer une valeur ancienne en droit durable : après une
+révocation Clerk, une projection non convergente doit rester sans effet sur la
+capacité privilégiée. Les clients ne peuvent pas écrire ces colonnes et les
+helpers SQL qui les lisent sont serveur seulement.
+
+La RLS directe retire donc les branches globales de rôle du canal `admin_elu`
+et des discussions d'action. Les accès directs restent bornés par la session
+et par une relation métier vérifiée (propriété, organisation, inscription,
+participation ou membre de conversation). Pour une capacité `admin`, `elu` ou
+`max`, la frontière serveur doit vérifier auprès de Clerk le `GRANTED_ROLE`,
+le `ACTIVE_ROLE`, la capacité demandée et le périmètre avant de lire ou muter
+avec `service_role`. Une indisponibilité Clerk, une session absente ou
+expirée, ou une autorisation non établie est un refus ; `service_role` ne vaut
+jamais autorisation utilisateur. Aucun TTL sur
+`role_projection_synced_at` ne remplace cette vérification.
 
 L'audit opérationnel doit relever, pour chaque compte privilégié, le rôle
 Clerk attendu, `role_label`, `active_role_label`, la source de projection et

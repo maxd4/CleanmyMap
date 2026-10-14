@@ -150,17 +150,13 @@ describe("admin_elu topics in the Chat API", () => {
       );
 
       expect(response.status).toBe(201);
-      expect(supabaseMock.supabase.rpc).toHaveBeenCalledWith(
-        "create_chat_poll_with_options",
+      expect(supabaseMock.serviceSupabase.rpc).toHaveBeenCalledWith(
+        "create_chat_poll_with_options_for_server",
         {
-          p_channel_type: "admin_elu",
+          p_actor_user_id: "user-1",
           p_content: "Quelle priorité retenir ?",
           p_topic_id: "arbitrages",
           p_option_labels: ["Priorité A", "Priorité B"],
-          p_recipient_id: null,
-          p_conversation_id: null,
-          p_arrondissement_id: null,
-          p_zone_name: null,
         },
       );
     },
@@ -174,6 +170,7 @@ describe("admin_elu topics in the Chat API", () => {
       insertedMessage: message({ sender_id: "user-1" }),
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const response = await GET(
       new Request("http://localhost/api/chat?channelType=admin_elu"),
@@ -185,6 +182,13 @@ describe("admin_elu topics in the Chat API", () => {
 
   it("denies admin_elu poll creation to other roles before opening the RLS client", async () => {
     identityMock.mockResolvedValueOnce({ activeRole: "benevole" });
+    const supabaseMock = buildSupabaseMock({
+      profile,
+      messages: [],
+      insertedMessage: message({ sender_id: "user-1" }),
+    });
+    rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.serviceSupabase);
     const response = await POST(
       new Request("http://localhost/api/chat", {
         method: "POST",
@@ -215,6 +219,7 @@ describe("admin_elu topics in the Chat API", () => {
       insertedMessage: message({ sender_id: "user-1" }),
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const aggregateResponse = await GET(
       new Request("http://localhost/api/chat?channelType=admin_elu"),
@@ -264,6 +269,7 @@ describe("admin_elu topics in the Chat API", () => {
       insertedMessage,
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const response = await POST(buildTopicRequest(topicId, "Point de coordination"));
 
@@ -283,6 +289,7 @@ describe("admin_elu topics in the Chat API", () => {
       insertedMessage: message({ sender_id: "user-1" }),
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const response = await POST(buildTopicRequest(topicId, "Tentative invalide"));
 

@@ -65,7 +65,7 @@ describe("GET /api/chat", () => {
     });
 
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue({ service: true });
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { GET } = await import("./route");
     const response = await GET(
@@ -120,6 +120,7 @@ describe("GET /api/chat", () => {
       },
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
     const { GET } = await import("./route");
     const response = await GET(new Request(`http://localhost/api/chat?channelType=action&actionId=${actionId}`));
     const body = (await response.json()) as { messages?: Array<{ id: string }> };
@@ -143,6 +144,7 @@ describe("GET /api/chat", () => {
       insertedMessage: { id: "relay", created_at: "2026-05-01T09:00:00.000Z", content: "Relais", channel_type: "community", topic_id: "relais_associatif", sender_id: "user-2", recipient_id: null, arrondissement_id: null, zone_name: null },
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { GET } = await import("./route");
     const response = await GET(
@@ -181,6 +183,7 @@ describe("GET /api/chat", () => {
       insertedMessage: messages[0],
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { GET } = await import("./route");
     const targetedResponse = await GET(
@@ -257,6 +260,7 @@ describe("GET /api/chat", () => {
       insertedMessage: messages[0],
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { GET } = await import("./route");
     const response = await GET(
@@ -319,6 +323,7 @@ describe("GET /api/chat", () => {
       },
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
     getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { GET } = await import("./route");

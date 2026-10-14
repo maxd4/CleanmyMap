@@ -18,11 +18,15 @@ type SearchRow = {
 const authMock = vi.hoisted(() => vi.fn());
 const identityMock = vi.hoisted(() => vi.fn());
 const rlsClientMock = vi.hoisted(() => vi.fn());
+const serverClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: identityMock }));
 vi.mock("@/lib/supabase/clerk-rls", () => ({
   getSupabaseClerkRlsClient: rlsClientMock,
+}));
+vi.mock("@/lib/supabase/server", () => ({
+  getSupabaseServerClient: serverClientMock,
 }));
 
 function buildSupabaseMock({
@@ -183,6 +187,7 @@ describe("GET /api/chat/search", () => {
       ],
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
 
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=community&topicId=relais_associatif&q=important"),
@@ -218,6 +223,7 @@ describe("GET /api/chat/search", () => {
       ],
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
 
     const response = await GET(
       new Request(
@@ -246,6 +252,7 @@ describe("GET /api/chat/search", () => {
     });
     identityMock.mockResolvedValueOnce({ activeRole: "elu" });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
 
     const response = await GET(
       new Request(
@@ -272,6 +279,7 @@ describe("GET /api/chat/search", () => {
       ],
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
 
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=dm&recipientId=user-2&q=plan"),
@@ -309,6 +317,7 @@ describe("GET /api/chat/search", () => {
       ],
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
 
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=bug_report&q=signalement"),
@@ -326,6 +335,7 @@ describe("GET /api/chat/search", () => {
     identityMock.mockResolvedValueOnce({ role: "benevole" });
     const supabaseMock = buildSupabaseMock({ rows: [] });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
 
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=admin_elu&q=secret"),
@@ -352,6 +362,7 @@ describe("GET /api/chat/search", () => {
       ],
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
 
     const response = await GET(
       new Request(
@@ -379,6 +390,7 @@ describe("GET /api/chat/search", () => {
       rows: [buildRow(1, { channel_type: "territory", arrondissement_id: 15, content: "Besoin local" })],
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
 
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=territory&arrondissementId=15&q=local"),
@@ -391,6 +403,7 @@ describe("GET /api/chat/search", () => {
   it("rejects an explicitly invalid territory", async () => {
     const supabaseMock = buildSupabaseMock({ rows: [] });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
 
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=territory&zoneName=Atlantis&q=local"),
@@ -411,6 +424,7 @@ describe("GET /api/chat/search", () => {
     rows.push(buildRow(99, { channel_type: "territory", arrondissement_id: 1, content: "Besoin local hors scope" }));
     const supabaseMock = buildSupabaseMock({ rows, arrondissement: 11 });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    serverClientMock.mockReturnValue(supabaseMock.supabase);
 
     const firstResponse = await GET(
       new Request("http://localhost/api/chat/search?channelType=territory&q=local"),

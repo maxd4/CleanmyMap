@@ -110,7 +110,8 @@ export async function POST(request: Request) {
     const destination = await resolveChatPostDestination({ supabase, serviceSupabase, userId, activeRole: identity.activeRole, validated: validatedPost, zone, isExternalActionShare });
     if (destination instanceof Response) return destination;
 
-    const message = await persistChatPostAndNotify({ supabase, serviceSupabase, userId, validated: validatedPost, feedbackReplyContext, recipientId: destination.recipientId, actionConversationId: destination.actionConversationId, targetArrondissementId: destination.targetArrondissementId, targetZoneName: destination.targetZoneName, relatedEvent: destination.relatedEvent });
+    const messageSupabase = parsed.data.channelType === "admin_elu" ? serviceSupabase : supabase;
+    const message = await persistChatPostAndNotify({ supabase: messageSupabase, serviceSupabase, userId, validated: validatedPost, feedbackReplyContext, recipientId: destination.recipientId, actionConversationId: destination.actionConversationId, targetArrondissementId: destination.targetArrondissementId, targetZoneName: destination.targetZoneName, relatedEvent: destination.relatedEvent });
     if (message instanceof Response) return message;
 
     return NextResponse.json({ status: "sent", message }, { status: 201 });

@@ -86,7 +86,8 @@ begin
     or has_table_privilege('anon', 'public.newsletter_subscriptions', 'SELECT')
     or has_table_privilege('anon', 'public.newsletter_subscriptions', 'TRIGGER')
     or has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'INSERT')
-    or not has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'SELECT')
+    or has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'SELECT')
+    or not has_table_privilege('service_role', 'public.newsletter_subscriptions', 'SELECT')
   then
     raise exception 'SECURITY-01 newsletter privileges do not match the contract';
   end if;
@@ -135,10 +136,24 @@ select id, display_name, handle, avatar_url
 from public.profiles
 where id = 'security-01-owner';
 
-select
-  public.current_profile_role_label(),
-  public.current_profile_active_role(),
-  public.current_profile_arrondissement();
+select public.current_profile_arrondissement();
+
+do $$
+begin
+  begin
+    perform public.current_profile_role_label();
+    raise exception 'SECURITY-01/02 authenticated role projection helper unexpectedly executable';
+  exception when insufficient_privilege then
+    null;
+  end;
+  begin
+    perform public.current_profile_active_role();
+    raise exception 'SECURITY-01/02 authenticated active-role projection helper unexpectedly executable';
+  exception when insufficient_privilege then
+    null;
+  end;
+end
+$$;
 
 update public.profiles
 set display_name = 'Security 01 owner updated'

@@ -948,12 +948,24 @@ auditée. Elle ne doit pas être déduite de la création de l'action.
 L'AuthZ applicative ne remplace pas RLS.
 
 `public.profiles.role_label` et `public.profiles.active_role_label` sont des
-projections serveur dérivées de Clerk. Elles sont utiles à la compatibilité
-SQL/RLS, mais ne constituent ni une autorité d'attribution ni un cache
-autorisant durablement un privilège révoqué. Les clients `anon` et
-`authenticated` ne peuvent pas écrire ces colonnes. Les routes sensibles
-doivent d'abord résoudre Clerk côté serveur ; une mutation de rôle Clerk n'est
-considérée convergente qu'après la synchronisation Supabase réussie.
+projections serveur dérivées de Clerk. Elles sont utiles à l'audit et aux
+consommateurs métier, mais ne constituent ni une autorité d'attribution ni un
+cache autorisant durablement un privilège révoqué. Les clients `anon` et
+`authenticated` ne peuvent pas écrire ces colonnes, et les helpers SQL qui les
+projettent sont réservés au serveur. Les routes sensibles doivent d'abord
+résoudre Clerk côté serveur ; une mutation de rôle Clerk n'est considérée
+convergente qu'après la synchronisation Supabase réussie.
+
+La RLS directe ne peut pas vérifier la fraîcheur de Clerk. Elle ne contient
+donc plus de branche globale fondée sur une projection pour `admin_elu`, ni
+pour les membres de discussion d'action. Une route Next.js ou mobile qui
+porte une capacité `admin`/`elu`/`max` doit établir `GRANTED_ROLE`,
+`ACTIVE_ROLE`, la capacité et le périmètre depuis Clerk, refuser en cas de
+session absente, expirée ou Clerk indisponible, puis utiliser le client serveur
+approprié avec un scope explicite. `service_role` est un mécanisme technique
+de cette route ; il ne crée jamais une permission utilisateur implicite.
+Les discussions d'action conservent séparément les relations vérifiées de
+propriété, organisation, participation et appartenance persistée.
 
 Après une révocation, toute divergence entre Clerk et ces projections est un
 incident `BLOCKED` : suspendre les opérations sensibles dépendant de la

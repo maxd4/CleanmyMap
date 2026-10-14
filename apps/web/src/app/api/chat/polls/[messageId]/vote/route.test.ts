@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createClerkAuthModule, createRateLimitModule, createSupabaseClerkRlsModule, createSupabaseServerModule, mockAllowedRateLimit } from "@/app/api/test-helpers";
 
 const authMock = vi.hoisted(() => vi.fn());
+const identityMock = vi.hoisted(() => vi.fn());
 const getSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const handleApiErrorMock = vi.hoisted(() =>
@@ -9,6 +10,7 @@ const handleApiErrorMock = vi.hoisted(() =>
 );
 
 vi.mock("@clerk/nextjs/server", () => createClerkAuthModule(authMock));
+vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: identityMock }));
 vi.mock("@/lib/supabase/clerk-rls", () => createSupabaseClerkRlsModule(getSupabaseClerkRlsClientMock));
 vi.mock("@/lib/supabase/server", () => createSupabaseServerModule(getSupabaseServerClientMock));
 vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
@@ -105,10 +107,6 @@ function buildSupabaseMock({
     },
   );
 
-  const serviceSupabase = {
-    rpc: summaryRpc,
-  };
-
   const supabase = {
     from: vi.fn((table: string) => {
       if (table === "app_messages") return appMessageQuery;
@@ -116,6 +114,10 @@ function buildSupabaseMock({
       if (table === "chat_poll_votes") return voteTable;
       throw new Error(`Unexpected table: ${table}`);
     }),
+  };
+  const serviceSupabase = {
+    from: supabase.from,
+    rpc: summaryRpc,
   };
 
   return {
@@ -137,6 +139,7 @@ async function preparePollRoute(channelType?: "community" | "admin_elu" | "terri
   const mock = buildSupabaseMock({ channelType });
   getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
   getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
+  identityMock.mockResolvedValue({ activeRole: channelType === "admin_elu" ? "elu" : "benevole" });
   return { mock, route: await import("./route") };
 }
 
@@ -144,6 +147,7 @@ describe("/api/chat/polls/[messageId]/vote", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "user-1" });
+    identityMock.mockResolvedValue({ activeRole: "benevole" });
     mockAllowedRateLimit(30);
   });
 

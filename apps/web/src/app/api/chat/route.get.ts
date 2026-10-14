@@ -383,6 +383,10 @@ export async function GET(request: Request) {
   } = accessContext;
 
   try {
+    // Direct Clerk-RLS sessions no longer receive the global admin_elu branch:
+    // this route has already established the current Clerk capability above,
+    // so use the explicitly scoped server client only for that channel.
+    const messageSupabase = channelType === "admin_elu" ? serviceSupabase : supabase;
     const actionConversation = await resolveActionConversationId({
       channelType,
       requestedActionId,
@@ -393,7 +397,7 @@ export async function GET(request: Request) {
     if (actionConversation.error) return actionConversation.error;
 
     const createMessageQuery = (): ChatScopedQuery =>
-      applyChatTopicFilter(supabase
+      applyChatTopicFilter(messageSupabase
         .from("app_messages")
         .select(messageSelect)
         .order("created_at", { ascending: false })
@@ -452,7 +456,7 @@ export async function GET(request: Request) {
       newestFirst.length > CHAT_PAGE_SIZE ||
       pageGroups.some((group) => group.length > CHAT_PAGE_SIZE);
     const messages = await enrichPollVoteSummaries(
-      supabase,
+      messageSupabase,
       serviceSupabase,
       userId,
       sortChatMessages(pageRows),

@@ -354,9 +354,10 @@ export async function GET(request: Request) {
     const accessContext = await loadSearchAccessContext(serviceSupabase, userId, identity, search);
     if (accessContext.error) return accessContext.error;
     const { zoneContext, zoneName } = accessContext;
+    const messageSupabase = search.channelType === "admin_elu" ? serviceSupabase : supabase;
 
     const scopeQueryFactories = buildScopeQueryFactories({
-      supabase,
+      supabase: messageSupabase,
       search,
       userId,
       zoneContext,

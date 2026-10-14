@@ -4,6 +4,7 @@ import { z } from "zod";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { normalizeChatPollVoteSummaryRows } from "@/lib/chat/poll-votes";
+import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
@@ -30,7 +31,7 @@ type PollVoteResponse = {
 };
 
 async function loadVisiblePoll(
-  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  supabase: ReturnType<typeof getSupabaseServerClient>,
   messageId: string,
 ): Promise<{ options: PollOptionRow[] } | null> {
   const { data: message, error: messageError } = await supabase
@@ -124,6 +125,10 @@ async function upsertVote(request: Request, context: VoteRouteContext) {
   if (!userId) {
     return unauthorizedJsonResponse();
   }
+  const identity = await getCurrentUserIdentity();
+  if (!identity) {
+    return unauthorizedJsonResponse();
+  }
 
   let payload: unknown;
   try {
@@ -145,9 +150,12 @@ async function upsertVote(request: Request, context: VoteRouteContext) {
       { status: 503 },
     );
   }
+  const messageSupabase = ["admin", "elu", "max"].includes(identity.activeRole)
+    ? getSupabaseServerClient(true)
+    : supabase;
 
   try {
-    const poll = await loadVisiblePoll(supabase, messageId);
+    const poll = await loadVisiblePoll(messageSupabase, messageId);
     if (!poll) {
       return NextResponse.json(
         { error: "Sondage introuvable ou inaccessible" },
@@ -162,7 +170,7 @@ async function upsertVote(request: Request, context: VoteRouteContext) {
       );
     }
 
-    const { error } = await supabase.from("chat_poll_votes").upsert(
+    const { error } = await messageSupabase.from("chat_poll_votes").upsert(
       {
         message_id: messageId,
         option_id: parsed.data.optionId,
@@ -198,6 +206,10 @@ export async function DELETE(_request: Request, context: VoteRouteContext) {
   if (!userId) {
     return unauthorizedJsonResponse();
   }
+  const identity = await getCurrentUserIdentity();
+  if (!identity) {
+    return unauthorizedJsonResponse();
+  }
 
   const { messageId } = await context.params;
   const supabase = await getSupabaseClerkRlsClient();
@@ -207,9 +219,12 @@ export async function DELETE(_request: Request, context: VoteRouteContext) {
       { status: 503 },
     );
   }
+  const messageSupabase = ["admin", "elu", "max"].includes(identity.activeRole)
+    ? getSupabaseServerClient(true)
+    : supabase;
 
   try {
-    const poll = await loadVisiblePoll(supabase, messageId);
+    const poll = await loadVisiblePoll(messageSupabase, messageId);
     if (!poll) {
       return NextResponse.json(
         { error: "Sondage introuvable ou inaccessible" },
@@ -217,7 +232,7 @@ export async function DELETE(_request: Request, context: VoteRouteContext) {
       );
     }
 
-    const { error } = await supabase
+    const { error } = await messageSupabase
       .from("chat_poll_votes")
       .delete()
       .eq("message_id", messageId)

@@ -192,8 +192,15 @@ export function buildSupabaseMock(options: {
   };
 
   const serviceRpc = vi.fn((functionName: string) => {
-    if (functionName !== "get_my_chat_poll_vote_summaries") {
+    if (functionName !== "get_my_chat_poll_vote_summaries" && functionName !== "create_chat_poll_with_options_for_server") {
       throw new Error(`Unexpected service RPC: ${functionName}`);
+    }
+
+    if (functionName === "create_chat_poll_with_options_for_server") {
+      return Promise.resolve({
+        data: options.pollMessage?.id ?? options.insertedMessage.id,
+        error: null,
+      });
     }
 
     return Promise.resolve({
@@ -218,6 +225,7 @@ export function buildSupabaseMock(options: {
   const serviceStorageBucket = { createSignedUrls };
 
   const serviceSupabase = {
+    from: (...args: Parameters<typeof supabase.from>) => supabase.from(...args),
     rpc: serviceRpc,
     storage: {
       from: vi.fn(() => serviceStorageBucket),
@@ -244,7 +252,7 @@ export function buildSupabaseMock(options: {
       if (functionName === "list_my_dm_conversations") {
         return Promise.resolve({ data: options.dmRows ?? [], error: null });
       }
-      if (functionName !== "create_chat_poll_with_options") {
+      if (functionName !== "create_chat_poll_with_options" && functionName !== "create_chat_poll_with_options_for_server") {
         throw new Error(`Unexpected RPC: ${functionName}`);
       }
       return Promise.resolve({

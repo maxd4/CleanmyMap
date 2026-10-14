@@ -51,21 +51,27 @@ async function persistChatPostMessage({
 }: ChatPostPersistenceContext): Promise<ChatMessageRow | Response> {
   const { data, messageKind, topicId, isExternalActionShare } = validated;
   if (messageKind === "poll") {
-    const { data: pollMessageId, error: pollError } = await supabase.rpc(
-      "create_chat_poll_with_options",
-      {
-        p_channel_type: data.channelType,
-        p_content: data.content,
-        p_topic_id: topicId,
-        ...pollOpts(data.pollOptions),
-        ...pollCtx(
-          recipientId,
-          actionConversationId,
-          targetArrondissementId,
-          targetZoneName,
-        ),
-      },
-    );
+    const pollOptions = pollOpts(data.pollOptions);
+    const isPrivilegedChannel = data.channelType === "admin_elu";
+    const { data: pollMessageId, error: pollError } = isPrivilegedChannel
+      ? await serviceSupabase.rpc("create_chat_poll_with_options_for_server", {
+          p_actor_user_id: userId,
+          p_content: data.content,
+          p_topic_id: topicId,
+          ...pollOptions,
+        })
+      : await supabase.rpc("create_chat_poll_with_options", {
+          p_channel_type: data.channelType,
+          p_content: data.content,
+          p_topic_id: topicId,
+          ...pollOptions,
+          ...pollCtx(
+            recipientId,
+            actionConversationId,
+            targetArrondissementId,
+            targetZoneName,
+          ),
+        });
     if (pollError) return handleApiError(pollError, "POST /api/chat (poll insert)");
     if (typeof pollMessageId !== "string") {
       return handleApiError(
@@ -75,7 +81,7 @@ async function persistChatPostMessage({
     }
 
     const message = await loadMessageById(
-      supabase,
+      isPrivilegedChannel ? serviceSupabase : supabase,
       serviceSupabase,
       userId,
       pollMessageId,
