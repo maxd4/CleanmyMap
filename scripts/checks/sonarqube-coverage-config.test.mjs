@@ -25,9 +25,66 @@ test("SonarQube receives both workspace LCOV reports without a broad test path",
 test("the workflow generates and validates coverage before scanning", () => {
   const workflow = read(".github/workflows/sonarqube-manual.yml");
   const web = workflow.indexOf("run: npm run test:coverage");
-  const webRatchet = workflow.indexOf("run: npm run quality:coverage -- --from-existing-summary");
+  const webRatchet = workflow.indexOf("- name: Verify Web coverage ratchet");
   const mobile = workflow.indexOf("run: npm run quality:mobile-coverage");
   const validator = workflow.indexOf("run: node scripts/checks/prepare-sonarqube-coverage.mjs");
   const scanner = workflow.indexOf("uses: SonarSource/sonarqube-scan-action@");
   assert.ok(web >= 0 && webRatchet > web && mobile > webRatchet && validator > mobile && scanner > validator);
+});
+
+test("only the Web ratchet is deferred and its final verdict runs after the scan", () => {
+  const workflow = read(".github/workflows/sonarqube-manual.yml");
+  const ratchetStart = workflow.indexOf("      - name: Verify Web coverage ratchet");
+  const mobileStart = workflow.indexOf("      - name: Generate and verify Mobile coverage");
+  const scannerStart = workflow.indexOf("      - name: SonarQube Cloud scan");
+  const verdictStart = workflow.indexOf("      - name: Enforce Web coverage ratchet verdict");
+  const ratchetStep = workflow.slice(ratchetStart, mobileStart);
+  const downstreamSteps = workflow.slice(mobileStart, verdictStart);
+  const verdictStep = workflow.slice(verdictStart);
+
+  assert.match(ratchetStep, /id: web_coverage_ratchet/);
+  assert.match(ratchetStep, /continue-on-error: true/);
+  assert.equal((ratchetStep.match(/continue-on-error:\s*true/g) ?? []).length, 1);
+  assert.doesNotMatch(downstreamSteps, /continue-on-error:\s*true/);
+  assert.ok(verdictStart > scannerStart, "the ratchet verdict must be enforced after SonarQube");
+  assert.match(verdictStep, /if: \$\{\{ always\(\) \}\}/);
+  assert.match(verdictStep, /WEB_COVERAGE_RATCHET_OUTCOME: \$\{\{ steps\.web_coverage_ratchet\.outcome \}\}/);
+  assert.match(verdictStep, /WEB_COVERAGE_RATCHET_OUTCOME.*!= "success"/s);
+  assert.match(verdictStep, /exit 1/);
+});
+
+function expectedWorkflowConclusion({ webGeneration, ratchet, mobile, lcov, scanner }) {
+  if (webGeneration !== "success") return "failure";
+  if (mobile !== "success" || lcov !== "success" || scanner !== "success") return "failure";
+  if (ratchet !== "success") return "failure";
+  return "success";
+}
+
+test("workflow outcome cases preserve mandatory failures while allowing downstream evidence", () => {
+  const cases = [
+    {
+      name: "ratchet PASS",
+      input: { webGeneration: "success", ratchet: "success", mobile: "success", lcov: "success", scanner: "success" },
+      expected: "success",
+    },
+    {
+      name: "ratchet FAIL with successful scan",
+      input: { webGeneration: "success", ratchet: "failure", mobile: "success", lcov: "success", scanner: "success" },
+      expected: "failure",
+    },
+    {
+      name: "LCOV absent",
+      input: { webGeneration: "success", ratchet: "success", mobile: "success", lcov: "failure", scanner: "skipped" },
+      expected: "failure",
+    },
+    {
+      name: "scanner error",
+      input: { webGeneration: "success", ratchet: "success", mobile: "success", lcov: "success", scanner: "failure" },
+      expected: "failure",
+    },
+  ];
+
+  for (const scenario of cases) {
+    assert.equal(expectedWorkflowConclusion(scenario.input), scenario.expected, scenario.name);
+  }
 });
