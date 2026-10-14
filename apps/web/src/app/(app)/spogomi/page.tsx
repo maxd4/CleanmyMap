@@ -61,6 +61,12 @@ export default async function SpogomiIndexPage() {
           }
         />
         <SpogomiOrientationTabs canAccessOrganizerDashboard={Boolean(userId)} />
+        {userId ? (
+          <nav className="flex flex-wrap gap-4" aria-label="Navigation privée SPOGOMI">
+            <Link href="/spogomi/mes-evenements" className="font-bold text-emerald-800 hover:underline">Mes événements</Link>
+            <Link href="/spogomi/nouveau" className="font-bold text-emerald-800 hover:underline">Nouvelle compétition</Link>
+          </nav>
+        ) : null}
         <section id="spogomi-events" className="scroll-mt-6 space-y-4" aria-labelledby="spogomi-events-title">
           <div>
             <h2 id="spogomi-events-title" className="text-2xl font-black text-slate-950">Compétitions publiées</h2>

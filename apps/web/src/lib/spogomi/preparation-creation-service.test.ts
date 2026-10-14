@@ -11,7 +11,10 @@ vi.mock("@/lib/authz", () => ({ getCurrentUserIdentity: mocks.getCurrentUserIden
 vi.mock("@/lib/actions/intervention-mode", () => ({ createActionInterventionMode: () => "fixed_area" }));
 vi.mock("@/lib/actions/permissions", () => ({ canManageAction: () => true }));
 vi.mock("@/lib/actions/store-create", () => ({ createAction: mocks.createAction }));
-vi.mock("@/lib/spogomi/public-service", () => ({ normalizeSpogomiEventSlug: (name: string) => name.toLowerCase().replace(/\s+/g, "-") }));
+vi.mock("@/lib/spogomi/public-service", () => ({
+  normalizeSpogomiEventSlug: (name: string) => name.toLowerCase().replace(/\s+/g, "-"),
+  isReservedSpogomiEventSlug: (slug: string) => ["nouveau", "mes-evenements"].includes(slug),
+}));
 
 import { createSpogomiEvent } from "./preparation-creation-service";
 
@@ -233,6 +236,19 @@ describe("SPOGOMI event creation contract", () => {
     await expect(createSpogomiEvent({ supabase: store as never, userId: "user-1", input: input({ idempotencyKey: "spogomi-invalid-start", startsAt: "not-a-date" }) })).rejects.toThrow(/date de début/i);
     await expect(createSpogomiEvent({ supabase: store as never, userId: "user-1", input: input({ idempotencyKey: "spogomi-invalid-end", endsAt: "not-a-date" }) })).rejects.toThrow(/date de fin/i);
     await expect(createSpogomiEvent({ supabase: store as never, userId: "user-1", input: input({ idempotencyKey: "spogomi-reversed", startsAt: "2026-10-13T12:00:00.000Z", endsAt: "2026-10-13T11:00:00.000Z" }) })).rejects.toThrow(/postérieure/i);
+  });
+
+  it("does not allocate a canonical navigation slug to a new event", async () => {
+    const store = new CreationStore();
+    installActionFactory(store);
+
+    await createSpogomiEvent({
+      supabase: store as never,
+      userId: "user-1",
+      input: input({ idempotencyKey: "spogomi-reserved-slug", name: "Nouveau" }),
+    });
+
+    expect(store.events[0]?.event_slug).toMatch(/^nouveau-spogomi-action-/);
   });
 
   it("reuses one private action and event after a transient failure", async () => {

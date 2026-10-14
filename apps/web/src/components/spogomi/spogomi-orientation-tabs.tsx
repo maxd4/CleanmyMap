@@ -175,7 +175,8 @@ export function SpogomiOrientationTabs({
         ) : null}
         {activePanel.id === "organizers" && canAccessOrganizerDashboard ? (
           <CmmButtonGroup>
-            <CmmButton href="/dashboard/spogomi" tone="primary">Ouvrir l’espace organisateur</CmmButton>
+            <CmmButton href="/spogomi/mes-evenements" tone="primary">Ouvrir mes événements</CmmButton>
+            <CmmButton href="/spogomi/nouveau" tone="secondary">Créer une compétition</CmmButton>
           </CmmButtonGroup>
         ) : null}
         {activePanel.id === "referees" ? (

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const component = readFileSync(new URL("./spogomi-preparation-workspace.tsx", import.meta.url), "utf8");
-const managementPage = readFileSync(new URL("../../app/(app)/spogomi/[eventSlug]/gestion/page.tsx", import.meta.url), "utf8");
+const spacePage = readFileSync(new URL("../../app/(app)/spogomi/[eventSlug]/espace/page.tsx", import.meta.url), "utf8");
 
 describe("SPOGOMI organizer team-name editor STATIC_CONTRACT", () => {
   it("edits the canonical public name without exposing composition controls", () => {
@@ -18,7 +18,8 @@ describe("SPOGOMI organizer team-name editor STATIC_CONTRACT", () => {
   });
 
   it("keeps explicit returns to the organizer space and public index", () => {
-    expect(managementPage).toContain('href="/dashboard/spogomi"');
-    expect(managementPage).toContain('href="/spogomi"');
+    expect(spacePage).toContain('href="/spogomi/mes-evenements"');
+    expect(spacePage).toContain('href="/spogomi/nouveau"');
+    expect(spacePage).toContain('href="/spogomi"');
   });
 });

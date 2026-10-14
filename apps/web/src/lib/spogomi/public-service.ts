@@ -69,6 +69,12 @@ function normalizeSlugPart(value: string): string {
     .replace(/-+$/g, "");
 }
 
+export const SPOGOMI_RESERVED_EVENT_SLUGS = new Set(["nouveau", "mes-evenements"]);
+
+export function isReservedSpogomiEventSlug(slug: string): boolean {
+  return SPOGOMI_RESERVED_EVENT_SLUGS.has(slug);
+}
+
 export function normalizeSpogomiEventSlug(name: string): string {
   return normalizeSlugPart(name) || "evenement-spogomi";
 }

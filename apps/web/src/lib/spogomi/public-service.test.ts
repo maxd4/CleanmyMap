@@ -17,6 +17,7 @@ import {
   loadPublishedSpogomiEventBySlug,
   loadPublishedSpogomiEventForAction,
   loadPublishedSpogomiEventResultsBySlug,
+  isReservedSpogomiEventSlug,
   normalizeSpogomiEventSlug,
 } from "./public-service";
 
@@ -66,6 +67,9 @@ describe("SPOGOMI public identity and lifecycle", () => {
   it("normalizes a stable URL slug without accents or unsafe separators", () => {
     expect(normalizeSpogomiEventSlug("Coupe d'été — Paris 2026")).toBe("coupe-d-ete-paris-2026");
     expect(normalizeSpogomiEventSlug("***")).toBe("evenement-spogomi");
+    expect(isReservedSpogomiEventSlug("nouveau")).toBe(true);
+    expect(isReservedSpogomiEventSlug("mes-evenements")).toBe(true);
+    expect(isReservedSpogomiEventSlug("paris-2026")).toBe(false);
   });
 
   it("classifies only from event dates and terminal states", () => {

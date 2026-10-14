@@ -23,7 +23,15 @@ function inputClassName() {
   return "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200";
 }
 
-export function SpogomiOrganizerDashboard({ initialEvents }: { initialEvents: EventRow[] }) {
+export type SpogomiOrganizerDashboardView = "all" | "events" | "create";
+
+export function SpogomiOrganizerDashboard({
+  initialEvents,
+  view = "all",
+}: {
+  initialEvents: EventRow[];
+  view?: SpogomiOrganizerDashboardView;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -95,9 +103,12 @@ export function SpogomiOrganizerDashboard({ initialEvents }: { initialEvents: Ev
     }
   }
 
+  const showCreation = view !== "events";
+  const showEvents = view !== "create";
+
   return (
     <div className="space-y-8">
-      <CmmCard tone="emerald" variant="glass" className="space-y-5 p-5 sm:p-6">
+      {showCreation ? <CmmCard tone="emerald" variant="glass" className="space-y-5 p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <ShieldCheck className="mt-1 text-emerald-700" size={22} aria-hidden="true" />
           <div>
@@ -117,9 +128,9 @@ export function SpogomiOrganizerDashboard({ initialEvents }: { initialEvents: Ev
             {error ? <p role="alert" className="text-sm font-semibold text-red-700">{error}</p> : null}
           </div>
         </form>
-      </CmmCard>
+      </CmmCard> : null}
 
-      <section className="space-y-4" aria-labelledby="spogomi-organizer-events-title">
+      {showEvents ? <section className="space-y-4" aria-labelledby="spogomi-organizer-events-title">
         <div>
           <h2 id="spogomi-organizer-events-title" className="text-2xl font-black text-slate-950">Mes événements SPOGOMI</h2>
           <p className="cmm-text-body mt-1 text-slate-900">Seuls les événements autorisés pour votre identité sont listés ici.</p>
@@ -127,7 +138,8 @@ export function SpogomiOrganizerDashboard({ initialEvents }: { initialEvents: Ev
         {initialEvents.length === 0 ? (
           <CmmCard tone="slate" variant="glass" className="border-dashed p-6">
             <p className="font-bold text-slate-900">Aucun événement gérable pour le moment.</p>
-            <p className="mt-2 text-sm text-slate-600">Créez une compétition privée ci-dessus ou demandez à être ajouté comme organisateur.</p>
+            <p className="mt-2 text-sm text-slate-600">Créez une compétition privée ou demandez à être ajouté comme organisateur.</p>
+            <CmmButton href="/spogomi/nouveau" tone="primary" size="sm" className="mt-4">Créer une compétition <Plus size={15} /></CmmButton>
           </CmmCard>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
@@ -145,15 +157,19 @@ export function SpogomiOrganizerDashboard({ initialEvents }: { initialEvents: Ev
                   <p className="flex items-center gap-2"><MapPin size={15} className="text-emerald-700" />{event.location_label}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  {event.event_slug ? <CmmButton href={`/spogomi/${encodeURIComponent(event.event_slug)}/gestion`} tone="primary" size="sm">Gérer cette compétition <ArrowRight size={15} /></CmmButton> : null}
+                  {event.event_slug ? <CmmButton href={`/spogomi/${encodeURIComponent(event.event_slug)}/espace`} tone="primary" size="sm">Gérer cette compétition <ArrowRight size={15} /></CmmButton> : null}
                   {event.public_visibility === "published" && event.event_slug ? <CmmButton href={`/spogomi/${encodeURIComponent(event.event_slug)}`} tone="secondary" size="sm">Voir la page publique</CmmButton> : null}
                 </div>
               </CmmCard>
             ))}
           </div>
         )}
-      </section>
-      <Link href="/spogomi" className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Retour à SPOGOMI <ArrowRight size={16} /></Link>
+      </section> : null}
+      <div className="flex flex-wrap gap-4">
+        {view === "events" ? <Link href="/spogomi/nouveau" className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Créer une compétition <Plus size={16} /></Link> : null}
+        {view === "create" ? <Link href="/spogomi/mes-evenements" className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Voir mes événements <ArrowRight size={16} /></Link> : null}
+        <Link href="/spogomi" className="inline-flex min-h-11 items-center gap-2 font-bold text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Retour à SPOGOMI <ArrowRight size={16} /></Link>
+      </div>
     </div>
   );
 }

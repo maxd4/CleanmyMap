@@ -65,6 +65,9 @@ describe("indexability helpers", () => {
     expect(isPrivateAppPath("/actions/map")).toBe(false);
     expect(isPrivateAppPath("/spogomi")).toBe(false);
     expect(isPrivateAppPath("/spogomi/coupe-paris/gestion")).toBe(true);
+    expect(isPrivateAppPath("/spogomi/coupe-paris/espace")).toBe(true);
+    expect(isPrivateAppPath("/spogomi/mes-evenements")).toBe(true);
+    expect(isPrivateAppPath("/spogomi/nouveau")).toBe(true);
     expect(isPrivateAppPath("/partners/network")).toBe(false);
     expect(isPrivateAppPath("/learn/ecole")).toBe(false);
     expect(isPublicNoindexPath("/sign-in")).toBe(true);

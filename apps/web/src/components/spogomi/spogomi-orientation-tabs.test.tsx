@@ -27,7 +27,7 @@ describe("SpogomiOrientationTabs", () => {
     expect(tabs[0]?.props["aria-selected"]).toBe(true);
     expect(tabs[1]?.props["aria-selected"]).toBe(false);
     expect(renderer.root.findByProps({ role: "tabpanel" }).props.children).toBeTruthy();
-    expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/dashboard/spogomi")).toHaveLength(0);
+    expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/spogomi/mes-evenements")).toHaveLength(0);
   });
 
   it("changes the explanatory journey without granting referee access", () => {
@@ -42,7 +42,7 @@ describe("SpogomiOrientationTabs", () => {
     });
 
     expect(renderer.root.findAllByType("h3").map((node) => node.props.children)).toContain("Arbitres & modération");
-    expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/dashboard/spogomi")).toHaveLength(0);
+    expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/spogomi/mes-evenements")).toHaveLength(0);
     expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/spogomi")).toHaveLength(0);
   });
 
@@ -57,6 +57,6 @@ describe("SpogomiOrientationTabs", () => {
       tabs[2]?.props.onClick({} as MouseEvent<HTMLButtonElement>);
     });
 
-    expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/dashboard/spogomi")).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/spogomi/mes-evenements")).toHaveLength(1);
   });
 });

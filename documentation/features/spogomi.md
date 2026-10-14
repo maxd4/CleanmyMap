@@ -354,7 +354,7 @@ Chaque lot s'appuie sur le `main` **publié** du lot précédent. Codex exécute
 
 ## 15. Lot 2 livré — CURRENT — préparation organisateur
 
-La préparation privée est désormais portée par `/spogomi/[eventSlug]/gestion` et permet
+La préparation privée est désormais portée par `/spogomi/[eventSlug]/espace` et permet
 à un compte authentifié qui possède la relation organisateur canonique de :
 
 - créer un brouillon avec une seule action CleanMyMap liée par `action_id` ; la
@@ -363,7 +363,7 @@ La préparation privée est désormais portée par `/spogomi/[eventSlug]/gestion
   vérifient le propriétaire et permettent de reprendre un échec de liaison sans
   créer une seconde action (`PARTIAL_ALLOWED`) ; le type juridique SPOGOMI
   France reste provisoire tant que le répertoire ne le configure pas ;
-- créer depuis `/dashboard/spogomi` avec une clé et un payload conservés pour
+- créer depuis `/spogomi/nouveau` avec une clé et un payload conservés pour
   la même intention lors d'une réponse réseau indéterminée ; le formulaire ne
   se réinitialise et le cockpit ne se rafraîchit qu'après confirmation du
   serveur ; le catalogue ordinaire part des créations et des relations
@@ -543,7 +543,7 @@ preuve de sémantique PostgreSQL ; hors environnement CI éphémère autorisé,
 ### Pseudonymes publics des équipes — Lot 11C
 
 Le pseudonyme public d'une équipe reste porté par `spogomi_teams.public_name`.
-Le cockpit `/spogomi/[eventSlug]/gestion` permet à l'organisateur habilité de
+Le cockpit `/spogomi/[eventSlug]/espace` permet à l'organisateur habilité de
 le modifier ou le corriger à tout moment, y compris après verrouillage,
 certification, publication ou archivage, sans rouvrir l'événement ni toucher
 à la composition, aux résultats, aux accès ou à la consolidation. Le numéro
@@ -615,14 +615,25 @@ Les trois routes canoniques sont intégrées dans la famille visuelle et documen
   distinguer à venir, en cours et terminé ;
 - `/spogomi/[eventSlug]` expose une projection publique bornée de l'événement,
   sans roster nominatif, et conserve la provenance `official_reference` du GPX ;
-- `/spogomi/[eventSlug]/gestion` réutilise le cockpit du lot 2 derrière une
+- `/spogomi/mes-evenements` liste les événements gérables après AuthN et
+  filtrage serveur ; `/spogomi/nouveau` réutilise le formulaire privé et
+  `/dashboard/spogomi` reste une redirection de compatibilité vers la liste ;
+- `/spogomi/[eventSlug]/espace` réutilise le cockpit du lot 2 derrière une
   AuthN/AuthZ serveur liée à l'organisateur de l'action canonique. La publication
   est explicite et réversible ; un événement privé n'est pas révélé par ses
   métadonnées ou par le sitemap statique.
 
+`/spogomi/[eventSlug]/gestion` reste un alias de compatibilité vers
+`/spogomi/[eventSlug]/espace`. Les quatre surfaces privées réutilisent les mêmes
+services de catalogue, de création et de préparation ; aucune permission ou
+nouvelle capacité métier n'est attachée au changement d'URL.
+
 `event_slug` est une identité d'URL stable et unique du propriétaire
 `spogomi_events`. Il est normalisé à la création et conserve sa valeur si le nom
-change ; une collision reçoit un suffixe dérivé de l'action canonique. La
+change ; une collision reçoit un suffixe dérivé de l'action canonique. Les
+segments réservés `nouveau` et `mes-evenements` ne sont jamais attribués à une
+nouvelle édition : les anciennes lignes éventuellement présentes restent
+inchangées et les nouvelles créations reçoivent un suffixe déterministe. La
 projection publique ne lit aucune table de roster et ne renvoie que les noms
 publics d'équipe, le parcours officiel et un lien vers l'action CleanMyMap
 réellement publiée.
@@ -1199,7 +1210,7 @@ composant réellement monté par `JoinActionSection` et renvoie vers `/spogomi`,
 y compris lorsque la liste d'actions est vide ou filtrée. La page publique
 présente uniquement les événements explicitement publiés. Pour une session
 authentifiée, elle expose aussi l'entrée « Mes événements SPOGOMI » vers
-`/dashboard/spogomi` sans charger les brouillons dans la page publique.
+`/spogomi/mes-evenements` sans charger les brouillons dans la page publique.
 
 Le cockpit privé obtient les événements depuis une lecture serveur puis
 réutilise `loadSpogomiEventForOrganizer`, qui applique `canManageEvent` et les
@@ -1222,7 +1233,8 @@ Fichiers principaux :
 - `apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.explorer.tsx` ;
 - `apps/web/src/components/spogomi/spogomi-future-card.tsx` et `spogomi-countdown.tsx` ;
 - `apps/web/src/app/(app)/spogomi/page.tsx` ;
-- `apps/web/src/app/(app)/dashboard/spogomi/page.tsx` ;
+- `apps/web/src/app/(app)/spogomi/mes-evenements/page.tsx` et
+  `apps/web/src/app/(app)/spogomi/nouveau/page.tsx` ;
 - `apps/web/src/lib/spogomi/organizer-service.ts`.
 
 ## 20. Sources canoniques liées

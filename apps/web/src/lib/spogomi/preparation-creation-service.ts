@@ -5,7 +5,7 @@ import { createActionInterventionMode } from "@/lib/actions/intervention-mode";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { canManageAction, type ActionPermissionIdentity } from "@/lib/actions/permissions";
 import type { SpogomiEventMode } from "./types";
-import { normalizeSpogomiEventSlug } from "./public-service";
+import { isReservedSpogomiEventSlug, normalizeSpogomiEventSlug } from "./public-service";
 
 const CREATION_LEASE_MS = 2 * 60 * 1000;
 const EVENT_SELECT = "id, action_id, created_by_clerk_id, idempotency_key, name, location_label, mode, state, starts_at, ends_at, team_size_config, creation_state, event_slug, public_visibility, public_results_visibility, composition_revision";
@@ -375,7 +375,12 @@ async function ensureEventForAction(params: {
     return event;
   }
 
-  const baseSlug = normalizeSpogomiEventSlug(canonical.name);
+  const normalizedSlug = normalizeSpogomiEventSlug(canonical.name);
+  // These paths are canonical private surfaces. Existing event rows are not
+  // renamed during recovery; new rows receive a deterministic safe suffix.
+  const baseSlug = isReservedSpogomiEventSlug(normalizedSlug)
+    ? `${normalizedSlug}-spogomi-${actionId.slice(0, 8)}`
+    : normalizedSlug;
   const eventPayload = {
     action_id: actionId, created_by_clerk_id: userId, idempotency_key: input.idempotencyKey,
     name: canonical.name, location_label: canonical.locationLabel, mode: canonical.mode,

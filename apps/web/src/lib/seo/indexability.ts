@@ -145,7 +145,9 @@ function matchesPathPrefix(pathname: string, prefix: string): boolean {
 }
 
 export function isPrivateAppPath(pathname: string): boolean {
-  return pathname.includes("/gestion") && pathname.startsWith("/spogomi/") || PRIVATE_APP_ROUTE_PREFIXES.some((prefix) =>
+  const isPrivateSpogomiPath = pathname === "/spogomi/nouveau" || pathname === "/spogomi/mes-evenements" ||
+    /^\/spogomi\/[^/]+\/(?:gestion|espace)$/.test(pathname);
+  return isPrivateSpogomiPath || PRIVATE_APP_ROUTE_PREFIXES.some((prefix) =>
     matchesPathPrefix(pathname, prefix),
   );
 }

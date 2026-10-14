@@ -136,7 +136,8 @@ mais ne constituent pas des pages de recherche autonomes.
 | /admin et /admin/* | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /pilotage | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /sponsor-portal | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
-| /spogomi/[eventSlug]/gestion | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /spogomi/mes-evenements et /spogomi/nouveau | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /spogomi/[eventSlug]/espace et /spogomi/[eventSlug]/gestion | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /spogomi/[eventSlug]/equipe | `PRIVATE` | `NOINDEX` | `PARTNER_SESSION` | `NONE` |
 | /partners/dashboard et /partners/onboarding | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /prints/report | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
@@ -217,7 +218,7 @@ Il n'existe actuellement aucune page canonique `/learn`. Les pages
 | Route | Fiche | Accès | Palette runtime | Source |
 |---|---|---|---|---|
 | `/dashboard` | [Dashboard](./routes/01-accueil-pilotage/dashboard/dashboard-README.md) | `protected` | amber / pilotage | `apps/web/src/app/(app)/dashboard/page.tsx` |
-| `/dashboard/spogomi` | [Espace organisateur SPOGOMI](./routes/01-accueil-pilotage/spogomi-organizer/spogomi-organizer-README.md) | `protected` ; événements filtrés par l'autorisation organisateur | agir | `apps/web/src/app/(app)/dashboard/spogomi/page.tsx` |
+| `/dashboard/spogomi` | — | `redirect` vers `/spogomi/mes-evenements` | agir | `apps/web/src/app/(app)/dashboard/spogomi/page.tsx` |
 | `/compte/evolution` | [Évolution du compte](./routes/01-accueil-pilotage/compte-evolution/compte-evolution-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/compte/evolution/page.tsx` |
 | `/explorer` | [Sommaire](./routes/01-accueil-pilotage/explorer/explorer-README.md) | `public-visible` | yellow, exception nommée | `apps/web/src/app/(app)/explorer/page.tsx` |
 | `/parcours` | [Parcours](./routes/01-accueil-pilotage/parcours/parcours-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/page.tsx` |
@@ -233,7 +234,10 @@ Il n'existe actuellement aucune page canonique `/learn`. Les pages
 
 | `/spogomi` | [Découverte SPOGOMI](./routes/02-agir/spogomi/spogomi-README.md) | `public-visible` ; événements explicitement publiés | agir | `apps/web/src/app/(app)/spogomi/page.tsx` |
 | `/spogomi/[eventSlug]` | [Événement SPOGOMI](./routes/02-agir/spogomi-event/spogomi-event-README.md) | `public-visible` ; projection publiée bornée | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/page.tsx` |
-| `/spogomi/[eventSlug]/gestion` | [Gestion SPOGOMI](./routes/02-agir/spogomi-gestion/spogomi-gestion-README.md) | `protected` ; organisateur habilité pour l'événement | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/gestion/page.tsx` |
+| `/spogomi/mes-evenements` | [Mes événements SPOGOMI](./routes/02-agir/spogomi-events/spogomi-events-README.md) | `protected` ; événements filtrés par l'autorisation organisateur | agir | `apps/web/src/app/(app)/spogomi/mes-evenements/page.tsx` |
+| `/spogomi/nouveau` | [Nouvelle compétition SPOGOMI](./routes/02-agir/spogomi-new/spogomi-new-README.md) | `protected` ; création privée | agir | `apps/web/src/app/(app)/spogomi/nouveau/page.tsx` |
+| `/spogomi/[eventSlug]/espace` | [Gestion SPOGOMI](./routes/02-agir/spogomi-gestion/spogomi-gestion-README.md) | `protected` ; organisateur habilité pour l'événement | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/espace/page.tsx` |
+| `/spogomi/[eventSlug]/gestion` | — | `redirect` vers `/spogomi/[eventSlug]/espace` | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/gestion/page.tsx` |
 | `/spogomi/[eventSlug]/equipe` | [Saisie équipe SPOGOMI](./routes/02-agir/spogomi-team/spogomi-team-README.md) | `partner-session` ; session d'équipe limitée et révocable | agir | `apps/web/src/app/(app)/spogomi/[eventSlug]/equipe/page.tsx` |
 
 ### Entrées visibles du bloc

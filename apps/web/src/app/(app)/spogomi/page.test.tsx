@@ -28,7 +28,7 @@ vi.mock("@/components/spogomi/spogomi-orientation-tabs", () => ({
     React.createElement(
       "div",
       { "data-testid": "orientation-tabs" },
-      canAccessOrganizerDashboard ? React.createElement("a", { href: "/dashboard/spogomi" }, "Ouvrir l’espace organisateur") : null,
+      canAccessOrganizerDashboard ? React.createElement("a", { href: "/spogomi/mes-evenements" }, "Ouvrir mes événements") : null,
     ),
 }));
 vi.mock("@/components/spogomi/spogomi-international-content", () => ({ SpogomiInternationalContent: () => React.createElement("div", { "data-testid": "international" }) }));
@@ -55,7 +55,7 @@ describe("/spogomi public and private navigation", () => {
     expect(markup).toContain("understanding.rulesTitle");
     expect(markup.indexOf("spogomi-events")).toBeLessThan(markup.indexOf("understanding.title"));
     expect(markup.indexOf("understanding.title")).toBeLessThan(markup.indexOf("international"));
-    expect(markup).not.toContain('href="/dashboard/spogomi"');
+    expect(markup).not.toContain('href="/spogomi/mes-evenements"');
     expect(mocks.listPublishedSpogomiEvents).toHaveBeenCalledTimes(1);
   });
 
@@ -63,7 +63,7 @@ describe("/spogomi public and private navigation", () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
     const markup = renderToStaticMarkup(await SpogomiIndexPage());
     expect(markup).toContain("orientation-tabs");
-    expect(markup).toContain('href="/dashboard/spogomi"');
+    expect(markup).toContain('href="/spogomi/mes-evenements"');
   });
 
   it("keeps a loading failure distinct from an empty published-events state", async () => {
