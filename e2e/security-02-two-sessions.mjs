@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import path from "node:path";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
 const execFileAsync = promisify(execFile);
 const root = process.cwd();
@@ -35,7 +37,7 @@ do $$ begin
     raise exception 'SECURITY-02 two-session fixture already exists';
   end if;
 end $$;
-set local role service_role;
+set local role postgres;
 insert into public.profiles (id, display_name, role_label, active_role_label, metadata)
 values
   ('${fixtureIds[0]}', 'Security 02 session stale admin', 'admin', 'admin', '{}'::jsonb),
@@ -67,7 +69,7 @@ rollback;
 
 const sessionB = `
 begin;
-set local role service_role;
+set local role postgres;
 do $$
 declare v_conversation_id uuid; v_owner_id text;
 begin
@@ -103,20 +105,98 @@ rollback;
 
 const cleanupSql = `
 begin;
-set local role service_role;
+set local role postgres;
 delete from public.profiles where id in ('${fixtureIds.join("','")}');
 commit;
 `;
 
-await runQuery(setupSql);
-try {
-  const results = await Promise.allSettled([runQuery(sessionA), runQuery(sessionB)]);
-  for (const result of results) {
-    if (result.status === "rejected") throw result.reason;
-  }
-  assert.equal(results.length, 2, "SECURITY-02 requires two independent PostgreSQL sessions");
-} finally {
-  await runQuery(cleanupSql);
+const privilegeSql = `
+do $$
+begin
+  if has_table_privilege('service_role', 'public.profiles', 'DELETE') then
+    raise exception 'SECURITY-02 service_role unexpectedly has profile DELETE';
+  end if;
+  if not has_table_privilege('service_role', 'public.profiles', 'SELECT') then
+    raise exception 'SECURITY-02 service_role lost profile SELECT';
+  end if;
+end
+$$;
+`;
+
+const absenceSql = `
+begin;
+set local role postgres;
+do $$
+begin
+  if exists (select 1 from public.profiles where id in ('${fixtureIds.join("','")}')) then
+    raise exception 'SECURITY-02 fixture cleanup left profile rows behind';
+  end if;
+end
+$$;
+rollback;
+`;
+
+function formatFailure(label, error) {
+  if (!error) return null;
+  const detail = error instanceof Error ? error.message : String(error);
+  return `${label}: ${detail}`;
 }
 
-console.log("SECURITY-02 two-session PostgreSQL contract passed.");
+export async function runSecurity02Contract(
+  query = runQuery,
+  { forceFailure = process.env.SECURITY_02_FORCE_FAILURE === "1" } = {},
+) {
+  let setupCommitted = false;
+  let assertionError = null;
+
+  try {
+    await query(privilegeSql);
+    await query(setupSql);
+    setupCommitted = true;
+
+    const results = await Promise.allSettled([query(sessionA), query(sessionB)]);
+    for (const result of results) {
+      if (result.status === "rejected") throw result.reason;
+    }
+    assert.equal(results.length, 2, "SECURITY-02 requires two independent PostgreSQL sessions");
+    if (forceFailure) {
+      throw new Error("SECURITY-02 intentional assertion failure for cleanup validation");
+    }
+  } catch (error) {
+    assertionError = error;
+  }
+
+  let cleanupError = null;
+  if (setupCommitted) {
+    try {
+      await query(cleanupSql);
+    } catch (error) {
+      cleanupError = error;
+    }
+  }
+
+  let absenceError = null;
+  try {
+    await query(absenceSql);
+  } catch (error) {
+    absenceError = error;
+  }
+
+  const failures = [
+    formatFailure("assertions", assertionError),
+    formatFailure("cleanup", cleanupError),
+    formatFailure("absence check", absenceError),
+  ].filter(Boolean);
+  if (failures.length > 0) {
+    throw new Error(`SECURITY-02 two-session PostgreSQL contract failed.\n${failures.join("\n")}`);
+  }
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  runSecurity02Contract()
+    .then(() => console.log("SECURITY-02 two-session PostgreSQL contract passed."))
+    .catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    });
+}
