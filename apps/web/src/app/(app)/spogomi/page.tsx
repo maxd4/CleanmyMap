@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, MapPin, Trophy } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, Globe2, MapPin, ShieldCheck } from "lucide-react";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+import { CmmIcon } from "@/components/ui/cmm-icon";
 import { PageHeader } from "@/components/ui/page-header";
 import { SpogomiInternationalContent } from "@/components/spogomi/spogomi-international-content";
 import { SpogomiOrientationTabs } from "@/components/spogomi/spogomi-orientation-tabs";
@@ -94,24 +96,58 @@ export default async function SpogomiIndexPage() {
             </div>
           )}
         </section>
-        <section className="grid gap-4 md:grid-cols-2" aria-label="Modes de compétition">
-          <CmmCard tone="emerald" variant="glass" className="space-y-3 p-5">
-            <h2 className="flex items-center gap-2 text-xl font-black text-emerald-950">
-              <Trophy size={20} />
-              Casual
+        <section className="space-y-4" aria-labelledby="spogomi-understanding-title">
+          <div>
+            <h2 id="spogomi-understanding-title" className="flex items-center gap-2 text-2xl font-black text-slate-950">
+              <CmmIcon icon={BookOpen} className="text-emerald-700" />
+              {t("understanding.title")}
             </h2>
-            <p className="cmm-text-body text-slate-900">
-              Des équipes dont la taille est configurée pour l’événement. Les règles publiées restent celles de l’organisateur.
-            </p>
-          </CmmCard>
-          <CmmCard tone="amber" variant="glass" className="space-y-3 p-5">
-            <h2 className="flex items-center gap-2 text-xl font-black text-amber-950">
-              <Trophy size={20} />
-              World Cup
-            </h2>
-            <p className="cmm-text-body text-slate-900">
-              Des équipes de trois personnes, avec une composition vérifiable. Aucun résultat sportif n’est affiché avant sa publication effective.
-            </p>
+            <p className="cmm-text-body mt-1 text-slate-900">{t("understanding.description")}</p>
+          </div>
+          <CmmCard tone="emerald" variant="glass" className="space-y-3 p-4 sm:p-5">
+            <CmmDisclosure
+              summary={(
+                <span className="flex items-center gap-3">
+                  <CmmIcon icon={BookOpen} className="text-emerald-700" />
+                  <span>{t("international.casualTitle")}</span>
+                </span>
+              )}
+              tone="emerald"
+              size="md"
+            >
+              <p className="cmm-text-body text-slate-900">{t("international.casualDescription")}</p>
+            </CmmDisclosure>
+            <CmmDisclosure
+              summary={(
+                <span className="flex items-center gap-3">
+                  <CmmIcon icon={Globe2} className="text-amber-700" />
+                  <span>{t("international.worldCupTitle")}</span>
+                </span>
+              )}
+              tone="amber"
+              size="md"
+            >
+              <p className="cmm-text-body text-slate-900">{t("international.worldCupDescription")}</p>
+            </CmmDisclosure>
+            <CmmDisclosure
+              summary={(
+                <span className="flex items-center gap-3">
+                  <CmmIcon icon={ShieldCheck} className="text-slate-700" />
+                  <span>{t("understanding.rulesTitle")}</span>
+                </span>
+              )}
+              tone="slate"
+              size="md"
+            >
+              <div className="space-y-3 text-slate-900">
+                <p className="cmm-text-body">{t("understanding.rulesDescription")}</p>
+                <ul className="list-disc space-y-2 pl-5 text-sm leading-6">
+                  <li>{t("understanding.rulesCasual")}</li>
+                  <li>{t("understanding.rulesWorldCup")}</li>
+                  <li>{t("understanding.rulesSafety")}</li>
+                </ul>
+              </div>
+            </CmmDisclosure>
           </CmmCard>
         </section>
         <SpogomiInternationalContent
@@ -122,10 +158,6 @@ export default async function SpogomiIndexPage() {
           copy={{
             worldTitle: t("international.worldTitle"),
             worldDescription: t("international.worldDescription"),
-            casualTitle: t("international.casualTitle"),
-            casualDescription: t("international.casualDescription"),
-            worldCupTitle: t("international.worldCupTitle"),
-            worldCupDescription: t("international.worldCupDescription"),
             cleanMyMapRole: t("international.cleanMyMapRole"),
             officialSources: t("international.officialSources"),
             verifiedOn: t("international.verifiedOn"),
@@ -140,7 +172,9 @@ export default async function SpogomiIndexPage() {
             externalEvent: t("international.externalEvent"),
             source: t("international.source"),
             noExternalEvents: t("international.noExternalEvents"),
-            communityLink: t("international.communityLink"),
+            newsDetails: t("international.newsDetails"),
+            filtersDetails: t("international.filtersDetails"),
+            worldDetails: t("international.worldDetails"),
           }}
         />
       </div>
