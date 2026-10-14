@@ -169,6 +169,12 @@ export const chatAuthorizationContract = {
         "recipient_id",
       ],
       evidenceScope: "module",
+      handlerEvidence: [
+        "auth()",
+        "getCurrentUserIdentity",
+        "getSupabaseClerkRlsClient",
+        "executeChatSearch",
+      ],
     },
   },
 } as const satisfies ApiAuthorizationContract;

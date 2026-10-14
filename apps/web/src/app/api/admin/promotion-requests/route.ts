@@ -404,8 +404,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  // API_AUTHORIZATION_CONTRACT: appendAdminOperationAudit is called by the
-  // local decision-audit owner below; the handler keeps its guard visible.
   const identity = await getCurrentUserIdentity();
   if (
     !identity ||

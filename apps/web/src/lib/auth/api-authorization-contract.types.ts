@@ -24,6 +24,11 @@ export type ApiAuthorizationContractEntry = {
   actual: string;
   evidence?: readonly string[];
   evidenceScope?: "method" | "module";
+  /**
+   * Evidence that must be present in the HTTP method even when some detailed
+   * evidence is intentionally owned by a local helper in the module.
+   */
+  handlerEvidence?: readonly string[];
   delegatesTo?: ApiHttpMethod;
 };
 

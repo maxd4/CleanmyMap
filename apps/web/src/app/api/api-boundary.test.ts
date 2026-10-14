@@ -53,6 +53,29 @@ function extractRouteMethods(source: string): Map<ApiHttpMethod, string> {
   return methods;
 }
 
+function withoutComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|\s)\/\/.*$/gm, "$1");
+}
+
+function missingEvidence(
+  entry: ApiAuthorizationContractEntry,
+  routeEntry: { source: string; methods: Map<ApiHttpMethod, string> },
+  method: ApiHttpMethod,
+): string[] {
+  const methodSource = routeEntry.methods.get(method);
+  const evidenceSource =
+    entry.evidenceScope === "module" ? routeEntry.source : methodSource;
+  const missing = (entry.evidence ?? []).filter(
+    (token) => !(evidenceSource ?? "").includes(token),
+  );
+  const missingHandlerEvidence = (entry.handlerEvidence ?? []).filter(
+    (token) => !withoutComments(methodSource ?? "").includes(token),
+  );
+  return [...missing, ...missingHandlerEvidence];
+}
+
 function resolveRouteMethods(path: string, source: string) {
   const methods = extractRouteMethods(source);
   const moduleSources = [source];
@@ -162,10 +185,8 @@ describe("API security boundaries", () => {
       const methodSource = routeEntry?.methods.get(method);
       expect(methodSource, `${route} ${method} is missing from route.ts`).toBeDefined();
 
-      const evidenceSource =
-        entry.evidenceScope === "module" ? routeEntry?.source : methodSource;
-      for (const token of entry.evidence ?? []) {
-        expect(evidenceSource, `${route} ${method} missing guard evidence ${token}`).toContain(token);
+      for (const token of missingEvidence(entry, routeEntry!, method)) {
+        expect.fail(`${route} ${method} missing guard evidence ${token}`);
       }
 
       if (entry.delegatesTo) {
@@ -174,5 +195,56 @@ describe("API security boundaries", () => {
         );
       }
     }
+  });
+
+  it("does not let an import or a different HTTP method satisfy method evidence", () => {
+    const fixture = `
+      import { requireCreatorAccess } from "@/lib/authz";
+      export async function GET() {
+        return requireCreatorAccess();
+      }
+      export async function POST() {
+        return new Response("ok");
+      }
+    `;
+    const routeEntry = {
+      source: fixture,
+      methods: extractRouteMethods(fixture),
+    };
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "creator access",
+      dimensions: ["admin/creator role"],
+      actual: "POST requires creator access",
+      handlerEvidence: ["requireCreatorAccess"],
+      evidenceScope: "method",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "POST")).toEqual([
+      "requireCreatorAccess",
+    ]);
+  });
+
+  it("does not count a comment as execution evidence", () => {
+    const fixture = `
+      export async function POST() {
+        // requireCreatorAccess is expected here but is not called.
+        return new Response("ok");
+      }
+    `;
+    const routeEntry = {
+      source: fixture,
+      methods: extractRouteMethods(fixture),
+    };
+    const entry: ApiAuthorizationContractEntry = {
+      expected: "creator access",
+      dimensions: ["admin/creator role"],
+      actual: "POST requires creator access",
+      handlerEvidence: ["requireCreatorAccess"],
+      evidenceScope: "method",
+    };
+
+    expect(missingEvidence(entry, routeEntry, "POST")).toEqual([
+      "requireCreatorAccess",
+    ]);
   });
 });

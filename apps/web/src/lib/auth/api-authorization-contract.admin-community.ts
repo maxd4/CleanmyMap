@@ -102,6 +102,13 @@ export const adminCommunityAuthorizationContract = {
       actual: "getCurrentUserIdentity must resolve canonical max with activeRole=max and the exact IMU owner id + authenticated distributed rate limit + appendAdminOperationAudit",
       evidence: ["getCurrentUserIdentity", "isConfiguredImuOwnerUserId", "enforceServerRateLimitForAuthenticatedUser", "appendAdminOperationAudit"],
       evidenceScope: "module",
+      handlerEvidence: [
+        "getCurrentUserIdentity",
+        "isConfiguredImuOwnerUserId",
+        "enforceServerRateLimitForAuthenticatedUser",
+        "respondToPromotionRejection",
+        "respondToPromotionAcceptance",
+      ],
     },
   },
   "admin/referrals.csv": {
@@ -124,7 +131,7 @@ export const adminCommunityAuthorizationContract = {
       dimensions: ["admin/creator role", "ownership", "audit"],
       actual: "requireCreatorAccess checks ACTIVE_ROLE=max + authenticated distributed rate limit + appendAdminOperationAudit",
       evidence: ["requireCreatorAccess", "enforceServerRateLimitForAuthenticatedUser", "appendAdminOperationAudit"],
-      evidenceScope: "module",
+      evidenceScope: "method",
     },
   },
   "admin/storage-usage": {
