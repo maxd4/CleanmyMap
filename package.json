@@ -76,6 +76,7 @@
     "audit:quality": "node scripts/audits/run-quality-audit.mjs",
     "audit:modularity": "node scripts/reports/generate-modularity-radar.mjs --ref=HEAD",
     "audit:modularity:write": "node scripts/reports/generate-modularity-radar.mjs --ref=HEAD --write",
+    "audit:architecture": "node scripts/reports/architecture-audit.mjs --ref=HEAD",
     "audit:product-surface": "node scripts/audits/generate-product-surface-audit.mjs --ref=HEAD",
     "audit:product-surface:write": "node scripts/audits/generate-product-surface-audit.mjs --ref=HEAD --write",
     "quality:mutation": "node scripts/checks/check-mutation.mjs",
