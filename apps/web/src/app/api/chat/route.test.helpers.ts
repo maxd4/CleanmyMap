@@ -20,6 +20,17 @@ export async function postChatPayload(payload: Record<string, unknown>) {
 }
 
 type ChatMessageFilter = { kind: "eq" | "in"; field: string; value: unknown } | { kind: "keyset"; expression: string };
+type MessageQueryResult = { data: ChatMessageRow[]; error: null };
+type MessageQuery = Promise<MessageQueryResult> & {
+  select: (...args: unknown[]) => MessageQuery;
+  order: (...args: unknown[]) => MessageQuery;
+  limit: (...args: unknown[]) => MessageQuery;
+  eq: (field: string, value: unknown) => MessageQuery;
+  in: (field: string, value: unknown[]) => MessageQuery;
+  or: (expression: string) => MessageQuery;
+  maybeSingle: () => Promise<{ data: ChatMessageRow | null; error: null }>;
+  single: () => Promise<{ data: ChatMessageRow | null; error: null | { message: string } }>;
+};
 
 function filterChatMessages(messages: ChatMessageRow[], filters: ChatMessageFilter[]): ChatMessageRow[] {
   return messages.filter((message) => filters.every((filter) => {
@@ -55,17 +66,20 @@ function createMessageHarness(options: SupabaseMockOptions) {
   const createMessagesQuery = () => {
     const filters: ChatMessageFilter[] = [];
     const filterMessages = () => filterChatMessages(options.messages, filters);
-    const query = {
-      select: vi.fn(() => query),
-      order: vi.fn((...args: unknown[]) => { messagesQuery.order(...args); return query; }),
-      limit: vi.fn((...args: unknown[]) => { messagesQuery.limit(...args); return query; }),
-      eq: vi.fn((field: string, value: unknown) => { filters.push({ kind: "eq", field, value }); messagesQuery.eq(field, value); return query; }),
-      in: vi.fn((field: string, value: unknown[]) => { filters.push({ kind: "in", field, value }); messagesQuery.in(field, value); return query; }),
-      or: vi.fn((expression: string) => { messagesQuery.or(expression); filters.push({ kind: "keyset", expression }); return query; }),
-      maybeSingle: vi.fn().mockImplementation(async () => ({ data: filterMessages()[0] ?? null, error: null })),
-      single: vi.fn().mockImplementation(async () => { const data = filterMessages()[0] ?? null; return data ? { data, error: null } : { data: null, error: { message: "not found" } }; }),
-      then: (resolve: (value: { data: ChatMessageRow[]; error: null }) => unknown, reject: (reason?: unknown) => unknown) => Promise.resolve({ data: filterMessages(), error: null }).then(resolve, reject),
-    };
+    // Supabase builders are awaitable and chainable; a real Promise preserves both behaviors without a manual thenable.
+    const query = Object.assign(
+      Promise.resolve().then<MessageQueryResult>(() => ({ data: filterMessages(), error: null })),
+      {
+        select: vi.fn(() => query),
+        order: vi.fn((...args: unknown[]) => { messagesQuery.order(...args); return query; }),
+        limit: vi.fn((...args: unknown[]) => { messagesQuery.limit(...args); return query; }),
+        eq: vi.fn((field: string, value: unknown) => { filters.push({ kind: "eq", field, value }); messagesQuery.eq(field, value); return query; }),
+        in: vi.fn((field: string, value: unknown[]) => { filters.push({ kind: "in", field, value }); messagesQuery.in(field, value); return query; }),
+        or: vi.fn((expression: string) => { messagesQuery.or(expression); filters.push({ kind: "keyset", expression }); return query; }),
+        maybeSingle: vi.fn().mockImplementation(async () => ({ data: filterMessages()[0] ?? null, error: null })),
+        single: vi.fn().mockImplementation(async () => { const data = filterMessages()[0] ?? null; return data ? { data, error: null } : { data: null, error: { message: "not found" } }; }),
+      },
+    ) as MessageQuery;
     return query;
   };
   messagesQuery.select.mockImplementation(() => createMessagesQuery()); messagesQuery.order.mockImplementation(() => createMessagesQuery()); messagesQuery.limit.mockImplementation(() => createMessagesQuery());
