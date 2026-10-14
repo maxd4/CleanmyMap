@@ -11,11 +11,11 @@
 - Révision analysée par SonarCloud : `ed0e2659760e3bdd8d26fba0389c6a52701a8c18`
 - Export : `2026-10-14T17:30:48.550Z`
 - Analyse SonarCloud : `2026-10-14T17:01:01+0000`
-- `main` confronté : `0686e02e16fa9dbfe0bf2af90ce6eb561e5f597f` (lot 3 intégré localement)
+- `main` confronté : `1bc900706cbac1790e7f6487b99dcca493012ca6` (lot 3 intégré localement)
 - `origin/main` au moment du rapprochement :
   `426e6cd1c7a98155e3d350ef015fbd31b851ed9f`
 - Inventaire détaillé généré :
-  `artifacts/sonarcloud-audit/0686e02e16fa9dbfe0bf2af90ce6eb561e5f597f/sonarcloud-491-tracking.json`
+  `artifacts/sonarcloud-audit/1bc900706cbac1790e7f6487b99dcca493012ca6/sonarcloud-491-tracking.json`
 
 L’inventaire source est conservé comme transport historique. Le suivi généré
 est la projection de rapprochement : chaque entrée conserve l’identifiant
