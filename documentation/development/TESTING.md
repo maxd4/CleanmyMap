@@ -1128,6 +1128,20 @@ sortie `UNCLASSIFIED` reste une absence de preuve causale ; elle ne doit pas
 la source de preuve pour enrichir la prochaine exécution sans publier de
 journal, credential, JWT, URL sensible ou configuration brute.
 
+La preuve des conteneurs distingue explicitement trois situations. Lorsque
+`docker ps` réussit avec une sortie vide, `NO_SUPABASE_CONTAINERS` signifie
+`OBSERVED_ZERO` : zéro conteneur a été observé. Lorsque l'inspection échoue,
+le diagnostic émet `SUPABASE_CONTAINERS_UNOBSERVED`, rend le nombre
+`unavailable` et rend chaque état (`running`, `exited`, `created`,
+`restarting`, `other`) `unavailable`. Une inspection impossible ne doit donc
+jamais être publiée comme une absence confirmée ; son stderr et les identifiants
+de conteneurs restent supprimés.
+
+La classification du démarrage utilise le véritable code de sortie de
+`supabase start`. Le code zéro produit l'état explicite `START_SUCCEEDED` et
+n'émet aucun signal d'échec de journal. Les catégories d'échec, y compris
+`UNCLASSIFIED`, ne sont évaluées que pour un démarrage effectivement non nul.
+
 Les commandes `supabase start`, `supabase status`, `supabase db reset` et
 `supabase stop` sont donc réservées à cette CI éphémère explicitement dédiée au
 replay ; elles ne font pas partie du workflow local.
