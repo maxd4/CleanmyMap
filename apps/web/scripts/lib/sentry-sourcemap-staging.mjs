@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
@@ -19,6 +19,18 @@ export function collectFiles(rootDir, predicate, results = []) {
   }
 
   return results;
+}
+
+export function removeFiles(files) {
+  const failed = [];
+  for (const file of files) {
+    try {
+      rmSync(file, { force: true });
+    } catch {
+      failed.push(file);
+    }
+  }
+  return failed;
 }
 
 function isUploadableArtifact(sourceFile) {

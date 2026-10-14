@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 
-import { stageMatchedArtifacts } from "./sentry-sourcemap-staging.mjs";
+import { removeFiles, stageMatchedArtifacts } from "./sentry-sourcemap-staging.mjs";
+import { cleanupBuildSourceMaps } from "./sentry-sourcemap-cleanup.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appRoot = resolve(here, "../..");
@@ -111,6 +112,48 @@ test("does not delete source artifacts while staging", () => {
     assert.equal(exists(sourceMap), true);
   } finally {
     rmSync(stage.stagingRoot, { recursive: true, force: true });
+    rmSync(fixture, { recursive: true, force: true });
+  }
+});
+
+test("removes generated source maps after upload", () => {
+  const fixture = createFixture();
+  const bundle = join(fixture, "chunks", "published.js");
+  const sourceMap = join(fixture, "chunks", "published.js.map");
+  writeFileSync(bundle, "published bundle");
+  writeMap(sourceMap);
+
+  try {
+    assert.deepEqual(removeFiles([sourceMap]), []);
+    assert.equal(exists(bundle), true);
+    assert.equal(exists(sourceMap), false);
+  } finally {
+    rmSync(fixture, { recursive: true, force: true });
+  }
+});
+
+test("removes client and server maps when Sentry upload is unavailable", () => {
+  const fixture = createFixture();
+  const staticDir = join(fixture, "static");
+  const serverDir = join(fixture, "server");
+  mkdirSync(staticDir, { recursive: true });
+  mkdirSync(serverDir, { recursive: true });
+  const clientMap = join(staticDir, "client.js.map");
+  const serverMap = join(serverDir, "server.js.map");
+  const clientBundle = join(staticDir, "client.js");
+  writeMap(clientMap);
+  writeMap(serverMap);
+  writeFileSync(clientBundle, "client bundle");
+
+  try {
+    const result = cleanupBuildSourceMaps({ staticDir, serverDir });
+    assert.equal(result.discovered, 2);
+    assert.equal(result.removed, 2);
+    assert.deepEqual(result.failed, []);
+    assert.equal(exists(clientBundle), true);
+    assert.equal(exists(clientMap), false);
+    assert.equal(exists(serverMap), false);
+  } finally {
     rmSync(fixture, { recursive: true, force: true });
   }
 });

@@ -250,10 +250,9 @@ La configuration versionnée actuelle est portée par
   `productionBrowserSourceMaps: true` et désactive
   `experimental.serverSourceMaps` ;
 - le build web exécute ensuite `scripts/upload-sentry-sourcemaps.mjs`. Les maps
-  sont supprimées après upload hors Vercel, mais conservées sur le filesystem
-  de build Vercel pour éviter une erreur connue du collecteur d'artefacts. Cette
-  conservation reste intentionnelle tant qu'une réduction de Deployment
-  Storage officiellement supportée et vérifiée n'est pas démontrée.
+  sont supprimées du filesystem de build après la tentative d'upload, y compris
+  sur Vercel. Sentry conserve la symbolication ; les `.map` ne sont donc pas
+  publiés comme artefacts statiques du déploiement.
 
 La homepage exporte `revalidate = 3600` dans
 [`apps/web/src/app/page.tsx`](../../apps/web/src/app/page.tsx). Cette fenêtre

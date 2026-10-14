@@ -5,8 +5,10 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import {
   collectFiles,
+  removeFiles,
   stageMatchedArtifacts,
 } from "./lib/sentry-sourcemap-staging.mjs";
+import { cleanupBuildSourceMaps } from "./lib/sentry-sourcemap-cleanup.mjs";
 import { resolveSentryRelease } from "../src/lib/observability/sentry-metadata.mjs";
 
 function log(message) {
@@ -39,12 +41,8 @@ function runSentryCli(args) {
 }
 
 function deleteFiles(files) {
-  for (const file of files) {
-    try {
-      rmSync(file, { force: true });
-    } catch (err) {
-      warn(`Unable to delete ${file}: ${err instanceof Error ? err.message : String(err)}`);
-    }
+  for (const file of removeFiles(files)) {
+    warn(`Unable to delete ${file} after source map upload.`);
   }
 }
 
@@ -183,10 +181,6 @@ function hydrateSourceMaps(rootDir) {
 const authToken = process.env.SENTRY_AUTH_TOKEN?.trim();
 const org = process.env.SENTRY_ORG?.trim();
 const project = process.env.SENTRY_PROJECT?.trim();
-const preserveOriginalMaps =
-  process.env.VERCEL === "1" ||
-  process.env.VERCEL_ENV === "production" ||
-  process.env.VERCEL_ENV === "preview";
 const release = resolveSentryRelease(process.env) ?? "";
 const shouldReportMissingSentryConfig =
   process.env.CI === "1" ||
@@ -197,6 +191,15 @@ const staticDir = join(buildDir, "static");
 const serverDir = join(buildDir, "server");
 
 if (!authToken || !org || !project) {
+  if (existsSync(buildDir)) {
+    const cleanup = cleanupBuildSourceMaps({ staticDir, serverDir });
+    if (cleanup.removed > 0) {
+      log(`Removed ${cleanup.removed} generated source map file(s); Sentry upload was skipped because configuration is incomplete.`);
+    }
+    for (const file of cleanup.failed) {
+      warn(`Unable to delete ${file} after skipping source map upload.`);
+    }
+  }
   if (shouldReportMissingSentryConfig) {
     log("Sentry source map upload skipped: missing SENTRY_AUTH_TOKEN, SENTRY_ORG, or SENTRY_PROJECT.");
   }
@@ -254,11 +257,7 @@ try {
   clientArgs.push(clientStage.stagingRoot);
   runSentryCli(clientArgs);
 } finally {
-  if (preserveOriginalMaps) {
-    log("Preserving client source maps on the build filesystem to avoid Vercel artifact collector errors.");
-  } else {
-    deleteFiles(clientMaps);
-  }
+  deleteFiles(clientMaps);
   rmSync(clientStage.stagingRoot, { recursive: true, force: true });
 }
 
@@ -297,20 +296,12 @@ if (serverMaps.length > 0) {
       serverArgs.push(serverStage.stagingRoot);
       runSentryCli(serverArgs);
     } finally {
-      if (preserveOriginalMaps) {
-        log("Preserving server source maps on the build filesystem to avoid Vercel artifact collector errors.");
-      } else {
-        deleteFiles(serverMaps);
-      }
+      deleteFiles(serverMaps);
       rmSync(serverStage.stagingRoot, { recursive: true, force: true });
     }
   } else {
     warn("No server bundles with matching source maps found in .next/server. Server stack traces will rely on runtime source maps only.");
-    if (preserveOriginalMaps) {
-      log("Preserving server source maps on the build filesystem to avoid Vercel artifact collector errors.");
-    } else {
-      deleteFiles(serverMaps);
-    }
+    deleteFiles(serverMaps);
     rmSync(serverStage.stagingRoot, { recursive: true, force: true });
   }
 } else {
