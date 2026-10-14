@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -206,10 +205,6 @@ function facadeOwner(relativePath) {
 
 function compareEdge(left, right) {
   return [left.from, left.to, left.kind, left.sourceKind, left.form, left.specifier, left.line].map(String).join("\0").localeCompare([right.from, right.to, right.kind, right.sourceKind, right.form, right.specifier, right.line].map(String).join("\0"));
-}
-
-function uniqueSorted(values) {
-  return [...new Set(values)].sort((a, b) => a.localeCompare(b));
 }
 
 function findCycles(nodes, edges) {
