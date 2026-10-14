@@ -64,6 +64,14 @@ guards CURRENT.
   l'arbre Git exact correspondant, sans staged, unstaged, untracked ni commit
   local étranger. Les SHA identiques sont dédupliqués ; une ref supprimée n'a
   pas d'arbre candidat ;
+- les cinq contrôles statiques critiques de la voie rapide sont invoqués par un
+  seul `run-static-candidate-check.mjs` avec plusieurs `--script`. Le runner
+  matérialise l'arbre du SHA exact une seule fois, exécute les checks dans
+  l'ordre déclaré, vérifie qu'aucun check ne modifie cette source et nettoie la
+  candidate dans son `finally`. L'invocation historique avec un seul
+  `--script` reste compatible. Les métriques `STATIC_CANDIDATE_*` et
+  `PREPUSH_*_SECONDS` rendent la durée et le nombre de matérialisations
+  observables sans changer le périmètre de validation ;
 - le pre-push courant conserve uniquement protocole Git, fast-forward,
   `git diff --check`, audit secrets et contrôles statiques critiques sur le
   `PUSH_CANDIDATE` exact. Il ne lance pas automatiquement `test:scripts`, lint,

@@ -15,6 +15,9 @@ try {
     # All Git reads in this guard validate a PUSH_CANDIDATE and must never
     # refresh or lock the caller's worktree index.
     $env:GIT_OPTIONAL_LOCKS = "0"
+    $script:GuardStartedAt = [Diagnostics.Stopwatch]::StartNew()
+    $script:GuardStepTimings = @()
+    $script:StaticRunnerInvocations = 0
 
 function Invoke-GuardStep {
         param(
@@ -26,10 +29,22 @@ function Invoke-GuardStep {
 
         Write-Host ""
         Write-Host "==> $Label"
-        & $Command
-
-        if ($LASTEXITCODE -ne 0) {
-            throw "$Label failed with exit code $LASTEXITCODE"
+        $stepStartedAt = [Diagnostics.Stopwatch]::StartNew()
+        $stepExitCode = 0
+        try {
+            & $Command
+            $stepExitCode = $LASTEXITCODE
+            if ($stepExitCode -ne 0) {
+                throw "$Label failed with exit code $stepExitCode"
+            }
+        } finally {
+            $stepStartedAt.Stop()
+            $script:GuardStepTimings += [pscustomobject]@{
+                Label = $Label
+                ExitCode = $stepExitCode
+                Seconds = [math]::Round($stepStartedAt.Elapsed.TotalSeconds, 3)
+            }
+            Write-Host ("GUARD_STEP_SECONDS: {0} = {1}" -f $Label, [math]::Round($stepStartedAt.Elapsed.TotalSeconds, 3))
         }
     }
 
@@ -379,10 +394,16 @@ function Invoke-GuardStep {
             "scripts/checks/check-lockfile-policy.mjs"
         )
 
+        $script:StaticRunnerInvocations += 1
+        $runnerArguments = @("--ref=$CandidateRef")
         foreach ($script in $criticalChecks) {
-            Invoke-GuardStep "critical static check $script ($CandidateRef)" {
-                node scripts/ci/run-static-candidate-check.mjs "--ref=$CandidateRef" "--script=$script" -- "--ref=$CandidateRef"
-            }
+            $runnerArguments += "--script=$script"
+        }
+        $runnerArguments += "--"
+        $runnerArguments += "--ref=$CandidateRef"
+
+        Invoke-GuardStep "critical static checks ($CandidateRef)" {
+            node scripts/ci/run-static-candidate-check.mjs @runnerArguments
         }
     }
 
@@ -590,5 +611,12 @@ function Invoke-GuardStep {
     Write-Host ""
     Write-Host "Pre-push guardrail passed."
 } finally {
+    if ($null -ne $script:GuardStartedAt) {
+        $script:GuardStartedAt.Stop()
+        Write-Host ""
+        Write-Host ("PREPUSH_TOTAL_SECONDS: {0}" -f [math]::Round($script:GuardStartedAt.Elapsed.TotalSeconds, 3))
+        Write-Host ("PREPUSH_STATIC_RUNNER_INVOCATIONS: {0}" -f $script:StaticRunnerInvocations)
+        Write-Host ("PREPUSH_GUARD_STEPS: {0}" -f $script:GuardStepTimings.Count)
+    }
     Pop-Location
 }

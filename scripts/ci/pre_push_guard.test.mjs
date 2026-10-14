@@ -170,13 +170,20 @@ function assertNoCommand(log, command) {
   assert.ok(!log.split(/\r?\n/).some((line) => line === command), `unexpected command: ${command}\n${log}`);
 }
 
-function candidateCheckCommand(ref, script, extraArguments = []) {
+const criticalStaticScripts = [
+  "scripts/checks/check-env-contract.mjs",
+  "scripts/checks/check-root-file-hygiene.mjs",
+  "scripts/checks/check-canonical-workspaces.mjs",
+  "scripts/checks/check-github-actions-security.mjs",
+  "scripts/checks/check-lockfile-policy.mjs",
+];
+
+function candidateCheckCommand(ref) {
   return [
     "node scripts/ci/run-static-candidate-check.mjs",
     `--ref=${ref}`,
-    `--script=${script}`,
+    ...criticalStaticScripts.map((script) => `--script=${script}`),
     "--",
-    ...extraArguments,
     `--ref=${ref}`,
   ].join(" ");
 }
@@ -221,6 +228,9 @@ test("web push keeps only quick candidate gates by default", () => {
 
   assert.equal(result.status, 0, result.output);
   assert.match(result.output, /Pre-push quick guardrail passed/);
+  assert.match(result.output, /PREPUSH_STATIC_RUNNER_INVOCATIONS: 1/);
+  assert.match(result.output, /PREPUSH_TOTAL_SECONDS:/);
+  assert.match(result.output, /GUARD_STEP_SECONDS:/);
   assertCommand(result.log, candidateCheckCommand("refs/web-local", "scripts/checks/check-github-actions-security.mjs"));
   assertCommand(result.log, candidateCheckCommand("refs/web-local", "scripts/checks/check-lockfile-policy.mjs"));
   assertCommand(result.log, "npm run security:secrets -- --candidate-ref=refs/web-local --candidate-range=refs/web-remote..refs/web-local");

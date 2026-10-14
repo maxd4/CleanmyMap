@@ -21,15 +21,25 @@ function createFixture() {
 
   const dependencyPath = join(fixtureRoot, "scripts", "checks", "fixture-dependency.mjs");
   const checkerPath = join(fixtureRoot, "scripts", "checks", "fixture-check.mjs");
+  const secondCheckerPath = join(fixtureRoot, "scripts", "checks", "fixture-second-check.mjs");
+  const thirdCheckerPath = join(fixtureRoot, "scripts", "checks", "fixture-third-check.mjs");
   writeFileSync(dependencyPath, "export const verdict = 'PASS';\n");
   writeFileSync(
     checkerPath,
     "import { verdict } from './fixture-dependency.mjs';\nconsole.log(`candidate-check: ${verdict}`);\nprocess.exitCode = verdict === 'PASS' ? 0 : 1;\n",
   );
-  git(fixtureRoot, ["add", "scripts/checks/fixture-check.mjs", "scripts/checks/fixture-dependency.mjs"]);
+  writeFileSync(secondCheckerPath, "console.log('candidate-check: SECOND');\n");
+  writeFileSync(thirdCheckerPath, "console.log('candidate-check: THIRD');\n");
+  git(fixtureRoot, [
+    "add",
+    "scripts/checks/fixture-check.mjs",
+    "scripts/checks/fixture-second-check.mjs",
+    "scripts/checks/fixture-third-check.mjs",
+    "scripts/checks/fixture-dependency.mjs",
+  ]);
   git(fixtureRoot, ["commit", "--quiet", "-m", "candidate checker passes"]);
 
-  return { fixtureRoot, checkerPath };
+  return { fixtureRoot, checkerPath, secondCheckerPath, thirdCheckerPath };
 }
 
 function runRunner(fixtureRoot, candidateRef, script = "scripts/checks/fixture-check.mjs") {
@@ -39,6 +49,20 @@ function runRunner(fixtureRoot, candidateRef, script = "scripts/checks/fixture-c
       RUNNER_PATH,
       `--ref=${candidateRef}`,
       `--script=${script}`,
+      "--",
+      `--ref=${candidateRef}`,
+    ],
+    { cwd: fixtureRoot, encoding: "utf8", windowsHide: true },
+  );
+}
+
+function runGroupedRunner(fixtureRoot, candidateRef, scripts) {
+  return spawnSync(
+    process.execPath,
+    [
+      RUNNER_PATH,
+      `--ref=${candidateRef}`,
+      ...scripts.map((script) => `--script=${script}`),
       "--",
       `--ref=${candidateRef}`,
     ],
@@ -138,6 +162,85 @@ test("candidate runner fails when the candidate checker itself fails", () => {
     assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("grouped candidate runner materializes once and preserves checker order", () => {
+  const { fixtureRoot } = createFixture();
+  try {
+    const candidateRef = git(fixtureRoot, ["rev-parse", "HEAD"]);
+    const result = runGroupedRunner(fixtureRoot, candidateRef, [
+      "scripts/checks/fixture-check.mjs",
+      "scripts/checks/fixture-second-check.mjs",
+      "scripts/checks/fixture-third-check.mjs",
+    ]);
+
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    const output = result.stdout;
+    assert.ok(output.indexOf("candidate-check: PASS") < output.indexOf("candidate-check: SECOND"));
+    assert.ok(output.indexOf("candidate-check: SECOND") < output.indexOf("candidate-check: THIRD"));
+    assert.match(output, /STATIC_CANDIDATE_CHECKS: 3/);
+    assert.match(output, /STATIC_CANDIDATE_CHECKS_EXECUTED: 3/);
+    assert.match(output, /STATIC_CANDIDATE_MATERIALIZATIONS: 1/);
+    assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("grouped candidate runner stops before a following checker when a checker mutates the candidate", () => {
+  const { fixtureRoot, checkerPath } = createFixture();
+  try {
+    writeFileSync(
+      checkerPath,
+      "import { writeFileSync } from 'node:fs';\nwriteFileSync('scripts/checks/fixture-dependency.mjs', 'mutated\\n');\nconsole.log('candidate-check: MUTATED');\n",
+    );
+    git(fixtureRoot, ["add", "scripts/checks/fixture-check.mjs"]);
+    git(fixtureRoot, ["commit", "--quiet", "-m", "candidate checker mutates source"]);
+    const candidateRef = git(fixtureRoot, ["rev-parse", "HEAD"]);
+    const result = runGroupedRunner(fixtureRoot, candidateRef, [
+      "scripts/checks/fixture-check.mjs",
+      "scripts/checks/fixture-second-check.mjs",
+    ]);
+
+    assert.equal(result.status, 1, `${result.stdout}\n${result.stderr}`);
+    assert.match(result.stderr, /mutated the candidate source tree/);
+    assert.match(result.stdout, /candidate-check: MUTATED/);
+    assert.doesNotMatch(result.stdout, /candidate-check: SECOND/);
+    assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("grouped candidate runner propagates first, middle and last checker failures", () => {
+  const cases = [
+    { index: 0, marker: "FIRST" },
+    { index: 1, marker: "SECOND" },
+    { index: 2, marker: "THIRD" },
+  ];
+
+  for (const { index, marker } of cases) {
+    const { fixtureRoot, checkerPath, secondCheckerPath, thirdCheckerPath } = createFixture();
+    try {
+      const paths = [checkerPath, secondCheckerPath, thirdCheckerPath];
+      writeFileSync(paths[index], `console.log('candidate-check: ${marker}');\nprocess.exitCode = 1;\n`);
+      git(fixtureRoot, ["add", "scripts/checks"]);
+      git(fixtureRoot, ["commit", "--quiet", "-m", `candidate ${marker.toLowerCase()} checker fails`]);
+      const candidateRef = git(fixtureRoot, ["rev-parse", "HEAD"]);
+      const result = runGroupedRunner(fixtureRoot, candidateRef, paths.map((file) => file.slice(fixtureRoot.length + 1).replaceAll("\\", "/")));
+
+      assert.equal(result.status, 1, `${result.stdout}\n${result.stderr}`);
+      const output = result.stdout;
+      assert.match(output, new RegExp(`candidate-check: ${marker}`));
+      if (index < 2) {
+        const following = cases[index + 1].marker;
+        assert.doesNotMatch(output, new RegExp(`candidate-check: ${following}`));
+      }
+      assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
   }
 });
 

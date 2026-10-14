@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
@@ -12,7 +13,7 @@ import {
 function usage(message) {
   if (message) console.error(message);
   console.error(
-    "Usage: node scripts/ci/run-static-candidate-check.mjs --ref=<commit> --script=<repository-relative-script> -- [checker arguments]",
+    "Usage: node scripts/ci/run-static-candidate-check.mjs --ref=<commit> --script=<repository-relative-script> [--script=<repository-relative-script> ...] -- [checker arguments]",
   );
   process.exitCode = 2;
 }
@@ -22,15 +23,17 @@ function parseArguments(argv = process.argv.slice(2)) {
   const runnerArguments = separatorIndex === -1 ? argv : argv.slice(0, separatorIndex);
   const checkerArguments = separatorIndex === -1 ? [] : argv.slice(separatorIndex + 1);
   const refArgument = runnerArguments.find((argument) => argument.startsWith("--ref="));
-  const scriptArgument = runnerArguments.find((argument) => argument.startsWith("--script="));
+  const scriptArguments = runnerArguments.filter((argument) => argument.startsWith("--script="));
 
-  if (!refArgument || !scriptArgument) {
-    usage("Both --ref and --script are required.");
+  if (!refArgument || scriptArguments.length === 0) {
+    usage("Both --ref and at least one --script are required.");
   }
 
   return {
     ref: refArgument.slice("--ref=".length),
-    script: normalizeRepositoryPath(scriptArgument.slice("--script=".length)),
+    scripts: scriptArguments.map((argument) =>
+      normalizeRepositoryPath(argument.slice("--script=".length)),
+    ),
     checkerArguments,
   };
 }
@@ -117,7 +120,7 @@ function materializeGitTree(candidateTreeRoot, entries, blobs) {
   }
 }
 
-function materializeCandidate(repositoryRoot, candidateRef, script) {
+function materializeCandidate(repositoryRoot, candidateRef, scripts) {
   const candidateSha = git(repositoryRoot, ["rev-parse", "--verify", `${candidateRef}^{commit}`]);
   const lifecycle = createCandidateMaterialization({
     repositoryRoot,
@@ -130,11 +133,9 @@ function materializeCandidate(repositoryRoot, candidateRef, script) {
   fs.mkdirSync(candidateTreeRoot);
 
   try {
-    git(repositoryRoot, [
-      "cat-file",
-      "-e",
-      `${candidateSha}:${script}`,
-    ]);
+    for (const script of scripts) {
+      git(repositoryRoot, ["cat-file", "-e", `${candidateSha}:${script}`]);
+    }
     const entries = readGitTree(repositoryRoot, candidateSha);
     const blobs = readGitBlobs(repositoryRoot, entries);
     materializeGitTree(candidateTreeRoot, entries, blobs);
@@ -144,6 +145,7 @@ function materializeCandidate(repositoryRoot, candidateRef, script) {
       candidateSha,
       candidateTreeRoot,
       materializedRoot,
+      trackedPaths: entries.filter((entry) => entry.type === "blob").map((entry) => entry.relativePath),
     };
   } catch (error) {
     lifecycle.cleanup();
@@ -151,36 +153,94 @@ function materializeCandidate(repositoryRoot, candidateRef, script) {
   }
 }
 
+function fingerprintCandidateTree(candidateTreeRoot, trackedPaths) {
+  const hash = createHash("sha256");
+
+  for (const relativePath of [...trackedPaths].sort()) {
+    const absolutePath = path.join(candidateTreeRoot, ...relativePath.split("/"));
+    if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
+      throw new Error(`Candidate source is missing tracked file: ${relativePath}`);
+    }
+    hash.update(relativePath);
+    hash.update("\0");
+    hash.update(fs.readFileSync(absolutePath));
+    hash.update("\0");
+  }
+
+  return hash.digest("hex");
+}
+
 function run() {
-  const { ref, script, checkerArguments } = parseArguments();
+  const { ref, scripts, checkerArguments } = parseArguments();
   const repositoryRoot = path.resolve(process.cwd());
-  const materialization = materializeCandidate(repositoryRoot, ref, script);
+  const totalStartedAt = performance.now();
+  const preparationStartedAt = performance.now();
+  const materialization = materializeCandidate(repositoryRoot, ref, scripts);
+  const preparationSeconds = (performance.now() - preparationStartedAt) / 1000;
   const detachSignalCleanup = installCandidateSignalCleanup(materialization);
+  const candidateFingerprint = fingerprintCandidateTree(
+    materialization.candidateTreeRoot,
+    materialization.trackedPaths,
+  );
+  let checksExecuted = 0;
+  let exitCode = 1;
 
   try {
-    const candidateScriptPath = path.join(materialization.candidateTreeRoot, ...script.split("/"));
-    const candidateArguments = [
-      ...checkerArguments.filter((argument) => !argument.startsWith("--ref=")),
-      `--ref=${materialization.candidateSha}`,
-    ];
-    const result = spawnSync(process.execPath, [candidateScriptPath, ...candidateArguments], {
-      cwd: materialization.candidateTreeRoot,
-      env: {
-        ...process.env,
-        CMM_STATIC_CANDIDATE_SHA: materialization.candidateSha,
-        CMM_STATIC_CANDIDATE_ROOT: materialization.candidateTreeRoot,
-      },
-      stdio: "inherit",
-      windowsHide: true,
-    });
+    for (const script of scripts) {
+      const candidateScriptPath = path.join(materialization.candidateTreeRoot, ...script.split("/"));
+      const candidateArguments = [
+        ...checkerArguments.filter((argument) => !argument.startsWith("--ref=")),
+        `--ref=${materialization.candidateSha}`,
+      ];
+      const result = spawnSync(process.execPath, [candidateScriptPath, ...candidateArguments], {
+        cwd: materialization.candidateTreeRoot,
+        env: {
+          ...process.env,
+          CMM_STATIC_CANDIDATE_SHA: materialization.candidateSha,
+          CMM_STATIC_CANDIDATE_ROOT: materialization.candidateTreeRoot,
+        },
+        stdio: "inherit",
+        windowsHide: true,
+      });
 
-    if (result.error) throw result.error;
-    if (typeof result.status === "number") return result.status;
-    return 1;
+      checksExecuted += 1;
+      if (result.error) throw result.error;
+
+      const currentFingerprint = fingerprintCandidateTree(
+        materialization.candidateTreeRoot,
+        materialization.trackedPaths,
+      );
+      if (currentFingerprint !== candidateFingerprint) {
+        throw new Error(`Static checker mutated the candidate source tree: ${script}`);
+      }
+
+      if (typeof result.status !== "number") {
+        exitCode = 1;
+        break;
+      }
+      if (result.status !== 0) {
+        exitCode = result.status;
+        break;
+      }
+
+      exitCode = 0;
+    }
   } finally {
     detachSignalCleanup();
+    const cleanupStartedAt = performance.now();
     materialization.cleanup();
+    const cleanupSeconds = (performance.now() - cleanupStartedAt) / 1000;
+    const totalSeconds = (performance.now() - totalStartedAt) / 1000;
+    console.log(`STATIC_CANDIDATE_SHA: ${materialization.candidateSha}`);
+    console.log(`STATIC_CANDIDATE_CHECKS: ${scripts.length}`);
+    console.log(`STATIC_CANDIDATE_CHECKS_EXECUTED: ${checksExecuted}`);
+    console.log("STATIC_CANDIDATE_MATERIALIZATIONS: 1");
+    console.log(`STATIC_CANDIDATE_PREPARATION_SECONDS: ${preparationSeconds.toFixed(3)}`);
+    console.log(`STATIC_CANDIDATE_CLEANUP_SECONDS: ${cleanupSeconds.toFixed(3)}`);
+    console.log(`STATIC_CANDIDATE_TOTAL_SECONDS: ${totalSeconds.toFixed(3)}`);
   }
+
+  return exitCode;
 }
 
 try {
