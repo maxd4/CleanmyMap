@@ -143,6 +143,13 @@ Le workflow CURRENT destiné à Codex possède trois modes clairement séparés 
 - `RELEASE` via `npm run release:check -- --sha=<sha>`, qui autorise uniquement
   un SHA disposant d'une preuve FULL verte et d'un worktree propre.
 
+Lorsqu'un `FULL` est explicitement lancé, toute erreur actionnable observée par
+ses contrôles doit être corrigée dans l'exécution courante, même si les
+fichiers causaux sont hors du lot initial. Un échec ne peut pas être laissé
+rouge au seul motif qu'il est préexistant ou hors périmètre. Les blocages
+externes et environnementaux restent `BLOCKED_*`, avec une preuve explicite,
+et ne doivent jamais être masqués ou reclassés en `PASS`.
+
 Le planificateur ne déclenche jamais `FULL` implicitement. Les suites Web
 complètes, couverture Web globale, duplication, cycles, Knip, mutation, E2E et
 audits distants restent donc disponibles pour FULL sans être ajoutées aux hooks

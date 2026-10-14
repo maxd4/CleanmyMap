@@ -43,7 +43,7 @@ describe("POST /api/chat — annonces et événements", () => {
       relatedEvent,
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue({ service: true });
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { GET } = await import("./route");
     const response = await postChatPayload({
@@ -120,7 +120,7 @@ describe("POST /api/chat — annonces et événements", () => {
       relatedEvent: null,
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue({ service: true });
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const response = await (await import("./route")).POST(
       new Request("http://localhost/api/chat", {

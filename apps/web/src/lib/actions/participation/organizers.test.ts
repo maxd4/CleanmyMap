@@ -57,7 +57,7 @@ function createSupabaseMock(profileRows: Array<{ id: string; display_name: strin
 
   return {
     from: vi.fn((table: string) => {
-      if (table !== "profiles") {
+      if (table !== "public_profiles") {
         throw new Error(`Unexpected table ${table}`);
       }
       state.eq = {};
@@ -203,7 +203,7 @@ describe("syncActionOrganizers", () => {
     ];
     const supabase = {
       from: vi.fn((table: string) => {
-        if (table === "profiles") {
+        if (table === "public_profiles") {
           const profileChain = {
             select: vi.fn(() => profileChain),
             eq: vi.fn((field: string, value: string) => {
@@ -298,7 +298,7 @@ describe("syncActionOrganizers", () => {
     const rpc = vi.fn().mockResolvedValue({ error: null });
     const supabase = {
       from: vi.fn((table: string) => {
-        if (table === "profiles") {
+        if (table === "public_profiles") {
           const chain = {
             select: vi.fn(() => chain),
             eq: vi.fn((field: string, value: string) => {

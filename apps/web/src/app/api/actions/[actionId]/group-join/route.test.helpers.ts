@@ -158,7 +158,7 @@ export function createGroupJoinSupabaseMock(params: { action: GroupJoinActionRow
           "registrations",
         );
       }
-      if (table === "profiles") {
+      if (table === "public_profiles") {
         return createProfilesChain(params.profiles ?? []);
       }
       if (table === "app_notifications") {

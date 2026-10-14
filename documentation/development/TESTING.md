@@ -286,6 +286,14 @@ par la suite Web complète ; une modification du candidat invalide toute preuve
 réutilisée. Les accès distants indisponibles restent `BLOCKED_ACCESS` et ne
 peuvent jamais produire un FULL vert.
 
+Lorsqu'un `FULL` est explicitement lancé, toute erreur actionnable de ses
+contrôles devient une obligation de correction dans l'exécution courante,
+même si les fichiers causaux n'appartiennent pas au lot initial. Un échec ne
+peut pas être laissé rouge en le classant simplement
+`PREEXISTING_CI_FAILURE` ou « hors périmètre ». Les blocages externes,
+décisionnels ou d'environnement restent `BLOCKED_*`, doivent conserver leur
+preuve et ne peuvent pas être masqués ni comptés comme un succès.
+
 Dans la CI GitHub, `workflow_dispatch` avec `validation_mode=FULL` sélectionne
 explicitement tous les domaines et ne dérive aucun périmètre à partir d'un
 diff ; le checkout et les preuves restent liés à `github.sha`. Les événements
@@ -412,8 +420,10 @@ Avant d'attribuer un échec au lot courant, comparer le workflow, le job, le
 step et l'environnement avec un run antérieur pertinent.
 
 - Si le même step était déjà rouge avant le lot et qu'aucun fichier causal
-  n'est touché, classer l'échec `PREEXISTING_CI_FAILURE` et ne pas corriger ce
-  défaut dans le lot courant sauf demande explicite.
+  n'est touché, classer l'échec `PREEXISTING_CI_FAILURE` pour en conserver la
+  provenance. Lorsqu'un `FULL` a été explicitement lancé, cette classification
+  n'autorise toutefois pas à laisser l'erreur actionnable rouge : elle doit
+  être corrigée dans l'exécution courante, quel que soit le périmètre initial.
 - Si `npm ci` échoue sur Windows avec un fichier verrouillé ou `EPERM`, classer
   le blocage `HOST_ENVIRONMENT` et conserver le diagnostic exact : chemin,
   opération et erreur native.

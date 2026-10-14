@@ -118,6 +118,14 @@ observation périphérique. La méthode détaillée et sa taxonomie appartiennen
 à `documentation/development/repo-quality-rules.md` ; les preuves et modes
 sont définis dans `documentation/development/TESTING.md`.
 
+Exception de validation `FULL` : lorsqu'un contrôle `FULL` est explicitement
+lancé, toute erreur actionnable de ce contrôle doit être corrigée dans
+l'exécution courante, même si les fichiers causaux n'appartiennent pas au lot
+initial. Elle ne peut pas être laissée rouge sous le classement
+`PREEXISTING_CI_FAILURE` ou « hors périmètre ». Les blocages externes ou
+environnementaux restent classés `BLOCKED_*` avec leur preuve ; ils ne doivent
+ni être masqués ni transformés en succès.
+
 ## Modèle d’exécution
 
 Le workflow courant est `MAIN-ONLY / SINGLE-WRITER`.

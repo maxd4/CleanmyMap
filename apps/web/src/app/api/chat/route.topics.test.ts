@@ -67,7 +67,7 @@ describe("POST /api/chat — topics et territoire", () => {
       insertedMessage,
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue({ service: true });
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { GET, POST } = await import("./route");
     const aggregateResponse = await GET(
@@ -201,6 +201,7 @@ describe("POST /api/chat — topics et territoire", () => {
       },
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { GET } = await import("./route");
     const response = await GET(

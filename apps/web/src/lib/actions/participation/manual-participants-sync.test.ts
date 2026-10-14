@@ -11,7 +11,7 @@ function createSupabaseMock(profileRows: Array<{ id: string; display_name: strin
   const supabase = {
     rpc: rpcMock,
     from: vi.fn((table: string) => {
-      if (table !== "profiles") throw new Error(`Unexpected table ${table}`);
+      if (table !== "public_profiles") throw new Error(`Unexpected table ${table}`);
       const chain = {
         select: vi.fn(() => chain),
         eq: vi.fn((field: string, value: string) => {
