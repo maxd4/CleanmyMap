@@ -77,4 +77,26 @@ describe("unified source cache key", () => {
     expect(emptyScope).not.toBe(global);
     expect(emptyScope).toContain("actionIds:empty");
   });
+
+  it("keeps canonical code-unit ordering for persisted cache key inputs", () => {
+    const key = buildUnifiedActionContractsCacheKey({
+      limit: 1000,
+      status: null,
+      floorDate: null,
+      requireCoordinates: false,
+      types: ["spot", "action", "clean_place"],
+      actionIds: ["a", "_", "A"],
+    });
+
+    expect(key).toContain("types:action,clean_place,spot");
+    expect(key).toContain("actionIds:sha256:59d05ebb8f197457ac791edceb43eeed");
+    expect(key).toBe(buildUnifiedActionContractsCacheKey({
+      limit: 1000,
+      status: null,
+      floorDate: null,
+      requireCoordinates: false,
+      types: ["clean_place", "spot", "action"],
+      actionIds: ["A", "a", "_"],
+    }));
+  });
 });

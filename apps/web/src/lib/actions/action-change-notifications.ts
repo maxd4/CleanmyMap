@@ -70,10 +70,14 @@ function meaningfulTextChanged(current: unknown, next: unknown): boolean {
   return normalizeMeaningfulText(current) !== normalizeMeaningfulText(next);
 }
 
+function compareCanonicalStrings(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function normalizeMeaningfulList(value: readonly unknown[] | null | undefined): string[] {
   return [...new Set((value ?? [])
     .map(normalizeMeaningfulText)
-    .filter((item): item is string => item !== null))].sort();
+    .filter((item): item is string => item !== null))].sort(compareCanonicalStrings);
 }
 
 function meaningfulListChanged(current: readonly unknown[] | null | undefined, next: readonly unknown[] | null | undefined): boolean {
@@ -223,7 +227,7 @@ export function buildActionChangeEventKey(params: {
   revision: string;
   changeKinds: readonly ActionChangeKind[];
 }): string {
-  const kinds = [...new Set(params.changeKinds)].sort().join(",");
+  const kinds = [...new Set(params.changeKinds)].sort(compareCanonicalStrings).join(",");
   return `action_update:${params.actionId}:${params.revision}:${kinds}`;
 }
 

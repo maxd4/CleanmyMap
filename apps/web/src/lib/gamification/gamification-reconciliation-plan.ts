@@ -192,8 +192,12 @@ function versionsBefore(
   return "mixed";
 }
 
+function compareCanonicalStrings(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function expectedMilestoneIds(expected: ExpectedGamificationState): string[] {
-  return [...new Set(expected.expectedMilestones.map((event) => event.milestoneId ?? event.mechanicId))].sort();
+  return [...new Set(expected.expectedMilestones.map((event) => event.milestoneId ?? event.mechanicId))].sort(compareCanonicalStrings);
 }
 
 function persistedBadgeIds(
@@ -208,7 +212,7 @@ function persistedBadgeIds(
     const rule = rules.mechanics.find((candidate) => candidate.eventType === event.event_type);
     if (rule?.badgeId) ids.add(rule.badgeId);
   }
-  return [...ids].sort();
+  return [...ids].sort(compareCanonicalStrings);
 }
 
 function persistedMilestoneIds(
@@ -229,12 +233,12 @@ function persistedMilestoneIds(
       ? milestoneId
       : rule?.milestoneId ?? rule?.mechanicId ?? event.event_type);
   }
-  return [...ids].sort();
+  return [...ids].sort(compareCanonicalStrings);
 }
 
 function difference(left: readonly string[], right: readonly string[]): string[] {
   const rightSet = new Set(right);
-  return left.filter((value) => !rightSet.has(value)).sort();
+  return left.filter((value) => !rightSet.has(value)).sort(compareCanonicalStrings);
 }
 
 function levelsForPlan(
@@ -306,7 +310,7 @@ export function buildGamificationReconciliationPlan(params: {
     validatedExpected,
   );
   const beforeBadges = persistedBadgeIds(currentPersisted, params.rules);
-  const afterBadges = [...params.expected.expectedBadges].sort();
+  const afterBadges = [...params.expected.expectedBadges].sort(compareCanonicalStrings);
   const beforeMilestones = persistedMilestoneIds(currentPersisted, params.rules);
   const afterMilestones = expectedMilestoneIds(params.expected);
 

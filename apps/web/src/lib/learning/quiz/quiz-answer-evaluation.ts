@@ -18,8 +18,9 @@ export function isQuizAnswerCorrect(
       return false;
     }
 
-    const sortedExpectedAnswer = [...expectedAnswer].sort();
-    const sortedActualAnswer = [...actualAnswer].sort();
+    const compareAnswers = (left: string, right: string) => left < right ? -1 : left > right ? 1 : 0;
+    const sortedExpectedAnswer = [...expectedAnswer].sort(compareAnswers);
+    const sortedActualAnswer = [...actualAnswer].sort(compareAnswers);
 
     return (
       sortedExpectedAnswer.length === sortedActualAnswer.length &&

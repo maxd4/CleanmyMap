@@ -29,7 +29,7 @@ function buildMapActionsSnapshotKey(url: URL): string {
     status: parsed.status ?? "all",
     floorDate: parsed.floorDate ?? "all",
     types: parsed.types && parsed.types.length > 0
-      ? [...parsed.types].sort().join(",")
+      ? [...parsed.types].sort((left, right) => left < right ? -1 : left > right ? 1 : 0).join(",")
       : "all",
     qualityMin: parsed.qualityMin ?? "all",
     impact: parsed.impact ?? "all",

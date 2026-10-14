@@ -160,7 +160,7 @@ const candidate = {
 const parsed = envSchema.safeParse(candidate);
 
 if (!parsed.success) {
-  const invalidFields = Object.keys(parsed.error.flatten().fieldErrors).sort();
+  const invalidFields = Object.keys(parsed.error.flatten().fieldErrors).sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
 
   console.error("Invalid environment configuration", {
     invalidFields,

@@ -25,7 +25,7 @@ export function buildActionsExportCachePath(params: {
         scopeKind: params.query.scopeKind,
         scopeValue: params.query.scopeValue,
         association: params.query.association,
-        types: params.types ? [...params.types].sort() : null,
+        types: params.types ? [...params.types].sort((left, right) => left < right ? -1 : left > right ? 1 : 0) : null,
       }),
     )
     .digest("hex")

@@ -66,7 +66,7 @@ async function loadCurrentGamificationFacts(
       .filter((mechanic) => mechanic.category !== "NON_GAMIFIED")
       .filter((mechanic) => mechanic.visibility !== "authorized_moderation" || moderationApplicable)
       .map((mechanic) => mechanic.id),
-  )].sort();
+  )].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
 
   return {
     userId,

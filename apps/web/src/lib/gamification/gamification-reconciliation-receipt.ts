@@ -88,8 +88,12 @@ export type GamificationReconciliationReceipt = {
   hasUserVisibleChanges: boolean;
 };
 
+function compareCanonicalStrings(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function sortedUnique(values: Iterable<string>): string[] {
-  return [...new Set(values)].sort();
+  return [...new Set(values)].sort(compareCanonicalStrings);
 }
 
 function metadataForChange(change: GamificationEventChange): Record<string, unknown> {
@@ -159,7 +163,7 @@ function persistedEventChange(
 function receiptId(plan: GamificationReconciliationPlan): string {
   const changes = [...plan.eventsToAdd, ...plan.eventsToUpdate, ...plan.eventsToRemove]
     .map((event) => `${event.logicalId}:${event.xpAwarded}:${event.sourceTable}:${event.sourceId}`)
-    .sort()
+    .sort(compareCanonicalStrings)
     .join(",");
   return [
     "gamification-reconciliation",
@@ -228,7 +232,7 @@ function progressionChanges(
   after: Map<string, GamificationProgressionReceiptState>,
 ): GamificationProgressionReceiptChange[] {
   const changes: GamificationProgressionReceiptChange[] = [];
-  for (const id of [...before.keys()].filter((value) => after.has(value)).sort()) {
+  for (const id of [...before.keys()].filter((value) => after.has(value)).sort(compareCanonicalStrings)) {
     const previous = before.get(id)!;
     const next = after.get(id)!;
     if (JSON.stringify(previous) !== JSON.stringify(next)) {
@@ -298,8 +302,8 @@ export function buildGamificationReconciliationReceipt(
   }));
   const beforeProgressions = progressionState(beforeEvents);
   const afterProgressions = progressionState(afterEvents);
-  const progressionAdded = [...afterProgressions.keys()].filter((id) => !beforeProgressions.has(id)).sort();
-  const progressionRemoved = [...beforeProgressions.keys()].filter((id) => !afterProgressions.has(id)).sort();
+  const progressionAdded = [...afterProgressions.keys()].filter((id) => !beforeProgressions.has(id)).sort(compareCanonicalStrings);
+  const progressionRemoved = [...beforeProgressions.keys()].filter((id) => !afterProgressions.has(id)).sort(compareCanonicalStrings);
   const changed = progressionChanges(beforeProgressions, afterProgressions);
   const gradeChanges = badgeGradeChanges(changed);
   const receiptWithoutVisibility = {

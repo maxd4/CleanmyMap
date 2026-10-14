@@ -21,4 +21,12 @@ describe("quiz answer evaluation", () => {
     expect(isQuizAnswerCorrect(question, ["A"])).toBe(false);
     expect(isQuizAnswerCorrect(question, ["A", "B"])).toBe(false);
   });
+
+  it("keeps duplicate selections and boundary cardinalities distinct", () => {
+    const question = { type: "multiple-select" as const, answer: ["A", "C"] };
+
+    expect(isQuizAnswerCorrect(question, ["A", "C"])).toBe(true);
+    expect(isQuizAnswerCorrect(question, ["A", "A", "C"])).toBe(false);
+    expect(isQuizAnswerCorrect(question, [])).toBe(false);
+  });
 });

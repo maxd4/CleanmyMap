@@ -268,7 +268,7 @@ export async function GET(request: Request) {
       limit,
       status: readPolicy.status,
       days,
-      types: types === null ? "all" : types.slice().sort().join(","),
+      types: types === null ? "all" : types.slice().sort((left, right) => left < right ? -1 : left > right ? 1 : 0).join(","),
       qualityGrade,
       toFixPriority,
       impact,

@@ -11,8 +11,12 @@ export type CachedUnifiedActionContractsParams = {
   types: ActionEntityType[] | null;
 };
 
+function compareCanonicalStrings(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function buildTypesCacheKey(types: ActionEntityType[] | null): string {
-  return types && types.length > 0 ? [...types].sort().join(",") : "all";
+  return types && types.length > 0 ? [...types].sort(compareCanonicalStrings).join(",") : "all";
 }
 
 function buildActionIdsCacheKey(actionIds: string[] | null | undefined): string {
@@ -23,7 +27,7 @@ function buildActionIdsCacheKey(actionIds: string[] | null | undefined): string 
     return "empty";
   }
   return `sha256:${createHash("sha256")
-    .update([...actionIds].sort().join("\n"))
+    .update([...actionIds].sort(compareCanonicalStrings).join("\n"))
     .digest("hex")
     .slice(0, 32)}`;
 }

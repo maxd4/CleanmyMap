@@ -49,7 +49,7 @@ type QuizSrsTableClient = {
 type AccessTokenProvider = () => Promise<string | null>;
 
 function getQuizSrsCacheKey(userId: string, questionIds: string[]): string {
-  return `${userId}::${[...questionIds].sort().join("|")}`;
+  return `${userId}::${[...questionIds].sort((left, right) => left < right ? -1 : left > right ? 1 : 0).join("|")}`;
 }
 
 function cloneSrsData(data: Record<string, SRSStats>): Record<string, SRSStats> {

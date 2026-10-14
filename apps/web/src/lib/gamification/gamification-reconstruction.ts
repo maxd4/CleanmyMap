@@ -128,7 +128,7 @@ export function computeExpectedGamificationState(
     facts.applicableMechanicIds ?? rules.mechanics
       .filter((rule) => rule.category !== "NON_GAMIFIED")
       .map((rule) => rule.mechanicId),
-  )].sort();
+  )].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
 
   for (const rule of rules.mechanics) {
     if (rule.category === "NON_GAMIFIED") continue;
@@ -172,7 +172,7 @@ export function computeExpectedGamificationState(
     expectedMilestones: events.filter((event) =>
       event.category === "XP_MILESTONE" || event.category === "BADGE_ONLY",
     ),
-    expectedBadges: [...expectedBadges].sort(),
+    expectedBadges: [...expectedBadges].sort((left, right) => left < right ? -1 : left > right ? 1 : 0),
     progressionCounters,
     applicableMechanicIds,
   };

@@ -427,7 +427,7 @@ export function aggregateSpogomiEnvironmentalProjection(input: SpogomiConsolidat
     officialRoute: input.officialRoute,
     organizer: input.organizer,
     sourceSnapshot: input.sourceSnapshot,
-    sourceSubmissionIds: [...new Set(sourceSubmissionIds)].sort(),
+    sourceSubmissionIds: [...new Set(sourceSubmissionIds)].sort((left, right) => left < right ? -1 : left > right ? 1 : 0),
     action: { wasteKg: actionWasteKg, cigaretteButts: buttsCount, volunteersCount: participantsPresent },
     consolidation: {
       consolidationKey,

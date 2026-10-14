@@ -70,7 +70,7 @@ export function useMapFeedData({
   );
 
   const serializedTypes = useMemo(
-    () => (types === "all" ? "all" : [...new Set(types)].sort().join(",")),
+    () => (types === "all" ? "all" : [...new Set(types)].sort((left, right) => left < right ? -1 : left > right ? 1 : 0).join(",")),
     [types],
   );
 

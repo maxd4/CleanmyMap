@@ -11,7 +11,7 @@
 - Révision analysée par SonarCloud : `ed0e2659760e3bdd8d26fba0389c6a52701a8c18`
 - Export : `2026-10-14T17:30:48.550Z`
 - Analyse SonarCloud : `2026-10-14T17:01:01+0000`
-- `main` confronté : `86f8e5ba050b929afea5ea7d6247f97ace32f1c7` (candidat local courant)
+- `main` confronté : `723c1f31e8e1d5daa766f6528e9a86f41f419909` (HEAD avant le lot 2B ; le candidat 2B est documenté après intégration)
 - `origin/main` au moment du rapprochement :
   `bccef2a5724ff288ca479e91bae33cfdcb4a777c`
 - Inventaire détaillé généré :
@@ -59,8 +59,8 @@ Aucune anomalie n’est donc classée `OBSOLETE` sur le seul critère de chemin.
 
 | Statut | Nombre | Règle d’attribution dans ce lot |
 | --- | ---: | --- |
-| `TO_FIX` | 482 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans le lot 2A |
-| `FIXED_PENDING_SCAN` | 9 | Correction locale vérifiée pour le lot 2A ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
+| `TO_FIX` | 446 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans les lots 2A/2B |
+| `FIXED_PENDING_SCAN` | 45 | Corrections locales vérifiées pour les lots 2A/2B ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
 | `FALSE_POSITIVE` | 0 | Aucune preuve technique et décision humaine spécifique n’a été fournie |
 | `ACCEPTED_PENDING_APPROVAL` | 0 | Aucun risque accepté ni approbation explicite n’a été fourni |
 | `OBSOLETE` | 0 | Aucun chemin source n’a disparu de `main` |
@@ -98,7 +98,7 @@ Pour `stableJson`, le comparateur conserve explicitement l’ordre UTF-16
 historique des clés afin de ne pas modifier les rapports JSON canoniques. Les
 alternatives regex sont uniquement parenthésées ; leurs correspondances ne
 sont pas élargies ni restreintes. Les 40 autres anomalies `javascript:S2871`
-et les 482 anomalies toutes règles confondues restent `TO_FIX`.
+et les 446 anomalies toutes règles confondues restent `TO_FIX`.
 
 Preuves locales du lot : les suites ciblées totalisent 31/31 succès et les
 trois tests de régression ciblés de complexité passent. Le fichier complet
@@ -106,6 +106,35 @@ trois tests de régression ciblés de complexité passent. Le fichier complet
 attentes de `complexity-baseline.json` (786 entrées actuelles contre 699
 attendues) ; aucune baseline n’a été modifiée. La confirmation SonarCloud est
 `NOT_CONFIRMED` pour les 9 identifiants.
+
+## Lot 2B — tris TypeScript déterministes dans `apps/web`
+
+Ce lot traite les 36 anomalies `typescript:S2871` recensées dans `apps/web`,
+par ensembles fonctionnels : routes et hooks d’actions, clés/fingerprints et
+exports, gamification, géographie, quiz, pilotage et SPOGOMI.
+
+Les comparateurs appliqués suivent le contrat de chaque donnée :
+
+- comparateur code-unit explicite pour les identifiants, fingerprints, clés de
+  cache, SHA et listes persistées, afin de conserver l’ordre historique de
+  `Array.prototype.sort()` et les preuves déterministes ;
+- comparateur numérique pour les années de filtre SPOGOMI ;
+- comparateur lexical explicite pour les dates ISO, dont l’ordre est
+  chronologique par construction.
+
+Les 36 identifiants traités sont :
+
+| Règle | Identifiants SonarCloud | Statut local |
+| --- | --- | --- |
+| `typescript:S2871` | `AaE3K8HqzHjHEPBoeQ9a`, `AaE3K8IezHjHEPBoeQ9g`, `AaE3K8PnzHjHEPBoeQ-N`, `AaE3K8aAzHjHEPBoeQ_J`, `AaE3K793zHjHEPBoeQ8j`, `AaE3K7-kzHjHEPBoeQ8l`, `AaE3K78MzHjHEPBoeQ8Z`, `AaE3K79mzHjHEPBoeQ8h`, `AaE3K79mzHjHEPBoeQ8i`, `AaE3K8GIzHjHEPBoeQ9V`, `AaE3K8AazHjHEPBoeQ80`, `AaE3K8AazHjHEPBoeQ81`, `AaE3K8AkzHjHEPBoeQ82`, `AaE3K8AHzHjHEPBoeQ8v`, `AaE3K8AHzHjHEPBoeQ8w`, `AaE3K8AHzHjHEPBoeQ8x`, `AaE3K8AHzHjHEPBoeQ8y`, `AaE3K8AHzHjHEPBoeQ8z`, `AaE3K8BkzHjHEPBoeQ85`, `AaE3K8BkzHjHEPBoeQ86`, `AaE3K8BkzHjHEPBoeQ87`, `AaE3K8BkzHjHEPBoeQ88`, `AaE3K8BkzHjHEPBoeQ89`, `AaE3K8BszHjHEPBoeQ8-`, `AaE3K8BszHjHEPBoeQ8_`, `AaE3K7_TzHjHEPBoeQ8p`, `AaE3K7_hzHjHEPBoeQ8r`, `AaE3K8CYzHjHEPBoeQ9C`, `AaE3K8CYzHjHEPBoeQ9D`, `AaE3K8F3zHjHEPBoeQ9S`, `AaE3K8F_zHjHEPBoeQ9T`, `AaE3K8F_zHjHEPBoeQ9U`, `AaE3K77NzHjHEPBoeQ8T`, `AaE3K8CIzHjHEPBoeQ9B`, `AaE3K8GyzHjHEPBoeQ9X`, `AaE3K8ELzHjHEPBoeQ9I` | `FIXED_PENDING_SCAN` |
+
+Preuves locales du lot : 19 fichiers de tests Vitest, 155 tests réussis ;
+`npm run typecheck -w apps/web` réussi ; `npm run lint -w apps/web` réussi.
+Les tests couvrent notamment les dates égales et bornes de seuil, le tri
+numérique des années affichées, l’ordre canonique des clés de cache et les
+cardinalités limites des réponses multi-sélection. Aucun ordre de donnée
+persistée ou fingerprint n’a été volontairement modifié. La confirmation
+SonarCloud reste `NOT_CONFIRMED` pour les 36 identifiants.
 
 ## Décisions humaines et faux positifs
 

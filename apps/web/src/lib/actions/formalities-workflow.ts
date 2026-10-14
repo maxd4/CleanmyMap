@@ -160,7 +160,7 @@ function contentVersionForQualification(
     qualification.rulesetVersion ?? "unknown-ruleset",
     ...qualification.formalities
       .map((formality) => `${formality.id}:${formality.requirementStatus}:${formality.procedureKind}`)
-      .sort(),
+      .sort((left, right) => left < right ? -1 : left > right ? 1 : 0),
   ].join("|");
 }
 

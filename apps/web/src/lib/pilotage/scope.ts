@@ -20,7 +20,7 @@ export function mergeOrganizedActionIds(
         .map((value) => value.trim())
         .filter(Boolean),
     ),
-  ].sort();
+  ].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
 }
 
 export async function loadOrganizedActionIds(
@@ -62,7 +62,7 @@ export function buildPilotageScopeCacheKey(
     return "global";
   }
 
-  const corpus = (actionIds ?? []).map((value) => value.trim()).filter(Boolean).sort().join("\n");
+  const corpus = (actionIds ?? []).map((value) => value.trim()).filter(Boolean).sort((left, right) => left < right ? -1 : left > right ? 1 : 0).join("\n");
   const digest = createHash("sha256").update(corpus).digest("hex").slice(0, 32);
   return `${scope.kind}:${digest}`;
 }

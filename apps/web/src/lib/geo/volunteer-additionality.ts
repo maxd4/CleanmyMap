@@ -325,7 +325,7 @@ function strongestIntervention(
 function safetyFactor(
   safety: VolunteerSafetyAssessment,
 ): VolunteerAdditionalityResult["volunteerSuitability"] {
-  const exclusionReasons = [...new Set(safety.exclusionReasons ?? [])].sort();
+  const exclusionReasons = [...new Set(safety.exclusionReasons ?? [])].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
   const safe = safety.status === "safe" && exclusionReasons.length === 0;
   return {
     value: safe ? clamp01(safety.suitability ?? 0) : 0,

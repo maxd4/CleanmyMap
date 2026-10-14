@@ -43,7 +43,7 @@ function formatDate(value: string, locale: Locale) {
 export function SpogomiInternationalContent({ locale, sources, news, externalEvents, copy }: Props) {
   const [year, setYear] = useState<number | null>(null);
   const [country, setCountry] = useState<string | null>(null);
-  const years = useMemo(() => [...new Set(externalEvents.map((event) => event.year))].sort(), [externalEvents]);
+  const years = useMemo(() => [...new Set(externalEvents.map((event) => event.year))].sort((left, right) => left - right), [externalEvents]);
   const countries = useMemo(() => [...new Set(externalEvents.map((event) => event.country.fr))].sort((left, right) => left.localeCompare(right, locale)), [externalEvents, locale]);
   const filteredEvents = useMemo(() => filterSpogomiExternalEvents(externalEvents, { year, country }), [externalEvents, year, country]);
 

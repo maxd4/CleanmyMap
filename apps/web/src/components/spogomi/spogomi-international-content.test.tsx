@@ -49,4 +49,22 @@ describe("SpogomiInternationalContent", () => {
     expect(markup).toContain("Toutes les années");
     expect(markup).toContain("Tous les pays connus");
   });
+
+  it("renders event years in numeric order for the business filter", () => {
+    const baseEvent = SPOGOMI_EXTERNAL_EVENTS[0];
+    const markup = renderToStaticMarkup(
+      <SpogomiInternationalContent
+        locale="fr"
+        sources={[]}
+        news={[]}
+        externalEvents={[
+          { ...baseEvent, id: "event-2027", year: 2027 },
+          { ...baseEvent, id: "event-2025", year: 2025 },
+        ]}
+        copy={copy}
+      />,
+    );
+
+    expect(markup.indexOf('value="2025"')).toBeLessThan(markup.indexOf('value="2027"'));
+  });
 });

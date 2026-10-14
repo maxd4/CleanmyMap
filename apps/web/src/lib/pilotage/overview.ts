@@ -108,7 +108,7 @@ function buildPilotageOverviewCacheKey(
   const types = params.scope
     ? "action"
     : params.types && params.types.length > 0
-      ? [...params.types].sort().join(",")
+      ? [...params.types].sort((left, right) => left < right ? -1 : left > right ? 1 : 0).join(",")
       : "all";
   return [
     `period:${params.periodDays}`,

@@ -14,7 +14,7 @@ function occurredOnAtThreshold<T>(
   threshold: number,
   timestampOf: (row: T) => string | null | undefined,
 ): string {
-  const timestamps = rows.map(timestampOf).filter(Boolean).map((value) => occurredOnFrom(value)).sort();
+  const timestamps = rows.map(timestampOf).filter(Boolean).map((value) => occurredOnFrom(value)).sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
   return timestamps[threshold - 1] ?? DETERMINISTIC_FALLBACK_OCCURRED_ON;
 }
 
@@ -22,7 +22,7 @@ function latestOccurredOn<T>(
   rows: readonly T[],
   timestampOf: (row: T) => string | null | undefined,
 ): string {
-  return rows.map(timestampOf).filter(Boolean).map((value) => occurredOnFrom(value)).sort().at(-1)
+  return rows.map(timestampOf).filter(Boolean).map((value) => occurredOnFrom(value)).sort((left, right) => left < right ? -1 : left > right ? 1 : 0).at(-1)
     ?? DETERMINISTIC_FALLBACK_OCCURRED_ON;
 }
 

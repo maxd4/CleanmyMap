@@ -314,7 +314,7 @@ export function buildProvenStreetCleaningCorridor(
     confidence: assertConfidence(input.confidence),
     provenance: {
       status: "proven",
-      evidenceIds: [...input.proof.evidenceIds].sort(),
+      evidenceIds: [...input.proof.evidenceIds].sort((left, right) => left < right ? -1 : left > right ? 1 : 0),
       note: input.proof.note,
     },
     safeCrossings: cloneCrossings(safeCrossings as StreetCleaningCrossing[]),

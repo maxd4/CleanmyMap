@@ -164,7 +164,7 @@ export function isBorderDistrict(districtNumber: number): boolean {
 export function getAllSuburbs(): string[] {
   const allSuburbs = new Set<string>();
   PARIS_DISTRICTS.forEach((d) => d.adjacentSuburbs.forEach((s) => allSuburbs.add(s)));
-  return Array.from(allSuburbs).sort();
+  return Array.from(allSuburbs).sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
 }
 
 export function findDistrictByName(name: string): District | null {

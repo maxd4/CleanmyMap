@@ -100,7 +100,7 @@ function buildParticipantImpactRevision(
   if (!action) return null;
   const participantRevisions = rows
     .map((row) => `${row.id}:${row.updatedAt ?? ""}`)
-    .sort();
+    .sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
   const revision = [action.updated_at ?? "", ...participantRevisions].join("|");
   return revision.length > 0 ? revision : null;
 }
