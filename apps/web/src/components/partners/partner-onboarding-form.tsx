@@ -1,10 +1,10 @@
 "use client";
 
 import { usePartnerOnboarding } from "./onboarding/use-partner-onboarding";
-import { GeneralInfoSection } from "./onboarding/sections/GeneralInfoSection";
-import { GeographicCoverageSection } from "./onboarding/sections/GeographicCoverageSection";
-import { AvailabilitySection } from "./onboarding/sections/AvailabilitySection";
-import { ContactSection } from "./onboarding/sections/ContactSection";
+import { GeneralInfoSection } from "./onboarding/sections/general-info-section";
+import { GeographicCoverageSection } from "./onboarding/sections/geographic-coverage-section";
+import { AvailabilitySection } from "./onboarding/sections/availability-section";
+import { ContactSection } from "./onboarding/sections/contact-section";
 import type { ContributionType } from "@/lib/partners/onboarding-types";
 
 const CONTRIBUTION_OPTIONS: Array<{ value: ContributionType; label: string }> = [
