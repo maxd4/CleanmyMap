@@ -23,6 +23,7 @@ on:
       - "e2e/profile-security.sql"
       - "e2e/security-02-projection-revocation.sql"
       - "e2e/security-02-two-sessions.mjs"
+      - "e2e/security-03-bug-report.sql"
       - "scripts/checks/spogomi-concurrency-destination.test.mjs"
       - "apps/web/src/lib/spogomi/**"
       - "apps/web/src/app/api/spogomi/**"
@@ -153,9 +154,11 @@ jobs:
           echo "Running SECURITY-01 PostgreSQL role and column privilege contract"
           profile_security_sql="$(cat e2e/profile-security.sql)"
           security_02_sql="$(cat e2e/security-02-projection-revocation.sql)"
+          security_03_sql="$(cat e2e/security-03-bug-report.sql)"
           npx supabase db query --workdir apps/web --local "$preflight_sql
 $profile_security_sql
-$security_02_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
+$security_02_sql
+$security_03_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
 
           echo "Running SECURITY-02 PostgreSQL two-session contract"
           node e2e/security-02-two-sessions.mjs 2>&1 | tee -a artifacts/ci/supabase-preflight.log

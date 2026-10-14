@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   }
   const { userId } = await auth();
   if (!userId) return unauthorizedJsonResponse();
-  const identity = await getCurrentUserIdentity({syncActiveRole:true});
+  const identity = await getCurrentUserIdentity({ userId, syncActiveRole: true });
   if (!identity) return unauthorizedJsonResponse();
   const validation = await validateChatPostRequest(request, userId);
   if (!validation.ok) return validation.response;
@@ -110,7 +110,10 @@ export async function POST(request: Request) {
     const destination = await resolveChatPostDestination({ supabase, serviceSupabase, userId, validated: validatedPost, zone, isExternalActionShare });
     if (destination instanceof Response) return destination;
 
-    const messageSupabase = parsed.data.channelType === "admin_elu" ? serviceSupabase : supabase;
+    const messageSupabase =
+      parsed.data.channelType === "admin_elu" || parsed.data.channelType === "bug_report"
+        ? serviceSupabase
+        : supabase;
     const message = await persistChatPostAndNotify({ supabase: messageSupabase, serviceSupabase, userId, validated: validatedPost, feedbackReplyContext, recipientId: destination.recipientId, actionConversationId: destination.actionConversationId, targetArrondissementId: destination.targetArrondissementId, targetZoneName: destination.targetZoneName, relatedEvent: destination.relatedEvent });
     if (message instanceof Response) return message;
 
