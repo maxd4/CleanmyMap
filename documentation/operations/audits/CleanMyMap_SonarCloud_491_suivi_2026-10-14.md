@@ -108,4 +108,3 @@ suivi Sonar a donc été généré par rapprochement read-only contre l’arbre 
 La procédure canonique de qualité existante couvre déjà la séparation entre
 finding SonarCloud, preuve locale et confirmation externe ; aucune modification
 de cette procédure n’était nécessaire dans ce lot.
-
