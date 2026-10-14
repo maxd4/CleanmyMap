@@ -6,6 +6,74 @@ import {
 } from "@/lib/profiles";
 import type { DisplayMode } from "@/lib/ui/preferences";
 import type { Role } from "@/lib/domain-language";
+import type { TerritoryLocationSelection } from "@/lib/user-location-preference";
+
+export type AccountSetupStep = "identity" | "usage" | "location";
+
+export function isAccountSetupStepValid(
+  step: AccountSetupStep,
+  errors: { firstName: string | null; lastName: string | null; profile: string | null; location: string | null },
+): boolean {
+  if (step === "identity") {
+    return !errors.firstName && !errors.lastName;
+  }
+  if (step === "usage") {
+    return !errors.profile;
+  }
+  return !errors.location;
+}
+
+function isValidSelection(selection: TerritoryLocationSelection | null): boolean {
+  return Boolean(
+    selection?.label.trim() &&
+      (selection.level !== "arrondissement" || selection.arrondissement != null),
+  );
+}
+
+export function resolveAccountSetupValidation({
+  firstName,
+  lastName,
+  selectedProfile,
+  profileOptions,
+  noneSelected,
+  residence,
+  work,
+  residenceEnabled,
+  workEnabled,
+}: {
+  firstName: string;
+  lastName: string;
+  selectedProfile: AppProfile;
+  profileOptions: readonly AppProfile[];
+  noneSelected: boolean;
+  residence: TerritoryLocationSelection | null;
+  work: TerritoryLocationSelection | null;
+  residenceEnabled: boolean;
+  workEnabled: boolean;
+}) {
+  const firstNameError = !firstName.trim() ? "Renseignez votre prénom." : null;
+  const lastNameError = !lastName.trim() ? "Renseignez votre nom." : null;
+  const profileError = !profileOptions.includes(selectedProfile)
+    ? "Sélectionnez un profil valide."
+    : null;
+  const activeResidence = !noneSelected && residenceEnabled;
+  const activeWork = !noneSelected && workEnabled;
+  const locationError =
+    (activeResidence && !isValidSelection(residence)) ||
+    (activeWork && !isValidSelection(work))
+      ? "Sélectionnez une ville ou un arrondissement pour chaque lieu activé."
+      : null;
+
+  return {
+    firstNameError,
+    lastNameError,
+    profileError,
+    activeResidence,
+    activeWork,
+    locationError,
+    formIsValid: !firstNameError && !lastNameError && !profileError && !locationError,
+  };
+}
 
 export function getAccountSetupProfileOptions(initialRole: Role): AppProfile[] {
   return getSwitchableProfiles(initialRole);

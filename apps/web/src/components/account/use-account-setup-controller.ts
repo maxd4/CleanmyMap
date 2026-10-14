@@ -1,47 +1,44 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent, type SetStateAction } from "react";
+import { useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import type { DisplayMode } from "@/lib/ui/preferences";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
-  clearLocationPreferenceMetadata,
-  createLocationPreferencesMetadata,
   createTerritoryLocationSelectionFromLegacyArrondissement,
   extractLocationPreferencesFromMetadata,
   type TerritoryLocationSelection,
 } from "@/lib/user-location-preference";
 import { resolveAccountDisplayName, type AppProfile, type DisplayNameMode } from "@/lib/profiles";
 import type { Role } from "@/lib/domain-language";
-import { notifyNetworkToast } from "@/lib/errors/network-toast";
-import { defaultMessageForKind, isAppError, toAppError, type AppError } from "@/lib/errors/app-errors";
+import type { AppError } from "@/lib/errors/app-errors";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
-import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
-import { logFailure } from "@/lib/logging/failure-log";
 import {
-  clearAccountSetupDeferralMetadata,
-  createAccountSetupDeferralMetadata,
-  persistAccountSetupChanges,
   type AccountSetupPersistenceStep,
 } from "@/components/account/account-setup-save";
 import {
   getAccountSetupProfileOptions,
-  getAccountSetupDeferralConfirmationMessage,
   getAccountSetupDeferralLabel,
+  isAccountSetupStepValid,
+  resolveAccountSetupValidation,
   resolveAccountSetupDisplayMode,
   resolveAccountSetupDisplayNameMode,
   resolveAccountSetupProfileSelection,
   shouldHydrateAccountSetupDisplayNameMode,
   shouldHydrateAccountSetupLocations,
-  shouldConfirmAccountSetupDeferral,
   shouldShowAccountSetupFieldError,
+  type AccountSetupStep,
 } from "@/components/account/account-setup-state";
 import {
   resolveAccountSetupIdentityNames,
   resolveAccountSetupNameField,
 } from "@/components/account/account-setup-identity";
-import { buildClerkMetadataPatch } from "@/lib/auth/clerk-metadata-patch";
+export type { AccountSetupStep } from "@/components/account/account-setup-state";
+import {
+  deferAccountSetup,
+  submitAccountSetup,
+} from "@/components/account/account-setup-controller-actions";
 
 export type AccountSetupFormProps = {
   nextPath?: string;
@@ -60,8 +57,6 @@ export type AccountSetupFormProps = {
 
 type AccountSetupField = "firstName" | "lastName" | "profile" | "location";
 
-export type AccountSetupStep = "identity" | "usage" | "location";
-
 const ACCOUNT_SETUP_STEPS: readonly AccountSetupStep[] = [
   "identity",
   "usage",
@@ -78,13 +73,6 @@ async function updateActiveProfile(activeProfile: AppProfile) {
   if (!response.ok) {
     throw new Error(payload?.error ?? "Mutation de profil refusée.");
   }
-}
-
-function isValidSelection(selection: TerritoryLocationSelection | null): boolean {
-  return Boolean(
-    selection?.label.trim() &&
-      (selection.level !== "arrondissement" || selection.arrondissement != null),
-  );
 }
 
 function readDisplayNameMode(metadata: Record<string, unknown> | null | undefined): DisplayNameMode {
@@ -251,20 +239,15 @@ export function useAccountSetupController({
     router.refresh();
   }
 
-  function validateStep(step: AccountSetupStep): boolean {
-    setSubmitAttempted(true);
-    if (step === "identity") {
-      return !firstNameError && !lastNameError;
-    }
-    if (step === "usage") {
-      return !profileError;
-    }
-    return !locationError;
-  }
-
   function handleNext() {
     if (isSaving) return;
-    if (!validateStep(currentStep)) return;
+    setSubmitAttempted(true);
+    if (!isAccountSetupStepValid(currentStep, {
+      firstName: firstNameError,
+      lastName: lastNameError,
+      profile: profileError,
+      location: locationError,
+    })) return;
     const stepIndex = ACCOUNT_SETUP_STEPS.indexOf(currentStep);
     const nextStep = ACCOUNT_SETUP_STEPS[stepIndex + 1];
     if (nextStep) {
@@ -323,136 +306,64 @@ export function useAccountSetupController({
     hasHydratedDisplayNameMode.current = true;
   }, [initialDisplayNameMode, isLoaded, user]);
 
-  const profileIsValid = profileOptions.includes(selectedProfile);
-  const firstNameError = !trimmedFirstName ? "Renseignez votre prénom." : null;
-  const lastNameError = !trimmedLastName ? "Renseignez votre nom." : null;
-  const profileError = !profileIsValid ? "Sélectionnez un profil valide." : null;
-  const activeResidence = !noneSelected && residenceEnabled;
-  const activeWork = !noneSelected && workEnabled;
-  const locationError =
-    (activeResidence && !isValidSelection(residence)) ||
-    (activeWork && !isValidSelection(work))
-      ? "Sélectionnez une ville ou un arrondissement pour chaque lieu activé."
-      : null;
-  const formIsValid = !firstNameError && !lastNameError && !profileError && !locationError;
+  const {
+    firstNameError,
+    lastNameError,
+    profileError,
+    activeResidence,
+    activeWork,
+    locationError,
+    formIsValid,
+  } = resolveAccountSetupValidation({
+    firstName,
+    lastName,
+    selectedProfile,
+    profileOptions,
+    noneSelected,
+    residence,
+    work,
+    residenceEnabled,
+    workEnabled,
+  });
 
-  async function handleDefer() {
-    if (saveInFlight.current) return;
-    setError(null);
-    if (!user) {
-      setError(toAppError("Compte introuvable, reconnectez-vous.", { kind: "permission", message: "Compte introuvable, reconnectez-vous." }));
-      return;
-    }
-    if (
-      shouldConfirmAccountSetupDeferral(isDirty, completedPersistenceSteps.current.size) &&
-      typeof window !== "undefined" &&
-      !window.confirm(getAccountSetupDeferralConfirmationMessage(completedPersistenceSteps.current.size))
-    ) {
-      return;
-    }
+  const handleDefer = () => deferAccountSetup({
+    user,
+    saveInFlight,
+    setError,
+    setIsSaving,
+    isDirty,
+    completedPersistenceSteps: completedPersistenceSteps.current,
+    confirmDeferral: (message) => typeof window === "undefined" || window.confirm(message),
+    navigateAfterSetup,
+  });
 
-    try {
-      saveInFlight.current = true;
-      setIsSaving(true);
-      const metadata = createAccountSetupDeferralMetadata(
-        { ...(user.unsafeMetadata ?? {}) },
-        ACCOUNT_SETUP_SCHEMA_VERSION,
-        new Date().toISOString(),
-      );
-      await user.updateMetadata({
-        unsafeMetadata: {
-          profileSetupDeferred: metadata.profileSetupDeferred,
-          profileSetupDeferredVersion: metadata.profileSetupDeferredVersion,
-          profileSetupDeferredAt: metadata.profileSetupDeferredAt,
-        },
-      });
-      navigateAfterSetup();
-    } catch (caughtError) {
-      logFailure("AccountSetup", "Deferral failed", caughtError);
-      const appError = isAppError(caughtError)
-        ? caughtError
-        : toAppError(caughtError, { kind: "server", message: "Impossible de différer la configuration. Réessayez." });
-      setError(appError);
-    } finally {
-      saveInFlight.current = false;
-      setIsSaving(false);
-    }
-  }
-
-  async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
-    event?.preventDefault();
-    if (isSaving || saveInFlight.current) return;
-    setError(null);
-    if (!user) {
-      setError(toAppError("Compte introuvable, reconnectez-vous.", { kind: "permission", message: "Compte introuvable, reconnectez-vous." }));
-      return;
-    }
-    if (currentStep !== "location") {
-      handleNext();
-      return;
-    }
-    setSubmitAttempted(true);
-    if (!formIsValid) {
-      setError(toAppError("Vérifiez les informations obligatoires.", { kind: "validation", message: "Vérifiez les informations obligatoires." }));
-      return;
-    }
-
-    try {
-      saveInFlight.current = true;
-      setIsSaving(true);
-      const metadata = clearLocationPreferenceMetadata({ ...(user.unsafeMetadata ?? {}) });
-      const completedMetadata = clearAccountSetupDeferralMetadata(metadata);
-      Object.assign(completedMetadata, {
-        profileSetupCompleted: true,
-        profileSetupVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
-        profileSetupSchemaVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
-        display_name_mode: displayNameMode,
-      });
-      Object.assign(
-        completedMetadata,
-        createLocationPreferencesMetadata({
-          residence: activeResidence ? residence : null,
-          work: activeWork ? work : null,
-        }),
-      );
-      const metadataPatch = buildClerkMetadataPatch(
-        (user.unsafeMetadata ?? {}) as Record<string, unknown>,
-        completedMetadata,
-      );
-
-      await persistAccountSetupChanges({
-        firstName: trimmedFirstName,
-        lastName: trimmedLastName,
-        metadata: metadataPatch,
-        selectedProfile,
-        updateUser: (update) => user.update(update),
-        updateMetadata: (patch) => user.updateMetadata({ unsafeMetadata: patch }),
-        updateActiveProfile,
-        saveDisplayMode: () => setDisplayMode(selectedDisplayMode),
-        completedSteps: completedPersistenceSteps.current,
-      });
-
-      completedPersistenceSteps.current.clear();
-      setIsDirty(false);
-      navigateAfterSetup();
-    } catch (caughtError) {
-      logFailure("AccountSetup", "Update failed", caughtError, { profile: selectedProfile });
-      const appError = isAppError(caughtError)
-        ? caughtError
-        : toAppError(caughtError, { kind: "server", message: "Impossible d’enregistrer les préférences. Réessayez." });
-      if (appError.kind === "network") {
-        notifyNetworkToast({
-          message: appError.message || defaultMessageForKind("network"),
-          onRetry: () => void handleSubmit(),
-          onRefresh: () => router.refresh(),
-        });
-      }
-      setError(appError);
-    } finally {
-      saveInFlight.current = false;
-      setIsSaving(false);
-    }
-  }
+  const handleSubmit = (event?: Parameters<typeof submitAccountSetup>[0]["event"]) => submitAccountSetup({
+    event,
+    isSaving,
+    saveInFlight,
+    setError,
+    setIsSaving,
+    user,
+    currentStep,
+    onAdvance: handleNext,
+    setSubmitAttempted,
+    formIsValid,
+    selectedProfile,
+    displayNameMode,
+    activeResidence,
+    activeWork,
+    residence,
+    work,
+    trimmedFirstName,
+    trimmedLastName,
+    completedPersistenceSteps: completedPersistenceSteps.current,
+    setIsDirty,
+    updateActiveProfile,
+    saveDisplayMode: () => setDisplayMode(selectedDisplayMode),
+    onRetry: () => void handleSubmit(),
+    onRefresh: () => router.refresh(),
+    navigateAfterSetup,
+  });
 
   return {
     user,

@@ -3,6 +3,8 @@ import {
   getAccountSetupProfileOptions,
   getAccountSetupDeferralConfirmationMessage,
   getAccountSetupDeferralLabel,
+  isAccountSetupStepValid,
+  resolveAccountSetupValidation,
   resolveAccountSetupDisplayMode,
   resolveAccountSetupDisplayNameMode,
   resolveAccountSetupProfileSelection,
@@ -56,5 +58,44 @@ describe("account setup initial state", () => {
     expect(shouldShowAccountSetupFieldError(false, false)).toBe(false);
     expect(shouldShowAccountSetupFieldError(false, true)).toBe(true);
     expect(shouldShowAccountSetupFieldError(true, false)).toBe(true);
+  });
+
+  it("validates only the fields owned by the current setup step", () => {
+    const errors = { firstName: null, lastName: null, profile: "invalid", location: "invalid" };
+
+    expect(isAccountSetupStepValid("identity", errors)).toBe(true);
+    expect(isAccountSetupStepValid("usage", errors)).toBe(false);
+    expect(isAccountSetupStepValid("location", errors)).toBe(false);
+  });
+
+  it("derives location and field validity without changing the selected values", () => {
+    const result = resolveAccountSetupValidation({
+      firstName: "Marie",
+      lastName: "Curie",
+      selectedProfile: "benevole",
+      profileOptions: ["benevole"],
+      noneSelected: false,
+      residence: {
+        country: "France",
+        level: "commune",
+        label: "Paris",
+        subtitle: "Île-de-France",
+        arrondissement: null,
+        arrondissementCity: null,
+      },
+      work: null,
+      residenceEnabled: true,
+      workEnabled: false,
+    });
+
+    expect(result).toMatchObject({
+      firstNameError: null,
+      lastNameError: null,
+      profileError: null,
+      activeResidence: true,
+      activeWork: false,
+      locationError: null,
+      formIsValid: true,
+    });
   });
 });
