@@ -42,11 +42,13 @@ GitHub lus à distance. Il décrit le contrat courant sans exposer de secret.
 - La lane `e2e-supabase.yml` échoue explicitement pour une Pull Request issue
   d'un dépôt externe avant l'étape qui consomme les secrets Clerk Development;
   elle ne transforme pas l'absence de secrets d'un fork en succès silencieux.
-- `npm run release:check -- --sha=<sha>` exige une preuve FULL version 2 liée au
-  SHA exact, la présence de tous les contrôles FULL, l'absence de contrôles
-  échoués, bloqués, non lancés ou classés `preexisting`, ainsi que la
-  provenance `maxd4/CleanmyMap` sur `main` et la cible Vercel `web`/`apps/web`
-  en environnement `production`. `git.deploymentEnabled: false` reste requis.
+- `npm run release:check -- --sha=<sha> --target=production` exige une preuve
+  FULL version 2 liée au SHA exact, la présence de tous les contrôles FULL,
+  l'absence de contrôles échoués, bloqués, non lancés ou classés `preexisting`,
+  ainsi que la provenance `maxd4/CleanmyMap` sur `main` avec un SHA
+  `origin/main` égal au candidat. La cible Vercel attendue `production` doit
+  être explicitement égale à la cible réellement fournie au contrôle pour le
+  projet `web`/`apps/web`. `git.deploymentEnabled: false` reste requis.
 
 ## Contrôles planifiés et audit de couverture
 

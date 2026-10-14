@@ -307,15 +307,17 @@ automatiquement FULL.
 Après un FULL vert sur le SHA exact, vérifier :
 
 ```bash
-npm run release:check -- --sha=<sha-valide>
+npm run release:check -- --sha=<sha-valide> --target=production
 ```
 
 La commande exige un worktree propre, une preuve FULL v2 persistée pour le SHA
 exact, la couverture de tous les contrôles FULL requis sans échec ni résultat
-préexistant, une provenance `origin/main` vérifiée, `RELEASE_READY: YES`, et une
-cible Vercel `web` / `apps/web` en Production avec `git.deploymentEnabled:
-false` pour empêcher les déploiements Git automatiques. Elle n'exécute aucun
-déploiement. Une commande Vercel explicite reste nécessaire après cette preuve.
+préexistant, une provenance `origin/main` dont le SHA distant correspond au
+candidat, et une cible Vercel `web` / `apps/web` avec une cible attendue
+`production` explicitement égale à la cible réellement fournie par
+`--target`. `git.deploymentEnabled: false` reste requis pour empêcher les
+déploiements Git automatiques. Elle n'exécute aucun déploiement. Une commande
+Vercel explicite reste nécessaire après cette preuve.
 
 Chaque exécution produit un rapport avec `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
 `ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS` (`none` pour `FULL`),

@@ -16,7 +16,7 @@ npm run checks:full
 npm run precommit:guard
 npm run prepush:guard
 npm run pre-release:check
-npm run release:check
+npm run release:check -- --sha=<sha-valide> --target=production
 ```
 
 `checks:full` et les vérifications de release sont proportionnées au candidat

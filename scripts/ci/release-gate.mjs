@@ -32,7 +32,11 @@ function currentSha() {
 
 function parseArgs(argv = []) {
   const shaArgument = argv.find((arg) => arg.startsWith("--sha="));
-  return { sha: shaArgument?.slice("--sha=".length) || currentSha() };
+  const targetArgument = argv.find((arg) => arg.startsWith("--target="));
+  return {
+    sha: shaArgument?.slice("--sha=".length) || currentSha(),
+    target: targetArgument?.slice("--target=".length) || "",
+  };
 }
 
 function isClean() {
@@ -72,11 +76,13 @@ export function evaluateReleaseGate({
   const provenanceVerified = Boolean(
     provenance?.repository === CANONICAL_REPOSITORY
       && provenance.branch === "main"
-      && provenance.originVerified === true,
+      && provenance.originVerified === true
+      && provenance.originMainSha === current,
   );
   const targetVerified = Boolean(
     deploymentEnabled?.main === false
-      && deploymentEnabled.target === "production"
+      && deploymentEnabled.expectedTarget === "production"
+      && deploymentEnabled.actualTarget === deploymentEnabled.expectedTarget
       && deploymentEnabled.projectName === "web"
       && deploymentEnabled.rootDirectory === "apps/web",
   );
@@ -89,25 +95,37 @@ export function evaluateReleaseGate({
       !evidenceMatches && "FULL evidence does not match the requested SHA",
       !fullGreen && "FULL evidence is not green",
       missingChecks.length > 0 && `FULL evidence is missing required checks: ${missingChecks.join(", ")}`,
-      !provenanceVerified && "candidate provenance is not verified for maxd4/CleanmyMap main",
-      !targetVerified && "Vercel target must be project web, root apps/web, production, with Git deployment disabled",
+      !provenanceVerified && "candidate provenance must match maxd4/CleanmyMap main at the candidate SHA",
+      !targetVerified && "Vercel target must explicitly match expected production for project web, root apps/web, with Git deployment disabled",
     ].filter(Boolean),
   };
 }
 
-function readCandidateProvenance() {
+function readCandidateProvenance(candidateSha) {
   try {
     const origin = execFileSync("git", ["remote", "get-url", "origin"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
     const branch = execFileSync("git", ["branch", "--show-current"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+    const originMain = execFileSync("git", ["ls-remote", "origin", "refs/heads/main"], {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+    }).trim();
     const match = origin.match(/github\.com[/:]([^/]+\/[^/]+?)(?:\.git)?$/i);
     const repository = match?.[1] ?? "";
-    return { branch, repository, originVerified: repository === CANONICAL_REPOSITORY };
+    const originMainSha = originMain.split(/\s+/)[0] ?? "";
+    return {
+      branch,
+      repository,
+      originMainSha,
+      originVerified: repository === CANONICAL_REPOSITORY
+        && branch === "main"
+        && originMainSha === candidateSha,
+    };
   } catch {
-    return { branch: "", repository: "", originVerified: false };
+    return { branch: "", repository: "", originMainSha: "", originVerified: false };
   }
 }
 
-function readVercelPolicy() {
+function readVercelPolicy(actualTarget) {
   const config = JSON.parse(fs.readFileSync(path.join(repositoryRoot, "apps/web/vercel.json"), "utf8"));
   const deploymentEnabled = config.git?.deploymentEnabled;
   let project = null;
@@ -118,28 +136,32 @@ function readVercelPolicy() {
   }
   return {
     main: deploymentEnabled === false ? false : deploymentEnabled?.main,
-    target: "production",
+    expectedTarget: "production",
+    actualTarget: actualTarget || "",
     projectName: project?.projectName,
     rootDirectory: project?.settings?.rootDirectory,
   };
 }
 
 function main() {
-  const { sha } = parseArgs(process.argv.slice(2));
+  const { sha, target } = parseArgs(process.argv.slice(2));
   const evidencePath = path.join(repositoryRoot, "artifacts", "validation", "full", `${sha}.json`);
   const evidence = fs.existsSync(evidencePath) ? JSON.parse(fs.readFileSync(evidencePath, "utf8")) : null;
   const current = currentSha();
+  const vercelPolicy = readVercelPolicy(target);
   const result = evaluateReleaseGate({
     evidence,
     current,
     clean: isClean(),
-    deploymentEnabled: { ...readVercelPolicy(), sha },
-    provenance: readCandidateProvenance(),
+    deploymentEnabled: { ...vercelPolicy, sha },
+    provenance: readCandidateProvenance(sha),
   });
 
   console.log(`CANDIDATE_SHA: ${sha}`);
   console.log(`CURRENT_SHA: ${current}`);
   console.log(`FULL_EVIDENCE: ${evidence ? "FOUND" : "MISSING"}`);
+  console.log(`VERCEL_EXPECTED_TARGET: ${vercelPolicy.expectedTarget}`);
+  console.log(`VERCEL_ACTUAL_TARGET: ${target || "MISSING"}`);
   console.log(`RELEASE_READY: ${result.ready ? "YES" : "NO"}`);
   for (const reason of result.reasons) console.error(`BLOCKED_DECISION: ${reason}`);
   process.exitCode = result.ready ? 0 : 1;

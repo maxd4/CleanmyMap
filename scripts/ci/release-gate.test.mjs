@@ -21,8 +21,20 @@ const evidence = {
 };
 
 const requiredChecks = ["full-check"];
-const provenance = { repository: "maxd4/CleanmyMap", branch: "main", originVerified: true };
-const deploymentEnabled = { sha, main: false, target: "production", projectName: "web", rootDirectory: "apps/web" };
+const provenance = {
+  repository: "maxd4/CleanmyMap",
+  branch: "main",
+  originMainSha: sha,
+  originVerified: true,
+};
+const deploymentEnabled = {
+  sha,
+  main: false,
+  expectedTarget: "production",
+  actualTarget: "production",
+  projectName: "web",
+  rootDirectory: "apps/web",
+};
 
 test("release gate requires exact SHA, clean worktree, and disabled main auto-deployment", () => {
   assert.equal(evaluateReleaseGate({
@@ -48,6 +60,15 @@ test("release gate requires exact SHA, clean worktree, and disabled main auto-de
     current: sha,
     clean: true,
     deploymentEnabled: { ...deploymentEnabled, main: true },
+    provenance,
+    requiredChecks,
+  }).ready, false);
+
+  assert.equal(evaluateReleaseGate({
+    evidence,
+    current: sha,
+    clean: true,
+    deploymentEnabled: { ...deploymentEnabled, actualTarget: "preview" },
     provenance,
     requiredChecks,
   }).ready, false);
@@ -77,6 +98,24 @@ test("release gate rejects incomplete, failed, stale, and out-of-procedure candi
     clean: true,
     deploymentEnabled,
     provenance: { ...provenance, repository: "attacker/fork" },
+    requiredChecks,
+  }).ready, false);
+
+  assert.equal(evaluateReleaseGate({
+    evidence,
+    current: sha,
+    clean: true,
+    deploymentEnabled,
+    provenance: { ...provenance, originMainSha: otherSha },
+    requiredChecks,
+  }).ready, false);
+
+  assert.equal(evaluateReleaseGate({
+    evidence,
+    current: sha,
+    clean: true,
+    deploymentEnabled,
+    provenance: { ...provenance, originVerified: false },
     requiredChecks,
   }).ready, false);
 
