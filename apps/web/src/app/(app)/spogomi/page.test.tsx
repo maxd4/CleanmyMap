@@ -46,6 +46,11 @@ describe("/spogomi public and private navigation", () => {
     expect(markup).toContain("Aucune compétition SPOGOMI publiée");
     expect(markup).toContain('href="#spogomi-events"');
     expect(markup).toContain('href="/sections/messagerie?tab=discussions&amp;channel=community&amp;topicId=spogomi"');
+    expect(markup).toContain("understanding.title");
+    expect(markup).toContain("international.casualTitle");
+    expect(markup).toContain("understanding.rulesTitle");
+    expect(markup.indexOf("spogomi-events")).toBeLessThan(markup.indexOf("understanding.title"));
+    expect(markup.indexOf("understanding.title")).toBeLessThan(markup.indexOf("international"));
     expect(markup).not.toContain('href="/dashboard/spogomi"');
     expect(mocks.listPublishedSpogomiEvents).toHaveBeenCalledTimes(1);
   });

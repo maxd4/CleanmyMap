@@ -255,7 +255,18 @@
       "cleanMyMapEvent": "CleanMyMap event",
       "source": "Official source",
       "noExternalEvents": "No verified external event matches these filters.",
-      "communityLink": "Open the SPOGOMI community room"
+      "newsDetails": "View verified updates",
+      "filtersDetails": "View filters and events",
+      "worldDetails": "View CleanMyMap's role and sources"
+    },
+    "understanding": {
+      "title": "Understanding SPOGOMI",
+      "description": "Competition formats, rules, and safety.",
+      "rulesTitle": "Rules & safety",
+      "rulesDescription": "The applicable rules are the ones published for each edition. International references do not replace local instructions.",
+      "rulesCasual": "Casual: team size and operating rules are defined by the edition organizer.",
+      "rulesWorldCup": "World Cup: a registered team includes three members; this does not prove they were present on the ground.",
+      "rulesSafety": "Roster personal data remains private, and results become public only after effective publication."
     }
   }
 }

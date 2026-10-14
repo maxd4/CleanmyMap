@@ -255,7 +255,18 @@
       "cleanMyMapEvent": "Événement CleanMyMap",
       "source": "Source officielle",
       "noExternalEvents": "Aucun événement externe vérifié pour ces filtres.",
-      "communityLink": "Ouvrir le salon SPOGOMI"
+      "newsDetails": "Voir les actualités vérifiées",
+      "filtersDetails": "Voir les filtres et événements",
+      "worldDetails": "Voir le rôle de CleanMyMap et les sources"
+    },
+    "understanding": {
+      "title": "Comprendre SPOGOMI",
+      "description": "Formats des compétitions, règlement et sécurité.",
+      "rulesTitle": "Règlement & sécurité",
+      "rulesDescription": "Le règlement applicable est celui qui est publié pour chaque édition. Les références internationales n’effacent pas les consignes locales.",
+      "rulesCasual": "Casual : l’effectif et les modalités sont définis par l’organisateur de l’édition.",
+      "rulesWorldCup": "World Cup : une équipe inscrite comprend trois membres ; cela ne prouve pas leur présence sur le terrain.",
+      "rulesSafety": "Les données nominatives du roster restent privées et les résultats ne deviennent publics qu’après leur publication effective."
     }
   }
 }

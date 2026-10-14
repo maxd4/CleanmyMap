@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { ArrowUpRight, CalendarDays, ExternalLink, Globe2 } from "lucide-react";
+import { CalendarDays, ExternalLink, Globe2, Megaphone, SlidersHorizontal } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+import { CmmIcon } from "@/components/ui/cmm-icon";
 import { filterSpogomiExternalEvents, type SpogomiExternalEvent, type SpogomiInternationalNews, type SpogomiInternationalSource } from "@/lib/spogomi/international-content";
 import type { Locale } from "@/lib/ui/preferences";
 
@@ -15,10 +16,6 @@ type Props = {
   copy: {
     worldTitle: string;
     worldDescription: string;
-    casualTitle: string;
-    casualDescription: string;
-    worldCupTitle: string;
-    worldCupDescription: string;
     cleanMyMapRole: string;
     officialSources: string;
     verifiedOn: string;
@@ -33,7 +30,9 @@ type Props = {
     externalEvent: string;
     source: string;
     noExternalEvents: string;
-    communityLink: string;
+    newsDetails: string;
+    filtersDetails: string;
+    worldDetails: string;
   };
 };
 
@@ -49,30 +48,19 @@ export function SpogomiInternationalContent({ locale, sources, news, externalEve
   const filteredEvents = useMemo(() => filterSpogomiExternalEvents(externalEvents, { year, country }), [externalEvents, year, country]);
 
   return (
-    <section className="space-y-5" aria-labelledby="spogomi-world-title">
+    <section className="space-y-4" aria-label="Informations internationales">
       <CmmCard tone="indigo" variant="glass" className="space-y-5 p-5 sm:p-6">
         <div className="flex items-start gap-3">
-          <Globe2 className="mt-1 shrink-0 text-indigo-700" aria-hidden="true" />
+          <CmmIcon icon={Globe2} className="mt-1 text-indigo-700" />
           <div>
-            <h2 id="spogomi-world-title" className="text-2xl font-black text-indigo-950">{copy.worldTitle}</h2>
-            <p className="cmm-text-body mt-2 text-slate-900">{copy.worldDescription}</p>
+            <h2 className="text-xl font-black text-indigo-950">{copy.worldTitle}</h2>
+            <p className="cmm-text-caption mt-1 text-slate-700">{copy.worldDescription}</p>
           </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-2xl border border-indigo-100 bg-white/75 p-4">
-            <h3 className="font-black text-indigo-950">{copy.casualTitle}</h3>
-            <p className="cmm-text-body mt-1 text-slate-800">{copy.casualDescription}</p>
-          </div>
-          <div className="rounded-2xl border border-indigo-100 bg-white/75 p-4">
-            <h3 className="font-black text-indigo-950">{copy.worldCupTitle}</h3>
-            <p className="cmm-text-body mt-1 text-slate-800">{copy.worldCupDescription}</p>
-          </div>
-        </div>
-        <p className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 text-sm text-indigo-950">{copy.cleanMyMapRole}</p>
-        <div className="flex flex-wrap items-center gap-3">
-          <Link href="/sections/messagerie?tab=discussions&channel=community&topicId=spogomi" className="inline-flex min-h-11 items-center gap-2 font-bold text-indigo-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
-            {copy.communityLink} <ArrowUpRight size={16} aria-hidden="true" />
-          </Link>
+        <CmmDisclosure summary={copy.worldDetails} tone="indigo" size="sm">
+          <div className="space-y-3">
+            <p className="text-sm leading-6 text-indigo-950">{copy.cleanMyMapRole}</p>
+            <div className="space-y-2">
           {sources.map((source) => (
             <div key={source.id} className="rounded-xl border border-indigo-100 bg-white/60 p-3">
               <a href={source.href} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-2 font-bold text-indigo-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
@@ -81,15 +69,21 @@ export function SpogomiInternationalContent({ locale, sources, news, externalEve
               <p className="cmm-text-caption mt-1 text-slate-700">{source.description[locale]} · {copy.verifiedOn} {source.verifiedAt}</p>
             </div>
           ))}
-        </div>
+            </div>
+          </div>
+        </CmmDisclosure>
       </CmmCard>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 lg:grid-cols-3">
         <CmmCard tone="indigo" variant="glass" className="space-y-4 p-5">
-          <div>
-            <h2 className="text-xl font-black text-indigo-950">{copy.newsTitle}</h2>
-            <p className="cmm-text-caption mt-1 text-slate-700">{copy.officialSources}</p>
+          <div className="flex items-start gap-3">
+            <CmmIcon icon={Megaphone} className="mt-1 text-indigo-700" />
+            <div>
+              <h2 className="text-xl font-black text-indigo-950">{copy.newsTitle}</h2>
+              <p className="cmm-text-caption mt-1 text-slate-700">{copy.officialSources}</p>
+            </div>
           </div>
+          <CmmDisclosure summary={copy.newsDetails} tone="indigo" size="sm">
           <div className="space-y-3">
             {news.map((item) => (
               <article key={item.id} className="rounded-2xl border border-indigo-100 bg-white/70 p-4">
@@ -104,13 +98,19 @@ export function SpogomiInternationalContent({ locale, sources, news, externalEve
               </article>
             ))}
           </div>
+          </CmmDisclosure>
         </CmmCard>
 
         <CmmCard tone="indigo" variant="glass" className="space-y-4 p-5">
-          <div>
-            <h2 className="text-xl font-black text-indigo-950">{copy.internationalEvents}</h2>
-            <p className="cmm-text-caption mt-1 text-slate-700">{copy.externalEvent}</p>
+          <div className="flex items-start gap-3">
+            <CmmIcon icon={SlidersHorizontal} className="mt-1 text-indigo-700" />
+            <div>
+              <h2 className="text-xl font-black text-indigo-950">{copy.internationalEvents}</h2>
+              <p className="cmm-text-caption mt-1 text-slate-700">{copy.externalEvent}</p>
+            </div>
           </div>
+          <CmmDisclosure summary={copy.filtersDetails} tone="indigo" size="sm">
+          <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2" aria-label={`${copy.internationalEvents} filters`}>
             <label className="space-y-1 text-sm font-bold text-slate-900">
               <span>{copy.year}</span>
@@ -145,6 +145,8 @@ export function SpogomiInternationalContent({ locale, sources, news, externalEve
               ))}
             </div>
           )}
+          </div>
+          </CmmDisclosure>
         </CmmCard>
       </div>
     </section>
