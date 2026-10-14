@@ -84,6 +84,7 @@
     "audit:product-surface:write": "node scripts/audits/generate-product-surface-audit.mjs --ref=HEAD --write",
     "quality:mutation": "node scripts/checks/check-mutation.mjs",
     "check:root-files": "node scripts/checks/check-root-file-hygiene.mjs",
+    "check:file-naming": "node scripts/checks/check-file-naming.mjs",
     "check:white-text": "node scripts/checks/check-white-text-variants.mjs",
     "check:text-colors": "node scripts/checks/check-white-text-variants.mjs",
     "check:page-header": "node scripts/checks/check-page-header-governance.mjs",

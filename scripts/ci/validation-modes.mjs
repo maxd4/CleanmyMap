@@ -177,6 +177,7 @@ function addFullCheck(checks, check) {
 function addFullPlanChecks(checks) {
   const commands = [
     ["root-file-hygiene", "Hygiène des fichiers racine", npmCommand("check:root-files"), 5],
+    ["file-naming", "Convention de nommage des fichiers", npmCommand("check:file-naming"), 2],
     ["environment-contract", "Contrat d'environnement", npmCommand("check:env-contract"), 5],
     ["documentation-governance", "Gouvernance documentaire", npmCommand("check:doc-governance"), 10],
     ["stack-documentation-drift", "Dérive stack/documentation", npmCommand("check:stack-doc-drift"), 5],
@@ -271,6 +272,14 @@ export function createModeValidationPlan({
       args: normalizedScope === "STAGED" ? ["diff", "--cached", "--check"] : ["diff", "--check"],
     },
     candidateScope: normalizedScope,
+  });
+
+  addCheck(checks, {
+    id: "file-naming",
+    label: "Convention de nommage des fichiers",
+    estimatedSeconds: 2,
+    critical: true,
+    command: npmCommand("check:file-naming"),
   });
 
   if (full) {

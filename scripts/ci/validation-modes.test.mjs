@@ -19,6 +19,7 @@ function ids(plan) {
 
 test("DEVELOPMENT docs-only keeps the fast plan targeted", () => {
   const plan = createModeValidationPlan({ mode: "FAST", changedFiles: ["documentation/development/TESTING.md"] });
+  assert.ok(ids(plan).includes("file-naming"));
   assert.ok(ids(plan).includes("documentation-governance"));
   assert.ok(!ids(plan).some((id) => ["test:coverage", "quality:duplication", "quality:cycles", "quality:dead-code", "test:e2e"].includes(id)));
   assert.ok(!ids(plan).includes("build"));
@@ -52,6 +53,7 @@ test("DEVELOPMENT script changes never fan out to the complete script suite", ()
 
 test("FULL is global even for documentation-only candidates", () => {
   const plan = createModeValidationPlan({ mode: "FULL", changedFiles: ["documentation/development/TESTING.md"] });
+  assert.ok(ids(plan).includes("file-naming"));
   for (const id of [
     "test:coverage", "quality:coverage", "typecheck", "lint", "quality:top-heavy",
     "quality:complexity", "quality:dead-code", "quality:duplication", "quality:cycles",
@@ -132,7 +134,7 @@ test("candidate scopes select the matching diff and secret boundaries", () => {
   assert.ok(ids(worktreePlan).includes("diff-check-staged"));
   assert.equal(ids(stagedPlan).includes("diff-check-staged"), false);
   assert.deepEqual(stagedPlan.checks[0].command.args, ["diff", "--cached", "--check"]);
-  assert.deepEqual(stagedPlan.checks[1].command.args, ["run", "security:secrets", "--", "--staged-only"]);
+  assert.deepEqual(stagedPlan.checks.find((check) => check.id === "security-secrets").command.args, ["run", "security:secrets", "--", "--staged-only"]);
 });
 
 test("budget decision is deterministic and FULL has no global budget", () => {
