@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { execFileSync } from "node:child_process";
 import ts from "typescript";
+import { createRepositoryView, parseRepositoryRef } from "../checks/repository-view.mjs";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const sourceExtensions = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx"];
@@ -68,16 +69,12 @@ function shouldIgnore(filePath) {
   return filePath.split(path.sep).some((segment) => ignoredDirectoryNames.has(segment));
 }
 
-function listSourceFiles(directory) {
-  if (!fs.existsSync(directory)) return [];
-  const files = [];
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-    const entryPath = path.join(directory, entry.name);
-    if (shouldIgnore(entryPath)) continue;
-    if (entry.isDirectory()) files.push(...listSourceFiles(entryPath));
-    else if (entry.isFile() && isSourceFile(entryPath)) files.push(entryPath);
-  }
-  return files;
+function listSourceFilesFromView(view, root, directory) {
+  const prefix = normalizePath(directory, root);
+  return view
+    .listFiles(prefix)
+    .filter((relativePath) => isSourceFile(relativePath) && !shouldIgnore(relativePath))
+    .map((relativePath) => path.resolve(root, ...relativePath.split("/")));
 }
 
 function isTestFile(filePath, root = repositoryRoot) {
@@ -97,7 +94,7 @@ function applyAlias(surface, specifier) {
   return null;
 }
 
-function resolveInternalImport(surface, importerPath, specifier) {
+function resolveInternalImport(surface, importerPath, specifier, { root = repositoryRoot, view } = {}) {
   const aliased = applyAlias(surface, specifier);
   if (!specifier.startsWith(".") && !aliased) return null;
   const basePath = aliased ?? path.resolve(path.dirname(importerPath), specifier);
@@ -108,7 +105,10 @@ function resolveInternalImport(surface, importerPath, specifier) {
   for (const extension of sourceExtensions) {
     candidates.push(path.join(basePath, `index${extension}`));
   }
-  const resolved = candidates.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
+  const resolved = candidates.find((candidate) => {
+    if (view) return view.isFile(normalizePath(candidate, root));
+    return fs.existsSync(candidate) && fs.statSync(candidate).isFile();
+  });
   if (!resolved || !resolved.startsWith(`${surface.root}${path.sep}`) || shouldIgnore(resolved)) return null;
   return resolved;
 }
@@ -160,11 +160,20 @@ function parseImportKind(node) {
   return "runtime";
 }
 
+function parseExportKind(node) {
+  if (node.isTypeOnly) return "type-only";
+  const clause = node.exportClause;
+  if (clause && ts.isNamedExports(clause) && clause.elements.length > 0 && clause.elements.every((element) => element.isTypeOnly)) {
+    return "type-only";
+  }
+  return "runtime";
+}
+
 function moduleSpecifierText(node) {
   return node.moduleSpecifier && ts.isStringLiteralLike(node.moduleSpecifier) ? node.moduleSpecifier.text : null;
 }
 
-function parseImports(filePath, source) {
+export function parseImports(filePath, source) {
   const scriptKind = filePath.endsWith(".tsx") || filePath.endsWith(".jsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
   const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, scriptKind);
   const imports = [];
@@ -175,7 +184,7 @@ function parseImports(filePath, source) {
   }
   function visit(node) {
     if (ts.isImportDeclaration(node)) add(node, moduleSpecifierText(node), parseImportKind(node), "import");
-    else if (ts.isExportDeclaration(node)) add(node, moduleSpecifierText(node), node.isTypeOnly ? "type-only" : "runtime", "export");
+    else if (ts.isExportDeclaration(node)) add(node, moduleSpecifierText(node), parseExportKind(node), "export");
     else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) add(node, moduleSpecifierText(node.moduleReference), "runtime", "import-equals");
     else if (ts.isCallExpression(node) && node.arguments.length === 1 && ts.isStringLiteralLike(node.arguments[0])) {
       if (node.expression.kind === ts.SyntaxKind.ImportKeyword) add(node, node.arguments[0].text, "runtime", "dynamic-import");
@@ -275,14 +284,16 @@ function summarizeDomains(nodes, edges) {
   return [...domains.values()].map((entry) => ({ ...entry, layers: sortStrings(entry.layers) })).sort((a, b) => a.domain.localeCompare(b.domain));
 }
 
-export function buildArchitectureImportGraph({ source = "worktree", root = repositoryRoot, surfaces: suppliedSurfaces, gitSha } = {}) {
+export function buildArchitectureImportGraph({ source = "worktree", root = repositoryRoot, surfaces: suppliedSurfaces, gitSha, ref, view: suppliedView } = {}) {
+  const measurementView = suppliedView ?? createRepositoryView({ root, ref });
   const activeSurfaces = suppliedSurfaces ?? createSurfaces(root);
-  const sha = gitSha ?? git(["rev-parse", "HEAD"], root);
+  const sha = gitSha ?? git(["rev-parse", ref ?? "HEAD"], root);
+  const provenanceVerified = measurementView.mode === "git" && Boolean(ref);
   const nodes = [];
   const edges = [];
   const unresolvedInternal = [];
   for (const surface of activeSurfaces) {
-    for (const filePath of listSourceFiles(surface.root)) {
+    for (const filePath of listSourceFilesFromView(measurementView, root, surface.root)) {
       const relativePath = normalizePath(filePath, root);
       const node = {
         path: relativePath,
@@ -294,9 +305,9 @@ export function buildArchitectureImportGraph({ source = "worktree", root = repos
         facadeOwner: facadeOwner(relativePath),
       };
       nodes.push(node);
-      const sourceText = fs.readFileSync(filePath, "utf8");
+      const sourceText = measurementView.readText(relativePath);
       for (const parsed of parseImports(filePath, sourceText)) {
-        const targetPath = resolveInternalImport(surface, filePath, parsed.specifier);
+        const targetPath = resolveInternalImport(surface, filePath, parsed.specifier, { root, view: measurementView });
         if (!targetPath) {
           if (parsed.specifier.startsWith(".") || parsed.specifier.startsWith("@/")) unresolvedInternal.push({ from: relativePath, specifier: parsed.specifier, line: parsed.line });
           continue;
@@ -345,6 +356,11 @@ export function buildArchitectureImportGraph({ source = "worktree", root = repos
     source,
     repository: "maxd4/CleanmyMap",
     gitSha: sha,
+    provenance: {
+      gitRef: ref ?? null,
+      measuredSource: measurementView.mode,
+      verified: provenanceVerified,
+    },
     generatedAt: null,
     surfaces: activeSurfaces.map((surface) => ({ id: surface.id, root: normalizePath(surface.root, root) })),
     layers: ["ui", "application", "domain", "infrastructure", "external-services", "test"],
@@ -385,11 +401,12 @@ export function buildArchitectureImportGraph({ source = "worktree", root = repos
 }
 
 function parseArgs(args) {
-  const options = { source: "worktree", output: null };
+  const options = { source: "worktree", output: null, ref: parseRepositoryRef(args) };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--output") options.output = args[++index];
     else if (arg === "--source") options.source = args[++index];
+    else if (arg === "--ref") options.ref = args[++index];
   }
   return options;
 }
