@@ -20,6 +20,8 @@ concurrente.
 - [Repo quality rules](./repo-quality-rules.md) — règles qualité spécialisées ;
 - [TypeScript Precision Policy](./typescript-precision-policy.md) — contrat
   durable pour les frontières non fiables, types, casts et accès dynamiques ;
+- [Runtime version matrix](./runtime-version-matrix.md) — versions et
+  configurations distinctes des surfaces Web, Mobile, outillage et Python ;
 - [Lint & Static Analysis Refactor Playbook](./lint-refactor-playbook.md) —
   méthode de correction des diagnostics statiques sans masquer la cause racine ;
 - [Mode de développement rapide](./rapid-development-mode.md) — protocole
