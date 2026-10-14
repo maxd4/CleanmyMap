@@ -1,5 +1,4 @@
 import type { User } from "@clerk/nextjs/server";
-import { getDisplayNameModeOverride } from "@/lib/account/display-name-mode-store";
 import {
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
@@ -59,8 +58,19 @@ export function resolveIdentityNameParts(
 export function resolveIdentityDisplayNameMode(
   userId: string,
   storedProfile: StoredProfileNameRow | null,
+  user?: User,
 ): DisplayNameMode {
-  return getDisplayNameModeOverride(userId) ?? normalizeDisplayNameMode(storedProfile?.display_name_mode);
+  void userId;
+  const metadataSources = [
+    user?.unsafeMetadata,
+    user?.publicMetadata,
+    user?.privateMetadata,
+  ] as Array<Record<string, unknown> | null | undefined>;
+  for (const metadata of metadataSources) {
+    const value = metadata?.display_name_mode ?? metadata?.displayNameMode;
+    if (typeof value === "string") return normalizeDisplayNameMode(value);
+  }
+  return normalizeDisplayNameMode(storedProfile?.display_name_mode);
 }
 
 export function resolveIdentityDisplayName(

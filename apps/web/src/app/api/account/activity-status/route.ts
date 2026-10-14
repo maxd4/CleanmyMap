@@ -29,12 +29,8 @@ export async function PATCH(request: Request) {
   }
 
   const client = await clerkClient();
-  const currentUser = await client.users.getUser(access.userId);
-  const currentUnsafeMetadata =
-    currentUser.unsafeMetadata as Record<string, unknown>;
-  const updatedUser = await client.users.updateUser(access.userId, {
+  const updatedUser = await client.users.updateUserMetadata(access.userId, {
     unsafeMetadata: {
-      ...currentUnsafeMetadata,
       activity_status: parsed.data.activityStatus,
     },
   });

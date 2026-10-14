@@ -13,6 +13,9 @@ function createPersistenceDependencies() {
     updateUser: vi.fn(async (update: AccountSetupUserUpdate) => {
       void update;
     }),
+    updateMetadata: vi.fn(async (patch: Record<string, unknown>) => {
+      void patch;
+    }),
     updateActiveProfile: vi.fn(async () => undefined),
     saveDisplayMode: vi.fn(),
   };
@@ -31,13 +34,12 @@ describe("account setup persistence", () => {
       firstName: "Marie",
       lastName: "Curie",
       metadata: { profileSetupCompleted: true },
-      initialProfile: "benevole",
       selectedProfile: "scientifique",
       ...dependencies,
     });
 
     expect(dependencies.updateUser).toHaveBeenNthCalledWith(1, { firstName: "Marie", lastName: "Curie" });
-    expect(dependencies.updateUser).toHaveBeenNthCalledWith(2, { unsafeMetadata: { profileSetupCompleted: true } });
+    expect(dependencies.updateMetadata).toHaveBeenCalledWith({ profileSetupCompleted: true });
     expect(dependencies.updateUser.mock.calls.flat()).not.toContainEqual(
       expect.objectContaining({ username: expect.anything() }),
     );
@@ -56,18 +58,19 @@ describe("account setup persistence", () => {
         }
       };
       const updateUser = vi.fn(async (update: AccountSetupUserUpdate) => {
+        void update;
         failOnce("identity");
-        if ("unsafeMetadata" in update) failOnce("metadata");
       });
+      const updateMetadata = vi.fn(async () => failOnce("metadata"));
       const updateActiveProfile = vi.fn(async () => failOnce("activeProfile"));
       const saveDisplayMode = vi.fn(() => failOnce("displayMode"));
       const runPersistence = () => persistAccountSetupChanges({
         firstName: "Marie",
         lastName: "Curie",
         metadata: { profileSetupCompleted: true },
-        initialProfile: "benevole",
-        selectedProfile: failedStep === "activeProfile" ? "scientifique" : "benevole",
+        selectedProfile: "scientifique",
         updateUser,
+        updateMetadata,
         updateActiveProfile,
         saveDisplayMode,
         completedSteps,
@@ -76,7 +79,9 @@ describe("account setup persistence", () => {
       await expect(runPersistence()).rejects.toThrow(`${failedStep} failed`);
       await expect(runPersistence()).resolves.toBeUndefined();
       expect(completedSteps).toEqual(new Set(["identity", "activeProfile", "metadata", "displayMode"]));
-      expect(updateActiveProfile).toHaveBeenCalledTimes(failedStep === "activeProfile" ? 2 : 0);
+      expect(updateUser).toHaveBeenCalledTimes(failedStep === "identity" ? 2 : 1);
+      expect(updateMetadata).toHaveBeenCalledTimes(failedStep === "metadata" ? 2 : 1);
+      expect(updateActiveProfile).toHaveBeenCalledTimes(failedStep === "activeProfile" ? 2 : 1);
       expect(saveDisplayMode).toHaveBeenCalledTimes(failedStep === "displayMode" ? 2 : 1);
     },
   );
@@ -95,7 +100,6 @@ describe("account setup persistence", () => {
       firstName: "Marie",
       lastName: "Curie",
       metadata: { profileSetupCompleted: true },
-      initialProfile: "benevole",
       selectedProfile: "scientifique",
       ...dependencies,
       completedSteps,
@@ -103,9 +107,27 @@ describe("account setup persistence", () => {
 
     await expect(runPersistence()).rejects.toThrow("displayMode failed");
     expect(dependencies.updateUser).toHaveBeenCalledTimes(1);
+    expect(dependencies.updateMetadata).not.toHaveBeenCalled();
     await expect(runPersistence()).resolves.toBeUndefined();
-    expect(dependencies.updateUser).toHaveBeenCalledTimes(2);
-    expect(completedSteps).toEqual(new Set(["identity", "activeProfile", "displayMode", "metadata"]));
+    expect(dependencies.updateUser).toHaveBeenCalledTimes(1);
+    expect(dependencies.updateMetadata).toHaveBeenCalledTimes(1);
+    expect(dependencies.updateActiveProfile).toHaveBeenCalledTimes(1);
+    expect(completedSteps).toEqual(new Set(["identity", "displayMode", "metadata", "activeProfile"]));
+  });
+
+  it("runs the terminal Supabase projection when the active profile is unchanged", async () => {
+    const dependencies = createPersistenceDependencies();
+    await persistAccountSetupChanges({
+      firstName: "Marie",
+      lastName: "Curie",
+      metadata: { profileSetupCompleted: true },
+      selectedProfile: "benevole",
+      ...dependencies,
+    });
+    expect(dependencies.updateActiveProfile).toHaveBeenCalledWith("benevole");
+    expect(dependencies.updateMetadata.mock.invocationCallOrder[0]).toBeLessThan(
+      dependencies.updateActiveProfile.mock.invocationCallOrder[0],
+    );
   });
 
   it("keeps a historical username outside the identity update", () => {

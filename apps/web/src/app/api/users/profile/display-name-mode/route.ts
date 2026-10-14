@@ -13,7 +13,6 @@ import {
 import { requireSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import {
   DISPLAY_NAME_MODE_COOKIE,
-  setDisplayNameModeOverride,
 } from "@/lib/account/display-name-mode-store";
 import { getDevAuthBypassUserId } from "@/lib/auth/dev-auth";
 import type { UserIdentity } from "@/lib/authz";
@@ -84,35 +83,25 @@ export async function PATCH(request: Request) {
 
   try {
     const displayNameMode = normalizeDisplayNameMode(parsed.data.displayNameMode);
+    let clerkUser: Awaited<ReturnType<Awaited<ReturnType<typeof clerkClient>>["users"]["getUser"]>> | null = null;
+    if (userId !== getDevAuthBypassUserId()) {
+      const client = await clerkClient();
+      clerkUser = await client.users.getUser(userId);
+      await client.users.updateUserMetadata(userId, {
+        unsafeMetadata: {
+          display_name_mode: displayNameMode,
+        },
+      });
+    }
     const displayName = resolveAccountDisplayName({
-      firstName: identity.firstName?.trim() || null,
-      lastName: null,
+      firstName: clerkUser?.firstName?.trim() || identity.firstName?.trim() || null,
+      lastName: clerkUser?.lastName?.trim() || null,
       username: identity.handle?.trim() || identity.username?.trim() || null,
       userId,
       mode: displayNameMode,
     });
 
-    setDisplayNameModeOverride(userId, displayNameMode);
-
-    try {
-      if (userId !== getDevAuthBypassUserId()) {
-        const client = await clerkClient();
-        const updateUser = client.users.updateUser;
-        if (typeof updateUser === "function") {
-          await updateUser.call(client.users, userId, {
-            unsafeMetadata: {
-              display_name_mode: displayNameMode,
-            },
-          });
-        }
-      }
-    } catch (error) {
-      console.warn(
-        "[DisplayNameMode] Clerk metadata sync skipped, local override stored",
-        error,
-      );
-    }
-
+    let projectionError: unknown = null;
     try {
       const { error } = await supabase
         .from("profiles")
@@ -125,17 +114,17 @@ export async function PATCH(request: Request) {
           },
           { onConflict: "id" },
         );
-
-      if (error) {
-        console.warn(
-          "[DisplayNameMode] Supabase sync skipped, local override stored",
-          error,
-        );
-      }
+      projectionError = error;
     } catch (error) {
-      console.warn(
-        "[DisplayNameMode] Supabase sync skipped, local override stored",
-        error,
+      projectionError = error;
+    }
+    if (projectionError) {
+      return NextResponse.json(
+        {
+          error: "Le mode d’affichage Clerk est enregistré, mais sa projection Supabase n’est pas confirmée.",
+          status: "clerk_updated_supabase_sync_pending",
+        },
+        { status: 503 },
       );
     }
 

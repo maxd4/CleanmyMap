@@ -82,6 +82,15 @@ describe("/api/mobile/account", () => {
           lastName: "Curie",
           unsafeMetadata: { profileSetupCompleted: true },
         }),
+        updateUserMetadata: vi.fn().mockImplementation(async (_id, patch) => ({
+          id: "user-1",
+          firstName: "Ada",
+          lastName: "Lovelace",
+          unsafeMetadata: {
+            profileSetupCompleted: false,
+            ...patch.unsafeMetadata,
+          },
+        })),
       },
     });
   });
@@ -112,9 +121,11 @@ describe("/api/mobile/account", () => {
       body: JSON.stringify({ firstName: "Ada", lastName: "Lovelace", residenceLabel: "Paris", workLabel: null, completeOnboarding: true }),
     }));
     expect(response.status).toBe(200);
-    expect(clerk.users.updateUser).toHaveBeenCalledWith("user-1", expect.objectContaining({
+    expect(clerk.users.updateUser).toHaveBeenCalledWith("user-1", {
       firstName: "Ada",
       lastName: "Lovelace",
+    });
+    expect(clerk.users.updateUserMetadata).toHaveBeenCalledWith("user-1", {
       unsafeMetadata: expect.objectContaining({
         profileSetupCompleted: true,
         territoryPreferences: expect.objectContaining({
@@ -122,7 +133,7 @@ describe("/api/mobile/account", () => {
           work: null,
         }),
       }),
-    }));
+    });
     expect(syncMock).toHaveBeenCalledTimes(1);
   });
 
@@ -137,7 +148,24 @@ describe("/api/mobile/account", () => {
 
     expect(response.status).toBe(422);
     expect(clerk.users.updateUser).not.toHaveBeenCalled();
+    expect(clerk.users.updateUserMetadata).not.toHaveBeenCalled();
     expect(syncMock).not.toHaveBeenCalled();
+  });
+
+  it("returns a recoverable partial state when Supabase projection is not confirmed", async () => {
+    syncMock.mockResolvedValueOnce(null);
+    const clerk = await clerkClientMock();
+    const { PATCH } = await import("./route");
+    const response = await PATCH(new Request("http://localhost/api/mobile/account", {
+      method: "PATCH",
+      headers: { Authorization: "Bearer clerk" },
+      body: JSON.stringify({ firstName: "Ada" }),
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe("clerk_updated_supabase_sync_pending");
+    expect(clerk.users.updateUser).toHaveBeenCalledWith("user-1", { firstName: "Ada" });
   });
 
   it("fails closed when the distributed abuse protection is unavailable", async () => {

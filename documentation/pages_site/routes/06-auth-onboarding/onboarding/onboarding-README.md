@@ -55,15 +55,17 @@ doit pas dupliquer localement le header ou le footer.
 
 La validation persiste les étapes nécessaires dans un ordre déterministe :
 
-`identity` → `activeProfile` → `displayMode` → `metadata/completion`
+`identity` → `displayMode` → `metadata/completion` → `activeProfile`
 
 Chaque étape est ajoutée au ledger uniquement après son succès. Une erreur
 reprend au retry à l'étape échouée et réutilise les succès déjà enregistrés,
-sans rejouer les étapes complétées. `metadata/completion` est la dernière
-frontière faillible : `profileSetupCompleted=true`, `profileSetupVersion` et
-`profileSetupSchemaVersion` ne sont persistés qu'après la réussite de toutes les
-étapes précédentes. Ce marqueur final ne constitue donc jamais la preuve d'une
-configuration complète avant la fin de la séquence.
+sans rejouer les étapes complétées. Les métadonnées Clerk sont envoyées par
+patch ciblé afin de préserver les clés sans rapport. `activeProfile` est la
+requête terminale : elle confirme la projection Clerk → Supabase, même lorsque
+le profil actif est inchangé. `profileSetupCompleted=true`,
+`profileSetupVersion` et `profileSetupSchemaVersion` ne sont persistés qu'après
+la réussite des écritures requises. Ce marqueur final ne constitue donc jamais
+la preuve d'une configuration complète avant la fin de la séquence.
 
 Les systèmes d'identité, de profil actif, de préférences d'affichage et de
 métadonnées restent distincts. Il n'existe pas de transaction ni de rollback
@@ -120,6 +122,12 @@ Lors d'une validation complète réussie :
   étapes de persistance ;
 - les métadonnées de déférence sont supprimées ;
 - les préférences réellement choisies sont persistées selon leur contrat propre.
+
+Une réponse `503` avec un état de synchronisation partielle signifie que Clerk
+a pu être mis à jour mais que la projection Supabase reste à confirmer. Le
+formulaire conserve les étapes réussies pour permettre une reprise idempotente ;
+il n'effectue pas de rollback fictif et l'utilisateur peut toujours différer ou
+reprendre la configuration depuis les réglages du compte.
 
 ## Références legacy
 

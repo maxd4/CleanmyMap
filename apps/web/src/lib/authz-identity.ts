@@ -28,7 +28,6 @@ import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { syncActiveRoleProjectionToSupabase } from "@/lib/auth/active-role-projection";
 import {
   getDisplayNameModeCookieOverride,
-  getDisplayNameModeOverride,
 } from "@/lib/account/display-name-mode-store";
 import {
   extractUserLocationPreferenceFromMetadata,
@@ -172,7 +171,6 @@ async function buildDevBypassIdentity(devBypass: {
 }): Promise<UserIdentity> {
   const displayNameMode =
     (await getDisplayNameModeCookieOverride()) ??
-    getDisplayNameModeOverride(devBypass.userId) ??
     "full_name";
   const role = resolveClerkRole({
     user: { id: devBypass.userId, publicMetadata: { role: devBypass.role } },
@@ -233,7 +231,7 @@ function resolveIdentityNames(
   actorNameOptions: string[];
 } {
   const { firstName, lastName, username, email } = resolveIdentityNameParts(user);
-  const displayNameMode = resolveIdentityDisplayNameMode(userId, storedProfile);
+  const displayNameMode = resolveIdentityDisplayNameMode(userId, storedProfile, user);
   const handle = resolveIdentityHandle(username, userId, storedProfile);
   return {
     firstName,

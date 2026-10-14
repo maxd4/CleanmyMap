@@ -3,7 +3,6 @@ import type { AppProfile } from "@/lib/profiles";
 export type AccountSetupUserUpdate = {
   firstName?: string;
   lastName?: string;
-  unsafeMetadata?: Record<string, unknown>;
 };
 
 export type AccountSetupPersistenceStep =
@@ -58,9 +57,9 @@ export async function persistAccountSetupChanges({
   firstName,
   lastName,
   metadata,
-  initialProfile,
   selectedProfile,
   updateUser,
+  updateMetadata,
   updateActiveProfile,
   saveDisplayMode,
   completedSteps = new Set<AccountSetupPersistenceStep>(),
@@ -68,17 +67,18 @@ export async function persistAccountSetupChanges({
   firstName: string;
   lastName: string;
   metadata: Record<string, unknown>;
-  initialProfile: AppProfile;
   selectedProfile: AppProfile;
   updateUser: (update: AccountSetupUserUpdate) => Promise<unknown>;
+  updateMetadata: (metadataPatch: Record<string, unknown>) => Promise<unknown>;
   updateActiveProfile: (profile: AppProfile) => Promise<void>;
   saveDisplayMode: () => void | Promise<void>;
   /**
    * Progress owned by the caller and reused for a retry after a partial
    * success. Clerk, active-profile persistence, browser preferences and
    * completion metadata are separate external systems: there is no cross-system
-   * transaction, so these writes intentionally remain sequential. Completion
-   * metadata is the final persistence boundary.
+   * transaction, so these writes intentionally remain sequential. The terminal
+   * active-profile request is also the final Clerk-to-Supabase
+   * projection boundary, including when the selected profile did not change.
    */
   completedSteps?: Set<AccountSetupPersistenceStep>;
 }): Promise<void> {
@@ -91,20 +91,20 @@ export async function persistAccountSetupChanges({
     completedSteps.add("identity");
   }
 
-  if (!completedSteps.has("activeProfile")) {
-    if (selectedProfile !== initialProfile) {
-      await updateActiveProfile(selectedProfile);
-    }
-    completedSteps.add("activeProfile");
-  }
-
   if (!completedSteps.has("displayMode")) {
     await saveDisplayMode();
     completedSteps.add("displayMode");
   }
 
   if (!completedSteps.has("metadata")) {
-    await updateUser({ unsafeMetadata: metadata });
+    if (Object.keys(metadata).length > 0) {
+      await updateMetadata(metadata);
+    }
     completedSteps.add("metadata");
+  }
+
+  if (!completedSteps.has("activeProfile")) {
+    await updateActiveProfile(selectedProfile);
+    completedSteps.add("activeProfile");
   }
 }

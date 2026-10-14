@@ -13,12 +13,12 @@ function setupClerk(initialUnsafeMetadata: Record<string, unknown>) {
     id: "user-1",
     unsafeMetadata: initialUnsafeMetadata,
   });
-  const updateUser = vi.fn().mockImplementation(async (_id, patch) => ({
+  const updateUserMetadata = vi.fn().mockImplementation(async (_id, patch) => ({
     id: "user-1",
-    unsafeMetadata: patch.unsafeMetadata,
+    unsafeMetadata: { ...initialUnsafeMetadata, ...patch.unsafeMetadata },
   }));
-  clerkClientMock.mockResolvedValue({ users: { getUser, updateUser } });
-  return { getUser, updateUser };
+  clerkClientMock.mockResolvedValue({ users: { getUser, updateUserMetadata } });
+  return { getUser, updateUserMetadata };
 }
 
 describe("PATCH /api/account/activity-status", () => {
@@ -79,7 +79,7 @@ describe("PATCH /api/account/activity-status", () => {
         keep: "value",
         nested: { preserved: true },
       };
-      const { getUser, updateUser } = setupClerk(initialUnsafeMetadata);
+      const { getUser, updateUserMetadata } = setupClerk(initialUnsafeMetadata);
 
       const { PATCH } = await import("./route");
       const response = await PATCH(
@@ -91,12 +91,9 @@ describe("PATCH /api/account/activity-status", () => {
 
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({ activityStatus });
-      expect(getUser).toHaveBeenCalledWith("user-1");
-      expect(updateUser).toHaveBeenCalledWith("user-1", {
-        unsafeMetadata: {
-          ...initialUnsafeMetadata,
-          activity_status: activityStatus,
-        },
+      expect(getUser).not.toHaveBeenCalled();
+      expect(updateUserMetadata).toHaveBeenCalledWith("user-1", {
+        unsafeMetadata: { activity_status: activityStatus },
       });
     },
   );

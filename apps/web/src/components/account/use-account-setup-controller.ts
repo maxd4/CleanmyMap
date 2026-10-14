@@ -41,6 +41,7 @@ import {
   resolveAccountSetupIdentityNames,
   resolveAccountSetupNameField,
 } from "@/components/account/account-setup-identity";
+import { buildClerkMetadataPatch } from "@/lib/auth/clerk-metadata-patch";
 
 export type AccountSetupFormProps = {
   nextPath?: string;
@@ -62,7 +63,7 @@ async function updateActiveProfile(activeProfile: AppProfile) {
   const response = await fetch("/api/account/active-profile", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ activeProfile }),
+    body: JSON.stringify({ activeRole: activeProfile }),
   });
   const payload = (await response.json().catch(() => null)) as { error?: string } | null;
   if (!response.ok) {
@@ -347,14 +348,18 @@ export function useAccountSetupController({
           work: activeWork ? work : null,
         }),
       );
+      const metadataPatch = buildClerkMetadataPatch(
+        (user.unsafeMetadata ?? {}) as Record<string, unknown>,
+        completedMetadata,
+      );
 
       await persistAccountSetupChanges({
         firstName: trimmedFirstName,
         lastName: trimmedLastName,
-        metadata: completedMetadata,
-        initialProfile,
+        metadata: metadataPatch,
         selectedProfile,
         updateUser: (update) => user.update(update),
+        updateMetadata: (patch) => user.updateMetadata({ unsafeMetadata: patch }),
         updateActiveProfile,
         saveDisplayMode: () => setDisplayMode(selectedDisplayMode),
         completedSteps: completedPersistenceSteps.current,

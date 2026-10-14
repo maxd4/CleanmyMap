@@ -17,6 +17,7 @@ import { loadUserProgressionStats } from "@/lib/gamification/progression-user-st
 import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
 import { loadNotificationPreferences } from "@/lib/notifications/notification-preferences-server";
 import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
+import { buildClerkMetadataPatch } from "@/lib/auth/clerk-metadata-patch";
 
 export const runtime = "nodejs";
 // Justification Vercel: the authenticated mobile account projection is private,
@@ -197,13 +198,16 @@ export async function PATCH(request: Request) {
     const clerk = await clerkClient();
     const currentUser = await clerk.users.getUser(access.userId);
     const currentUnsafeMetadata = (currentUser.unsafeMetadata ?? {}) as Record<string, unknown>;
-    const update: {
+    let updatedUser = currentUser;
+    const identityUpdate: {
       firstName?: string;
       lastName?: string;
-      unsafeMetadata?: Record<string, unknown>;
     } = {};
-    if (parsed.data.firstName !== undefined) update.firstName = parsed.data.firstName;
-    if (parsed.data.lastName !== undefined) update.lastName = parsed.data.lastName;
+    if (parsed.data.firstName !== undefined) identityUpdate.firstName = parsed.data.firstName;
+    if (parsed.data.lastName !== undefined) identityUpdate.lastName = parsed.data.lastName;
+    if (Object.keys(identityUpdate).length > 0) {
+      updatedUser = await clerk.users.updateUser(access.userId, identityUpdate);
+    }
 
     if (parsed.data.residenceLabel !== undefined || parsed.data.workLabel !== undefined || parsed.data.completeOnboarding) {
       const currentLocations = locationPayloadFromMetadata(currentUnsafeMetadata);
@@ -225,12 +229,21 @@ export async function PATCH(request: Request) {
         nextMetadata.profileSetupVersion = ACCOUNT_SETUP_SCHEMA_VERSION;
         nextMetadata.profileSetupSchemaVersion = ACCOUNT_SETUP_SCHEMA_VERSION;
       }
-      update.unsafeMetadata = nextMetadata;
+      const metadataPatch = buildClerkMetadataPatch(currentUnsafeMetadata, nextMetadata);
+      if (Object.keys(metadataPatch).length > 0) {
+        updatedUser = await clerk.users.updateUserMetadata(access.userId, {
+          unsafeMetadata: metadataPatch,
+        });
+      }
     }
 
-    const updatedUser = await clerk.users.updateUser(access.userId, update);
     const { syncClerkUserToSupabase } = await import("@/lib/auth/sync");
-    const syncedProfile = await syncClerkUserToSupabase(updatedUser);
+    let syncedProfile: Awaited<ReturnType<typeof syncClerkUserToSupabase>> = null;
+    try {
+      syncedProfile = await syncClerkUserToSupabase(updatedUser);
+    } catch {
+      syncedProfile = null;
+    }
     if (!syncedProfile) {
       return NextResponse.json(
         {

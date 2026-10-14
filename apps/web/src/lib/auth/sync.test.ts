@@ -153,6 +153,9 @@ describe("syncClerkUserToSupabase", () => {
       }),
       { onConflict: "id" },
     );
+    const [payload] = upsert.mock.calls[0] as unknown as [Record<string, unknown>];
+    expect(payload).not.toHaveProperty("leaderboard_public_opt_in");
+    expect(payload).not.toHaveProperty("notification_preferences");
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
@@ -453,6 +456,28 @@ describe("syncClerkUserToSupabase", () => {
         display_name_mode: "pseudo",
         display_name: "user_t_only",
       }),
+      { onConflict: "id" },
+    );
+  });
+
+  it("uses Clerk metadata for the display mode when the profile projection is stale", async () => {
+    const { supabase, upsert } = createSupabaseMock({
+      existingProfile: { id: "user_clerk_mode", handle: "clerk_handle", display_name_mode: null },
+    });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+
+    await syncClerkUserToSupabase(
+      clerkUser({
+        id: "user_clerk_mode",
+        username: "clerk_handle",
+        firstName: "Ada",
+        lastName: "Lovelace",
+        unsafeMetadata: { display_name_mode: "pseudo" },
+      }) as never,
+    );
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ display_name_mode: "pseudo", display_name: "clerk_handle" }),
       { onConflict: "id" },
     );
   });

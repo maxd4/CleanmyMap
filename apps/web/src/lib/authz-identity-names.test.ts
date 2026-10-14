@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   resolveIdentityActorNameOptions,
+  resolveIdentityDisplayNameMode,
   resolveIdentityDisplayName,
   resolveIdentityHandle,
   resolveIdentityNameParts,
@@ -36,6 +37,11 @@ describe("identity username and application handle semantics", () => {
     expect(resolveIdentityHandle(parts.username, "user_present", null)).toBe(
       "historical_pseudo",
     );
+  });
+
+  it("reads the durable display mode from Clerk metadata before the projection", () => {
+    const user = clerkUser({ unsafeMetadata: { display_name_mode: "pseudo" } });
+    expect(resolveIdentityDisplayNameMode("user_metadata_mode", storedProfile(), user)).toBe("pseudo");
   });
 
   it("does not expose an email as username when Clerk username is absent", () => {

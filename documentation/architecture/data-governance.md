@@ -148,6 +148,29 @@ de profil ; leur exécution est limitée à `authenticated` et `service_role`.
 Le RPC de filiation, qui renvoie des relations privées, est réservé au
 `service_role` et n'est pas une API publique.
 
+### Synchronisation du compte
+
+Les mutations de configuration partent de Clerk et utilisent ses opérations de
+mise à jour ciblées pour les métadonnées (`updateMetadata` côté navigateur,
+`updateUserMetadata` côté serveur). Elles ne remplacent jamais l'objet complet
+`unsafeMetadata` ou `publicMetadata` : les clés sans rapport, les anciennes
+clés de localisation et les préférences déjà persistées restent intactes.
+
+Après les écritures Clerk, l'appel de profil actif est exécuté comme frontière
+terminale de projection vers Supabase, y compris lorsque le profil actif n'a
+pas changé. `profileSetupCompleted=true` n'est marqué qu'après les écritures
+requises. Une panne intermédiaire conserve les écritures déjà réussies,
+retourne un état explicite de synchronisation partielle et peut être rejouée
+de façon idempotente ; une réponse de succès n'est jamais fondée sur un cache
+mémoire ou une promesse d'écriture non confirmée.
+
+Les métadonnées non sûres ne sont pas une source d'autorisation. Le rôle
+attribué reste celui de Clerk et les projections Supabase ne servent qu'aux
+consommateurs métier et à l'audit. Une synchronisation générale du profil
+n'écrit pas `profiles.handle`, `leaderboard_public_opt_in`, les préférences de
+notification ou les autres données métier lorsqu'elles ne font pas partie de
+la mutation demandée.
+
 ## Entités principales
 
 | Entité | Table principale | Contrat |

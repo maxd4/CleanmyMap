@@ -28,14 +28,18 @@ function setupClerk(initialPublicMetadata: Record<string, unknown>, userId = "us
     publicMetadata: initialPublicMetadata,
     privateMetadata: { role: initialPublicMetadata.role },
   });
-  const updateUser = vi.fn().mockImplementation(async (_id, patch) => ({
+  const updateUserMetadata = vi.fn().mockImplementation(async (_id, patch) => {
+    const publicMetadata = { ...initialPublicMetadata, ...patch.publicMetadata };
+    if (patch.publicMetadata?.activeProfile === null) delete publicMetadata.activeProfile;
+    return {
     id: userId,
-    publicMetadata: patch.publicMetadata,
+    publicMetadata,
     privateMetadata: { role: initialPublicMetadata.role },
-  }));
-  clerkClientMock.mockResolvedValue({ users: { getUser, updateUser } });
+    };
+  });
+  clerkClientMock.mockResolvedValue({ users: { getUser, updateUserMetadata } });
   syncMock.mockResolvedValue({ id: userId });
-  return { getUser, updateUser };
+  return { getUser, updateUserMetadata };
 }
 
 async function post(payload: unknown) {
@@ -79,14 +83,14 @@ describe("POST /api/account/active-profile", () => {
   ] as const)("uses the already authenticated %s subject for the update", async (_transport, access) => {
     actionRequestAccessMock.mockResolvedValue(access);
     identityMock.mockResolvedValue({ role: "benevole", activeRole: "benevole" });
-    const { updateUser } = setupClerk({ role: "benevole" }, access.userId);
+    const { updateUserMetadata } = setupClerk({ role: "benevole" }, access.userId);
 
     const response = await post({ activeRole: "scientifique" });
 
     expect(response.status).toBe(200);
-    expect(updateUser).toHaveBeenCalledWith(access.userId, expect.objectContaining({
-      publicMetadata: expect.objectContaining({ activeRole: "scientifique" }),
-    }));
+    expect(updateUserMetadata).toHaveBeenCalledWith(access.userId, {
+      publicMetadata: { activeRole: "scientifique", activeProfile: null },
+    });
   });
 
   it.each([
@@ -132,7 +136,7 @@ describe("POST /api/account/active-profile", () => {
   });
 
   it("changes only ACTIVE_ROLE for an open-role account", async () => {
-    const { updateUser } = setupClerk({
+    const { updateUserMetadata } = setupClerk({
       role: "benevole",
       profile: "benevole",
       activeProfile: "benevole",
@@ -146,13 +150,8 @@ describe("POST /api/account/active-profile", () => {
       activeProfile: "scientifique",
       profilePath: "/profil/scientifique",
     });
-    expect(updateUser).toHaveBeenCalledWith("user-1", {
-      publicMetadata: {
-        role: "benevole",
-        profile: "benevole",
-        preserved: "metadata",
-        activeRole: "scientifique",
-      },
+    expect(updateUserMetadata).toHaveBeenCalledWith("user-1", {
+      publicMetadata: { activeRole: "scientifique", activeProfile: null },
     });
     expect(syncMock).toHaveBeenCalledTimes(1);
   });
@@ -164,40 +163,40 @@ describe("POST /api/account/active-profile", () => {
     ["max", "admin"],
   ] as const)("allows granted %s to activate %s without changing GRANTED_ROLE", async (role, activeRole) => {
     identityMock.mockResolvedValue({ role, activeRole: role });
-    const { updateUser } = setupClerk({ role, profile: role });
+    const { updateUserMetadata } = setupClerk({ role, profile: role });
     const response = await post({ activeRole });
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ role, activeRole });
-    expect(updateUser).toHaveBeenCalledTimes(1);
-    const [, patch] = updateUser.mock.calls[0];
-    expect(patch.publicMetadata).toMatchObject({ role, profile: role, activeRole });
-    expect(patch).not.toHaveProperty("privateMetadata");
+    expect(updateUserMetadata).toHaveBeenCalledTimes(1);
+    const [, patch] = updateUserMetadata.mock.calls[0];
+    expect(patch).toEqual({ publicMetadata: { activeRole, activeProfile: null } });
+    expect(patch.publicMetadata).not.toHaveProperty("role");
   });
 
   it("rejects elu -> ACTIVE_ROLE=admin", async () => {
     identityMock.mockResolvedValue({ role: "elu", activeRole: "elu" });
-    const { updateUser } = setupClerk({ role: "elu" });
+    const { updateUserMetadata } = setupClerk({ role: "elu" });
     const response = await post({ activeRole: "admin" });
     expect(response.status).toBe(403);
-    expect(updateUser).not.toHaveBeenCalled();
+    expect(updateUserMetadata).not.toHaveBeenCalled();
     expect(syncMock).not.toHaveBeenCalled();
   });
 
   it("rejects admin -> ACTIVE_ROLE=elu", async () => {
     identityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
-    const { updateUser } = setupClerk({ role: "admin" });
+    const { updateUserMetadata } = setupClerk({ role: "admin" });
     const response = await post({ activeRole: "elu" });
     expect(response.status).toBe(403);
-    expect(updateUser).not.toHaveBeenCalled();
+    expect(updateUserMetadata).not.toHaveBeenCalled();
     expect(syncMock).not.toHaveBeenCalled();
   });
 
   it("rejects admin -> ACTIVE_ROLE=max", async () => {
     identityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
-    const { updateUser } = setupClerk({ role: "admin" });
+    const { updateUserMetadata } = setupClerk({ role: "admin" });
     const response = await post({ activeRole: "max" });
     expect(response.status).toBe(403);
-    expect(updateUser).not.toHaveBeenCalled();
+    expect(updateUserMetadata).not.toHaveBeenCalled();
     expect(syncMock).not.toHaveBeenCalled();
   });
 

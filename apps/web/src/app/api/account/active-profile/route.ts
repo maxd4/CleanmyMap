@@ -85,20 +85,21 @@ export async function POST(request: Request) {
   }
 
   const client = await clerkClient();
-  const currentUser = await client.users.getUser(access.userId);
-  const publicMetadata: Record<string, unknown> = {
-    ...(currentUser.publicMetadata as Record<string, unknown>),
-    activeRole: targetRole,
-  };
-  delete publicMetadata.activeProfile;
-  const updatedUser = await client.users.updateUser(access.userId, {
-    // Clerk replaces the metadata object, so preserve every existing key.
-    // The only authorization-adjacent value changed by this endpoint is
-    // activeRole; role/profile remain untouched and are never assigned here.
-    publicMetadata,
+  const updatedUser = await client.users.updateUserMetadata(access.userId, {
+    // Targeted metadata mutation preserves unrelated public metadata and
+    // never assigns the granted role.
+    publicMetadata: {
+      activeRole: targetRole,
+      activeProfile: null,
+    },
   });
 
-  const syncedProfile = await syncClerkUserToSupabase(updatedUser);
+  let syncedProfile: Awaited<ReturnType<typeof syncClerkUserToSupabase>> = null;
+  try {
+    syncedProfile = await syncClerkUserToSupabase(updatedUser);
+  } catch {
+    syncedProfile = null;
+  }
   if (!syncedProfile) {
     return NextResponse.json(
       {

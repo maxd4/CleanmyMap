@@ -60,13 +60,15 @@ L'interface doit appeler exclusivement :
 
 ```txt
 POST /api/account/active-profile
-{ "activeProfile": "benevole|coordinateur|scientifique|entreprise|elu|admin|max" }
+{ "activeRole": "benevole|coordinateur|scientifique|entreprise|elu|admin|max" }
 ```
 
 Le serveur résout le `role` courant, vérifie la cible avec
-`getSwitchableProfiles(role)`, écrit uniquement `activeProfile` dans Clerk puis
-appelle le mécanisme canonique Clerk → Supabase. Le payload ne peut pas
-modifier `role`. En particulier :
+`getSwitchableProfiles(role)`, écrit uniquement le patch `activeRole` dans les
+métadonnées publiques Clerk puis appelle le mécanisme canonique Clerk →
+Supabase. La clé legacy `activeProfile` peut être supprimée par ce patch, sans
+remplacer les autres métadonnées. Le payload ne peut pas modifier `role`. En
+particulier :
 
 - `role=max` reste `max` lorsqu'une persona `benevole` est choisie ;
 - `role=admin` reste `admin` lorsqu'une persona `scientifique` est choisie ;
