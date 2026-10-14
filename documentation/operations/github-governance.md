@@ -6,9 +6,10 @@ Ce mémo résume les garde-fous GitHub à garder en place pour CleanMyMap.
 
 ### Contrat durable
 
-La maintenance suit `MAIN-ONLY / SINGLE-WRITER` : un seul checkout local
-mutable sur `main`, un seul writer, des lots isolés et aucune publication
-implicite. Les branches distantes attendues sont `main` uniquement.
+La maintenance suit `MAIN-ONLY / MULTI-WRITER COORDONNÉ` : un checkout local
+canonique sur `main`, plusieurs writers coordonnés, des candidats explicitement
+identifiés et aucune publication implicite. Les branches distantes attendues
+sont `main` uniquement.
 
 - Les mises à jour Dependabot de version sont autorisées dans une veille
   hebdomadaire bornée, regroupée par familles compatibles et limitée à six PR
@@ -82,13 +83,19 @@ invariants.
 
 ## Protection de `main`
 
-Le dépôt conserve un workflow `MAIN-ONLY / SINGLE-WRITER` : les pushes
+Le dépôt conserve un workflow `MAIN-ONLY / MULTI-WRITER COORDONNÉ` : les pushes
 fast-forward directs sur `main` restent autorisés pour l'intégrateur légitime
 autorisé par le ruleset distant. Les deux rulesets GitHub actifs ciblant `main`
 interdisent :
 
 - la suppression de `main` ;
 - les mises à jour non fast-forward et les force-push.
+
+Si un autre writer publie pendant une tentative, le publisher attend de façon
+bornée, refetch `origin/main`, relit tous les commits locaux non publiés et
+réessaie après une intégration fast-forward ou une fusion non destructive
+explicitement résolue. Une divergence ou un conflit reste visible et bloque
+la publication ; aucune tentative ne contourne les protections distantes.
 
 Les rulesets n'imposent ni Pull Request, ni approbation, ni required status
 check, ni merge queue. Le ruleset `main — owner-only updates` réserve toutefois

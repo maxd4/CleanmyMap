@@ -4,7 +4,7 @@
 
 Ce document porte les contraintes de diagnostic propres au poste local.
 Il complète la gouvernance racine sans modifier le workflow
-`MAIN-ONLY / SINGLE-WRITER`.
+`MAIN-ONLY / MULTI-WRITER COORDONNÉ`.
 
 Les règles spécifiques aux hooks, candidats Git et validations restent dans le
 périmètre de gouvernance des scripts et dans

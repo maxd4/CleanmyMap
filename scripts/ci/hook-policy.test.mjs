@@ -247,7 +247,7 @@ test("pre-commit is independent from the retired coordinator", async () => {
   assert.equal(Object.keys(packageJson.scripts).some((name) => name.startsWith("workspace:")), false);
 });
 
-test("governance keeps parallel dirty work separate from published commits", async () => {
+test("governance coordinates parallel dirty work without losing published scope", async () => {
   const rootAgents = await readRepoFile("AGENTS.md");
   const chatgpt = await readRepoFile("CHATGPT.md");
   const scriptsAgents = await readRepoFile("scripts/AGENTS.md");
@@ -258,8 +258,10 @@ test("governance keeps parallel dirty work separate from published commits", asy
   assert.match(rootAgents, /WORKTREE/);
   assert.match(rootAgents, /STAGED/);
   assert.match(rootAgents, /PUSH_CANDIDATE/);
-  assert.match(rootAgents, /MAIN-ONLY \/ SINGLE-WRITER/);
-  assert.match(rootAgents, /un seul writer mutable peut agir à la fois ; les analyses read-only peuvent être parallèles/);
+  assert.match(rootAgents, /MAIN-ONLY \/ MULTI-WRITER COORDONNÉ/);
+  assert.match(rootAgents, /plusieurs writers Codex peuvent travailler dans le checkout canonique/);
+  assert.match(rootAgents, /modifications sur des fichiers distincts peuvent progresser en parallèle/);
+  assert.match(rootAgents, /jamais écraser silencieusement les changements d’un autre writer/);
   assert.match(rootAgents, /main publié = référence versionnée/);
   assert.match(rootAgents, /candidate locale explicitement fournie ou produite pour le lot courant/);
   assert.match(rootAgents, /tout changement local préexistant doit être préservé/);
@@ -269,8 +271,10 @@ test("governance keeps parallel dirty work separate from published commits", asy
   assert.doesNotMatch(rootAgents, /workspace:start/);
   assert.doesNotMatch(scriptsAgents, /workspace:start/);
   assert.match(rootAgents, /### LEGACY \/ COMPATIBILITY/);
-  assert.match(chatgpt, /MAIN-ONLY \/ SINGLE-WRITER/);
-  assert.match(chatgpt, /ne doit jamais déclencher deux Codex d'écriture simultanément/);
+  assert.match(chatgpt, /MAIN-ONLY \/ MULTI-WRITER COORDONNÉ/);
+  assert.match(chatgpt, /Plusieurs writers Codex peuvent y travailler en parallèle/);
+  assert.match(chatgpt, /préserver les changements concurrents/);
+  assert.match(chatgpt, /attente bornée, synchronisation non destructive/);
   assert.match(chatgpt, /Hors mode de développement rapide\s*:\s*[\s\S]*validation → commit isolé → push main → vérification de convergence/);
   assert.match(chatgpt, /Mode de développement rapide explicitement activé\s*:\s*[\s\S]*commit local selon son protocole, sans push tant que le mode reste actif/);
   assert.doesNotMatch(chatgpt, /push origin\/main sur demande explicite|demander commit et push le lot|committer et pousser sur main lorsque l'utilisateur l'a demandé/i);

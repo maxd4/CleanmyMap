@@ -36,13 +36,13 @@ const skippedDirectories = new Set([
 ]);
 
 const requiredMarkers = new Map([
-  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "MAIN-ONLY / SINGLE-WRITER", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push"]],
+  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push"]],
   ["apps/web/AGENTS.md", ["Next.js", "Server/Client", "Leaflet"]],
   ["apps/web/src/app/api/AGENTS.md", ["AuthN", "AuthZ", "contrat de réponse propre"]],
   ["apps/web/supabase/AGENTS.md", ["apps/web/supabase/migrations/", "unique", "RLS"]],
   ["apps/web/scripts/AGENTS.md", ["dry-run", "--apply", "provenance"]],
   ["apps/mobile/AGENTS.md", ["ClerkProvider", "Third-Party Auth", "`sub` Clerk", "distance_m"]],
-  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "MAIN-ONLY / SINGLE-WRITER", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push"]],
+  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push"]],
   [".github/AGENTS.md", ["permissions", "CodeQL", "check:github-actions"]],
   ["maintenance/python/AGENTS.md", ["hors du", "requirements", "pytest"]],
   ["documentation/AGENTS.md", ["état actuel", "historique", "public"]],
@@ -63,6 +63,10 @@ const legacyCoordinatorTerms = Object.freeze([
   "WORKTREE_BASE_DIVERGED",
   "checkout partagé",
   "un seul chantier peut écrire à la fois",
+  "MAIN-ONLY / SINGLE-WRITER",
+  "MAIN_ONLY_SINGLE_WRITER",
+  "un seul writer mutable",
+  "un seul writer à la fois",
   "RUN_OWNED_PATHS",
   "OWNED_FILES",
 ]);
@@ -119,13 +123,20 @@ function validateCurrentWorkflowDoctrine(view, findings) {
     .replace(/\s+/g, " ")
     .trim();
   const normalizedRoot = rootAgents ? normalizeWorkflowContent(rootAgents) : "";
+  const normalizedRootLower = normalizedRoot.toLocaleLowerCase("fr-FR");
   const normalizedChatgpt = chatgpt ? normalizeWorkflowContent(chatgpt) : "";
   const normalizedCurrentChatgpt = contentOutsideLegacySections(chatgpt ?? "")
     .replace(/\s+/g, " ")
     .trim();
 
-  if (rootAgents && !normalizedRoot.includes("un seul writer mutable peut agir à la fois ; les analyses read-only peuvent être parallèles.")) {
-    findings.push("AGENTS.md: CURRENT workflow must allow parallel read-only analysis and only one mutable writer.");
+  if (rootAgents && !normalizedRootLower.includes("plusieurs writers codex peuvent travailler dans le checkout canonique")) {
+    findings.push("AGENTS.md: CURRENT workflow must describe coordinated parallel writers in the canonical checkout.");
+  }
+  if (rootAgents && !normalizedRootLower.includes("les modifications sur des fichiers distincts peuvent progresser en parallèle")) {
+    findings.push("AGENTS.md: CURRENT workflow must permit independent file changes to progress in parallel.");
+  }
+  if (rootAgents && !normalizedRootLower.includes("jamais écraser silencieusement les changements d’un autre writer")) {
+    findings.push("AGENTS.md: CURRENT workflow must prohibit silent loss of another writer's changes.");
   }
   if (rootAgents && !normalizedRoot.includes("main publié = référence versionnée ;")) {
     findings.push("AGENTS.md: CURRENT workflow must identify published main as the versioned reference.");

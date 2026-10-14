@@ -128,19 +128,23 @@ ni être masqués ni transformés en succès.
 
 ## Modèle d’exécution
 
-Le workflow courant est `MAIN-ONLY / SINGLE-WRITER`.
+Le workflow courant est `MAIN-ONLY / MULTI-WRITER COORDONNÉ`.
 
 - la branche de travail normale est `main` ;
-- un seul writer mutable peut agir à la fois ; les analyses read-only peuvent être parallèles.
-- aucun nouveau worktree, clone ou branche de chantier n’est créé pour le
-  workflow normal ;
+- plusieurs writers Codex peuvent travailler dans le checkout canonique ; ils
+  ne doivent jamais écraser silencieusement les changements d’un autre writer ;
+- les modifications sur des fichiers distincts peuvent progresser en parallèle ;
+  un même fichier, l’index, `HEAD` et les opérations Git mutantes doivent être
+  relus et réconciliés explicitement ;
+- aucun nouveau worktree, clone, branche de chantier, claim ou coordinateur
+  persistant n’est créé pour le workflow normal ;
 - main publié = référence versionnée ;
 - une candidate locale explicitement fournie ou produite pour le lot courant
   est autoritative pour ce lot jusqu’à intégration ;
 - tout changement local préexistant doit être préservé et ne doit jamais être
   écrasé par une synchronisation avec Git.
-- un lot terminé produit un au moins commit local sur `main` après validation de
-  son candidat ;
+- un ou plusieurs lots coordonnés peuvent produire des commits locaux sur
+  `main` après validation de leurs candidats ;
 - le commit est non signé par défaut ;
 
 Hors mode de développement rapide :
@@ -159,22 +163,28 @@ L’absence de push d’un lot précédent ne bloque pas un nouveau lot local co
 
 Lors du push :
 
-- auditer l’ascendance locale non publiée ;
+- auditer toute l’ascendance locale non publiée, y compris les commits d’autres
+  writers ;
 - vérifier `git diff --cached --name-only` avant le commit et
   `git log --oneline origin/main..HEAD` avant la publication ;
-- vérifier qu’aucun commit étranger ou non validé ne serait embarqué ;
+- identifier les fichiers et validations de chaque commit local ; un commit
+  multi-responsabilités est publiable seulement si toutes ses parties sont
+  identifiées, préservées et validées ;
 - appliquer les validations de publication définies par la gouvernance
   spécialisée ;
+- si `origin/main` avance pendant le push, attendre de façon bornée, refetcher,
+  relire l’ascendance puis resynchroniser sans perte avant une nouvelle tentative
+  fast-forward ; ne jamais forcer le push ;
 - après publication, vérifier la convergence locale/distante.
 
 ### Autorisation ChatGPT Web
 
 ChatGPT Web/Codex est un writer autorisé de ce dépôt. Pour un lot demandé ou
-validé par l’utilisateur, il peut créer le commit isolé correspondant et pousser
-normalement sur `origin/main` après les validations requises. Avant le push, il
-doit vérifier le périmètre staged, l’ascendance non publiée et l’absence de
-divergence distante ; après le push, il doit vérifier la convergence entre
-`HEAD` et `origin/main`.
+validé par l’utilisateur, il peut créer le ou les commits correspondant(s) et
+pousser normalement sur `origin/main` après les validations requises. Avant le
+push, il doit vérifier le périmètre staged, l’ascendance de tous les commits
+non publiés, l’absence de conflit non résolu et la divergence distante ; après
+le push, il doit vérifier la convergence entre `HEAD` et `origin/main`.
 
 Cette autorisation ne couvre ni le force-push, ni la réécriture d’historique, ni
 la suppression distante, ni un déploiement ou une autre mutation externe non
@@ -196,9 +206,12 @@ Les anciens noms, coordinateurs et métadonnées de migration ne décrivent que
 l’historique ; ils ne gouvernent aucun nouveau lot et ne doivent pas être
 consommés par les guards `CURRENT`.
 
-## Isolation du lot
+## Coordination et périmètre des lots
 
-Un lot ne contient que les changements attribuables à sa responsabilité.
+Chaque writer doit identifier les fichiers, contrats et validations de son lot.
+Plusieurs responsabilités peuvent coexister dans le même checkout ou dans un
+commit lorsque leurs changements sont explicitement identifiés, préservés et
+validés ; une présence étrangère n’est pas, à elle seule, un motif de blocage.
 
 ### Propreté obligatoire du worktree
 
@@ -216,14 +229,18 @@ pas établie.
 
 - préserver les changements dirty, staged et untracked hors périmètre ;
 - les modifications locales non stagées hors périmètre ne bloquent ni le commit
-  ni le push ;
+  ni le push lorsqu’elles ne sont pas écrasées et que le candidat exact reste
+  vérifiable ;
 - stage uniquement les fichiers du candidat courant ;
 - ne jamais utiliser `git add -A` par commodité ;
 - ne jamais utiliser reset destructif, clean, stash ou force-push pour masquer
   un conflit ou un changement étranger ;
 - une erreur étrangère est signalée, pas réparée opportunistement ;
-- si un fichier ou un contrat est modifié concurremment, ou si l’attribution du
-  candidat devient ambiguë, arrêter avant de mélanger les travaux.
+- si un fichier ou un contrat est modifié concurremment, relire le diff courant
+  et réconcilier explicitement avant de le modifier ou de le committer ;
+- une divergence d’index, de `HEAD` ou de branche distante doit être traitée
+  par attente bornée, refetch et intégration non destructive ; un conflit non
+  résolu reste bloquant et ne doit jamais être masqué.
 
 Un fichier supplémentaire directement nécessaire à la même responsabilité
 n’est pas un nouveau chantier : adapter callers, consommateurs, tests, types ou

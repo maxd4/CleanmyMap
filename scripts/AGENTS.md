@@ -23,13 +23,17 @@ réserver les audits globaux aux changements transversaux. La relecture de
 
 ## Modèle canonique de développement
 
-`MAIN-ONLY / SINGLE-WRITER` est le workflow CURRENT pour les scripts et leurs
-consommateurs : `CleanmyMap-main` reste sur `main`, un seul writer travaille à
-la fois, et les analyses read-only peuvent être parallèles. Aucun nouveau
-worktree, clone, claim, lock, run ou branche de chantier n'est créé.
+`MAIN-ONLY / MULTI-WRITER COORDONNÉ` est le workflow CURRENT pour les scripts
+et leurs consommateurs : `CleanmyMap-main` reste sur `main`, plusieurs writers
+peuvent travailler sur des fichiers distincts, et les analyses read-only
+peuvent être parallèles. Les fichiers partagés, l’index et les références Git
+doivent être relus et mutés de façon coordonnée. Aucun nouveau worktree, clone,
+claim, coordinateur persistant ou branche de chantier n'est créé.
 
 Chaque lot fait `git fetch origin main`, vérifie `main`, stage une allowlist,
-valide `STAGED` et crée un commit local isolé.
+valide `STAGED` et crée un commit local dont les fichiers et validations sont
+identifiés. Plusieurs responsabilités peuvent être publiées ensemble si elles
+ont été explicitement relues et validées.
 
 Hors mode de développement rapide :
 
@@ -42,6 +46,12 @@ Mode de développement rapide explicitement activé :
 ```text
 commit local selon son protocole, sans push tant que le mode reste actif
 ```
+
+Lorsqu’un push concurrent échoue, le publisher attend de façon bornée, refetch
+`origin/main`, relit les commits locaux et tente une synchronisation
+non destructive avant de réessayer en fast-forward. Une divergence ou un
+conflit non résolu est signalé explicitement ; aucun force-push ni contournement
+des protections GitHub n’est permis.
 
 ### LEGACY / COMPATIBILITY
 

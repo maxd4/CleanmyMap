@@ -35,6 +35,7 @@ uniquement s'il appartient au lot ; les erreurs étrangères sont signalées.
   configuration globale ou une primitive partagée, sortir du mode rapide et
   appliquer le niveau d'investigation requis.
 
-Ce mode ne remplace donc pas `MAIN-ONLY / SINGLE-WRITER` : il accélère la
-préparation et la validation d'un lot clairement local, mais conserve son
-isolation et sa clôture par commit.
+Ce mode ne remplace donc pas `MAIN-ONLY / MULTI-WRITER COORDONNÉ` : il
+accélère la préparation et la validation d'un lot clairement local, conserve
+la coordination des fichiers et opérations Git partagés, et reste sans push
+tant qu'il est explicitement actif.

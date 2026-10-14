@@ -30,11 +30,11 @@ if (!sessionMemory.valid) {
 
 const branch = execFileSync("git", ["branch", "--show-current"], { cwd: ROOT, encoding: "utf8" }).trim();
 if (branch !== "main") {
-  throw new Error(`MAIN_ONLY_SINGLE_WRITER requires branch main; found ${branch || "detached HEAD"}.`);
+  throw new Error(`MAIN_ONLY_MULTI_WRITER requires branch main; found ${branch || "detached HEAD"}.`);
 }
 
 console.log("Session bootstrap ready.");
-console.log("MODEL=MAIN-ONLY/SINGLE-WRITER");
+console.log("MODEL=MAIN-ONLY/MULTI-WRITER-COORDONNE");
 console.log("BRANCH=main");
 console.log(`SESSION_MEMORY=VALID updated=${sessionMemory.date}`);
 if (sessionMemory.stale) {

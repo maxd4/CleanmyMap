@@ -31,7 +31,10 @@ Une ancienne conversation, un ancien SHA, un audit passé, QMD ou un snapshot ne
 
 ## Règles de travail
 
-- Travailler en `MAIN-ONLY / SINGLE-WRITER` selon la gouvernance actuelle.
+- Travailler en `MAIN-ONLY / MULTI-WRITER COORDONNÉ` selon la gouvernance
+  actuelle : plusieurs writers peuvent agir sur des fichiers distincts, tandis
+  que les fichiers partagés, l’index et les références Git sont réconciliés
+  explicitement.
 - Préserver tout changement local ou fichier utilisateur préexistant ; ne jamais le restaurer ou l'écraser par commodité.
 - Stager uniquement le candidat du lot ; ne jamais utiliser `git add -A`, `reset`, `clean`, `stash` ou `force-push` pour masquer un conflit.
 - Traiter une **responsabilité cohérente** : ne pas créer de micro-lots par finding ou fichier quand les conséquences appartiennent au même contrat.

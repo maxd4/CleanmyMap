@@ -134,6 +134,7 @@
     "quality:mobile-coverage": "npm run mobile:coverage && node scripts/checks/check-coverage.mjs --scope=mobile",
     "precommit:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_commit_guard.ps1",
     "prepush:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_push_guard.ps1",
+    "publish:main": "node scripts/ci/publish-main.mjs",
     "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/ci/install_git_hooks.ps1",
     "checks:changed:quick": "powershell -ExecutionPolicy Bypass -File scripts/checks/check_changed_quick.ps1",
     "checks:staged:quick": "powershell -ExecutionPolicy Bypass -File scripts/checks/check_changed_quick.ps1 -StagedOnly",

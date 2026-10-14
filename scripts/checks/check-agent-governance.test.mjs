@@ -11,14 +11,14 @@ import { canonicalAgentFiles, validateAgentGovernance } from "./check-agent-gove
 function createValidFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-agent-governance-"));
   const content = {
-    "AGENTS.md": "apps/web scripts documentation fichiers scoped MAIN-ONLY / SINGLE-WRITER origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push\nun seul writer mutable peut agir à la fois ; les analyses read-only peuvent être parallèles.\nmain publié = référence versionnée ;\nune candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;\ntout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.\nHors mode de développement rapide : validation → commit isolé → push main → vérification de convergence\nMode de développement rapide explicitement activé : commit local selon son protocole, sans push tant que le mode reste actif\n\n### LEGACY / COMPATIBILITY\nworkspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire",
-    "CHATGPT.md": "MAIN-ONLY / SINGLE-WRITER\nHors mode de développement rapide : validation → commit isolé → push main → vérification de convergence\nMode de développement rapide explicitement activé : commit local selon son protocole, sans push tant que le mode reste actif",
+    "AGENTS.md": "apps/web scripts documentation fichiers scoped MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push\nPlusieurs writers Codex peuvent travailler dans le checkout canonique ; ils ne doivent jamais écraser silencieusement les changements d’un autre writer.\nLes modifications sur des fichiers distincts peuvent progresser en parallèle ; un même fichier, l’index, HEAD et les opérations Git mutantes doivent être relus et réconciliés explicitement.\nmain publié = référence versionnée ;\nune candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;\ntout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.\nHors mode de développement rapide : validation → commit isolé → push main → vérification de convergence\nMode de développement rapide explicitement activé : commit local selon son protocole, sans push tant que le mode reste actif\n\n### LEGACY / COMPATIBILITY\nMAIN-ONLY / SINGLE-WRITER workspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire",
+    "CHATGPT.md": "MAIN-ONLY / MULTI-WRITER COORDONNÉ\nHors mode de développement rapide : validation → commit isolé → push main → vérification de convergence\nMode de développement rapide explicitement activé : commit local selon son protocole, sans push tant que le mode reste actif",
     "apps/web/AGENTS.md": "Next.js Server/Client Leaflet",
     "apps/web/src/app/api/AGENTS.md": "AuthN AuthZ contrat de réponse propre",
     "apps/web/supabase/AGENTS.md": "apps/web/supabase/migrations/ unique RLS",
     "apps/web/scripts/AGENTS.md": "dry-run --apply provenance",
     "apps/mobile/AGENTS.md": "ClerkProvider Third-Party Auth `sub` Clerk distance_m",
-    "scripts/AGENTS.md": "audit cleanup provenance MAIN-ONLY / SINGLE-WRITER origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push",
+    "scripts/AGENTS.md": "audit cleanup provenance MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push",
     ".github/AGENTS.md": "permissions CodeQL check:github-actions",
     "maintenance/python/AGENTS.md": "hors du requirements pytest",
     "documentation/AGENTS.md": "état actuel historique public",
@@ -67,6 +67,19 @@ describe("AGENTS hierarchy governance", () => {
     try {
       const findings = validateAgentGovernance(fixture);
       assert.ok(findings.some((finding) => finding.includes("PUBLICATION_PENDING")));
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects the retired single-writer doctrine in a current section", () => {
+    const fixture = createValidFixture();
+    const agentsPath = path.join(fixture, "AGENTS.md");
+    const current = fs.readFileSync(agentsPath, "utf8");
+    fs.writeFileSync(agentsPath, current.replace("PUSH_CANDIDATE", "MAIN-ONLY / SINGLE-WRITER PUSH_CANDIDATE"));
+    try {
+      const findings = validateAgentGovernance(fixture);
+      assert.ok(findings.some((finding) => finding.includes("MAIN-ONLY / SINGLE-WRITER")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }

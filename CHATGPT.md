@@ -799,18 +799,21 @@ signale toute preuve locale contradictoire.
 Cette section gouverne l’analyse et la préparation ; les règles d’exécution,
 de qualification et de mutation du checkout sont définies dans `AGENTS.md`.
 
-## 17. MAIN-ONLY / SINGLE-WRITER
+## 17. MAIN-ONLY / MULTI-WRITER COORDONNÉ
 
-`CleanmyMap-main` est l'unique checkout mutable, toujours sur `main`, et la
-source de localhost. ChatGPT peut analyser plusieurs sujets en parallèle,
-mais ne doit jamais déclencher deux Codex d'écriture simultanément. Tant qu'un
-lot mutable n'est pas stabilisé, les autres sujets restent read-only/analyse.
+`CleanmyMap-main` est le checkout canonique, toujours sur `main`, et la source
+de localhost. Plusieurs writers Codex peuvent y travailler en parallèle sur
+des fichiers distincts. Ils doivent préserver les changements concurrents,
+relire tout fichier partagé avant modification et sérialiser les mutations de
+l’index, de `HEAD` et des références Git ; aucun writer ne peut écraser
+silencieusement le travail d’un autre.
 
 Lorsque l'utilisateur demande explicitement le mode de développement rapide,
 appliquer le protocole borné de
 [`documentation/development/rapid-development-mode.md`](documentation/development/rapid-development-mode.md) :
 une passe initiale et une validation ciblée. Le mode rapide suit le protocole
-suivant et reste sans push tant qu'il est explicitement actif.
+suivant et reste sans push tant qu'il est explicitement actif ; il ne désactive
+pas la coordination multi-writer.
 
 Hors mode de développement rapide :
 
@@ -876,8 +879,8 @@ Ne jamais poser comme prérequis que le lot précédent ait été poussé.
    vérification du working tree, de `HEAD`, de l’index et des éventuels
    commits locaux.
 3. Les lots successifs peuvent donc s’enchaîner localement avant publication,
-   tant qu’ils respectent `MAIN-ONLY / SINGLE-WRITER` et que l’état local est
-   cohérent.
+   tant qu’ils respectent `MAIN-ONLY / MULTI-WRITER COORDONNÉ` et que chaque
+   candidat reste identifiable et cohérent.
 4. Hors mode de développement rapide, appliquer le cycle
    `validation → commit isolé → push main → vérification de convergence`.
 5. Le push est une étape de publication finale du lot, **pas un prérequis pour
@@ -896,7 +899,8 @@ Les modifications `staged`, `unstaged` ou `untracked` étrangères au lot couran
 - ne doivent pas être nettoyées ;
 - ne doivent pas être stashées ;
 - ne doivent pas être déplacées ;
-- ne doivent pas être incluses dans le commit courant ;
+- peuvent être incluses dans un commit courant uniquement si leur attribution,
+  leur validation et leur conservation ont été explicitement vérifiées ;
 - ne doivent pas déclencher une refonte hors périmètre.
 
 Les validations ont trois portées qui ne doivent pas être confondues :
@@ -946,18 +950,21 @@ Les validations lourdes ne doivent pas être répétées entre phases sans raiso
 liée au candidat réellement traité.
 
 ChatGPT ne doit pas recommander de branche ou de worktree comme workflow
-normal. Il peut préparer plusieurs analyses read-only, mais doit attendre qu'un
-lot mutable soit stabilisé avant d'en déclencher un autre. Codex stage une
-allowlist ciblée, vérifie `git diff --cached --name-only`, conserve les dirty
-paths étrangers et ne les inclut pas dans le commit.
+normal. Il peut préparer plusieurs analyses read-only et plusieurs lots
+mutables coordonnés. Codex stage une allowlist ciblée, vérifie
+`git diff --cached --name-only`, conserve les dirty paths étrangers et ne les
+inclut que lorsqu’ils ont été explicitement identifiés et validés.
 
 Après un push, Codex refait le fetch et vérifie
 `git rev-list --left-right --count HEAD...origin/main`; le résultat `0 0` est
 la preuve de convergence. Le seul mécanisme de candidate materialisé est
 `.artifacts/validation/prepush-candidate/<sha>/`, avec cleanup obligatoire.
 
-Le workflow d'écriture est séquentiel dans `CleanmyMap-main` : un seul writer
-à la fois, sans coordinateur, branche ou worktree mutable.
+Le workflow d'écriture reste dans `CleanmyMap-main` : plusieurs writers
+coordonnés, sans coordinateur persistant, branche ou worktree mutable. Les
+opérations Git mutantes sont exécutées l’une après l’autre ; une course de
+push est traitée par attente bornée, synchronisation non destructive et
+nouvelle tentative fast-forward, jamais par force-push.
 
 Chaque lot peut être repris depuis son commit local précédent sans créer un
 nouveau propriétaire. Si le push est interdit temporairement, les commits
