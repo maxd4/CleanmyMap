@@ -34,4 +34,39 @@ test.describe("SPOGOMI public navigation", () => {
     await page.getByRole("link", { name: "Découvrir SPOGOMI" }).click();
     await expect(page).toHaveURL(/\/spogomi$/);
   });
+
+  test("keeps secondary content accessible and compact", async ({ page }) => {
+    const response = await page.goto("/spogomi");
+    expect(response?.status()).toBe(200);
+
+    await expect(page.getByRole("heading", { name: "Comprendre SPOGOMI", exact: true })).toBeVisible();
+    await expect(page.locator("details")).toHaveCount(6);
+    await expect(page.locator("details[open]")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "SPOGOMI dans le monde", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Actualités officielles", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Événements internationaux", exact: true })).toBeVisible();
+
+    const casual = page.locator("details").filter({ hasText: "Casual" }).first();
+    await casual.locator("summary").press("Enter");
+    await expect(casual).toHaveAttribute("open", "");
+    await expect(casual).toContainText("taille des équipes");
+
+    const worldCup = page.locator("details").filter({ hasText: "World Cup" }).first();
+    await worldCup.locator("summary").focus();
+    await worldCup.locator("summary").press("Enter");
+    await expect(worldCup).toHaveAttribute("open", "");
+
+    const worldCard = page.locator('[data-cmm-card-tone="indigo"]').filter({ hasText: "SPOGOMI dans le monde" }).first();
+    const world = worldCard.locator("details").first();
+    await world.locator("summary").click();
+    await expect(page.getByRole("link", { name: /Fédération japonaise SPOGOMI/ })).toBeVisible();
+    await expect(world.getByText("Vérifié le 2026-10-12", { exact: false })).toBeVisible();
+
+    const eventsCard = page.locator('[data-cmm-card-tone="indigo"]').filter({ hasText: "Événements internationaux" }).first();
+    const events = eventsCard.locator("details").first();
+    await events.locator("summary").click();
+    await expect(page.getByLabel("Année")).toBeVisible();
+    await page.getByLabel("Année").selectOption("2026");
+    await expect(events).toContainText("Aucun événement externe vérifié pour ces filtres.");
+  });
 });
