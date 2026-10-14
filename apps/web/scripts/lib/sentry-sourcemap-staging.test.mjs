@@ -238,7 +238,7 @@ test("fails with a non-zero status when cleanup fails without Sentry configurati
     ...process.env,
     CI: "1",
     SENTRY_AUTH_TOKEN: secret,
-    NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import=${pathToFileURL(preload).href}`.trim(),
+    NODE_OPTIONS: `--import=${pathToFileURL(preload).href}`,
   };
   delete env.SENTRY_ORG;
   delete env.SENTRY_PROJECT;
@@ -293,7 +293,7 @@ test("fails with a non-zero status when configured Sentry cleanup fails", () => 
     SENTRY_ORG: "test-org",
     SENTRY_PROJECT: "test-project",
     SENTRY_CLI_BIN: cli,
-    NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import=${pathToFileURL(preload).href}`.trim(),
+    NODE_OPTIONS: `--import=${pathToFileURL(preload).href}`,
   };
 
   try {
