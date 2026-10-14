@@ -335,7 +335,7 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
       status: coverage.get(domain).files > 0 ? coverage.get(domain).status === "PASS" ? "AVAILABLE" : "PRESENT_NOT_ATTESTED" : "NOT_AVAILABLE",
       files: coverage.get(domain).files,
       metrics: coverage.get(domain).metrics,
-    } : { status: "NOT_AVAILABLE", files: 0, metrics: null };
+    } : { status: "NOT_RUN", files: 0, metrics: null };
     entry.testDuplication = duplicationDomains.get(domain) ?? { clonePairs: 0, pairedLines: 0, testFiles: [] };
     entry.runtimeFilesWithoutDirectTestExamples.sort();
   }

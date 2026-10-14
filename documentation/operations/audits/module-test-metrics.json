@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceSha": "171cec4104cbd3d70fa74e8b419b57b3f8fd9005",
-  "timestamp": "2026-10-14T18:02:44.476Z",
+  "timestamp": "2026-10-14T18:04:15.936Z",
   "methodology": {
     "source": "git-tracked-source-at-sourceSha",
     "physicalLines": "UTF-8 lines after CRLF normalization; trailing split line retained, matching repository quality measurement.",
@@ -823,7 +823,7 @@
         "lines": null
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1153,7 +1153,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1322,7 +1322,7 @@
         "lines": null
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1535,7 +1535,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1691,7 +1691,7 @@
         "lines": 0.2712
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1735,7 +1735,7 @@
         "lines": 0.3791
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1758,7 +1758,7 @@
         "lines": 0.5134
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1786,7 +1786,7 @@
         "lines": 0.019
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1816,7 +1816,7 @@
         "lines": 0.2134
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1841,7 +1841,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1869,7 +1869,7 @@
         "lines": 0.3142
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1894,7 +1894,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1919,7 +1919,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1947,7 +1947,7 @@
         "lines": 0.1667
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -1985,7 +1985,7 @@
         "lines": 0.6716
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -2008,7 +2008,7 @@
         "lines": 0.1795
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
@@ -2105,7 +2105,7 @@
         "lines": null
       },
       "coverage": {
-        "status": "NOT_AVAILABLE",
+        "status": "NOT_RUN",
         "files": 0,
         "metrics": null
       },
