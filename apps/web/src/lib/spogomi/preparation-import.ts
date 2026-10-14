@@ -168,29 +168,46 @@ function candidateForHeader(header: string, rule: FieldRule): { confidence: Spog
   return null;
 }
 
-function inferMapping(headers: string[]): { mapping: SpogomiRosterColumnMapping; diagnostics: SpogomiRosterColumnDiagnostic[]; ambiguousFields: SpogomiRosterColumn[] } {
-  const mapping: SpogomiRosterColumnMapping = {};
-  const diagnostics: SpogomiRosterColumnDiagnostic[] = [];
-  const ambiguousFields: SpogomiRosterColumn[] = [];
-  for (const rule of FIELD_RULES) {
-    const candidates = headers.flatMap((header, index) => {
-      const match = candidateForHeader(header, rule);
-      return match ? [{ header, index, ...match }] : [];
-    }).sort((left, right) => left.distance - right.distance || left.index - right.index);
-    const exactOrHigh = candidates.filter((candidate) => candidate.confidence === "exact" || candidate.confidence === "high");
-    const best = exactOrHigh.length ? exactOrHigh : candidates.filter((candidate) => candidate.confidence === "suggested");
-    const ambiguous = best.length > 1 && best[0]?.distance === best[1]?.distance && best[0]?.confidence === best[1]?.confidence;
-    const selected = !ambiguous && best[0] && best[0].confidence !== "suggested" ? best[0] : null;
-    if (ambiguous) ambiguousFields.push(rule.field);
-    if (selected) mapping[rule.field] = selected.header;
-    diagnostics.push({
+type HeaderCandidate = { header: string; index: number; confidence: SpogomiRosterMappingConfidence; distance: number };
+
+function candidatesForRule(headers: string[], rule: FieldRule): HeaderCandidate[] {
+  return headers.flatMap((header, index) => {
+    const match = candidateForHeader(header, rule);
+    return match ? [{ header, index, ...match }] : [];
+  }).sort((left, right) => left.distance - right.distance || left.index - right.index);
+}
+
+function bestCandidates(candidates: HeaderCandidate[]): HeaderCandidate[] {
+  const exactOrHigh = candidates.filter((candidate) => candidate.confidence === "exact" || candidate.confidence === "high");
+  return exactOrHigh.length ? exactOrHigh : candidates.filter((candidate) => candidate.confidence === "suggested");
+}
+
+function inferField(rule: FieldRule, headers: string[]): { diagnostic: SpogomiRosterColumnDiagnostic; selectedHeader: string | null } {
+  const best = bestCandidates(candidatesForRule(headers, rule));
+  const ambiguous = best.length > 1 && best[0]?.distance === best[1]?.distance && best[0]?.confidence === best[1]?.confidence;
+  const selected = !ambiguous && best[0] && best[0].confidence !== "suggested" ? best[0] : null;
+  return {
+    selectedHeader: selected?.header ?? null,
+    diagnostic: {
       field: rule.field,
       selectedHeader: selected?.header ?? null,
       confidence: ambiguous ? "ambiguous" : selected?.confidence ?? (best[0]?.confidence ?? "missing"),
       candidates: best.map((candidate) => candidate.header),
       required: rule.requiredForTicket,
       status: ambiguous ? "ambiguous" : selected ? "recognized" : "optional_absent",
-    });
+    },
+  };
+}
+
+function inferMapping(headers: string[]): { mapping: SpogomiRosterColumnMapping; diagnostics: SpogomiRosterColumnDiagnostic[]; ambiguousFields: SpogomiRosterColumn[] } {
+  const mapping: SpogomiRosterColumnMapping = {};
+  const diagnostics: SpogomiRosterColumnDiagnostic[] = [];
+  const ambiguousFields: SpogomiRosterColumn[] = [];
+  for (const rule of FIELD_RULES) {
+    const inferred = inferField(rule, headers);
+    if (inferred.diagnostic.status === "ambiguous") ambiguousFields.push(rule.field);
+    if (inferred.selectedHeader) mapping[rule.field] = inferred.selectedHeader;
+    diagnostics.push(inferred.diagnostic);
   }
   return { mapping, diagnostics, ambiguousFields };
 }
@@ -239,97 +256,132 @@ function selectHeader(rows: string[][], requestedHeaderRow?: number): { rowIndex
   return best ? { rowIndex: best.index, headers: best.row } : null;
 }
 
+type RowIndexes = Partial<Record<SpogomiRosterColumn, number>>;
+type RowBuildResult = { row: SpogomiRosterRow | null; errors: SpogomiRosterRowError[]; ignored: boolean };
+
+function rowIndexes(headers: string[], mapping: SpogomiRosterColumnMapping): RowIndexes {
+  return Object.fromEntries(Object.entries(mapping).map(([key, header]) => [key, headers.indexOf(header ?? "")])) as RowIndexes;
+}
+
+function rowError(rowNumber: number, code: SpogomiRosterRowError["code"], message: string): SpogomiRosterRowError {
+  return { rowNumber, code, message };
+}
+
+function readRowValue(values: string[], indexes: RowIndexes, field: SpogomiRosterColumn): string {
+  return normalizeValue(indexes[field] === undefined ? "" : values[indexes[field] as number]);
+}
+
+function rejectRow(rowNumber: number, code: SpogomiRosterRowError["code"], message: string): RowBuildResult {
+  return { row: null, errors: [rowError(rowNumber, code, message)], ignored: true };
+}
+
+function rowHasActiveContent(values: string[]): boolean {
+  return values.some((value) => /^(?:=|\+|@|-?[A-Za-z_][A-Za-z0-9_.]*\()/i.test(normalizeValue(value)));
+}
+
+function validateRowShape(rowNumber: number, values: string[], formulaRows: number[]): RowBuildResult | null {
+  if (formulaRows.includes(rowNumber)) return rejectRow(rowNumber, "formula_or_active_content", "Ligne exclue : formule ou lien actif détecté.");
+  if (values.length > MAX_COLUMNS) return rejectRow(rowNumber, "row_too_wide", "Trop de colonnes dans cette ligne.");
+  if (!values.some((value) => normalizeValue(value))) return { row: null, errors: [], ignored: false };
+  if (rowHasActiveContent(values)) return rejectRow(rowNumber, "formula_or_active_content", "Ligne exclue : contenu textuel interprétable comme une formule ou un lien actif.");
+  return null;
+}
+
+type ParsedRowFields = {
+  name: string | null;
+  group: string;
+  sourceRowId: string;
+  externalReference: string;
+  orderReference: string;
+  orderAlternativeReference: string;
+  ticketStatus: string;
+  rawDeletedValue: string;
+};
+
+function readRowFields(values: string[], indexes: RowIndexes): ParsedRowFields {
+  const rawName = readRowValue(values, indexes, "name");
+  return {
+    name: rawName || null,
+    group: readRowValue(values, indexes, "group"),
+    sourceRowId: readRowValue(values, indexes, "sourceRowId"),
+    externalReference: readRowValue(values, indexes, "ticketReference"),
+    orderReference: readRowValue(values, indexes, "orderReference"),
+    orderAlternativeReference: readRowValue(values, indexes, "orderAlternativeReference"),
+    ticketStatus: readRowValue(values, indexes, "ticketStatus"),
+    rawDeletedValue: readRowValue(values, indexes, "ticketDeleted"),
+  };
+}
+
+function ticketDeletionValue(rawDeletedValue: string, indexes: RowIndexes, ticketImport: boolean): { classification: ReturnType<typeof classifyCachanTicketDeletion>; value: boolean | null } {
+  const classification = ticketImport && indexes.ticketDeleted !== undefined ? classifyCachanTicketDeletion(rawDeletedValue) : "absent";
+  const value = classification === "deleted" ? true : classification === "not_deleted" ? false : indexes.ticketDeleted === undefined ? false : null;
+  return { classification, value };
+}
+
+function validateRequiredRowFields(rowNumber: number, fields: ParsedRowFields, ticketImport: boolean): RowBuildResult | null {
+  if (ticketImport && fields.externalReference.startsWith("__AMBIGUOUS_NUMERIC_ID__")) return rejectRow(rowNumber, "ambiguous_identifier", "Identifiant numérique ambigu : conservez le billet comme texte pour éviter un arrondi ou une notation scientifique.");
+  if (ticketImport && !fields.externalReference) return rejectRow(rowNumber, "ticket_reference_required", "La référence N. Billet est obligatoire pour une ligne de billetterie ; aucun identifiant n’est inventé.");
+  if (!ticketImport && !fields.name) return rejectRow(rowNumber, "name_required", "Le nom du participant est obligatoire pour une liste manuelle.");
+  return null;
+}
+
+function ticketDiagnostics(rowNumber: number, fields: ParsedRowFields, deletionClassification: ReturnType<typeof classifyCachanTicketDeletion>, ticketImport: boolean, hasDeletionColumn: boolean): SpogomiRosterRowError[] {
+  if (!ticketImport) return [];
+  const errors: SpogomiRosterRowError[] = [];
+  const statusClassification = classifyCachanTicketStatus(fields.ticketStatus);
+  if (statusClassification === "absent") errors.push(rowError(rowNumber, "ticket_status_missing", "Statut du billet absent : la ligne doit être revue avant confirmation."));
+  if (statusClassification === "pending") errors.push(rowError(rowNumber, "ticket_status_pending", `Statut du billet en attente (${fields.ticketStatus}) : la ligne ne peut pas être confirmée comme place admissible.`));
+  if (statusClassification === "unknown") errors.push(rowError(rowNumber, "ticket_status_unknown", `Statut du billet inconnu (${fields.ticketStatus}) : la ligne doit être revue avant confirmation.`));
+  if (deletionClassification === "absent" && hasDeletionColumn) errors.push(rowError(rowNumber, "ticket_deletion_missing", "La valeur Supprimé est absente : la ligne doit être revue avant confirmation."));
+  if (deletionClassification === "unknown") errors.push(rowError(rowNumber, "ticket_deletion_unknown", `La valeur Supprimé est ambiguë (${fields.rawDeletedValue}) : la ligne doit être revue avant confirmation.`));
+  return errors;
+}
+
+function buildRosterRow(rowNumber: number, values: string[], indexes: RowIndexes, ticketImport: boolean): RowBuildResult {
+  const fields = readRowFields(values, indexes);
+  const deletion = ticketDeletionValue(fields.rawDeletedValue, indexes, ticketImport);
+  const requiredFailure = validateRequiredRowFields(rowNumber, fields, ticketImport);
+  if (requiredFailure) return requiredFailure;
+  const errors = ticketDiagnostics(rowNumber, fields, deletion.classification, ticketImport, indexes.ticketDeleted !== undefined);
+  if (fields.name && fields.name.length > MAX_NAME_LENGTH) return { row: null, errors: [...errors, rowError(rowNumber, "name_too_long", "Le nom du participant est trop long.")], ignored: false };
+  if ([fields.sourceRowId, fields.externalReference, fields.orderReference, fields.orderAlternativeReference].some((value) => value.length > MAX_EXTERNAL_REFERENCE_LENGTH)) return { row: null, errors: [...errors, rowError(rowNumber, "invalid_source_row_id", "La référence de ligne est trop longue.")], ignored: false };
+  const row: SpogomiRosterRow = {
+    rowNumber,
+    name: fields.name,
+    groupPreference: (fields.orderReference || fields.group) ? (fields.orderReference || fields.group).slice(0, MAX_GROUP_LENGTH) : null,
+    sourceRowId: fields.sourceRowId || fields.externalReference || null,
+    externalReference: fields.externalReference || null,
+    orderReference: fields.orderReference || null,
+    orderAlternativeReference: fields.orderAlternativeReference || null,
+    ticketStatus: fields.ticketStatus || null,
+    ticketDeleted: deletion.value,
+    ticketDeletedRaw: indexes.ticketDeleted === undefined ? null : fields.rawDeletedValue || null,
+    sourceSystem: ticketImport ? "cachan_ticketing" : "manual_roster",
+    sourceFingerprint: "",
+  };
+  row.sourceFingerprint = fingerprint(row);
+  return { row, errors, ignored: false };
+}
+
 function buildRows(rawRows: string[][], mapping: SpogomiRosterColumnMapping, malformedRowNumbers: number[], formulaRows: number[]) {
   const headers = rawRows[0] ?? [];
-  const indexes = Object.fromEntries(Object.entries(mapping).map(([key, header]) => [key, headers.indexOf(header ?? "")])) as Partial<Record<SpogomiRosterColumn, number>>;
-  const errors: SpogomiRosterRowError[] = malformedRowNumbers.map((rowNumber) => ({ rowNumber, code: "row_excluded", message: "Ligne ignorée : guillemet non fermé ou structure CSV incomplète." }));
+  const indexes = rowIndexes(headers, mapping);
+  const errors: SpogomiRosterRowError[] = malformedRowNumbers.map((rowNumber) => rowError(rowNumber, "row_excluded", "Ligne ignorée : guillemet non fermé ou structure CSV incomplète."));
   const rows: SpogomiRosterRow[] = [];
   const ignoredRowNumbers = [...malformedRowNumbers];
   const ticketImport = Boolean(mapping.ticketReference);
   for (const [offset, values] of rawRows.slice(1, MAX_ROWS + 1).entries()) {
     const rowNumber = offset + 2;
-    if (formulaRows.includes(rowNumber)) {
-      errors.push({ rowNumber, code: "formula_or_active_content", message: "Ligne exclue : formule ou lien actif détecté." });
-      ignoredRowNumbers.push(rowNumber);
+    const shape = validateRowShape(rowNumber, values, formulaRows);
+    if (shape) {
+      errors.push(...shape.errors);
+      if (shape.ignored) ignoredRowNumbers.push(rowNumber);
       continue;
     }
-    if (values.length > MAX_COLUMNS) {
-      errors.push({ rowNumber, code: "row_too_wide", message: "Trop de colonnes dans cette ligne." });
-      ignoredRowNumbers.push(rowNumber);
-      continue;
-    }
-    if (!values.some((value) => normalizeValue(value))) continue;
-    if (values.some((value) => /^(?:=|\+|@|-?[A-Za-z_][A-Za-z0-9_.]*\()/i.test(normalizeValue(value)))) {
-      errors.push({ rowNumber, code: "formula_or_active_content", message: "Ligne exclue : contenu textuel interprétable comme une formule ou un lien actif." });
-      ignoredRowNumbers.push(rowNumber);
-      continue;
-    }
-    const rawName = normalizeValue(indexes.name === undefined ? "" : values[indexes.name]);
-    const name = rawName || null;
-    const group = normalizeValue(indexes.group === undefined ? "" : values[indexes.group]);
-    const sourceRowId = normalizeValue(indexes.sourceRowId === undefined ? "" : values[indexes.sourceRowId]);
-    const externalReference = normalizeValue(indexes.ticketReference === undefined ? "" : values[indexes.ticketReference]);
-    const orderReference = normalizeValue(indexes.orderReference === undefined ? "" : values[indexes.orderReference]);
-    const orderAlternativeReference = normalizeValue(indexes.orderAlternativeReference === undefined ? "" : values[indexes.orderAlternativeReference]);
-    const ticketStatus = normalizeValue(indexes.ticketStatus === undefined ? "" : values[indexes.ticketStatus]);
-    const rawDeletedValue = normalizeValue(indexes.ticketDeleted === undefined ? "" : values[indexes.ticketDeleted]);
-    const deletionClassification = ticketImport && indexes.ticketDeleted !== undefined
-      ? classifyCachanTicketDeletion(rawDeletedValue)
-      : "absent";
-    const ticketDeleted = deletionClassification === "deleted"
-      ? true
-      : deletionClassification === "not_deleted"
-        ? false
-        : indexes.ticketDeleted === undefined
-          ? false
-          : null;
-    if (ticketImport && externalReference.startsWith("__AMBIGUOUS_NUMERIC_ID__")) {
-      errors.push({ rowNumber, code: "ambiguous_identifier", message: "Identifiant numérique ambigu : conservez le billet comme texte pour éviter un arrondi ou une notation scientifique." });
-      ignoredRowNumbers.push(rowNumber);
-      continue;
-    }
-    if (ticketImport && !externalReference) {
-      errors.push({ rowNumber, code: "ticket_reference_required", message: "La référence N. Billet est obligatoire pour une ligne de billetterie ; aucun identifiant n’est inventé." });
-      ignoredRowNumbers.push(rowNumber);
-      continue;
-    }
-    if (!ticketImport && !name) {
-      errors.push({ rowNumber, code: "name_required", message: "Le nom du participant est obligatoire pour une liste manuelle." });
-      ignoredRowNumbers.push(rowNumber);
-      continue;
-    }
-    if (ticketImport) {
-      const statusClassification = classifyCachanTicketStatus(ticketStatus);
-      if (statusClassification === "absent") errors.push({ rowNumber, code: "ticket_status_missing", message: "Statut du billet absent : la ligne doit être revue avant confirmation." });
-      else if (statusClassification === "pending") errors.push({ rowNumber, code: "ticket_status_pending", message: `Statut du billet en attente (${ticketStatus}) : la ligne ne peut pas être confirmée comme place admissible.` });
-      else if (statusClassification === "unknown") errors.push({ rowNumber, code: "ticket_status_unknown", message: `Statut du billet inconnu (${ticketStatus}) : la ligne doit être revue avant confirmation.` });
-      if (deletionClassification === "absent" && indexes.ticketDeleted !== undefined) errors.push({ rowNumber, code: "ticket_deletion_missing", message: "La valeur Supprimé est absente : la ligne doit être revue avant confirmation." });
-      else if (deletionClassification === "unknown") errors.push({ rowNumber, code: "ticket_deletion_unknown", message: `La valeur Supprimé est ambiguë (${rawDeletedValue}) : la ligne doit être revue avant confirmation.` });
-    }
-    if (name && name.length > MAX_NAME_LENGTH) {
-      errors.push({ rowNumber, code: "name_too_long", message: "Le nom du participant est trop long." });
-      continue;
-    }
-    if (sourceRowId.length > MAX_EXTERNAL_REFERENCE_LENGTH || externalReference.length > MAX_EXTERNAL_REFERENCE_LENGTH || orderReference.length > MAX_EXTERNAL_REFERENCE_LENGTH || orderAlternativeReference.length > MAX_EXTERNAL_REFERENCE_LENGTH) {
-      errors.push({ rowNumber, code: "invalid_source_row_id", message: "La référence de ligne est trop longue." });
-      continue;
-    }
-    const candidate: SpogomiRosterRow = {
-      rowNumber,
-      name,
-      groupPreference: (orderReference || group) ? (orderReference || group).slice(0, MAX_GROUP_LENGTH) : null,
-      sourceRowId: sourceRowId || externalReference || null,
-      externalReference: externalReference || null,
-      orderReference: orderReference || null,
-      orderAlternativeReference: orderAlternativeReference || null,
-      ticketStatus: ticketStatus || null,
-      ticketDeleted,
-      ticketDeletedRaw: indexes.ticketDeleted === undefined ? null : rawDeletedValue || null,
-      sourceSystem: ticketImport ? "cachan_ticketing" : "manual_roster",
-      sourceFingerprint: "",
-    };
-    candidate.sourceFingerprint = fingerprint(candidate);
-    rows.push(candidate);
+    const built = buildRosterRow(rowNumber, values, indexes, ticketImport);
+    errors.push(...built.errors);
+    if (built.ignored) ignoredRowNumbers.push(rowNumber);
+    if (built.row) rows.push(built.row);
   }
   if (rawRows.length - 1 > MAX_ROWS) errors.push({ rowNumber: MAX_ROWS + 2, code: "row_excluded", message: `Les lignes au-delà de ${MAX_ROWS} sont exclues par la limite d’import.` });
   return { headers, rows, errors, ignoredRowNumbers };
@@ -347,6 +399,115 @@ function assertMime(file: File, format: SpogomiImportFormat): void {
   if (!allowed.includes(type)) throw new Error("Type MIME incohérent avec l’extension du fichier.");
 }
 
+type ImportSheet = { name: string; rows: string[][]; formulaRows: number[] };
+type ImportReadResult = { sheets: ImportSheet[]; encoding: "utf-8" | "windows-1252" | "binary"; malformedRowNumbers: number[] };
+
+function normalizePreviewOptions(options?: SpogomiRosterPreviewOptions | SpogomiRosterColumnMapping): SpogomiRosterPreviewOptions {
+  if (options && ("mapping" in options || "sheetName" in options || "headerRow" in options || "allowIncompatibleMapping" in options)) return options as SpogomiRosterPreviewOptions;
+  return { mapping: options as SpogomiRosterColumnMapping | undefined };
+}
+
+function readImportSheets(bytes: Uint8Array, format: SpogomiImportFormat): ImportReadResult {
+  if (format === "csv" || format === "tsv") {
+    const decoded = decodeText(bytes);
+    const parsed = parseDelimited(decoded.text, detectDelimiter(decoded.text, format));
+    return { sheets: [{ name: "CSV", rows: parsed.rows, formulaRows: [] }], encoding: decoded.encoding, malformedRowNumbers: parsed.malformedRowNumbers };
+  }
+  const workbook = workbookRows(bytes, format);
+  return { sheets: workbook.sheets, encoding: workbook.encoding, malformedRowNumbers: [] };
+}
+
+function buildSheetCandidates(sheets: ImportSheet[]): SpogomiRosterSheetCandidate[] {
+  return sheets.map((sheet, index) => {
+    const selected = selectHeader(sheet.rows);
+    const score = selected ? headerScore(selected.headers) : { recognizedFieldCount: 0, confidence: "missing" as const };
+    return { index, name: sheet.name, headerRow: selected ? selected.rowIndex + 1 : null, recognizedFieldCount: score.recognizedFieldCount, confidence: score.confidence, rowCount: sheet.rows.length };
+  });
+}
+
+function selectImportSheet(sheets: ImportSheet[], candidates: SpogomiRosterSheetCandidate[], options: SpogomiRosterPreviewOptions): ImportSheet | undefined {
+  if (options.sheetName) return sheets.find((sheet) => sheet.name === options.sheetName);
+  const best = candidates.slice().sort((left, right) => right.recognizedFieldCount - left.recognizedFieldCount || left.index - right.index)[0];
+  return best ? sheets[best.index] : undefined;
+}
+
+function explicitMappingDiagnostics(inferred: ReturnType<typeof inferMapping>, headers: string[], mapping?: SpogomiRosterColumnMapping) {
+  return inferred.diagnostics.map((diagnostic) => {
+    const explicit = mapping?.[diagnostic.field];
+    return explicit && headers.includes(explicit) ? { ...diagnostic, selectedHeader: explicit, confidence: "exact" as const, candidates: [explicit], status: "recognized" as const } : diagnostic;
+  });
+}
+
+function mappingErrors(headerRow: number, diagnostics: SpogomiRosterColumnDiagnostic[], ticketImport: boolean): { errors: SpogomiRosterRowError[]; missingFields: SpogomiRosterColumn[]; ambiguousFields: SpogomiRosterColumn[] } {
+  const missingFields = diagnostics.filter((diagnostic) => diagnostic.required && ticketImport && diagnostic.status === "optional_absent").map(({ field }) => field);
+  const ambiguousFields = diagnostics.filter((diagnostic) => diagnostic.status === "ambiguous").map(({ field }) => field);
+  const errors: SpogomiRosterRowError[] = [];
+  if (ambiguousFields.length) errors.push(rowError(headerRow, "ambiguous_mapping", `Correspondance ambiguë à confirmer : ${ambiguousFields.join(", ")}.`));
+  if (ticketImport && missingFields.length) errors.push(rowError(headerRow, "ambiguous_mapping", `Colonnes critiques absentes ou non reconnues : ${missingFields.join(", ")}.`));
+  return { errors, missingFields, ambiguousFields };
+}
+
+function duplicateTicketErrors(rows: SpogomiRosterRow[], ticketReferenceMapped: boolean): SpogomiRosterRowError[] {
+  if (!ticketReferenceMapped) return [];
+  const rowNumbersByReference = new Map<string, number[]>();
+  for (const row of rows) {
+    if (!row.externalReference) continue;
+    rowNumbersByReference.set(row.externalReference, [...(rowNumbersByReference.get(row.externalReference) ?? []), row.rowNumber]);
+  }
+  return [...rowNumbersByReference.values()].filter((rowNumbers) => rowNumbers.length > 1).flatMap((rowNumbers) => rowNumbers.map((rowNumber) => rowError(rowNumber, "ticket_reference_collision", "La même référence de billet apparaît plusieurs fois dans le fichier ; aucune place n’est fusionnée.")));
+}
+
+function previewWithoutHeader(format: SpogomiImportFormat, fileName: string, contentHash: string, encoding: "utf-8" | "windows-1252" | "binary", sheetName: string, candidates: SpogomiRosterSheetCandidate[]): SpogomiRosterPreview {
+  return {
+    format, fileName, contentHash, headers: [], unknownHeaders: [], mapping: {}, rows: [], errors: [rowError(1, "header_not_found", "Aucune ligne d’en-tête reconnue.")], probableDuplicateRowNumbers: [], sourceSystem: "manual_roster", cancelledRowNumbers: [], encoding, sheetName, headerRow: 0, sheetCandidates: candidates, columnDiagnostics: [], missingFields: [], ambiguousFields: [], rowsRead: 0, ignoredRowNumbers: [], requiresExplicitSelection: true, importKey: "",
+  };
+}
+
+function buildPreviewContent(params: {
+  format: SpogomiImportFormat;
+  fileName: string;
+  contentHash: string;
+  headers: string[];
+  mapping: SpogomiRosterColumnMapping;
+  rows: SpogomiRosterRow[];
+  errors: SpogomiRosterRowError[];
+  sourceSystem: "manual_roster" | "cachan_ticketing";
+  encoding: "utf-8" | "windows-1252" | "binary";
+  sheetName: string;
+  headerRow: number;
+  sheetCandidates: SpogomiRosterSheetCandidate[];
+  columnDiagnostics: SpogomiRosterColumnDiagnostic[];
+  missingFields: SpogomiRosterColumn[];
+  ambiguousFields: SpogomiRosterColumn[];
+  rowsRead: number;
+  ignoredRowNumbers: number[];
+  explicitSheetSelection: boolean;
+}): Omit<SpogomiRosterPreview, "importKey"> & { importKey: string } {
+  const { headers, mapping, rows, errors, sourceSystem, ambiguousFields, sheetCandidates, sheetName, headerRow, explicitSheetSelection, ...content } = params;
+  const mappedHeaders = new Set(Object.values(mapping).filter(Boolean));
+  const byFingerprint = new Map<string, number[]>();
+  for (const row of rows) byFingerprint.set(row.sourceFingerprint, [...(byFingerprint.get(row.sourceFingerprint) ?? []), row.rowNumber]);
+  return {
+    ...content,
+    headers,
+    mapping,
+    rows,
+    errors,
+    sourceSystem,
+    unknownHeaders: headers.filter((header) => !mappedHeaders.has(header)),
+    probableDuplicateRowNumbers: [...byFingerprint.values()].filter((group) => group.length > 1),
+    cancelledRowNumbers: rows.filter((row) => row.ticketDeleted || classifyCachanTicketStatus(row.ticketStatus) === "cancelled").map((row) => row.rowNumber),
+    sheetName,
+    headerRow,
+    sheetCandidates,
+    columnDiagnostics: params.columnDiagnostics,
+    missingFields: params.missingFields,
+    ambiguousFields,
+    requiresExplicitSelection: Boolean(ambiguousFields.length || (sheetCandidates.filter((candidate) => candidate.recognizedFieldCount > 0).length > 1 && !explicitSheetSelection)) || Boolean(errors.some((error) => error.code === "ambiguous_mapping")),
+    importKey: "",
+  };
+}
+
 export async function parseRosterFile(file: File, options?: SpogomiRosterPreviewOptions | SpogomiRosterColumnMapping): Promise<SpogomiRosterPreview> {
   if (file.size > MAX_SPOGOMI_FILE_BYTES) throw new Error("Fichier trop volumineux (5 Mo maximum).");
   const fileName = file.name.trim() || "roster";
@@ -355,36 +516,15 @@ export async function parseRosterFile(file: File, options?: SpogomiRosterPreview
   assertMime(file, format);
   const bytes = new Uint8Array(await file.arrayBuffer());
   const contentHash = await sha256Hex(bytes);
-  const normalizedOptions = options && ("mapping" in options || "sheetName" in options || "headerRow" in options || "allowIncompatibleMapping" in options) ? options as SpogomiRosterPreviewOptions : { mapping: options as SpogomiRosterColumnMapping | undefined };
-  let sheets: Array<{ name: string; rows: string[][]; formulaRows: number[] }>;
-  let encoding: "utf-8" | "windows-1252" | "binary";
-  let malformedRowNumbers: number[] = [];
-  if (format === "csv" || format === "tsv") {
-    const decoded = decodeText(bytes);
-    const parsed = parseDelimited(decoded.text, detectDelimiter(decoded.text, format));
-    sheets = [{ name: "CSV", rows: parsed.rows, formulaRows: [] }];
-    malformedRowNumbers = parsed.malformedRowNumbers;
-    encoding = decoded.encoding;
-  } else {
-    const workbook = workbookRows(bytes, format);
-    sheets = workbook.sheets;
-    encoding = workbook.encoding;
-  }
+  const normalizedOptions = normalizePreviewOptions(options);
+  const { sheets, encoding, malformedRowNumbers } = readImportSheets(bytes, format);
   if (!sheets.length) throw new Error("Le fichier ne contient aucune feuille exploitable.");
-  const candidates: SpogomiRosterSheetCandidate[] = sheets.map((sheet, index) => {
-    const selected = selectHeader(sheet.rows);
-    const score = selected ? headerScore(selected.headers) : { recognizedFieldCount: 0, confidence: "missing" as const };
-    return { index, name: sheet.name, headerRow: selected ? selected.rowIndex + 1 : null, recognizedFieldCount: score.recognizedFieldCount, confidence: score.confidence, rowCount: sheet.rows.length };
-  });
-  const selectedSheet = normalizedOptions.sheetName ? sheets.find((sheet) => sheet.name === normalizedOptions.sheetName) : sheets.find((_, index) => index === candidates.slice().sort((left, right) => right.recognizedFieldCount - left.recognizedFieldCount || left.index - right.index)[0]?.index);
+  const candidates = buildSheetCandidates(sheets);
+  const selectedSheet = selectImportSheet(sheets, candidates, normalizedOptions);
   if (!selectedSheet) throw new Error("Validation: la feuille demandée est introuvable.");
   const selectedCandidate = candidates.find((candidate) => candidate.name === selectedSheet.name);
   const header = selectHeader(selectedSheet.rows, normalizedOptions.headerRow ?? selectedCandidate?.headerRow ?? undefined);
-  if (!header) {
-    return {
-      format, fileName, contentHash, headers: [], unknownHeaders: [], mapping: {}, rows: [], errors: [{ rowNumber: 1, code: "header_not_found", message: "Aucune ligne d’en-tête reconnue." }], probableDuplicateRowNumbers: [], sourceSystem: "manual_roster", cancelledRowNumbers: [], encoding, sheetName: selectedSheet.name, headerRow: 0, sheetCandidates: candidates, columnDiagnostics: [], missingFields: [], ambiguousFields: [], rowsRead: 0, ignoredRowNumbers: [], requiresExplicitSelection: true, importKey: await deterministicImportKey(contentHash, {}),
-    };
-  }
+  if (!header) return { ...previewWithoutHeader(format, fileName, contentHash, encoding, selectedSheet.name, candidates), importKey: await deterministicImportKey(contentHash, {}) };
   if (header.headers.length > MAX_COLUMNS) throw new Error("Le fichier contient trop de colonnes.");
   const headers = header.headers.map(normalizeValue);
   const inferred = inferMapping(headers);
@@ -393,27 +533,13 @@ export async function parseRosterFile(file: File, options?: SpogomiRosterPreview
       ? { ...inferred.mapping, ...resolveExplicitMapping(headers, normalizedOptions.mapping, true) }
       : resolveExplicitMapping(headers, normalizedOptions.mapping)
     : inferred.mapping;
-  const mappingDiagnostics = inferred.diagnostics.map((diagnostic) => {
-    const explicit = normalizedOptions.mapping?.[diagnostic.field];
-    return explicit && headers.includes(explicit) ? { ...diagnostic, selectedHeader: explicit, confidence: "exact" as const, candidates: [explicit], status: "recognized" as const } : diagnostic;
-  });
+  const mappingDiagnostics = explicitMappingDiagnostics(inferred, headers, normalizedOptions.mapping);
   const ticketImport = Boolean(resolvedMapping.ticketReference);
-  const missingFields = mappingDiagnostics.filter((diagnostic) => diagnostic.required && ticketImport && diagnostic.status === "optional_absent").map(({ field }) => field);
-  const ambiguousFields = mappingDiagnostics.filter((diagnostic) => diagnostic.status === "ambiguous").map(({ field }) => field);
-  const mappingErrors: SpogomiRosterRowError[] = [];
-  if (ambiguousFields.length) mappingErrors.push({ rowNumber: header.rowIndex + 1, code: "ambiguous_mapping", message: `Correspondance ambiguë à confirmer : ${ambiguousFields.join(", ")}.` });
-  if (ticketImport && missingFields.length) mappingErrors.push({ rowNumber: header.rowIndex + 1, code: "ambiguous_mapping", message: `Colonnes critiques absentes ou non reconnues : ${missingFields.join(", ")}.` });
+  const mapping = mappingErrors(header.rowIndex + 1, mappingDiagnostics, ticketImport);
   const dataRows = selectedSheet.rows.slice(header.rowIndex);
   const built = buildRows(dataRows, resolvedMapping, malformedRowNumbers.map((row) => row - header.rowIndex), selectedSheet.formulaRows.map((row) => row - header.rowIndex));
-  const errors = [...mappingErrors, ...built.errors];
-  const byFingerprint = new Map<string, number[]>();
-  for (const row of built.rows) byFingerprint.set(row.sourceFingerprint, [...(byFingerprint.get(row.sourceFingerprint) ?? []), row.rowNumber]);
-  const duplicateTicketRows = resolvedMapping.ticketReference ? [...new Map(built.rows.filter((row) => row.externalReference).map((row) => [row.externalReference as string, [] as number[]])).entries()]
-    .map(([reference]) => [reference, built.rows.filter((row) => row.externalReference === reference).map((row) => row.rowNumber)] as const)
-    .filter(([, rowNumbers]) => rowNumbers.length > 1) : [];
-  for (const [, rowNumbers] of duplicateTicketRows) for (const rowNumber of rowNumbers) errors.push({ rowNumber, code: "ticket_reference_collision", message: "La même référence de billet apparaît plusieurs fois dans le fichier ; aucune place n’est fusionnée." });
+  const errors = [...mapping.errors, ...built.errors, ...duplicateTicketErrors(built.rows, Boolean(resolvedMapping.ticketReference))];
   const sourceSystem = resolvedMapping.ticketReference ? "cachan_ticketing" : "manual_roster";
-  const requiresExplicitSelection = Boolean(ambiguousFields.length || (candidates.filter((candidate) => candidate.recognizedFieldCount > 0).length > 1 && !normalizedOptions.sheetName)) || Boolean(mappingErrors.length);
-  const content = { format, fileName, contentHash, headers, unknownHeaders: headers.filter((header) => !new Set(Object.values(resolvedMapping).filter(Boolean)).has(header)), mapping: resolvedMapping, rows: built.rows, errors, probableDuplicateRowNumbers: [...byFingerprint.values()].filter((group) => group.length > 1), sourceSystem, cancelledRowNumbers: built.rows.filter((row) => row.ticketDeleted || classifyCachanTicketStatus(row.ticketStatus) === "cancelled").map((row) => row.rowNumber), encoding, sheetName: selectedSheet.name, headerRow: header.rowIndex + 1, sheetCandidates: candidates, columnDiagnostics: mappingDiagnostics, missingFields, ambiguousFields, rowsRead: selectedSheet.rows.length - header.rowIndex - 1, ignoredRowNumbers: built.ignoredRowNumbers, requiresExplicitSelection, importKey: "" } satisfies Omit<SpogomiRosterPreview, "importKey"> & { importKey: string };
+  const content = buildPreviewContent({ format, fileName, contentHash, headers, mapping: resolvedMapping, rows: built.rows, errors, sourceSystem, encoding, sheetName: selectedSheet.name, headerRow: header.rowIndex + 1, sheetCandidates: candidates, columnDiagnostics: mappingDiagnostics, missingFields: mapping.missingFields, ambiguousFields: mapping.ambiguousFields, rowsRead: selectedSheet.rows.length - header.rowIndex - 1, ignoredRowNumbers: built.ignoredRowNumbers, explicitSheetSelection: Boolean(normalizedOptions.sheetName) });
   return { ...content, importKey: await deterministicImportKey(contentHash, resolvedMapping) };
 }

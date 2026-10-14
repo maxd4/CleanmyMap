@@ -152,6 +152,146 @@ type RosterImport = Record<string, unknown> & {
   source_proof_status?: "pending" | "complete" | "legacy_unavailable" | "incomplete";
 };
 
+type ConfirmRosterImportParams = {
+  supabase: SupabaseClient;
+  event: EventRow;
+  userId: string;
+  file: File;
+  mapping?: SpogomiRosterColumnMapping;
+  importOptions?: Pick<SpogomiRosterPreviewOptions, "sheetName" | "headerRow">;
+  acceptedRowNumbers?: number[];
+};
+
+type SelectedImportRows = { eligibleRows: SpogomiRosterPreview["rows"]; selectedRows: SpogomiRosterPreview["rows"] };
+
+function selectImportRows(preview: SpogomiRosterPreview, acceptedRowNumbers?: number[]): SelectedImportRows {
+  const errorsByRow = new Set(preview.errors.map((error) => error.rowNumber));
+  const eligibleRows = preview.rows.filter((row) => !errorsByRow.has(row.rowNumber));
+  const selectedRowNumbers = acceptedRowNumbers ?? eligibleRows.map((row) => row.rowNumber);
+  if (!selectedRowNumbers.length && eligibleRows.length) throw new Error("Validation: sélectionnez explicitement les lignes admissibles avant confirmation.");
+  if (selectedRowNumbers.some((rowNumber) => errorsByRow.has(rowNumber) || !preview.rows.some((row) => row.rowNumber === rowNumber))) throw new Error("Validation: une ligne sélectionnée est invalide ou absente de l’aperçu.");
+  const selectedRows = preview.rows.filter((row) => selectedRowNumbers.includes(row.rowNumber));
+  if (!selectedRows.length && preview.rows.length) throw new Error("Validation: aucune ligne admissible sélectionnée.");
+  return { eligibleRows, selectedRows };
+}
+
+function assertSelectedImportRowsAllowed(preview: SpogomiRosterPreview, selectedRows: SpogomiRosterPreview["rows"]): void {
+  const selectedRowNumbers = new Set(selectedRows.map((row) => row.rowNumber));
+  const selectedConflictRows = (preview.conflictRowNumbers ?? []).filter((rowNumber) => selectedRowNumbers.has(rowNumber));
+  if (preview.sourceSystem === "cachan_ticketing" && selectedConflictRows.length) throw conflict(`les lignes ${selectedConflictRows.join(", ")} nécessitent une résolution organisateur avant confirmation.`);
+}
+
+function assertImportMappingMatches(imported: RosterImport, preview: SpogomiRosterPreview): void {
+  if (!importMappingMatches(imported.column_mapping ?? {}, preview)) throw conflict("le même fichier a déjà été présenté avec une autre correspondance de colonnes.");
+}
+
+async function reserveRosterImport(params: {
+  supabase: SupabaseClient;
+  event: EventRow;
+  userId: string;
+  preview: SpogomiRosterPreview;
+  eligibleRows: SpogomiRosterPreview["rows"];
+  token: string;
+}): Promise<{ imported: RosterImport; ownsInitialReservation: boolean }> {
+  const { supabase, event, userId, preview, eligibleRows, token } = params;
+  const existing = await supabase.from("spogomi_roster_imports").select("*").eq("event_id", event.id).eq("content_sha256", preview.contentHash).maybeSingle();
+  if (existing.error) throw existing.error;
+  let imported = existing.data as RosterImport | null;
+  if (imported) assertImportMappingMatches(imported, preview);
+  let ownsInitialReservation = false;
+  if (!imported) {
+    const created = await supabase.from("spogomi_roster_imports").insert({
+      event_id: event.id,
+      content_sha256: preview.contentHash,
+      import_key: preview.importKey,
+      file_name: preview.fileName,
+      format: preview.format,
+      column_mapping: { ...preview.mapping, __sheetName: preview.sheetName, __headerRow: String(preview.headerRow) },
+      source_row_count: eligibleRows.length,
+      imported_by_clerk_id: userId,
+      status: "processing",
+      processing_token: token,
+      processing_started_at: new Date().toISOString(),
+    }).select("*").maybeSingle();
+    if (!created.error && created.data) {
+      imported = created.data as RosterImport;
+      ownsInitialReservation = true;
+    } else if (created.error?.code === "23505") {
+      const raced = await supabase.from("spogomi_roster_imports").select("*").eq("event_id", event.id).eq("content_sha256", preview.contentHash).single();
+      if (raced.error) throw raced.error;
+      imported = raced.data as RosterImport;
+      assertImportMappingMatches(imported, preview);
+    } else if (created.error) {
+      throw created.error;
+    }
+  }
+  if (!imported) throw conflict("l'import n'a pas pu être réservé.");
+  return { imported, ownsInitialReservation };
+}
+
+async function claimRosterImport(params: { supabase: SupabaseClient; imported: RosterImport; preview: SpogomiRosterPreview; eligibleRows: SpogomiRosterPreview["rows"]; token: string; ownsInitialReservation: boolean }): Promise<void> {
+  const { supabase, imported, preview, eligibleRows, token, ownsInitialReservation } = params;
+  const activeSince = imported.processing_started_at ? Date.parse(imported.processing_started_at) : 0;
+  if (imported.processing_token && imported.processing_token !== token && activeSince > Date.now() - IMPORT_LEASE_MS) throw conflict("un import est déjà en cours pour ce fichier.");
+  if (ownsInitialReservation) return;
+  const claimed = await supabase.from("spogomi_roster_imports").update({ status: "processing", processing_token: token, processing_started_at: new Date().toISOString(), source_row_count: eligibleRows.length, column_mapping: { ...preview.mapping, __sheetName: preview.sheetName, __headerRow: String(preview.headerRow) }, file_name: preview.fileName, format: preview.format }).eq("id", imported.id).or(`processing_token.is.null,processing_started_at.is.null,processing_started_at.lt.${new Date(Date.now() - IMPORT_LEASE_MS).toISOString()}`).select("id").maybeSingle();
+  if (claimed.error) throw claimed.error;
+  if (!claimed.data) throw conflict("un import concurrent est déjà en cours pour ce fichier.");
+}
+
+function participantRowsForImport(preview: SpogomiRosterPreview, eventId: string, importId: string, selectedRows: SpogomiRosterPreview["rows"]) {
+  return selectedRows.map((row) => ({
+    event_id: eventId,
+    roster_import_id: importId,
+    source_row_number: row.rowNumber,
+    source_row_id: row.sourceRowId,
+    source_fingerprint: row.sourceFingerprint,
+    group_preference: row.groupPreference,
+    external_reference: row.externalReference ?? row.sourceRowId,
+    order_reference: row.orderReference,
+    order_alternative_reference: row.orderAlternativeReference,
+    source_system: row.sourceSystem,
+    ticket_status: row.ticketStatus,
+    ticket_deleted: row.ticketDeleted,
+    identity_status: preview.sourceSystem === "cachan_ticketing" ? "unknown" : row.name ? "identified" : "unknown",
+    display_name: row.name,
+    registration_status: isCancelledCachanTicket(row.ticketStatus, row.ticketDeleted) ? "withdrawn" : "registered",
+    attendance_status: "unknown",
+    account_link_status: "unlinked",
+  }));
+}
+
+async function persistConfirmedRosterImport(params: {
+  supabase: SupabaseClient;
+  event: EventRow;
+  preview: SpogomiRosterPreview;
+  reservedImport: RosterImport;
+  selectedRows: SpogomiRosterPreview["rows"];
+  eligibleRows: SpogomiRosterPreview["rows"];
+  participantRows: ReturnType<typeof participantRowsForImport>;
+  token: string;
+}): Promise<{ importId: string; importedRows: number; alreadyImported: boolean }> {
+  const { supabase, event, preview, reservedImport, selectedRows, eligibleRows, participantRows, token } = params;
+  try {
+    if (preview.sourceSystem === "cachan_ticketing") {
+      const reconciliation = await reconcileCachanTicketRows({ supabase, eventId: event.id, rosterImport: reservedImport, rows: selectedRows });
+      if (reconciliation.conflictRows.length) throw conflict(`les lignes ${reconciliation.conflictRows.join(", ")} nécessitent une résolution organisateur avant confirmation.`);
+    } else {
+      const inserted = await supabase.from("spogomi_participants").upsert(participantRows, { onConflict: "event_id,roster_import_id,source_row_number", ignoreDuplicates: false });
+      if (inserted.error) throw inserted.error;
+    }
+    if (!(await verifyImportedRosterSelection(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing"))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
+    const completeProof = await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, eligibleRows, eligibleRows.length, preview.sourceSystem === "cachan_ticketing");
+    const confirmed = await supabase.from("spogomi_roster_imports").update({ status: "confirmed", source_proof_status: completeProof ? "complete" : "incomplete", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token).select("id").maybeSingle();
+    if (confirmed.error) throw confirmed.error;
+    if (!confirmed.data) throw conflict("la confirmation de l'import a été reprise par une autre opération.");
+    return { importId: reservedImport.id, importedRows: participantRows.length, alreadyImported: false };
+  } catch (error) {
+    await supabase.from("spogomi_roster_imports").update({ status: "failed_recoverable", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token);
+    throw error instanceof Error && error.message.startsWith("Conflict:") ? error : new Error("Conflict: import non finalisé, reprise possible avec le même fichier et la même correspondance.");
+  }
+}
+
 function conflict(message: string): Error {
   return new Error(`Conflict: ${message}`);
 }
@@ -258,110 +398,23 @@ export async function previewRosterImportChanges(
   return { ...preview, changedRowNumbers, conflictRowNumbers, rowEffects, importSummary: { created, unchanged, changed: changedRowNumbers.length, conflicts, excluded: preview.ignoredRowNumbers.length } };
 }
 
-export async function confirmRosterImport(params: { supabase: SupabaseClient; event: EventRow; userId: string; file: File; mapping?: SpogomiRosterColumnMapping; importOptions?: Pick<SpogomiRosterPreviewOptions, "sheetName" | "headerRow">; acceptedRowNumbers?: number[] }) {
+export async function confirmRosterImport(params: ConfirmRosterImportParams) {
   const { supabase, event, userId } = params;
   const preview = await previewRosterImportChanges(supabase, event, await previewRosterFile(params.file, params.importOptions ? { mapping: params.mapping, ...params.importOptions } : params.mapping));
   if (preview.requiresExplicitSelection) throw new Error("Validation: sélectionnez explicitement la feuille et les correspondances ambiguës avant confirmation.");
-  const errorsByRow = new Set(preview.errors.map((error) => error.rowNumber));
-  const eligibleRows = preview.rows.filter((row) => !errorsByRow.has(row.rowNumber));
-  const selectedRowNumbers = params.acceptedRowNumbers ?? eligibleRows.map((row) => row.rowNumber);
-  if (!selectedRowNumbers.length && eligibleRows.length) throw new Error("Validation: sélectionnez explicitement les lignes admissibles avant confirmation.");
-  if (selectedRowNumbers.some((rowNumber) => errorsByRow.has(rowNumber) || !preview.rows.some((row) => row.rowNumber === rowNumber))) throw new Error("Validation: une ligne sélectionnée est invalide ou absente de l’aperçu.");
-  const selectedRows = preview.rows.filter((row) => selectedRowNumbers.includes(row.rowNumber));
-  if (!selectedRows.length && preview.rows.length) throw new Error("Validation: aucune ligne admissible sélectionnée.");
-  const selectedConflictRows = (preview.conflictRowNumbers ?? []).filter((rowNumber) => selectedRowNumbers.includes(rowNumber));
-  if (preview.sourceSystem === "cachan_ticketing" && selectedConflictRows.length) {
-    throw conflict(`les lignes ${selectedConflictRows.join(", ")} nécessitent une résolution organisateur avant confirmation.`);
-  }
-  const existing = await supabase.from("spogomi_roster_imports").select("*").eq("event_id", event.id).eq("content_sha256", preview.contentHash).maybeSingle();
-  if (existing.error) throw existing.error;
-  let imported = existing.data as RosterImport | null;
-  if (imported && !importMappingMatches(imported.column_mapping ?? {}, preview)) throw conflict("le même fichier a déjà été présenté avec une autre correspondance de colonnes.");
+  const { eligibleRows, selectedRows } = selectImportRows(preview, params.acceptedRowNumbers);
+  assertSelectedImportRowsAllowed(preview, selectedRows);
   const token = randomUUID();
-  let ownsInitialReservation = false;
-  if (!imported) {
-    const created = await supabase.from("spogomi_roster_imports").insert({
-      event_id: event.id,
-      content_sha256: preview.contentHash,
-      import_key: preview.importKey,
-      file_name: preview.fileName,
-      format: preview.format,
-      column_mapping: { ...preview.mapping, __sheetName: preview.sheetName, __headerRow: String(preview.headerRow) },
-      source_row_count: eligibleRows.length,
-      imported_by_clerk_id: userId,
-      status: "processing",
-      processing_token: token,
-      processing_started_at: new Date().toISOString(),
-    }).select("*").maybeSingle();
-    if (!created.error && created.data) {
-      imported = created.data as RosterImport;
-      ownsInitialReservation = true;
-    }
-    else if (created.error?.code === "23505") {
-      const raced = await supabase.from("spogomi_roster_imports").select("*").eq("event_id", event.id).eq("content_sha256", preview.contentHash).single();
-      if (raced.error) throw raced.error;
-      const racedImport = raced.data as RosterImport;
-      imported = racedImport;
-    if (!importMappingMatches(racedImport.column_mapping ?? {}, preview)) throw conflict("le même fichier a déjà été présenté avec une autre correspondance de colonnes.");
-    } else if (created.error) throw created.error;
-  }
-  if (!imported) throw conflict("l'import n'a pas pu être réservé.");
-  const reservedImport = imported;
+  const { imported: reservedImport, ownsInitialReservation } = await reserveRosterImport({ supabase, event, userId, preview, eligibleRows, token });
   const allowsPartialProof = reservedImport.source_proof_status === "incomplete";
   if (reservedImport.status === "confirmed") {
     const selectedAlreadyImported = await verifyImportedRosterSelection(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing");
     if (selectedAlreadyImported) return { importId: reservedImport.id, importedRows: selectedRows.length, alreadyImported: true };
     if (!allowsPartialProof) throw conflict("l'import confirmé est incomplet et doit être repris.");
   }
-  const activeSince = reservedImport.processing_started_at ? Date.parse(reservedImport.processing_started_at) : 0;
-  if (reservedImport.processing_token && reservedImport.processing_token !== token && activeSince > Date.now() - IMPORT_LEASE_MS) throw conflict("un import est déjà en cours pour ce fichier.");
-  if (!ownsInitialReservation) {
-    const claimed = await supabase.from("spogomi_roster_imports").update({ status: "processing", processing_token: token, processing_started_at: new Date().toISOString(), source_row_count: eligibleRows.length, column_mapping: { ...preview.mapping, __sheetName: preview.sheetName, __headerRow: String(preview.headerRow) }, file_name: preview.fileName, format: preview.format }).eq("id", reservedImport.id).or(`processing_token.is.null,processing_started_at.is.null,processing_started_at.lt.${new Date(Date.now() - IMPORT_LEASE_MS).toISOString()}`).select("id").maybeSingle();
-    if (claimed.error) throw claimed.error;
-    if (!claimed.data) throw conflict("un import concurrent est déjà en cours pour ce fichier.");
-  }
-  const participantRows = selectedRows.map((row) => ({
-    event_id: event.id,
-    roster_import_id: reservedImport.id,
-    source_row_number: row.rowNumber,
-    source_row_id: row.sourceRowId,
-    source_fingerprint: row.sourceFingerprint,
-    group_preference: row.groupPreference,
-    external_reference: row.externalReference ?? row.sourceRowId,
-    order_reference: row.orderReference,
-    order_alternative_reference: row.orderAlternativeReference,
-    source_system: row.sourceSystem,
-    ticket_status: row.ticketStatus,
-    ticket_deleted: row.ticketDeleted,
-    identity_status: preview.sourceSystem === "cachan_ticketing" ? "unknown" : row.name ? "identified" : "unknown",
-    display_name: row.name,
-    registration_status: isCancelledCachanTicket(row.ticketStatus, row.ticketDeleted) ? "withdrawn" : "registered",
-    attendance_status: "unknown",
-    account_link_status: "unlinked",
-  }));
-  try {
-    if (preview.sourceSystem === "cachan_ticketing") {
-      const reconciliation = await reconcileCachanTicketRows({ supabase, eventId: event.id, rosterImport: reservedImport, rows: selectedRows });
-      if (reconciliation.conflictRows.length) {
-        throw conflict(`les lignes ${reconciliation.conflictRows.join(", ")} nécessitent une résolution organisateur avant confirmation.`);
-      }
-    } else {
-      const inserted = await supabase.from("spogomi_participants").upsert(participantRows, {
-        onConflict: "event_id,roster_import_id,source_row_number",
-        ignoreDuplicates: false,
-      });
-      if (inserted.error) throw inserted.error;
-    }
-    if (!(await verifyImportedRosterSelection(supabase, event.id, reservedImport.id, selectedRows, selectedRows.length, preview.sourceSystem === "cachan_ticketing"))) throw conflict("l'import n'a pas produit toutes les lignes attendues.");
-    const completeProof = await verifyImportedRosterCompleteness(supabase, event.id, reservedImport.id, eligibleRows, eligibleRows.length, preview.sourceSystem === "cachan_ticketing");
-    const confirmed = await supabase.from("spogomi_roster_imports").update({ status: "confirmed", source_proof_status: completeProof ? "complete" : "incomplete", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token).select("id").maybeSingle();
-    if (confirmed.error) throw confirmed.error;
-    if (!confirmed.data) throw conflict("la confirmation de l'import a été reprise par une autre opération.");
-    return { importId: reservedImport.id, importedRows: participantRows.length, alreadyImported: false };
-  } catch (error) {
-    await supabase.from("spogomi_roster_imports").update({ status: "failed_recoverable", processing_token: null, processing_started_at: null }).eq("id", reservedImport.id).eq("processing_token", token);
-    throw error instanceof Error && error.message.startsWith("Conflict:") ? error : new Error("Conflict: import non finalisé, reprise possible avec le même fichier et la même correspondance.");
-  }
+  await claimRosterImport({ supabase, imported: reservedImport, preview, eligibleRows, token, ownsInitialReservation });
+  const participantRows = participantRowsForImport(preview, event.id, reservedImport.id, selectedRows);
+  return persistConfirmedRosterImport({ supabase, event, preview, reservedImport, selectedRows, eligibleRows, participantRows, token });
 }
 
 export type SpogomiTeamCompositionPreview = {

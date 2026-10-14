@@ -349,6 +349,16 @@ describe("SPOGOMI preparation", () => {
     expect(preview.rows).toHaveLength(0);
   });
 
+  it("retains ticket diagnostics when a normalized row exceeds a bounded field limit", async () => {
+    const longName = "N".repeat(161);
+    const preview = await previewRosterFile(new File([
+      `N. Billet;Statut du billet;Supprimé;Nom\nTICKET-LONG;Payé;0;${longName}\n`,
+    ], "bounded-fields.csv", { type: "text/csv" }));
+    expect(preview.errors).toEqual([{ rowNumber: 2, code: "name_too_long", message: "Le nom du participant est trop long." }]);
+    expect(preview.rows).toEqual([]);
+    expect(preview.sourceSystem).toBe("cachan_ticketing");
+  });
+
   it("checks ZIP expansion metadata before inflation", () => {
     const bytes = zipSync({ "xl/workbook.xml": new TextEncoder().encode("<workbook />") });
     const centralSignature = [0x50, 0x4b, 0x01, 0x02];
