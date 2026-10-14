@@ -237,4 +237,64 @@ describe("POST /api/chat — publication et canaux", () => {
     expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
     expect(reserveDiscussionMessageSlotMock).not.toHaveBeenCalled();
   }, 15000);
+
+  it("converts asynchronous processing failures into a controlled server response", async () => {
+    const actionId = "66666666-6666-4666-8666-666666666666";
+    const internalMessage = "sensitive asynchronous database failure";
+    const internalStackLine = "at internalChatProcessor (server-secret.ts:42:7)";
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: null,
+        role_label: "member",
+        metadata: null,
+      },
+      messages: [],
+      actionConversation: { id: "conversation-async-error", action_id: actionId },
+      insertedMessage: {
+        id: "unused",
+        created_at: "2026-05-01T11:30:00.000Z",
+        content: "unused",
+        channel_type: "action",
+        sender_id: "user-1",
+        recipient_id: null,
+        arrondissement_id: null,
+        zone_name: null,
+      },
+    });
+    resolveActionDiscussionAccessMock.mockRejectedValue(
+      new Error(`${internalMessage}\n${internalStackLine}`),
+    );
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue({
+      ...supabaseMock.serviceSupabase,
+      from: supabaseMock.supabase.from,
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType: "action",
+          actionId,
+          content: "Je participe",
+        }),
+      }),
+    );
+    const responseText = await response.text();
+
+    expect(response.status).toBe(500);
+    expect(responseText).not.toContain(internalMessage);
+    expect(responseText).not.toContain(internalStackLine);
+    expect(JSON.parse(responseText)).toEqual(
+      expect.objectContaining({
+        error: "Une erreur est survenue de notre côté. Réessayez dans quelques instants.",
+        status: "error",
+      }),
+    );
+  }, 15000);
 });

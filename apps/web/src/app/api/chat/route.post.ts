@@ -88,7 +88,7 @@ export async function POST(request: Request) {
   const supabase = supabaseResult;
 
   try {
-    return processValidatedChatPost({ supabase, userId, identity, validated: { data: parsedData, topicId, messageKind, isExternalActionShare } });
+    return await processValidatedChatPost({ supabase, userId, identity, validated: { data: parsedData, topicId, messageKind, isExternalActionShare } });
   } catch (error) {
     return handleApiError(error, "POST /api/chat (general)");
   }
