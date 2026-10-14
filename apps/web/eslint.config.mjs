@@ -58,6 +58,39 @@ const eslintConfig = defineConfig([
       complexity: ["warn", 55],
     },
   },
+  {
+    files: ["src/lib/learning/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/components/learn", "@/components/learn/*"],
+              message: "lib/learning must not depend on the UI learning components.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/lib/actions/**/*.{ts,tsx}"],
+    ignores: ["src/lib/actions/data-contract.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/data-contract"],
+              message: "actions internals must use direct internal contracts, not the public data-contract facade.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

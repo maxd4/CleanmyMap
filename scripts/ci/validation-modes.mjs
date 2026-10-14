@@ -101,6 +101,17 @@ function isSemgrepRelevantFile(file) {
   );
 }
 
+function isArchitectureImportRelevantFile(file) {
+  const normalized = normalizePath(file);
+  return normalized.startsWith("apps/web/src/")
+    || normalized.startsWith("apps/mobile/")
+    || normalized === "apps/web/eslint.config.mjs"
+    || normalized === "scripts/checks/architecture-import-boundary-baseline.json"
+    || normalized === "scripts/checks/check-architecture-import-boundary.mjs"
+    || normalized === "scripts/checks/architecture-import-boundary.test.mjs"
+    || normalized === "scripts/reports/generate-architecture-import-graph.mjs";
+}
+
 function isRegressionRelevantFile(file) {
   const normalized = normalizePath(file);
   return (
@@ -184,6 +195,7 @@ function addFullPlanChecks(checks) {
     ["quality:dead-code", "Ratchet dead-code Knip", npmCommand("quality:dead-code"), 60],
     ["quality:duplication", "Ratchet duplication jscpd", npmCommand("quality:duplication"), 60],
     ["quality:cycles", "Ratchet cycles GitNexus", npmCommand("quality:cycles"), 60],
+    ["architecture-import-boundary", "Graphe et frontières d'import", npmCommand("check:architecture-import-boundary"), 15],
     ["quality:mutation", "Mutation testing", npmCommand("quality:mutation"), 180],
     ["mobile:typecheck", "Typecheck mobile", npmCommand("mobile:typecheck"), 30],
     ["mobile:test", "Vitest mobile complet", npmCommand("mobile:test"), 60],
@@ -237,6 +249,7 @@ export function createModeValidationPlan({
   const mobileRelevant = files.some(isMobileRelevantFile);
   const lockfileRelevant = files.some(isLockfileRelevantFile);
   const dependencyGraphRelevant = files.some(isDependencyGraphRelevantFile);
+  const architectureImportRelevant = files.some(isArchitectureImportRelevantFile);
   const deadCodeRelevant =
     webRuntimeRelevant ||
     scriptsRelevant ||
@@ -345,6 +358,16 @@ export function createModeValidationPlan({
       normalizedScope === "STAGED" ? ["--", "--staged-only"] : [],
     ),
   });
+
+  if (architectureImportRelevant) {
+    addCheck(checks, {
+      id: "architecture-import-boundary",
+      label: "Graphe et frontières d'import",
+      estimatedSeconds: 15,
+      critical: true,
+      command: npmCommand("check:architecture-import-boundary"),
+    });
+  }
 
   if (docsRelevant) {
     addCheck(checks, {

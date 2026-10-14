@@ -30,11 +30,17 @@ test("DEVELOPMENT Web changes stay targeted without automatic quality ratchets",
   assert.ok(ids(plan).includes("typecheck"));
   assert.ok(ids(plan).includes("lint-targeted"));
   assert.ok(ids(plan).includes("vitest-targeted"));
+  assert.ok(ids(plan).includes("architecture-import-boundary"));
   for (const id of ["quality:top-heavy", "quality:complexity", "quality:dead-code", "quality:duplication", "quality:cycles"]) {
     assert.equal(ids(plan).includes(id), false, `${id} must remain FULL-only in DEVELOPMENT`);
   }
   assert.ok(!ids(plan).includes("test:coverage"));
   assert.ok(!ids(plan).includes("build"));
+});
+
+test("DEVELOPMENT Mobile changes include the shared architecture import boundary", () => {
+  const plan = createModeValidationPlan({ mode: "FAST", changedFiles: ["apps/mobile/screens/account.tsx"] });
+  assert.ok(ids(plan).includes("architecture-import-boundary"));
 });
 
 test("DEVELOPMENT script changes never fan out to the complete script suite", () => {
