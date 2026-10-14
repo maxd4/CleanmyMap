@@ -15,7 +15,7 @@ import {
 } from "../checks/duplication-policy.mjs";
 
 export const MODULE_TEST_METRICS_SCHEMA_VERSION = 1;
-export const MODULE_TEST_METRICS_OUTPUT = "reports/quality/module-test-metrics.json";
+export const MODULE_TEST_METRICS_OUTPUT = "documentation/operations/audits/module-test-metrics.json";
 const SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]);
 const COVERAGE_METRICS = ["lines", "functions", "branches", "statements"];
 const SOURCE_ROOTS = ["apps/web/src", "apps/mobile", "scripts"];
