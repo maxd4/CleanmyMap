@@ -1,15 +1,16 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sourceSha": "171cec4104cbd3d70fa74e8b419b57b3f8fd9005",
-  "timestamp": "2026-10-14T18:04:15.936Z",
+  "timestamp": "2026-10-14T19:24:17.840Z",
   "methodology": {
     "source": "git-tracked-source-at-sourceSha",
     "physicalLines": "UTF-8 lines after CRLF normalization; trailing split line retained, matching repository quality measurement.",
     "runtimeFiles": "tracked source files under apps/web/src, apps/mobile and scripts, excluding tests and generated files",
     "testFiles": "tracked files identified by tests/__tests__ paths or .test/.spec filename markers",
     "directAssociation": "same-stem test beside the runtime file or a test import resolving directly to the runtime file; absence is not a coverage claim",
-    "coverageTruth": "coverage-summary.json grouped by the discovered domain; status is attested only when the corresponding command was executed for this report",
-    "testDuplication": "raw jscpd test-scope clone pairs; pairedLines is the sum of both occurrences and is not a deduplicated line count",
+    "coverageTruth": "coverage-summary.json grouped by the discovered domain; AVAILABLE requires canonical Web evidence for the audited sourceSha, a clean checkout and a PASS execution status; other summaries remain PRESENT_NOT_ATTESTED observations",
+    "testDuplication": "raw jscpd test-scope clone pairs measured from the checkout; the report records working-tree provenance and does not attribute the observation to sourceSha unless the checkout is clean at that SHA",
+    "provenance": "structural metrics are read from the exact Git tree at sourceSha; coverage and jscpd are checkout observations and are attested only when their candidate evidence matches sourceSha",
     "noThresholdIntroduced": true
   },
   "discovery": {
@@ -80,58 +81,70 @@
     "domainAssignment": "current repository path organization with semantic path rules for web and top-level module rules for mobile/scripts"
   },
   "totals": {
-    "runtimeFiles": 2352,
-    "runtimeLines": 337213,
-    "testFiles": 1309,
-    "testLines": 156028,
+    "runtimeFiles": 2353,
+    "runtimeLines": 337330,
+    "testFiles": 1308,
+    "testLines": 155911,
     "testRuntimeRatio": {
-      "files": 0.5565,
-      "lines": 0.4627
+      "files": 0.5559,
+      "lines": 0.4622
     }
   },
   "execution": {
-    "webTests": "PASS",
-    "mobileTests": "PASS",
+    "webTests": "NOT_RUN",
+    "mobileTests": "NOT_RUN",
     "webCoverage": {
-      "execution": "PASS",
-      "ratchet": "FAIL"
+      "execution": "NOT_RUN",
+      "ratchet": "NOT_RUN",
+      "status": "PRESENT_NOT_ATTESTED",
+      "attestation": "NOT_ATTESTED",
+      "sourceSha": "cbbd3832a3e405bb1726dc206531e64d508bf10d",
+      "reason": "COVERAGE_EXECUTION_NOT_ATTESTED"
     },
     "mobileCoverage": {
-      "execution": "PASS",
-      "ratchet": "PASS"
+      "execution": "NOT_RUN",
+      "ratchet": "NOT_RUN",
+      "status": "PRESENT_NOT_ATTESTED",
+      "attestation": "NOT_ATTESTED",
+      "sourceSha": null,
+      "reason": "NO_CANONICAL_MOBILE_COVERAGE_ATTESTATION"
     },
     "duplication": {
-      "policy": "FAIL",
-      "reason": "duplication justifications malformed: entry 370 targets an unknown native fingerprint or CURRENT fingerprint."
+      "policy": "NOT_ATTESTED",
+      "reason": "OBSERVATIONS_NOT_PROVEN_FOR_AUDITED_SHA"
     },
-    "testFilesModified": false
+    "testFilesModified": "NOT_ATTESTED"
   },
   "duplication": {
     "tests": {
-      "status": "AVAILABLE",
+      "status": "AVAILABLE_NOT_ATTESTED",
+      "attestation": "NOT_ATTESTED",
+      "observedSha": "29b3573cabff45a3b4e57543b945b1a9327c339d",
+      "provenance": "working-tree",
+      "provenanceReason": "JSCPD_OBSERVED_ON_DIFFERENT_SHA",
       "metrics": {
-        "files": 1189,
-        "lines": 137221,
-        "tokens": 857556,
-        "clones": 327,
-        "duplicatedLines": 3367,
-        "duplicatedTokens": 21044,
-        "percentage": 2.4537060653981535,
-        "percentageTokens": 2.4539505291782695,
-        "newClones": 48
+        "files": 1196,
+        "lines": 138248,
+        "tokens": 866839,
+        "clones": 332,
+        "duplicatedLines": 3415,
+        "duplicatedTokens": 21374,
+        "percentage": 2.4701984838840345,
+        "percentageTokens": 2.465740466222678,
+        "newClones": 53
       },
       "comparison": {
         "status": "FAIL",
         "failures": [
-          "new clone fingerprints detected (48)",
-          "duplicatedLines exceeded grace (344 > 150)",
-          "duplicatedTokens exceeded grace (2706 > 1500)"
+          "new clone fingerprints detected (53)",
+          "duplicatedLines exceeded grace (392 > 150)",
+          "duplicatedTokens exceeded grace (3036 > 1500)"
         ],
         "deltas": {
-          "duplicatedLines": 344,
-          "duplicatedTokens": 2706,
-          "linePercentagePoints": 0.05230796395636131,
-          "tokenPercentagePoints": 0.05953063217305696
+          "duplicatedLines": 392,
+          "duplicatedTokens": 3036,
+          "linePercentagePoints": 0.06880038244224222,
+          "tokenPercentagePoints": 0.07132056921746559
         }
       },
       "clonePairsByDomain": {
@@ -148,8 +161,8 @@
           ]
         },
         "actions": {
-          "clonePairs": 98,
-          "pairedLines": 2217,
+          "clonePairs": 101,
+          "pairedLines": 2262,
           "testFiles": [
             "apps/web/src/app/(app)/actions/map/page-client.test.tsx",
             "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.test.ts",
@@ -175,6 +188,7 @@
             "apps/web/src/app/api/actions/route.submit.roles.test.ts",
             "apps/web/src/app/api/actions/route.submit.test.ts",
             "apps/web/src/app/api/actions/route.test.ts",
+            "apps/web/src/app/api/mobile/actions/[actionId]/review/route.test.ts",
             "apps/web/src/app/api/mobile/actions/[actionId]/route.test.ts",
             "apps/web/src/app/api/mobile/actions/route.test.ts",
             "apps/web/src/components/actions/action-declaration/before/form-logic.test.ts",
@@ -206,8 +220,8 @@
           ]
         },
         "api": {
-          "clonePairs": 85,
-          "pairedLines": 1823,
+          "clonePairs": 87,
+          "pairedLines": 1883,
           "testFiles": [
             "apps/web/src/app/api/admin/creator-inbox/route.test.ts",
             "apps/web/src/app/api/admin/environmental-impact/route.test.ts",
@@ -482,7 +496,7 @@
         "lines": 0.2048
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 42,
         "metrics": {
           "lines": {
@@ -554,34 +568,34 @@
         "lines": 0.1603
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 472,
         "metrics": {
           "lines": {
             "total": 12800,
-            "covered": 9186,
-            "pct": 71.77
+            "covered": 9207,
+            "pct": 71.93
           },
           "functions": {
             "total": 3461,
-            "covered": 2424,
-            "pct": 70.04
+            "covered": 2431,
+            "pct": 70.24
           },
           "branches": {
             "total": 15396,
-            "covered": 9632,
-            "pct": 62.56
+            "covered": 9654,
+            "pct": 62.7
           },
           "statements": {
             "total": 13806,
-            "covered": 9668,
-            "pct": 70.03
+            "covered": 9690,
+            "pct": 70.19
           }
         }
       },
       "testDuplication": {
-        "clonePairs": 98,
-        "pairedLines": 2217,
+        "clonePairs": 101,
+        "pairedLines": 2262,
         "testFiles": [
           "apps/web/src/app/(app)/actions/map/page-client.test.tsx",
           "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.test.ts",
@@ -607,6 +621,7 @@
           "apps/web/src/app/api/actions/route.submit.roles.test.ts",
           "apps/web/src/app/api/actions/route.submit.test.ts",
           "apps/web/src/app/api/actions/route.test.ts",
+          "apps/web/src/app/api/mobile/actions/[actionId]/review/route.test.ts",
           "apps/web/src/app/api/mobile/actions/[actionId]/route.test.ts",
           "apps/web/src/app/api/mobile/actions/route.test.ts",
           "apps/web/src/components/actions/action-declaration/before/form-logic.test.ts",
@@ -639,12 +654,12 @@
       }
     },
     "api": {
-      "runtimeFiles": 101,
-      "runtimeLines": 14233,
-      "testFiles": 45,
-      "testLines": 5439,
+      "runtimeFiles": 102,
+      "runtimeLines": 14350,
+      "testFiles": 44,
+      "testLines": 5203,
       "runtimeFilesWithoutDirectTest": 34,
-      "runtimeFilesWithDirectTest": 67,
+      "runtimeFilesWithDirectTest": 68,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
         "apps/web/src/app/api/admin/creator-inbox/route.feedback.ts",
@@ -668,38 +683,38 @@
         "apps/web/src/app/api/community/funnel.csv/route.ts"
       ],
       "testRuntimeRatio": {
-        "files": 0.4455,
-        "lines": 0.3821
+        "files": 0.4314,
+        "lines": 0.3626
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 113,
         "metrics": {
           "lines": {
             "total": 3732,
-            "covered": 3066,
-            "pct": 82.15
+            "covered": 3107,
+            "pct": 83.25
           },
           "functions": {
             "total": 742,
-            "covered": 666,
-            "pct": 89.76
+            "covered": 674,
+            "pct": 90.84
           },
           "branches": {
             "total": 2785,
-            "covered": 2022,
-            "pct": 72.6
+            "covered": 2033,
+            "pct": 73
           },
           "statements": {
             "total": 4055,
-            "covered": 3280,
-            "pct": 80.89
+            "covered": 3323,
+            "pct": 81.95
           }
         }
       },
       "testDuplication": {
-        "clonePairs": 85,
-        "pairedLines": 1823,
+        "clonePairs": 87,
+        "pairedLines": 1883,
         "testFiles": [
           "apps/web/src/app/api/admin/creator-inbox/route.test.ts",
           "apps/web/src/app/api/admin/environmental-impact/route.test.ts",
@@ -776,7 +791,7 @@
         "lines": 0.4629
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 40,
         "metrics": {
           "lines": {
@@ -814,7 +829,7 @@
       "runtimeFiles": 0,
       "runtimeLines": 0,
       "testFiles": 521,
-      "testLines": 86828,
+      "testLines": 86947,
       "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [],
@@ -882,7 +897,7 @@
         "lines": 0.4887
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 1,
         "metrics": {
           "lines": {
@@ -947,7 +962,7 @@
         "lines": 0.0731
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 97,
         "metrics": {
           "lines": {
@@ -1009,7 +1024,7 @@
         "lines": 0.1633
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 38,
         "metrics": {
           "lines": {
@@ -1061,7 +1076,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 1,
         "metrics": {
           "lines": {
@@ -1107,7 +1122,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 1,
         "metrics": {
           "lines": {
@@ -1179,7 +1194,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 2,
         "metrics": {
           "lines": {
@@ -1225,7 +1240,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 1,
         "metrics": {
           "lines": {
@@ -1278,7 +1293,7 @@
         "lines": 0.0998
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 10,
         "metrics": {
           "lines": {
@@ -1348,7 +1363,7 @@
         "lines": 0.7817
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 15,
         "metrics": {
           "lines": {
@@ -1392,7 +1407,7 @@
         "lines": 1.3684
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 1,
         "metrics": {
           "lines": {
@@ -1436,7 +1451,7 @@
         "lines": null
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 3,
         "metrics": {
           "lines": {
@@ -1489,7 +1504,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 2,
         "metrics": {
           "lines": {
@@ -1558,7 +1573,7 @@
         "lines": 0.8864
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 1,
         "metrics": {
           "lines": {
@@ -1623,28 +1638,28 @@
         "lines": 0.188
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 74,
         "metrics": {
           "lines": {
             "total": 1702,
-            "covered": 1181,
-            "pct": 69.39
+            "covered": 1189,
+            "pct": 69.86
           },
           "functions": {
             "total": 574,
-            "covered": 378,
-            "pct": 65.85
+            "covered": 384,
+            "pct": 66.9
           },
           "branches": {
             "total": 1553,
-            "covered": 820,
-            "pct": 52.8
+            "covered": 834,
+            "pct": 53.7
           },
           "statements": {
             "total": 1814,
-            "covered": 1244,
-            "pct": 68.58
+            "covered": 1252,
+            "pct": 69.02
           }
         }
       },
@@ -2052,28 +2067,28 @@
         "lines": 0.2548
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 91,
         "metrics": {
           "lines": {
             "total": 3166,
-            "covered": 1560,
-            "pct": 49.27
+            "covered": 2099,
+            "pct": 66.3
           },
           "functions": {
             "total": 1023,
-            "covered": 483,
-            "pct": 47.21
+            "covered": 565,
+            "pct": 55.23
           },
           "branches": {
             "total": 3966,
-            "covered": 1656,
-            "pct": 41.75
+            "covered": 1931,
+            "pct": 48.69
           },
           "statements": {
             "total": 4265,
-            "covered": 1864,
-            "pct": 43.7
+            "covered": 2432,
+            "pct": 57.02
           }
         }
       },
@@ -2149,7 +2164,7 @@
         "lines": 0.2033
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 22,
         "metrics": {
           "lines": {
@@ -2220,7 +2235,7 @@
         "lines": 0.0915
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 587,
         "metrics": {
           "lines": {
@@ -2286,7 +2301,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 1,
         "metrics": {
           "lines": {
@@ -2333,7 +2348,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 2,
         "metrics": {
           "lines": {
@@ -2377,7 +2392,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 1,
         "metrics": {
           "lines": {
@@ -2423,7 +2438,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 1,
         "metrics": {
           "lines": {
@@ -2459,11 +2474,12 @@
       "runtimeLines": 75501,
       "testFiles": 253,
       "testLines": 21041,
-      "runtimeFilesWithoutDirectTest": 192,
-      "runtimeFilesWithDirectTest": 315,
+      "runtimeFilesWithoutDirectTest": 194,
+      "runtimeFilesWithDirectTest": 313,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/lib/accueil/public-landing-action-summary.ts",
         "apps/web/src/lib/admin/admin-dashboard-types.ts",
+        "apps/web/src/lib/admin/audit/email-test-audit.ts",
         "apps/web/src/lib/admin/moderation/action-moderation-measurements.ts",
         "apps/web/src/lib/admin/moderation/legal-content-moderation.ts",
         "apps/web/src/lib/admin/moderation/transition.ts",
@@ -2480,36 +2496,35 @@
         "apps/web/src/lib/community/engagement/shared.ts",
         "apps/web/src/lib/community/engagement/types.ts",
         "apps/web/src/lib/community/report-events.ts",
-        "apps/web/src/lib/dashboard/page-data.ts",
-        "apps/web/src/lib/data/number-normalization.ts"
+        "apps/web/src/lib/dashboard/page-data.ts"
       ],
       "testRuntimeRatio": {
         "files": 0.499,
         "lines": 0.2787
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 499,
         "metrics": {
           "lines": {
             "total": 15050,
-            "covered": 11517,
-            "pct": 76.52
+            "covered": 11524,
+            "pct": 76.57
           },
           "functions": {
             "total": 4355,
-            "covered": 3522,
-            "pct": 80.87
+            "covered": 3523,
+            "pct": 80.9
           },
           "branches": {
             "total": 14915,
-            "covered": 9686,
-            "pct": 64.94
+            "covered": 9691,
+            "pct": 64.97
           },
           "statements": {
             "total": 16123,
-            "covered": 12118,
-            "pct": 75.16
+            "covered": 12125,
+            "pct": 75.2
           }
         }
       },
@@ -2580,7 +2595,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 1,
         "metrics": {
           "lines": {
@@ -2627,7 +2642,7 @@
         "lines": 0
       },
       "coverage": {
-        "status": "AVAILABLE",
+        "status": "PRESENT_NOT_ATTESTED",
         "files": 1,
         "metrics": {
           "lines": {

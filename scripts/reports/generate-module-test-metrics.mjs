@@ -13,8 +13,10 @@ import {
   readJscpdMetrics,
   readJscpdOccurrences,
 } from "../checks/duplication-policy.mjs";
+import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
+import { createGitRepositoryView } from "../checks/repository-view.mjs";
 
-export const MODULE_TEST_METRICS_SCHEMA_VERSION = 1;
+export const MODULE_TEST_METRICS_SCHEMA_VERSION = 2;
 export const MODULE_TEST_METRICS_OUTPUT = "documentation/operations/audits/module-test-metrics.json";
 const SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]);
 const COVERAGE_METRICS = ["lines", "functions", "branches", "statements"];
@@ -35,7 +37,7 @@ function isIgnored(file) {
 
 function isTestFile(file) {
   const normalized = normalize(file);
-  return /(?:^|\/)(?:__tests__|tests?)(?:\/|$)|\.(?:test|spec)(?:\.[^.]+)*\.(?:js|jsx|ts|tsx|mjs|cjs)$/i.test(normalized);
+  return /(?:^|\/)(?:__tests__|tests)(?:\/|$)|\.(?:test|spec)(?:\.[^.]+)*\.(?:js|jsx|ts|tsx|mjs|cjs)$/i.test(normalized);
 }
 
 function isGeneratedFile(file, content) {
@@ -89,9 +91,8 @@ function sourceDomain(file) {
   return "other";
 }
 
-function listTrackedSourceFiles(root, sourceSha) {
-  const output = git(["ls-tree", "-r", "--name-only", sourceSha, "--", ...SOURCE_ROOTS], root);
-  return output.split(/\r?\n/).map(normalize).filter((file) => {
+function listTrackedSourceFiles(sourceView) {
+  return sourceView.listFiles().map(normalize).filter((file) => {
     if (!file || isIgnored(file) || !SOURCE_EXTENSIONS.has(path.posix.extname(file))) return false;
     return SOURCE_ROOTS.some((sourceRoot) => file === sourceRoot || file.startsWith(`${sourceRoot}/`));
   });
@@ -115,10 +116,10 @@ function importSpecifiers(content) {
   return [...matches].map((match) => match[1]);
 }
 
-function readSourceFiles(root, sourceSha, files) {
+function readSourceFiles(sourceView, files) {
   const records = new Map();
   for (const file of files) {
-    const content = fs.readFileSync(path.join(root, ...file.split("/")), "utf8");
+    const content = sourceView.readText(file);
     const generated = isGeneratedFile(file, content);
     records.set(file, {
       file,
@@ -188,16 +189,83 @@ function normalizeCoverageFile(file, scope) {
   return normalized;
 }
 
-function readCoverage(root, scope, status) {
-  const summaryPath = path.join(root, scope === "web" ? "apps/web/coverage/coverage-summary.json" : "apps/mobile/coverage/coverage-summary.json");
-  if (!fs.existsSync(summaryPath)) return { status: "NOT_RUN", summaryPath: normalize(path.relative(root, summaryPath)), files: 0, metrics: null };
-  let summary;
+function readJson(file) {
   try {
-    summary = JSON.parse(fs.readFileSync(summaryPath, "utf8"));
+    return JSON.parse(fs.readFileSync(file, "utf8"));
   } catch {
-    return { status: "INVALID", summaryPath: normalize(path.relative(root, summaryPath)), files: 0, metrics: null };
+    return null;
   }
-  return { status, summaryPath: normalize(path.relative(root, summaryPath)), summary };
+}
+
+function readCoverage(root, scope, requestedStatus, auditedSha) {
+  const summaryPath = path.join(root, scope === "web" ? "apps/web/coverage/coverage-summary.json" : "apps/mobile/coverage/coverage-summary.json");
+  const relativeSummaryPath = normalize(path.relative(root, summaryPath));
+  if (!fs.existsSync(summaryPath)) {
+    return {
+      status: "NOT_RUN",
+      executionStatus: requestedStatus,
+      attestationStatus: "NOT_ATTESTED",
+      sourceSha: null,
+      reason: "COVERAGE_SUMMARY_MISSING",
+      summaryPath: relativeSummaryPath,
+      files: 0,
+      metrics: null,
+    };
+  }
+
+  const summary = readJson(summaryPath);
+  if (!summary) {
+    return {
+      status: "INVALID",
+      executionStatus: requestedStatus,
+      attestationStatus: "NOT_ATTESTED",
+      sourceSha: null,
+      reason: "COVERAGE_SUMMARY_INVALID",
+      summaryPath: relativeSummaryPath,
+      files: 0,
+      metrics: null,
+    };
+  }
+
+  const evidencePath = path.join(root, scope === "web" ? "apps/web/coverage/coverage-evidence.json" : "apps/mobile/coverage/coverage-evidence.json");
+  const evidence = readJson(evidencePath);
+  const evidenceSourceSha = evidence?.gitHead ?? evidence?.candidateSha ?? null;
+  const currentHead = git(["rev-parse", "HEAD"], root);
+  const worktreeClean = git(["status", "--short"], root).length === 0;
+  let attestationStatus = "NOT_ATTESTED";
+  let reason = "COVERAGE_EVIDENCE_MISSING";
+
+  if (scope !== "web") {
+    reason = "NO_CANONICAL_MOBILE_COVERAGE_ATTESTATION";
+  } else if (requestedStatus !== "PASS") {
+    reason = "COVERAGE_EXECUTION_NOT_ATTESTED";
+  } else if (auditedSha !== currentHead) {
+    reason = "AUDITED_SHA_IS_NOT_CURRENT_HEAD";
+  } else if (!worktreeClean) {
+    reason = "WORKTREE_NOT_CLEAN";
+  } else if (!evidence) {
+    reason = "COVERAGE_EVIDENCE_MISSING";
+  } else if (evidenceSourceSha !== auditedSha) {
+    reason = "COVERAGE_EVIDENCE_SHA_MISMATCH";
+  } else {
+    try {
+      validateCoverageEvidence({ repositoryRoot: root });
+      attestationStatus = "ATTESTED";
+      reason = null;
+    } catch {
+      reason = "COVERAGE_EVIDENCE_INVALID_OR_INCOHERENT";
+    }
+  }
+
+  return {
+    status: attestationStatus === "ATTESTED" ? "AVAILABLE" : "PRESENT_NOT_ATTESTED",
+    executionStatus: requestedStatus,
+    attestationStatus,
+    sourceSha: evidenceSourceSha,
+    reason,
+    summaryPath: relativeSummaryPath,
+    summary,
+  };
 }
 
 function coverageByDomain(root, scope, coverage, runtimeRecords) {
@@ -217,17 +285,38 @@ function coverageByDomain(root, scope, coverage, runtimeRecords) {
   return result;
 }
 
-function runTestDuplication(root) {
+function runTestDuplication(root, auditedSha) {
   const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-module-test-metrics-"));
   try {
+    const observedSha = git(["rev-parse", "HEAD"], root);
+    const worktreeClean = git(["status", "--short"], root).length === 0;
+    const attestationStatus = observedSha === auditedSha && worktreeClean ? "ATTESTED" : "NOT_ATTESTED";
+    const provenanceReason = attestationStatus === "ATTESTED"
+      ? null
+      : observedSha !== auditedSha
+        ? "JSCPD_OBSERVED_ON_DIFFERENT_SHA"
+        : "JSCPD_OBSERVED_ON_DIRTY_WORKTREE";
     const runner = path.join(root, "node_modules", "jscpd", "run-jscpd.js");
     const nativeBaseline = path.join(root, "scripts/checks/duplication-tests-baseline.json");
     const metricsBaseline = path.join(root, "scripts/checks/duplication-metrics-baseline.json");
-    if (!fs.existsSync(runner)) return { status: "NOT_AVAILABLE", reason: "jscpd 5.3.0 is not installed." };
+    if (!fs.existsSync(runner)) return {
+      status: "NOT_AVAILABLE",
+      attestationStatus,
+      observedSha,
+      provenance: "working-tree",
+      reason: "jscpd 5.3.0 is not installed.",
+    };
     const result = spawnSync(process.execPath, [runner, ...buildJscpdArguments("tests", nativeBaseline, outputDirectory, "json,sarif")], { cwd: root, encoding: "utf8", windowsHide: true });
     const jsonPath = path.join(outputDirectory, "jscpd-report.json");
     const sarifPath = path.join(outputDirectory, "jscpd-report.sarif");
-    if (!fs.existsSync(jsonPath) || !fs.existsSync(sarifPath)) return { status: "INVALID", reason: "jscpd did not produce both reports." };
+    if (!fs.existsSync(jsonPath) || !fs.existsSync(sarifPath)) return {
+      status: "INVALID",
+      attestationStatus,
+      observedSha,
+      provenance: "working-tree",
+      provenanceReason,
+      reason: "jscpd did not produce both reports.",
+    };
     const report = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
     const sarif = JSON.parse(fs.readFileSync(sarifPath, "utf8"));
     const metrics = readJscpdMetrics(report);
@@ -236,6 +325,10 @@ function runTestDuplication(root) {
     const baselineData = JSON.parse(fs.readFileSync(metricsBaseline, "utf8"));
     return {
       status: result.status === 0 ? "AVAILABLE" : "AVAILABLE_WITH_TOOL_FAILURE",
+      attestationStatus,
+      observedSha,
+      provenance: "working-tree",
+      provenanceReason,
       metrics,
       fingerprints: [...fingerprints].sort(),
       occurrences,
@@ -243,7 +336,12 @@ function runTestDuplication(root) {
       toolExitCode: result.status,
     };
   } catch (error) {
-    return { status: "INVALID", reason: error instanceof Error ? error.message : String(error) };
+    return {
+      status: "INVALID",
+      attestationStatus: "NOT_ATTESTED",
+      provenance: "working-tree",
+      reason: error instanceof Error ? error.message : String(error),
+    };
   } finally {
     fs.rmSync(outputDirectory, { recursive: true, force: true });
   }
@@ -285,10 +383,11 @@ function parseOption(args, name, fallback) {
   return args.find((arg) => arg.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
 }
 
-export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null, timestamp = new Date().toISOString(), webCoverageStatus = "NOT_RUN", mobileCoverageStatus = "NOT_RUN", webRatchetStatus = "NOT_RUN", mobileRatchetStatus = "NOT_RUN", duplicationPolicyStatus = "NOT_RUN", duplicationPolicyReason = null } = {}) {
+export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null, timestamp = new Date().toISOString(), webTestsStatus = "NOT_RUN", mobileTestsStatus = "NOT_RUN", webCoverageStatus = "NOT_RUN", mobileCoverageStatus = "NOT_RUN", webRatchetStatus = "NOT_RUN", mobileRatchetStatus = "NOT_RUN", duplicationPolicyStatus = "NOT_RUN", duplicationPolicyReason = null, testFilesModifiedStatus = "NOT_ATTESTED" } = {}) {
   const auditedSha = sourceSha ?? git(["rev-parse", "HEAD"], root);
-  const files = listTrackedSourceFiles(root, auditedSha);
-  const records = readSourceFiles(root, auditedSha, files);
+  const sourceView = createGitRepositoryView(auditedSha, root);
+  const files = listTrackedSourceFiles(sourceView);
+  const records = readSourceFiles(sourceView, files);
   const { associated, importedByTests } = directTestAssociations(records);
   const domains = new Map();
   for (const record of records.values()) {
@@ -317,13 +416,13 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
     domains.set(domain, entry);
   }
 
-  const webCoverage = readCoverage(root, "web", webCoverageStatus);
-  const mobileCoverage = readCoverage(root, "mobile", mobileCoverageStatus);
+  const webCoverage = readCoverage(root, "web", webCoverageStatus, auditedSha);
+  const mobileCoverage = readCoverage(root, "mobile", mobileCoverageStatus, auditedSha);
   const coverage = new Map([
     ...coverageByDomain(root, "web", webCoverage, records),
     ...coverageByDomain(root, "mobile", mobileCoverage, records),
   ]);
-  const duplication = runTestDuplication(root);
+  const duplication = runTestDuplication(root, auditedSha);
   const duplicationDomains = duplicationByDomain(duplication, records);
 
   for (const [domain, entry] of domains) {
@@ -332,7 +431,7 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
       lines: entry.runtimeLines > 0 ? Number((entry.testLines / entry.runtimeLines).toFixed(4)) : null,
     };
     entry.coverage = coverage.get(domain) ? {
-      status: coverage.get(domain).files > 0 ? coverage.get(domain).status === "PASS" ? "AVAILABLE" : "PRESENT_NOT_ATTESTED" : "NOT_AVAILABLE",
+      status: coverage.get(domain).files > 0 ? coverage.get(domain).status : "NOT_AVAILABLE",
       files: coverage.get(domain).files,
       metrics: coverage.get(domain).metrics,
     } : { status: "NOT_RUN", files: 0, metrics: null };
@@ -355,8 +454,9 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
       runtimeFiles: "tracked source files under apps/web/src, apps/mobile and scripts, excluding tests and generated files",
       testFiles: "tracked files identified by tests/__tests__ paths or .test/.spec filename markers",
       directAssociation: "same-stem test beside the runtime file or a test import resolving directly to the runtime file; absence is not a coverage claim",
-      coverageTruth: "coverage-summary.json grouped by the discovered domain; status is attested only when the corresponding command was executed for this report",
-      testDuplication: "raw jscpd test-scope clone pairs; pairedLines is the sum of both occurrences and is not a deduplicated line count",
+      coverageTruth: "coverage-summary.json grouped by the discovered domain; AVAILABLE requires canonical Web evidence for the audited sourceSha, a clean checkout and a PASS execution status; other summaries remain PRESENT_NOT_ATTESTED observations",
+      testDuplication: "raw jscpd test-scope clone pairs measured from the checkout; the report records working-tree provenance and does not attribute the observation to sourceSha unless the checkout is clean at that SHA",
+      provenance: "structural metrics are read from the exact Git tree at sourceSha; coverage and jscpd are checkout observations and are attested only when their candidate evidence matches sourceSha",
       noThresholdIntroduced: true,
     },
     discovery: {
@@ -376,17 +476,40 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
       },
     },
     execution: {
-      webTests: "PASS",
-      mobileTests: "PASS",
-      webCoverage: { execution: webCoverageStatus, ratchet: webRatchetStatus },
-      mobileCoverage: { execution: mobileCoverageStatus, ratchet: mobileRatchetStatus },
+      webTests: webTestsStatus,
+      mobileTests: mobileTestsStatus,
+      webCoverage: {
+        execution: webCoverage.executionStatus,
+        ratchet: webRatchetStatus,
+        status: webCoverage.status,
+        attestation: webCoverage.attestationStatus,
+        sourceSha: webCoverage.sourceSha,
+        reason: webCoverage.reason,
+      },
+      mobileCoverage: {
+        execution: mobileCoverage.executionStatus,
+        ratchet: mobileRatchetStatus,
+        status: mobileCoverage.status,
+        attestation: mobileCoverage.attestationStatus,
+        sourceSha: mobileCoverage.sourceSha,
+        reason: mobileCoverage.reason,
+      },
       duplication: { policy: duplicationPolicyStatus, reason: duplicationPolicyReason },
-      testFilesModified: false,
+      testFilesModified: testFilesModifiedStatus,
     },
     duplication: {
       tests: duplication.status === "AVAILABLE" || duplication.status === "AVAILABLE_WITH_TOOL_FAILURE"
-        ? { status: duplication.status, metrics: duplication.metrics, comparison: duplication.comparison, clonePairsByDomain: Object.fromEntries([...duplicationDomains.entries()].sort(([left], [right]) => left.localeCompare(right))) }
-        : duplication,
+        ? {
+          status: duplication.attestationStatus === "ATTESTED" ? duplication.status : "AVAILABLE_NOT_ATTESTED",
+          attestation: duplication.attestationStatus,
+          observedSha: duplication.observedSha,
+          provenance: duplication.provenance,
+          provenanceReason: duplication.provenanceReason,
+          metrics: duplication.metrics,
+          comparison: duplication.comparison,
+          clonePairsByDomain: Object.fromEntries([...duplicationDomains.entries()].sort(([left], [right]) => left.localeCompare(right))),
+        }
+        : { ...duplication, attestation: duplication.attestationStatus ?? "NOT_ATTESTED" },
     },
     domains: Object.fromEntries([...domains.entries()].sort(([left], [right]) => left.localeCompare(right))),
   };
@@ -398,12 +521,15 @@ export function main(args = process.argv.slice(2)) {
     root,
     sourceSha: parseOption(args, "source-sha", null),
     timestamp: parseOption(args, "timestamp", new Date().toISOString()),
+    webTestsStatus: parseOption(args, "web-tests", "NOT_RUN"),
+    mobileTestsStatus: parseOption(args, "mobile-tests", "NOT_RUN"),
     webCoverageStatus: parseOption(args, "web-coverage", "NOT_RUN"),
     mobileCoverageStatus: parseOption(args, "mobile-coverage", "NOT_RUN"),
     webRatchetStatus: parseOption(args, "web-ratchet", "NOT_RUN"),
     mobileRatchetStatus: parseOption(args, "mobile-ratchet", "NOT_RUN"),
     duplicationPolicyStatus: parseOption(args, "duplication-policy", "NOT_RUN"),
     duplicationPolicyReason: parseOption(args, "duplication-reason", null),
+    testFilesModifiedStatus: parseOption(args, "test-files-modified", "NOT_ATTESTED"),
   });
   const output = path.resolve(root, parseOption(args, "output", MODULE_TEST_METRICS_OUTPUT));
   fs.mkdirSync(path.dirname(output), { recursive: true });
