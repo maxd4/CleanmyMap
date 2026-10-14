@@ -57,8 +57,12 @@ function testNameTokens(file) {
   return fileName(file).split(".").slice(0, -1).flatMap((part) => part.split("-"));
 }
 
+function hasExecutableTestMarker(file) {
+  return /\.(?:test|spec)\.(?:[cm]?[jt]sx?)$/.test(fileName(file));
+}
+
 function isTestSupportFile(file) {
-  if (isTypeScriptFile(file) && testNameIsValid(fileName(file))) return false;
+  if (hasExecutableTestMarker(file)) return false;
   const segments = normalizePath(file).split("/");
   const hasTestContext = segments.some((segment) => TEST_CONTEXT_SEGMENTS.has(segment));
   const hasSupportDirectory = segments.some((segment) => TEST_SUPPORT_SEGMENTS.has(segment));
@@ -70,9 +74,9 @@ function isTestSupportFile(file) {
 }
 
 function isTestFile(file) {
+  if (hasExecutableTestMarker(file)) return true;
   if (isTestSupportFile(file)) return false;
-  return /(^|\/)(__tests__|tests)(\/|$)/.test(file)
-    || /\.(?:test|spec)(?:\.[^.]+)*\.(?:[cm]?[jt]sx?)$/.test(fileName(file));
+  return /(^|\/)(__tests__|tests)(\/|$)/.test(file);
 }
 
 function isConfigFile(file) {

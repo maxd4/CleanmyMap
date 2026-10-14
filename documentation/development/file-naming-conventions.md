@@ -20,6 +20,12 @@ fichiers suivis par Git :
 | Configuration et documentation | classées et auditées, mais non soumises à une normalisation cosmétique dans ce lot |
 | Generated/vendor | exclus du contrôle de convention |
 
+Un marqueur terminal `.test.*` ou `.spec.*` classe d’abord le fichier
+TypeScript comme test exécutable, avant l’examen des répertoires `fixtures` ou
+`support`. Un helper tel que `route.test.helpers.ts` n’a pas ce marqueur
+terminal et reste donc un support de test ; un segment de chemin `fixtures` ou
+`support` ne peut pas reclasser une spec exécutable.
+
 Un token minuscule unique (`route.ts`, `config.ts`) est accepté comme forme
 mono-segment de `kebab-case`. Les segments composés séparés par un point ne
 sont acceptés que lorsqu’ils sont tous en `kebab-case`.

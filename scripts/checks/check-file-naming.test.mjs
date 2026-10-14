@@ -22,6 +22,8 @@ test("classifies the requested fixture categories and reserved names", () => {
   assert.equal(classifyFile("src/my-feature.test.ts"), "tests");
   assert.equal(classifyFile("src/my-feature.test.tsx"), "tests");
   assert.equal(classifyFile("src/my-feature.helpers.test.ts"), "tests");
+  assert.equal(classifyFile("e2e/fixtures/smoke-public.spec.ts"), "tests");
+  assert.equal(classifyFile("e2e/support/smoke-public.spec.ts"), "tests");
   assert.equal(classifyFile("tests/support/persistence-helper.ts"), "test support");
   assert.equal(classifyFile("__tests__/support/api-route-mocks.ts"), "test support");
   assert.equal(classifyFile("src/route.test.helpers.ts"), "test support");
@@ -87,6 +89,21 @@ test("test support is not executable while real tests keep the suffix contract",
     "tests/my-feature.spec.ts",
   ]);
   assert.deepEqual(result.map(({ path: file }) => file), ["tests/my-feature.spec.ts"]);
+});
+
+test("Playwright specs remain executable inside fixture and support directories", () => {
+  const result = findNamingViolations([
+    "e2e/fixtures/smoke-public.spec.ts",
+    "e2e/support/smoke-public.spec.ts",
+    "e2e/fixtures/route.test.helpers.ts",
+    "tests/support/persistence-helper.ts",
+    "__tests__/support/api-route-mocks.ts",
+    "src/route.test.helpers.ts",
+  ]);
+  assert.deepEqual(result, [
+    { path: "e2e/fixtures/smoke-public.spec.ts", rule: "test-suffix", observedStyle: "legacy-test-name" },
+    { path: "e2e/support/smoke-public.spec.ts", rule: "test-suffix", observedStyle: "legacy-test-name" },
+  ]);
 });
 
 test("new executable and support naming violations remain blocking", () => {
