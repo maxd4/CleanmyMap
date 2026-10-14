@@ -2715,14 +2715,6 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "b4bbade9e5bd6a9a",
-      "classification": "KEEP_INTENTIONAL",
-      "reason": "La lecture d'identité est répétée dans deux handlers de profil qui exposent des contrats distincts ; conserver la garde locale rend explicite la frontière serveur de chaque route.",
-      "evidence": "app/api/account/active-profile/route.ts:38-47 et app/api/account/activity-status/route.ts:12-21 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
-    },
-    {
-      "scope": "runtime",
       "fingerprint": "8a354b26a79cc9b6",
       "classification": "NO_ACTION_NOISE",
       "reason": "Deux branches du handler de consolidation construisent des réponses d'erreur avec des statuts différents ; leur fusion n'apporterait aucun owner commun.",
