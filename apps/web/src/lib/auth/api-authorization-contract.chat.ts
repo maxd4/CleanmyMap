@@ -168,6 +168,7 @@ export const chatAuthorizationContract = {
         "sender_id",
         "recipient_id",
       ],
+      evidenceScope: "module",
     },
   },
 } as const satisfies ApiAuthorizationContract;

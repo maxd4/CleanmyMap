@@ -309,6 +309,7 @@ export const actionsAuthorizationContract = {
       dimensions: ["authentication", "business permission", "ownership"],
       actual: "requireActionRequestAccess preserves the web cookie and bounded Clerk Bearer transports before canManageAction, with canPublishPreAction keeping moderation and publication separate",
       evidence: ["requireActionRequestAccess", "canManageAction", "canPublishPreAction"],
+      evidenceScope: "module",
     },
   },
   "actions/invitations": {

@@ -110,6 +110,7 @@ export const platformAuthorizationContract = {
       dimensions: ["authentication"],
       actual: "requireAuthenticatedAccess + authenticated distributed rate limit before the bounded aggregate export; PDF requests never sign a legacy Storage path and keep the browser export flow",
       evidence: ["requireAuthenticatedAccess", "enforceServerRateLimitForAuthenticatedUser", "buildCachedPdfResponse"],
+      evidenceScope: "module",
     },
   },
   "reports/governance-monthly": {
@@ -185,6 +186,7 @@ export const platformAuthorizationContract = {
       dimensions: ["authentication", "ownership"],
       actual: "getCurrentUserIdentity current-user gate",
       evidence: ["getCurrentUserIdentity", "unauthorizedJsonResponse"],
+      evidenceScope: "module",
     },
   },
   "users/profile/handle": {
