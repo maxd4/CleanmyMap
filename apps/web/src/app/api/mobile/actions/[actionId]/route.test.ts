@@ -26,7 +26,7 @@ vi.mock("@/lib/actions/data-contract", () => ({ toPublicActionListItem: mocks.to
 vi.mock("@/lib/actions/moderation-audit", () => ({ appendActionModerationAudit: mocks.audit }));
 vi.mock("@/lib/gamification/progression-tracking", () => ({ refreshProgressionProfile: mocks.refreshProgression }));
 
-import { DELETE, POST } from "./route";
+import { DELETE, GET, POST } from "./route";
 
 const ctx = { params: Promise.resolve({ actionId: "action-1" }) };
 const req = (method: string, body?: unknown) => new Request("https://cleanmymap.test/api/mobile/actions/action-1", {
@@ -64,6 +64,30 @@ describe("/api/mobile/actions/:actionId", () => {
       targetActionId: "action-1",
       operation: "post_action_claim",
       outcome: "success",
+    }));
+  });
+
+  it("returns the private projection for a joinable action", async () => {
+    mocks.loadJoinable.mockResolvedValue([{ id: "action-1", joined: false, awaitingApproval: false }]);
+
+    const response = await GET(req("GET"), ctx);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(expect.objectContaining({
+      status: "ok",
+      action: expect.objectContaining({ id: "action-1" }),
+      canJoin: true,
+      canClaim: false,
+    }));
+    expect(mocks.loadJoinable).toHaveBeenCalledWith(expect.anything(), {
+      limit: 1,
+      userId: "user-mobile",
+      actionId: "action-1",
+    });
+    expect(mocks.loadHistory).toHaveBeenCalledWith(expect.anything(), { userId: "user-mobile", limit: 200 });
+    expect(mocks.fetchUnified).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      actionId: "action-1",
+      status: "approved",
     }));
   });
 

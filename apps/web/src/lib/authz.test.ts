@@ -1,13 +1,38 @@
 import { describe, expect, it } from "vitest";
 import { vi } from "vitest";
-import { __authz_testables, isAdminRole } from "./authz";
+import {
+  __authz_testables,
+  isAdminRole,
+  requireAdminAccess,
+  requireAuthenticatedAccess,
+} from "./authz";
 import { resolveIdentityActiveRole } from "./authz-identity";
+
+const authMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@clerk/nextjs/server", () => ({ auth: authMock, clerkClient: vi.fn() }));
 
 vi.mock("@/lib/env", () => ({
   env: { CLERK_IMU_OWNER_USER_ID: "owner" },
 }));
 
 describe("authz helpers", () => {
+  it("returns the authenticated Clerk identity through the server guard", async () => {
+    authMock.mockResolvedValue({ userId: "user-1" });
+
+    await expect(requireAuthenticatedAccess()).resolves.toEqual({ ok: true, userId: "user-1" });
+  });
+
+  it("rejects an unauthenticated admin access request", async () => {
+    authMock.mockResolvedValue({ userId: null });
+
+    await expect(requireAdminAccess()).resolves.toEqual({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
+  });
+
   it("projects dev-auth bypass roles through the canonical profile resolver", () => {
     expect(__authz_testables.resolveDevAuthBypassRole("owner", "max")).toBe("max");
     expect(__authz_testables.resolveDevAuthBypassRole("user", "admin")).toBe("admin");
