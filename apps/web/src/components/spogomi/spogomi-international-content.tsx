@@ -49,6 +49,7 @@ export function SpogomiInternationalContent({ locale, sources, news, externalEve
 
   return (
     <section className="space-y-4" aria-label="Informations internationales">
+      <div className="grid gap-4 lg:grid-cols-3">
       <CmmCard tone="indigo" variant="glass" className="space-y-5 p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <CmmIcon icon={Globe2} className="mt-1 text-indigo-700" />
@@ -74,7 +75,6 @@ export function SpogomiInternationalContent({ locale, sources, news, externalEve
         </CmmDisclosure>
       </CmmCard>
 
-      <div className="grid gap-4 lg:grid-cols-3">
         <CmmCard tone="indigo" variant="glass" className="space-y-4 p-5">
           <div className="flex items-start gap-3">
             <CmmIcon icon={Megaphone} className="mt-1 text-indigo-700" />
