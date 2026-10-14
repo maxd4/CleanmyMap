@@ -155,10 +155,8 @@ jobs:
           profile_security_sql="$(cat e2e/profile-security.sql)"
           security_02_sql="$(cat e2e/security-02-projection-revocation.sql)"
           security_03_sql="$(cat e2e/security-03-bug-report.sql)"
-          npx supabase db query --workdir apps/web --local "$preflight_sql
-          $profile_security_sql
-          $security_02_sql
-          $security_03_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
+          combined_sql="$(printf '%s\n' "$preflight_sql" "$profile_security_sql" "$security_02_sql" "$security_03_sql")"
+          npx supabase db query --workdir apps/web --local "$combined_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
 
           echo "Running SECURITY-02 PostgreSQL two-session contract"
           node e2e/security-02-two-sessions.mjs 2>&1 | tee -a artifacts/ci/supabase-preflight.log

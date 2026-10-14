@@ -77,6 +77,9 @@ assert.doesNotMatch(e2eWorkflow, /path:\s*artifacts\/playwright\b/);
 assert.match(e2eWorkflow, /stage-public-e2e-artifact\.mjs/);
 assert.match(e2eWorkflow, /check-public-e2e-artifact\.mjs/);
 assert.match(e2eWorkflow, /path:\s*artifacts\/ci-public-evidence\b/);
+assert.deepEqual(auditWorkflowContent(e2eWorkflow, ".github/workflows/e2e-supabase.yml"), []);
+assert.match(e2eWorkflow, /combined_sql="\$\(printf '%s\\n'/);
+assert.match(e2eWorkflow, /security_03_sql/);
 
 const firstPartyCodeqlJob = codeqlWorkflow.match(/  analyze-first-party-javascript:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";
 const vendoredCodeqlJob = codeqlWorkflow.match(/  analyze-vendored-javascript:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";
