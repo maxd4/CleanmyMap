@@ -83,7 +83,10 @@ export async function PATCH(request: Request) {
     return NextResponse.json({
       status: "updated",
       locationPreferences: nextLocations,
-    }, { headers: { "Cache-Control": "private, no-store" } });
+    }, {
+      // Données personnelles de localisation issues de Clerk : ne pas les stocker dans un cache partagé ou réutilisable.
+      headers: { "Cache-Control": "private, no-store" },
+    });
   } catch (error) {
     return handleApiError(error, "PATCH /api/account/locations");
   }

@@ -54,7 +54,10 @@ export async function PATCH(request: Request) {
       status: "updated",
       firstName: updatedUser.firstName,
       lastName: updatedUser.lastName,
-    }, { headers: { "Cache-Control": "private, no-store" } });
+    }, {
+      // Données personnelles issues de Clerk : ne pas les stocker dans un cache partagé ou réutilisable.
+      headers: { "Cache-Control": "private, no-store" },
+    });
   } catch (error) {
     return handleApiError(error, "PATCH /api/account/identity");
   }

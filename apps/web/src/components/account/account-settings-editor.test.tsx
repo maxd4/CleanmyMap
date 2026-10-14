@@ -27,4 +27,13 @@ describe("canonical account settings editor", () => {
     expect(source).toContain('"pending"');
     expect(source).toContain('role={state === "error" ? "alert" : "status"}');
   });
+
+  it("shows a uniqueness conflict only for HTTP 409 and distinguishes other failures", () => {
+    expect(source).toContain('response.status === 409');
+    expect(source).toContain('response.status === 400 || response.status === 422');
+    expect(source).toContain('setHandleError("unavailable")');
+    expect(source).toContain('handleError === "conflict" ? copy.handleConflict');
+    expect(source).toContain('handleError === "validation" ? copy.handleInvalid');
+    expect(source).toContain("copy.handleUnavailable");
+  });
 });

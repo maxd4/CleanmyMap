@@ -15,6 +15,7 @@ import type { Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
 
 type SaveState = "idle" | "saving" | "saved" | "pending" | "error";
+type HandleError = "validation" | "conflict" | "unavailable" | null;
 
 export type AccountSettingsInitialData = {
   firstName: string;
@@ -48,6 +49,7 @@ type Copy = {
   handle: string;
   handleHelp: string;
   handleInvalid: string;
+  handleUnavailable: string;
   handleSaved: string;
   handleConflict: string;
   publicPrivacy: string;
@@ -95,6 +97,7 @@ const COPY: Record<Locale, Copy> = {
     handle: "Handle public",
     handleHelp: "3 à 30 caractères : lettres minuscules, chiffres et underscores.",
     handleInvalid: "Le handle doit contenir 3 à 30 caractères valides.",
+    handleUnavailable: "Le handle n’a pas pu être enregistré. Réessayez lorsque le service sera disponible.",
     handleSaved: "Handle enregistré.",
     handleConflict: "Ce handle est déjà utilisé par un autre membre.",
     publicPrivacy: "Un pseudonyme masque le nom affiché, mais ne rend pas automatiquement vos contributions anonymes.",
@@ -140,6 +143,7 @@ const COPY: Record<Locale, Copy> = {
     handle: "Public handle",
     handleHelp: "3 to 30 characters: lowercase letters, numbers and underscores.",
     handleInvalid: "The handle must contain 3 to 30 valid characters.",
+    handleUnavailable: "The handle could not be saved. Try again when the service is available.",
     handleSaved: "Handle saved.",
     handleConflict: "This handle is already used by another member.",
     publicPrivacy: "A pseudonym hides the displayed name, but does not automatically make your contributions anonymous.",
@@ -204,6 +208,7 @@ export function AccountSettingsEditor({ locale, initialData }: { locale: Locale;
   const [activityStatus, setActivityStatus] = useState(initialData.activityStatus);
   const [identityState, setIdentityState] = useState<SaveState>("idle");
   const [handleState, setHandleState] = useState<SaveState>("idle");
+  const [handleError, setHandleError] = useState<HandleError>(null);
   const [modeState, setModeState] = useState<SaveState>("idle");
   const [locationState, setLocationState] = useState<{ residence: SaveState; work: SaveState }>({ residence: "idle", work: "idle" });
   const [activityState, setActivityState] = useState<SaveState>("idle");
@@ -233,9 +238,11 @@ export function AccountSettingsEditor({ locale, initialData }: { locale: Locale;
   async function saveHandle() {
     const normalized = handle.trim().toLowerCase();
     if (!/^[a-z0-9_]{3,30}$/.test(normalized) || handleState === "saving") {
+      setHandleError("validation");
       setHandleState("error");
       return;
     }
+    setHandleError(null);
     setHandleState("saving");
     try {
       const response = await fetch("/api/users/profile/handle", {
@@ -245,14 +252,20 @@ export function AccountSettingsEditor({ locale, initialData }: { locale: Locale;
       });
       const payload = await response.json().catch(() => null) as { error?: string; handle?: string } | null;
       if (!response.ok) {
-        if (response.status === 409) throw new Error("conflict");
-        throw new Error(payload?.error || "error");
+        setHandleError(response.status === 409
+          ? "conflict"
+          : response.status === 400 || response.status === 422
+            ? "validation"
+            : "unavailable");
+        setHandleState("error");
+        return;
       }
       setHandle(payload?.handle || normalized);
+      setHandleError(null);
       setHandleState("saved");
-    } catch (error) {
+    } catch {
+      setHandleError("unavailable");
       setHandleState("error");
-      if (error instanceof Error && error.message === "conflict") setHandleState("error");
     }
   }
 
@@ -329,7 +342,7 @@ export function AccountSettingsEditor({ locale, initialData }: { locale: Locale;
         </div>
         <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{copy.preview}</p><p className="mt-2 text-sm text-slate-700">{copy.fullName}: <strong>{fullNamePreview}</strong></p><p className="mt-1 text-sm text-slate-700">{copy.pseudo}: <strong>{handle}</strong></p><p className="mt-3 text-sm text-slate-700">{copy.publicPrivacy}</p></div>
         <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end"><label className="grid gap-1.5 text-sm font-semibold text-slate-800"><span>{copy.handle}</span><input value={handle} onChange={(event) => setHandle(event.target.value)} autoComplete="nickname" maxLength={30} className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-sky-500" /><span className="text-xs font-normal text-slate-500">{copy.handleHelp}</span></label><button type="button" onClick={() => void saveHandle()} disabled={handleState === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-800 hover:bg-sky-100 disabled:opacity-60"><Save className="h-4 w-4" aria-hidden="true" />{handleState === "saving" ? copy.saving : copy.save}</button></div>
-        <div className="mt-3 flex flex-wrap gap-3"><SaveStatus state={modeState} copy={copy} /><SaveStatus state={handleState} copy={{ ...copy, error: handleState === "error" && handle.length > 0 && !/^[a-z0-9_]{3,30}$/.test(handle.trim().toLowerCase()) ? copy.handleInvalid : copy.handleConflict }} /></div>
+        <div className="mt-3 flex flex-wrap gap-3"><SaveStatus state={modeState} copy={copy} /><SaveStatus state={handleState} copy={{ ...copy, saved: copy.handleSaved, error: handleError === "conflict" ? copy.handleConflict : handleError === "validation" ? copy.handleInvalid : copy.handleUnavailable }} /></div>
       </SectionCard>
 
       <SectionCard title={copy.locations} description={copy.locationsDescription}>
