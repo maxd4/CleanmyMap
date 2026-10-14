@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 export const QUALITY_EVIDENCE_SCHEMA_VERSION = 1;
 export const QUALITY_EVIDENCE_RELATIVE_ROOT = "artifacts/quality-evidence";
@@ -29,7 +30,7 @@ export function resolveCandidateSha(repositoryRoot = process.cwd(), environment 
     assertCandidateSha(configured);
     return configured;
   }
-  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  const head = execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
   assertCandidateSha(head);
   return head;
 }
@@ -37,7 +38,7 @@ export function resolveCandidateSha(repositoryRoot = process.cwd(), environment 
 export function resolveCandidateShaFromRef(repositoryRoot = process.cwd(), candidateRef = null, environment = process.env) {
   const configured = candidateRef?.trim();
   if (!configured) return resolveCandidateSha(repositoryRoot, environment);
-  const resolved = execFileSync("git", ["rev-parse", configured], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  const resolved = execFileSync(gitExecutable(), ["rev-parse", configured], { cwd: repositoryRoot, encoding: "utf8" }).trim();
   assertCandidateSha(resolved);
   return resolved;
 }
@@ -106,7 +107,7 @@ export function validateQualityEvidenceForGate({
   evidence,
   candidateSha,
   repositoryRoot = process.cwd(),
-  gitRunner = (args, cwd) => execFileSync("git", args, { cwd, stdio: "ignore" }),
+  gitRunner = (args, cwd) => execFileSync(gitExecutable(), args, { cwd, stdio: "ignore" }),
 }) {
   const failures = [];
   try {

@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { gitExecutable } from "../ci/git-executable.mjs";
 import {
   buildJscpdArguments,
   compareDuplicationMetrics,
@@ -24,15 +25,15 @@ const nativeBaselineDirectory = path.join(repositoryRoot, "scripts", "checks");
 const justificationsPath = path.join(nativeBaselineDirectory, "duplication-justifications.json");
 
 function git(args) {
-  return execFileSync("git", args, { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  return execFileSync(gitExecutable(), args, { cwd: repositoryRoot, encoding: "utf8" }).trim();
 }
 
 function assertBaselineFresh(baseline) {
   validateDuplicationMetricsBaseline(baseline);
   const head = git(["rev-parse", "HEAD"]);
   try {
-    execFileSync("git", ["cat-file", "-e", `${baseline.sourceCommit}^{commit}`], { cwd: repositoryRoot, stdio: "ignore" });
-    execFileSync("git", ["merge-base", "--is-ancestor", baseline.sourceCommit, head], { cwd: repositoryRoot, stdio: "ignore" });
+    execFileSync(gitExecutable(), ["cat-file", "-e", `${baseline.sourceCommit}^{commit}`], { cwd: repositoryRoot, stdio: "ignore" });
+    execFileSync(gitExecutable(), ["merge-base", "--is-ancestor", baseline.sourceCommit, head], { cwd: repositoryRoot, stdio: "ignore" });
   } catch {
     throw new Error(`duplication baseline stale: ${baseline.sourceCommit} is not an ancestor of ${head}.`);
   }
@@ -107,7 +108,7 @@ export function runDuplicationPolicy() {
     currentOccurrencesByScope,
     reviewedRefValidation: {
       auditedSha,
-      gitRunner: (args) => execFileSync("git", args, { cwd: repositoryRoot, stdio: "ignore" }),
+      gitRunner: (args) => execFileSync(gitExecutable(), args, { cwd: repositoryRoot, stdio: "ignore" }),
     },
   });
   const qualifiedNewFingerprints = new Set(Object.values(justificationReport.classifications).flat());

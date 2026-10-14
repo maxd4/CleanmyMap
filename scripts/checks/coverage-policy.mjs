@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 export const COVERAGE_METRICS = Object.freeze([
   "statements",
@@ -212,10 +213,10 @@ export function validateBaseline(baseline, { scope = "web" } = {}) {
 
 export function assertBaselineFresh(baseline, { currentCommit = null, scope = "web" } = {}) {
   validateBaseline(baseline, { scope });
-  const head = currentCommit ?? execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  const head = currentCommit ?? execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   try {
-    execFileSync("git", ["cat-file", "-e", `${baseline.sourceCommit}^{commit}`], { stdio: "ignore" });
-    execFileSync("git", ["merge-base", "--is-ancestor", baseline.sourceCommit, head], { stdio: "ignore" });
+    execFileSync(gitExecutable(), ["cat-file", "-e", `${baseline.sourceCommit}^{commit}`], { stdio: "ignore" });
+    execFileSync(gitExecutable(), ["merge-base", "--is-ancestor", baseline.sourceCommit, head], { stdio: "ignore" });
   } catch {
     throw new Error(`Coverage baseline is stale: ${baseline.sourceCommit} is not an ancestor of ${head}.`);
   }

@@ -2,6 +2,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 const ROOT = resolve(".");
 const SENSITIVE_PREFIXES = [
@@ -33,7 +34,7 @@ function isSensitiveTextFile(path) {
 }
 
 function listTrackedFiles() {
-  const output = execFileSync("git", ["ls-files"], {
+  const output = execFileSync(gitExecutable(), ["ls-files"], {
     cwd: ROOT,
     encoding: "utf8",
   });

@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { gitExecutable } from "./git-executable.mjs";
 import { createModeValidationPlan } from "./validation-modes.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -27,7 +28,7 @@ function missingRequiredChecks(evidence, requiredChecks) {
 }
 
 function currentSha() {
-  return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  return execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
 }
 
 function parseArgs(argv = []) {
@@ -40,7 +41,7 @@ function parseArgs(argv = []) {
 }
 
 function isClean() {
-  return execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], {
+  return execFileSync(gitExecutable(), ["status", "--porcelain", "--untracked-files=all"], {
     cwd: repositoryRoot,
     encoding: "utf8",
   }).trim() === "";
@@ -103,9 +104,9 @@ export function evaluateReleaseGate({
 
 function readCandidateProvenance(candidateSha) {
   try {
-    const origin = execFileSync("git", ["remote", "get-url", "origin"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
-    const branch = execFileSync("git", ["branch", "--show-current"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
-    const originMain = execFileSync("git", ["ls-remote", "origin", "refs/heads/main"], {
+    const origin = execFileSync(gitExecutable(), ["remote", "get-url", "origin"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+    const branch = execFileSync(gitExecutable(), ["branch", "--show-current"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+    const originMain = execFileSync(gitExecutable(), ["ls-remote", "origin", "refs/heads/main"], {
       cwd: repositoryRoot,
       encoding: "utf8",
     }).trim();

@@ -4,6 +4,7 @@ import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { gitExecutable } from "../ci/git-executable.mjs";
 import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
 
 const defaultRepoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -14,7 +15,7 @@ const generatedMarkers = [
 
 export function isGitNexusIgnored(repoRoot) {
   const result = spawnSync(
-    "git",
+    gitExecutable(),
     ["check-ignore", "--no-index", "--quiet", "--", ".gitnexus/"],
     {
       cwd: repoRoot,

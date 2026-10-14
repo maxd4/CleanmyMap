@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 const MOBILE_WORKSPACE = "apps/mobile";
 const MOBILE_SENTINELS = [
@@ -35,7 +36,7 @@ function parseArguments(argv) {
 }
 
 function runGit(repositoryRoot, argumentsList, input = undefined) {
-  return execFileSync("git", argumentsList, {
+  return execFileSync(gitExecutable(), argumentsList, {
     cwd: repositoryRoot,
     env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" },
     input,

@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { gitExecutable } from "../ci/git-executable.mjs";
 import { resolveCandidateShaFromRef, writeQualityEvidence } from "./quality-evidence.mjs";
 
 const ROOT = resolve(".");
@@ -281,7 +282,7 @@ function parseGitNullDelimited(output) {
 }
 
 function listGitFiles(args) {
-  const output = execFileSync("git", args, {
+  const output = execFileSync(gitExecutable(), args, {
     cwd: ROOT,
     encoding: "utf8",
     maxBuffer: 16 * 1024 * 1024,
@@ -486,7 +487,7 @@ function readGitFiles(ref, files) {
   const specs = files.map((relativePath) =>
     ref === ":" ? `:${relativePath}` : `${ref}:${relativePath}`,
   );
-  const output = execFileSync("git", ["cat-file", "--batch"], {
+  const output = execFileSync(gitExecutable(), ["cat-file", "--batch"], {
     cwd: ROOT,
     input: `${specs.join("\n")}\n`,
     maxBuffer: 128 * 1024 * 1024,

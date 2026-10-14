@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const MAX_DIFF_BUFFER_BYTES = 16 * 1024 * 1024;
@@ -356,7 +357,7 @@ export function analyzeDiff(diff) {
 function readDiff({ staged }) {
   const args = ["diff", "--unified=0"];
   if (staged) args.push("--cached");
-  return execFileSync("git", args, {
+  return execFileSync(gitExecutable(), args, {
     cwd: repositoryRoot,
     encoding: "utf8",
     maxBuffer: MAX_DIFF_BUFFER_BYTES,

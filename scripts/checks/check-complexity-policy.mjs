@@ -6,6 +6,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import tseslint from "typescript-eslint";
+import { gitExecutable } from "../ci/git-executable.mjs";
 import {
   baselineKey,
   classifyComplexityCategory,
@@ -35,7 +36,7 @@ function normalizeRepositoryPath(file) {
 }
 
 function git(args) {
-  return execFileSync("git", args, {
+  return execFileSync(gitExecutable(), args, {
     cwd: repositoryRoot,
     encoding: "utf8",
     maxBuffer: GIT_OUTPUT_MAX_BUFFER,
@@ -50,8 +51,8 @@ export function assertBaselineFresh(baseline) {
   validateBaselineShape(baseline);
   const head = currentCommit();
   try {
-    execFileSync("git", ["cat-file", "-e", `${baseline.sourceCommit}^{commit}`], { cwd: repositoryRoot, stdio: "ignore" });
-    execFileSync("git", ["merge-base", "--is-ancestor", baseline.sourceCommit, head], { cwd: repositoryRoot, stdio: "ignore" });
+    execFileSync(gitExecutable(), ["cat-file", "-e", `${baseline.sourceCommit}^{commit}`], { cwd: repositoryRoot, stdio: "ignore" });
+    execFileSync(gitExecutable(), ["merge-base", "--is-ancestor", baseline.sourceCommit, head], { cwd: repositoryRoot, stdio: "ignore" });
   } catch {
     throw new Error(`complexity baseline stale: ${baseline.sourceCommit} is not an ancestor of ${head}.`);
   }
@@ -174,7 +175,7 @@ function parseChangedDiff({ from = baselineSourceCommit, to = null } = {}) {
   const diffArguments = ["diff", "--unified=0", from];
   if (to) diffArguments.push(to);
   diffArguments.push("--", ...sourceRoots);
-  const diff = execFileSync("git", diffArguments, {
+  const diff = execFileSync(gitExecutable(), diffArguments, {
     cwd: repositoryRoot,
     encoding: "utf8",
     maxBuffer: GIT_OUTPUT_MAX_BUFFER,

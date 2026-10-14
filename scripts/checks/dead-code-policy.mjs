@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { gitExecutable } from "../ci/git-executable.mjs";
 import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
 
 export const DEAD_CODE_BASELINE_SCHEMA_VERSION = 1;
@@ -198,8 +199,8 @@ export function loadDeadCodeJustifications(filePath = justificationsPath) {
 
 function isAncestor(sourceCommit) {
   try {
-    execFileSync("git", ["cat-file", "-e", `${sourceCommit}^{commit}`], { cwd: repositoryRoot, stdio: "ignore" });
-    execFileSync("git", ["merge-base", "--is-ancestor", sourceCommit, "HEAD"], { cwd: repositoryRoot, stdio: "ignore" });
+    execFileSync(gitExecutable(), ["cat-file", "-e", `${sourceCommit}^{commit}`], { cwd: repositoryRoot, stdio: "ignore" });
+    execFileSync(gitExecutable(), ["merge-base", "--is-ancestor", sourceCommit, "HEAD"], { cwd: repositoryRoot, stdio: "ignore" });
     return true;
   } catch {
     return false;

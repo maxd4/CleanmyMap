@@ -10,6 +10,7 @@ import {
   createCandidateFingerprint,
   getWorktreeCandidateFiles,
 } from "../ci/validation-evidence.mjs";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 const COVERAGE_EVIDENCE_VERSION = 1;
 export const COVERAGE_SUMMARY_RELATIVE_PATH = path.join("apps", "web", "coverage", "coverage-summary.json");
@@ -43,7 +44,7 @@ function repositoryPath(repositoryRoot, relativePath) {
 
 function gitHead(repositoryRoot) {
   try {
-    return execFileSync("git", ["rev-parse", "HEAD"], {
+    return execFileSync(gitExecutable(), ["rev-parse", "HEAD"], {
       cwd: repositoryRoot,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],

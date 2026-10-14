@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { gitExecutable } from "./git-executable.mjs";
 
 const VALIDATION_EVIDENCE_VERSION = 2;
 const WINDOWS_CLEANUP_RETRIES = 5;
@@ -24,7 +25,7 @@ function normalizePath(file) {
 
 function gitHead(repositoryRoot) {
   try {
-    return execFileSync("git", ["rev-parse", "HEAD"], {
+    return execFileSync(gitExecutable(), ["rev-parse", "HEAD"], {
       cwd: repositoryRoot,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
@@ -40,7 +41,7 @@ export function getCandidateSha(repositoryRoot = process.cwd()) {
 
 function readStagedFile(repositoryRoot, relativePath) {
   try {
-    return execFileSync("git", ["show", `:${relativePath}`], {
+    return execFileSync(gitExecutable(), ["show", `:${relativePath}`], {
       cwd: repositoryRoot,
       encoding: "buffer",
       stdio: ["ignore", "pipe", "ignore"],
@@ -62,7 +63,7 @@ function readCandidateFile(repositoryRoot, relativePath, candidateScope) {
 
 function readGitLines(repositoryRoot, args) {
   try {
-    return execFileSync("git", args, {
+    return execFileSync(gitExecutable(), args, {
       cwd: repositoryRoot,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],

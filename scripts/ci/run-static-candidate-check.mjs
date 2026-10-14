@@ -9,6 +9,7 @@ import {
   createCandidateMaterialization,
   installCandidateSignalCleanup,
 } from "./candidate-lifecycle.mjs";
+import { gitExecutable } from "./git-executable.mjs";
 
 function usage(message) {
   if (message) console.error(message);
@@ -57,7 +58,7 @@ function normalizeRepositoryPath(value) {
 }
 
 function git(repositoryRoot, arguments_, options = {}) {
-  return execFileSync("git", arguments_, {
+  return execFileSync(gitExecutable(), arguments_, {
     cwd: repositoryRoot,
     encoding: "utf8",
     stdio: ["pipe", "pipe", "pipe"],
@@ -66,7 +67,7 @@ function git(repositoryRoot, arguments_, options = {}) {
 }
 
 function readGitTree(repositoryRoot, candidateSha) {
-  const output = execFileSync("git", ["ls-tree", "--full-tree", "-r", "-z", candidateSha, "--"], {
+  const output = execFileSync(gitExecutable(), ["ls-tree", "--full-tree", "-r", "-z", candidateSha, "--"], {
     cwd: repositoryRoot,
     maxBuffer: 64 * 1024 * 1024,
   });
@@ -84,7 +85,7 @@ function readGitTree(repositoryRoot, candidateSha) {
 
 function readGitBlobs(repositoryRoot, entries) {
   const objectIds = [...new Set(entries.filter((entry) => entry.type === "blob").map((entry) => entry.objectId))];
-  const batchOutput = execFileSync("git", ["cat-file", "--batch"], {
+  const batchOutput = execFileSync(gitExecutable(), ["cat-file", "--batch"], {
     cwd: repositoryRoot,
     input: `${objectIds.join("\n")}\n`,
     maxBuffer: 256 * 1024 * 1024,

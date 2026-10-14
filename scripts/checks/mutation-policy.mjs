@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
+import { gitExecutable } from "../ci/git-executable.mjs";
 
 const MUTATION_POLICY_VERSION = 1;
 const MUTATION_TOOL = "stryker";
@@ -116,13 +117,13 @@ export function validateMutationBaseline(baseline, config) {
 }
 
 export function assertMutationBaselineFresh(baseline, { currentCommit, repositoryRoot }) {
-  const head = currentCommit ?? execFileSync("git", ["rev-parse", "HEAD"], {
+  const head = currentCommit ?? execFileSync(gitExecutable(), ["rev-parse", "HEAD"], {
     cwd: repositoryRoot,
     encoding: "utf8",
   }).trim();
   try {
-    execFileSync("git", ["cat-file", "-e", `${baseline.sourceCommit}^{commit}`], { cwd: repositoryRoot, stdio: "ignore" });
-    execFileSync("git", ["merge-base", "--is-ancestor", baseline.sourceCommit, head], { cwd: repositoryRoot, stdio: "ignore" });
+    execFileSync(gitExecutable(), ["cat-file", "-e", `${baseline.sourceCommit}^{commit}`], { cwd: repositoryRoot, stdio: "ignore" });
+    execFileSync(gitExecutable(), ["merge-base", "--is-ancestor", baseline.sourceCommit, head], { cwd: repositoryRoot, stdio: "ignore" });
   } catch {
     throw new Error(`Mutation baseline stale: ${baseline.sourceCommit} is not an ancestor of ${head}.`);
   }

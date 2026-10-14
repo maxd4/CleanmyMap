@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import process from "node:process";
+import { gitExecutable } from "./git-executable.mjs";
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 
@@ -114,7 +115,7 @@ export function resolveCiScopeSelection({
 
 function gitHasCommit(repositoryRoot, sha, label) {
   try {
-    execFileSync("git", ["cat-file", "-e", `${sha}^{commit}`], {
+    execFileSync(gitExecutable(), ["cat-file", "-e", `${sha}^{commit}`], {
       cwd: repositoryRoot,
       stdio: "ignore",
     });
@@ -124,7 +125,7 @@ function gitHasCommit(repositoryRoot, sha, label) {
 }
 
 function getChangedFiles(repositoryRoot, baseSha, candidateSha) {
-  const output = execFileSync("git", ["diff", "--name-only", baseSha, candidateSha], {
+  const output = execFileSync(gitExecutable(), ["diff", "--name-only", baseSha, candidateSha], {
     cwd: repositoryRoot,
     encoding: "utf8",
   });

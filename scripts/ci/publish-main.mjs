@@ -1,11 +1,12 @@
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
+import { gitExecutable } from "./git-executable.mjs";
 
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_BACKOFF_MS = 1_000;
 
 function runGit(args) {
-  const result = spawnSync("git", args, { encoding: "utf8" });
+  const result = spawnSync(gitExecutable(), args, { encoding: "utf8" });
   return {
     status: result.status ?? 1,
     stdout: result.stdout ?? "",

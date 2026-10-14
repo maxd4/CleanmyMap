@@ -3,16 +3,17 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { gitExecutable } from "./git-executable.mjs";
 
 function repositoryName() {
-  const remote = execFileSync("git", ["remote", "get-url", "origin"], { encoding: "utf8" }).trim();
+  const remote = execFileSync(gitExecutable(), ["remote", "get-url", "origin"], { encoding: "utf8" }).trim();
   const match = remote.match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?$/i);
   if (!match) throw new Error("origin is not a GitHub repository");
   return `${match[1]}/${match[2]}`;
 }
 
 function currentSha() {
-  return execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  return execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 }
 
 function runGh(args, runner = defaultRunner) {

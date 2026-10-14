@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
+import { gitExecutable } from "../ci/git-executable.mjs";
 import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
 
 const repoRoot = process.cwd();
@@ -85,7 +86,7 @@ export function findForbiddenTrackedPaths(trackedFiles) {
 }
 
 export function listTrackedWorktreeFiles(repositoryRoot = repoRoot) {
-  const output = execFileSync("git", ["ls-files", "-z", "--"], {
+  const output = execFileSync(gitExecutable(), ["ls-files", "-z", "--"], {
     cwd: repositoryRoot,
   });
   return output

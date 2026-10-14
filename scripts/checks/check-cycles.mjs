@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { gitExecutable } from "../ci/git-executable.mjs";
 import { resolveCandidateSha, writeQualityEvidence } from "./quality-evidence.mjs";
 
 import { runCommandWithTimeout } from "../ci/validation-process.mjs";
@@ -29,7 +30,7 @@ export class CycleGateError extends Error {
 }
 
 function git(args) {
-  return execFileSync("git", args, { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  return execFileSync(gitExecutable(), args, { cwd: repositoryRoot, encoding: "utf8" }).trim();
 }
 
 function stableValue(value) {
@@ -66,8 +67,8 @@ function assertBaselineFresh(baseline) {
   }
   const head = git(["rev-parse", "HEAD"]);
   try {
-    execFileSync("git", ["cat-file", "-e", `${baseline.sourceCommit}^{commit}`], { cwd: repositoryRoot, stdio: "ignore" });
-    execFileSync("git", ["merge-base", "--is-ancestor", baseline.sourceCommit, head], { cwd: repositoryRoot, stdio: "ignore" });
+    execFileSync(gitExecutable(), ["cat-file", "-e", `${baseline.sourceCommit}^{commit}`], { cwd: repositoryRoot, stdio: "ignore" });
+    execFileSync(gitExecutable(), ["merge-base", "--is-ancestor", baseline.sourceCommit, head], { cwd: repositoryRoot, stdio: "ignore" });
   } catch {
     throw new Error(`GitNexus cycle baseline stale: ${baseline.sourceCommit} is not an ancestor of ${head}.`);
   }

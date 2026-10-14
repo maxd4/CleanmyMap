@@ -8,6 +8,7 @@ import {
   createCandidateMaterialization,
   installCandidateSignalCleanup,
 } from "./candidate-lifecycle.mjs";
+import { gitExecutable } from "./git-executable.mjs";
 
 const DEPENDENCY_MANIFESTS = Object.freeze([
   "package.json",
@@ -75,7 +76,7 @@ function cleanGitEnvironment() {
 }
 
 function git(repositoryRoot, arguments_, options = {}) {
-  return execFileSync("git", arguments_, {
+  return execFileSync(gitExecutable(), arguments_, {
     cwd: repositoryRoot,
     encoding: "utf8",
     stdio: ["pipe", "pipe", "pipe"],
@@ -109,7 +110,7 @@ function dependencyManifestsMatch(candidateTreeRoot, canonicalRoot) {
 }
 
 function readGitTree(repositoryRoot, candidateSha) {
-  const output = execFileSync("git", ["ls-tree", "--full-tree", "-r", "-z", candidateSha, "--"], {
+  const output = execFileSync(gitExecutable(), ["ls-tree", "--full-tree", "-r", "-z", candidateSha, "--"], {
     cwd: repositoryRoot,
     env: cleanGitEnvironment(),
     maxBuffer: 64 * 1024 * 1024,
@@ -127,7 +128,7 @@ function readGitTree(repositoryRoot, candidateSha) {
 
 function readGitBlobs(repositoryRoot, entries) {
   const objectIds = [...new Set(entries.filter((entry) => entry.type === "blob").map((entry) => entry.objectId))];
-  const batchOutput = execFileSync("git", ["cat-file", "--batch"], {
+  const batchOutput = execFileSync(gitExecutable(), ["cat-file", "--batch"], {
     cwd: repositoryRoot,
     env: cleanGitEnvironment(),
     input: objectIds.length > 0 ? objectIds.join("\n") + "\n" : "",
@@ -191,17 +192,8 @@ function linkWorkspaceDirectory(candidateTreeRoot, relativePath, sourcePath, lin
   linkedPaths.push(destination);
 }
 
-function findGitExecutable() {
-  const locator = process.platform === "win32" ? "where.exe" : "which";
-  return execFileSync(locator, ["git"], { encoding: "utf8" })
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find(Boolean);
-}
-
 function createGitShim(materialization) {
-  const realGit = findGitExecutable();
-  if (!realGit) throw new Error("HOST_ENVIRONMENT: git is unavailable for dynamic candidate validation.");
+  const realGit = gitExecutable();
   const shimRoot = path.join(materialization.materializedRoot, "git-shim");
   fs.mkdirSync(shimRoot);
   const helperPath = path.join(shimRoot, "git-wrapper.cjs");
