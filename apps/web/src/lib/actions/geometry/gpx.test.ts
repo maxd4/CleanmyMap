@@ -65,6 +65,11 @@ describe("GPX track parsing", () => {
     expect(() => parseGpxText(gpx(point(48.85, 2.35)))).toThrow(/au moins 2 points/i);
   });
 
+  it("rejects a long unterminated attribute without regex backtracking", () => {
+    const malformed = `<gpx><trk><trkseg><trkpt lat="${"9".repeat(200_000)}>`;
+    expect(() => parseGpxText(malformed)).toThrow(GpxImportError);
+  });
+
   it("rejects invalid coordinates and multiple segments instead of inventing a link", () => {
     expect(() => parseGpxText(gpx(`${point(95, 2.35)}${point(48.851, 2.351)}`))).toThrow(
       /latitude ou une longitude invalide/i,

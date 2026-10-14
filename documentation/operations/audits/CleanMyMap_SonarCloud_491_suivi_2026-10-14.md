@@ -59,8 +59,9 @@ Aucune anomalie n’est donc classée `OBSOLETE` sur le seul critère de chemin.
 
 | Statut | Nombre | Règle d’attribution dans ce lot |
 | --- | ---: | --- |
-| `TO_FIX` | 368 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans les lots traités |
-| `FIXED_PENDING_SCAN` | 123 | Corrections locales vérifiées pour les lots 2A/2B/3/4 ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
+| `TO_FIX` | 276 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans les lots traités |
+| `FIXED_PENDING_SCAN` | 213 | Corrections locales vérifiées pour les lots traités ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
+| `BLOCKED` | 2 | Findings S8786 sur un fichier TypeScript déjà modifié par un writer concurrent, non écrasés |
 | `FALSE_POSITIVE` | 0 | Aucune preuve technique et décision humaine spécifique n’a été fournie |
 | `ACCEPTED_PENDING_APPROVAL` | 0 | Aucun risque accepté ni approbation explicite n’a été fourni |
 | `OBSOLETE` | 0 | Aucun chemin source n’a disparu de `main` |
@@ -220,6 +221,35 @@ Playwright répondent aux versions verrouillées, et les deux résolutions pip
 avec `--only-binary=:all:` passent en Python 3.14. Aucun faux positif ni risque
 accepté n’est enregistré pour ce lot ; la confirmation SonarCloud reste
 `NOT_CONFIRMED` pour les 30 identifiants.
+
+## Lot 5 — prévention du backtracking regex (`S8786`)
+
+Ce lot traite les 92 alertes S8786 de l’inventaire : 27 TypeScript, 64
+JavaScript et 1 Python. Les expressions ont été classées par usage réel
+(validation, parsing, recherche, transformation ou traitement de contenu), puis
+remplacées localement par des scanners bornés, des recherches déterministes ou
+des boucles de trim. Les contrats d’entrée et de sortie ont été conservés ;
+aucun parseur universel ni aucune limite d’API n’a été ajouté.
+
+Les identifiants sont suivis individuellement. `FIXED_PENDING_SCAN` signifie
+que la correction locale et les tests sont vérifiés, sans prétendre à une
+confirmation SonarCloud. Les deux identifiants `public-service.ts` restent
+`BLOCKED` car le fichier contenait déjà un diff Spogomi d’un autre writer ; ce
+lot n’a pas écrasé ni fusionné silencieusement ce changement.
+
+| Règle | Identifiants SonarCloud | Statut local |
+| --- | --- | --- |
+| `typescript:S8786` | `AaE3K8K5zHjHEPBoeQ9o`, `AaE3K8PezHjHEPBoeQ-M`, `AaE3K8a3zHjHEPBoeQ_W`, `AaE3K8D4zHjHEPBoeQ9H`, `AaE3K7_GzHjHEPBoeQ8o`, `AaE3K780zHjHEPBoeQ8c`, `AaE3K79MzHjHEPBoeQ8f`, `AaE3K77kzHjHEPBoeQ8U`, `AaE3K77kzHjHEPBoeQ8V`, `AaE3K77kzHjHEPBoeQ8W`, `AaE3K7-vzHjHEPBoeQ8m`, `AaE3K8FWzHjHEPBoeQ9Q`, `AaE3K8C4zHjHEPBoeQ9E`, `AaE3K8FuzHjHEPBoeQ9R`, `AaE3K7_szHjHEPBoeQ8s`, `AaE3K8HDzHjHEPBoeQ9Y`, `AaE3K8DMzHjHEPBoeQ9F`, `AaE3K76HzHjHEPBoeQ8S`, `AaE3K74MzHjHEPBoeQ8R`, `AaE3K8EYzHjHEPBoeQ9K`, `AaE3K8EYzHjHEPBoeQ9L`, `AaE3K8EYzHjHEPBoeQ9M`, `AaE3K8yRzHjHEPBoeRC6`, `AaE3K8ybzHjHEPBoeRC7`, `AaE3K8xMzHjHEPBoeRCy` | `FIXED_PENDING_SCAN` |
+| `typescript:S8786` | `AaE3K8EjzHjHEPBoeQ9N`, `AaE3K8EjzHjHEPBoeQ9O` — `apps/web/src/lib/spogomi/public-service.ts:67,69` | `BLOCKED` |
+| `javascript:S8786` | `AaE3K8eTzHjHEPBoeQ_b`, `AaE3K8eTzHjHEPBoeQ_c`, `AaE3K8eTzHjHEPBoeQ_d`, `AaE3K8enzHjHEPBoeQ_f`, `AaE3K8dzzHjHEPBoeQ_X`, `AaE3K8fVzHjHEPBoeQ_k`, `AaE3K8gmzHjHEPBoeQ_v`, `AaE3K8y0zHjHEPBoeRC9`, `AaE3K8irzHjHEPBoeRAI`, `AaE3K8irzHjHEPBoeRAJ`, `AaE3K8irzHjHEPBoeRAK`, `AaE3K8ifzHjHEPBoeQ_7`, `AaE3K8ifzHjHEPBoeQ_8`, `AaE3K8ifzHjHEPBoeQ_9`, `AaE3K8ifzHjHEPBoeQ_-`, `AaE3K8ifzHjHEPBoeQ__`, `AaE3K8ifzHjHEPBoeRAA`, `AaE3K8ifzHjHEPBoeRAB`, `AaE3K8ifzHjHEPBoeRAC`, `AaE3K8ifzHjHEPBoeRAD`, `AaE3K8ifzHjHEPBoeRAE`, `AaE3K8ifzHjHEPBoeRAF`, `AaE3K8oNzHjHEPBoeRA-`, `AaE7ZAtHkxkMFlGl5f3G`, `AaE3K8p0zHjHEPBoeRBS`, `AaE3K8p0zHjHEPBoeRBT`, `AaE3K8p0zHjHEPBoeRBU`, `AaE3K8p0zHjHEPBoeRBV`, `AaE3K8nWzHjHEPBoeRA1`, `AaE3K8pezHjHEPBoeRBO`, `AaE3K8pezHjHEPBoeRBP`, `AaE3K8q2zHjHEPBoeRBl`, `AaE3K8oDzHjHEPBoeRA9`, `AaE3K8rizHjHEPBoeRBr`, `AaE3K8rizHjHEPBoeRBs`, `AaE3K8qUzHjHEPBoeRBa`, `AaE3K8ppzHjHEPBoeRBQ`, `AaE3K8ppzHjHEPBoeRBR`, `AaE3K8otzHjHEPBoeRBB`, `AaE3K8otzHjHEPBoeRBC`, `AaE3K8otzHjHEPBoeRBD`, `AaE7ZA1_kxkMFlGl5f3K`, `AaE3K8rCzHjHEPBoeRBn`, `AaE3K8t3zHjHEPBoeRCJ`, `AaE3K8t3zHjHEPBoeRCK`, `AaE3K8uVzHjHEPBoeRCP`, `AaE3K8uVzHjHEPBoeRCQ`, `AaE3K8xjzHjHEPBoeRC1`, `AaE3K8s1zHjHEPBoeRB4`, `AaE7ZAMDkxkMFlGl5f2_`, `AaE3K8kuzHjHEPBoeRAO`, `AaE3K8lYzHjHEPBoeRAV`, `AaE3K8lYzHjHEPBoeRAW`, `AaE3K8lYzHjHEPBoeRAX`, `AaE3K8lYzHjHEPBoeRAY`, `AaE3K8lYzHjHEPBoeRAZ`, `AaE3K8lYzHjHEPBoeRAa`, `AaE3K8lYzHjHEPBoeRAb`, `AaE3K8lYzHjHEPBoeRAc`, `AaE3K8k5zHjHEPBoeRAP`, `AaE3K8k5zHjHEPBoeRAS`, `AaE3K8xuzHjHEPBoeRC2`, `AaE3K8xuzHjHEPBoeRC3`, `AaE3K8xuzHjHEPBoeRC4` | `FIXED_PENDING_SCAN` |
+| `python:S8786` | `AaE3K8yAzHjHEPBoeRC5` — `maintenance/python/scripts/import_sheet.py:40` | `FIXED_PENDING_SCAN` |
+
+Les fixtures S2187, assertions S8784 et autres code smells ne sont pas
+absorbés par ce lot et restent dans le suivi exhaustif pour des lots distincts.
+
+Preuves locales : syntaxe Node/Python, 15 suites Node ciblées, 10 fichiers
+Vitest / 70 tests applicatifs, dont les entrées adverses longues. Le contrôle
+de couverture SonarCloud externe reste `NOT_CONFIRMED`.
 
 ## Décisions humaines et faux positifs
 

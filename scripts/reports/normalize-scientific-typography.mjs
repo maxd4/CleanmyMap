@@ -2,7 +2,14 @@ import fs from 'fs';
 import { readImpactReportDocuments } from './impact-report-files.mjs';
 
 function formatThousands(value) {
-  return value.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return value.split(' ').map((part) => {
+    let result = '';
+    for (let index = 0; index < part.length; index += 1) {
+      if (index > 0 && (part.length - index) % 3 === 0) result += ' ';
+      result += part[index];
+    }
+    return result;
+  }).join(' ');
 }
 
 function protectSegments(line) {
@@ -30,24 +37,10 @@ function protectSegments(line) {
 function normalizeText(text) {
   let output = text;
 
-  output = output.replace(/\bMtCO2e\b/g, 'MtCO₂e');
-  output = output.replace(/\bMtCO2\b/g, 'MtCO₂');
-  output = output.replace(/\bkgCO2e\b/g, 'kgCO₂e');
-  output = output.replace(/\bgCO2e\b/g, 'gCO₂e');
-  output = output.replace(/\bCO2e\b/g, 'CO₂e');
-  output = output.replace(/\bCO2\b/g, 'CO₂');
-  output = output.replace(/\bH2O\b/g, 'H₂O');
-  output = output.replace(/\bkm2\b/g, 'km²');
-  output = output.replace(/\bm3\b/g, 'm³');
-
-  output = output.replace(/(\d[\d ]*)(?=\s?(?:kWh|TWh\/an|kgCO₂e|gCO₂e|MtCO₂e|L|km|Go|Mo|%|€|\$|dollars?|euros?|USD|EUR)\b)/g, (match) => formatThousands(match.trim()));
-
-  output = output.replace(/(\d[\d ]*)(?:\s?)(kWh|TWh\/an|kgCO₂e|gCO₂e|MtCO₂e|L|km|Go|Mo)\b/g, (_, number, unit) => `${formatThousands(number.trim())} ${unit}`);
-  output = output.replace(/(\d[\d ]*)(?:\s?)(%)(?![^\s])/g, (_, number, unit) => `${formatThousands(number.trim())} ${unit}`);
-  output = output.replace(/(\d[\d ]*)(?:\s?)(?:dollars?|USD)\b/gi, (_, number) => `${formatThousands(number.trim())} $`);
-  output = output.replace(/(\d[\d ]*)(?:\s?)(?:euros?|EUR)\b/gi, (_, number) => `${formatThousands(number.trim())} €`);
-  output = output.replace(/(\d[\d ]*)(?:\s?)(\$)\b/g, (_, number, unit) => `${formatThousands(number.trim())} ${unit}`);
-  output = output.replace(/(\d[\d ]*)(?:\s?)(€)\b/g, (_, number, unit) => `${formatThousands(number.trim())} ${unit}`);
+  for (const [source, replacement] of [['MtCO2e', 'MtCO₂e'], ['MtCO2', 'MtCO₂'], ['kgCO2e', 'kgCO₂e'], ['gCO2e', 'gCO₂e'], ['CO2e', 'CO₂e'], ['CO2', 'CO₂'], ['H2O', 'H₂O'], ['km2', 'km²'], ['m3', 'm³']]) {
+    output = output.replaceAll(source, replacement);
+  }
+  output = normalizeMetricUnits(output);
 
   output = output.replace(/(\d)\s?%/g, '$1 %');
   output = output.replace(/(\d)\s?kWh\b/g, '$1 kWh');
@@ -60,6 +53,44 @@ function normalizeText(text) {
   output = output.replace(/(\d)\s?Go\b/g, '$1 Go');
   output = output.replace(/(\d)\s?Mo\b/g, '$1 Mo');
 
+  return output;
+}
+
+function normalizeMetricUnits(text) {
+  const units = [
+    ['TWh/an', 'TWh/an'], ['kgCO₂e', 'kgCO₂e'], ['gCO₂e', 'gCO₂e'], ['MtCO₂e', 'MtCO₂e'],
+    ['dollars', '$'], ['dollar', '$'], ['USD', '$'], ['euros', '€'], ['euro', '€'], ['EUR', '€'],
+    ['kWh', 'kWh'], ['L', 'L'], ['km', 'km'], ['Go', 'Go'], ['Mo', 'Mo'], ['%', '%'], ['$', '$'], ['€', '€'],
+  ];
+  let output = '';
+  let cursor = 0;
+  while (cursor < text.length) {
+    const code = text.charCodeAt(cursor);
+    if (code < 48 || code > 57) {
+      output += text[cursor++];
+      continue;
+    }
+    const numberStart = cursor;
+    while (cursor < text.length && ((text.charCodeAt(cursor) >= 48 && text.charCodeAt(cursor) <= 57) || text[cursor] === ' ')) cursor += 1;
+    const number = text.slice(numberStart, cursor).trim();
+    let unitStart = cursor;
+    while (text[unitStart] === ' ' || text[unitStart] === '\t') unitStart += 1;
+    const candidate = units.find(([unit]) => text.slice(unitStart, unitStart + unit.length).toLowerCase() === unit.toLowerCase());
+    if (!candidate) {
+      output += text.slice(numberStart, unitStart);
+      cursor = unitStart;
+      continue;
+    }
+    const unitEnd = unitStart + candidate[0].length;
+    const following = text[unitEnd] ?? '';
+    if (/[A-Za-z0-9_]/.test(following) && /[A-Za-z0-9_]/.test(candidate[0].at(-1) ?? '')) {
+      output += text.slice(numberStart, unitStart);
+      cursor = unitStart;
+      continue;
+    }
+    output += `${formatThousands(number)} ${candidate[1]}`;
+    cursor = unitEnd;
+  }
   return output;
 }
 

@@ -8,10 +8,11 @@ function toAsciiLower(value: string): string {
 }
 
 export function normalizeDeliverableRubrique(value: string): string {
-  const normalized = toAsciiLower(value)
+  let normalized = toAsciiLower(value)
     .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
     .replace(/_+/g, "_");
+  while (normalized.startsWith("_")) normalized = normalized.slice(1);
+  while (normalized.endsWith("_")) normalized = normalized.slice(0, -1);
   return normalized || "export";
 }
 

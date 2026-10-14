@@ -374,7 +374,9 @@ function isPublicEmailAddress(value) {
   if (atIndex === -1) {
     return false;
   }
-  const domain = normalized.slice(atIndex + 1).replace(/[)>.,;:'"`\]]+$/g, "");
+  let domain = normalized.slice(atIndex + 1);
+  const trailingCharacters = new Set([")", ">", ".", ",", ";", ":", "'", '"', "`", "]"]);
+  while (trailingCharacters.has(domain.at(-1) ?? "")) domain = domain.slice(0, -1);
   return PUBLIC_EMAIL_DOMAINS.has(domain);
 }
 

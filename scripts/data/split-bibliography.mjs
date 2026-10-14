@@ -18,7 +18,7 @@ function extractCitationKeys(text) {
   let match;
 
   while ((match = re.exec(bodyText))) {
-    const segments = match[1].split(/\s*;\s*/);
+    const segments = match[1].split(";").map((segment) => segment.trim()).filter(Boolean);
     for (const segment of segments) {
       const key = segment.replace(/^@/, '').match(/^([A-Za-z0-9_:-]+)/);
       if (key) {
@@ -98,10 +98,14 @@ function rewriteReport(reportText) {
     /Les références formelles du rapport sont générées automatiquement via `references\.bib` et les citations `\[@clé\]` intégrées dans le corps du texte\./,
     'Les références formelles du rapport sont générées automatiquement via `references.bib` pour le corps du texte et `references_annexes.bib` pour les annexes, avec les citations `[@clé]` intégrées dans le corps du texte.',
   );
-  out = out.replace(
-    /bibliography:\s*\n\s*-\s*references\.bib\s*\n(?:\s*-\s*references_annexes\.bib\s*\n)?/,
-    'bibliography:\n  - references.bib\n  - references_annexes.bib\n',
-  );
+  const bibliographyStart = out.indexOf("bibliography:");
+  if (bibliographyStart >= 0) {
+    const bibliographyEnd = out.indexOf("\n\n", bibliographyStart);
+    const existingBlock = bibliographyEnd < 0 ? out.slice(bibliographyStart) : out.slice(bibliographyStart, bibliographyEnd);
+    if (existingBlock.includes("references.bib")) {
+      out = out.slice(0, bibliographyStart) + 'bibliography:\n  - references.bib\n  - references_annexes.bib\n' + out.slice(bibliographyEnd < 0 ? out.length : bibliographyEnd);
+    }
+  }
   return out;
 }
 

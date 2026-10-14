@@ -136,9 +136,26 @@ function auditPublishedMigrationRewrites({ repoRoot, baseRef, candidateRef, stag
 }
 
 function stripSqlComments(sql) {
-  return sql
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/--[^\r\n]*/g, "");
+  let output = "";
+  let cursor = 0;
+  while (cursor < sql.length) {
+    const blockStart = sql.indexOf("/*", cursor);
+    const lineStart = sql.indexOf("--", cursor);
+    const nextStart = blockStart < 0 ? lineStart : lineStart < 0 ? blockStart : Math.min(blockStart, lineStart);
+    if (nextStart < 0) {
+      output += sql.slice(cursor);
+      break;
+    }
+    output += sql.slice(cursor, nextStart);
+    if (nextStart === lineStart) {
+      const lineEnd = sql.indexOf("\n", nextStart + 2);
+      cursor = lineEnd < 0 ? sql.length : lineEnd;
+    } else {
+      const blockEnd = sql.indexOf("*/", nextStart + 2);
+      cursor = blockEnd < 0 ? sql.length : blockEnd + 2;
+    }
+  }
+  return output;
 }
 
 export function findLegacySpotsRuntimeSurfaceViolations(name, normalizedSql) {
@@ -154,21 +171,22 @@ export function findLegacySpotsRuntimeSurfaceViolations(name, normalizedSql) {
     );
   }
 
-  if (
-    /\bcreate\s+policy\b.*?\bon\s+public\.spots\b.*?\bfor\s+(?:insert|update|all)\b/i.test(
-      normalizedSql,
-    )
-  ) {
+  const reintroducedWritePolicy = normalizedSql.split(";").some((statement) =>
+    /\bcreate\s+policy\b/i.test(statement) &&
+    /\bon\s+public\.spots\b/i.test(statement) &&
+    /\bfor\s+(?:insert|update|all)\b/i.test(statement),
+  );
+  if (reintroducedWritePolicy) {
     violations.push(
       `${name}: public.spots INSERT/UPDATE policies must not be reintroduced after legacy spots retirement`,
     );
   }
 
-  const alteredPolicyMatches = normalizedSql.matchAll(
-    /\balter\s+policy\s+("[^"]+"|[^\s]+)\s+on\s+public\.spots\b[^;]*;/gi,
+  const alteredPolicyStatements = normalizedSql.split(";").filter((statement) =>
+    /\balter\s+policy\b/i.test(statement) && /\bon\s+public\.spots\b/i.test(statement),
   );
-  for (const match of alteredPolicyMatches) {
-    const policyName = match[1].replace(/^"|"$/g, "").toLowerCase();
+  for (const statement of alteredPolicyStatements) {
+    const policyName = statement.trim().split(/\s+/)[2]?.replaceAll('"', "").toLowerCase() ?? "";
     if (policyName !== "spots_service_select") {
       violations.push(
         `${name}: public.spots policies other than spots_service_select must not be altered after legacy spots retirement`,
@@ -187,7 +205,7 @@ export function findLegacySpotsRuntimeSurfaceViolations(name, normalizedSql) {
     const privileges = trimmedStatement
       .slice("grant ".length, onIndex)
       .split(/\s+/)
-      .filter((privilege) => !/^privileges?$/i.test(privilege))
+      .filter((privilege) => !["privilege", "privileges"].includes(privilege.toLowerCase()))
       .join(" ")
       .split(",")
       .map((privilege) => {
@@ -206,8 +224,9 @@ export function findLegacySpotsRuntimeSurfaceViolations(name, normalizedSql) {
     if (!lowerStatement.startsWith("public.spots", targetStart)) continue;
 
     const rolesStart = targetStart + "public.spots".length;
-    if (!/^\s+to\s+/i.test(trimmedStatement.slice(rolesStart))) continue;
-    const roles = trimmedStatement.slice(rolesStart).replace(/^\s+to\s+/i, "").toLowerCase();
+    const rolesTail = trimmedStatement.slice(rolesStart).trimStart();
+    if (!rolesTail.toLowerCase().startsWith("to ")) continue;
+    const roles = rolesTail.slice(2).trimStart().toLowerCase();
     const hasWritePrivilege = privileges.some((privilege) =>
       ["all", "insert", "update", "delete", "truncate", "references", "trigger"].includes(
         privilege,

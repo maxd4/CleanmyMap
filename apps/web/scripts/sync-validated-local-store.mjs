@@ -37,9 +37,11 @@ function extractAssociationNameFromNotes(notes) {
   for (const line of notes.split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed.startsWith("[cmm-meta]")) {
-      const legacyMatch = trimmed.match(/^association\s*:\s*(.+)$/i);
-      if (legacyMatch) {
-        const value = legacyMatch[1]?.trim();
+      const legacyValue = trimmed.slice(0, "association".length).toLowerCase() === "association" && trimmed.slice("association".length).trimStart().startsWith(":")
+        ? trimmed.slice("association".length).trimStart().slice(1).trim()
+        : null;
+      if (legacyValue) {
+        const value = legacyValue;
         if (value) {
           return value;
         }

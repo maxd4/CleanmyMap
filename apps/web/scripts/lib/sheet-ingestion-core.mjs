@@ -220,10 +220,10 @@ export function parseCoordsFromText(raw) {
     return { latitude: null, longitude: null };
   }
 
-  const decimal = value.match(/(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)/);
+  const decimal = findDecimalCoordinatePair(value);
   if (decimal) {
-    const latitude = Number(decimal[1]);
-    const longitude = Number(decimal[2]);
+    const latitude = decimal[0];
+    const longitude = decimal[1];
     if (
       Number.isFinite(latitude) &&
       Number.isFinite(longitude) &&
@@ -236,26 +236,108 @@ export function parseCoordsFromText(raw) {
     }
   }
 
-  const dms = value.match(
-    /(\d+)[°\s]+(\d+)[\s']+(\d+(?:\.\d+)?)[\s"]*([NS])\s*(\d+)[°\s]+(\d+)[\s']+(\d+(?:\.\d+)?)[\s"]*([EW])/i,
-  );
+  const dms = findDmsCoordinateParts(value);
   if (!dms) {
     return { latitude: null, longitude: null };
   }
 
-  let latitude = Number(dms[1]) + Number(dms[2]) / 60 + Number(dms[3]) / 3600;
-  if (dms[4].toUpperCase() === "S") {
+  let latitude = dms.latitudeDegrees + dms.latitudeMinutes / 60 + dms.latitudeSeconds / 3600;
+  if (dms.latitudeDirection === "S") {
     latitude *= -1;
   }
   let longitude =
-    Number(dms[5]) + Number(dms[6]) / 60 + Number(dms[7]) / 3600;
-  if (dms[8].toUpperCase() === "W") {
+    dms.longitudeDegrees + dms.longitudeMinutes / 60 + dms.longitudeSeconds / 3600;
+  if (dms.longitudeDirection === "W") {
     longitude *= -1;
   }
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     return { latitude: null, longitude: null };
   }
   return { latitude, longitude };
+}
+
+function readCoordinateNumber(value, start) {
+  let cursor = start;
+  while (/\s/.test(value[cursor] ?? "")) cursor += 1;
+  const numberStart = cursor;
+  if (value[cursor] === "-") cursor += 1;
+  const integerStart = cursor;
+  while (cursor < value.length && value.charCodeAt(cursor) >= 48 && value.charCodeAt(cursor) <= 57) cursor += 1;
+  if (cursor === integerStart) return null;
+  if (value[cursor] === ".") {
+    cursor += 1;
+    const fractionStart = cursor;
+    while (cursor < value.length && value.charCodeAt(cursor) >= 48 && value.charCodeAt(cursor) <= 57) cursor += 1;
+    if (cursor === fractionStart) return null;
+  }
+  return { value: Number(value.slice(numberStart, cursor)), end: cursor };
+}
+
+function findDecimalCoordinatePair(value) {
+  for (let index = 0; index < value.length; index += 1) {
+    const first = readCoordinateNumber(value, index);
+    if (!first) continue;
+    let separator = first.end;
+    const hadWhitespace = /\s/.test(value[separator] ?? "");
+    while (/\s/.test(value[separator] ?? "")) separator += 1;
+    if (!hadWhitespace && ![",", ";"].includes(value[separator] ?? "")) continue;
+    if (value[separator] === "," || value[separator] === ";") separator += 1;
+    const second = readCoordinateNumber(value, separator);
+    if (second) return [first.value, second.value];
+  }
+  return null;
+}
+
+function findDmsCoordinateParts(value) {
+  const readUnsigned = (start, decimal = false) => {
+    let cursor = start;
+    const integerStart = cursor;
+    while (cursor < value.length && /[0-9]/.test(value[cursor])) cursor += 1;
+    if (cursor === integerStart) return null;
+    if (decimal && value[cursor] === ".") {
+      cursor += 1;
+      const fractionStart = cursor;
+      while (cursor < value.length && /[0-9]/.test(value[cursor])) cursor += 1;
+      if (cursor === fractionStart) return null;
+    }
+    return { value: Number(value.slice(start, cursor)), end: cursor };
+  };
+  const consume = (start, predicate, required = true) => {
+    let cursor = start;
+    while (cursor < value.length && predicate(value[cursor])) cursor += 1;
+    return cursor === start && required ? null : cursor;
+  };
+  for (let index = 0; index < value.length; index += 1) {
+    const latitudeDegrees = readUnsigned(index);
+    if (!latitudeDegrees) continue;
+    let cursor = consume(latitudeDegrees.end, (character) => character === "°" || /\s/.test(character));
+    if (cursor === null) continue;
+    const latitudeMinutes = readUnsigned(cursor);
+    if (!latitudeMinutes) continue;
+    cursor = consume(latitudeMinutes.end, (character) => character === "'" || /\s/.test(character));
+    if (cursor === null) continue;
+    const latitudeSeconds = readUnsigned(cursor, true);
+    if (!latitudeSeconds) continue;
+    cursor = consume(latitudeSeconds.end, (character) => character === '"' || /\s/.test(character), false);
+    const latitudeDirection = value[cursor]?.toUpperCase();
+    if (!["N", "S"].includes(latitudeDirection)) continue;
+    cursor = consume(cursor + 1, (character) => /\s/.test(character), false);
+    const longitudeDegrees = readUnsigned(cursor);
+    if (!longitudeDegrees) continue;
+    cursor = consume(longitudeDegrees.end, (character) => character === "°" || /\s/.test(character));
+    if (cursor === null) continue;
+    const longitudeMinutes = readUnsigned(cursor);
+    if (!longitudeMinutes) continue;
+    cursor = consume(longitudeMinutes.end, (character) => character === "'" || /\s/.test(character));
+    if (cursor === null) continue;
+    const longitudeSeconds = readUnsigned(cursor, true);
+    if (!longitudeSeconds) continue;
+    cursor = consume(longitudeSeconds.end, (character) => character === '"' || /\s/.test(character), false);
+    const longitudeDirection = value[cursor]?.toUpperCase();
+    if (!["E", "W"].includes(longitudeDirection)) continue;
+    return { latitudeDegrees: latitudeDegrees.value, latitudeMinutes: latitudeMinutes.value, latitudeSeconds: latitudeSeconds.value, latitudeDirection, longitudeDegrees: longitudeDegrees.value, longitudeMinutes: longitudeMinutes.value, longitudeSeconds: longitudeSeconds.value, longitudeDirection };
+  }
+  return null;
 }
 
 async function sleep(ms) {
@@ -278,7 +360,7 @@ export function normalizeGeocodeLabel(rawAddress) {
 
   if (
     /(?:https?:\/\/|www\.)/i.test(normalized) ||
-    /[^\s]+@[^\s]+\.[^\s]+/.test(normalized) ||
+    containsEmailLikePattern(normalized) ||
     /[<>`{}[\]\\]/.test(normalized)
   ) {
     return null;
@@ -289,6 +371,16 @@ export function normalizeGeocodeLabel(rawAddress) {
   }
 
   return normalized;
+}
+
+function containsEmailLikePattern(value) {
+  for (let at = value.indexOf("@"); at >= 0; at = value.indexOf("@", at + 1)) {
+    let start = at - 1;
+    while (start >= 0 && !/\s/.test(value[start])) start -= 1;
+    const end = (() => { let cursor = at + 1; while (cursor < value.length && !/\s/.test(value[cursor])) cursor += 1; return cursor; })();
+    if (start < at - 1 && value.slice(at + 1, end).includes(".")) return true;
+  }
+  return false;
 }
 
 export async function geocodeAddress(address, params) {

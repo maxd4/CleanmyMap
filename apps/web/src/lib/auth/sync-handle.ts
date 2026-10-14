@@ -5,12 +5,14 @@ import { buildFallbackHandle } from "@/lib/auth/identity-handle";
 const MAX_HANDLE_LENGTH = 30;
 
 function normalizeHandleSegment(value: string): string {
-  const normalized = value
+  let normalized = value
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9_]/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "");
+    ;
+  while (normalized.includes("__")) normalized = normalized.replaceAll("__", "_");
+  while (normalized.startsWith("_")) normalized = normalized.slice(1);
+  while (normalized.endsWith("_")) normalized = normalized.slice(0, -1);
   return normalized.slice(0, MAX_HANDLE_LENGTH);
 }
 

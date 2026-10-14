@@ -37,10 +37,37 @@ def find_col(columns, key):
 
 def extract_coords(text):
     if not text or pd.isna(text): return None, None
-    match = re.search(r'([-+]?\d*\.\d+|\d+)\s*[,;]\s*([-+]?\d*\.\d+|\d+)', str(text))
-    if match:
+    value = str(text)
+    for index, character in enumerate(value):
+        if character not in '+-' and not character.isdigit() and character != '.':
+            continue
+        cursor = index
+        if value[cursor] in '+-': cursor += 1
+        digits = cursor
+        while cursor < len(value) and value[cursor].isdigit(): cursor += 1
+        if cursor < len(value) and value[cursor] == '.':
+            cursor += 1
+            fraction = cursor
+            while cursor < len(value) and value[cursor].isdigit(): cursor += 1
+            if cursor == fraction: continue
+        if cursor == digits: continue
+        first_end = cursor
+        while cursor < len(value) and value[cursor].isspace(): cursor += 1
+        if cursor >= len(value) or value[cursor] not in ',;': continue
+        cursor += 1
+        while cursor < len(value) and value[cursor].isspace(): cursor += 1
+        second_start = cursor
+        if cursor < len(value) and value[cursor] in '+-': cursor += 1
+        second_digits = cursor
+        while cursor < len(value) and value[cursor].isdigit(): cursor += 1
+        if cursor < len(value) and value[cursor] == '.':
+            cursor += 1
+            fraction = cursor
+            while cursor < len(value) and value[cursor].isdigit(): cursor += 1
+            if cursor == fraction: continue
+        if cursor == second_digits: continue
         try:
-            return float(match.group(1)), float(match.group(2))
+            return float(value[index:first_end]), float(value[second_start:cursor])
         except (TypeError, ValueError):
             return None, None
     return None, None

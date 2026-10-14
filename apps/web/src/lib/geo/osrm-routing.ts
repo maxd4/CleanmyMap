@@ -135,7 +135,8 @@ export function buildOsrmRouteUrl(
   const coordString = coordinates
     .map((point) => `${point[1].toFixed(6)},${point[0].toFixed(6)}`)
     .join(";");
-  const baseUrl = (options.baseUrl ?? OSRM_BASE_URL).replace(/\/+$/, "");
+  let baseUrl = options.baseUrl ?? OSRM_BASE_URL;
+  while (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1);
   const profileSegment = options.profileSegment ?? OSRM_PROFILE;
   return `${baseUrl}/route/v1/${profileSegment}/${coordString}?geometries=geojson&overview=full&steps=true`;
 }

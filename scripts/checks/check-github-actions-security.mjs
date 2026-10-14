@@ -26,7 +26,7 @@ export function auditWorkflowContent(content, filePath = "workflow") {
     issues.push(`${filePath}${line}: invalid YAML: ${reason}`);
   }
 
-  const hasPullRequestTrigger = /^\s*pull_request\s*:/m.test(content);
+  const hasPullRequestTrigger = content.split(/\r?\n/).some((line) => line.trimStart().startsWith("pull_request:"));
   const usesSecrets = /\$\{\{\s*secrets\./.test(content);
   const hasFailClosedForkGuard = /github\.event\.pull_request\.head\.repo\.full_name\s*!=\s*github\.repository/.test(content)
     && /exit\s+1/.test(content);
@@ -34,15 +34,15 @@ export function auditWorkflowContent(content, filePath = "workflow") {
     issues.push(`${filePath}: workflows triggered by pull_request and using secrets must fail closed for external repositories before secret-bearing steps.`);
   }
 
-  if (!/^permissions:\s*/m.test(content)) {
+  if (!content.split(/\r?\n/).some((line) => line.startsWith("permissions:"))) {
     issues.push(`${filePath}: workflow must declare explicit top-level permissions (use permissions: {} and grant only job-scoped rights).`);
   }
 
-  if (/^\s*pull_request_target\s*:/m.test(content)) {
+  if (content.split(/\r?\n/).some((line) => line.trimStart().startsWith("pull_request_target:"))) {
     issues.push(`${filePath}: pull_request_target is forbidden for repository workflows.`);
   }
 
-  if (/^\s*permissions:\s*(?:write-all|read-all)\s*$/m.test(content)) {
+  if (content.split(/\r?\n/).some((line) => ["permissions: write-all", "permissions: read-all"].includes(line.trim()))) {
     issues.push(`${filePath}: broad workflow permissions are forbidden.`);
   }
 
@@ -53,7 +53,7 @@ export function auditWorkflowContent(content, filePath = "workflow") {
   }
 
   if (filePath.endsWith("e2e-supabase.yml") || filePath.endsWith("e2e-supabase.yaml")) {
-    if (/path:\s*artifacts\/playwright\b/.test(content)) {
+    if (content.split(/\r?\n/).some((line) => line.includes("path: artifacts/playwright"))) {
       issues.push(`${filePath}: raw Playwright artifacts must never be uploaded publicly.`);
     }
     if (!content.includes("scripts/checks/stage-public-e2e-artifact.mjs")) {
@@ -62,16 +62,15 @@ export function auditWorkflowContent(content, filePath = "workflow") {
     if (!content.includes("scripts/checks/check-public-e2e-artifact.mjs")) {
       issues.push(`${filePath}: public E2E evidence must pass its dedicated guard.`);
     }
-    if (!/path:\s*artifacts\/ci-public-evidence\b/.test(content)) {
+    if (!content.split(/\r?\n/).some((line) => line.includes("path: artifacts/ci-public-evidence"))) {
       issues.push(`${filePath}: only artifacts/ci-public-evidence may be uploaded.`);
     }
   }
 
   for (const [index, line] of content.split(/\r?\n/).entries()) {
-    const match = line.match(/^\s*(?:-\s*)?uses:\s*([^#]+?)(?:\s+#.*)?$/);
-    if (!match) continue;
-
-    const actionReference = match[1].trim();
+    const usesIndex = line.indexOf("uses:");
+    if (usesIndex < 0) continue;
+    const actionReference = line.slice(usesIndex + "uses:".length).split("#", 1)[0].trim();
     if (actionReference.startsWith("./") || actionReference.startsWith("docker://")) continue;
     if (!ACTION_SHA_PATTERN.test(actionReference)) {
       issues.push(`${filePath}:${index + 1}: action must be pinned to a full commit SHA: ${actionReference}`);
@@ -82,7 +81,7 @@ export function auditWorkflowContent(content, filePath = "workflow") {
         .split(/\r?\n/)
         .slice(index, index + 12)
         .join("\n");
-      if (!/^\s+persist-credentials:\s*false\s*$/m.test(checkoutBlock)) {
+      if (!checkoutBlock.split(/\r?\n/).some((checkoutLine) => checkoutLine.trim() === "persist-credentials: false")) {
         issues.push(`${filePath}:${index + 1}: read-only checkout must set persist-credentials: false`);
       }
     }

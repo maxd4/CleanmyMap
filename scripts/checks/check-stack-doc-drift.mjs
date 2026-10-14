@@ -86,17 +86,50 @@ function finding(file, message, line = 0) {
 }
 
 function versionReferences(content, kind) {
-  const pattern = kind === "next"
-    ? /(?<![-\w])(?:Next(?:\.js)?|next)\s*(?:[:=-]\s*|\s+)`?v?(\d+)(?:\.(\d+)(?:\.(\d+))?)?`?/gi
-    : kind === "react"
-      ? /\bReact\s*(?:[:=-]\s*|\s+)`?v?(\d+)(?:\.(\d+)(?:\.(\d+))?)?`?/gi
-    : /\bTypeScript\s*(?:[:=-]\s*|\s+)?(?:\^|~|v)?(\d+)(?:\.(\d+)(?:\.(\d+))?)?/gi;
-  return [...content.matchAll(pattern)].map((match) => ({
-    major: Number(match[1]),
-    version: [match[1], match[2], match[3]].filter(Boolean).join("."),
-    full: Boolean(match[2] && match[3]),
-    line: content.slice(0, match.index ?? 0).split(/\r?\n/).length,
-  }));
+  const label = kind === "next" ? "next" : kind === "react" ? "react" : "typescript";
+  const references = [];
+  let cursor = 0;
+  while (cursor < content.length) {
+    const labelStart = content.toLowerCase().indexOf(label, cursor);
+    if (labelStart < 0) break;
+    const before = content[labelStart - 1] ?? "";
+    if (/[A-Za-z0-9_]/.test(before) || (kind === "next" && before === "-")) {
+      cursor = labelStart + label.length;
+      continue;
+    }
+    let labelEnd = labelStart + label.length;
+    if (kind === "next" && content.slice(labelEnd, labelEnd + 3).toLowerCase() === ".js") labelEnd += 3;
+    let position = labelEnd;
+    while (/\s/.test(content[position] ?? "")) position += 1;
+    if (content[position] === "`") position += 1;
+    const separator = content[position];
+    if (separator === ":" || separator === "=" || separator === "-") {
+      position += 1;
+      while (/\s/.test(content[position] ?? "")) position += 1;
+    } else if (kind !== "typescript" && position === labelEnd) {
+      cursor = labelEnd;
+      continue;
+    }
+    if (["^", "~", "v"].includes(content[position]?.toLowerCase())) position += 1;
+    const majorStart = position;
+    while (/\d/.test(content[position] ?? "")) position += 1;
+    if (position === majorStart) {
+      cursor = labelEnd;
+      continue;
+    }
+    const parts = [content.slice(majorStart, position)];
+    for (let part = 0; part < 2 && content[position] === "."; part += 1) {
+      let digitStart = position + 1;
+      let digitEnd = digitStart;
+      while (/\d/.test(content[digitEnd] ?? "")) digitEnd += 1;
+      if (digitEnd === digitStart) break;
+      parts.push(content.slice(digitStart, digitEnd));
+      position = digitEnd;
+    }
+    references.push({ major: Number(parts[0]), version: parts.join("."), full: parts.length === 3, line: content.slice(0, labelStart).split(/\r?\n/).length });
+    cursor = position;
+  }
+  return references;
 }
 
 function validateManifest(view, findings) {

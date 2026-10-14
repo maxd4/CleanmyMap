@@ -20,7 +20,10 @@ if (!fs.existsSync(buttonPath)) {
   if (source.includes("transition-all")) {
     violations.push("cmm-button.tsx: transition-all is not allowed in the primitive");
   }
-  if (/tone\s*\??:\s*[^\n;]*[|]\s*["']muted["']|tone\s*===\s*["']muted["']/.test(source)) {
+  const hasMutedToneContract = source.split(/\r?\n/).some((line) =>
+    line.includes("tone") && line.includes("muted"),
+  );
+  if (hasMutedToneContract) {
     violations.push("cmm-button.tsx: muted is not part of the canonical tone contract");
   }
 

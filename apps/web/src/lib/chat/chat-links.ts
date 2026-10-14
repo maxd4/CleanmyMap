@@ -17,7 +17,8 @@ function splitTrailingUrlPunctuation(value: string): {
   let url = value;
   let punctuation = "";
 
-  while (/[.,!?;:]+$/.test(url)) {
+  const trailingPunctuation = new Set([".", ",", "!", "?", ";", ":"]);
+  while (trailingPunctuation.has(url.at(-1) ?? "")) {
     punctuation = `${url.slice(-1)}${punctuation}`;
     url = url.slice(0, -1);
   }

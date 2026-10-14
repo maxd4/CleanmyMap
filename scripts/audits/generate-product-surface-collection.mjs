@@ -84,15 +84,15 @@ function sourceFilesToMap(files) {
 function collectReferenceMatches(source, content) {
   const matches = [];
   const patterns = [
-    { kind: "link", expression: /href\s*[:=]\s*\{?\s*(["'`])([^"'`]+)\1/g },
-    { kind: "reference", expression: /(?:route|path|url)\s*[:=]\s*\{?\s*(["'`])([^"'`]+)\1/g },
-    { kind: "navigation", expression: /\brouter\.(?:push|replace)\(\s*(["'`])([^"'`]+)\1/g },
-    { kind: "redirect", expression: /\b(?:permanentRedirect|redirect)\(\s*(["'`])([^"'`]+)\1/g },
+    { kind: "link", expression: /href\s*[:=]\s*\{?\s*["'`]([^"'`]+)["'`]/g },
+    { kind: "reference", expression: /(?:route|path|url)\s*[:=]\s*\{?\s*["'`]([^"'`]+)["'`]/g },
+    { kind: "navigation", expression: /\brouter\.(?:push|replace)\(\s*["'`]([^"'`]+)["'`]/g },
+    { kind: "redirect", expression: /\b(?:permanentRedirect|redirect)\(\s*["'`]([^"'`]+)["'`]/g },
   ];
 
   for (const { kind, expression } of patterns) {
     for (const match of content.matchAll(expression)) {
-      const target = normalizeRouteTarget(match[2]);
+      const target = normalizeRouteTarget(match[1]);
       if (!target || target.startsWith("/api/") || target.startsWith("/_next/")) continue;
       matches.push({ source, kind, target });
     }
@@ -116,7 +116,7 @@ export function isRedirectOnlyRouteSource(source, files) {
 
 function extractRegistryEntries(content, routeConstants = new Map()) {
   const entries = [];
-  const blocks = content.matchAll(/(?:^|\r?\n)  \{\r?\n([\s\S]*?)\r?\n  \},?/gm);
+  const blocks = content.matchAll(/(?:^|\r?\n)  \{\r?\n([^{}]*)\r?\n  \},?/gm);
   for (const match of blocks) {
     const block = match[1];
     const id = block.match(/^\s*id:\s*["']([^"']+)["']/m)?.[1];
@@ -139,7 +139,7 @@ function extractRegistryEntries(content, routeConstants = new Map()) {
 
 function extractStringArrayConstants(content) {
   const arrays = new Map();
-  const declarationPattern = /\bconst\s+([A-Z][A-Z0-9_]*)\s*(?::\s*[^=]+)?=\s*\[([\s\S]*?)\]/g;
+  const declarationPattern = /\bconst\s+([A-Z][A-Z0-9_]*)\s*(?::\s*[^=]+)?=\s*\[([^\]]*)\]/g;
   for (const match of content.matchAll(declarationPattern)) {
     arrays.set(
       match[1],
@@ -152,8 +152,8 @@ function extractStringArrayConstants(content) {
 export function extractNavigationRouteIds(content) {
   const arrays = extractStringArrayConstants(content);
   const bodies = [
-    content.match(/const COMMON_PROFILE_SPACE_PAGES[\s\S]*?=\s*\{([\s\S]*?)\n\s*\};/)?.[1] ?? "",
-    content.match(/const PARCOURS_SPACE_PAGE_MAP[\s\S]*?=\s*\{([\s\S]*?)\n\s*\};/)?.[1] ?? "",
+    content.match(/const COMMON_PROFILE_SPACE_PAGES[^{}]*=\s*\{([^{}]*)\n\s*\};/)?.[1] ?? "",
+    content.match(/const PARCOURS_SPACE_PAGE_MAP[^{}]*=\s*\{([^{}]*)\n\s*\};/)?.[1] ?? "",
   ];
   const routeIds = new Set();
   for (const body of bodies) {

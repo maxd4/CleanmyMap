@@ -8,14 +8,27 @@ const authDirectory = path.join(process.cwd(), "artifacts", "playwright", "clerk
 const authFile = path.join(authDirectory, "user.json");
 const managedUserFile = path.join(authDirectory, "managed-user.json");
 
+function parseEnvAssignment(line: string): { key: string; value: string } | null {
+  let candidate = line.trimStart();
+  if (candidate.startsWith("export ")) candidate = candidate.slice("export ".length);
+  const separator = candidate.indexOf("=");
+  if (separator <= 0) return null;
+  const key = candidate.slice(0, separator).trim();
+  if (!key || [...key].some((character, index) => !(index === 0 ? /[A-Za-z_]/ : /[A-Za-z0-9_]/).test(character))) return null;
+  return { key, value: candidate.slice(separator + 1).trim() };
+}
+
 teardown("delete automatically managed Clerk user", async () => {
   const envFile = path.join(process.cwd(), "apps", "web", ".env.local");
   try {
     const contents = readFileSync(envFile, "utf8");
     for (const line of contents.split(/\r?\n/)) {
-      const match = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
-      if (!match || process.env[match[1]]) continue;
-      process.env[match[1]] = match[2].replace(/^("|')(.*)\1$/, "$2");
+      const assignment = parseEnvAssignment(line);
+      if (!assignment || process.env[assignment.key]) continue;
+      const rawValue = assignment.value;
+      process.env[assignment.key] = rawValue.length >= 2 && ((rawValue.startsWith('"') && rawValue.endsWith('"')) || (rawValue.startsWith("'") && rawValue.endsWith("'")))
+        ? rawValue.slice(1, -1)
+        : rawValue;
     }
   } catch {
     // The Clerk secret is optional during best-effort teardown.

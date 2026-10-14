@@ -77,7 +77,9 @@ function resolveProxyUrl(raw: string | undefined, appOrigin: string | undefined)
   }
 
   try {
-    return new URL(candidate, appOrigin).toString().replace(/\/+$/, "");
+    let normalized = new URL(candidate, appOrigin).toString();
+    while (normalized.endsWith("/")) normalized = normalized.slice(0, -1);
+    return normalized;
   } catch {
     return candidate;
   }

@@ -8,7 +8,9 @@ function isConfigured(value: string | undefined): boolean {
 }
 
 function normalizeHost(value: string): string {
-  return value.trim().replace(/\/+$/, "");
+  let normalized = value.trim();
+  while (normalized.endsWith("/")) normalized = normalized.slice(0, -1);
+  return normalized;
 }
 
 export function getPostHogKey(): string | null {

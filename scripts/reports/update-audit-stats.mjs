@@ -148,7 +148,10 @@ function collectWebSrcStats(dir) {
     stats.files += 1;
     stats.lines += countTextLines(text);
 
-    if (/^\s*['"]use client['"]\s*;?\s*$/m.test(text)) {
+    if (text.split(/\r?\n/).some((line) => {
+      const normalized = line.trim();
+      return normalized === '"use client";' || normalized === "'use client';" || normalized === '"use client"' || normalized === "'use client'";
+    })) {
       stats.useClientFiles += 1;
     }
 
@@ -270,15 +273,22 @@ const gitStats = collectGitHistory('2026-02-20');
 const publicImageCountText = `${rasterStats.byExt.get('.png') || 0} PNG publics et ${rasterStats.byExt.get('.webp') || 0} WebP public`;
 const maxRasterKo = Math.round(rasterStats.maxSize / 1024);
 
+function replaceRepoSnapshotSentence(report, replacement) {
+  const start = report.indexOf('Le dépôt fournit une photographie du projet à ');
+  const suffix = ' hors dépendances, builds, documentation, fichiers publics et lockfiles.';
+  if (start < 0) return report;
+  const end = report.indexOf(suffix, start);
+  if (end < 0) return report;
+  return `${report.slice(0, start)}${replacement}${report.slice(end + suffix.length)}`;
+}
+
 for (const document of readImpactReportDocuments()) {
 let report = document.text;
 
-report = replaceOrFail(
-  report,
-  /Le dépôt fournit une photographie du projet à (?:une date donnée|l'instant du relevé)\. Il contient \*\*[\d\s\u202f]+\s*fichiers source\*\* et \*\*[\d\s\u202f]+\s*lignes source\*\* hors dépendances, builds, documentation, fichiers publics et lockfiles\./,
-  `Le dépôt fournit une photographie du projet à l'instant du relevé. Il contient **${formatFr(repoStats.files)} fichiers source** et **${formatFr(repoStats.lines)} lignes source** hors dépendances, builds, documentation, fichiers publics et lockfiles.`,
-  'repo snapshot sentence',
-);
+  const snapshotReplacement = `Le dépôt fournit une photographie du projet à l'instant du relevé. Il contient **${formatFr(repoStats.files)} fichiers source** et **${formatFr(repoStats.lines)} lignes source**`;
+  const snapshotUpdated = replaceRepoSnapshotSentence(report, snapshotReplacement);
+  if (snapshotUpdated === report) throw new Error('Unable to replace repo snapshot sentence');
+  report = snapshotUpdated;
 
 report = replaceOrFail(
   report,

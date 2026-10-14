@@ -87,12 +87,22 @@ function isAmbiguousNumericCell(cell: XLSX.CellObject): boolean {
 function inspectCell(address: string, cell: unknown, rows: string[][], formulaRows: Set<number>): void {
   if (address.startsWith("!") || !cell || typeof cell !== "object") return;
   const typed = cell as XLSX.CellObject;
-  if (typed.f || typed.l) formulaRows.add(Number(address.match(/\d+$/)?.[0] ?? 0));
+  const addressParts = splitCellAddress(address);
+  if (!addressParts) return;
+  if (typed.f || typed.l) formulaRows.add(addressParts.rowNumber);
   if (!isAmbiguousNumericCell(typed)) return;
-  const rowNumber = Number(address.match(/\d+$/)?.[0] ?? 0);
+  const rowNumber = addressParts.rowNumber;
   if (rowNumber <= 0 || !rows[rowNumber - 1]) return;
-  const column = XLSX.utils.decode_col(address.replace(/\d+$/, ""));
+  const column = XLSX.utils.decode_col(addressParts.column);
   rows[rowNumber - 1][column] = `__AMBIGUOUS_NUMERIC_ID__${String(typed.w ?? typed.v)}`;
+}
+
+function splitCellAddress(address: string): { column: string; rowNumber: number } | null {
+  let split = address.length;
+  while (split > 0 && address.charCodeAt(split - 1) >= 48 && address.charCodeAt(split - 1) <= 57) split -= 1;
+  if (split === address.length || split === 0) return null;
+  const rowNumber = Number(address.slice(split));
+  return Number.isSafeInteger(rowNumber) ? { column: address.slice(0, split), rowNumber } : null;
 }
 
 function inspectSheetCells(sheet: XLSX.WorkSheet, rows: string[][]): number[] {

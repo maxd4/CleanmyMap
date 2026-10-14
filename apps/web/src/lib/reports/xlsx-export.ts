@@ -55,6 +55,8 @@ export function buildXlsxWorkbook(sheets: XlsxSheet[]): Uint8Array {
 }
 
 export function safeXlsxFilename(value: string): string {
-  const normalized = value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
+  let normalized = value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 80);
+  while (normalized.startsWith("-")) normalized = normalized.slice(1);
+  while (normalized.endsWith("-")) normalized = normalized.slice(0, -1);
   return `${normalized || "spogomi-evenement"}.xlsx`;
 }

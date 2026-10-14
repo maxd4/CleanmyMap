@@ -43,11 +43,30 @@ export type GpxSerializerInput = {
 
 const GPX_1_1_NAMESPACE = "http://www.topografix.com/GPX/1/1";
 
-const PERSONAL_DATA_PATTERN =
-  /(?:[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}|(?:clerk|user)(?:[_-]?(?:id))?\s*[:=]|(?:clerk|user)_[A-Za-z0-9_-]{4,}|(?:bearer|authorization|token)\s*[:=]|\bparticipants?\b)/i;
+const PERSONAL_DATA_PATTERNS = [
+  /[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}/i,
+  /(?:clerk|user)(?:[_-]?id)?\s*[:=]/i,
+  /(?:clerk|user)_[A-Za-z0-9_-]{4,}/i,
+  /(?:bearer|authorization|token)\s*[:=]/i,
+];
+
+function containsParticipantWord(value: string): boolean {
+  const normalized = value.toLowerCase();
+  let cursor = normalized.indexOf("participant");
+  while (cursor >= 0) {
+    const before = normalized[cursor - 1] ?? "";
+    const afterToken = normalized[cursor + "participant".length] ?? "";
+    const end = afterToken === "s" ? cursor + "participants".length : cursor + "participant".length;
+    const after = normalized[end] ?? "";
+    const isWord = (character: string) => /[a-z0-9_]/.test(character);
+    if (!isWord(before) && !isWord(after)) return true;
+    cursor = normalized.indexOf("participant", cursor + 1);
+  }
+  return false;
+}
 
 function assertSafeXmlText(value: string, field: string): void {
-  if (PERSONAL_DATA_PATTERN.test(value)) {
+  if (PERSONAL_DATA_PATTERNS.some((pattern) => pattern.test(value)) || containsParticipantWord(value)) {
     throw new Error(`Le champ GPX ${field} contient une donnée personnelle interdite.`);
   }
 

@@ -52,21 +52,28 @@ function sanitizeFileName(fileName: string | undefined): string | undefined {
 
 function parseAttributes(source: string): Record<string, string> {
   const attributes: Record<string, string> = {};
-  const attributePattern = /([A-Za-z_][\w:.-]*)\s*=\s*(["'])(.*?)\2/g;
-  let match: RegExpExecArray | null;
-  let consumed = 0;
-
-  while ((match = attributePattern.exec(source)) !== null) {
-    const between = source.slice(consumed, match.index).trim();
-    if (between) {
+  let cursor = 0;
+  while (cursor < source.length) {
+    while (/\s/.test(source[cursor] ?? "")) cursor += 1;
+    if (cursor >= source.length) break;
+    const nameStart = cursor;
+    while (/[A-Za-z0-9_:.\-]/.test(source[cursor] ?? "")) cursor += 1;
+    if (cursor === nameStart || !/[A-Za-z_]/.test(source[nameStart] ?? "")) {
       throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
     }
-    attributes[localName(match[1])] = match[3];
-    consumed = attributePattern.lastIndex;
-  }
-
-  if (source.slice(consumed).trim()) {
-    throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
+    const name = source.slice(nameStart, cursor);
+    while (/\s/.test(source[cursor] ?? "")) cursor += 1;
+    if (source[cursor] !== "=") throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
+    cursor += 1;
+    while (/\s/.test(source[cursor] ?? "")) cursor += 1;
+    const quote = source[cursor];
+    if (quote !== '"' && quote !== "'") throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
+    cursor += 1;
+    const valueStart = cursor;
+    const valueEnd = source.indexOf(quote, valueStart);
+    if (valueEnd < 0) throw new GpxImportError("Le fichier GPX contient un attribut XML invalide.");
+    attributes[localName(name)] = source.slice(valueStart, valueEnd);
+    cursor = valueEnd + 1;
   }
   return attributes;
 }
@@ -83,14 +90,15 @@ function parseTag(rawTag: string): XmlTag | null {
   const normalized = selfClosing
     ? withoutClosing.replace(/\/\s*$/, "").trim()
     : withoutClosing;
-  const nameMatch = normalized.match(/^([A-Za-z_][\w:.-]*)(?:\s+([\s\S]*))?$/);
-  if (!nameMatch) {
+  const nameEnd = normalized.search(/[\s]/);
+  const name = nameEnd < 0 ? normalized : normalized.slice(0, nameEnd);
+  if (!/^[A-Za-z_][\w:.-]*$/.test(name)) {
     throw new GpxImportError("Le fichier GPX contient une balise XML invalide.");
   }
 
   return {
-    name: localName(nameMatch[1]),
-    attributes: parseAttributes(nameMatch[2] ?? ""),
+    name: localName(name),
+    attributes: parseAttributes(nameEnd < 0 ? "" : normalized.slice(nameEnd)),
     closing,
     selfClosing,
   };
@@ -104,16 +112,19 @@ function assertXmlSafe(xml: string): void {
 
 function parseTrackSegments(xml: string): GeodesicCoordinate[][] {
   assertXmlSafe(xml);
-  const tagPattern = /<[^>]*>/g;
   const stack: string[] = [];
   const segments: GeodesicCoordinate[][] = [];
   let activeSegment: GeodesicCoordinate[] | null = null;
   let rootSeen = false;
   let rootClosed = false;
-  let match: RegExpExecArray | null;
-
-  while ((match = tagPattern.exec(xml)) !== null) {
-    const tag = parseTag(match[0]);
+  let cursor = 0;
+  while (cursor < xml.length) {
+    const tagStart = xml.indexOf("<", cursor);
+    if (tagStart < 0) break;
+    const tagEnd = xml.indexOf(">", tagStart + 1);
+    if (tagEnd < 0) throw new GpxImportError("Le fichier GPX n'est pas un XML bien formé.");
+    const tag = parseTag(xml.slice(tagStart, tagEnd + 1));
+    cursor = tagEnd + 1;
     if (!tag) continue;
 
     if (tag.closing) {

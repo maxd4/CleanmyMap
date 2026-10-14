@@ -38,10 +38,33 @@ export function stripEventRefFromNotes(
   if (!raw) {
     return null;
   }
-  const stripped = raw
-    .replace(/\s*\[EVENT_REF\][a-zA-Z0-9-]{6,80}\s*/g, "\n")
-    .replace(/\n{2,}/g, "\n")
-    .trim();
+  let stripped = "";
+  let cursor = 0;
+  while (cursor < raw.length) {
+    const markerStart = raw.indexOf(EVENT_REF_NOTE_PREFIX, cursor);
+    if (markerStart < 0) {
+      stripped += raw.slice(cursor);
+      break;
+    }
+    const candidateStart = markerStart + EVENT_REF_NOTE_PREFIX.length;
+    let candidateEnd = candidateStart;
+    while (candidateEnd < raw.length && /[a-zA-Z0-9-]/.test(raw[candidateEnd] ?? "")) candidateEnd += 1;
+    const candidate = raw.slice(candidateStart, candidateEnd);
+    if (!normalizeEventId(candidate)) {
+      stripped += raw.slice(cursor, candidateStart);
+      cursor = candidateStart;
+      continue;
+    }
+    let replaceStart = markerStart;
+    while (replaceStart > cursor && /\s/.test(raw[replaceStart - 1] ?? "")) replaceStart -= 1;
+    let replaceEnd = candidateEnd;
+    while (replaceEnd < raw.length && /\s/.test(raw[replaceEnd] ?? "")) replaceEnd += 1;
+    stripped += raw.slice(cursor, replaceStart);
+    stripped += "\n";
+    cursor = replaceEnd;
+  }
+  while (stripped.includes("\n\n")) stripped = stripped.replaceAll("\n\n", "\n");
+  stripped = stripped.trim();
   return stripped.length > 0 ? stripped : null;
 }
 

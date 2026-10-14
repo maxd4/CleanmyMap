@@ -72,11 +72,15 @@ const CANONICAL_SIZE_CLASSES = new Map([
 
 function readSizeClasses(source) {
   const body = extractObjectBody(source, "sizeClasses");
-  return new Map(
-    [...body.matchAll(/^\s*([a-z]+)\s*:\s*["']([^"']+)["']\s*,?/gim)].map(
-      ([, size, classes]) => [size, classes],
-    ),
-  );
+  const values = new Map();
+  for (const line of body.split(/\r?\n/)) {
+    const separator = line.indexOf(":");
+    if (separator < 0) continue;
+    const size = line.slice(0, separator).trim();
+    const classes = line.slice(separator + 1).trim().replaceAll(",", "").replaceAll('"', "").replaceAll("'", "");
+    if (/^[a-z]+$/.test(size) && classes) values.set(size, classes);
+  }
+  return values;
 }
 
 function sameMap(left, right) {
@@ -113,8 +117,10 @@ export function auditCmmIconSource(source, filePath = CMM_ICON_PATH) {
     requireText(source, filePath, marker, violations);
   }
 
-  const sizeType = source.match(/export type\s+CmmIconSize\s*=\s*([^;]+);/);
-  if (sizeType?.[1].replace(/\s+/g, " ").trim() !== '"xs" | "sm" | "md" | "lg" | "xl"') {
+  const typeStart = source.indexOf("export type CmmIconSize");
+  const typeEnd = typeStart < 0 ? -1 : source.indexOf(";", typeStart);
+  const sizeType = typeStart >= 0 && typeEnd > typeStart ? source.slice(typeStart, typeEnd).split("=", 2)[1]?.replace(/\s+/g, " ").trim() : null;
+  if (sizeType !== '"xs" | "sm" | "md" | "lg" | "xl"') {
     violations.push(`${filePath}: CmmIconSize must be exactly xs | sm | md | lg | xl`);
   }
 

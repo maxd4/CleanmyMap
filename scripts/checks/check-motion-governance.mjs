@@ -71,12 +71,13 @@ export function auditDisplayModesCss(source, filePath = MOTION_PATHS.displayMode
 
 export function auditRevealVisibilityCss(source, filePath = MOTION_PATHS.baseCss) {
   const violations = [];
-  const blockPattern = /([^{}]+)\{([^{}]*)\}/g;
+  const blockPattern = /[^{}]+\{[^{}]*\}/g;
   const hiddenDeclaration = /(?:opacity\s*:\s*0\b|visibility\s*:\s*hidden\b|display\s*:\s*none\b|content-visibility\s*:\s*hidden\b)/i;
 
-  for (const match of source.matchAll(blockPattern)) {
-    const selectors = match[1].trim();
-    const declarations = match[2];
+  for (const block of source.matchAll(blockPattern)) {
+    const separator = block[0].indexOf("{");
+    const selectors = block[0].slice(0, separator).trim();
+    const declarations = block[0].slice(separator + 1, -1);
     if (selectors.includes("[data-gsap-reveal]") && hiddenDeclaration.test(declarations)) {
       violations.push(
         `${filePath}: data-gsap-reveal must remain visible without JavaScript/GSAP`,

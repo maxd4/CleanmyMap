@@ -33,7 +33,8 @@ function normalizeRoute(value) {
     return "";
   }
 
-  const withoutExample = trimmed.replace(/\s+\(ex\..*$/i, "").trim();
+  const exampleIndex = trimmed.toLowerCase().indexOf(" (ex.");
+  const withoutExample = exampleIndex >= 0 ? trimmed.slice(0, exampleIndex).trim() : trimmed;
   const withoutQuery = withoutExample.split("?")[0]?.split("#")[0] ?? withoutExample;
   const collapsed = withoutQuery.replace(/\/+/g, "/");
 
@@ -115,7 +116,9 @@ export function extractIndexEntries(content) {
     }
 
     const normalizedLine = line.toLowerCase();
-    const readmeMatch = columns[1].match(/\[[^\]]+\]\(([^)]+)\)/);
+    const readmeOpen = columns[1].indexOf("[");
+    const readmeClose = readmeOpen < 0 ? -1 : columns[1].indexOf("](", readmeOpen + 1);
+    const readmeEnd = readmeClose < 0 ? -1 : columns[1].indexOf(")", readmeClose + 2);
     const pageType = columns[2].toLowerCase();
     const isAliasOrRedirect =
       pageType.includes("redirection") ||
@@ -133,7 +136,7 @@ export function extractIndexEntries(content) {
       pageType: columns[2],
       documentedAccessModes: extractDocumentedAccessModes(columns[2]),
       familyLabel: columns[3] ?? "",
-      readmePath: readmeMatch ? readmeMatch[1] : null,
+      readmePath: readmeEnd > readmeClose + 2 ? columns[1].slice(readmeClose + 2, readmeEnd) : null,
       isAliasOrRedirect,
       isAwaitingClassification,
       isGenericDynamicPattern: route.includes("[sectionId]"),
@@ -198,7 +201,9 @@ function extractArrayValues(body, constants = new Map()) {
   }
 
   return body
-    .replace(/\/\/.*$/gm, "")
+    .split(/\r?\n/)
+    .map((line) => line.split("//", 1)[0])
+    .join("\n")
     .split(",")
     .map((item) => item.trim())
     .map((item) => {

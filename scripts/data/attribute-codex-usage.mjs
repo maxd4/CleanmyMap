@@ -71,12 +71,17 @@ function asNumber(value) {
 
 function normalizePath(value) {
   if (typeof value !== "string" || value.length === 0) return null;
-  return value.replaceAll("\\", "/").replace(/\/+$/, "").toLowerCase();
+  let normalized = value.replaceAll("\\", "/").toLowerCase();
+  while (normalized.endsWith("/")) normalized = normalized.slice(0, -1);
+  return normalized;
 }
 
 function normalizeOrigin(value) {
   if (typeof value !== "string" || value.length === 0) return null;
-  return value.trim().replace(/\/+$/, "").replace(/\.git$/i, "").toLowerCase();
+  let normalized = value.trim().toLowerCase();
+  while (normalized.endsWith("/")) normalized = normalized.slice(0, -1);
+  if (normalized.endsWith(".git")) normalized = normalized.slice(0, -4);
+  return normalized;
 }
 
 function sameOrInside(candidate, root) {

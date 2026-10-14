@@ -39,7 +39,7 @@ export function validateNodeVersionContract({
     issues.push(`apps/web/.nvmrc must contain exactly ${NODE_FAMILY}; found ${JSON.stringify(contract)}`);
   }
 
-  const workflowNodeFile = workflowContent.match(/^\s*NODE_VERSION_FILE:\s*([^\s#]+)\s*$/m)?.[1];
+  const workflowNodeFile = workflowContent.split(/\r?\n/).find((line) => line.trimStart().startsWith("NODE_VERSION_FILE:"))?.split(":", 2)[1]?.trim().split("#", 1)[0].trim();
   if (workflowNodeFile !== "apps/web/.nvmrc") {
     issues.push(`CI must centralize Node through NODE_VERSION_FILE=apps/web/.nvmrc; found ${workflowNodeFile ?? "missing"}`);
   }

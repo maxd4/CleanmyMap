@@ -3,17 +3,75 @@ import { escapeHtml } from "@/lib/security/html-escape";
 function renderInlineMarkdown(value: string): string {
   const escaped = escapeHtml(value);
   const withCode = escaped.replace(/`([^`]+)`/g, "<code>$1</code>");
-  const withLinks = withCode.replace(
-    /\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]+)")?\)/g,
-    (_match, label: string, href: string, title?: string) => {
-      const safeTitle = title ? ` title="${escapeHtml(title)}"` : "";
-      return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer"${safeTitle}>${label}</a>`;
-    },
-  );
+  const withLinks = replaceInlineMarkdownLinks(withCode);
 
   return withLinks
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+}
+
+function replaceInlineMarkdownLinks(value: string): string {
+  let output = "";
+  let cursor = 0;
+
+  while (cursor < value.length) {
+    const openBracket = value.indexOf("[", cursor);
+    if (openBracket < 0) {
+      output += value.slice(cursor);
+      break;
+    }
+    const closeBracket = value.indexOf("]", openBracket + 1);
+    if (closeBracket < 0) {
+      output += value.slice(cursor);
+      break;
+    }
+    if (closeBracket <= openBracket + 1 || value[closeBracket + 1] !== "(") {
+      output += value.slice(cursor, closeBracket + 1);
+      cursor = closeBracket + 1;
+      continue;
+    }
+
+    let hrefEnd = closeBracket + 2;
+    while (hrefEnd < value.length && !/\s/.test(value[hrefEnd] ?? "") && value[hrefEnd] !== ")") {
+      hrefEnd += 1;
+    }
+    if (hrefEnd === closeBracket + 2) {
+      output += value.slice(cursor, openBracket + 1);
+      cursor = openBracket + 1;
+      continue;
+    }
+
+    let end = hrefEnd;
+    let title: string | undefined;
+    if (value[hrefEnd] === ")") {
+      end = hrefEnd;
+    } else {
+      while (end < value.length && /\s/.test(value[end] ?? "")) end += 1;
+      if (value[end] === '"') {
+        const titleEnd = value.indexOf('"', end + 1);
+        if (titleEnd > end + 1 && value[titleEnd + 1] === ")") {
+          title = value.slice(end + 1, titleEnd);
+          end = titleEnd + 1;
+        } else {
+          output += value.slice(cursor, openBracket + 1);
+          cursor = openBracket + 1;
+          continue;
+        }
+      } else {
+        output += value.slice(cursor, openBracket + 1);
+        cursor = openBracket + 1;
+        continue;
+      }
+    }
+
+    const label = value.slice(openBracket + 1, closeBracket);
+    const href = value.slice(closeBracket + 2, hrefEnd);
+    const safeTitle = title ? ` title="${escapeHtml(title)}"` : "";
+    output += `${value.slice(cursor, openBracket)}<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer"${safeTitle}>${label}</a>`;
+    cursor = end + 1;
+  }
+
+  return output;
 }
 
 function renderTable(lines: string[]): string {

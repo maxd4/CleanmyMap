@@ -97,15 +97,25 @@ function parseCobertura(content, definition, root) {
     const source = normalizeSourcePath(filename, { root, sourceRoot: definition.sourceRoot });
     const body = text.slice(openEnd + 1, closeStart);
     const lines = [];
-    const linePattern = /<line\b([^>]*)\/?\s*>/g;
-    let lineMatch;
-    while ((lineMatch = linePattern.exec(body)) !== null) {
-      const number = Number(xmlAttribute(lineMatch[1], "number"));
-      const hits = Number(xmlAttribute(lineMatch[1], "hits"));
+    let lineCursor = 0;
+    while (true) {
+      const lineStart = body.indexOf("<line", lineCursor);
+      if (lineStart < 0) break;
+      const afterName = body[lineStart + 5] ?? "";
+      if (!/[\s>]/.test(afterName)) {
+        lineCursor = lineStart + 5;
+        continue;
+      }
+      const lineEnd = body.indexOf(">", lineStart + 5);
+      if (lineEnd < 0) throw new Error(`${definition.scope} coverage XML contains an unterminated line element.`);
+      const attributes = body.slice(lineStart + 5, lineEnd);
+      const number = Number(xmlAttribute(attributes, "number"));
+      const hits = Number(xmlAttribute(attributes, "hits"));
       if (!Number.isInteger(number) || number < 1 || !Number.isInteger(hits) || hits < 0) {
         throw new Error(`${definition.scope} coverage XML contains an invalid line metric.`);
       }
       lines.push({ number, hits });
+      lineCursor = lineEnd + 1;
     }
     if (lines.length > 0) classRecords.push({ source, lines });
     offset = closeStart + "</class>".length;

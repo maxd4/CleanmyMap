@@ -15,8 +15,8 @@ const scanRoots = [
 const fileExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 const ignoredDirs = new Set([".git", "node_modules", ".next", "dist", "build", "coverage"]);
 const localImportPatterns = [
-  /(?:^|\n)\s*import\s+(?!type\b)[\s\S]*?\sfrom\s+['"]([^'"]+)['"]/g,
-  /(?:^|\n)\s*export\s+(?!type\b)[\s\S]*?\sfrom\s+['"]([^'"]+)['"]/g,
+  /^\s*import\s+(?!type\b)[^\n]*\sfrom\s+['"]([^'"]+)['"]/gm,
+  /^\s*export\s+(?!type\b)[^\n]*\sfrom\s+['"]([^'"]+)['"]/gm,
   /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
 ];
 const dynamicTriggerPatterns = {
@@ -24,7 +24,7 @@ const dynamicTriggerPatterns = {
   cookies: /\bcookies\s*\(/,
   headers: /\bheaders\s*\(/,
 };
-const externalFetchPattern = /fetch\s*\(\s*(?:[\s\S]*?['"]https?:\/\/|new\s+URL\s*\(\s*['"]https?:\/\/)/;
+const externalFetchPattern = /fetch\s*\([^\n]*['"]https?:\/\//;
 
 const JUSTIFICATION_KEYWORDS = [
   "justification",

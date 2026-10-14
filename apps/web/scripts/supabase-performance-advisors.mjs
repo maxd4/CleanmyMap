@@ -47,11 +47,13 @@ const explicitPendingWorkloadByName = new Map(
 );
 
 function normalizeAdvisorName(value) {
-  return String(value ?? "")
+  let normalized = String(value ?? "")
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+    .replace(/[^a-z0-9]+/g, "_");
+  while (normalized.startsWith("_")) normalized = normalized.slice(1);
+  while (normalized.endsWith("_")) normalized = normalized.slice(0, -1);
+  return normalized;
 }
 
 function findingsFromPayload(payload) {

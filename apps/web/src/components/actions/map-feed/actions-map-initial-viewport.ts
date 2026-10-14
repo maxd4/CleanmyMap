@@ -59,6 +59,21 @@ export type InitialPublicMapViewportResolution = {
   searchRadiiKm: number[];
 };
 
+function extractPostalCity(value: string): string | null {
+  for (let index = 0; index <= value.length - 5; index += 1) {
+    const postalCode = value.slice(index, index + 5);
+    if (!/^\d{5}$/.test(postalCode)) continue;
+    if (index > 0 && /[\w]/u.test(value[index - 1] ?? "")) continue;
+    let cityStart = index + 5;
+    while (/\s/u.test(value[cityStart] ?? "")) cityStart += 1;
+    let cityEnd = cityStart;
+    while (cityEnd < value.length && ![",", "→"].includes(value[cityEnd] ?? "")) cityEnd += 1;
+    const city = value.slice(cityStart, cityEnd).trim();
+    if (city) return city;
+  }
+  return null;
+}
+
 function isValidCoordinatePair(
   latitude: number | null,
   longitude: number | null,
@@ -100,15 +115,7 @@ function normalizeCityKey(value: string): string {
  */
 export function mapItemCityLabel(item: ActionMapItem): string | null {
   const locationLabel = item.contract?.location.label ?? item.location_label;
-  const postalCityMatch =
-    typeof locationLabel === "string"
-      ? locationLabel.match(/\b\d{5}\s+([^,→]+?)(?=\s*(?:→|,|$))/u)
-      : null;
-  if (postalCityMatch?.[1]) {
-    return postalCityMatch[1].trim();
-  }
-
-  return null;
+  return typeof locationLabel === "string" ? extractPostalCity(locationLabel) : null;
 }
 
 function mapItemRecency(item: ActionMapItem): {

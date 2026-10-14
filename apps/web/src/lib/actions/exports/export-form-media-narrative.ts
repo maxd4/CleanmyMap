@@ -11,12 +11,14 @@ export function escapeXml(value: string): string {
 }
 
 function slugify(value: string): string {
-  return value
+  let normalized = value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/gi, "-")
-    .replace(/^-+|-+$/g, "")
     .toLowerCase();
+  while (normalized.startsWith("-")) normalized = normalized.slice(1);
+  while (normalized.endsWith("-")) normalized = normalized.slice(0, -1);
+  return normalized;
 }
 
 export function wrapText(value: string, maxCharacters: number): string[] {

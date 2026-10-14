@@ -27,8 +27,11 @@ function extractActualRoute(routeLabel) {
 }
 
 function extractReadmeHref(cell) {
-  const match = cell.match(/\[[^\]]+\]\(([^)]+)\)/);
-  return match?.[1] ?? null;
+  const open = cell.indexOf("[");
+  const close = open < 0 ? -1 : cell.indexOf("](", open + 1);
+  if (close < 0) return null;
+  const end = cell.indexOf(")", close + 2);
+  return end > close + 2 ? cell.slice(close + 2, end) : null;
 }
 
 function parseTableRows(markdown) {

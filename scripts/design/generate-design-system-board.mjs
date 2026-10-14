@@ -134,10 +134,27 @@ function extractCssVars(source, selector) {
   const closeIndex = findMatchingDelimiter(source, openIndex, "{", "}");
   const block = source.slice(openIndex + 1, closeIndex);
   const vars = {};
-  const matcher = /(--[A-Za-z0-9-]+)\s*:\s*([^;]+);/g;
-  let match;
-  while ((match = matcher.exec(block))) {
-    vars[match[1]] = match[2].trim();
+  let cursor = 0;
+  while (cursor < block.length) {
+    const nameStart = block.indexOf("--", cursor);
+    if (nameStart < 0) break;
+    let nameEnd = nameStart + 2;
+    while (/[A-Za-z0-9-]/.test(block[nameEnd] ?? "")) nameEnd += 1;
+    if (nameEnd === nameStart + 2) {
+      cursor = nameEnd;
+      continue;
+    }
+    let colon = nameEnd;
+    while (/\s/.test(block[colon] ?? "")) colon += 1;
+    if (block[colon] !== ":") {
+      cursor = nameEnd;
+      continue;
+    }
+    const valueStart = colon + 1;
+    const valueEnd = block.indexOf(";", valueStart);
+    if (valueEnd < 0) break;
+    vars[block.slice(nameStart, nameEnd)] = block.slice(valueStart, valueEnd).trim();
+    cursor = valueEnd + 1;
   }
   return vars;
 }

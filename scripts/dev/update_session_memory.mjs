@@ -83,9 +83,9 @@ export function parseExisting(content) {
     if (!current) {
       continue;
     }
-    const item = line.match(/^\-\s+(.+)$/);
-    if (item) {
-      state[current].push(item[1].trim());
+    const item = line.trimStart();
+    if (item.startsWith("- ")) {
+      state[current].push(item.slice(2).trim());
     }
   }
 

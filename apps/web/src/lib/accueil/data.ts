@@ -213,7 +213,12 @@ function getActionLocation(contract: ActionDataContract): string {
     return "Lieu non précisé";
   }
 
-  return location.split(/\s*(?:→|->|—)\s*/u)[0]?.trim() || location;
+  const separators = ["→", "->", "—"];
+  const separatorIndex = separators
+    .map((separator) => location.indexOf(separator))
+    .filter((index) => index >= 0)
+    .sort((left, right) => left - right)[0];
+  return separatorIndex === undefined ? location : location.slice(0, separatorIndex).trim() || location;
 }
 
 function getActionSummary(contract: ActionDataContract): string {

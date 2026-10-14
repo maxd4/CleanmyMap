@@ -53,9 +53,10 @@ export function findGitNexusHygieneViolations(
   }
 
   const ignored = view
-    ? /(?:^|\r?\n)\s*\/?\.gitnexus\/?\s*(?:#.*)?$/m.test(
-        repositoryView.exists(".gitignore") ? repositoryView.readText(".gitignore") : "",
-      ) && !repositoryView.listFiles(".gitnexus").length
+    ? (repositoryView.exists(".gitignore") ? repositoryView.readText(".gitignore") : "")
+      .split(/\r?\n/)
+      .some((line) => line.trim().split("#", 1)[0].trim().replaceAll("/", "") === ".gitnexus")
+      && !repositoryView.listFiles(".gitnexus").length
     : gitNexusIgnored(repoRoot);
   if (!ignored) {
     violations.push(".gitnexus/ must remain local and ignored by Git.");

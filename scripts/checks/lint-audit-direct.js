@@ -117,9 +117,17 @@ function parseLintOutput(lintOutput) {
     }
     
     // Détecter les warnings/erreurs
-    const warningMatch = cleanLine.match(/^(\d+):(\d+)\s+(warning|error)\s+(.+?)\s+([a-zA-Z0-9._/@-]+)$/);
-    if (warningMatch && currentFile) {
-      const [, lineNum, colNum, type, message, ruleId] = warningMatch;
+    const locationSeparator = cleanLine.indexOf(' ');
+    const locationText = locationSeparator > 0 ? cleanLine.slice(0, locationSeparator) : '';
+    const [lineNum, colNum] = locationText.split(':');
+    const diagnostic = locationSeparator > 0 ? cleanLine.slice(locationSeparator).trimStart() : '';
+    const typeEnd = diagnostic.indexOf(' ');
+    const type = typeEnd > 0 ? diagnostic.slice(0, typeEnd) : '';
+    const detail = typeEnd > 0 ? diagnostic.slice(typeEnd).trimStart() : '';
+    const ruleSeparator = detail.lastIndexOf(' ');
+    const ruleId = ruleSeparator > 0 ? detail.slice(ruleSeparator + 1) : '';
+    const message = ruleSeparator > 0 ? detail.slice(0, ruleSeparator) : '';
+    if (/^\d+$/.test(lineNum) && /^\d+$/.test(colNum) && (type === 'warning' || type === 'error') && message && ruleId && currentFile) {
       
       warnings.push({
         file: currentFile,

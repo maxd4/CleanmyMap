@@ -117,8 +117,22 @@ async function fetchPaginatedArray<T>(
     items.push(...chunk);
 
     const linkHeader = response.headers.get("link");
-    const nextMatch = linkHeader?.match(/<([^>]+)>;\s*rel="next"/);
-    nextUrl = nextMatch?.[1] ?? null;
+    nextUrl = null;
+    if (linkHeader) {
+      let cursor = 0;
+      while (cursor < linkHeader.length) {
+        const start = linkHeader.indexOf("<", cursor);
+        if (start < 0) break;
+        const end = linkHeader.indexOf(">", start + 1);
+        if (end < 0) break;
+        const relation = linkHeader.slice(end + 1).split(",", 1)[0]?.trim();
+        if (relation === '; rel="next"') {
+          nextUrl = linkHeader.slice(start + 1, end);
+          break;
+        }
+        cursor = end + 1;
+      }
+    }
     guard += 1;
   }
 

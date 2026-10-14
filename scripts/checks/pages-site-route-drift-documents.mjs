@@ -7,7 +7,6 @@ import {
 } from "./pages-site-route-drift-routes.mjs";
 
 const ALLOWED_FAMILY_DIRECTORIES = new Set(["screenshots"]);
-const EXACT_CURRENT_SCOPE_PLACEHOLDER = /^\s*-\s+\*\*Scope\*\*\s*:\s*à corriger\s*$/im;
 
 function isWithin(root, candidate) {
   const relative = path.relative(root, candidate);
@@ -39,7 +38,7 @@ export async function walkFiles(root, predicate) {
 }
 
 export function hasExactCurrentScopePlaceholder(content) {
-  return EXACT_CURRENT_SCOPE_PLACEHOLDER.test(String(content ?? ""));
+  return String(content ?? "").split(/\r?\n/).some((line) => line.trim() === "- **Scope** : à corriger");
 }
 
 async function fileExists(filePath) {
@@ -116,8 +115,9 @@ export async function loadCanonicalRouteDocs({
       isAlias: entry.isAliasOrRedirect,
       isGenericDynamicPattern: entry.isGenericDynamicPattern,
       documentedAccessModes: extractDocumentedAccessModes(
-        [...readmeContent.matchAll(/^\s*-\s+\*\*(Accès runtime|Statut)\*\*\s*:\s*(.*)$/gim)]
-          .map((match) => match[2])
+        readmeContent.split(/\r?\n/)
+          .filter((line) => line.includes("**Accès runtime**:") || line.includes("**Statut**:"))
+          .map((line) => line.slice(line.indexOf(":") + 1).trim())
           .join(" "),
       ),
       line: entry.line,

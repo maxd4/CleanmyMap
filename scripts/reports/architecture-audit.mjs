@@ -104,8 +104,28 @@ function buildDomainMeasures(rows) {
 
 function importSpecifiers(content) {
   const specs = [];
-  const expression = /\b(?:from|import|require)\s*\(?\s*["']([^"']+)["']/g;
-  for (const match of content.matchAll(expression)) specs.push(match[1]);
+  for (const line of content.split(/\r?\n/)) {
+    let cursor = 0;
+    while (cursor < line.length) {
+      const candidates = ["from", "import", "require"]
+        .map((keyword) => ({ keyword, index: line.indexOf(keyword, cursor) }))
+        .filter(({ index, keyword }) => index >= 0 && !/[A-Za-z0-9_$]/.test(line[index - 1] ?? "") && !/[A-Za-z0-9_$]/.test(line[index + keyword.length] ?? ""))
+        .sort((left, right) => left.index - right.index);
+      const marker = candidates[0];
+      if (!marker) break;
+      const doubleQuote = line.indexOf('"', marker.index + marker.keyword.length);
+      const singleQuote = line.indexOf("'", marker.index + marker.keyword.length);
+      const quoteStart = doubleQuote >= 0 && (singleQuote < 0 || doubleQuote < singleQuote) ? doubleQuote : singleQuote;
+      if (quoteStart < 0) break;
+      const quoteEnd = line.indexOf(line[quoteStart], quoteStart + 1);
+      if (quoteEnd <= quoteStart + 1) {
+        cursor = quoteStart + 1;
+        continue;
+      }
+      specs.push(line.slice(quoteStart + 1, quoteEnd));
+      cursor = quoteEnd + 1;
+    }
+  }
   return specs;
 }
 

@@ -39,11 +39,12 @@ function parseBool(raw, fallback = true) {
 
 function base64UrlEncode(input) {
   const buffer = Buffer.isBuffer(input) ? input : Buffer.from(input);
-  return buffer
+  let encoded = buffer
     .toString("base64")
     .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+    .replace(/\//g, "_");
+  while (encoded.endsWith("=")) encoded = encoded.slice(0, -1);
+  return encoded;
 }
 
 function toCsvRows(csvText) {

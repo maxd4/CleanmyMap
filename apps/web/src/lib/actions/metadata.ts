@@ -403,9 +403,13 @@ export function extractActionMetadataFromNotes(
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed.startsWith(META_PREFIX)) {
-      const legacyAssociationMatch = trimmed.match(/^association\s*:\s*(.+)$/i);
-      if (legacyAssociationMatch) {
-        const legacyAssociation = legacyAssociationMatch[1]?.trim();
+      const associationSeparator = trimmed.toLowerCase().indexOf("association");
+      const legacyAssociation = associationSeparator === 0
+        ? trimmed.slice("association".length).trimStart().startsWith(":")
+          ? trimmed.slice("association".length).trimStart().slice(1).trim()
+          : null
+        : null;
+      if (legacyAssociation) {
         if (legacyAssociation) {
           state.associationName = legacyAssociation;
         }

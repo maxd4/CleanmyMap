@@ -145,13 +145,16 @@ function runCommand(command, args, { allowFailure = false } = {}) {
 
 function readRepoInfo() {
   const remote = runCommand("git", ["remote", "get-url", "origin"]).trim();
-  const match = remote.match(/github\.com[:/](.+?)\/(.+?)(?:\.git)?$/i);
-  if (!match) {
+  const marker = Math.max(remote.toLowerCase().lastIndexOf("github.com:"), remote.toLowerCase().lastIndexOf("github.com/"));
+  if (marker < 0) {
     throw new Error(`Unable to parse GitHub remote: ${remote}`);
   }
-
-  const owner = match[1];
-  const repo = match[2];
+  let repositoryPath = remote.slice(marker + "github.com".length + 1);
+  if (repositoryPath.toLowerCase().endsWith(".git")) repositoryPath = repositoryPath.slice(0, -4);
+  const separator = repositoryPath.indexOf("/");
+  if (separator < 1 || separator === repositoryPath.length - 1) throw new Error(`Unable to parse GitHub remote: ${remote}`);
+  const owner = repositoryPath.slice(0, separator);
+  const repo = repositoryPath.slice(separator + 1);
   return { owner, repo, fullName: `${owner}/${repo}` };
 }
 

@@ -5,6 +5,7 @@ import {
   geocodeAddress,
   findColumnIndex,
   normalizeGeocodeLabel,
+  parseCoordsFromText,
   toNullableNumber,
 } from "./sheet-ingestion-core.mjs";
 
@@ -21,6 +22,11 @@ assert.throws(() => toNullableNumber("not-a-number"), /invalide/);
 assert.equal(normalizeGeocodeLabel("  Rue de Rivoli\nParis  "), "Rue de Rivoli Paris");
 assert.equal(normalizeGeocodeLabel("https://example.com"), null);
 assert.equal(normalizeGeocodeLabel("contact@example.org"), null);
+assert.deepEqual(parseCoordsFromText("Départ: 48.8566, 2.3522"), { latitude: 48.8566, longitude: 2.3522 });
+const dms = parseCoordsFromText("48°51'23.76\"N 2°21'7.92\"E");
+assert.ok(dms.latitude !== null && Math.abs(dms.latitude - 48.8566) < 1e-9);
+assert.ok(dms.longitude !== null && Math.abs(dms.longitude - 2.3522) < 1e-9);
+assert.deepEqual(parseCoordsFromText(`${"x ".repeat(100_000)}48.8566, 2.3522`), { latitude: 48.8566, longitude: 2.3522 });
 
 const originalFetch = globalThis.fetch;
 let fetchCalled = false;
