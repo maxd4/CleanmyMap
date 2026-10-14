@@ -1,7 +1,7 @@
 import path from "node:path";
 
 export const HEAVY_FILE_EXTENSIONS = new Set([".ts", ".tsx"]);
-export const ARCHITECTURE_SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]);
+const ARCHITECTURE_SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]);
 
 function isIgnoredPath(file) {
   return /(?:^|\/)(?:\.git|node_modules|\.next|dist|build|coverage|maintenance)(?:\/|$)/.test(file);

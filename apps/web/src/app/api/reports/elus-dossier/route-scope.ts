@@ -9,10 +9,7 @@ export type ScopeSelection = {
   value: string | null;
 };
 
-export const ELUS_DOSSIER_BUCKET = "reports";
 export const ELUS_DOSSIER_RESPONSE_CACHE_CONTROL =
-  "private, max-age=300, stale-while-revalidate=86400";
-export const ELUS_DOSSIER_PDF_REDIRECT_CACHE_CONTROL =
   "private, max-age=300, stale-while-revalidate=86400";
 
 function parseExportFormat(raw: string | null): ExportFormat {
