@@ -37,112 +37,52 @@ export type ChatPostPersistenceContext = {
   relatedEvent: ChatRelatedEvent | null;
 };
 
-async function persistChatPostMessage({
-  supabase,
-  serviceSupabase,
-  userId,
-  validated,
-  feedbackReplyContext,
-  recipientId,
-  actionConversationId,
-  targetArrondissementId,
-  targetZoneName,
-  relatedEvent,
-}: ChatPostPersistenceContext): Promise<ChatMessageRow | Response> {
+async function persistPollMessage(context: ChatPostPersistenceContext): Promise<ChatMessageRow | Response> {
+  const { supabase, serviceSupabase, userId, validated, recipientId, actionConversationId, targetArrondissementId, targetZoneName } = context;
+  const { data, topicId } = validated;
+  const pollOptions = pollOpts(data.pollOptions);
+  const isPrivilegedChannel = data.channelType === "admin_elu";
+  const { data: pollMessageId, error: pollError } = isPrivilegedChannel
+    ? await serviceSupabase.rpc("create_chat_poll_with_options_for_server", { p_actor_user_id: userId, p_content: data.content, p_topic_id: topicId, ...pollOptions })
+    : await supabase.rpc("create_chat_poll_with_options", { p_channel_type: data.channelType, p_content: data.content, p_topic_id: topicId, ...pollOptions, ...pollCtx(recipientId, actionConversationId, targetArrondissementId, targetZoneName) });
+  if (pollError) return handleApiError(pollError, "POST /api/chat (poll insert)");
+  if (typeof pollMessageId !== "string") return handleApiError(new Error("La création du sondage n'a pas renvoyé son message."), "POST /api/chat (poll result)");
+  const message = await loadMessageById(isPrivilegedChannel ? serviceSupabase : supabase, serviceSupabase, userId, pollMessageId);
+  return message ?? handleApiError(new Error("Le sondage créé est introuvable."), "POST /api/chat (poll readback)");
+}
+
+async function persistFeedbackReply(context: ChatPostPersistenceContext): Promise<ChatMessageRow | Response> {
+  const { serviceSupabase, userId, validated, feedbackReplyContext } = context;
+  const result = await serviceSupabase.rpc("send_feedback_private_reply", {
+    p_operation_id: validated.data.operationId!,
+    p_actor_user_id: userId,
+    p_feedback_id: feedbackReplyContext!.feedbackId,
+    p_recipient_id: feedbackReplyContext!.targetUserId,
+    p_content: validated.data.content,
+  });
+  if (result.error) return handleApiError(result.error, "POST /api/chat (feedback private reply)");
+  const feedbackReplyMessage = result.data && typeof result.data === "object" && "message" in result.data ? (result.data as { message?: unknown }).message : null;
+  if (!feedbackReplyMessage || typeof feedbackReplyMessage !== "object") return handleApiError(new Error("La réponse feedback n'a pas renvoyé son message."), "POST /api/chat (feedback private reply result)");
+  return normalizeChatMessageRow(feedbackReplyMessage as ChatMessageRow);
+}
+
+async function persistRegularMessage(context: ChatPostPersistenceContext): Promise<ChatMessageRow | Response> {
+  const { supabase, userId, validated, recipientId, actionConversationId, targetArrondissementId, targetZoneName, relatedEvent } = context;
   const { data, messageKind, topicId, isExternalActionShare } = validated;
-  if (messageKind === "poll") {
-    const pollOptions = pollOpts(data.pollOptions);
-    const isPrivilegedChannel = data.channelType === "admin_elu";
-    const { data: pollMessageId, error: pollError } = isPrivilegedChannel
-      ? await serviceSupabase.rpc("create_chat_poll_with_options_for_server", {
-          p_actor_user_id: userId,
-          p_content: data.content,
-          p_topic_id: topicId,
-          ...pollOptions,
-        })
-      : await supabase.rpc("create_chat_poll_with_options", {
-          p_channel_type: data.channelType,
-          p_content: data.content,
-          p_topic_id: topicId,
-          ...pollOptions,
-          ...pollCtx(
-            recipientId,
-            actionConversationId,
-            targetArrondissementId,
-            targetZoneName,
-          ),
-        });
-    if (pollError) return handleApiError(pollError, "POST /api/chat (poll insert)");
-    if (typeof pollMessageId !== "string") {
-      return handleApiError(
-        new Error("La création du sondage n'a pas renvoyé son message."),
-        "POST /api/chat (poll result)",
-      );
-    }
-
-    const message = await loadMessageById(
-      isPrivilegedChannel ? serviceSupabase : supabase,
-      serviceSupabase,
-      userId,
-      pollMessageId,
-    );
-    return message ?? handleApiError(
-      new Error("Le sondage créé est introuvable."),
-      "POST /api/chat (poll readback)",
-    );
-  }
-
-  if (feedbackReplyContext) {
-    const { data: feedbackReplyResult, error: feedbackReplyError } =
-      await serviceSupabase.rpc("send_feedback_private_reply", {
-        p_operation_id: data.operationId!,
-        p_actor_user_id: userId,
-        p_feedback_id: feedbackReplyContext.feedbackId,
-        p_recipient_id: feedbackReplyContext.targetUserId,
-        p_content: data.content,
-      });
-    if (feedbackReplyError) {
-      return handleApiError(
-        feedbackReplyError,
-        "POST /api/chat (feedback private reply)",
-      );
-    }
-
-    const feedbackReplyMessage =
-      feedbackReplyResult &&
-      typeof feedbackReplyResult === "object" &&
-      "message" in feedbackReplyResult
-        ? (feedbackReplyResult as { message?: unknown }).message
-        : null;
-    if (!feedbackReplyMessage || typeof feedbackReplyMessage !== "object") {
-      return handleApiError(
-        new Error("La réponse feedback n'a pas renvoyé son message."),
-        "POST /api/chat (feedback private reply result)",
-      );
-    }
-    return normalizeChatMessageRow(feedbackReplyMessage as ChatMessageRow);
-  }
-
-  const { data: insertedMessage, error } = await supabase
-    .from("app_messages")
-    .insert({
-      sender_id: userId,
-      recipient_id: recipientId,
-      channel_type: data.channelType,
-      conversation_id: actionConversationId,
-      topic_id: topicId,
-      message_kind: messageKind,
-      related_event_id: relatedEvent?.id ?? null,
-      arrondissement_id: targetArrondissementId,
-      zone_name: targetZoneName,
-      content: data.content,
-      ...buildChatAttachmentPersistence(data),
-      action_id: data.actionId && isExternalActionShare ? data.actionId : null,
-    })
-    .select(messageSelect)
-    .single();
+  const { data: insertedMessage, error } = await supabase.from("app_messages").insert({
+    sender_id: userId, recipient_id: recipientId, channel_type: data.channelType, conversation_id: actionConversationId,
+    topic_id: topicId, message_kind: messageKind, related_event_id: relatedEvent?.id ?? null,
+    arrondissement_id: targetArrondissementId, zone_name: targetZoneName, content: data.content,
+    ...buildChatAttachmentPersistence(data), action_id: data.actionId && isExternalActionShare ? data.actionId : null,
+  }).select(messageSelect).single();
   if (error) return handleApiError(error, "POST /api/chat (insert)");
   return normalizeChatMessageRow(insertedMessage as ChatMessageRow);
+}
+
+async function persistChatPostMessage(context: ChatPostPersistenceContext): Promise<ChatMessageRow | Response> {
+  if (context.validated.messageKind === "poll") return persistPollMessage(context);
+  if (context.feedbackReplyContext) return persistFeedbackReply(context);
+  return persistRegularMessage(context);
 }
 
 export async function persistChatPostAndNotify(

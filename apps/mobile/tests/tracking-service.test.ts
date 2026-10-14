@@ -1,62 +1,83 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
 
-const state = vi.hoisted(() => ({
-  client: null as any,
-  storedMissionId: null as string | null,
-  foregroundPermission: 'granted' as string,
-  backgroundPermission: 'granted' as string,
-  taskRegistered: false,
-  currentUserId: 'user_123' as string | null,
-  sequence: [] as string[],
-}))
-const getClient = vi.hoisted(() => vi.fn())
-const getUserId = vi.hoisted(() => vi.fn())
+function createTrackingState() {
+  return {
+    client: null as any,
+    storedMissionId: null as string | null,
+    foregroundPermission: 'granted' as string,
+    backgroundPermission: 'granted' as string,
+    taskRegistered: false,
+    currentUserId: 'user_123' as string | null,
+    sequence: [] as string[],
+  }
+}
+
+function createMockFunction() { return vi.fn() }
+
+const state = vi.hoisted(createTrackingState)
+const getClient = vi.hoisted(createMockFunction)
+const getUserId = vi.hoisted(createMockFunction)
 
 vi.mock('expo-constants', () => ({
   default: { appOwnership: 'standalone', executionEnvironment: 'standalone' },
 }))
 
-vi.mock('expo-location', () => ({
+function createLocationMock() { return {
   Accuracy: { Balanced: 'balanced' },
   requestForegroundPermissionsAsync: vi.fn(async () => ({ status: state.foregroundPermission })),
   requestBackgroundPermissionsAsync: vi.fn(async () => ({ status: state.backgroundPermission })),
   startLocationUpdatesAsync: vi.fn(async () => undefined),
   stopLocationUpdatesAsync: vi.fn(async () => undefined),
   getCurrentPositionAsync: vi.fn(),
-}))
+} }
 
-vi.mock('expo-task-manager', () => ({
-  isTaskRegisteredAsync: vi.fn(async () => {
-    state.sequence.push('task-status')
-    return state.taskRegistered
-  }),
-}))
+vi.mock('expo-location', createLocationMock)
 
-vi.mock('../lib/supabase', () => ({
+function readTaskRegistration() {
+  state.sequence.push('task-status')
+  return state.taskRegistered
+}
+
+function createTaskManagerMock() { return {
+  isTaskRegisteredAsync: vi.fn(async () => readTaskRegistration()),
+} }
+
+vi.mock('expo-task-manager', createTaskManagerMock)
+
+function createSupabaseMock() { return {
   getAuthenticatedSupabaseClient: getClient,
   getClerkUserId: getUserId,
-}))
+} }
 
-vi.mock('../lib/gps-permission-rationale', () => ({
+vi.mock('../lib/supabase', createSupabaseMock)
+
+function createPermissionRationaleMock() { return {
   showGpsPermissionRationale: vi.fn(async () => true),
-}))
+} }
 
-vi.mock('../lib/storage', () => ({
-  getStoredMissionId: vi.fn(async () => state.storedMissionId),
-  getStoredMissionOwnerId: vi.fn(async () => 'user_123'),
-  setStoredMissionId: vi.fn(async (...args: [string, string]) => {
-    const id = args[1]
-    state.storedMissionId = id
-  }),
-  clearStoredMissionId: vi.fn(async () => {
-    state.storedMissionId = null
-  }),
-  bufferPoint: vi.fn(async () => undefined),
-  bufferAction: vi.fn(async () => undefined),
-  flushBuffer: vi.fn(async () => {
-    state.sequence.push('flush')
-  }),
-}))
+vi.mock('../lib/gps-permission-rationale', createPermissionRationaleMock)
+
+async function readStoredMissionId() { return state.storedMissionId }
+async function readStoredMissionOwnerId() { return 'user_123' }
+async function setStoredMissionId(...args: [string, string]) { state.storedMissionId = args[1] }
+async function clearStoredMissionId() { state.storedMissionId = null }
+const bufferPointMock = vi.hoisted(createMockFunction)
+const bufferActionMock = vi.hoisted(createMockFunction)
+const flushBufferMock = vi.hoisted(createMockFunction)
+
+function recordFlush() { state.sequence.push('flush') }
+
+function createStorageMock() { return {
+  getStoredMissionId: readStoredMissionId,
+  getStoredMissionOwnerId: readStoredMissionOwnerId,
+  setStoredMissionId,
+  clearStoredMissionId,
+  bufferPoint: bufferPointMock,
+  bufferAction: bufferActionMock,
+  flushBuffer: flushBufferMock,
+} }
+
+vi.mock('../lib/storage', createStorageMock)
 
 import {
   CLERK_SESSION_REQUIRED_ERROR,
@@ -81,53 +102,45 @@ const activeMission = {
   created_at: '2026-09-28T08:00:00.000Z',
 }
 
+function missionResult(options: { data?: unknown; error?: Error | null }) {
+  return {
+    data: options.data === undefined ? activeMission : options.data,
+    error: options.error ?? null,
+  }
+}
+
 function missionClient(options: { data?: unknown; error?: Error | null } = {}) {
   const updatePayloads: unknown[] = []
   const insertPayloads: unknown[] = []
-  const missionResult = {
-    data: options.data === undefined ? activeMission : options.data,
-    error: options.error ?? null,
+  const result = missionResult(options)
+
+  function singleResult() { return result }
+  function createSingleQuery() { return { single: vi.fn(singleResult) } }
+  function createUpdateFilter() { return { eq: vi.fn(() => ({ select: vi.fn(createSingleQuery) })) } }
+  function recordUpdate(payload: unknown) {
+    state.sequence.push('update')
+    updatePayloads.push(payload)
+    return createUpdateFilter()
+  }
+  function recordInsert(payload: unknown) {
+    state.sequence.push('insert')
+    insertPayloads.push(payload)
+    return { select: vi.fn(createSingleQuery) }
+  }
+  function selectMission() { return { eq: vi.fn(createSingleQuery) } }
+  function createMissionTable(table: string) {
+    if (table === 'missions') return { update: vi.fn(recordUpdate), insert: vi.fn(recordInsert), select: vi.fn(selectMission) }
+    throw new Error(`Unexpected table: ${table}`)
   }
 
   return {
     updatePayloads,
     insertPayloads,
-    from: vi.fn((table: string) => {
-      if (table !== 'missions') throw new Error(`Unexpected table: ${table}`)
-
-      return {
-        update: vi.fn((payload: unknown) => {
-          state.sequence.push('update')
-          updatePayloads.push(payload)
-          return {
-            eq: vi.fn(() => ({
-              select: vi.fn(() => ({
-                single: vi.fn(async () => missionResult),
-              })),
-            })),
-          }
-        }),
-        insert: vi.fn((payload: unknown) => {
-          state.sequence.push('insert')
-          insertPayloads.push(payload)
-          return {
-            select: vi.fn(() => ({
-              single: vi.fn(async () => missionResult),
-            })),
-          }
-        }),
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(async () => missionResult),
-          })),
-        })),
-      }
-    }),
+    from: vi.fn(createMissionTable),
   }
 }
 
-describe('mobile tracking service', () => {
-  beforeEach(() => {
+function resetTrackingState() {
     state.client = null
     state.storedMissionId = null
     state.foregroundPermission = 'granted'
@@ -137,16 +150,19 @@ describe('mobile tracking service', () => {
     state.sequence.length = 0
     getClient.mockImplementation(async () => state.client)
     getUserId.mockImplementation(async () => state.currentUserId)
+  flushBufferMock.mockImplementation(recordFlush)
     vi.clearAllMocks()
-  })
+}
 
-  it('restores the persisted active mission identifier', async () => {
+beforeEach(resetTrackingState)
+
+it('restores the persisted active mission identifier', async () => {
     state.storedMissionId = 'mission-1'
 
     await expect(restoreActiveTracking('user_123')).resolves.toBe('mission-1')
-  })
+})
 
-  it('creates an owner-scoped mission without client-owned metrics', async () => {
+it('creates an owner-scoped mission without client-owned metrics', async () => {
     const pendingMission = { ...activeMission, status: 'pending' as const, started_at: null }
     const client = missionClient({ data: pendingMission })
     state.client = client
@@ -160,18 +176,18 @@ describe('mobile tracking service', () => {
     expect(client.insertPayloads[0]).not.toHaveProperty('distance_m')
     expect(client.insertPayloads[0]).not.toHaveProperty('duration_s')
     expect(client.insertPayloads[0]).not.toHaveProperty('created_by')
-  })
+})
 
-  it('surfaces a mission creation error without inventing a mission', async () => {
+it('surfaces a mission creation error without inventing a mission', async () => {
     state.client = missionClient({ error: new Error('RLS denied') })
 
     await expect(createMission('user_123')).resolves.toEqual({
       ok: false,
       error: 'Impossible de créer la mission : RLS denied',
     })
-  })
+})
 
-  it('refuses the permission gate when foreground GPS permission is denied', async () => {
+it('refuses the permission gate when foreground GPS permission is denied', async () => {
     state.client = missionClient()
     state.foregroundPermission = 'denied'
 
@@ -179,9 +195,9 @@ describe('mobile tracking service', () => {
 
     expect(result).toEqual({ ok: false, error: 'Permission GPS premier plan refusée.' })
     expect(state.client.from).not.toHaveBeenCalled()
-  })
+})
 
-  it('refuses the permission gate when background GPS permission is denied', async () => {
+it('refuses the permission gate when background GPS permission is denied', async () => {
     state.client = missionClient()
     state.backgroundPermission = 'denied'
 
@@ -192,17 +208,17 @@ describe('mobile tracking service', () => {
       error: "Permission GPS arrière-plan refusée. Le suivi s'arrêtera si l'écran est éteint.",
     })
     expect(state.client.from).not.toHaveBeenCalled()
-  })
+})
 
-  it('surfaces a Supabase mission error without inventing mission data', async () => {
+it('surfaces a Supabase mission error without inventing mission data', async () => {
     state.client = missionClient({ error: new Error('RLS denied') })
 
     const result = await getMission('mission-1')
 
     expect(result).toEqual({ ok: false, error: 'Mission introuvable : RLS denied' })
-  })
+})
 
-  it('buffers a GPS point when the Supabase insert fails', async () => {
+async function buffersPointWhenInsertFails() {
     const insertError = new Error('offline')
     state.client = {
       from: vi.fn(() => ({
@@ -225,9 +241,11 @@ describe('mobile tracking service', () => {
       client_point_id: expect.any(String),
       recorded_at: expect.any(String),
     })
-  })
+}
 
-  it('buffers a GPS point when the Clerk session is unavailable', async () => {
+it('buffers a GPS point when the Supabase insert fails', buffersPointWhenInsertFails)
+
+it('buffers a GPS point when the Clerk session is unavailable', async () => {
     const result = await saveLocationPoint('mission-1', {
       latitude: 48.8566,
       longitude: 2.3522,
@@ -245,9 +263,9 @@ describe('mobile tracking service', () => {
       client_point_id: expect.any(String),
       recorded_at: expect.any(String),
     })
-  })
+})
 
-  it('refuses a GPS write after the active Clerk identity changes', async () => {
+it('refuses a GPS write after the active Clerk identity changes', async () => {
     state.currentUserId = 'user_other'
     const upsert = vi.fn(async () => ({ error: null }))
     state.client = { from: vi.fn(() => ({ upsert })) }
@@ -261,9 +279,9 @@ describe('mobile tracking service', () => {
     })
     expect(upsert).not.toHaveBeenCalled()
     expect(bufferPoint).not.toHaveBeenCalled()
-  })
+})
 
-  it('refuses a GPS write when Clerk changes while the client is being resolved', async () => {
+it('refuses a GPS write when Clerk changes while the client is being resolved', async () => {
     const upsert = vi.fn(async () => ({ error: null }))
     const client = { from: vi.fn(() => ({ upsert })) }
     let releaseClient!: () => void
@@ -285,9 +303,9 @@ describe('mobile tracking service', () => {
     })
     expect(upsert).not.toHaveBeenCalled()
     expect(bufferPoint).not.toHaveBeenCalled()
-  })
+})
 
-  it('flushes the GPS buffer before completing and never writes derived metrics', async () => {
+it('flushes the GPS buffer before completing and never writes derived metrics', async () => {
     const completedMission = { ...activeMission, status: 'completed' as const, distance_m: 321, duration_s: 600 }
     const client = missionClient({ data: completedMission })
     state.client = client
@@ -304,12 +322,11 @@ describe('mobile tracking service', () => {
     expect(client.updatePayloads[0]).not.toHaveProperty('distance_m')
     expect(client.updatePayloads[0]).not.toHaveProperty('duration_s')
     expect(state.storedMissionId).toBeNull()
-  })
+})
 
-  it('fails closed when no Clerk-backed Supabase client is available', async () => {
+it('fails closed when no Clerk-backed Supabase client is available', async () => {
     await expect(getMission('mission-1')).resolves.toEqual({
       ok: false,
       error: CLERK_SESSION_REQUIRED_ERROR,
     })
-  })
 })

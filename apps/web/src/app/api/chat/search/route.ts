@@ -325,6 +325,32 @@ async function executeSearch(
   };
 }
 
+async function executeChatSearch({
+  search,
+  supabase,
+  serviceSupabase,
+  userId,
+  identity,
+}: {
+  search: SearchRequest;
+  supabase: SearchSupabaseClient;
+  serviceSupabase: ReturnType<typeof getSupabaseServerClient>;
+  userId: string;
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
+}) {
+  try {
+    const accessContext = await loadSearchAccessContext(serviceSupabase, userId, identity, search);
+    if (accessContext.error) return accessContext.error;
+    const messageSupabase = search.channelType === "admin_elu" ? serviceSupabase : supabase;
+    const scopeQueryFactories = buildScopeQueryFactories({ supabase: messageSupabase, search, userId, zoneContext: accessContext.zoneContext, zoneName: accessContext.zoneName });
+    if (scopeQueryFactories.length === 0) return NextResponse.json({ results: [], nextCursor: null, hasMore: false, query: search.query });
+    const response = await executeSearch(scopeQueryFactories, search.beforeCursor, search.query);
+    return NextResponse.json({ ...response, query: search.query });
+  } catch (error) {
+    return handleApiError(error, "GET /api/chat/search");
+  }
+}
+
 export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) return unauthorizedJsonResponse();
@@ -347,30 +373,5 @@ export async function GET(request: Request) {
   }
   const serviceSupabase = getSupabaseServerClient(true);
 
-  try {
-    // Les garde-fous de canal restent portés par loadChatAccessContext,
-    // getTerritoryFilter, buildChatDirectScopeFactories et applyChatTopicFilter;
-    // sender_id/recipient_id bornent la propriété des messages.
-    const accessContext = await loadSearchAccessContext(serviceSupabase, userId, identity, search);
-    if (accessContext.error) return accessContext.error;
-    const { zoneContext, zoneName } = accessContext;
-    const messageSupabase = search.channelType === "admin_elu" ? serviceSupabase : supabase;
-
-    const scopeQueryFactories = buildScopeQueryFactories({
-      supabase: messageSupabase,
-      search,
-      userId,
-      zoneContext,
-      zoneName,
-    });
-
-    if (scopeQueryFactories.length === 0) {
-      return NextResponse.json({ results: [], nextCursor: null, hasMore: false, query: search.query });
-    }
-
-    const response = await executeSearch(scopeQueryFactories, search.beforeCursor, search.query);
-    return NextResponse.json({ ...response, query: search.query });
-  } catch (error) {
-    return handleApiError(error, "GET /api/chat/search");
-  }
+  return executeChatSearch({ search, supabase, serviceSupabase, userId, identity });
 }

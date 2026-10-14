@@ -75,6 +75,62 @@ function spontaneousOrganizerPublicationError(
   );
 }
 
+async function completeActionPublication({
+  supabase,
+  current,
+  actionId,
+  userId,
+}: {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  current: ActionRow;
+  actionId: string;
+  userId: string;
+}) {
+  const formalitiesContext = await deriveActionFormalitiesFactsFromAction(current);
+  const qualification = qualifyActionFormalities(formalitiesContext);
+  const formalitiesWorkflow = buildFormalitiesWorkflowState({
+    facts: formalitiesContext,
+    qualification,
+    previous: normalizeActionFormalitiesWorkflow(current.preparation_data?.formalitiesWorkflow),
+    actionDependencies: {
+      locationLabel: current.location_label,
+      actionDate: current.action_date,
+      territoryFingerprint: buildFormalitiesTerritoryFingerprint(formalitiesContext.territory),
+    },
+  });
+  const blockedFormalities = requiredFormalitiesNotReady({ qualification, workflow: formalitiesWorkflow });
+  if (blockedFormalities.length > 0) {
+    return NextResponse.json(
+      {
+        error: "Une formalité démontrée comme requise doit être déclarée envoyée avant la publication.",
+        code: "required_formality_not_ready",
+        formalityIds: blockedFormalities,
+      },
+      { status: 422 },
+    );
+  }
+  const publishedAt = new Date().toISOString();
+  const result = await supabase
+    .from("actions")
+    .update(buildPublicationUpdate({
+      currentPreparationData: current.preparation_data,
+      publishedAt,
+      userId,
+      formalitiesContext,
+      formalitiesWorkflow,
+    }))
+    .eq("id", actionId)
+    .eq("created_by_clerk_id", current.created_by_clerk_id)
+    .eq("action_phase", "pre_action")
+    .is("published_at", null)
+    .select("id, published_at")
+    .maybeSingle();
+  if (result.error) throw result.error;
+  if (!result.data) return NextResponse.json({ error: "La publication n'a pas pu être confirmée." }, { status: 409 });
+  await emitAdministrativeRequirementNotifications({ supabase, actionId: result.data.id });
+  return NextResponse.json({ status: "published", id: result.data.id, publishedAt: result.data.published_at, alreadyPublished: false });
+}
+
 export async function POST(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
@@ -142,72 +198,7 @@ export async function POST(
     const spontaneousOrganizerError = spontaneousOrganizerPublicationError(current, organizerIds);
     if (spontaneousOrganizerError) return spontaneousOrganizerError;
 
-    const formalitiesContext = await deriveActionFormalitiesFactsFromAction(current);
-    const qualification = qualifyActionFormalities(formalitiesContext);
-    const formalitiesWorkflow = buildFormalitiesWorkflowState({
-      facts: formalitiesContext,
-      qualification,
-      previous: normalizeActionFormalitiesWorkflow(
-        current.preparation_data?.formalitiesWorkflow,
-      ),
-      actionDependencies: {
-        locationLabel: current.location_label,
-        actionDate: current.action_date,
-        territoryFingerprint: buildFormalitiesTerritoryFingerprint(formalitiesContext.territory),
-      },
-    });
-    const blockedFormalities = requiredFormalitiesNotReady({
-      qualification,
-      workflow: formalitiesWorkflow,
-    });
-    if (blockedFormalities.length > 0) {
-      return NextResponse.json(
-        {
-          error: "Une formalité démontrée comme requise doit être déclarée envoyée avant la publication.",
-          code: "required_formality_not_ready",
-          formalityIds: blockedFormalities,
-        },
-        { status: 422 },
-      );
-    }
-
-    const publishedAt = new Date().toISOString();
-    const result = await supabase
-      .from("actions")
-      .update(buildPublicationUpdate({
-        currentPreparationData: current.preparation_data,
-        publishedAt,
-        userId: access.userId,
-        formalitiesContext,
-        formalitiesWorkflow,
-      }))
-      .eq("id", actionId)
-      .eq("created_by_clerk_id", current.created_by_clerk_id)
-      .eq("action_phase", "pre_action")
-      .is("published_at", null)
-      .select("id, published_at")
-      .maybeSingle();
-    if (result.error) {
-      throw result.error;
-    }
-    if (!result.data) {
-      return NextResponse.json(
-        { error: "La publication n'a pas pu être confirmée." },
-        { status: 409 },
-      );
-    }
-
-    await emitAdministrativeRequirementNotifications({
-      supabase,
-      actionId: result.data.id,
-    });
-
-    return NextResponse.json({
-      status: "published",
-      id: result.data.id,
-      publishedAt: result.data.published_at,
-      alreadyPublished: false,
-    });
+    return completeActionPublication({ supabase, current, actionId, userId: access.userId });
   } catch (error) {
     return handleApiError(error, "POST /api/actions/:actionId/publish");
   }

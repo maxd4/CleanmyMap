@@ -102,45 +102,60 @@ function detectDelimiter(text: string, extension: SpogomiImportFormat): string {
   return Array.from([";", ",", "\t"] as const).sort((a: string, b: string) => countDelimiter(sample, b) - countDelimiter(sample, a))[0] ?? ";";
 }
 
+type DelimitedState = {
+  row: string[];
+  field: string;
+  quoted: boolean;
+  rowHasData: boolean;
+};
+
+function consumeDelimitedCharacter(state: DelimitedState, character: string, nextCharacter: string | undefined, delimiter: string): "append" | "push" | "skip" {
+  if (character === '"') {
+    if (state.quoted && nextCharacter === '"') {
+      state.field += '"';
+      return "skip";
+    }
+    state.quoted = !state.quoted;
+    state.rowHasData = true;
+    return "append";
+  }
+  if (character === delimiter && !state.quoted) {
+    state.row.push(state.field);
+    state.field = "";
+    state.rowHasData = true;
+    return "append";
+  }
+  if ((character === "\n" || character === "\r") && !state.quoted) {
+    return "push";
+  }
+  state.field += character;
+  if (character.trim()) state.rowHasData = true;
+  return "append";
+}
+
 function parseDelimited(text: string, delimiter: string): { rows: string[][]; malformedRowNumbers: number[] } {
   const rows: string[][] = [];
   const malformedRowNumbers: number[] = [];
-  let row: string[] = [];
-  let field = "";
-  let quoted = false;
+  const state: DelimitedState = { row: [], field: "", quoted: false, rowHasData: false };
   let sourceRow = 1;
-  let rowHasData = false;
   const pushRow = () => {
-    if (row.some((cell) => cell.trim()) || rowHasData) rows.push([...row, field]);
-    row = [];
-    field = "";
-    rowHasData = false;
+    if (state.row.some((cell) => cell.trim()) || state.rowHasData) rows.push([...state.row, state.field]);
+    state.row = [];
+    state.field = "";
+    state.rowHasData = false;
     sourceRow += 1;
   };
   for (let index = 0; index < text.length; index += 1) {
     const character = text[index];
-    if (character === '"') {
-      if (quoted && text[index + 1] === '"') {
-        field += '"';
-        index += 1;
-      } else {
-        quoted = !quoted;
-        rowHasData = true;
-      }
-    } else if (character === delimiter && !quoted) {
-      row.push(field);
-      field = "";
-      rowHasData = true;
-    } else if ((character === "\n" || character === "\r") && !quoted) {
+    const action = consumeDelimitedCharacter(state, character, text[index + 1], delimiter);
+    if (action === "skip") index += 1;
+    if (action === "push") {
       if (character === "\r" && text[index + 1] === "\n") index += 1;
       pushRow();
-    } else {
-      field += character;
-      if (character.trim()) rowHasData = true;
     }
   }
-  if (field || row.length || rowHasData) pushRow();
-  if (quoted) malformedRowNumbers.push(sourceRow);
+  if (state.field || state.row.length || state.rowHasData) pushRow();
+  if (state.quoted) malformedRowNumbers.push(sourceRow);
   return { rows, malformedRowNumbers };
 }
 

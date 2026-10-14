@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
 
 const state = vi.hoisted(() => ({
   getToken: vi.fn(async () => 'clerk-jwt'),
@@ -32,15 +32,14 @@ const gpsIdentityMigration = fileURLToPath(
   new URL('../../web/supabase/migrations/20261013000010_mobile_gps_point_idempotency.sql', import.meta.url),
 )
 
-describe('mobile identity and server contracts', () => {
-  beforeEach(() => {
+beforeEach(() => {
     process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://example.supabase.co'
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = 'public-anon-key'
     state.getToken.mockResolvedValue('clerk-jwt')
     state.createClient.mockClear()
-  })
+})
 
-  it('passes the current Clerk token to Supabase Third-Party Auth without a Supabase session', async () => {
+it('passes the current Clerk token to Supabase Third-Party Auth without a Supabase session', async () => {
     const module = await import('../lib/supabase')
     const [, , options] = state.createClient.mock.calls[0] as unknown as [
       string,
@@ -56,17 +55,17 @@ describe('mobile identity and server contracts', () => {
       detectSessionInUrl: false,
     })
     expect(await module.getAuthenticatedSupabaseClient()).not.toBeNull()
-  })
+})
 
-  it('keeps mission and GPS ownership bound to the Clerk sub claim', () => {
+it('keeps mission and GPS ownership bound to the Clerk sub claim', () => {
     const sql = readFileSync(rlsMigration, 'utf8')
 
     expect(sql).toMatch(/create policy "volunteer_read_missions"[\s\S]+?volunteer_id\s*=\s*coalesce\(\(select auth\.jwt\(\)\)\s*->>\s*'sub'/i)
     expect(sql).toMatch(/create policy "volunteer_update_missions"[\s\S]+?with check[\s\S]+?volunteer_id\s*=\s*coalesce\(\(select auth\.jwt\(\)\)\s*->>\s*'sub'/i)
     expect(sql).toMatch(/create policy "volunteer_insert_gps"[\s\S]+?m\.id\s*=\s*gps_points\.mission_id[\s\S]+?m\.volunteer_id\s*=\s*coalesce\(\(select auth\.jwt\(\)\)\s*->>\s*'sub'/i)
-  })
+})
 
-  it('keeps derived mission metrics server-owned', () => {
+it('keeps derived mission metrics server-owned', () => {
     const rlsSql = readFileSync(rlsMigration, 'utf8')
     const metricsSql = readFileSync(metricsMigration, 'utf8')
 
@@ -75,9 +74,9 @@ describe('mobile identity and server contracts', () => {
     expect(metricsSql).toMatch(/security invoker/i)
     expect(metricsSql).toMatch(/new\.distance_m\s*:=/i)
     expect(metricsSql).toMatch(/new\.duration_s\s*:=/i)
-  })
+})
 
-  it('allows only owner-scoped mission creation with a minimal client insert surface', () => {
+it('allows only owner-scoped mission creation with a minimal client insert surface', () => {
     const sql = readFileSync(missionInsertMigration, 'utf8')
 
     expect(sql).toMatch(
@@ -87,15 +86,13 @@ describe('mobile identity and server contracts', () => {
       /grant insert\s*\(volunteer_id,\s*label\)\s*on table public\.missions\s*to authenticated/i,
     )
     expect(sql).not.toMatch(/grant insert\s*\([^)]*(distance_m|duration_s|created_by)/i)
-  })
+})
 
-  it('keeps historical GPS rows valid while making new mobile retries idempotent', () => {
+it('keeps historical GPS rows valid while making new mobile retries idempotent', () => {
     const sql = readFileSync(gpsIdentityMigration, 'utf8')
 
     expect(sql).toMatch(/add column if not exists client_point_id text/i)
     expect(sql).toMatch(/check \(client_point_id is null or client_point_id ~ /i)
     expect(sql).toMatch(/unique \(mission_id, client_point_id\)/i)
     expect(sql).not.toMatch(/drop policy|disable row level security|grant all privileges on table public\.gps_points to authenticated/i)
-  })
-
 })

@@ -346,6 +346,37 @@ function resolveCanonicalTargetRole(user: {
   });
 }
 
+async function respondToPromotionRejection(
+  requestRecord: PromotionRequestRecord,
+  identity: PromotionIdentity,
+  reason: string,
+) {
+  const result = await processPromotionRejection({ requestRecord, identity, reason });
+  if (result.kind === "mutation_failed") {
+    return NextResponse.json({ error: result.auditAvailable ? "Impossible d'enregistrer la décision." : "Impossible d'enregistrer la décision et son journal." }, { status: 500 });
+  }
+  if (result.kind === "audit_unavailable") {
+    return NextResponse.json({ error: "La décision a été enregistrée, mais son journal est indisponible." }, { status: 500 });
+  }
+  await sendPromotionDecisionNotification({ actorUserId: identity.userId, requestRecord, status: "rejected" });
+  return NextResponse.json({ status: "rejected", item: result.item });
+}
+
+async function respondToPromotionAcceptance(
+  requestRecord: PromotionRequestRecord,
+  identity: PromotionIdentity,
+  reason: string,
+) {
+  const result = await processPromotionAcceptance({ requestRecord, identity, reason });
+  if (result.kind === "owner_protected") return NextResponse.json({ error: "Le compte IMU owner ne peut pas être modifié ici." }, { status: 403 });
+  if (result.kind === "mutation_failed") {
+    return NextResponse.json({ error: result.auditAvailable ? "Impossible d'appliquer la décision de promotion." : "Impossible d'appliquer la décision et son journal." }, { status: 500 });
+  }
+  if (result.kind === "audit_unavailable") return NextResponse.json({ error: "La décision a été appliquée, mais son journal est indisponible." }, { status: 500 });
+  await sendPromotionDecisionNotification({ actorUserId: identity.userId, requestRecord, status: "accepted" });
+  return NextResponse.json({ status: "accepted", item: result.item });
+}
+
 export async function GET(request: Request) {
   const identity = await getCurrentUserIdentity();
   if (
@@ -407,68 +438,7 @@ export async function POST(request: Request) {
   }
 
   if (parsed.data.action === "reject") {
-    const result = await processPromotionRejection({
-      requestRecord,
-      identity,
-      reason: parsed.data.reason,
-    });
-    if (result.kind === "mutation_failed") {
-      return NextResponse.json(
-        {
-          error: result.auditAvailable
-            ? "Impossible d'enregistrer la décision."
-            : "Impossible d'enregistrer la décision et son journal.",
-        },
-        { status: 500 },
-      );
-    }
-    if (result.kind === "audit_unavailable") {
-      return NextResponse.json({ error: "La décision a été enregistrée, mais son journal est indisponible." }, { status: 500 });
-    }
-    await sendPromotionDecisionNotification({
-      actorUserId: identity.userId,
-      requestRecord,
-      status: "rejected",
-    });
-    return NextResponse.json({
-      status: "rejected",
-      item: result.item,
-    });
+    return respondToPromotionRejection(requestRecord, identity, parsed.data.reason);
   }
-
-  const result = await processPromotionAcceptance({
-    requestRecord,
-    identity,
-    reason: parsed.data.reason,
-  });
-  if (result.kind === "owner_protected") {
-    return NextResponse.json({ error: "Le compte IMU owner ne peut pas être modifié ici." }, { status: 403 });
-  }
-  if (result.kind === "mutation_failed") {
-    return NextResponse.json(
-      {
-        error: result.auditAvailable
-          ? "Impossible d'appliquer la décision de promotion."
-          : "Impossible d'appliquer la décision et son journal.",
-      },
-      { status: 500 },
-    );
-  }
-  if (result.kind === "audit_unavailable") {
-    return NextResponse.json(
-      { error: "La décision a été appliquée, mais son journal est indisponible." },
-      { status: 500 },
-    );
-  }
-
-  await sendPromotionDecisionNotification({
-    actorUserId: identity.userId,
-    requestRecord,
-    status: "accepted",
-  });
-
-  return NextResponse.json({
-    status: "accepted",
-    item: result.item,
-  });
+  return respondToPromotionAcceptance(requestRecord, identity, parsed.data.reason);
 }

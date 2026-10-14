@@ -163,6 +163,17 @@ function resolveCanonicalTargetRole(user: {
   });
 }
 
+function validateRoleMutationTarget(
+  data: RoleMutationData,
+  actorUserId: string,
+): RoleAccountRecord["roleLabel"] | undefined | Response {
+  if (data.userId === actorUserId) return NextResponse.json({ error: "Vous ne pouvez pas modifier votre propre niveau ici." }, { status: 400 });
+  const targetRole = data.action === "revoke" ? "benevole" : data.role;
+  if (data.action === "assign" && !targetRole) return NextResponse.json({ error: "Rôle cible manquant." }, { status: 400 });
+  if (data.action === "assign" && targetRole && !isAdminLikeRole(targetRole)) return NextResponse.json({ error: "Rôle cible interdit." }, { status: 400 });
+  return targetRole;
+}
+
 export async function GET(request: Request) {
   const access = await requireCreatorAccess();
   if (!access.ok) {
@@ -227,28 +238,8 @@ export async function POST(request: Request) {
   const parsed = await parseJsonBodyWithSchema(request, mutationSchema);
   if (!parsed.ok) return parsed.response;
 
-  if (parsed.data.userId === identity.userId) {
-    return NextResponse.json(
-      { error: "Vous ne pouvez pas modifier votre propre niveau ici." },
-      { status: 400 },
-    );
-  }
-
-  const targetRole = parsed.data.action === "revoke"
-    ? "benevole"
-    : parsed.data.role;
-
-  if (parsed.data.action === "assign" && !targetRole) {
-    return NextResponse.json({ error: "Rôle cible manquant." }, { status: 400 });
-  }
-
-  if (
-    parsed.data.action === "assign" &&
-    targetRole &&
-    !isAdminLikeRole(targetRole)
-  ) {
-    return NextResponse.json({ error: "Rôle cible interdit." }, { status: 400 });
-  }
+  const targetRole = validateRoleMutationTarget(parsed.data, identity.userId);
+  if (targetRole instanceof Response) return targetRole;
 
   return applyRoleAccountMutation({
     data: parsed.data,

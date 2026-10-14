@@ -7,7 +7,7 @@ import { canAccessChatChannel, buildChannelAccessHint } from "@/lib/chat/channel
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { resolveActionDiscussionAccess } from "@/lib/chat/action-conversations";
-import { validateChatPostRequest } from "./route.post-validation";
+import { validateChatPostRequest, type ValidatedChatPost } from "./route.post-validation";
 import {
   persistChatPostAndNotify,
   type FeedbackReplyContext,
@@ -22,6 +22,49 @@ import {
   mapActionDiscussionAccessError,
   resolvePublicSharedAction,
 } from "./route.post-support";
+
+async function processValidatedChatPost({
+  supabase,
+  userId,
+  identity,
+  validated,
+}: {
+  supabase: Awaited<ReturnType<typeof getChatSupabaseOrResponse>> extends infer T ? Exclude<T, Response> : never;
+  userId: string;
+  identity: NonNullable<Awaited<ReturnType<typeof getCurrentUserIdentity>>>;
+  validated: ValidatedChatPost;
+}) {
+  const { data, isExternalActionShare } = validated;
+  const serviceSupabase = getSupabaseServerClient(true);
+  let feedbackReplyContext: FeedbackReplyContext | null = null;
+  if (data.feedbackId) {
+    if (!["admin", "max"].includes(identity.activeRole)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const feedbackContext = await resolveFeedbackReplyContext(data);
+    if (feedbackContext instanceof Response) return feedbackContext;
+    feedbackReplyContext = feedbackContext;
+  }
+  const sharedActionResult = await resolvePublicSharedAction(serviceSupabase, data, isExternalActionShare);
+  if (sharedActionResult instanceof Response) return sharedActionResult;
+  if (data.channelType === "action" && data.actionId) {
+    const access = await resolveActionDiscussionAccess(serviceSupabase, data.actionId, userId, identity.activeRole);
+    const accessError = mapActionDiscussionAccessError(access.state);
+    if (accessError) return accessError;
+    const { loadActionById } = await import("@/lib/actions/store");
+    const action = await loadActionById(serviceSupabase, data.actionId);
+    if (action?.status === "cancelled") return NextResponse.json({ error: "Cette action a été annulée.", hint: "La discussion est conservée en lecture seule." }, { status: 403 });
+  }
+  const zone = await resolveChatPostExecutionZone({ serviceSupabase, userId, data, sharedAction: sharedActionResult });
+  if (zone instanceof Response) return zone;
+  if (!canAccessChatChannel(data.channelType, { roleLabel: identity.activeRole, hasArrondissement: zone.hasArrondissement, hasGreaterParisZone: zone.hasGreaterParisZone, zoneContext: zone.zoneContext })) {
+    return NextResponse.json({ error: "Canal indisponible", hint: buildChannelAccessHint(data.channelType) }, { status: 403 });
+  }
+  const destination = await resolveChatPostDestination({ supabase, serviceSupabase, userId, validated, zone, isExternalActionShare });
+  if (destination instanceof Response) return destination;
+  const messageSupabase = data.channelType === "admin_elu" || data.channelType === "bug_report" ? serviceSupabase : supabase;
+  const message = await persistChatPostAndNotify({ supabase: messageSupabase, serviceSupabase, userId, validated, feedbackReplyContext, recipientId: destination.recipientId, actionConversationId: destination.actionConversationId, targetArrondissementId: destination.targetArrondissementId, targetZoneName: destination.targetZoneName, relatedEvent: destination.relatedEvent });
+  if (message instanceof Response) return message;
+  return NextResponse.json({ status: "sent", message }, { status: 201 });
+}
 export async function POST(request: Request) {
   const writeRateLimit = await verifyRateLimit(request, { limit: 20, window: 60 });
   const writeRateLimitResponse = createServerRateLimitResponse(
@@ -45,79 +88,7 @@ export async function POST(request: Request) {
   const supabase = supabaseResult;
 
   try {
-    const serviceSupabase = getSupabaseServerClient(true);
-    const parsed = { data: parsedData };
-
-    let feedbackReplyContext: FeedbackReplyContext | null = null;
-    if (parsed.data.feedbackId) {
-      if (!["admin", "max"].includes(identity.activeRole)) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-      const feedbackContext = await resolveFeedbackReplyContext(parsed.data);
-      if (feedbackContext instanceof Response) return feedbackContext;
-      feedbackReplyContext = feedbackContext;
-    }
-
-    const sharedActionResult = await resolvePublicSharedAction(
-      serviceSupabase,
-      parsed.data,
-      isExternalActionShare,
-    );
-    if (sharedActionResult instanceof Response) return sharedActionResult;
-    const sharedAction = sharedActionResult;
-    const validatedPost = { data: parsed.data, topicId, messageKind, isExternalActionShare };
-
-    if (parsed.data.channelType === "action" && parsed.data.actionId) {
-      const actionId = parsed.data.actionId;
-      const access = await resolveActionDiscussionAccess(serviceSupabase, actionId, userId, identity.activeRole);
-      const accessError = mapActionDiscussionAccessError(access.state);
-      if (accessError) return accessError;
-      const { loadActionById } = await import("@/lib/actions/store");
-      const action = await loadActionById(serviceSupabase, actionId);
-      if (action?.status === "cancelled") {
-        return NextResponse.json(
-          { error: "Cette action a été annulée.", hint: "La discussion est conservée en lecture seule." },
-          { status: 403 },
-        );
-      }
-    }
-
-    const zone = await resolveChatPostExecutionZone({
-      serviceSupabase,
-      userId,
-      data: parsed.data,
-      sharedAction,
-    });
-    if (zone instanceof Response) return zone;
-
-    if (
-      !canAccessChatChannel(parsed.data.channelType, {
-        roleLabel: identity.activeRole,
-        hasArrondissement: zone.hasArrondissement,
-        hasGreaterParisZone: zone.hasGreaterParisZone,
-        zoneContext: zone.zoneContext,
-      })
-    ) {
-      return NextResponse.json(
-        {
-          error: "Canal indisponible",
-          hint: buildChannelAccessHint(parsed.data.channelType),
-        },
-        { status: 403 },
-      );
-    }
-
-    const destination = await resolveChatPostDestination({ supabase, serviceSupabase, userId, validated: validatedPost, zone, isExternalActionShare });
-    if (destination instanceof Response) return destination;
-
-    const messageSupabase =
-      parsed.data.channelType === "admin_elu" || parsed.data.channelType === "bug_report"
-        ? serviceSupabase
-        : supabase;
-    const message = await persistChatPostAndNotify({ supabase: messageSupabase, serviceSupabase, userId, validated: validatedPost, feedbackReplyContext, recipientId: destination.recipientId, actionConversationId: destination.actionConversationId, targetArrondissementId: destination.targetArrondissementId, targetZoneName: destination.targetZoneName, relatedEvent: destination.relatedEvent });
-    if (message instanceof Response) return message;
-
-    return NextResponse.json({ status: "sent", message }, { status: 201 });
+    return processValidatedChatPost({ supabase, userId, identity, validated: { data: parsedData, topicId, messageKind, isExternalActionShare } });
   } catch (error) {
     return handleApiError(error, "POST /api/chat (general)");
   }

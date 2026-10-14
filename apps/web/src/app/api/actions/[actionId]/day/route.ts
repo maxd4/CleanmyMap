@@ -22,6 +22,89 @@ function finiteCoordinate(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function firstText(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function textOrDefault(defaultValue: string, ...values: unknown[]): string {
+  return firstText(...values) ?? defaultValue;
+}
+
+function nullable<T>(value: T | null | undefined): T | null {
+  return value === undefined ? null : value;
+}
+
+async function resolveDayAccess({
+  supabase,
+  action,
+  actionId,
+  userId,
+}: {
+  supabase: ReturnType<typeof getSupabaseServerClient>;
+  action: Awaited<ReturnType<typeof loadActionById>>;
+  actionId: string;
+  userId: string;
+}): Promise<boolean | Response> {
+  if (!action) return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
+  const identity = await getCurrentUserIdentity({ userId });
+  const organizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, actionId);
+  const isOrganizer = canManageAction(
+    { userId, role: identity?.role ?? null, activeRole: identity?.activeRole ?? null },
+    { createdByClerkId: action.created_by_clerk_id },
+    organizerIds,
+  );
+  if (isOrganizer) return true;
+  if (!isPublicActionReferenceAvailable(action)) return NextResponse.json({ error: "Action indisponible." }, { status: 404 });
+  const registration = await readActionRegistrationRecord(supabase, { actionId, userId });
+  return registration?.registration_status === "confirmed"
+    ? false
+    : NextResponse.json({ error: "Briefing réservé aux bénévoles inscrits." }, { status: 403 });
+}
+
+function buildDayPayload(action: NonNullable<Awaited<ReturnType<typeof loadActionById>>>, actionId: string, isOrganizer: boolean) {
+  const preparation = normalizeActionPreparationData(action.preparation_data ?? {});
+  const metadata = extractActionMetadataFromNotes(action.notes);
+  const latitude = finiteCoordinate(action.latitude);
+  const longitude = finiteCoordinate(action.longitude);
+  return {
+    status: "ok",
+    actionId,
+    access: isOrganizer ? "organizer" : "confirmed_volunteer",
+    action: {
+      status: action.status,
+      publishedAt: nullable(action.published_at),
+      actionPhase: action.action_phase,
+      title: textOrDefault(action.location_label, preparation.actionTitle),
+      actionDate: action.action_date,
+      locationLabel: action.location_label,
+      meetingPoint: textOrDefault(action.location_label, preparation.pointDeRendezVous),
+      meetingTime: firstText(preparation.meetingTime, action.event_start_time),
+      eventStartTime: nullable(action.event_start_time),
+      eventEndTime: nullable(action.event_end_time),
+      organizerLabel: textOrDefault("Organisateur", metadata.associationName, action.actor_name),
+      participantMessage: firstText(preparation.participantMessage),
+      safetyInstructions: firstText(preparation.safetyInstructions),
+      recommendedMaterials: firstText(preparation.recommendedMaterials),
+      materialsProvided: firstText(preparation.materialsProvided),
+      accessibility: firstText(preparation.accessibility),
+      accessibilityStatus: preparation.accessibilityStatus ?? "not_evaluated",
+      checklist: (preparation.preparationChecklist ?? []).map((item) => ({ key: item.key, label: item.label, checked: item.checked })),
+      route: {
+        topology: nullable(preparation.routeTopology),
+        departureLabel: firstText(metadata.departureLocationLabel),
+        arrivalLabel: firstText(metadata.arrivalLocationLabel),
+        hasSelectedOperationalRoute: Boolean(preparation.operationalRoute),
+        targetDistanceKm: nullable(preparation.routeTargetDistanceKm),
+        networkDistanceKm: nullable(preparation.routeNetworkDistanceKm),
+      },
+      map: { latitude, longitude, geometrySource: nullable(action.geometry_source), hasGeometry: Boolean(action.derived_geometry_geojson) },
+    },
+  };
+}
+
 export async function GET(request: Request, context: DayRouteContext) {
   const access = await requireActionRequestAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
@@ -32,70 +115,9 @@ export async function GET(request: Request, context: DayRouteContext) {
     const supabase = getSupabaseServerClient(true);
     const action = await loadActionById(supabase, normalizedActionId);
     if (!action) return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
-
-    const identity = await getCurrentUserIdentity({ userId: access.userId });
-    const organizerIds = await loadCanonicalActionOrganizerIdsForAction(supabase, normalizedActionId);
-    const isOrganizer = canManageAction(
-      { userId: access.userId, role: identity?.role ?? null, activeRole: identity?.activeRole ?? null },
-      { createdByClerkId: action.created_by_clerk_id },
-      organizerIds,
-    );
-
-    if (!isOrganizer) {
-      if (!isPublicActionReferenceAvailable(action)) {
-        return NextResponse.json({ error: "Action indisponible." }, { status: 404 });
-      }
-      const registration = await readActionRegistrationRecord(supabase, { actionId: normalizedActionId, userId: access.userId });
-      if (registration?.registration_status !== "confirmed") {
-        return NextResponse.json({ error: "Briefing réservé aux bénévoles inscrits." }, { status: 403 });
-      }
-    }
-
-    const preparation = normalizeActionPreparationData(action.preparation_data ?? {});
-    const metadata = extractActionMetadataFromNotes(action.notes);
-    const latitude = finiteCoordinate(action.latitude);
-    const longitude = finiteCoordinate(action.longitude);
-    const geometrySource = action.geometry_source ?? null;
-
-    return NextResponse.json({
-      status: "ok",
-      actionId: normalizedActionId,
-      access: isOrganizer ? "organizer" : "confirmed_volunteer",
-      action: {
-        status: action.status,
-        publishedAt: action.published_at ?? null,
-        actionPhase: action.action_phase,
-        title: preparation.actionTitle?.trim() || action.location_label,
-        actionDate: action.action_date,
-        locationLabel: action.location_label,
-        meetingPoint: preparation.pointDeRendezVous?.trim() || action.location_label,
-        meetingTime: (preparation.meetingTime?.trim() || action.event_start_time) ?? null,
-        eventStartTime: action.event_start_time ?? null,
-        eventEndTime: action.event_end_time ?? null,
-        organizerLabel: metadata.associationName?.trim() || action.actor_name?.trim() || "Organisateur",
-        participantMessage: preparation.participantMessage?.trim() || null,
-        safetyInstructions: preparation.safetyInstructions?.trim() || null,
-        recommendedMaterials: preparation.recommendedMaterials?.trim() || null,
-        materialsProvided: preparation.materialsProvided?.trim() || null,
-        accessibility: preparation.accessibility?.trim() || null,
-        accessibilityStatus: preparation.accessibilityStatus ?? "not_evaluated",
-        checklist: (preparation.preparationChecklist ?? []).map((item) => ({ key: item.key, label: item.label, checked: item.checked })),
-        route: {
-          topology: preparation.routeTopology ?? null,
-          departureLabel: metadata.departureLocationLabel?.trim() || null,
-          arrivalLabel: metadata.arrivalLocationLabel?.trim() || null,
-          hasSelectedOperationalRoute: Boolean(preparation.operationalRoute),
-          targetDistanceKm: preparation.routeTargetDistanceKm ?? null,
-          networkDistanceKm: preparation.routeNetworkDistanceKm ?? null,
-        },
-        map: {
-          latitude,
-          longitude,
-          geometrySource,
-          hasGeometry: Boolean(action.derived_geometry_geojson),
-        },
-      },
-    });
+    const dayAccess = await resolveDayAccess({ supabase, action, actionId: normalizedActionId, userId: access.userId });
+    if (dayAccess instanceof Response) return dayAccess;
+    return NextResponse.json(buildDayPayload(action, normalizedActionId, dayAccess));
   } catch (error) {
     return handleApiError(error, "GET /api/actions/[actionId]/day");
   }

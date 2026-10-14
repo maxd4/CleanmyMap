@@ -1,22 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React from 'react'
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { Bell, CircleHelp, ExternalLink, Info, Search, Settings2, UserRound, type LucideIcon } from 'lucide-react-native'
-import {
-  loadMobileAccount,
-  updateMobileAccountProfile,
-  updateMobileActiveRole,
-  updateMobileActivityStatus,
-  updateMobileDisplayNameMode,
-  updateMobileNotificationPreferences,
-  requestMobileAccountDeletion,
-  type MobileAccountPayload,
-} from '../lib/mobile-account-service'
+import { useAccountController, type AccountData, type AccountSection } from '../hooks/use-account-controller'
 import { EmergencyContactPanel } from './emergency-contact'
 
 type AccountProps = { onSignOut: () => void; onSessionExpired: () => void; onOpenWeb: (path: string) => void }
-type AccountData = MobileAccountPayload
-type AccountSection = 'profile' | 'activity' | 'preferences' | 'search' | 'help' | 'about'
-
 const ACCOUNT_SECTIONS: Array<{ id: AccountSection; label: string; description: string; icon: LucideIcon }> = [
   { id: 'profile', label: 'Mon profil', description: 'Identité, onboarding et parcours actif', icon: UserRound },
   { id: 'activity', label: 'Activité et notifications', description: 'Historique, invitations et alertes', icon: Bell },
@@ -40,116 +28,13 @@ function roleLabel(role: string) {
 }
 
 export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: AccountProps) {
-  const [account, setAccount] = useState<AccountData | null>(null)
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [residence, setResidence] = useState('')
-  const [work, setWork] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
-  const [section, setSection] = useState<AccountSection>('profile')
-  const [deletionConfirmation, setDeletionConfirmation] = useState('')
-  const [deletionRequestId, setDeletionRequestId] = useState<string | null>(null)
-  const [deletionNotificationStatus, setDeletionNotificationStatus] = useState<'sent' | 'failed' | null>(null)
-
-  const hydrate = useCallback((next: AccountData) => {
-    setAccount(next)
-    setFirstName(next.identity.firstName ?? '')
-    setLastName(next.identity.lastName ?? '')
-    setResidence(next.locationPreferences.residence?.label ?? '')
-    setWork(next.locationPreferences.work?.label ?? '')
-  }, [])
-
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      hydrate(await loadMobileAccount())
-    } catch (value) {
-      if ((value as { status?: number }).status === 401) onSessionExpired()
-      else setError(value instanceof Error ? value.message : 'Votre compte est indisponible.')
-    } finally {
-      setLoading(false)
-    }
-  }, [hydrate, onSessionExpired])
-
-  useEffect(() => { void refresh() }, [refresh])
-
-  async function saveProfile(completeOnboarding = false) {
-    if (!firstName.trim() || !lastName.trim()) {
-      setError('Renseignez votre prénom et votre nom avant d’enregistrer.')
-      return
-    }
-    setSaving(true); setError(null); setMessage(null)
-    try {
-      const result = await updateMobileAccountProfile({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        residenceLabel: residence.trim() || null,
-        workLabel: work.trim() || null,
-        completeOnboarding,
-      })
-      hydrate(result.account)
-      setMessage(completeOnboarding ? 'Profil configuré et synchronisé avec CleanMyMap.' : 'Profil synchronisé avec CleanMyMap.')
-    } catch (value) {
-      if ((value as { status?: number }).status === 401) onSessionExpired()
-      else setError(value instanceof Error ? value.message : 'Le profil n’a pas pu être enregistré.')
-    } finally { setSaving(false) }
-  }
-
-  async function changeActiveRole(activeRole: string) {
-    if (!account || activeRole === account.identity.activeRole) return
-    setSaving(true); setError(null); setMessage(null)
-    try {
-      const result = await updateMobileActiveRole(activeRole)
-      setAccount((current) => current ? { ...current, identity: { ...current.identity, activeRole: result.activeRole } } : current)
-      setMessage('Parcours actif mis à jour. Vos droits attribués restent inchangés.')
-    } catch (value) {
-      if ((value as { status?: number }).status === 401) onSessionExpired()
-      else setError(value instanceof Error ? value.message : 'Ce parcours ne peut pas être activé.')
-    } finally { setSaving(false) }
-  }
-
-  async function changeDisplayNameMode(displayNameMode: 'full_name' | 'pseudo') {
-    if (!account || displayNameMode === account.identity.displayNameMode) return
-    setSaving(true); setError(null); setMessage(null)
-    try {
-      const result = await updateMobileDisplayNameMode(displayNameMode)
-      setAccount((current) => current ? { ...current, identity: { ...current.identity, displayNameMode: result.displayNameMode, displayName: result.displayName } } : current)
-      setMessage('Préférence de nom synchronisée.')
-    } catch (value) {
-      if ((value as { status?: number }).status === 401) onSessionExpired()
-      else setError(value instanceof Error ? value.message : 'La préférence de nom est indisponible.')
-    } finally { setSaving(false) }
-  }
-
-  async function changeActivityStatus(activityStatus: 'active' | 'inactive') {
-    if (!account || activityStatus === account.activityStatus) return
-    setSaving(true); setError(null); setMessage(null)
-    try {
-      const result = await updateMobileActivityStatus(activityStatus)
-      setAccount((current) => current ? { ...current, activityStatus: result.activityStatus } : current)
-      setMessage('Statut d’activité synchronisé.')
-    } catch (value) {
-      if ((value as { status?: number }).status === 401) onSessionExpired()
-      else setError(value instanceof Error ? value.message : 'Le statut d’activité est indisponible.')
-    } finally { setSaving(false) }
-  }
-
-  async function changeNotification(field: 'informationalEnabled' | 'actionRemindersEnabled', value: boolean) {
-    if (!account) return
-    setSaving(true); setError(null); setMessage(null)
-    try {
-      const notifications = await updateMobileNotificationPreferences({ [field]: value })
-      setAccount((current) => current ? { ...current, notifications } : current)
-      setMessage('Préférence de notification synchronisée.')
-    } catch (value) {
-      if ((value as { status?: number }).status === 401) onSessionExpired()
-      else setError(value instanceof Error ? value.message : 'Les notifications sont indisponibles.')
-    } finally { setSaving(false) }
-  }
+  const {
+    account, firstName, lastName, residence, work, loading, saving, error, message,
+    section, deletionConfirmation, deletionRequestId, deletionNotificationStatus,
+    setFirstName, setLastName, setResidence, setWork, setSection, setDeletionConfirmation,
+    refresh, saveProfile, changeActiveRole, changeDisplayNameMode, changeActivityStatus,
+    changeNotification, sendDeletionRequest,
+  } = useAccountController({ onSessionExpired })
 
   function submitDeletionRequest() {
     if (deletionConfirmation !== 'SUPPRIMER MON COMPTE' || saving) return
@@ -161,20 +46,6 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
         { text: 'Envoyer la demande', style: 'destructive', onPress: () => void sendDeletionRequest() },
       ],
     )
-  }
-
-  async function sendDeletionRequest() {
-    setSaving(true); setError(null); setMessage(null)
-    try {
-      const result = await requestMobileAccountDeletion(deletionConfirmation)
-      setDeletionRequestId(result.requestId)
-      setDeletionNotificationStatus(result.notificationStatus)
-      setMessage(result.message)
-      setDeletionConfirmation('')
-    } catch (value) {
-      if ((value as { status?: number }).status === 401) onSessionExpired()
-      else setError(value instanceof Error ? value.message : 'La demande de suppression n’a pas pu être enregistrée.')
-    } finally { setSaving(false) }
   }
 
   if (loading) return <View style={styles.state}><ActivityIndicator color="#34d399" /><Text style={styles.helper}>Chargement de votre compte…</Text></View>
@@ -190,7 +61,7 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
 
     <SectionMenu section={section} onChange={setSection} />
 
-    {section === 'profile' ? <>
+    <SectionContent visible={section === 'profile'}>
     <Card title="Identité et localisation préférée">
       <Text style={styles.identityName}>{account.identity.displayName}</Text>
       <Text style={styles.meta}>{account.identity.email ?? 'Adresse email non disponible'}</Text>
@@ -211,9 +82,9 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
       <View style={styles.chips}>{account.identity.availableActiveRoles.map((role) => <TouchableOpacity key={role} style={[styles.chip, account.identity.activeRole === role && styles.chipSelected]} onPress={() => void changeActiveRole(role)} disabled={saving} accessibilityRole="radio" accessibilityState={{ checked: account.identity.activeRole === role }}><Text style={styles.chipLabel}>{roleLabel(role)}</Text></TouchableOpacity>)}</View>
       <Text style={styles.helper}>Le rôle attribué est conservé. Seul le parcours actif autorisé peut changer.</Text>
     </Card>
-    </> : null}
+    </SectionContent>
 
-    {section === 'activity' ? <>
+    <SectionContent visible={section === 'activity'}>
     <Card title="Notifications et activité">
       <SwitchRow label="Informations CleanMyMap" value={account.notifications.informationalEnabled} onChange={(value) => void changeNotification('informationalEnabled', value)} disabled={saving} />
       <SwitchRow label="Rappels d’action" value={account.notifications.actionRemindersEnabled} onChange={(value) => void changeNotification('actionRemindersEnabled', value)} disabled={saving} />
@@ -232,31 +103,31 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
     <MissionCard account={account} />
     <CreatedActionCard account={account} />
     <InvitationCard account={account} />
-    </> : null}
+    </SectionContent>
 
-    {section === 'preferences' ? <Card title="Préférences d’affichage">
+    <SectionContent visible={section === 'preferences'}><Card title="Préférences d’affichage">
       <Text style={styles.helper}>Ces choix sont synchronisés avec votre compte CleanMyMap. La langue et les réglages web détaillés restent accessibles depuis leur surface canonique.</Text>
       <Text style={styles.label}>Nom affiché</Text>
       <View style={styles.row}><TouchableOpacity style={[styles.outlineButton, account.identity.displayNameMode === 'full_name' && styles.selectedButton]} onPress={() => void changeDisplayNameMode('full_name')} disabled={saving} accessibilityRole="radio" accessibilityState={{ checked: account.identity.displayNameMode === 'full_name' }}><Text style={styles.secondaryLabel}>Nom complet</Text></TouchableOpacity><TouchableOpacity style={[styles.outlineButton, account.identity.displayNameMode === 'pseudo' && styles.selectedButton]} onPress={() => void changeDisplayNameMode('pseudo')} disabled={saving} accessibilityRole="radio" accessibilityState={{ checked: account.identity.displayNameMode === 'pseudo' }}><Text style={styles.secondaryLabel}>Pseudo</Text></TouchableOpacity></View>
       <LinkButton label="Ouvrir les réglages web" onPress={() => onOpenWeb('/reglages')} />
-    </Card> : null}
+    </Card></SectionContent>
 
-    {section === 'search' ? <Card title="Rechercher">
+    <SectionContent visible={section === 'search'}><Card title="Rechercher">
       <Text style={styles.helper}>La recherche complète utilise la surface canonique CleanMyMap. Son ouverture conserve votre session Clerk.</Text>
       <LinkButton label="Ouvrir la recherche CleanMyMap" onPress={() => onOpenWeb('/explorer')} />
-    </Card> : null}
+    </Card></SectionContent>
 
-    {section === 'help' ? <>
+    <SectionContent visible={section === 'help'}>
       <Card title="Aide et feedback">
         <Text style={styles.helper}>Pour une question, un retour ou une demande d’assistance, utilisez le formulaire canonique du site.</Text>
         <LinkButton label="Aide et contact" onPress={() => onOpenWeb('/contact')} />
         <LinkButton label="Envoyer un feedback" onPress={() => onOpenWeb('/sections/feedback')} />
       </Card>
-    </> : null}
+    </SectionContent>
 
-    <View style={section === 'help' ? styles.visibleSection : styles.hiddenSection} pointerEvents={section === 'help' ? 'auto' : 'none'}><EmergencyContactPanel /></View>
+    <View style={sectionVisibilityStyle(section === 'help')} pointerEvents={sectionPointerEvents(section === 'help')}><EmergencyContactPanel /></View>
 
-    {section === 'about' ? <Card title="À propos et informations légales">
+    <SectionContent visible={section === 'about'}><Card title="À propos et informations légales">
       <LinkButton label="Politique de confidentialité" onPress={() => onOpenWeb('/politique-confidentialite')} />
       <LinkButton label="Mentions légales" onPress={() => onOpenWeb('/mentions-legales')} />
       <LinkButton label="Réseau CleanMyMap" onPress={() => onOpenWeb('/sections/annuaire')} />
@@ -272,10 +143,22 @@ export function AccountScreen({ onSignOut, onSessionExpired, onOpenWeb }: Accoun
         {deletionRequestId ? <Text style={styles.helper}>Demande enregistrée : {deletionRequestId}. Notification : {deletionNotificationStatus === 'sent' ? 'transmise' : 'en échec, traitement manuel requis'}. Suppression traitée : non confirmée.</Text> : null}
         <LinkButton label="Demander après désinstallation via le site" onPress={() => onOpenWeb('/contact')} />
       </View>
-    </Card> : null}
+    </Card></SectionContent>
 
     <TouchableOpacity style={styles.signOutButton} onPress={() => Alert.alert('Se déconnecter ?', 'La session Clerk sera fermée sur cet appareil.', [{ text: 'Annuler', style: 'cancel' }, { text: 'Se déconnecter', style: 'destructive', onPress: onSignOut }])} accessibilityRole="button"><Text style={styles.signOutLabel}>SE DÉCONNECTER</Text></TouchableOpacity>
   </View>
+}
+
+function SectionContent({ visible, children }: { visible: boolean; children: React.ReactNode }) {
+  return visible ? <>{children}</> : null
+}
+
+function sectionVisibilityStyle(visible: boolean) {
+  return visible ? styles.visibleSection : styles.hiddenSection
+}
+
+function sectionPointerEvents(visible: boolean): 'auto' | 'none' {
+  return visible ? 'auto' : 'none'
 }
 
 function SectionMenu({ section, onChange }: { section: AccountSection; onChange: (section: AccountSection) => void }) {

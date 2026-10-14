@@ -5047,56 +5047,11 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 31,
+      "line": 5,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
-      "functionIdentity": "callback:beforeEach:0:#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 30,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:describe:1:'mobile identity and server contracts'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 75,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'allows only owner-scoped mission creation with a minimal client insert surface'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 64,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'keeps derived mission metrics server-owned'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 56,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'keeps mission and GPS ownership bound to the Clerk sub claim'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 38,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'passes the current Clerk token to Supabase Third-Party Auth without a Supabase session'#1"
+      "functionIdentity": "callback:vi . hoisted:0:#1"
     },
     {
       "metric": "complexity",
@@ -5119,24 +5074,6 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 11,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#3"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 5,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . hoisted:0:#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
       "line": 10,
       "category": "tests",
       "ceiling": 1,
@@ -5146,7 +5083,25 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 11,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#3"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
       "line": 14,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . mock:1:'@clerk/expo/token-cache'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 16,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
@@ -5155,7 +5110,133 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 18,
+      "line": 20,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . mock:1:'react-native-url-polyfill/auto'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 35,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:beforeEach:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 42,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'passes the current Clerk token to Supabase Third-Party Auth without a Supabase session'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 60,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'keeps mission and GPS ownership bound to the Clerk sub claim'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 68,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'keeps derived mission metrics server-owned'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 79,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'allows only owner-scoped mission creation with a minimal client insert surface'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 91,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps historical GPS rows valid while making new mobile retries idempotent'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 5,
+      "category": "tests",
+      "ceiling": 4,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . hoisted:0:#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 6,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 7,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#2"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 10,
+      "category": "tests",
+      "ceiling": 3,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . mock:1:'@clerk/expo'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 11,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#3"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 14,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . mock:1:'@clerk/expo/token-cache'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 16,
+      "category": "tests",
+      "ceiling": 3,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . mock:1:'@supabase/supabase-js'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 20,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
@@ -5164,7 +5245,7 @@
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 31,
+      "line": 35,
       "category": "tests",
       "ceiling": 6,
       "status": "LEGACY",
@@ -5173,16 +5254,34 @@
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 30,
+      "line": 42,
       "category": "tests",
-      "ceiling": 49,
+      "ceiling": 16,
       "status": "LEGACY",
-      "functionIdentity": "callback:describe:1:'mobile identity and server contracts'#1"
+      "functionIdentity": "callback:it:1:'passes the current Clerk token to Supabase Third-Party Auth without a Supabase session'#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 75,
+      "line": 60,
+      "category": "tests",
+      "ceiling": 6,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'keeps mission and GPS ownership bound to the Clerk sub claim'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 68,
+      "category": "tests",
+      "ceiling": 9,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'keeps derived mission metrics server-owned'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "line": 79,
       "category": "tests",
       "ceiling": 10,
       "status": "LEGACY",
@@ -5191,34 +5290,484 @@
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 64,
+      "line": 91,
       "category": "tests",
-      "ceiling": 9,
+      "ceiling": 7,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps historical GPS rows valid while making new mobile retries idempotent'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
+      "line": 4,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:assertWebBridgeContract#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
+      "line": 19,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps the three native destinations explicit and ordered'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
+      "line": 20,
+      "category": "tests",
+      "ceiling": 1,
       "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'keeps derived mission metrics server-owned'#1"
+      "functionIdentity": "callback:MOBILE_DESTINATIONS . map:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
+      "line": 21,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:MOBILE_DESTINATIONS . map:0:#2"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
+      "line": 22,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:MOBILE_DESTINATION_REGISTRY . planned . map:0:#1"
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 56,
+      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
+      "line": 4,
+      "category": "tests",
+      "ceiling": 14,
+      "status": "CURRENT",
+      "functionIdentity": "named:assertWebBridgeContract#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
+      "line": 19,
       "category": "tests",
       "ceiling": 6,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'keeps mission and GPS ownership bound to the Clerk sub claim'#1"
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps the three native destinations explicit and ordered'#1"
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 38,
+      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
+      "line": 20,
       "category": "tests",
-      "ceiling": 16,
+      "ceiling": 1,
       "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'passes the current Clerk token to Supabase Third-Party Auth without a Supabase session'#1"
+      "functionIdentity": "callback:MOBILE_DESTINATIONS . map:0:#1"
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
+      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
+      "line": 21,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:MOBILE_DESTINATIONS . map:0:#2"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
+      "line": 22,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:MOBILE_DESTINATION_REGISTRY . planned . map:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 4,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createStorageSupabaseMock#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 5,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
       "line": 6,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#2"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 36,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:resetStorageState#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 45,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:replaysOfflinePoint#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 49,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#3"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 50,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#4"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 61,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps mission and reconciliation state scoped to the Clerk owner'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 81,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'rejects invalid mission owners before writing local identity state'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 87,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'serializes reconciliation queue additions per owner without cross-owner loss'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 98,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'serializes reconciliation additions and removals for one owner'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 111,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'does not discard the buffer when Supabase replay fails'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 113,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#5"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 114,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#6"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 122,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps the buffer when the Clerk session is unavailable'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 133,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'never exposes or replays one owner buffer through another owner namespace'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 138,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#7"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 139,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#8"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 149,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'fails closed for empty or unsafe owner identifiers'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 158,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'removes malformed records without replaying them or discarding valid owner data'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 162,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#9"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 163,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#10"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 172,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps owner data when the replay request throws before confirmation'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 174,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#11"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 175,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#12"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 184,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'retries a point after a lost acknowledgement with the same stable identity'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 188,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn ( ) . mockImplementationOnce:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 192,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn ( ) . mockImplementationOnce ( async ( rows : typeof point [ ] ) => { acceptedPointIds . push ( rows [ 0 ] . client_point_id ) throw new Error ( 'ack lost after commit' ) } ) . mockImplementationOnce:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 196,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#13"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 206,
+      "category": "tests",
+      "ceiling": 2,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'persists an identity for a legacy buffered point before a restart/retry'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 212,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn ( ) . mockImplementationOnce:0:#2"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 216,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn ( ) . mockImplementationOnce ( async ( rows : typeof point [ ] ) => { acceptedPointIds . push ( rows [ 0 ] . client_point_id ) return { error : new Error ( 'ack lost after commit' ) } } ) . mockImplementationOnce:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 220,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#14"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 234,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'refuses replay after the Clerk account changes without touching the owner buffer'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 237,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#15"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 238,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#16"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 248,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps a point buffered while an earlier replay is in flight'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 255,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn ( ) . mockImplementationOnce:0:#3"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 256,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "anonymous:220#2"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 260,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#17"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 263,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . waitFor:0:#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 4,
+      "category": "tests",
+      "ceiling": 4,
+      "status": "CURRENT",
+      "functionIdentity": "named:createStorageSupabaseMock#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 5,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
@@ -5226,8 +5775,8 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 7,
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 6,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
@@ -5235,8 +5784,26 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 11,
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 36,
+      "category": "tests",
+      "ceiling": 6,
+      "status": "CURRENT",
+      "functionIdentity": "named:resetStorageState#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 45,
+      "category": "tests",
+      "ceiling": 12,
+      "status": "CURRENT",
+      "functionIdentity": "named:replaysOfflinePoint#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 49,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
@@ -5244,138 +5811,534 @@
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 5,
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 50,
       "category": "tests",
-      "ceiling": 4,
+      "ceiling": 1,
       "status": "LEGACY",
-      "functionIdentity": "callback:vi . hoisted:0:#1"
+      "functionIdentity": "callback:vi . fn:0:#4"
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 10,
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 61,
       "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'@clerk/expo'#1"
+      "ceiling": 16,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps mission and reconciliation state scoped to the Clerk owner'#1"
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 14,
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 81,
       "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'@supabase/supabase-js'#1"
+      "ceiling": 5,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'rejects invalid mission owners before writing local identity state'#1"
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/identity-and-contracts.test.ts",
-      "line": 18,
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 87,
       "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'react-native-url-polyfill/auto'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
-      "line": 4,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:describe:1:'mobile V1 shell contract'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
-      "line": 10,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'bridges lightweight actions to existing web surfaces'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
-      "line": 5,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'keeps the five volunteer destinations explicit and ordered'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
-      "line": 6,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:MOBILE_DESTINATIONS . map:0:#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
-      "line": 7,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:MOBILE_DESTINATIONS . map:0:#2"
+      "ceiling": 9,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'serializes reconciliation queue additions per owner without cross-owner loss'#1"
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
-      "line": 4,
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 98,
       "category": "tests",
-      "ceiling": 17,
-      "status": "LEGACY",
-      "functionIdentity": "callback:describe:1:'mobile V1 shell contract'#1"
+      "ceiling": 8,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'serializes reconciliation additions and removals for one owner'#1"
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
-      "line": 10,
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 111,
+      "category": "tests",
+      "ceiling": 8,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'does not discard the buffer when Supabase replay fails'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 113,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#5"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 114,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#6"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 122,
+      "category": "tests",
+      "ceiling": 8,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps the buffer when the Clerk session is unavailable'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 133,
+      "category": "tests",
+      "ceiling": 13,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'never exposes or replays one owner buffer through another owner namespace'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 138,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#7"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 139,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#8"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 149,
+      "category": "tests",
+      "ceiling": 7,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'fails closed for empty or unsafe owner identifiers'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 158,
       "category": "tests",
       "ceiling": 11,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'bridges lightweight actions to existing web surfaces'#1"
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'removes malformed records without replaying them or discarding valid owner data'#1"
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
-      "line": 5,
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 162,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#9"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 163,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#10"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 172,
+      "category": "tests",
+      "ceiling": 10,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps owner data when the replay request throws before confirmation'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 174,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#11"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 175,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#12"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 184,
+      "category": "tests",
+      "ceiling": 19,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'retries a point after a lost acknowledgement with the same stable identity'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 188,
       "category": "tests",
       "ceiling": 4,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'keeps the five volunteer destinations explicit and ordered'#1"
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn ( ) . mockImplementationOnce:0:#1"
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
-      "line": 6,
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 192,
       "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:MOBILE_DESTINATIONS . map:0:#1"
+      "ceiling": 4,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn ( ) . mockImplementationOnce ( async ( rows : typeof point [ ] ) => { acceptedPointIds . push ( rows [ 0 ] . client_point_id ) throw new Error ( 'ack lost after commit' ) } ) . mockImplementationOnce:0:#1"
     },
     {
       "metric": "functionLength",
-      "path": "apps/mobile/tests/mobile-shell-contract.test.ts",
-      "line": 7,
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 196,
       "category": "tests",
       "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:MOBILE_DESTINATIONS . map:0:#2"
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#13"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 206,
+      "category": "tests",
+      "ceiling": 24,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'persists an identity for a legacy buffered point before a restart/retry'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 212,
+      "category": "tests",
+      "ceiling": 4,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn ( ) . mockImplementationOnce:0:#2"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 216,
+      "category": "tests",
+      "ceiling": 4,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn ( ) . mockImplementationOnce ( async ( rows : typeof point [ ] ) => { acceptedPointIds . push ( rows [ 0 ] . client_point_id ) return { error : new Error ( 'ack lost after commit' ) } } ) . mockImplementationOnce:0:#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 220,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#14"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 234,
+      "category": "tests",
+      "ceiling": 12,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'refuses replay after the Clerk account changes without touching the owner buffer'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 237,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#15"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 238,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#16"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 248,
+      "category": "tests",
+      "ceiling": 25,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'keeps a point buffered while an earlier replay is in flight'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 255,
+      "category": "tests",
+      "ceiling": 3,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn ( ) . mockImplementationOnce:0:#3"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 256,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "anonymous:220#2"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 260,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . fn:0:#17"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/storage.test.ts",
+      "line": 263,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . waitFor:0:#1"
     },
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 120,
+      "line": 3,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createTrackingState#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 15,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createMockFunction#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 21,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
-      "functionIdentity": "callback:beforeEach:0:#1"
+      "functionIdentity": "callback:vi . mock:1:'expo-constants'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 25,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createLocationMock#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 27,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 28,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#2"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 29,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#3"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 30,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#4"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 36,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:readTaskRegistration#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 41,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createTaskManagerMock#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 42,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#5"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 47,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createSupabaseMock#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 54,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createPermissionRationaleMock#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 55,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#6"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 60,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:readStoredMissionId#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 61,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:readStoredMissionOwnerId#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 62,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:setStoredMissionId#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 63,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:clearStoredMissionId#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 68,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:recordFlush#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 70,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createStorageMock#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 105,
+      "category": "tests",
+      "ceiling": 3,
+      "status": "CURRENT",
+      "functionIdentity": "named:missionResult#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 112,
+      "category": "tests",
+      "ceiling": 4,
+      "status": "LEGACY",
+      "functionIdentity": "named:missionClient#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 117,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:singleResult#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 118,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createSingleQuery#1"
     },
     {
       "metric": "complexity",
@@ -5383,49 +6346,76 @@
       "line": 119,
       "category": "tests",
       "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:describe:1:'mobile tracking service'#1"
+      "status": "CURRENT",
+      "functionIdentity": "named:createUpdateFilter#1"
     },
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 179,
+      "line": 120,
       "category": "tests",
       "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'buffers a GPS point when the Supabase insert fails'#1"
+      "status": "CURRENT",
+      "functionIdentity": "named:recordUpdate#1"
     },
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 136,
+      "line": 125,
       "category": "tests",
       "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'creates an owner-scoped mission without client-owned metrics'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 222,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'fails closed when no Clerk-backed Supabase client is available'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 203,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'flushes the GPS buffer before completing and never writes derived metrics'#1"
+      "status": "CURRENT",
+      "functionIdentity": "named:recordInsert#1"
     },
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 130,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:selectMission#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 131,
+      "category": "tests",
+      "ceiling": 2,
+      "status": "CURRENT",
+      "functionIdentity": "named:createMissionTable#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 143,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:resetTrackingState#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 151,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:getClient . mockImplementation:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 152,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:getUserId . mockImplementation:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 159,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
@@ -5434,7 +6424,16 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 152,
+      "line": 165,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'creates an owner-scoped mission without client-owned metrics'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 181,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
@@ -5443,7 +6442,25 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 171,
+      "line": 190,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'refuses the permission gate when foreground GPS permission is denied'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 200,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'refuses the permission gate when background GPS permission is denied'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 213,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
@@ -5452,16 +6469,52 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 18,
+      "line": 221,
       "category": "tests",
       "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#1"
+      "status": "CURRENT",
+      "functionIdentity": "named:buffersPointWhenInsertFails#1"
     },
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 44,
+      "line": 224,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#8"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 225,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#9"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 248,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'buffers a GPS point when the Clerk session is unavailable'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 268,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'refuses a GPS write after the active Clerk identity changes'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 270,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
@@ -5470,7 +6523,7 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 45,
+      "line": 271,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
@@ -5479,7 +6532,16 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 46,
+      "line": 284,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'refuses a GPS write when Clerk changes while the client is being resolved'#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 285,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
@@ -5488,7 +6550,7 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 85,
+      "line": 286,
       "category": "tests",
       "ceiling": 2,
       "status": "LEGACY",
@@ -5497,304 +6559,340 @@
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 89,
+      "line": 288,
       "category": "tests",
       "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#14"
+      "status": "CURRENT",
+      "functionIdentity": "callback:getClient . mockImplementationOnce:0:#1"
     },
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 93,
+      "line": 289,
       "category": "tests",
       "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#15"
+      "status": "CURRENT",
+      "functionIdentity": "anonymous:220#2"
     },
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 94,
+      "line": 296,
       "category": "tests",
       "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#16"
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . waitFor:0:#1"
     },
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 95,
+      "line": 308,
       "category": "tests",
       "ceiling": 1,
       "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#17"
+      "functionIdentity": "callback:it:1:'flushes the GPS buffer before completing and never writes derived metrics'#1"
     },
     {
       "metric": "complexity",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 100,
+      "line": 327,
       "category": "tests",
       "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#18"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 104,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#19"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 19,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#2"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 105,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#20"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 109,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#21"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 110,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#22"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 111,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#23"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 182,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#24"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 183,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#25"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 20,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#3"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 21,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#4"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 26,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#5"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 33,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#6"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 37,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#7"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 38,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#8"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 41,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#9"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 3,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . hoisted:0:#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 36,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'../lib/storage'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 32,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'../lib/supabase'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 12,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'expo-constants'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 16,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'expo-location'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 25,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'expo-task-manager'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 74,
-      "category": "tests",
-      "ceiling": 4,
-      "status": "LEGACY",
-      "functionIdentity": "named:missionClient#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 120,
-      "category": "tests",
-      "ceiling": 9,
-      "status": "LEGACY",
-      "functionIdentity": "callback:beforeEach:0:#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 119,
-      "category": "tests",
-      "ceiling": 117,
-      "status": "LEGACY",
-      "functionIdentity": "callback:describe:1:'mobile tracking service'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 179,
-      "category": "tests",
-      "ceiling": 21,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'buffers a GPS point when the Supabase insert fails'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 136,
-      "category": "tests",
-      "ceiling": 13,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'creates an owner-scoped mission without client-owned metrics'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 222,
-      "category": "tests",
-      "ceiling": 6,
       "status": "LEGACY",
       "functionIdentity": "callback:it:1:'fails closed when no Clerk-backed Supabase client is available'#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 203,
+      "line": 3,
       "category": "tests",
-      "ceiling": 16,
+      "ceiling": 11,
+      "status": "CURRENT",
+      "functionIdentity": "named:createTrackingState#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 15,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createMockFunction#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 21,
+      "category": "tests",
+      "ceiling": 3,
       "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'flushes the GPS buffer before completing and never writes derived metrics'#1"
+      "functionIdentity": "callback:vi . mock:1:'expo-constants'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 25,
+      "category": "tests",
+      "ceiling": 8,
+      "status": "CURRENT",
+      "functionIdentity": "named:createLocationMock#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 27,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 28,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#2"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 29,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#3"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 30,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#4"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 36,
+      "category": "tests",
+      "ceiling": 4,
+      "status": "CURRENT",
+      "functionIdentity": "named:readTaskRegistration#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 41,
+      "category": "tests",
+      "ceiling": 3,
+      "status": "CURRENT",
+      "functionIdentity": "named:createTaskManagerMock#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 42,
+      "category": "tests",
+      "ceiling": 4,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#5"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 47,
+      "category": "tests",
+      "ceiling": 4,
+      "status": "CURRENT",
+      "functionIdentity": "named:createSupabaseMock#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 54,
+      "category": "tests",
+      "ceiling": 3,
+      "status": "CURRENT",
+      "functionIdentity": "named:createPermissionRationaleMock#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 55,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#6"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 60,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:readStoredMissionId#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 61,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:readStoredMissionOwnerId#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 62,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:setStoredMissionId#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 63,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:clearStoredMissionId#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 68,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:recordFlush#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 70,
+      "category": "tests",
+      "ceiling": 9,
+      "status": "CURRENT",
+      "functionIdentity": "named:createStorageMock#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 105,
+      "category": "tests",
+      "ceiling": 6,
+      "status": "CURRENT",
+      "functionIdentity": "named:missionResult#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 112,
+      "category": "tests",
+      "ceiling": 42,
+      "status": "LEGACY",
+      "functionIdentity": "named:missionClient#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 117,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:singleResult#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 118,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createSingleQuery#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 119,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:createUpdateFilter#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 120,
+      "category": "tests",
+      "ceiling": 5,
+      "status": "CURRENT",
+      "functionIdentity": "named:recordUpdate#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 125,
+      "category": "tests",
+      "ceiling": 5,
+      "status": "CURRENT",
+      "functionIdentity": "named:recordInsert#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
       "line": 130,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "named:selectMission#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 131,
+      "category": "tests",
+      "ceiling": 4,
+      "status": "CURRENT",
+      "functionIdentity": "named:createMissionTable#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 143,
+      "category": "tests",
+      "ceiling": 13,
+      "status": "CURRENT",
+      "functionIdentity": "named:resetTrackingState#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 151,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:getClient . mockImplementation:0:#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 152,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:getUserId . mockImplementation:0:#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 159,
       "category": "tests",
       "ceiling": 4,
       "status": "LEGACY",
@@ -5803,7 +6901,16 @@
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 152,
+      "line": 165,
+      "category": "tests",
+      "ceiling": 13,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'creates an owner-scoped mission without client-owned metrics'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 181,
       "category": "tests",
       "ceiling": 7,
       "status": "LEGACY",
@@ -5812,7 +6919,25 @@
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 171,
+      "line": 190,
+      "category": "tests",
+      "ceiling": 7,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'refuses the permission gate when foreground GPS permission is denied'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 200,
+      "category": "tests",
+      "ceiling": 10,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'refuses the permission gate when background GPS permission is denied'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 213,
       "category": "tests",
       "ceiling": 5,
       "status": "LEGACY",
@@ -5821,214 +6946,16 @@
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 18,
+      "line": 221,
       "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#1"
+      "ceiling": 22,
+      "status": "CURRENT",
+      "functionIdentity": "named:buffersPointWhenInsertFails#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 44,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#10"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 45,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#11"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 46,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#12"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 85,
-      "category": "tests",
-      "ceiling": 30,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#13"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 89,
-      "category": "tests",
-      "ceiling": 11,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#14"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 93,
-      "category": "tests",
-      "ceiling": 5,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#15"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 94,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#16"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 95,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#17"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 100,
-      "category": "tests",
-      "ceiling": 9,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#18"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 104,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#19"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 19,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#2"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 105,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#20"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 109,
-      "category": "tests",
-      "ceiling": 5,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#21"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 110,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#22"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 111,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#23"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 182,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#24"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 183,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#25"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 20,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#3"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 21,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#4"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 26,
-      "category": "tests",
-      "ceiling": 4,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#5"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 33,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#6"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 37,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#7"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 38,
+      "line": 224,
       "category": "tests",
       "ceiling": 3,
       "status": "LEGACY",
@@ -6037,7 +6964,7 @@
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 41,
+      "line": 225,
       "category": "tests",
       "ceiling": 3,
       "status": "LEGACY",
@@ -6046,245 +6973,110 @@
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 3,
+      "line": 248,
       "category": "tests",
-      "ceiling": 8,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . hoisted:0:#1"
+      "ceiling": 18,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'buffers a GPS point when the Clerk session is unavailable'#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 36,
+      "line": 268,
       "category": "tests",
       "ceiling": 14,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'../lib/storage'#1"
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'refuses a GPS write after the active Clerk identity changes'#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 32,
+      "line": 270,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#10"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 271,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#11"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 284,
+      "category": "tests",
+      "ceiling": 21,
+      "status": "CURRENT",
+      "functionIdentity": "callback:it:1:'refuses a GPS write when Clerk changes while the client is being resolved'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 285,
       "category": "tests",
       "ceiling": 3,
       "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'../lib/supabase'#1"
+      "functionIdentity": "callback:vi . fn:0:#12"
     },
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 12,
+      "line": 286,
+      "category": "tests",
+      "ceiling": 30,
+      "status": "LEGACY",
+      "functionIdentity": "callback:vi . fn:0:#13"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 288,
       "category": "tests",
       "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'expo-constants'#1"
+      "status": "CURRENT",
+      "functionIdentity": "callback:getClient . mockImplementationOnce:0:#1"
     },
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 16,
+      "line": 289,
       "category": "tests",
-      "ceiling": 8,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'expo-location'#1"
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "anonymous:220#2"
     },
     {
       "metric": "functionLength",
       "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 25,
+      "line": 296,
+      "category": "tests",
+      "ceiling": 1,
+      "status": "CURRENT",
+      "functionIdentity": "callback:vi . waitFor:0:#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 308,
+      "category": "tests",
+      "ceiling": 16,
+      "status": "LEGACY",
+      "functionIdentity": "callback:it:1:'flushes the GPS buffer before completing and never writes derived metrics'#1"
+    },
+    {
+      "metric": "functionLength",
+      "path": "apps/mobile/tests/tracking-service.test.ts",
+      "line": 327,
       "category": "tests",
       "ceiling": 6,
       "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'expo-task-manager'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/tracking-service.test.ts",
-      "line": 74,
-      "category": "tests",
-      "ceiling": 42,
-      "status": "LEGACY",
-      "functionIdentity": "named:missionClient#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 4,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'../lib/supabase'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 5,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 19,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:describe:1:'mobile GPS offline storage'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 20,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:beforeEach:0:#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 26,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'keeps an offline point and replays it once Clerk/Supabase is available'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 30,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#2"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 31,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#3"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 39,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'does not discard the buffer when Supabase replay fails'#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 41,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#4"
-    },
-    {
-      "metric": "complexity",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 42,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#5"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 4,
-      "category": "tests",
-      "ceiling": 3,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . mock:1:'../lib/supabase'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 5,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 19,
-      "category": "tests",
-      "ceiling": 27,
-      "status": "IMPROVED",
-      "functionIdentity": "callback:describe:1:'mobile GPS offline storage'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 20,
-      "category": "tests",
-      "ceiling": 5,
-      "status": "LEGACY",
-      "functionIdentity": "callback:beforeEach:0:#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 26,
-      "category": "tests",
-      "ceiling": 9,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'keeps an offline point and replays it once Clerk/Supabase is available'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 30,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#2"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 31,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#3"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 39,
-      "category": "tests",
-      "ceiling": 8,
-      "status": "LEGACY",
-      "functionIdentity": "callback:it:1:'does not discard the buffer when Supabase replay fails'#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 41,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#4"
-    },
-    {
-      "metric": "functionLength",
-      "path": "apps/mobile/tests/storage.test.ts",
-      "line": 42,
-      "category": "tests",
-      "ceiling": 1,
-      "status": "LEGACY",
-      "functionIdentity": "callback:vi . fn:0:#5"
+      "functionIdentity": "callback:it:1:'fails closed when no Clerk-backed Supabase client is available'#1"
     }
   ]
 }

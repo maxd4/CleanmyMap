@@ -98,46 +98,43 @@ export async function updateSpogomiEvent(params: {
   };
 }) {
   const { event, input, supabase, actorClerkId } = params;
-  const name = input.name?.trim() || event.name;
-  const locationLabel = input.locationLabel?.trim() || event.location_label;
-  if (!name || !locationLabel) throw new Error("Validation: nom et lieu obligatoires.");
-  const startsAt = input.startsAt ?? event.starts_at;
-  const endsAt = input.endsAt === undefined ? event.ends_at : input.endsAt;
-  if (endsAt && Date.parse(endsAt) < Date.parse(startsAt)) {
-    throw new Error("Validation: la fin doit être postérieure au début.");
-  }
-  if (input.publicVisibility === "published" && (!event.event_slug || !startsAt || !locationLabel)) {
-    throw new Error("Validation: un événement publié doit avoir un identifiant, une date et un lieu.");
-  }
-  if (input.publicVisibility === "published" && event.state === "draft") {
-    throw new Error("Validation: un brouillon doit d'abord quitter l'état draft avant publication.");
-  }
-  const currentCasual = event.team_size_config?.casual ?? {};
-  const teamSizeConfig = input.casualTeamSize === undefined
-    ? event.team_size_config
-    : {
-      ...event.team_size_config,
-      casual: {
-        ...currentCasual,
-        minMembers: input.casualTeamSize,
-        maxMembers: input.casualTeamSize,
-      },
-    };
+  const update = normalizeEventUpdate(event, input);
   const result = await supabase.rpc("spogomi_update_event_metadata", {
     p_event_id: event.id,
     p_expected_revision: Number(event.composition_revision ?? 0),
     p_actor_clerk_id: actorClerkId,
-    p_name: name,
-    p_location_label: locationLabel,
-    p_starts_at: startsAt,
-    p_ends_at: endsAt,
-    p_mode: input.mode ?? event.mode,
-    p_team_size_config: teamSizeConfig,
+    p_name: update.name,
+    p_location_label: update.locationLabel,
+    p_starts_at: update.startsAt,
+    p_ends_at: update.endsAt,
+    p_mode: update.mode,
+    p_team_size_config: update.teamSizeConfig,
     p_public_visibility: input.publicVisibility ?? event.public_visibility,
     p_public_results_visibility: input.publicResultsVisibility ?? event.public_results_visibility,
   });
   if (result.error) throw result.error;
   return result.data as EventRow;
+}
+
+function validateEventUpdate(event: EventRow, input: Parameters<typeof updateSpogomiEvent>[0]["input"], name: string, locationLabel: string, startsAt: string, endsAt: string | null): void {
+  if (!name || !locationLabel) throw new Error("Validation: nom et lieu obligatoires.");
+  if (endsAt && Date.parse(endsAt) < Date.parse(startsAt)) throw new Error("Validation: la fin doit être postérieure au début.");
+  if (input.publicVisibility === "published" && (!event.event_slug || !startsAt || !locationLabel)) throw new Error("Validation: un événement publié doit avoir un identifiant, une date et un lieu.");
+  if (input.publicVisibility === "published" && event.state === "draft") throw new Error("Validation: un brouillon doit d'abord quitter l'état draft avant publication.");
+}
+
+function normalizeEventUpdate(event: EventRow, input: Parameters<typeof updateSpogomiEvent>[0]["input"]) {
+  const name = input.name?.trim() || event.name;
+  const locationLabel = input.locationLabel?.trim() || event.location_label;
+  const startsAt = input.startsAt ?? event.starts_at;
+  const endsAt = input.endsAt === undefined ? event.ends_at : input.endsAt;
+  validateEventUpdate(event, input, name, locationLabel, startsAt, endsAt);
+  const currentCasual = event.team_size_config?.casual ?? {};
+  const teamSizeConfig = input.casualTeamSize === undefined ? event.team_size_config : {
+    ...event.team_size_config,
+    casual: { ...currentCasual, minMembers: input.casualTeamSize, maxMembers: input.casualTeamSize },
+  };
+  return { name, locationLabel, startsAt, endsAt, mode: input.mode ?? event.mode, teamSizeConfig };
 }
 
 const IMPORT_LEASE_MS = 2 * 60 * 1000;
@@ -316,25 +313,36 @@ function importMappingMatches(stored: SpogomiRosterColumnMapping, preview: Spogo
   return canonicalImportMapping(stored, { sheetName: String(metadata.__sheetName ?? ""), headerRow: Number(metadata.__headerRow ?? 0) }) === canonicalImportMapping(preview.mapping, preview);
 }
 
-export async function previewRosterImportChanges(
-  supabase: SupabaseClient,
-  event: EventRow,
-  preview: SpogomiRosterPreview,
-): Promise<SpogomiRosterPreview> {
-  if (preview.sourceSystem !== "cachan_ticketing") {
-    const errorsByRow = new Set(preview.errors.map((error) => error.rowNumber));
-    const rowEffects: NonNullable<SpogomiRosterPreview["rowEffects"]> = Object.fromEntries(preview.rows.map((row) => [String(row.rowNumber), errorsByRow.has(row.rowNumber) ? "excluded" : "created"]));
-    return { ...preview, rowEffects, importSummary: { created: preview.rows.filter((row) => !errorsByRow.has(row.rowNumber)).length, unchanged: 0, changed: 0, conflicts: preview.errors.length, excluded: preview.ignoredRowNumbers.length } };
-  }
-  const references = preview.rows.map((row) => row.externalReference).filter((reference): reference is string => Boolean(reference));
-  if (!references.length) return { ...preview, rowEffects: {}, importSummary: { created: 0, unchanged: 0, changed: 0, conflicts: preview.errors.length, excluded: preview.ignoredRowNumbers.length } };
+function previewNonCachanChanges(preview: SpogomiRosterPreview): SpogomiRosterPreview {
+  const errorsByRow = new Set(preview.errors.map((error) => error.rowNumber));
+  const rowEffects: NonNullable<SpogomiRosterPreview["rowEffects"]> = Object.fromEntries(preview.rows.map((row) => [String(row.rowNumber), errorsByRow.has(row.rowNumber) ? "excluded" : "created"]));
+  return { ...preview, rowEffects, importSummary: { created: preview.rows.filter((row) => !errorsByRow.has(row.rowNumber)).length, unchanged: 0, changed: 0, conflicts: preview.errors.length, excluded: preview.ignoredRowNumbers.length } };
+}
+
+type ExistingCachanParticipant = {
+  id: string;
+  external_reference: string | null;
+  order_reference: string | null;
+  order_alternative_reference: string | null;
+  ticket_status: string | null;
+  ticket_deleted: boolean | null;
+  display_name: string | null;
+  identity_status: string | null;
+  attendance_status: string | null;
+  account_link_status: string | null;
+  clerk_id: string | null;
+  team_id: string | null;
+  registration_status: string | null;
+};
+
+async function loadCachanPreviewContext(supabase: SupabaseClient, event: EventRow, preview: SpogomiRosterPreview, references: string[]) {
   const existing = await supabase.from("spogomi_participants")
     .select("id, external_reference, source_system, order_reference, order_alternative_reference, ticket_status, ticket_deleted, display_name, identity_status, attendance_status, account_link_status, clerk_id, team_id, registration_status")
     .eq("event_id", event.id)
     .eq("source_system", preview.sourceSystem)
     .in("external_reference", references);
   if (existing.error) throw existing.error;
-  const byReference = new Map((existing.data ?? []).map((row) => [String(row.external_reference), row]));
+  const byReference = new Map((existing.data as ExistingCachanParticipant[] ?? []).map((row) => [String(row.external_reference), row]));
   const existingParticipantIds = [...byReference.values()].map((row) => String(row.id));
   const protectedCancellations = existingParticipantIds.length
     ? await supabase.from("spogomi_roster_import_changes")
@@ -350,6 +358,13 @@ export async function previewRosterImportChanges(
     eventId: event.id,
     participants: [...byReference.values()].map((row) => ({ id: String(row.id), ticket_status: row.ticket_status, ticket_deleted: Boolean(row.ticket_deleted) })),
   });
+  return { byReference, protectedCancellationIds, sourceWithdrawalIds };
+}
+
+function classifyCachanPreviewRows(
+  preview: SpogomiRosterPreview,
+  context: Awaited<ReturnType<typeof loadCachanPreviewContext>>,
+) {
   const changedRowNumbers: number[] = [];
   const conflictRowNumbers: number[] = [];
   const errorsByRow = new Set(preview.errors.map((error) => error.rowNumber));
@@ -357,7 +372,7 @@ export async function previewRosterImportChanges(
   let unchanged = 0;
   let created = 0;
   for (const row of preview.rows) {
-    const current = row.externalReference ? byReference.get(row.externalReference) : undefined;
+    const current = row.externalReference ? context.byReference.get(row.externalReference) : undefined;
     if (errorsByRow.has(row.rowNumber)) {
       rowEffects[String(row.rowNumber)] = "excluded";
       continue;
@@ -365,37 +380,46 @@ export async function previewRosterImportChanges(
     if (!current) {
       created += 1;
       rowEffects[String(row.rowNumber)] = "created";
+      continue;
     }
-    else {
-      const changed = current.order_reference !== row.orderReference ||
-        current.order_alternative_reference !== row.orderAlternativeReference ||
-        current.ticket_status !== row.ticketStatus ||
-        Boolean(current.ticket_deleted) !== row.ticketDeleted ||
-        (current.display_name ?? null) !== row.name;
-      const cancellationChanged = Boolean(current.ticket_deleted) !== row.ticketDeleted ||
-        isCancelledCachanTicketStatus(current.ticket_status) !== isCancelledCachanTicketStatus(row.ticketStatus);
-      const hasHumanDecision = hasProtectedSpogomiHumanDecision({
-        attendanceStatus: current.attendance_status,
-        accountLinkStatus: current.account_link_status,
-        clerkId: current.clerk_id,
-        identityStatus: current.identity_status,
-        teamId: current.team_id,
-        registrationStatus: current.registration_status,
-        sourceWithdrawalProven: sourceWithdrawalIds.has(String(current.id)),
-      });
-      if (changed) changedRowNumbers.push(row.rowNumber);
-      else unchanged += 1;
-      if ((cancellationChanged && hasHumanDecision) || (
-        protectedCancellationIds.has(String(current.id))
-      )) {
-        conflictRowNumbers.push(row.rowNumber);
-        rowEffects[String(row.rowNumber)] = "conflict";
-      } else if (changed) rowEffects[String(row.rowNumber)] = "changed";
-      else rowEffects[String(row.rowNumber)] = "unchanged";
-    }
+    const changed = current.order_reference !== row.orderReference ||
+      current.order_alternative_reference !== row.orderAlternativeReference ||
+      current.ticket_status !== row.ticketStatus ||
+      Boolean(current.ticket_deleted) !== row.ticketDeleted ||
+      (current.display_name ?? null) !== row.name;
+    const cancellationChanged = Boolean(current.ticket_deleted) !== row.ticketDeleted ||
+      isCancelledCachanTicketStatus(current.ticket_status) !== isCancelledCachanTicketStatus(row.ticketStatus);
+    const hasHumanDecision = hasProtectedSpogomiHumanDecision({
+      attendanceStatus: current.attendance_status,
+      accountLinkStatus: current.account_link_status,
+      clerkId: current.clerk_id,
+      identityStatus: current.identity_status,
+      teamId: current.team_id,
+      registrationStatus: current.registration_status,
+      sourceWithdrawalProven: context.sourceWithdrawalIds.has(String(current.id)),
+    });
+    if (changed) changedRowNumbers.push(row.rowNumber);
+    else unchanged += 1;
+    if ((cancellationChanged && hasHumanDecision) || context.protectedCancellationIds.has(String(current.id))) {
+      conflictRowNumbers.push(row.rowNumber);
+      rowEffects[String(row.rowNumber)] = "conflict";
+    } else if (changed) rowEffects[String(row.rowNumber)] = "changed";
+    else rowEffects[String(row.rowNumber)] = "unchanged";
   }
   const conflicts = preview.errors.filter((error) => error.code === "ticket_reference_collision" || error.code === "ambiguous_identifier" || error.code === "ambiguous_mapping").length + conflictRowNumbers.length;
-  return { ...preview, changedRowNumbers, conflictRowNumbers, rowEffects, importSummary: { created, unchanged, changed: changedRowNumbers.length, conflicts, excluded: preview.ignoredRowNumbers.length } };
+  return { changedRowNumbers, conflictRowNumbers, rowEffects, importSummary: { created, unchanged, changed: changedRowNumbers.length, conflicts, excluded: preview.ignoredRowNumbers.length } };
+}
+
+export async function previewRosterImportChanges(
+  supabase: SupabaseClient,
+  event: EventRow,
+  preview: SpogomiRosterPreview,
+): Promise<SpogomiRosterPreview> {
+  if (preview.sourceSystem !== "cachan_ticketing") return previewNonCachanChanges(preview);
+  const references = preview.rows.map((row) => row.externalReference).filter((reference): reference is string => Boolean(reference));
+  if (!references.length) return { ...preview, rowEffects: {}, importSummary: { created: 0, unchanged: 0, changed: 0, conflicts: preview.errors.length, excluded: preview.ignoredRowNumbers.length } };
+  const context = await loadCachanPreviewContext(supabase, event, preview, references);
+  return { ...preview, ...classifyCachanPreviewRows(preview, context) };
 }
 
 export async function confirmRosterImport(params: ConfirmRosterImportParams) {

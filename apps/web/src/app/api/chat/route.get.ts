@@ -332,6 +332,78 @@ async function resolveChatIdentity(): Promise<
   return { userId, identity };
 }
 
+async function findChatTargetCursor(scopeQueryFactories: ChatQueryFactory[], requestedMessageId: string | null) {
+  if (!requestedMessageId || !isChatMessageId(requestedMessageId)) return { cursor: null, found: false };
+  const targetGroups = await Promise.all(scopeQueryFactories.map((factory) => runMessageQuery(factory().eq("id", requestedMessageId).limit(1))));
+  const target = sortChatMessages(mergeRowGroupsById(targetGroups))[0];
+  return target ? { cursor: buildChatHistoryCursor(target), found: true } : { cursor: null, found: false };
+}
+
+async function executeChatPage({
+  supabase,
+  serviceSupabase,
+  userId,
+  channelType,
+  topicId,
+  topicIds,
+  recipientId,
+  requestedMessageId,
+  requestedActionId,
+  beforeCursor,
+  hasExplicitTerritoryContext,
+  hasValidZone,
+  zoneContext,
+  zoneName,
+  activeRole,
+}: {
+  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>;
+  serviceSupabase: ReturnType<typeof getSupabaseServerClient>;
+  userId: string;
+  channelType: ChatChannelType;
+  topicId: string | null;
+  topicIds: ReturnType<typeof getChatTopicIdsFromValidation>;
+  recipientId: string | null;
+  requestedMessageId: string | null;
+  requestedActionId: string | null;
+  beforeCursor: ChatHistoryCursor | null;
+  hasExplicitTerritoryContext: boolean;
+  hasValidZone: boolean;
+  zoneContext: Parameters<typeof getTerritoryFilter>[0];
+  zoneName: string | null;
+  activeRole: NonNullable<Awaited<ReturnType<typeof getCurrentUserIdentity>>>["activeRole"];
+}) {
+  try {
+    const messageSupabase = channelType === "admin_elu" ? serviceSupabase : supabase;
+    const actionConversation = await resolveActionConversationId({ channelType, requestedActionId, supabase, userId, activeRole });
+    if (actionConversation.error) return actionConversation.error;
+    const createMessageQuery = (): ChatScopedQuery => applyChatTopicFilter(messageSupabase.from("app_messages").select(messageSelect).order("created_at", { ascending: false }).order("id", { ascending: false }), topicIds) as unknown as ChatScopedQuery;
+    const scope = buildChatScopeQueryFactories({ actionConversationId: actionConversation.id, channelType, createMessageQuery, hasExplicitTerritoryContext, hasValidZone, recipientId, topicId, userId, zoneContext, zoneName });
+    if (scope.error) return scope.error;
+    if (scope.factories.length === 0) return buildEmptyChatResponse(requestedMessageId);
+    const target = await findChatTargetCursor(scope.factories, requestedMessageId);
+    const pageGroups = await Promise.all(scope.factories.map((factory) => {
+      let query = factory();
+      if (target.cursor) query = query.or(buildInclusiveThroughFilter(target.cursor));
+      else if (beforeCursor) query = query.or(buildStrictBeforeFilter(beforeCursor));
+      return runMessageQuery(query.limit(CHAT_PAGE_SIZE + 1));
+    }));
+    const mergedRows = mergeRowGroupsById(pageGroups);
+    const newestFirst = sortChatMessages(mergedRows).reverse();
+    const pageRows = newestFirst.slice(0, CHAT_PAGE_SIZE);
+    const messages = await enrichPollVoteSummaries(messageSupabase, serviceSupabase, userId, sortChatMessages(pageRows));
+    return NextResponse.json({
+      messages,
+      previousCursor: messages[0] ? buildChatHistoryCursor(messages[0]) : null,
+      hasMore: newestFirst.length > CHAT_PAGE_SIZE || pageGroups.some((group) => group.length > CHAT_PAGE_SIZE),
+      ...(requestedMessageId ? { targetMessageId: requestedMessageId, targetStatus: target.found ? ("found" as const) : ("unavailable" as const) } : {}),
+    });
+  } catch (error) {
+    console.error("[GET /api/chat] Database Error:", error);
+    const dbError = error as { message?: string; code?: string; details?: string };
+    return NextResponse.json({ error: "Erreur Base de Données", message: dbError.message ?? "Erreur inconnue", code: dbError.code, details: dbError.details, hint: channelType === "territory" && !hasValidZone ? "Choisissez un arrondissement parisien ou une commune de la région." : "Vérifiez que la table 'app_messages' existe et que les profils sont synchronisés." }, { status: 500 });
+  }
+}
+
 export async function GET(request: Request) {
   const requester = await resolveChatIdentity();
   if (requester instanceof Response) return requester;
@@ -382,119 +454,5 @@ export async function GET(request: Request) {
     hasValidZone,
   } = accessContext;
 
-  try {
-    // Direct Clerk-RLS sessions no longer receive the global admin_elu branch:
-    // this route has already established the current Clerk capability above,
-    // so use the explicitly scoped server client only for that channel.
-    const messageSupabase = channelType === "admin_elu" ? serviceSupabase : supabase;
-    const actionConversation = await resolveActionConversationId({
-      channelType,
-      requestedActionId,
-      supabase,
-      userId,
-      activeRole: identity.activeRole,
-    });
-    if (actionConversation.error) return actionConversation.error;
-
-    const createMessageQuery = (): ChatScopedQuery =>
-      applyChatTopicFilter(messageSupabase
-        .from("app_messages")
-        .select(messageSelect)
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false }), topicIds) as unknown as ChatScopedQuery;
-    const scope = buildChatScopeQueryFactories({
-      actionConversationId: actionConversation.id,
-      channelType,
-      createMessageQuery,
-      hasExplicitTerritoryContext,
-      hasValidZone,
-      recipientId,
-      topicId,
-      userId,
-      zoneContext,
-      zoneName,
-    });
-    if (scope.error) return scope.error;
-    const scopeQueryFactories = scope.factories;
-
-    if (scopeQueryFactories.length === 0) {
-      return buildEmptyChatResponse(requestedMessageId);
-    }
-
-    let targetCursor: ChatHistoryCursor | null = null;
-    let targetFound = false;
-    if (requestedMessageId && isChatMessageId(requestedMessageId)) {
-      const targetGroups = await Promise.all(
-        scopeQueryFactories.map((factory) =>
-          runMessageQuery(factory().eq("id", requestedMessageId).limit(1)),
-        ),
-      );
-      const targetRows = mergeRowGroupsById(targetGroups);
-      const target = sortChatMessages(targetRows)[0];
-      if (target) {
-        targetFound = true;
-        targetCursor = buildChatHistoryCursor(target);
-      }
-    }
-
-    const pageGroups = await Promise.all(
-      scopeQueryFactories.map((factory) => {
-        let query = factory();
-        if (targetCursor) {
-          query = query.or(buildInclusiveThroughFilter(targetCursor));
-        } else if (beforeCursor) {
-          query = query.or(buildStrictBeforeFilter(beforeCursor));
-        }
-        return runMessageQuery(query.limit(CHAT_PAGE_SIZE + 1));
-      }),
-    );
-
-    const mergedRows = mergeRowGroupsById(pageGroups);
-    const newestFirst = sortChatMessages(mergedRows).reverse();
-    const pageRows = newestFirst.slice(0, CHAT_PAGE_SIZE);
-    const hasMore =
-      newestFirst.length > CHAT_PAGE_SIZE ||
-      pageGroups.some((group) => group.length > CHAT_PAGE_SIZE);
-    const messages = await enrichPollVoteSummaries(
-      messageSupabase,
-      serviceSupabase,
-      userId,
-      sortChatMessages(pageRows),
-    );
-    const previousCursor = messages[0]
-      ? buildChatHistoryCursor(messages[0])
-      : null;
-
-    return NextResponse.json({
-      messages,
-      previousCursor,
-      hasMore,
-      ...(requestedMessageId
-        ? {
-            targetMessageId: requestedMessageId,
-            targetStatus: targetFound ? ("found" as const) : ("unavailable" as const),
-          }
-        : {}),
-    });
-  } catch (error) {
-    console.error("[GET /api/chat] Database Error:", error);
-    const dbError = error as {
-      message?: string;
-      code?: string;
-      details?: string;
-    };
-    return NextResponse.json(
-      {
-        error: "Erreur Base de Données",
-        message: dbError.message ?? "Erreur inconnue",
-        code: dbError.code,
-        details: dbError.details,
-        hint:
-          channelType === "territory" && !hasValidZone
-            ? "Choisissez un arrondissement parisien ou une commune de la région."
-            : "Vérifiez que la table 'app_messages' existe et que les profils sont synchronisés.",
-      },
-      { status: 500 },
-    );
-  }
+  return executeChatPage({ supabase, serviceSupabase, userId, channelType, topicId, topicIds, recipientId, requestedMessageId, requestedActionId, beforeCursor, hasExplicitTerritoryContext, hasValidZone, zoneContext, zoneName, activeRole: identity.activeRole });
 }

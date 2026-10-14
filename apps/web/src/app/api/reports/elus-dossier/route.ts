@@ -9,6 +9,19 @@ import { parseElusDossierRequest } from "./route-scope";
 
 export const runtime = "nodejs";
 
+async function executeDossierExport(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  params: ReturnType<typeof parseElusDossierRequest>,
+) {
+  try {
+    if (params.format === "pdf") return await buildCachedPdfResponse(supabase, params.cachedPdfPath);
+    const payload = await buildElusDossierPayload({ supabase, days: params.days, limit: params.limit, floorDate: params.floorDate, scope: params.scope });
+    return buildDossierResponse(payload, params.format);
+  } catch {
+    return new Response("Export unavailable", { status: 500 });
+  }
+}
+
 export async function GET(request: Request) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) {
@@ -25,20 +38,5 @@ export async function GET(request: Request) {
   const params = parseElusDossierRequest(new URL(request.url));
   const supabase = getSupabaseAdminClient();
 
-  try {
-    if (params.format === "pdf") {
-      return await buildCachedPdfResponse(supabase, params.cachedPdfPath);
-    }
-
-    const payload = await buildElusDossierPayload({
-      supabase,
-      days: params.days,
-      limit: params.limit,
-      floorDate: params.floorDate,
-      scope: params.scope,
-    });
-    return buildDossierResponse(payload, params.format);
-  } catch {
-    return new Response("Export unavailable", { status: 500 });
-  }
+  return executeDossierExport(supabase, params);
 }

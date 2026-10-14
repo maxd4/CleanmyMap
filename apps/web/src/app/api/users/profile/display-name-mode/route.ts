@@ -27,6 +27,44 @@ const DISPLAY_NAME_MODE_CACHE_HEADERS = {
 };
 type DisplayNameModeResponse = UserIdentity;
 
+async function updateDisplayNameProjection({
+  supabase,
+  userId,
+  identity,
+  displayNameMode,
+}: {
+  supabase: NonNullable<Awaited<ReturnType<typeof requireSupabaseClerkRlsClient>>>;
+  userId: string;
+  identity: NonNullable<Awaited<ReturnType<typeof getCurrentUserIdentity>>>;
+  displayNameMode: "full_name" | "pseudo";
+}) {
+  let clerkUser: Awaited<ReturnType<Awaited<ReturnType<typeof clerkClient>>["users"]["getUser"]>> | null = null;
+  if (userId !== getDevAuthBypassUserId()) {
+    const client = await clerkClient();
+    clerkUser = await client.users.getUser(userId);
+    await client.users.updateUserMetadata(userId, { unsafeMetadata: { display_name_mode: displayNameMode } });
+  }
+  const displayName = resolveAccountDisplayName({
+    firstName: clerkUser?.firstName?.trim() || identity.firstName?.trim() || null,
+    lastName: clerkUser?.lastName?.trim() || null,
+    username: identity.handle?.trim() || identity.username?.trim() || null,
+    userId,
+    mode: displayNameMode,
+  });
+  let projectionError: unknown = null;
+  try {
+    const { error } = await supabase.from("profiles").upsert({ id: userId, display_name_mode: displayNameMode, display_name: displayName, updated_at: new Date().toISOString() }, { onConflict: "id" });
+    projectionError = error;
+  } catch (error) {
+    projectionError = error;
+  }
+  if (projectionError) return NextResponse.json({ error: "Le mode d’affichage Clerk est enregistré, mais sa projection Supabase n’est pas confirmée.", status: "clerk_updated_supabase_sync_pending" }, { status: 503 });
+  revalidateTag("admin-referral-lineage-export", "max");
+  const response = NextResponse.json({ status: "updated", displayNameMode, displayName });
+  response.cookies.set(DISPLAY_NAME_MODE_COOKIE, displayNameMode, { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 365 });
+  return response;
+}
+
 export async function GET(request?: Request) {
   const devBypass = await getDevAuthBypassSession();
   const access = request
@@ -82,65 +120,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const displayNameMode = normalizeDisplayNameMode(parsed.data.displayNameMode);
-    let clerkUser: Awaited<ReturnType<Awaited<ReturnType<typeof clerkClient>>["users"]["getUser"]>> | null = null;
-    if (userId !== getDevAuthBypassUserId()) {
-      const client = await clerkClient();
-      clerkUser = await client.users.getUser(userId);
-      await client.users.updateUserMetadata(userId, {
-        unsafeMetadata: {
-          display_name_mode: displayNameMode,
-        },
-      });
-    }
-    const displayName = resolveAccountDisplayName({
-      firstName: clerkUser?.firstName?.trim() || identity.firstName?.trim() || null,
-      lastName: clerkUser?.lastName?.trim() || null,
-      username: identity.handle?.trim() || identity.username?.trim() || null,
-      userId,
-      mode: displayNameMode,
-    });
-
-    let projectionError: unknown = null;
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .upsert(
-          {
-            id: userId,
-            display_name_mode: displayNameMode,
-            display_name: displayName,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "id" },
-        );
-      projectionError = error;
-    } catch (error) {
-      projectionError = error;
-    }
-    if (projectionError) {
-      return NextResponse.json(
-        {
-          error: "Le mode d’affichage Clerk est enregistré, mais sa projection Supabase n’est pas confirmée.",
-          status: "clerk_updated_supabase_sync_pending",
-        },
-        { status: 503 },
-      );
-    }
-
-    revalidateTag("admin-referral-lineage-export", "max");
-    const response = NextResponse.json({
-      status: "updated",
-      displayNameMode,
-      displayName,
-    });
-    response.cookies.set(DISPLAY_NAME_MODE_COOKIE, displayNameMode, {
-      path: "/",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 365,
-    });
-
-    return response;
+    return await updateDisplayNameProjection({ supabase, userId, identity, displayNameMode: normalizeDisplayNameMode(parsed.data.displayNameMode) });
   } catch (error) {
     return handleApiError(error, "PATCH /api/users/profile/display-name-mode (general)");
   }

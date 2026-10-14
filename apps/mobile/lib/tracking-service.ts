@@ -298,19 +298,8 @@ export async function stopTracking(
     return { ok: false, error: `${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.` };
   }
 
-  try {
-    const isRegistered = await TaskManager.isTaskRegisteredAsync(GPS_TASK_NAME);
-    if (isRegistered) {
-      await Location.stopLocationUpdatesAsync(GPS_TASK_NAME);
-    }
-  } catch (error) {
-    const resumeResult = await restartBackgroundTracking();
-    const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
-    return {
-      ok: false,
-      error: `Impossible de suspendre le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}.${resumeSuffix}`,
-    };
-  }
+  const stopError = await stopRegisteredTracking();
+  if (stopError) return resumeAfterFailure(stopError);
 
   const client = await getAuthenticatedSupabaseClient();
   if (!client) {
@@ -320,14 +309,10 @@ export async function stopTracking(
   onStageChange?.('synchronizing');
   const flushResult = await flushBuffer(resolvedOwnerId);
   if (flushResult && !flushResult.ok) {
-    const resumeResult = await restartBackgroundTracking();
-    const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
-    return { ok: false, error: `${flushResult.error}.${resumeSuffix}` };
+    return resumeAfterFailure(flushResult.error);
   }
   if (await getClerkUserId() !== resolvedOwnerId) {
-    const resumeResult = await restartBackgroundTracking();
-    const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
-    return { ok: false, error: `${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.${resumeSuffix}` };
+    return resumeAfterFailure(`${CLERK_SESSION_REQUIRED_ERROR} Identité Clerk obsolète.`);
   }
 
   onStageChange?.('finalizing');
@@ -344,24 +329,41 @@ export async function stopTracking(
     'Erreur lors de la finalisation',
   );
   if (!missionResult.ok) {
-    const resumeResult = await restartBackgroundTracking();
-    const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
-    return { ok: false, error: `${missionResult.error}.${resumeSuffix}` };
+    return resumeAfterFailure(missionResult.error);
   }
 
   await clearStoredMissionId(resolvedOwnerId);
-
-  if (missionResult.data.action_id) {
-    await enqueuePendingLinkedMissionReconciliation(resolvedOwnerId, missionResult.data.id);
-    const handoff = await reconcileLinkedMission(missionResult.data.id, resolvedOwnerId);
-    if (handoff.ok || handoff.terminal) {
-      await removePendingLinkedMissionReconciliation(resolvedOwnerId, missionResult.data.id);
-    } else {
-      console.warn('[GPS] Mission finalisée; réconciliation gamification différée.', handoff.error);
-    }
-  }
+  await reconcileCompletedMission(missionResult.data, resolvedOwnerId);
 
   return missionResult;
+}
+
+async function stopRegisteredTracking(): Promise<string | null> {
+  try {
+    if (await TaskManager.isTaskRegisteredAsync(GPS_TASK_NAME)) {
+      await Location.stopLocationUpdatesAsync(GPS_TASK_NAME);
+    }
+    return null;
+  } catch (error) {
+    return `Impossible de suspendre le suivi GPS : ${error instanceof Error ? error.message : 'erreur inconnue.'}`;
+  }
+}
+
+async function resumeAfterFailure(message: string): Promise<ServiceResult<never>> {
+  const resumeResult = await restartBackgroundTracking();
+  const resumeSuffix = resumeResult.ok ? '' : ` ${resumeResult.error}`;
+  return { ok: false, error: `${message}.${resumeSuffix}` };
+}
+
+async function reconcileCompletedMission(mission: Mission, ownerId: string): Promise<void> {
+  if (!mission.action_id) return;
+  await enqueuePendingLinkedMissionReconciliation(ownerId, mission.id);
+  const handoff = await reconcileLinkedMission(mission.id, ownerId);
+  if (handoff.ok || handoff.terminal) {
+    await removePendingLinkedMissionReconciliation(ownerId, mission.id);
+  } else {
+    console.warn('[GPS] Mission finalisée; réconciliation gamification différée.', handoff.error);
+  }
 }
 
 export async function saveLocationPoint(
