@@ -34,6 +34,22 @@ export const accountAnalyticsAuthorizationContract = {
       evidence: ["requireActionRequestAccess", "access.userId", "updateUser"],
     },
   },
+  "account/identity": {
+    PATCH: {
+      expected: "Authenticated owner updates only its own first and last name; Clerk remains the identity authority and Supabase is only a confirmed projection",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireActionRequestAccess and authenticated rate limit precede a Clerk update scoped to access.userId; syncClerkUserToSupabase confirms the projection or returns a recoverable partial state",
+      evidence: ["requireActionRequestAccess", "enforceServerRateLimitForAuthenticatedUser", "access.userId", "updateUser", "syncClerkUserToSupabase"],
+    },
+  },
+  "account/locations": {
+    PATCH: {
+      expected: "Authenticated owner updates or removes only its own residence/work territoryPreferences without replacing unrelated Clerk metadata",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireActionRequestAccess and authenticated rate limit precede a targeted Clerk unsafeMetadata patch built from the current owner metadata; the profile projection is confirmed before success",
+      evidence: ["requireActionRequestAccess", "enforceServerRateLimitForAuthenticatedUser", "access.userId", "buildClerkMetadataPatch", "syncClerkUserToSupabase"],
+    },
+  },
   "account/promotion-requests": {
     GET: {
       expected: "Authenticated user reads only their own promotion requests",

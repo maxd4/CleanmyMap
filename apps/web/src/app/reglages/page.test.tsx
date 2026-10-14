@@ -11,29 +11,27 @@ describe("/reglages canonical settings contract", () => {
   });
 
   it("renders the canonical editable preferences and account controls", () => {
-    expect(pageSource).toContain('<SitePreferencesControls surface="light" />');
-    expect(pageSource).toContain("<DisplayNameModeSetting");
-    expect(pageSource).toContain('<LeaderboardOptInSetting fr={locale === "fr"} />');
-    expect(pageSource).toContain("<AccountSettingsSection locale={locale} />");
+    expect(pageSource).toContain("<AccountSettingsEditor");
+    expect(pageSource).toContain("extractLocationPreferencesFromMetadata");
     expect(pageSource).not.toContain("Section réservée pour une prochaine phase");
   });
 
   it("keeps the metadata limited to settings actually managed on the page", () => {
     expect(pageSource).toContain(
-      'metadataDescription:\n      "Configurez vos préférences CleanMyMap : affichage, localisation et paramètres de compte.",',
+      'metadataDescription:\n      "Modifiez vos informations personnelles, votre identité publique, vos localisations et vos préférences CleanMyMap.",',
     );
     expect(pageSource).toContain(
-      '"Configure your CleanMyMap preferences: display, location and account settings."',
+      '"Manage your personal information, public identity, locations and CleanMyMap preferences."',
     );
-    expect(pageSource).not.toMatch(/notifications/i);
+    expect(pageSource).toMatch(/AccountSettingsEditor/);
   });
 
   it("keeps the settings surface on the documented sky/slate palette", () => {
-    expect(pageSource).toContain("bg-slate-50/70");
+    expect(pageSource).toContain("bg-[radial-gradient");
     expect(pageSource).not.toContain("bg-amber-50/70");
   });
 
-  it("keeps localisation on the existing onboarding workflow", () => {
-    expect(pageSource).toContain('href="/onboarding/localisation"');
+  it("keeps localisation editable without redirecting to onboarding", () => {
+    expect(pageSource).not.toContain('href="/onboarding/localisation"');
   });
 });

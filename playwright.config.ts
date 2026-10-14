@@ -64,6 +64,15 @@ export default defineConfig({
       },
     },
     {
+      name: "settings authenticated",
+      testMatch: /settings-canonical\.spec\.ts/,
+      dependencies: ["global setup"],
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "artifacts/playwright/clerk/user.json",
+      },
+    },
+    {
       name: "chromium",
       testMatch: /public-first-campaign\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
