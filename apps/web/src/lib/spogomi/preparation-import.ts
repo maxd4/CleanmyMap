@@ -182,20 +182,33 @@ function bestCandidates(candidates: HeaderCandidate[]): HeaderCandidate[] {
   return exactOrHigh.length ? exactOrHigh : candidates.filter((candidate) => candidate.confidence === "suggested");
 }
 
+function candidatesAreAmbiguous(candidates: HeaderCandidate[]): boolean {
+  return candidates.length > 1 && candidates[0]?.distance === candidates[1]?.distance && candidates[0]?.confidence === candidates[1]?.confidence;
+}
+
+function recognizedCandidate(candidates: HeaderCandidate[]): HeaderCandidate | null {
+  const candidate = candidates[0];
+  return candidate && candidate.confidence !== "suggested" ? candidate : null;
+}
+
+function fieldDiagnostic(rule: FieldRule, candidates: HeaderCandidate[], selected: HeaderCandidate | null, ambiguous: boolean): SpogomiRosterColumnDiagnostic {
+  return {
+    field: rule.field,
+    selectedHeader: selected?.header ?? null,
+    confidence: ambiguous ? "ambiguous" : selected?.confidence ?? (candidates[0]?.confidence ?? "missing"),
+    candidates: candidates.map((candidate) => candidate.header),
+    required: rule.requiredForTicket,
+    status: ambiguous ? "ambiguous" : selected ? "recognized" : "optional_absent",
+  };
+}
+
 function inferField(rule: FieldRule, headers: string[]): { diagnostic: SpogomiRosterColumnDiagnostic; selectedHeader: string | null } {
   const best = bestCandidates(candidatesForRule(headers, rule));
-  const ambiguous = best.length > 1 && best[0]?.distance === best[1]?.distance && best[0]?.confidence === best[1]?.confidence;
-  const selected = !ambiguous && best[0] && best[0].confidence !== "suggested" ? best[0] : null;
+  const ambiguous = candidatesAreAmbiguous(best);
+  const selected = ambiguous ? null : recognizedCandidate(best);
   return {
     selectedHeader: selected?.header ?? null,
-    diagnostic: {
-      field: rule.field,
-      selectedHeader: selected?.header ?? null,
-      confidence: ambiguous ? "ambiguous" : selected?.confidence ?? (best[0]?.confidence ?? "missing"),
-      candidates: best.map((candidate) => candidate.header),
-      required: rule.requiredForTicket,
-      status: ambiguous ? "ambiguous" : selected ? "recognized" : "optional_absent",
-    },
+    diagnostic: fieldDiagnostic(rule, best, selected, ambiguous),
   };
 }
 
@@ -337,14 +350,13 @@ function ticketDiagnostics(rowNumber: number, fields: ParsedRowFields, deletionC
   return errors;
 }
 
-function buildRosterRow(rowNumber: number, values: string[], indexes: RowIndexes, ticketImport: boolean): RowBuildResult {
-  const fields = readRowFields(values, indexes);
-  const deletion = ticketDeletionValue(fields.rawDeletedValue, indexes, ticketImport);
-  const requiredFailure = validateRequiredRowFields(rowNumber, fields, ticketImport);
-  if (requiredFailure) return requiredFailure;
-  const errors = ticketDiagnostics(rowNumber, fields, deletion.classification, ticketImport, indexes.ticketDeleted !== undefined);
+function validateRowLimits(fields: ParsedRowFields, errors: SpogomiRosterRowError[], rowNumber: number): RowBuildResult | null {
   if (fields.name && fields.name.length > MAX_NAME_LENGTH) return { row: null, errors: [...errors, rowError(rowNumber, "name_too_long", "Le nom du participant est trop long.")], ignored: false };
   if ([fields.sourceRowId, fields.externalReference, fields.orderReference, fields.orderAlternativeReference].some((value) => value.length > MAX_EXTERNAL_REFERENCE_LENGTH)) return { row: null, errors: [...errors, rowError(rowNumber, "invalid_source_row_id", "La référence de ligne est trop longue.")], ignored: false };
+  return null;
+}
+
+function normalizedRosterRow(rowNumber: number, fields: ParsedRowFields, deletionValue: boolean | null, indexes: RowIndexes, ticketImport: boolean): SpogomiRosterRow {
   const row: SpogomiRosterRow = {
     rowNumber,
     name: fields.name,
@@ -354,13 +366,24 @@ function buildRosterRow(rowNumber: number, values: string[], indexes: RowIndexes
     orderReference: fields.orderReference || null,
     orderAlternativeReference: fields.orderAlternativeReference || null,
     ticketStatus: fields.ticketStatus || null,
-    ticketDeleted: deletion.value,
+    ticketDeleted: deletionValue,
     ticketDeletedRaw: indexes.ticketDeleted === undefined ? null : fields.rawDeletedValue || null,
     sourceSystem: ticketImport ? "cachan_ticketing" : "manual_roster",
     sourceFingerprint: "",
   };
   row.sourceFingerprint = fingerprint(row);
-  return { row, errors, ignored: false };
+  return row;
+}
+
+function buildRosterRow(rowNumber: number, values: string[], indexes: RowIndexes, ticketImport: boolean): RowBuildResult {
+  const fields = readRowFields(values, indexes);
+  const deletion = ticketDeletionValue(fields.rawDeletedValue, indexes, ticketImport);
+  const requiredFailure = validateRequiredRowFields(rowNumber, fields, ticketImport);
+  if (requiredFailure) return requiredFailure;
+  const errors = ticketDiagnostics(rowNumber, fields, deletion.classification, ticketImport, indexes.ticketDeleted !== undefined);
+  const limitFailure = validateRowLimits(fields, errors, rowNumber);
+  if (limitFailure) return limitFailure;
+  return { row: normalizedRosterRow(rowNumber, fields, deletion.value, indexes, ticketImport), errors, ignored: false };
 }
 
 function buildRows(rawRows: string[][], mapping: SpogomiRosterColumnMapping, malformedRowNumbers: number[], formulaRows: number[]) {
