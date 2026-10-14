@@ -11,11 +11,11 @@
 - Révision analysée par SonarCloud : `ed0e2659760e3bdd8d26fba0389c6a52701a8c18`
 - Export : `2026-10-14T17:30:48.550Z`
 - Analyse SonarCloud : `2026-10-14T17:01:01+0000`
-- `main` confronté : `9d4238429a82f63c045b2b66be2b204df493c393` (lot 2B intégré localement)
+- `main` confronté : `0686e02e16fa9dbfe0bf2af90ce6eb561e5f597f` (lot 3 intégré localement)
 - `origin/main` au moment du rapprochement :
-  `723c1f31e8e1d5daa766f6528e9a86f41f419909`
+  `426e6cd1c7a98155e3d350ef015fbd31b851ed9f`
 - Inventaire détaillé généré :
-  `artifacts/sonarcloud-audit/9d4238429a82f63c045b2b66be2b204df493c393/sonarcloud-491-tracking.json`
+  `artifacts/sonarcloud-audit/0686e02e16fa9dbfe0bf2af90ce6eb561e5f597f/sonarcloud-491-tracking.json`
 
 L’inventaire source est conservé comme transport historique. Le suivi généré
 est la projection de rapprochement : chaque entrée conserve l’identifiant
@@ -59,8 +59,8 @@ Aucune anomalie n’est donc classée `OBSOLETE` sur le seul critère de chemin.
 
 | Statut | Nombre | Règle d’attribution dans ce lot |
 | --- | ---: | --- |
-| `TO_FIX` | 446 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans les lots 2A/2B |
-| `FIXED_PENDING_SCAN` | 45 | Corrections locales vérifiées pour les lots 2A/2B ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
+| `TO_FIX` | 398 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans les lots traités |
+| `FIXED_PENDING_SCAN` | 93 | Corrections locales vérifiées pour les lots 2A/2B/3 ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
 | `FALSE_POSITIVE` | 0 | Aucune preuve technique et décision humaine spécifique n’a été fournie |
 | `ACCEPTED_PENDING_APPROVAL` | 0 | Aucun risque accepté ni approbation explicite n’a été fourni |
 | `OBSOLETE` | 0 | Aucun chemin source n’a disparu de `main` |
@@ -98,7 +98,8 @@ Pour `stableJson`, le comparateur conserve explicitement l’ordre UTF-16
 historique des clés afin de ne pas modifier les rapports JSON canoniques. Les
 alternatives regex sont uniquement parenthésées ; leurs correspondances ne
 sont pas élargies ni restreintes. Les 40 autres anomalies `javascript:S2871`
-et les 446 anomalies toutes règles confondues restent `TO_FIX`.
+restent `TO_FIX` ; le reliquat global est mis à jour dans la répartition des
+statuts et dans l’inventaire généré.
 
 Preuves locales du lot : les suites ciblées totalisent 31/31 succès et les
 trois tests de régression ciblés de complexité passent. Le fichier complet
@@ -135,6 +136,53 @@ numérique des années affichées, l’ordre canonique des clés de cache et les
 cardinalités limites des réponses multi-sélection. Aucun ordre de donnée
 persistée ou fingerprint n’a été volontairement modifié. La confirmation
 SonarCloud reste `NOT_CONFIRMED` pour les 36 identifiants.
+
+## Lot 3 — sécurisation des invocations Git (`javascript:S4036`)
+
+Ce lot est borné aux 48 alertes `javascript:S4036` portant sur de véritables
+invocations Git dans `scripts/ci/` et `scripts/checks/`. Un résolveur partagé,
+`scripts/ci/git-executable.mjs`, sélectionne uniquement les emplacements
+système fixes connus pour Windows et POSIX ; il ne consulte pas `PATH` et
+échoue explicitement si Git n’est pas présent dans ces emplacements. Les
+arguments restent transmis sans shell. Le shim de validation dynamique réutilise
+le même chemin résolu tout en conservant ses variables de candidat et ses
+protections de provenance.
+
+Les décisions sont locales et par identifiant :
+
+| Fichier | Identifiants SonarCloud couverts | Qualification | Statut local |
+| --- | --- | --- | --- |
+| `scripts/checks/check-canonical-workspaces.mjs` | `AaE3K8ohzHjHEPBoeRBA` | Git de lecture du candidat via chemin fixe | `FIXED_PENDING_SCAN` |
+| `scripts/checks/check-complexity-policy.mjs` | `AaE3K8qgzHjHEPBoeRBe`, `AaE3K8qgzHjHEPBoeRBf`, `AaE3K8qgzHjHEPBoeRBg`, `AaE3K8qgzHjHEPBoeRBj` | résolution fixe, arguments séparés, provenance de baseline préservée | `FIXED_PENDING_SCAN` |
+| `scripts/checks/check-cycles.mjs` | `AaE3K8mWzHjHEPBoeRAm`, `AaE3K8mWzHjHEPBoeRAo`, `AaE3K8mWzHjHEPBoeRAp` | lecture de révision et vérification d’ascendance sans shell | `FIXED_PENDING_SCAN` |
+| `scripts/checks/check-duplication.mjs` | `AaE3K8pKzHjHEPBoeRBH`, `AaE3K8pKzHjHEPBoeRBI`, `AaE3K8pKzHjHEPBoeRBJ`, `AaE3K8pKzHjHEPBoeRBK` | Git de baseline et runner injecté avec exécutable fixe | `FIXED_PENDING_SCAN` |
+| `scripts/checks/check-gitnexus-hygiene.mjs` | `AaE3K8nWzHjHEPBoeRA0` | `spawnSync` sans shell et binaire résolu hors `PATH` | `FIXED_PENDING_SCAN` |
+| `scripts/checks/check-readable-typography.mjs` | `AaE3K8rXzHjHEPBoeRBq` | lecture de diff avec arguments séparés | `FIXED_PENDING_SCAN` |
+| `scripts/checks/check-root-file-hygiene.mjs` | `AaE3K8p-zHjHEPBoeRBW` | énumération versionnée via chemin fixe | `FIXED_PENDING_SCAN` |
+| `scripts/checks/check-utf8-fr-files.mjs` | `AaE3K8oXzHjHEPBoeRA_` | énumération Git sans shell | `FIXED_PENDING_SCAN` |
+| `scripts/checks/coverage-evidence.mjs` | `AaE3K8nhzHjHEPBoeRA2` | SHA exact de l’évidence de couverture | `FIXED_PENDING_SCAN` |
+| `scripts/checks/coverage-policy.mjs` | `AaE3K8n4zHjHEPBoeRA6`, `AaE3K8n4zHjHEPBoeRA7`, `AaE3K8n4zHjHEPBoeRA8` | résolution de HEAD et validation d’ascendance | `FIXED_PENDING_SCAN` |
+| `scripts/checks/dead-code-policy.mjs` | `AaE3K8qKzHjHEPBoeRBX`, `AaE3K8qKzHjHEPBoeRBY` | validation de source de baseline | `FIXED_PENDING_SCAN` |
+| `scripts/checks/mutation-policy.mjs` | `AaE3K8mrzHjHEPBoeRAr`, `AaE3K8mrzHjHEPBoeRAs`, `AaE3K8mrzHjHEPBoeRAt` | SHA et ascendance de baseline | `FIXED_PENDING_SCAN` |
+| `scripts/checks/quality-evidence.mjs` | `AaE3K8pUzHjHEPBoeRBL`, `AaE3K8pUzHjHEPBoeRBM`, `AaE3K8pUzHjHEPBoeRBN` | résolution de candidat et runner Git explicite | `FIXED_PENDING_SCAN` |
+| `scripts/checks/secret-audit.mjs` | `AaE3K8rCzHjHEPBoeRBm`, `AaE3K8rCzHjHEPBoeRBo` | lecture de tree/blob pour audit de secrets | `FIXED_PENDING_SCAN` |
+| `scripts/ci/audit-github-release.mjs` | `AaE3K8wVzHjHEPBoeRCl`, `AaE3K8wVzHjHEPBoeRCm` | lecture du remote et de HEAD, sans shell | `FIXED_PENDING_SCAN` |
+| `scripts/ci/detect-scope.mjs` | `AaE3K8xAzHjHEPBoeRCw`, `AaE3K8xAzHjHEPBoeRCx` | vérification de SHA et diff de portée | `FIXED_PENDING_SCAN` |
+| `scripts/ci/release-gate.mjs` | `AaE3K8w2zHjHEPBoeRCu`, `AaE3K8w2zHjHEPBoeRCv`, `AaE7ZBVmkxkMFlGl5f3N`, `AaE7ZBVmkxkMFlGl5f3O`, `AaE7ZBVmkxkMFlGl5f3P` | gate exact SHA, état, remote et branche | `FIXED_PENDING_SCAN` |
+| `scripts/ci/run-dynamic-candidate-check.mjs` | `AaE3K8u0zHjHEPBoeRCa`, `AaE3K8u0zHjHEPBoeRCb`, `AaE3K8u0zHjHEPBoeRCc` | candidat, tree/blob et shim avec chemin Git fixe | `FIXED_PENDING_SCAN` |
+| `scripts/ci/run-static-candidate-check.mjs` | `AaE3K8wfzHjHEPBoeRCn`, `AaE3K8wfzHjHEPBoeRCo`, `AaE3K8wfzHjHEPBoeRCp` | candidat, tree/blob et SHA exact | `FIXED_PENDING_SCAN` |
+| `scripts/ci/validation-evidence.mjs` | `AaE3K8v3zHjHEPBoeRCe`, `AaE3K8v3zHjHEPBoeRCf`, `AaE3K8v3zHjHEPBoeRCg` | lecture de HEAD, index et preuves | `FIXED_PENDING_SCAN` |
+
+Les 25 autres `javascript:S4036` ne sont pas absorbées par ce lot : 22 sont
+hors des deux répertoires ciblés, tandis que trois signalements du périmètre
+large concernent `taskkill`, `npx` et `npm`, et non Git. Ils restent
+`TO_FIX` pour un lot distinct ; aucun n’est classé faux positif ou risque
+accepté sans preuve technique et approbation explicite.
+
+Preuves locales du lot : le test du résolveur passe 3/3, le test de l’audit
+secret passe 11/11, le test des workspaces/candidat passe 6/6 et le garde
+`pre-commit:guard` passe sur le candidat de 24 fichiers. La confirmation
+SonarCloud reste `NOT_CONFIRMED` pour les 48 identifiants.
 
 ## Décisions humaines et faux positifs
 
