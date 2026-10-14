@@ -18,11 +18,13 @@ des scripts sont définies dans les `AGENTS.md` de ces sous-arbres.
 
 ## Stack web
 
-- Next.js `16.3.8` avec App Router ;
-- React `19.2.8` ;
-- TypeScript `^7`.
+- Next.js avec App Router, React et TypeScript selon le manifeste du workspace ;
+- les versions déclarées et la divergence entre surfaces sont décrites dans
+  `apps/web/package.json` et la matrice canonique
+  `documentation/development/runtime-version-matrix.md`.
 
-Les versions exactes restent celles de `apps/web/package.json`.
+Les versions exactes ne doivent pas être recopiées ici : le manifeste et la
+matrice sont les sources de vérité du lot concerné.
 
 ## Identité et domaine web
 

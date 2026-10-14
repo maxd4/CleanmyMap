@@ -79,6 +79,7 @@ export const CLERK_CONTEXT_API_ROUTE_PREFIXES = [
   "/api/send",
   "/api/services",
   "/api/signalements",
+  "/api/spogomi",
   "/api/spots",
   "/api/users",
 ] as const;
@@ -164,16 +165,18 @@ function isApiRoute(pathname: string): boolean {
 
 export function isAnonymousSafeApiRequest(req: NextRequest): boolean {
   if (req.method !== "GET") {
-    return false;
+    return req.nextUrl.pathname === "/api/spogomi/team-form";
   }
 
+  const pathname = req.nextUrl.pathname;
   return [
     "/api/actions/map",
     "/api/actions/map/initial-nearest",
     "/api/actions/group-join",
     "/api/partners/published-directory",
     "/api/community/events",
-  ].some((pathname) => req.nextUrl.pathname === pathname);
+    "/api/spogomi/team-access",
+  ].includes(pathname) || pathname.startsWith("/api/spogomi/public/") || pathname === "/api/spogomi/team-form";
 }
 
 function hasClerkSessionSignal(req: NextRequest): boolean {
@@ -355,6 +358,7 @@ export const config = {
     "/api/send(.*)",
     "/api/services(.*)",
     "/api/signalements(.*)",
+    "/api/spogomi(.*)",
     "/api/spots(.*)",
     "/api/users(.*)",
   ],

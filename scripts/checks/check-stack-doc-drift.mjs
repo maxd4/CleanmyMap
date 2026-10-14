@@ -20,6 +20,7 @@ export const ACTIVE_DOCS = Object.freeze([
   "documentation/development/AI_DEVELOPER_GUIDE.md",
   "documentation/development/api-standard.md",
   "documentation/development/DOCUMENTATION_POLICY.md",
+  "documentation/development/runtime-version-matrix.md",
   "documentation/operations/README.md",
   "documentation/operations/agent-memory-governance.md",
   "documentation/operations/data-import/README.md",
@@ -45,6 +46,7 @@ export const CANONICAL_PATHS = Object.freeze([
 ]);
 
 const ADR_CANARY_EXCEPTION = "documentation/architecture/adr/ADR-005-next-canary-policy.md";
+const RUNTIME_VERSION_MATRIX = "documentation/development/runtime-version-matrix.md";
 
 function readText(view, relativePath) {
   try {
@@ -85,7 +87,9 @@ function finding(file, message, line = 0) {
 
 function versionReferences(content, kind) {
   const pattern = kind === "next"
-    ? /(?<![-\w])(?:Next(?:\.js)?|next)\s*(?:[:=-]\s*|\s+)v?(\d+)(?:\.(\d+)(?:\.(\d+))?)?/gi
+    ? /(?<![-\w])(?:Next(?:\.js)?|next)\s*(?:[:=-]\s*|\s+)`?v?(\d+)(?:\.(\d+)(?:\.(\d+))?)?`?/gi
+    : kind === "react"
+      ? /\bReact\s*(?:[:=-]\s*|\s+)`?v?(\d+)(?:\.(\d+)(?:\.(\d+))?)?`?/gi
     : /\bTypeScript\s*(?:[:=-]\s*|\s+)?(?:\^|~|v)?(\d+)(?:\.(\d+)(?:\.(\d+))?)?/gi;
   return [...content.matchAll(pattern)].map((match) => ({
     major: Number(match[1]),
@@ -105,18 +109,24 @@ function validateManifest(view, findings) {
 
   const mobileManifest = readJson(view, "apps/mobile/package.json");
   const mobileTypescriptSpecifier = mobileManifest?.devDependencies?.typescript;
+  const mobileReactSpecifier = mobileManifest?.dependencies?.react;
   const mobileTypescriptMajor = readMajor(mobileTypescriptSpecifier);
   if (mobileManifest && (typeof mobileTypescriptSpecifier !== "string" || mobileTypescriptMajor === null)) {
     findings.push(finding("apps/mobile/package.json", "mobile manifest must declare a readable TypeScript version"));
   }
+  if (mobileManifest && typeof mobileReactSpecifier !== "string") {
+    findings.push(finding("apps/mobile/package.json", "mobile manifest must declare a readable React version"));
+  }
 
   const nextSpecifier = manifest.dependencies?.next;
+  const reactSpecifier = manifest.dependencies?.react;
   const eslintConfigNextSpecifier = manifest.devDependencies?.["eslint-config-next"];
   const typescriptSpecifier = manifest.devDependencies?.typescript;
   const nextMajor = readMajor(nextSpecifier);
   const typescriptMajor = readMajor(typescriptSpecifier);
   if (
     typeof nextSpecifier !== "string"
+    || typeof reactSpecifier !== "string"
     || typeof eslintConfigNextSpecifier !== "string"
     || typeof typescriptSpecifier !== "string"
     || !nextSpecifier.trim()
@@ -125,7 +135,7 @@ function validateManifest(view, findings) {
     || nextMajor === null
     || typescriptMajor === null
   ) {
-    findings.push(finding(packagePath, "manifest must declare readable Next.js, eslint-config-next and TypeScript versions"));
+    findings.push(finding(packagePath, "manifest must declare readable Next.js, React, eslint-config-next and TypeScript versions"));
     return null;
   }
 
@@ -153,7 +163,33 @@ function validateManifest(view, findings) {
     eslintConfigNextVersion,
     typescriptMajor,
     mobileTypescriptMajor,
+    reactVersion: typeof manifest.dependencies?.react === "string" ? manifest.dependencies.react.trim() : null,
+    mobileReactVersion: typeof mobileManifest?.dependencies?.react === "string" ? mobileManifest.dependencies.react.trim() : null,
   };
+}
+
+function matrixSurface(line) {
+  if (/\b(?:Mobile|apps\/mobile)\b/i.test(line)) return "mobile";
+  if (/\b(?:Web|apps\/web)\b/i.test(line)) return "web";
+  return null;
+}
+
+function expectedTypescriptMajorForReference(relativePath, line, manifest) {
+  if (relativePath === RUNTIME_VERSION_MATRIX) {
+    const surface = matrixSurface(line);
+    return surface === "mobile"
+      ? manifest.mobileTypescriptMajor
+      : surface === "web" ? manifest.typescriptMajor : null;
+  }
+  return relativePath.startsWith("apps/mobile/")
+    ? (manifest.mobileTypescriptMajor ?? manifest.typescriptMajor)
+    : manifest.typescriptMajor;
+}
+
+function expectedReactVersion(relativePath, line, manifest) {
+  if (relativePath !== RUNTIME_VERSION_MATRIX) return null;
+  const surface = matrixSurface(line);
+  return surface === "mobile" ? manifest.mobileReactVersion : surface === "web" ? manifest.reactVersion : null;
 }
 
 function validateActiveFiles(view, findings, activeDocs) {
@@ -188,14 +224,35 @@ function validateActiveFiles(view, findings, activeDocs) {
       }
     }
 
-    const expectedTypescriptMajor = relativePath.startsWith("apps/mobile/")
-      ? (manifest.mobileTypescriptMajor ?? manifest.typescriptMajor)
-      : manifest.typescriptMajor;
-    for (const reference of versionReferences(content, "typescript")) {
-      if (reference.major !== expectedTypescriptMajor) {
+    const lines = content.split(/\r?\n/);
+    for (const reference of versionReferences(content, "react")) {
+      const line = lines[reference.line - 1] ?? "";
+      const expectedVersion = expectedReactVersion(relativePath, line, manifest);
+      if (!expectedVersion) continue;
+      if (reference.major !== readMajor(expectedVersion)) {
         findings.push(finding(
           relativePath,
-          `incompatible TypeScript major ${reference.major}; manifest major is ${expectedTypescriptMajor}`,
+          `incompatible React major ${reference.major}; manifest version is ${expectedVersion}`,
+          reference.line,
+        ));
+      }
+      if (reference.full && reference.version !== expectedVersion) {
+        findings.push(finding(
+          relativePath,
+          `incompatible React version ${reference.version}; manifest version is ${expectedVersion}`,
+          reference.line,
+        ));
+      }
+    }
+
+    for (const reference of versionReferences(content, "typescript")) {
+      const line = lines[reference.line - 1] ?? "";
+      const expectedMajor = expectedTypescriptMajorForReference(relativePath, line, manifest);
+      if (expectedMajor === null) continue;
+      if (reference.major !== expectedMajor) {
+        findings.push(finding(
+          relativePath,
+          `incompatible TypeScript major ${reference.major}; manifest major is ${expectedMajor}`,
           reference.line,
         ));
       }
@@ -224,14 +281,20 @@ function validateActiveFiles(view, findings, activeDocs) {
       }
     }
 
+    const defaultTypescriptMajor = relativePath.startsWith("apps/mobile/")
+      ? (manifest.mobileTypescriptMajor ?? manifest.typescriptMajor)
+      : manifest.typescriptMajor;
+    const staleTypescriptRules = relativePath === RUNTIME_VERSION_MATRIX ? [] : [
+      ...(defaultTypescriptMajor !== 5 ? [{ regex: /\bTypeScript\s+5\b/gi, message: `stale TypeScript major; current manifest major is ${defaultTypescriptMajor}` }] : []),
+      ...(defaultTypescriptMajor !== 6 ? [{ regex: /\bTypeScript\s+6\b/gi, message: `stale TypeScript major; current manifest major is ${defaultTypescriptMajor}` }] : []),
+      ...(defaultTypescriptMajor !== 7 ? [{ regex: /\bTypeScript\s+7\b/gi, message: `stale TypeScript major; current manifest major is ${defaultTypescriptMajor}` }] : []),
+      ...(defaultTypescriptMajor !== 5 ? [{ regex: /TypeScript-5-/gi, message: `stale TypeScript badge; current manifest major is ${defaultTypescriptMajor}` }] : []),
+      ...(defaultTypescriptMajor !== 6 ? [{ regex: /TypeScript-6-/gi, message: `stale TypeScript badge; current manifest is ${defaultTypescriptMajor}` }] : []),
+      ...(defaultTypescriptMajor !== 7 ? [{ regex: /TypeScript-7-/gi, message: `stale TypeScript badge; current manifest is ${defaultTypescriptMajor}` }] : []),
+    ];
     for (const rule of [
       { regex: /\bNext\.js\s+15\b/gi, message: `stale Next.js major; current manifest major is ${manifest.nextMajor}` },
-      ...(expectedTypescriptMajor !== 5 ? [{ regex: /\bTypeScript\s+5\b/gi, message: `stale TypeScript major; current manifest major is ${expectedTypescriptMajor}` }] : []),
-      ...(expectedTypescriptMajor !== 6 ? [{ regex: /\bTypeScript\s+6\b/gi, message: `stale TypeScript major; current manifest major is ${expectedTypescriptMajor}` }] : []),
-      ...(expectedTypescriptMajor !== 7 ? [{ regex: /\bTypeScript\s+7\b/gi, message: `stale TypeScript major; current manifest major is ${expectedTypescriptMajor}` }] : []),
-      ...(expectedTypescriptMajor !== 5 ? [{ regex: /TypeScript-5-/gi, message: `stale TypeScript badge; current manifest major is ${expectedTypescriptMajor}` }] : []),
-      ...(expectedTypescriptMajor !== 6 ? [{ regex: /TypeScript-6-/gi, message: `stale TypeScript badge; current manifest is ${expectedTypescriptMajor}` }] : []),
-      ...(expectedTypescriptMajor !== 7 ? [{ regex: /TypeScript-7-/gi, message: `stale TypeScript badge; current manifest is ${expectedTypescriptMajor}` }] : []),
+      ...staleTypescriptRules,
       { regex: /2025-01-XX/g, message: "placeholder date must not remain in active documentation" },
       { regex: /documentation\/repo-docs\/ops\/INCIDENT_RUNBOOK_SHORT\.md/g, message: "stale incident runbook path" },
       { regex: /(^|[^/])src\/report_generator\.py/gm, message: "stale Python runtime path" },

@@ -10,7 +10,6 @@ const payload: SpogomiCreationPayload = {
   mode: "casual",
   startsAt: "2026-10-13T10:00:00.000Z",
   endsAt: null,
-  casualTeamSize: 5,
 };
 
 describe("SPOGOMI organizer creation attempts", () => {

@@ -354,6 +354,17 @@ La préparation privée est désormais portée par `/spogomi/[eventSlug]/gestion
   serveur ; le catalogue ordinaire part des créations et des relations
   `action_organizers`, déduplique les événements puis applique `canManageEvent`,
   tandis que le catalogue global `ACTIVE_ROLE=admin|max` reste paginé ;
+- la création ne choisit pas la taille des équipes : une intention nouvelle ne
+  transporte aucun `casualTeamSize` et initialise la configuration réglementaire
+  vide ; les bornes nécessaires sont définies dans la préparation avant la
+  composition. Les tentatives historiques qui contiennent encore cette donnée
+  restent reprenables avec leur même clé, sans modifier la configuration déjà
+  enregistrée ;
+- les dates de création viennent exclusivement de la saisie : une date passée,
+  future ou une période qui traverse le présent est valide si les dates sont
+  interprétables et que la fin, lorsqu'elle existe, n'est pas antérieure au
+  début. Aucune période courante supposée n'est injectée par défaut ; une
+  création reste privée jusqu'à sa publication explicite ;
 - déposer un CSV, TSV, XLSX, XLS ou ODS de roster privé, sélectionner
   explicitement la feuille, la ligne d'en-tête et les correspondances ambiguës,
   voir l'encodage, les inconnues, erreurs, conflits et doublons probables, puis

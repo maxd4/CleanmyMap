@@ -19,6 +19,7 @@ const FOCUSED_ACTIVE_DOCS = [
   "documentation/operations/data-import/README.md",
   "documentation/operations/data-import/pipeline-import.md",
   "documentation/development/api-standard.md",
+  "documentation/development/runtime-version-matrix.md",
   "documentation/pages_site/INDEX.md",
   "apps/web/AGENTS.md",
   "apps/mobile/README.md",
@@ -48,10 +49,11 @@ function writeFile(root, relativePath, content) {
 function createFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-stack-drift-"));
   writeFile(root, "apps/web/package.json", JSON.stringify({
-    dependencies: { next: "16.3.1" },
+    dependencies: { next: "16.3.1", react: "19.2.3" },
     devDependencies: { "eslint-config-next": "16.3.1", typescript: "^7" },
   }));
   writeFile(root, "apps/mobile/package.json", JSON.stringify({
+    dependencies: { react: "19.2.3" },
     devDependencies: { typescript: "6.0.3" },
   }));
   writeFile(root, "apps/web/src/lib/ui/page-families/families/registry.ts", `
@@ -75,6 +77,7 @@ export const OTHER_FAMILY = {};
     "documentation/operations/data-import/README.md": dataContractContent,
     "documentation/operations/data-import/pipeline-import.md": dataContractContent,
     "documentation/development/api-standard.md": "API contracts by route.",
+    "documentation/development/runtime-version-matrix.md": "Web: Next.js 16.3.1; React 19.2.3; TypeScript 7.0.2.\nMobile: React 19.2.3; TypeScript 6.0.3.",
     "documentation/pages_site/INDEX.md": indexContent,
     "apps/web/AGENTS.md": "Next.js 16.3.1; TypeScript 7; web governance.",
     "apps/mobile/README.md": "Expo 57; TypeScript 6; mobile release governance.",
@@ -184,6 +187,41 @@ describe("stack and documentation drift governance", () => {
         finding.file === "apps/web/AGENTS.md"
         && finding.message.includes("incompatible Next.js version 16.3.0")
       )));
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a stale backtick-wrapped Next.js version", () => {
+    const fixture = createFixture();
+    updateManifest(fixture, { next: "16.4.0", eslintConfigNext: "16.4.0" });
+    writeFile(fixture, "apps/web/AGENTS.md", "Next.js `16.3.8`; web governance.\n");
+    try {
+      assert.ok(findingsFor(fixture).some((finding) => (
+        finding.file === "apps/web/AGENTS.md"
+        && finding.message.includes("incompatible Next.js version 16.3.8")
+      )));
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts the current backtick-wrapped Next.js version", () => {
+    const fixture = createFixture();
+    updateManifest(fixture, { next: "16.4.0", eslintConfigNext: "16.4.0" });
+    writeFile(fixture, "apps/web/AGENTS.md", "Next.js `16.4.0`; web governance.\n");
+    try {
+      assert.deepEqual(findingsFor(fixture).filter((finding) => finding.file === "apps/web/AGENTS.md"), []);
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps exact React versions in the runtime matrix tied to each workspace", () => {
+    const fixture = createFixture();
+    writeFile(fixture, "documentation/development/runtime-version-matrix.md", "Web: Next.js 16.3.1; React 19.2.2; TypeScript 7.0.2.\nMobile: React 19.2.3; TypeScript 6.0.3.\n");
+    try {
+      assert.ok(findingsFor(fixture).some((finding) => finding.message.includes("incompatible React version 19.2.2")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }

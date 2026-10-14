@@ -153,6 +153,15 @@ describe("proxy route context", () => {
     expect(config.matcher).toContain(expectedMatcher);
   });
 
+  it("covers SPOGOMI server auth context without protecting public or team-session endpoints", () => {
+    expect(CLERK_CONTEXT_API_ROUTE_PREFIXES).toContain("/api/spogomi");
+    expect(config.matcher).toContain("/api/spogomi(.*)");
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/spogomi/public/events/paris"))).toBe(true);
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/spogomi/team-access"))).toBe(true);
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/spogomi/team-form"))).toBe(true);
+    expect(isAnonymousSafeApiRequest(new NextRequest("http://localhost/api/spogomi/events", { method: "POST" }))).toBe(false);
+  });
+
   it("sends a bearer-authenticated mission request through Clerk context", async () => {
     clerkContextRequestMock.mockClear();
 

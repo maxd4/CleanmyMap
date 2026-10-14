@@ -17,7 +17,6 @@ const createSchema = z.object({
   mode: z.enum(["casual", "world_cup"]),
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime().nullable().optional(),
-  casualTeamSize: z.number().int().min(1).max(20).nullable().optional(),
 });
 
 export async function POST(request: Request) {

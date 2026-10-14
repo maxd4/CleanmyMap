@@ -51,6 +51,12 @@ export function SpogomiOrganizerDashboard({ initialEvents }: { initialEvents: Ev
       setPending(false);
       return;
     }
+    if (endsAtDate && endsAtDate < startsAtDate) {
+      setError("La date de fin doit être postérieure ou égale au début.");
+      submissionInFlightRef.current = false;
+      setPending(false);
+      return;
+    }
 
     const payload: SpogomiCreationPayload = {
       name: String(form.get("name") ?? ""),
@@ -58,7 +64,6 @@ export function SpogomiOrganizerDashboard({ initialEvents }: { initialEvents: Ev
       mode: String(form.get("mode") ?? "casual") as SpogomiCreationPayload["mode"],
       startsAt: startsAtDate.toISOString(),
       endsAt: endsAtDate ? endsAtDate.toISOString() : null,
-      casualTeamSize: form.get("casualTeamSize") ? Number(form.get("casualTeamSize")) : null,
     };
     const attempt = reuseOrCreateSpogomiCreationAttempt(
       creationAttemptRef.current,
@@ -104,7 +109,6 @@ export function SpogomiOrganizerDashboard({ initialEvents }: { initialEvents: Ev
           <label className="space-y-1 text-sm font-bold text-slate-800">Nom<input className={inputClassName()} name="name" required maxLength={160} /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Lieu<input className={inputClassName()} name="locationLabel" required maxLength={200} /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Mode<select className={inputClassName()} name="mode" defaultValue="casual"><option value="casual">Casual</option><option value="world_cup">World Cup</option></select></label>
-          <label className="space-y-1 text-sm font-bold text-slate-800">Taille d’équipe casual<input className={inputClassName()} name="casualTeamSize" type="number" min={1} max={20} inputMode="numeric" /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Début<input className={inputClassName()} name="startsAt" type="datetime-local" required /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Fin (facultative)<input className={inputClassName()} name="endsAt" type="datetime-local" /></label>
           <div className="md:col-span-2 flex flex-wrap items-center gap-3">

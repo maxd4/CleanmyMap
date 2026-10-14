@@ -324,6 +324,7 @@ describe("SPOGOMI persistence routes", () => {
     }));
     expect(created.status).toBe(201);
     expect(mocks.createSpogomiEvent).toHaveBeenCalledWith(expect.objectContaining({ userId: "user-1" }));
+    expect(mocks.createSpogomiEvent.mock.calls[0]?.[0].input).not.toHaveProperty("casualTeamSize");
 
     const eventRoute = await import("./events/[eventId]/route");
     expect((await eventRoute.GET(new Request("http://localhost"), eventContext)).status).toBe(200);

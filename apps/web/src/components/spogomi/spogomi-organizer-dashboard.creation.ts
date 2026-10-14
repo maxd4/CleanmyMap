@@ -4,7 +4,6 @@ export type SpogomiCreationPayload = {
   mode: "casual" | "world_cup";
   startsAt: string;
   endsAt: string | null;
-  casualTeamSize: number | null;
 };
 
 export type SpogomiCreationAttempt = {

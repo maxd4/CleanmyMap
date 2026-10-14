@@ -34,7 +34,6 @@ const validValues = {
   name: "Compétition test",
   locationLabel: "Paris",
   mode: "casual",
-  casualTeamSize: "5",
   startsAt: "2026-10-13T12:00",
   endsAt: "",
 };
