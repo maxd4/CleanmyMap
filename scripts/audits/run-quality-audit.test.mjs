@@ -12,6 +12,7 @@ import {
   createAuditPaths,
   parseAuditMode,
   runQualityAudit,
+  serialize,
 } from "./run-quality-audit.mjs";
 
 const sha = "a".repeat(40);
@@ -223,4 +224,59 @@ test("unstable start and end snapshots stop without publishing a canonical resul
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("serializes shared findings in each branch instead of marking them circular", () => {
+  const staleEntry = {
+    path: "src/example.ts",
+    metric: "complexity",
+    identity: "function:example",
+    value: 23,
+  };
+  const report = {
+    baseline: { entries: [staleEntry] },
+    result: { stale: [staleEntry] },
+  };
+
+  const serialized = serialize(report);
+
+  assert.deepEqual(serialized.baseline.entries[0], serialized.result.stale[0]);
+  assert.notEqual(serialized.result.stale[0], "[Circular]");
+  assert.equal(serialized.result.stale[0].path, "src/example.ts");
+  assert.equal(serialized.result.stale[0].metric, "complexity");
+  assert.equal(serialized.result.stale[0].identity, "function:example");
+  assert.equal(serialized.result.stale[0].value, 23);
+});
+
+test("protects true circular references", () => {
+  const value = { name: "cycle" };
+  value.self = value;
+
+  assert.deepEqual(serialize(value), { name: "cycle", self: "[Circular]" });
+});
+
+test("serializes metrics and diagnostic error fields", () => {
+  const error = new Error("engine failed");
+  error.code = "ENGINE_FAILED";
+
+  assert.deepEqual(serialize({
+    metrics: {
+      complexity: 23,
+      duplicatedLines: 7,
+      nonFinite: Number.POSITIVE_INFINITY,
+    },
+    error,
+  }), {
+    metrics: {
+      complexity: 23,
+      duplicatedLines: 7,
+      nonFinite: null,
+    },
+    error: {
+      name: "Error",
+      message: "engine failed",
+      code: "ENGINE_FAILED",
+    },
+  });
+});
+
 // End-to-end engine execution belongs to the audit commands, not this plumbing suite.

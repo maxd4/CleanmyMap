@@ -82,19 +82,39 @@ export function createAuditPaths({ root = REPOSITORY_ROOT, auditedHead, audit })
   };
 }
 
-function serialize(value, seen = new WeakSet()) {
+export function serialize(value, active = new WeakSet()) {
   if (value === undefined) return null;
   if (value === null || typeof value === "string" || typeof value === "boolean") return value;
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
   if (typeof value === "bigint") return value.toString();
   if (value instanceof Error) return { name: value.name, message: value.message, code: value.code };
-  if (value instanceof Set) return [...value].map((entry) => serialize(entry, seen));
-  if (value instanceof Map) return Object.fromEntries([...value.entries()].map(([key, entry]) => [String(key), serialize(entry, seen)]));
+  if (value instanceof Set) {
+    if (active.has(value)) return "[Circular]";
+    active.add(value);
+    try {
+      return [...value].map((entry) => serialize(entry, active));
+    } finally {
+      active.delete(value);
+    }
+  }
+  if (value instanceof Map) {
+    if (active.has(value)) return "[Circular]";
+    active.add(value);
+    try {
+      return Object.fromEntries([...value.entries()].map(([key, entry]) => [String(key), serialize(entry, active)]));
+    } finally {
+      active.delete(value);
+    }
+  }
   if (typeof value !== "object") return String(value);
-  if (seen.has(value)) return "[Circular]";
-  seen.add(value);
-  if (Array.isArray(value)) return value.map((entry) => serialize(entry, seen));
-  return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, serialize(entry, seen)]));
+  if (active.has(value)) return "[Circular]";
+  active.add(value);
+  try {
+    if (Array.isArray(value)) return value.map((entry) => serialize(entry, active));
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, serialize(entry, active)]));
+  } finally {
+    active.delete(value);
+  }
 }
 
 function writeJson(filePath, value, fsApi = fs) {
