@@ -11,11 +11,11 @@
 - Révision analysée par SonarCloud : `ed0e2659760e3bdd8d26fba0389c6a52701a8c18`
 - Export : `2026-10-14T17:30:48.550Z`
 - Analyse SonarCloud : `2026-10-14T17:01:01+0000`
-- `main` confronté : `1bc900706cbac1790e7f6487b99dcca493012ca6` (lot 3 intégré localement)
+- `main` confronté : `e03f9f7c255a1b4d51eb17f25e9b6f128d51448c` (lot 4 intégré localement)
 - `origin/main` au moment du rapprochement :
-  `426e6cd1c7a98155e3d350ef015fbd31b851ed9f`
+  `6966ddefaa408c9cb162812e31a5a68cb5231e58`
 - Inventaire détaillé généré :
-  `artifacts/sonarcloud-audit/1bc900706cbac1790e7f6487b99dcca493012ca6/sonarcloud-491-tracking.json`
+  `artifacts/sonarcloud-audit/e03f9f7c255a1b4d51eb17f25e9b6f128d51448c/sonarcloud-491-tracking.json`
 
 L’inventaire source est conservé comme transport historique. Le suivi généré
 est la projection de rapprochement : chaque entrée conserve l’identifiant
@@ -59,8 +59,8 @@ Aucune anomalie n’est donc classée `OBSOLETE` sur le seul critère de chemin.
 
 | Statut | Nombre | Règle d’attribution dans ce lot |
 | --- | ---: | --- |
-| `TO_FIX` | 398 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans les lots traités |
-| `FIXED_PENDING_SCAN` | 93 | Corrections locales vérifiées pour les lots 2A/2B/3 ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
+| `TO_FIX` | 368 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans les lots traités |
+| `FIXED_PENDING_SCAN` | 123 | Corrections locales vérifiées pour les lots 2A/2B/3/4 ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
 | `FALSE_POSITIVE` | 0 | Aucune preuve technique et décision humaine spécifique n’a été fournie |
 | `ACCEPTED_PENDING_APPROVAL` | 0 | Aucun risque accepté ni approbation explicite n’a été fourni |
 | `OBSOLETE` | 0 | Aucun chemin source n’a disparu de `main` |
@@ -183,6 +183,43 @@ Preuves locales du lot : le test du résolveur passe 3/3, le test de l’audit
 secret passe 11/11, le test des workspaces/candidat passe 6/6 et le garde
 `pre-commit:guard` passe sur le candidat de 24 fichiers. La confirmation
 SonarCloud reste `NOT_CONFIRMED` pour les 48 identifiants.
+
+## Lot 4 — sécurité des workflows GitHub Actions
+
+Ce lot est borné aux 30 anomalies `githubactions:S6505`,
+`githubactions:S8543` et `githubactions:S8541` de l’inventaire. Les
+identifiants ci-dessous sont conservés individuellement ; ils sont tous
+`FIXED_PENDING_SCAN`, car les preuves locales ne constituent pas une
+confirmation SonarCloud.
+
+| Règle | Fichier et lignes | Identifiants SonarCloud | Statut local |
+| --- | --- | --- | --- |
+| `githubactions:S6505` | `.github/workflows/ci.yml:138,207,280,357,398,417,489,538,576,608,649` | `AaE3K8zqzHjHEPBoeRDG`, `AaE3K8zqzHjHEPBoeRDH`, `AaE3K8zqzHjHEPBoeRDI`, `AaE3K8zqzHjHEPBoeRDK`, `AaE3K8zqzHjHEPBoeRDM`, `AaE3K8zqzHjHEPBoeRDN`, `AaE3K8zqzHjHEPBoeRDO`, `AaE3K8zqzHjHEPBoeRDP`, `AaE3K8zqzHjHEPBoeRDQ`, `AaE3K8zqzHjHEPBoeRDR`, `AaE3K8zqzHjHEPBoeRDS` | `FIXED_PENDING_SCAN` |
+| `githubactions:S6505` | `.github/workflows/e2e-supabase.yml:69,87,103,120,183,186,201,228` | `AaE3K8z1zHjHEPBoeRDU`, `AaE7ZBl1kxkMFlGl5f3R`, `AaE3K8z1zHjHEPBoeRDX`, `AaE3K8z1zHjHEPBoeRDZ`, `AaE3K8z1zHjHEPBoeRDb`, `AaE3K8z1zHjHEPBoeRDd`, `AaE3K8z1zHjHEPBoeRDf`, `AaE3K8z1zHjHEPBoeRDh` | `FIXED_PENDING_SCAN` |
+| `githubactions:S6505` | `.github/workflows/sonarqube-manual.yml:39` | `AaE7ZBjpkxkMFlGl5f3Q` | `FIXED_PENDING_SCAN` |
+| `githubactions:S8541` | `.github/workflows/ci.yml:283,360,653` | `AaE3K8zqzHjHEPBoeRDJ`, `AaE3K8zqzHjHEPBoeRDL`, `AaE3K8zqzHjHEPBoeRDT` | `FIXED_PENDING_SCAN` |
+| `githubactions:S8543` | `.github/workflows/e2e-supabase.yml:87,103,120,183,186,201,228` | `AaE7ZBl1kxkMFlGl5f3S`, `AaE3K8z1zHjHEPBoeRDY`, `AaE3K8z1zHjHEPBoeRDa`, `AaE3K8z1zHjHEPBoeRDc`, `AaE3K8z1zHjHEPBoeRDe`, `AaE3K8z1zHjHEPBoeRDg`, `AaE3K8z1zHjHEPBoeRDi` | `FIXED_PENDING_SCAN` |
+
+Les changements sont limités aux workflows et à leur test de contrat :
+
+- les `npm ci` concernés et l’installation globale GitNexus utilisent
+  `--ignore-scripts` au niveau de l’étape, sans configuration npm globale ni
+  désactivation générale des scripts de cycle de vie ;
+- les sept commandes `npx` Supabase/Playwright utilisent les exécutables
+  locaux issus du lockfile ; `supabase` est résolu en `2.117.0` et
+  Playwright/`@playwright/test` en `1.64.0` ;
+- les trois installations Python utilisent `--only-binary=:all:`. La
+  résolution `--dry-run` passe avec Python 3.14, version du runner CI ;
+- les permissions, secrets, attestations, caches et jobs existants n’ont pas
+  été supprimés ou élargis.
+
+Preuves locales du lot : le test de contrat GitHub Actions passe 1/1,
+`npm run check:github-actions` audite 7 workflows avec succès,
+`npm ci --ignore-scripts --dry-run` passe, les binaires locaux Supabase et
+Playwright répondent aux versions verrouillées, et les deux résolutions pip
+avec `--only-binary=:all:` passent en Python 3.14. Aucun faux positif ni risque
+accepté n’est enregistré pour ce lot ; la confirmation SonarCloud reste
+`NOT_CONFIRMED` pour les 30 identifiants.
 
 ## Décisions humaines et faux positifs
 
