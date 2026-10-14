@@ -301,13 +301,13 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
         return importedDomains.length === 1 ? importedDomains[0] : importedDomains.length > 1 ? "cross-domain-tests" : sourceDomain(record.file);
       })()
       : sourceDomain(record.file);
-    const entry = domains.get(domain) ?? { runtimeFiles: 0, runtimeLines: 0, testFiles: 0, testLines: 0, runtimeWithoutDirectTest: 0, runtimeFilesWithDirectTest: 0, runtimeFilesWithoutDirectTestExamples: [] };
+    const entry = domains.get(domain) ?? { runtimeFiles: 0, runtimeLines: 0, testFiles: 0, testLines: 0, runtimeFilesWithoutDirectTest: 0, runtimeFilesWithDirectTest: 0, runtimeFilesWithoutDirectTestExamples: [] };
     if (record.kind === "runtime") {
       entry.runtimeFiles += 1;
       entry.runtimeLines += record.lines;
       if (associated.has(record.file)) entry.runtimeFilesWithDirectTest += 1;
       else {
-        entry.runtimeWithoutDirectTest += 1;
+        entry.runtimeFilesWithoutDirectTest += 1;
         if (entry.runtimeFilesWithoutDirectTestExamples.length < 20) entry.runtimeFilesWithoutDirectTestExamples.push(record.file);
       }
     } else {

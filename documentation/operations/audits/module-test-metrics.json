@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceSha": "171cec4104cbd3d70fa74e8b419b57b3f8fd9005",
-  "timestamp": "2026-10-14T18:00:50.847Z",
+  "timestamp": "2026-10-14T18:02:44.476Z",
   "methodology": {
     "source": "git-tracked-source-at-sourceSha",
     "physicalLines": "UTF-8 lines after CRLF normalization; trailing split line retained, matching repository quality measurement.",
@@ -462,7 +462,7 @@
       "runtimeLines": 5625,
       "testFiles": 17,
       "testLines": 1152,
-      "runtimeWithoutDirectTest": 11,
+      "runtimeFilesWithoutDirectTest": 11,
       "runtimeFilesWithDirectTest": 31,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/app/api/users/profile/handle/route.ts",
@@ -525,7 +525,7 @@
       "runtimeLines": 67244,
       "testFiles": 100,
       "testLines": 10780,
-      "runtimeWithoutDirectTest": 227,
+      "runtimeFilesWithoutDirectTest": 227,
       "runtimeFilesWithDirectTest": 249,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/app/(app)/actions/history/page.tsx",
@@ -643,7 +643,7 @@
       "runtimeLines": 14233,
       "testFiles": 45,
       "testLines": 5439,
-      "runtimeWithoutDirectTest": 34,
+      "runtimeFilesWithoutDirectTest": 34,
       "runtimeFilesWithDirectTest": 67,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
@@ -749,7 +749,7 @@
       "runtimeLines": 3575,
       "testFiles": 16,
       "testLines": 1655,
-      "runtimeWithoutDirectTest": 18,
+      "runtimeFilesWithoutDirectTest": 18,
       "runtimeFilesWithDirectTest": 21,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/components/auth/clerk-hydration-gate.tsx",
@@ -815,7 +815,7 @@
       "runtimeLines": 0,
       "testFiles": 521,
       "testLines": 86828,
-      "runtimeWithoutDirectTest": 0,
+      "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
@@ -874,7 +874,7 @@
       "runtimeLines": 133,
       "testFiles": 1,
       "testLines": 65,
-      "runtimeWithoutDirectTest": 0,
+      "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 1,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
@@ -918,7 +918,7 @@
       "runtimeLines": 17044,
       "testFiles": 19,
       "testLines": 1246,
-      "runtimeWithoutDirectTest": 35,
+      "runtimeFilesWithoutDirectTest": 35,
       "runtimeFilesWithDirectTest": 63,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/app/(app)/admin/quiz-bank/page.tsx",
@@ -987,7 +987,7 @@
       "runtimeLines": 6848,
       "testFiles": 11,
       "testLines": 1118,
-      "runtimeWithoutDirectTest": 13,
+      "runtimeFilesWithoutDirectTest": 13,
       "runtimeFilesWithDirectTest": 27,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/app/api/users/map-viewport-fallback/route.ts",
@@ -1051,7 +1051,7 @@
       "runtimeLines": 23,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 1,
+      "runtimeFilesWithoutDirectTest": 1,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/mobile/app.config.js"
@@ -1097,7 +1097,7 @@
       "runtimeLines": 301,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 1,
+      "runtimeFilesWithoutDirectTest": 1,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/mobile/App.tsx"
@@ -1143,7 +1143,7 @@
       "runtimeLines": 52,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 1,
+      "runtimeFilesWithoutDirectTest": 1,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/mobile/eslint.config.mjs"
@@ -1168,7 +1168,7 @@
       "runtimeLines": 359,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 2,
+      "runtimeFilesWithoutDirectTest": 2,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/mobile/hooks/use-account-controller.ts",
@@ -1215,7 +1215,7 @@
       "runtimeLines": 19,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 1,
+      "runtimeFilesWithoutDirectTest": 1,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/mobile/index.ts"
@@ -1261,7 +1261,7 @@
       "runtimeLines": 1784,
       "testFiles": 2,
       "testLines": 178,
-      "runtimeWithoutDirectTest": 8,
+      "runtimeFilesWithoutDirectTest": 8,
       "runtimeFilesWithDirectTest": 2,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/mobile/screens/account.tsx",
@@ -1314,7 +1314,7 @@
       "runtimeLines": 0,
       "testFiles": 4,
       "testLines": 574,
-      "runtimeWithoutDirectTest": 0,
+      "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
@@ -1337,7 +1337,7 @@
       "runtimeLines": 1846,
       "testFiles": 15,
       "testLines": 1443,
-      "runtimeWithoutDirectTest": 2,
+      "runtimeFilesWithoutDirectTest": 2,
       "runtimeFilesWithDirectTest": 13,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/mobile/lib/gps-point-identity.ts",
@@ -1384,7 +1384,7 @@
       "runtimeLines": 114,
       "testFiles": 1,
       "testLines": 156,
-      "runtimeWithoutDirectTest": 0,
+      "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 1,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
@@ -1428,7 +1428,7 @@
       "runtimeLines": 0,
       "testFiles": 10,
       "testLines": 506,
-      "runtimeWithoutDirectTest": 0,
+      "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
@@ -1478,7 +1478,7 @@
       "runtimeLines": 55,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 2,
+      "runtimeFilesWithoutDirectTest": 2,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/mobile/types/emergency-contact.ts",
@@ -1525,7 +1525,7 @@
       "runtimeLines": 22,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 1,
+      "runtimeFilesWithoutDirectTest": 1,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/mobile/vitest.config.ts"
@@ -1550,7 +1550,7 @@
       "runtimeLines": 88,
       "testFiles": 1,
       "testLines": 78,
-      "runtimeWithoutDirectTest": 0,
+      "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 1,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
@@ -1594,7 +1594,7 @@
       "runtimeLines": 10567,
       "testFiles": 22,
       "testLines": 1987,
-      "runtimeWithoutDirectTest": 26,
+      "runtimeFilesWithoutDirectTest": 26,
       "runtimeFilesWithDirectTest": 52,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/app/api/reports/elus-dossier/route-aggregation.ts",
@@ -1673,7 +1673,7 @@
       "runtimeLines": 3160,
       "testFiles": 5,
       "testLines": 857,
-      "runtimeWithoutDirectTest": 9,
+      "runtimeFilesWithoutDirectTest": 9,
       "runtimeFilesWithDirectTest": 5,
       "runtimeFilesWithoutDirectTestExamples": [
         "scripts/audits/audit-quiz-quality.mjs",
@@ -1706,7 +1706,7 @@
       "runtimeLines": 12631,
       "testFiles": 40,
       "testLines": 4789,
-      "runtimeWithoutDirectTest": 35,
+      "runtimeFilesWithoutDirectTest": 35,
       "runtimeFilesWithDirectTest": 41,
       "runtimeFilesWithoutDirectTestExamples": [
         "scripts/checks/check-9c-public-facades.mjs",
@@ -1750,7 +1750,7 @@
       "runtimeLines": 3995,
       "testFiles": 13,
       "testLines": 2051,
-      "runtimeWithoutDirectTest": 0,
+      "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 17,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
@@ -1773,7 +1773,7 @@
       "runtimeLines": 897,
       "testFiles": 1,
       "testLines": 17,
-      "runtimeWithoutDirectTest": 4,
+      "runtimeFilesWithoutDirectTest": 4,
       "runtimeFilesWithDirectTest": 1,
       "runtimeFilesWithoutDirectTestExamples": [
         "scripts/cleanup/backup.ts",
@@ -1801,7 +1801,7 @@
       "runtimeLines": 1926,
       "testFiles": 3,
       "testLines": 411,
-      "runtimeWithoutDirectTest": 6,
+      "runtimeFilesWithoutDirectTest": 6,
       "runtimeFilesWithDirectTest": 3,
       "runtimeFilesWithoutDirectTestExamples": [
         "scripts/data/split-bibliography.mjs",
@@ -1831,7 +1831,7 @@
       "runtimeLines": 721,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 1,
+      "runtimeFilesWithoutDirectTest": 1,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "scripts/design/generate-design-system-board.mjs"
@@ -1856,7 +1856,7 @@
       "runtimeLines": 1833,
       "testFiles": 5,
       "testLines": 576,
-      "runtimeWithoutDirectTest": 4,
+      "runtimeFilesWithoutDirectTest": 4,
       "runtimeFilesWithDirectTest": 5,
       "runtimeFilesWithoutDirectTestExamples": [
         "scripts/dev/clean-local-temp.mjs",
@@ -1884,7 +1884,7 @@
       "runtimeLines": 77,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 1,
+      "runtimeFilesWithoutDirectTest": 1,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "scripts/gamification/ts-loader.mjs"
@@ -1909,7 +1909,7 @@
       "runtimeLines": 45,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 1,
+      "runtimeFilesWithoutDirectTest": 1,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "scripts/media/resize_homepage.js"
@@ -1934,7 +1934,7 @@
       "runtimeLines": 4247,
       "testFiles": 6,
       "testLines": 708,
-      "runtimeWithoutDirectTest": 4,
+      "runtimeFilesWithoutDirectTest": 4,
       "runtimeFilesWithDirectTest": 9,
       "runtimeFilesWithoutDirectTestExamples": [
         "scripts/reports/generate-vercel-surface-report.mjs",
@@ -1962,7 +1962,7 @@
       "runtimeLines": 810,
       "testFiles": 3,
       "testLines": 544,
-      "runtimeWithoutDirectTest": 14,
+      "runtimeFilesWithoutDirectTest": 14,
       "runtimeFilesWithDirectTest": 1,
       "runtimeFilesWithoutDirectTestExamples": [
         "scripts/security/run-semgrep-fixtures.mjs",
@@ -2000,7 +2000,7 @@
       "runtimeLines": 440,
       "testFiles": 1,
       "testLines": 79,
-      "runtimeWithoutDirectTest": 0,
+      "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 1,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
@@ -2023,7 +2023,7 @@
       "runtimeLines": 10370,
       "testFiles": 44,
       "testLines": 2642,
-      "runtimeWithoutDirectTest": 61,
+      "runtimeFilesWithoutDirectTest": 61,
       "runtimeFilesWithDirectTest": 35,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/app/(app)/spogomi/[eventSlug]/equipe/page.tsx",
@@ -2097,7 +2097,7 @@
       "runtimeLines": 0,
       "testFiles": 2,
       "testLines": 48,
-      "runtimeWithoutDirectTest": 0,
+      "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
@@ -2120,7 +2120,7 @@
       "runtimeLines": 7830,
       "testFiles": 23,
       "testLines": 1592,
-      "runtimeWithoutDirectTest": 58,
+      "runtimeFilesWithoutDirectTest": 58,
       "runtimeFilesWithDirectTest": 21,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/app/(app)/admin/forms/page.tsx",
@@ -2191,7 +2191,7 @@
       "runtimeLines": 81616,
       "testFiles": 125,
       "testLines": 7468,
-      "runtimeWithoutDirectTest": 348,
+      "runtimeFilesWithoutDirectTest": 348,
       "runtimeFilesWithDirectTest": 240,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/components/accueil/accueil-community-activity-panel.tsx",
@@ -2276,7 +2276,7 @@
       "runtimeLines": 2,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 1,
+      "runtimeFilesWithoutDirectTest": 1,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/config/gamification.config.ts"
@@ -2322,7 +2322,7 @@
       "runtimeLines": 540,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 2,
+      "runtimeFilesWithoutDirectTest": 2,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/data/content/giec-reports.ts",
@@ -2369,7 +2369,7 @@
       "runtimeLines": 42,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 0,
+      "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 1,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
@@ -2413,7 +2413,7 @@
       "runtimeLines": 27,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 1,
+      "runtimeFilesWithoutDirectTest": 1,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/hooks/use-submission-lock.ts"
@@ -2459,7 +2459,7 @@
       "runtimeLines": 75501,
       "testFiles": 253,
       "testLines": 21041,
-      "runtimeWithoutDirectTest": 192,
+      "runtimeFilesWithoutDirectTest": 192,
       "runtimeFilesWithDirectTest": 315,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/lib/accueil/public-landing-action-summary.ts",
@@ -2572,7 +2572,7 @@
       "runtimeLines": 362,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 0,
+      "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 1,
       "runtimeFilesWithoutDirectTestExamples": [],
       "testRuntimeRatio": {
@@ -2616,7 +2616,7 @@
       "runtimeLines": 209,
       "testFiles": 0,
       "testLines": 0,
-      "runtimeWithoutDirectTest": 2,
+      "runtimeFilesWithoutDirectTest": 2,
       "runtimeFilesWithDirectTest": 1,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/types/env.d.ts",
