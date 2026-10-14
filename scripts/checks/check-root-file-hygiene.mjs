@@ -24,6 +24,7 @@ export const versionableRootFiles = new Set([
   "PRE_PUSH_GUARD.md",
   "README.md",
   "SECURITY.md",
+  "sonar-project.properties",
 ]);
 
 export const trackedCanonicalRootDirectories = [

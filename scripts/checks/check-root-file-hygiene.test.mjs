@@ -45,6 +45,41 @@ test("linked worktree metadata file is allowed at the repository root", () => {
   assert.deepEqual(result.forbidden, []);
 });
 
+test("SonarQube configuration is allowed while unknown root files remain rejected in Git and filesystem views", (t) => {
+  assert.equal(versionableRootFiles.has("sonar-project.properties"), true);
+
+  const candidateFiles = ["README.md", "sonar-project.properties", "unknown-root.txt"];
+  const gitResult = validateRootFileHygiene({
+    mode: "git",
+    listFiles: () => candidateFiles,
+    rootFiles: () => candidateFiles,
+    rootDirectories: () => [],
+  });
+  assert.deepEqual(gitResult.forbidden, ["unknown-root.txt"]);
+
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-root-hygiene-sonar-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  execFileSync("git", ["init", "-q"], { cwd: root });
+  writeFile(root, "README.md", "fixture\n");
+  writeFile(root, "sonar-project.properties", "sonar.projectKey=fixture\n");
+  writeFile(root, "unknown-root.txt", "unexpected\n");
+  execFileSync("git", ["add", "--", "README.md", "sonar-project.properties", "unknown-root.txt"], {
+    cwd: root,
+  });
+  execFileSync("git", [
+    "-c", "user.name=Codex test", "-c", "user.email=codex-test",
+    "commit", "-qm", "fixture",
+  ], { cwd: root });
+
+  const filesystemResult = validateRootFileHygiene(
+    createFilesystemRepositoryView(root),
+    { repositoryRoot: root },
+  );
+  assert.deepEqual(filesystemResult.forbidden, ["unknown-root.txt"]);
+  assert.deepEqual(filesystemResult.forbiddenTrackedPaths, []);
+});
+
 test("mobile launcher wrappers are rejected at the root and local wrappers use the ignored directory", () => {
   const wrappers = [
     "LANCER_APP_MOBILE_WEB.bat",
