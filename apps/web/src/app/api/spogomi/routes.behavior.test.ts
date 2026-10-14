@@ -254,6 +254,7 @@ function formRequest(url: string, fields: Record<string, string | File>, method 
 describe("SPOGOMI persistence routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.event.state = "draft";
     mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "user-1" });
     mocks.auth.mockResolvedValue({ userId: "user-1" });
     mocks.currentUser.mockResolvedValue({ firstName: "Alex", lastName: "Martin", username: "alex" });

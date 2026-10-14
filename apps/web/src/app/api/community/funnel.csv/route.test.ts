@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => {
   return {
     query,
     supabase: { from: vi.fn(() => query) },
+    getSupabaseServerClient: vi.fn(),
     requireAdminAccess: vi.fn(),
     summaries: vi.fn(),
     toEventItem: vi.fn(),
@@ -28,10 +29,8 @@ const mocks = vi.hoisted(() => {
 });
 
 vi.mock("@/lib/authz", () => ({ requireAdminAccess: mocks.requireAdminAccess }));
-vi.mock("@/lib/http/auth-responses", () => ({
-  adminAccessErrorJsonResponse: (access: unknown) => new Response(JSON.stringify(access), { status: 403 }),
-}));
-vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: vi.fn(() => mocks.supabase) }));
+vi.mock("@/lib/http/auth-responses", async (importOriginal) => importOriginal());
+vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: mocks.getSupabaseServerClient }));
 vi.mock("@/lib/community/event-rsvp-summaries", () => ({ loadCommunityEventRsvpSummaries: mocks.summaries }));
 vi.mock("@/lib/community/event-item", () => ({ toCommunityEventItem: mocks.toEventItem }));
 vi.mock("@/lib/actions/unified-source", () => ({ fetchUnifiedActionContracts: mocks.fetchActions }));
@@ -45,6 +44,7 @@ describe("/api/community/funnel.csv", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireAdminAccess.mockResolvedValue({ ok: true, userId: "admin-1" });
+    mocks.getSupabaseServerClient.mockReturnValue(mocks.supabase);
     mocks.summaries.mockResolvedValue([{ eventId: "event-1", eventTitle: "Nettoyage des berges" }]);
     mocks.toEventItem.mockReturnValue({ id: "event-1", title: "Nettoyage des berges" });
     mocks.fetchActions.mockResolvedValue({ items: [], isTruncated: false });
@@ -88,10 +88,37 @@ describe("/api/community/funnel.csv", () => {
     expect(mocks.fetchActions).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ limit: 2500 }));
   });
 
-  it("rejects non-admin access before reading the event data", async () => {
+  it("returns 401 for missing authentication before privileged access or export work", async () => {
     mocks.requireAdminAccess.mockResolvedValue({ ok: false, status: 401, error: "Unauthorized" });
 
-    expect((await GET(new Request("https://cleanmymap.test/api/community/funnel.csv"))).status).toBe(403);
+    const response = await GET(new Request("https://cleanmymap.test/api/community/funnel.csv"));
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({ code: "unauthorized" });
+    expect(mocks.getSupabaseServerClient).not.toHaveBeenCalled();
     expect(mocks.supabase.from).not.toHaveBeenCalled();
+    expect(mocks.summaries).not.toHaveBeenCalled();
+    expect(mocks.toEventItem).not.toHaveBeenCalled();
+    expect(mocks.fetchActions).not.toHaveBeenCalled();
+    expect(mocks.toActionItem).not.toHaveBeenCalled();
+    expect(mocks.conversions).not.toHaveBeenCalled();
+    expect(mocks.filename).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 for insufficient permissions before privileged access or export work", async () => {
+    mocks.requireAdminAccess.mockResolvedValue({ ok: false, status: 403, error: "Forbidden" });
+
+    const response = await GET(new Request("https://cleanmymap.test/api/community/funnel.csv"));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({ code: "forbidden" });
+    expect(mocks.getSupabaseServerClient).not.toHaveBeenCalled();
+    expect(mocks.supabase.from).not.toHaveBeenCalled();
+    expect(mocks.summaries).not.toHaveBeenCalled();
+    expect(mocks.toEventItem).not.toHaveBeenCalled();
+    expect(mocks.fetchActions).not.toHaveBeenCalled();
+    expect(mocks.toActionItem).not.toHaveBeenCalled();
+    expect(mocks.conversions).not.toHaveBeenCalled();
+    expect(mocks.filename).not.toHaveBeenCalled();
   });
 });
