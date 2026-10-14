@@ -17,6 +17,7 @@ export function AccountCompletionPage({
   initialRole,
   initialProfile,
   clerkReachable,
+  initialHandle,
   initialDisplayNameMode,
   initialResidence,
   initialWork,
@@ -33,6 +34,7 @@ export function AccountCompletionPage({
           initialRole={initialRole}
           initialProfile={initialProfile}
           clerkReachable={clerkReachable}
+          initialHandle={initialHandle}
           initialDisplayNameMode={initialDisplayNameMode}
           initialResidence={initialResidence}
           initialWork={initialWork}

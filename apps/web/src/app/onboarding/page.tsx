@@ -11,7 +11,7 @@ import { claimReferralInviteForUser } from "@/lib/gamification/referrals/referra
 export const metadata: Metadata = {
   title: "Configuration initiale",
   description:
-    "Configurez votre profil CleanMyMap : identité, profil, zones principales et mode d’affichage.",
+    "Configurez votre profil CleanMyMap en trois étapes : identité publique, parcours, localisation facultative et mode d’affichage.",
   keywords: ["onboarding", "configuration", "profil", "écologie", "CleanMyMap"],
   robots: {
     index: false,
@@ -73,6 +73,7 @@ export default async function OnboardingPage({
       initialRole={identity.role}
       initialProfile={profile}
       clerkReachable={clerkReachable}
+      initialHandle={identity.handle}
       initialDisplayNameMode={identity.displayNameMode}
       initialResidence={locationPreferences.residence}
       initialWork={locationPreferences.work}

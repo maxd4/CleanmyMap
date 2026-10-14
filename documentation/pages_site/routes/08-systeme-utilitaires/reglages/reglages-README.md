@@ -43,7 +43,7 @@
 
 - La route n'est pas ajoutée au ruban principal.
 - Le profil actif et le dashboard proposent un CTA secondaire `Ouvrir les réglages`.
-- La localisation continue d'utiliser le workflow canonique `/onboarding/localisation`.
+- La localisation des réglages réutilise le modèle canonique `territoryPreferences` ; `/onboarding/localisation` est désormais une route historique qui redirige vers l'étape Localisation de `/onboarding`.
 - Les libellés visibles et les textes d'assistance des contrôles sont disponibles en français et en anglais ; leurs aria-labels suivent la langue active.
 - Les notifications ne sont pas présentées ici comme un réglage : leur lecture et
   leur gestion restent portées par `/dashboard#notifications`.

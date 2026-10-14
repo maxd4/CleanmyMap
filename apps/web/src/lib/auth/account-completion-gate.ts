@@ -12,6 +12,7 @@ export type AccountCompletionGateState = {
   role: AppRoleLabel;
   currentProfile: AppProfile;
   clerkReachable: boolean;
+  initialHandle?: string | null;
   initialDisplayNameMode?: DisplayNameMode;
   initialArrondissement: number | null;
   initialLocationType: "residence" | "work" | null;
@@ -52,6 +53,7 @@ export async function loadAccountCompletionGateState(
       role,
        currentProfile,
       clerkReachable: resolvedSession.clerkReachable,
+      initialHandle: identity?.handle,
       initialDisplayNameMode: identity?.displayNameMode,
       initialArrondissement: null,
       initialLocationType: null,
@@ -71,6 +73,7 @@ export async function loadAccountCompletionGateState(
     role,
     currentProfile,
     clerkReachable: resolvedSession.clerkReachable,
+    initialHandle: identity?.handle,
     initialDisplayNameMode: identity?.displayNameMode,
     initialArrondissement: existingPreference?.arrondissement ?? null,
     initialLocationType: locationPreferences.residence

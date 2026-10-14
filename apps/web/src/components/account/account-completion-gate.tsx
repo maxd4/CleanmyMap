@@ -26,6 +26,7 @@ export function AccountCompletionGate({
         initialRole={state.role === "anonymous" ? undefined : state.role}
         initialProfile={state.currentProfile}
         clerkReachable={state.clerkReachable}
+        initialHandle={state.initialHandle}
         initialDisplayNameMode={state.initialDisplayNameMode}
         initialResidence={state.initialResidence}
         initialWork={state.initialWork}

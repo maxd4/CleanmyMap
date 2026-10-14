@@ -55,6 +55,15 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "onboarding authenticated",
+      testMatch: /onboarding-progressive\.spec\.ts/,
+      dependencies: ["global setup"],
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "artifacts/playwright/clerk/user.json",
+      },
+    },
+    {
       name: "chromium",
       testMatch: /public-first-campaign\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },

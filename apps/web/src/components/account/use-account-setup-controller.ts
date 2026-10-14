@@ -12,7 +12,7 @@ import {
   extractLocationPreferencesFromMetadata,
   type TerritoryLocationSelection,
 } from "@/lib/user-location-preference";
-import type { AppProfile, DisplayNameMode } from "@/lib/profiles";
+import { resolveAccountDisplayName, type AppProfile, type DisplayNameMode } from "@/lib/profiles";
 import type { Role } from "@/lib/domain-language";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { defaultMessageForKind, isAppError, toAppError, type AppError } from "@/lib/errors/app-errors";
@@ -48,6 +48,7 @@ export type AccountSetupFormProps = {
   initialRole?: Role;
   initialProfile: AppProfile;
   clerkReachable: boolean;
+  initialHandle?: string | null;
   initialDisplayNameMode?: DisplayNameMode | null;
   initialResidence?: TerritoryLocationSelection | null;
   initialWork?: TerritoryLocationSelection | null;
@@ -58,6 +59,14 @@ export type AccountSetupFormProps = {
 };
 
 type AccountSetupField = "firstName" | "lastName" | "profile" | "location";
+
+export type AccountSetupStep = "identity" | "usage" | "location";
+
+const ACCOUNT_SETUP_STEPS: readonly AccountSetupStep[] = [
+  "identity",
+  "usage",
+  "location",
+];
 
 async function updateActiveProfile(activeProfile: AppProfile) {
   const response = await fetch("/api/account/active-profile", {
@@ -86,6 +95,7 @@ function readDisplayNameMode(metadata: Record<string, unknown> | null | undefine
 export function useAccountSetupController({
   nextPath,
   initialProfile,
+  initialHandle,
   initialRole = initialProfile,
   clerkReachable,
   initialResidence,
@@ -125,6 +135,7 @@ export function useAccountSetupController({
   const [residenceEnabled, setResidenceEnabled] = useState(Boolean(resolvedInitialResidence));
   const [workEnabled, setWorkEnabled] = useState(Boolean(resolvedInitialWork));
   const [noneSelected, setNoneSelected] = useState(!resolvedInitialResidence && !resolvedInitialWork);
+  const [currentStep, setCurrentStep] = useState<AccountSetupStep>("identity");
   const hasHydratedLocations = useRef(Boolean(resolvedInitialResidence || resolvedInitialWork));
   const hasHydratedDisplayNameMode = useRef(initialDisplayNameMode != null);
   const completedPersistenceSteps = useRef<Set<AccountSetupPersistenceStep>>(new Set());
@@ -133,6 +144,7 @@ export function useAccountSetupController({
   const [touchedFields, setTouchedFields] = useState<Set<AccountSetupField>>(() => new Set());
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
+  const saveInFlight = useRef(false);
 
   const providerIdentityNames = resolveAccountSetupIdentityNames({
     firstName: user?.firstName,
@@ -147,6 +159,13 @@ export function useAccountSetupController({
     ? selectedProfileCandidate
     : resolveAccountSetupProfileSelection(selectedProfileCandidate, profileOptions);
   const selectedDisplayMode = resolveAccountSetupDisplayMode(displayMode, manualDisplayMode);
+  const publicDisplayName = resolveAccountDisplayName({
+    firstName: trimmedFirstName,
+    lastName: trimmedLastName,
+    username: initialHandle,
+    userId: user?.id ?? "compte",
+    mode: displayNameMode,
+  });
 
   function markFormDirty() {
     completedPersistenceSteps.current.clear();
@@ -187,6 +206,11 @@ export function useAccountSetupController({
     setManualDisplayMode(mode);
   }
 
+  function handleDisplayNameModeChange(mode: DisplayNameMode) {
+    markFormDirty();
+    setDisplayNameMode(mode);
+  }
+
   function updateResidence(value: SetStateAction<TerritoryLocationSelection | null>) {
     markFormDirty();
     touchField("location");
@@ -225,6 +249,40 @@ export function useAccountSetupController({
 
     router.replace(nextPath ?? PROFIL_ROUTE);
     router.refresh();
+  }
+
+  function validateStep(step: AccountSetupStep): boolean {
+    setSubmitAttempted(true);
+    if (step === "identity") {
+      return !firstNameError && !lastNameError;
+    }
+    if (step === "usage") {
+      return !profileError;
+    }
+    return !locationError;
+  }
+
+  function handleNext() {
+    if (isSaving) return;
+    if (!validateStep(currentStep)) return;
+    const stepIndex = ACCOUNT_SETUP_STEPS.indexOf(currentStep);
+    const nextStep = ACCOUNT_SETUP_STEPS[stepIndex + 1];
+    if (nextStep) {
+      setCurrentStep(nextStep);
+      setSubmitAttempted(false);
+      setError(null);
+    }
+  }
+
+  function handlePrevious() {
+    if (isSaving) return;
+    const stepIndex = ACCOUNT_SETUP_STEPS.indexOf(currentStep);
+    const previousStep = ACCOUNT_SETUP_STEPS[stepIndex - 1];
+    if (previousStep) {
+      setCurrentStep(previousStep);
+      setSubmitAttempted(false);
+      setError(null);
+    }
   }
 
   useEffect(() => {
@@ -279,6 +337,7 @@ export function useAccountSetupController({
   const formIsValid = !firstNameError && !lastNameError && !profileError && !locationError;
 
   async function handleDefer() {
+    if (saveInFlight.current) return;
     setError(null);
     if (!user) {
       setError(toAppError("Compte introuvable, reconnectez-vous.", { kind: "permission", message: "Compte introuvable, reconnectez-vous." }));
@@ -293,6 +352,7 @@ export function useAccountSetupController({
     }
 
     try {
+      saveInFlight.current = true;
       setIsSaving(true);
       const metadata = createAccountSetupDeferralMetadata(
         { ...(user.unsafeMetadata ?? {}) },
@@ -314,24 +374,31 @@ export function useAccountSetupController({
         : toAppError(caughtError, { kind: "server", message: "Impossible de différer la configuration. Réessayez." });
       setError(appError);
     } finally {
+      saveInFlight.current = false;
       setIsSaving(false);
     }
   }
 
   async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
-    setSubmitAttempted(true);
+    if (isSaving || saveInFlight.current) return;
     setError(null);
     if (!user) {
       setError(toAppError("Compte introuvable, reconnectez-vous.", { kind: "permission", message: "Compte introuvable, reconnectez-vous." }));
       return;
     }
+    if (currentStep !== "location") {
+      handleNext();
+      return;
+    }
+    setSubmitAttempted(true);
     if (!formIsValid) {
       setError(toAppError("Vérifiez les informations obligatoires.", { kind: "validation", message: "Vérifiez les informations obligatoires." }));
       return;
     }
 
     try {
+      saveInFlight.current = true;
       setIsSaving(true);
       const metadata = clearLocationPreferenceMetadata({ ...(user.unsafeMetadata ?? {}) });
       const completedMetadata = clearAccountSetupDeferralMetadata(metadata);
@@ -382,6 +449,7 @@ export function useAccountSetupController({
       }
       setError(appError);
     } finally {
+      saveInFlight.current = false;
       setIsSaving(false);
     }
   }
@@ -393,6 +461,10 @@ export function useAccountSetupController({
     locale,
     profileOptions,
     selectedProfile,
+    currentStep,
+    displayNameMode,
+    publicDisplayName,
+    publicHandle: initialHandle?.trim() || null,
     firstName,
     lastName,
     selectedDisplayMode,
@@ -415,6 +487,7 @@ export function useAccountSetupController({
     handleLastNameChange,
     handleProfileChange,
     handleDisplayModeChange,
+    handleDisplayNameModeChange,
     updateResidence,
     updateWork,
     updateResidenceEnabled,
@@ -422,6 +495,8 @@ export function useAccountSetupController({
     updateNoneSelected,
     handleDefer,
     handleSubmit,
+    handleNext,
+    handlePrevious,
     getDeferralLabel: () => getAccountSetupDeferralLabel(isDirty, completedPersistenceSteps.current.size),
   };
 }

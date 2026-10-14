@@ -9,8 +9,8 @@
 - **Famille / bloc fonctionnel** : Auth & Onboarding (hors bloc)
 - **Statut** : auth
 - **Contexte nécessaire** : Compte authentifié ; redirection vers `/sign-in` si la session ou l'identité n'est pas disponible.
-- **Objectif utilisateur principal** : Compléter la configuration initiale du compte avec le rôle, le profil actif, la localisation et les préférences d'affichage.
-- **Action principale attendue** : Enregistrer la configuration puis reprendre la route demandée, ou revenir au profil par défaut si la destination est invalide.
+- **Objectif utilisateur principal** : Compléter progressivement la configuration initiale du compte avec l'identité publique, le parcours actif, la localisation facultative et les préférences d'affichage.
+- **Action principale attendue** : Parcourir les étapes Identité, Utilisation et Localisation, enregistrer la configuration puis reprendre la route demandée, ou revenir au profil par défaut si la destination est invalide.
 - **Palette attendue** : surface claire lavande/menthe, panneaux slate/indigo
 - **Scope** : parcours authentifié de complétion initiale, prise en compte d'un code de parrainage et redirection sûre vers la destination après enregistrement. L'espace Compte mobile peut compléter les informations Clerk et les préférences de localisation via `/api/mobile/account`, sans créer un second onboarding métier.
 - **Terminée** : oui pour le parcours actuellement livré
@@ -22,6 +22,7 @@
 - Formulaire
 - CTA principal
 - validation
+- progression en trois étapes et navigation Précédent/Suivant
 - liens de bascule auth
 - lien secondaire « Vous représentez une collectivité ? » vers `/compte/evolution`
 - CTA secondaire « Configurer plus tard » ou « Plus tard, sans enregistrer » selon
@@ -52,6 +53,25 @@ Le chrome est fourni exclusivement par le layout racine. La page onboarding ne
 doit pas dupliquer localement le header ou le footer.
 
 ## Persistance séquentielle et reprise
+
+Le formulaire est organisé en trois étapes conservant les saisies en mémoire
+pendant la navigation :
+
+- `Identité` exige le prénom et le nom, propose le nom complet ou le pseudonyme,
+  et prévisualise l'identité publique. Le pseudonyme s'appuie sur le `handle`
+  canonique de `public.profiles`, jamais sur le username Clerk ; il ne rend pas
+  automatiquement anonymes les autres contributions.
+- `Utilisation` présente les parcours ouverts bénévole, coordinateur,
+  scientifique et entreprise. Les parcours `elu`, `admin` et `max` sont
+  affichés uniquement lorsque le rôle correspondant est réellement attribué
+  par Clerk. La sélection ne modifie que `ACTIVE_ROLE`.
+- `Localisation` permet de renseigner séparément une ville de résidence et une
+  ville de travail, ou de sélectionner explicitement l'absence de zone. Aucune
+  adresse précise n'est demandée.
+
+`/onboarding/localisation` reste une route historique sécurisée qui redirige
+vers `/onboarding` ; l'étape Localisation est désormais intégrée à ce parcours
+progressif et réutilise le même modèle `territoryPreferences`.
 
 La validation persiste les étapes nécessaires dans un ordre déterministe :
 
@@ -135,12 +155,12 @@ reprendre la configuration depuis les réglages du compte.
 
 ## Contrat d'identité initiale
 
-La configuration initiale exige un prénom et un nom. Le pseudo Clerk est
-facultatif et ne fait pas partie de la création ni de la finalisation du
-compte CleanMyMap ; il reste configurable séparément dans les préférences du
-compte. Une absence de pseudo ne déclenche donc ni le gate, ni une mise à jour
-de schéma, ni une validation supplémentaire. Les pseudos historiques sont
-conservés tels quels.
+La configuration initiale exige un prénom et un nom. Le mode d'identité
+publique est facultatif : le mode `full_name` combine ces deux champs, tandis
+que le mode `pseudo` utilise le `handle` CleanMyMap projeté par Supabase. Une
+absence de handle ne donne pas lieu à une nouvelle source de données ni à une
+invention de pseudonyme ; l'aperçu retombe sur l'identité disponible. Les
+pseudos historiques sont conservés tels quels.
 
 Lorsque Clerk fournit une identité Google, les champs `firstName` et `lastName`
 de l'utilisateur Clerk sont prioritaires. À défaut, les mêmes champs du compte
