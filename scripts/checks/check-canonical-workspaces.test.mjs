@@ -7,6 +7,7 @@ import test from "node:test";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const CHECK_PATH = path.join(REPO_ROOT, "scripts", "checks", "check-canonical-workspaces.mjs");
+const GIT_EXECUTABLE_PATH = path.join(REPO_ROOT, "scripts", "ci", "git-executable.mjs");
 const STATIC_RUNNER_PATH = path.join(REPO_ROOT, "scripts", "ci", "run-static-candidate-check.mjs");
 
 function writeFile(root, relativePath, content) {
@@ -33,6 +34,7 @@ function createFixture() {
   writeFile(root, "apps/mobile/AGENTS.md", "# Mobile governance\n");
   writeFile(root, "apps/mobile/src/internal.ts", "export const value = 1;\n");
   writeFile(root, "scripts/checks/check-canonical-workspaces.mjs", fs.readFileSync(CHECK_PATH));
+  writeFile(root, "scripts/ci/git-executable.mjs", fs.readFileSync(GIT_EXECUTABLE_PATH));
   git(root, ["add", "."]);
   git(root, ["commit", "--quiet", "-m", "canonical workspace baseline"]);
   return root;
