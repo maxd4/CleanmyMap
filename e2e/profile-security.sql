@@ -84,10 +84,13 @@ begin
 
   if not has_table_privilege('anon', 'public.newsletter_subscriptions', 'INSERT')
     or has_table_privilege('anon', 'public.newsletter_subscriptions', 'SELECT')
+    or has_table_privilege('anon', 'public.newsletter_subscriptions', 'UPDATE')
     or has_table_privilege('anon', 'public.newsletter_subscriptions', 'TRIGGER')
     or has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'INSERT')
     or has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'SELECT')
+    or has_table_privilege('authenticated', 'public.newsletter_subscriptions', 'UPDATE')
     or not has_table_privilege('service_role', 'public.newsletter_subscriptions', 'SELECT')
+    or not has_table_privilege('service_role', 'public.newsletter_subscriptions', 'UPDATE')
   then
     raise exception 'SECURITY-01 newsletter privileges do not match the contract';
   end if;
@@ -101,6 +104,13 @@ begin
     or has_table_privilege('authenticated', 'public.notification_preferences', 'REFERENCES')
   then
     raise exception 'SECURITY-01 notification preference privileges do not match the contract';
+  end if;
+
+  if has_table_privilege('anon', 'public.notification_information_mutes', 'UPDATE')
+    or has_table_privilege('authenticated', 'public.notification_information_mutes', 'UPDATE')
+    or not has_table_privilege('service_role', 'public.notification_information_mutes', 'UPDATE')
+  then
+    raise exception 'SECURITY-01 notification mute privileges do not match the contract';
   end if;
 end
 $$;
@@ -198,6 +208,65 @@ set local role service_role;
 select metadata, role_label, active_role_label, referral_code, referred_by_profile_id
 from public.profiles
 where id = 'security-01-owner';
+
+do $$
+declare
+  selected_action_id uuid;
+  newsletter_status text;
+begin
+  insert into public.newsletter_subscriptions (email, gdpr_consent, source, status)
+  values ('security-01-upsert-fixture', true, 'security-01', 'inactive')
+  on conflict (email) do update
+    set gdpr_consent = excluded.gdpr_consent,
+        source = excluded.source,
+        status = excluded.status;
+
+  insert into public.newsletter_subscriptions (email, gdpr_consent, source, status)
+  values ('security-01-upsert-fixture', true, 'security-01-retry', 'active')
+  on conflict (email) do update
+    set gdpr_consent = excluded.gdpr_consent,
+        source = excluded.source,
+        status = excluded.status;
+
+  select status
+    into newsletter_status
+    from public.newsletter_subscriptions
+   where email = 'security-01-upsert-fixture';
+  if newsletter_status <> 'active' then
+    raise exception 'SECURITY-01 newsletter upsert did not reactivate the subscription';
+  end if;
+
+  select id
+    into selected_action_id
+    from public.actions
+   limit 1;
+  if selected_action_id is null then
+    raise exception 'SECURITY-01 mute upsert fixture requires an existing action';
+  end if;
+
+  insert into public.notification_information_mutes (user_id, action_id)
+  values ('security-01-upsert-user', selected_action_id)
+  on conflict (user_id, action_id) do update
+    set created_at = excluded.created_at;
+
+  insert into public.notification_information_mutes (user_id, action_id)
+  values ('security-01-upsert-user', selected_action_id)
+  on conflict (user_id, action_id) do update
+    set created_at = excluded.created_at;
+
+  delete from public.notification_information_mutes
+   where user_id = 'security-01-upsert-user'
+     and action_id = selected_action_id;
+  if exists (
+    select 1
+      from public.notification_information_mutes
+     where user_id = 'security-01-upsert-user'
+       and action_id = selected_action_id
+  ) then
+    raise exception 'SECURITY-01 notification mute delete did not remove the row';
+  end if;
+end
+$$;
 
 rollback;
 

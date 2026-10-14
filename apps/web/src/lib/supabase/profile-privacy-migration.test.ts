@@ -5,6 +5,10 @@ const migration = readFileSync(
   new URL("../../../supabase/migrations/20261014000001_profile_privacy_and_role_privilege_hardening.sql", import.meta.url),
   "utf8",
 );
+const correctiveMigration = readFileSync(
+  new URL("../../../supabase/migrations/20261014000003_security01_upsert_privileges.sql", import.meta.url),
+  "utf8",
+);
 
 it("keeps profiles public through an explicit identity projection only", () => {
   expect(migration).toContain("drop policy if exists profiles_select_all on public.profiles;");
@@ -58,4 +62,23 @@ it("keeps the RLS authorization helpers controlled and server-owned", () => {
   expect(migration).toContain(
     'alter policy "Allow admin view subscriptions"\n  on public.newsletter_subscriptions\n  using (public.current_profile_role_label() in (\'admin\', \'super-admin\'));',
   );
+});
+
+it("restores only the service upsert UPDATE privileges required by SECURITY-01", () => {
+  expect(correctiveMigration).toContain(
+    "revoke update on table public.newsletter_subscriptions from public, anon, authenticated;",
+  );
+  expect(correctiveMigration).toContain(
+    "grant update on table public.newsletter_subscriptions to service_role;",
+  );
+  expect(correctiveMigration).toContain(
+    "revoke update on table public.notification_information_mutes from public, anon, authenticated;",
+  );
+  expect(correctiveMigration).toContain(
+    "grant update on table public.notification_information_mutes to service_role;",
+  );
+  expect(correctiveMigration).not.toContain("grant update on table public.newsletter_subscriptions to anon");
+  expect(correctiveMigration).not.toContain("grant update on table public.newsletter_subscriptions to authenticated");
+  expect(correctiveMigration).not.toContain("grant update on table public.notification_information_mutes to anon");
+  expect(correctiveMigration).not.toContain("grant update on table public.notification_information_mutes to authenticated");
 });

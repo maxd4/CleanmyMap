@@ -12,6 +12,12 @@ function makeSupabase() {
       error: null,
     },
   };
+  const muteUpsert = vi.fn().mockResolvedValue({ error: null });
+  const muteDelete = vi.fn(() => ({
+    eq: vi.fn(() => ({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    })),
+  }));
   const from = vi.fn((table: keyof typeof queries) => {
     if (table === "notification_preferences") {
       return {
@@ -24,9 +30,11 @@ function makeSupabase() {
       select: vi.fn(() => ({
         eq: vi.fn(() => Promise.resolve(queries.notification_information_mutes)),
       })),
+      upsert: muteUpsert,
+      delete: muteDelete,
     };
   });
-  return { from };
+  return { from, muteUpsert, muteDelete };
 }
 
 describe("/api/notifications/preferences", () => {
@@ -58,5 +66,60 @@ describe("/api/notifications/preferences", () => {
     });
     expect(supabase.from).toHaveBeenCalledWith("notification_preferences");
     expect(supabase.from).toHaveBeenCalledWith("notification_information_mutes");
+  });
+
+  it("supports repeated action mute upserts and keeps the operation user-scoped", async () => {
+    const supabase = makeSupabase();
+    serverMock.mockReturnValue(supabase);
+    const { PATCH } = await import("./route");
+    const request = () => new Request("http://localhost/api/notifications/preferences", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        actionId: "11111111-1111-4111-8111-111111111111",
+        muted: true,
+      }),
+    });
+
+    expect((await PATCH(request())).status).toBe(200);
+    expect((await PATCH(request())).status).toBe(200);
+    expect(supabase.muteUpsert).toHaveBeenCalledTimes(2);
+    expect(supabase.muteUpsert).toHaveBeenNthCalledWith(
+      1,
+      {
+        user_id: "user-1",
+        action_id: "11111111-1111-4111-8111-111111111111",
+      },
+      { onConflict: "user_id,action_id" },
+    );
+    expect(supabase.muteUpsert).toHaveBeenNthCalledWith(
+      2,
+      {
+        user_id: "user-1",
+        action_id: "11111111-1111-4111-8111-111111111111",
+      },
+      { onConflict: "user_id,action_id" },
+    );
+  });
+
+  it("returns a safe server error when the action mute upsert fails", async () => {
+    const supabase = makeSupabase();
+    supabase.muteUpsert.mockResolvedValueOnce({
+      error: { message: "permission denied for table notification_information_mutes" },
+    });
+    serverMock.mockReturnValue(supabase);
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(new Request("http://localhost/api/notifications/preferences", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        actionId: "11111111-1111-4111-8111-111111111111",
+        muted: true,
+      }),
+    }));
+
+    expect(response.status).toBe(500);
+    expect(await response.text()).toBe("error");
   });
 });
