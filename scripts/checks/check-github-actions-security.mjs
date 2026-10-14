@@ -3,6 +3,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import yaml from "js-yaml";
 import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
 import { resolveCandidateSha, resolveCandidateShaFromRef, writeQualityEvidence } from "./quality-evidence.mjs";
 
@@ -16,6 +17,22 @@ const FORBIDDEN_SECRET_NAMES = [
 
 export function auditWorkflowContent(content, filePath = "workflow") {
   const issues = [];
+
+  try {
+    yaml.load(content);
+  } catch (error) {
+    const line = error?.mark?.line === undefined ? "" : `:${error.mark.line + 1}`;
+    const reason = error instanceof Error ? error.reason ?? error.message : "invalid YAML";
+    issues.push(`${filePath}${line}: invalid YAML: ${reason}`);
+  }
+
+  const hasPullRequestTrigger = /^\s*pull_request\s*:/m.test(content);
+  const usesSecrets = /\$\{\{\s*secrets\./.test(content);
+  const hasFailClosedForkGuard = /github\.event\.pull_request\.head\.repo\.full_name\s*!=\s*github\.repository/.test(content)
+    && /exit\s+1/.test(content);
+  if (hasPullRequestTrigger && usesSecrets && !hasFailClosedForkGuard) {
+    issues.push(`${filePath}: workflows triggered by pull_request and using secrets must fail closed for external repositories before secret-bearing steps.`);
+  }
 
   if (!/^permissions:\s*/m.test(content)) {
     issues.push(`${filePath}: workflow must declare explicit top-level permissions (use permissions: {} and grant only job-scoped rights).`);

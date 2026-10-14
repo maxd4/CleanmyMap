@@ -72,9 +72,9 @@ function readProjectSettings(appDirectory) {
 
   try {
     const project = JSON.parse(readFileSync(projectPath, "utf8"));
-    return { projectPath, settings: project.settings ?? null };
+    return { projectPath, projectName: project.projectName, settings: project.settings ?? null };
   } catch (error) {
-    return { projectPath, settings: { parseError: error.message } };
+    return { projectPath, projectName: undefined, settings: { parseError: error.message } };
   }
 }
 
@@ -134,14 +134,17 @@ export function runPreflight({ repoRoot = repositoryRoot(), mode = "source", pla
     }
   }
 
-  const { settings } = readProjectSettings(resolvedAppRoot);
+  const { projectName, settings } = readProjectSettings(resolvedAppRoot);
   if (!settings) {
     errors.push("apps/web/.vercel/project.json est absent; le projet Vercel local n'est pas lié");
   } else if (settings.parseError) {
     errors.push(`apps/web/.vercel/project.json est illisible: ${settings.parseError}`);
+  } else if (projectName !== "web") {
+    errors.push(`projet Vercel inattendu: ${projectName ?? "absent"} (attendu: web)`);
   } else if (settings.rootDirectory !== "apps/web") {
     errors.push(`rootDirectory Vercel inattendu: ${settings.rootDirectory ?? "absent"} (attendu: apps/web)`);
   } else {
+    checks.push("projet Vercel = web");
     checks.push("rootDirectory Vercel = apps/web");
   }
 

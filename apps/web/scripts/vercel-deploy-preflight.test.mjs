@@ -15,7 +15,7 @@ function createFixture({ functions = [], links = [], sensitive = false } = {}) {
   writeFileSync(join(appRoot, ".vercelignore"), ".next/\nnode_modules/\nartifacts/\n");
   writeFileSync(
     join(appRoot, ".vercel", "project.json"),
-    JSON.stringify({ settings: { rootDirectory: "apps/web" } }),
+    JSON.stringify({ projectName: "web", settings: { rootDirectory: "apps/web" } }),
   );
   writeFileSync(join(appRoot, "vercel.json"), JSON.stringify({ git: { deploymentEnabled: false } }));
 
@@ -55,6 +55,21 @@ test("source preflight rejects automatic Git deployments", () => {
     const result = runPreflight({ repoRoot: root, mode: "source" });
     assert.equal(result.ok, false);
     assert.match(result.errors.join("\n"), /déploiements Git automatiques/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("source preflight rejects an unexpected linked Vercel project", () => {
+  const root = createFixture();
+  try {
+    writeFileSync(
+      join(root, "apps", "web", ".vercel", "project.json"),
+      JSON.stringify({ projectName: "untrusted-project", settings: { rootDirectory: "apps/web" } }),
+    );
+    const result = runPreflight({ repoRoot: root, mode: "source" });
+    assert.equal(result.ok, false);
+    assert.match(result.errors.join("\n"), /projet Vercel inattendu/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

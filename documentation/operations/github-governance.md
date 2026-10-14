@@ -83,15 +83,18 @@ invariants.
 ## Protection de `main`
 
 Le dépôt conserve un workflow `MAIN-ONLY / SINGLE-WRITER` : les pushes
-fast-forward directs sur `main` restent autorisés pour l'intégrateur légitime.
-Le ruleset GitHub actif ciblant uniquement `refs/heads/main` interdit :
+fast-forward directs sur `main` restent autorisés pour l'intégrateur légitime
+autorisé par le ruleset distant. Les deux rulesets GitHub actifs ciblant `main`
+interdisent :
 
 - la suppression de `main` ;
 - les mises à jour non fast-forward et les force-push.
 
-Le ruleset n'impose ni Pull Request, ni approbation, ni required status check,
-ni merge queue. Les contrôles CI et CodeQL restent disponibles pour les runs
-GitHub et les revues, sans bloquer le push direct par une règle de branche.
+Les rulesets n'imposent ni Pull Request, ni approbation, ni required status
+check, ni merge queue. Le ruleset `main — owner-only updates` réserve toutefois
+la mise à jour au rôle propriétaire. Les contrôles CI et CodeQL restent
+disponibles pour les runs GitHub et les revues, sans remplacer la validation
+locale du candidat.
 
 Checks conservés pour la revue manuelle GitHub :
 

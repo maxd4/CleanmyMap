@@ -4,8 +4,27 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createModeValidationPlan } from "./validation-modes.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const CANONICAL_REPOSITORY = "maxd4/CleanmyMap";
+const REQUIRED_FULL_CHECK_IDS = Object.freeze(
+  createModeValidationPlan({ mode: "FULL", candidateScope: "WORKTREE", changedFiles: [] }).checks.map((check) => check.id),
+);
+
+function checkIds(entries) {
+  return Array.isArray(entries)
+    ? entries.map((entry) => (typeof entry === "string" ? entry : entry?.id)).filter(Boolean)
+    : [];
+}
+
+function missingRequiredChecks(evidence, requiredChecks) {
+  const completed = new Set([
+    ...checkIds(evidence?.passed),
+    ...checkIds(evidence?.reused),
+  ]);
+  return requiredChecks.filter((checkId) => !completed.has(checkId));
+}
 
 function currentSha() {
   return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
@@ -23,26 +42,86 @@ function isClean() {
   }).trim() === "";
 }
 
-export function evaluateReleaseGate({ evidence, current, clean, deploymentEnabled }) {
-  const evidenceMatches = Boolean(evidence && evidence.candidateSha === current && evidence.candidateSha === deploymentEnabled.sha);
+export function evaluateReleaseGate({
+  evidence,
+  current,
+  clean,
+  deploymentEnabled,
+  provenance,
+  requiredChecks = REQUIRED_FULL_CHECK_IDS,
+}) {
+  const validSha = (value) => /^[0-9a-f]{40}$/i.test(value ?? "");
+  const missingChecks = missingRequiredChecks(evidence, requiredChecks);
+  const evidenceMatches = Boolean(
+    evidence
+      && validSha(current)
+      && validSha(evidence.candidateSha)
+      && evidence.candidateSha === current
+      && evidence.candidateSha === deploymentEnabled?.sha,
+  );
   const fullGreen = Boolean(evidence?.mode === "FULL" && evidence.verdict === "PASS" && evidence.releaseReady === true
-    && evidence.failed?.length === 0 && evidence.blocked?.length === 0 && evidence.notRun?.length === 0);
-  const ready = clean && evidenceMatches && fullGreen && deploymentEnabled.main === false;
+    && evidence.version === 2
+    && evidence.candidateScope === "WORKTREE"
+    && Array.isArray(evidence.passed)
+    && Array.isArray(evidence.reused)
+    && Array.isArray(evidence.failed) && evidence.failed.length === 0
+    && Array.isArray(evidence.blocked) && evidence.blocked.length === 0
+    && Array.isArray(evidence.notRun) && evidence.notRun.length === 0
+    && Array.isArray(evidence.preexisting) && evidence.preexisting.length === 0
+    && missingChecks.length === 0);
+  const provenanceVerified = Boolean(
+    provenance?.repository === CANONICAL_REPOSITORY
+      && provenance.branch === "main"
+      && provenance.originVerified === true,
+  );
+  const targetVerified = Boolean(
+    deploymentEnabled?.main === false
+      && deploymentEnabled.target === "production"
+      && deploymentEnabled.projectName === "web"
+      && deploymentEnabled.rootDirectory === "apps/web",
+  );
+  const ready = clean && evidenceMatches && fullGreen && provenanceVerified && targetVerified;
   return {
     ready,
+    missingChecks,
     reasons: [
       !clean && "worktree is not clean",
       !evidenceMatches && "FULL evidence does not match the requested SHA",
       !fullGreen && "FULL evidence is not green",
-      deploymentEnabled.main !== false && "Vercel main auto-deployment is not disabled",
+      missingChecks.length > 0 && `FULL evidence is missing required checks: ${missingChecks.join(", ")}`,
+      !provenanceVerified && "candidate provenance is not verified for maxd4/CleanmyMap main",
+      !targetVerified && "Vercel target must be project web, root apps/web, production, with Git deployment disabled",
     ].filter(Boolean),
   };
+}
+
+function readCandidateProvenance() {
+  try {
+    const origin = execFileSync("git", ["remote", "get-url", "origin"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+    const branch = execFileSync("git", ["branch", "--show-current"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+    const match = origin.match(/github\.com[/:]([^/]+\/[^/]+?)(?:\.git)?$/i);
+    const repository = match?.[1] ?? "";
+    return { branch, repository, originVerified: repository === CANONICAL_REPOSITORY };
+  } catch {
+    return { branch: "", repository: "", originVerified: false };
+  }
 }
 
 function readVercelPolicy() {
   const config = JSON.parse(fs.readFileSync(path.join(repositoryRoot, "apps/web/vercel.json"), "utf8"));
   const deploymentEnabled = config.git?.deploymentEnabled;
-  return { main: deploymentEnabled === false ? false : deploymentEnabled?.main };
+  let project = null;
+  try {
+    project = JSON.parse(fs.readFileSync(path.join(repositoryRoot, "apps/web/.vercel/project.json"), "utf8"));
+  } catch {
+    project = null;
+  }
+  return {
+    main: deploymentEnabled === false ? false : deploymentEnabled?.main,
+    target: "production",
+    projectName: project?.projectName,
+    rootDirectory: project?.settings?.rootDirectory,
+  };
 }
 
 function main() {
@@ -55,6 +134,7 @@ function main() {
     current,
     clean: isClean(),
     deploymentEnabled: { ...readVercelPolicy(), sha },
+    provenance: readCandidateProvenance(),
   });
 
   console.log(`CANDIDATE_SHA: ${sha}`);

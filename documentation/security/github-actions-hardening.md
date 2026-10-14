@@ -39,6 +39,14 @@ GitHub lus à distance. Il décrit le contrat courant sans exposer de secret.
 - Le build CI reçoit uniquement les variables publiques de build
   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` et `CONTACT_EMAIL`;
   aucune `service_role` n’est injectée.
+- La lane `e2e-supabase.yml` échoue explicitement pour une Pull Request issue
+  d'un dépôt externe avant l'étape qui consomme les secrets Clerk Development;
+  elle ne transforme pas l'absence de secrets d'un fork en succès silencieux.
+- `npm run release:check -- --sha=<sha>` exige une preuve FULL version 2 liée au
+  SHA exact, la présence de tous les contrôles FULL, l'absence de contrôles
+  échoués, bloqués, non lancés ou classés `preexisting`, ainsi que la
+  provenance `maxd4/CleanmyMap` sur `main` et la cible Vercel `web`/`apps/web`
+  en environnement `production`. `git.deploymentEnabled: false` reste requis.
 
 ## Contrôles planifiés et audit de couverture
 
@@ -66,25 +74,51 @@ Ce lot n'ajoute ni SBOM permanent ni workflow SLSA.
 
 ## Paramètres GitHub observés
 
-Lecture GitHub effectuée le 16/09/2026 :
+Lecture GitHub effectuée le 14/10/2026 :
 
 - Actions activées ;
 - actions autorisées : `all` ;
 - obligation de SHA côté dépôt : désactivée ;
+- permissions par défaut des workflows : `read` ;
+- approbation des Pull Requests de contributeurs externes : `first_time_contributors` ;
 - secret scanning et push protection activés ;
 - mises à jour de sécurité Dependabot activées ;
+- 0 alerte Dependabot ouverte, 11 alertes CodeQL ouvertes et 0 alerte Secret
+  Scanning ouverte au moment de la lecture ; ces compteurs sont un snapshot et
+  ne remplacent pas le triage courant ;
 - workflow CodeQL versionné conservé ; le `default setup` CodeQL est distinct
   et reste `not-configured` ;
-- ruleset actif `Protect main history` ciblant uniquement `refs/heads/main` ;
+- ruleset actif `Protect main history` ciblant `refs/heads/main`, avec
+  suppression et mise à jour non-fast-forward interdites ;
+- ruleset actif `main — owner-only updates` ciblant la branche par défaut, avec
+  mise à jour réservée au rôle propriétaire ;
 - suppression de `main` interdite ;
-- force-push et mises à jour non fast-forward interdits ;
 - push fast-forward direct autorisé ; aucune Pull Request, approbation ou
-  required status check n'est imposée par ce ruleset.
+  required status check n'est imposée par ces rulesets ; l'API de protection de
+  branche classique ne déclare pas `main` comme branche protégée.
+
+Lecture Vercel effectuée le 14/10/2026 :
+
+- projet lié `web` dans l'équipe attendue, `rootDirectory: apps/web` ;
+- `git.deploymentEnabled: false` côté dépôt ;
+- `createDeployments: disabled`, `requireVerifiedCommits: true` et
+  `gitForkProtection: true` côté projet distant ;
+- l'environnement de release attendu reste `production`; les environnements
+  Preview et Development ne sont pas des cibles de promotion par défaut.
 
 Ces réglages vivent dans GitHub et doivent être relus via l'API avant toute
 conclusion sur leur état. Les checks locaux ne prétendent pas vérifier le
-ruleset distant. Toute évolution doit préserver la publication directe
-fast-forward sur `main`.
+ruleset distant. Les contrôles versionnés ne peuvent pas activer ou modifier ces
+réglages.
+
+Durcissements nécessitant une décision GitHub/Vercel séparée :
+
+- limiter `allowed_actions` aux actions approuvées et activer l'exigence
+  distante de SHA complet ;
+- ajouter un required status check et, si le modèle de publication évolue,
+  imposer Pull Request et approbation avant mise à jour de `main` ;
+- confirmer opérationnellement la séparation des secrets Preview/Production et
+  l'identité du projet Vercel avant toute promotion.
 
 ## Dépendances
 

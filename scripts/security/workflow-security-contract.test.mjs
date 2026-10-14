@@ -49,3 +49,7 @@ assert.equal(
   1,
   "zizmor must be the only non-blocking step",
 );
+
+const e2e = readWorkflow("e2e-supabase.yml");
+assert.match(e2e, /pull_request\.head\.repo\.full_name != github\.repository/);
+assert.match(e2e, /External pull requests cannot execute[\s\S]*?exit 1/);

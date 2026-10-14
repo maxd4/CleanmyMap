@@ -42,6 +42,26 @@ assert.equal(
   true,
 );
 
+assert.deepEqual(
+  auditWorkflowContent("permissions: {}\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo ok\n"),
+  [],
+);
+
+assert.match(
+  auditWorkflowContent("permissions: {}\njobs:\n  test:\n    steps:\n      - run: echo ok\n    - malformed\n")[0],
+  /invalid YAML/,
+);
+
+assert.match(
+  auditWorkflowContent("permissions: {}\non:\n  pull_request:\n\njobs:\n  test:\n    steps:\n      - env:\n          TOKEN: ${{ secrets.TEST_TOKEN }}\n        run: echo test\n")[0],
+  /secrets.*external repositories/,
+);
+
+assert.doesNotMatch(
+  auditWorkflowContent("permissions: {}\non:\n  pull_request:\n\njobs:\n  test:\n    steps:\n      - if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository\n        run: exit 1\n      - env:\n          TOKEN: ${{ secrets.TEST_TOKEN }}\n        run: echo test\n").join("\n"),
+  /external repositories/,
+);
+
 assert.equal(
   auditWorkflowContent("permissions: {}\n- uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02\n  with:\n    path: artifacts/playwright\n", ".github/workflows/e2e-supabase.yml").some((issue) => issue.includes("raw Playwright")),
   true,
