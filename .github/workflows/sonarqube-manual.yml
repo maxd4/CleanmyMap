@@ -38,6 +38,18 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Generate Web coverage
+        run: npm run test:coverage
+
+      - name: Verify Web coverage ratchet
+        run: npm run quality:coverage -- --from-existing-summary
+
+      - name: Generate and verify Mobile coverage
+        run: npm run quality:mobile-coverage
+
+      - name: Validate SonarQube LCOV reports
+        run: node scripts/checks/prepare-sonarqube-coverage.mjs
+
       - name: SonarQube Cloud scan
         uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
         env:
