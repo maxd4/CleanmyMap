@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 
@@ -17,6 +17,58 @@ function createFixture() {
   const root = mkdtempSync(join(tmpdir(), "cmm-sentry-staging-test-"));
   mkdirSync(join(root, "chunks"), { recursive: true });
   return root;
+}
+
+function createBuildFixture() {
+  const root = mkdtempSync(join(tmpdir(), "cmm-sentry-build-test-"));
+  const staticDir = join(root, ".next", "static");
+  const serverDir = join(root, ".next", "server");
+  mkdirSync(staticDir, { recursive: true });
+  mkdirSync(serverDir, { recursive: true });
+
+  writeFileSync(join(staticDir, "client.js"), "client bundle");
+  writeMap(join(staticDir, "client.js.map"));
+  writeFileSync(join(serverDir, "server.js"), "server bundle");
+  writeMap(join(serverDir, "server.js.map"));
+
+  return { root, staticDir, serverDir };
+}
+
+function createFakeSentryCli(root) {
+  if (process.platform === "win32") {
+    const cli = join(root, "fake-sentry.cmd");
+    writeFileSync(cli, "@echo off\r\nexit /b 0\r\n");
+    return cli;
+  }
+
+  const cli = join(root, "fake-sentry.sh");
+  writeFileSync(cli, "#!/bin/sh\nexit 0\n");
+  chmodSync(cli, 0o755);
+  return cli;
+}
+
+function createSourceMapRemovalBlocker(root) {
+  const preload = join(root, "block-source-map-removal.mjs");
+  writeFileSync(
+    preload,
+    [
+      'import fs from "node:fs";',
+      'import { syncBuiltinESMExports } from "node:module";',
+      "const originalRmSync = fs.rmSync.bind(fs);",
+      'fs.rmSync = (target, options) => { if (String(target).endsWith(".map")) throw new Error("simulated source map removal failure"); return originalRmSync(target, options); };',
+      "syncBuiltinESMExports();",
+      "",
+    ].join("\n"),
+  );
+  return preload;
+}
+
+function runUploader(cwd, env) {
+  return spawnSync(process.execPath, [uploader], {
+    cwd,
+    env,
+    encoding: "utf8",
+  });
 }
 
 function writeMap(path, file = "") {
@@ -150,11 +202,112 @@ test("removes client and server maps when Sentry upload is unavailable", () => {
     assert.equal(result.discovered, 2);
     assert.equal(result.removed, 2);
     assert.deepEqual(result.failed, []);
+    assert.deepEqual(result.remaining, []);
     assert.equal(exists(clientBundle), true);
     assert.equal(exists(clientMap), false);
     assert.equal(exists(serverMap), false);
   } finally {
     rmSync(fixture, { recursive: true, force: true });
+  }
+});
+
+test("reports failed and residual source map cleanup", () => {
+  const fixture = createBuildFixture();
+  const clientMap = join(fixture.staticDir, "client.js.map");
+
+  try {
+    const result = cleanupBuildSourceMaps({
+      staticDir: fixture.staticDir,
+      serverDir: fixture.serverDir,
+      remove: () => [clientMap],
+    });
+
+    assert.deepEqual(result.failed, [clientMap]);
+    assert.deepEqual(result.remaining, [clientMap, join(fixture.serverDir, "server.js.map")]);
+    assert.equal(result.removed, 1);
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("fails with a non-zero status when cleanup fails without Sentry configuration", () => {
+  const fixture = createBuildFixture();
+  const preload = createSourceMapRemovalBlocker(fixture.root);
+  const secret = "source-map-test-secret";
+  const env = {
+    ...process.env,
+    CI: "1",
+    SENTRY_AUTH_TOKEN: secret,
+    NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import=${pathToFileURL(preload).href}`.trim(),
+  };
+  delete env.SENTRY_ORG;
+  delete env.SENTRY_PROJECT;
+
+  try {
+    const result = runUploader(fixture.root, env);
+    const output = `${result.stdout}\n${result.stderr}`;
+
+    assert.notEqual(result.status, 0);
+    assert.match(output, /Source map cleanup failed/);
+    assert.match(output, /client\.js\.map/);
+    assert.doesNotMatch(output, new RegExp(secret));
+    assert.equal(exists(join(fixture.staticDir, "client.js.map")), true);
+    assert.equal(exists(join(fixture.staticDir, "client.js")), true);
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("removes all maps and preserves bundles with Sentry configuration", () => {
+  const fixture = createBuildFixture();
+  const cli = createFakeSentryCli(fixture.root);
+  const env = {
+    ...process.env,
+    SENTRY_AUTH_TOKEN: "test-token",
+    SENTRY_ORG: "test-org",
+    SENTRY_PROJECT: "test-project",
+    SENTRY_CLI_BIN: cli,
+  };
+
+  try {
+    const result = runUploader(fixture.root, env);
+
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.equal(exists(join(fixture.staticDir, "client.js.map")), false);
+    assert.equal(exists(join(fixture.serverDir, "server.js.map")), false);
+    assert.equal(exists(join(fixture.staticDir, "client.js")), true);
+    assert.equal(exists(join(fixture.serverDir, "server.js")), true);
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("fails with a non-zero status when configured Sentry cleanup fails", () => {
+  const fixture = createBuildFixture();
+  const cli = createFakeSentryCli(fixture.root);
+  const preload = createSourceMapRemovalBlocker(fixture.root);
+  const secret = "configured-source-map-test-secret";
+  const env = {
+    ...process.env,
+    SENTRY_AUTH_TOKEN: secret,
+    SENTRY_ORG: "test-org",
+    SENTRY_PROJECT: "test-project",
+    SENTRY_CLI_BIN: cli,
+    NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import=${pathToFileURL(preload).href}`.trim(),
+  };
+
+  try {
+    const result = runUploader(fixture.root, env);
+    const output = `${result.stdout}\n${result.stderr}`;
+
+    assert.notEqual(result.status, 0);
+    assert.match(output, /Source map cleanup failed/);
+    assert.match(output, /client\.js\.map/);
+    assert.doesNotMatch(output, new RegExp(secret));
+    assert.equal(exists(join(fixture.staticDir, "client.js.map")), true);
+    assert.equal(exists(join(fixture.staticDir, "client.js")), true);
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
   }
 });
 

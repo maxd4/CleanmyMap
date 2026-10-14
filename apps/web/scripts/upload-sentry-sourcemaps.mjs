@@ -40,9 +40,29 @@ function runSentryCli(args) {
   }
 }
 
-function deleteFiles(files) {
-  for (const file of removeFiles(files)) {
-    warn(`Unable to delete ${file} after source map upload.`);
+function sourceMapFiles(directories) {
+  return directories.flatMap((directory) => collectFiles(directory, (file) => file.endsWith(".map")));
+}
+
+function buildCleanupError(context, files) {
+  const uniqueFiles = [...new Set(files)];
+  return new Error(
+    `Source map cleanup failed ${context}; residual .map file(s): ${uniqueFiles.join(", ")}`,
+  );
+}
+
+function deleteFiles(files, directories, context) {
+  const failed = removeFiles(files);
+  const remaining = sourceMapFiles(directories);
+  if (failed.length > 0 || remaining.length > 0) {
+    throw buildCleanupError(context, [...failed, ...remaining]);
+  }
+}
+
+function assertNoSourceMaps(directories, context) {
+  const remaining = sourceMapFiles(directories);
+  if (remaining.length > 0) {
+    throw buildCleanupError(context, remaining);
   }
 }
 
@@ -196,8 +216,14 @@ if (!authToken || !org || !project) {
     if (cleanup.removed > 0) {
       log(`Removed ${cleanup.removed} generated source map file(s); Sentry upload was skipped because configuration is incomplete.`);
     }
-    for (const file of cleanup.failed) {
-      warn(`Unable to delete ${file} after skipping source map upload.`);
+    if (cleanup.failed.length > 0 || cleanup.remaining.length > 0) {
+      error(
+        buildCleanupError(
+          "after skipping source map upload",
+          [...cleanup.failed, ...cleanup.remaining],
+        ).message,
+      );
+      process.exit(1);
     }
   }
   if (shouldReportMissingSentryConfig) {
@@ -257,8 +283,11 @@ try {
   clientArgs.push(clientStage.stagingRoot);
   runSentryCli(clientArgs);
 } finally {
-  deleteFiles(clientMaps);
-  rmSync(clientStage.stagingRoot, { recursive: true, force: true });
+  try {
+    deleteFiles(clientMaps, [staticDir], "after client source map upload");
+  } finally {
+    rmSync(clientStage.stagingRoot, { recursive: true, force: true });
+  }
 }
 
 if (serverMaps.length > 0) {
@@ -296,16 +325,23 @@ if (serverMaps.length > 0) {
       serverArgs.push(serverStage.stagingRoot);
       runSentryCli(serverArgs);
     } finally {
-      deleteFiles(serverMaps);
-      rmSync(serverStage.stagingRoot, { recursive: true, force: true });
+      try {
+        deleteFiles(serverMaps, [serverDir], "after server source map upload");
+      } finally {
+        rmSync(serverStage.stagingRoot, { recursive: true, force: true });
+      }
     }
   } else {
     warn("No server bundles with matching source maps found in .next/server. Server stack traces will rely on runtime source maps only.");
-    deleteFiles(serverMaps);
-    rmSync(serverStage.stagingRoot, { recursive: true, force: true });
+    try {
+      deleteFiles(serverMaps, [serverDir], "after server source map cleanup");
+    } finally {
+      rmSync(serverStage.stagingRoot, { recursive: true, force: true });
+    }
   }
 } else {
   warn("No server source maps found in .next/server. Server stack traces will rely on runtime source maps only.");
 }
 
+assertNoSourceMaps([staticDir, serverDir], "after source map processing");
 log("Source map upload completed.");
