@@ -38,6 +38,8 @@ test.describe("SPOGOMI public navigation", () => {
   test("keeps secondary content accessible and compact", async ({ page }) => {
     const response = await page.goto("/spogomi");
     expect(response?.status()).toBe(200);
+    const rejectCookies = page.getByRole("button", { name: "Tout refuser" });
+    if (await rejectCookies.isVisible()) await rejectCookies.click();
 
     await expect(page.getByRole("heading", { name: "Comprendre SPOGOMI", exact: true })).toBeVisible();
     await expect(page.locator("details")).toHaveCount(6);
@@ -60,7 +62,7 @@ test.describe("SPOGOMI public navigation", () => {
     const world = worldCard.locator("details").first();
     await world.locator("summary").click();
     await expect(page.getByRole("link", { name: /Fédération japonaise SPOGOMI/ })).toBeVisible();
-    await expect(world.getByText("Vérifié le 2026-10-12", { exact: false })).toBeVisible();
+    await expect(world.getByText("Vérifié le 2026-10-12", { exact: false }).first()).toBeVisible();
 
     const eventsCard = page.locator('[data-cmm-card-tone="indigo"]').filter({ hasText: "Événements internationaux" }).first();
     const events = eventsCard.locator("details").first();
