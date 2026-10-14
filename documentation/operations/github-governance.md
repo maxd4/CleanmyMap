@@ -91,11 +91,18 @@ interdisent :
 - la suppression de `main` ;
 - les mises à jour non fast-forward et les force-push.
 
+Chaque tentative établit un SHA candidat immuable après le `fetch` et pousse
+explicitement `${candidateSha}:refs/heads/main`. Le publisher relit `HEAD` et
+`refs/heads/main` avant le push et après sa vérification ; un nouveau commit
+local apparu entre ces étapes bloque la publication et impose une nouvelle
+réconciliation des fichiers, commits et validations. Il ne peut donc pas
+adopter silencieusement le dernier `HEAD`.
+
 Si un autre writer publie pendant une tentative, le publisher attend de façon
-bornée, refetch `origin/main`, relit tous les commits locaux non publiés et
-réessaie après une intégration fast-forward ou une fusion non destructive
-explicitement résolue. Une divergence ou un conflit reste visible et bloque
-la publication ; aucune tentative ne contourne les protections distantes.
+bornée, refetch `origin/main`, relit le candidat inchangé et réessaie après une
+intégration fast-forward distante explicitement vérifiée. Une divergence, un
+conflit ou une erreur de permission reste visible et bloque la publication ;
+aucune tentative ne contourne les protections distantes.
 
 Les rulesets n'imposent ni Pull Request, ni approbation, ni required status
 check, ni merge queue. Le ruleset `main — owner-only updates` réserve toutefois

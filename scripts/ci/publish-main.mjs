@@ -43,13 +43,62 @@ function isAncestor(runGitCommand, ancestor, descendant) {
 }
 
 function isRetryablePushRace(result) {
-  return /non-fast-forward|fetch first|rejected|failed to push|stale info/i.test(
+  return /non-fast-forward|fetch first|stale info|remote contains work|tip of your current branch is behind/i.test(
     `${result.stdout}\n${result.stderr}`,
   );
 }
 
 function waitMs(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function readLocalMain(runGitCommand) {
+  return {
+    head: gitText(runGitCommand, ["rev-parse", "HEAD"]),
+    branch: gitText(runGitCommand, ["rev-parse", "refs/heads/main"]),
+  };
+}
+
+function assertCandidateIsCurrent(runGitCommand, candidateSha, phase) {
+  const local = readLocalMain(runGitCommand);
+  if (local.head !== candidateSha || local.branch !== candidateSha) {
+    throw new Error(
+      `Local main changed ${phase}; candidate ${candidateSha} is no longer current `
+        + `(HEAD=${local.head}, refs/heads/main=${local.branch}). `
+        + "Reconcile the new local commit and its validations before publishing.",
+    );
+  }
+}
+
+function assertLocalMainMatchesCandidate(runGitCommand, phase) {
+  const local = readLocalMain(runGitCommand);
+  if (local.head !== local.branch) {
+    throw new Error(
+      `Local main is not aligned ${phase}; HEAD=${local.head}, refs/heads/main=${local.branch}. `
+        + "Reconcile local refs explicitly before publishing.",
+    );
+  }
+  return local.head;
+}
+
+function reconcileRemoteFastForward(runGitCommand, candidateSha, remoteSha) {
+  assertCandidateIsCurrent(runGitCommand, candidateSha, "before remote fast-forward reconciliation");
+
+  const fastForward = runGitCommand(["merge", "--ff-only", "origin/main"]);
+  if (fastForward.status !== 0) {
+    throw new Error(
+      `Cannot fast-forward local main without overwriting local work: ${(fastForward.stderr || fastForward.stdout).trim()}`,
+    );
+  }
+
+  const reconciledSha = assertLocalMainMatchesCandidate(runGitCommand, "after remote fast-forward reconciliation");
+  if (!isAncestor(runGitCommand, candidateSha, reconciledSha) || !isAncestor(runGitCommand, remoteSha, reconciledSha)) {
+    throw new Error(
+      `Remote fast-forward reconciliation produced an unexpected local SHA ${reconciledSha}; `
+        + "resolve the refs explicitly before publishing.",
+    );
+  }
+  return reconciledSha;
 }
 
 export async function publishMain({
@@ -62,53 +111,67 @@ export async function publishMain({
   assertMain(runGitCommand);
   assertNoOperationInProgress(runGitCommand);
 
+  let candidateSha = null;
+
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const fetch = runGitCommand(["fetch", "origin", "main"]);
     if (fetch.status !== 0) {
       throw new Error(`git fetch origin main failed: ${(fetch.stderr || fetch.stdout).trim()}`);
     }
 
-    const localSha = gitText(runGitCommand, ["rev-parse", "HEAD"]);
-    const remoteSha = gitText(runGitCommand, ["rev-parse", "origin/main"]);
-    if (localSha === remoteSha) {
-      log(`main already converged at ${localSha}.`);
-      return localSha;
+    if (candidateSha === null) {
+      candidateSha = assertLocalMainMatchesCandidate(runGitCommand, "when establishing the candidate");
+    } else {
+      assertCandidateIsCurrent(runGitCommand, candidateSha, "during a bounded retry");
     }
 
-    if (!isAncestor(runGitCommand, remoteSha, localSha)) {
-      if (isAncestor(runGitCommand, localSha, remoteSha)) {
-        const fastForward = runGitCommand(["merge", "--ff-only", "origin/main"]);
-        if (fastForward.status !== 0) {
-          throw new Error(`Cannot fast-forward local main without overwriting local work: ${(fastForward.stderr || fastForward.stdout).trim()}`);
-        }
+    const remoteSha = gitText(runGitCommand, ["rev-parse", "origin/main"]);
+    if (candidateSha === remoteSha) {
+      log(`main already converged at candidate ${candidateSha}.`);
+      return candidateSha;
+    }
+
+    if (!isAncestor(runGitCommand, remoteSha, candidateSha)) {
+      if (isAncestor(runGitCommand, candidateSha, remoteSha)) {
+        candidateSha = reconcileRemoteFastForward(runGitCommand, candidateSha, remoteSha);
+        continue;
       } else {
         throw new Error("origin/main and local main diverged; resolve the non-destructive merge explicitly before publishing.");
       }
     }
 
-    const push = runGitCommand(["push", "origin", "main"]);
+    assertCandidateIsCurrent(runGitCommand, candidateSha, "immediately before push");
+    const push = runGitCommand(["push", "origin", `${candidateSha}:refs/heads/main`]);
     if (push.status === 0) {
       const verifyFetch = runGitCommand(["fetch", "origin", "main"]);
       if (verifyFetch.status !== 0) {
         throw new Error(`Post-push fetch failed: ${(verifyFetch.stderr || verifyFetch.stdout).trim()}`);
       }
+
+      assertCandidateIsCurrent(runGitCommand, candidateSha, "after push verification");
       const publishedSha = gitText(runGitCommand, ["rev-parse", "origin/main"]);
-      const currentSha = gitText(runGitCommand, ["rev-parse", "HEAD"]);
-      if (publishedSha !== currentSha) {
-        if (attempt === maxAttempts) {
-          throw new Error("origin/main advanced again after push; bounded publication retries exhausted.");
+      if (publishedSha === candidateSha) {
+        log(`Published main at candidate ${candidateSha}.`);
+        return candidateSha;
+      }
+
+      if (isAncestor(runGitCommand, candidateSha, publishedSha)) {
+        candidateSha = reconcileRemoteFastForward(runGitCommand, candidateSha, publishedSha);
+        if (candidateSha === publishedSha) {
+          log(`Published candidate ${candidateSha}; remote advanced compatibly and was reconciled explicitly.`);
+          return candidateSha;
         }
-        await sleep(backoffMs * attempt);
         continue;
       }
-      log(`Published main at ${currentSha}.`);
-      return currentSha;
+
+      throw new Error("origin/main advanced to an incompatible SHA after push; resolve the divergence explicitly before publishing.");
     }
 
     if (!isRetryablePushRace(push) || attempt === maxAttempts) {
-      throw new Error(`git push origin main failed: ${(push.stderr || push.stdout).trim()}`);
+      throw new Error(`git push candidate ${candidateSha}:refs/heads/main failed: ${(push.stderr || push.stdout).trim()}`);
     }
 
+    assertCandidateIsCurrent(runGitCommand, candidateSha, "after a concurrent push rejection");
     log(`Concurrent push detected; waiting before retry ${attempt + 1}/${maxAttempts}.`);
     await sleep(backoffMs * attempt);
   }
