@@ -77,6 +77,7 @@
     "quality:cycles": "node scripts/checks/check-cycles.mjs",
     "audit:quality": "node scripts/audits/run-quality-audit.mjs",
     "audit:modularity": "node scripts/reports/generate-modularity-radar.mjs --ref=HEAD",
+    "quality:module-test-metrics": "node scripts/reports/generate-module-test-metrics.mjs",
     "audit:modularity:write": "node scripts/reports/generate-modularity-radar.mjs --ref=HEAD --write",
     "audit:architecture": "node scripts/reports/architecture-audit.mjs --ref=HEAD",
     "audit:product-surface": "node scripts/audits/generate-product-surface-audit.mjs --ref=HEAD",
