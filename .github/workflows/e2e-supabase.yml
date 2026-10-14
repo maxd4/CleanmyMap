@@ -83,12 +83,15 @@ jobs:
           mkdir -p artifacts/ci
           start_log="artifacts/ci/supabase-start.log"
           trap 'rm -f "$start_log"' EXIT
+          start_started_at="$(date +%s)"
           npx supabase start --workdir apps/web --yes > "$start_log" 2>&1
           start_exit_code=$?
+          start_duration_seconds=$(( $(date +%s) - start_started_at ))
           diagnostic_exit_code=0
           node scripts/ci/diagnose-supabase-start.mjs \
             --log-file="$start_log" \
-            --exit-code="$start_exit_code" || diagnostic_exit_code=$?
+            --exit-code="$start_exit_code" \
+            --duration-seconds="$start_duration_seconds" || diagnostic_exit_code=$?
           if [ "$start_exit_code" -ne 0 ]; then
             exit "$start_exit_code"
           fi

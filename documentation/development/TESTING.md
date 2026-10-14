@@ -1118,6 +1118,16 @@ diagnostic et ne sont jamais téléversées. L'artefact public est construit dan
 synthétique ou une capture explicitement autorisée, jamais de `storageState`,
 cookie, trace, HAR, vidéo, header ou token.
 
+L'étape de démarrage conserve la même suppression du journal brut. En cas
+d'échec, `scripts/ci/diagnose-supabase-start.mjs` publie uniquement un
+diagnostic borné : catégorie, versions, disponibilité du daemon, codes machine
+pour les ressources Docker, les conteneurs `supabase_*`, `supabase status`, le
+contrat minimal de `apps/web/supabase/config.toml` et la durée observée. Une
+sortie `UNCLASSIFIED` reste une absence de preuve causale ; elle ne doit pas
+être transformée en cause supposée. Les codes et les tests du diagnostic sont
+la source de preuve pour enrichir la prochaine exécution sans publier de
+journal, credential, JWT, URL sensible ou configuration brute.
+
 Les commandes `supabase start`, `supabase status`, `supabase db reset` et
 `supabase stop` sont donc réservées à cette CI éphémère explicitement dédiée au
 replay ; elles ne font pas partie du workflow local.

@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import path from "node:path";
+import process from "node:process";
 import { pathToFileURL } from "node:url";
 
 export const SUPABASE_START_CATEGORIES = Object.freeze({
@@ -65,23 +67,130 @@ export function sanitizeVersion(value) {
   return match?.[0] ?? "unavailable";
 }
 
+function parseJsonObject(value) {
+  const text = String(value ?? "");
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try {
+    const parsed = JSON.parse(text.slice(start, end + 1));
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function readConfigContract(root) {
+  try {
+    const config = readFileSync(path.join(root, "apps/web/supabase/config.toml"), "utf8");
+    const projectId = config.match(/^project_id\s*=\s*"([^"]+)"\s*$/m)?.[1] ?? null;
+    const majorVersion = config.match(/^major_version\s*=\s*(\d+)\s*$/m)?.[1] ?? null;
+    const healthTimeout = config.match(/^health_timeout\s*=\s*"([^"]+)"\s*$/m)?.[1] ?? null;
+    return {
+      available: true,
+      valid: projectId === "web" && majorVersion === "17" && healthTimeout === "2m",
+    };
+  } catch {
+    return { available: false, valid: false };
+  }
+}
+
+function classifyContainerStates(output) {
+  const states = { running: 0, exited: 0, created: 0, restarting: 0, other: 0 };
+  for (const line of String(output ?? "").split(/\r?\n/).filter(Boolean)) {
+    const status = line.split("\t")[1]?.toLowerCase() ?? "";
+    if (/^up\b/.test(status)) states.running += 1;
+    else if (/^exited\b/.test(status)) states.exited += 1;
+    else if (/^created\b/.test(status)) states.created += 1;
+    else if (/^restarting\b/.test(status)) states.restarting += 1;
+    else states.other += 1;
+  }
+  return states;
+}
+
+export function collectBoundedStartEvidence({
+  log,
+  exitCode,
+  durationSeconds = null,
+  root = process.cwd(),
+  probeCommand = probe,
+}) {
+  const dockerVersion = probeCommand("docker", ["--version"]);
+  const dockerDaemon = probeCommand("docker", ["info", "--format", "{{.ServerVersion}}"]);
+  const dockerInfo = probeCommand("docker", ["info", "--format", "{{json .}}"]);
+  const dockerContainers = probeCommand("docker", ["ps", "-a", "--filter", "name=supabase_", "--format", "{{.Names}}\t{{.Status}}"]);
+  const supabaseCli = probeCommand("npx", ["--no-install", "supabase", "--version"]);
+  const supabaseStatus = probeCommand("npx", ["--no-install", "supabase", "status", "--workdir", "apps/web", "--output", "json"]);
+  const configContract = readConfigContract(root);
+  const parsedDockerInfo = parseJsonObject(dockerInfo.output);
+  const containerStates = classifyContainerStates(dockerContainers.output);
+  const containerCount = Object.values(containerStates).reduce((total, count) => total + count, 0);
+  const category = categoryForLog(log);
+  const evidenceCodes = [
+    dockerVersion.available ? "DOCKER_COMMAND_AVAILABLE" : "DOCKER_COMMAND_UNAVAILABLE",
+    dockerDaemon.available ? "DOCKER_DAEMON_AVAILABLE" : "DOCKER_DAEMON_UNAVAILABLE",
+    supabaseCli.available ? "SUPABASE_CLI_AVAILABLE" : "SUPABASE_CLI_UNAVAILABLE",
+    configContract.valid ? "SUPABASE_CONFIG_CONTRACT_VALID" : configContract.available ? "SUPABASE_CONFIG_CONTRACT_INVALID" : "SUPABASE_CONFIG_UNAVAILABLE",
+    supabaseStatus.available ? "SUPABASE_STATUS_AVAILABLE" : "SUPABASE_STATUS_UNAVAILABLE",
+    containerCount === 0 ? "NO_SUPABASE_CONTAINERS" : "SUPABASE_CONTAINERS_PRESENT",
+    parsedDockerInfo ? "DOCKER_RESOURCES_OBSERVED" : "DOCKER_RESOURCES_UNAVAILABLE",
+    category === SUPABASE_START_CATEGORIES.UNCLASSIFIED ? "NO_CLASSIFIABLE_START_LOG_SIGNAL" : `LOG_SIGNAL_${category}`,
+  ];
+  if (exitCode !== 0) evidenceCodes.push("NONZERO_START_EXIT");
+  if (Number.isFinite(durationSeconds) && durationSeconds >= 80) evidenceCodes.push("START_DURATION_OVER_80_SECONDS");
+
+  return {
+    schemaVersion: 1,
+    evidenceCodes: [...new Set(evidenceCodes)].sort(),
+    dockerCommandAvailable: dockerVersion.available,
+    dockerDaemonAvailable: dockerDaemon.available,
+    supabaseCliAvailable: supabaseCli.available,
+    dockerServerVersion: sanitizeVersion(dockerDaemon.output),
+    supabaseCliVersion: sanitizeVersion(supabaseCli.output),
+    dockerContainers: containerCount,
+    dockerContainerStates: containerStates,
+    dockerCpuCount: Number.isSafeInteger(parsedDockerInfo?.NCPU) ? parsedDockerInfo.NCPU : null,
+    dockerMemoryBytes: Number.isSafeInteger(parsedDockerInfo?.MemTotal) ? parsedDockerInfo.MemTotal : null,
+    supabaseStatus: supabaseStatus.available ? "available" : "unavailable",
+    configContract: configContract.valid ? "valid" : configContract.available ? "invalid" : "unavailable",
+    durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : null,
+  };
+}
+
+function categoryForLog(log) {
+  return classifySupabaseStartFailure({ log, exitCode: 1 });
+}
+
 export function renderSupabaseStartDiagnostic({
   category,
   exitCode,
   dockerVersion,
   supabaseCliVersion,
   dockerDaemonAvailable,
+  evidence,
 }) {
   const result = exitCode === 0 ? "success" : "failure";
   const daemon = dockerDaemonAvailable ? "available" : "unavailable";
-  return [
+  const lines = [
     "Supabase start diagnostic (bounded; raw log withheld):",
     `result=${result} exit_code=${exitCode}`,
     `category=${category}`,
     `docker_version=${sanitizeVersion(dockerVersion)}`,
     `supabase_cli_version=${sanitizeVersion(supabaseCliVersion)}`,
     `docker_daemon=${daemon}`,
-  ].join("\n");
+  ];
+  if (evidence) {
+    lines.push(`evidence_schema_version=${evidence.schemaVersion}`);
+    lines.push(`evidence_codes=${evidence.evidenceCodes.join(",")}`);
+    lines.push(`docker_containers=${evidence.dockerContainers}`);
+    lines.push(`docker_container_states=${Object.entries(evidence.dockerContainerStates).map(([state, count]) => `${state}:${count}`).join(",")}`);
+    lines.push(`docker_cpu_count=${evidence.dockerCpuCount ?? "unavailable"}`);
+    lines.push(`docker_memory_bytes=${evidence.dockerMemoryBytes ?? "unavailable"}`);
+    lines.push(`supabase_status=${evidence.supabaseStatus}`);
+    lines.push(`config_contract=${evidence.configContract}`);
+    lines.push(`duration_seconds=${evidence.durationSeconds ?? "unavailable"}`);
+  }
+  return lines.join("\n");
 }
 
 function probe(command, args) {
@@ -107,30 +216,31 @@ function readArgument(name) {
 function main() {
   const logFile = readArgument("--log-file");
   const exitCodeValue = readArgument("--exit-code");
+  const durationValue = readArgument("--duration-seconds");
   const exitCode = Number.parseInt(exitCodeValue ?? "", 10);
+  const durationSeconds = durationValue === undefined ? null : Number.parseInt(durationValue, 10);
 
-  if (!logFile || !Number.isInteger(exitCode) || exitCode < 0) {
+  if (!logFile || !Number.isInteger(exitCode) || exitCode < 0 || (durationValue !== undefined && (!Number.isInteger(durationSeconds) || durationSeconds < 0))) {
     throw new Error("Supabase start diagnostic requires --log-file and a non-negative --exit-code.");
   }
 
   const log = readFileSync(logFile, "utf8");
-  const dockerVersion = probe("docker", ["--version"]);
-  const dockerDaemon = probe("docker", ["info", "--format", "{{.ServerVersion}}"]);
-  const supabaseCli = probe("npx", ["--no-install", "supabase", "--version"]);
+  const evidence = collectBoundedStartEvidence({ log, exitCode, durationSeconds });
   const category = classifySupabaseStartFailure({
     log,
     exitCode,
-    dockerCommandAvailable: dockerVersion.available,
-    dockerDaemonAvailable: dockerDaemon.available,
-    supabaseCliAvailable: supabaseCli.available,
+    dockerCommandAvailable: evidence.dockerCommandAvailable,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    supabaseCliAvailable: evidence.supabaseCliAvailable,
   });
 
   process.stdout.write(renderSupabaseStartDiagnostic({
     category,
     exitCode,
-    dockerVersion: dockerVersion.output,
-    supabaseCliVersion: supabaseCli.output,
-    dockerDaemonAvailable: dockerDaemon.available,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.evidenceCodes.includes("DOCKER_DAEMON_AVAILABLE"),
+    evidence,
   }) + "\n");
 }
 
