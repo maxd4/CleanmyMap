@@ -39,7 +39,17 @@ test.describe("SPOGOMI public navigation", () => {
     const response = await page.goto("/spogomi");
     expect(response?.status()).toBe(200);
     const rejectCookies = page.getByRole("button", { name: "Tout refuser" });
-    if (await rejectCookies.isVisible()) await rejectCookies.click();
+    let cookiePromptVisible = false;
+    try {
+      await rejectCookies.waitFor({ state: "visible", timeout: 5_000 });
+      cookiePromptVisible = true;
+    } catch {
+      cookiePromptVisible = false;
+    }
+    if (cookiePromptVisible) {
+      await rejectCookies.click();
+      await expect(rejectCookies).toBeHidden();
+    }
 
     await expect(page.getByRole("heading", { name: "Comprendre SPOGOMI", exact: true })).toBeVisible();
     await expect(page.locator("details")).toHaveCount(6);
@@ -68,7 +78,7 @@ test.describe("SPOGOMI public navigation", () => {
     const events = eventsCard.locator("details").first();
     await events.locator("summary").click();
     await expect(page.getByLabel("Année")).toBeVisible();
-    await page.getByLabel("Année").selectOption("2026");
-    await expect(events).toContainText("Aucun événement externe vérifié pour ces filtres.");
+    await page.getByLabel("Année").selectOption("2027");
+    await expect(events).toContainText("SPOGOMI World Cup 2027");
   });
 });
