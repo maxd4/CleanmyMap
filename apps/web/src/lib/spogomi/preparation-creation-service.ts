@@ -38,16 +38,6 @@ type CreationEvent = Record<string, unknown> & {
   idempotency_key: string | null;
 };
 
-type CreationAction = Record<string, unknown> & {
-  id: string;
-  created_by_clerk_id: string;
-  action_date: string | null;
-  location_label: string | null;
-  event_start_time: string | null;
-  event_end_time: string | null;
-  preparation_data: Record<string, unknown> | null;
-};
-
 function actionIdentity(identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>): ActionPermissionIdentity {
   return { userId: identity?.userId ?? "", role: identity?.role ?? null, activeRole: identity?.activeRole ?? null };
 }
@@ -88,18 +78,44 @@ function legacyCreationFingerprint(input: CreationInput, casualTeamSize: number 
   })).digest("hex");
 }
 
-function eventCasualTeamSize(event: Record<string, unknown>): number | null {
-  const teamSizeConfig = event.team_size_config as { casual?: { maxMembers?: number | null } } | null;
-  return teamSizeConfig?.casual?.maxMembers ?? null;
+type CreationFingerprintProof = {
+  fingerprint: string;
+  source: "current" | "legacy";
+  casualTeamSize?: number | null;
+};
+
+function legacyTeamSizes(): Array<number | null> {
+  return [null, ...Array.from({ length: 20 }, (_, index) => index + 1)];
+}
+
+function fingerprintProof(input: CreationInput, fingerprint: string): CreationFingerprintProof | null {
+  if (fingerprint === creationFingerprint(input)) return { fingerprint, source: "current" };
+  for (const casualTeamSize of legacyTeamSizes()) {
+    if (fingerprint === legacyCreationFingerprint(input, casualTeamSize)) {
+      return { fingerprint, source: "legacy", casualTeamSize };
+    }
+  }
+  return null;
+}
+
+function mergeFingerprintProofs(proofs: readonly CreationFingerprintProof[]): CreationFingerprintProof | null {
+  const legacyProofs = proofs.filter((proof) => proof.source === "legacy");
+  const legacySizes = new Set(legacyProofs.map((proof) => proof.casualTeamSize));
+  if (legacySizes.size > 1) throw conflict("les empreintes historiques portent des paramètres réglementaires différents.");
+  return legacyProofs[0] ?? proofs[0] ?? null;
 }
 
 function eventMatchesInput(event: Record<string, unknown>, input: CreationInput): boolean {
   const canonical = canonicalCreationInput(input);
-  return event.name === canonical.name &&
-    event.location_label === canonical.locationLabel &&
-    event.mode === canonical.mode &&
-    new Date(String(event.starts_at)).toISOString() === canonical.startsAt &&
-    (event.ends_at ? new Date(String(event.ends_at)).toISOString() : null) === canonical.endsAt;
+  try {
+    return event.name === canonical.name &&
+      event.location_label === canonical.locationLabel &&
+      event.mode === canonical.mode &&
+      new Date(String(event.starts_at)).toISOString() === canonical.startsAt &&
+      (event.ends_at ? new Date(String(event.ends_at)).toISOString() : null) === canonical.endsAt;
+  } catch {
+    return false;
+  }
 }
 
 async function loadEventById(supabase: SupabaseClient, eventId: string) {
@@ -122,41 +138,15 @@ async function ensureParentDivisions(supabase: SupabaseClient, event: CreationEv
   if (result.error) throw result.error;
 }
 
-async function loadActionForCreation(supabase: SupabaseClient, actionId: string): Promise<CreationAction | null> {
-  const result = await supabase
-    .from("actions")
-    .select("id, created_by_clerk_id, action_date, location_label, event_start_time, event_end_time, preparation_data")
-    .eq("id", actionId)
-    .maybeSingle();
-  if (result.error) throw result.error;
-  return result.data as CreationAction | null;
-}
-
-function storedDateMatches(value: string | null, expected: string): boolean {
-  if (!value) return false;
-  if (value === expected) return true;
-  const parsed = new Date(value);
-  if (!Number.isNaN(parsed.valueOf()) && parsed.toISOString() === expected) return true;
-  return value.slice(0, 5) === expected.slice(11, 16);
-}
-
-function actionMatchesCreationInput(action: CreationAction, input: CreationInput): boolean {
-  const canonical = canonicalCreationInput(input);
-  return action.location_label === canonical.locationLabel &&
-    action.action_date === canonical.startsAt.slice(0, 10) &&
-    storedDateMatches(action.event_start_time, canonical.startsAt) &&
-    (canonical.endsAt === null ? !action.event_end_time : storedDateMatches(action.event_end_time, canonical.endsAt));
-}
-
 async function assertActionOwnership(
   supabase: SupabaseClient,
   actionId: string,
   userId: string,
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
+  input: CreationInput,
   expectedKey: string,
-  expectedFingerprint: string,
-  compatibleFingerprints: readonly string[] = [],
-) {
+  knownProofs: readonly CreationFingerprintProof[] = [],
+): Promise<CreationFingerprintProof> {
   const action = await supabase.from("actions").select("id, created_by_clerk_id, preparation_data").eq("id", actionId).maybeSingle();
   if (action.error) throw action.error;
   if (!action.data || action.data.created_by_clerk_id !== userId) throw conflict("la tentative de création n'appartient pas à cet organisateur.");
@@ -164,15 +154,19 @@ async function assertActionOwnership(
   if (preparationData.spogomiCreationKey && preparationData.spogomiCreationKey !== expectedKey) {
     throw conflict("la relation action-événement est incohérente.");
   }
-  if (preparationData.spogomiCreationFingerprint &&
-      preparationData.spogomiCreationFingerprint !== expectedFingerprint &&
-      !compatibleFingerprints.includes(String(preparationData.spogomiCreationFingerprint))) {
-    throw conflict("la clé d'idempotence a reçu des paramètres différents.");
+  const actionProof = preparationData.spogomiCreationFingerprint
+    ? fingerprintProof(input, String(preparationData.spogomiCreationFingerprint))
+    : null;
+  if (preparationData.spogomiCreationFingerprint && !actionProof) {
+    throw conflict("l'empreinte historique de l'action est inconnue.");
   }
+  const proof = mergeFingerprintProofs([...knownProofs, ...(actionProof ? [actionProof] : [])]);
+  if (!proof) throw conflict("la relation action-événement ne porte pas une empreinte complète.");
   const organizers = await supabase.from("action_organizers").select("organizer_clerk_id").eq("action_id", actionId);
   if (organizers.error) throw organizers.error;
   const manageable = canManageAction(actionIdentity(identity), { createdByClerkId: userId }, (organizers.data ?? []).map((row) => String(row.organizer_clerk_id)));
   if (!manageable) throw conflict("l'action canonique n'est pas gérée par cet organisateur.");
+  return proof;
 }
 
 async function assertEventIntegrity(
@@ -181,22 +175,20 @@ async function assertEventIntegrity(
   input: CreationInput,
   userId: string,
   actionId: string,
-  fingerprint: string,
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
-  compatibleFingerprints: readonly string[] = [],
-) {
+  knownProofs: readonly CreationFingerprintProof[] = [],
+): Promise<CreationFingerprintProof> {
   if (event.created_by_clerk_id !== userId || event.idempotency_key !== input.idempotencyKey || event.action_id !== actionId || !eventMatchesInput(event, input)) {
     throw conflict("la clé d'idempotence a reçu des paramètres ou des relations différents.");
   }
-  const legacyFingerprint = legacyCreationFingerprint(input, eventCasualTeamSize(event));
-  await assertActionOwnership(
+  return assertActionOwnership(
     supabase,
     actionId,
     userId,
     identity,
+    input,
     input.idempotencyKey,
-    fingerprint,
-    [...compatibleFingerprints, legacyFingerprint],
+    knownProofs,
   );
 }
 
@@ -204,42 +196,46 @@ async function ensureAttemptFingerprint(
   supabase: SupabaseClient,
   attempt: CreationAttempt,
   input: CreationInput,
+  userId: string,
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
   fingerprint: string,
-): Promise<string | null> {
-  if (attempt.intention_fingerprint) {
-    if (attempt.intention_fingerprint === fingerprint) return null;
-    const event = attempt.event_id
-      ? await loadEventById(supabase, attempt.event_id)
-      : await loadEventByKey(supabase, input.idempotencyKey);
-    const legacyFingerprint = event ? legacyCreationFingerprint(input, eventCasualTeamSize(event)) : null;
-    if (!event || !eventMatchesInput(event, input) || legacyFingerprint !== attempt.intention_fingerprint) {
-      throw conflict("la clé d'idempotence a reçu des paramètres différents.");
-    }
-    const fingerprinted = await supabase
+): Promise<CreationFingerprintProof> {
+  const attemptProof = attempt.intention_fingerprint
+    ? fingerprintProof(input, attempt.intention_fingerprint)
+    : null;
+  if (attempt.intention_fingerprint && !attemptProof) throw conflict("la clé d'idempotence a reçu une empreinte historique inconnue.");
+
+  const event = attempt.event_id
+    ? await loadEventById(supabase, attempt.event_id)
+    : await loadEventByKey(supabase, input.idempotencyKey);
+  if (event && (!eventMatchesInput(event, input) || event.created_by_clerk_id !== userId || event.idempotency_key !== input.idempotencyKey)) {
+    throw conflict("la clé d'idempotence a reçu des paramètres ou des relations différents.");
+  }
+  if (event && attempt.action_id && event.action_id !== attempt.action_id) {
+    throw conflict("la relation tentative-action-événement est incohérente.");
+  }
+
+  const actionId = attempt.action_id ?? event?.action_id ?? await findCorrelatedActionId(supabase, input.idempotencyKey);
+  const proofs = attemptProof ? [attemptProof] : [];
+  const actionProof = actionId
+    ? await assertActionOwnership(supabase, String(actionId), userId, identity, input, input.idempotencyKey, proofs)
+    : null;
+  const proof = mergeFingerprintProofs(actionProof ? [...proofs, actionProof] : proofs);
+  if (!proof) throw conflict("une ancienne tentative sans empreinte complète ne peut pas être vérifiée.");
+
+  if (attempt.intention_fingerprint !== fingerprint) {
+    let fingerprintUpdate = supabase
       .from("spogomi_event_creation_attempts")
       .update({ intention_fingerprint: fingerprint })
-      .eq("id", attempt.id)
-      .eq("intention_fingerprint", attempt.intention_fingerprint);
+      .eq("id", attempt.id);
+    fingerprintUpdate = attempt.intention_fingerprint
+      ? fingerprintUpdate.eq("intention_fingerprint", attempt.intention_fingerprint)
+      : fingerprintUpdate.is("intention_fingerprint", null);
+    const fingerprinted = await fingerprintUpdate.select("*").maybeSingle();
     if (fingerprinted.error) throw fingerprinted.error;
-    return legacyFingerprint;
+    if (!fingerprinted.data) throw conflict("la tentative a été modifiée pendant sa reprise.");
   }
-  if (!attempt.event_id && attempt.action_id) {
-    const action = await loadActionForCreation(supabase, attempt.action_id);
-    const preparationData = action?.preparation_data ?? {};
-    if (
-      action?.created_by_clerk_id === attempt.created_by_clerk_id &&
-      preparationData.spogomiCreationKey === input.idempotencyKey &&
-      actionMatchesCreationInput(action, input)
-    ) {
-      return null;
-    }
-  }
-  if (!attempt.event_id) throw conflict("une ancienne tentative sans empreinte doit être reprise avec une nouvelle clé.");
-  const event = await loadEventById(supabase, attempt.event_id);
-  if (!event || !eventMatchesInput(event, input)) throw conflict("la clé d'idempotence ne peut pas être vérifiée.");
-  const fingerprinted = await supabase.from("spogomi_event_creation_attempts").update({ intention_fingerprint: fingerprint }).eq("id", attempt.id).is("intention_fingerprint", null);
-  if (fingerprinted.error) throw fingerprinted.error;
-  return null;
+  return proof;
 }
 
 async function reclaimCreationAttempt(
@@ -247,11 +243,12 @@ async function reclaimCreationAttempt(
   attempt: CreationAttempt,
   input: CreationInput,
   userId: string,
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
   fingerprint: string,
   token: string,
-): Promise<{ attempt: CreationAttempt; token: string; legacyFingerprint?: string }> {
+): Promise<{ attempt: CreationAttempt; token: string; proof: CreationFingerprintProof }> {
   if (attempt.created_by_clerk_id !== userId) throw conflict("la clé d'idempotence est déjà utilisée.");
-  const legacyFingerprint = await ensureAttemptFingerprint(supabase, attempt, input, fingerprint);
+  const proof = await ensureAttemptFingerprint(supabase, attempt, input, userId, identity, fingerprint);
   const activeSince = attempt.processing_started_at ? Date.parse(attempt.processing_started_at) : 0;
   if (attempt.processing_token && activeSince > Date.now() - CREATION_LEASE_MS) throw conflict("une création est déjà en cours pour cette clé.");
   const reclaimed = await supabase.from("spogomi_event_creation_attempts").update({
@@ -262,7 +259,7 @@ async function reclaimCreationAttempt(
   }).eq("id", attempt.id).or(`processing_started_at.is.null,processing_started_at.lt.${new Date(Date.now() - CREATION_LEASE_MS).toISOString()}`).select("*").maybeSingle();
   if (reclaimed.error) throw reclaimed.error;
   if (!reclaimed.data) throw conflict("une création concurrente est en cours pour cette clé.");
-  return { attempt: reclaimed.data as CreationAttempt, token, ...(legacyFingerprint ? { legacyFingerprint } : {}) };
+  return { attempt: reclaimed.data as CreationAttempt, token, proof };
 }
 
 async function claimCreationAttempt(
@@ -270,7 +267,7 @@ async function claimCreationAttempt(
   input: CreationInput,
   userId: string,
   fingerprint: string,
-): Promise<{ attempt: CreationAttempt; token: string; legacyFingerprint?: string }> {
+): Promise<{ attempt: CreationAttempt; token: string; proof: CreationFingerprintProof }> {
   const token = randomUUID();
   const inserted = await supabase.from("spogomi_event_creation_attempts").insert({
     idempotency_key: input.idempotencyKey,
@@ -280,12 +277,14 @@ async function claimCreationAttempt(
     processing_token: token,
     processing_started_at: new Date().toISOString(),
   }).select("*").maybeSingle();
-  if (!inserted.error && inserted.data) return { attempt: inserted.data as CreationAttempt, token };
+  if (!inserted.error && inserted.data) return { attempt: inserted.data as CreationAttempt, token, proof: { fingerprint, source: "current" } };
   if (inserted.error?.code !== "23505") throw inserted.error;
   const existing = await supabase.from("spogomi_event_creation_attempts").select("*").eq("idempotency_key", input.idempotencyKey).maybeSingle();
   if (existing.error) throw existing.error;
   if (!existing.data) throw conflict("la réservation de création n'est plus disponible.");
-  return reclaimCreationAttempt(supabase, existing.data as CreationAttempt, input, userId, fingerprint, token);
+  const identity = await getCurrentUserIdentity();
+  if (!identity || identity.userId !== userId) throw new Error("Unauthorized");
+  return reclaimCreationAttempt(supabase, existing.data as CreationAttempt, input, userId, identity, fingerprint, token);
 }
 
 async function updateCreationAttempt(supabase: SupabaseClient, attemptId: string, token: string, values: Record<string, unknown>) {
@@ -310,10 +309,10 @@ async function createSpogomiAction(params: {
   input: CreationInput;
   userId: string;
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
-  fingerprint: string;
+  proof: CreationFingerprintProof;
   canonical: ReturnType<typeof canonicalCreationInput>;
 }): Promise<string> {
-  const { supabase, input, userId, identity, fingerprint, canonical } = params;
+  const { supabase, input, userId, identity, proof, canonical } = params;
   const displayName = identity?.displayName ?? userId;
   const created = await createAction(supabase, {
     userId,
@@ -322,7 +321,7 @@ async function createSpogomiAction(params: {
       actionDate: canonical.startsAt.slice(0, 10),
       locationLabel: canonical.locationLabel,
       actionPhase: "pre_action",
-      preparationData: { interventionMode: createActionInterventionMode("fixed_area"), spogomiCreationKey: input.idempotencyKey, spogomiCreationFingerprint: fingerprint },
+      preparationData: { interventionMode: createActionInterventionMode("fixed_area"), spogomiCreationKey: input.idempotencyKey, spogomiCreationFingerprint: proof.fingerprint },
       wasteKg: null, cigaretteButts: null, volunteersCount: 0, durationMinutes: 0,
       eventStartTime: canonical.startsAt, eventEndTime: canonical.endsAt, organizerType: null, organizerName: null,
     },
@@ -340,18 +339,22 @@ async function ensureActionForAttempt(params: {
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
   attempt: CreationAttempt;
   token: string;
-  fingerprint: string;
   canonical: ReturnType<typeof canonicalCreationInput>;
-  legacyFingerprint?: string;
-}): Promise<string> {
-  const { supabase, input, userId, identity, attempt, token, fingerprint, canonical, legacyFingerprint } = params;
+  proof: CreationFingerprintProof;
+}): Promise<{ actionId: string; proof: CreationFingerprintProof }> {
+  const { supabase, input, userId, identity, attempt, token, canonical, proof: attemptProof } = params;
+  const relatedEvent = attempt.event_id
+    ? await loadEventById(supabase, String(attempt.event_id))
+    : await loadEventByKey(supabase, input.idempotencyKey);
   const actionId = attempt.action_id
     ? String(attempt.action_id)
-    : await findCorrelatedActionId(supabase, input.idempotencyKey)
-      ?? await createSpogomiAction({ supabase, input, userId, identity, fingerprint, canonical });
-  await assertActionOwnership(supabase, actionId, userId, identity, input.idempotencyKey, fingerprint, legacyFingerprint ? [legacyFingerprint] : []);
+    : relatedEvent?.action_id
+      ? String(relatedEvent.action_id)
+      : await findCorrelatedActionId(supabase, input.idempotencyKey)
+        ?? await createSpogomiAction({ supabase, input, userId, identity, proof: attemptProof, canonical });
+  const proof = await assertActionOwnership(supabase, actionId, userId, identity, input, input.idempotencyKey, [attemptProof]);
   if (!attempt.action_id) await updateCreationAttempt(supabase, attempt.id, token, { action_id: actionId, state: "event_pending" });
-  return actionId;
+  return { actionId, proof };
 }
 
 async function ensureEventForAction(params: {
@@ -361,14 +364,13 @@ async function ensureEventForAction(params: {
   actionId: string;
   attempt: CreationAttempt;
   identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
-  fingerprint: string;
   canonical: ReturnType<typeof canonicalCreationInput>;
-  legacyFingerprint?: string;
+  proof: CreationFingerprintProof;
 }): Promise<CreationEvent> {
-  const { supabase, input, userId, actionId, attempt, identity, fingerprint, canonical, legacyFingerprint } = params;
+  const { supabase, input, userId, actionId, attempt, identity, canonical, proof } = params;
   let event = attempt.event_id ? await loadEventById(supabase, String(attempt.event_id)) : await loadEventByKey(supabase, input.idempotencyKey);
   if (event) {
-    await assertEventIntegrity(supabase, event, input, userId, actionId, fingerprint, identity, legacyFingerprint ? [legacyFingerprint] : []);
+    await assertEventIntegrity(supabase, event, input, userId, actionId, identity, [proof]);
     await ensureParentDivisions(supabase, event);
     return event;
   }
@@ -378,6 +380,7 @@ async function ensureEventForAction(params: {
     action_id: actionId, created_by_clerk_id: userId, idempotency_key: input.idempotencyKey,
     name: canonical.name, location_label: canonical.locationLabel, mode: canonical.mode,
     starts_at: canonical.startsAt, ends_at: canonical.endsAt,
+    ...(proof.source === "legacy" ? { team_size_config: { casual: { minMembers: proof.casualTeamSize ?? null, maxMembers: proof.casualTeamSize ?? null } } } : {}),
     regulation_version: "pending-official-regulation", regulation_status: "incomplete", creation_state: "event_pending",
     event_slug: baseSlug, public_visibility: "private" as const,
   };
@@ -408,20 +411,20 @@ export async function createSpogomiEvent(params: { supabase: SupabaseClient; use
   if (existing.data?.event_id && existing.data.state === "ready") {
     const event = await loadEventById(supabase, String(existing.data.event_id));
     if (!event) throw conflict("l'événement lié à la tentative est introuvable.");
-    const legacyFingerprint = await ensureAttemptFingerprint(supabase, existing.data as CreationAttempt, input, fingerprint);
-    await assertEventIntegrity(supabase, event, input, userId, event.action_id, fingerprint, identity, legacyFingerprint ? [legacyFingerprint] : []);
+    const proof = await ensureAttemptFingerprint(supabase, existing.data as CreationAttempt, input, userId, identity, fingerprint);
+    await assertEventIntegrity(supabase, event, input, userId, event.action_id, identity, [proof]);
     return { eventId: event.id, actionId: event.action_id };
   }
 
-  const { attempt, token, legacyFingerprint } = await claimCreationAttempt(supabase, input, userId, fingerprint);
+  const { attempt, token, proof } = await claimCreationAttempt(supabase, input, userId, fingerprint);
   try {
-    const actionId = await ensureActionForAttempt({ supabase, input, userId, identity, attempt, token, fingerprint, canonical, legacyFingerprint });
-    const event = await ensureEventForAction({ supabase, input, userId, actionId, attempt, identity, fingerprint, canonical, legacyFingerprint });
-    await assertEventIntegrity(supabase, event, input, userId, actionId, fingerprint, identity, legacyFingerprint ? [legacyFingerprint] : []);
-    const eventReady = await supabase.from("spogomi_events").update({ creation_state: "ready" }).eq("id", event.id).eq("action_id", actionId);
+    const action = await ensureActionForAttempt({ supabase, input, userId, identity, attempt, token, canonical, proof });
+    const event = await ensureEventForAction({ supabase, input, userId, actionId: action.actionId, attempt, identity, canonical, proof: action.proof });
+    await assertEventIntegrity(supabase, event, input, userId, action.actionId, identity, [action.proof]);
+    const eventReady = await supabase.from("spogomi_events").update({ creation_state: "ready" }).eq("id", event.id).eq("action_id", action.actionId);
     if (eventReady.error) throw eventReady.error;
-    await updateCreationAttempt(supabase, attempt.id, token, { event_id: event.id, action_id: actionId, state: "ready", last_error_code: null, processing_token: null, processing_started_at: null });
-    return { eventId: event.id, actionId };
+    await updateCreationAttempt(supabase, attempt.id, token, { event_id: event.id, action_id: action.actionId, state: "ready", last_error_code: null, processing_token: null, processing_started_at: null });
+    return { eventId: event.id, actionId: action.actionId };
   } catch (error) {
     await supabase.from("spogomi_event_creation_attempts").update({ state: "failed_recoverable", last_error_code: error instanceof Error ? error.name : "creation_failed", processing_token: null, processing_started_at: null }).eq("id", attempt.id).eq("processing_token", token);
     throw error;

@@ -373,8 +373,15 @@ La préparation privée est désormais portée par `/spogomi/[eventSlug]/gestion
   transporte aucun `casualTeamSize` et initialise la configuration réglementaire
   vide ; les bornes nécessaires sont définies dans la préparation avant la
   composition. Les tentatives historiques qui contiennent encore cette donnée
-  restent reprenables avec leur même clé, sans modifier la configuration déjà
-  enregistrée ;
+  restent reprenables avec leur même clé : l'ancienne empreinte est reconstruite
+  dans son ordre canonique, uniquement pour `null` ou une valeur entière de `1`
+  à `20`. Une empreinte complète portée par la tentative ou l'action est exigée ;
+  des dates, un lieu, un nom ou une clé seuls ne constituent jamais une preuve.
+  La taille historique prouvée ne restaure une configuration que lors de la
+  première création de l'événement ; une configuration déjà existante, même
+  modifiée depuis, n'est jamais réinterprétée ni écrasée. La normalisation vers
+  l'empreinte courante reste protégée par le prédicat de concurrence de la
+  tentative et le lease de reprise ;
 - les dates de création viennent exclusivement de la saisie : une date passée,
   future ou une période qui traverse le présent est valide si les dates sont
   interprétables et que la fin, lorsqu'elle existe, n'est pas antérieure au

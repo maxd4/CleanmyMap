@@ -16,8 +16,8 @@ describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
     expect(creationService).toContain("processing_token");
     expect(creationService).not.toContain('from("spogomi_event_creation_attempts").upsert');
     expect(creationService).not.toContain("canonical.casualTeamSize");
-    expect(creationService).not.toContain("team_size_config: { casual:");
     expect(creationService).toContain("legacyCreationFingerprint");
+    expect(creationService).toContain('proof.source === "legacy"');
     expect(creationService).toContain('public_visibility: "private"');
   });
 
