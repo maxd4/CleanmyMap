@@ -39,6 +39,7 @@ const categoryPatterns = [
 ];
 
 const dockerUnavailablePattern = /(cannot connect to the docker daemon|is the docker daemon running|docker daemon.*(not running|unavailable)|docker command not found|error during connect)/i;
+const containerStateNames = Object.freeze(["running", "exited", "created", "restarting", "other"]);
 
 export function classifySupabaseStartFailure({
   log,
@@ -96,7 +97,7 @@ function readConfigContract(root) {
 }
 
 function classifyContainerStates(output) {
-  const states = { running: 0, exited: 0, created: 0, restarting: 0, other: 0 };
+  const states = Object.fromEntries(containerStateNames.map((state) => [state, 0]));
   for (const line of String(output ?? "").split(/\r?\n/).filter(Boolean)) {
     const status = line.split("\t")[1]?.toLowerCase() ?? "";
     if (/^up\b/.test(status)) states.running += 1;
@@ -106,6 +107,10 @@ function classifyContainerStates(output) {
     else states.other += 1;
   }
   return states;
+}
+
+function unavailableContainerStates() {
+  return Object.fromEntries(containerStateNames.map((state) => [state, "unavailable"]));
 }
 
 export function collectBoundedStartEvidence({
@@ -123,18 +128,21 @@ export function collectBoundedStartEvidence({
   const supabaseStatus = probeCommand("npx", ["--no-install", "supabase", "status", "--workdir", "apps/web", "--output", "json"]);
   const configContract = readConfigContract(root);
   const parsedDockerInfo = parseJsonObject(dockerInfo.output);
-  const containerStates = classifyContainerStates(dockerContainers.output);
-  const containerCount = Object.values(containerStates).reduce((total, count) => total + count, 0);
-  const category = categoryForLog(log);
+  const containerInspectionAvailable = dockerContainers.available;
+  const containerStates = containerInspectionAvailable ? classifyContainerStates(dockerContainers.output) : unavailableContainerStates();
+  const containerCount = containerInspectionAvailable
+    ? Object.values(containerStates).reduce((total, count) => total + count, 0)
+    : null;
+  const category = categoryForLog(log, exitCode);
   const evidenceCodes = [
     dockerVersion.available ? "DOCKER_COMMAND_AVAILABLE" : "DOCKER_COMMAND_UNAVAILABLE",
     dockerDaemon.available ? "DOCKER_DAEMON_AVAILABLE" : "DOCKER_DAEMON_UNAVAILABLE",
     supabaseCli.available ? "SUPABASE_CLI_AVAILABLE" : "SUPABASE_CLI_UNAVAILABLE",
     configContract.valid ? "SUPABASE_CONFIG_CONTRACT_VALID" : configContract.available ? "SUPABASE_CONFIG_CONTRACT_INVALID" : "SUPABASE_CONFIG_UNAVAILABLE",
     supabaseStatus.available ? "SUPABASE_STATUS_AVAILABLE" : "SUPABASE_STATUS_UNAVAILABLE",
-    containerCount === 0 ? "NO_SUPABASE_CONTAINERS" : "SUPABASE_CONTAINERS_PRESENT",
+    containerCount === null ? "SUPABASE_CONTAINERS_UNOBSERVED" : containerCount === 0 ? "NO_SUPABASE_CONTAINERS" : "SUPABASE_CONTAINERS_PRESENT",
     parsedDockerInfo ? "DOCKER_RESOURCES_OBSERVED" : "DOCKER_RESOURCES_UNAVAILABLE",
-    category === SUPABASE_START_CATEGORIES.UNCLASSIFIED ? "NO_CLASSIFIABLE_START_LOG_SIGNAL" : `LOG_SIGNAL_${category}`,
+    category === SUPABASE_START_CATEGORIES.UNCLASSIFIED ? "NO_CLASSIFIABLE_START_LOG_SIGNAL" : category === SUPABASE_START_CATEGORIES.START_SUCCEEDED ? "START_SUCCEEDED" : `LOG_SIGNAL_${category}`,
   ];
   if (exitCode !== 0) evidenceCodes.push("NONZERO_START_EXIT");
   if (Number.isFinite(durationSeconds) && durationSeconds >= 80) evidenceCodes.push("START_DURATION_OVER_80_SECONDS");
@@ -157,8 +165,8 @@ export function collectBoundedStartEvidence({
   };
 }
 
-function categoryForLog(log) {
-  return classifySupabaseStartFailure({ log, exitCode: 1 });
+function categoryForLog(log, exitCode) {
+  return classifySupabaseStartFailure({ log, exitCode });
 }
 
 export function renderSupabaseStartDiagnostic({
@@ -182,7 +190,7 @@ export function renderSupabaseStartDiagnostic({
   if (evidence) {
     lines.push(`evidence_schema_version=${evidence.schemaVersion}`);
     lines.push(`evidence_codes=${evidence.evidenceCodes.join(",")}`);
-    lines.push(`docker_containers=${evidence.dockerContainers}`);
+    lines.push(`docker_containers=${evidence.dockerContainers ?? "unavailable"}`);
     lines.push(`docker_container_states=${Object.entries(evidence.dockerContainerStates).map(([state, count]) => `${state}:${count}`).join(",")}`);
     lines.push(`docker_cpu_count=${evidence.dockerCpuCount ?? "unavailable"}`);
     lines.push(`docker_memory_bytes=${evidence.dockerMemoryBytes ?? "unavailable"}`);

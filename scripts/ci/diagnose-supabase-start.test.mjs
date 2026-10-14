@@ -11,6 +11,19 @@ import {
 } from "./diagnose-supabase-start.mjs";
 
 const workflow = readFileSync(resolve(".github", "workflows", "e2e-supabase.yml"), "utf8");
+const dockerContainersCommand = "docker ps -a --filter name=supabase_ --format {{.Names}}\t{{.Status}}";
+
+function createProbeCommand({ dockerContainers = { available: true, output: "" } } = {}) {
+  const probeOutputs = new Map([
+    ["docker --version", { available: true, output: "Docker version 28.0.4" }],
+    ["docker info --format {{.ServerVersion}}", { available: true, output: "28.0.4" }],
+    ["docker info --format {{json .}}", { available: true, output: JSON.stringify({ NCPU: 4, MemTotal: 8_000_000_000 }) }],
+    [dockerContainersCommand, dockerContainers],
+    ["npx --no-install supabase --version", { available: true, output: "2.117.0" }],
+    ["npx --no-install supabase status --workdir apps/web --output json", { available: false, output: "status unavailable" }],
+  ]);
+  return (command, args) => probeOutputs.get([command, ...args].join(" ")) ?? { available: false, output: "unexpected" };
+}
 
 test("classifies a failed start without exposing the raw Docker message", () => {
   const secretLog = "Error: pull access denied for private/image token=super-secret-jwt";
@@ -61,19 +74,11 @@ test("never reports success for a non-zero Supabase start result", () => {
 });
 
 test("emits bounded machine evidence without returning Docker or Supabase output", () => {
-  const probeOutputs = new Map([
-    ["docker --version", { available: true, output: "Docker version 28.0.4, build private-token" }],
-    ["docker info --format {{.ServerVersion}}", { available: true, output: "28.0.4" }],
-    ["docker info --format {{json .}}", { available: true, output: JSON.stringify({ NCPU: 4, MemTotal: 8_000_000_000, DockerRootDir: "/private/path" }) }],
-    ["docker ps -a --filter name=supabase_ --format {{.Names}}\t{{.Status}}", { available: true, output: "supabase_db\tExited (1)" }],
-    ["npx --no-install supabase --version", { available: true, output: "2.117.0" }],
-    ["npx --no-install supabase status --workdir apps/web --output json", { available: false, output: "status details private-token" }],
-  ]);
   const evidence = collectBoundedStartEvidence({
     log: "opaque startup failure private-token",
     exitCode: 1,
     durationSeconds: 91,
-    probeCommand: (command, args) => probeOutputs.get([command, ...args].join(" ")) ?? { available: false, output: "unexpected" },
+    probeCommand: createProbeCommand({ dockerContainers: { available: true, output: "supabase_db\tExited (1)" } }),
   });
   const diagnostic = renderSupabaseStartDiagnostic({
     category: SUPABASE_START_CATEGORIES.UNCLASSIFIED,
@@ -91,6 +96,89 @@ test("emits bounded machine evidence without returning Docker or Supabase output
   assert.ok(evidence.evidenceCodes.includes("NO_CLASSIFIABLE_START_LOG_SIGNAL"));
   assert.match(diagnostic, /evidence_codes=/);
   assert.doesNotMatch(diagnostic, /private-token|DockerRootDir|supabase_db/);
+});
+
+test("confirms zero containers only when docker ps succeeds", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "opaque startup failure",
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+
+  assert.equal(evidence.dockerContainers, 0);
+  assert.deepEqual(evidence.dockerContainerStates, { running: 0, exited: 0, created: 0, restarting: 0, other: 0 });
+  assert.ok(evidence.evidenceCodes.includes("NO_SUPABASE_CONTAINERS"));
+  assert.ok(!evidence.evidenceCodes.includes("SUPABASE_CONTAINERS_UNOBSERVED"));
+});
+
+test("marks container evidence unavailable when docker ps fails", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "opaque startup failure",
+    exitCode: 1,
+    probeCommand: createProbeCommand({ dockerContainers: { available: false, output: "" } }),
+  });
+
+  assert.equal(evidence.dockerContainers, null);
+  assert.deepEqual(evidence.dockerContainerStates, {
+    running: "unavailable",
+    exited: "unavailable",
+    created: "unavailable",
+    restarting: "unavailable",
+    other: "unavailable",
+  });
+  assert.ok(evidence.evidenceCodes.includes("SUPABASE_CONTAINERS_UNOBSERVED"));
+  assert.ok(!evidence.evidenceCodes.includes("NO_SUPABASE_CONTAINERS"));
+});
+
+test("does not disclose docker ps stderr when container inspection fails", () => {
+  const secret = "docker-secret-jwt";
+  const evidence = collectBoundedStartEvidence({
+    log: "opaque startup failure",
+    exitCode: 1,
+    probeCommand: createProbeCommand({ dockerContainers: { available: false, output: `permission denied token=${secret}` } }),
+  });
+  const diagnostic = renderSupabaseStartDiagnostic({
+    category: SUPABASE_START_CATEGORIES.UNCLASSIFIED,
+    exitCode: 1,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    evidence,
+  });
+
+  assert.equal(evidence.dockerContainers, null);
+  assert.match(diagnostic, /docker_containers=unavailable/);
+  assert.doesNotMatch(diagnostic, new RegExp(secret));
+});
+
+test("keeps START_SUCCEEDED explicit and does not emit a failure log signal", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "",
+    exitCode: 0,
+    probeCommand: createProbeCommand({ dockerContainers: { available: true, output: "" } }),
+  });
+
+  assert.equal(
+    classifySupabaseStartFailure({ log: "", exitCode: 0 }),
+    SUPABASE_START_CATEGORIES.START_SUCCEEDED,
+  );
+  assert.ok(evidence.evidenceCodes.includes("START_SUCCEEDED"));
+  assert.ok(!evidence.evidenceCodes.includes("NO_CLASSIFIABLE_START_LOG_SIGNAL"));
+});
+
+test("preserves failure classification when supabase start fails", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "failed to pull image from registry",
+    exitCode: 1,
+    probeCommand: createProbeCommand(),
+  });
+
+  assert.equal(
+    classifySupabaseStartFailure({ log: "failed to pull image from registry", exitCode: 1 }),
+    SUPABASE_START_CATEGORIES.IMAGE_UNAVAILABLE,
+  );
+  assert.ok(evidence.evidenceCodes.includes("LOG_SIGNAL_IMAGE_UNAVAILABLE"));
+  assert.ok(!evidence.evidenceCodes.includes("START_SUCCEEDED"));
 });
 
 test("the workflow keeps startup failure blocking and never prints the raw log", () => {
