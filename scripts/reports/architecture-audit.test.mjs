@@ -1,7 +1,69 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
-import { assertArchitectureAuditFresh, classifySourceRevision, collectImportGraph } from "./architecture-audit.mjs";
+import {
+  assertArchitectureAuditFresh,
+  classifySourceRevision,
+  collectImportGraph,
+  coverageAvailability,
+} from "./architecture-audit.mjs";
+import { collectArchitectureRows, collectMeasuredRows } from "../checks/top-heavy-measurement.mjs";
+import { isAboveReview } from "../checks/top-heavy-policy.mjs";
+
+const SHA_A = "a".repeat(40);
+const SHA_B = "b".repeat(40);
+
+function metric() {
+  return { total: 1, covered: 1, pct: 100 };
+}
+
+function coverageSummary() {
+  return {
+    total: { statements: metric(), branches: metric(), functions: metric(), lines: metric() },
+    "src/lib/auth/auth.ts": { statements: metric(), branches: metric(), functions: metric(), lines: metric() },
+    "src/lib/actions/actions.ts": { statements: metric(), branches: metric(), functions: metric(), lines: metric() },
+    "src/app/api/actions/[actionId]/formalities/index.ts": { statements: metric(), branches: metric(), functions: metric(), lines: metric() },
+    "src/lib/route/route.ts": { statements: metric(), branches: metric(), functions: metric(), lines: metric() },
+    "src/lib/supabase/client.ts": { statements: metric(), branches: metric(), functions: metric(), lines: metric() },
+  };
+}
+
+function coverageFixture({ evidence = null, summary = coverageSummary() } = {}) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-architecture-coverage-"));
+  fs.mkdirSync(path.join(root, "apps", "web", "coverage"), { recursive: true });
+  fs.writeFileSync(path.join(root, "apps", "web", "coverage", "coverage-summary.json"), JSON.stringify(summary), "utf8");
+  if (evidence) fs.writeFileSync(path.join(root, "apps", "web", "coverage", "coverage-evidence.json"), JSON.stringify(evidence), "utf8");
+  return root;
+}
+
+function coverageView() {
+  const baseline = JSON.stringify({ sourceCommit: SHA_B });
+  return {
+    isFile: (file) => file === "scripts/checks/coverage-baseline.json" || file === "scripts/checks/coverage-mobile-baseline.json",
+    readText: () => baseline,
+  };
+}
+
+function coverageArgs(root, overrides = {}) {
+  return {
+    root,
+    view: coverageView(),
+    auditedSha: SHA_A,
+    auditedHead: SHA_A,
+    classify: () => false,
+    scope: "web",
+    baselineFile: "scripts/checks/coverage-baseline.json",
+    worktreeClean: true,
+    ...overrides,
+  };
+}
+
+function cleanup(root) {
+  fs.rmSync(root, { recursive: true, force: true });
+}
 
 test("classifies exact, ancestor, stale, and missing source revisions", () => {
   const head = "a".repeat(40);
@@ -41,4 +103,98 @@ test("import graph reports resolved relative and alias edges without claiming ex
   });
   assert.equal(graph.modules.find((entry) => entry.file.endsWith("/b.ts")).importsIn, 1);
   assert.equal(graph.modules.find((entry) => entry.file.endsWith("/c.ts")).importsIn, 1);
+});
+
+test("coverage audit accepts only validated web evidence for the exact audited SHA", () => {
+  const root = coverageFixture({ evidence: { gitHead: SHA_A, candidateFingerprint: "candidate" } });
+  try {
+    const result = coverageAvailability(coverageArgs(root, {
+      validateEvidence: () => ({ gitHead: SHA_A, candidateFingerprint: "candidate" }),
+    }));
+    assert.equal(result.available, true);
+    assert.equal(result.proofStatus, "VALID");
+    assert.equal(result.availabilityReason, null);
+    assert.equal(result.metrics.metrics.lines.covered, 1);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("coverage audit distinguishes missing, stale, and incoherent web evidence", () => {
+  const missingRoot = coverageFixture();
+  try {
+    const result = coverageAvailability(coverageArgs(missingRoot));
+    assert.equal(result.available, false);
+    assert.equal(result.availabilityReason, "EVIDENCE_MISSING");
+  } finally {
+    cleanup(missingRoot);
+  }
+
+  const staleRoot = coverageFixture({ evidence: { gitHead: SHA_B, candidateFingerprint: "old" } });
+  try {
+    const result = coverageAvailability(coverageArgs(staleRoot));
+    assert.equal(result.available, false);
+    assert.equal(result.proofStatus, "STALE_OR_INCOHERENT");
+    assert.equal(result.availabilityReason, "EVIDENCE_STALE_OR_INCOHERENT");
+  } finally {
+    cleanup(staleRoot);
+  }
+
+  const incoherentRoot = coverageFixture({ evidence: { gitHead: SHA_A, candidateFingerprint: "candidate" } });
+  try {
+    const result = coverageAvailability(coverageArgs(incoherentRoot, {
+      validateEvidence: () => { throw new Error("configuration mismatch"); },
+    }));
+    assert.equal(result.available, false);
+    assert.equal(result.proofStatus, "STALE_OR_INCOHERENT");
+    assert.equal(result.availabilityReason, "EVIDENCE_INVALID_OR_INCOHERENT");
+  } finally {
+    cleanup(incoherentRoot);
+  }
+});
+
+test("mobile coverage is unavailable without a mobile evidence producer", () => {
+  const root = coverageFixture();
+  try {
+    const result = coverageAvailability(coverageArgs(root, {
+      scope: "mobile",
+      baselineFile: "scripts/checks/coverage-mobile-baseline.json",
+    }));
+    assert.equal(result.available, false);
+    assert.equal(result.metrics, null);
+    assert.equal(result.availabilityReason, "EVIDENCE_NOT_PRODUCED");
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("architecture inventory includes first-party MJS and JS, classifies tests, and excludes vendor", () => {
+  const files = {
+    "scripts/tool.mjs": "import './helper.mjs'; import './helper.js'; import './vendor/third-party.mjs';\n",
+    "scripts/helper.mjs": "export const helper = true;\n",
+    "scripts/helper.js": "export const helperJs = true;\n",
+    "scripts/tool.test.mjs": "export const test = true;\n",
+    "scripts/vendor/third-party.mjs": "export const vendor = true;\n",
+    "scripts/radar.ts": "export const radar = true;\n" + "x\n".repeat(500),
+  };
+  const view = {
+    listFiles: () => Object.keys(files),
+    readBinary: (file) => Buffer.from(files[file]),
+  };
+  const architectureRows = collectArchitectureRows(view, ["scripts"]);
+  assert.ok(architectureRows.some((row) => row.file === "scripts/tool.mjs" && row.kind === "runtime"));
+  assert.ok(architectureRows.some((row) => row.file === "scripts/tool.test.mjs" && row.kind === "test"));
+  assert.equal(architectureRows.some((row) => row.file.includes("vendor")), false);
+
+  const radarRows = collectMeasuredRows(view, ["scripts"]);
+  assert.deepEqual(radarRows.map((row) => row.file), ["scripts/radar.ts"]);
+  assert.equal(isAboveReview(radarRows[0]), true);
+
+  const graph = collectImportGraph(
+    { ...view, isFile: (file) => Object.hasOwn(files, file), readText: (file) => files[file] },
+    architectureRows,
+  );
+  assert.equal(graph.unresolvedLocalImports, 0);
+  assert.equal(graph.excludedLocalImports, 1);
+  assert.equal(graph.modules.find((entry) => entry.file === "scripts/tool.mjs").importsOut, 2);
 });

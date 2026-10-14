@@ -6,11 +6,13 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { createRepositoryView, parseRepositoryRef } from "../checks/repository-view.mjs";
-import { collectMeasuredRows } from "../checks/top-heavy-measurement.mjs";
+import { collectArchitectureRows } from "../checks/top-heavy-measurement.mjs";
 import { FILE_KIND_POLICY, isAboveHard, isAboveReview } from "../checks/top-heavy-policy.mjs";
+import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
+import { aggregateCoverage } from "../checks/coverage-policy.mjs";
 import { extractHumanDecisions, parseHumanDecisions } from "./generate-modularity-radar.mjs";
 
-export const ARCHITECTURE_AUDIT_SCHEMA_VERSION = 1;
+export const ARCHITECTURE_AUDIT_SCHEMA_VERSION = 2;
 export const ARCHITECTURE_AUDIT_ROOT = "artifacts/architecture";
 export const ARCHITECTURE_SCAN_ROOTS = Object.freeze(["apps/web/src", "apps/mobile", "scripts"]);
 export const ARCHITECTURE_BASELINES = Object.freeze([
@@ -25,7 +27,8 @@ const QUALITY_EVIDENCE = Object.freeze({
   duplication: "duplication-runtime",
   cycles: "cycles",
 });
-const CODE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx"]);
+const CODE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]);
+const IMPORT_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
 const MODULARITY_PLAN = "documentation/architecture/monolith-split-plan.md";
 const ACTION_CREATION_SHELL = "apps/web/src/components/actions/action-creation-shell.tsx";
 
@@ -122,7 +125,7 @@ function resolveImport(view, importer, specifier) {
   const base = specifier.startsWith("@/")
     ? `apps/web/src/${specifier.slice(2)}`
     : path.posix.normalize(path.posix.join(path.posix.dirname(importer), specifier));
-  const candidates = [base, ...[".ts", ".tsx", ".js", ".jsx"].map((extension) => `${base}${extension}`), ...[".ts", ".tsx", ".js", ".jsx"].map((extension) => `${base}/index${extension}`)];
+  const candidates = [base, ...IMPORT_EXTENSIONS.map((extension) => `${base}${extension}`), ...IMPORT_EXTENSIONS.map((extension) => `${base}/index${extension}`)];
   return candidates.find((candidate) => view.isFile(candidate)) ?? null;
 }
 
@@ -130,12 +133,15 @@ export function collectImportGraph(view, rows) {
   const sourceFiles = rows
     .map((row) => row.file)
     .filter((file) => CODE_EXTENSIONS.has(path.posix.extname(file)));
+  const sourceFileSet = new Set(sourceFiles);
   const outgoing = new Map(sourceFiles.map((file) => [file, new Set()]));
   let unresolvedLocalImports = 0;
+  let excludedLocalImports = 0;
   for (const file of sourceFiles) {
     for (const specifier of importSpecifiers(view.readText(file))) {
       const resolved = resolveImport(view, file, specifier);
-      if (resolved) outgoing.get(file).add(resolved);
+      if (resolved && sourceFileSet.has(resolved)) outgoing.get(file).add(resolved);
+      else if (resolved) excludedLocalImports += 1;
       else if (specifier.startsWith(".") || specifier.startsWith("@/")) unresolvedLocalImports += 1;
     }
   }
@@ -158,6 +164,7 @@ export function collectImportGraph(view, rows) {
     method: "static-relative-and-alias-imports",
     available: true,
     unresolvedLocalImports,
+    excludedLocalImports,
     byDomain: Object.fromEntries(Object.entries(byDomain).sort(([left], [right]) => left.localeCompare(right))),
     modules,
   };
@@ -213,19 +220,78 @@ function qualityEvidence(root, auditedSha, key, worktreeClean) {
   };
 }
 
-function coverageAvailability(root, view, auditedSha, classify, scope, baselineFile, worktreeClean) {
+export function coverageAvailability({
+  root,
+  view,
+  auditedSha,
+  auditedHead,
+  classify,
+  scope,
+  baselineFile,
+  worktreeClean,
+  validateEvidence = validateCoverageEvidence,
+}) {
   const baseline = readJsonFromView(view, baselineFile);
   const sourceSha = baseline?.sourceCommit ?? null;
-  const evidence = readJsonFromFilesystem(root, scope === "web" ? "apps/web/coverage/coverage-evidence.json" : "apps/mobile/coverage/coverage-evidence.json");
-  const evidenceStatus = classifySnapshotSource(evidence?.candidateSha, auditedSha);
-  return {
+  const evidencePath = scope === "web" ? "apps/web/coverage/coverage-evidence.json" : "apps/mobile/coverage/coverage-evidence.json";
+  const summaryPath = scope === "web" ? "apps/web/coverage/coverage-summary.json" : "apps/mobile/coverage/coverage-summary.json";
+  const evidence = readJsonFromFilesystem(root, evidencePath);
+  const evidenceSourceSha = evidence?.gitHead ?? evidence?.candidateSha ?? null;
+  const evidenceStatus = classifySnapshotSource(evidenceSourceSha, auditedSha);
+  const result = {
     baseline: classifyReportSource({ sourceSha, auditedSha, classify }),
-    available: evidenceStatus === "CURRENT_SHA" && evidence?.executed === true && worktreeClean,
-    availabilityReason: !worktreeClean ? "WORKTREE_NOT_CLEAN" : evidenceStatus === "MISSING" ? "EVIDENCE_MISSING" : null,
-    evidenceSourceSha: evidence?.candidateSha ?? null,
+    available: false,
+    availabilityReason: null,
+    evidencePath,
+    evidenceSourceSha,
     evidenceStatus,
-    metrics: evidence?.metrics ?? null,
+    proofStatus: "MISSING",
+    metrics: null,
   };
+
+  if (scope !== "web") {
+    result.availabilityReason = evidence
+      ? "VALIDATION_NOT_PRODUCED_FOR_SCOPE"
+      : auditedSha !== auditedHead
+        ? "UNVERIFIABLE_HISTORICAL_REFERENCE"
+        : "EVIDENCE_NOT_PRODUCED";
+    result.proofStatus = evidence ? "UNVERIFIED" : "MISSING";
+    return result;
+  }
+
+  if (auditedSha !== auditedHead) {
+    result.availabilityReason = "UNVERIFIABLE_HISTORICAL_REFERENCE";
+    result.proofStatus = evidenceStatus === "MISSING" ? "MISSING" : "UNVERIFIED";
+    return result;
+  }
+  if (!worktreeClean) {
+    result.availabilityReason = "WORKTREE_NOT_CLEAN";
+    result.proofStatus = evidenceStatus === "MISSING" ? "MISSING" : "UNVERIFIED";
+    return result;
+  }
+  if (!evidence || !readJsonFromFilesystem(root, summaryPath)) {
+    result.availabilityReason = "EVIDENCE_MISSING";
+    return result;
+  }
+  if (evidenceStatus !== "CURRENT_SHA") {
+    result.availabilityReason = "EVIDENCE_STALE_OR_INCOHERENT";
+    result.proofStatus = "STALE_OR_INCOHERENT";
+    return result;
+  }
+
+  try {
+    const validatedEvidence = validateEvidence({ repositoryRoot: root });
+    const summary = readJsonFromFilesystem(root, summaryPath);
+    result.metrics = aggregateCoverage(summary, { scope });
+    result.evidenceSourceSha = validatedEvidence.gitHead ?? evidenceSourceSha;
+    result.available = result.evidenceSourceSha === auditedSha;
+    result.availabilityReason = result.available ? null : "EVIDENCE_SHA_MISMATCH";
+    result.proofStatus = result.available ? "VALID" : "STALE_OR_INCOHERENT";
+  } catch {
+    result.availabilityReason = "EVIDENCE_INVALID_OR_INCOHERENT";
+    result.proofStatus = "STALE_OR_INCOHERENT";
+  }
+  return result;
 }
 
 export function buildArchitectureAudit({ root = process.cwd(), ref = "HEAD", now = () => new Date().toISOString(), gitRunner = git } = {}) {
@@ -243,7 +309,7 @@ export function buildArchitectureAudit({ root = process.cwd(), ref = "HEAD", now
     }
   };
   const view = createRepositoryView({ root, ref: sourceSha });
-  const rows = collectMeasuredRows(view, ARCHITECTURE_SCAN_ROOTS);
+  const rows = collectArchitectureRows(view, ARCHITECTURE_SCAN_ROOTS);
   const largeModules = rows
     .filter((row) => isAboveReview(row))
     .sort((left, right) => right.lines - left.lines || right.bytes - left.bytes || left.file.localeCompare(right.file))
@@ -275,8 +341,8 @@ export function buildArchitectureAudit({ root = process.cwd(), ref = "HEAD", now
     cycles: quality.cycles,
     duplication: quality.duplication,
     coverage: {
-      web: coverageAvailability(root, view, sourceSha, classify, "web", "scripts/checks/coverage-baseline.json", worktreeClean),
-      mobile: coverageAvailability(root, view, sourceSha, classify, "mobile", "scripts/checks/coverage-mobile-baseline.json", worktreeClean),
+      web: coverageAvailability({ root, view, auditedSha: sourceSha, auditedHead: headSha, classify, scope: "web", baselineFile: "scripts/checks/coverage-baseline.json", worktreeClean }),
+      mobile: coverageAvailability({ root, view, auditedSha: sourceSha, auditedHead: headSha, classify, scope: "mobile", baselineFile: "scripts/checks/coverage-mobile-baseline.json", worktreeClean }),
     },
     modularityReview: {
       historicalDeferredSplit: radarSource.deferredSplit,

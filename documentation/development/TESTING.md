@@ -999,6 +999,31 @@ signifie qu’aucun delta top-heavy ni REVIEW non qualifié nécessitant une
 nouvelle analyse n’a été observé, pas que la dette historique de fichiers
 volumineux est absente.
 
+L’audit architectural ponctuel est distinct du radar top-heavy :
+
+```bash
+npm run audit:architecture
+```
+
+Il lit l’arbre Git du SHA audité et écrit un artefact local régénérable sous
+`artifacts/architecture/<SHA>/architecture.json`. Son inventaire first-party
+mesure les sources `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs` et `.cjs` de `apps/web`,
+`apps/mobile` et `scripts`, avec une classification séparée des tests et des
+fichiers générés. Les chemins `vendor` et tiers sont exclus de l’inventaire ;
+les imports locaux vers ces chemins sont comptés séparément. Le graphe reste
+une analyse statique des imports relatifs et alias : il ne prouve ni les
+imports dynamiques, ni les consommateurs externes, ni les dépendances
+indirectes.
+
+La couverture Web n’est déclarée disponible par cet audit que si
+`apps/web/coverage/coverage-evidence.json` passe le validateur canonique, si
+son `gitHead`, sa configuration, son empreinte de candidat et son résumé
+convergent vers le SHA audité, et si le worktree permet cette vérification. Un
+résumé présent sur disque ne constitue pas seul une preuve fraîche. Pour le
+mobile, l’absence actuelle de producteur de preuve dédié reste explicitement
+`EVIDENCE_NOT_PRODUCED` et ne signifie ni couverture nulle ni mesure exécutée.
+Les références historiques non rejouées sont `UNVERIFIABLE_HISTORICAL_REFERENCE`.
+
 ### Évidence compacte des gates de qualité
 
 Le job CI `web-quality` écrit une projection JSON compacte après chaque gate,

@@ -1,6 +1,7 @@
 import path from "node:path";
 
 export const HEAVY_FILE_EXTENSIONS = new Set([".ts", ".tsx"]);
+export const ARCHITECTURE_SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]);
 
 function isIgnoredPath(file) {
   return /(?:^|\/)(?:\.git|node_modules|\.next|dist|build|coverage|maintenance)(?:\/|$)/.test(file);
@@ -8,6 +9,11 @@ function isIgnoredPath(file) {
 
 function isMeasuredFile(file) {
   return HEAVY_FILE_EXTENSIONS.has(path.posix.extname(file)) && !isIgnoredPath(file);
+}
+
+function isArchitectureSourceFile(file) {
+  if (!ARCHITECTURE_SOURCE_EXTENSIONS.has(path.posix.extname(file)) || isIgnoredPath(file)) return false;
+  return !/(?:^|\/)(?:vendor|third[-_]?party)(?:\/|$)/i.test(file);
 }
 
 export function measureContent(content) {
@@ -36,13 +42,19 @@ export function collectMeasuredRows(view, scanRoots) {
     .map((file) => measureRepositoryFile(view, file));
 }
 
+export function collectArchitectureRows(view, scanRoots) {
+  return [...new Set(scanRoots.flatMap((root) => view.listFiles(root)))]
+    .filter(isArchitectureSourceFile)
+    .map((file) => measureRepositoryFile(view, file));
+}
+
 export function classifyFileKind(file) {
   const normalized = file.replaceAll("\\", "/");
   const fileName = normalized.slice(normalized.lastIndexOf("/") + 1);
   if (/(?:^|\/)(?:generated|__generated__)(?:\/|$)|(?:^|\/)next-env\.d\.ts$|\.generated\./i.test(normalized)) {
     return "generated";
   }
-  if (/(?:^|\/)(?:__tests__|tests?)(?:\/|$)|\.(?:test|spec)(?:\.[^.]+)*\.(?:ts|tsx)$/i.test(normalized)) {
+  if (/(?:^|\/)(?:__tests__|tests?)(?:\/|$)|\.(?:test|spec)(?:\.[^.]+)*\.(?:js|jsx|ts|tsx|mjs|cjs)$/i.test(normalized)) {
     return "test";
   }
   if (
