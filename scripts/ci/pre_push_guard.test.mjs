@@ -208,8 +208,7 @@ test("docs-only push ignores a foreign web commit in HEAD", () => {
   assert.equal(result.status, 0, result.output);
   assert.match(result.output, /mode = push-protocol/);
   assert.match(result.output, /Quick PUSH_CANDIDATE checks/);
-  assertCommand(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-env-contract.mjs"));
-  assertCommand(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-canonical-workspaces.mjs"));
+  assertCommand(result.log, candidateCheckCommand("refs/docs-local"));
   assertCommand(result.log, "npm run security:secrets -- --candidate-ref=refs/docs-local --candidate-range=refs/docs-remote..refs/docs-local");
   assertNoCommand(result.log, "npm run lint");
   assertNoCommand(result.log, "npm run typecheck");
@@ -231,8 +230,7 @@ test("web push keeps only quick candidate gates by default", () => {
   assert.match(result.output, /PREPUSH_STATIC_RUNNER_INVOCATIONS: 1/);
   assert.match(result.output, /PREPUSH_TOTAL_SECONDS:/);
   assert.match(result.output, /GUARD_STEP_SECONDS:/);
-  assertCommand(result.log, candidateCheckCommand("refs/web-local", "scripts/checks/check-github-actions-security.mjs"));
-  assertCommand(result.log, candidateCheckCommand("refs/web-local", "scripts/checks/check-lockfile-policy.mjs"));
+  assertCommand(result.log, candidateCheckCommand("refs/web-local"));
   assertCommand(result.log, "npm run security:secrets -- --candidate-ref=refs/web-local --candidate-range=refs/web-remote..refs/web-local");
   assertCommand(result.log, "git diff --check refs/web-remote..refs/web-local --");
   assertNoCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "lint"]));
@@ -252,7 +250,7 @@ test("web candidate ignores a foreign artifact lockfile during quick checks", ()
   });
 
   assert.equal(result.status, 0, result.output);
-  assertCommandCount(result.log, candidateCheckCommand("refs/web-local", "scripts/checks/check-lockfile-policy.mjs"), 1);
+  assertCommandCount(result.log, candidateCheckCommand("refs/web-local"), 1);
   assertNoCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "lint"]));
   assertNoCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "typecheck"]));
   assertNoCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "build"], "isolated"));
@@ -300,7 +298,7 @@ test("Supabase push keeps the quick candidate path", () => {
   });
 
   assert.equal(result.status, 0, result.output);
-  assertCommand(result.log, candidateCheckCommand("refs/db-local", "scripts/checks/check-canonical-workspaces.mjs"));
+  assertCommand(result.log, candidateCheckCommand("refs/db-local"));
   assertNoCommand(result.log, dynamicCandidateCommand("refs/db-local", "npm", ["run", "lint"]));
   assertNoCommand(result.log, dynamicCandidateCommand("refs/db-local", "npm", ["run", "typecheck"]));
   assertNoCommand(result.log, "audit-supabase-migration-trees.mjs");
@@ -319,8 +317,8 @@ test("multi-ref push validates each exact candidate without heavy gates", () => 
   });
 
   assert.equal(result.status, 0, result.output);
-  assertCommandCount(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-env-contract.mjs"), 1);
-  assertCommandCount(result.log, candidateCheckCommand("refs/scripts-local", "scripts/checks/check-env-contract.mjs"), 1);
+  assertCommandCount(result.log, candidateCheckCommand("refs/docs-local"), 1);
+  assertCommandCount(result.log, candidateCheckCommand("refs/scripts-local"), 1);
   assertCommandCount(result.log, "npm run security:secrets -- --candidate-ref=refs/docs-local --candidate-range=refs/docs-remote..refs/docs-local --candidate-ref=refs/scripts-local --candidate-range=refs/scripts-remote..refs/scripts-local", 1);
   assertNoCommand(result.log, "npm run test:scripts");
   assertNoCommand(result.log, "scripts/checks/check-doc-visuals.mjs");
@@ -395,7 +393,7 @@ test("manual invocation keeps the documented fallback visible", () => {
   assert.equal(result.status, 0, result.output);
   assert.match(result.output, /mode = manual-fallback/);
   assert.match(result.output, /Pre-push quick guardrail passed/);
-  assertCommand(result.log, candidateCheckCommand("HEAD", "scripts/checks/check-env-contract.mjs"));
+  assertCommand(result.log, candidateCheckCommand("HEAD"));
   assertCommand(result.log, "npm run security:secrets -- --candidate-ref=HEAD --candidate-range=remote-main-sha...HEAD");
   assertNoCommand(result.log, "npm run lint");
 });

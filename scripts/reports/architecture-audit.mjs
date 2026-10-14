@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { createRepositoryView, parseRepositoryRef } from "../checks/repository-view.mjs";
 import { collectArchitectureRows } from "../checks/top-heavy-measurement.mjs";
-import { FILE_KIND_POLICY, isAboveHard, isAboveReview } from "../checks/top-heavy-policy.mjs";
+import { isAboveHard, isAboveReview } from "../checks/top-heavy-policy.mjs";
 import { validateCoverageEvidence } from "../checks/coverage-evidence.mjs";
 import { aggregateCoverage } from "../checks/coverage-policy.mjs";
 import { extractHumanDecisions, parseHumanDecisions } from "./generate-modularity-radar.mjs";
@@ -56,17 +56,6 @@ export function assertArchitectureAuditFresh(artifact, auditedSha) {
     throw new Error(`Architecture audit is not current for ${auditedSha}.`);
   }
   return artifact;
-}
-
-function revisionClassifier(root) {
-  return (sourceSha, auditedSha) => {
-    try {
-      execFileSync("git", ["merge-base", "--is-ancestor", sourceSha, auditedSha], { cwd: root, stdio: "ignore" });
-      return true;
-    } catch {
-      return false;
-    }
-  };
 }
 
 function readJsonFromView(view, relativePath) {

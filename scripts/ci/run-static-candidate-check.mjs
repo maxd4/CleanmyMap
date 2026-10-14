@@ -158,13 +158,20 @@ function fingerprintCandidateTree(candidateTreeRoot, trackedPaths) {
 
   for (const relativePath of [...trackedPaths].sort()) {
     const absolutePath = path.join(candidateTreeRoot, ...relativePath.split("/"));
-    if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
-      throw new Error(`Candidate source is missing tracked file: ${relativePath}`);
+    let descriptor;
+    try {
+      descriptor = fs.openSync(absolutePath, "r");
+      if (!fs.fstatSync(descriptor).isFile()) throw new Error(`Candidate source is missing tracked file: ${relativePath}`);
+      hash.update(relativePath);
+      hash.update("\0");
+      hash.update(fs.readFileSync(descriptor));
+      hash.update("\0");
+    } catch (error) {
+      if (error?.code === "ENOENT") throw new Error(`Candidate source is missing tracked file: ${relativePath}`);
+      throw error;
+    } finally {
+      if (descriptor !== undefined) fs.closeSync(descriptor);
     }
-    hash.update(relativePath);
-    hash.update("\0");
-    hash.update(fs.readFileSync(absolutePath));
-    hash.update("\0");
   }
 
   return hash.digest("hex");

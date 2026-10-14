@@ -119,7 +119,7 @@ export async function updateSpogomiEvent(params: {
 function validateEventUpdate(event: EventRow, input: Parameters<typeof updateSpogomiEvent>[0]["input"], name: string, locationLabel: string, startsAt: string, endsAt: string | null): void {
   if (!name || !locationLabel) throw new Error("Validation: nom et lieu obligatoires.");
   if (endsAt && Date.parse(endsAt) < Date.parse(startsAt)) throw new Error("Validation: la fin doit être postérieure au début.");
-  if (input.publicVisibility === "published" && (!event.event_slug || !startsAt || !locationLabel)) throw new Error("Validation: un événement publié doit avoir un identifiant, une date et un lieu.");
+  if (input.publicVisibility === "published" && (!event.event_slug || !startsAt)) throw new Error("Validation: un événement publié doit avoir un identifiant et une date.");
   if (input.publicVisibility === "published" && event.state === "draft") throw new Error("Validation: un brouillon doit d'abord quitter l'état draft avant publication.");
 }
 

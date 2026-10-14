@@ -133,15 +133,35 @@ export function validateSonarCoverageReports({ root = process.cwd(), reports = R
   return reports.map((definition) => {
     const lcovFile = repositoryFile(root, definition.lcovPath);
     const summaryFile = repositoryFile(root, definition.summaryPath);
-    if (!fs.existsSync(lcovFile)) throw new Error(`${definition.scope} LCOV report is missing: ${definition.lcovPath}`);
-    if (fs.statSync(lcovFile).size === 0) throw new Error(`${definition.scope} LCOV report is empty: ${definition.lcovPath}`);
-    if (!fs.existsSync(summaryFile)) throw new Error(`${definition.scope} coverage summary is missing: ${definition.summaryPath}`);
-    const content = fs.readFileSync(lcovFile, "utf8");
-    const summary = JSON.parse(fs.readFileSync(summaryFile, "utf8"));
-    const parsed = parseLcov(content, definition, root);
-    const totals = assertMetricsMatchSummary(parsed.records, summary, definition, root);
-    if (write && parsed.normalizedContent !== content) fs.writeFileSync(lcovFile, parsed.normalizedContent, "utf8");
-    return { scope: definition.scope, path: definition.lcovPath, files: parsed.records.length, totals, normalized: parsed.normalizedContent !== content };
+    let lcovDescriptor;
+    try {
+      lcovDescriptor = fs.openSync(lcovFile, write ? "r+" : "r");
+    } catch (error) {
+      if (error?.code === "ENOENT") throw new Error(`${definition.scope} LCOV report is missing: ${definition.lcovPath}`);
+      throw error;
+    }
+    try {
+      const content = fs.readFileSync(lcovDescriptor, "utf8");
+      if (content.length === 0) throw new Error(`${definition.scope} LCOV report is empty: ${definition.lcovPath}`);
+      let summaryContent;
+      try {
+        summaryContent = fs.readFileSync(summaryFile, "utf8");
+      } catch (error) {
+        if (error?.code === "ENOENT") throw new Error(`${definition.scope} coverage summary is missing: ${definition.summaryPath}`);
+        throw error;
+      }
+      const summary = JSON.parse(summaryContent);
+      const parsed = parseLcov(content, definition, root);
+      const totals = assertMetricsMatchSummary(parsed.records, summary, definition, root);
+      if (write && parsed.normalizedContent !== content) {
+        const normalized = Buffer.from(parsed.normalizedContent, "utf8");
+        fs.writeSync(lcovDescriptor, normalized, 0, normalized.length, 0);
+        fs.ftruncateSync(lcovDescriptor, normalized.length);
+      }
+      return { scope: definition.scope, path: definition.lcovPath, files: parsed.records.length, totals, normalized: parsed.normalizedContent !== content };
+    } finally {
+      fs.closeSync(lcovDescriptor);
+    }
   });
 }
 
