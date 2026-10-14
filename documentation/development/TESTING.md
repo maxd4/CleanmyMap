@@ -556,6 +556,34 @@ pourcentage mobile n'est
 agrégé avec le web et le mobile ne possède pas de domaines web artificiels.
 Une baisse mobile est donc comparée indépendamment sur les quatre métriques.
 
+### Rapports de couverture importés par SonarQube Cloud
+
+Le workflow manuel `sonarqube-manual.yml` produit quatre rapports distincts
+avant le scan : les LCOV Web et mobile générés par Vitest, le LCOV Node généré
+par `c8` à partir de la suite `node:test` des répertoires `scripts/` et
+`apps/web/scripts/`, et le rapport Cobertura XML de `coverage.py` pour
+`maintenance/python/src` et `maintenance/python/scripts`. Les tests, fixtures
+et fichiers de test sont exclus du périmètre Node ; les tests Python ne sont
+pas une source instrumentée.
+
+Les chemins déclarés sont ceux de `sonar-project.properties`. Avant l'analyse,
+`scripts/checks/prepare-sonarqube-coverage.mjs` échoue si un rapport est
+absent, vide, pointe vers un fichier inexistant, ne contient aucune mesure de
+ligne, ou si les sources et métriques LCOV ne correspondent pas à leur résumé
+JSON. Le même contrôle vérifie les classes et mesures du rapport Python. Cette
+étape est fail-closed ; elle ne relève aucun ratchet et ne fabrique pas de
+mesure nulle pour rendre le scan possible.
+
+Les rapports locaux sont des artefacts ignorés (`apps/*/coverage/`,
+`scripts/coverage/` et `maintenance/python/coverage.xml`). Ils décrivent la
+couverture observée par la candidate exécutée, pas le nouveau score SonarQube
+Cloud : seul un scan réel peut confirmer l'import et le score final. Les
+fichiers exécutables non chargés par les tests restent présents dans le
+rapport Node avec une couverture nulle lorsque `c8 --all` les découvre ; les
+scripts opérationnels nécessitant des services externes, et les modules
+Python hors des deux racines instrumentées, restent des limites de preuve
+explicites.
+
 ## Suivi historique de croissance du dépôt
 
 Le suivi de croissance est une mesure descriptive et reproductible ; il ne

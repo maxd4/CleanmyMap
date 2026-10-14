@@ -17,6 +17,19 @@ const REPORT_DEFINITIONS = Object.freeze([
     summaryPath: "apps/mobile/coverage/coverage-summary.json",
     sourceRoot: "apps/mobile",
   }),
+  Object.freeze({
+    scope: "node",
+    format: "lcov",
+    lcovPath: "scripts/coverage/lcov.info",
+    summaryPath: "scripts/coverage/coverage-summary.json",
+    sourceRoot: ".",
+  }),
+  Object.freeze({
+    scope: "python",
+    format: "cobertura",
+    coveragePath: "maintenance/python/coverage.xml",
+    sourceRoot: "maintenance/python",
+  }),
 ]);
 
 function repositoryFile(root, relativePath) {
@@ -33,9 +46,10 @@ function normalizeSourcePath(rawPath, { root, sourceRoot }) {
   const isAbsolute = path.isAbsolute(raw) || path.win32.isAbsolute(raw);
   const absolute = isAbsolute ? path.resolve(raw) : path.resolve(root, ...raw.split("/"));
   const rootRelative = path.relative(root, absolute).replaceAll("\\", "/");
-  const candidate = isAbsolute ? rootRelative : raw.startsWith(`${sourceRoot}/`) ? raw : `${sourceRoot}/${raw}`;
+  const sourcePrefix = sourceRoot === "." ? "" : `${sourceRoot}/`;
+  const candidate = isAbsolute ? rootRelative : raw.startsWith(sourcePrefix) ? raw : `${sourcePrefix}${raw}`;
   const normalized = normalizePath(candidate);
-  if (rootRelative.startsWith("..") || path.isAbsolute(rootRelative) || !normalized.startsWith(`${sourceRoot}/`)) {
+  if (rootRelative.startsWith("..") || path.isAbsolute(rootRelative) || (sourceRoot !== "." && !normalized.startsWith(sourcePrefix))) {
     throw new Error(`LCOV SF path escapes the checked-out source root: ${rawPath}`);
   }
   const target = repositoryFile(root, normalized);
@@ -43,6 +57,68 @@ function normalizeSourcePath(rawPath, { root, sourceRoot }) {
     throw new Error(`LCOV SF path does not resolve in the checkout: ${normalized}`);
   }
   return normalized;
+}
+
+function decodeXmlAttribute(value) {
+  return String(value)
+    .replaceAll("&quot;", '"')
+    .replaceAll("&apos;", "'")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&amp;", "&");
+}
+
+function xmlAttribute(attributes, name) {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = attributes.match(new RegExp(`${escapedName}\\s*=\\s*["']([^"']*)["']`));
+  return match ? decodeXmlAttribute(match[1]) : null;
+}
+
+function parseCobertura(content, definition, root) {
+  const text = String(content);
+  const classRecords = [];
+  let offset = 0;
+  while (true) {
+    const candidate = text.indexOf("<class", offset);
+    if (candidate < 0) break;
+    const markerEnd = candidate + "<class".length;
+    const marker = text[markerEnd] ?? "";
+    if (!/\s|>/.test(marker)) {
+      offset = markerEnd;
+      continue;
+    }
+    const openEnd = text.indexOf(">", markerEnd);
+    if (openEnd < 0) throw new Error(`${definition.scope} coverage XML contains an unterminated class element.`);
+    const closeStart = text.indexOf("</class>", openEnd + 1);
+    if (closeStart < 0) throw new Error(`${definition.scope} coverage XML contains an unterminated class element.`);
+    const attributes = text.slice(markerEnd, openEnd);
+    const filename = xmlAttribute(attributes, "filename");
+    if (!filename) throw new Error(`${definition.scope} coverage XML contains a class without filename.`);
+    const source = normalizeSourcePath(filename, { root, sourceRoot: definition.sourceRoot });
+    const body = text.slice(openEnd + 1, closeStart);
+    const lines = [];
+    const linePattern = /<line\b([^>]*)\/?\s*>/g;
+    let lineMatch;
+    while ((lineMatch = linePattern.exec(body)) !== null) {
+      const number = Number(xmlAttribute(lineMatch[1], "number"));
+      const hits = Number(xmlAttribute(lineMatch[1], "hits"));
+      if (!Number.isInteger(number) || number < 1 || !Number.isInteger(hits) || hits < 0) {
+        throw new Error(`${definition.scope} coverage XML contains an invalid line metric.`);
+      }
+      lines.push({ number, hits });
+    }
+    if (lines.length > 0) classRecords.push({ source, lines });
+    offset = closeStart + "</class>".length;
+  }
+  if (classRecords.length === 0) throw new Error(`${definition.scope} coverage XML has no instrumented classes with line measurements.`);
+  const uniqueSources = new Set(classRecords.map((record) => record.source));
+  const totals = classRecords.reduce((result, record) => {
+    result.lines.total += record.lines.length;
+    result.lines.covered += record.lines.filter((line) => line.hits > 0).length;
+    return result;
+  }, { lines: { total: 0, covered: 0 } });
+  if (totals.lines.total === 0) throw new Error(`${definition.scope} coverage XML contains no line measurements.`);
+  return { files: uniqueSources.size, totals };
 }
 
 function parseMetric(value, label) {
@@ -131,6 +207,19 @@ function assertMetricsMatchSummary(records, summary, definition, root) {
 
 export function validateSonarCoverageReports({ root = process.cwd(), reports = REPORT_DEFINITIONS, write = true } = {}) {
   return reports.map((definition) => {
+    if (definition.format === "cobertura") {
+      const coverageFile = repositoryFile(root, definition.coveragePath);
+      let content;
+      try {
+        content = fs.readFileSync(coverageFile, "utf8");
+      } catch (error) {
+        if (error?.code === "ENOENT") throw new Error(`${definition.scope} coverage report is missing: ${definition.coveragePath}`);
+        throw error;
+      }
+      if (content.length === 0) throw new Error(`${definition.scope} coverage report is empty: ${definition.coveragePath}`);
+      const parsed = parseCobertura(content, definition, root);
+      return { scope: definition.scope, path: definition.coveragePath, files: parsed.files, totals: parsed.totals, normalized: false };
+    }
     const lcovFile = repositoryFile(root, definition.lcovPath);
     const summaryFile = repositoryFile(root, definition.summaryPath);
     let lcovDescriptor;
