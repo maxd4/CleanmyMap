@@ -15,7 +15,7 @@ function listDirectories(view, root) {
   const prefix = `${root}/`;
   return [...new Set(view.listFiles(root)
     .filter((file) => file.startsWith(prefix))
-    .map((file) => file.slice(prefix.length).split("/")[0]))].sort();
+    .map((file) => file.slice(prefix.length).split("/")[0]))].sort((left, right) => left.localeCompare(right));
 }
 
 function listFiles(view, root) {
@@ -23,13 +23,13 @@ function listFiles(view, root) {
   return view.listFiles(root)
     .filter((file) => file.startsWith(prefix))
     .map((file) => file.slice(prefix.length))
-    .sort();
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function filesDiffer(view, canonicalSkillRoot, mirrorSkillRoot) {
   const canonicalFiles = listFiles(view, canonicalSkillRoot);
   const mirrorFiles = listFiles(view, mirrorSkillRoot);
-  const allFiles = [...new Set([...canonicalFiles, ...mirrorFiles])].sort();
+  const allFiles = [...new Set([...canonicalFiles, ...mirrorFiles])].sort((left, right) => left.localeCompare(right));
   const differences = [];
 
   if (canonicalFiles.join("\n") !== mirrorFiles.join("\n")) {
@@ -70,7 +70,7 @@ function findForbiddenCheckoutSkillArtifacts(view) {
     }
   }
 
-  return [...new Set(violations)].sort();
+  return [...new Set(violations)].sort((left, right) => left.localeCompare(right));
 }
 
 function syncSkill(skillName) {

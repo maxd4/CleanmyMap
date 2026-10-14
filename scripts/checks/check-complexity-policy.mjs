@@ -137,7 +137,7 @@ export function parseChangedDiffText(diff) {
         && added.length === deleted.length
         && added.every(Boolean)
         && deleted.every(Boolean)
-        && [...added].sort().join("\n") === [...deleted].sort().join("\n");
+        && [...added].sort((left, right) => left.localeCompare(right)).join("\n") === [...deleted].sort((left, right) => left.localeCompare(right)).join("\n");
       delete hunk.addedLines;
       delete hunk.deletedLines;
     }

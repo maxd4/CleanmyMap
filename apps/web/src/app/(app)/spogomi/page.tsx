@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, CalendarDays, Globe2, MapPin, ShieldCheck } from 
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { CmmIcon } from "@/components/ui/cmm-icon";
 import { PageHeader } from "@/components/ui/page-header";
 import { SpogomiInternationalContent } from "@/components/spogomi/spogomi-international-content";
@@ -37,10 +38,11 @@ export default async function SpogomiIndexPage() {
   const { t } = getTranslation("spogomi", locale);
   const { userId } = await getSafeAuthSession();
   let events = [] as Awaited<ReturnType<typeof listPublishedSpogomiEvents>>;
+  let eventsLoadError = false;
   try {
     events = await listPublishedSpogomiEvents();
   } catch {
-    events = [];
+    eventsLoadError = true;
   }
 
   return (
@@ -66,7 +68,11 @@ export default async function SpogomiIndexPage() {
               Seules les compétitions explicitement rendues publiques par un organisateur habilité apparaissent ici.
             </p>
           </div>
-          {events.length === 0 ? (
+          {eventsLoadError ? (
+            <CmmFeedback tone="error" title="Compétitions indisponibles">
+              Les compétitions publiées ne peuvent pas être chargées pour le moment. Réessayez plus tard.
+            </CmmFeedback>
+          ) : events.length === 0 ? (
             <CmmCard tone="slate" variant="glass" className="border-dashed p-6">
               <p className="font-bold text-slate-900">Aucune compétition SPOGOMI publiée pour le moment.</p>
               <p className="mt-2 text-sm text-slate-600">Les brouillons et compétitions privées ne sont pas exposés sur cette page.</p>

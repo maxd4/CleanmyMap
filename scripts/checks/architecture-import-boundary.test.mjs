@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process";
 import { test } from "node:test";
 import { buildArchitectureImportGraph } from "../reports/generate-architecture-import-graph.mjs";
 import { createIndexRepositoryView } from "./repository-view.mjs";
-import { AUTHORIZED_BOUNDARY_RULES, collectBoundaryViolations, evaluateBoundary } from "./check-architecture-import-boundary.mjs";
+import { AUTHORIZED_BOUNDARY_RULES, collectBoundaryViolations, evaluateBoundary, stableJson } from "./check-architecture-import-boundary.mjs";
 
 const fixtureRoot = path.join(import.meta.dirname, "fixtures/architecture-import-boundary");
 const fixtureSurface = {
@@ -50,6 +50,10 @@ test("architecture graph resolves relative, alias, facade, test and type-only im
   assert.equal(reexports.length, 3);
   assert.equal(reexports.filter((candidate) => candidate.kind === "type-only").length, 2);
   assert.equal(reexports.filter((candidate) => candidate.kind === "runtime").length, 1);
+});
+
+test("stable JSON keeps the historical UTF-16 key order while using an explicit comparator", () => {
+  assert.equal(stableJson({ z: 1, a: 2, A: 3, _: 4 }), '{\n  "A": 3,\n  "_": 4,\n  "a": 2,\n  "z": 1\n}\n');
 });
 
 test("architecture graph reports a runtime A -> B -> A cycle", () => {

@@ -125,7 +125,7 @@ function isKnownMedia(file) {
 }
 
 function isTestPath(file) {
-  return /(?:^|\/)(?:__tests__|tests?|fixtures?)(?:\/|$)|\.(?:test|spec)(?:\.[^.]+)*\.[^.]+$/i.test(file);
+  return /(?:(?:^|\/)(?:__tests__|tests?|fixtures?)(?:\/|$)|\.(?:test|spec)(?:\.[^.]+)*\.[^.]+$)/i.test(file);
 }
 
 function isDocumentation(file) {

@@ -304,6 +304,20 @@ test("presentation-only JSX class changes do not trigger the substantial-change 
   assert.equal(result.failures.length, 0);
 });
 
+test("style-only comparison remains order-independent with an explicit string comparator", () => {
+  const parsed = parseChangedDiffText([
+    "diff --git a/apps/web/src/fixture.ts b/apps/web/src/fixture.ts",
+    "--- a/apps/web/src/fixture.ts",
+    "+++ b/apps/web/src/fixture.ts",
+    "@@ -3,2 +3,2 @@",
+    '-  <div className="bg-beta text-white">',
+    '-  <div className="bg-alpha text-black">',
+    '+  <div className="bg-alpha text-black">',
+    '+  <div className="bg-beta text-white">',
+  ].join("\n"));
+  assert.equal(parsed.hunks.get("apps/web/src/fixture.ts")[0].styleOnly, true);
+});
+
 test("H: a new React function above target still fails", () => {
   const result = evaluateMetrics({
     metrics: [measuredMetric(21, "named:newFunction#1")],

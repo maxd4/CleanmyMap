@@ -19,6 +19,10 @@ vi.mock("@/components/ui/page-header", () => ({
     React.createElement("header", null, React.createElement("h1", null, title), action),
 }));
 vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children }: { children: React.ReactNode }) => React.createElement("div", null, children) }));
+vi.mock("@/components/ui/cmm-feedback", () => ({
+  CmmFeedback: ({ title, children, tone }: { title?: React.ReactNode; children: React.ReactNode; tone?: string }) =>
+    React.createElement("div", { role: tone === "error" ? "alert" : "status", "data-feedback-tone": tone }, title, children),
+}));
 vi.mock("@/components/spogomi/spogomi-orientation-tabs", () => ({
   SpogomiOrientationTabs: ({ canAccessOrganizerDashboard }: { canAccessOrganizerDashboard: boolean }) =>
     React.createElement(
@@ -60,5 +64,17 @@ describe("/spogomi public and private navigation", () => {
     const markup = renderToStaticMarkup(await SpogomiIndexPage());
     expect(markup).toContain("orientation-tabs");
     expect(markup).toContain('href="/dashboard/spogomi"');
+  });
+
+  it("keeps a loading failure distinct from an empty published-events state", async () => {
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: true });
+    mocks.listPublishedSpogomiEvents.mockRejectedValue(new Error("persistence unavailable"));
+
+    const markup = renderToStaticMarkup(await SpogomiIndexPage());
+
+    expect(markup).toContain('role="alert"');
+    expect(markup).toContain("Compétitions indisponibles");
+    expect(markup).toContain("ne peuvent pas être chargées");
+    expect(markup).not.toContain("Aucune compétition SPOGOMI publiée");
   });
 });

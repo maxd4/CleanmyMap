@@ -11,11 +11,11 @@
 - Révision analysée par SonarCloud : `ed0e2659760e3bdd8d26fba0389c6a52701a8c18`
 - Export : `2026-10-14T17:30:48.550Z`
 - Analyse SonarCloud : `2026-10-14T17:01:01+0000`
-- `main` confronté : `76f5ea768d421829412afae7de318489bb2496e8`
+- `main` confronté : `86f8e5ba050b929afea5ea7d6247f97ace32f1c7` (candidat local courant)
 - `origin/main` au moment du rapprochement :
-  `76f5ea768d421829412afae7de318489bb2496e8`
+  `bccef2a5724ff288ca479e91bae33cfdcb4a777c`
 - Inventaire détaillé généré :
-  `artifacts/sonarcloud-audit/76f5ea768d421829412afae7de318489bb2496e8/sonarcloud-491-tracking.json`
+  `artifacts/sonarcloud-audit/86f8e5ba050b929afea5ea7d6247f97ace32f1c7/sonarcloud-491-tracking.json`
 
 L’inventaire source est conservé comme transport historique. Le suivi généré
 est la projection de rapprochement : chaque entrée conserve l’identifiant
@@ -59,8 +59,8 @@ Aucune anomalie n’est donc classée `OBSOLETE` sur le seul critère de chemin.
 
 | Statut | Nombre | Règle d’attribution dans ce lot |
 | --- | ---: | --- |
-| `TO_FIX` | 491 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, aucune correction locale vérifiée et aucun scan SonarCloud confirmant une résolution |
-| `FIXED_PENDING_SCAN` | 0 | Aucun correctif n’a été exécuté ou prouvé dans ce lot |
+| `TO_FIX` | 482 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans le lot 2A |
+| `FIXED_PENDING_SCAN` | 9 | Correction locale vérifiée pour le lot 2A ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
 | `FALSE_POSITIVE` | 0 | Aucune preuve technique et décision humaine spécifique n’a été fournie |
 | `ACCEPTED_PENDING_APPROVAL` | 0 | Aucun risque accepté ni approbation explicite n’a été fourni |
 | `OBSOLETE` | 0 | Aucun chemin source n’a disparu de `main` |
@@ -69,9 +69,43 @@ Aucune anomalie n’est donc classée `OBSOLETE` sur le seul critère de chemin.
 `TO_FIX` ne signifie pas que chaque finding a été reproduit indépendamment par
 un moteur local. Il signifie que l’anomalie reste une anomalie SonarCloud
 ouverte à traiter, rattachée à un chemin toujours présent, sans preuve de
-correction ou d’obsolescence. Une future correction locale pourra passer à
-`FIXED_PENDING_SCAN` uniquement avec une preuve technique locale explicite ; la
-résolution SonarCloud restera à confirmer séparément par un scan réel.
+correction ou d’obsolescence dans le lot courant. `FIXED_PENDING_SCAN` signifie
+uniquement qu’une correction locale et ses tests ciblés sont documentés ; la
+résolution SonarCloud reste à confirmer séparément par un scan réel.
+
+## Lot 2A — tris déterministes et précédence des expressions régulières
+
+Ce lot est borné aux scripts de gouvernance et de rapport suivants :
+
+- comparateurs explicites pour les tris de chaînes dans
+  `scripts/checks/check-agent-skill-mirrors.mjs`,
+  `scripts/checks/check-architecture-import-boundary.mjs` et
+  `scripts/checks/check-complexity-policy.mjs` ;
+- groupement explicite des alternatives regex dans
+  `scripts/checks/check-public-e2e-artifact.mjs`,
+  `scripts/checks/complexity-policy.mjs`,
+  `scripts/checks/top-heavy-measurement.mjs` et
+  `scripts/reports/repository-growth.mjs`.
+
+Les 9 identifiants traités sont :
+
+| Règle | Identifiants SonarCloud | Statut local |
+| --- | --- | --- |
+| `javascript:S2871` | `AaE3K8nLzHjHEPBoeRAx`, `AaE3K8nLzHjHEPBoeRAy`, `AaE3K8nLzHjHEPBoeRAz`, `AaE7ZAcJkxkMFlGl5f3E`, `AaE3K8qgzHjHEPBoeRBi` | `FIXED_PENDING_SCAN` |
+| `javascript:S5850` | `AaE3K8m2zHjHEPBoeRAu`, `AaE3K8nBzHjHEPBoeRAw`, `AaE7ZAm5kxkMFlGl5f3F`, `AaE3K8khzHjHEPBoeRAN` | `FIXED_PENDING_SCAN` |
+
+Pour `stableJson`, le comparateur conserve explicitement l’ordre UTF-16
+historique des clés afin de ne pas modifier les rapports JSON canoniques. Les
+alternatives regex sont uniquement parenthésées ; leurs correspondances ne
+sont pas élargies ni restreintes. Les 40 autres anomalies `javascript:S2871`
+et les 482 anomalies toutes règles confondues restent `TO_FIX`.
+
+Preuves locales du lot : les suites ciblées totalisent 31/31 succès et les
+trois tests de régression ciblés de complexité passent. Le fichier complet
+`check-complexity-policy.test.mjs` conserve deux échecs préexistants sur les
+attentes de `complexity-baseline.json` (786 entrées actuelles contre 699
+attendues) ; aucune baseline n’a été modifiée. La confirmation SonarCloud est
+`NOT_CONFIRMED` pour les 9 identifiants.
 
 ## Décisions humaines et faux positifs
 

@@ -251,7 +251,7 @@ export function validateBaselineShape(baseline) {
 export function classifyFileKind(file) {
   const normalized = file.replaceAll("\\", "/");
   const base = normalized.slice(normalized.lastIndexOf("/") + 1);
-  if (/(^|\/)(generated|__generated__)(\/|$)|(^|\/)next-env\.d\.ts$|\.generated\./i.test(normalized)) return "generated";
+  if (/(?:(^|\/)(generated|__generated__)(\/|$)|(^|\/)next-env\.d\.ts$|\.generated\.)/i.test(normalized)) return "generated";
   if (/(^|\/)(__tests__|tests?)(\/|$)|\.(?:test|spec)(?:\.[^.]+)*\.(?:ts|tsx)$/i.test(normalized)) return "test";
   if (/(^|\/)(data|config|constants|types)(\/|$)|(^|[-_.])(data|config|constants|types)([-_.]|$)/i.test(base) || /(^|\/)(data|config|constants|types)(\/|$)/i.test(normalized)) return "data/config";
   return "runtime";

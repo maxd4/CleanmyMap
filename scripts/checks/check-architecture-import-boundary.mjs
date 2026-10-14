@@ -17,11 +17,18 @@ export const AUTHORIZED_BOUNDARY_RULES = Object.freeze([
 
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue);
-  if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stableValue(value[key])]));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.keys(value).sort(compareCanonicalKey).map((key) => [key, stableValue(value[key])]));
+  }
   return value;
 }
 
-function stableJson(value) {
+function compareCanonicalKey(left, right) {
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+}
+
+export function stableJson(value) {
   return JSON.stringify(stableValue(value), null, 2) + "\n";
 }
 
