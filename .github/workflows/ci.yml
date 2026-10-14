@@ -135,7 +135,7 @@ jobs:
 
       - name: Install Node dependencies
         id: install_node_dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Test dependency audit controller
         run: node --test scripts/security/audit-dependencies.test.mjs
@@ -204,7 +204,7 @@ jobs:
 
       - name: Install Node dependencies
         id: install_node_dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Security deception contract
         run: npm run check:security-deception
@@ -277,10 +277,10 @@ jobs:
 
       - name: Install Node dependencies
         id: install-node-dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Install architectural Semgrep
-        run: python -m pip install --disable-pip-version-check --no-input semgrep==1.180.0
+        run: "python -m pip install --disable-pip-version-check --no-input --only-binary=:all: semgrep==1.180.0"
 
       - name: Architectural Semgrep
         id: semgrep
@@ -354,10 +354,10 @@ jobs:
             maintenance/python/requirements-lock.txt
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Install Python maintenance dependencies
-        run: python -m pip install --disable-pip-version-check --no-input -r maintenance/python/requirements-dev.txt -c maintenance/python/requirements-lock.txt
+        run: "python -m pip install --disable-pip-version-check --no-input --only-binary=:all: -r maintenance/python/requirements-dev.txt -c maintenance/python/requirements-lock.txt"
 
       - name: Python full validation
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/ci/run_checks.ps1 -Scope full -SkipE2E -SkipEncodingAutofix
@@ -395,7 +395,7 @@ jobs:
 
       - name: Install Node dependencies
         id: install_node_dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Heavy files policy (FULL)
         run: npm run quality:top-heavy
@@ -414,7 +414,7 @@ jobs:
       - name: Install GitNexus
         id: install_gitnexus
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' && steps.install_node_dependencies.outcome == 'success' }}
-        run: npm install --global gitnexus@1.6.12
+        run: npm install --global --ignore-scripts gitnexus@1.6.12
 
       - name: Initialize GitNexus candidate index
         id: initialize_gitnexus
@@ -486,7 +486,7 @@ jobs:
         run: node scripts/checks/check-node-version-contract.mjs
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Web targeted security and regression tests
         run: npm run test:security && npm run test:regression-gates
@@ -535,7 +535,7 @@ jobs:
         run: node scripts/checks/check-node-version-contract.mjs
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Download Web coverage evidence
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
@@ -573,7 +573,7 @@ jobs:
         run: node scripts/checks/check-node-version-contract.mjs
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Vercel audit
         run: npm run audit:vercel:ci
@@ -605,7 +605,7 @@ jobs:
         run: node scripts/checks/check-node-version-contract.mjs
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Web production build
         env:
@@ -646,11 +646,11 @@ jobs:
 
       - name: Install mobile dependencies
         id: install_node_dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Install architectural Semgrep (mobile-only)
         if: needs.scope.outputs.web_code_relevant != 'true'
-        run: python -m pip install --disable-pip-version-check --no-input semgrep==1.180.0
+        run: "python -m pip install --disable-pip-version-check --no-input --only-binary=:all: semgrep==1.180.0"
 
       - name: Architectural Semgrep (mobile-only)
         id: semgrep_mobile

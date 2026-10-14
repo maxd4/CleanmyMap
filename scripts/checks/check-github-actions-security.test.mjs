@@ -70,6 +70,8 @@ assert.equal(
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const ciWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "ci.yml"), "utf8");
 const e2eWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "e2e-supabase.yml"), "utf8");
+const sonarqubeWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "sonarqube-manual.yml"), "utf8");
+const packageLock = JSON.parse(readFileSync(path.join(repositoryRoot, "package-lock.json"), "utf8"));
 const codeqlWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "codeql.yml"), "utf8");
 const pinnedCiCheckoutSha = ["3d3c42e5aac5ba805825", "da76410c181273ba90b1"].join("");
 
@@ -80,6 +82,22 @@ assert.match(e2eWorkflow, /path:\s*artifacts\/ci-public-evidence\b/);
 assert.deepEqual(auditWorkflowContent(e2eWorkflow, ".github/workflows/e2e-supabase.yml"), []);
 assert.match(e2eWorkflow, /combined_sql="\$\(printf '%s\\n'/);
 assert.match(e2eWorkflow, /security_03_sql/);
+
+// Installation and CLI execution remain local and lockfile-controlled. These
+// assertions protect the S6505/S8543/S8541 contract without disabling scripts
+// globally or changing the workflow jobs.
+for (const workflow of [ciWorkflow, e2eWorkflow, sonarqubeWorkflow]) {
+  assert.doesNotMatch(workflow, /^\s*run:\s*npm ci\s*$/m);
+}
+assert.match(ciWorkflow, /npm install --global --ignore-scripts gitnexus@1\.6\.12/);
+assert.equal((ciWorkflow.match(/--only-binary=:all:/g) ?? []).length, 3);
+assert.doesNotMatch(e2eWorkflow, /\bnpx\s+(?:supabase|playwright)\b/);
+assert.match(e2eWorkflow, /\.\/node_modules\/\.bin\/supabase start/);
+assert.match(e2eWorkflow, /\.\/node_modules\/\.bin\/playwright install/);
+assert.match(e2eWorkflow, /\.\/node_modules\/\.bin\/playwright test/);
+assert.equal(packageLock.packages["node_modules/supabase"].version, "2.117.0");
+assert.equal(packageLock.packages["node_modules/playwright"].version, "1.64.0");
+assert.equal(packageLock.packages["node_modules/@playwright/test"].version, "1.64.0");
 
 const firstPartyCodeqlJob = codeqlWorkflow.match(/  analyze-first-party-javascript:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";
 const vendoredCodeqlJob = codeqlWorkflow.match(/  analyze-vendored-javascript:[\s\S]*?(?=\n  [a-z-]+:|\s*$)/)?.[0] ?? "";

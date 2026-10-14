@@ -66,7 +66,7 @@ jobs:
         run: node scripts/checks/check-node-version-contract.mjs
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Audit canonical Supabase migration tree
         run: npm run audit:supabase-migration-trees
@@ -84,7 +84,7 @@ jobs:
           start_log="artifacts/ci/supabase-start.log"
           trap 'rm -f "$start_log"' EXIT
           start_started_at="$(date +%s)"
-          npx supabase start --workdir apps/web --yes > "$start_log" 2>&1
+          ./node_modules/.bin/supabase start --workdir apps/web --yes > "$start_log" 2>&1
           start_exit_code=$?
           start_duration_seconds=$(( $(date +%s) - start_started_at ))
           diagnostic_exit_code=0
@@ -100,7 +100,7 @@ jobs:
       - name: Apply canonical migrations and seed
         run: |
           set -o pipefail
-          npx supabase db reset --local --workdir apps/web --yes 2>&1 | tee artifacts/ci/supabase-reset.log
+          ./node_modules/.bin/supabase db reset --local --workdir apps/web --yes 2>&1 | tee artifacts/ci/supabase-reset.log
 
       - name: Preflight canonical ephemeral PostgreSQL schema
         run: |
@@ -117,7 +117,7 @@ jobs:
           status_file="$(mktemp)"
           status_error_file="$(mktemp)"
           trap 'rm -f "$status_file" "$status_error_file"' EXIT
-          if ! npx supabase status --workdir apps/web --output json > "$status_file" 2> "$status_error_file"; then
+          if ! ./node_modules/.bin/supabase status --workdir apps/web --output json > "$status_file" 2> "$status_error_file"; then
             echo "Canonical Supabase config could not be loaded from apps/web."
             cat "$status_error_file"
             exit 1
@@ -173,17 +173,17 @@ jobs:
           security_02_sql="$(cat e2e/security-02-projection-revocation.sql)"
           security_03_sql="$(cat e2e/security-03-bug-report.sql)"
           combined_sql="$(printf '%s\n' "$preflight_sql" "$profile_security_sql" "$security_02_sql" "$security_03_sql")"
-          npx supabase db query --workdir apps/web --local "$combined_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
+          ./node_modules/.bin/supabase db query --workdir apps/web --local "$combined_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
 
           echo "Running SECURITY-02 PostgreSQL two-session contract"
           node e2e/security-02-two-sessions.mjs 2>&1 | tee -a artifacts/ci/supabase-preflight.log
 
       - name: Synchronize PostgREST schema after PostgreSQL proof
         run: |
-          npx supabase db query --workdir apps/web --local "notify pgrst, 'reload schema';"
+          ./node_modules/.bin/supabase db query --workdir apps/web --local "notify pgrst, 'reload schema';"
 
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        run: ./node_modules/.bin/playwright install --with-deps chromium
 
       - name: Run SPOGOMI business tests
         run: |
@@ -198,7 +198,7 @@ jobs:
 
       - name: Verify persistent Playwright projects are listable
         run: |
-          npx playwright test --list \
+          ./node_modules/.bin/playwright test --list \
             --project="action sharing" \
             --project="authenticated campaign" \
             --project="signalement campaign 2"
@@ -225,7 +225,7 @@ jobs:
             echo "No ephemeral Supabase containers exist; skipping stop."
             exit 0
           fi
-          npx supabase stop --workdir apps/web --no-backup > artifacts/ci/supabase-stop.log 2>&1
+          ./node_modules/.bin/supabase stop --workdir apps/web --no-backup > artifacts/ci/supabase-stop.log 2>&1
 
       - name: Remove ephemeral credentials
         if: always()
