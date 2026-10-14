@@ -20,6 +20,12 @@ test("classifies the requested fixture categories and reserved names", () => {
   assert.equal(classifyFile("app/route.ts"), "Next reserved");
   assert.equal(classifyFile("src/my-feature.ts"), "TS/TSX");
   assert.equal(classifyFile("src/my-feature.test.ts"), "tests");
+  assert.equal(classifyFile("src/my-feature.test.tsx"), "tests");
+  assert.equal(classifyFile("src/my-feature.helpers.test.ts"), "tests");
+  assert.equal(classifyFile("tests/support/persistence-helper.ts"), "test support");
+  assert.equal(classifyFile("__tests__/support/api-route-mocks.ts"), "test support");
+  assert.equal(classifyFile("src/route.test.helpers.ts"), "test support");
+  assert.equal(classifyFile("apps/web/src/app/api/email/test/route.ts"), "Next reserved");
   assert.equal(classifyFile("src/ActionStepLocation.tsx"), "TS/TSX");
   assert.equal(classifyFile("maintenance/python_module.py"), "Python");
   assert.equal(classifyFile("apps/web/supabase/migrations/20261014000000_add_table.sql"), "migrations SQL");
@@ -70,7 +76,34 @@ test("the scanner reads only Git-tracked files", (t) => {
   assert.equal(result.trackedFiles.includes("src/NewFeature.ts"), false);
 });
 
-test("legacy test helpers remain baselined while new test suffixes are enforced", () => {
-  const result = findNamingViolations(["tests/my-feature.test.ts", "tests/my-feature.test.helpers.ts", "tests/my-feature.spec.ts"]);
-  assert.deepEqual(result.map(({ path: file }) => file), ["tests/my-feature.spec.ts", "tests/my-feature.test.helpers.ts"]);
+test("test support is not executable while real tests keep the suffix contract", () => {
+  const result = findNamingViolations([
+    "tests/my-feature.test.ts",
+    "tests/my-feature.test.tsx",
+    "src/my-feature.helpers.test.ts",
+    "tests/support/persistence-helper.ts",
+    "__tests__/support/api-route-mocks.ts",
+    "src/route.test.helpers.ts",
+    "tests/my-feature.spec.ts",
+  ]);
+  assert.deepEqual(result.map(({ path: file }) => file), ["tests/my-feature.spec.ts"]);
+});
+
+test("new executable and support naming violations remain blocking", () => {
+  const result = findNamingViolations([
+    "tests/NewFeature.ts",
+    "tests/support/NewHelper.ts",
+  ]);
+  assert.deepEqual(result, [
+    { path: "tests/NewFeature.ts", rule: "test-suffix", observedStyle: "legacy-test-name" },
+    { path: "tests/support/NewHelper.ts", rule: "test-support-kebab-case", observedStyle: "PascalCase" },
+  ]);
+});
+
+test("a removed support exception cannot allow a non-kebab support name to reappear", () => {
+  const result = validateNaming({
+    trackedFiles: ["tests/support/NewHelper.ts"],
+    baseline: fixtureBaseline(),
+  });
+  assert.deepEqual(result.newViolations.map(({ path: file }) => file), ["tests/support/NewHelper.ts"]);
 });

@@ -12,7 +12,8 @@ fichiers suivis par Git :
 | Fichiers applicatifs TS/TSX | `kebab-case`, avec les noms en plusieurs segments séparés par `.` conservés lorsqu’ils sont eux-mêmes en `kebab-case` (`route.shared.ts`, `feature.model.ts`) |
 | Symboles React, classes et types | `PascalCase` dans le code, indépendamment du nom de fichier |
 | Fonctions et variables TS | `camelCase` dans le code |
-| Tests TS/TSX | `<target>.test.ts` ou `<target>.test.tsx` ; les suffixes historiques et les specs Playwright sont baselinés |
+| Tests exécutables TS/TSX | `<target>.test.ts` ou `<target>.test.tsx` ; les specs Playwright historiques sont baselinées |
+| Helpers, fixtures et scénarios de tests | classés séparément ; TypeScript en `kebab-case`, sans suffixe `.test` artificiel |
 | Python | modules PEP 8 en `snake_case` ; les modules privés `_name.py` sont valides |
 | Migrations Supabase | `YYYYMMDDHHMMSS_snake_case.sql` |
 | Fichiers réservés Next.js | noms imposés (`page.tsx`, `route.ts`, `layout.tsx`, etc.), explicitement exemptés |
@@ -25,24 +26,28 @@ sont acceptés que lorsqu’ils sont tous en `kebab-case`.
 
 ## Mesure de départ
 
-L’audit a été exécuté sur les 5 045 chemins retournés par `git ls-files` au
-SHA `a83ad3a57aa08f90e4549e20d44b421cc494c964`. Aucun fichier non suivi n’a
+L’audit a été exécuté sur les 5 050 chemins retournés par `git ls-files` au
+SHA `732f0bc4f2dd9b25faa8e5e0bfc02e027384f48e`. Aucun fichier non suivi n’a
 participé à la mesure.
 
 | Catégorie | Distribution mesurée |
 | --- | --- |
-| TS/TSX applicatifs | 1 976 `kebab-case`, 13 `PascalCase`, 1 `camelCase`, 1 exception historique |
-| Tests TS/TSX | 1 194 `<target>.test.ts[x]`, 47 noms historiques hors suffixe canonique |
+| TS/TSX applicatifs | 1 943 `kebab-case`, 13 `PascalCase`, 1 `camelCase`, 1 exception historique |
+| Tests exécutables TS/TSX | 1 298 `<target>.test.ts[x]`, 17 specs Playwright historiques hors suffixe canonique |
+| Helpers/fixtures/scénarios de tests | 63 fichiers TypeScript `kebab-case` et 1 fixture non-TypeScript, classés hors tests exécutables |
 | Python | 52 `snake_case` PEP 8 |
 | Migrations SQL | 262 timestampées Supabase conformes |
 | Next reserved | 229 fichiers exemptés par contrat Next.js |
-| Configuration | 85 |
-| Documentation | 694 |
+| Configuration | 86 |
+| Documentation | 696 |
 | Generated/vendor | 119, exclus |
 | Autres fichiers suivis | 265 |
 
-La majorité réelle confirme donc la cible préférée : `kebab-case` pour les
-fichiers applicatifs et `<target>.test.ts[x]` pour les tests TypeScript.
+La mesure réelle confirme donc la cible préférée : `kebab-case` pour les
+fichiers applicatifs et les supports de tests TypeScript, et
+`<target>.test.ts[x]` pour les tests exécutables. Un segment de chemin nommé
+`test` seul, comme dans `apps/web/src/app/api/email/test/route.ts`, ne suffit
+pas à classer une source applicative comme test.
 
 ## Ratchet et baseline
 
@@ -52,8 +57,10 @@ conserve le même résultat sous Windows et Linux.
 
 La baseline versionnée est
 [`scripts/checks/file-naming-baseline.json`](../../scripts/checks/file-naming-baseline.json).
-Elle contient les 15 écarts TS/TSX et 47 noms de tests historiques observés
-au SHA de mesure. `ActionStepLocation.tsx` est conservé comme exception
+Elle contient les 15 écarts TS/TSX et 17 specs Playwright historiques observés
+au SHA de mesure. Les helpers, fixtures et scénarios TypeScript conformes ne
+sont plus des exceptions : ils sont validés comme supports en `kebab-case`.
+`ActionStepLocation.tsx` est conservé comme exception
 PascalCase explicite pour préserver ses imports existants.
 
 Le contrôle échoue lorsqu’un chemin suivi introduit une violation absente de

@@ -47,8 +47,31 @@ function isMigrationFile(file) {
     && fileName(file).endsWith(".sql");
 }
 
+const TEST_SUPPORT_SEGMENTS = new Set([
+  "fixture", "fixtures", "helper", "helpers", "harness", "harnesses", "mock", "mocks",
+  "scenario", "scenarios", "support",
+]);
+const TEST_CONTEXT_SEGMENTS = new Set(["__tests__", "e2e", "fixture", "fixtures", "tests"]);
+
+function testNameTokens(file) {
+  return fileName(file).split(".").slice(0, -1).flatMap((part) => part.split("-"));
+}
+
+function isTestSupportFile(file) {
+  if (isTypeScriptFile(file) && testNameIsValid(fileName(file))) return false;
+  const segments = normalizePath(file).split("/");
+  const hasTestContext = segments.some((segment) => TEST_CONTEXT_SEGMENTS.has(segment));
+  const hasSupportDirectory = segments.some((segment) => TEST_SUPPORT_SEGMENTS.has(segment));
+  const tokens = testNameTokens(file);
+  const hasTestMarker = tokens.includes("test") || tokens.includes("tests");
+  const hasSupportMarker = tokens.some((token) => TEST_SUPPORT_SEGMENTS.has(token));
+  return (hasTestContext && (hasSupportDirectory || hasSupportMarker))
+    || (hasTestMarker && hasSupportMarker);
+}
+
 function isTestFile(file) {
-  return /(^|\/)(__tests__|tests?)(\/|$)/.test(file)
+  if (isTestSupportFile(file)) return false;
+  return /(^|\/)(__tests__|tests)(\/|$)/.test(file)
     || /\.(?:test|spec)(?:\.[^.]+)*\.(?:[cm]?[jt]sx?)$/.test(fileName(file));
 }
 
@@ -82,6 +105,7 @@ export function classifyFile(file) {
   if (isMigrationFile(normalized)) return "migrations SQL";
   if (isTypeScriptFile(normalized) && NEXT_RESERVED_BASENAMES.has(stem)) return "Next reserved";
   if (isPythonFile(normalized)) return "Python";
+  if (isTestSupportFile(normalized)) return "test support";
   if (isTestFile(normalized)) return "tests";
   if (isConfigFile(normalized)) return "config";
   if (isTypeScriptFile(normalized)) return "TS/TSX";
@@ -111,6 +135,9 @@ export function findNamingViolations(trackedFiles) {
     if (category === "TS/TSX") {
       const observedStyle = classifyStyle(stem);
       if (observedStyle !== "kebab-case") violations.push({ path: file, rule: "ts-tsx-kebab-case", observedStyle });
+    } else if (category === "test support" && isTypeScriptFile(file)) {
+      const observedStyle = classifyStyle(stem);
+      if (observedStyle !== "kebab-case") violations.push({ path: file, rule: "test-support-kebab-case", observedStyle });
     } else if (category === "tests" && isTypeScriptFile(file) && !testNameIsValid(name)) {
       violations.push({ path: file, rule: "test-suffix", observedStyle: "legacy-test-name" });
     } else if (category === "Python" && !pythonNameIsValid(stem)) {
