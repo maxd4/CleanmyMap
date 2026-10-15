@@ -282,7 +282,7 @@ export function ActionStepReview({
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">
-                {isCleanPlaceMode ? "Dernière vérification" : "Dernière vérification"}
+                Dernière vérification
               </p>
               <p className="text-xs text-slate-400 mt-0.5">
                 Ce bouton ouvre une confirmation. Rien n&apos;est envoyé tant que vous ne confirmez pas.
@@ -306,7 +306,7 @@ export function ActionStepReview({
             ) : (
               <>
                 <ClipboardCheck size={16} />
-                {isCleanPlaceMode ? "Vérifier avant envoi" : "Vérifier avant envoi"}
+                Vérifier avant envoi
               </>
             )}
           </CmmButton>

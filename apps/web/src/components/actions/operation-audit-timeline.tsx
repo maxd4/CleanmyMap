@@ -80,9 +80,7 @@ export function OperationAuditTimeline({
                         className={`font-semibold ${entry.outcome === "success" ? "text-emerald-700" : "text-red-700"}`}
                       >
                         {entry.outcome === "success"
-                          ? fr
-                            ? "OK"
-                            : "OK"
+                          ? "OK"
                           : fr
                             ? "ERREUR"
                             : "ERROR"}
@@ -91,7 +89,7 @@ export function OperationAuditTimeline({
                       {entry.targetId ? <span>#{entry.targetId}</span> : null}
                     </div>
                     <div className="mt-1 cmm-text-muted">
-                      {fr ? "Admin" : "Admin"}: {entry.actorLabel ?? entry.actorUserId}
+                      Admin: {entry.actorLabel ?? entry.actorUserId}
                     </div>
                     <div className="cmm-text-muted">Op: {entry.operationId}</div>
                     {editedFields ? (

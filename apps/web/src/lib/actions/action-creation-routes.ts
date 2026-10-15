@@ -144,7 +144,7 @@ export function normalizeActionCreationSpace(
     return candidate as ActionCreationSpace;
   }
   if (context.tab === "after") return "bilan";
-  return context.actionId?.trim() ? "prepare" : "prepare";
+  return "prepare";
 }
 
 export function buildActionCreationTabHref(

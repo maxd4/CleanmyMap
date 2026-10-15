@@ -214,7 +214,7 @@ function buildSvgIntroMarkup(
       <text x="24" y="${layout.isPortrait ? 326 : 322}" fill="#ffffff" font-size="${layout.bodyFontSize}" font-weight="800">
         <tspan x="24" dy="0">${escapeXml(content.locationLabel)}</tspan>
       </text>
-      <text x="${organizationX}" y="${layout.isPortrait ? 290 : 290}" fill="#FFFFFF" font-size="${layout.smallFontSize}" font-weight="700" letter-spacing="0.18em">ORGANISATION</text>
+      <text x="${organizationX}" y="290" fill="#FFFFFF" font-size="${layout.smallFontSize}" font-weight="700" letter-spacing="0.18em">ORGANISATION</text>
       <text x="${organizationX}" y="${layout.isPortrait ? 326 : 322}" fill="#ffffff" font-size="${layout.bodyFontSize}" font-weight="800">
         <tspan x="${organizationX}" dy="0">${escapeXml(form.associationName || actorName || "CleanMyMap")}</tspan>
       </text>

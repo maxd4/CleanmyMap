@@ -59,8 +59,8 @@ Aucune anomalie n’est donc classée `OBSOLETE` sur le seul critère de chemin.
 
 | Statut | Nombre | Règle d’attribution dans ce lot |
 | --- | ---: | --- |
-| `TO_FIX` | 276 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans les lots traités |
-| `FIXED_PENDING_SCAN` | 213 | Corrections locales vérifiées pour les lots traités ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
+| `TO_FIX` | 269 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans les lots traités |
+| `FIXED_PENDING_SCAN` | 220 | Corrections locales vérifiées pour les lots traités ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
 | `BLOCKED` | 2 | Findings S8786 sur un fichier TypeScript déjà modifié par un writer concurrent, non écrasés |
 | `FALSE_POSITIVE` | 0 | Aucune preuve technique et décision humaine spécifique n’a été fournie |
 | `ACCEPTED_PENDING_APPROVAL` | 0 | Aucun risque accepté ni approbation explicite n’a été fourni |
@@ -246,6 +246,37 @@ lot n’a pas écrasé ni fusionné silencieusement ce changement.
 
 Les fixtures S2187, assertions S8784 et autres code smells ne sont pas
 absorbés par ce lot et restent dans le suivi exhaustif pour des lots distincts.
+
+## Lot 6 — branches conditionnelles identiques (`S3923`)
+
+Ce lot traite la première famille du chantier S3923 dans le domaine Actions.
+Le snapshot SonarCloud source contient 82 anomalies S3923 (80 TypeScript et 2
+JavaScript). Le fichier demandé comme point de départ,
+`apps/web/src/components/navigation/app-navigation-ribbon-theme.ts`, ne porte
+aucun S3923 dans cet inventaire ; ses 12 findings locaux sont des S7773 et
+restent donc hors de ce lot.
+
+Les sept expressions ci-dessous ont été confrontées à leurs consommateurs et
+contrats locaux. Chaque condition retournait exactement la même valeur dans
+ses deux branches ; la simplification conserve les textes, les variantes UI,
+les tokens, le routage et la géométrie SVG. Aucun nouveau comportement n’a été
+inventé et aucun test de régression métier n’était requis pour ces
+simplifications sémantiques.
+
+| Identifiant SonarCloud | Fichier et ligne | Décision locale | Statut |
+| --- | --- | --- | --- |
+| `AaE3K8QCzHjHEPBoeQ-O` | `apps/web/src/components/actions/action-creation-shell-sections.tsx:37` | Supprimer `fr ? "Date" : "Date"` ; libellé invariant | `FIXED_PENDING_SCAN` |
+| `AaE3K8PBzHjHEPBoeQ-J` | `apps/web/src/components/actions/action-declaration/steps/ActionStepReview.tsx:285` | Supprimer le conditionnel ; titre invariant | `FIXED_PENDING_SCAN` |
+| `AaE3K8PBzHjHEPBoeQ-K` | `apps/web/src/components/actions/action-declaration/steps/ActionStepReview.tsx:309` | Supprimer le conditionnel ; libellé invariant | `FIXED_PENDING_SCAN` |
+| `AaE3K8QXzHjHEPBoeQ-Q` | `apps/web/src/components/actions/operation-audit-timeline.tsx:83` | Conserver la distinction succès/erreur, simplifier uniquement le `"OK"` invariant | `FIXED_PENDING_SCAN` |
+| `AaE3K8QXzHjHEPBoeQ-R` | `apps/web/src/components/actions/operation-audit-timeline.tsx:94` | Supprimer `fr ? "Admin" : "Admin"` ; libellé invariant | `FIXED_PENDING_SCAN` |
+| `AaE3K7-6zHjHEPBoeQ8n` | `apps/web/src/lib/actions/action-creation-routes.ts:147` | Supprimer le test `actionId` ; les deux chemins retournaient `"prepare"` | `FIXED_PENDING_SCAN` |
+| `AaE3K79BzHjHEPBoeQ8d` | `apps/web/src/lib/actions/exports/export-form-media-svg.ts:217` | Fixer `y` à `290` ; les deux branches étaient identiques | `FIXED_PENDING_SCAN` |
+
+Le reliquat S3923 du snapshot est de 75 identifiants, à traiter par domaines
+cohérents. Les anomalies S3923 non modifiées restent `TO_FIX` jusqu’à leur
+qualification et correction ; `FIXED_PENDING_SCAN` ne signifie pas qu’un scan
+SonarCloud ultérieur a confirmé la résolution.
 
 Preuves locales : syntaxe Node/Python, 15 suites Node ciblées, 10 fichiers
 Vitest / 70 tests applicatifs, dont les entrées adverses longues. Le contrôle
