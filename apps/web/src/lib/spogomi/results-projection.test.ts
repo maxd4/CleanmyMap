@@ -53,6 +53,24 @@ describe("SPOGOMI public results projection", () => {
     expect(projection.results.butts.entries.find((entry) => entry.teamNumber === 3)).toMatchObject({ rank: 1, numerator: 4, denominator: 1 });
   });
 
+  it("calculates mixed edition rankings inside each division only", () => {
+    const candidate = source();
+    candidate.event.mode = "mixed";
+    candidate.event.divisions = [
+      { id: "division-casual", division_type: "casual" },
+      { id: "division-world", division_type: "world_cup" },
+    ];
+    candidate.categories = candidate.categories.map((category) => ({ ...category, division_id: category.code === "waste" ? "division-casual" : "division-world" }));
+    candidate.teams = candidate.teams.map((team) => ({ ...team, division_id: team.id === "team-3" ? "division-world" : "division-casual" }));
+    candidate.submissions = candidate.submissions.map((submission) => ({ ...submission, division_id: submission.team_id === "team-3" ? "division-world" : "division-casual" }));
+    candidate.items = candidate.items.map((item) => ({ ...item, division_id: item.submission_id === "submission-3" ? "division-world" : "division-casual" }));
+    candidate.participants = candidate.participants.map((participant) => ({ ...participant, division_id: participant.team_id === "team-3" ? "division-world" : "division-casual" }));
+    const projection = buildSpogomiResultsProjection(candidate);
+    expect(projection.results.divisions).toHaveLength(2);
+    expect(projection.results.divisions?.[0]?.sport.entries.map((entry) => entry.teamNumber)).toEqual([1, 2]);
+    expect(projection.results.divisions?.[1]?.sport.entries.map((entry) => entry.teamNumber)).toEqual([3]);
+  });
+
   it("keeps unresolved sports ties equal when the regulation does not configure a further departure", () => {
     const candidate = source();
     candidate.event.regulationConfig = { ...(candidate.event.regulationConfig as Record<string, unknown>), tiebreakers: ["sporting_score"] };

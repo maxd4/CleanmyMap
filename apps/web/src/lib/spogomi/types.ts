@@ -1,4 +1,21 @@
-export type SpogomiEventMode = "casual" | "world_cup";
+export type SpogomiDivisionType = "casual" | "world_cup";
+export type SpogomiEventMode = SpogomiDivisionType | "mixed";
+
+export type SpogomiDivision = {
+  id: string;
+  event_id: string;
+  division_type: SpogomiDivisionType;
+  division_key: SpogomiDivisionType;
+};
+
+export function spogomiDivisionTypesForMode(mode: SpogomiEventMode): SpogomiDivisionType[] {
+  return mode === "mixed" ? ["casual", "world_cup"] : [mode];
+}
+
+export function spogomiModeLabel(mode: SpogomiEventMode): string {
+  const divisionTypes = spogomiDivisionTypesForMode(mode);
+  return divisionTypes.length === 2 ? "Casual & World Cup" : divisionTypes[0] === "world_cup" ? "World Cup" : "Casual";
+}
 export type SpogomiEventState =
   | "draft"
   | "registration_open"

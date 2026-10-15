@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const selectionSchema = z.object({
+  divisionId: z.string().uuid().optional(),
   sheetName: z.string().min(1).max(255).optional(),
   headerRow: z.coerce.number().int().min(1).max(60).optional(),
   acceptedRowNumbers: z.array(z.number().int().min(2).max(10002)).max(10000).optional(),
@@ -37,14 +38,15 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
       return validationErrorResponse({ body: ["La sélection de lignes est invalide."] });
     }
     const rawSelection = {
+      ...(typeof form.get("divisionId") === "string" && form.get("divisionId") ? { divisionId: form.get("divisionId") } : {}),
       ...(typeof form.get("sheetName") === "string" && form.get("sheetName") ? { sheetName: form.get("sheetName") } : {}),
       ...(typeof form.get("headerRow") === "string" && form.get("headerRow") ? { headerRow: form.get("headerRow") } : {}),
       ...(rawAcceptedRowNumbers !== undefined ? { acceptedRowNumbers: rawAcceptedRowNumbers } : {}),
     };
     const parsedSelection = selectionSchema.safeParse(rawSelection);
     if (!parsedSelection.success) return validationErrorResponse({ body: ["La sélection de feuille, d’en-tête ou de lignes est invalide."] });
-    const { sheetName, headerRow, acceptedRowNumbers } = parsedSelection.data;
-    const result = await confirmRosterImport({ supabase, event, userId: access.userId, file, mapping, importOptions: { sheetName, headerRow }, acceptedRowNumbers });
+    const { divisionId, sheetName, headerRow, acceptedRowNumbers } = parsedSelection.data;
+    const result = await confirmRosterImport({ supabase, event, userId: access.userId, file, mapping, importOptions: { sheetName, headerRow }, acceptedRowNumbers, divisionId });
     return NextResponse.json(result, { status: result.alreadyImported ? 200 : 201 });
   } catch (error) {
     return handleApiError(error, "spogomi.roster.confirm");

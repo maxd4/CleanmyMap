@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 // Justification Vercel: team locking changes certification state and must not be statically rendered.
 export const dynamic = "force-dynamic";
 
-const lockSchema = z.object({ expectedRevision: z.number().int().nonnegative().optional() });
+const lockSchema = z.object({ expectedRevision: z.number().int().nonnegative().optional(), divisionId: z.string().uuid().optional() });
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
   const access = await requireAuthenticatedAccess();
@@ -20,7 +20,7 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
   try {
     const { supabase, authorized } = await loadAuthorizedSpogomiEvent((await context.params).eventId, access.userId);
     if ("response" in authorized) return authorized.response;
-    return NextResponse.json(await lockSpogomiTeams(supabase, authorized.event, access.userId, parsed.data.expectedRevision));
+    return NextResponse.json(await lockSpogomiTeams(supabase, authorized.event, access.userId, parsed.data.expectedRevision, parsed.data.divisionId));
   } catch (error) {
     if (error instanceof SpogomiCompositionProtectionError) {
       return NextResponse.json({ error: error.message, kind: "validation", status: "error" }, { status: 409 });

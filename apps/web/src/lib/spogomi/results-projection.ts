@@ -4,8 +4,10 @@ import {
 import { buildSpogomiRegulation } from "./regulation";
 import { toSpogomiResultItemInput } from "./result-input";
 import type { SpogomiCompetitionResult, SpogomiRegulation } from "./types";
+import { buildPublicationSourceSnapshot, type SpogomiPublicationSourceSnapshot } from "./results-projection-snapshot";
 
 type SpogomiPublicResultsVisibility = "hidden" | "provisional" | "certified";
+import type { SpogomiDivision, SpogomiDivisionType } from "./types";
 
 export type SpogomiResultsSource = {
   event: {
@@ -13,7 +15,8 @@ export type SpogomiResultsSource = {
     actionId: string;
     name: string;
     locationLabel: string;
-    mode: "casual" | "world_cup";
+    mode: "casual" | "world_cup" | "mixed";
+    divisions?: Array<Pick<SpogomiDivision, "id" | "division_type">>;
     state: string;
     startsAt: string;
     endsAt: string | null;
@@ -28,6 +31,7 @@ export type SpogomiResultsSource = {
   categories: Array<{
     id: string;
     event_id: string;
+    division_id?: string;
     regulation_version: string;
     code: string;
     label: string;
@@ -40,51 +44,13 @@ export type SpogomiResultsSource = {
     is_complete: boolean;
     updated_at?: string;
   }>;
-  teams: Array<{ id: string; team_number: number; public_name: string; composition_state: string; certified_submission_id: string | null; updated_at?: string }>;
-  submissions: Array<{ id: string; team_id: string; version: number; status: string; submitted_at: string | null; updated_at: string; regulation_version?: string }>;
+  teams: Array<{ id: string; division_id?: string; team_number: number; public_name: string; composition_state: string; certified_submission_id: string | null; updated_at?: string }>;
+  submissions: Array<{ id: string; division_id?: string; team_id: string; version: number; status: string; submitted_at: string | null; updated_at: string; regulation_version?: string }>;
   items: Array<Record<string, unknown>>;
-  participants: Array<{ id: string; team_id: string | null; registration_status: string; attendance_status: string; updated_at?: string }>;
-  officialRankings: Array<{ team_id: string; kind: "points" | "butts"; rank: number; status: "certified" | "revoked"; team_eligible: boolean; decision_version: string; source_reference: string; source_snapshot?: SpogomiPublicationSourceSnapshot | null }>;
+  participants: Array<{ id: string; division_id?: string; team_id: string | null; registration_status: string; attendance_status: string; updated_at?: string }>;
+  officialRankings: Array<{ division_id?: string; team_id: string; kind: "points" | "butts"; rank: number; status: "certified" | "revoked"; team_eligible: boolean; decision_version: string; source_reference: string; source_snapshot?: SpogomiPublicationSourceSnapshot | null }>;
   consolidation: { projection: Record<string, unknown>; published_at: string } | null;
   actionIsPublished: boolean;
-};
-
-type SpogomiPublicationSourceSnapshot = {
-  event: {
-    id: string;
-    regulationVersion: string;
-    regulationStatus: string;
-    regulationSourceReference: string | null;
-    regulationConfig: unknown;
-    teamSizeConfig: unknown;
-  };
-  categories: Array<{
-    id: string;
-    regulationVersion: string;
-    code: string;
-    measurementKind: string;
-    unit: string;
-    coefficient: string | null;
-    coefficientStatus: string;
-    environmentalCategorySlug: string | null;
-    isComplete: boolean;
-  }>;
-  teams: Array<{ id: string; teamNumber: number; compositionState: string; certifiedSubmissionId: string | null }>;
-  submissions: Array<{ id: string; teamId: string; version: number; status: string; submittedAt: string | null; regulationVersion: string }>;
-  items: Array<{
-    id: string;
-    submissionId: string;
-    categoryRuleId: string;
-    measurementKind: string;
-    unit: string;
-    quantity: string | null;
-    massGrams: string | null;
-    objectCount: string | null;
-    measurementMethod: string | null;
-    provenance: string;
-    sourceReference: string | null;
-  }>;
-  participants: Array<{ id: string; teamId: string | null; registrationStatus: string; attendanceStatus: string }>;
 };
 
 type SpogomiPublicRankingEntry = {
@@ -127,10 +93,19 @@ export type SpogomiPublicResults = {
     projectionVersion: string | null;
     sourceHash: string | null;
   };
+  divisions?: Array<{
+    id: string;
+    type: SpogomiDivisionType;
+    regulationVersion: string;
+    regulationComplete: boolean;
+    sport: SpogomiPublicResults["sport"];
+    butts: SpogomiPublicResults["butts"];
+  }>;
 };
 
 type SpogomiExportTeam = {
   teamId: string;
+  divisionId?: string;
   teamNumber: number;
   publicName: string;
   registeredParticipants: number;
@@ -184,7 +159,7 @@ function sourceEvent(event: SpogomiResultsSource["event"]) {
     id: event.id,
     name: event.name,
     event_slug: null,
-    mode: event.mode,
+    mode: event.mode === "mixed" ? "casual" : event.mode,
     state: event.state,
     regulation_version: event.regulationVersion,
     regulation_status: event.regulationStatus,
@@ -193,7 +168,6 @@ function sourceEvent(event: SpogomiResultsSource["event"]) {
     team_size_config: event.teamSizeConfig,
   };
 }
-
 function parseNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);
@@ -327,6 +301,43 @@ function buildRankingEntries(params: {
 }
 
 export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refreshedAt = new Date().toISOString()): SpogomiExportProjection {
+  const divisionRows = source.event.divisions ?? [];
+  if (source.event.mode === "mixed" && divisionRows.length === 2) {
+    const projections = divisionRows.map((division) => buildSpogomiResultsProjection({
+      ...source,
+      event: { ...source.event, mode: division.division_type, divisions: undefined },
+      categories: source.categories.filter((row) => row.division_id === division.id),
+      teams: source.teams.filter((row) => row.division_id === division.id),
+      submissions: source.submissions.filter((row) => row.division_id === division.id),
+      items: source.items.filter((row) => row.division_id === division.id),
+      participants: source.participants.filter((row) => row.division_id === division.id),
+      officialRankings: source.officialRankings.filter((row) => row.division_id === division.id),
+    }, refreshedAt));
+    const first = projections[0];
+    if (!first) throw new Error("Validation: une édition mixte doit posséder deux divisions.");
+    const environmental = source.actionIsPublished && source.consolidation?.projection
+      ? {
+          status: "available" as const,
+          totalWasteMassGrams: parseNumber(source.consolidation.projection.totalWasteMassGrams),
+          cigaretteButtsMassGrams: parseNumber(source.consolidation.projection.cigaretteButtsMassGrams),
+          cigaretteButtsCount: parseNumber(source.consolidation.projection.cigaretteButtsCount),
+          participantsPresent: parseNumber(source.consolidation.projection.participantsPresent),
+          projectionVersion: typeof source.consolidation.projection.projectionVersion === "string" ? source.consolidation.projection.projectionVersion : null,
+          sourceHash: typeof source.consolidation.projection.sourceHash === "string" ? source.consolidation.projection.sourceHash : null,
+        }
+      : { status: "unavailable" as const, totalWasteMassGrams: null, cigaretteButtsMassGrams: null, cigaretteButtsCount: null, participantsPresent: null, projectionVersion: null, sourceHash: null };
+    return {
+      ...first,
+      event: source.event,
+      teams: projections.flatMap((projection, index) => projection.teams.map((team) => ({ ...team, division_id: divisionRows[index]?.id }))),
+      sourceSubmissionIds: projections.flatMap((projection) => projection.sourceSubmissionIds),
+      results: {
+        ...first.results,
+        environmental,
+        divisions: projections.map((projection, index) => ({ id: divisionRows[index]!.id, type: divisionRows[index]!.division_type, regulationVersion: projection.results.regulationVersion, regulationComplete: projection.results.regulationComplete, sport: projection.results.sport, butts: projection.results.butts })),
+      },
+    };
+  }
   const regulation = buildSpogomiRegulation(sourceEvent(source.event), source.categories);
   const publicationSourceSnapshot = buildPublicationSourceSnapshot(source);
   const regulationComplete = regulation.status === "complete" && regulation.categories.every((category) => category.isComplete);
@@ -378,6 +389,7 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
     const buttsDecision = certified ? officialButts.get(entry.team.id) ?? null : null;
     return {
       teamId: entry.team.id,
+      divisionId: entry.team.division_id,
       teamNumber: entry.team.team_number,
       publicName: entry.team.public_name,
       registeredParticipants: entry.registeredParticipants,
@@ -411,63 +423,4 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
   });
   const sourceSubmissionIds = computed.map((entry) => entry.team.certified_submission_id).filter((id): id is string => Boolean(id));
   return { event: source.event, regulation, results: publicResults, teams: exportTeams, consolidation: source.consolidation?.projection ?? null, categories: source.categories, sourceSubmissionIds, publicationSourceSnapshot };
-}
-
-function buildPublicationSourceSnapshot(source: SpogomiResultsSource): SpogomiPublicationSourceSnapshot {
-  const snapshotNumber = (value: unknown): string | null => value === null || value === undefined ? null : String(value);
-
-  return {
-    event: {
-      id: source.event.id,
-      regulationVersion: source.event.regulationVersion,
-      regulationStatus: source.event.regulationStatus,
-      regulationSourceReference: source.event.regulationSourceReference,
-      regulationConfig: source.event.regulationConfig,
-      teamSizeConfig: source.event.teamSizeConfig,
-    },
-    categories: source.categories.map((row) => ({
-      id: row.id,
-      regulationVersion: row.regulation_version,
-      code: row.code,
-      measurementKind: row.measurement_kind,
-      unit: row.unit,
-      coefficient: snapshotNumber(row.coefficient),
-      coefficientStatus: row.coefficient_status,
-      environmentalCategorySlug: row.environmental_category_slug,
-      isComplete: row.is_complete,
-    })),
-    teams: source.teams.map((row) => ({
-      id: row.id,
-      teamNumber: row.team_number,
-      compositionState: row.composition_state,
-      certifiedSubmissionId: row.certified_submission_id,
-    })),
-    submissions: source.submissions.map((row) => ({
-      id: row.id,
-      teamId: row.team_id,
-      version: row.version,
-      status: row.status,
-      submittedAt: row.submitted_at,
-      regulationVersion: row.regulation_version ?? "",
-    })),
-    items: source.items.map((row) => ({
-      id: String(row.id ?? ""),
-      submissionId: String(row.submission_id ?? ""),
-      categoryRuleId: String(row.category_rule_id ?? ""),
-      measurementKind: String(row.measurement_kind ?? ""),
-      unit: String(row.unit ?? ""),
-      quantity: snapshotNumber(row.quantity),
-      massGrams: snapshotNumber(row.mass_grams),
-      objectCount: snapshotNumber(row.object_count),
-      measurementMethod: typeof row.measurement_method === "string" ? row.measurement_method : null,
-      provenance: typeof row.provenance === "string" ? row.provenance : "",
-      sourceReference: typeof row.source_reference === "string" ? row.source_reference : null,
-    })),
-    participants: source.participants.map((row) => ({
-      id: row.id,
-      teamId: row.team_id,
-      registrationStatus: row.registration_status,
-      attendanceStatus: row.attendance_status,
-    })),
-  };
 }

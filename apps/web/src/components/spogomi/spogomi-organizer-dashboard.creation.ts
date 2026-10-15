@@ -1,7 +1,7 @@
 export type SpogomiCreationPayload = {
   name: string;
   locationLabel: string;
-  mode: "casual" | "world_cup";
+  mode: "casual" | "world_cup" | "mixed";
   startsAt: string;
   endsAt: string | null;
 };

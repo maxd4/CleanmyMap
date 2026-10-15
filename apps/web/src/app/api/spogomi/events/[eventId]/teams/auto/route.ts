@@ -22,6 +22,7 @@ const formationSchema = z.object({
   reasons: z.record(z.string(), z.enum(["group_exceeds_team_size", "team_size_required", "incomplete_team", "casual_bounds_no_fit"])),
   explanation: z.array(z.string().max(500)).max(20),
 }).strict();
+const divisionIdSchema = z.string().uuid();
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
   const access = await requireAuthenticatedAccess();
@@ -31,8 +32,14 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
     if ("response" in authorized) return authorized.response;
     const { event } = authorized;
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
+    const divisionId = typeof body.divisionId === "string" && divisionIdSchema.safeParse(body.divisionId).success ? body.divisionId : undefined;
+    if (event.mode === "mixed" && !divisionId) return NextResponse.json({ error: "Une division explicite est requise pour composer un événement mixte." }, { status: 400 });
+    const divisionResult = divisionId ? await supabase.from("spogomi_divisions").select("id, division_type").eq("event_id", event.id).eq("id", divisionId).maybeSingle() : { data: null, error: null };
+    if (divisionResult.error) throw divisionResult.error;
+    if (divisionId && !divisionResult.data) return NextResponse.json({ error: "Division SPOGOMI introuvable." }, { status: 404 });
+    const division = divisionResult.data ?? undefined;
     const confirm = body.confirm === true;
-    if (!confirm) return NextResponse.json(await autoComposeTeams(supabase, event));
+    if (!confirm) return NextResponse.json(await autoComposeTeams(supabase, event, undefined, division));
     if (typeof body.proposalFingerprint !== "string" || typeof body.expectedRevision !== "number" || !Number.isInteger(body.expectedRevision)) {
       return NextResponse.json({ error: "La confirmation exige l'empreinte et la révision de l'aperçu." }, { status: 400 });
     }
@@ -43,6 +50,7 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
       expectedRevision: body.expectedRevision,
       actorClerkId: access.userId,
       formation: parsedFormation.data,
+      division,
     }));
   } catch (error) {
     return handleApiError(error, "spogomi.teams.auto");

@@ -17,6 +17,10 @@ const lockCorrection = readFileSync(
   new URL("../../../supabase/migrations/20261015000004_spogomi_division_lock.sql", import.meta.url),
   "utf8",
 );
+const scopedLock = readFileSync(
+  new URL("../../../supabase/migrations/20261015000010_spogomi_division_scoped_lock.sql", import.meta.url),
+  "utf8",
+);
 const foundation = readFileSync(
   new URL("../../../supabase/migrations/20261012000001_spogomi_foundation.sql", import.meta.url),
   "utf8",
@@ -48,10 +52,11 @@ describe("SPOGOMI parent division contract", () => {
     expect(lockCorrection).toContain("participant.division_id = team.division_id");
   });
 
-  it("materializes divisions through the idempotent server RPC without exposing mixed in creation UI", () => {
+  it("materializes divisions through the idempotent server RPC and exposes the three supported creation modes", () => {
     expect(creationService).toContain('rpc("spogomi_ensure_parent_divisions"');
     expect(creationService.match(/createAction\(supabase/g)).toHaveLength(1);
-    expect(publicCreationRoute).toContain('z.enum(["casual", "world_cup"])');
-    expect(publicCreationRoute).not.toContain('z.enum(["casual", "world_cup", "mixed"])');
+    expect(publicCreationRoute).toContain('z.enum(["casual", "world_cup", "mixed"])');
+    expect(scopedLock).toContain("spogomi_lock_team_composition_for_division");
+    expect(scopedLock).toContain("p_division_id");
   });
 });

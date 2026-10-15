@@ -5,6 +5,7 @@ const service = readFileSync(new URL("./preparation-service.ts", import.meta.url
 const creationService = readFileSync(new URL("./preparation-creation-service.ts", import.meta.url), "utf8");
 const importCompleteness = readFileSync(new URL("./import-completeness.ts", import.meta.url), "utf8");
 const compositionMutationService = readFileSync(new URL("./composition-mutation-service.ts", import.meta.url), "utf8");
+const eventService = readFileSync(new URL("./preparation-event-service.ts", import.meta.url), "utf8");
 
 describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
   it("reserves the creation intent before calling the canonical action service", () => {
@@ -58,10 +59,10 @@ describe("SPOGOMI preparation service STATIC_CONTRACT", () => {
   });
 
   it("routes event metadata through the revision-controlled rule boundary", () => {
-    expect(service).toContain('rpc("spogomi_update_event_metadata"');
-    expect(service).toContain("p_expected_revision");
-    expect(service).toContain("const teamSizeConfig = input.casualTeamSize === undefined");
-    expect(service).toContain("...event.team_size_config");
-    expect(service).not.toContain("minMembers: casualTeamSize, maxMembers: casualTeamSize");
+    expect(eventService).toContain('rpc("spogomi_update_event_metadata"');
+    expect(eventService).toContain("p_expected_revision");
+    expect(eventService).toContain("const teamSizeConfig = input.casualTeamSize === undefined");
+    expect(eventService).toContain("...event.team_size_config");
+    expect(eventService).not.toContain("minMembers: casualTeamSize, maxMembers: casualTeamSize");
   });
 });

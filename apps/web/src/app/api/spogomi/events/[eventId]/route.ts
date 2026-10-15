@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 // Justification Vercel: event metadata and permissions are mutable and must be resolved dynamically.
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: Request, context: { params: Promise<{ eventId: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ eventId: string }> }) {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) return unauthorizedJsonResponse();
   try {
@@ -18,9 +18,15 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
     if (event === false) return forbiddenJsonResponse();
     if (!event) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
     const supabase = getSupabaseServerClient(true);
+    const divisionId = new URL(request.url).searchParams.get("divisionId");
+    const divisions = await supabase.from("spogomi_divisions").select("id, event_id, division_type, division_key").eq("event_id", event.id).order("division_type");
+    if (divisions.error) throw divisions.error;
+    let participantsQuery = supabase.from("spogomi_participants").select("id, division_id, display_name, external_reference, order_reference, identity_status, group_preference, source_row_number, team_id, attendance_status, registration_status, account_link_status, source_system, ticket_status, ticket_deleted").eq("event_id", event.id).order("source_row_number");
+    let teamsQuery = supabase.from("spogomi_teams").select("id, division_id, team_number, public_name, composition_state").eq("event_id", event.id).order("team_number");
+    if (divisionId) { participantsQuery = participantsQuery.eq("division_id", divisionId); teamsQuery = teamsQuery.eq("division_id", divisionId); }
     const [participants, teams, route] = await Promise.all([
-      supabase.from("spogomi_participants").select("id, display_name, external_reference, order_reference, identity_status, group_preference, source_row_number, team_id, attendance_status, registration_status, account_link_status, source_system, ticket_status, ticket_deleted").eq("event_id", event.id).order("source_row_number"),
-      supabase.from("spogomi_teams").select("id, team_number, public_name, composition_state").eq("event_id", event.id).order("team_number"),
+      participantsQuery,
+      teamsQuery,
       supabase.from("spogomi_event_routes").select("source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson").eq("event_id", event.id).maybeSingle(),
     ]);
     if (participants.error) throw participants.error;
@@ -35,7 +41,7 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
         registrationStatus: String(participant.registration_status),
       }),
     }));
-    return NextResponse.json({ event, participants: organizerParticipants, teams: teams.data ?? [], route: route.data ?? null });
+    return NextResponse.json({ event, divisions: divisions.data ?? [], participants: organizerParticipants, teams: teams.data ?? [], route: route.data ?? null });
   } catch (error) {
     return handleApiError(error, "spogomi.event.read");
   }
@@ -59,7 +65,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ event
         locationLabel: typeof body.locationLabel === "string" ? body.locationLabel : undefined,
         startsAt: typeof body.startsAt === "string" ? body.startsAt : undefined,
         endsAt: body.endsAt === null || typeof body.endsAt === "string" ? body.endsAt : undefined,
-        mode: body.mode === "casual" || body.mode === "world_cup" ? body.mode : undefined,
+        mode: body.mode === "casual" || body.mode === "world_cup" || body.mode === "mixed" ? body.mode : undefined,
         casualTeamSize: body.casualTeamSize === null || typeof body.casualTeamSize === "number" ? body.casualTeamSize : undefined,
         publicVisibility: body.publicVisibility === "private" || body.publicVisibility === "published" ? body.publicVisibility : undefined,
         publicResultsVisibility: body.publicResultsVisibility === "hidden" || body.publicResultsVisibility === "provisional" || body.publicResultsVisibility === "certified" ? body.publicResultsVisibility : undefined,

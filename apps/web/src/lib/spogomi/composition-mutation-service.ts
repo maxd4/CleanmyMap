@@ -31,7 +31,18 @@ export async function lockSpogomiTeams(
   event: EventForCompositionMutation,
   actorClerkId: string,
   expectedRevision = Number(event.composition_revision ?? 0),
+  divisionId?: string,
 ) {
+  if (divisionId) {
+    const scoped = await supabase.rpc("spogomi_lock_team_composition_for_division", {
+      p_event_id: event.id,
+      p_division_id: divisionId,
+      p_expected_revision: expectedRevision,
+      p_actor_clerk_id: actorClerkId,
+    });
+    if (scoped.error) throw compositionRpcError(scoped.error);
+    return scoped.data;
+  }
   const result = await supabase.rpc("spogomi_lock_team_composition", {
     p_event_id: event.id,
     p_expected_revision: expectedRevision,

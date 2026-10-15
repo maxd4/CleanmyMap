@@ -13,6 +13,8 @@ import type { SpogomiPublicGalleryPhoto } from "./photo-gallery";
 export type SpogomiPublicLifecycle = "upcoming" | "in_progress" | "finished";
 
 type SpogomiPublicTeam = {
+  divisionId: string;
+  divisionType: "casual" | "world_cup";
   teamNumber: number;
   publicName: string;
   compositionState: string;
@@ -69,7 +71,7 @@ function normalizeSlugPart(value: string): string {
     .replace(/-+$/g, "");
 }
 
-export const SPOGOMI_RESERVED_EVENT_SLUGS = new Set(["nouveau", "mes-evenements"]);
+const SPOGOMI_RESERVED_EVENT_SLUGS = new Set(["nouveau", "mes-evenements"]);
 
 export function isReservedSpogomiEventSlug(slug: string): boolean {
   return SPOGOMI_RESERVED_EVENT_SLUGS.has(slug);
@@ -184,10 +186,11 @@ export async function loadPublishedSpogomiEventBySlug(
   const row = rows[0];
   if (!row) return null;
   const actionIds = await loadPublicActionHrefs(supabase, [row.action_id]);
-  const [teamsResult, routeResult] = await Promise.all([
+  const [divisionsResult, teamsResult, routeResult] = await Promise.all([
+    supabase.from("spogomi_divisions").select("id, division_type").eq("event_id", row.id).order("division_type"),
     supabase
       .from("spogomi_teams")
-      .select("team_number, public_name, composition_state")
+      .select("division_id, team_number, public_name, composition_state")
       .eq("event_id", row.id)
       .order("team_number", { ascending: true }),
     supabase
@@ -196,6 +199,7 @@ export async function loadPublishedSpogomiEventBySlug(
       .eq("event_id", row.id)
       .maybeSingle(),
   ]);
+  if (divisionsResult.error) throw divisionsResult.error;
   if (teamsResult.error) throw teamsResult.error;
   if (routeResult.error) throw routeResult.error;
   const routeData = routeResult.data as {
@@ -220,6 +224,8 @@ export async function loadPublishedSpogomiEventBySlug(
     row,
     actionIds,
     (teamsResult.data ?? []).map((team) => ({
+      divisionId: String(team.division_id),
+      divisionType: (divisionsResult.data ?? []).find((division) => String(division.id) === String(team.division_id))?.division_type === "world_cup" ? "world_cup" as const : "casual" as const,
       teamNumber: Number(team.team_number),
       publicName: String(team.public_name),
       compositionState: String(team.composition_state),

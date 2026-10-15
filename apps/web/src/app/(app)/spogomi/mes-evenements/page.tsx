@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { SpogomiOrganizerDashboard } from "@/components/spogomi/spogomi-organizer-dashboard";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { listSpogomiEventsForOrganizer } from "@/lib/spogomi/organizer-service";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { listSpogomiEventsForCurrentOrganizer } from "@/lib/spogomi/organizer-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export const metadata: Metadata = {
@@ -16,7 +15,7 @@ export const metadata: Metadata = {
 export default async function SpogomiOrganizerEventsPage() {
   const access = await requireAuthenticatedAccess();
   if (!access.ok) redirect(`/sign-in?redirect_url=${encodeURIComponent("/spogomi/mes-evenements")}`);
-  const events = await listSpogomiEventsForOrganizer(getSupabaseServerClient(true), access.userId);
+  const events = await listSpogomiEventsForCurrentOrganizer(access.userId);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-emerald-50 px-4 py-10">

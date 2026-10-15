@@ -3,8 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SpogomiPreparationWorkspace } from "@/components/spogomi/spogomi-preparation-workspace";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadSpogomiEventBySlugForOrganizer } from "@/lib/spogomi/preparation-service";
+import { loadSpogomiEventBySlugForCurrentOrganizer } from "@/lib/spogomi/preparation-service";
 
 type Props = { params: Promise<{ eventSlug: string }> };
 
@@ -17,7 +16,7 @@ export default async function SpogomiEventSpacePage({ params }: Props) {
   const { eventSlug } = await params;
   const access = await requireAuthenticatedAccess();
   if (!access.ok) redirect(`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${eventSlug}/espace`)}`);
-  const event = await loadSpogomiEventBySlugForOrganizer(getSupabaseServerClient(true), eventSlug, access.userId);
+  const event = await loadSpogomiEventBySlugForCurrentOrganizer(eventSlug, access.userId);
   if (event === false || !event) notFound();
 
   return (

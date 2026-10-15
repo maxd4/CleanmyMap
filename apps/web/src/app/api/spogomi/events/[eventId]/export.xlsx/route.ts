@@ -26,19 +26,19 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
     if (!projection) return NextResponse.json({ error: "Projection SPOGOMI indisponible." }, { status: 404 });
     const certifiedTeams = projection.teams.filter((team) => team.submissionStatus === "certified");
     const categoryRows = certifiedTeams.flatMap((team) => team.categories.map((category) => [
-      team.teamNumber, team.publicName, team.submissionStatus, category.code, category.label, category.measurementKind, category.unit,
+      team.divisionId ?? null, team.teamNumber, team.publicName, team.submissionStatus, category.code, category.label, category.measurementKind, category.unit,
       value(category.quantity), value(category.massGrams), value(category.objectCount), category.environmentalCategorySlug, category.provenance, category.measurementMethod,
     ]));
     const traceRows = [
       ["Règlement", projection.regulation.version, "Statut", projection.regulation.status, "Source", projection.regulation.sourceReference],
       ["Visibilité publique", projection.results.visibility, "Classement sportif", projection.results.sport.status, "Classement mégots", projection.results.butts.status],
       ["Projection environnementale", projection.results.environmental.projectionVersion, "Hash source", projection.results.environmental.sourceHash, "Soumissions certifiées", projection.sourceSubmissionIds.join(", ")],
-      ...projection.teams.map((team) => ["Équipe", team.teamNumber, "Soumission", team.submissionStatus, "Données exportées", team.submissionStatus === "certified" ? "oui" : "non — non certifiée"]),
+      ...projection.teams.map((team) => ["Division", team.divisionId ?? null, "Équipe", team.teamNumber, "Soumission", team.submissionStatus, "Données exportées", team.submissionStatus === "certified" ? "oui" : "non — non certifiée"]),
     ];
     const rows = [
       { name: "Synthèse", rows: [["Champ", "Valeur"], ["Événement", projection.event.name], ["Mode", projection.event.mode], ["Début", projection.event.startsAt], ["Fin", projection.event.endsAt], ["Équipes", projection.teams.length], ["Équipes certifiées", certifiedTeams.length], ["Participants présents", projection.results.environmental.participantsPresent], ["Masse hors mégots (g)", projection.results.environmental.totalWasteMassGrams], ["Mégots comptés", projection.results.environmental.cigaretteButtsCount], ["Masse mégots (g)", projection.results.environmental.cigaretteButtsMassGrams], ["Révision environnementale", projection.results.environmental.projectionVersion], ["Statut événement", projection.event.state]] },
-      { name: "Équipes", rows: [["N°", "Nom public", "Inscrits", "Présents", "Soumission", "Version", "Rang sportif", "Statut sportif", "Points certifiés", "Rang mégots", "Statut mégots", "Mégots comptés certifiés", "Mégots / participant certifié"], ...projection.teams.map((team) => [team.teamNumber, team.publicName, team.registeredParticipants, team.presentParticipants, team.submissionStatus, team.submissionVersion, team.sportRank, team.sportStatus, team.sportScore, team.buttsRank, team.buttsStatus, team.buttsCount, team.buttsPerParticipant])] },
-      { name: "Catégories", rows: [["Équipe", "Nom public", "Statut soumission", "Code", "Catégorie", "Type", "Unité", "Quantité", "Masse (g)", "Comptage direct", "Mapping CleanMyMap", "Provenance", "Méthode"], ...categoryRows] },
+      { name: "Équipes", rows: [["Division", "N°", "Nom public", "Inscrits", "Présents", "Soumission", "Version", "Rang sportif", "Statut sportif", "Points certifiés", "Rang mégots", "Statut mégots", "Mégots comptés certifiés", "Mégots / participant certifié"], ...projection.teams.map((team) => [team.divisionId ?? null, team.teamNumber, team.publicName, team.registeredParticipants, team.presentParticipants, team.submissionStatus, team.submissionVersion, team.sportRank, team.sportStatus, team.sportScore, team.buttsRank, team.buttsStatus, team.buttsCount, team.buttsPerParticipant])] },
+      { name: "Catégories", rows: [["Division", "Équipe", "Nom public", "Statut soumission", "Code", "Catégorie", "Type", "Unité", "Quantité", "Masse (g)", "Comptage direct", "Mapping CleanMyMap", "Provenance", "Méthode"], ...categoryRows] },
       { name: "Traçabilité", rows: [["Type", "Valeur 1", "Type", "Valeur 2", "Type", "Valeur 3"], ...traceRows] },
     ];
     const bytes = buildXlsxWorkbook(rows);

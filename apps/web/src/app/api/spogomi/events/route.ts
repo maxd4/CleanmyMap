@@ -14,7 +14,7 @@ const createSchema = z.object({
   idempotencyKey: z.string().min(8).max(128).regex(/^[a-zA-Z0-9:_-]+$/),
   name: z.string().trim().min(1).max(160),
   locationLabel: z.string().trim().min(1).max(200),
-  mode: z.enum(["casual", "world_cup"]),
+  mode: z.enum(["casual", "world_cup", "mixed"]),
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime().nullable().optional(),
 });

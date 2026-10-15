@@ -93,7 +93,7 @@ export default async function SpogomiIndexPage() {
                       <p className="mt-1 text-xs font-bold uppercase tracking-[0.15em] text-emerald-700">{lifecycleLabels[event.lifecycle]}</p>
                     </div>
                     <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700">
-                      {event.mode === "world_cup" ? "World Cup" : "Casual"}
+                      {event.mode === "mixed" ? "Casual & World Cup" : event.mode === "world_cup" ? "World Cup" : "Casual"}
                     </span>
                   </div>
                   <div className="space-y-2 text-sm text-slate-700">

@@ -119,7 +119,7 @@ export function SpogomiOrganizerDashboard({
         <form className="grid gap-4 md:grid-cols-2" onSubmit={(event) => void createEvent(event)}>
           <label className="space-y-1 text-sm font-bold text-slate-800">Nom<input className={inputClassName()} name="name" required maxLength={160} /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Lieu<input className={inputClassName()} name="locationLabel" required maxLength={200} /></label>
-          <label className="space-y-1 text-sm font-bold text-slate-800">Mode<select className={inputClassName()} name="mode" defaultValue="casual"><option value="casual">Casual</option><option value="world_cup">World Cup</option></select></label>
+          <label className="space-y-1 text-sm font-bold text-slate-800">Mode<select className={inputClassName()} name="mode" defaultValue="casual"><option value="casual">Casual</option><option value="world_cup">World Cup</option><option value="mixed">Casual &amp; World Cup</option></select></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Début<input className={inputClassName()} name="startsAt" type="datetime-local" required /></label>
           <label className="space-y-1 text-sm font-bold text-slate-800">Fin (facultative)<input className={inputClassName()} name="endsAt" type="datetime-local" /></label>
           <div className="md:col-span-2 flex flex-wrap items-center gap-3">
@@ -150,7 +150,7 @@ export function SpogomiOrganizerDashboard({
                     <h3 className="text-xl font-black text-emerald-950">{event.name}</h3>
                     <p className="mt-1 text-xs font-bold uppercase tracking-[0.15em] text-slate-600">{event.public_visibility === "published" ? "Publié" : "Privé"} · {event.state}</p>
                   </div>
-                  <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700">{event.mode === "world_cup" ? "World Cup" : "Casual"}</span>
+                  <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700">{event.mode === "mixed" ? "Casual & World Cup" : event.mode === "world_cup" ? "World Cup" : "Casual"}</span>
                 </div>
                 <div className="space-y-2 text-sm text-slate-700">
                   <p className="flex items-center gap-2"><CalendarDays size={15} className="text-emerald-700" />{formatDate(event.starts_at)}</p>

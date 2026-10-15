@@ -3,7 +3,7 @@
 > **Statut : CURRENT PARTIEL — la préparation, la certification, les projections publiques bornées, les deux classements indépendants, la consolidation et l'export XLSX sont livrés sur les contrats explicitement présents dans le dépôt. Les preuves runtime externes et l'intégration partenaire restent à valider en environnement de validation.**
 > Ce document ne prouve ni l'existence des tables et interfaces décrites, ni un partenariat contractualisé, ni la validation d'un règlement officiel SPOGOMI. Après chaque lot, ne passer en `CURRENT` que les comportements réellement livrés et testés.
 >
-> **Périmètre :** événements SPOGOMI organisés avec CleanMyMap, modes `casual` et `world_cup`, inscriptions importées, équipes, mesures, classements, action canonique agrégée et participations confirmées.
+> **Périmètre :** événements SPOGOMI organisés avec CleanMyMap, modes `casual`, `world_cup` et `mixed` (`Casual & World Cup`), inscriptions importées, équipes, mesures, classements par division, action canonique agrégée et participations confirmées.
 
 ## 1. Décision centrale
 
@@ -42,7 +42,7 @@ Une édition possède une division `casual`, une division `world_cup`, ou les de
 - Les éditions existantes sont conservées sans réinterprétation : chaque ancien `casual` ou `world_cup` reçoit une seule division de même type, avec un identifiant stable. Le mécanisme de compatibilité ne résout automatiquement une valeur absente que lorsqu’une seule division existe ; il échoue fermé pour une édition mixte.
 - `spogomi_ensure_parent_divisions` verrouille l’édition et effectue les insertions idempotentes dans une transaction. La clé d’idempotence existante continue de protéger la reprise de l’action et de l’édition ; aucune reprise ne crée une seconde action, division ou équipe.
 - Les verrous de composition, règlements, certifications et classements restent portés par les procédures serveur et s’appliquent dans le périmètre d’une division. Le rôle HTTP conserve l’AuthN/AuthZ ; Supabase RLS et les grants ne sont pas élargis aux écritures client.
-- Le choix `mixed` n’est pas encore proposé dans l’interface de création. Il ne le sera qu’après migration de tous les consommateurs de préparation, résultats, projections et exports vers le contexte de division explicite.
+- Le formulaire de création propose `Casual`, `World Cup` et `Casual & World Cup`. Le dernier crée une édition privée avec deux divisions déterministes et une seule action parent ; les onglets de gestion et les projections gardent les équipes, mesures, arbitrages et classements dans leur division.
 
 **Frontières non négociables :**
 
