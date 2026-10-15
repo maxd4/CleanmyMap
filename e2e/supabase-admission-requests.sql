@@ -15,9 +15,12 @@ declare
   v_world_cup_id uuid := md5(v_event_id::text || ':world_cup')::uuid;
   v_team_casual uuid := gen_random_uuid();
   v_team_world_cup uuid := gen_random_uuid();
-  v_request_id uuid;
+  v_registration_request_id uuid;
+  v_team_join_request_id uuid;
   v_replay_id uuid;
   v_status text;
+  v_request_kind text;
+  v_requester_clerk_id text;
   v_team_id uuid;
   v_division_id uuid;
   v_created_at timestamptz;
@@ -63,22 +66,23 @@ begin
     (v_team_world_cup, v_event_id, v_world_cup_id, 1, 'Contract World Cup');
 
   -- Same event/account/kind/division/team replays the same pending request.
-  select request_id, request_status, request_team_id, request_division_id
-    into v_request_id, v_status, v_team_id, v_division_id
+  select request_id, request_status, request_kind, request_team_id, request_division_id
+    into v_registration_request_id, v_status, v_request_kind, v_team_id, v_division_id
     from public.create_spogomi_admission_request(
       v_event_id, null, 'admission-owner', 'registration', v_casual_id, 'Casual request'
     );
-  if v_status <> 'pending' or v_team_id is not null or v_division_id <> v_casual_id then
+  if v_status <> 'pending' or v_request_kind <> 'registration'
+     or v_team_id is not null or v_division_id <> v_casual_id then
     raise exception 'initial admission request has the wrong projection';
   end if;
 
   select created_at into v_created_at
-    from public.spogomi_team_join_requests where id = v_request_id;
+    from public.spogomi_team_join_requests where id = v_registration_request_id;
   select request_id, request_status into v_replay_id, v_status
     from public.create_spogomi_admission_request(
       v_event_id, null, 'admission-owner', 'registration', v_casual_id, 'Changed context must not replace the request'
     );
-  if v_replay_id <> v_request_id or v_status <> 'pending' then
+  if v_replay_id <> v_registration_request_id or v_status <> 'pending' then
     raise exception 'same-scope admission replay did not converge';
   end if;
   select created_at into v_replay_created_at
@@ -87,7 +91,7 @@ begin
     raise exception 'same-scope replay changed created_at';
   end if;
   select count(*) into v_audit_count
-    from public.spogomi_team_join_request_events where request_id = v_request_id;
+    from public.spogomi_team_join_request_events where request_id = v_registration_request_id;
   if v_audit_count <> 1 then
     raise exception 'same-scope replay added a duplicate audit event';
   end if;
@@ -108,10 +112,29 @@ begin
   end if;
 
   -- A team-join replay also compares the effective team, not only the kind.
-  select request_id into v_request_id
+  select request_id, request_status, request_kind, request_team_id, request_division_id
+    into v_team_join_request_id, v_status, v_request_kind, v_team_id, v_division_id
     from public.create_spogomi_admission_request(
       v_event_id, v_team_casual, 'team-owner', 'team_join', v_casual_id, ''
     );
+  if v_team_join_request_id = v_registration_request_id
+     or v_status <> 'pending'
+     or v_request_kind <> 'team_join'
+     or v_team_id <> v_team_casual
+     or v_division_id <> v_casual_id then
+    raise exception 'team-join admission request has the wrong identity or projection';
+  end if;
+  select requester_clerk_id, request_kind, team_id, division_id
+    into v_requester_clerk_id, v_request_kind, v_team_id, v_division_id
+    from public.spogomi_team_join_requests request
+   where request.id = v_team_join_request_id;
+  if not found
+     or v_requester_clerk_id <> 'team-owner'
+     or v_request_kind <> 'team_join'
+     or v_team_id <> v_team_casual
+     or v_division_id <> v_casual_id then
+    raise exception 'team-join admission request persisted the wrong identity or scope';
+  end if;
   begin
     perform public.create_spogomi_admission_request(
       v_event_id, v_team_world_cup, 'team-owner', 'team_join', v_world_cup_id, ''
@@ -159,22 +182,35 @@ begin
   end;
 
   -- Admin approval is authorized, repeatable and does not create participation.
+  -- Keep this assertion adjacent to the decision so a future variable reuse
+  -- cannot approve the team_join request as a registration request.
+  select requester_clerk_id, request_kind, team_id, division_id
+    into v_requester_clerk_id, v_request_kind, v_team_id, v_division_id
+    from public.spogomi_team_join_requests request
+   where request.id = v_registration_request_id;
+  if not found
+     or v_requester_clerk_id <> 'admission-owner'
+     or v_request_kind <> 'registration'
+     or v_team_id is not null
+     or v_division_id <> v_casual_id then
+    raise exception 'registration approval target is not the expected request';
+  end if;
   select count(*) into v_action_participants_before from public.action_participants;
   v_decision := public.transition_spogomi_admission_request(
-    v_request_id, v_event_id, 'approved', 'admin', 'admin-1', 'admin',
+    v_registration_request_id, v_event_id, 'approved', 'admin', 'admin-1', 'admin',
     null, 'Independent registration proof', 'Approved by review', 'Registration accepted'
   );
   if v_decision ->> 'status' <> 'approved' then
     raise exception 'admin approval did not resolve the request';
   end if;
   select decided_at into v_decided_at
-    from public.spogomi_team_join_requests where id = v_request_id;
+    from public.spogomi_team_join_requests where id = v_registration_request_id;
   v_decision := public.transition_spogomi_admission_request(
-    v_request_id, v_event_id, 'approved', 'admin', 'admin-1', 'admin',
+    v_registration_request_id, v_event_id, 'approved', 'admin', 'admin-1', 'admin',
     null, null, null, null
   );
   select decided_at into v_replay_decided_at
-    from public.spogomi_team_join_requests where id = v_request_id;
+    from public.spogomi_team_join_requests where id = v_registration_request_id;
   if v_decision ->> 'status' <> 'approved' or v_replay_decided_at <> v_decided_at then
     raise exception 'admin approval replay changed the persisted decision';
   end if;
@@ -186,7 +222,7 @@ begin
   -- Self-approval must be rejected before any idempotent return.
   begin
     perform public.transition_spogomi_admission_request(
-      v_request_id, v_event_id, 'approved', 'admin', 'admission-owner', 'admin',
+      v_registration_request_id, v_event_id, 'approved', 'admin', 'admission-owner', 'admin',
       null, null, null, null
     );
     raise exception 'requester self-approval was accepted';
