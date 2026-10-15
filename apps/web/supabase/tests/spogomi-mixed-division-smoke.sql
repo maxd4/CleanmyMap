@@ -7,6 +7,7 @@ select set_config('request.jwt.claim.role', 'service_role', true);
 do $$
 declare
   v_action_id uuid := gen_random_uuid();
+  v_independent_action_id uuid := gen_random_uuid();
   v_event_id uuid := gen_random_uuid();
   v_casual_id uuid := md5(v_event_id::text || ':casual')::uuid;
   v_world_cup_id uuid := md5(v_event_id::text || ':world_cup')::uuid;
@@ -16,8 +17,10 @@ declare
   v_count integer;
   v_decision_id uuid;
 begin
-  insert into public.actions (id, created_by_clerk_id, action_date, location_label)
-  values (v_action_id, 'spogomi-db-smoke', current_date, 'SPOGOMI smoke');
+  insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count, spogomi_total_mass_grams, spogomi_megots_mass_grams, spogomi_megots_count, spogomi_projection_source_hash, spogomi_projection_version, notes)
+  values (v_action_id, 'spogomi-db-smoke', current_date, 'SPOGOMI smoke', 12.5, 42, 7, 12500, 10, 42, repeat('a', 64), 'smoke-v1', 'owned by SPOGOMI');
+  insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count, notes)
+  values (v_independent_action_id, 'spogomi-db-smoke', current_date, 'Independent smoke', 8.5, 9, 3, 'independent measurement');
 
   insert into public.spogomi_events (
     id, action_id, created_by_clerk_id, name, location_label, mode,
@@ -143,6 +146,28 @@ begin
   end if;
   if (select count(*) from public.spogomi_action_consolidations where event_id = v_event_id and is_current) <> 0 then
     raise exception 'closure correction left a stale environmental consolidation current';
+  end if;
+  if exists (
+    select 1 from public.actions
+     where id = v_action_id
+       and (waste_kg is not null or cigarette_butts is not null or volunteers_count is not null
+         or spogomi_total_mass_grams is not null or spogomi_megots_mass_grams is not null
+         or spogomi_megots_count is not null or spogomi_projection_source_hash is not null
+         or spogomi_projection_version is not null)
+  ) then
+    raise exception 'closure correction left hash-owned SPOGOMI measures visible';
+  end if;
+  if not exists (
+    select 1 from public.actions
+     where id = v_independent_action_id
+       and waste_kg = 8.5 and cigarette_butts = 9 and volunteers_count = 3
+  ) then
+    raise exception 'closure correction modified independent action measures';
+  end if;
+
+  if ((timestamptz '2026-06-30 23:30:00+00' at time zone 'Europe/Paris')::date <> date '2026-07-01')
+     or ((timestamptz '2026-07-01 00:30:00+00' at time zone 'Europe/Paris')::date <> date '2026-07-01') then
+    raise exception 'official timezone civil-date boundary is incorrect';
   end if;
 
   begin

@@ -13,6 +13,10 @@ describe("SPOGOMI mixed-division PostgreSQL smoke STATIC_CONTRACT", () => {
     expect(smoke).toContain("requires an explicit division_id");
     expect(smoke).toContain("division is forbidden");
     expect(smoke).toContain("spogomi_move_participant_to_team_for_division");
+    expect(smoke).toContain("closure correction left hash-owned SPOGOMI measures visible");
+    expect(smoke).toContain("closure correction modified independent action measures");
+    expect(smoke).toContain("timestamptz '2026-06-30 23:30:00+00' at time zone 'Europe/Paris'");
+    expect(smoke).toContain("timestamptz '2026-07-01 00:30:00+00' at time zone 'Europe/Paris'");
   });
 
   it("runs this exact SQL in the authorized ephemeral PostgreSQL job", () => {

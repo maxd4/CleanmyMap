@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 const decisionsMigration = readFileSync(new URL("../../../supabase/migrations/20261015000026_spogomi_closure_decisions.sql", import.meta.url), "utf8");
 const consolidationMigration = readFileSync(new URL("../../../supabase/migrations/20261015000027_spogomi_closure_publication_guards.sql", import.meta.url), "utf8");
 const rankingMigration = readFileSync(new URL("../../../supabase/migrations/20261015000028_spogomi_ranking_closure_guard.sql", import.meta.url), "utf8");
+const correctionMigration = readFileSync(new URL("../../../supabase/migrations/20261015000029_spogomi_closure_republication_safety.sql", import.meta.url), "utf8");
 
 describe("SPOGOMI closure STATIC_CONTRACT", () => {
   it("keeps explicit statuses, independent environmental eligibility and append-only replay", () => {
@@ -35,5 +36,25 @@ describe("SPOGOMI closure STATIC_CONTRACT", () => {
     expect(rankingMigration).toContain("publish_spogomi_official_rankings_for_division_checked_closure");
     expect(rankingMigration).toContain("The SPOGOMI closure decision set changed since ranking calculation");
     expect(rankingMigration).toContain("grant execute on function public.publish_spogomi_official_rankings_for_division_checked_closure");
+  });
+
+  it("serializes closure verification before the existing ranking publication owner", () => {
+    const wrapper = correctionMigration.slice(correctionMigration.indexOf("create or replace function public.publish_spogomi_official_rankings_for_division_checked_closure"));
+    expect(wrapper).toContain("perform 1 from public.spogomi_events where id = p_event_id for update");
+    expect(wrapper.indexOf("for update")).toBeLessThan(wrapper.indexOf("spogomi_division_closure_decisions_match"));
+    expect(wrapper).toContain("return public.publish_spogomi_official_rankings_for_division(");
+    expect(correctionMigration).toContain("grant execute on function public.publish_spogomi_official_rankings_for_division_checked_closure");
+  });
+
+  it("uses the official event timezone and hash-owned invalidation without imputing zero", () => {
+    expect(correctionMigration).toContain("v_event.starts_at at time zone coalesce(nullif(btrim(v_event.official_timezone), ''), 'Europe/Paris')");
+    expect(correctionMigration).toContain("alter column volunteers_count drop not null");
+    expect(correctionMigration).toContain("spogomi_projection_source_hash = old.source_hash");
+    expect(correctionMigration).toContain("waste_kg = null");
+    expect(correctionMigration).toContain("cigarette_butts = null");
+    expect(correctionMigration).toContain("volunteers_count = null");
+    expect(correctionMigration).toContain("spogomi_total_mass_grams = null");
+    expect(correctionMigration).toContain("preparation_data - 'spogomiConsolidation' - 'spogomiOfficialReference'");
+    expect(correctionMigration).not.toMatch(/volunteers_count\s*=\s*coalesce\([^\n]+,\s*0\)/);
   });
 });

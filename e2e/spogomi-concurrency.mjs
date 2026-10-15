@@ -346,6 +346,172 @@ async function concurrentCertificateReissue() {
   assert.equal(history.length, 3, "certificate concurrency keeps issued and replaced history");
 }
 
+async function concurrentClosureCorrectionAndRankingPublication() {
+  const actionId = await createAction(sessionA, { independent: `${marker}-preserved` });
+  const event = await createEvent(sessionA, actionId, "casual");
+  await must(
+    await sessionA.rpc("spogomi_ensure_parent_divisions", { p_event_id: event.id, p_mode: "casual" }),
+    "create closure concurrency division",
+  );
+  const division = await must(
+    await sessionA.from("spogomi_divisions").select("id, division_type, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config").eq("event_id", event.id).single(),
+    "read closure concurrency division",
+  );
+  const regulationConfig = {
+    rounding: { decimals: 0, mode: "half_up" },
+    eligibility: { requiresAllCategories: true },
+    tiebreakers: ["rank"],
+  };
+  const updatedDivision = await must(
+    await sessionA.from("spogomi_divisions").update({
+      regulation_version: "synthetic-v1",
+      regulation_status: "complete",
+      regulation_source_reference: `${marker}-regulation`,
+      regulation_config: regulationConfig,
+      team_size_config: { casual: { minMembers: 1, maxMembers: 4 } },
+    }).eq("id", division.id).select("id, division_type, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config, updated_at").single(),
+    "complete closure concurrency division regulation",
+  );
+  const category = await must(
+    await sessionA.from("spogomi_category_rules").insert({
+      event_id: event.id,
+      division_id: division.id,
+      regulation_version: "synthetic-v1",
+      code: `${marker}-plastic`,
+      label: "Plastic",
+      measurement_kind: "mass",
+      unit: "g",
+      coefficient_status: "not_applicable",
+      display_order: 1,
+      is_complete: true,
+    }).select("id, regulation_version, code, label, measurement_kind, unit, coefficient, coefficient_status, environmental_category_slug, is_complete, updated_at").single(),
+    "create closure concurrency category",
+  );
+  const team = await must(
+    await sessionA.from("spogomi_teams").insert({
+      event_id: event.id,
+      division_id: division.id,
+      team_number: 1,
+      public_name: `${marker} closure team`,
+      composition_state: "verified",
+    }).select("id, division_id, team_number, composition_state, certified_submission_id, updated_at").single(),
+    "create closure concurrency team",
+  );
+  await must(
+    await sessionA.from("spogomi_events").update({ state: "certified", regulation_status: "complete" }).eq("id", event.id),
+    "certify closure concurrency event",
+  );
+  const decision = await must(
+    await sessionA.rpc("spogomi_set_team_closure_decision", {
+      p_event_id: event.id,
+      p_division_id: division.id,
+      p_team_id: team.id,
+      p_status: "present_measured",
+      p_sport_eligible: true,
+      p_environmental_eligibility: "eligible",
+      p_reason: "Synthetic closure concurrency fixture",
+      p_decision_version: 1,
+      p_actor_clerk_id: `${marker}-decision-1`,
+    }),
+    "create closure concurrency decision",
+  );
+  assert.equal(decision.decision_version, 1);
+
+  const sourceSnapshot = {
+    event: { id: event.id },
+    divisions: [{
+      id: updatedDivision.id,
+      type: updatedDivision.division_type,
+      regulationVersion: updatedDivision.regulation_version,
+      regulationStatus: updatedDivision.regulation_status,
+      regulationSourceReference: updatedDivision.regulation_source_reference,
+      regulationConfig: updatedDivision.regulation_config,
+      teamSizeConfig: updatedDivision.team_size_config,
+    }],
+    categories: [{
+      id: category.id,
+      divisionId: division.id,
+      regulationVersion: category.regulation_version,
+      code: category.code,
+      label: category.label,
+      measurementKind: category.measurement_kind,
+      unit: category.unit,
+      coefficient: category.coefficient,
+      coefficientStatus: category.coefficient_status,
+      environmentalCategorySlug: category.environmental_category_slug,
+      isComplete: category.is_complete,
+      updatedAt: category.updated_at,
+    }],
+    teams: [{
+      id: team.id,
+      divisionId: division.id,
+      teamNumber: team.team_number,
+      compositionState: team.composition_state,
+      certifiedSubmissionId: team.certified_submission_id,
+      updatedAt: team.updated_at,
+      closureStatus: "present_measured",
+      sportEligible: true,
+      environmentalEligibility: "eligible",
+      closureDecisionVersion: 1,
+    }],
+    submissions: [],
+    items: [],
+    participants: [],
+  };
+  await must(
+    await sessionA.from("spogomi_official_rankings").insert({
+      event_id: event.id,
+      division_id: division.id,
+      team_id: team.id,
+      kind: "points",
+      rank: 1,
+      status: "certified",
+      team_eligible: true,
+      decision_version: "1",
+      source_reference: `${marker}-ranking-v1`,
+      source_snapshot: sourceSnapshot,
+      decided_by_clerk_id: `${marker}-seed`,
+    }).select("id").single(),
+    "seed certified closure ranking",
+  );
+
+  const [publication, correction] = await Promise.all([
+    sessionA.rpc("publish_spogomi_official_rankings_for_division_checked_closure", {
+      p_event_id: event.id,
+      p_division_id: division.id,
+      p_decision_version: "1",
+      p_source_reference: `${marker}-ranking-v1-republish`,
+      p_rankings: [{ divisionId: division.id, kind: "points", teamId: team.id, rank: 1, teamEligible: true }],
+      p_actor_clerk_id: `${marker}-publisher`,
+      p_source_snapshot: sourceSnapshot,
+    }),
+    sessionB.rpc("spogomi_set_team_closure_decision", {
+      p_event_id: event.id,
+      p_division_id: division.id,
+      p_team_id: team.id,
+      p_status: "disqualified",
+      p_sport_eligible: false,
+      p_environmental_eligibility: "excluded",
+      p_reason: "Synthetic concurrent correction",
+      p_decision_version: 2,
+      p_actor_clerk_id: `${marker}-decision-2`,
+    }),
+  ]);
+  assert.equal(correction.error, null, "the concurrent closure correction must commit");
+  assert.ok(publication.error === null || publication.error.code === "40001", "publication must either commit before the correction or reject its stale snapshot");
+
+  const certified = await must(
+    await sessionA.from("spogomi_official_rankings").select("id").eq("event_id", event.id).eq("division_id", division.id).eq("status", "certified"),
+    "read rankings after closure correction",
+  );
+  assert.equal(certified.length, 0, "a concurrent correction cannot leave an obsolete certified ranking");
+  const currentDecision = await must(
+    await sessionA.from("spogomi_team_closure_decisions").select("decision_version").eq("event_id", event.id).eq("division_id", division.id).eq("team_id", team.id).eq("is_current", true).single(),
+    "read current closure decision",
+  );
+  assert.equal(currentDecision.decision_version, 2);
+}
+
 async function cleanup() {
   await sessionA.from("admin_operations_audit").delete().like("actor_user_id", `${marker}%`);
   for (const eventId of created.events) {
@@ -368,7 +534,8 @@ async function main() {
     await concurrentMoveAndLock();
     await concurrentOfficialGpxSync();
     await concurrentCertificateReissue();
-    process.stdout.write("EXECUTED_DB_CONTRACT: SPOGOMI composition, public-name uniqueness and certificate concurrency passed.\n");
+    await concurrentClosureCorrectionAndRankingPublication();
+    process.stdout.write("EXECUTED_DB_CONTRACT: SPOGOMI composition, public-name uniqueness, certificate concurrency and closure republication safety passed.\n");
   } finally {
     await cleanup();
   }
