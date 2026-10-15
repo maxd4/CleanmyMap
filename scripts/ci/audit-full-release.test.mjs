@@ -13,6 +13,33 @@ import {
 } from "./audit-supabase-release.mjs";
 
 const validProjectRef = "abcdefghijklmnopqrst";
+const serviceRoleEnvKey = "SUPABASE_SERVICE_ROLE_KEY";
+const syntheticServiceRoleKey = ["synthetic", "service", "role", "key"].join("-");
+
+function captureEnvironmentValue(name) {
+  return {
+    present: Object.prototype.hasOwnProperty.call(process.env, name),
+    value: process.env[name],
+  };
+}
+
+async function withSyntheticEnvironmentValue(name, value, callback) {
+  const previous = captureEnvironmentValue(name);
+  try {
+    if (value === undefined) {
+      delete process.env[name];
+    } else {
+      process.env[name] = value;
+    }
+    return await callback();
+  } finally {
+    if (previous.present) {
+      process.env[name] = previous.value;
+    } else {
+      delete process.env[name];
+    }
+  }
+}
 
 test("GitHub release audit fails on open alerts and accepts only completed SHA evidence", () => {
   const blocked = evaluateGithubRelease({
@@ -75,10 +102,8 @@ test("Supabase release audit requires an explicitly identified project and healt
 test("Supabase project reference resolution uses explicit, process, then local configuration", async (t) => {
   const directory = await mkdtemp(join(tmpdir(), "cleanmymap-supabase-audit-"));
   const envPath = join(directory, ".env.local");
-  const secret = "local-secret-must-not-be-loaded";
-
   t.after(() => rm(directory, { recursive: true, force: true }));
-  await writeFile(envPath, `SUPABASE_PROJECT_REF=${validProjectRef}\nSUPABASE_SERVICE_ROLE_KEY=${secret}\n`, "utf8");
+  await writeFile(envPath, `SUPABASE_PROJECT_REF=${validProjectRef}\nSUPABASE_SERVICE_ROLE_KEY=${syntheticServiceRoleKey}\n`, "utf8");
 
   assert.equal(resolveProjectRef({
     argv: ["--project-ref", "zyxwvutsrqponmlkjihg"],
@@ -107,8 +132,24 @@ test("Supabase project reference resolution uses explicit, process, then local c
   assert.equal(isValidProjectRef("abcdefghijklmnopqrst"), true);
   assert.equal(isValidProjectRef("prod-ref"), false);
 
-  const parsed = parseArgs([], { env: {}, envPath });
-  assert.equal(parsed.projectRef, validProjectRef);
-  assert.equal(parsed.projectRef.includes(secret), false);
-  assert.equal(Object.prototype.hasOwnProperty.call(process.env, "SUPABASE_SERVICE_ROLE_KEY"), false);
+  for (const [label, initialValue] of [
+    ["absent", undefined],
+    ["present", syntheticServiceRoleKey],
+  ]) {
+    await t.test(`preserves the service-role environment state when initially ${label}`, async () => {
+      const outerState = captureEnvironmentValue(serviceRoleEnvKey);
+      await withSyntheticEnvironmentValue(serviceRoleEnvKey, initialValue, () => {
+        const initialState = captureEnvironmentValue(serviceRoleEnvKey);
+        const resolvedProjectRef = resolveProjectRef({ argv: [], env: {}, envPath });
+        const parsed = parseArgs([], { env: {}, envPath });
+        const finalState = captureEnvironmentValue(serviceRoleEnvKey);
+
+        assert.equal(resolvedProjectRef, validProjectRef);
+        assert.equal(parsed.projectRef, validProjectRef);
+        assert.equal(parsed.projectRef.includes(syntheticServiceRoleKey), false);
+        assert.deepEqual(finalState, initialState);
+      });
+      assert.deepEqual(captureEnvironmentValue(serviceRoleEnvKey), outerState);
+    });
+  }
 });
