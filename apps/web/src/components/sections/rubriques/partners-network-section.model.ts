@@ -35,12 +35,12 @@ export function isInstitution(entry: AnnuaireEntry): boolean {
 
 export function getKindLabel(entry: AnnuaireEntry, fr: boolean): string {
   if (isInstitution(entry)) {
-    return fr ? "Institution" : "Institution";
+    return "Institution";
   }
 
   switch (entry.kind) {
     case "association":
-      return fr ? "Association" : "Association";
+      return "Association";
     case "groupe_parole":
     case "evenement":
       return fr ? "Collectif" : "Collective";
@@ -117,7 +117,7 @@ export function getDomainLabel(entry: AnnuaireEntry, locale: Locale): string {
       case "environnemental":
         return locale === "fr" ? "Environnement" : "Environment";
       case "social":
-        return locale === "fr" ? "Social" : "Social";
+        return "Social";
       case "humanitaire":
         return locale === "fr" ? "Humanitaire" : "Humanitarian";
       default:

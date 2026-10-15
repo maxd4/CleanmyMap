@@ -45,7 +45,7 @@ export function FeedbackHeader() {
               {locale === "fr" ? "Amélioration" : "Improvement"}
             </CmmButton>
             <CmmButton href="#collaboration" tone="secondary" variant="pill">
-              {locale === "fr" ? "Collaboration" : "Collaboration"}
+              Collaboration
             </CmmButton>
           </CmmButtonGroup>
         </div>
@@ -53,7 +53,7 @@ export function FeedbackHeader() {
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
           {[
             {
-              label: locale === "fr" ? "Bugs" : "Bugs",
+                label: "Bugs",
               value: locale === "fr" ? "Réparation priorisée" : "Priority fix",
             },
             {
@@ -61,7 +61,7 @@ export function FeedbackHeader() {
               value: locale === "fr" ? "Itérations utiles" : "Useful iterations",
             },
             {
-              label: locale === "fr" ? "Collaborations" : "Collaborations",
+                label: "Collaborations",
               value: locale === "fr" ? "Mise en lien" : "Warm introduction",
             },
           ].map((item) => (

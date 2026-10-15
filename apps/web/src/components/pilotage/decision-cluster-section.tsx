@@ -40,7 +40,7 @@ function buildDecisionClusterLinks(locale: Locale): PilotageClusterLink[] {
     {
       id: "pilotage",
       href: "/pilotage",
-      label: locale === "fr" ? "Pilotage" : "Pilotage",
+      label: "Pilotage",
       description:
         locale === "fr"
           ? "Synthèse transverse, méthodes et recommandations."

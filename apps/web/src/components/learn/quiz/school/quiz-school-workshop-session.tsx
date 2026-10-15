@@ -142,7 +142,7 @@ export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart,
                 <span className="rounded-full bg-emerald-100 px-3 py-1">{activity.difficulty}</span>
               </div>
               <p className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 p-4 text-base font-bold leading-relaxed text-slate-900">{activity.instruction[locale]}</p>
-              <p className="cmm-text-body mt-4 font-medium"><span className="font-black text-slate-950">{locale === "fr" ? "Adaptation" : "Adaptation"} :</span> {activity.adaptation[locale]}</p>
+              <p className="cmm-text-body mt-4 font-medium"><span className="font-black text-slate-950">Adaptation :</span> {activity.adaptation[locale]}</p>
               {activity.dataPoints ? (
                 <div className="cmm-data-table-wrap mt-5">
                   <table className="cmm-data-table min-w-[18rem]">

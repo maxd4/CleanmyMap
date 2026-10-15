@@ -96,7 +96,7 @@ export function LearnVulgarisationMagnitudeComparator({
       value: `${formatLearnNumber(locale, snapshot.waterLiters)} L`,
     },
     {
-      label: locale === "fr" ? "CO2eq" : "CO2eq",
+      label: "CO2eq",
       value: `${formatLearnNumber(locale, snapshot.co2Kg)} kg`,
     },
     {

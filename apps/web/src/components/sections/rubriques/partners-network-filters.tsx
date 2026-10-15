@@ -60,7 +60,7 @@ export function PartnersNetworkFilters({
 
       <div className="space-y-2">
         <span className="cmm-text-small font-semibold text-transparent" aria-hidden="true">
-          {fr ? "Action" : "Action"}
+          Action
         </span>
         <CmmButton
           type="button"

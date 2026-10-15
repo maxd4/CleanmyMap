@@ -255,7 +255,7 @@ export function LearnGestesPropresBarometer({ locale, className }: { locale: Lea
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <div className="rounded-[1.15rem] border border-amber-100 bg-amber-50/40 px-3 py-3">
               <p className="cmm-text-caption font-black uppercase tracking-[0.16em] text-amber-700">
-                {locale === "fr" ? "Source" : "Source"}
+                Source
               </p>
               <p className="mt-1 cmm-text-small leading-relaxed cmm-text-primary">
                 {GESTES_PROPRES_BAROMETER_2025.organization[locale]}

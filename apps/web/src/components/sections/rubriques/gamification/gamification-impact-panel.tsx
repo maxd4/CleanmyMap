@@ -49,7 +49,7 @@ function ImpactCoverage({ impact, fr }: { impact: Progression["impact"]; fr: boo
       {hasCoverage ? (
         <p className="mt-2 text-sm font-semibold text-[#5e4842]">
           {formatMetric(impact.wasteCoverageRate ?? 0)} % {fr ? "des actions ont une masse renseignée" : "of actions have a recorded mass"}
-          {typeof impact.wasteKnownActions === "number" ? ` · ${impact.wasteKnownActions} ${fr ? "action(s)" : "action(s)"}` : ""}
+          {typeof impact.wasteKnownActions === "number" ? ` · ${impact.wasteKnownActions} action(s)` : ""}
         </p>
       ) : (
         <p className="mt-2 text-sm font-semibold text-[#8c716b]">NA — {fr ? "couverture indisponible" : "coverage unavailable"}</p>

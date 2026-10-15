@@ -73,7 +73,7 @@ export function PilotageRestrictedPage({
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {[
               {
-                title: locale === "fr" ? "Observation" : "Observation",
+                title: "Observation",
                 text:
                   locale === "fr"
                     ? "Vue d'ensemble des indicateurs et du contexte."
@@ -116,7 +116,7 @@ export function PilotageRestrictedPage({
               href={DASHBOARD_ROUTE}
               className="inline-flex min-h-11 items-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-slate-800"
             >
-              {locale === "fr" ? "Dashboard" : "Dashboard"}
+              Dashboard
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
             <Link

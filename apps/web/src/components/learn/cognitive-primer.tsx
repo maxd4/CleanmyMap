@@ -97,7 +97,7 @@ export function CognitivePrimer({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="cmm-text-caption font-bold uppercase tracking-[0.18em] cmm-text-muted">
-                  {locale === "fr" ? "Quiz" : "Quiz"}
+                  Quiz
                 </p>
                 <p className="mt-1 cmm-text-small cmm-text-secondary">
                   {locale === "fr"

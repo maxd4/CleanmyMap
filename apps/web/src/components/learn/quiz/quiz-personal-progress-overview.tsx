@@ -254,7 +254,7 @@ export function QuizPersonalProgressOverview({
                   <div>
                     <p className="text-sm font-bold text-slate-950">{mode.label}</p>
                     <p className="text-xs leading-relaxed text-slate-600">
-                      {mode.sessions} session{mode.sessions > 1 ? "s" : ""} {locale === "fr" ? "•" : "•"}{" "}
+                      {mode.sessions} session{mode.sessions > 1 ? "s" : ""} •{" "}
                       {mode.correctAnswers}/{mode.totalQuestions}
                     </p>
                   </div>

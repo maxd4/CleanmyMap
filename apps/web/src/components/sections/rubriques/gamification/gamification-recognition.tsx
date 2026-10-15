@@ -31,7 +31,7 @@ function RecognitionCard({
 
       <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
         <div className="rounded-xl border border-[#ead8d2] bg-white p-3">
-          <p className="font-black uppercase tracking-[0.15em] text-[#a48d86]">{fr ? "Contribution" : "Contribution"}</p>
+          <p className="font-black uppercase tracking-[0.15em] text-[#a48d86]">Contribution</p>
           <p className="mt-1 font-bold text-[#2c1a17]">{card.verifiedContributions} {fr ? "vérifiée(s)" : "verified"}</p>
         </div>
         <div className="rounded-xl border border-[#ead8d2] bg-white p-3">

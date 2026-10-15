@@ -26,7 +26,7 @@ export function AnnuaireThematicExploration({
     }, 
     { 
       id: "social", 
-      label: fr ? "Social" : "Social", 
+      label: "Social",
       icon: Users, 
       color: "text-sky-400",
       bg: "bg-sky-500/10",

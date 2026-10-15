@@ -150,7 +150,7 @@ export function LearnGestesPropresInsightsSection({
           <summary className="flex cursor-pointer list-none items-start justify-between gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white">
             <div className="space-y-1 pr-4">
               <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
-                {scope === "overview" ? "Voir les autres éclairages" : "Voir les autres éclairages"}
+                Voir les autres éclairages
               </p>
               <p className="cmm-text-small leading-relaxed cmm-text-secondary">
                 {scope === "overview"

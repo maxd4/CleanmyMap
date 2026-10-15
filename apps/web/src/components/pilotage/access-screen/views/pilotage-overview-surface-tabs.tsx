@@ -50,7 +50,7 @@ export function PilotageOverviewSurfaceTabs({
           variant="pill"
           className="px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em]"
         >
-          {locale === "fr" ? "Pilotage" : "Pilotage"}
+          Pilotage
         </CmmButton>
         <CmmButton
           href="#gouvernance"

@@ -119,7 +119,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
                   className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
                 >
                   <option value="all">{fr ? "Toutes" : "All"}</option>
-                  <option value="ile-de-france">{fr ? "Île-de-France" : "Île-de-France"}</option>
+                  <option value="ile-de-france">Île-de-France</option>
                   <option value="autres">{fr ? "Autres régions" : "Other regions"}</option>
                 </select>
                 <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />

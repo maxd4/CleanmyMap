@@ -107,7 +107,7 @@ function rulesVersionLabel(value: string | null | "mixed", fr: boolean, previous
   if (value === "mixed") return fr ? "Plusieurs versions précédentes" : "Several previous versions";
   if (value === null) return previous ? (fr ? "Aucune version précédente" : "No previous version") : (fr ? "Règles CURRENT" : "CURRENT rules");
   const simpleVersion = value.match(/^v?(\d+(?:\.\d+)*)$/)?.[1];
-  if (simpleVersion) return `${fr ? "Version" : "Version"} ${simpleVersion}`;
+  if (simpleVersion) return `Version ${simpleVersion}`;
   return previous ? (fr ? "Version précédente" : "Previous rules version") : (fr ? "Version actuelle" : "Current rules version");
 }
 

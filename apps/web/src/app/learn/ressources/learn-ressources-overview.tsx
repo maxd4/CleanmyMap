@@ -144,7 +144,7 @@ export function LearnRessourcesOverview({ locale }: { locale: LearnLocale }) {
 
         <div className="mt-4 rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
-            {locale === "fr" ? "Orientation" : "Orientation"}
+            Orientation
           </p>
           <p className="cmm-text-body mt-2">
             {locale === "fr"

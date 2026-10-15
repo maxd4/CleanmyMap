@@ -86,7 +86,7 @@ export function JoinFormConfirmationDialog({
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
-              {fr ? "Confirmation" : "Confirmation"}
+              Confirmation
             </p>
             <h2 id="join-dialog-title" className="text-xl font-black tracking-tight">
               {dialogTitle}

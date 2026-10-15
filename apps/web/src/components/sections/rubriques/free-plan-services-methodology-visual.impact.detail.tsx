@@ -51,7 +51,7 @@ export function ImpactSelectionDetail({ isFrench, onClose, selectedImpactSelecti
               {isFrench ? "Part du total" : "Share of total"} {selectedImpactSelection.contributionPercentLabel}
             </span>
             <span className="rounded-full border border-rose-200 bg-white px-3 py-1 cmm-text-caption font-black uppercase tracking-[0.18em] text-rose-700">
-              {isFrench ? "Contribution" : "Contribution"} {selectedImpactSelection.contributionValueLabel}
+              Contribution {selectedImpactSelection.contributionValueLabel}
             </span>
           </div>
 

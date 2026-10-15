@@ -99,7 +99,7 @@ export function CompostMapCanvas({ points }: CompostMapCanvasProps) {
            </div>
            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-400 uppercase tracking-widest">
               <Sparkles size={12} />
-              {points.length} {isFrench ? "Sites" : "Sites"}
+               {points.length} Sites
            </div>
         </div>
       </div>

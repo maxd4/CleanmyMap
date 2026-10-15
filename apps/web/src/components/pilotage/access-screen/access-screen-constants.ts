@@ -134,7 +134,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
   const adminItems: NavigationGridItem[] = [
     {
       icon: "Settings",
-      title: locale === "fr" ? "Administration" : "Administration",
+      title: "Administration",
       desc:
         locale === "fr"
           ? "File d'attente, validations et supervision des services."
@@ -165,7 +165,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
   if (profile === "max") {
     adminItems.push({
       icon: "LockKeyhole",
-      title: locale === "fr" ? "God Mode" : "God Mode",
+      title: "God Mode",
       desc:
         locale === "fr"
           ? "Accès total avec confirmation obligatoire."

@@ -86,7 +86,7 @@ function HistoryEntry({
           <dd className="mt-1 font-bold">{formatNumber(entry.receipt.level.before, locale)} → {formatNumber(entry.receipt.level.after, locale)}</dd>
         </div>
         <div>
-          <dt className="font-black uppercase tracking-[0.14em] text-[#a48d86]">{fr ? "Progressions" : "Progressions"}</dt>
+          <dt className="font-black uppercase tracking-[0.14em] text-[#a48d86]">Progressions</dt>
           <dd className="mt-1 font-bold">{counts.progressions}</dd>
         </div>
         <div>

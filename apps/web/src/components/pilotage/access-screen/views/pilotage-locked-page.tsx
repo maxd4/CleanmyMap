@@ -49,7 +49,7 @@ export function PilotageLockedPage({
               {[
                 {
                   label: copy.overviewLabel,
-                  value: locale === "fr" ? "Observation" : "Observation",
+                  value: "Observation",
                   detail:
                     locale === "fr"
                       ? "KPI, contexte, lecture rapide."
@@ -90,7 +90,7 @@ export function PilotageLockedPage({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-100/70">
-                  {locale === "fr" ? "Permissions" : "Permissions"}
+                  Permissions
                 </p>
                 <h2 className="mt-2 text-xl font-black tracking-tight text-white">
                   {locale === "fr" ? "Accès visible, contenu réservé" : "Visible access, reserved content"}
@@ -164,7 +164,7 @@ export function PilotageLockedPage({
       <div className="grid gap-4 lg:grid-cols-3">
         {[
           {
-            title: locale === "fr" ? "Observation" : "Observation",
+            title: "Observation",
             detail:
               locale === "fr"
                 ? "Vue synthèse des KPIs, de la fiabilité et des fenêtres."

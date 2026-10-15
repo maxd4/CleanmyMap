@@ -30,7 +30,7 @@ function SituationCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
-            {locale === "fr" ? "Situation" : "Situation"}
+            Situation
           </p>
           <h4 className="mt-1 text-lg font-black tracking-tight cmm-text-primary">
             {situation.object[locale]}
@@ -121,7 +121,7 @@ export function LearnGestesPropresCampaignSection({
 
         <div className="flex flex-wrap gap-2">
           <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.16em] text-amber-900">
-            {locale === "fr" ? "4 situations" : "4 situations"}
+            4 situations
           </span>
           <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.16em] text-amber-900">
             {locale === "fr" ? "Mégot, canette, bouteille, encombrant" : "Butt, can, bottle, bulky item"}

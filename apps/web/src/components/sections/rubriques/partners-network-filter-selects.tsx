@@ -26,17 +26,17 @@ export function PartnersNetworkFilterSelects({
   return (
     <>
       <label className="space-y-2">
-        <span className="cmm-text-small font-semibold text-slate-700">{fr ? "Type" : "Type"}</span>
+        <span className="cmm-text-small font-semibold text-slate-700">Type</span>
         <select
           value={kindFilter}
           onChange={(event) => onKindChange(event.target.value as PartnerKindFilter)}
           className="h-12 w-full rounded-2xl border border-pink-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-pink-400 focus:ring-4 focus:ring-pink-100"
         >
           <option value="all">{fr ? "Tous" : "All"}</option>
-          <option value="association">{fr ? "Associations" : "Associations"}</option>
+          <option value="association">Associations</option>
           <option value="collective">{fr ? "Collectivités" : "Collectivities"}</option>
           <option value="company">{fr ? "Entreprises" : "Companies"}</option>
-          <option value="institution">{fr ? "Institutions" : "Institutions"}</option>
+          <option value="institution">Institutions</option>
         </select>
       </label>
 
@@ -51,7 +51,7 @@ export function PartnersNetworkFilterSelects({
         >
           <option value="all">{fr ? "Tous" : "All"}</option>
           <option value="environnemental">{fr ? "Environnement" : "Environment"}</option>
-          <option value="social">{fr ? "Social" : "Social"}</option>
+          <option value="social">Social</option>
           <option value="humanitaire">{fr ? "Humanitaire" : "Humanitarian"}</option>
         </select>
       </label>

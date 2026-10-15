@@ -56,7 +56,7 @@ export function LearnRessourcesCalendarPanel({ locale }: { locale: LearnLocale }
             </div>
             <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-3">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
-                {locale === "fr" ? "Usage" : "Usage"}
+                Usage
               </p>
               <p className="mt-2 text-sm font-bold text-slate-900">
                 {locale === "fr" ? "Support secondaire" : "Secondary support"}

@@ -93,7 +93,7 @@ export function LearnRessourcesCalendar({ locale }: { locale: LearnLocale }) {
         </div>
         <div className="rounded-[1.35rem] border border-amber-200 bg-amber-50 p-3">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-            {isFrench ? "Support" : "Support"}
+            Support
           </p>
           <p className="mt-2 text-2xl font-black tracking-tight text-amber-800">1</p>
         </div>

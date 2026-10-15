@@ -136,7 +136,7 @@ export function LearnNationalContextSection({ locale, className }: { locale: Lea
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </CmmButton>
           <CmmButton href={barometerStudy.pdfPath} tone="secondary" variant="pill" className="min-h-11 px-4 py-2.5 cmm-text-caption font-black uppercase tracking-[0.16em]" title={locale === "fr" ? "Ouvrir le PDF du baromètre" : "Open the barometer PDF"}>
-            {locale === "fr" ? "Source PDF" : "Source PDF"}
+            Source PDF
             <FileText className="h-4 w-4" aria-hidden="true" />
           </CmmButton>
         </div>

@@ -147,7 +147,7 @@ function SourceCardView({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
-              {locale === "fr" ? "Source" : "Source"}
+              Source
             </p>
             <h5 className="mt-1 text-base font-black tracking-tight cmm-text-primary">{card.title[locale]}</h5>
           </div>

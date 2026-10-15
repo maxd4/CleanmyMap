@@ -31,7 +31,7 @@ export function RouteOptionsForm({
           </h3>
         </div>
         <p className="rounded-full border border-emerald-200/14 bg-[rgba(17,56,41,0.76)] px-3 py-1.5 text-xs font-semibold text-emerald-50/92">
-          {fr ? "Mobile-first" : "Mobile-first"}
+          Mobile-first
         </p>
       </div>
 

@@ -78,7 +78,7 @@ export function MethodologieCalculationSection({ isFrench, methodology }: Pick<B
     { label: "Version", val: methodology.version, icon: <BookOpen size={16} /> },
     { label: "Sources", val: "Configuration runtime", icon: <Zap size={16} /> },
     { label: isFrench ? "Périmètre" : "Scope", val: isFrench ? "Approuvé + filtres" : "Approved + filters", icon: <Scaling size={16} /> },
-    { label: isFrench ? "Nature" : "Nature", val: isFrench ? "Proxys, pas mesures" : "Proxies, not measurements", icon: <Sparkles size={16} /> },
+    { label: "Nature", val: isFrench ? "Proxys, pas mesures" : "Proxies, not measurements", icon: <Sparkles size={16} /> },
   ];
 
   return (

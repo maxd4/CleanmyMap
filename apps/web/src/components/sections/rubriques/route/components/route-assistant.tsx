@@ -65,7 +65,7 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <p className="font-semibold text-white">
-                    {hotspot.zoneLabel} - {fr ? "signal" : "signal"}{" "}
+                    {hotspot.zoneLabel} - signal{" "}
                     {hotspot.operationalSignalScore.toFixed(1)}/10
                   </p>
                   {hotspot.distanceKm !== null ? (

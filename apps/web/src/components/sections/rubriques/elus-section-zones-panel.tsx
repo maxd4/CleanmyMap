@@ -50,7 +50,7 @@ export function ElusSectionZonesPanel({ data, fr }: ElusSectionZonesPanelProps) 
                 <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Volume Actions" : "Action Volume"}</th>
                 <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Tonnage Net" : "Net Tonnage"}</th>
                 <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Couverture" : "Coverage"}</th>
-                <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "P-Score" : "P-Score"}</th>
+                <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">P-Score</th>
                 <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] text-center">{fr ? "Indice Urgence" : "Urgency Index"}</th>
               </tr>
             </thead>

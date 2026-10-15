@@ -20,7 +20,7 @@ export function GuideCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
-              {locale === "fr" ? "Guide" : "Guide"}
+              Guide
             </p>
             <h4 className="mt-1 text-lg font-black tracking-tight cmm-text-primary">
               {guide.title[locale]}

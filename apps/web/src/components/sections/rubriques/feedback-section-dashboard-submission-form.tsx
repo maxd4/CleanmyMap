@@ -99,7 +99,7 @@ export function FeedbackSectionDashboardSubmissionForm({
               {localize(locale, activeTopic.helper)}
             </p>
             <p className="text-xs text-slate-500">
-              {fr ? "Page" : "Page"}: {pagePath}
+              Page: {pagePath}
             </p>
           </div>
         </div>
