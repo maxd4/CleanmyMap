@@ -1,27 +1,44 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { test } from "node:test";
-import { tmpdir } from "node:os";
 
-import { validatePublicE2EArtifact } from "./check-public-e2e-artifact.mjs";
+import {
+  PUBLIC_E2E_ARTIFACT_ROOT,
+  validatePublicE2EArtifact,
+} from "./check-public-e2e-artifact.mjs";
 
 const syntheticJwt = ["eyJ" + "a".repeat(11), "b".repeat(11), "c".repeat(11)].join(".");
 const syntheticClerkKey = ["pk_test_", "a".repeat(24)].join("");
 
 function staging() {
-  const root = mkdtempSync(join(tmpdir(), "cleanmymap-public-e2e-"));
+  const root = mkdtempSync(join(resolve(PUBLIC_E2E_ARTIFACT_ROOT), "test-"));
   mkdirSync(join(root, "evidence"), { recursive: true });
   return root;
 }
 
-test("accepts synthetic evidence JSON and an explicitly allowed screenshot", () => {
+function withStaging(callback) {
   const root = staging();
-  writeFileSync(join(root, "evidence", "summary.json"), '{"status":"passed"}\n');
-  mkdirSync(join(root, "screenshots"));
-  writeFileSync(join(root, "screenshots", "clean.png"), Buffer.from([137, 80, 78, 71]));
+  try {
+    return callback(root);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
 
-  assert.deepEqual(validatePublicE2EArtifact(root), []);
+test("accepts synthetic evidence JSON and an explicitly allowed screenshot", () => {
+  withStaging((root) => {
+    writeFileSync(join(root, "evidence", "summary.json"), '{"status":"passed"}\n');
+    mkdirSync(join(root, "screenshots"));
+    writeFileSync(join(root, "screenshots", "clean.png"), Buffer.from([137, 80, 78, 71]));
+
+    assert.deepEqual(validatePublicE2EArtifact(root), []);
+  });
+});
+
+test("rejects a traversal root outside the public evidence directory", () => {
+  const outsideRoot = join(PUBLIC_E2E_ARTIFACT_ROOT, "..", "outside");
+  assert.match(validatePublicE2EArtifact(outsideRoot)[0], /outside/);
 });
 
 for (const [name, relativePath, content] of [
@@ -35,11 +52,12 @@ for (const [name, relativePath, content] of [
   ["rejects non-allowlisted files", "evidence/notes.txt", "safe-looking text"],
 ]) {
   test(name, () => {
-    const root = staging();
-    const absolutePath = join(root, ...relativePath.split("/"));
-    mkdirSync(join(absolutePath, ".."), { recursive: true });
-    writeFileSync(absolutePath, content);
+    withStaging((root) => {
+      const absolutePath = join(root, ...relativePath.split("/"));
+      mkdirSync(join(absolutePath, ".."), { recursive: true });
+      writeFileSync(absolutePath, content);
 
-    assert.notDeepEqual(validatePublicE2EArtifact(root), []);
+      assert.notDeepEqual(validatePublicE2EArtifact(root), []);
+    });
   });
 }

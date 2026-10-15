@@ -193,3 +193,27 @@ test('guards the assembled report against duplicate explicit anchors and placeho
   assert.equal(new Set(anchors).size, anchors.length, 'Assembled report contains duplicate explicit anchors');
   assert.doesNotMatch(result.stdout, /SYNTHÈSE À COMPLÉTER MANUELLEMENT/);
 });
+
+test('constrains file output to the dedicated reports artifact directory', () => {
+  const safeOutput = path.join('artifacts', 'assembled-reports', 'security-test.md');
+  const safeResult = spawnSync(
+    process.execPath,
+    ['scripts/reports/assemble-impact-report.mjs', '--output', safeOutput],
+    { cwd: repositoryRoot, encoding: 'utf8' },
+  );
+  try {
+    assert.equal(safeResult.status, 0, safeResult.stderr);
+    assert.equal(fs.existsSync(path.resolve(repositoryRoot, safeOutput)), true);
+
+    const traversalResult = spawnSync(
+      process.execPath,
+      ['scripts/reports/assemble-impact-report.mjs', '--output', path.join('artifacts', 'assembled-reports', '..', 'outside.md')],
+      { cwd: repositoryRoot, encoding: 'utf8' },
+    );
+    assert.notEqual(traversalResult.status, 0);
+    assert.match(traversalResult.stderr, /must be a file directly under artifacts[\\/]assembled-reports/);
+    assert.equal(fs.existsSync(path.resolve(repositoryRoot, 'artifacts', 'outside.md')), false);
+  } finally {
+    fs.rmSync(path.resolve(repositoryRoot, 'artifacts', 'assembled-reports'), { recursive: true, force: true });
+  }
+});

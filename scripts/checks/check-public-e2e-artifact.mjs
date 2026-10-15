@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
-import { extname, relative, resolve } from "node:path";
+import { extname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { scanContent } from "./secret-audit.mjs";
@@ -45,6 +45,11 @@ function findRule(relativePath) {
 export function validatePublicE2EArtifact(rootPath) {
   const root = resolve(rootPath);
   const issues = [];
+
+  const allowedRoot = resolve(PUBLIC_E2E_ARTIFACT_ROOT);
+  if (root !== allowedRoot && !root.startsWith(`${allowedRoot}${sep}`)) {
+    return [`staging directory is outside ${PUBLIC_E2E_ARTIFACT_ROOT}: ${rootPath}`];
+  }
 
   if (!existsSync(root) || !lstatSync(root).isDirectory()) {
     return [`staging directory is missing: ${rootPath}`];

@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import { watch } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(SCRIPT_DIR, "../..");
@@ -106,13 +107,136 @@ function extractLiteral(source, marker, openChar) {
   return source.slice(openIndex, closeIndex + 1);
 }
 
-function parseLiteral(source, marker, openChar, context = {}) {
+function evaluateLiteralNode(node, context) {
+  if (ts.isParenthesizedExpression(node)) {
+    return evaluateLiteralNode(node.expression, context);
+  }
+
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return node.text;
+  }
+  if (ts.isNumericLiteral(node)) {
+    return Number(node.text);
+  }
+  if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
+  if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
+  if (node.kind === ts.SyntaxKind.NullKeyword) return null;
+
+  if (ts.isIdentifier(node)) {
+    if (!Object.hasOwn(context, node.text)) {
+      throw new Error(`Unsupported literal identifier: ${node.text}`);
+    }
+    return context[node.text];
+  }
+
+  if (ts.isArrayLiteralExpression(node)) {
+    return node.elements.map((element) => {
+      if (ts.isSpreadElement(element)) {
+        throw new Error("Spread expressions are not allowed in design-system literals.");
+      }
+      return evaluateLiteralNode(element, context);
+    });
+  }
+
+  if (ts.isObjectLiteralExpression(node)) {
+    const result = {};
+    for (const property of node.properties) {
+      if (ts.isSpreadAssignment(property)) {
+        throw new Error("Spread assignments are not allowed in design-system literals.");
+      }
+
+      if (ts.isShorthandPropertyAssignment(property)) {
+        if (!Object.hasOwn(context, property.name.text)) {
+          throw new Error(`Unsupported literal identifier: ${property.name.text}`);
+        }
+        result[property.name.text] = context[property.name.text];
+        continue;
+      }
+
+      if (!ts.isPropertyAssignment(property)) {
+        throw new Error("Only data properties are allowed in design-system literals.");
+      }
+
+      const propertyName = property.name;
+      const key = ts.isIdentifier(propertyName) || ts.isStringLiteral(propertyName) || ts.isNumericLiteral(propertyName)
+        ? propertyName.text
+        : null;
+      if (key === null) {
+        throw new Error("Computed property names are not allowed in design-system literals.");
+      }
+      result[key] = evaluateLiteralNode(property.initializer, context);
+    }
+    return result;
+  }
+
+  throw new Error(`Unsupported design-system literal syntax: ${ts.SyntaxKind[node.kind]}`);
+}
+
+export function parseLiteral(source, marker, openChar, context = {}) {
   const literal = extractLiteral(source, marker, openChar);
-  // The extracted blocks are plain object/array literals with comments, so
-  // evaluating them in a Function is sufficient and keeps the parser simple.
-  const names = Object.keys(context);
-  const values = Object.values(context);
-  return Function(...names, `"use strict"; return (${literal});`)(...values);
+  const sourceFile = ts.createSourceFile(
+    "design-system-literal.ts",
+    `const value = ${literal};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const statement = sourceFile.statements[0];
+  if (!statement || !ts.isVariableStatement(statement)) {
+    throw new Error("Unable to parse design-system literal.");
+  }
+  const declaration = statement.declarationList.declarations[0];
+  if (!declaration?.initializer) {
+    throw new Error("Design-system literal has no initializer.");
+  }
+  return evaluateLiteralNode(declaration.initializer, context);
+}
+
+export function parseNavigationProfileSpaceMap(source) {
+  const actVisibleRouteIds = parseLiteral(source, "const ACT_VISIBLE_ROUTE_IDS", "[");
+  const commonProfileSpacePages = parseLiteral(
+    source,
+    "const COMMON_PROFILE_SPACE_PAGES",
+    "{",
+    { ACT_VISIBLE_ROUTE_IDS: actVisibleRouteIds },
+  );
+  const literal = extractLiteral(source, "const PARCOURS_SPACE_PAGE_MAP", "{");
+  const sourceFile = ts.createSourceFile(
+    "navigation-profile-space-map.ts",
+    `const value = ${literal};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const statement = sourceFile.statements[0];
+  const declaration = ts.isVariableStatement(statement)
+    ? statement.declarationList.declarations[0]
+    : undefined;
+  const initializer = declaration?.initializer;
+  if (!initializer || !ts.isObjectLiteralExpression(initializer)) {
+    throw new Error("Navigation profile space map must be a data object.");
+  }
+
+  const result = {};
+  for (const property of initializer.properties) {
+    if (!ts.isPropertyAssignment(property) || !ts.isIdentifier(property.name)) {
+      throw new Error("Navigation profile space map contains unsupported syntax.");
+    }
+    const value = property.initializer;
+    if (
+      !ts.isCallExpression(value) ||
+      !ts.isIdentifier(value.expression) ||
+      value.expression.text !== "buildProfileSpacePages" ||
+      value.arguments.length !== 1
+    ) {
+      throw new Error("Navigation profile space map must use buildProfileSpacePages(home).");
+    }
+    result[property.name.text] = {
+      home: evaluateLiteralNode(value.arguments[0], {}),
+      ...commonProfileSpacePages,
+    };
+  }
+  return result;
 }
 
 function parseExportedStringConstants(source) {
@@ -337,8 +461,8 @@ async function buildData() {
   const darkVars = extractCssVars(globalsCss, 'html[data-theme="dark"]');
   const themeVars = extractCssVars(globalsCss, "@theme inline");
 
-  const blockAccentMap = parseLiteral(blockAccentsSource, "export const BLOCK_ACCENT_MAP", "{");
-  const accentTokens = parseLiteral(blockAccentsSource, "export const ACCENT_TOKENS", "{");
+  const blockAccentMap = parseLiteral(blockAccentsSource, "const BLOCK_ACCENT_MAP", "{");
+  const accentTokens = parseLiteral(blockAccentsSource, "const ACCENT_TOKENS", "{");
   const accentRgb = {
     amber: "245 158 11",
     emerald: "16 185 129",
@@ -351,7 +475,7 @@ async function buildData() {
   };
   const spaceDefinitions = parseLiteral(navigationSource, "const SPACE_DEFINITIONS", "{");
   const fixedSpaceOrder = parseLiteral(navigationSource, "const FIXED_SPACE_ORDER", "[");
-  const parcoursSpaceMap = parseLiteral(navigationSource, "const PARCOURS_SPACE_PAGE_MAP", "{");
+  const parcoursSpaceMap = parseNavigationProfileSpaceMap(navigationSource);
 
   const rubriqueCategories = parseLiteral(sectionsConfigSource, "export const RUBRIQUE_CATEGORIES", "[");
   const routeConstants = parseExportedStringConstants(accueilPilotageRoutesSource);
@@ -724,14 +848,20 @@ async function watchAndRegenerate() {
 
 const shouldWatch = WATCH_ARGS.has("--watch");
 
-if (shouldWatch) {
-  watchAndRegenerate().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  });
-} else {
-  generate().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  });
+const isDirectRun =
+  typeof process.argv[1] === "string" &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectRun) {
+  if (shouldWatch) {
+    watchAndRegenerate().catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    });
+  } else {
+    generate().catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    });
+  }
 }

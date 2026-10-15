@@ -1,9 +1,24 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import {
   absoluteReportPath,
   impactReportMaster,
   readImpactReportAssemblyEntries,
 } from './impact-report-files.mjs';
+
+const assembledReportOutputRoot = path.resolve('artifacts/assembled-reports');
+
+function resolveOutputPath(value) {
+  const resolved = path.resolve(value);
+  if (
+    path.dirname(resolved) !== assembledReportOutputRoot ||
+    path.basename(resolved) === '.' ||
+    path.basename(resolved) === '..'
+  ) {
+    throw new Error(`--output must be a file directly under ${path.relative(process.cwd(), assembledReportOutputRoot)}.`);
+  }
+  return resolved;
+}
 
 const masterText = fs.readFileSync(absoluteReportPath(impactReportMaster), 'utf8');
 const bibliographyMarker = '\n# Bibliographie';
@@ -41,7 +56,8 @@ if (process.argv[2] === '--output') {
   if (!outputPath) {
     throw new Error('--output requires a file path.');
   }
-  fs.writeFileSync(outputPath, assembled, 'utf8');
+  fs.mkdirSync(assembledReportOutputRoot, { recursive: true });
+  fs.writeFileSync(resolveOutputPath(outputPath), assembled, 'utf8');
 } else if (process.argv.length > 2) {
   throw new Error('Usage: node scripts/reports/assemble-impact-report.mjs [--output <path>]');
 } else {
