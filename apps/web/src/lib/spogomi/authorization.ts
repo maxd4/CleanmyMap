@@ -10,9 +10,10 @@ export type SpogomiCapability =
   | "observe"
   | "arbitrate"
   | "manage"
-  | "assign_event_access";
+  | "assign_event_access"
+  | "checkin";
 
-export type SpogomiEventAccessRole = "organizer" | "referee" | "observer" | "participant";
+export type SpogomiEventAccessRole = "organizer" | "referee" | "observer" | "checkin" | "participant";
 export type SpogomiAssignedAccessRole = Exclude<SpogomiEventAccessRole, "organizer" | "participant">;
 
 export type SpogomiEventAccessDecision = {
@@ -78,7 +79,7 @@ export async function resolveSpogomiEventAccess(params: {
   const organizerIds = (organizersResult.data ?? []).map((row) => String(row.organizer_clerk_id));
   const reviewerRoles = (reviewersResult.data ?? [])
     .map((row) => String(row.role))
-    .filter((role): role is SpogomiAssignedAccessRole => role === "observer" || role === "referee");
+    .filter((role): role is SpogomiAssignedAccessRole => role === "observer" || role === "referee" || role === "checkin");
   const isOrganizer = canManageEvent(
     identity,
     event,
@@ -88,8 +89,9 @@ export async function resolveSpogomiEventAccess(params: {
   const capabilities = new Set<SpogomiCapability>();
 
   if (participantId) capabilities.add("private_read");
-  if (isOrganizer || reviewerRoles.length > 0) capabilities.add("observe");
+  if (isOrganizer || reviewerRoles.includes("observer") || reviewerRoles.includes("referee")) capabilities.add("observe");
   if (isOrganizer || reviewerRoles.includes("referee")) capabilities.add("arbitrate");
+  if (isOrganizer || reviewerRoles.includes("checkin")) capabilities.add("checkin");
   if (isOrganizer) {
     capabilities.add("manage");
     capabilities.add("assign_event_access");
@@ -99,6 +101,8 @@ export async function resolveSpogomiEventAccess(params: {
     ? "organizer"
     : reviewerRoles.includes("referee")
       ? "referee"
+      : reviewerRoles.includes("checkin")
+        ? "checkin"
       : reviewerRoles.includes("observer")
         ? "observer"
         : participantId

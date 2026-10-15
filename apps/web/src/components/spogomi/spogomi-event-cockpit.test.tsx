@@ -27,7 +27,7 @@ const event = {
 describe("SpogomiEventCockpit", () => {
   it("keeps a persistent direct-link navigation and exposes all organizer sections", () => {
     const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="organizer" capabilities={["manage", "observe", "arbitrate", "assign_event_access"]} />);
-    for (const section of ["presentation", "teams", "results", "arbitration", "bilan", "settings"]) {
+    for (const section of ["presentation", "teams", "attendance", "results", "arbitration", "bilan", "settings"]) {
       expect(markup).toContain(`href="#${section}"`);
       expect(markup).toContain(`id="${section}"`);
     }
@@ -49,5 +49,12 @@ describe("SpogomiEventCockpit", () => {
     expect(markup).toContain('href="#results"');
     expect(markup).not.toContain('href="#arbitration"');
     expect(markup).not.toContain("Certifier");
+  });
+
+  it("limits check-in staff to the private attendance section", () => {
+    const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="checkin" capabilities={["checkin"]} />);
+    expect(markup).toContain('href="#attendance"');
+    expect(markup).not.toContain('href="#teams"');
+    expect(markup).not.toContain('href="#settings"');
   });
 });

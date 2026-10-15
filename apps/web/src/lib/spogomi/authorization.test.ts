@@ -13,7 +13,7 @@ type Fixture = {
   actionId: string;
   createdBy: string;
   organizers: string[];
-  reviewers: Array<{ clerk_id: string; role: "observer" | "referee"; revoked_at: string | null }>;
+  reviewers: Array<{ clerk_id: string; role: "observer" | "referee" | "checkin"; revoked_at: string | null }>;
   participants: Array<{ id: string; clerk_id: string; account_link_status: string }>;
 };
 
@@ -62,6 +62,7 @@ const baseFixture = (): Fixture => ({
   reviewers: [
     { clerk_id: "observer-a", role: "observer", revoked_at: null },
     { clerk_id: "referee-a", role: "referee", revoked_at: null },
+    { clerk_id: "checkin-a", role: "checkin", revoked_at: null },
     { clerk_id: "revoked-a", role: "observer", revoked_at: "2026-01-02T10:00:00.000Z" },
   ],
   participants: [{ id: "participant-a", clerk_id: "participant-a", account_link_status: "verified" }],
@@ -105,6 +106,15 @@ describe("SPOGOMI event-scoped authorization", () => {
     expect(access?.role).toBe("referee");
     expect(hasSpogomiCapability(access, "observe")).toBe(true);
     expect(hasSpogomiCapability(access, "arbitrate")).toBe(true);
+    expect(hasSpogomiCapability(access, "manage")).toBe(false);
+  });
+
+  it("gives check-in staff only private attendance access for this event", async () => {
+    const access = await resolveSpogomiEventAccess({ supabase: supabaseFor(baseFixture()) as never, eventId: "event-a", userId: "checkin-a" });
+    expect(access?.role).toBe("checkin");
+    expect(hasSpogomiCapability(access, "checkin")).toBe(true);
+    expect(hasSpogomiCapability(access, "observe")).toBe(false);
+    expect(hasSpogomiCapability(access, "arbitrate")).toBe(false);
     expect(hasSpogomiCapability(access, "manage")).toBe(false);
   });
 

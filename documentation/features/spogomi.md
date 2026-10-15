@@ -587,6 +587,36 @@ exactement la proposition contrôlée côté serveur. Un dry-run ne vaut pas pre
 d'application distante ; la certification, la consolidation, AuthN/AuthZ, RLS et
 la liaison Clerk restent inchangées.
 
+### Préparation opérationnelle et accueil — CURRENT
+
+Le cockpit événementiel conserve une distinction stricte entre la fiche publiable
+et la préparation privée du jour J. La préparation privée regroupe, par division,
+le statut et la source du règlement, les catégories et unités, les équipes, les
+places non affectées, l’état de verrouillage, les informations pratiques, le
+parcours officiel lorsqu’il existe et les habilitations de l’édition. Une
+publication d’annonce n’exige pas que les compositions soient déjà terminées ;
+une composition provisoire ne peut toutefois pas être présentée comme officielle
+et une certification reste soumise au règlement complet.
+
+L’accès `checkin` est attribué et révoqué par l’organisateur dans
+`spogomi_event_reviewers` pour une seule édition. Il ne s’agit pas d’un rôle Clerk
+global. La projection « Accueil et présences » est privée, paginée et limitée à
+la place, l’identité roster nécessaire, l’équipe et `attendance_status` ; elle
+n’accorde ni export nominatif complet, ni configuration du règlement, ni
+certification. Un compte Clerk n’est pas requis pour le participant pointé.
+
+`attendance_status` reste la valeur courante canonique (`unknown`, `present`,
+`absent`). Chaque changement effectif passe par
+`spogomi_set_attendance_status`, qui verrouille l’événement et le participant,
+contrôle la révision optionnelle `updated_at`, écrit l’acteur, le motif et la
+provenance dans `spogomi_attendance_audit`, et rend une répétition idempotente.
+Une absence, une arrivée tardive, une identité non résolue ou une demande de
+remplacement ne supprime pas l’inscription et ne modifie pas silencieusement la
+composition officielle ; après verrouillage, la route ordinaire de déplacement
+reste refusée. En cas de réseau indisponible, seule une feuille ou un export
+privé minimal suivi d’une ressaisie contrôlée est prévu : aucune synchronisation
+hors ligne automatique n’est prétendue.
+
 ### Verrouillage effectif des compositions
 
 Les déplacements ordinaires passent par la RPC server-only

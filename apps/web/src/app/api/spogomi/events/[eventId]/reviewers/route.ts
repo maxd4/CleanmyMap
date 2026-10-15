@@ -10,6 +10,8 @@ import {
   assignSpogomiReferee,
   revokeSpogomiObserver,
   revokeSpogomiReferee,
+  assignSpogomiCheckin,
+  revokeSpogomiCheckin,
 } from "@/lib/spogomi/result-service";
 
 export const runtime = "nodejs";
@@ -18,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 const reviewerSchema = z.object({
   clerkId: z.string().trim().min(3).max(128),
-  role: z.enum(["observer", "referee"]).default("referee"),
+  role: z.enum(["observer", "referee", "checkin"]).default("referee"),
 }).strict();
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
@@ -32,7 +34,9 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
     const params = { supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, clerkId: parsed.data.clerkId, assignedByClerkId: access.userId };
     const reviewer = parsed.data.role === "observer"
       ? await assignSpogomiObserver(params)
-      : await assignSpogomiReferee(params);
+      : parsed.data.role === "checkin"
+        ? await assignSpogomiCheckin(params)
+        : await assignSpogomiReferee(params);
     return NextResponse.json({ reviewer }, { status: 201 });
   } catch (error) {
     return handleApiError(error, "spogomi.reviewer.assign");
@@ -49,6 +53,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ even
   try {
     const params = { supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, clerkId: parsed.data.clerkId, assignedByClerkId: access.userId };
     if (parsed.data.role === "observer") await revokeSpogomiObserver(params);
+    else if (parsed.data.role === "checkin") await revokeSpogomiCheckin(params);
     else await revokeSpogomiReferee(params);
     return NextResponse.json({ revoked: true });
   } catch (error) {

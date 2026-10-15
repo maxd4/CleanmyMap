@@ -63,6 +63,8 @@ const mocks = vi.hoisted(() => {
   const revokeSpogomiReferee = vi.fn();
   const assignSpogomiObserver = vi.fn();
   const revokeSpogomiObserver = vi.fn();
+  const assignSpogomiCheckin = vi.fn();
+  const revokeSpogomiCheckin = vi.fn();
   const buildSpogomiConsolidationPreview = vi.fn();
   const publishSpogomiConsolidation = vi.fn();
   const loadSpogomiGalleryEntries = vi.fn();
@@ -128,6 +130,8 @@ const mocks = vi.hoisted(() => {
     revokeSpogomiReferee,
     assignSpogomiObserver,
     revokeSpogomiObserver,
+    assignSpogomiCheckin,
+    revokeSpogomiCheckin,
     buildSpogomiConsolidationPreview,
     publishSpogomiConsolidation,
     loadSpogomiGalleryEntries,
@@ -192,12 +196,14 @@ vi.mock("@/lib/spogomi/preparation-service", () => ({
 vi.mock("@/lib/spogomi/result-service", () => ({
   assignSpogomiObserver: mocks.assignSpogomiObserver,
   assignSpogomiReferee: mocks.assignSpogomiReferee,
+  assignSpogomiCheckin: mocks.assignSpogomiCheckin,
   loadSpogomiEventResultReviews: mocks.loadSpogomiEventResultReviews,
   loadSpogomiTeamResultForm: mocks.loadSpogomiTeamResultForm,
   resolveSpogomiReviewerRole: mocks.resolveSpogomiReviewerRole,
   reviewSpogomiTeamSubmission: mocks.reviewSpogomiTeamSubmission,
   revokeSpogomiReferee: mocks.revokeSpogomiReferee,
   revokeSpogomiObserver: mocks.revokeSpogomiObserver,
+  revokeSpogomiCheckin: mocks.revokeSpogomiCheckin,
   saveSpogomiTeamSubmission: mocks.saveSpogomiTeamSubmission,
 }));
 vi.mock("@/lib/spogomi/team-access", () => ({
@@ -293,6 +299,8 @@ describe("SPOGOMI persistence routes", () => {
     mocks.revokeSpogomiReferee.mockResolvedValue(undefined);
     mocks.assignSpogomiObserver.mockResolvedValue({ clerkId: "observer-1", role: "observer" });
     mocks.revokeSpogomiObserver.mockResolvedValue(undefined);
+    mocks.assignSpogomiCheckin.mockResolvedValue({ clerkId: "checkin-1", role: "checkin" });
+    mocks.revokeSpogomiCheckin.mockResolvedValue(undefined);
     mocks.buildSpogomiConsolidationPreview.mockResolvedValue({ sourceHash: "a".repeat(64), conflicts: [] });
     mocks.publishSpogomiConsolidation.mockResolvedValue({ sourceHash: "a".repeat(64) });
     mocks.loadSpogomiGalleryEntries.mockResolvedValue([]);
@@ -394,6 +402,10 @@ describe("SPOGOMI persistence routes", () => {
     expect((await reviewers.DELETE(jsonRequest("http://localhost", { clerkId: "observer-1", role: "observer" }), eventContext)).status).toBe(200);
     expect(mocks.assignSpogomiObserver).toHaveBeenCalledWith(expect.objectContaining({ eventId: "event-1", clerkId: "observer-1" }));
     expect(mocks.revokeSpogomiObserver).toHaveBeenCalledWith(expect.objectContaining({ eventId: "event-1", clerkId: "observer-1" }));
+    expect((await reviewers.POST(jsonRequest("http://localhost", { clerkId: "checkin-1", role: "checkin" }), eventContext)).status).toBe(201);
+    expect((await reviewers.DELETE(jsonRequest("http://localhost", { clerkId: "checkin-1", role: "checkin" }), eventContext)).status).toBe(200);
+    expect(mocks.assignSpogomiCheckin).toHaveBeenCalledWith(expect.objectContaining({ eventId: "event-1", clerkId: "checkin-1" }));
+    expect(mocks.revokeSpogomiCheckin).toHaveBeenCalledWith(expect.objectContaining({ eventId: "event-1", clerkId: "checkin-1" }));
 
     const results = await import("./events/[eventId]/results/route");
     expect((await results.GET(new Request("http://localhost"), eventContext)).status).toBe(200);

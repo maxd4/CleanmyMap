@@ -36,7 +36,7 @@ export async function loadSpogomiManagementProjection(params: {
     teamsQuery = teamsQuery.eq("division_id", divisionId);
   }
 
-  const [participants, teams, route] = await Promise.all([
+  const [participants, teams, route, eventAccess, categoryRules] = await Promise.all([
     participantsQuery,
     teamsQuery,
     supabase
@@ -44,10 +44,21 @@ export async function loadSpogomiManagementProjection(params: {
       .select("source, file_name, point_count, reference_distance_km, inferred_topology, geometry_geojson")
       .eq("event_id", event.id)
       .maybeSingle(),
+    supabase
+      .from("spogomi_event_reviewers")
+      .select("role, revoked_at")
+      .eq("event_id", event.id),
+    supabase
+      .from("spogomi_category_rules")
+      .select("division_id, label, measurement_kind, unit, is_complete")
+      .eq("event_id", event.id)
+      .order("display_order", { ascending: true }),
   ]);
   if (participants.error) throw participants.error;
   if (teams.error) throw teams.error;
   if (route.error) throw route.error;
+  if (eventAccess.error) throw eventAccess.error;
+  if (categoryRules.error) throw categoryRules.error;
 
   return {
     event,
@@ -63,5 +74,7 @@ export async function loadSpogomiManagementProjection(params: {
     })),
     teams: teams.data ?? [],
     route: route.data ?? null,
+    eventAccess: eventAccess.data ?? [],
+    categoryRules: categoryRules.data ?? [],
   };
 }

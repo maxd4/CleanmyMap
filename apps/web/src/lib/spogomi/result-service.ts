@@ -40,7 +40,7 @@ export async function assignSpogomiEventAccess(params: {
   supabase: SupabaseClient;
   eventId: string;
   clerkId: string;
-  role: "observer" | "referee";
+  role: "observer" | "referee" | "checkin";
   assignedByClerkId: string;
 }): Promise<unknown> {
   await assertReviewerAssignmentEvent(params, false);
@@ -59,7 +59,7 @@ export async function revokeSpogomiEventAccess(params: {
   supabase: SupabaseClient;
   eventId: string;
   clerkId: string;
-  role: "observer" | "referee";
+  role: "observer" | "referee" | "checkin";
   assignedByClerkId: string;
 }): Promise<void> {
   await assertReviewerAssignmentEvent(params, true);
@@ -87,6 +87,14 @@ export async function assignSpogomiObserver(params: Omit<Parameters<typeof assig
 
 export async function revokeSpogomiObserver(params: Omit<Parameters<typeof revokeSpogomiEventAccess>[0], "role">): Promise<void> {
   return revokeSpogomiEventAccess({ ...params, role: "observer" });
+}
+
+export async function assignSpogomiCheckin(params: Omit<Parameters<typeof assignSpogomiEventAccess>[0], "role">): Promise<unknown> {
+  return assignSpogomiEventAccess({ ...params, role: "checkin" });
+}
+
+export async function revokeSpogomiCheckin(params: Omit<Parameters<typeof revokeSpogomiEventAccess>[0], "role">): Promise<void> {
+  return revokeSpogomiEventAccess({ ...params, role: "checkin" });
 }
 
 async function assertReviewerAssignmentEvent(
