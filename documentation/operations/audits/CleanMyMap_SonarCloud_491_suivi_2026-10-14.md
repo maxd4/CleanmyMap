@@ -59,10 +59,10 @@ Aucune anomalie n’est donc classée `OBSOLETE` sur le seul critère de chemin.
 
 | Statut | Nombre | Règle d’attribution dans ce lot |
 | --- | ---: | --- |
-| `TO_FIX` | 269 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans les lots traités |
-| `FIXED_PENDING_SCAN` | 220 | Corrections locales vérifiées pour les lots traités ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
+| `TO_FIX` | 248 | Anomalie `OPEN` dans l’export, chemin présent dans `main`, sans correction locale prouvée dans les lots traités |
+| `FIXED_PENDING_SCAN` | 236 | Corrections locales vérifiées pour les lots traités ; aucun scan SonarCloud postérieur ne confirme encore la résolution |
 | `BLOCKED` | 2 | Findings S8786 sur un fichier TypeScript déjà modifié par un writer concurrent, non écrasés |
-| `FALSE_POSITIVE` | 0 | Aucune preuve technique et décision humaine spécifique n’a été fournie |
+| `FALSE_POSITIVE` | 5 | Faux positifs techniquement démontrés dans le lot sécurité ; cette qualification locale ne constitue pas une décision SonarCloud enregistrée |
 | `ACCEPTED_PENDING_APPROVAL` | 0 | Aucun risque accepté ni approbation explicite n’a été fourni |
 | `OBSOLETE` | 0 | Aucun chemin source n’a disparu de `main` |
 | `BLOCKED` | 0 | Le rapprochement identifiant/règle/chemin est complet ; le blocage du runner qualité est documenté séparément ci-dessous |
@@ -73,6 +73,46 @@ ouverte à traiter, rattachée à un chemin toujours présent, sans preuve de
 correction ou d’obsolescence dans le lot courant. `FIXED_PENDING_SCAN` signifie
 uniquement qu’une correction locale et ses tests ciblés sont documentés ; la
 résolution SonarCloud reste à confirmer séparément par un scan réel.
+
+## Lot sécurité historique — 21 findings réconciliés
+
+Les 21 identifiants ci-dessous proviennent du rapport complémentaire du lot
+sécurité et sont réinscrits ici, dans la source canonique de suivi. Le rapport
+complémentaire reste une preuve d’audit ; il ne constitue pas une deuxième
+source de vérité. Les 16 corrections locales restent `FIXED_PENDING_SCAN` tant
+qu’aucun nouveau scan SonarCloud ne les confirme. Les 5 lignes
+`FALSE_POSITIVE` sont des qualifications techniques locales démontrées ; elles
+ne signifient pas qu’une décision ou une résolution a été enregistrée dans
+SonarCloud.
+
+| Identifiant SonarCloud | Règle / emplacement | Qualification locale | Statut de suivi |
+| --- | --- | --- | --- |
+| `AaE3K8xjzHjHEPBoeRC0` | `javascript:S1523` — `scripts/design/generate-design-system-board.mjs:115` | Parsing AST borné aux littéraux de données ; appels, spreads et propriétés calculées refusés | `FIXED_PENDING_SCAN` |
+| `AaE3K8sNzHjHEPBoeRBw` | `javascript:S5443` — `scripts/dev/clean-local-temp.mjs:6` | Faux positif techniquement démontré : candidats explicitement allowlistés, sans chemin utilisateur ni entrée web | `FALSE_POSITIVE` |
+| `AaE3K8sNzHjHEPBoeRBx` | `javascript:S5443` — `scripts/dev/clean-local-temp.mjs:6` | Même faux positif techniquement démontré ; doublon SonarCloud sur le même usage | `FALSE_POSITIVE` |
+| `AaE3K8iCzHjHEPBoeQ_3` | `jssecurity:S5145` — `scripts/audits/audit-clerk-supabase.mjs:738` | Faux positif techniquement démontré : journalisation limitée à des compteurs, booléens et horodatage générés | `FALSE_POSITIVE` |
+| `AaE3K8uBzHjHEPBoeRCN` | `jssecurity:S5145` — `scripts/data/export-clerk-users.mjs:269` | Valeur de chemin journalisée assainie contre CR/LF/NUL et bornée aux sorties `artifacts` | `FIXED_PENDING_SCAN` |
+| `AaE3K8m2zHjHEPBoeRAv` | `jssecurity:S8707` — `scripts/checks/check-public-e2e-artifact.mjs:49` | Racine de staging limitée à `artifacts/ci-public-evidence`, avec contrôle des liens symboliques | `FIXED_PENDING_SCAN` |
+| `AaE3K8mAzHjHEPBoeRAg` | `jssecurity:S8707` — `scripts/reports/assemble-impact-report.mjs:44` | Sortie limitée à un fichier direct de `artifacts/assembled-reports`, avec contrôle des liens symboliques | `FIXED_PENDING_SCAN` |
+| `AaE3K8g8zHjHEPBoeQ_w` | `typescript:S2245` — `apps/mobile/lib/gps-point-identity.ts:5` | Identifiant synchronisé généré par UUID crypto avec fallback borné | `FIXED_PENDING_SCAN` |
+| `AaE3K8hQzHjHEPBoeQ_y` | `typescript:S2245` — `apps/mobile/lib/storage.ts:38` | Faux positif techniquement démontré : clé locale de buffer sans secret ni décision d’autorisation | `FALSE_POSITIVE` |
+| `AaE3K8NQzHjHEPBoeQ99` | `typescript:S2245` — `apps/web/src/components/chat/hooks/use-chat-submit.helpers.ts:66` | Identifiant d’upload client remplacé par le générateur crypto/fallback borné | `FIXED_PENDING_SCAN` |
+| `AaE3K8M8zHjHEPBoeQ96` | `typescript:S2245` — `apps/web/src/components/chat/hooks/use-chat-submit.ts:57` | Identifiant d’opération optimiste remplacé par le générateur crypto/fallback borné | `FIXED_PENDING_SCAN` |
+| `AaE3K8LSzHjHEPBoeQ9q` | `typescript:S2245` — `apps/web/src/components/ui/pdf-export/use-pdf-export.ts:115` | Identifiant d’historique PDF remplacé par le générateur crypto/fallback borné | `FIXED_PENDING_SCAN` |
+| `AaE3K78rzHjHEPBoeQ8b` | `typescript:S2245` — `apps/web/src/lib/actions/exports/export-form-history.ts:96` | Identifiant d’historique remplacé par le générateur crypto/fallback borné | `FIXED_PENDING_SCAN` |
+| `AaE3K78gzHjHEPBoeQ8a` | `typescript:S2245` — `apps/web/src/lib/actions/exports/export-form-pdf.ts:82` | Identifiant PDF remplacé par le générateur crypto/fallback borné | `FIXED_PENDING_SCAN` |
+| `AaE3K79YzHjHEPBoeQ8g` | `typescript:S2245` — `apps/web/src/lib/actions/signalement/signalement-media-client.ts:53` | Identifiant de média remplacé par le générateur crypto/fallback borné | `FIXED_PENDING_SCAN` |
+| `AaE3K7-BzHjHEPBoeQ8k` | `typescript:S2245` — `apps/web/src/lib/actions/vision.ts:332` | Identifiant photo temporaire remplacé par le générateur crypto/fallback borné | `FIXED_PENDING_SCAN` |
+| `AaE3K8HLzHjHEPBoeQ9Z` | `typescript:S2245` — `apps/web/src/lib/photo-upload.ts:64` | Identifiant de chemin d’upload remplacé par le générateur crypto/fallback borné | `FIXED_PENDING_SCAN` |
+| `AaE3K8NHzHjHEPBoeQ97` | `typescript:S5332` — `apps/web/src/components/chat/hooks/use-chat-data.ts:183` | Base de parsing locale explicite `https://chat.local` | `FIXED_PENDING_SCAN` |
+| `AaE3K8NHzHjHEPBoeQ98` | `typescript:S5332` — `apps/web/src/components/chat/hooks/use-chat-data.ts:487` | Base de parsing locale explicite `https://chat.local` | `FIXED_PENDING_SCAN` |
+| `AaE3K8M0zHjHEPBoeQ95` | `typescript:S5332` — `apps/web/src/components/chat/hooks/use-chat-search.ts:100` | Base de parsing locale explicite `https://chat.local` | `FIXED_PENDING_SCAN` |
+| `AaE3K79MzHjHEPBoeQ8e` | `typescript:S5332` — `apps/web/src/lib/actions/exports/gpx-serializer.ts:44` | Faux positif techniquement démontré : namespace XML GPX 1.1 normatif, sans destination réseau | `FALSE_POSITIVE` |
+
+Le contrôle de cohérence associé vérifie 491 entrées `unresolvedIssues`, 491
+identifiants source uniques, la présence des 21 identifiants de ce lot dans
+l’inventaire source et leur présence unique dans cette section canonique. La
+répartition locale est donc `248 + 236 + 2 + 5 = 491`.
 
 ## Lot 2A — tris déterministes et précédence des expressions régulières
 
@@ -284,8 +324,11 @@ de couverture SonarCloud externe reste `NOT_CONFIRMED`.
 
 ## Décisions humaines et faux positifs
 
-Aucune décision humaine de type `FALSE_POSITIVE` ou
-`ACCEPTED_PENDING_APPROVAL` n’est enregistrée dans ce suivi. En conséquence :
+Aucune décision SonarCloud humaine de type `FALSE_POSITIVE` ou
+`ACCEPTED_PENDING_APPROVAL` n’est enregistrée dans ce suivi. Les cinq
+`FALSE_POSITIVE` ci-dessus sont uniquement des qualifications techniques
+locales démontrées, séparées d’une décision effectivement enregistrée dans
+SonarCloud. En conséquence :
 
 - aucune règle Sonar n’a été affaiblie ;
 - aucun seuil, baseline, exclusion ou grâce n’a été modifié ;

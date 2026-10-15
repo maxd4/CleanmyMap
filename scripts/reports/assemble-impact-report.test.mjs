@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import {
@@ -195,25 +197,84 @@ test('guards the assembled report against duplicate explicit anchors and placeho
 });
 
 test('constrains file output to the dedicated reports artifact directory', () => {
-  const safeOutput = path.join('artifacts', 'assembled-reports', 'security-test.md');
-  const safeResult = spawnSync(
-    process.execPath,
-    ['scripts/reports/assemble-impact-report.mjs', '--output', safeOutput],
-    { cwd: repositoryRoot, encoding: 'utf8' },
-  );
+  const testRoot = fs.mkdtempSync(path.join(tmpdir(), 'cleanmymap-assemble-output-'));
+  const outputRoot = path.join(testRoot, 'artifacts', 'assembled-reports');
+  const safeOutput = path.join('artifacts', 'assembled-reports', `codex-${randomUUID()}.md`);
+  const foreignOutput = path.join(outputRoot, 'foreign-report.md');
+  const scriptPath = path.join(repositoryRoot, 'scripts/reports/assemble-impact-report.mjs');
+
+  fs.mkdirSync(outputRoot, { recursive: true });
+  fs.writeFileSync(foreignOutput, 'foreign report\n', 'utf8');
+
   try {
+    const safeResult = spawnSync(
+      process.execPath,
+      [scriptPath, '--output', safeOutput],
+      { cwd: testRoot, encoding: 'utf8' },
+    );
     assert.equal(safeResult.status, 0, safeResult.stderr);
-    assert.equal(fs.existsSync(path.resolve(repositoryRoot, safeOutput)), true);
+    assert.equal(fs.existsSync(path.resolve(testRoot, safeOutput)), true);
+    assert.equal(fs.readFileSync(foreignOutput, 'utf8'), 'foreign report\n');
 
     const traversalResult = spawnSync(
       process.execPath,
-      ['scripts/reports/assemble-impact-report.mjs', '--output', path.join('artifacts', 'assembled-reports', '..', 'outside.md')],
-      { cwd: repositoryRoot, encoding: 'utf8' },
+      [scriptPath, '--output', path.join('artifacts', 'assembled-reports', '..', 'outside.md')],
+      { cwd: testRoot, encoding: 'utf8' },
     );
     assert.notEqual(traversalResult.status, 0);
     assert.match(traversalResult.stderr, /must be a file directly under artifacts[\\/]assembled-reports/);
-    assert.equal(fs.existsSync(path.resolve(repositoryRoot, 'artifacts', 'outside.md')), false);
+    assert.equal(fs.existsSync(path.resolve(testRoot, 'artifacts', 'outside.md')), false);
   } finally {
-    fs.rmSync(path.resolve(repositoryRoot, 'artifacts', 'assembled-reports'), { recursive: true, force: true });
+    fs.rmSync(testRoot, { recursive: true, force: true });
+  }
+});
+
+test('rejects a symlinked output file without changing its target', () => {
+  const testRoot = fs.mkdtempSync(path.join(tmpdir(), 'cleanmymap-assemble-file-link-'));
+  const outputRoot = path.join(testRoot, 'artifacts', 'assembled-reports');
+  const outsideOutput = path.join(testRoot, 'outside.md');
+  const linkedOutput = path.join(outputRoot, 'linked-output.md');
+  const scriptPath = path.join(repositoryRoot, 'scripts/reports/assemble-impact-report.mjs');
+
+  fs.mkdirSync(outputRoot, { recursive: true });
+  fs.writeFileSync(outsideOutput, 'must remain unchanged\n', 'utf8');
+  fs.symlinkSync(outsideOutput, linkedOutput, 'file');
+
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [scriptPath, '--output', path.join('artifacts', 'assembled-reports', 'linked-output.md')],
+      { cwd: testRoot, encoding: 'utf8' },
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /symbolic link/i);
+    assert.equal(fs.readFileSync(outsideOutput, 'utf8'), 'must remain unchanged\n');
+  } finally {
+    fs.rmSync(testRoot, { recursive: true, force: true });
+  }
+});
+
+test('rejects an artifact parent directory reached through a symlink', () => {
+  const testRoot = fs.mkdtempSync(path.join(tmpdir(), 'cleanmymap-assemble-parent-link-'));
+  const externalArtifacts = fs.mkdtempSync(path.join(tmpdir(), 'cleanmymap-external-artifacts-'));
+  const scriptPath = path.join(repositoryRoot, 'scripts/reports/assemble-impact-report.mjs');
+
+  fs.mkdirSync(path.join(externalArtifacts, 'assembled-reports'), { recursive: true });
+  fs.symlinkSync(externalArtifacts, path.join(testRoot, 'artifacts'), 'junction');
+
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [scriptPath, '--output', path.join('artifacts', 'assembled-reports', 'outside-parent.md')],
+      { cwd: testRoot, encoding: 'utf8' },
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /symbolic link/i);
+    assert.equal(fs.existsSync(path.join(externalArtifacts, 'assembled-reports', 'outside-parent.md')), false);
+  } finally {
+    fs.rmSync(testRoot, { recursive: true, force: true });
+    fs.rmSync(externalArtifacts, { recursive: true, force: true });
   }
 });

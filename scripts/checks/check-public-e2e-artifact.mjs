@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { extname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -42,6 +42,31 @@ function findRule(relativePath) {
   return ALLOWED_FILE_RULES.find(({ pattern }) => pattern.test(relativePath));
 }
 
+function findSymlinkInPath(targetPath) {
+  const absolutePath = resolve(targetPath);
+  const filesystemRoot = resolve(sep);
+  let currentPath = absolutePath;
+
+  while (currentPath !== filesystemRoot) {
+    try {
+      if (lstatSync(currentPath).isSymbolicLink()) return currentPath;
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+    const parentPath = resolve(currentPath, "..");
+    if (parentPath === currentPath) break;
+    currentPath = parentPath;
+  }
+
+  return null;
+}
+
+function findRealPathEscape(root, allowedRoot) {
+  const realAllowedRoot = realpathSync(allowedRoot);
+  const realRoot = realpathSync(root);
+  return realRoot !== realAllowedRoot && !realRoot.startsWith(`${realAllowedRoot}${sep}`);
+}
+
 export function validatePublicE2EArtifact(rootPath) {
   const root = resolve(rootPath);
   const issues = [];
@@ -51,8 +76,17 @@ export function validatePublicE2EArtifact(rootPath) {
     return [`staging directory is outside ${PUBLIC_E2E_ARTIFACT_ROOT}: ${rootPath}`];
   }
 
+  const symlinkPath = findSymlinkInPath(root);
+  if (symlinkPath) {
+    return [`staging directory traverses a symbolic link: ${symlinkPath}`];
+  }
+
   if (!existsSync(root) || !lstatSync(root).isDirectory()) {
     return [`staging directory is missing: ${rootPath}`];
+  }
+
+  if (findRealPathEscape(root, allowedRoot)) {
+    return [`staging directory resolves outside ${PUBLIC_E2E_ARTIFACT_ROOT}: ${rootPath}`];
   }
 
   for (const file of collectFiles(root)) {

@@ -8,6 +8,32 @@ import {
 
 const assembledReportOutputRoot = path.resolve('artifacts/assembled-reports');
 
+function findSymlinkInPath(targetPath) {
+  const absolutePath = path.resolve(targetPath);
+  const filesystemRoot = path.parse(absolutePath).root;
+  let currentPath = absolutePath;
+
+  while (currentPath !== filesystemRoot) {
+    try {
+      if (fs.lstatSync(currentPath).isSymbolicLink()) return currentPath;
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+    const parentPath = path.dirname(currentPath);
+    if (parentPath === currentPath) break;
+    currentPath = parentPath;
+  }
+
+  return null;
+}
+
+function assertNoSymlinkInPath(targetPath) {
+  const symlinkPath = findSymlinkInPath(targetPath);
+  if (symlinkPath) {
+    throw new Error(`--output cannot traverse a symbolic link: ${symlinkPath}`);
+  }
+}
+
 function resolveOutputPath(value) {
   const resolved = path.resolve(value);
   if (
@@ -16,6 +42,11 @@ function resolveOutputPath(value) {
     path.basename(resolved) === '..'
   ) {
     throw new Error(`--output must be a file directly under ${path.relative(process.cwd(), assembledReportOutputRoot)}.`);
+  }
+  assertNoSymlinkInPath(assembledReportOutputRoot);
+  assertNoSymlinkInPath(resolved);
+  if (fs.existsSync(resolved) && fs.lstatSync(resolved).isSymbolicLink()) {
+    throw new Error(`--output cannot overwrite a symbolic link: ${resolved}`);
   }
   return resolved;
 }
@@ -56,8 +87,10 @@ if (process.argv[2] === '--output') {
   if (!outputPath) {
     throw new Error('--output requires a file path.');
   }
+  const resolvedOutputPath = resolveOutputPath(outputPath);
   fs.mkdirSync(assembledReportOutputRoot, { recursive: true });
-  fs.writeFileSync(resolveOutputPath(outputPath), assembled, 'utf8');
+  assertNoSymlinkInPath(resolvedOutputPath);
+  fs.writeFileSync(resolvedOutputPath, assembled, 'utf8');
 } else if (process.argv.length > 2) {
   throw new Error('Usage: node scripts/reports/assemble-impact-report.mjs [--output <path>]');
 } else {

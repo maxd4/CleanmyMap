@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { existsSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { test } from "node:test";
 
 import {
@@ -12,17 +14,32 @@ const syntheticJwt = ["eyJ" + "a".repeat(11), "b".repeat(11), "c".repeat(11)].jo
 const syntheticClerkKey = ["pk_test_", "a".repeat(24)].join("");
 
 function staging() {
-  const root = mkdtempSync(join(resolve(PUBLIC_E2E_ARTIFACT_ROOT), "test-"));
+  const artifactRoot = resolve(PUBLIC_E2E_ARTIFACT_ROOT);
+  const artifactRootExisted = existsSync(artifactRoot);
+  mkdirSync(artifactRoot, { recursive: true });
+  const root = mkdtempSync(join(artifactRoot, "test-"));
   mkdirSync(join(root, "evidence"), { recursive: true });
-  return root;
+  return {
+    root,
+    cleanup() {
+      rmSync(root, { recursive: true, force: true });
+      if (!artifactRootExisted) {
+        try {
+          rmSync(artifactRoot, { recursive: false, force: true });
+        } catch (error) {
+          if (error?.code !== "ENOTEMPTY") throw error;
+        }
+      }
+    },
+  };
 }
 
 function withStaging(callback) {
-  const root = staging();
+  const fixture = staging();
   try {
-    return callback(root);
+    return callback(fixture.root);
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    fixture.cleanup();
   }
 }
 
@@ -39,6 +56,49 @@ test("accepts synthetic evidence JSON and an explicitly allowed screenshot", () 
 test("rejects a traversal root outside the public evidence directory", () => {
   const outsideRoot = join(PUBLIC_E2E_ARTIFACT_ROOT, "..", "outside");
   assert.match(validatePublicE2EArtifact(outsideRoot)[0], /outside/);
+});
+
+test("rejects a file symlink inside public evidence", () => {
+  withStaging((root) => {
+    const externalRoot = mkdtempSync(join(tmpdir(), "cleanmymap-public-e2e-external-"));
+    const externalFile = join(externalRoot, "summary.json");
+    const linkedFile = join(root, "evidence", "linked.json");
+    writeFileSync(externalFile, '{"status":"passed"}\n');
+    symlinkSync(externalFile, linkedFile, "file");
+
+    try {
+      assert.match(validatePublicE2EArtifact(root).join("\n"), /symbolic links are forbidden/);
+    } finally {
+      rmSync(externalRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+test("rejects a staging directory reached through a parent symlink", () => {
+  const artifactRoot = resolve(PUBLIC_E2E_ARTIFACT_ROOT);
+  const artifactRootExisted = existsSync(artifactRoot);
+  const externalRoot = mkdtempSync(join(tmpdir(), "cleanmymap-public-e2e-parent-"));
+  const linkName = `parent-link-${randomUUID()}`;
+  const linkedParent = join(artifactRoot, linkName);
+  const linkedStaging = join(linkedParent, "staging");
+
+  mkdirSync(artifactRoot, { recursive: true });
+  mkdirSync(join(externalRoot, "staging"), { recursive: true });
+  symlinkSync(externalRoot, linkedParent, "junction");
+
+  try {
+    assert.match(validatePublicE2EArtifact(linkedStaging).join("\n"), /symbolic link|resolves outside/);
+  } finally {
+    rmSync(linkedParent, { recursive: true, force: true });
+    rmSync(externalRoot, { recursive: true, force: true });
+    if (!artifactRootExisted) {
+      try {
+        rmSync(artifactRoot, { recursive: false, force: true });
+      } catch (error) {
+        if (error?.code !== "ENOTEMPTY") throw error;
+      }
+    }
+  }
 });
 
 for (const [name, relativePath, content] of [
