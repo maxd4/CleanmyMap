@@ -53,7 +53,7 @@ export type ActionEditorRecord = {
   volunteerParticipation?: ActionVolunteerParticipation | null;
   cigaretteButtsKg?: number | null;
   cigaretteButts: number | null;
-  volunteersCount: number;
+  volunteersCount: number | null;
   durationMinutes: number;
   eventStartTime?: string | null;
   eventEndTime?: string | null;

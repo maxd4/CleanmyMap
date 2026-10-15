@@ -97,6 +97,15 @@ describe("public action DTO boundary", () => {
     });
   });
 
+  it("keeps an unavailable participant measure unavailable at the public DTO boundary", () => {
+    const contract = buildContract();
+    contract.metadata.volunteersCount = null;
+
+    expect(toActionListItem(contract).volunteers_count).toBeNull();
+    expect(toActionMapItem(contract).volunteers_count).toBeNull();
+    expect(toPublicActionListItem(contract).volunteers_count).toBeNull();
+  });
+
   it("sanitizes complete public responses, including nested identity fields", () => {
     const listResponse = toPublicActionListResponse({
       status: "ok",

@@ -101,7 +101,7 @@ function fromActionRow(
     metrics: {
       wasteKg: row.waste_kg,
       cigaretteButts: row.cigarette_butts,
-      volunteersCount: row.volunteers_count ?? 0,
+      volunteersCount: row.volunteers_count,
       durationMinutes: row.duration_minutes ?? 0,
     },
     map: toDisplayableMap(row.latitude, row.longitude),

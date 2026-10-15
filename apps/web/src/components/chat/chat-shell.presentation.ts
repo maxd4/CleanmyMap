@@ -115,7 +115,7 @@ function getActiveActionMetaItems({
       label: isFrench ? "Participants prévus" : "Planned participants",
       value: String(
         activeAction.contract?.metadata.preparationData?.volunteerParticipation
-          ?.participantsCount ?? activeAction.volunteers_count,
+          ?.participantsCount ?? activeAction.volunteers_count ?? "n/a",
       ),
     },
     {

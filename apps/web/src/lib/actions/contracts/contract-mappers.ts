@@ -232,7 +232,9 @@ export function mapItemCigaretteButts(item: ActionMapItem): number | null {
 }
 
 export function mapItemVolunteersCount(item: ActionMapItem): number | null {
-  const value = item.contract?.metadata.volunteersCount ?? item.volunteers_count;
+  const value = item.contract
+    ? item.contract.metadata.volunteersCount
+    : item.volunteers_count;
 
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }

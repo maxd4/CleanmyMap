@@ -23,7 +23,7 @@ export type PublicSectionActionItem = {
   action_date: string;
   waste_kg: number | null;
   cigarette_butts: number | null;
-  volunteers_count: number;
+  volunteers_count: number | null;
   duration_minutes: number;
   geometry_kind?: ActionGeometryKind | null;
   contract?: {

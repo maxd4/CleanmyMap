@@ -20,7 +20,7 @@ export function CompareSection() {
       locationLabel: item.location_label || "Hors arrondissement",
       wasteKg: item.waste_kg === null ? null : Number(item.waste_kg),
       butts: Number(item.cigarette_butts || 0),
-      volunteersCount: Number(item.volunteers_count || 0),
+      volunteersCount: item.volunteers_count,
     })),
     periodDays,
   }), [data?.items, periodDays]);

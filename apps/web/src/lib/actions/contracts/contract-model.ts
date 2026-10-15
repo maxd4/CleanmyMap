@@ -83,7 +83,7 @@ type ActionDataMetadata = {
   postActionPollutionScore?: number | null;
   /** Future canonical quantitative Trash Spotter observation, when available. */
   observedPollutionScore?: number | null;
-  volunteersCount: number;
+  volunteersCount: number | null;
   durationMinutes: number;
   manualDrawing: ActionDrawing | null;
 };
@@ -184,10 +184,6 @@ function normalizeCoordinate(
     return null;
   }
   return toFiniteNumber(value, 0);
-}
-
-function normalizeCount(value: number | null | undefined): number {
-  return Math.max(0, Math.trunc(toFiniteNumber(value, 0)));
 }
 
 function buildPersistedActionGeometry(params: BuildActionContractParams): PersistedDerivedGeometry {
@@ -331,7 +327,7 @@ function buildActionMeasureMetadata(
       params.postActionPollutionScore === undefined
         ? undefined
         : toFiniteNumber(params.postActionPollutionScore, 0),
-    volunteersCount: normalizeCount(params.volunteersCount),
+    volunteersCount: normalizeNullableCount(params.volunteersCount),
     durationMinutes: normalizeCount(params.durationMinutes),
   };
 
@@ -347,6 +343,10 @@ function buildActionMeasureMetadata(
 
 function normalizeNullableNumber(value: number | null | undefined): number | null {
   return value === undefined || value === null ? null : toFiniteNumber(value, 0);
+}
+
+function normalizeCount(value: number | null | undefined): number {
+  return Math.max(0, Math.trunc(toFiniteNumber(value, 0)));
 }
 
 function normalizeNullableCount(

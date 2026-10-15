@@ -6,7 +6,8 @@ export function makeJoinableActionItem(
   return {
     ...partial,
     created_at: `${partial.action_date}T10:00:00Z`,
-    volunteers_count: partial.volunteers_count ?? 12,
+    volunteers_count:
+      partial.volunteers_count === undefined ? 12 : partial.volunteers_count,
     duration_minutes: partial.duration_minutes ?? 30,
     status: partial.status ?? "approved",
     actionPhase: partial.actionPhase ?? "post_action_complete",

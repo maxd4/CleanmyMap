@@ -8,11 +8,13 @@ import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import type { ActionListItem } from "@/lib/actions/types";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 
-function plannedParticipants(item: ActionListItem): number {
+function plannedParticipants(item: ActionListItem): number | null {
   const fromPreparation = item.contract?.metadata.preparationData?.volunteerParticipation?.participantsCount;
   return typeof fromPreparation === "number" && Number.isFinite(fromPreparation)
     ? Math.max(0, Math.trunc(fromPreparation))
-    : Math.max(0, Math.trunc(item.volunteers_count));
+    : item.volunteers_count === null
+      ? null
+      : Math.max(0, Math.trunc(item.volunteers_count));
 }
 
 function titleFor(item: ActionListItem): string {
@@ -90,7 +92,7 @@ export function FutureActionsPanel({
                 <div className="grid gap-2 text-sm text-slate-600">
                   <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>
                   {timeWindow ? <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{timeWindow}</p> : null}
-                  <p className="flex items-center gap-2"><Users2 size={14} className="text-slate-400" />{formatCount(plannedParticipants(item))} {fr ? "participants prévus" : "planned participants"}</p>
+                  <p className="flex items-center gap-2"><Users2 size={14} className="text-slate-400" />{plannedParticipants(item) === null ? (fr ? "Participants non renseignés" : "Participants not provided") : `${formatCount(plannedParticipants(item) as number)} ${fr ? "participants prévus" : "planned participants"}`}</p>
                   <p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{item.geometry_kind ? (fr ? "Itinéraire prévu disponible" : "Planned route available") : (fr ? "Lieu uniquement" : "Location only")}</p>
                   <p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "estimés" : "estimated"}</p>
                 </div>

@@ -23,7 +23,7 @@ export function ReportCover({
   const keyFigures = [
     `Actions validées: ${toFrInt(report.totals.actions)}`,
     `Masse collectée: ${toFrNumber(report.totals.kg)} kg`,
-    `Bénévoles mobilisés: ${toFrInt(report.totals.volunteers)}`,
+    `Bénévoles mobilisés: ${report.totals.volunteersKnownActions === 0 ? "n/a" : toFrInt(report.totals.volunteers)}`,
     `Couverture géographique: ${toFrNumber(report.map.geoCoverage)}%`,
   ];
   const conclusions = narrative.watchouts.slice(0, 3);

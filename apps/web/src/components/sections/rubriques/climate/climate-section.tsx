@@ -35,7 +35,7 @@ export function ClimateSection({
       wasteKg: item.waste_kg === null ? null : Number(item.waste_kg),
       cigaretteButts: Number(item.cigarette_butts || 0),
       durationMinutes: Number(item.duration_minutes || 0),
-      volunteersCount: Number(item.volunteers_count || 0),
+      volunteersCount: item.volunteers_count,
       effectiveVolunteerUnits:
         item.contract?.metadata.volunteerParticipation?.effectiveVolunteerUnits ?? null,
       volunteerParticipation: item.contract?.metadata.volunteerParticipation ?? null,

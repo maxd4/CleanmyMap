@@ -98,6 +98,16 @@ describe("buildPostActionSummary", () => {
     expect(zero.impact.find((metric) => metric.id === "water")?.value).toBe(0);
   });
 
+  it("keeps an invalidated participant count unavailable in the summary", () => {
+    const summary = buildPostActionSummary({
+      ...action,
+      volunteersCount: null,
+    });
+
+    expect(summary.action.volunteersCount).toBeNull();
+    expect(summary.impact.find((metric) => metric.id === "surface")?.value).toBeNull();
+  });
+
   it("preserves positive and explicit zero waste measurements", () => {
     const zero = buildPostActionSummary({ ...action, wasteKg: 0 });
     const positive = buildPostActionSummary({ ...action, wasteKg: 2.5 });

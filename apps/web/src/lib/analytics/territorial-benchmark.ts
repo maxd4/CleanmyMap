@@ -6,7 +6,7 @@ export type TerritorialInput = {
   status: ActionStatus;
   locationLabel: string;
   wasteKg: number | null;
-  volunteersCount: number;
+  volunteersCount: number | null;
   actionsCount?: number;
 };
 
@@ -98,7 +98,9 @@ export function buildTerritorialBenchmark(
       previous.totalKg += row.wasteKg;
       previous.knownWasteActions += 1;
     }
-    previous.totalVolunteers += Number(row.volunteersCount || 0);
+    if (row.volunteersCount !== null) {
+      previous.totalVolunteers += Number(row.volunteersCount);
+    }
     grouped.set(area, previous);
   }
 

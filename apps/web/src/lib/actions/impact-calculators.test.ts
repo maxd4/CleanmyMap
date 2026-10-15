@@ -141,6 +141,7 @@ describe("canonical action impact calculation", () => {
       wasteKgSource: "none",
       butts: 0,
       volunteers: 0,
+      volunteersKnown: false,
       co2AvoidedKg: 0,
       waterSavedLiters: 0,
       streetCleaningSavings: {
@@ -182,6 +183,10 @@ describe("canonical action impact calculation", () => {
       wasteCoverageRate: 50,
       butts: 2600,
       volunteers: 3,
+      volunteersKnown: true,
+      volunteersKnownActions: 2,
+      volunteersActionCount: 2,
+      volunteersCoverageRate: 100,
       co2AvoidedKg: expect.closeTo(2.4, 10),
       waterSavedLiters: 1_300_000,
       streetCleaningSavings: {
@@ -194,6 +199,30 @@ describe("canonical action impact calculation", () => {
         upperBoundEuros: 3,
       },
       euroSaved: 3,
+    });
+  });
+
+  it("does not treat an unavailable participant measure as observed zero", () => {
+    const unknown = computeActionImpactKpis(
+      makeContract({ volunteersCount: null, durationMinutes: 60 }),
+    );
+    const zero = computeActionImpactKpis(
+      makeContract({ volunteersCount: 0, durationMinutes: 60 }),
+    );
+
+    expect(unknown.volunteers).toBe(0);
+    expect(unknown.volunteersKnown).toBe(false);
+    expect(zero.volunteers).toBe(0);
+    expect(zero.volunteersKnown).toBe(true);
+    expect(sumActionImpactKpis([
+      makeContract({ volunteersCount: null, durationMinutes: 60 }),
+      makeContract({ volunteersCount: 0, durationMinutes: 60 }),
+      makeContract({ volunteersCount: 7, durationMinutes: 60 }),
+    ])).toMatchObject({
+      volunteers: 7,
+      volunteersKnownActions: 2,
+      volunteersActionCount: 3,
+      volunteersCoverageRate: (2 / 3) * 100,
     });
   });
 
@@ -243,7 +272,7 @@ describe("canonical action impact calculation", () => {
     );
     expect(methodology.buttsPerKg).toBe(BUTTS_PER_KG_REFERENCE);
     expect(methodology.formulas.butts).toBe("butts = max(0, cigaretteButts)");
-    expect(methodology.formulas.volunteers).toBe("volunteers = max(0, volunteersCount)");
+    expect(methodology.formulas.volunteers).toContain("volunteersCount connus");
     expect(methodology.formulas.wasteKg).toContain("valeur déclarée");
     expect(methodology.formulas.wasteKg).not.toContain("cigaretteButts / 2500");
     expect(methodology.formulas.co2e).toContain(

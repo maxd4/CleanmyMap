@@ -17,7 +17,7 @@ export type ClimateInputRecord = {
   wasteKg: number | null;
   cigaretteButts: number;
   durationMinutes: number;
-  volunteersCount: number;
+  volunteersCount: number | null;
   effectiveVolunteerUnits?: number | null;
   volunteerParticipation?: ActionVolunteerParticipation | null;
   latitude: number | null;
@@ -146,21 +146,16 @@ function aggregate(
     0,
   );
   const citizenHours =
-    records.reduce(
-      (acc, record) =>
-        acc +
-        Number(record.durationMinutes || 0) *
-          Math.max(
-            0,
-            Number(
-              record.volunteerParticipation
-                ? resolveEffectiveVolunteerUnits(record.volunteerParticipation) ??
-                  record.volunteersCount
-                : record.effectiveVolunteerUnits ?? record.volunteersCount ?? 0,
-            ),
-          ),
-      0,
-    ) / 60;
+    records.reduce((acc, record) => {
+      const volunteerUnits = record.volunteerParticipation
+        ? resolveEffectiveVolunteerUnits(record.volunteerParticipation) ??
+          record.volunteersCount
+        : record.effectiveVolunteerUnits ?? record.volunteersCount;
+      if (volunteerUnits === null || volunteerUnits === undefined) {
+        return acc;
+      }
+      return acc + Number(record.durationMinutes || 0) * Math.max(0, Number(volunteerUnits));
+    }, 0) / 60;
   const geolocated = records.filter((record) => isGeolocated(record)).length;
   const geocoverageRate =
     actionsTotal > 0 ? (geolocated / actionsTotal) * 100 : 0;

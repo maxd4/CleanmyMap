@@ -244,7 +244,8 @@ function isValidatedForm(row: FormRow): boolean {
 function isCompleteAction(row: ActionRow, validatedActionIds: ReadonlySet<string>): boolean {
   return validatedActionIds.has(row.id) && row.status === "approved" &&
     row.location_label.trim().length >= 3 && Number(row.waste_kg ?? 0) >= 0 &&
-    row.volunteers_count >= 1 && row.duration_minutes >= 0 && (row.actor_name?.trim().length ?? 0) > 0;
+    row.volunteers_count !== null && row.volunteers_count >= 1 &&
+    row.duration_minutes >= 0 && (row.actor_name?.trim().length ?? 0) > 0;
 }
 
 function groupByUser<T extends { user_id?: string | null }>(rows: readonly T[]): Map<string, T[]> {

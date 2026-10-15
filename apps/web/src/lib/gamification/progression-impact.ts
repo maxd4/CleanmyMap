@@ -34,7 +34,10 @@ export function computePersonalImpactMetrics(
       metadata: {
         wasteKg: row.waste_kg === null ? null : toFloat(row.waste_kg, 0),
         cigaretteButts: toInt(row.cigarette_butts, 0),
-        volunteersCount: toInt(row.volunteers_count, 0),
+        volunteersCount:
+          row.volunteers_count === null
+            ? null
+            : toInt(row.volunteers_count, 0),
         wasteBreakdown: row.waste_breakdown,
       },
     });
@@ -43,9 +46,10 @@ export function computePersonalImpactMetrics(
       wasteKnownActions += 1;
     }
     totalWasteKg += impact.wasteKg;
-    totalVolunteerMinutes +=
-      Math.max(0, toInt(row.duration_minutes, 0)) *
-      Math.max(1, toInt(row.volunteers_count, 1));
+    if (impact.volunteersKnown) {
+      totalVolunteerMinutes +=
+        Math.max(0, toInt(row.duration_minutes, 0)) * impact.volunteers;
+    }
   }
 
   return {

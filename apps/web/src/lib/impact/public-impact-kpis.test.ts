@@ -11,14 +11,15 @@ function action(params: {
   megotsKg?: number;
   megotsCondition?: "propre" | "humide" | "mouille" | null;
   actionPhase?: string | null;
-  volunteersCount?: number;
+  volunteersCount?: number | null;
   durationMinutes?: number;
 }) {
   return {
     metadata: {
       wasteKg: params.wasteKg ?? null,
       cigaretteButts: params.cigaretteButts ?? null,
-      volunteersCount: params.volunteersCount ?? 0,
+      volunteersCount:
+        params.volunteersCount === undefined ? 0 : params.volunteersCount,
       durationMinutes: params.durationMinutes ?? 0,
       actionPhase: params.actionPhase ?? "post_action_complete",
       wasteBreakdown:
@@ -102,6 +103,32 @@ describe("public Impact KPI contract", () => {
       water: 1_250_000,
       euro: 2,
     });
+  });
+
+  it("tracks unknown participants separately from an observed zero", () => {
+    const calculation = buildPublicImpactCalculationFromActions([
+      action({ volunteersCount: null, durationMinutes: 60 }),
+      action({ volunteersCount: 0, durationMinutes: 60 }),
+      action({ volunteersCount: 7, durationMinutes: 60 }),
+    ]);
+
+    expect(calculation.counters.volunteers).toBe(7);
+    expect(calculation.counters.volunteersKnownActions).toBe(2);
+    expect(calculation.counters.volunteersActionCount).toBe(3);
+    expect(
+      buildPublicImpactMetrics(calculation.counters, true).find(
+        (metric) => metric.key === "volunteers",
+      )?.value,
+    ).toBe("7");
+
+    const onlyUnknown = buildPublicImpactCalculationFromActions([
+      action({ volunteersCount: null }),
+    ]);
+    expect(
+      buildPublicImpactMetrics(onlyUnknown.counters, true).find(
+        (metric) => metric.key === "volunteers",
+      )?.value,
+    ).toBe("n/a");
   });
 
   it.each(["propre", "humide", "mouille"] as const)(

@@ -23,7 +23,7 @@ type PendingActionModerationRow = {
   action_date: string;
   location_label: string;
   created_at: string;
-  volunteers_count: number;
+  volunteers_count: number | null;
   duration_minutes: number;
 };
 

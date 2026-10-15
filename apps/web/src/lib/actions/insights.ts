@@ -21,7 +21,11 @@ export type ActionInsights = {
 function computeImpactLevel(contract: ActionDataContract): ActionImpactLevel {
   const kg = Number(contract.metadata.wasteKg || 0);
   const butts = Number(contract.metadata.cigaretteButts || 0);
-  const volunteers = Number(contract.metadata.volunteersCount || 0);
+  const volunteers =
+    contract.metadata.volunteersCount === null ||
+    contract.metadata.volunteersCount === undefined
+      ? 0
+      : Number(contract.metadata.volunteersCount);
   const duration = Number(contract.metadata.durationMinutes || 0);
   const score =
     kg * 5 + butts * 0.035 + volunteers * 1.6 + duration * 0.05;

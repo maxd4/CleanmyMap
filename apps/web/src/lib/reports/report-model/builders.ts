@@ -101,7 +101,9 @@ export function buildMonthRows(items: ActionListItem[]): MonthRow[] {
       previous.knownWasteActions = (previous.knownWasteActions ?? 0) + 1;
     }
     previous.butts += impact.butts;
-    previous.volunteers += impact.volunteers;
+    if (impact.volunteersKnown) {
+      previous.volunteers += impact.volunteers;
+    }
     previous.minutes += Number(
       item.contract?.metadata.durationMinutes ?? item.duration_minutes ?? 0,
     );

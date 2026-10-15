@@ -116,7 +116,7 @@ function formatActivityDetail(
   if (wasteKg > 0) {
     parts.push(`${toNumberFormat(locale).format(wasteKg)} kg`);
   }
-  if (contract.metadata.volunteersCount > 0) {
+  if (contract.metadata.volunteersCount !== null && contract.metadata.volunteersCount > 0) {
     parts.push(
       `${contract.metadata.volunteersCount} ${text(locale, "bénévoles", "volunteers")}`,
     );

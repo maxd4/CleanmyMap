@@ -94,7 +94,7 @@ export type ActionRow = {
   geometry_confidence: number | null;
   waste_kg: number | null;
   cigarette_butts: number | null;
-  volunteers_count: number;
+  volunteers_count: number | null;
   duration_minutes: number;
   event_start_time?: string | null;
   event_end_time?: string | null;

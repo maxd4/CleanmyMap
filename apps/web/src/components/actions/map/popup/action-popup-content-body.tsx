@@ -19,9 +19,9 @@ import { SpogomiContextLink } from "@/components/spogomi/spogomi-context-link";
 type ActionPopupContentBodyProps = {
   wasteKg: number;
   butts: number;
-  volunteers: number;
+  volunteers: number | null;
   durationMinutes: number;
-  operationalEngagementHours: number;
+  operationalEngagementHours: number | null;
   associationName: string | null;
   departure: string | null;
   arrival: string | null;
@@ -109,8 +109,8 @@ export function ActionPopupContentBody({
             <span className={metricLabelClass}>Équipe</span>
           </div>
           <p className={metricValueClass}>
-            {formatNumber(volunteers)}{" "}
-            <span className="cmm-text-caption font-semibold text-slate-500">pers.</span>
+            {volunteers === null ? "n/a" : formatNumber(volunteers)}{" "}
+            {volunteers === null ? null : <span className="cmm-text-caption font-semibold text-slate-500">pers.</span>}
           </p>
         </div>
         <div className={metricCellClass}>
@@ -138,7 +138,7 @@ export function ActionPopupContentBody({
             </span>
           </div>
           <span className="cmm-text-small font-bold text-emerald-700 dark:text-emerald-400">
-            {formatNumber(operationalEngagementHours)}h-p
+            {operationalEngagementHours === null ? "n/a" : `${formatNumber(operationalEngagementHours)}h-p`}
           </span>
         </div>
       </div>

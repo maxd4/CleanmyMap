@@ -106,7 +106,7 @@ export type JoinableActionItem = {
   location_label: string;
   /** Read-only display metadata; participation mutations do not depend on it. */
   actionTitle?: string | null;
-  volunteers_count: number;
+  volunteers_count: number | null;
   duration_minutes: number;
   status: "pending" | "approved" | "rejected" | "cancelled";
   cancelled_at?: string | null;

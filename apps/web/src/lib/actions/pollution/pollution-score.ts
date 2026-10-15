@@ -45,8 +45,13 @@ function isValidMetric(value: number | null | undefined): value is number {
 }
 
 function resolveVolunteerCount(inputs: PollutionScoreInputs): number {
-  const volunteersCount = Math.trunc(Number(inputs.volunteersCount ?? 1) || 1);
-  return Math.max(1, volunteersCount);
+  // This scorer needs a strictly positive denominator. Missing and observed
+  // zero counts are handled explicitly as the legacy safe denominator; they
+  // are not exposed as participant totals or treated as observed one person.
+  if (!isValidMetric(inputs.volunteersCount) || inputs.volunteersCount === 0) {
+    return 1;
+  }
+  return Math.max(1, Math.trunc(inputs.volunteersCount));
 }
 
 function resolveReference(value: number | null | undefined): number | null {

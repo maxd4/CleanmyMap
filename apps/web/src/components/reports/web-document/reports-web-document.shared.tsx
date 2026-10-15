@@ -368,7 +368,7 @@ export function buildPdfData(params: {
         { label: "Actions recensées", value: report.totals.actions },
         { label: "Déchets collectés", value: `${report.totals.kg.toFixed(1)} kg` },
         { label: "Déchets signalés", value: report.terrain.spotCount },
-        { label: "Participation bénévole", value: report.totals.volunteers },
+        { label: "Participation bénévole", value: report.totals.volunteersKnownActions === 0 ? "n/a" : report.totals.volunteers },
       ],
     },
     {
@@ -444,7 +444,7 @@ export function buildPdfData(params: {
           stats: [
             { label: "Événements", value: report.community.totalEvents },
             { label: "RSVP oui", value: `${report.community.participationRate.toFixed(1)}%` },
-            { label: "Bénévoles", value: report.totals.volunteers },
+            { label: "Bénévoles", value: report.totals.volunteersKnownActions === 0 ? "n/a" : report.totals.volunteers },
           ],
           rows: report.community.topLeaderboard.slice(0, 5).map((entry) => ({
             Contributeur: entry.name,
@@ -581,7 +581,7 @@ export function buildPdfData(params: {
       { label: "Actions", value: report.totals.actions },
       { label: "Masse collectée", value: `${report.totals.kg.toFixed(1)} kg` },
       { label: "Mégots", value: report.totals.butts },
-      { label: "Bénévoles", value: report.totals.volunteers },
+      { label: "Bénévoles", value: report.totals.volunteersKnownActions === 0 ? "n/a" : report.totals.volunteers },
       ...(modules.dataAndCartography
         ? [{ label: "Couverture géographique", value: `${report.map.geoCoverage.toFixed(1)}%` }]
         : []),

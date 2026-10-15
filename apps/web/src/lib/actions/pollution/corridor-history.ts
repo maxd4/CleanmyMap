@@ -69,8 +69,10 @@ export type CorridorHistorySummary = {
   wasteCoverageRate: number;
   totalCigaretteButts: number;
   totalVolunteers: number;
+  volunteersKnownActions: number;
+  volunteersCoverageRate: number;
   totalDurationMinutes: number;
-  totalEngagementHours: number;
+  totalEngagementHours: number | null;
   observedScores: readonly CorridorObservedScore[];
   scoreEvolution: {
     first: number;
@@ -511,21 +513,38 @@ export function summarizeCorridorHistory(
       0,
     ),
     totalVolunteers: actions.reduce(
-      (total, action) => total + Math.max(0, action.metadata.volunteersCount),
+      (total, action) =>
+        total +
+        (action.metadata.volunteersCount === null
+          ? 0
+          : Math.max(0, action.metadata.volunteersCount)),
       0,
     ),
+    volunteersKnownActions: actions.filter(
+      (action) => action.metadata.volunteersCount !== null,
+    ).length,
+    volunteersCoverageRate:
+      actions.length > 0
+        ? (actions.filter(
+            (action) => action.metadata.volunteersCount !== null,
+          ).length /
+            actions.length) *
+          100
+        : 0,
     totalDurationMinutes: actions.reduce(
       (total, action) => total + Math.max(0, action.metadata.durationMinutes),
       0,
     ),
     totalEngagementHours:
-      actions.reduce(
-        (total, action) =>
-          total +
-          Math.max(0, action.metadata.durationMinutes) *
-            Math.max(0, action.metadata.volunteersCount),
-        0,
-      ) / 60,
+      actions.some((action) => action.metadata.volunteersCount === null)
+        ? null
+        : actions.reduce(
+            (total, action) =>
+              total +
+              Math.max(0, action.metadata.durationMinutes) *
+                Math.max(0, action.metadata.volunteersCount ?? 0),
+            0,
+          ) / 60,
     observedScores,
     scoreEvolution:
       oldestScore === null || latestScore === null

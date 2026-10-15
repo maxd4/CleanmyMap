@@ -169,7 +169,7 @@ function ActionCardDetails({
 
       <div className="flex flex-wrap gap-2">
         <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
-          {formatCount(item.participantsCount)}/{formatCount(item.volunteers_count)}{" "}
+          {formatCount(item.participantsCount)}/{item.volunteers_count === null ? (fr ? "non renseigné" : "not provided") : formatCount(item.volunteers_count)}{" "}
           {usesRegistration
             ? fr
               ? "Inscriptions confirmées"

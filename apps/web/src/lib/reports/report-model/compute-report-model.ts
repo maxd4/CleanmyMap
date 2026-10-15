@@ -52,7 +52,9 @@ function computeTotals(approvedActions: ActionListItem[]) {
       const durationMinutes = Number(
         item.contract?.metadata.durationMinutes ?? item.duration_minutes ?? 0,
       );
-      return sum + (durationMinutes * Math.max(1, impact.volunteers)) / 60;
+      return impact.volunteersKnown
+        ? sum + (durationMinutes * impact.volunteers) / 60
+        : sum;
     },
     0,
   );
@@ -61,6 +63,9 @@ function computeTotals(approvedActions: ActionListItem[]) {
     wasteKnownActions: impact.wasteKnownActions,
     totalButts: impact.butts,
     totalVolunteers: impact.volunteers,
+    volunteersKnownActions: impact.volunteersKnownActions,
+    volunteersActionCount: impact.volunteersActionCount,
+    volunteersCoverageRate: impact.volunteersCoverageRate,
     totalHours,
     co2AvoidedKg: impact.co2AvoidedKg,
     waterSavedLiters: impact.waterSavedLiters,
@@ -138,7 +143,8 @@ function computeQualityMetrics(approvedActions: ActionListItem[], nowMs: number)
     const hasDate = Boolean(item.action_date);
     const hasLocation = item.location_label.trim().length > 2;
     const hasDuration = Number(item.duration_minutes || 0) > 0;
-    const hasVolunteers = Number(item.volunteers_count || 0) > 0;
+    const hasVolunteers =
+      item.volunteers_count !== null && item.volunteers_count > 0;
     const hasWaste =
       item.waste_kg !== null &&
       Number.isFinite(item.waste_kg) &&
@@ -153,7 +159,7 @@ function computeQualityMetrics(approvedActions: ActionListItem[], nowMs: number)
   const coherenceChecks = approvedActions.map((item) => {
     const waste = item.waste_kg;
     const butts = item.cigarette_butts;
-    const volunteers = Number(item.volunteers_count || 0);
+    const volunteers = item.volunteers_count ?? 0;
     const minutes = Number(item.duration_minutes || 0);
     return (
       waste !== null &&
@@ -298,6 +304,9 @@ function buildReportSections(input: ReportAssemblyInput) {
       knownWasteActions: totals.wasteKnownActions,
       butts: totals.totalButts,
       volunteers: totals.totalVolunteers,
+      volunteersKnownActions: totals.volunteersKnownActions,
+      volunteersActionCount: totals.volunteersActionCount,
+      volunteersCoverageRate: totals.volunteersCoverageRate,
       hours: totals.totalHours,
     },
     map: {

@@ -7,12 +7,12 @@ export type ActionOperationalContext = {
   placeType: string | null;
   routeStyle: "direct" | "souple" | null;
   routeAdjustmentMessage: string | null;
-  volunteersCount: number;
+  volunteersCount: number | null;
   effectiveVolunteerUnits: number | null;
-  operationalVolunteerUnits: number;
+  operationalVolunteerUnits: number | null;
   durationMinutes: number;
-  engagementMinutes: number;
-  engagementHours: number;
+  engagementMinutes: number | null;
+  engagementHours: number | null;
   placeTypeLabel: string;
   routeStyleLabel: string;
 };
@@ -82,13 +82,17 @@ export function getActionOperationalContext(
   const routeAdjustmentMessage = normalizeContextText(
     metadata?.routeAdjustmentMessage,
   );
-  const volunteersCount = normalizeOperationalCount(metadata?.volunteersCount);
+  const volunteersCount =
+    metadata?.volunteersCount === null || metadata?.volunteersCount === undefined
+      ? null
+      : normalizeOperationalCount(metadata.volunteersCount);
   const effectiveVolunteerUnits = resolveEffectiveVolunteerUnits(
     metadata?.volunteerParticipation,
   );
   const operationalVolunteerUnits = effectiveVolunteerUnits ?? volunteersCount;
   const durationMinutes = normalizeOperationalCount(metadata?.durationMinutes);
-  const engagementMinutes = operationalVolunteerUnits * durationMinutes;
+  const engagementMinutes =
+    operationalVolunteerUnits === null ? null : operationalVolunteerUnits * durationMinutes;
 
   return {
     placeType,
@@ -99,7 +103,10 @@ export function getActionOperationalContext(
     operationalVolunteerUnits,
     durationMinutes,
     engagementMinutes,
-    engagementHours: Number((engagementMinutes / 60).toFixed(1)),
+    engagementHours:
+      engagementMinutes === null
+        ? null
+        : Number((engagementMinutes / 60).toFixed(1)),
     placeTypeLabel: placeType ?? "Type de lieu non précisé",
     routeStyleLabel: formatRouteStyleLabel(routeStyle),
   };

@@ -23,6 +23,9 @@ export type PublicImpactCounters = {
   co2: number;
   water: number;
   euro: number;
+  volunteersKnownActions?: number;
+  volunteersActionCount?: number;
+  volunteersCoverageRate?: number;
 };
 
 export type PublicImpactMetric = {
@@ -134,9 +137,13 @@ export function buildPublicImpactMetrics(
   return PUBLIC_IMPACT_KPI_DEFINITIONS.map((definition) => ({
     ...definition,
     value: formatPublicImpactValue(
-      counters[PUBLIC_IMPACT_KPI_VALUES[definition.key]],
+      counters[PUBLIC_IMPACT_KPI_VALUES[definition.key]] ?? 0,
       definition,
-      hasData,
+      definition.key === "volunteers" &&
+        counters.volunteersKnownActions !== undefined &&
+        counters.volunteersKnownActions === 0
+        ? false
+        : hasData,
     ),
   }));
 }
@@ -151,12 +158,19 @@ export type PublicImpactCalculation = {
   counters: PublicImpactCounters;
   impactTerrain: ImpactTerrain2026PublicResults;
   streetCleaningSavings: ImpactTerrain2026StreetCleaningSavings;
+  volunteersKnownActions: number;
+  volunteersActionCount: number;
+  volunteersCoverageRate: number;
 };
 
 function buildPublicImpactCounters(
   impactTerrain: ImpactTerrain2026PublicResults,
   streetCleaningSavings: ImpactTerrain2026StreetCleaningSavings,
   volunteers: number,
+  volunteerCoverage: {
+    knownActions: number;
+    actionCount: number;
+  },
 ): PublicImpactCounters {
   return {
     wasteKg: impactTerrain.wasteKg,
@@ -165,6 +179,12 @@ function buildPublicImpactCounters(
     co2: impactTerrain.co2eKg,
     water: impactTerrain.waterLiters,
     euro: Math.round(streetCleaningSavings.massEstimateEuros),
+    volunteersKnownActions: volunteerCoverage.knownActions,
+    volunteersActionCount: volunteerCoverage.actionCount,
+    volunteersCoverageRate:
+      volunteerCoverage.actionCount > 0
+        ? (volunteerCoverage.knownActions / volunteerCoverage.actionCount) * 100
+        : 0,
   };
 }
 
@@ -194,9 +214,20 @@ export function buildPublicImpactCalculationFromActions(
   );
   const volunteers = eligibleActions.reduce(
     (total, action) =>
-      total + toFiniteNonNegativeInteger(action.metadata.volunteersCount),
+      total +
+      (action.metadata.volunteersCount === null ||
+      action.metadata.volunteersCount === undefined
+        ? 0
+        : toFiniteNonNegativeInteger(action.metadata.volunteersCount)),
     0,
   );
+  const volunteersKnownActions = eligibleActions.filter(
+    (action) =>
+      action.metadata.volunteersCount !== null &&
+      action.metadata.volunteersCount !== undefined &&
+      Number.isFinite(action.metadata.volunteersCount) &&
+      action.metadata.volunteersCount >= 0,
+  ).length;
   const streetCleaningSavings = computeImpactTerrain2026StreetCleaningSavings({
     wasteKg: impactTerrain.wasteKg,
     durationMinutes: totalDurationMinutes,
@@ -207,9 +238,16 @@ export function buildPublicImpactCalculationFromActions(
       impactTerrain,
       streetCleaningSavings,
       volunteers,
+      { knownActions: volunteersKnownActions, actionCount: eligibleActions.length },
     ),
     impactTerrain,
     streetCleaningSavings,
+    volunteersKnownActions,
+    volunteersActionCount: eligibleActions.length,
+    volunteersCoverageRate:
+      eligibleActions.length > 0
+        ? (volunteersKnownActions / eligibleActions.length) * 100
+        : 0,
   };
 }
 
@@ -220,6 +258,9 @@ export function buildPublicImpactCalculationFromAggregate(params: {
   cigaretteButts?: unknown;
   buttsByCondition?: unknown;
   durationMinutes: number;
+  volunteers?: unknown;
+  volunteersKnownActions?: unknown;
+  volunteersActionCount?: unknown;
 }): PublicImpactCalculation {
   const impactTerrain = buildImpactTerrain2026PublicResultsFromAggregate({
     wasteKg: params.wasteKg,
@@ -235,14 +276,32 @@ export function buildPublicImpactCalculationFromAggregate(params: {
     wasteKg: impactTerrain.wasteKg,
     durationMinutes: normalizedDurationMinutes,
   });
+  const normalizedVolunteers = toFiniteNonNegativeInteger(params.volunteers as number | null | undefined);
+  const volunteersActionCount = toFiniteNonNegativeInteger(
+    params.volunteersActionCount,
+  );
+  const volunteersKnownActions = Math.min(
+    volunteersActionCount,
+    toFiniteNonNegativeInteger(params.volunteersKnownActions),
+  );
 
   return {
     counters: buildPublicImpactCounters(
       impactTerrain,
       streetCleaningSavings,
-      0,
+      normalizedVolunteers,
+      {
+        knownActions: volunteersKnownActions,
+        actionCount: volunteersActionCount,
+      },
     ),
     impactTerrain,
     streetCleaningSavings,
+    volunteersKnownActions,
+    volunteersActionCount,
+    volunteersCoverageRate:
+      volunteersActionCount > 0
+        ? (volunteersKnownActions / volunteersActionCount) * 100
+        : 0,
   };
 }

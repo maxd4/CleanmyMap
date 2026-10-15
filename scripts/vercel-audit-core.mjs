@@ -208,7 +208,7 @@ function collectLocalDependencies(filePath, content, filesByRelPath, view = null
       const separator = trimmed[keyword.length];
       if (!trimmed.startsWith(keyword) || (separator !== " " && separator !== "\t")) continue;
       const body = trimmed.slice(keyword.length).trimStart();
-      if (keyword === "import" && body.startsWith("type ")) continue;
+      if (/^type(?:[ \t]|$)/.test(body)) continue;
       const fromMatch = body.match(/[ \t]+from[ \t]+/);
       if (!fromMatch || fromMatch.index === undefined) continue;
       const quoted = body.slice(fromMatch.index + fromMatch[0].length).trim();

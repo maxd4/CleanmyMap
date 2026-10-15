@@ -160,7 +160,7 @@ function buildSearchableText(item: JoinableActionItem, locale: "fr" | "en"): str
       phaseLabel,
       item.participantsCount.toString(),
       item.pendingRequestsCount.toString(),
-      item.volunteers_count.toString(),
+      item.volunteers_count === null ? "participants non renseignes" : item.volunteers_count.toString(),
       item.duration_minutes.toString(),
       item.awaitingApproval
         ? "en attente approbation"

@@ -85,7 +85,7 @@ function computeCompleteness(item: ActionListItem): {
     hasValidDate(parseObservedAt(item)),
     (item.location_label ?? "").trim().length >= 3,
     toFiniteNumber(item.waste_kg, -1) >= 0,
-    toFiniteNumber(item.volunteers_count, 0) >= 1,
+    item.volunteers_count !== null && item.volunteers_count >= 1,
     toFiniteNumber(item.duration_minutes, -1) >= 0,
     (item.actor_name ?? item.contract?.metadata.actorName ?? "").trim().length >
       0,
@@ -108,7 +108,7 @@ function computeCoherence(item: ActionListItem): {
 } {
   const wasteKg = toFiniteNumber(item.waste_kg, 0);
   const butts = toFiniteNumber(item.cigarette_butts, 0);
-  const volunteers = toFiniteNumber(item.volunteers_count, 0);
+  const volunteers = item.volunteers_count ?? 0;
   const minutes = toFiniteNumber(item.duration_minutes, 0);
   const checks = [
     isWithinRange(wasteKg, 0, 1000),

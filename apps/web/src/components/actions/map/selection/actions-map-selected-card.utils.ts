@@ -113,7 +113,10 @@ export function buildSelectedActionCardModel(
     geometryConfidenceLabel: formatGeometryConfidenceLabel(geometry.confidence),
     wasteLabel: `${mapItemWasteKg(item) ?? 0} kg`,
     buttsLabel: `${mapItemCigaretteButts(item) ?? 0}`,
-    volunteersLabel: `${operational.volunteersCount}`,
+    volunteersLabel:
+      operational.volunteersCount === null
+        ? "Non renseigné"
+        : `${operational.volunteersCount}`,
     durationLabel: `${operational.durationMinutes} min`,
     impactLabel: item.impact_level ?? "Indisponible",
     qualityLabel: item.quality_grade ?? "Non évalué",

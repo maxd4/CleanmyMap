@@ -55,6 +55,9 @@ export type ReportModel = {
     knownWasteActions?: number;
     butts: number;
     volunteers: number;
+    volunteersKnownActions?: number;
+    volunteersActionCount?: number;
+    volunteersCoverageRate?: number;
     hours: number;
   };
   map: {

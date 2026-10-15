@@ -16,7 +16,7 @@ export type PostActionSummary = {
     actionDate: string;
     wasteKg: number | null;
     cigaretteButts: number | null;
-    volunteersCount: number;
+    volunteersCount: number | null;
     effectiveVolunteerUnits: number | null;
     durationMinutes: number | null;
   };
@@ -77,7 +77,8 @@ export function buildPostActionSummary(
   const cigaretteButtsValue = toNonNegativeNumber(action.cigaretteButts);
   const cigaretteButts = cigaretteButtsValue === null ? null : Math.trunc(cigaretteButtsValue);
   const volunteersValue = toNonNegativeNumber(action.volunteersCount);
-  const volunteersCount = Math.max(1, Math.trunc(volunteersValue ?? 0));
+  const volunteersCount =
+    volunteersValue === null ? null : Math.trunc(volunteersValue);
   const effectiveVolunteerUnits = resolveEffectiveVolunteerUnits(
     action.volunteerParticipation,
   );

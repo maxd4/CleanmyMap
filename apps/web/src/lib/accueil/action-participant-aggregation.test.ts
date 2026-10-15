@@ -8,7 +8,7 @@ import {
 
 function action(
   organizerType: ActionAggregationAction["metadata"]["organizerType"],
-  volunteersCount: number,
+  volunteersCount: number | null,
   durationMinutes: number,
 ): ActionAggregationAction {
   return {
@@ -95,6 +95,22 @@ describe("action participant aggregation", () => {
     expect(result.actionDistribution.some((entry) => entry.category === "Quintet")).toBe(false);
   });
 
+  it("keeps unknown participants out of observed totals while preserving zero", () => {
+    const result = aggregatePublicActionMetrics([
+      action("spontaneous", null, 20),
+      action("spontaneous", 0, 20),
+      action("spontaneous", 7, 20),
+    ]);
+
+    expect(result.participantsTotal).toBe(7);
+    expect(result.participantsKnownActions).toBe(2);
+    expect(result.participantsUnknownActions).toBe(1);
+    expect(result.classificationWarnings).toContainEqual({
+      code: "unknown_spontaneous_participant_count",
+      count: 1,
+    });
+  });
+
   it("classifies legacy and incoherent types as Autres with an administrative warning", () => {
     const result = aggregatePublicActionMetrics([
       action(undefined, 0, 5),
@@ -128,6 +144,8 @@ describe("action participant aggregation", () => {
       wasteKnownActions: 0,
       wasteCoverageRate: 0,
       participantsTotal: 12,
+      participantsKnownActions: 0,
+      participantsUnknownActions: 0,
       totalDurationMinutes: 90,
       totalDurationHours: 1.5,
       actionDistribution: [

@@ -18,9 +18,9 @@ export type ActionQualityResult = {
 export type SelectedOperationalContext = {
   placeTypeLabel: string;
   routeStyleLabel: string;
-  volunteersCount: number;
+  volunteersCount: number | null;
   durationMinutes: number;
-  engagementHours: number;
+  engagementHours: number | null;
   routeAdjustmentMessage?: string | null;
 } | null;
 
@@ -58,9 +58,9 @@ export function ActionHistoryQualitySection({
           <div className="mt-2 flex flex-wrap gap-2">
             <span className="rounded-full bg-emerald-50 px-2 py-0.5 cmm-text-caption font-semibold text-emerald-800">{selectedOperational.placeTypeLabel}</span>
             <span className="rounded-full bg-slate-100 px-2 py-0.5 cmm-text-caption font-semibold cmm-text-secondary">{selectedOperational.routeStyleLabel}</span>
-            <span className="rounded-full bg-sky-50 px-2 py-0.5 cmm-text-caption font-semibold text-sky-800">{selectedOperational.volunteersCount} bénévoles</span>
+            <span className="rounded-full bg-sky-50 px-2 py-0.5 cmm-text-caption font-semibold text-sky-800">{selectedOperational.volunteersCount === null ? "Participants non renseignés" : `${selectedOperational.volunteersCount} bénévoles`}</span>
             <span className="rounded-full bg-indigo-50 px-2 py-0.5 cmm-text-caption font-semibold text-indigo-800">{selectedOperational.durationMinutes} min</span>
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 cmm-text-caption font-semibold text-amber-800">{selectedOperational.engagementHours} h-personnes</span>
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 cmm-text-caption font-semibold text-amber-800">{selectedOperational.engagementHours === null ? "Engagement non calculable" : `${selectedOperational.engagementHours} h-personnes`}</span>
           </div>
           {selectedOperational.routeAdjustmentMessage ? <p className="mt-2 cmm-text-caption cmm-text-secondary">Ajustement trajet: {selectedOperational.routeAdjustmentMessage}</p> : null}
         </div>

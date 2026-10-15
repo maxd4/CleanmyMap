@@ -13,7 +13,7 @@ type BuildPostActionImpactMetricsInput = {
   wasteKg: number | null;
   cigaretteButts: number | null;
   durationMinutes: number | null;
-  operationalVolunteerUnits: number;
+  operationalVolunteerUnits: number | null;
   qualityScore: number;
 };
 
@@ -55,7 +55,9 @@ export function buildPostActionImpactMetrics({
       id: "surface",
       label: "Surface nettoyée",
       value:
-        wasteKg === null || durationMinutes === null
+        wasteKg === null ||
+        durationMinutes === null ||
+        operationalVolunteerUnits === null
           ? null
           : round(
               wasteKg * factors.surfaceM2PerWasteKg +

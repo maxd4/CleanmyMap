@@ -204,7 +204,8 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     wasteKg: toFiniteNumber(row.waste_kg),
     cigaretteButtsKg: parsedMetadata.cigaretteButtsKg,
     cigaretteButts: toFiniteNumber(row.cigarette_butts),
-    volunteersCount: toFiniteNumber(row.volunteers_count),
+    volunteersCount:
+      row.volunteers_count === null ? null : toFiniteNumber(row.volunteers_count),
     durationMinutes: toFiniteNumber(row.duration_minutes),
     actorName: null,
     associationName: parsedMetadata.associationName,

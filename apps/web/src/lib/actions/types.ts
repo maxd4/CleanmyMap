@@ -268,7 +268,7 @@ export type ActionListItem = {
   waste_pollution_score?: number | null;
   cigarette_butts_pollution_score?: number | null;
   post_action_pollution_score?: number | null;
-  volunteers_count: number;
+  volunteers_count: number | null;
   duration_minutes: number;
   notes: string | null;
   status: ActionStatus;
@@ -339,7 +339,7 @@ export type ActionListItem = {
       cigaretteButtsKg?: number | null;
       cigaretteButts: number | null;
       postActionPollutionScore?: number | null;
-      volunteersCount: number;
+      volunteersCount: number | null;
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;
       wasteBreakdown?: ActionWasteBreakdown | null;

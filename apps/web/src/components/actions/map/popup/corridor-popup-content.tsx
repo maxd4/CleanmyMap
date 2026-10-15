@@ -151,7 +151,7 @@ export function CorridorPopupContent({
             <SummaryMetric
               icon={<Users size={13} />}
               label="Bénévoles / heures"
-              value={`${formatNumber(summary.totalVolunteers)} · ${formatNumber(summary.totalEngagementHours, " h-p")}`}
+              value={`${summary.volunteersCoverageRate < 100 ? "n/a" : formatNumber(summary.totalVolunteers)} · ${summary.totalEngagementHours === null ? "n/a" : formatNumber(summary.totalEngagementHours, " h-p")}`}
             />
           </div>
 

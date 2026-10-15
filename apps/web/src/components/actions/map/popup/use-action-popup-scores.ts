@@ -24,7 +24,7 @@ type UseActionPopupScoresParams = {
   hasPollution: boolean;
   wasteKg: number;
   cigaretteButts: number;
-  volunteersCount: number;
+  volunteersCount: number | null;
   scoreScope?: PollutionScoreScope;
   displayMode?: CurrentPlaceStateMode;
   currentPlaceState?: CurrentPlaceState | null;

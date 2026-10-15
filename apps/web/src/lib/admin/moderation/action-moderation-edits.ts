@@ -288,7 +288,11 @@ function buildAdminActionPayload(params: {
     cigaretteButtsVolumeLiters:
       cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters,
     cigaretteButtsCondition: cigaretteButtsMeasurements?.cigaretteButtsCondition,
-    volunteersCount: edits.volunteersCount ?? Number(existing.volunteers_count ?? 1),
+    volunteersCount:
+      edits.volunteersCount ??
+      (existing.volunteers_count === null
+        ? undefined
+        : Number(existing.volunteers_count)),
     durationMinutes: edits.durationMinutes ?? Number(existing.duration_minutes ?? 0),
     notes:
       edits.notes !== undefined

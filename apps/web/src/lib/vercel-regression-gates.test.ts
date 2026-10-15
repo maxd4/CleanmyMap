@@ -1,7 +1,9 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { createFilesystemRepositoryView } from "../../../../scripts/checks/repository-view.mjs";
 import {
   hasNearbyJustificationComment,
   scanVercelSurface,
@@ -20,6 +22,22 @@ function readBaselineApiRoutes(): string[] {
   const raw = fs.readFileSync(baselinePath, "utf8");
   const parsed = JSON.parse(raw) as { apiRoutes?: string[] };
   return parsed.apiRoutes ?? [];
+}
+
+function scanFixture(files: Record<string, string>) {
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-vercel-audit-"));
+
+  try {
+    for (const [relativePath, content] of Object.entries(files)) {
+      const absolutePath = path.join(fixtureRoot, ...relativePath.split("/"));
+      fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
+      fs.writeFileSync(absolutePath, content, "utf8");
+    }
+
+    return scanVercelSurface({ view: createFilesystemRepositoryView(fixtureRoot) });
+  } finally {
+    fs.rmSync(fixtureRoot, { recursive: true, force: true });
+  }
 }
 
 function assertJustifiedEntries(
@@ -74,5 +92,41 @@ describe("vercel regression gates", () => {
     expect(onboardingPage?.signals).toEqual(
       expect.arrayContaining(["auth", "headers"]),
     );
+  });
+
+  it("does not propagate runtime signals through type-only imports and re-exports", () => {
+    const fixture = scanFixture({
+      "apps/web/src/app/type-import-space/page.tsx":
+        'import type { AuthMarker } from "@/lib/auth-runtime";\n',
+      "apps/web/src/app/type-import-tab/page.tsx":
+        'import\ttype { AuthMarker } from "@/lib/auth-runtime";\n',
+      "apps/web/src/app/type-export-space/page.tsx":
+        'export type { AuthMarker } from "@/lib/auth-runtime";\n',
+      "apps/web/src/app/type-export-tab/page.tsx":
+        'export\ttype { AuthMarker } from "@/lib/auth-runtime";\n',
+      "apps/web/src/lib/auth-runtime.ts":
+        "export function auth() { return null; }\n",
+    });
+
+    expect(fixture.dynamicPages).toEqual([]);
+  });
+
+  it("keeps runtime static and dynamic imports in the dependency graph", () => {
+    const fixture = scanFixture({
+      "apps/web/src/app/runtime-static/page.tsx":
+        'import\t{ auth }\tfrom "@/lib/auth-runtime";\n',
+      "apps/web/src/app/runtime-export/page.tsx":
+        'export\t{ auth }\tfrom "@/lib/auth-runtime";\n',
+      "apps/web/src/app/runtime-dynamic/page.tsx":
+        'const authModule = import\t("@/lib/auth-runtime");\nvoid authModule;\n',
+      "apps/web/src/lib/auth-runtime.ts":
+        "export function auth() { return null; }\n",
+    });
+
+    expect(fixture.dynamicPages).toEqual([
+      { path: "apps/web/src/app/runtime-dynamic/page.tsx", signals: ["auth"] },
+      { path: "apps/web/src/app/runtime-export/page.tsx", signals: ["auth"] },
+      { path: "apps/web/src/app/runtime-static/page.tsx", signals: ["auth"] },
+    ]);
   });
 });

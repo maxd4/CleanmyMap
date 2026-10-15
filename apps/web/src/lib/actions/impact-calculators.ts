@@ -33,6 +33,7 @@ export type ActionImpactKpis = {
   wasteKgSource: ActionWasteKgSource;
   butts: number;
   volunteers: number;
+  volunteersKnown: boolean;
   co2AvoidedKg: number;
   waterSavedLiters: number;
   streetCleaningSavings: ImpactTerrain2026StreetCleaningSavings;
@@ -44,6 +45,9 @@ export type ActionImpactTotals = Omit<ActionImpactKpis, "wasteKgSource"> & {
   wasteKnownActions: number;
   wasteActionCount: number;
   wasteCoverageRate: number;
+  volunteersKnownActions: number;
+  volunteersActionCount: number;
+  volunteersCoverageRate: number;
 };
 
 export type ActionImpactMethodology = {
@@ -95,10 +99,14 @@ export function computeActionImpactKpis(
   const wasteKnown = measuredWasteKg !== null;
   const wasteKg = measuredWasteKg ?? 0;
   const butts = Math.max(0, Number(contract.metadata.cigaretteButts || 0));
-  const volunteers = Math.max(
-    0,
-    Number(contract.metadata.volunteersCount || 0),
-  );
+  const volunteersKnown =
+    contract.metadata.volunteersCount !== null &&
+    contract.metadata.volunteersCount !== undefined &&
+    Number.isFinite(Number(contract.metadata.volunteersCount)) &&
+    Number(contract.metadata.volunteersCount) >= 0;
+  const volunteers = volunteersKnown
+    ? Math.max(0, Number(contract.metadata.volunteersCount))
+    : 0;
   const streetCleaningSavings =
     computeImpactTerrain2026StreetCleaningSavings({
       wasteKg,
@@ -111,6 +119,7 @@ export function computeActionImpactKpis(
     wasteKgSource: resolveActionWasteKgSource(contract),
     butts,
     volunteers,
+    volunteersKnown,
     co2AvoidedKg: wasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg,
     waterSavedLiters: Math.round(
       butts * IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt,
@@ -129,8 +138,12 @@ export function sumActionImpactKpis(
     wasteKnownActions: 0,
     wasteActionCount: 0,
     wasteCoverageRate: 0,
+    volunteersKnownActions: 0,
+    volunteersActionCount: 0,
+    volunteersCoverageRate: 0,
     butts: 0,
     volunteers: 0,
+    volunteersKnown: false,
     co2AvoidedKg: 0,
     waterSavedLiters: 0,
     streetCleaningSavings: computeImpactTerrain2026StreetCleaningSavings({
@@ -142,6 +155,8 @@ export function sumActionImpactKpis(
   let totalDurationMinutes = 0;
   let wasteKnownActions = 0;
   let wasteActionCount = 0;
+  let volunteersKnownActions = 0;
+  let volunteersActionCount = 0;
 
   for (const contract of contracts) {
     wasteActionCount += 1;
@@ -152,6 +167,10 @@ export function sumActionImpactKpis(
     }
     totals.butts += impact.butts;
     totals.volunteers += impact.volunteers;
+    volunteersActionCount += 1;
+    if (impact.volunteersKnown) {
+      volunteersKnownActions += 1;
+    }
     totalDurationMinutes += Math.max(
       0,
       Number(contract.metadata.durationMinutes || 0),
@@ -174,6 +193,13 @@ export function sumActionImpactKpis(
   totals.wasteCoverageRate =
     wasteActionCount > 0 ? (wasteKnownActions / wasteActionCount) * 100 : 0;
   totals.wasteKnown = wasteKnownActions > 0;
+  totals.volunteersKnownActions = volunteersKnownActions;
+  totals.volunteersActionCount = volunteersActionCount;
+  totals.volunteersCoverageRate =
+    volunteersActionCount > 0
+      ? (volunteersKnownActions / volunteersActionCount) * 100
+      : 0;
+  totals.volunteersKnown = volunteersKnownActions > 0;
 
   return totals;
 }
@@ -194,7 +220,7 @@ export function buildActionImpactMethodology(): ActionImpactMethodology {
     formulas: {
       wasteKg: "wasteKg = valeur déclarée de déchets; null = métrique non renseignée; les mégots restent une composante distincte",
       butts: "butts = max(0, cigaretteButts)",
-      volunteers: "volunteers = max(0, volunteersCount)",
+      volunteers: "volunteers = somme des volunteersCount connus; une valeur inconnue est exclue du total et suivie par la couverture de mesure",
       co2e: `co2e_kg = wasteKg * ${factors.co2KgPerWasteKg}`,
       water: `eau_L = butts * ${factors.waterLitersPerCigaretteButt}`,
       euro: `economie_dechets = totalWasteKg * ${STREET_CLEANING_EUROS_PER_WASTE_KG}; heures_action = somme(durationMinutes) / 60; economie_temps = heures_action * ${VOLUNTEER_ACTION_EUROS_PER_HOUR}; economie_min = min(economie_dechets, economie_temps); economie_max = max(economie_dechets, economie_temps)`,

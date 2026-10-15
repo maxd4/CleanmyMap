@@ -188,7 +188,7 @@ export function toActionsMapCsvRows(
       longitude: contract?.location.longitude ?? item.longitude,
       waste_kg: contract?.metadata.wasteKg ?? item.waste_kg,
       cigarette_butts: contract?.metadata.cigaretteButts ?? item.cigarette_butts,
-      volunteers_count: contract?.metadata.volunteersCount ?? 0,
+      volunteers_count: contract?.metadata.volunteersCount ?? null,
       duration_minutes: contract?.metadata.durationMinutes ?? 0,
       status: contract?.status ?? item.status,
       notes: contract?.metadata.notes ?? null,

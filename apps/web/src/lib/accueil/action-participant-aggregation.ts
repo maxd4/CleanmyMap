@@ -43,6 +43,8 @@ export type PublicLandingActionAggregation = {
   wasteKnownActions?: number;
   wasteCoverageRate?: number;
   participantsTotal: number;
+  participantsKnownActions?: number;
+  participantsUnknownActions?: number;
   totalDurationMinutes: number;
   totalDurationHours: number;
   actionDistribution: ActionDistributionEntry[];
@@ -86,8 +88,11 @@ const SPONTANEOUS_GROUP_NAMES: Record<number, string> = {
 };
 
 export function getSpontaneousActionCategory(
-  volunteersCount: number,
+  volunteersCount: number | null | undefined,
 ): Omit<ActionDistributionEntry, "count"> | null {
+  if (volunteersCount === null || volunteersCount === undefined) {
+    return null;
+  }
   const count = toFiniteNonNegativeInteger(volunteersCount);
   if (count < 1) {
     return null;
@@ -115,7 +120,11 @@ function classifyActionForDistribution(
 
     return {
       entry: STRUCTURED_CATEGORIES.other,
-      warningCode: "invalid_spontaneous_participant_count",
+      warningCode:
+        action.metadata.volunteersCount === null ||
+        action.metadata.volunteersCount === undefined
+          ? "unknown_spontaneous_participant_count"
+          : "invalid_spontaneous_participant_count",
     };
   }
 
@@ -152,14 +161,24 @@ export function aggregatePublicActionMetrics(
 ): PublicLandingActionAggregation {
   const eligibleActions = actions.filter(isPublicImpactActionInputEligible);
   let participantsTotal = 0;
+  let participantsKnownActions = 0;
+  let participantsUnknownActions = 0;
   let totalDurationMinutes = 0;
   const distribution = new Map<string, ActionDistributionEntry>();
   const warnings = new Map<string, number>();
 
   for (const action of eligibleActions) {
-    participantsTotal += toFiniteNonNegativeInteger(
-      action.metadata.volunteersCount,
-    );
+    if (
+      action.metadata.volunteersCount === null ||
+      action.metadata.volunteersCount === undefined
+    ) {
+      participantsUnknownActions += 1;
+    } else {
+      participantsKnownActions += 1;
+      participantsTotal += toFiniteNonNegativeInteger(
+        action.metadata.volunteersCount,
+      );
+    }
     totalDurationMinutes += toFiniteNonNegativeInteger(
       action.metadata.durationMinutes,
     );
@@ -188,6 +207,8 @@ export function aggregatePublicActionMetrics(
     wasteKnownActions: publicImpact.impactTerrain.wasteKnownActions,
     wasteCoverageRate: publicImpact.impactTerrain.wasteCoverageRate,
     participantsTotal,
+    participantsKnownActions,
+    participantsUnknownActions,
     totalDurationMinutes,
     totalDurationHours: totalDurationMinutes / 60,
     actionDistribution: [...distribution.values()]
@@ -206,6 +227,8 @@ export type PublicLandingActionAggregationRow = {
   visible_actions?: number | string | null;
   participants_total?: number | string | null;
   volunteers?: number | string | null;
+  participants_known_actions?: number | string | null;
+  participants_action_count?: number | string | null;
   total_duration_minutes?: number | string | null;
   action_distribution?: unknown;
   classification_warnings?: unknown;
@@ -225,6 +248,12 @@ export function buildPublicLandingActionMetricsFromAggregate(
 ): PublicLandingActionAggregation {
   const participantsTotal = toFiniteNonNegativeNumber(
     row.participants_total ?? row.volunteers,
+  );
+  const participantsKnownActions = toFiniteNonNegativeNumber(
+    row.participants_known_actions,
+  );
+  const participantsActionCount = toFiniteNonNegativeNumber(
+    row.participants_action_count ?? row.visible_actions,
   );
   const totalDurationMinutes = toFiniteNonNegativeNumber(
     row.total_duration_minutes,
@@ -265,6 +294,9 @@ export function buildPublicLandingActionMetricsFromAggregate(
     cigaretteButts: row.cigarette_butts,
     buttsByCondition: row.butts_by_condition,
     durationMinutes: totalDurationMinutes,
+    volunteers: row.participants_total ?? row.volunteers,
+    volunteersKnownActions: row.participants_known_actions,
+    volunteersActionCount: row.participants_action_count ?? row.visible_actions,
   });
 
   return {
@@ -272,6 +304,11 @@ export function buildPublicLandingActionMetricsFromAggregate(
     wasteKnownActions: publicImpact.impactTerrain.wasteKnownActions,
     wasteCoverageRate: publicImpact.impactTerrain.wasteCoverageRate,
     participantsTotal,
+    participantsKnownActions,
+    participantsUnknownActions: Math.max(
+      0,
+      participantsActionCount - participantsKnownActions,
+    ),
     totalDurationMinutes,
     totalDurationHours: totalDurationMinutes / 60,
     actionDistribution,

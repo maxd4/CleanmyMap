@@ -64,7 +64,7 @@ function inferContributionType(row: ActionRow): ContributorRecognitionType {
   if (containsAny(raw, ["relais", "diffusion", "partage", "communication"])) {
     return "diffusion";
   }
-  if (containsAny(raw, ["coord", "organis", "animation", "accompagn"]) || row.volunteers_count >= 6) {
+  if (containsAny(raw, ["coord", "organis", "animation", "accompagn"]) || (row.volunteers_count !== null && row.volunteers_count >= 6)) {
     return "coordination";
   }
   if (

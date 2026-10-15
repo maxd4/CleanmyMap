@@ -6,7 +6,7 @@ export type ZoneCompareInput = {
   locationLabel: string;
   wasteKg: number | null;
   butts: number;
-  volunteersCount: number;
+  volunteersCount: number | null;
 };
 
 type ZoneCompareRow = {
@@ -149,7 +149,9 @@ export function computeZoneCompare(params: {
         row.current.knownWasteActions += 1;
       }
       row.current.butts += Number(record.butts || 0);
-      row.current.volunteers += Number(record.volunteersCount || 0);
+      if (record.volunteersCount !== null) {
+        row.current.volunteers += Number(record.volunteersCount);
+      }
       row.current.pointKeys.add(pointKey);
     } else if (observedMs >= previousFloor && observedMs < currentFloor) {
       row.previous.actions += 1;
@@ -158,7 +160,9 @@ export function computeZoneCompare(params: {
         row.previous.knownWasteActions += 1;
       }
       row.previous.butts += Number(record.butts || 0);
-      row.previous.volunteers += Number(record.volunteersCount || 0);
+      if (record.volunteersCount !== null) {
+        row.previous.volunteers += Number(record.volunteersCount);
+      }
       row.previous.pointKeys.add(pointKey);
     }
 

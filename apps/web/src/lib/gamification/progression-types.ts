@@ -304,7 +304,7 @@ export type ActionRow = {
   waste_kg: number | null;
   waste_breakdown?: import("@/lib/actions/types").ActionWasteBreakdown | null;
   cigarette_butts: number;
-  volunteers_count: number;
+  volunteers_count: number | null;
   duration_minutes: number;
   status: "pending" | "approved" | "rejected";
   notes: string | null;

@@ -7,7 +7,7 @@ export function normalizeStoredAction(row: ActionRow): ActionRow {
     department_name: row.department_name ?? null,
     waste_kg: normalizeNullableStoredNumber(row.waste_kg),
     cigarette_butts: normalizeNullableStoredNumber(row.cigarette_butts),
-    volunteers_count: Number(row.volunteers_count ?? 0),
+    volunteers_count: normalizeNullableStoredNumber(row.volunteers_count),
     duration_minutes: Number(row.duration_minutes ?? 0),
     action_phase: row.action_phase ?? "post_action_complete",
     preparation_data: (row.preparation_data ?? {}) as ActionRow["preparation_data"],

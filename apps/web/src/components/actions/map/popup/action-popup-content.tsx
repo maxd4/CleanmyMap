@@ -120,7 +120,7 @@ function SingleActionPopupContent({
   const geometry = getGeometryPresentation(item);
   const wasteKg = mapItemWasteKg(item) ?? 0;
   const butts = mapItemCigaretteButts(item) ?? 0;
-  const volunteers = mapItemVolunteersCount(item) ?? 0;
+  const volunteers = mapItemVolunteersCount(item);
   const durationMinutes = Number(contract?.metadata.durationMinutes ?? 0);
   const placeType = contract?.metadata.placeType?.trim();
   const associationName = contract?.metadata.associationName?.trim();
