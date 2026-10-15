@@ -93,18 +93,18 @@ export const adminCommunityAuthorizationContract = {
     GET: {
       expected: "ACTIVE_ROLE=max",
       dimensions: ["admin/creator role"],
-      actual: "getCurrentUserIdentity must resolve canonical max with activeRole=max and the exact IMU owner id; authenticated distributed rate limit is enforced before listing",
-      evidence: ["getCurrentUserIdentity", "isConfiguredImuOwnerUserId", "enforceServerRateLimitForAuthenticatedUser"],
+      actual: "getCurrentUserIdentity must resolve canonical max with activeRole=max and the exact IMU owner id via isImuOwnerIdentity; authenticated distributed rate limit is enforced before listing",
+      evidence: ["getCurrentUserIdentity", "isImuOwnerIdentity", "enforceServerRateLimitForAuthenticatedUser"],
     },
     POST: {
       expected: "ACTIVE_ROLE=max plus operation audit",
       dimensions: ["admin/creator role", "audit"],
-      actual: "getCurrentUserIdentity must resolve canonical max with activeRole=max and the exact IMU owner id + authenticated distributed rate limit + appendAdminOperationAudit",
-      evidence: ["getCurrentUserIdentity", "isConfiguredImuOwnerUserId", "enforceServerRateLimitForAuthenticatedUser", "appendAdminOperationAudit"],
+      actual: "getCurrentUserIdentity must resolve canonical max with activeRole=max and the exact IMU owner id via isImuOwnerIdentity + authenticated distributed rate limit + appendAdminOperationAudit",
+      evidence: ["getCurrentUserIdentity", "isImuOwnerIdentity", "enforceServerRateLimitForAuthenticatedUser", "appendAdminOperationAudit"],
       evidenceScope: "module",
       handlerEvidence: [
         "getCurrentUserIdentity",
-        "isConfiguredImuOwnerUserId",
+        "isImuOwnerIdentity",
         "enforceServerRateLimitForAuthenticatedUser",
         "respondToPromotionRejection",
         "respondToPromotionAcceptance",

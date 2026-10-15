@@ -7,6 +7,7 @@ import { env } from "@/lib/env";
 import { getCurrentUserIdentity, requireCreatorAccess } from "@/lib/authz";
 import {
   isConfiguredImuOwnerUserId,
+  isImuOwnerIdentity,
   resolveClerkRole,
 } from "@/lib/auth/role-resolution";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
@@ -181,12 +182,7 @@ export async function GET(request: Request) {
   }
 
   const identity = await getCurrentUserIdentity();
-  if (
-    !identity ||
-    identity.role !== "max" ||
-    identity.activeRole !== "max" ||
-    !isConfiguredImuOwnerUserId(identity.userId, env.CLERK_IMU_OWNER_USER_ID)
-  ) {
+  if (!isImuOwnerIdentity(identity, env.CLERK_IMU_OWNER_USER_ID)) {
     return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
 
@@ -220,11 +216,7 @@ export async function POST(request: Request) {
     return unauthorizedJsonResponse();
   }
 
-  if (
-    identity.role !== "max" ||
-    identity.activeRole !== "max" ||
-    !isConfiguredImuOwnerUserId(identity.userId, env.CLERK_IMU_OWNER_USER_ID)
-  ) {
+  if (!isImuOwnerIdentity(identity, env.CLERK_IMU_OWNER_USER_ID)) {
     return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
 

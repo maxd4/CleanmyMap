@@ -1,4 +1,4 @@
-import type { Role } from "@/lib/domain-language";
+import type { ActiveRole, Role } from "@/lib/domain-language";
 
 export type ClerkMetadata = Record<string, unknown> | null | undefined;
 
@@ -58,6 +58,24 @@ export function isConfiguredImuOwnerUserId(
 ): boolean {
   const ownerUserId = imuOwnerUserId?.trim();
   return Boolean(ownerUserId && userId && userId === ownerUserId);
+}
+
+type ImuOwnerIdentityShape = {
+  userId: string;
+  role: Role;
+  activeRole: ActiveRole;
+};
+
+export function isImuOwnerIdentity<T extends ImuOwnerIdentityShape>(
+  identity: T | null | undefined,
+  imuOwnerUserId: string | undefined,
+): identity is T {
+  return Boolean(
+    identity &&
+      identity.role === "max" &&
+      identity.activeRole === "max" &&
+      isConfiguredImuOwnerUserId(identity.userId, imuOwnerUserId),
+  );
 }
 
 export function resolveClerkRole(params: {

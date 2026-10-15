@@ -3,6 +3,7 @@ import {
   extractRole,
   isAdminRole,
   isConfiguredImuOwnerUserId,
+  isImuOwnerIdentity,
   isMaxRole,
   resolveClerkRole,
   type ClerkUserForRole,
@@ -68,6 +69,17 @@ describe("canonical Clerk role resolution", () => {
       user: user({ publicMetadata: { profile: "admin" }, privateMetadata: { role: "admin" } }),
       imuOwnerUserId: "owner",
     })).toBe("benevole");
+  });
+
+  it("requires the exact owner identity for privileged API guards", () => {
+    const owner = { userId: "owner", role: "max" as const, activeRole: "max" as const };
+
+    expect(isImuOwnerIdentity(owner, " owner ")).toBe(true);
+    expect(isImuOwnerIdentity({ ...owner, role: "admin" }, "owner")).toBe(false);
+    expect(isImuOwnerIdentity({ ...owner, activeRole: "admin" }, "owner")).toBe(false);
+    expect(isImuOwnerIdentity({ ...owner, userId: "other" }, "owner")).toBe(false);
+    expect(isImuOwnerIdentity(owner, undefined)).toBe(false);
+    expect(isImuOwnerIdentity(null, "owner")).toBe(false);
   });
 
   it("does not use emails or old allowlist-shaped inputs", () => {
