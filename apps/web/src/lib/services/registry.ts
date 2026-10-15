@@ -53,7 +53,13 @@ export const SERVICE_DEFINITIONS: ServiceDefinition[] = [
   {
     id: "upstash",
     label: "Upstash",
-    description: "Cache Redis sécurisé pour les flux asynchrones.",
+    description: "Redis pour le rate-limit distribué et le cache sécurisé.",
+    category: "optional",
+  },
+  {
+    id: "qstash",
+    label: "Upstash QStash",
+    description: "Jobs et messages programmés, indépendants du rate-limit Redis.",
     category: "optional",
   },
   {

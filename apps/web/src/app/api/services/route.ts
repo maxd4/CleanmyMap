@@ -4,6 +4,7 @@ import { requireAdminAccess } from"@/lib/authz";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 import { resolveContactEmail, resolveEmailFrom } from "@/lib/email-config";
 import { isPostHogConfigured } from"@/lib/posthog/config";
+import { getRateLimitObservability } from "@/lib/rate-limit/observability";
 import { SERVICE_DEFINITIONS, type ServiceHealthState } from"@/lib/services/registry";
 import {
  buildServiceHealthSummary,
@@ -13,7 +14,7 @@ import {
 
 export const runtime ="nodejs";
 const SERVICE_STATUS_CACHE_HEADERS = {
- "Cache-Control": "private, max-age=300, stale-while-revalidate=3600",
+ "Cache-Control": "private, no-store",
 };
 
 function getServiceState(id: string): ServiceHealthState {
@@ -56,10 +57,11 @@ function getServiceState(id: string): ServiceHealthState {
  :"defer";
  case"upstash":
  return isConfigured(env.UPSTASH_REDIS_REST_URL) &&
- isConfigured(env.UPSTASH_REDIS_REST_TOKEN) &&
- isConfigured(env.QSTASH_TOKEN)
+ isConfigured(env.UPSTASH_REDIS_REST_TOKEN)
  ?"ready"
  :"defer";
+ case"qstash":
+ return isConfigured(env.QSTASH_TOKEN) ?"ready" :"defer";
  case"uptimerobot":
  return isConfigured(env.UPTIMEROBOT_API_KEY) ?"ready" :"external";
  default:
@@ -81,6 +83,7 @@ export async function GET() {
  .map(([service]) => service);
  const summary = buildServiceHealthSummary(services, generatedAt);
  const timeline = buildServiceIncidentTimeline(services, generatedAt);
+ const observability = { rateLimit: getRateLimitObservability() };
 
  return NextResponse.json({
  status: summary.globalState === "ok" ? "ok" : "degraded",
@@ -88,6 +91,7 @@ export async function GET() {
  missing,
  summary,
  timeline,
+ observability,
  timestamp: generatedAt,
  }, { headers: SERVICE_STATUS_CACHE_HEADERS });
 }

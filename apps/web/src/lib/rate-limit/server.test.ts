@@ -274,6 +274,54 @@ describe("server rate-limit", () => {
     warnSpy.mockRestore();
   });
 
+  it("records successful Redis checks and 429 outcomes without user identifiers", async () => {
+    distributedLimitMock.mockResolvedValue({
+      success: false,
+      limit: 2,
+      remaining: 0,
+      reset: Date.now() + 5_000,
+    });
+    const observability = await import("./observability");
+    observability.resetRateLimitObservability();
+    const { verifyRateLimit } = await import("./server");
+
+    const result = await verifyRateLimit(buildRequest(), { limit: 2, window: 60 });
+    const snapshot = observability.getRateLimitObservability();
+
+    expect(result.allowed).toBe(false);
+    expect(snapshot.redisChecks.succeeded).toBe(1);
+    expect(snapshot.redisChecks.durationMs.last).toBeGreaterThanOrEqual(0);
+    expect(snapshot.responses).toEqual({
+      rateLimited429: 1,
+      unavailable503: 0,
+    });
+    expect(JSON.stringify(snapshot)).not.toContain("198.51.100.10");
+  });
+
+  it("records a 503 when a fail-closed Redis check is unavailable", async () => {
+    getRedisClientMock.mockReturnValue(null);
+    const observability = await import("./observability");
+    observability.resetRateLimitObservability();
+    const { verifyRateLimit } = await import("./server");
+
+    const result = await verifyRateLimit(buildRequest("POST"), {
+      limit: 2,
+      window: 60,
+    });
+    const snapshot = observability.getRateLimitObservability();
+
+    expect(result.failure).toBe("distributed-unavailable");
+    expect(snapshot.redisChecks).toMatchObject({
+      attempted: 1,
+      succeeded: 0,
+      unavailable: 1,
+    });
+    expect(snapshot.responses).toEqual({
+      rateLimited429: 0,
+      unavailable503: 1,
+    });
+  });
+
   it("returns a stable 429 payload", async () => {
     const { createServerRateLimitResponse } = await import("./server");
     const response = createServerRateLimitResponse(false, 42);

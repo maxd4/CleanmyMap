@@ -1,3 +1,5 @@
+import type { RateLimitObservabilitySnapshot } from "@/lib/rate-limit/observability";
+
 export type UptimePayload = {
   status: "ok" | "degraded";
   criticalStatus: "ok" | "degraded";
@@ -38,6 +40,9 @@ export type ServicesPayload = {
     detail: string;
     happenedAt: string;
   }>;
+  observability?: {
+    rateLimit: RateLimitObservabilitySnapshot;
+  };
   timestamp: string;
 };
 

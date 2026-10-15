@@ -2,6 +2,10 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { getRedisClient } from "@/lib/services/upstash";
 import { checkRateLimit } from "./store";
 import {
+  recordRateLimitResponse,
+  recordRedisCheck,
+} from "./observability";
+import {
   getRateLimitIdentity,
   getRateLimitKey,
   getRateLimitPolicy,
@@ -103,15 +107,18 @@ async function checkDistributedRateLimit(options: {
   | { status: "available"; result: ServerRateLimitResult }
   | { status: "unavailable" }
 > {
+  const startedAt = Date.now();
   let redis: NonNullable<ReturnType<typeof getRedisClient>> | null;
   try {
     redis = getRedisClient();
   } catch {
+    recordRedisCheck(false, Date.now() - startedAt);
     logDistributedUnavailable("unavailable");
     return { status: "unavailable" };
   }
 
   if (!redis) {
+    recordRedisCheck(false, Date.now() - startedAt);
     logDistributedUnavailable("not_configured");
     return { status: "unavailable" };
   }
@@ -124,10 +131,12 @@ async function checkDistributedRateLimit(options: {
     ).limit(options.key);
 
     if (result.reason === "timeout") {
+      recordRedisCheck(false, Date.now() - startedAt);
       logDistributedUnavailable("unavailable");
       return { status: "unavailable" };
     }
 
+    recordRedisCheck(true, Date.now() - startedAt);
     return {
       status: "available",
       result: {
@@ -142,6 +151,7 @@ async function checkDistributedRateLimit(options: {
       },
     };
   } catch {
+    recordRedisCheck(false, Date.now() - startedAt);
     logDistributedUnavailable("unavailable");
     return { status: "unavailable" };
   }
@@ -168,6 +178,10 @@ export async function checkServerRateLimit(
     window,
   });
   if (distributedResult.status === "available") {
+    if (!distributedResult.result.allowed) {
+      recordRateLimitResponse(429);
+    }
+
     return {
       ...distributedResult.result,
       failureMode: policy.failureMode,
@@ -176,6 +190,7 @@ export async function checkServerRateLimit(
 
   if (policy.failureMode === "fail-closed") {
     const reset = Math.floor(Date.now() / 1000) + window;
+    recordRateLimitResponse(503);
     return {
       allowed: false,
       limit,
@@ -193,6 +208,10 @@ export async function checkServerRateLimit(
     limit,
     window,
   });
+
+  if (!localResult.success) {
+    recordRateLimitResponse(429);
+  }
 
   return {
     allowed: localResult.success,

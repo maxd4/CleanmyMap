@@ -30,6 +30,7 @@ describe("rateLimitMiddleware", () => {
   });
 
   it("returns 429 with Retry-After after the local limit is exhausted", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const request = new NextRequest("https://example.com/api/test", { method: "GET" });
 
     const first = await rateLimitMiddleware(request, request.method, {
@@ -47,5 +48,8 @@ describe("rateLimitMiddleware", () => {
     expect(second.response?.headers.get("Retry-After")).toBe("60");
     expect(getRateLimitIdentityMock).toHaveBeenCalledWith(request);
     expect(getClientIpMock).toHaveBeenCalledWith(request);
+    expect(JSON.stringify(warnSpy.mock.calls)).not.toContain("198.51.100.10");
+    expect(JSON.stringify(warnSpy.mock.calls)).not.toContain("user-");
+    warnSpy.mockRestore();
   });
 });

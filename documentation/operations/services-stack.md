@@ -277,18 +277,24 @@ Rôle:
 
 Activation:
 
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
-- `QSTASH_TOKEN`
+- Redis rate-limit: `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+- Jobs programmés: `QSTASH_TOKEN` (optional and independent of Redis rate-limit)
 
 Code clé:
 
 - [apps/web/src/lib/services/upstash.ts](../../apps/web/src/lib/services/upstash.ts)
+- [apps/web/src/lib/rate-limit/observability.ts](../../apps/web/src/lib/rate-limit/observability.ts)
 
 Logs:
 
 - console serveur
 - tableaux de bord Upstash
+
+`GET /api/services` reports Redis and QStash independently. Its administrator-only
+`observability.rateLimit` payload is an aggregate for the current server process:
+successful and unavailable Redis checks, their durations, and 429/503 outcomes.
+It contains no user identifiers. It is an operational signal, not a fleet-wide
+counter across independent Vercel instances.
 
 ### État OPS-01 — vérification runtime
 

@@ -86,6 +86,28 @@ describe("GET /api/services", () => {
     expect(payload.services["resend"]?.state).toBe("ready");
   });
 
+  it("reports Redis independently from optional QStash", async () => {
+    process.env["UPSTASH_REDIS_REST_URL"] = [
+      "https:",
+      "",
+      "example.test",
+    ].join("/");
+    process.env["UPSTASH_REDIS_REST_TOKEN"] = "redis_test_token";
+
+    const { GET } = await import("./route");
+
+    const response = await GET();
+    const payload = (await response.json()) as {
+      services: Record<string, { state: string }>;
+      missing: string[];
+    };
+
+    expect(payload.services["upstash"]?.state).toBe("ready");
+    expect(payload.services["qstash"]?.state).toBe("defer");
+    expect(payload.missing).not.toContain("upstash");
+    expect(payload.missing).toContain("qstash");
+  });
+
   it("returns 403 when admin access is denied", async () => {
     requireAdminAccessMock.mockResolvedValueOnce({ ok: false, reason: "forbidden" });
     const { GET } = await import("./route");

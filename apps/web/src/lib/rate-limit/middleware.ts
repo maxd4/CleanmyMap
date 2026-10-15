@@ -20,7 +20,7 @@ const SKIP_PATHS = [
 
 const LOGGED_ABUSE_PATHS = new Map<string, { count: number; firstAt: number }>();
 
-function logAbuse(identifier: string, route: string, ip: string): void {
+function logAbuse(identifier: string, route: string): void {
   const key = `${identifier}:${route}`;
   const now = Date.now();
   const existing = LOGGED_ABUSE_PATHS.get(key) || { count: 0, firstAt: now };
@@ -29,8 +29,6 @@ function logAbuse(identifier: string, route: string, ip: string): void {
   
   if (existing.count === 1 || existing.count % 10 === 0) {
     console.warn("[RateLimit] Abuse pattern detected:", {
-      identifier,
-      ip,
       route,
       count: existing.count,
       timeWindow: now - existing.firstAt,
@@ -38,7 +36,7 @@ function logAbuse(identifier: string, route: string, ip: string): void {
   }
   
   if (existing.count > 50) {
-    console.error("[RateLimit] Critical abuse - key locked:", { identifier, route });
+    console.error("[RateLimit] Critical abuse - key locked:", { route });
   }
   
   LOGGED_ABUSE_PATHS.set(key, existing);
@@ -98,8 +96,8 @@ export async function rateLimitMiddleware(
   if (!result.allowed) {
     if (result.failure !== "distributed-unavailable") {
       const identity = await getRateLimitIdentity(request);
-      const ip = await getClientIp(request);
-      logAbuse(identity.key, path, ip);
+      await getClientIp(request);
+      logAbuse(identity.key, path);
     }
     
     response.headers.set("X-RateLimit-Reset", String(result.reset));
