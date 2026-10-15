@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-15T16:44:22.000Z",
-  "apiRouteCount": 169,
+  "apiRouteCount": 170,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -270,6 +270,7 @@
     "apps/web/src/app/api/spogomi/events/[eventId]/admission-requests/review/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/admission-requests/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/attendance/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/closure/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/consolidation/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/contributions/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/export.xlsx/route.ts",

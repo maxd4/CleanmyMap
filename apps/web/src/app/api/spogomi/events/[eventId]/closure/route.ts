@@ -8,6 +8,8 @@ import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service"
 import { loadSpogomiClosureSummary, setSpogomiTeamClosureDecision } from "@/lib/spogomi/closure-service";
 
 export const runtime = "nodejs";
+// Vercel justification : cette consultation privée relit les décisions de clôture mutables et l'autorisation organisateur à chaque requête.
+// Le rendu doit rester dynamique pour ne jamais servir une synthèse de clôture obsolète ou partagée.
 export const dynamic = "force-dynamic";
 
 const decisionSchema = z.object({
@@ -33,6 +35,7 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
     const event = await authorizedEvent(eventId, access.userId);
     if (event === false) return forbiddenJsonResponse();
     if (!event) return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
+    // Cache justification : la synthèse privée et mutable ne doit jamais être servie depuis un cache partagé ou obsolète.
     return NextResponse.json({ summary: await loadSpogomiClosureSummary({ supabase: getSupabaseServerClient(true), eventId }) }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return handleApiError(error, "spogomi.closure.read");
