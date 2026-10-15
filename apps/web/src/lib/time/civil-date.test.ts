@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { formatCivilDateInTimeZone, isCivilDate, parseDateTimeLocalInTimeZone, parseCivilDateAsUtc } from "./civil-date";
 
 describe("civil date adapter", () => {
@@ -47,13 +47,11 @@ describe("civil date adapter", () => {
   });
 
   it("does not consult the host timezone for an explicit Paris conversion", () => {
-    const previous = process.env.TZ;
-    process.env.TZ = "America/Los_Angeles";
+    const hostOffset = vi.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(420);
     try {
       expect(parseDateTimeLocalInTimeZone("2026-07-14T10:30").toISOString()).toBe("2026-07-14T08:30:00.000Z");
     } finally {
-      if (previous === undefined) delete process.env.TZ;
-      else process.env.TZ = previous;
+      hostOffset.mockRestore();
     }
   });
 });
