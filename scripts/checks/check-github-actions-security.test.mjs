@@ -180,6 +180,15 @@ assert.doesNotMatch(webQualityJob, /COMPLEXITY_CHANGED_FROM:/);
 assert.match(webQualityJob, /- name: Complexity and function-length policy\n\s+run: npm run quality:complexity/);
 assert.match(webQualityJob, /- name: Upload compact web-quality evidence[\s\S]*?path: artifacts\/quality-evidence[\s\S]*?retention-days: 3/);
 assert.match(webQualityJob, /- name: Install GitNexus[\s\S]*?if: \$\{\{ !cancelled\(\)/);
+assert.match(
+  webQualityJob,
+  /- name: Prepare verified GitNexus native dependencies\n\s+id: prepare_gitnexus_native\n\s+if: \$\{\{ !cancelled\(\) && steps\.install_gitnexus\.outcome == 'success' \}\}\n\s+run: node scripts\/ci\/prepare-gitnexus-native\.mjs --global-root "\$\(npm root --global\)"/,
+);
+assert.match(webQualityJob, /- name: Initialize GitNexus candidate index\n\s+id: initialize_gitnexus\n\s+if: \$\{\{ !cancelled\(\) && steps\.prepare_gitnexus_native\.outcome == 'success' \}\}/);
+assert.doesNotMatch(
+  webQualityJob,
+  /npm install --global(?! --ignore-scripts) [^\n]*gitnexus@1\.6\.12/,
+);
 assert.match(webQualityJob, /- name: GitNexus cycle ratchet[\s\S]*?if: \$\{\{ !cancelled\(\)/);
 assert.match(
   webQualityJob,

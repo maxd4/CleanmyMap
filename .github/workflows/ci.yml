@@ -416,9 +416,14 @@ jobs:
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' && steps.install_node_dependencies.outcome == 'success' }}
         run: npm install --global --ignore-scripts gitnexus@1.6.12
 
+      - name: Prepare verified GitNexus native dependencies
+        id: prepare_gitnexus_native
+        if: ${{ !cancelled() && steps.install_gitnexus.outcome == 'success' }}
+        run: node scripts/ci/prepare-gitnexus-native.mjs --global-root "$(npm root --global)"
+
       - name: Initialize GitNexus candidate index
         id: initialize_gitnexus
-        if: ${{ !cancelled() && steps.install_gitnexus.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.prepare_gitnexus_native.outcome == 'success' }}
         shell: bash
         env:
           CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
