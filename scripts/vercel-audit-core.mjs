@@ -14,7 +14,7 @@ const scanRoots = [
 
 const fileExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 const ignoredDirs = new Set([".git", "node_modules", ".next", "dist", "build", "coverage"]);
-const dynamicImportPattern = /\bimport[ \t]*\([ \t]*['"]([^'"]+)['"][ \t]*\)/g;
+const dynamicImportPattern = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 const dynamicTriggerPatterns = {
   auth: /\bauth\s*\(/,
   cookies: /\bcookies\s*\(/,
@@ -205,12 +205,13 @@ function collectLocalDependencies(filePath, content, filesByRelPath, view = null
   for (const line of String(content).split(/\r?\n/)) {
     const trimmed = line.trim();
     for (const keyword of ["import", "export"]) {
-      if (!trimmed.startsWith(keyword + " ")) continue;
-      const body = trimmed.slice(keyword.length + 1);
+      const separator = trimmed[keyword.length];
+      if (!trimmed.startsWith(keyword) || (separator !== " " && separator !== "\t")) continue;
+      const body = trimmed.slice(keyword.length).trimStart();
       if (keyword === "import" && body.startsWith("type ")) continue;
-      const fromIndex = body.indexOf(" from ");
-      if (fromIndex < 0) continue;
-      const quoted = body.slice(fromIndex + " from ".length).trim();
+      const fromMatch = body.match(/[ \t]+from[ \t]+/);
+      if (!fromMatch || fromMatch.index === undefined) continue;
+      const quoted = body.slice(fromMatch.index + fromMatch[0].length).trim();
       const quote = quoted[0];
       if (quote !== "'" && quote !== "\"") continue;
       const end = quoted.indexOf(quote, 1);
