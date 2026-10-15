@@ -120,6 +120,9 @@ Checks conservés pour la revue manuelle GitHub :
 - `web-coverage`
 - `web-vercel-audit` et `web-build` lorsque `build_relevant == 'true'`
 - `mobile-validation` sur chaque `push` vers `main` et chaque Pull Request ciblant `main`
+- `sonarqube-manual` : préparation indépendante des quatre couvertures puis
+  analyse SonarQube sur le SHA exact, y compris lorsque la préparation échoue
+  sans annulation du workflow
 - `CodeQL`
 - `Vercel`
 
@@ -144,6 +147,17 @@ Supabase. Cette documentation ne contient aucune valeur secrète.
 - Grouper les mises à jour Dependabot compatibles, y compris les security
   updates, pour limiter le bruit sans mélanger tout le monorepo dans une seule
   PR.
+- Le workflow manuel `sonarqube-manual` sépare `coverage-preparation` et
+  `sonarqube`. La matrice de préparation utilise `fail-fast: false` ; un
+  producteur ou un validateur en échec reste en échec, tandis que le job
+  d'analyse utilise `always() && !cancelled()` et son propre checkout du
+  `github.sha`.
+- Le scanner ne reçoit qu'une configuration temporaire dérivée des rapports
+  validés du `run_id` courant. Les rapports absents, invalides ou d'un autre
+  SHA sont omis et leur raison est conservée dans le manifeste. Les statuts
+  `SONAR_ANALYSIS_STATUS`, `SONAR_COVERAGE_STATUS`, `SONAR_TESTS_STATUS` et
+  `ANALYZED_SHA` doivent être lus séparément ; un scan terminé ne transforme
+  jamais un échec de tests en preuve de release verte.
 
 ## Reproductibilité locale des workflows
 
@@ -166,6 +180,8 @@ reproductibles localement, tandis que le runner GitHub, les conditions calculée
 | `ci.yml` / `web-vercel-audit` | `npm run audit:vercel:ci` lorsque `build_relevant == 'true'` | Job indépendant après `scope`; il est `SKIPPED_SCOPE` sinon. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `web-build` | `npm run build` lorsque `build_relevant == 'true'` | Job indépendant après `scope`; les variables publiques de build sont injectées uniquement dans ce job. | Oui pour la commande; non pour l'orchestration exacte GitHub. |
 | `ci.yml` / `mobile-validation` | `npm ci`; `npm run check:semgrep` lorsque le Web n'est pas concerné; sécurité mobile; typecheck; tests Vitest; couverture; lint | Node.js 24.x lu depuis `apps/web/.nvmrc`, `package-lock.json`. Le job s'exécute sur chaque `push` vers `main` et chaque Pull Request ciblant `main`; le résumé Semgrep reste séparé lorsque ce contrôle conditionnel est réellement exécuté. | Oui. |
+| `sonarqube-manual` / `coverage-preparation` | Producteurs `npm run test:coverage`, `npm run quality:mobile-coverage`, `npm run test:coverage:node` et `npm run test:coverage:python`, puis `prepare-sonarqube-coverage.mjs --mode=STRICT` par domaine | Matrice `fail-fast: false`, artefacts rattachés au `github.run_id` et au `github.sha`; un producteur ou un validateur en échec reste bloquant pour la préparation et n'autorise pas l'import de son rapport. | Oui pour les producteurs et le validateur; non pour l'orchestration exacte GitHub. |
+| `sonarqube-manual` / `sonarqube` | Téléchargement des artefacts valides; `prepare-sonarqube-coverage.mjs --mode=SONAR_PARTIAL`; SonarSource scan action; publication des statuts indépendants | Job exécuté avec `always() && !cancelled()` après la préparation. Il peut analyser sans un ou plusieurs rapports, mais ne consomme que les rapports strictement validés du même SHA/run. Le résultat du scanner, les tests et la couverture restent distincts. | Partiellement : la configuration effective et les validations sont locales; le runner, le token et le résultat SonarQube Cloud restent externes. |
 | `codeql.yml` / `analyze` | Aucun script npm équivalent direct : `actions/checkout`, `github/codeql-action/init`, `autobuild` et `analyze` | Runner GitHub, bundle CodeQL et permission `security-events: write` pour publier les résultats. | Non à l'identique; ce contrôle reste GitHub-dépendant. |
 
 Les modes locaux `DEVELOPMENT`/`FULL`/`RELEASE` restent orchestrés

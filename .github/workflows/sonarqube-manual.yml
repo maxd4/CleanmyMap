@@ -10,12 +10,134 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sonarqube:
-    name: Analyze repository with SonarQube Cloud
+  coverage-preparation:
+    name: Prepare ${{ matrix.scope }} coverage
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scope: web
+            runtime: node
+            command: npm run test:coverage
+          - scope: mobile
+            runtime: node
+            command: npm run quality:mobile-coverage
+          - scope: node
+            runtime: node
+            command: npm run test:coverage:node
+          - scope: python
+            runtime: python
+            command: npm run test:coverage:python
+
+    steps:
+      - name: Checkout selected commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        if: matrix.runtime == 'node'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Verify Node runtime contract
+        if: matrix.runtime == 'node'
+        run: node scripts/checks/check-node-version-contract.mjs
+
+      - name: Install locked Node dependencies
+        if: matrix.runtime == 'node'
+        run: npm ci --ignore-scripts
+
+      - name: Set up Python
+        if: matrix.runtime == 'python'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: |
+            maintenance/python/requirements-dev.txt
+            maintenance/python/requirements-lock.txt
+
+      - name: Install legacy Python PDF dependency
+        if: matrix.runtime == 'python'
+        run: "python -m pip install --disable-pip-version-check --no-input --no-cache-dir --no-deps --no-binary=:all: fpdf==1.7.2"
+
+      - name: Install Python maintenance dependencies
+        if: matrix.runtime == 'python'
+        run: "python -m pip install --disable-pip-version-check --no-input --only-binary=:all: -r maintenance/python/requirements-dev.txt -c maintenance/python/requirements-lock.txt"
+
+      - name: Generate ${{ matrix.scope }} coverage
+        id: producer
+        if: always()
+        continue-on-error: true
+        run: ${{ matrix.command }}
+
+      - name: Validate ${{ matrix.scope }} SonarQube report
+        id: validator
+        if: steps.producer.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/checks/prepare-sonarqube-coverage.mjs --mode=STRICT --scope=${{ matrix.scope }}
+
+      - name: Stage validated ${{ matrix.scope }} report
+        id: stage
+        if: steps.producer.outcome == 'success' && steps.validator.outcome == 'success'
+        run: node scripts/checks/prepare-sonarqube-coverage.mjs --mode=STAGE --scope=${{ matrix.scope }} --outputRoot=artifacts/sonarqube-coverage
+
+      - name: Write ${{ matrix.scope }} preparation result
+        id: write-result
+        if: always()
+        env:
+          SONAR_PRODUCER_OUTCOME: ${{ steps.producer.outcome }}
+          SONAR_VALIDATOR_OUTCOME: ${{ steps.validator.outcome }}
+        run: node scripts/checks/prepare-sonarqube-coverage.mjs --mode=WRITE_RESULT --scope=${{ matrix.scope }} --sha=${{ github.sha }} --runId=${{ github.run_id }} --resultPath=artifacts/sonarqube-results/${{ matrix.scope }}.json
+
+      - name: Upload validated ${{ matrix.scope }} report
+        if: steps.stage.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sonarqube-coverage-report-${{ github.run_id }}-${{ matrix.scope }}
+          path: artifacts/sonarqube-coverage
+          if-no-files-found: error
+
+      - name: Upload ${{ matrix.scope }} preparation result
+        if: always() && steps.write-result.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sonarqube-coverage-result-${{ github.run_id }}-${{ matrix.scope }}
+          path: artifacts/sonarqube-results/${{ matrix.scope }}.json
+          if-no-files-found: error
+
+      - name: Preserve producer and validator failures
+        if: always()
+        env:
+          SONAR_PRODUCER_OUTCOME: ${{ steps.producer.outcome }}
+          SONAR_VALIDATOR_OUTCOME: ${{ steps.validator.outcome }}
+        run: |
+          if [ "$SONAR_PRODUCER_OUTCOME" != "success" ]; then
+            exit 1
+          fi
+          if [ -n "$SONAR_VALIDATOR_OUTCOME" ] && [ "$SONAR_VALIDATOR_OUTCOME" != "success" ]; then
+            exit 1
+          fi
+
+  sonarqube:
+    name: Analyze repository with SonarQube Cloud
+    needs: coverage-preparation
+    if: ${{ always() && !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
 
     steps:
       - name: Checkout selected commit
@@ -32,46 +154,56 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.14"
-          cache: pip
-          cache-dependency-path: |
-            maintenance/python/requirements-dev.txt
-            maintenance/python/requirements-lock.txt
-
-      - name: Verify Node runtime contract
-        run: node scripts/checks/check-node-version-contract.mjs
-
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
 
-      - name: Install legacy Python PDF dependency
-        run: "python -m pip install --disable-pip-version-check --no-input --no-cache-dir --no-deps --no-binary=:all: fpdf==1.7.2"
+      - name: Download validated coverage reports
+        if: always()
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: sonarqube-coverage-report-${{ github.run_id }}-*
+          path: .
+          merge-multiple: true
 
-      - name: Install Python maintenance dependencies
-        run: "python -m pip install --disable-pip-version-check --no-input --only-binary=:all: -r maintenance/python/requirements-dev.txt -c maintenance/python/requirements-lock.txt"
+      - name: Download coverage preparation results
+        if: always()
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: sonarqube-coverage-result-${{ github.run_id }}-*
+          path: artifacts/sonarqube-results
+          merge-multiple: true
 
-      - name: Generate Web coverage
-        run: npm run test:coverage
-
-      - name: Report Web coverage comparison
-        run: npm run quality:coverage -- --from-existing-summary
-
-      - name: Generate and verify Mobile coverage
-        run: npm run quality:mobile-coverage
-
-      - name: Generate Node scripts coverage
-        run: npm run test:coverage:node
-
-      - name: Generate Python maintenance coverage
-        run: npm run test:coverage:python
-
-      - name: Validate SonarQube LCOV reports
-        run: node scripts/checks/prepare-sonarqube-coverage.mjs
+      - name: Prepare effective partial SonarQube coverage configuration
+        id: partial
+        if: always()
+        continue-on-error: true
+        run: node scripts/checks/prepare-sonarqube-coverage.mjs --mode=SONAR_PARTIAL --sha=${{ github.sha }} --runId=${{ github.run_id }} --producerResultsDir=artifacts/sonarqube-results --propertiesOut=artifacts/sonar-project.properties --manifestOut=artifacts/sonarqube-manifest.json
 
       - name: SonarQube Cloud scan
-        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        id: sonar-scan
+        if: steps.partial.outcome == 'success'
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9
+        with:
+          args: -Dproject.settings=artifacts/sonar-project.properties
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Upload SonarQube analysis evidence
+        if: always() && steps.partial.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sonarqube-analysis-evidence-${{ github.run_id }}
+          path: |
+            artifacts/sonarqube-manifest.json
+            artifacts/sonar-project.properties
+          if-no-files-found: warn
+
+      - name: Publish independent SonarQube statuses
+        if: always()
+        env:
+          SONAR_SCANNER_OUTCOME: ${{ steps.sonar-scan.outcome }}
+          SONAR_PREPARATION_OUTCOME: ${{ steps.partial.outcome }}
+        run: node scripts/checks/prepare-sonarqube-coverage.mjs --mode=FINALIZE --manifestPath=artifacts/sonarqube-manifest.json

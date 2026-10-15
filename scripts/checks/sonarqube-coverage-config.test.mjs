@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import yaml from "js-yaml";
 
 const root = process.cwd();
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
+const workflow = () => yaml.load(read(".github/workflows/sonarqube-manual.yml"));
+const step = (steps, name) => steps.find((candidate) => candidate.name === name);
 
 test("Vitest keeps JSON summaries and emits LCOV for both workspaces", () => {
   for (const configPath of ["apps/web/vitest.config.ts", "apps/mobile/vitest.config.ts"]) {
@@ -34,38 +37,51 @@ test("SonarQube receives Web, mobile and Node LCOV plus Python coverage", () => 
   assert.match(properties, /\*\*\/__tests__\/\*\*/);
 });
 
-test("the workflow generates and validates coverage before scanning", () => {
-  const workflow = read(".github/workflows/sonarqube-manual.yml");
-  const web = workflow.indexOf("run: npm run test:coverage");
-  const webRatchet = workflow.indexOf("- name: Report Web coverage comparison");
-  const mobile = workflow.indexOf("run: npm run quality:mobile-coverage");
-  const node = workflow.indexOf("run: npm run test:coverage:node");
-  const python = workflow.indexOf("run: npm run test:coverage:python");
-  const validator = workflow.indexOf("run: node scripts/checks/prepare-sonarqube-coverage.mjs");
-  const scanner = workflow.indexOf("uses: SonarSource/sonarqube-scan-action@");
-  assert.ok(web >= 0 && webRatchet > web && mobile > webRatchet && node > mobile && python > node && validator > python && scanner > validator);
-  assert.match(workflow, /uses: actions\/setup-python@[0-9a-f]{40}/);
-  assert.match(workflow, /run:\s+"?python -m pip install .*requirements-dev\.txt .*requirements-lock\.txt"?/);
+test("the workflow runs four independent producers and validates only successful reports", () => {
+  const parsed = workflow();
+  const preparation = parsed.jobs["coverage-preparation"];
+  const scopes = preparation.strategy.matrix.include.map((entry) => entry.scope);
+  assert.deepEqual(scopes, ["web", "mobile", "node", "python"]);
+  assert.equal(preparation.strategy["fail-fast"], false);
+  assert.equal(preparation.permissions.contents, "read");
+  const producer = step(preparation.steps, "Generate ${{ matrix.scope }} coverage");
+  const validator = step(preparation.steps, "Validate ${{ matrix.scope }} SonarQube report");
+  const stage = step(preparation.steps, "Stage validated ${{ matrix.scope }} report");
+  assert.match(producer.if, /always\(\)/);
+  assert.equal(producer["continue-on-error"], true);
+  assert.match(validator.if, /steps\.producer\.outcome == 'success'/);
+  assert.equal(validator["continue-on-error"], true);
+  assert.match(stage.if, /steps\.producer\.outcome == 'success'/);
+  assert.match(stage.if, /steps\.validator\.outcome == 'success'/);
+  assert.match(step(preparation.steps, "Upload validated ${{ matrix.scope }} report").if, /steps\.stage\.outcome == 'success'/);
+  assert.match(step(preparation.steps, "Preserve producer and validator failures").run, /exit 1/);
 });
 
-test("coverage regressions remain informational while mandatory scan inputs stay blocking", () => {
-  const workflow = read(".github/workflows/sonarqube-manual.yml");
-  const ratchetStart = workflow.indexOf("      - name: Report Web coverage comparison");
-  const mobileStart = workflow.indexOf("      - name: Generate and verify Mobile coverage");
-  const scannerStart = workflow.indexOf("      - name: SonarQube Cloud scan");
-  const ratchetStep = workflow.slice(ratchetStart, mobileStart);
-
-  assert.doesNotMatch(workflow, /Enforce Web coverage ratchet verdict/);
-  assert.doesNotMatch(ratchetStep, /id: web_coverage_ratchet/);
-  assert.doesNotMatch(ratchetStep, /continue-on-error:\s*true/);
-  assert.ok(scannerStart > mobileStart, "the scanner must remain after all mandatory coverage inputs");
+test("the analysis job is independent, imports only validated artifacts, and preserves the scanner gate", () => {
+  const parsed = workflow();
+  const analysis = parsed.jobs.sonarqube;
+  assert.equal(analysis.needs, "coverage-preparation");
+  assert.match(analysis.if, /always\(\)/);
+  assert.match(analysis.if, /!cancelled\(\)/);
+  assert.equal(analysis.permissions.contents, "read");
+  assert.equal(analysis.permissions.actions, "read");
+  const partial = step(analysis.steps, "Prepare effective partial SonarQube coverage configuration");
+  const scanner = step(analysis.steps, "SonarQube Cloud scan");
+  const finalizer = step(analysis.steps, "Publish independent SonarQube statuses");
+  assert.match(partial.run, /--mode=SONAR_PARTIAL/);
+  assert.match(partial.run, /--manifestOut=artifacts\/sonarqube-manifest\.json/);
+  assert.match(scanner.if, /steps\.partial\.outcome == 'success'/);
+  assert.match(scanner.with.args, /-Dproject\.settings=artifacts\/sonar-project\.properties/);
+  assert.match(finalizer.run, /--mode=FINALIZE/);
+  assert.match(read(".github/workflows/sonarqube-manual.yml"), /uses: actions\/setup-python@[0-9a-f]{40}/);
+  assert.match(read(".github/workflows/sonarqube-manual.yml"), /uses: actions\/upload-artifact@[0-9a-f]{40}/);
+  assert.match(read(".github/workflows/sonarqube-manual.yml"), /uses: actions\/download-artifact@[0-9a-f]{40}/);
 });
 
 function expectedWorkflowConclusion({ webGeneration, coverageComparison, mobile, lcov, scanner }) {
-  if (webGeneration !== "success") return "failure";
-  if (mobile !== "success" || lcov !== "success" || scanner !== "success") return "failure";
-  if (coverageComparison === "mandatory-failure") return "failure";
-  return "success";
+  const preparation = [webGeneration, mobile, lcov].every((status) => status === "success") && coverageComparison !== "mandatory-failure";
+  const analysis = scanner === "success";
+  return preparation && analysis ? "success" : "failure";
 }
 
 test("workflow outcome cases allow numeric regressions but preserve mandatory failures", () => {
@@ -93,6 +109,11 @@ test("workflow outcome cases allow numeric regressions but preserve mandatory fa
     {
       name: "mandatory coverage evidence error",
       input: { webGeneration: "success", coverageComparison: "mandatory-failure", mobile: "success", lcov: "success", scanner: "skipped" },
+      expected: "failure",
+    },
+    {
+      name: "Node producer failure still allows a successful scanner but not a green workflow",
+      input: { webGeneration: "success", coverageComparison: "pass", mobile: "success", lcov: "failure", scanner: "success" },
       expected: "failure",
     },
   ];

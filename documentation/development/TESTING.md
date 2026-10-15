@@ -615,13 +615,40 @@ par `c8` à partir de la suite `node:test` des répertoires `scripts/` et
 et fichiers de test sont exclus du périmètre Node ; les tests Python ne sont
 pas une source instrumentée.
 
-Les chemins déclarés sont ceux de `sonar-project.properties`. Avant l'analyse,
-`scripts/checks/prepare-sonarqube-coverage.mjs` échoue si un rapport est
+Les chemins déclarés dans `sonar-project.properties` restent la source
+canonique. `scripts/checks/prepare-sonarqube-coverage.mjs` possède deux modes.
+Le mode `STRICT`, utilisé par les producteurs, échoue si un rapport est
 absent, vide, pointe vers un fichier inexistant, ne contient aucune mesure de
 ligne, ou si les sources et métriques LCOV ne correspondent pas à leur résumé
-JSON. Le même contrôle vérifie les classes et mesures du rapport Python. Cette
-étape est fail-closed ; elle ne relève aucun ratchet et ne fabrique pas de
-mesure nulle pour rendre le scan possible.
+JSON. Le même contrôle vérifie les classes et mesures du rapport Python.
+
+Le workflow manuel sépare la préparation des couvertures du scan. Les quatre
+producteurs sont indépendants et un échec reste publié comme `FAIL`. Un rapport
+n'est téléversé que si son producteur et sa validation stricte ont réussi ; un
+LCOV partiellement écrit après un échec n'est jamais récupéré. Le job d'analyse
+utilise le mode `SONAR_PARTIAL` : chaque rapport candidat est revalidé, les
+rapports absents ou invalides sont explicitement omis, et une configuration
+temporaire est dérivée des seuls chemins importables. Le mode partiel ne
+tolère donc jamais l'intégrité douteuse d'un rapport effectivement importé et
+ne fabrique ni métrique nulle, ni fichier LCOV vide.
+
+Les résultats indépendants sont affichés sous la forme :
+
+```text
+SONAR_ANALYSIS_STATUS: COMPLETE | FAILED | NOT_RUN
+SONAR_COVERAGE_STATUS: COMPLETE | PARTIAL | UNAVAILABLE
+SONAR_TESTS_STATUS: PASS | FAIL | NOT_RUN
+ANALYZED_SHA: <sha>
+```
+
+Pour chaque domaine, la preuve indique le producteur, le validateur,
+l'import ou l'omission et sa raison. Une analyse `COMPLETE` avec
+`SONAR_TESTS_STATUS: FAIL` prouve uniquement que le scanner a terminé ; elle
+ne constitue pas une preuve de release verte. Les artefacts sont nommés avec
+le `run_id` et rattachés au SHA exact du workflow. Le manifeste final permet
+de retrouver le SHA réellement analysé et les couvertures effectivement
+transmises. Une couverture partielle ne peut pas devenir, sans qualification,
+une nouvelle référence comparable pour la couverture globale SonarQube Cloud.
 
 Les rapports locaux sont des artefacts ignorés (`apps/*/coverage/`,
 `scripts/coverage/` et `maintenance/python/coverage.xml`). Ils décrivent la

@@ -131,6 +131,25 @@ existants sont réutilisés sans copie ni contournement. Les réglages réelleme
 actifs sur SonarQube Cloud doivent être distingués de la configuration
 versionnée et des analyses historiques observées.
 
+Le workflow manuel sépare désormais trois faits qui ne doivent pas être
+confondus : la préparation et les tests de couverture, l'analyse statique
+SonarQube et la décision de qualité/release. Les producteurs Web, mobile, Node
+et Python s'exécutent indépendamment ; leurs échecs restent visibles et
+bloquent leur propre préparation, mais ne suppriment pas la possibilité de
+lancer le scanner sur le SHA sélectionné. Le job SonarQube est conditionné par
+`always() && !cancelled()` et ne consomme que les artefacts du `run_id` courant
+portant le même `ANALYZED_SHA`.
+
+Un rapport valide est importé uniquement après validation de son producteur,
+de ses chemins sources, de son contenu et de la cohérence de ses métriques.
+Les rapports absents, corrompus ou rattachés à un autre SHA sont omis de la
+configuration effective temporaire et restent documentés dans le manifeste.
+Les statuts indépendants `SONAR_ANALYSIS_STATUS`, `SONAR_COVERAGE_STATUS`,
+`SONAR_TESTS_STATUS` et `ANALYZED_SHA` décrivent respectivement le scanner, les
+rapports réellement importés, les producteurs et la référence analysée.
+`COMPLETE` pour l'analyse ne vaut ni Quality Gate favorable, ni preuve FULL
+verte, ni autorisation de release.
+
 Avant toute correction issue d'un finding :
 
 - qualifier la cause racine, l'exposition réelle, les consommateurs et les
