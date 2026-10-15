@@ -6,6 +6,7 @@ import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/ser
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   loadSpogomiIdentityAssistanceRequestForRequester,
+  projectSpogomiIdentityAssistanceForRequester,
   SpogomiIdentityAssistanceError,
   transitionSpogomiIdentityAssistanceRequest,
 } from "@/lib/spogomi/identity-assistance";
@@ -53,7 +54,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       actorKind: "requester",
       actorClerkId: access.userId,
     });
-    return NextResponse.json({ status: "ok", request: updated });
+    return NextResponse.json({ status: "ok", request: projectSpogomiIdentityAssistanceForRequester(updated) });
   } catch (error) {
     if (error instanceof SpogomiIdentityAssistanceError && error.kind === "unavailable") {
       return NextResponse.json({ error: "Cette demande n’est pas disponible." }, { status: 404 });

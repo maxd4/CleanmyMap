@@ -302,6 +302,12 @@ Les demandes sont idempotentes par compte/événement, protégées par limitatio
 de débit, journalisées par transition et révocables par le demandeur tant
 qu'elles sont en attente. Aucune présence, participation, récompense,
 classement ou certification ne découle de la demande ou de sa liaison.
+Les réponses privées du demandeur restent une projection minimale limitée à
+l'identifiant de sa demande, son statut, sa date de création et le contexte
+qu'il a lui-même fourni. Elles n'exposent jamais l'identifiant de rapprochement
+au roster, les notes de vérification ou de décision, ni une donnée nominative
+d'un autre participant ; ces informations restent dans la projection
+organisateur protégée.
 
 Pour une édition privée, le même formulaire n'est accessible qu'après un lien
 d'invitation opaque, expirant et remis directement par l'organisateur. Un

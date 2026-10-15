@@ -17,6 +17,13 @@ export type SpogomiIdentityAssistanceRequest = {
   createdAt: string;
 };
 
+export type SpogomiIdentityAssistanceRequesterView = {
+  id: string;
+  providedContext: string;
+  status: SpogomiIdentityAssistanceStatus;
+  createdAt: string;
+};
+
 export class SpogomiIdentityAssistanceError extends Error {
   constructor(
     message: string,
@@ -49,7 +56,7 @@ export function hashSpogomiIdentityAssistanceToken(token: string): string {
   return createHash("sha256").update(token.trim(), "utf8").digest("hex");
 }
 
-function mapRequest(row: Record<string, unknown>): SpogomiIdentityAssistanceRequest {
+function mapOrganizerRequest(row: Record<string, unknown>): SpogomiIdentityAssistanceRequest {
   return {
     id: String(row.id),
     eventId: String(row.event_id),
@@ -63,13 +70,33 @@ function mapRequest(row: Record<string, unknown>): SpogomiIdentityAssistanceRequ
   };
 }
 
+function mapRequesterRequest(row: Record<string, unknown>): SpogomiIdentityAssistanceRequesterView {
+  return {
+    id: String(row.id),
+    providedContext: String(row.provided_context ?? ""),
+    status: row.status === "treated" || row.status === "rejected" || row.status === "cancelled" ? row.status : "pending",
+    createdAt: String(row.created_at),
+  };
+}
+
+export function projectSpogomiIdentityAssistanceForRequester(
+  request: SpogomiIdentityAssistanceRequest,
+): SpogomiIdentityAssistanceRequesterView {
+  return {
+    id: request.id,
+    providedContext: request.providedContext,
+    status: request.status,
+    createdAt: request.createdAt,
+  };
+}
+
 export async function createSpogomiIdentityAssistanceRequest(params: {
   supabase: SupabaseClient;
   eventId: string;
   requesterClerkId: string;
   providedContext?: string;
   invitationToken?: string;
-}): Promise<Pick<SpogomiIdentityAssistanceRequest, "id" | "eventId" | "status">> {
+}): Promise<Pick<SpogomiIdentityAssistanceRequesterView, "id" | "status">> {
   const result = await params.supabase.rpc("create_spogomi_identity_assistance_request", {
     p_event_id: params.eventId,
     p_requester_clerk_id: params.requesterClerkId,
@@ -81,7 +108,7 @@ export async function createSpogomiIdentityAssistanceRequest(params: {
   if (!row || typeof row !== "object") throw new SpogomiIdentityAssistanceError("La demande d’assistance n’a pas pu être enregistrée.", "validation");
   const status = (row as Record<string, unknown>).request_status;
   if (status !== "pending") throw new SpogomiIdentityAssistanceError("La demande d’assistance n’a pas pu être enregistrée.", "validation");
-  return { id: String((row as Record<string, unknown>).request_id), eventId: params.eventId, status };
+  return { id: String((row as Record<string, unknown>).request_id), status };
 }
 
 export async function listSpogomiIdentityAssistanceRequests(
@@ -94,23 +121,23 @@ export async function listSpogomiIdentityAssistanceRequests(
     .eq("event_id", eventId)
     .order("created_at", { ascending: false });
   if (result.error) throw result.error;
-  return (result.data ?? []).map((row) => mapRequest(row as Record<string, unknown>));
+  return (result.data ?? []).map((row) => mapOrganizerRequest(row as Record<string, unknown>));
 }
 
 export async function loadSpogomiIdentityAssistanceRequestForRequester(
   supabase: SupabaseClient,
   params: { eventId: string; requesterClerkId: string },
-): Promise<SpogomiIdentityAssistanceRequest | null> {
+): Promise<SpogomiIdentityAssistanceRequesterView | null> {
   const result = await supabase
     .from("spogomi_identity_assistance_requests")
-    .select("id, event_id, provided_context, status, matched_participant_id, verification_note, resolution_note, handled_at, created_at")
+    .select("id, provided_context, status, created_at")
     .eq("event_id", params.eventId)
     .eq("requester_clerk_id", params.requesterClerkId)
     .order("created_at", { ascending: false })
     .limit(1);
   if (result.error) throw result.error;
   const row = result.data?.[0];
-  return row ? mapRequest(row as Record<string, unknown>) : null;
+  return row ? mapRequesterRequest(row as Record<string, unknown>) : null;
 }
 
 export async function transitionSpogomiIdentityAssistanceRequest(params: {
@@ -136,7 +163,7 @@ export async function transitionSpogomiIdentityAssistanceRequest(params: {
   });
   if (result.error) throw mapError(result.error);
   if (!result.data || typeof result.data !== "object") throw new SpogomiIdentityAssistanceError("La décision n’a pas pu être enregistrée.", "validation");
-  return mapRequest(result.data as Record<string, unknown>);
+  return mapOrganizerRequest(result.data as Record<string, unknown>);
 }
 
 export async function issueSpogomiIdentityAssistanceInvitation(params: {

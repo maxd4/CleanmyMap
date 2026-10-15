@@ -64,7 +64,7 @@ describe("SPOGOMI identity-link recovery route", () => {
     });
     loadSpogomiEventRecognitionForUserMock.mockResolvedValue({ status: "available", awards: [] });
     loadAssistanceRequestMock.mockResolvedValue(null);
-    createAssistanceRequestMock.mockResolvedValue({ id: "request-1", eventId: "event-1", status: "pending" });
+    createAssistanceRequestMock.mockResolvedValue({ id: "request-1", status: "pending" });
   });
 
   it("links with the one-time code without requesting participation in the same call", async () => {
@@ -132,6 +132,32 @@ describe("SPOGOMI identity-link recovery route", () => {
     expect(loadSpogomiIdentityStateMock).toHaveBeenCalledTimes(1);
   });
 
+  it("returns only the requester assistance projection in the identity-link state", async () => {
+    loadAssistanceRequestMock.mockResolvedValueOnce({
+      id: "request-1",
+      providedContext: "Contexte fourni par le demandeur.",
+      status: "treated",
+      createdAt: "2026-10-15T09:00:00.000Z",
+    });
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/spogomi/events/event-1/identity-link"),
+      { params: Promise.resolve({ eventId: "event-1" }) },
+    );
+    if (!response) throw new Error("GET route did not return a response");
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.assistance).toEqual({
+      id: "request-1",
+      providedContext: "Contexte fourni par le demandeur.",
+      status: "treated",
+      createdAt: "2026-10-15T09:00:00.000Z",
+    });
+    expect(body.assistance).not.toHaveProperty("matchedParticipantId");
+    expect(body.assistance).not.toHaveProperty("verificationNote");
+    expect(body.assistance).not.toHaveProperty("resolutionNote");
+  });
+
   it("submits assistance without claiming identity or resuming participation", async () => {
     const { POST } = await import("./route");
     const response = await POST(
@@ -143,6 +169,7 @@ describe("SPOGOMI identity-link recovery route", () => {
     );
     if (!response) throw new Error("POST route did not return a response");
     expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ assistance: { id: "request-1", status: "pending" } });
     expect(createAssistanceRequestMock).toHaveBeenCalledWith(expect.objectContaining({
       eventId: "event-1",
       requesterClerkId: "user-1",
