@@ -110,6 +110,10 @@ function getVercelCliCandidates({ env, platform, pathDelimiter }) {
   return getPathEntries(env, pathDelimiter).flatMap((entry) => names.map((name) => join(entry, name)));
 }
 
+function getPlatformPathDelimiter(platform, explicitDelimiter) {
+  return explicitDelimiter ?? (platform === "win32" ? ";" : delimiter);
+}
+
 function getAdjacentVercelScript(candidate, existsImpl) {
   const scriptPath = join(dirname(candidate), "node_modules", "vercel", "dist", "vc.js");
   return existsImpl(scriptPath) ? resolve(scriptPath) : null;
@@ -120,9 +124,13 @@ export function resolveVercelCliInvocation({
   platform = process.platform,
   existsImpl = existsSync,
   nodePath = process.execPath,
-  pathDelimiter = delimiter,
+  pathDelimiter,
 } = {}) {
-  for (const candidate of getVercelCliCandidates({ env, platform, pathDelimiter })) {
+  for (const candidate of getVercelCliCandidates({
+    env,
+    platform,
+    pathDelimiter: getPlatformPathDelimiter(platform, pathDelimiter),
+  })) {
     if (!existsImpl(candidate)) {
       continue;
     }
@@ -182,9 +190,15 @@ export function runVercelEnvPull({
   existsImpl = existsSync,
   spawnSyncImpl = spawnSync,
   nodePath = process.execPath,
-  pathDelimiter = delimiter,
+  pathDelimiter,
 } = {}) {
-  const invocation = resolveVercelCliInvocation({ env, platform, existsImpl, nodePath, pathDelimiter });
+  const invocation = resolveVercelCliInvocation({
+    env,
+    platform,
+    existsImpl,
+    nodePath,
+    pathDelimiter: getPlatformPathDelimiter(platform, pathDelimiter),
+  });
   const result = spawnSyncImpl(invocation.command, [...invocation.args, ...getVercelEnvPullArgs()], {
     cwd,
     env,

@@ -10,6 +10,7 @@ const GUARD_PATH = join(REPO_ROOT, "scripts", "ci", "pre_push_guard.ps1");
 const POLICY_PATH = join(REPO_ROOT, "scripts", "checks", "validation-policy.mjs");
 const GUARD_SOURCE = readFileSync(GUARD_PATH, "utf8");
 const POLICY_SOURCE = readFileSync(POLICY_PATH, "utf8");
+const POWER_SHELL_COMMAND = process.platform === "win32" ? "powershell.exe" : "pwsh";
 
 function withoutCandidateGitEnvironment(extra = {}) {
   const env = { ...process.env, ...extra };
@@ -119,7 +120,7 @@ function runGuard({
 
   try {
     const result = spawnSync(
-      "powershell.exe",
+      POWER_SHELL_COMMAND,
       [
         "-NoProfile",
         "-NonInteractive",

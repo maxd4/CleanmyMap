@@ -17,10 +17,11 @@ const STAGED_QUICK_SENTINEL = join(WEB_SOURCE, "components", "ui", "__codex-stag
 const DIRTY_ROUTE_SENTINEL = join(WEB_SOURCE, "app", "api", "route", "recommend", "__codex-dirty-route.test.ts");
 const STAGED_SECRET_SENTINEL = join(WEB_SOURCE, "components", "ui", "__codex-staged-secret.ts");
 const DIRTY_SECRET_SENTINEL = join(WEB_SOURCE, "app", "api", "route", "recommend", "__codex-dirty-secret.ts");
+const POWER_SHELL_COMMAND = process.platform === "win32" ? "powershell.exe" : "pwsh";
 
 function runPowerShell(scriptPath, args = [], envOverrides = {}, cwd = ROOT) {
   return spawnSync(
-    "powershell.exe",
+    POWER_SHELL_COMMAND,
     ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, ...args],
     {
       cwd,
