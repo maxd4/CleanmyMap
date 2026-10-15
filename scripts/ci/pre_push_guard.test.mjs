@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { delimiter, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 
@@ -21,10 +21,37 @@ function withoutCandidateGitEnvironment(extra = {}) {
 }
 
 function writeCommandStub(binRoot, name, lines) {
+  if (process.platform === "win32") {
+    writeFileSync(
+      join(binRoot, `${name}.cmd`),
+      ["@echo off", ...lines, "exit /b 0", ""].join("\r\n"),
+    );
+    return;
+  }
+
+  const stubScript = join(binRoot, `${name}-stub.cjs`);
   writeFileSync(
-    join(binRoot, `${name}.cmd`),
-    ["@echo off", ...lines, "exit /b 0", ""].join("\r\n"),
+    stubScript,
+    `const { appendFileSync } = require("node:fs");
+const { spawnSync } = require("node:child_process");
+const args = process.argv.slice(2);
+const command = ${JSON.stringify(name)};
+const logPath = process.env.GUARD_TEST_LOG;
+if (command === "npm" && args[0] === "run" && args[1] === "security:secrets") {
+  const exitCode = Number(process.env.GUARD_TEST_SECRET_AUDIT_EXIT ?? 0);
+  if (exitCode !== 0) process.exit(exitCode);
+}
+if (command === "node" && (args[0]?.endsWith("scripts/checks/validation-policy.mjs") || args[0]?.endsWith("git-test.cjs"))) {
+  const result = spawnSync(process.execPath, args, { stdio: "inherit", env: process.env });
+  process.exit(result.status ?? 1);
+}
+if (logPath) appendFileSync(logPath, command + " " + args.join(" ") + "\\n");
+process.exit(0);
+`,
   );
+  const wrapperPath = join(binRoot, name);
+  writeFileSync(wrapperPath, `#!/bin/sh\nexec "${process.execPath}" "${stubScript}" "$@"\n`);
+  chmodSync(wrapperPath, 0o755);
 }
 
 function writeGitStub(binRoot, config) {
@@ -61,10 +88,16 @@ if (args[0] === "diff" && args[1] === "--name-only") {
 process.exit(0);
 `;
   writeFileSync(join(binRoot, "git-test.cjs"), gitScript);
-  writeFileSync(
-    join(binRoot, "git.cmd"),
-    ["@echo off", 'node "%~dp0git-test.cjs" %*', "exit /b %errorlevel%", ""].join("\r\n"),
-  );
+  if (process.platform === "win32") {
+    writeFileSync(
+      join(binRoot, "git.cmd"),
+      ["@echo off", 'node "%~dp0git-test.cjs" %*', "exit /b %errorlevel%", ""].join("\r\n"),
+    );
+  } else {
+    const gitPath = join(binRoot, "git");
+    writeFileSync(gitPath, `#!/bin/sh\nexec "${process.execPath}" "${join(binRoot, "git-test.cjs")}" "$@"\n`);
+    chmodSync(gitPath, 0o755);
+  }
 }
 
 function runGuard({
@@ -137,7 +170,8 @@ function runGuard({
         encoding: "utf8",
         env: withoutCandidateGitEnvironment({
           GUARD_TEST_LOG: logPath,
-          PATH: `${binRoot};${process.env.PATH ?? ""}`,
+          PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}`,
+          GUARD_TEST_SECRET_AUDIT_EXIT: String(secretAuditExit),
         }),
         windowsHide: true,
         maxBuffer: 2 * 1024 * 1024,

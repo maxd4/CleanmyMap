@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import { afterEach, describe, it } from "node:test";
@@ -76,7 +76,13 @@ function withAlternateIndex(callback) {
 
 function createNpmStub() {
   const binRoot = mkdtempSync(join(tmpdir(), "cleanmymap-guard-bin-"));
-  writeFileSync(join(binRoot, "npm.cmd"), "@echo off\r\nexit /b 0\r\n");
+  if (process.platform === "win32") {
+    writeFileSync(join(binRoot, "npm.cmd"), "@echo off\r\nexit /b 0\r\n");
+  } else {
+    const npmPath = join(binRoot, "npm");
+    writeFileSync(npmPath, "#!/bin/sh\nexit 0\n");
+    chmodSync(npmPath, 0o755);
+  }
   return binRoot;
 }
 
@@ -142,7 +148,7 @@ describe("generated artifact guard boundaries", { concurrency: 1 }, () => {
       const result = runPowerShell(
         join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
         [],
-        withoutCandidateGitEnvironment({ PATH: `${binRoot};${process.env.PATH ?? ""}` }),
+        withoutCandidateGitEnvironment({ PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}` }),
         fixtureRoot,
       );
       const output = `${result.stdout}\n${result.stderr}`;
@@ -193,7 +199,7 @@ describe("generated artifact guard boundaries", { concurrency: 1 }, () => {
         return runPowerShell(
           join(ROOT, "scripts", "checks", "check_changed_quick.ps1"),
           ["-StagedOnly"],
-          { ...env, PATH: `${binRoot};${process.env.PATH ?? ""}` },
+          { ...env, PATH: `${binRoot}${delimiter}${process.env.PATH ?? ""}` },
         );
       });
       const output = `${result.stdout}\n${result.stderr}`;

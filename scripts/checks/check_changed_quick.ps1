@@ -60,6 +60,20 @@ function Invoke-Step([string]$Label, [scriptblock]$Action) {
     }
 }
 
+function Get-NpmCommand {
+    $npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
+    if ($npmCmd) {
+        return $npmCmd.Source
+    }
+
+    $npm = Get-Command npm -ErrorAction SilentlyContinue
+    if ($npm) {
+        return $npm.Source
+    }
+
+    throw "npm introuvable dans le PATH."
+}
+
 $changedFiles = @(Get-ChangedFiles)
 if ($changedFiles.Count -eq 0) {
     if ($StagedOnly) {
@@ -81,6 +95,7 @@ $webSourceFiles = @($changedFiles | Where-Object {
 $webTestFiles = @($webSourceFiles | Where-Object { $_ -match "(\.test|\.spec)\.(ts|tsx|js|jsx)$" })
 $webSourceFilesRelative = @($webSourceFiles | ForEach-Object { $_ -replace '^apps/web/', '' })
 $webTestFilesRelative = @($webTestFiles | ForEach-Object { $_ -replace '^apps/web/', '' })
+$npmCommand = Get-NpmCommand
 
 $pythonFiles = @($changedFiles | Where-Object { $_ -match "\.py$" })
 
@@ -96,7 +111,7 @@ Write-Host "[quick] changed python files: $($pythonFiles.Count)"
 
 if ($webSourceFiles.Count -gt 0) {
     Invoke-Step "eslint (changed web files)" {
-        & npm.cmd --prefix apps/web run lint -- @webSourceFilesRelative
+        & $npmCommand --prefix apps/web run lint -- @webSourceFilesRelative
     }
 } else {
     Write-Host "[quick] Skip eslint (no changed web source files)."
@@ -104,7 +119,7 @@ if ($webSourceFiles.Count -gt 0) {
 
 if ($webTestFiles.Count -gt 0) {
     Invoke-Step "vitest (changed web test files)" {
-        & npm.cmd --prefix apps/web run test -- @webTestFilesRelative
+        & $npmCommand --prefix apps/web run test -- @webTestFilesRelative
     }
 } else {
     Write-Host "[quick] Skip vitest (no changed web test files)."
@@ -120,7 +135,7 @@ foreach ($file in $pythonFiles) {
 
 if ($IncludeBuild) {
     Invoke-Step "next build (apps/web)" {
-        & npm.cmd --prefix apps/web run build
+        & $npmCommand --prefix apps/web run build
     }
 } else {
     Write-Host "[quick] Skip build (use -IncludeBuild to enable)."

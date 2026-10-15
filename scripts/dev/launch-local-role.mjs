@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { delimiter, dirname, extname, join, resolve } from "node:path";
+import { delimiter, dirname, extname, join, posix, resolve, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = resolve(fileURLToPath(new URL(".", import.meta.url)));
@@ -107,16 +107,18 @@ function getVercelCliCandidates({ env, platform, pathDelimiter }) {
       ? [commandName, `${commandName}.cmd`, `${commandName}.exe`, `${commandName}.ps1`]
       : [commandName];
 
-  return getPathEntries(env, pathDelimiter).flatMap((entry) => names.map((name) => join(entry, name)));
+  const pathApi = platform === "win32" ? win32 : posix;
+  return getPathEntries(env, pathDelimiter).flatMap((entry) => names.map((name) => pathApi.join(entry, name)));
 }
 
 function getPlatformPathDelimiter(platform, explicitDelimiter) {
   return explicitDelimiter ?? (platform === "win32" ? ";" : delimiter);
 }
 
-function getAdjacentVercelScript(candidate, existsImpl) {
-  const scriptPath = join(dirname(candidate), "node_modules", "vercel", "dist", "vc.js");
-  return existsImpl(scriptPath) ? resolve(scriptPath) : null;
+function getAdjacentVercelScript(candidate, platform, existsImpl) {
+  const pathApi = platform === "win32" ? win32 : posix;
+  const scriptPath = pathApi.join(pathApi.dirname(candidate), "node_modules", "vercel", "dist", "vc.js");
+  return existsImpl(scriptPath) ? pathApi.resolve(scriptPath) : null;
 }
 
 export function resolveVercelCliInvocation({
@@ -141,7 +143,7 @@ export function resolveVercelCliInvocation({
     }
 
     if (platform === "win32" && [".bat", ".cmd", ".ps1", ""].includes(extension)) {
-      const scriptPath = getAdjacentVercelScript(candidate, existsImpl);
+      const scriptPath = getAdjacentVercelScript(candidate, platform, existsImpl);
       if (scriptPath) {
         return { command: nodePath, args: [scriptPath] };
       }

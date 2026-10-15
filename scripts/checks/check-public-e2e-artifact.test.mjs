@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, rmSync, rmdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { test } from "node:test";
@@ -25,9 +25,9 @@ function staging() {
       rmSync(root, { recursive: true, force: true });
       if (!artifactRootExisted) {
         try {
-          rmSync(artifactRoot, { recursive: false, force: true });
+          rmdirSync(artifactRoot);
         } catch (error) {
-          if (error?.code !== "ENOTEMPTY") throw error;
+          if (!new Set(["ENOTEMPTY", "EEXIST", "ENOENT"]).has(error?.code)) throw error;
         }
       }
     },
@@ -93,9 +93,9 @@ test("rejects a staging directory reached through a parent symlink", () => {
     rmSync(externalRoot, { recursive: true, force: true });
     if (!artifactRootExisted) {
       try {
-        rmSync(artifactRoot, { recursive: false, force: true });
+        rmdirSync(artifactRoot);
       } catch (error) {
-        if (error?.code !== "ENOTEMPTY") throw error;
+        if (!new Set(["ENOTEMPTY", "EEXIST", "ENOENT"]).has(error?.code)) throw error;
       }
     }
   }
