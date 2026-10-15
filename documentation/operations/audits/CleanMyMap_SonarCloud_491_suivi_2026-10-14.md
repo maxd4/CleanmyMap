@@ -287,6 +287,10 @@ lot n’a pas écrasé ni fusionné silencieusement ce changement.
 Les fixtures S2187, assertions S8784 et autres code smells ne sont pas
 absorbés par ce lot et restent dans le suivi exhaustif pour des lots distincts.
 
+Preuves locales : syntaxe Node/Python, 15 suites Node ciblées, 10 fichiers
+Vitest / 70 tests applicatifs, dont les entrées adverses longues. Le contrôle
+de couverture SonarCloud externe reste `NOT_CONFIRMED`.
+
 ## Lot 6 — branches conditionnelles identiques (`S3923`)
 
 Ce lot traite la première famille du chantier S3923 dans le domaine Actions.
@@ -318,9 +322,9 @@ cohérents. Les anomalies S3923 non modifiées restent `TO_FIX` jusqu’à leur
 qualification et correction ; `FIXED_PENDING_SCAN` ne signifie pas qu’un scan
 SonarCloud ultérieur a confirmé la résolution.
 
-Preuves locales : syntaxe Node/Python, 15 suites Node ciblées, 10 fichiers
-Vitest / 70 tests applicatifs, dont les entrées adverses longues. Le contrôle
-de couverture SonarCloud externe reste `NOT_CONFIRMED`.
+Preuves locales du lot : 3 fichiers de tests Actions, 17 tests réussis ;
+typecheck Web, lint Web et gardes pré-commit/pré-push réussis. La confirmation
+SonarCloud reste `NOT_CONFIRMED` pour les sept identifiants.
 
 ## Décisions humaines et faux positifs
 
