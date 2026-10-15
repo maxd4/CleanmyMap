@@ -335,19 +335,106 @@ export function createSonarProducerResult({ scope, analyzedSha, runId, producerO
   };
 }
 
+function knownScope(value) {
+  return typeof value === "string" && REPORT_DEFINITIONS.some((definition) => definition.scope === value) ? value : null;
+}
+
+function resultScopeFromFile(fileName) {
+  const basename = path.basename(fileName, ".json");
+  return knownScope(basename);
+}
+
+function resultStatus(result, key) {
+  const status = result?.[key]?.status;
+  return status === "PASS" || status === "FAIL" || status === "NOT_RUN" ? status : "NOT_RUN";
+}
+
+function resultAnnouncedPass(result) {
+  return resultStatus(result, "producer") === "PASS" || resultStatus(result, "validator") === "PASS";
+}
+
 function readProducerResults(directory, { analyzedSha, runId }) {
-  if (!directory || !fs.existsSync(directory)) return new Map();
   const results = new Map();
+  const omissions = [];
+  const invalidScopes = new Set();
+  if (!directory || !fs.existsSync(directory)) return { results, omissions };
+
+  const recordOmission = ({ fileName, scope, result, kind, reason }) => {
+    const resolvedScope = knownScope(scope);
+    const omission = {
+      scope: resolvedScope ?? "unknown",
+      file: fileName,
+      kind,
+      announcedPass: resultAnnouncedPass(result),
+      reason,
+      producerStatus: resultStatus(result, "producer"),
+      validatorStatus: resultStatus(result, "validator"),
+    };
+    omissions.push(omission);
+    if (resolvedScope) {
+      invalidScopes.add(resolvedScope);
+      results.delete(resolvedScope);
+    }
+  };
+
   for (const fileName of fs.readdirSync(directory).filter((candidate) => candidate.endsWith(".json")).sort()) {
     const filePath = path.join(directory, fileName);
-    const result = JSON.parse(fs.readFileSync(filePath, "utf8"));
-    if (result.schemaVersion !== 1 || !result.scope || !result.producer || !result.validator) throw new Error(`Invalid SonarQube producer result: ${fileName}`);
-    if (result.analyzedSha !== analyzedSha || String(result.runId) !== String(runId)) throw new Error(`SonarQube producer result is not attached to the analyzed SHA/run: ${fileName}`);
-    reportDefinition(result.scope);
-    if (results.has(result.scope)) throw new Error(`Duplicate SonarQube producer result: ${result.scope}`);
+    const fileScope = resultScopeFromFile(fileName);
+    let result = null;
+    try {
+      result = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    } catch (error) {
+      recordOmission({
+        fileName,
+        scope: fileScope,
+        result,
+        kind: "MALFORMED_RESULT",
+        reason: `SonarQube producer result was omitted because it is not valid JSON: ${fileName}.`,
+      });
+      continue;
+    }
+
+    const scope = knownScope(result?.scope) ?? fileScope;
+    if (
+      !result ||
+      typeof result !== "object" ||
+      result.schemaVersion !== 1 ||
+      !knownScope(result.scope) ||
+      !result.producer ||
+      !result.validator
+    ) {
+      recordOmission({
+        fileName,
+        scope,
+        result,
+        kind: "MALFORMED_RESULT",
+        reason: `SonarQube producer result was omitted because its schema is invalid: ${fileName}.`,
+      });
+      continue;
+    }
+    if (result.analyzedSha !== analyzedSha || String(result.runId) !== String(runId)) {
+      recordOmission({
+        fileName,
+        scope,
+        result,
+        kind: "INVALID_PROVENANCE",
+        reason: `SonarQube producer result was omitted because it is not attached to the analyzed SHA/run: ${fileName}.`,
+      });
+      continue;
+    }
+    if (invalidScopes.has(result.scope) || results.has(result.scope)) {
+      recordOmission({
+        fileName,
+        scope: result.scope,
+        result,
+        kind: "DUPLICATE_RESULT",
+        reason: `SonarQube producer results were omitted because the scope has multiple result files: ${result.scope}.`,
+      });
+      continue;
+    }
     results.set(result.scope, result);
   }
-  return results;
+  return { results, omissions };
 }
 
 function effectiveSonarProperties({ root, importedScopes }) {
@@ -374,11 +461,35 @@ export function prepareSonarPartialCoverage({
   propertiesOut,
   manifestOut,
 } = {}) {
-  const producerResults = readProducerResults(producerResultsDir, { analyzedSha, runId });
+  const producerResultSet = readProducerResults(producerResultsDir, { analyzedSha, runId });
+  const producerResults = producerResultSet.results;
+  const omissionsByScope = new Map(producerResultSet.omissions.filter((omission) => omission.scope !== "unknown").map((omission) => [omission.scope, omission]));
   const reports = REPORT_DEFINITIONS.map((definition) => {
+    const omission = omissionsByScope.get(definition.scope);
+    if (omission) {
+      return {
+        scope: definition.scope,
+        path: definition.format === "cobertura" ? definition.coveragePath : definition.lcovPath,
+        producerStatus: omission.producerStatus,
+        validatorStatus: omission.validatorStatus,
+        imported: false,
+        integrityIssue: true,
+        omission,
+        reason: omission.reason,
+      };
+    }
     const producerResult = producerResults.get(definition.scope);
     if (!producerResult) {
-      return { scope: definition.scope, producerStatus: "NOT_RUN", validatorStatus: "NOT_RUN", imported: false, reason: "No producer result was published for this scope." };
+      return {
+        scope: definition.scope,
+        path: definition.format === "cobertura" ? definition.coveragePath : definition.lcovPath,
+        producerStatus: "NOT_RUN",
+        validatorStatus: "NOT_RUN",
+        imported: false,
+        integrityIssue: true,
+        omission: { scope: definition.scope, file: null, kind: "MISSING_RESULT", announcedPass: false, reason: "No producer result was published for this scope." },
+        reason: "No producer result was published for this scope.",
+      };
     }
     if (producerResult.producer.status !== "PASS") {
       return { scope: definition.scope, producerStatus: producerResult.producer.status, validatorStatus: producerResult.validator.status, imported: false, reason: producerResult.reason };
@@ -396,6 +507,14 @@ export function prepareSonarPartialCoverage({
         producerStatus: producerResult.producer.status,
         validatorStatus: "FAIL",
         imported: false,
+        integrityIssue: producerResult.producer.status === "PASS" && producerResult.validator.status === "PASS",
+        omission: {
+          scope: definition.scope,
+          file: definition.format === "cobertura" ? definition.coveragePath : definition.lcovPath,
+          kind: "INVALID_ARTIFACT",
+          announcedPass: producerResult.producer.status === "PASS" && producerResult.validator.status === "PASS",
+          reason: error instanceof Error ? error.message : String(error),
+        },
         reason: error instanceof Error ? error.message : String(error),
       };
     }
@@ -407,9 +526,11 @@ export function prepareSonarPartialCoverage({
     analyzedSha,
     runId: String(runId),
     reports,
+    omittedResults: producerResultSet.omissions,
     statuses: {
       sonarCoverage: importedScopes.length === REPORT_DEFINITIONS.length ? "COMPLETE" : importedScopes.length > 0 ? "PARTIAL" : "UNAVAILABLE",
       sonarTests: producerStatuses.every((status) => status === "PASS") ? "PASS" : producerStatuses.some((status) => status === "FAIL") ? "FAIL" : "NOT_RUN",
+      sonarIntegrity: reports.some((report) => report.integrityIssue) || producerResultSet.omissions.some((omission) => omission.scope === "unknown") ? "FAIL" : "PASS",
     },
   };
   fs.mkdirSync(path.dirname(propertiesOut), { recursive: true });
@@ -425,14 +546,16 @@ export function finalizeSonarAnalysis({ manifest = null, scannerOutcome, prepara
     : scannerOutcome === "success" ? "COMPLETE" : scannerOutcome === "failure" ? "FAILED" : "NOT_RUN";
   const coverageStatus = manifest?.statuses?.sonarCoverage ?? "UNAVAILABLE";
   const testsStatus = manifest?.statuses?.sonarTests ?? "NOT_RUN";
+  const integrityStatus = manifest?.statuses?.sonarIntegrity ?? "NOT_RUN";
   console.log(`SONAR_ANALYSIS_STATUS: ${analysisStatus}`);
   console.log(`SONAR_COVERAGE_STATUS: ${coverageStatus}`);
   console.log(`SONAR_TESTS_STATUS: ${testsStatus}`);
+  console.log(`SONAR_INTEGRITY_STATUS: ${integrityStatus}`);
   console.log(`ANALYZED_SHA: ${manifest?.analyzedSha ?? "unknown"}`);
   for (const report of manifest?.reports ?? []) {
     console.log(`SONAR_COVERAGE_${report.scope.toUpperCase()}: producer=${report.producerStatus} validator=${report.validatorStatus} import=${report.imported ? "YES" : "NO"}${report.reason ? ` reason=${report.reason}` : ""}`);
   }
-  return analysisStatus === "COMPLETE" ? 0 : 1;
+  return analysisStatus === "COMPLETE" && integrityStatus === "PASS" ? 0 : 1;
 }
 
 function cliArgs() {
@@ -478,6 +601,7 @@ function main() {
       });
       console.log(`SONAR_COVERAGE_STATUS: ${manifest.statuses.sonarCoverage}`);
       console.log(`SONAR_TESTS_STATUS: ${manifest.statuses.sonarTests}`);
+      console.log(`SONAR_INTEGRITY_STATUS: ${manifest.statuses.sonarIntegrity}`);
       for (const report of manifest.reports) console.log(`SONAR_COVERAGE_${report.scope.toUpperCase()}: producer=${report.producerStatus} validator=${report.validatorStatus} import=${report.imported ? "YES" : "NO"}${report.reason ? ` reason=${report.reason}` : ""}`);
       return;
     }

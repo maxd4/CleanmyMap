@@ -155,9 +155,13 @@ Supabase. Cette documentation ne contient aucune valeur secrète.
 - Le scanner ne reçoit qu'une configuration temporaire dérivée des rapports
   validés du `run_id` courant. Les rapports absents, invalides ou d'un autre
   SHA sont omis et leur raison est conservée dans le manifeste. Les statuts
-  `SONAR_ANALYSIS_STATUS`, `SONAR_COVERAGE_STATUS`, `SONAR_TESTS_STATUS` et
-  `ANALYZED_SHA` doivent être lus séparément ; un scan terminé ne transforme
-  jamais un échec de tests en preuve de release verte.
+  `SONAR_ANALYSIS_STATUS`, `SONAR_COVERAGE_STATUS`, `SONAR_TESTS_STATUS`,
+  `SONAR_INTEGRITY_STATUS` et `ANALYZED_SHA` doivent être lus séparément ; un
+  scan terminé ne transforme jamais un échec de tests ou d'intégrité en preuve
+  de release verte. Un résultat producteur malformé ou d'un autre SHA/run est
+  omis par domaine et conservé comme omission dans le manifeste ; l'analyse
+  statique peut continuer, mais la finalisation échoue si l'intégrité attendue
+  n'est pas démontrée.
 
 ## Reproductibilité locale des workflows
 

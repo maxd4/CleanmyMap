@@ -145,10 +145,15 @@ de ses chemins sources, de son contenu et de la cohérence de ses métriques.
 Les rapports absents, corrompus ou rattachés à un autre SHA sont omis de la
 configuration effective temporaire et restent documentés dans le manifeste.
 Les statuts indépendants `SONAR_ANALYSIS_STATUS`, `SONAR_COVERAGE_STATUS`,
-`SONAR_TESTS_STATUS` et `ANALYZED_SHA` décrivent respectivement le scanner, les
-rapports réellement importés, les producteurs et la référence analysée.
-`COMPLETE` pour l'analyse ne vaut ni Quality Gate favorable, ni preuve FULL
-verte, ni autorisation de release.
+`SONAR_TESTS_STATUS`, `SONAR_INTEGRITY_STATUS` et `ANALYZED_SHA` décrivent
+respectivement le scanner, les rapports réellement importés, les producteurs,
+l'intégrité de la preuve importée et la référence analysée.
+`SONAR_INTEGRITY_STATUS: PASS` n'est acquis que pour des rapports importés
+valides et correctement rattachés ; une omission due à un rapport malformé,
+absent après un `PASS`, corrompu ou d'un autre SHA/run reste documentée et
+produit `FAIL`. `COMPLETE` pour l'analyse ne vaut donc ni preuve d'intégrité
+PASS, ni Quality Gate favorable, ni preuve FULL verte, ni autorisation de
+release.
 
 Avant toute correction issue d'un finding :
 

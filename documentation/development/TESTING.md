@@ -638,17 +638,25 @@ Les résultats indépendants sont affichés sous la forme :
 SONAR_ANALYSIS_STATUS: COMPLETE | FAILED | NOT_RUN
 SONAR_COVERAGE_STATUS: COMPLETE | PARTIAL | UNAVAILABLE
 SONAR_TESTS_STATUS: PASS | FAIL | NOT_RUN
+SONAR_INTEGRITY_STATUS: PASS | FAIL | NOT_RUN
 ANALYZED_SHA: <sha>
 ```
 
 Pour chaque domaine, la preuve indique le producteur, le validateur,
 l'import ou l'omission et sa raison. Une analyse `COMPLETE` avec
 `SONAR_TESTS_STATUS: FAIL` prouve uniquement que le scanner a terminé ; elle
-ne constitue pas une preuve de release verte. Les artefacts sont nommés avec
-le `run_id` et rattachés au SHA exact du workflow. Le manifeste final permet
-de retrouver le SHA réellement analysé et les couvertures effectivement
-transmises. Une couverture partielle ne peut pas devenir, sans qualification,
-une nouvelle référence comparable pour la couverture globale SonarQube Cloud.
+ne constitue pas une preuve de release verte. `SONAR_INTEGRITY_STATUS: PASS`
+exige que chaque rapport importé soit validé et rattaché au même SHA et au
+même `run_id`; un rapport absent, corrompu, malformé ou d'une autre
+provenance est omis, documenté dans le manifeste et produit
+`SONAR_INTEGRITY_STATUS: FAIL` lorsqu'une preuve de rapport était attendue.
+Le scanner peut donc terminer avec une configuration partielle, mais la
+finalisation échoue tant que l'intégrité attendue n'est pas prouvée. Les
+artefacts sont nommés avec le `run_id` et rattachés au SHA exact du workflow.
+Le manifeste final permet de retrouver le SHA réellement analysé et les
+couvertures effectivement transmises. Une couverture partielle ne peut pas
+devenir, sans qualification, une nouvelle référence comparable pour la
+couverture globale SonarQube Cloud.
 
 Les rapports locaux sont des artefacts ignorés (`apps/*/coverage/`,
 `scripts/coverage/` et `maintenance/python/coverage.xml`). Ils décrivent la
