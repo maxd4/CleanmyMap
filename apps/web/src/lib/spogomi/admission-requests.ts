@@ -43,7 +43,12 @@ function mapError(error: unknown): SpogomiAdmissionRequestError {
     ? (error as { message: string }).message
     : "";
   if (code === "P0002") return new SpogomiAdmissionRequestError("Cette édition n’est pas disponible pour ce parcours.", "unavailable");
-  if (code === "23505" || code === "40001") return new SpogomiAdmissionRequestError("Une demande ou une liaison existe déjà pour ce compte.", "conflict");
+  if (code === "23505" || code === "40001") {
+    if (message.includes("spogomi_admission_request_scope_conflict")) {
+      return new SpogomiAdmissionRequestError("Une demande active existe déjà dans une autre division ou équipe.", "conflict");
+    }
+    return new SpogomiAdmissionRequestError("Une demande ou une liaison existe déjà pour ce compte.", "conflict");
+  }
   if (code === "42501") {
     if (message.includes("external_ticketing")) return new SpogomiAdmissionRequestError("Cette édition doit être rejointe par la billetterie officielle.", "forbidden");
     if (message.includes("capacity")) return new SpogomiAdmissionRequestError("La capacité d’inscription de cette édition est atteinte.", "forbidden");
@@ -110,12 +115,15 @@ export async function createSpogomiAdmissionRequest(params: {
   if (result.error) throw mapError(result.error);
   const row = (Array.isArray(result.data) ? result.data[0] : result.data) as Record<string, unknown> | undefined;
   if (!row) throw new SpogomiAdmissionRequestError("La demande n’a pas pu être créée.", "validation");
-  return mapRequester({
-    ...row,
-    request_kind: row.request_kind ?? params.requestKind,
-    request_division_id: row.request_division_id ?? params.divisionId,
-    created_at: new Date().toISOString(),
+  const requestId = typeof row.request_id === "string" ? row.request_id : typeof row.id === "string" ? row.id : "";
+  if (!requestId) throw new SpogomiAdmissionRequestError("La demande n’a pas pu être créée.", "validation");
+  const persisted = await loadSpogomiAdmissionRequestForRequester(params.supabase, {
+    eventId: params.eventId,
+    requestId,
+    requesterClerkId: params.requesterClerkId,
   });
+  if (!persisted) throw new SpogomiAdmissionRequestError("La demande n’a pas pu être relue après son enregistrement.", "validation");
+  return persisted;
 }
 
 export async function listSpogomiAdmissionRequestsForRequester(

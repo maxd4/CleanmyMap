@@ -347,7 +347,10 @@ verrou lors de l'approbation. Le demandeur ne reçoit qu'une projection de sa
 propre demande (`id`, type, division éventuelle, contexte fourni, statut,
 message public et dates). Les identifiants de rapprochement, notes internes,
 identités du roster, identifiants de décideur et secrets restent dans la
-projection d'administration protégée.
+projection d'administration protégée. Une reprise active n'est idempotente que
+si l'événement, le compte, le type, la division et l'équipe effectivement
+demandés correspondent ; une tentative dans une autre division ou équipe
+retourne un conflit explicite sans créer de doublon.
 
 Un refus administratif peut être enregistré sans sélectionner d'identité
 historique et sans note de vérification ; seule la note de décision facultative

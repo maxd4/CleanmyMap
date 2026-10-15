@@ -356,6 +356,14 @@ test("isolates malformed producer results without aborting the partial scanner p
   for (const definition of REPORT_DEFINITIONS) writeValidReport(root, definition.scope);
   const resultsDir = writeProducerResults(root);
   fs.writeFileSync(path.join(resultsDir, "web.json"), "{ malformed");
+  fs.writeFileSync(path.join(resultsDir, "mobile.json"), JSON.stringify({
+    schemaVersion: 1,
+    scope: "mobile",
+    analyzedSha: "sha-current",
+    runId: "run-1",
+    producer: {},
+    validator: {},
+  }));
   const manifest = prepareSonarPartialCoverage({
     root,
     producerResultsDir: resultsDir,
@@ -367,6 +375,9 @@ test("isolates malformed producer results without aborting the partial scanner p
   const web = manifest.reports.find((report) => report.scope === "web");
   assert.equal(web.imported, false);
   assert.equal(web.omission.kind, "MALFORMED_RESULT");
+  const mobile = manifest.reports.find((report) => report.scope === "mobile");
+  assert.equal(mobile.imported, false);
+  assert.equal(mobile.omission.kind, "MALFORMED_RESULT");
   assert.equal(manifest.statuses.sonarIntegrity, "FAIL");
   assert.equal(finalizeSonarAnalysis({ manifest, scannerOutcome: "success", preparationOutcome: "success" }), 1);
 });

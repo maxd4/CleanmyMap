@@ -349,6 +349,11 @@ function resultStatus(result, key) {
   return status === "PASS" || status === "FAIL" || status === "NOT_RUN" ? status : "NOT_RUN";
 }
 
+function hasValidResultStatus(result, key) {
+  const status = result?.[key]?.status;
+  return status === "PASS" || status === "FAIL" || status === "NOT_RUN";
+}
+
 function resultAnnouncedPass(result) {
   return resultStatus(result, "producer") === "PASS" || resultStatus(result, "validator") === "PASS";
 }
@@ -401,7 +406,9 @@ function readProducerResults(directory, { analyzedSha, runId }) {
       result.schemaVersion !== 1 ||
       !knownScope(result.scope) ||
       !result.producer ||
-      !result.validator
+      !result.validator ||
+      !hasValidResultStatus(result, "producer") ||
+      !hasValidResultStatus(result, "validator")
     ) {
       recordOmission({
         fileName,

@@ -22,6 +22,7 @@ on:
       - "e2e/spogomi-concurrency.mjs"
       - "e2e/profile-security.sql"
       - "e2e/supabase-advisory-hardening.sql"
+      - "e2e/supabase-admission-requests.sql"
       - "e2e/security-02-projection-revocation.sql"
       - "e2e/security-02-two-sessions.mjs"
       - "e2e/security-03-bug-report.sql"
@@ -172,9 +173,10 @@ jobs:
           echo "Running SECURITY-01 PostgreSQL role and column privilege contract"
           profile_security_sql="$(cat e2e/profile-security.sql)"
           supabase_advisory_sql="$(cat e2e/supabase-advisory-hardening.sql)"
+          supabase_admission_sql="$(cat e2e/supabase-admission-requests.sql)"
           security_02_sql="$(cat e2e/security-02-projection-revocation.sql)"
           security_03_sql="$(cat e2e/security-03-bug-report.sql)"
-          combined_sql="$(printf '%s\n' "$preflight_sql" "$profile_security_sql" "$supabase_advisory_sql" "$security_02_sql" "$security_03_sql")"
+          combined_sql="$(printf '%s\n' "$preflight_sql" "$profile_security_sql" "$supabase_advisory_sql" "$supabase_admission_sql" "$security_02_sql" "$security_03_sql")"
           ./node_modules/.bin/supabase db query --workdir apps/web --local "$combined_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
 
           echo "Running SECURITY-02 PostgreSQL two-session contract"
