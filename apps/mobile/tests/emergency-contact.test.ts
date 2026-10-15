@@ -58,4 +58,12 @@ describe('mobile emergency contact', () => {
     await expect(getStoredEmergencyContact()).resolves.toBeNull()
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('cmm_emergency_contact')
   })
+
+  it('keeps an empty SecureStore distinct from a failed read', async () => {
+    await expect(getStoredEmergencyContact()).resolves.toBeNull()
+
+    vi.mocked(SecureStore.getItemAsync).mockRejectedValueOnce(new Error('SecureStore unavailable'))
+
+    await expect(getStoredEmergencyContact()).rejects.toThrow('SecureStore unavailable')
+  })
 })

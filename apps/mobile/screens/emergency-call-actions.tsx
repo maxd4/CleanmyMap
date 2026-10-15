@@ -46,30 +46,33 @@ export function EmergencyCallActions({ compact = false }: { compact?: boolean })
   return (
     <View style={[styles.panel, compact && styles.compactPanel]}>
       {compact ? (
-        <View style={styles.compactRow}>
-          <View style={styles.compactLabel}>
-            <Ionicons name="call-outline" size={20} color="#fbbf24" />
-            <Text style={styles.compactTitle}>Urgence</Text>
-          </View>
-          {contact ? (
+        <>
+          <View style={styles.compactRow}>
+            <View style={styles.compactLabel}>
+              <Ionicons name="call-outline" size={20} color="#fbbf24" />
+              <Text style={styles.compactTitle}>Urgence</Text>
+            </View>
+            {contact ? (
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Appeler le contact d’urgence"
+                style={styles.compactButton}
+                onPress={() => confirmCall('mon contact d’urgence', contact.phone)}
+              >
+                <Text style={styles.compactButtonText}>Contact</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel="Appeler le contact d’urgence"
-              style={styles.compactButton}
-              onPress={() => confirmCall('mon contact d’urgence', contact.phone)}
+              accessibilityLabel="Appeler le 112"
+              style={[styles.compactButton, styles.compactEmergencyButton]}
+              onPress={() => confirmCall('le 112', '112')}
             >
-              <Text style={styles.compactButtonText}>Contact</Text>
+              <Text style={styles.compactEmergencyText}>112</Text>
             </TouchableOpacity>
-          ) : null}
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="Appeler le 112"
-            style={[styles.compactButton, styles.compactEmergencyButton]}
-            onPress={() => confirmCall('le 112', '112')}
-          >
-            <Text style={styles.compactEmergencyText}>112</Text>
-          </TouchableOpacity>
-        </View>
+          </View>
+          {contactLoadError ? <Text style={styles.compactError}>{contactLoadError}</Text> : null}
+        </>
       ) : null}
       {!compact ? (
       <>
@@ -123,6 +126,7 @@ const styles = StyleSheet.create({
   compactButtonText: { color: '#fef3c7', fontSize: 12, fontWeight: '900' },
   compactEmergencyButton: { backgroundColor: '#991b1b' },
   compactEmergencyText: { color: '#ffffff', fontSize: 13, fontWeight: '900' },
+  compactError: { color: '#fca5a5', fontSize: 11, lineHeight: 16, marginTop: 6 },
   header: { alignItems: 'flex-start', flexDirection: 'row', marginBottom: 14 },
   copy: { flex: 1, marginLeft: 10 },
   title: { color: '#f8fafc', fontSize: 14, fontWeight: '900', marginBottom: 4 },

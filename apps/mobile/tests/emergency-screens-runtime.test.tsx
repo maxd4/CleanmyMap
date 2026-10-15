@@ -5,10 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const state = vi.hoisted(() => ({
-  readContact: vi.fn(),
   saveContact: vi.fn(),
   clearContact: vi.fn(),
   alert: vi.fn(),
+  secureValues: new Map<string, string>(),
+  secureReadError: null as Error | null,
 }))
 
 function nativeComponent(name: string) {
@@ -20,6 +21,8 @@ function nativeComponent(name: string) {
 vi.mock('react-native', () => ({
   ActivityIndicator: nativeComponent('ActivityIndicator'),
   Alert: { alert: state.alert },
+  Linking: { openURL: vi.fn(async () => undefined) },
+  Platform: { OS: 'android' },
   StyleSheet: { create: (styles: unknown) => styles },
   Text: nativeComponent('Text'),
   TextInput: nativeComponent('TextInput'),
@@ -28,10 +31,28 @@ vi.mock('react-native', () => ({
 }))
 
 vi.mock('@expo/vector-icons', () => ({ Ionicons: nativeComponent('Ionicons') }))
-vi.mock('../lib/storage', () => ({
-  clearStoredEmergencyContact: state.clearContact,
-  getStoredEmergencyContact: state.readContact,
-  saveStoredEmergencyContact: state.saveContact,
+vi.mock('expo-secure-store', () => ({
+  getItemAsync: vi.fn(async (key: string) => {
+    if (state.secureReadError) throw state.secureReadError
+    return state.secureValues.get(key) ?? null
+  }),
+  setItemAsync: vi.fn(async (key: string, value: string) => {
+    state.secureValues.set(key, value)
+  }),
+  deleteItemAsync: vi.fn(async (key: string) => {
+    state.secureValues.delete(key)
+  }),
+}))
+vi.mock('@react-native-async-storage/async-storage', () => ({
+  default: {
+    getItem: vi.fn(async () => null),
+    setItem: vi.fn(async () => undefined),
+    removeItem: vi.fn(async () => undefined),
+  },
+}))
+vi.mock('../lib/supabase', () => ({
+  getAuthenticatedSupabaseClient: vi.fn(async () => null),
+  getClerkUserId: vi.fn(async () => null),
 }))
 vi.mock('../lib/emergency-contact', () => ({
   getDialablePhone: (phone: string) => phone,
@@ -56,15 +77,15 @@ async function settleEffect() {
 
 describe('mobile emergency screens', () => {
   beforeEach(() => {
-    state.readContact.mockReset()
-    state.readContact.mockResolvedValue(null)
+    state.secureValues.clear()
+    state.secureReadError = null
     state.saveContact.mockReset()
     state.clearContact.mockReset()
     state.alert.mockReset()
   })
 
   it('renders a stored emergency contact after a successful read', async () => {
-    state.readContact.mockResolvedValue({ name: 'Ada', relation: 'amie', phone: '0612345678' })
+    state.secureValues.set('cmm_emergency_contact', JSON.stringify({ name: 'Ada', relation: 'amie', phone: '0612345678' }))
     let renderer!: TestRenderer.ReactTestRenderer
 
     await act(async () => {
@@ -77,7 +98,7 @@ describe('mobile emergency screens', () => {
   })
 
   it('keeps the 112 action visible and explains a contact read failure', async () => {
-    state.readContact.mockRejectedValue(new Error('SecureStore unavailable'))
+    state.secureReadError = new Error('SecureStore unavailable')
     let renderer!: TestRenderer.ReactTestRenderer
 
     await act(async () => {
@@ -89,8 +110,21 @@ describe('mobile emergency screens', () => {
     expect(textContent(renderer.root)).toContain('APPELER LE 112')
   })
 
+  it('shows a contact read failure in compact mode while keeping 112 available', async () => {
+    state.secureReadError = new Error('SecureStore unavailable')
+    let renderer!: TestRenderer.ReactTestRenderer
+
+    await act(async () => {
+      renderer = TestRenderer.create(<EmergencyCallActions compact />)
+      await settleEffect()
+    })
+
+    expect(textContent(renderer.root)).toContain('Contact d’urgence indisponible sur cet appareil.')
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Appeler le 112' })).toBeDefined()
+  })
+
   it('stops loading and exposes a retry path when the contact cannot be read', async () => {
-    state.readContact.mockRejectedValue(new Error('SecureStore unavailable'))
+    state.secureReadError = new Error('SecureStore unavailable')
     let renderer!: TestRenderer.ReactTestRenderer
 
     await act(async () => {

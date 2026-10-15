@@ -257,10 +257,10 @@ export async function clearStoredForegroundTrack(ownerId: string, missionId: str
 }
 
 export async function getStoredEmergencyContact(): Promise<EmergencyContact | null> {
-  try {
-    const raw = await readStoredValue(EMERGENCY_CONTACT_KEY);
-    if (!raw) return null;
+  const raw = await readStoredValue(EMERGENCY_CONTACT_KEY);
+  if (!raw) return null;
 
+  try {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return null;
     const contact = parsed as Record<string, unknown>;
@@ -272,6 +272,7 @@ export async function getStoredEmergencyContact(): Promise<EmergencyContact | nu
 
     return { name: contact.name, relation: contact.relation, phone: contact.phone };
   } catch {
+    // Un contenu local invalide reste traité comme une absence de contact.
     return null;
   }
 }
