@@ -33,6 +33,7 @@ on:
       - "apps/web/src/app/api/spogomi/**"
       - "apps/web/supabase/config.toml"
       - "apps/web/supabase/migrations/**"
+      - "apps/web/supabase/tests/spogomi-mixed-division-smoke.sql"
       - "apps/web/supabase/seed.sql"
       - "playwright.config.ts"
       - "package.json"
@@ -178,6 +179,11 @@ jobs:
           security_03_sql="$(cat e2e/security-03-bug-report.sql)"
           combined_sql="$(printf '%s\n' "$preflight_sql" "$profile_security_sql" "$supabase_advisory_sql" "$supabase_admission_sql" "$security_02_sql" "$security_03_sql")"
           ./node_modules/.bin/supabase db query --workdir apps/web --local "$combined_sql" 2>&1 | tee artifacts/ci/supabase-preflight.log
+
+      - name: Execute SPOGOMI mixed-division PostgreSQL contract
+        run: |
+          set -o pipefail
+          ./node_modules/.bin/supabase db query --workdir apps/web --local "$(cat apps/web/supabase/tests/spogomi-mixed-division-smoke.sql)" 2>&1 | tee artifacts/ci/spogomi-mixed-division-smoke.log
 
           echo "Running SECURITY-02 PostgreSQL two-session contract"
           node e2e/security-02-two-sessions.mjs 2>&1 | tee -a artifacts/ci/supabase-preflight.log
