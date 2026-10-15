@@ -7,6 +7,8 @@ const claimSpogomiIdentityLinkMock = vi.hoisted(() => vi.fn());
 const loadSpogomiIdentityStateMock = vi.hoisted(() => vi.fn());
 const resumeSpogomiIdentityParticipationMock = vi.hoisted(() => vi.fn());
 const loadSpogomiEventRecognitionForUserMock = vi.hoisted(() => vi.fn());
+const loadAssistanceRequestMock = vi.hoisted(() => vi.fn());
+const createAssistanceRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: requireAuthenticatedAccessMock }));
 vi.mock("@/lib/rate-limit/server", () => ({ enforceServerRateLimitForAuthenticatedUser: enforceRateLimitMock }));
@@ -19,6 +21,11 @@ vi.mock("@/lib/spogomi/identity-link", () => ({
 }));
 vi.mock("@/lib/spogomi/recognition-service", () => ({
   loadSpogomiEventRecognitionForUser: loadSpogomiEventRecognitionForUserMock,
+}));
+vi.mock("@/lib/spogomi/identity-assistance", () => ({
+  loadSpogomiIdentityAssistanceRequestForRequester: loadAssistanceRequestMock,
+  createSpogomiIdentityAssistanceRequest: createAssistanceRequestMock,
+  SpogomiIdentityAssistanceError: class SpogomiIdentityAssistanceError extends Error {},
 }));
 
 vi.mock("@/lib/http/auth-responses", () => ({
@@ -56,6 +63,8 @@ describe("SPOGOMI identity-link recovery route", () => {
       participation: { status: "pending", store: "action_registrations" },
     });
     loadSpogomiEventRecognitionForUserMock.mockResolvedValue({ status: "available", awards: [] });
+    loadAssistanceRequestMock.mockResolvedValue(null);
+    createAssistanceRequestMock.mockResolvedValue({ id: "request-1", eventId: "event-1", status: "pending" });
   });
 
   it("links with the one-time code without requesting participation in the same call", async () => {
@@ -121,5 +130,26 @@ describe("SPOGOMI identity-link recovery route", () => {
     if (!denied) throw new Error("GET route did not return a response");
     expect(denied.status).toBe(401);
     expect(loadSpogomiIdentityStateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("submits assistance without claiming identity or resuming participation", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/spogomi/events/event-1/identity-link", {
+        method: "POST",
+        body: JSON.stringify({ assistance: true, context: "Je peux confirmer ma présence hors bande." }),
+      }),
+      { params: Promise.resolve({ eventId: "event-1" }) },
+    );
+    if (!response) throw new Error("POST route did not return a response");
+    expect(response.status).toBe(200);
+    expect(createAssistanceRequestMock).toHaveBeenCalledWith(expect.objectContaining({
+      eventId: "event-1",
+      requesterClerkId: "user-1",
+      providedContext: "Je peux confirmer ma présence hors bande.",
+      invitationToken: undefined,
+    }));
+    expect(claimSpogomiIdentityLinkMock).not.toHaveBeenCalled();
+    expect(resumeSpogomiIdentityParticipationMock).not.toHaveBeenCalled();
   });
 });

@@ -11,13 +11,23 @@ import {
   resumeSpogomiIdentityParticipation,
   SpogomiIdentityLinkError,
 } from "@/lib/spogomi/identity-link";
+import {
+  createSpogomiIdentityAssistanceRequest,
+  loadSpogomiIdentityAssistanceRequestForRequester,
+  SpogomiIdentityAssistanceError,
+} from "@/lib/spogomi/identity-assistance";
 import { loadSpogomiEventRecognitionForUser } from "@/lib/spogomi/recognition-service";
 
 export const runtime = "nodejs";
 // Justification Vercel: identity-link state is sensitive and changes after each verified claim.
 export const dynamic = "force-dynamic";
 
-const bodySchema = z.object({ code: z.string().trim().min(16).max(100).optional() });
+const bodySchema = z.object({
+  code: z.string().trim().min(16).max(100).optional(),
+  assistance: z.literal(true).optional(),
+  context: z.string().trim().max(1200).optional(),
+  invitationToken: z.string().trim().min(20).max(160).optional(),
+}).refine((body) => !body.assistance || !body.code, { message: "Choisissez une seule voie de liaison." });
 type RouteContext = { params: Promise<{ eventId: string }> };
 
 async function authenticateIdentityLinkRequest(request: Request) {
@@ -44,7 +54,11 @@ export async function GET(request: Request, context: RouteContext) {
         userId: authentication.access.userId,
       })
       : null;
-    return NextResponse.json({ status: "ok", ...state, recognition });
+    const assistance = await loadSpogomiIdentityAssistanceRequestForRequester(getSupabaseServerClient(true), {
+      eventId,
+      requesterClerkId: authentication.access.userId,
+    });
+    return NextResponse.json({ status: "ok", ...state, recognition, assistance });
   } catch (error) {
     return handleApiError(error, "spogomi.identity-link.read");
   }
@@ -89,6 +103,18 @@ export async function POST(request: Request, context: RouteContext) {
       });
     }
 
+    if (parsed.data.assistance) {
+      const assistance = await createSpogomiIdentityAssistanceRequest({
+        supabase,
+        eventId,
+        requesterClerkId: access.userId,
+        providedContext: parsed.data.context,
+        invitationToken: parsed.data.invitationToken,
+      });
+      const state = await loadSpogomiIdentityState(supabase, { eventId, clerkId: access.userId });
+      return NextResponse.json({ status: "ok", ...state, assistance, note: "Votre demande est transmise à l’organisateur. Aucune liaison, affectation ou confirmation n’est automatique." });
+    }
+
     const state = await resumeSpogomiIdentityParticipation(supabase, {
       eventId,
       clerkId: access.userId,
@@ -105,6 +131,10 @@ export async function POST(request: Request, context: RouteContext) {
   } catch (error) {
     if (error instanceof SpogomiIdentityLinkError) {
       const status = error.kind === "already_linked" ? 409 : error.kind === "not_found" ? 404 : 400;
+      return NextResponse.json({ error: error.message }, { status });
+    }
+    if (error instanceof SpogomiIdentityAssistanceError) {
+      const status = error.kind === "unavailable" ? 404 : error.kind === "conflict" ? 409 : 400;
       return NextResponse.json({ error: error.message }, { status });
     }
     return handleApiError(error, "spogomi.identity-link.claim");

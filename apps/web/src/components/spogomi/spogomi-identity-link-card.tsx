@@ -19,6 +19,15 @@ type LinkResponse = {
   participation?: { status: string; store: string | null };
   recognition?: SpogomiEventRecognition | null;
   team?: SpogomiLinkedTeam | null;
+  assistance?: SpogomiAssistanceRequest | null;
+  request?: SpogomiAssistanceRequest | null;
+};
+
+type SpogomiAssistanceRequest = {
+  id: string;
+  status: "pending" | "treated" | "rejected" | "cancelled";
+  providedContext: string;
+  createdAt: string;
 };
 
 type SpogomiEventRecognition = {
@@ -75,6 +84,9 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
   const [isLoadingState, setIsLoadingState] = useState(false);
   const [recognition, setRecognition] = useState<SpogomiEventRecognition | null>(null);
   const [team, setTeam] = useState<SpogomiLinkedTeam | null>(null);
+  const [assistanceMode, setAssistanceMode] = useState(false);
+  const [assistanceContext, setAssistanceContext] = useState("");
+  const [assistanceRequest, setAssistanceRequest] = useState<SpogomiAssistanceRequest | null>(null);
 
   const loadState = useCallback(async () => {
     if (!isLoaded || !isSignedIn) return;
@@ -86,6 +98,7 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
       setIdentityState(payload.state ?? "identity_unlinked");
       setRecognition(payload.recognition ?? null);
       setTeam(payload.team ?? null);
+      setAssistanceRequest(payload.assistance ?? null);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "L’état de la liaison n’a pas pu être chargé.");
     } finally {
@@ -149,6 +162,52 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
     }
   }
 
+  async function submitAssistance() {
+    setIsSubmitting(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/identity-link`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ assistance: true, context: assistanceContext }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as LinkResponse;
+      if (!response.ok) throw new Error(payload.error ?? "La demande d’assistance n’a pas pu être envoyée.");
+      setAssistanceRequest(payload.assistance ?? null);
+      setAssistanceMode(false);
+      setAssistanceContext("");
+      setMessage("Demande transmise. L’organisateur doit vérifier votre situation avant de remettre un nouveau code.");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "La demande d’assistance n’a pas pu être envoyée.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function cancelAssistance() {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/spogomi/events/${encodeURIComponent(eventId)}/identity-assistance`, { method: "DELETE" });
+      const payload = (await response.json().catch(() => ({}))) as LinkResponse;
+      if (!response.ok) throw new Error(payload.error ?? "La demande n’a pas pu être annulée.");
+      setAssistanceRequest(payload.request ?? null);
+      setMessage("Demande annulée.");
+    } catch (cancelError) {
+      setError(cancelError instanceof Error ? cancelError.message : "La demande n’a pas pu être annulée.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function assistanceStatusLabel(status: SpogomiAssistanceRequest["status"]): string {
+    if (status === "treated") return "Demande traitée : attendez la remise directe du code.";
+    if (status === "rejected") return "Demande refusée par l’organisateur.";
+    if (status === "cancelled") return "Demande annulée.";
+    return "Demande en attente de vérification par l’organisateur.";
+  }
+
   return (
     <CmmCard tone="emerald" variant="glass" className="space-y-3 p-5">
       <div className="flex items-start gap-3">
@@ -164,6 +223,7 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
         <div className="space-y-2">
           <p className="text-sm text-slate-700">Connectez-vous avec Clerk pour saisir votre code.</p>
           <CmmButton href={signInHref} tone="primary">Se connecter</CmmButton>
+          <p className="text-sm text-slate-700">Je n’ai pas de code ? Connectez-vous puis demandez une assistance à l’organisateur.</p>
         </div>
       ) : isLoadingState && !identityState ? (
         <p className="text-sm text-slate-600">Vérification de votre liaison…</p>
@@ -178,24 +238,32 @@ export function SpogomiIdentityLinkCard({ eventId, signInHref }: Props) {
           {identityState === "participation_unavailable" ? <CmmButton type="button" tone="secondary" disabled={isSubmitting} onClick={() => void loadState()}>Vérifier à nouveau</CmmButton> : null}
         </div>
       ) : (
-        <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
-          <label className="block text-sm font-bold text-slate-800" htmlFor="spogomi-identity-code">Code individuel</label>
-          <input
-            id="spogomi-identity-code"
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-            autoComplete="one-time-code"
-            inputMode="text"
-            placeholder="SPOGOMI-…"
-            className="min-h-11 w-full rounded-xl border border-emerald-200 bg-white px-3 text-sm text-slate-900 outline-none ring-emerald-500 focus:ring-2"
-            maxLength={100}
-          />
-          <CmmButton type="submit" tone="primary" disabled={isSubmitting || code.trim().length < 16} loading={isSubmitting}>
-            {isSubmitting ? "Vérification…" : "Relier le compte"}
-          </CmmButton>
-          {message ? <p role="status" className="text-sm font-semibold text-emerald-800">{message}</p> : null}
-          {error ? <p role="alert" className="text-sm font-semibold text-rose-700">{error}</p> : null}
-        </form>
+        <div className="space-y-3">
+          {assistanceRequest ? (
+            <div className="space-y-2 rounded-xl border border-emerald-200 bg-white/75 p-3">
+              <p className="text-sm font-bold text-emerald-900">{assistanceStatusLabel(assistanceRequest.status)}</p>
+              {assistanceRequest.status === "pending" ? <CmmButton type="button" size="sm" tone="secondary" disabled={isSubmitting} onClick={() => void cancelAssistance()}>Annuler la demande</CmmButton> : null}
+            </div>
+          ) : null}
+          {!assistanceRequest || assistanceRequest.status === "cancelled" || assistanceRequest.status === "rejected" ? (
+            assistanceMode ? (
+              <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); void submitAssistance(); }}>
+                <p className="text-sm text-slate-700">L’organisateur recherchera votre entrée dans le roster et vérifiera votre situation par un moyen indépendant. Un nom, une adresse électronique ou un billet ne suffit jamais à valider une identité.</p>
+                <label className="block text-sm font-bold text-slate-800" htmlFor="spogomi-identity-assistance-context">Élément utile à la recherche <span className="font-normal text-slate-500">(facultatif)</span></label>
+                <textarea id="spogomi-identity-assistance-context" value={assistanceContext} onChange={(event) => setAssistanceContext(event.target.value)} maxLength={1200} rows={4} placeholder="Expliquez brièvement comment l’organisateur peut vous recontacter ou vérifier votre participation. Ne saisissez pas de code secret." className="w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500 focus:ring-2" />
+                <div className="flex flex-wrap gap-2"><CmmButton type="submit" tone="primary" disabled={isSubmitting} loading={isSubmitting}>{isSubmitting ? "Transmission…" : "Envoyer la demande"}</CmmButton><CmmButton type="button" tone="secondary" disabled={isSubmitting} onClick={() => setAssistanceMode(false)}>J’ai retrouvé mon code</CmmButton></div>
+              </form>
+            ) : (
+              <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
+                <label className="block text-sm font-bold text-slate-800" htmlFor="spogomi-identity-code">Code individuel</label>
+                <input id="spogomi-identity-code" value={code} onChange={(event) => setCode(event.target.value)} autoComplete="one-time-code" inputMode="text" placeholder="SPOGOMI-…" className="min-h-11 w-full rounded-xl border border-emerald-200 bg-white px-3 text-sm text-slate-900 outline-none ring-emerald-500 focus:ring-2" maxLength={100} />
+                <div className="flex flex-wrap gap-2"><CmmButton type="submit" tone="primary" disabled={isSubmitting || code.trim().length < 16} loading={isSubmitting}>{isSubmitting ? "Vérification…" : "Relier le compte"}</CmmButton><CmmButton type="button" tone="secondary" disabled={isSubmitting} onClick={() => setAssistanceMode(true)}>Je n’ai pas de code</CmmButton></div>
+                {message ? <p role="status" className="text-sm font-semibold text-emerald-800">{message}</p> : null}
+                {error ? <p role="alert" className="text-sm font-semibold text-rose-700">{error}</p> : null}
+              </form>
+            )
+          ) : null}
+        </div>
       )}
       {identityState && identityState !== "identity_unlinked" ? (
         <section className="border-t border-emerald-200/40 pt-4" aria-labelledby="spogomi-linked-team-title">

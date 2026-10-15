@@ -284,6 +284,30 @@ Parcours cible sur les surfaces appropriées du produit (les chemins finaux doiv
 
 La liaison d'un compte CleanMyMap est désormais proposée depuis la page publique
 de l'événement, mais elle exige un code individuel remis par l'organisateur.
+
+Si la personne n'a pas reçu ou a perdu ce code, la carte propose « Je n'ai pas
+de code ». Après authentification, elle peut transmettre une demande minimale
+bornée à l'événement : aucun rattachement n'est tenté et aucun participant n'est
+recherché automatiquement. Un élément de contexte libre et limité peut orienter
+la recherche, mais un nom, un prénom, une adresse électronique ou une référence
+de billet ne constitue jamais une preuve.
+
+Dans l'espace événementiel privé, l'organisateur habilité voit les demandes de
+son seul événement et peut les marquer en attente, traitées, refusées ou
+annulées. Une décision « traitée » exige la sélection explicite d'une entrée du
+roster non liée et une note de vérification indépendante. Elle ne modifie ni le
+participant ni l'équipe ; l'organisateur doit ensuite déclencher séparément
+l'émission existante du code et le remettre directement à la personne concernée.
+Les demandes sont idempotentes par compte/événement, protégées par limitation
+de débit, journalisées par transition et révocables par le demandeur tant
+qu'elles sont en attente. Aucune présence, participation, récompense,
+classement ou certification ne découle de la demande ou de sa liaison.
+
+Pour une édition privée, le même formulaire n'est accessible qu'après un lien
+d'invitation opaque, expirant et remis directement par l'organisateur. Un
+événement privé invalide, un token expiré/révoqué et un événement absent
+retournent la même indisponibilité sans énumérer les participants ou les
+métadonnées de l'édition. Le token n'est jamais conservé en clair.
 Le code est haché côté serveur, à usage unique, expirant et non réutilisable ;
 aucune recherche par nom/prénom, lecture du fichier Excel ou exposition d'email
 ne participe à la décision. L'organisateur habilité peut émettre un code depuis
