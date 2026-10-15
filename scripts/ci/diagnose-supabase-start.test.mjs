@@ -11,14 +11,25 @@ import {
 } from "./diagnose-supabase-start.mjs";
 
 const workflow = readFileSync(resolve(".github", "workflows", "e2e-supabase.yml"), "utf8");
-const dockerContainersCommand = "docker ps -a --filter name=supabase_ --format {{.Names}}\t{{.Status}}";
+const dockerContainersCommand = "docker ps -a --filter name=supabase_ --format {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}";
+const dockerImagesCommand = "docker images --format {{.Repository}}\t{{.Tag}}";
+const dockerNetworksCommand = "docker network ls --format {{.Name}}\t{{.Driver}}";
+const listeningPortsCommand = "ss -ltnH";
 
-function createProbeCommand({ dockerContainers = { available: true, output: "" } } = {}) {
+function createProbeCommand({
+  dockerContainers = { available: true, output: "" },
+  dockerImages = { available: true, output: "supabase/postgres\t17" },
+  dockerNetworks = { available: true, output: "bridge\tbridge" },
+  listeningPorts = { available: true, output: "" },
+} = {}) {
   const probeOutputs = new Map([
     ["docker --version", { available: true, output: "Docker version 28.0.4" }],
     ["docker info --format {{.ServerVersion}}", { available: true, output: "28.0.4" }],
     ["docker info --format {{json .}}", { available: true, output: JSON.stringify({ NCPU: 4, MemTotal: 8_000_000_000 }) }],
     [dockerContainersCommand, dockerContainers],
+    [dockerImagesCommand, dockerImages],
+    [dockerNetworksCommand, dockerNetworks],
+    [listeningPortsCommand, listeningPorts],
     ["npx --no-install supabase --version", { available: true, output: "2.117.0" }],
     ["npx --no-install supabase status --workdir apps/web --output json", { available: false, output: "status unavailable" }],
   ]);
@@ -45,6 +56,7 @@ test("classifies a failed start without exposing the raw Docker message", () => 
 test("classifies Docker, port, healthcheck, resources and CLI failures", () => {
   const cases = [
     ["Cannot connect to the Docker daemon", SUPABASE_START_CATEGORIES.DOCKER_UNAVAILABLE],
+    ["failed to resolve registry network: i/o timeout", SUPABASE_START_CATEGORIES.NETWORK_FAILURE],
     ["Error: port is already allocated", SUPABASE_START_CATEGORIES.PORT_CONFLICT],
     ["container db is unhealthy", SUPABASE_START_CATEGORIES.HEALTHCHECK_FAILURE],
     ["no space left on device", SUPABASE_START_CATEGORIES.INSUFFICIENT_RESOURCES],
@@ -60,6 +72,23 @@ test("classifies Docker, port, healthcheck, resources and CLI failures", () => {
       `expected ${expected} for ${log}`,
     );
   }
+});
+
+test("turns a long failed start with no containers into an actionable bounded code", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "opaque startup failure",
+    exitCode: 1,
+    durationSeconds: 95,
+    probeCommand: createProbeCommand(),
+  });
+
+  assert.equal(
+    classifySupabaseStartFailure({ log: "opaque startup failure", exitCode: 1, evidence }),
+    SUPABASE_START_CATEGORIES.START_TIMEOUT,
+  );
+  assert.ok(evidence.evidenceCodes.includes("REQUIRED_SERVICES_MISSING"));
+  assert.ok(evidence.evidenceCodes.includes("SUPABASE_NETWORK_MISSING"));
+  assert.equal(evidence.startPhase, "UNKNOWN");
 });
 
 test("never reports success for a non-zero Supabase start result", () => {
@@ -78,7 +107,7 @@ test("emits bounded machine evidence without returning Docker or Supabase output
     log: "opaque startup failure private-token",
     exitCode: 1,
     durationSeconds: 91,
-    probeCommand: createProbeCommand({ dockerContainers: { available: true, output: "supabase_db\tExited (1)" } }),
+    probeCommand: createProbeCommand({ dockerContainers: { available: true, output: "supabase_db\tpostgres\tExited (1)\t" } }),
   });
   const diagnostic = renderSupabaseStartDiagnostic({
     category: SUPABASE_START_CATEGORIES.UNCLASSIFIED,
@@ -94,6 +123,8 @@ test("emits bounded machine evidence without returning Docker or Supabase output
   assert.deepEqual(evidence.dockerContainerStates, { running: 0, exited: 1, created: 0, restarting: 0, other: 0 });
   assert.ok(evidence.evidenceCodes.includes("START_DURATION_OVER_80_SECONDS"));
   assert.ok(evidence.evidenceCodes.includes("NO_CLASSIFIABLE_START_LOG_SIGNAL"));
+  assert.equal(evidence.requiredServicesState, "incomplete");
+  assert.equal(evidence.healthState, "failed");
   assert.match(diagnostic, /evidence_codes=/);
   assert.doesNotMatch(diagnostic, /private-token|DockerRootDir|supabase_db/);
 });
@@ -181,10 +212,47 @@ test("preserves failure classification when supabase start fails", () => {
   assert.ok(!evidence.evidenceCodes.includes("START_SUCCEEDED"));
 });
 
+test("identifies the configured E2E services and port conflict without publishing names or logs", () => {
+  const evidence = collectBoundedStartEvidence({
+    log: "failed to bind service kong: address already in use",
+    exitCode: 1,
+    probeCommand: createProbeCommand({
+      dockerContainers: {
+        available: true,
+        output: [
+          "supabase_db_web\tpostgres\tUp 10 seconds\t",
+          "supabase_kong_web\tkong\tUp 10 seconds\t0.0.0.0:54321->8000/tcp",
+          "supabase_rest_web\tpostgrest\tUp 10 seconds\t",
+          "supabase_storage_api_web\tstorage\tUp 10 seconds\t",
+        ].join("\n"),
+      },
+      listeningPorts: { available: true, output: "LISTEN 0 128 127.0.0.1:54321 0.0.0.0:*" },
+    }),
+  });
+  const diagnostic = renderSupabaseStartDiagnostic({
+    category: classifySupabaseStartFailure({ log: "failed to bind service kong: address already in use", exitCode: 1, evidence }),
+    exitCode: 1,
+    dockerVersion: evidence.dockerServerVersion,
+    supabaseCliVersion: evidence.supabaseCliVersion,
+    dockerDaemonAvailable: evidence.dockerDaemonAvailable,
+    evidence,
+  });
+
+  assert.equal(evidence.requiredServicesState, "ready");
+  assert.equal(evidence.portState, "conflict");
+  assert.equal(evidence.failureService, "kong");
+  assert.match(diagnostic, /category=PORT_CONFLICT/);
+  assert.match(diagnostic, /failure_service=kong/);
+  assert.match(diagnostic, /port_conflicts=54321/);
+  assert.doesNotMatch(diagnostic, /postgres|private|token|docker-secret/);
+});
+
 test("the workflow keeps startup failure blocking and never prints the raw log", () => {
   assert.match(workflow, /set \+e[\s\S]*?start_exit_code=\$\?/);
   assert.match(workflow, /node scripts\/ci\/diagnose-supabase-start\.mjs/);
   assert.match(workflow, /--duration-seconds="\$start_duration_seconds"/);
+  assert.match(workflow, /supabase start --workdir apps\/web --yes --output-format json/);
+  assert.doesNotMatch(workflow, /--ignore-health-check/);
   assert.match(workflow, /if \[ "\$start_exit_code" -ne 0 \]; then\s+exit "\$start_exit_code"/);
   assert.match(workflow, /trap 'rm -f "\$start_log"' EXIT/);
   assert.doesNotMatch(workflow, /cat\s+[^\n]*supabase-start\.log/);

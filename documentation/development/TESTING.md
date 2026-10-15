@@ -1230,15 +1230,21 @@ diagnostic et ne sont jamais téléversées. L'artefact public est construit dan
 synthétique ou une capture explicitement autorisée, jamais de `storageState`,
 cookie, trace, HAR, vidéo, header ou token.
 
-L'étape de démarrage conserve la même suppression du journal brut. En cas
-d'échec, `scripts/ci/diagnose-supabase-start.mjs` publie uniquement un
-diagnostic borné : catégorie, versions, disponibilité du daemon, codes machine
-pour les ressources Docker, les conteneurs `supabase_*`, `supabase status`, le
-contrat minimal de `apps/web/supabase/config.toml` et la durée observée. Une
-sortie `UNCLASSIFIED` reste une absence de preuve causale ; elle ne doit pas
-être transformée en cause supposée. Les codes et les tests du diagnostic sont
-la source de preuve pour enrichir la prochaine exécution sans publier de
-journal, credential, JWT, URL sensible ou configuration brute.
+L'étape de démarrage demande à la CLI une sortie structurée JSON, conserve la
+même suppression du journal brut et ne passe jamais `--ignore-health-check`.
+En cas d'échec, `scripts/ci/diagnose-supabase-start.mjs` publie uniquement un
+diagnostic borné : catégorie et code stable, phase, service Supabase connu,
+versions, disponibilité du daemon, état des images et du réseau Docker,
+conflits de ports, santé et présence des services indispensables à cette lane
+(`db`, `kong`, `rest`, `storage`), `supabase status`, contrat minimal de
+`apps/web/supabase/config.toml` et durée observée. Les sondes ne publient ni
+nom d'image, ni sortie Docker, ni variable d'environnement. Une sortie
+`UNCLASSIFIED` reste une absence de preuve causale ; elle ne doit pas être
+transformée en cause supposée. `START_TIMEOUT` signifie seulement qu'aucun
+conteneur et aucun statut n'ont été observés après la durée bornée ; il ne
+prouve pas à lui seul une cause réseau ou image. Les codes et les tests du
+diagnostic sont la source de preuve pour enrichir la prochaine exécution sans
+publier de journal, credential, JWT, URL sensible ou configuration brute.
 
 La preuve des conteneurs distingue explicitement trois situations. Lorsque
 `docker ps` réussit avec une sortie vide, `NO_SUPABASE_CONTAINERS` signifie

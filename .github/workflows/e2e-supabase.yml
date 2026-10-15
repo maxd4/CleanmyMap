@@ -87,7 +87,7 @@ jobs:
           start_log="artifacts/ci/supabase-start.log"
           trap 'rm -f "$start_log"' EXIT
           start_started_at="$(date +%s)"
-          ./node_modules/.bin/supabase start --workdir apps/web --yes > "$start_log" 2>&1
+          ./node_modules/.bin/supabase start --workdir apps/web --yes --output-format json > "$start_log" 2>&1
           start_exit_code=$?
           start_duration_seconds=$(( $(date +%s) - start_started_at ))
           diagnostic_exit_code=0
