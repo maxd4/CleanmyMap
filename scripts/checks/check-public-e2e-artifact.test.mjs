@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdtempSync, mkdirSync, rmSync, rmdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, rmdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { test } from "node:test";
@@ -13,8 +13,8 @@ import {
 const syntheticJwt = ["eyJ" + "a".repeat(11), "b".repeat(11), "c".repeat(11)].join(".");
 const syntheticClerkKey = ["pk_test_", "a".repeat(24)].join("");
 
-function staging() {
-  const artifactRoot = resolve(PUBLIC_E2E_ARTIFACT_ROOT);
+function staging(artifactRootPath = PUBLIC_E2E_ARTIFACT_ROOT) {
+  const artifactRoot = resolve(artifactRootPath);
   const artifactRootExisted = existsSync(artifactRoot);
   mkdirSync(artifactRoot, { recursive: true });
   const root = mkdtempSync(join(artifactRoot, "test-"));
@@ -34,14 +34,54 @@ function staging() {
   };
 }
 
-function withStaging(callback) {
-  const fixture = staging();
+function withStaging(callback, artifactRootPath = PUBLIC_E2E_ARTIFACT_ROOT) {
+  const fixture = staging(artifactRootPath);
   try {
     return callback(fixture.root);
   } finally {
     fixture.cleanup();
   }
 }
+
+function withIsolatedArtifactRoot(callback) {
+  const container = mkdtempSync(join(tmpdir(), "cleanmymap-public-e2e-root-"));
+  const artifactRoot = join(container, "artifacts", "ci-public-evidence");
+  try {
+    return callback(artifactRoot);
+  } finally {
+    rmSync(container, { recursive: true, force: true });
+  }
+}
+
+test("cleans an artifact parent created by the test without touching the checkout root", () => {
+  withIsolatedArtifactRoot((artifactRoot) => {
+    assert.equal(existsSync(artifactRoot), false);
+    withStaging(() => {}, artifactRoot);
+    assert.equal(existsSync(artifactRoot), false);
+  });
+});
+
+test("preserves an artifact parent that existed before staging", () => {
+  withIsolatedArtifactRoot((artifactRoot) => {
+    mkdirSync(artifactRoot, { recursive: true });
+    withStaging(() => {}, artifactRoot);
+    assert.equal(existsSync(artifactRoot), true);
+  });
+});
+
+test("preserves a foreign artifact when the parent cannot be removed", () => {
+  withIsolatedArtifactRoot((artifactRoot) => {
+    mkdirSync(artifactRoot, { recursive: true });
+    const foreignArtifact = join(artifactRoot, "foreign-report.json");
+    writeFileSync(foreignArtifact, '{"owner":"another-test"}\n');
+
+    withStaging(() => {}, artifactRoot);
+
+    assert.equal(existsSync(artifactRoot), true);
+    assert.equal(existsSync(foreignArtifact), true);
+    assert.equal(readFileSync(foreignArtifact, "utf8"), '{"owner":"another-test"}\n');
+  });
+});
 
 test("accepts synthetic evidence JSON and an explicitly allowed screenshot", () => {
   withStaging((root) => {
