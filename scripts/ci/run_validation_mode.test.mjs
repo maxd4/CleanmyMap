@@ -1,10 +1,16 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { runCheck, runChecksWithScheduler, runValidationMode } from "./run_validation_mode.mjs";
+import {
+  classifyValidationResult,
+  runCheck,
+  runChecksWithScheduler,
+  runValidationMode,
+} from "./run_validation_mode.mjs";
 import {
   removePathWithRetry,
   VALIDATION_EVIDENCE_RELATIVE_ROOT,
@@ -98,6 +104,12 @@ function makeRepository() {
 
 function removeFixture(root) {
   removePathWithRetry(root, { recursive: true });
+}
+
+function initializeGitFixture(root) {
+  execFileSync("git", ["init"], { cwd: root, stdio: "ignore" });
+  execFileSync("git", ["add", "--", "."], { cwd: root, stdio: "ignore" });
+  execFileSync("git", ["commit", "-m", "fixture"], { cwd: root, stdio: "ignore" });
 }
 
 test("retries transient Windows cleanup failures and rethrows persistent failures", () => {
@@ -348,6 +360,113 @@ test("scheduler keeps an independent check running after a failure and blocks it
   assert.deepEqual(result.states.get("independent"), "PASS");
   assert.deepEqual(result.states.get("dependent"), "BLOCKED");
   assert.deepEqual(finished, ["failing", "independent"]);
+});
+
+test("scheduler normalizes PASS with an explicit blocked control status", async () => {
+  const callbacks = [];
+  const result = await runChecksWithScheduler({
+    checks: [{ id: "blocked-access", dependencies: [], parallelizable: true }],
+    maxParallel: 1,
+    getDecision: () => ({ decision: "execute", remainingSeconds: Infinity }),
+    executeCheck: async () => ({
+      status: "PASS",
+      exitCode: 0,
+      output: "CONTROL_STATUS: BLOCKED_ACCESS",
+    }),
+    onResult: (check, normalizedResult, state) => callbacks.push({ check, normalizedResult, state }),
+  });
+
+  assert.equal(classifyValidationResult({
+    status: "PASS",
+    exitCode: 0,
+    output: "CONTROL_STATUS: BLOCKED_ACCESS",
+  }).state, "BLOCKED");
+  assert.equal(result.states.get("blocked-access"), "BLOCKED");
+  assert.equal(result.results.get("blocked-access").state, "BLOCKED");
+  assert.equal(result.results.get("blocked-access").controlStatus, "BLOCKED_ACCESS");
+  assert.deepEqual(callbacks.map(({ state }) => state), ["BLOCKED"]);
+});
+
+test("FULL keeps a PASS result with BLOCKED_ACCESS out of progress, evidence, and release readiness", async () => {
+  const root = makeRepository();
+  const lines = [];
+  initializeGitFixture(root);
+  try {
+    const result = await runValidationMode({
+      mode: "FULL",
+      candidateScope: "WORKTREE",
+      changedFiles: ["documentation/development/TESTING.md"],
+      maxParallel: 4,
+    }, {
+      repositoryRoot: root,
+      log: (line) => lines.push(String(line)),
+      interactive: false,
+      runCheck: async () => ({
+        status: "PASS",
+        exitCode: 0,
+        output: "CONTROL_STATUS: BLOCKED_ACCESS",
+      }),
+    });
+
+    assert.equal(result, 1);
+    assert.ok(lines.some((line) => line.includes("BLOCKED") && line.includes("success=0")));
+    const passedStart = lines.indexOf("CHECKS_PASSED:");
+    const blockedStart = lines.indexOf("CHECKS_BLOCKED:");
+    assert.ok(passedStart >= 0 && blockedStart > passedStart);
+    assert.equal(lines.slice(passedStart + 1, blockedStart).some((line) => line.startsWith("- ")), false);
+    assert.ok(lines.some((line) => line === "VERDICT: FAIL"));
+    assert.ok(lines.some((line) => line === "RELEASE_READY: NO"));
+
+    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    const evidence = JSON.parse(fs.readFileSync(
+      path.join(root, "artifacts", "validation", "full", `${candidateSha}.json`),
+      "utf8",
+    ));
+    assert.deepEqual(evidence.passed, []);
+    assert.ok(evidence.blocked.length > 0);
+    assert.equal(evidence.verdict, "FAIL");
+    assert.equal(evidence.releaseReady, false);
+  } finally {
+    removeFixture(root);
+  }
+});
+
+test("each late-started check begins at zero and keeps a monotone local duration", async () => {
+  const root = makeRepository();
+  const lines = [];
+  const startedChecks = [];
+  let first = true;
+  try {
+    assert.equal(await runValidationMode({
+      mode: "FAST",
+      candidateScope: "WORKTREE",
+      changedFiles: ["documentation/development/TESTING.md"],
+      maxParallel: 1,
+    }, {
+      repositoryRoot: root,
+      log: (line) => lines.push(String(line)),
+      interactive: false,
+      runCheck: async (check, remainingSeconds, repositoryRoot, callbacks) => {
+        if (first) {
+          first = false;
+          await delay(30);
+        }
+        startedChecks.push(check.id);
+        callbacks.onHeartbeat?.(2);
+        callbacks.onHeartbeat?.(1);
+        return { status: "PASS", elapsedSeconds: 1 };
+      },
+    }), 0);
+
+    const runningLines = lines.filter((line) => line.includes("RUNNING elapsed="));
+    assert.ok(startedChecks.length > 1);
+    assert.ok(runningLines.length > 1);
+    assert.ok(runningLines.every((line) => line.includes("elapsed=0.0s")));
+    assert.ok(lines.some((line) => line.includes("Toujours actif") && line.includes("2.0s écoulées")));
+    assert.ok(lines.some((line) => line.includes("PASS duration=2.0s")));
+  } finally {
+    removeFixture(root);
+  }
 });
 
 test("progress reports monotone completion and noninteractive final metrics", async () => {

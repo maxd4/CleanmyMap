@@ -105,6 +105,20 @@ function isTerminalState(state) {
   return ["PASS", "FAIL", "BLOCKED", "REUSED", "NOT_RUN"].includes(state);
 }
 
+const CONTROL_STATUS_PATTERN = /CONTROL_STATUS:\s+(BLOCKED_ACCESS|BLOCKED_ENVIRONMENT|BLOCKED_DECISION|NOT_RUN)/;
+
+export function classifyValidationResult(result = {}) {
+  const controlStatus = result.output?.match(CONTROL_STATUS_PATTERN)?.[1];
+  const state = controlStatus || result.status === "BLOCKED"
+    ? "BLOCKED"
+    : result.status === "PASS"
+      ? "PASS"
+      : result.status === "NOT_RUN"
+        ? "NOT_RUN"
+        : "FAIL";
+  return { state, controlStatus };
+}
+
 function createProgressReporter({
   plan,
   candidateSha,
@@ -113,7 +127,6 @@ function createProgressReporter({
   write = (value) => process.stdout.write(value),
   interactive = Boolean(process.stdout.isTTY && process.env.CI !== "true"),
 } = {}) {
-  const startedAt = performance.now();
   const records = new Map(plan.checks.map((check) => [check.id, {
     id: check.id,
     label: check.label,
@@ -140,8 +153,11 @@ function createProgressReporter({
 
   const lineFor = (record, details = {}) => {
     const counts = snapshot();
-    const elapsed = details.elapsedSeconds ?? ((performance.now() - startedAt) / 1000);
-    const duration = details.durationSeconds ?? record.durationSeconds;
+    const requestedElapsed = details.elapsedSeconds ?? record.durationSeconds;
+    const elapsed = Number.isFinite(Number(requestedElapsed))
+      ? Math.max(record.durationSeconds, Number(requestedElapsed), 0)
+      : record.durationSeconds;
+    const duration = record.durationSeconds;
     const suffix = record.state === "RUNNING"
       ? `elapsed=${formatDuration(elapsed)}`
       : `duration=${formatDuration(duration)}`;
@@ -169,14 +185,22 @@ function createProgressReporter({
       const record = records.get(check.id);
       if (!record) return;
       record.state = state;
-      if (details.durationSeconds !== undefined) record.durationSeconds = details.durationSeconds;
+      for (const value of [details.elapsedSeconds, details.durationSeconds]) {
+        if (Number.isFinite(Number(value))) {
+          record.durationSeconds = Math.max(record.durationSeconds, Number(value), 0);
+        }
+      }
       emit(record, details);
     },
     heartbeat(check, elapsedSeconds) {
       const record = records.get(check.id);
       if (!record || record.state !== "RUNNING") return;
-      if (interactive) emit(record, { elapsedSeconds });
-      else log(`[${new Date().toISOString()}] [${plan.mode}] Toujours actif — ${record.label} — ${formatDuration(elapsedSeconds)} écoulées`);
+      const monotoneElapsed = Number.isFinite(Number(elapsedSeconds))
+        ? Math.max(record.durationSeconds, Number(elapsedSeconds), 0)
+        : record.durationSeconds;
+      record.durationSeconds = monotoneElapsed;
+      if (interactive) emit(record, { elapsedSeconds: monotoneElapsed });
+      else log(`[${new Date().toISOString()}] [${plan.mode}] Toujours actif — ${record.label} — ${formatDuration(monotoneElapsed)} écoulées`);
     },
     finishInteractive() {
       if (interactive) write("\n");
@@ -225,17 +249,15 @@ export async function runChecksWithScheduler({
   };
 
   const settle = (check, result) => {
-    results.set(check.id, result);
-    const hasBlockedStatus = result.output?.match(/CONTROL_STATUS:\s+(BLOCKED_ACCESS|BLOCKED_ENVIRONMENT|BLOCKED_DECISION|NOT_RUN)/);
-    const state = hasBlockedStatus || result.status === "BLOCKED"
-      ? "BLOCKED"
-      : result.status === "PASS"
-      ? "PASS"
-      : result.status === "NOT_RUN"
-        ? "NOT_RUN"
-        : "FAIL";
-    states.set(check.id, state);
-    onResult?.(check, result, state);
+    const classification = classifyValidationResult(result);
+    const normalizedResult = {
+      ...result,
+      state: classification.state,
+      controlStatus: classification.controlStatus,
+    };
+    results.set(check.id, normalizedResult);
+    states.set(check.id, classification.state);
+    onResult?.(check, normalizedResult, classification.state);
   };
 
   while (active.size > 0 || [...states.values()].some((state) => state === "PENDING")) {
@@ -253,7 +275,8 @@ export async function runChecksWithScheduler({
         continue;
       }
       states.set(check.id, "RUNNING");
-      onStart?.(check);
+      const checkStartedAt = performance.now();
+      onStart?.(check, { startedAt: checkStartedAt, elapsedSeconds: 0 });
       const promise = Promise.resolve()
         .then(() => executeCheck(check, decision.remainingSeconds))
         .then((result) => ({ check, result }))
@@ -408,7 +431,7 @@ export async function runValidationMode(
         estimatedSeconds: check.estimatedSeconds,
         budgetSeconds: plan.budgetSeconds,
       }),
-      onStart: (check) => progress.update(check, "RUNNING", { elapsedSeconds: (performance.now() - startedAt) / 1000 }),
+      onStart: (check, timing) => progress.update(check, "RUNNING", { elapsedSeconds: timing.elapsedSeconds }),
       executeCheck: (check, remainingSeconds) => executeCheck(
         check,
         remainingSeconds,
@@ -421,7 +444,7 @@ export async function runValidationMode(
       onResult: (check, result, state) => {
         const durationSeconds = Number(result.elapsedSeconds ?? 0);
         progress.update(check, state, { durationSeconds });
-        if (result.status === "PASS") {
+        if (state === "PASS") {
           passed.push(check.id);
           if (plan.mode === "FAST") {
             fastEvidenceEntries.set(evidenceKeys.get(check.id), {
@@ -446,13 +469,8 @@ export async function runValidationMode(
           notRun.push({ id: check.id, reason: result.reason ?? "NOT_RUN" });
           return;
         }
-        if (result.status === "BLOCKED") {
-          blocked.push(`${check.id}: ${result.reason ?? "BLOCKED_DECISION"}`);
-          return;
-        }
-        const blockedStatus = result.output?.match(/CONTROL_STATUS:\s+(BLOCKED_ACCESS|BLOCKED_ENVIRONMENT|BLOCKED_DECISION|NOT_RUN)/)?.[1];
-        if (blockedStatus) {
-          blocked.push(`${check.id}: ${blockedStatus}`);
+        if (state === "BLOCKED") {
+          blocked.push(`${check.id}: ${result.controlStatus ?? result.reason ?? "BLOCKED_DECISION"}`);
           return;
         }
         const classification = classifyValidationFailure({
