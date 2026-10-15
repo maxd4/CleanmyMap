@@ -7,6 +7,8 @@ import { loadSpogomiFieldOperationsAccess } from "@/lib/spogomi/field-operations
 import { previewSpogomiMeasurementWorkbook } from "@/lib/spogomi/field-measurement-import";
 
 export const runtime = "nodejs";
+// Justification Vercel: l'aperçu dépend de l'identité habilitée, de la division
+// et du classeur reçu ; il ne doit pas être rendu statique ou partagé.
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {

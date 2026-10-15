@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-15T16:39:22.000Z",
-  "apiRouteCount": 166,
+  "generatedAt": "2026-10-15T16:44:22.000Z",
+  "apiRouteCount": 169,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -119,6 +119,27 @@
       "introducedBy": "1de7594128a4b7ff4635c507e4f504d4bc6cdac4",
       "reason": "Surface privée et paginée de pointage SPOGOMI, réservée à la capacité checkin et séparée des inscriptions, équipes et certifications.",
       "costContract": "GET borné à un eventId UUID, une division UUID facultative, une recherche de 80 caractères, une page jusqu'à 10000 et une pageSize de 1 à 100 (25 par défaut) ; POST limité à 120 requêtes par minute par utilisateur authentifié, avec participantId/divisionId UUID, statut borné, motif de 500 caractères et provenance de 120 caractères ; la RPC verrouille l'événement et le participant, contrôle expectedUpdatedAt et journalise l'acteur, le motif et la provenance.",
+      "reviewedAt": "2026-10-15"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/field-operations/route.ts",
+      "introducedBy": "2233f7b82e02bc5d211f7a6dbab229d11f073ede",
+      "reason": "Cockpit serveur des opérations terrain SPOGOMI : phases, retours d'équipes, incidents, décisions et mesures restent séparés par événement et division, avec capacités opérationnelles vérifiées côté serveur.",
+      "costContract": "GET et POST bornés à un eventId UUID, avec divisionId UUID dans chaque mutation et filtre de division facultatif en lecture ; la lecture projette les divisions, équipes, catégories, opérations, retours, incidents et mesures de cet événement, sans pagination implicite ; le POST accepte uniquement les sept actions discriminées du schéma, avec textes bornés à 64/80/120/240/500/1000/4000 caractères selon le champ, UUID et enums validés, puis appelle une RPC service_role après contrôle de capacité. Aucun rate limit applicatif n'est ajouté par ce handler.",
+      "reviewedAt": "2026-10-15"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/field-operations/import/preview/route.ts",
+      "introducedBy": "2233f7b82e02bc5d211f7a6dbab229d11f073ede",
+      "reason": "Aperçu authentifié d'un classeur de mesures SPOGOMI, réservé à l'organisateur ou aux capacités measurement_entry/weighing avant écriture des mesures officielles.",
+      "costContract": "POST borné à l'authentification, à un événement et une division fournis dans le multipart, à un fichier de 5 MiB maximum et aux formats CSV/TSV/XLSX/XLS/ODS ; le parseur calcule un hash, limite la projection aux équipes et catégories de la division, persiste l'aperçu et ses lignes, et réutilise la réservation existante sur collision de contenu. Aucun rate limit applicatif n'est ajouté par ce handler.",
+      "reviewedAt": "2026-10-15"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/field-operations/import/confirm/route.ts",
+      "introducedBy": "2233f7b82e02bc5d211f7a6dbab229d11f073ede",
+      "reason": "Confirmation authentifiée d'un aperçu de mesures SPOGOMI, réservée à l'organisateur ou aux capacités measurement_entry/weighing et soumise à la division de l'import.",
+      "costContract": "POST borné par eventId UUID, divisionId UUID, importId UUID et une liste facultative de numéros de ligne positifs ; seules les lignes admissibles sélectionnées de l'import sont transmises une par une à la RPC de mesure, avec reprise idempotente si l'import est déjà confirmé. Aucun rate limit applicatif n'est ajouté par ce handler.",
       "reviewedAt": "2026-10-15"
     }
   ],
@@ -252,6 +273,9 @@
     "apps/web/src/app/api/spogomi/events/[eventId]/consolidation/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/contributions/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/export.xlsx/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/field-operations/import/confirm/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/field-operations/import/preview/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/field-operations/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/gallery/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/identity-assistance/invitation/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/identity-assistance/requests/[requestId]/route.ts",

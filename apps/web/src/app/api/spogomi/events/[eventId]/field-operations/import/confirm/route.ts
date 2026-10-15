@@ -8,6 +8,8 @@ import { loadSpogomiFieldOperationsAccess } from "@/lib/spogomi/field-operations
 import { confirmSpogomiMeasurementImport } from "@/lib/spogomi/field-measurement-import";
 
 export const runtime = "nodejs";
+// Justification Vercel: la confirmation modifie les mesures canoniques et doit
+// revalider l'accès opérationnel courant avant chaque import.
 export const dynamic = "force-dynamic";
 
 const schema = z.object({ divisionId: z.string().uuid(), importId: z.string().uuid(), selectedRowNumbers: z.array(z.number().int().positive()).optional() }).strict();

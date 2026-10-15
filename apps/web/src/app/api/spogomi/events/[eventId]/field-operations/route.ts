@@ -12,6 +12,8 @@ import {
 } from "@/lib/spogomi/field-operations-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: ce cockpit privé relit l'opération, les capacités et
+// les décisions terrain courantes de l'événement et de la division.
 export const dynamic = "force-dynamic";
 
 const paramsSchema = z.object({ eventId: z.string().uuid() });
