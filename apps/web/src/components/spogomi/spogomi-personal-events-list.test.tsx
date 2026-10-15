@@ -1,7 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { SpogomiPersonalEventsList } from "./spogomi-personal-events-list";
 import type { SpogomiPersonalEvent } from "@/lib/spogomi/personal-events-service";
+
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true, self: globalThis });
 
 function event(id: string, relations: SpogomiPersonalEvent["relations"]): SpogomiPersonalEvent {
   return {
@@ -17,10 +20,12 @@ function event(id: string, relations: SpogomiPersonalEvent["relations"]): Spogom
     relations,
     accesses: relations.includes("organizer")
       ? ["manage"]
+      : relations.includes("checkin")
+        ? ["checkin"]
       : relations.includes("observer")
         ? ["observe"]
         : ["participate"],
-    links: { public: null, space: relations.some((relation) => ["organizer", "referee", "observer"].includes(relation)) ? `/spogomi/${id}-slug/espace` : null },
+    links: { public: null, space: relations.some((relation) => ["organizer", "referee", "observer", "checkin"].includes(relation)) ? `/spogomi/${id}-slug/espace` : null },
   };
 }
 
@@ -38,6 +43,28 @@ describe("SpogomiPersonalEventsList", () => {
   it("links an operational reviewer to the capability-scoped space", () => {
     const markup = renderToStaticMarkup(<SpogomiPersonalEventsList events={[event("observer", ["observer"])]} />);
     expect(markup).toContain('/spogomi/observer-slug/espace');
+  });
+
+  it("labels and filters check-in events without changing their server-scoped link", () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<SpogomiPersonalEventsList events={[event("checkin", ["checkin"]), event("participant", ["participant"])]} />);
+    });
+
+    expect(renderer.root.findAll((node) => node.type === "button").map((node) => node.props.children)).toContain("J’accueille");
+    expect(renderer.root.findAll((node) => node.type === "a" && node.props.href === "/spogomi/checkin-slug/espace")).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.type === "span").some((node) => {
+      const children = node.props.children;
+      return (Array.isArray(children) ? children.filter((child): child is string => typeof child === "string").join("") : children) === "Accueil et présences";
+    })).toBe(true);
+
+    const checkinFilter = renderer.root.findAll((node) => node.type === "button" && node.props.children === "J’accueille")[0];
+    act(() => {
+      checkinFilter?.props.onClick();
+    });
+
+    expect(renderer.root.findAll((node) => node.type === "article" && node.props["data-testid"] === "spogomi-personal-event-checkin")).toHaveLength(1);
+    expect(renderer.root.findAll((node) => node.type === "article" && node.props["data-testid"] === "spogomi-personal-event-participant")).toHaveLength(0);
   });
 
   it("does not invent a private participant route", () => {

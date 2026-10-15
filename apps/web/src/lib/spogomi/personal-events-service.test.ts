@@ -64,14 +64,17 @@ describe("listSpogomiEventsForUser", () => {
     const supabase = createSupabaseFixture({
       events: [event("event-a", "action-a", "published"), event("event-b", "action-b")],
       organizers: [{ action_id: "action-a", organizer_clerk_id: "user-1" }, { action_id: "action-b", organizer_clerk_id: "user-1" }],
-      reviewers: [{ event_id: "event-a", clerk_id: "user-1", role: "referee", revoked_at: null }],
+      reviewers: [
+        { event_id: "event-a", clerk_id: "user-1", role: "referee", revoked_at: null },
+        { event_id: "event-a", clerk_id: "user-1", role: "checkin", revoked_at: null },
+      ],
       participants: [{ event_id: "event-a", clerk_id: "user-1", account_link_status: "verified" }],
     });
 
     const result = await listSpogomiEventsForUser(supabase as never, "user-1");
 
     expect(result).toHaveLength(2);
-    expect(result[1]).toMatchObject({ id: "event-a", relations: ["organizer", "referee", "participant"], accesses: ["manage", "arbitrate", "participate"] });
+    expect(result[1]).toMatchObject({ id: "event-a", relations: ["organizer", "referee", "checkin", "participant"], accesses: ["manage", "arbitrate", "checkin", "participate"] });
     expect(result[1]?.links.space).toBe("/spogomi/event-a-slug/espace");
     expect(result[1]?.links.public).toBe("/spogomi/event-a-slug");
     expect(result[1]).not.toHaveProperty("action_id");
@@ -88,6 +91,23 @@ describe("listSpogomiEventsForUser", () => {
     const [result] = await listSpogomiEventsForUser(supabase as never, "user-1");
 
     expect(result?.links.space).toBe("/spogomi/event-a-slug/espace");
+  });
+
+  it("returns an active check-in assignment with only pointage access", async () => {
+    const supabase = createSupabaseFixture({
+      events: [event("event-a", "action-a")],
+      organizers: [],
+      reviewers: [{ event_id: "event-a", clerk_id: "user-1", role: "checkin", revoked_at: null }],
+      participants: [],
+    });
+
+    const [result] = await listSpogomiEventsForUser(supabase as never, "user-1");
+
+    expect(result).toMatchObject({
+      relations: ["checkin"],
+      accesses: ["checkin"],
+      links: { space: "/spogomi/event-a-slug/espace", public: null },
+    });
   });
 
   it("keeps relations found after the first 1,000-row page", async () => {

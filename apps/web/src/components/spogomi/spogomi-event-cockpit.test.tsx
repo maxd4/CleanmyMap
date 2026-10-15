@@ -55,6 +55,13 @@ describe("SpogomiEventCockpit", () => {
     const markup = renderToStaticMarkup(<SpogomiEventCockpit event={event} role="checkin" capabilities={["checkin"]} />);
     expect(markup).toContain('href="#attendance"');
     expect(markup).not.toContain('href="#teams"');
+    expect(markup).not.toContain('href="#results"');
+    expect(markup).not.toContain('href="#arbitration"');
+    expect(markup).not.toContain('href="#bilan"');
     expect(markup).not.toContain('href="#settings"');
+    expect(markup).not.toContain("Équipes");
+    expect(markup).not.toContain("Arbitrage");
+    expect(markup).not.toContain("Bilan");
+    expect(markup).not.toContain("Paramètres");
   });
 });

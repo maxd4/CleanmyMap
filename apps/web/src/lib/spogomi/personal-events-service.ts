@@ -24,18 +24,20 @@ type PersonalEventRow = {
 };
 
 type OrganizerActionRow = { action_id: string };
-type ReviewerRow = { event_id: string; role: "observer" | "referee" };
+type ReviewerRow = { event_id: string; role: "observer" | "referee" | "checkin" };
 type ParticipantRow = { event_id: string; account_link_status: "verified" };
 
 export type SpogomiPersonalRelation =
   | "organizer"
   | "referee"
   | "observer"
+  | "checkin"
   | "participant";
 
 export type SpogomiPersonalAccess =
   | "manage"
   | "arbitrate"
+  | "checkin"
   | "observe"
   | "participate";
 
@@ -197,11 +199,12 @@ function toPersonalEvent(
   event: PersonalEventRow,
   relations: Set<SpogomiPersonalRelation>,
 ): SpogomiPersonalEvent {
-  const orderedRelations = (["organizer", "referee", "observer", "participant"] as const)
+  const orderedRelations = (["organizer", "referee", "checkin", "observer", "participant"] as const)
     .filter((relation) => relations.has(relation));
   const accesses: SpogomiPersonalAccess[] = [];
   if (relations.has("organizer")) accesses.push("manage");
   if (relations.has("referee")) accesses.push("arbitrate");
+  if (relations.has("checkin")) accesses.push("checkin");
   if (relations.has("observer")) accesses.push("observe");
   if (relations.has("participant")) accesses.push("participate");
 
@@ -223,7 +226,7 @@ function toPersonalEvent(
           ? `/spogomi/${encodeURIComponent(event.event_slug)}`
           : null,
       space:
-        (relations.has("organizer") || relations.has("referee") || relations.has("observer")) && event.event_slug
+        (relations.has("organizer") || relations.has("referee") || relations.has("observer") || relations.has("checkin")) && event.event_slug
           ? `/spogomi/${encodeURIComponent(event.event_slug)}/espace`
           : null,
     },

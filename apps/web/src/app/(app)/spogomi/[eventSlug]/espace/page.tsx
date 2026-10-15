@@ -30,7 +30,7 @@ export default async function SpogomiEventSpacePage({ params }: Props) {
       if (eventResult.error || !eventResult.data) return null;
       return loadSpogomiFieldOperationsAccess({ supabase: getSupabaseServerClient(true), eventId: String(eventResult.data.id), userId: access.userId });
     })();
-  if ((!eventAccess || (!hasSpogomiCapability(eventAccess, "observe") && !hasSpogomiCapability(eventAccess, "manage"))) && !fieldOperationsAccess) notFound();
+  if ((!eventAccess || (!hasSpogomiCapability(eventAccess, "observe") && !hasSpogomiCapability(eventAccess, "manage") && !hasSpogomiCapability(eventAccess, "checkin"))) && !fieldOperationsAccess) notFound();
   const effectiveEvent = eventAccess?.event ?? fieldOperationsAccess?.event;
   if (!effectiveEvent) notFound();
   const activeRole = await getCurrentUserActiveRole();

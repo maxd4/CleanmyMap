@@ -70,4 +70,34 @@ describe("/spogomi/[eventSlug]/espace", () => {
     expect(markup).toContain('data-event-id="event-1"');
     expect(mocks.resolveSpogomiEventAccessBySlug).toHaveBeenCalled();
   });
+
+  it("allows a check-in-only assignment through the server event authorization", async () => {
+    mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "checkin-1" });
+    mocks.resolveSpogomiEventAccessBySlug.mockResolvedValue({
+      event: { id: "event-1", name: "Paris", event_slug: "paris-2026", mode: "casual", state: "published", starts_at: "2026-01-01", ends_at: null, public_visibility: "private" },
+      role: "checkin",
+      capabilities: new Set(["checkin"]),
+    });
+
+    const markup = renderToStaticMarkup(await SpogomiEventSpacePage({ params: Promise.resolve({ eventSlug: "paris-2026" }) }));
+
+    expect(markup).toContain('data-event-id="event-1"');
+    expect(mocks.loadSpogomiFieldOperationsAccess).toHaveBeenCalledWith({ supabase: { server: true }, eventId: "event-1", userId: "checkin-1" });
+    expect(mocks.resolveSpogomiEventAccessBySlug).toHaveBeenCalledWith({ supabase: { server: true }, eventSlug: "paris-2026", userId: "checkin-1" });
+  });
+
+  it("refuses a revoked or unrelated event before rendering the cockpit", async () => {
+    mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "checkin-1" });
+    mocks.resolveSpogomiEventAccessBySlug.mockResolvedValue(null);
+    const eventLookup = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+    };
+    eventLookup.select.mockReturnValue(eventLookup);
+    eventLookup.eq.mockReturnValue(eventLookup);
+    mocks.getSupabaseServerClient.mockReturnValue({ from: vi.fn().mockReturnValue(eventLookup) });
+    await expect(SpogomiEventSpacePage({ params: Promise.resolve({ eventSlug: "other-event" }) })).rejects.toMatchObject({ digest: "NEXT_HTTP_ERROR_FALLBACK;404" });
+    expect(mocks.loadSpogomiFieldOperationsAccess).not.toHaveBeenCalled();
+  });
 });

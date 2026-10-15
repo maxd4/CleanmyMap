@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, CalendarDays, Eye, Gavel, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowRight, CalendarDays, ClipboardCheck, Eye, Gavel, ShieldCheck, UserRound } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import type {
@@ -15,6 +15,7 @@ const FILTERS: readonly { key: FilterKey; label: string; relation?: SpogomiPerso
   { key: "all", label: "Tous" },
   { key: "organizer", label: "J’organise", relation: "organizer" },
   { key: "referee", label: "J’arbitre", relation: "referee" },
+  { key: "checkin", label: "J’accueille", relation: "checkin" },
   { key: "observer", label: "J’observe", relation: "observer" },
   { key: "participant", label: "Je participe", relation: "participant" },
 ];
@@ -22,6 +23,7 @@ const FILTERS: readonly { key: FilterKey; label: string; relation?: SpogomiPerso
 const RELATION_LABELS: Record<SpogomiPersonalRelation, string> = {
   organizer: "Organisateur",
   referee: "Arbitre",
+  checkin: "Accueil et présences",
   observer: "Observateur",
   participant: "Participant lié",
 };
@@ -29,6 +31,7 @@ const RELATION_LABELS: Record<SpogomiPersonalRelation, string> = {
 const ACCESS_LABELS = {
   manage: "Gestion",
   arbitrate: "Arbitrage",
+  checkin: "Pointage",
   observe: "Lecture opérationnelle",
   participate: "Parcours personnel",
 } as const;
@@ -61,6 +64,7 @@ function stateLabel(state: string): string {
 function AccessIcon({ relation }: { relation: SpogomiPersonalRelation }) {
   if (relation === "organizer") return <ShieldCheck size={14} aria-hidden="true" />;
   if (relation === "referee") return <Gavel size={14} aria-hidden="true" />;
+  if (relation === "checkin") return <ClipboardCheck size={14} aria-hidden="true" />;
   if (relation === "observer") return <Eye size={14} aria-hidden="true" />;
   return <UserRound size={14} aria-hidden="true" />;
 }
