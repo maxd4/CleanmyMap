@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSpogomiResultsProjection, type SpogomiResultsSource } from "./results-projection";
+import { buildSpogomiResultsProjection, getSpogomiDivisionProjections, type SpogomiResultsSource } from "./results-projection";
 
 function source(): SpogomiResultsSource {
   return {
@@ -57,22 +57,56 @@ describe("SPOGOMI public results projection", () => {
     const candidate = source();
     candidate.event.mode = "mixed";
     candidate.event.divisions = [
-      { id: "division-casual", division_type: "casual" },
-      { id: "division-world", division_type: "world_cup" },
+      {
+        id: "division-casual", division_type: "casual", regulation_version: "rules-casual", regulation_status: "complete",
+        regulation_source_reference: "reglement:casual", regulation_config: { ...(candidate.event.regulationConfig as Record<string, unknown>), tiebreakers: ["mass_grams"] },
+        team_size_config: { casual: { minMembers: 1, maxMembers: 5 } },
+      },
+      {
+        id: "division-world", division_type: "world_cup", regulation_version: "rules-world", regulation_status: "complete",
+        regulation_source_reference: "reglement:world", regulation_config: { ...(candidate.event.regulationConfig as Record<string, unknown>), tiebreakers: ["counted_objects"] },
+        team_size_config: { world_cup: { minMembers: 3, maxMembers: 3 } },
+      },
     ];
-    candidate.categories = candidate.categories.map((category) => ({ ...category, division_id: category.code === "waste" ? "division-casual" : "division-world" }));
-    candidate.teams = candidate.teams.map((team) => ({ ...team, division_id: team.id === "team-3" ? "division-world" : "division-casual" }));
-    candidate.submissions = candidate.submissions.map((submission) => ({ ...submission, division_id: submission.team_id === "team-3" ? "division-world" : "division-casual" }));
-    candidate.teams = candidate.teams.map((team) => ({ ...team, certified_submission_id: `submission-${team.team_number}` }));
-    candidate.submissions = candidate.submissions.map((submission) => ({ ...submission, status: "certified" }));
-    candidate.items = candidate.items.map((item) => ({ ...item, division_id: item.submission_id === "submission-3" ? "division-world" : "division-casual" }));
-    candidate.participants = candidate.participants.map((participant) => ({ ...participant, division_id: participant.team_id === "team-3" ? "division-world" : "division-casual" }));
+    candidate.categories = [
+      { ...candidate.categories[0], id: "cat-casual-waste", division_id: "division-casual", regulation_version: "rules-casual", coefficient: 1 },
+      { ...candidate.categories[1], id: "cat-casual-butts", division_id: "division-casual", regulation_version: "rules-casual", coefficient: 0 },
+      { ...candidate.categories[0], id: "cat-world-waste", division_id: "division-world", regulation_version: "rules-world", coefficient: 2 },
+      { ...candidate.categories[1], id: "cat-world-butts", division_id: "division-world", regulation_version: "rules-world", coefficient: 0 },
+    ];
+    candidate.teams = [
+      { ...candidate.teams[0], id: "team-casual-1", division_id: "division-casual", team_number: 1, certified_submission_id: "submission-casual" },
+      { ...candidate.teams[1], id: "team-world-1", division_id: "division-world", team_number: 1, certified_submission_id: "submission-world" },
+    ];
+    candidate.submissions = [
+      { ...candidate.submissions[0], id: "submission-casual", division_id: "division-casual", team_id: "team-casual-1", status: "certified", regulation_version: "rules-casual" },
+      { ...candidate.submissions[1], id: "submission-world", division_id: "division-world", team_id: "team-world-1", status: "certified", regulation_version: "rules-world" },
+    ];
+    candidate.items = [
+      { id: "item-casual-waste", submission_id: "submission-casual", category_rule_id: "cat-casual-waste", division_id: "division-casual", measurement_kind: "mass", unit: "kg", quantity: 10, mass_grams: 10000, object_count: null, measurement_method: "balance", provenance: "poste casual" },
+      { id: "item-casual-butts", submission_id: "submission-casual", category_rule_id: "cat-casual-butts", division_id: "division-casual", measurement_kind: "count", unit: "unité", quantity: 2, mass_grams: null, object_count: 2, measurement_method: "comptage", provenance: "sac casual" },
+      { id: "item-world-waste", submission_id: "submission-world", category_rule_id: "cat-world-waste", division_id: "division-world", measurement_kind: "mass", unit: "kg", quantity: 6, mass_grams: 6000, object_count: null, measurement_method: "balance", provenance: "poste world" },
+      { id: "item-world-butts", submission_id: "submission-world", category_rule_id: "cat-world-butts", division_id: "division-world", measurement_kind: "count", unit: "unité", quantity: 4, mass_grams: null, object_count: 4, measurement_method: "comptage", provenance: "sac world" },
+    ];
+    candidate.participants = [
+      { id: "p-casual", division_id: "division-casual", team_id: "team-casual-1", registration_status: "registered", attendance_status: "present" },
+      { id: "p-world", division_id: "division-world", team_id: "team-world-1", registration_status: "registered", attendance_status: "present" },
+    ];
     const projection = buildSpogomiResultsProjection(candidate);
+    const divisionProjections = getSpogomiDivisionProjections(projection);
     expect(projection.results.divisions).toHaveLength(2);
-    expect(projection.results.divisions?.[0]?.sport.entries.map((entry) => entry.teamNumber)).toEqual([1, 2]);
-    expect(projection.results.divisions?.[1]?.sport.entries.map((entry) => entry.teamNumber)).toEqual([3]);
-    expect(projection.teams.find((team) => team.teamNumber === 1)?.categories.map((category) => category.code)).toEqual(["waste"]);
-    expect(projection.teams.find((team) => team.teamNumber === 3)?.categories.map((category) => category.code)).toEqual(["butts"]);
+    expect(divisionProjections).toHaveLength(2);
+    expect(divisionProjections.map((division) => division.publicationSourceSnapshot.divisions)).toEqual([
+      [expect.objectContaining({ id: "division-casual", type: "casual", regulationVersion: "rules-casual" })],
+      [expect.objectContaining({ id: "division-world", type: "world_cup", regulationVersion: "rules-world" })],
+    ]);
+    expect(divisionProjections[0]?.results.sport.entries).toEqual([expect.objectContaining({ teamId: "team-casual-1", teamNumber: 1 })]);
+    expect(divisionProjections[1]?.results.sport.entries).toEqual([expect.objectContaining({ teamId: "team-world-1", teamNumber: 1 })]);
+    expect(divisionProjections[0]?.publicationSourceSnapshot.teams).toEqual([expect.objectContaining({ id: "team-casual-1", divisionId: "division-casual" })]);
+    expect(divisionProjections[1]?.publicationSourceSnapshot.teams).toEqual([expect.objectContaining({ id: "team-world-1", divisionId: "division-world" })]);
+    expect(divisionProjections[0]?.publicationSourceSnapshot.items.every((item) => item.divisionId === "division-casual")).toBe(true);
+    expect(divisionProjections[1]?.publicationSourceSnapshot.items.every((item) => item.divisionId === "division-world")).toBe(true);
+    expect(divisionProjections[0]?.results.sport.entries[0]?.score).not.toBe(divisionProjections[1]?.results.sport.entries[0]?.score);
   });
 
   it("keeps unresolved sports ties equal when the regulation does not configure a further departure", () => {

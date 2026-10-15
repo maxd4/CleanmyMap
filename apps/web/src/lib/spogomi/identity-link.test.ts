@@ -214,4 +214,71 @@ describe("SPOGOMI identity link", () => {
     });
     expect(loadSpogomiResultsProjectionMock).toHaveBeenCalledWith({ supabase, eventId: "event-1", publicOnly: true });
   });
+
+  it("loads the linked World Cup results when a mixed edition reuses the team number", async () => {
+    const { loadSpogomiIdentityState } = await import("./identity-link");
+    loadSpogomiResultsProjectionMock.mockResolvedValue({
+      event: { mode: "mixed" },
+      results: {
+        sport: { entries: [{ teamId: "casual-team-1", status: "certified", rank: 1, score: 40 }] },
+        butts: { entries: [{ teamId: "casual-team-1", status: "certified", rank: 1, ratio: 2 }] },
+        divisions: [
+          { id: "division-casual", sport: { entries: [{ teamId: "casual-team-1", status: "certified", rank: 1, score: 40 }] }, butts: { entries: [{ teamId: "casual-team-1", status: "certified", rank: 1, ratio: 2 }] } },
+          { id: "division-world", sport: { entries: [{ teamId: "world-team-1", status: "certified", rank: 3, score: 90 }] }, butts: { entries: [{ teamId: "world-team-1", status: "provisional", rank: 2, ratio: 4 }] } },
+        ],
+      },
+    });
+    const makeChain = (data: unknown) => {
+      const chain = {
+        select: vi.fn(() => chain),
+        eq: vi.fn(() => chain),
+        limit: vi.fn(async () => ({ data, error: null })),
+        maybeSingle: vi.fn(async () => ({ data, error: null })),
+      };
+      return chain;
+    };
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === "spogomi_events") return makeChain({ action_id: "action-1" });
+        if (table === "spogomi_participants") return makeChain([{ id: "participant-1", division_id: "division-world", team_id: "world-team-1", account_link_status: "verified", attendance_status: "present" }]);
+        if (table === "actions") return makeChain({ action_phase: "post_action_complete" });
+        if (table === "spogomi_teams") return makeChain({ id: "world-team-1", division_id: "division-world", team_number: 1, public_name: "World Cup" });
+        if (table === "spogomi_divisions") return makeChain({ division_type: "world_cup" });
+        return makeChain({ participation_status: "confirmed" });
+      }),
+    } as never;
+
+    await expect(loadSpogomiIdentityState(supabase, { eventId: "event-1", clerkId: "user-1" })).resolves.toMatchObject({
+      team: {
+        teamNumber: 1,
+        divisionType: "world_cup",
+        publishedResults: {
+          sport: { rank: 3, score: 90, status: "certified" },
+          butts: { rank: 2, ratio: 4, status: "provisional" },
+        },
+      },
+    });
+  });
+
+  it("fails closed when a mixed team's division is absent from the public projection", async () => {
+    const { loadSpogomiIdentityState } = await import("./identity-link");
+    loadSpogomiResultsProjectionMock.mockResolvedValue({ event: { mode: "mixed" }, results: { divisions: [{ id: "division-casual", sport: { entries: [] }, butts: { entries: [] } }] } });
+    const supabase = {
+      from: vi.fn((table: string) => table === "spogomi_events"
+        ? createIdentityLinkChain({ action_id: "action-1" })
+        : table === "spogomi_participants"
+          ? createIdentityLinkChain([{ id: "participant-1", division_id: "division-world", team_id: "world-team-1", account_link_status: "verified", attendance_status: "present" }], true)
+          : table === "actions"
+            ? createIdentityLinkChain({ action_phase: "pre_action" })
+            : table === "spogomi_teams"
+              ? createIdentityLinkChain({ id: "world-team-1", division_id: "division-world", team_number: 1, public_name: "World Cup" })
+              : table === "spogomi_divisions"
+                ? createIdentityLinkChain({ division_type: "world_cup" })
+                : createIdentityLinkChain({ registration_status: "pending" })),
+    } as never;
+
+    await expect(loadSpogomiIdentityState(supabase, { eventId: "event-1", clerkId: "user-1" })).resolves.toMatchObject({
+      team: { divisionType: "world_cup", publishedResults: null },
+    });
+  });
 });

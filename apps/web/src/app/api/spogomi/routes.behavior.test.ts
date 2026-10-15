@@ -55,6 +55,7 @@ const mocks = vi.hoisted(() => {
   const loadSpogomiTeamResultForm = vi.fn();
   const saveSpogomiTeamSubmission = vi.fn();
   const loadSpogomiResultsProjection = vi.fn();
+  const getSpogomiDivisionProjections = vi.fn((projection: unknown) => [projection]);
   const loadSpogomiEventResultReviews = vi.fn();
   const resolveSpogomiReviewerRole = vi.fn();
   const reviewSpogomiTeamSubmission = vi.fn();
@@ -119,6 +120,7 @@ const mocks = vi.hoisted(() => {
     loadSpogomiTeamResultForm,
     saveSpogomiTeamSubmission,
     loadSpogomiResultsProjection,
+    getSpogomiDivisionProjections,
     loadSpogomiEventResultReviews,
     resolveSpogomiReviewerRole,
     reviewSpogomiTeamSubmission,
@@ -227,6 +229,9 @@ vi.mock("@/lib/spogomi/volunteer", () => ({
 }));
 vi.mock("@/lib/spogomi/results-projection-service", () => ({
   loadSpogomiResultsProjection: mocks.loadSpogomiResultsProjection,
+}));
+vi.mock("@/lib/spogomi/results-projection", () => ({
+  getSpogomiDivisionProjections: mocks.getSpogomiDivisionProjections,
 }));
 vi.mock("@/lib/spogomi/identity-link", () => ({
   issueSpogomiIdentityCode: mocks.issueSpogomiIdentityCode,
@@ -398,10 +403,11 @@ describe("SPOGOMI persistence routes", () => {
 
     mocks.event.state = "certified";
     mocks.loadSpogomiResultsProjection.mockResolvedValue({
-      event: { name: "SPOGOMI Paris", mode: "casual", startsAt: "2026-06-01", endsAt: null, state: "certified" },
+      event: { name: "SPOGOMI Paris", mode: "casual", startsAt: "2026-06-01", endsAt: null, state: "certified", divisions: [{ id: "division-1", division_type: "casual" }] },
       teams: [{
         teamNumber: 1,
         teamId: "team-1",
+        divisionId: "division-1",
         publicName: "Alpha",
         registeredParticipants: 3,
         presentParticipants: 2,
@@ -430,8 +436,8 @@ describe("SPOGOMI persistence routes", () => {
       results: {
         regulationComplete: true,
         visibility: "certified",
-        sport: { status: "available", entries: [{ teamNumber: 1, rank: 1, eligible: true, score: 10 }] },
-        butts: { status: "available", entries: [{ teamNumber: 1, rank: 2, eligible: true, ratio: 1.5 }] },
+        sport: { status: "available", entries: [{ teamNumber: 1, teamId: "team-1", divisionId: "division-1", rank: 1, eligible: true, score: 10 }] },
+        butts: { status: "available", entries: [{ teamNumber: 1, teamId: "team-1", divisionId: "division-1", rank: 2, eligible: true, ratio: 1.5 }] },
         environmental: { projectionVersion: "v1", sourceHash: "hash", participantsPresent: 2, totalWasteMassGrams: 12, cigaretteButtsCount: 3, cigaretteButtsMassGrams: 1 },
       },
       regulation: { version: "v1", status: "complete", sourceReference: "fixture" },
@@ -449,6 +455,111 @@ describe("SPOGOMI persistence routes", () => {
     const photo = { id: "photo-1", url: "https://example.test/photo.jpg", alt: "Photo", caption: null, credit: null, sourceUrl: "https://example.test/source", ownerName: "CleanMyMap", status: "draft" };
     expect((await gallery.POST(jsonRequest("http://localhost", photo), eventContext)).status).toBe(200);
     expect((await gallery.DELETE(new Request("http://localhost?photoId=photo-1", { method: "DELETE" }), eventContext)).status).toBe(200);
+  });
+
+  it("publishes mixed rankings with independent UUID-scoped projections and snapshots", async () => {
+    mocks.event.state = "certified";
+    const casualDivisionId = "11111111-1111-4111-8111-111111111111";
+    const worldDivisionId = "22222222-2222-4222-8222-222222222222";
+    const casualTeamId = "33333333-3333-4333-8333-333333333333";
+    const worldTeamId = "44444444-4444-4444-8444-444444444444";
+    const snapshot = (divisionId: string, teamId: string) => ({
+      event: { id: "event-1", regulationVersion: "parent", regulationStatus: "complete", regulationSourceReference: null, regulationConfig: {}, teamSizeConfig: {} },
+      divisions: [{ id: divisionId, type: divisionId === casualDivisionId ? "casual" : "world_cup", regulationVersion: divisionId === casualDivisionId ? "rules-casual" : "rules-world", regulationStatus: "complete", regulationSourceReference: null, regulationConfig: {}, teamSizeConfig: {} }],
+      categories: [], teams: [{ id: teamId, divisionId, teamNumber: 1, compositionState: "locked", certifiedSubmissionId: "55555555-5555-4555-8555-555555555555" }], submissions: [], items: [], participants: [],
+    });
+    const divisionProjection = (divisionId: string, teamId: string, rank: number, score: number) => ({
+      event: { mode: divisionId === casualDivisionId ? "casual" : "world_cup", divisions: [{ id: divisionId, division_type: divisionId === casualDivisionId ? "casual" : "world_cup" }] },
+      regulation: { version: divisionId === casualDivisionId ? "rules-casual" : "rules-world", status: "complete", sourceReference: null },
+      results: {
+        regulationComplete: true,
+        sport: { entries: [{ teamId, teamNumber: 1, rank, eligible: true, score }] },
+        butts: { entries: [{ teamId, teamNumber: 1, rank: rank + 1, eligible: true }] },
+      },
+      teams: [{ teamId, divisionId, teamNumber: 1, submissionStatus: "certified", submissionVersion: 1, presentParticipants: 3 }],
+      publicationSourceSnapshot: snapshot(divisionId, teamId),
+    });
+    const casual = divisionProjection(casualDivisionId, casualTeamId, 1, 80);
+    const world = divisionProjection(worldDivisionId, worldTeamId, 1, 120);
+    const projection = {
+      event: { mode: "mixed", divisions: [{ id: casualDivisionId, division_type: "casual" }, { id: worldDivisionId, division_type: "world_cup" }] },
+      teams: [...casual.teams, ...world.teams],
+    };
+    mocks.loadSpogomiResultsProjection.mockResolvedValue(projection);
+    mocks.getSpogomiDivisionProjections.mockReturnValueOnce([casual, world]);
+    mocks.supabase.rpc.mockResolvedValue({ data: 2, error: null });
+
+    const rankings = await import("./events/[eventId]/rankings/route");
+    expect((await rankings.POST(new Request("http://localhost"), eventContext)).status).toBe(200);
+    expect(mocks.supabase.rpc).toHaveBeenCalledTimes(2);
+
+    const calls = mocks.supabase.rpc.mock.calls;
+    const casualCall = calls[0]?.[1] as Record<string, unknown>;
+    const worldCall = calls[1]?.[1] as Record<string, unknown>;
+    expect(calls[0]?.[0]).toBe("publish_spogomi_official_rankings_for_division");
+    expect(casualCall.p_division_id).toBe(casualDivisionId);
+    expect(worldCall.p_division_id).toBe(worldDivisionId);
+    expect(casualCall.p_rankings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ teamId: casualTeamId, divisionId: casualDivisionId }),
+    ]));
+    expect(worldCall.p_rankings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ teamId: worldTeamId, divisionId: worldDivisionId }),
+    ]));
+    expect(casualCall.p_rankings).not.toEqual(expect.arrayContaining([expect.objectContaining({ teamId: worldTeamId })]));
+    expect(worldCall.p_rankings).not.toEqual(expect.arrayContaining([expect.objectContaining({ teamId: casualTeamId })]));
+    expect((casualCall.p_source_snapshot as { divisions: unknown[] }).divisions).toHaveLength(1);
+    expect((worldCall.p_source_snapshot as { divisions: unknown[] }).divisions).toHaveLength(1);
+    expect(casualCall.p_decision_version).not.toBe(worldCall.p_decision_version);
+
+    const firstWorldDecision = worldCall.p_decision_version;
+    mocks.supabase.rpc.mockClear();
+    mocks.getSpogomiDivisionProjections.mockReturnValueOnce([casual, world]);
+    expect((await rankings.POST(new Request("http://localhost"), eventContext)).status).toBe(200);
+    const replayCalls = mocks.supabase.rpc.mock.calls;
+    expect((replayCalls[0]?.[1] as Record<string, unknown>).p_decision_version).toBe(casualCall.p_decision_version);
+    expect((replayCalls[1]?.[1] as Record<string, unknown>).p_decision_version).toBe(firstWorldDecision);
+
+    const changedCasual = {
+      ...casual,
+      results: { ...casual.results, sport: { ...casual.results.sport, entries: casual.results.sport.entries.map((entry) => ({ ...entry, rank: 2 })) } },
+    };
+    mocks.supabase.rpc.mockClear();
+    mocks.getSpogomiDivisionProjections.mockReturnValueOnce([changedCasual, world]);
+    expect((await rankings.POST(new Request("http://localhost"), eventContext)).status).toBe(200);
+    const changedCalls = mocks.supabase.rpc.mock.calls;
+    expect((changedCalls[0]?.[1] as Record<string, unknown>).p_decision_version).not.toBe(casualCall.p_decision_version);
+    expect((changedCalls[1]?.[1] as Record<string, unknown>).p_decision_version).toBe(firstWorldDecision);
+  });
+
+  it("publishes an empty ranking for a valid division without inventing a team result", async () => {
+    mocks.event.state = "certified";
+    const casualDivisionId = "11111111-1111-4111-8111-111111111111";
+    const worldDivisionId = "22222222-2222-4222-8222-222222222222";
+    const casualTeamId = "33333333-3333-4333-8333-333333333333";
+    const emptySnapshot = { event: { id: "event-1" }, divisions: [{ id: worldDivisionId, type: "world_cup" }], categories: [], teams: [], submissions: [], items: [], participants: [] };
+    const world = {
+      event: { mode: "world_cup", divisions: [{ id: worldDivisionId, division_type: "world_cup" }] },
+      regulation: { version: "rules-world", status: "complete", sourceReference: null },
+      results: { regulationComplete: true, sport: { entries: [] }, butts: { entries: [] } },
+      teams: [],
+      publicationSourceSnapshot: emptySnapshot,
+    };
+    const casual = {
+      event: { mode: "casual", divisions: [{ id: casualDivisionId, division_type: "casual" }] },
+      regulation: { version: "rules-casual", status: "complete", sourceReference: null },
+      results: { regulationComplete: true, sport: { entries: [{ teamId: casualTeamId, rank: 1, eligible: true }] }, butts: { entries: [] } },
+      teams: [{ teamId: casualTeamId, divisionId: casualDivisionId, teamNumber: 1, submissionStatus: "certified", submissionVersion: 1, presentParticipants: 3 }],
+      publicationSourceSnapshot: { event: { id: "event-1" }, divisions: [{ id: casualDivisionId, type: "casual" }], categories: [], teams: [{ id: casualTeamId }], submissions: [], items: [], participants: [] },
+    };
+    mocks.loadSpogomiResultsProjection.mockResolvedValue({ event: { mode: "mixed" }, teams: casual.teams });
+    mocks.getSpogomiDivisionProjections.mockReturnValueOnce([casual, world]);
+    mocks.supabase.rpc.mockResolvedValue({ data: 1, error: null });
+
+    const rankings = await import("./events/[eventId]/rankings/route");
+    expect((await rankings.POST(new Request("http://localhost"), eventContext)).status).toBe(200);
+    expect(mocks.supabase.rpc).toHaveBeenCalledTimes(2);
+    expect((mocks.supabase.rpc.mock.calls[1]?.[1] as Record<string, unknown>).p_division_id).toBe(worldDivisionId);
+    expect((mocks.supabase.rpc.mock.calls[1]?.[1] as Record<string, unknown>).p_rankings).toEqual([]);
   });
 
   it("preserves private team, contribution, certificate and public lookup contracts", async () => {

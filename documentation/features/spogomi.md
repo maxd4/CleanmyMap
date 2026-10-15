@@ -1163,6 +1163,14 @@ atomiquement l'ancienne et chaque transition est conservée dans
 `spogomi_official_ranking_history`. La relecture d'une décision historique
 révoquée est possible sans collision de clé et reste traçable.
 
+Pour une édition `mixed`, cette décision est produite séparément pour chaque
+division : la RPC reçoit le règlement, les classements, les équipes et un
+instantané de source strictement mono-division. Une division valide sans équipe
+publie un classement vide, sans gagnant ni résultat inventé. La restitution
+personnelle résout ensuite l'équipe par son UUID et sa `division_id` ; elle ne
+retombe jamais sur la première division lorsque la division reliée est absente
+ou incohérente.
+
 La projection publique est distincte de la projection privée organisateur.
 Lorsque le statut est `unavailable`, les champs numériques et les résultats
 internes sont absents du JSON ; ils ne peuvent pas réapparaître via un

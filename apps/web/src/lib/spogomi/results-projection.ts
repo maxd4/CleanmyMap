@@ -153,6 +153,17 @@ export type SpogomiExportProjection = {
   publicationSourceSnapshot: SpogomiPublicationSourceSnapshot;
 };
 
+const divisionProjectionStore = new WeakMap<SpogomiExportProjection, SpogomiExportProjection[]>();
+
+/**
+ * Returns the private per-division projections used by official publication.
+ * The store is deliberately not part of the serialized public projection: it
+ * contains source snapshots that must remain server-side.
+ */
+export function getSpogomiDivisionProjections(projection: SpogomiExportProjection): SpogomiExportProjection[] {
+  return divisionProjectionStore.get(projection) ?? [projection];
+}
+
 type TeamComputed = {
   team: SpogomiResultsSource["teams"][number];
   submission: SpogomiResultsSource["submissions"][number] | null;
@@ -318,7 +329,7 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
       event: {
         ...source.event,
         mode: division.division_type,
-        divisions: undefined,
+        divisions: [division],
         ...(division.regulation_version ? { regulationVersion: division.regulation_version } : {}),
         ...(division.regulation_status ? { regulationStatus: division.regulation_status } : {}),
         ...(division.regulation_source_reference !== undefined ? { regulationSourceReference: division.regulation_source_reference } : {}),
@@ -345,7 +356,7 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
           sourceHash: typeof source.consolidation.projection.sourceHash === "string" ? source.consolidation.projection.sourceHash : null,
         }
       : { status: "unavailable" as const, totalWasteMassGrams: null, cigaretteButtsMassGrams: null, cigaretteButtsCount: null, participantsPresent: null, projectionVersion: null, sourceHash: null };
-    return {
+    const mixedProjection: SpogomiExportProjection = {
       ...first,
       event: source.event,
       teams: projections.flatMap((projection, index) => projection.teams.map((team) => ({ ...team, division_id: divisionRows[index]?.id }))),
@@ -357,6 +368,8 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
         divisions: projections.map((projection, index) => ({ id: divisionRows[index]!.id, type: divisionRows[index]!.division_type, regulationVersion: projection.results.regulationVersion, regulationComplete: projection.results.regulationComplete, sport: projection.results.sport, butts: projection.results.butts })),
       },
     };
+    divisionProjectionStore.set(mixedProjection, projections);
+    return mixedProjection;
   }
   const regulation = buildSpogomiRegulation(sourceEvent(source.event), source.categories);
   const publicationSourceSnapshot = buildPublicationSourceSnapshot(source);
@@ -442,5 +455,7 @@ export function buildSpogomiResultsProjection(source: SpogomiResultsSource, refr
     };
   });
   const sourceSubmissionIds = computed.map((entry) => entry.team.certified_submission_id).filter((id): id is string => Boolean(id));
-  return { event: source.event, regulation, results: publicResults, teams: exportTeams, consolidation: source.consolidation?.projection ?? null, categories: source.categories, sourceSubmissionIds, publicationSourceSnapshot };
+  const projection: SpogomiExportProjection = { event: source.event, regulation, results: publicResults, teams: exportTeams, consolidation: source.consolidation?.projection ?? null, categories: source.categories, sourceSubmissionIds, publicationSourceSnapshot };
+  divisionProjectionStore.set(projection, [projection]);
+  return projection;
 }

@@ -270,13 +270,14 @@ async function loadLinkedTeam(
     .maybeSingle();
   if (teamResult.error) throw teamResult.error;
   if (!teamResult.data) return null;
+  const teamDivisionId = typeof teamResult.data.division_id === "string" ? teamResult.data.division_id : null;
 
   let divisionType: SpogomiLinkedTeam["divisionType"] = null;
-  if (typeof teamResult.data.division_id === "string") {
+  if (teamDivisionId) {
     const divisionResult = await supabase
       .from("spogomi_divisions")
       .select("division_type")
-      .eq("id", teamResult.data.division_id)
+      .eq("id", teamDivisionId)
       .eq("event_id", params.eventId)
       .maybeSingle();
     if (divisionResult.error) throw divisionResult.error;
@@ -290,8 +291,11 @@ async function loadLinkedTeam(
     eventId: params.eventId,
     publicOnly: true,
   });
-  const sport = projection ? mapPublishedTeamResult(projection.results.sport.entries, params.identity.teamId) : null;
-  const butts = projection ? mapPublishedTeamResult(projection.results.butts.entries, params.identity.teamId) : null;
+  const divisionResults = projection?.event?.mode === "mixed"
+    ? teamDivisionId ? projection.results.divisions?.find((division) => division.id === teamDivisionId) ?? null : null
+    : projection?.results ?? null;
+  const sport = divisionResults ? mapPublishedTeamResult(divisionResults.sport.entries, params.identity.teamId) : null;
+  const butts = divisionResults ? mapPublishedTeamResult(divisionResults.butts.entries, params.identity.teamId) : null;
 
   return {
     publicName: String(teamResult.data.public_name),
