@@ -109,8 +109,123 @@ function removeFixture(root) {
 function initializeGitFixture(root) {
   execFileSync("git", ["init"], { cwd: root, stdio: "ignore" });
   execFileSync("git", ["add", "--", "."], { cwd: root, stdio: "ignore" });
-  execFileSync("git", ["commit", "-m", "fixture"], { cwd: root, stdio: "ignore" });
+
+  const hooksPath = path.join(root, ".fixture-hooks");
+  fs.mkdirSync(hooksPath, { recursive: true });
+  const fixtureEmail = ["cleanmymap", "fixture", "invalid"].join("@");
+  const fixtureGitEnv = {
+    ...process.env,
+    GIT_AUTHOR_NAME: "CleanMyMap fixture",
+    GIT_AUTHOR_EMAIL: fixtureEmail,
+    GIT_COMMITTER_NAME: "CleanMyMap fixture",
+    GIT_COMMITTER_EMAIL: fixtureEmail,
+    GIT_CONFIG_GLOBAL: path.join(root, ".fixture-global-config"),
+    GIT_CONFIG_NOSYSTEM: "1",
+  };
+
+  execFileSync("git", [
+    "-c",
+    `core.hooksPath=${hooksPath}`,
+    "-c",
+    "commit.gpgSign=false",
+    "commit",
+    "--no-verify",
+    "-m",
+    "fixture",
+  ], {
+    cwd: root,
+    env: fixtureGitEnv,
+    stdio: "ignore",
+  });
 }
+
+function readFixtureIdentity(root) {
+  return execFileSync(
+    "git",
+    ["show", "-s", "--format=%an%n%ae%n%cn%n%ce"],
+    { cwd: root, encoding: "utf8" },
+  ).trim().split("\n");
+}
+
+function withAmbientGitIdentityUnset(callback) {
+  const keys = [
+    "GIT_AUTHOR_NAME",
+    "GIT_AUTHOR_EMAIL",
+    "GIT_COMMITTER_NAME",
+    "GIT_COMMITTER_EMAIL",
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_NOSYSTEM",
+  ];
+  const previous = new Map(keys.map((key) => [key, process.env[key]]));
+
+  for (const key of keys) {
+    delete process.env[key];
+  }
+
+  try {
+    return callback();
+  } finally {
+    for (const key of keys) {
+      const value = previous.get(key);
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
+}
+
+test("initializes a Git fixture without ambient identity configuration", () => {
+  const root = makeRepository();
+
+  try {
+    withAmbientGitIdentityUnset(() => {
+      initializeGitFixture(root);
+    });
+
+    const fixtureEmail = ["cleanmymap", "fixture", "invalid"].join("@");
+    assert.deepEqual(readFixtureIdentity(root), [
+      "CleanMyMap fixture",
+      fixtureEmail,
+      "CleanMyMap fixture",
+      fixtureEmail,
+    ]);
+  } finally {
+    removeFixture(root);
+  }
+});
+
+test("ignores an ambient global Git identity for the fixture commit", () => {
+  const root = makeRepository();
+  const globalConfigRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), "cleanmymap-validation-global-config-"),
+  );
+  const globalConfigPath = path.join(globalConfigRoot, "config");
+  const globalEmail = ["ambient", "global", "invalid"].join("@");
+  fs.writeFileSync(
+    globalConfigPath,
+    `[user]\nname = Ambient global user\nemail = ${globalEmail}\n`,
+  );
+
+  try {
+    withAmbientGitIdentityUnset(() => {
+      process.env.GIT_CONFIG_GLOBAL = globalConfigPath;
+      initializeGitFixture(root);
+    });
+
+    const fixtureEmail = ["cleanmymap", "fixture", "invalid"].join("@");
+    assert.deepEqual(readFixtureIdentity(root), [
+      "CleanMyMap fixture",
+      fixtureEmail,
+      "CleanMyMap fixture",
+      fixtureEmail,
+    ]);
+  } finally {
+    removeFixture(root);
+    removeFixture(globalConfigRoot);
+  }
+});
 
 test("retries transient Windows cleanup failures and rethrows persistent failures", () => {
   let attempts = 0;
