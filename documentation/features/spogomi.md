@@ -615,8 +615,11 @@ Les trois routes canoniques sont intégrées dans la famille visuelle et documen
   distinguer à venir, en cours et terminé ;
 - `/spogomi/[eventSlug]` expose une projection publique bornée de l'événement,
   sans roster nominatif, et conserve la provenance `official_reference` du GPX ;
-- `/spogomi/mes-evenements` liste les événements gérables après AuthN et
-  filtrage serveur ; `/spogomi/nouveau` réutilise le formulaire privé et
+- `/spogomi/mes-evenements` est le catalogue personnel canonique après AuthN :
+  il déduplique les éditions accessibles par création, organisation,
+  habilitation active d'arbitre/observateur ou liaison participant vérifiée,
+  puis expose uniquement les dates, statut, mode et accès effectivement
+  disponibles ; `/spogomi/nouveau` réutilise le formulaire privé et
   `/dashboard/spogomi` reste une redirection de compatibilité vers la liste ;
 - `/spogomi/[eventSlug]/espace` réutilise le cockpit du lot 2 derrière une
   AuthN/AuthZ serveur liée à l'organisateur de l'action canonique. La publication
@@ -1214,7 +1217,14 @@ présente uniquement les événements explicitement publiés. Pour une session
 authentifiée, elle expose aussi l'entrée « Mes événements SPOGOMI » vers
 `/spogomi/mes-evenements` sans charger les brouillons dans la page publique.
 
-Le cockpit privé obtient les événements depuis une lecture serveur puis
+Le catalogue personnel obtient les éditions depuis des lectures serveur
+paginées des relations `created_by_clerk_id`, `action_organizers`,
+`spogomi_event_reviewers` actifs et `spogomi_participants` vérifiés. Il ne
+consulte pas le rôle global pour fabriquer une relation événementielle et ne
+transmet pas de lieu, roster ou autre projection de gestion au client.
+Les filtres sont calculés sur les relations réellement présentes ; une
+habilitation révoquée, un compte seul ou un nom importé ne crée aucune entrée.
+Le cockpit privé obtient ensuite l'édition depuis une lecture serveur puis
 réutilise `loadSpogomiEventForOrganizer`, qui applique `canManageEvent` et les
 relations `action_organizers` avant de transmettre une projection au client.
 Les événements créés depuis le formulaire appellent seulement
@@ -1237,7 +1247,9 @@ Fichiers principaux :
 - `apps/web/src/app/(app)/spogomi/page.tsx` ;
 - `apps/web/src/app/(app)/spogomi/mes-evenements/page.tsx` et
   `apps/web/src/app/(app)/spogomi/nouveau/page.tsx` ;
-- `apps/web/src/lib/spogomi/organizer-service.ts`.
+- `apps/web/src/components/spogomi/spogomi-personal-events-list.tsx` ;
+- `apps/web/src/lib/spogomi/personal-events-service.ts` ;
+- `apps/web/src/app/(app)/spogomi/mes-evenements/error.tsx`.
 
 ## 19 septies. Autorisation par capacité et périmètre — CURRENT
 
