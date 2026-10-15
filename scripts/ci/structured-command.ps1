@@ -40,6 +40,17 @@ function ConvertTo-StructuredInvocation {
 
     $values = [System.Collections.Generic.List[string]]::new()
     foreach ($element in @($command.CommandElements)) {
+        if ($element -is [System.Management.Automation.Language.CommandParameterAst]) {
+            $parameterText = [string]$element.Extent.Text
+            if ($null -eq $element.Argument -and
+                $parameterText -match '^--?[A-Za-z0-9][A-Za-z0-9_-]*$') {
+                [void]$values.Add($parameterText)
+                continue
+            }
+
+            throw "Command parameter must be a literal option without an attached expression."
+        }
+
         if ($element -is [System.Management.Automation.Language.StringConstantExpressionAst]) {
             [void]$values.Add([string]$element.Value)
             continue
