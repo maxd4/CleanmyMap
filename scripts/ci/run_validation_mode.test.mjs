@@ -505,8 +505,8 @@ test("scheduler normalizes PASS with an explicit blocked control status", async 
 test("FULL keeps a PASS result with BLOCKED_ACCESS out of progress, evidence, and release readiness", async () => {
   const root = makeRepository();
   const lines = [];
-  initializeGitFixture(root);
   try {
+    initializeGitFixture(root);
     const result = await runValidationMode({
       mode: "FULL",
       candidateScope: "WORKTREE",
