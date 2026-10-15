@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
-  FEEDBACK_TRACKER_ITEMS,
   buildPrefillText,
   buildSubmissionTitle,
   getTopicById,
@@ -11,7 +10,6 @@ import {
   type FeedbackSectionProps,
   type FeedbackTopicId,
   type Locale,
-  type StatusFilter,
 } from "./feedback-section.shared";
 
 export type FeedbackSectionDashboardProps = {
@@ -39,7 +37,6 @@ export function useFeedbackDashboardController({
   const topicId = topicIdOverride ?? (supportPrefill ? "signalement" : "all");
   const message = messageOverride ?? buildPrefillText(supportPrefill, locale);
   const setTopicId = (value: FeedbackTopicId) => setTopicIdOverride(value);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [honeypot, setHoneypot] = useState("");
   const formStartedAt = useRef<number | null>(null);
   const [submitState, setSubmitState] = useState<"idle" | "submitting" | "success" | "error">(
@@ -56,9 +53,6 @@ export function useFeedbackDashboardController({
   };
 
   const activeTopic = getTopicById(topicId);
-  const visibleTrackerItems = FEEDBACK_TRACKER_ITEMS.filter(
-    (item) => statusFilter === "all" || item.statusId === statusFilter,
-  );
   const canSubmit = message.trim().length >= 10 && submitState !== "submitting";
 
   useEffect(() => {
@@ -129,12 +123,9 @@ export function useFeedbackDashboardController({
     message,
     setTopicId,
     setMessage,
-    statusFilter,
-    setStatusFilter,
     honeypot,
     setHoneypot,
     activeTopic,
-    visibleTrackerItems,
     canSubmit,
     submitState,
     errorMessage,

@@ -1,9 +1,8 @@
 "use client";
 
-import { ArrowRight, Mail, MessageSquare, Sparkles } from "lucide-react";
+import { ArrowRight, Mail } from "lucide-react";
 import Link from "next/link";
 import {
-  FEEDBACK_METRICS,
   FEEDBACK_SUPPORT_LINKS,
   type FeedbackSectionProps,
   type Locale,
@@ -32,7 +31,7 @@ function FeedbackDiscussionMode({
       id="feedback"
       className="space-y-5 rounded-[2.25rem] border border-rose-200/70 bg-[linear-gradient(180deg,rgba(255,249,251,0.98)_0%,rgba(255,255,255,0.98)_100%)] p-4 text-slate-950 shadow-[0_26px_90px_-72px_rgba(236,72,153,0.6)] sm:p-5"
     >
-      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr] xl:items-end">
+      <div>
         <div className="space-y-4">
           <PageHeader
             title={fr ? "Retours & Qualité" : "Feedback & Quality"}
@@ -44,30 +43,6 @@ function FeedbackDiscussionMode({
           />
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {FEEDBACK_METRICS.map((metric) => {
-            const Icon = metric.icon;
-            return (
-              <div
-                key={metric.label.fr}
-                className="rounded-[1.35rem] border border-rose-200/70 bg-white/90 p-4 shadow-[0_16px_42px_-36px_rgba(236,72,153,0.38)] backdrop-blur-sm"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-500">
-                  <Icon size={18} />
-                </div>
-                <p className="mt-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                  {fr ? metric.label.fr : metric.label.en}
-                </p>
-                <p className="mt-2 text-[clamp(1.65rem,2.8vw,2.3rem)] font-black leading-none tracking-[-0.04em] text-slate-950">
-                  {metric.value}
-                </p>
-                <p className="mt-2 text-[0.82rem] leading-relaxed text-slate-500">
-                  {fr ? metric.detail.fr : metric.detail.en}
-                </p>
-              </div>
-            );
-          })}
-        </div>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
@@ -151,36 +126,7 @@ function FeedbackDiscussionMode({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex items-center gap-4 rounded-[1.5rem] border border-rose-200/70 bg-white/92 p-4 shadow-sm">
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-rose-500">
-              <Sparkles size={18} />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-sm font-black uppercase tracking-[0.14em] text-slate-950">
-                  {fr ? "Traitement prioritaire" : "Priority processing"}
-                </h4>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  {fr ? "Réponse garantie sous 48h" : "Response guaranteed within 48h"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 rounded-[1.5rem] border border-rose-200/70 bg-white/92 p-4 shadow-sm">
-              <div className="rounded-2xl border border-pink-200 bg-pink-50 p-3 text-pink-500">
-                <MessageSquare size={18} />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-sm font-black uppercase tracking-[0.14em] text-slate-950">
-                  {fr ? "Amélioration continue" : "Continuous improvement"}
-                </h4>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  {fr ? "100% des retours sont analysés" : "100% of feedback is analyzed"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+      </div>
       </div>
     </section>
   );

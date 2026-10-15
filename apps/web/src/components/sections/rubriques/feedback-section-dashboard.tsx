@@ -1,7 +1,7 @@
 "use client";
 
 import { FeedbackSectionDashboardForm } from "./feedback-section-dashboard-form";
-import { FeedbackSectionDashboardProgress } from "./feedback-section-dashboard-progress";
+import { FeedbackSectionDashboardGuidance } from "./feedback-section-dashboard-guidance";
 import {
   useFeedbackDashboardController,
   type FeedbackSectionDashboardProps,
@@ -21,10 +21,7 @@ function FeedbackDashboardMode(props: FeedbackSectionDashboardProps) {
         pagePath={props.pagePath}
         locale={props.locale}
       />
-      <FeedbackSectionDashboardProgress
-        {...controller}
-        locale={props.locale}
-      />
+      <FeedbackSectionDashboardGuidance locale={props.locale} fr={controller.fr} />
     </div>
   );
 }

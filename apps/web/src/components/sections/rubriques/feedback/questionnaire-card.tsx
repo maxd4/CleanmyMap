@@ -219,8 +219,8 @@ export function QuestionnaireCard({
           </p>
           <p className="mt-1 text-sm leading-relaxed text-slate-300">
             {locale === "fr"
-              ? "Le retour est enregistré dans l'espace de feedback interne, avec un vrai suivi."
-              : "The feedback is recorded in the internal feedback space with real follow-up."}
+              ? "Après envoi, le retour est transmis à CleanMyMap pour examen."
+              : "After submission, your feedback is sent to CleanMyMap for review."}
           </p>
           <CmmButton
             href="/sign-in"
@@ -264,8 +264,8 @@ export function QuestionnaireCard({
           <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="cmm-text-caption text-slate-300">
               {locale === "fr"
-                ? "Le retour part dans la file de suivi CleanMyMap."
-                : "The feedback is sent into the CleanMyMap follow-up queue."}
+                ? "Le retour est transmis à CleanMyMap pour examen."
+                : "Your feedback is sent to CleanMyMap for review."}
             </p>
             <CmmButton
               type="submit"

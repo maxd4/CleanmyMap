@@ -29,8 +29,8 @@ export function FeedbackSectionDashboardSubmitState({
           </p>
           <p className="mt-1 text-sm leading-relaxed text-amber-800/80">
             {fr
-              ? "Le retour sera enregistré dans l'espace de suivi interne."
-              : "The reply will be stored in the internal follow-up queue."}
+              ? "Après envoi, le retour est transmis à CleanMyMap pour examen."
+              : "After submission, your feedback is sent to CleanMyMap for review."}
           </p>
           <CmmButton
             href="/sign-in"

@@ -9,7 +9,7 @@ La rubrique `Feedback` centralise les retours d'usage, les idées d'amélioratio
 - plusieurs questionnaires ciblés, dont le bug, l'idée et la collaboration
 - une logique de préremplissage à partir de l'URL
 - un contact direct par mail quand le formulaire n'est pas suffisant
-- des éléments de réassurance sur le traitement des retours
+- un message factuel indiquant que le retour est transmis à CleanMyMap pour examen
 
 ## Ce que la page doit préserver
 
@@ -23,6 +23,7 @@ La rubrique `Feedback` centralise les retours d'usage, les idées d'amélioratio
 - ne pas transformer la page en support ticketing
 - garder le contact mail secondaire par rapport aux formulaires
 - éviter de dupliquer les messages d'aide entre questionnaires et page
+- ne pas présenter de statistiques, de roadmap ou de suivi personnel sans source runtime
 
 ## Référence canonique
 

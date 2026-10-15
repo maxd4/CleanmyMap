@@ -29,9 +29,20 @@ describe("FeedbackSection", () => {
     );
 
     expect(markup).toContain("Retours &amp; Qualité");
-    expect(markup).toContain("Suivi des retours");
-    expect(markup).toContain("Vos idées, notre feuille de route");
-    expect(markup).toContain("Votre avis fait la différence");
+    expect(markup).toContain("Comment ça marche ?");
+    expect(markup).toContain("Le retour est transmis à CleanMyMap pour examen.");
+    expect(markup).toContain('id="bug"');
+    expect(markup).toContain('id="improvement"');
+    expect(markup).toContain('id="collaboration"');
+    expect(markup).not.toContain("Avis reçus");
+    expect(markup).not.toContain("Actions réalisées");
+    expect(markup).not.toContain("Note moyenne");
+    expect(markup).not.toContain("Membres engagés");
+    expect(markup).not.toContain("Suivi des retours");
+    expect(markup).not.toContain("feuille de route");
+    expect(markup).not.toContain("48h");
+    expect(markup).not.toContain("capture d&#x27;écran");
+    expect(markup).not.toContain("Devenir contributeur");
   });
 
   it("renders the discussion mode", () => {
@@ -46,5 +57,12 @@ describe("FeedbackSection", () => {
     expect(markup).toContain("Centre d&#x27;aide");
     expect(markup).toContain("Soutenir le projet");
     expect(markup).toContain("Connecte-toi pour envoyer ce questionnaire.");
+    expect(markup).toContain("Après envoi, le retour est transmis à CleanMyMap pour examen.");
+    expect(markup).not.toContain("Avis reçus");
+    expect(markup).not.toContain("Actions réalisées");
+    expect(markup).not.toContain("Note moyenne");
+    expect(markup).not.toContain("Membres engagés");
+    expect(markup).not.toContain("Réponse garantie sous 48h");
+    expect(markup).not.toContain("100% des retours sont analysés");
   });
 });

@@ -1,4 +1,4 @@
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { localize, type Locale } from "./feedback-section.shared";
 import type { FeedbackDashboardController } from "./use-feedback-dashboard-controller";
 import { FeedbackSectionDashboardSubmitState } from "./feedback-section-dashboard-submit-state";
@@ -59,17 +59,11 @@ export function FeedbackSectionDashboardSubmissionForm({
           </span>
         </label>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center gap-2 rounded-2xl border border-dashed border-pink-200 bg-white px-4 py-3 text-sm font-medium text-pink-500">
-            <ArrowRight size={16} />
-            {fr ? "Ajouter une capture d'écran (facultatif)" : "Add a screenshot (optional)"}
-          </div>
-          <div className="text-xs font-medium text-slate-500">
-            {fr
-              ? "Votre envoi reste confidentiel et traçable."
-              : "Your submission stays private and traceable."}
-          </div>
-        </div>
+        <p className="text-xs font-medium text-slate-500">
+          {fr
+            ? "Le retour est transmis à CleanMyMap pour examen."
+            : "Your feedback is sent to CleanMyMap for review."}
+        </p>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -82,8 +76,8 @@ export function FeedbackSectionDashboardSubmissionForm({
           </div>
           <p className="mt-3 text-[0.96rem] leading-[1.65] text-slate-600">
             {fr
-              ? "Chaque message est lu par notre équipe. Nous nous engageons à vous répondre sous 48h maximum."
-              : "Each message is read by our team. We commit to replying within 48 hours maximum."}
+              ? "Le retour est transmis à CleanMyMap pour examen."
+              : "Your feedback is sent to CleanMyMap for review."}
           </p>
         </div>
 

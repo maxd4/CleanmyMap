@@ -1,6 +1,5 @@
 import {
   BookOpen,
-  CheckCircle2,
   Database,
   Flag,
   HelpCircle,
@@ -9,8 +8,6 @@ import {
   Mail,
   MessageSquare,
   Monitor,
-  PencilLine,
-  Star,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -27,7 +24,6 @@ export type FeedbackTopicId =
   | "interface"
   | "partenariats"
   | "autre";
-export type StatusFilter = "all" | "en_cours" | "traite" | "planifie";
 
 export type L10n = { fr: string; en: string };
 
@@ -38,29 +34,6 @@ export type FeedbackTopic = {
   placeholder: L10n;
   reportType: FeedbackReportType;
   icon: LucideIcon;
-};
-
-export type FeedbackMetric = {
-  label: L10n;
-  value: string;
-  detail: L10n;
-  icon: LucideIcon;
-};
-
-export type TrackerItem = {
-  title: L10n;
-  category: L10n;
-  status: L10n;
-  statusId: Exclude<StatusFilter, "all">;
-  summary: L10n;
-  icon: LucideIcon;
-};
-
-export type RoadmapItem = {
-  title: L10n;
-  score: number;
-  state: L10n;
-  progress: number;
 };
 
 export type SupportLink = {
@@ -181,107 +154,6 @@ export const FEEDBACK_TOPICS: FeedbackTopic[] = [
   },
 ];
 
-export const FEEDBACK_METRICS: FeedbackMetric[] = [
-  {
-    label: { fr: "Avis reçus", en: "Reviews received" },
-    value: "127",
-    detail: { fr: "+18 ce mois", en: "+18 this month" },
-    icon: MessageSquare,
-  },
-  {
-    label: { fr: "Actions réalisées", en: "Actions completed" },
-    value: "86",
-    detail: { fr: "68% des retours traités", en: "68% of replies processed" },
-    icon: CheckCircle2,
-  },
-  {
-    label: { fr: "Note moyenne", en: "Average rating" },
-    value: "4,6 / 5",
-    detail: { fr: "Basée sur 89 avis", en: "Based on 89 reviews" },
-    icon: Star,
-  },
-  {
-    label: { fr: "Membres engagés", en: "Engaged members" },
-    value: "64",
-    detail: { fr: "Contributeurs actifs", en: "Active contributors" },
-    icon: Users,
-  },
-];
-
-export const FEEDBACK_TRACKER_ITEMS: TrackerItem[] = [
-  {
-    title: { fr: "Ajouter un filtre par type de déchet", en: "Add a waste-type filter" },
-    category: { fr: "Amélioration • Interface", en: "Improvement • Interface" },
-    status: { fr: "En cours", en: "In progress" },
-    statusId: "en_cours",
-    summary: {
-      fr: "Nous travaillons sur l'ajout d'un filtre avancé par catégorie de déchet dans la cartographie.",
-      en: "We are working on adding an advanced waste category filter to the map.",
-    },
-    icon: PencilLine,
-  },
-  {
-    title: { fr: "Signalement point noir", en: "Hotspot report" },
-    category: { fr: "Signalement • Données", en: "Issue • Data" },
-    status: { fr: "Traité", en: "Resolved" },
-    statusId: "traite",
-    summary: {
-      fr: "Le point a été vérifié et supprimé de la carte. Merci pour votre vigilance !",
-      en: "The point was verified and removed from the map. Thanks for the alert.",
-    },
-    icon: Flag,
-  },
-  {
-    title: { fr: "Proposition : export des données", en: "Proposal: data export" },
-    category: { fr: "Amélioration • Open Data", en: "Improvement • Open Data" },
-    status: { fr: "Planifié", en: "Planned" },
-    statusId: "planifie",
-    summary: {
-      fr: "Fonctionnalité validée. Intégration prévue dans la prochaine mise à jour.",
-      en: "Feature approved. Integration planned for the next update.",
-    },
-    icon: Database,
-  },
-  {
-    title: { fr: "Correction données collectées", en: "Collected data correction" },
-    category: { fr: "Données • Qualité", en: "Data • Quality" },
-    status: { fr: "Traité", en: "Resolved" },
-    statusId: "traite",
-    summary: {
-      fr: "Les données ont été corrigées et la qualité mise à jour.",
-      en: "The data was corrected and the quality was updated.",
-    },
-    icon: CheckCircle2,
-  },
-];
-
-export const FEEDBACK_ROADMAP_ITEMS: RoadmapItem[] = [
-  {
-    title: { fr: "Export des données en CSV", en: "CSV data export" },
-    score: 128,
-    state: { fr: "En développement", en: "In development" },
-    progress: 80,
-  },
-  {
-    title: { fr: "Filtre avancé par type de déchet", en: "Advanced waste filter" },
-    score: 96,
-    state: { fr: "En cours d'analyse", en: "Under analysis" },
-    progress: 60,
-  },
-  {
-    title: { fr: "Application mobile", en: "Mobile app" },
-    score: 74,
-    state: { fr: "À l'étude", en: "Under review" },
-    progress: 40,
-  },
-  {
-    title: { fr: "Tableau de bord personnalisé", en: "Personal dashboard" },
-    score: 53,
-    state: { fr: "À l'étude", en: "Under review" },
-    progress: 20,
-  },
-];
-
 export const FEEDBACK_STEPS = [
   {
     index: "1",
@@ -293,26 +165,10 @@ export const FEEDBACK_STEPS = [
   },
   {
     index: "2",
-    title: { fr: "Nous l'analysions", en: "We review it" },
+    title: { fr: "Votre retour est transmis", en: "Your feedback is sent" },
     body: {
-      fr: "Votre retour est étudié par l'équipe concernée.",
-      en: "Your feedback is reviewed by the relevant team.",
-    },
-  },
-  {
-    index: "3",
-    title: { fr: "Nous agissons", en: "We act" },
-    body: {
-      fr: "Les améliorations sont intégrées et vous êtes informés.",
-      en: "Improvements are shipped and you are informed.",
-    },
-  },
-  {
-    index: "4",
-    title: { fr: "Vous suivez l'évolution", en: "You track progress" },
-    body: {
-      fr: "Consultez l'état d'avancement de vos retours à tout moment.",
-      en: "Track your feedback status anytime.",
+      fr: "Le retour est transmis à CleanMyMap pour examen.",
+      en: "Your feedback is sent to CleanMyMap for review.",
     },
   },
 ];
@@ -440,17 +296,4 @@ export function buildSubmissionTitle(message: string, fallback: string): string 
 
 export function getTopicById(topicId: FeedbackTopicId): FeedbackTopic {
   return FEEDBACK_TOPICS.find((topic) => topic.id === topicId) ?? FEEDBACK_TOPICS[0];
-}
-
-export function getStatusTone(statusId: StatusFilter): string {
-  switch (statusId) {
-    case "en_cours":
-      return "border-amber-200 bg-amber-50 text-amber-600";
-    case "traite":
-      return "border-emerald-200 bg-emerald-50 text-emerald-600";
-    case "planifie":
-      return "border-violet-200 bg-violet-50 text-violet-600";
-    default:
-      return "border-rose-200 bg-rose-50 text-rose-600";
-  }
 }

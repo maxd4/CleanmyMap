@@ -46,13 +46,13 @@ export function FeedbackSectionDashboardForm({
 }: FeedbackDashboardFormProps) {
   return (
     <>
-      <FeedbackSectionDashboardHeader locale={locale} fr={fr} />
+      <FeedbackSectionDashboardHeader fr={fr} />
 
       <section
         id="bug"
         className="rounded-[2.2rem] border border-rose-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(255,248,250,0.99)_100%)] p-6 shadow-[0_28px_80px_-64px_rgba(236,72,153,0.6)]"
       >
-        <div className="space-y-4">
+        <div id="improvement" className="space-y-4">
           <div>
             <h2 className="text-[0.9rem] font-black uppercase tracking-[0.18em] text-pink-600">
               {fr ? "Donnez votre avis" : "Give your feedback"}
