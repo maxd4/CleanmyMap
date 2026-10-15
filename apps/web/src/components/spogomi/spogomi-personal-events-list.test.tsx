@@ -20,7 +20,7 @@ function event(id: string, relations: SpogomiPersonalEvent["relations"]): Spogom
       : relations.includes("observer")
         ? ["observe"]
         : ["participate"],
-    links: { public: null, space: relations.includes("organizer") ? `/spogomi/${id}-slug/espace` : null },
+    links: { public: null, space: relations.some((relation) => ["organizer", "referee", "observer"].includes(relation)) ? `/spogomi/${id}-slug/espace` : null },
   };
 }
 
@@ -33,6 +33,11 @@ describe("SpogomiPersonalEventsList", () => {
     expect(markup).not.toContain("J’arbitre");
     expect(markup).not.toContain("Je participe");
     expect(markup).toContain('href="/spogomi/nouveau"');
+  });
+
+  it("links an operational reviewer to the capability-scoped space", () => {
+    const markup = renderToStaticMarkup(<SpogomiPersonalEventsList events={[event("observer", ["observer"])]} />);
+    expect(markup).toContain('/spogomi/observer-slug/espace');
   });
 
   it("does not invent a private participant route", () => {

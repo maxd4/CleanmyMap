@@ -223,7 +223,7 @@ function toPersonalEvent(
           ? `/spogomi/${encodeURIComponent(event.event_slug)}`
           : null,
       space:
-        relations.has("organizer") && event.event_slug
+        (relations.has("organizer") || relations.has("referee") || relations.has("observer")) && event.event_slug
           ? `/spogomi/${encodeURIComponent(event.event_slug)}/espace`
           : null,
     },

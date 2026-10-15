@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { runCheck, runValidationMode } from "./run_validation_mode.mjs";
+import { runCheck, runChecksWithScheduler, runValidationMode } from "./run_validation_mode.mjs";
 import {
   removePathWithRetry,
   VALIDATION_EVIDENCE_RELATIVE_ROOT,
@@ -287,6 +287,131 @@ test("timeout terminates the parent and its child process", async () => {
     const childPid = Number(fs.readFileSync(childPidFile, "utf8"));
     assert.equal(await waitForExit(parentPid), false);
     assert.equal(await waitForExit(childPid), false);
+  } finally {
+    removeFixture(root);
+  }
+});
+
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+test("scheduler runs independent checks in parallel and respects resources/dependencies", async () => {
+  const checks = [
+    { id: "independent-a", parallelizable: true, resources: ["a"], dependencies: [] },
+    { id: "independent-b", parallelizable: true, resources: ["b"], dependencies: [] },
+    { id: "dependent-a", parallelizable: true, resources: ["a"], dependencies: ["independent-a"] },
+  ];
+  const running = new Set();
+  let maximumRunning = 0;
+  const started = [];
+  const result = await runChecksWithScheduler({
+    checks,
+    maxParallel: 2,
+    getDecision: () => ({ decision: "execute", remainingSeconds: Infinity }),
+    onStart: (check) => started.push(check.id),
+    executeCheck: async (check) => {
+      running.add(check.id);
+      maximumRunning = Math.max(maximumRunning, running.size);
+      await delay(25);
+      running.delete(check.id);
+      return { status: "PASS", elapsedSeconds: 0.025 };
+    },
+  });
+
+  assert.equal(maximumRunning, 2);
+  assert.deepEqual([...result.states.values()], ["PASS", "PASS", "PASS"]);
+  assert.ok(started.indexOf("dependent-a") > started.indexOf("independent-a"));
+});
+
+test("scheduler keeps an independent check running after a failure and blocks its dependent", async () => {
+  const checks = [
+    { id: "failing", parallelizable: true, resources: ["failure"], dependencies: [] },
+    { id: "independent", parallelizable: true, resources: ["independent"], dependencies: [] },
+    { id: "dependent", parallelizable: true, resources: ["failure"], dependencies: ["failing"] },
+  ];
+  const finished = [];
+  const result = await runChecksWithScheduler({
+    checks,
+    maxParallel: 2,
+    getDecision: () => ({ decision: "execute", remainingSeconds: Infinity }),
+    executeCheck: async (check) => {
+      await delay(check.id === "failing" ? 10 : 30);
+      finished.push(check.id);
+      return check.id === "failing"
+        ? { status: "FAIL", exitCode: 1 }
+        : { status: "PASS", elapsedSeconds: 0.03 };
+    },
+  });
+
+  assert.deepEqual(result.states.get("failing"), "FAIL");
+  assert.deepEqual(result.states.get("independent"), "PASS");
+  assert.deepEqual(result.states.get("dependent"), "BLOCKED");
+  assert.deepEqual(finished, ["failing", "independent"]);
+});
+
+test("progress reports monotone completion and noninteractive final metrics", async () => {
+  const lines = [];
+  const root = makeRepository();
+  try {
+    const result = await runValidationMode({
+      mode: "FAST",
+      candidateScope: "WORKTREE",
+      changedFiles: ["documentation/development/TESTING.md"],
+      maxParallel: 2,
+    }, {
+      repositoryRoot: root,
+      log: (line) => lines.push(line),
+      interactive: false,
+      runCheck: async () => ({ status: "PASS", elapsedSeconds: 0.01 }),
+    });
+    assert.equal(result, 0);
+    const progress = lines
+      .filter((line) => String(line).includes("[FAST]"))
+      .map((line) => Number(String(line).match(/\((\d+)%\)/)?.[1]))
+      .filter(Number.isFinite);
+    assert.ok(progress.length > 0);
+    for (let index = 1; index < progress.length; index += 1) {
+      assert.ok(progress[index] >= progress[index - 1]);
+    }
+    assert.ok(lines.some((line) => String(line).includes("START candidate=")));
+    assert.ok(lines.some((line) => String(line).includes("TOTAL_DURATION_SECONDS:")));
+  } finally {
+    removeFixture(root);
+  }
+});
+
+test("silent child processes emit heartbeat callbacks", async () => {
+  const heartbeats = [];
+  const result = await runCommandWithTimeout({
+    command: { executable: process.execPath, args: ["-e", "setTimeout(() => {}, 90)"] },
+    timeoutMs: 1_000,
+    heartbeatMs: 20,
+    onHeartbeat: (elapsedSeconds) => heartbeats.push(elapsedSeconds),
+  });
+  assert.equal(result.status, "PASS");
+  assert.ok(heartbeats.length > 0);
+});
+
+test("interactive progress uses terminal refreshes", async () => {
+  const output = [];
+  const logs = [];
+  const root = makeRepository();
+  try {
+    assert.equal(await runValidationMode({
+      mode: "FAST",
+      candidateScope: "WORKTREE",
+      changedFiles: ["documentation/development/TESTING.md"],
+      maxParallel: 1,
+    }, {
+      repositoryRoot: root,
+      interactive: true,
+      write: (value) => output.push(value),
+      log: (line) => logs.push(line),
+      runCheck: async () => ({ status: "PASS", elapsedSeconds: 0.01 }),
+    }), 0);
+    assert.ok(output.some((value) => value.includes("\r")));
+    assert.ok(logs.some((line) => String(line).includes("VALIDATION_MODE: FAST")));
   } finally {
     removeFixture(root);
   }

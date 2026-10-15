@@ -148,9 +148,60 @@ function npmCommand(script, args = []) {
   };
 }
 
+const CHECK_POLICIES = Object.freeze({
+  "test:coverage": { category: "Web", resources: ["web-coverage"], parallelizable: false },
+  "quality:coverage": { category: "Quality", dependencies: ["test:coverage"], resources: ["web-coverage"], parallelizable: false },
+  typecheck: { category: "Web", resources: ["web-runtime"], parallelizable: false },
+  lint: { category: "Web", resources: ["web-lint"], parallelizable: true },
+  build: { category: "Build", resources: ["web-runtime"], parallelizable: false },
+  "test:e2e": { category: "E2E", resources: ["web-runtime"], parallelizable: false },
+  "quality:mutation": { category: "Quality", resources: ["web-runtime", "web-coverage"], parallelizable: false },
+  "quality:top-heavy": { category: "Quality", resources: ["quality-ratchets"], parallelizable: false },
+  "quality:complexity": { category: "Quality", resources: ["quality-ratchets"], parallelizable: false },
+  "quality:dead-code": { category: "Quality", resources: ["quality-ratchets"], parallelizable: false },
+  "quality:duplication": { category: "Quality", resources: ["quality-ratchets"], parallelizable: false },
+  "quality:cycles": { category: "Quality", resources: ["gitnexus"], parallelizable: false },
+  "mobile:typecheck": { category: "Mobile", resources: ["mobile-runtime"], parallelizable: false },
+  "mobile:test": { category: "Mobile", resources: ["mobile-runtime"], parallelizable: false },
+  "mobile:security": { category: "Security", resources: ["mobile-runtime"], parallelizable: false },
+  "mobile:lint": { category: "Mobile", resources: ["mobile-runtime"], parallelizable: false },
+  "quality:mobile-coverage": { category: "Quality", dependencies: ["mobile:test"], resources: ["mobile-runtime"], parallelizable: false },
+  "audit:vercel-ci": { category: "External", resources: ["external-vercel"], parallelizable: false },
+  "vercel-deploy-preflight": { category: "External", resources: ["external-vercel"], parallelizable: false },
+  "github-security-full": { category: "External", resources: ["external-github"], parallelizable: false },
+  "supabase-full": { category: "External", resources: ["external-supabase"], parallelizable: false },
+  "python-tests": { category: "Python", resources: ["python-runtime"], parallelizable: false },
+  "test:scripts": { category: "Governance", resources: ["script-tests"], parallelizable: false },
+  "scripts-tests-targeted": { category: "Governance", resources: ["script-tests"], parallelizable: false },
+  "semgrep-architecture": { category: "Security", resources: ["semgrep"], parallelizable: false },
+});
+
+function inferCheckCategory(id) {
+  if (id.startsWith("mobile:")) return "Mobile";
+  if (id.startsWith("quality:") || id.includes("coverage")) return "Quality";
+  if (id.startsWith("test:") || id.includes("security")) return "Security";
+  if (id.includes("e2e")) return "E2E";
+  if (id.includes("vercel") || id.includes("github") || id.includes("supabase")) return "External";
+  if (id === "typecheck" || id === "lint" || id === "vitest-full") return "Web";
+  if (id === "build") return "Build";
+  if (id.includes("python")) return "Python";
+  return "Governance";
+}
+
+function decorateCheck(check) {
+  const policy = CHECK_POLICIES[check.id] ?? {};
+  return {
+    ...check,
+    category: check.category ?? policy.category ?? inferCheckCategory(check.id),
+    dependencies: Object.freeze([...(check.dependencies ?? policy.dependencies ?? [])]),
+    resources: Object.freeze([...(check.resources ?? policy.resources ?? [])]),
+    parallelizable: check.parallelizable ?? policy.parallelizable ?? true,
+  };
+}
+
 function addCheck(checks, check) {
   if (checks.some((entry) => entry.id === check.id)) return;
-  checks.push(Object.freeze(check));
+  checks.push(Object.freeze(decorateCheck(check)));
 }
 
 function addTargetedVitest(checks, files, estimatedSeconds = 30) {

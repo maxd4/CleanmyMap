@@ -1224,9 +1224,16 @@ consulte pas le rôle global pour fabriquer une relation événementielle et ne
 transmet pas de lieu, roster ou autre projection de gestion au client.
 Les filtres sont calculés sur les relations réellement présentes ; une
 habilitation révoquée, un compte seul ou un nom importé ne crée aucune entrée.
-Le cockpit privé obtient ensuite l'édition depuis une lecture serveur puis
-réutilise `loadSpogomiEventForOrganizer`, qui applique `canManageEvent` et les
-relations `action_organizers` avant de transmettre une projection au client.
+Le cockpit privé canonique est `/spogomi/[eventSlug]/espace`. Sa page résout
+d'abord la relation événementielle par slug avec
+`resolveSpogomiEventAccessBySlug`, puis affiche uniquement les sections
+correspondant aux capacités réellement accordées. La navigation persistante
+contient Présentation, Équipes, Résultats, Arbitrage, Bilan et Paramètres ;
+les vues organisateur réutilisent `loadSpogomiManagementProjection`, tandis
+que les observateurs passent par `loadSpogomiObserverProjection` et restent
+strictement en lecture. Les arbitres utilisent la projection d'arbitrage et
+ses mutations tracées. Chaque API continue de refaire son propre contrôle
+serveur : le masquage d'une section n'est jamais une autorisation.
 Les événements créés depuis le formulaire appellent seulement
 `POST /api/spogomi/events`, utilisent une clé d'idempotence et restent privés
 par défaut. La navigation vers la gestion est réservée aux événements ainsi
@@ -1249,6 +1256,9 @@ Fichiers principaux :
   `apps/web/src/app/(app)/spogomi/nouveau/page.tsx` ;
 - `apps/web/src/components/spogomi/spogomi-personal-events-list.tsx` ;
 - `apps/web/src/lib/spogomi/personal-events-service.ts` ;
+- `apps/web/src/components/spogomi/spogomi-event-cockpit.tsx` ;
+- `apps/web/src/components/spogomi/spogomi-observer-cockpit-panel.tsx` ;
+- `apps/web/src/app/(app)/spogomi/[eventSlug]/espace/page.tsx` ;
 - `apps/web/src/app/(app)/spogomi/mes-evenements/error.tsx`.
 
 ## 19 septies. Autorisation par capacité et périmètre — CURRENT

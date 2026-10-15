@@ -115,3 +115,23 @@ export async function resolveSpogomiEventAccess(params: {
     capabilities,
   };
 }
+
+export async function resolveSpogomiEventAccessBySlug(params: {
+  supabase: SupabaseClient;
+  eventSlug: string;
+  userId: string;
+}): Promise<SpogomiEventAccessDecision | null> {
+  const eventResult = await params.supabase
+    .from("spogomi_events")
+    .select(EVENT_ACCESS_SELECT)
+    .eq("event_slug", params.eventSlug)
+    .maybeSingle();
+  if (eventResult.error) throw eventResult.error;
+  if (!eventResult.data) return null;
+
+  return resolveSpogomiEventAccess({
+    supabase: params.supabase,
+    eventId: String(eventResult.data.id),
+    userId: params.userId,
+  });
+}

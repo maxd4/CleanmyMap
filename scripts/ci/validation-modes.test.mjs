@@ -104,6 +104,25 @@ test("FULL keeps canonical Web command and does not relaunch covered groups", ()
   assert.equal(new Set(ids(plan)).size, ids(plan).length);
 });
 
+test("FULL annotates categories and protects known exclusive resources", () => {
+  const plan = createModeValidationPlan({ mode: "FULL", changedFiles: [] });
+  const coverage = plan.checks.find((check) => check.id === "quality:coverage");
+  const webTests = plan.checks.find((check) => check.id === "test:coverage");
+  const build = plan.checks.find((check) => check.id === "build");
+  const e2e = plan.checks.find((check) => check.id === "test:e2e");
+  const github = plan.checks.find((check) => check.id === "github-security-full");
+
+  assert.equal(webTests.category, "Web");
+  assert.deepEqual(coverage.dependencies, ["test:coverage"]);
+  assert.deepEqual(coverage.resources, ["web-coverage"]);
+  assert.deepEqual(build.resources, ["web-runtime"]);
+  assert.deepEqual(e2e.resources, ["web-runtime"]);
+  assert.equal(build.parallelizable, false);
+  assert.equal(e2e.parallelizable, false);
+  assert.deepEqual(github.resources, ["external-github"]);
+  assert.equal(github.parallelizable, false);
+});
+
 test("migration families retain their specialized FAST contract", () => {
   const migration = "apps/web/supabase/migrations/20260915000021_action_registrations_browser_deny_policy.sql";
   assert.deepEqual(resolveMigrationContracts([migration]), [{

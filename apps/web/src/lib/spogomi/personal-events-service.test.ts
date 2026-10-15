@@ -77,6 +77,19 @@ describe("listSpogomiEventsForUser", () => {
     expect(result[1]).not.toHaveProperty("action_id");
   });
 
+  it("routes active reviewers to the capability-scoped event space", async () => {
+    const supabase = createSupabaseFixture({
+      events: [event("event-a", "action-a")],
+      organizers: [],
+      reviewers: [{ event_id: "event-a", clerk_id: "user-1", role: "observer", revoked_at: null }],
+      participants: [],
+    });
+
+    const [result] = await listSpogomiEventsForUser(supabase as never, "user-1");
+
+    expect(result?.links.space).toBe("/spogomi/event-a-slug/espace");
+  });
+
   it("keeps relations found after the first 1,000-row page", async () => {
     const events = Array.from({ length: 1001 }, (_, index) => event(`event-${index}`, `action-${index}`));
     const supabase = createSupabaseFixture({

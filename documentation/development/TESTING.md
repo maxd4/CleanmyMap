@@ -294,6 +294,43 @@ peut pas être laissé rouge en le classant simplement
 décisionnels ou d'environnement restent `BLOCKED_*`, doivent conserver leur
 preuve et ne peuvent pas être masqués ni comptés comme un succès.
 
+### Orchestration et progression de `checks:full`
+
+Le runner affiche dès le démarrage le SHA observé, le scope, le mode, le
+nombre exact de contrôles et la limite de concurrence. Chaque contrôle est
+ensuite suivi avec son identifiant, sa catégorie (`Web`, `Mobile`, `Python`,
+`Security`, `Governance`, `Quality`, `Build`, `E2E` ou `External`), son état,
+sa durée et le compteur réel des contrôles terminés. Les états `PENDING`,
+`RUNNING`, `PASS`, `FAIL`, `BLOCKED`, `REUSED` et `NOT_RUN` restent distincts.
+En terminal interactif, la ligne de progression est rafraîchie ; en CI ou en
+sortie redirigée, chaque événement est horodaté. Un contrôle silencieux émet
+également un heartbeat toutes les 15 secondes, sans fabriquer d'ETA ni de
+pourcentage autre que le ratio contrôles terminés / contrôles planifiés.
+
+La limite par défaut est de deux contrôles simultanés. Pour diagnostiquer ou
+reproduire strictement l'ordre historique, utiliser :
+
+```bash
+npm run checks:full -- --max-parallel=1
+```
+
+L'ordonnanceur ne chevauche que des contrôles déclarés compatibles et dont les
+ressources sont disjointes. Les contrôles de couverture, mutation, ratchets
+artefactés, GitNexus, mobile, build, E2E et services externes restent isolés ;
+`quality:coverage` attend la preuve `test:coverage` (ou sa preuve exactement
+réutilisée) et la couverture mobile attend le test mobile. Une erreur d'un
+contrôle n'interrompt pas les contrôles indépendants déjà en cours ; les
+dépendants deviennent explicitement `BLOCKED`. Un timeout, une interruption
+ou un nettoyage de processus conserve son verdict et ne transforme jamais un
+contrôle non exécuté en succès.
+
+Le rapport final ajoute les durées par contrôle, triées par durée décroissante,
+et la durée totale. Cette instrumentation mesure le coût observé ; elle ne
+modifie ni le périmètre FULL, ni les seuils, ni les baselines, ni les
+exclusions. Une amélioration de durée ne peut être annoncée qu'après une
+comparaison reproductible avec `--max-parallel=1` sur une candidate et un
+environnement comparables.
+
 Dans la CI GitHub, `workflow_dispatch` avec `validation_mode=FULL` sélectionne
 explicitement tous les domaines et ne dérive aucun périmètre à partir d'un
 diff ; le checkout et les preuves restent liés à `github.sha`. Les événements

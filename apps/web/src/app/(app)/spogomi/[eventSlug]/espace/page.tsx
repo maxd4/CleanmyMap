@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { SpogomiPreparationWorkspace } from "@/components/spogomi/spogomi-preparation-workspace";
+import { SpogomiEventCockpit } from "@/components/spogomi/spogomi-event-cockpit";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { loadSpogomiEventBySlugForCurrentOrganizer } from "@/lib/spogomi/preparation-service";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { hasSpogomiCapability, resolveSpogomiEventAccessBySlug } from "@/lib/spogomi/authorization";
 
 type Props = { params: Promise<{ eventSlug: string }> };
 
@@ -16,8 +17,12 @@ export default async function SpogomiEventSpacePage({ params }: Props) {
   const { eventSlug } = await params;
   const access = await requireAuthenticatedAccess();
   if (!access.ok) redirect(`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${eventSlug}/espace`)}`);
-  const event = await loadSpogomiEventBySlugForCurrentOrganizer(eventSlug, access.userId);
-  if (event === false || !event) notFound();
+  const eventAccess = await resolveSpogomiEventAccessBySlug({
+    supabase: getSupabaseServerClient(true),
+    eventSlug,
+    userId: access.userId,
+  });
+  if (!eventAccess || (!hasSpogomiCapability(eventAccess, "observe") && !hasSpogomiCapability(eventAccess, "manage"))) notFound();
 
   return (
     <>
@@ -26,7 +31,20 @@ export default async function SpogomiEventSpacePage({ params }: Props) {
         <Link href="/spogomi/nouveau" className="font-bold text-emerald-800 hover:underline">Nouvelle compétition</Link>
         <Link href="/spogomi" className="font-bold text-emerald-800 hover:underline">Index public SPOGOMI</Link>
       </nav>
-      <SpogomiPreparationWorkspace eventId={event.id} />
+      <SpogomiEventCockpit
+        event={{
+          id: String(eventAccess.event.id),
+          name: String(eventAccess.event.name),
+          eventSlug: eventAccess.event.event_slug,
+          mode: eventAccess.event.mode,
+          state: eventAccess.event.state,
+          startsAt: eventAccess.event.starts_at,
+          endsAt: eventAccess.event.ends_at,
+          publicVisibility: eventAccess.event.public_visibility,
+        }}
+        role={eventAccess.role}
+        capabilities={[...eventAccess.capabilities]}
+      />
     </>
   );
 }
