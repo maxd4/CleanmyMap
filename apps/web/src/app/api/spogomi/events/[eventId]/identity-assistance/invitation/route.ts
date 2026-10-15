@@ -8,6 +8,7 @@ import { issueSpogomiIdentityAssistanceInvitation } from "@/lib/spogomi/identity
 import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: private invitation issuance depends on the current organizer session and must remain fresh.
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {

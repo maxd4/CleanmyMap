@@ -8,6 +8,7 @@ import { listSpogomiIdentityAssistanceRequests } from "@/lib/spogomi/identity-as
 import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: organizer-only assistance requests are private and must remain fresh per request.
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, context: { params: Promise<{ eventId: string }> }) {

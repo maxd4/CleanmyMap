@@ -12,6 +12,7 @@ import {
 import { loadSpogomiEventForOrganizer } from "@/lib/spogomi/preparation-service";
 
 export const runtime = "nodejs";
+// Justification Vercel: organizer decisions on private assistance requests must remain fresh per request.
 export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({

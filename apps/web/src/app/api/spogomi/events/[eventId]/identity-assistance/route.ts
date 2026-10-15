@@ -11,6 +11,7 @@ import {
 } from "@/lib/spogomi/identity-assistance";
 
 export const runtime = "nodejs";
+// Justification Vercel: this authenticated identity-assistance state is private and must remain fresh per request.
 export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ eventId: string }> };
