@@ -102,3 +102,43 @@ relancé.
   GitHub Actions de workflow n'a pas été lancé car `.github/workflows/` n'a
   pas été modifié ; `checks:full` et tout scan SonarCloud distant restent
   `NOT_RUN` conformément au périmètre L02.
+
+## Lot L04 — périmètre generated/fixture (`L04_GENERATED_FIXTURE_SCOPE`)
+
+L'inventaire source est
+`.artifacts/sonarqube/CleanMyMap_SonarQube_286_issues_2026-10-15.json`, analysé
+sur `fd2e640683c23e876ff6924457946fabb763b322`. La relecture locale a été
+faite sur `main` à la révision `9ca437ff7565d9f26c3a094dc8c836122ce897c7`.
+Les deux HTML du board appartiennent au livrable documentaire `GENERATED` :
+`design-system:board` consomme le HTML statique comme template et produit la
+copie dynamique et les données à partir du script de génération. Aucun des
+deux fichiers ne contient de source runtime, de code métier ou d'indicateur
+produit. Leurs contrôles sont des échantillons natifs sans gestionnaire de
+workflow ; ils ne constituent pas une surface applicative métier à maintenir.
+
+La fixture `fixture.test.ts` est un `FIXTURE_GRAPH_INPUT`, consommé par
+`scripts/checks/architecture-import-boundary.test.mjs` pour vérifier une arête
+type-only. Son suffixe `.test.ts` la fait classer comme test par Sonar, mais le
+fichier ne porte aucune suite exécutable et sa suppression ou son déplacement
+changerait le graphe synthétique testé. Le contrat réel reste couvert par le
+harness Node canonique.
+
+| Identifiant | Règle / chemin exact | Qualification | Décision locale | Statut |
+| --- | --- | --- | --- | --- |
+| `AaE3K8zJzHjHEPBoeRC-`, `AaE3K8zJzHjHEPBoeRC_`, `AaE3K8zJzHjHEPBoeRDA`, `AaE3K8zJzHjHEPBoeRDB` | `Web:InputWithoutLabelCheck` — `documentation/design-system/generated/board/design-system-board.dynamic.html` | `GENERATED` documentaire | Exclusion Sonar au chemin exact ; aucune source runtime, test contractuel ou métrique métier masquée. | `REVIEWED_NOT_EXPLOITABLE` |
+| `AaE3K8zdzHjHEPBoeRDC`, `AaE3K8zdzHjHEPBoeRDD`, `AaE3K8zdzHjHEPBoeRDE`, `AaE3K8zdzHjHEPBoeRDF` | `Web:InputWithoutLabelCheck` — `documentation/design-system/generated/board/design-system-board.html` | `GENERATED` documentaire | Exclusion Sonar au chemin exact ; aucune source runtime, test contractuel ou métrique métier masquée. | `REVIEWED_NOT_EXPLOITABLE` |
+| `AaE7ZAYrkxkMFlGl5f3D` | `typescript:S2187` — `scripts/checks/fixtures/architecture-import-boundary/web/src/components/fixture.test.ts` | `FIXTURE_GRAPH_INPUT`, pas `TEST` exécutable | Exclusion Sonar au chemin exact ; le harness `architecture-import-boundary.test.mjs` et le graphe type-only restent analysés. | `REVIEWED_NOT_EXPLOITABLE` |
+
+Les trois exclusions sont littérales dans `sonar-project.properties` et ne
+couvrent aucun autre fichier. Le changement de périmètre rend les métriques
+Sonar globales avant/après `NON_COMPARABLES` sans recalcul homogène : ne pas
+interpréter une variation du nombre d'issues, de couverture ou de duplication
+comme un effet isolé de ce lot. Aucun seuil, baseline, règle métier ou garde
+de test n'a été affaibli.
+
+Preuves du lot : test du contrat du générateur, vérification de la
+configuration Sonar et test du harness d'architecture. L'exécution complète
+de `design-system:board` reste à qualifier séparément si la dérive
+préexistante de `globals.css` (absence de `:root` attendu par le générateur)
+est toujours présente. Aucun scan SonarCloud distant n'est relancé
+automatiquement ; ces décisions restent locales jusqu'à une nouvelle analyse.
