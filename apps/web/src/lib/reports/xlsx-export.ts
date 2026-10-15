@@ -58,7 +58,14 @@ export function safeXlsxFilename(value: string): string {
   const normalized = value
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return `${(normalized || "spogomi-evenement").slice(0, 80)}.xlsx`;
+    .replace(/[^a-zA-Z0-9._-]+/g, "-");
+
+  let start = 0;
+  while (start < normalized.length && normalized[start] === "-") start += 1;
+
+  let end = normalized.length;
+  while (end > start && normalized[end - 1] === "-") end -= 1;
+
+  const filenamePart = normalized.slice(start, Math.min(end, start + 80));
+  return `${filenamePart || "spogomi-evenement"}.xlsx`;
 }

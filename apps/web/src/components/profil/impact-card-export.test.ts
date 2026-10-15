@@ -87,6 +87,32 @@ describe("impact card export", () => {
     expect(result.filename).toBe("CleanMyMap-Impact-Rapport.png");
   });
 
+  it("conserve les caractères internes, utilise le secours pour les seuls tirets et limite après les bordures", async () => {
+    installBrowserStubs();
+    toPngMock.mockResolvedValueOnce(pngDataUrl);
+
+    const result = await generateImpactCardPng("--Rapport_2026--");
+
+    expect(result.filename).toBe("CleanMyMap-Impact-Rapport_2026.png");
+
+    toPngMock.mockResolvedValueOnce(pngDataUrl);
+    const fallback = await generateImpactCardPng("-".repeat(10_000));
+    expect(fallback.filename).toBe("CleanMyMap-Impact-Contributeur.png");
+
+    toPngMock.mockResolvedValueOnce(pngDataUrl);
+    const limited = await generateImpactCardPng(`${"-".repeat(100)}${"a".repeat(100)}-`);
+    expect(limited.filename).toBe(`CleanMyMap-Impact-${"a".repeat(80)}.png`);
+  });
+
+  it("traite une longue séquence interne sans la confondre avec une bordure", async () => {
+    installBrowserStubs();
+    toPngMock.mockResolvedValueOnce(pngDataUrl);
+
+    const result = await generateImpactCardPng(`Alpha${"-".repeat(10_000)}Omega`);
+
+    expect(result.filename).toBe(`CleanMyMap-Impact-Alpha${"-".repeat(75)}.png`);
+  });
+
   it("déclenche effectivement le téléchargement du PNG", () => {
     const anchor = createAnchor();
     installBrowserStubs({ anchor });

@@ -24,10 +24,16 @@ function normalizeFilenamePart(name: string | undefined): string {
     .trim()
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^a-zA-Z0-9_-]+/g, "-");
 
-  return (normalized || IMPACT_CARD_FALLBACK_NAME).slice(0, 80);
+  let start = 0;
+  while (start < normalized.length && normalized[start] === "-") start += 1;
+
+  let end = normalized.length;
+  while (end > start && normalized[end - 1] === "-") end -= 1;
+
+  const filenamePart = normalized.slice(start, Math.min(end, start + 80));
+  return filenamePart || IMPACT_CARD_FALLBACK_NAME;
 }
 
 function dataUrlToBlob(dataUrl: string): Blob {
