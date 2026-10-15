@@ -71,4 +71,19 @@ describe("SPOGOMI team join admin queue", () => {
     expect(response.status).toBe(400);
     expect(transitionRequestMock).not.toHaveBeenCalled();
   });
+
+  it("allows an active admin to reject without selecting a roster identity", async () => {
+    const { PATCH } = await import("./route");
+    const response = requireResponse(await PATCH(new Request("http://localhost", {
+      method: "PATCH",
+      body: JSON.stringify({ requestId: "00000000-0000-4000-8000-000000000001", status: "rejected" }),
+    }), { params: Promise.resolve({ eventId }) }));
+    expect(response.status).toBe(200);
+    expect(transitionRequestMock).toHaveBeenCalledWith(expect.objectContaining({
+      targetStatus: "rejected",
+      actorKind: "admin",
+      matchedParticipantId: undefined,
+      verificationNote: undefined,
+    }));
+  });
 });

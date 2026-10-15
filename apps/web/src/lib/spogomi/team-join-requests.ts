@@ -19,6 +19,15 @@ export type SpogomiTeamJoinRequest = {
   team: { publicName: string; teamNumber: number } | null;
 };
 
+export type SpogomiTeamJoinRequestRequesterView = {
+  id: string;
+  teamId: string;
+  status: SpogomiTeamJoinRequestStatus;
+  decidedAt: string | null;
+  createdAt: string;
+  team: { publicName: string; teamNumber: number } | null;
+};
+
 export class SpogomiTeamJoinRequestError extends Error {
   constructor(
     message: string,
@@ -60,6 +69,30 @@ function mapRequest(row: Record<string, unknown>, team: SpogomiTeamJoinRequest["
   };
 }
 
+function mapRequesterRequest(row: Record<string, unknown>, team: SpogomiTeamJoinRequest["team"] = null): SpogomiTeamJoinRequestRequesterView {
+  return {
+    id: String(row.id ?? row.request_id),
+    teamId: String(row.team_id ?? row.request_team_id),
+    status: asStatus(row.status ?? row.request_status),
+    decidedAt: typeof row.decided_at === "string" ? row.decided_at : null,
+    createdAt: String(row.created_at ?? ""),
+    team,
+  };
+}
+
+export function projectSpogomiTeamJoinRequestForRequester(
+  request: SpogomiTeamJoinRequest,
+): SpogomiTeamJoinRequestRequesterView {
+  return {
+    id: request.id,
+    teamId: request.teamId,
+    status: request.status,
+    decidedAt: request.decidedAt,
+    createdAt: request.createdAt,
+    team: request.team,
+  };
+}
+
 async function loadTeamLabels(
   supabase: SupabaseClient,
   eventId: string,
@@ -83,7 +116,7 @@ export async function createSpogomiTeamJoinRequest(params: {
   eventId: string;
   teamId: string;
   requesterClerkId: string;
-}): Promise<SpogomiTeamJoinRequest> {
+}): Promise<SpogomiTeamJoinRequestRequesterView> {
   const result = await params.supabase.rpc("create_spogomi_team_join_request", {
     p_event_id: params.eventId,
     p_team_id: params.teamId,
@@ -92,22 +125,28 @@ export async function createSpogomiTeamJoinRequest(params: {
   if (result.error) throw mapError(result.error);
   const row = Array.isArray(result.data) ? result.data[0] : result.data;
   if (!row || typeof row !== "object") throw new SpogomiTeamJoinRequestError("La demande n’a pas pu être créée.", "validation");
-  const mapped = mapRequest({
+  const requestTeamId = (row as Record<string, unknown>).request_team_id;
+  if (typeof requestTeamId !== "string" || !requestTeamId) {
+    throw new SpogomiTeamJoinRequestError("La demande retournée est incohérente.", "validation");
+  }
+  if (requestTeamId !== params.teamId) {
+    throw new SpogomiTeamJoinRequestError("Une demande approuvée existe déjà pour une autre équipe de cet événement.", "conflict");
+  }
+  const mapped = mapRequesterRequest({
     id: (row as Record<string, unknown>).request_id,
     event_id: params.eventId,
-    team_id: (row as Record<string, unknown>).request_team_id,
-    requester_clerk_id: params.requesterClerkId,
+    team_id: requestTeamId,
     status: (row as Record<string, unknown>).request_status,
     created_at: new Date().toISOString(),
   });
-  const labels = await loadTeamLabels(params.supabase, params.eventId, [params.teamId]);
-  return { ...mapped, team: labels.get(params.teamId) ?? null };
+  const labels = await loadTeamLabels(params.supabase, params.eventId, [requestTeamId]);
+  return { ...mapped, team: labels.get(requestTeamId) ?? null };
 }
 
 export async function loadSpogomiTeamJoinRequestForRequester(
   supabase: SupabaseClient,
   params: { eventId: string; teamId: string; requesterClerkId: string },
-): Promise<SpogomiTeamJoinRequest | null> {
+): Promise<SpogomiTeamJoinRequestRequesterView | null> {
   const eventResult = await supabase
     .from("spogomi_events")
     .select("id")
@@ -119,7 +158,7 @@ export async function loadSpogomiTeamJoinRequestForRequester(
   if (!eventResult.data) return null;
   const result = await supabase
     .from("spogomi_team_join_requests")
-    .select("id, event_id, team_id, requester_clerk_id, status, matched_participant_id, verification_note, resolution_note, decided_by_clerk_id, decided_at, created_at")
+    .select("id, event_id, team_id, status, decided_at, created_at")
     .eq("event_id", params.eventId)
     .eq("team_id", params.teamId)
     .eq("requester_clerk_id", params.requesterClerkId)
@@ -128,8 +167,9 @@ export async function loadSpogomiTeamJoinRequestForRequester(
   if (result.error) throw result.error;
   const row = result.data?.[0];
   if (!row) return null;
-  const labels = await loadTeamLabels(supabase, params.eventId, [params.teamId]);
-  return mapRequest(row as Record<string, unknown>, labels.get(params.teamId) ?? null);
+  const requestTeamId = String((row as Record<string, unknown>).team_id);
+  const labels = await loadTeamLabels(supabase, params.eventId, [requestTeamId]);
+  return mapRequesterRequest(row as Record<string, unknown>, labels.get(requestTeamId) ?? null);
 }
 
 export async function listSpogomiTeamJoinRequestsForAdmin(

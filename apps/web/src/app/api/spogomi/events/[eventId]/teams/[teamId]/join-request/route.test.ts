@@ -13,6 +13,21 @@ vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: getSupabaseSe
 vi.mock("@/lib/spogomi/team-join-requests", () => ({
   createSpogomiTeamJoinRequest: createRequestMock,
   loadSpogomiTeamJoinRequestForRequester: loadRequestMock,
+  projectSpogomiTeamJoinRequestForRequester: (request: {
+    id: string;
+    teamId: string;
+    status: string;
+    decidedAt: string | null;
+    createdAt: string;
+    team: { publicName: string; teamNumber: number } | null;
+  }) => ({
+    id: request.id,
+    teamId: request.teamId,
+    status: request.status,
+    decidedAt: request.decidedAt,
+    createdAt: request.createdAt,
+    team: request.team,
+  }),
   transitionSpogomiTeamJoinRequest: transitionRequestMock,
   SpogomiTeamJoinRequestError: class SpogomiTeamJoinRequestError extends Error { kind = "conflict" as const; },
 }));
@@ -34,9 +49,22 @@ describe("SPOGOMI public team join request", () => {
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
     enforceRateLimitMock.mockResolvedValue(null);
     getSupabaseServerClientMock.mockReturnValue({});
-    createRequestMock.mockResolvedValue({ id: "request-1", status: "pending", teamId: "team-1" });
+    createRequestMock.mockResolvedValue({ id: "request-1", status: "pending", teamId: params.teamId, decidedAt: null, createdAt: "2026-10-15T09:00:00.000Z", team: { publicName: "Alpha", teamNumber: 1 } });
     loadRequestMock.mockResolvedValue(null);
-    transitionRequestMock.mockResolvedValue({ id: "request-1", status: "cancelled", teamId: "team-1" });
+    transitionRequestMock.mockResolvedValue({
+      id: "request-1",
+      eventId: params.eventId,
+      teamId: params.teamId,
+      requesterClerkId: "user-1",
+      status: "cancelled",
+      matchedParticipantId: "participant-internal",
+      verificationNote: "Note interne.",
+      resolutionNote: "Décision interne.",
+      decidedByClerkId: "admin-internal",
+      decidedAt: "2026-10-15T10:00:00.000Z",
+      createdAt: "2026-10-15T09:00:00.000Z",
+      team: { publicName: "Alpha", teamNumber: 1 },
+    });
   });
 
   it("refuses anonymous requests before the team service is reached", async () => {
@@ -51,7 +79,44 @@ describe("SPOGOMI public team join request", () => {
     const { POST } = await import("./route");
     const response = requireResponse(await POST(new Request("http://localhost", { method: "POST" }), { params: Promise.resolve(params) }));
     expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toEqual({
+      status: "ok",
+      request: {
+        id: "request-1",
+        status: "pending",
+        teamId: params.teamId,
+        decidedAt: null,
+        createdAt: "2026-10-15T09:00:00.000Z",
+        team: { publicName: "Alpha", teamNumber: 1 },
+      },
+    });
     expect(createRequestMock).toHaveBeenCalledWith({ supabase: {}, eventId: params.eventId, teamId: params.teamId, requesterClerkId: "user-1" });
+  });
+
+  it("returns the requester projection for the effective approved team", async () => {
+    loadRequestMock.mockResolvedValueOnce({
+      id: "request-1",
+      teamId: params.teamId,
+      status: "approved",
+      decidedAt: "2026-10-15T10:00:00.000Z",
+      createdAt: "2026-10-15T09:00:00.000Z",
+      team: { publicName: "Alpha", teamNumber: 1 },
+    });
+    const { GET } = await import("./route");
+    const response = requireResponse(await GET(new Request("http://localhost"), { params: Promise.resolve(params) }));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      status: "ok",
+      request: {
+        id: "request-1",
+        teamId: params.teamId,
+        status: "approved",
+        decidedAt: "2026-10-15T10:00:00.000Z",
+        createdAt: "2026-10-15T09:00:00.000Z",
+        team: { publicName: "Alpha", teamNumber: 1 },
+      },
+    });
+    expect(loadRequestMock).toHaveBeenCalledWith({}, expect.objectContaining({ requesterClerkId: "user-1" }));
   });
 
   it("cancels only the requester-owned pending request", async () => {
@@ -59,6 +124,17 @@ describe("SPOGOMI public team join request", () => {
     const { DELETE } = await import("./route");
     const response = requireResponse(await DELETE(new Request("http://localhost", { method: "DELETE" }), { params: Promise.resolve(params) }));
     expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      status: "ok",
+      request: {
+        id: "request-1",
+        teamId: params.teamId,
+        status: "cancelled",
+        decidedAt: "2026-10-15T10:00:00.000Z",
+        createdAt: "2026-10-15T09:00:00.000Z",
+        team: { publicName: "Alpha", teamNumber: 1 },
+      },
+    });
     expect(transitionRequestMock).toHaveBeenCalledWith(expect.objectContaining({ actorKind: "requester", actorClerkId: "user-1", targetStatus: "cancelled" }));
   });
 });

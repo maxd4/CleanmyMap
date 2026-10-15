@@ -8,6 +8,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createSpogomiTeamJoinRequest,
   loadSpogomiTeamJoinRequestForRequester,
+  projectSpogomiTeamJoinRequestForRequester,
   SpogomiTeamJoinRequestError,
   transitionSpogomiTeamJoinRequest,
 } from "@/lib/spogomi/team-join-requests";
@@ -92,7 +93,7 @@ export async function DELETE(request: Request, context: RouteContext): Promise<R
       actorKind: "requester",
       actorClerkId: authentication.access.userId,
     });
-    return NextResponse.json({ status: "ok", request: requestRecord });
+    return NextResponse.json({ status: "ok", request: projectSpogomiTeamJoinRequestForRequester(requestRecord) });
   } catch (error) {
     if (error instanceof SpogomiTeamJoinRequestError) {
       const status = error.kind === "unavailable" ? 404 : error.kind === "conflict" ? 409 : error.kind === "forbidden" ? 403 : 400;

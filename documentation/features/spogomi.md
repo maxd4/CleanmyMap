@@ -328,6 +328,15 @@ La file privée est réservée aux rôles actifs `admin` et `max` ; un organisat
 coorganisateur, arbitre, observateur ou coordinateur non admin ne peut ni
 accepter ni refuser cette demande.
 
+Un refus administratif peut être enregistré sans sélectionner d'identité
+historique et sans note de vérification ; seule la note de décision facultative
+reste conservée. Une approbation exige toujours une identité existante du
+roster appartenant exactement à l'équipe demandée et une vérification
+indépendante. La réponse personnelle du demandeur contient uniquement l'id de
+la demande, l'équipe publique effective, le statut et les dates utiles ; les
+notes, l'identité rapprochée et l'identité du décideur restent réservées à la
+file `admin|max`.
+
 L'acceptation exige la sélection d'une identité `spogomi_participants` déjà
 existante et appartenant à l'équipe demandée, ainsi qu'une note de vérification
 indépendante. Le nom, le prénom, l'adresse électronique ou une référence de
