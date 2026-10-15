@@ -446,6 +446,54 @@ export async function detectProfileProjectionColumns(supabase) {
   return { available, status };
 }
 
+function safeAuditCount(value) {
+  return Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+
+function safeAuditBoolean(value) {
+  return value === true;
+}
+
+function safeAuditTimestamp(value) {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
+export function formatAuditSummaryLog(summary) {
+  const projectionColumns = Object.fromEntries(
+    Object.entries(summary?.supabase?.profileProjectionColumns ?? {})
+      .filter(([column, status]) =>
+        OPTIONAL_PROFILE_PROJECTION_COLUMNS.includes(column) &&
+        (status === "present" || status === "absent"),
+      ),
+  );
+
+  return JSON.stringify({
+    generatedAt: safeAuditTimestamp(summary?.generatedAt),
+    clerk: {
+      totalCount: safeAuditCount(summary?.clerk?.totalCount),
+      count: safeAuditCount(summary?.clerk?.count),
+    },
+    supabase: {
+      profiles: safeAuditCount(summary?.supabase?.profiles),
+      profileProjectionColumns: projectionColumns,
+      progressionProfiles: safeAuditCount(summary?.supabase?.progressionProfiles),
+      progressionEvents: safeAuditCount(summary?.supabase?.progressionEvents),
+      checklistProgress: safeAuditCount(summary?.supabase?.checklistProgress),
+      funnelEvents: safeAuditCount(summary?.supabase?.funnelEvents),
+    },
+    counts: {
+      unionUsers: safeAuditCount(summary?.counts?.unionUsers),
+      missingProfiles: safeAuditCount(summary?.counts?.missingProfiles),
+      orphanProfiles: safeAuditCount(summary?.counts?.orphanProfiles),
+      roleMismatches: safeAuditCount(summary?.counts?.roleMismatches),
+      legacyActivityOnly: safeAuditCount(summary?.counts?.legacyActivityOnly),
+      legacyPrivilegedMetadata: safeAuditCount(summary?.counts?.legacyPrivilegedMetadata),
+      imuOwnerConfigured: safeAuditBoolean(summary?.counts?.imuOwnerConfigured),
+    },
+  });
+}
+
 function buildRowSummary({
   id,
   clerkUser,
@@ -735,7 +783,7 @@ async function main() {
   );
   await writeFile(`${outputBase}.csv`, toCsv(rows), "utf8");
 
-  console.log(JSON.stringify(summary, null, 2));
+  console.log(formatAuditSummaryLog(summary));
   console.log(`JSON: ${resolve(`${outputBase}.json`)}`);
   console.log(`CSV:  ${resolve(`${outputBase}.csv`)}`);
 }

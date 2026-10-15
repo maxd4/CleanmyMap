@@ -21,17 +21,26 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "structured-command.ps1")
+
+$invocation = ConvertTo-StructuredInvocation -CommandLine $Command
+$invocationArguments = [string[]]$invocation.Arguments
 
 $rawLines = @()
 
 & {
-    Invoke-Expression $Command
+    & $invocation.Executable @invocationArguments
 } 2>&1 | ForEach-Object {
     $line = "$_"
     $rawLines += $line
 }
 
-$exitCode = if ($LASTEXITCODE -is [int]) { $LASTEXITCODE } else { 0 }
+$lastExitCodeVariable = Get-Variable -Name LASTEXITCODE -ErrorAction SilentlyContinue
+$exitCode = if ($null -ne $lastExitCodeVariable -and $lastExitCodeVariable.Value -is [int]) {
+    $lastExitCodeVariable.Value
+} else {
+    0
+}
 $filtered = @($rawLines | Where-Object { $_ -match $IncludeRegex })
 
 if ($filtered.Count -eq 0) {

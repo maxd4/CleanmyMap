@@ -55,16 +55,20 @@ function Invoke-ParallelSteps {
         param(
             [string]$RepoRoot,
             [string]$Label,
-            [string]$Command
+            [string]$Command,
+            [string]$CommandParserPath
         )
 
         Set-StrictMode -Version Latest
         $ErrorActionPreference = "Stop"
         Set-Location -LiteralPath $RepoRoot
+        . $CommandParserPath
         $output = [System.Collections.Generic.List[string]]::new()
 
         try {
-            Invoke-Expression $Command 2>&1 | ForEach-Object {
+            $invocation = ConvertTo-StructuredInvocation -CommandLine $Command
+            $invocationArguments = [string[]]$invocation.Arguments
+            & $invocation.Executable @invocationArguments 2>&1 | ForEach-Object {
                 [void]$output.Add([string]$_)
             }
             $exitCode = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
@@ -86,7 +90,8 @@ function Invoke-ParallelSteps {
             $job = Start-Job -ScriptBlock $jobScript -ArgumentList @(
                 $repoRoot,
                 $step.Label,
-                $step.Command
+                $step.Command,
+                (Join-Path $repoRoot "scripts/ci/structured-command.ps1")
             )
             $running[$job.Id] = $job
         }

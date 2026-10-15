@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   buildProfileSelect,
   detectProfileProjectionColumns,
+  formatAuditSummaryLog,
   resolveStoredActiveRole,
   resolveStoredRoleLabel,
 } from "./audit-clerk-supabase.mjs";
@@ -90,5 +91,38 @@ describe("audit-clerk-supabase canonical role contract", () => {
     const select = buildProfileSelect();
     assert.match(select, /role_projection_source/);
     assert.match(select, /role_projection_synced_at/);
+  });
+
+  it("projects only generated counters and safe statuses into the audit log", () => {
+    const logLine = formatAuditSummaryLog({
+      generatedAt: "2026-10-15T16:00:00Z\nforged-entry",
+      clerk: { totalCount: "42\nforged-entry", count: 2 },
+      supabase: {
+        profiles: 3,
+        profileProjectionColumns: {
+          role_projection_source: "present",
+          role_projection_synced_at: "forged\nstatus",
+          injected: "present",
+        },
+        progressionProfiles: 4,
+        progressionEvents: 5,
+        checklistProgress: 6,
+        funnelEvents: 7,
+      },
+      counts: {
+        unionUsers: 8,
+        missingProfiles: 1,
+        orphanProfiles: 0,
+        roleMismatches: 0,
+        legacyActivityOnly: 0,
+        legacyPrivilegedMetadata: 0,
+        imuOwnerConfigured: true,
+      },
+    });
+
+    assert.doesNotMatch(logLine, /forged|\n|\r/);
+    assert.match(logLine, /"totalCount":null/);
+    assert.match(logLine, /"role_projection_source":"present"/);
+    assert.doesNotMatch(logLine, /injected|role_projection_synced_at/);
   });
 });
