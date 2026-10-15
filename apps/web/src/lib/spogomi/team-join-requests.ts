@@ -132,15 +132,15 @@ export async function createSpogomiTeamJoinRequest(params: {
   if (requestTeamId !== params.teamId) {
     throw new SpogomiTeamJoinRequestError("Une demande approuvée existe déjà pour une autre équipe de cet événement.", "conflict");
   }
-  const mapped = mapRequesterRequest({
-    id: (row as Record<string, unknown>).request_id,
-    event_id: params.eventId,
-    team_id: requestTeamId,
-    status: (row as Record<string, unknown>).request_status,
-    created_at: new Date().toISOString(),
+  const persisted = await loadSpogomiTeamJoinRequestForRequester(params.supabase, {
+    eventId: params.eventId,
+    teamId: requestTeamId,
+    requesterClerkId: params.requesterClerkId,
   });
-  const labels = await loadTeamLabels(params.supabase, params.eventId, [requestTeamId]);
-  return { ...mapped, team: labels.get(requestTeamId) ?? null };
+  if (!persisted || persisted.id !== String((row as Record<string, unknown>).request_id)) {
+    throw new SpogomiTeamJoinRequestError("La demande retournée est introuvable.", "validation");
+  }
+  return persisted;
 }
 
 export async function loadSpogomiTeamJoinRequestForRequester(

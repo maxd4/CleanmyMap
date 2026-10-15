@@ -42,19 +42,72 @@ function dataQuery(data: unknown[], singleData: unknown = undefined) {
   return query;
 }
 
+function createSupabaseForCreate(rpcRow: Record<string, unknown>, persistedRow: Record<string, unknown>) {
+  const eventQuery = dataQuery([], { id: "event-1" });
+  const requestQuery = dataQuery([persistedRow]);
+  const labelsQuery = dataQuery([{ id: String(persistedRow.team_id), public_name: "Alpha", team_number: 1 }]);
+  const rpc = vi.fn().mockResolvedValue({ data: [rpcRow], error: null });
+  const supabase = {
+    rpc,
+    from: vi.fn((table: string) => table === "spogomi_events" ? eventQuery : table === "spogomi_team_join_requests" ? requestQuery : labelsQuery),
+  } as never;
+  return { rpc, supabase };
+}
+
 describe("SPOGOMI team join requests", () => {
-  it("uses stable status labels and creates only a request", async () => {
-    const rpc = vi.fn().mockResolvedValue({ data: [{ request_id: "request-1", request_status: "pending", request_team_id: "team-1" }], error: null });
-    const supabase = { rpc, from: vi.fn(() => teamQuery()) } as never;
+  it("uses the persisted dates for an initial pending request", async () => {
+    const { rpc, supabase } = createSupabaseForCreate(
+      { request_id: "request-1", request_status: "pending", request_team_id: "team-1" },
+      {
+        id: "request-1", event_id: "event-1", team_id: "team-1", status: "pending",
+        decided_at: null, created_at: "2026-10-15T09:00:00.000Z",
+      },
+    );
     await expect(createSpogomiTeamJoinRequest({ supabase, eventId: "event-1", teamId: "team-1", requesterClerkId: "user-1" })).resolves.toMatchObject({
       id: "request-1",
       status: "pending",
+      createdAt: "2026-10-15T09:00:00.000Z",
+      decidedAt: null,
       team: { publicName: "Alpha", teamNumber: 1 },
     });
     expect(rpc).toHaveBeenCalledWith("create_spogomi_team_join_request", {
       p_event_id: "event-1",
       p_team_id: "team-1",
       p_requester_clerk_id: "user-1",
+    });
+  });
+
+  it("keeps persisted dates when the RPC resumes an existing pending request", async () => {
+    const { supabase } = createSupabaseForCreate(
+      { request_id: "request-1", request_status: "pending", request_team_id: "team-1" },
+      {
+        id: "request-1", event_id: "event-1", team_id: "team-1", status: "pending",
+        decided_at: null, created_at: "2026-10-14T08:30:00.000Z",
+      },
+    );
+
+    await expect(createSpogomiTeamJoinRequest({ supabase, eventId: "event-1", teamId: "team-1", requesterClerkId: "user-1" })).resolves.toMatchObject({
+      id: "request-1",
+      status: "pending",
+      createdAt: "2026-10-14T08:30:00.000Z",
+      decidedAt: null,
+    });
+  });
+
+  it("keeps persisted creation and decision dates when the RPC resumes an approved request", async () => {
+    const { supabase } = createSupabaseForCreate(
+      { request_id: "request-1", request_status: "approved", request_team_id: "team-1" },
+      {
+        id: "request-1", event_id: "event-1", team_id: "team-1", status: "approved",
+        decided_at: "2026-10-15T10:00:00.000Z", created_at: "2026-10-14T08:30:00.000Z",
+      },
+    );
+
+    await expect(createSpogomiTeamJoinRequest({ supabase, eventId: "event-1", teamId: "team-1", requesterClerkId: "user-1" })).resolves.toMatchObject({
+      id: "request-1",
+      status: "approved",
+      createdAt: "2026-10-14T08:30:00.000Z",
+      decidedAt: "2026-10-15T10:00:00.000Z",
     });
   });
 
@@ -122,10 +175,13 @@ describe("SPOGOMI team join requests", () => {
   });
 
   it("uses the effective RPC team and rejects a cross-team approved replay", async () => {
-    const rpc = vi.fn().mockResolvedValue({ data: [{ request_id: "request-1", request_status: "approved", request_team_id: "team-a" }], error: null });
-    const labels = teamQuery();
-    labels.then = (resolve: (value: unknown) => unknown) => Promise.resolve({ data: [{ id: "team-a", public_name: "Alpha", team_number: 1 }], error: null }).then(resolve);
-    const supabase = { rpc, from: vi.fn(() => labels) } as never;
+    const { supabase } = createSupabaseForCreate(
+      { request_id: "request-1", request_status: "approved", request_team_id: "team-a" },
+      {
+        id: "request-1", event_id: "event-1", team_id: "team-a", status: "approved",
+        decided_at: "2026-10-15T10:00:00.000Z", created_at: "2026-10-14T08:30:00.000Z",
+      },
+    );
 
     await expect(createSpogomiTeamJoinRequest({ supabase, eventId: "event-1", teamId: "team-a", requesterClerkId: "user-1" })).resolves.toMatchObject({
       status: "approved",
