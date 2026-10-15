@@ -23,8 +23,8 @@ export function resolveBrowserRouteOrigin(): Promise<RouteRecommendationOrigin |
     return Promise.resolve(undefined);
   }
 
-  try {
-    return new Promise((resolve) => {
+  return new Promise((resolve) => {
+    try {
       navigator.geolocation.getCurrentPosition(
         ({ coords }) => {
           if (!isValidCoordinatePair(coords.latitude, coords.longitude)) {
@@ -41,8 +41,8 @@ export function resolveBrowserRouteOrigin(): Promise<RouteRecommendationOrigin |
         () => resolve(undefined),
         BROWSER_GEOLOCATION_OPTIONS,
       );
-    });
-  } catch {
-    return Promise.resolve(undefined);
-  }
+    } catch {
+      resolve(undefined);
+    }
+  });
 }

@@ -35,7 +35,7 @@ export type SpogomiPersonalRelation =
   | "checkin"
   | "participant";
 
-export type SpogomiPersonalAccess =
+type SpogomiPersonalAccess =
   | "manage"
   | "arbitrate"
   | "checkin"

@@ -170,7 +170,7 @@ export function ChatSidebarContent({
   return (
     <>
       <section className={isMessagerie ? "w-full space-y-2" : "space-y-2"}>
-        <p className={`px-2 cmm-text-caption font-semibold ${isLight ? "text-slate-500" : "text-slate-500"}`}>Discussions</p>
+        <p className="px-2 cmm-text-caption font-semibold text-slate-500">Discussions</p>
         <div className="space-y-1">
           <ChatSidebarChannelButton {...channelButtonProps} channel={communityChannel} overrides={{ label: "Communauté globale", description: "Conversation collective" }} />
           {currentChannelType === "community" ? <ChatSidebarTopics {...topicProps} /> : null}

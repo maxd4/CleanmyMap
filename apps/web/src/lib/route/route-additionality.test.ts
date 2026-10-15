@@ -11,7 +11,7 @@ import {
   safetyForObservedCandidate,
 } from "./route-additionality";
 
-function candidate(wasteCategories: readonly WasteCategorySlug[] = ["plastic"]) {
+function candidate(wasteCategories: readonly WasteCategorySlug[] | null = ["plastic"]) {
   const contract = buildActionDataContract({
     id: "spot-1",
     type: "spot",
@@ -22,7 +22,7 @@ function candidate(wasteCategories: readonly WasteCategorySlug[] = ["plastic"]) 
     locationLabel: "Quai de test",
     latitude: 48.8566,
     longitude: 2.3522,
-    wasteCategories: [...wasteCategories],
+    wasteCategories: wasteCategories ? [...wasteCategories] : null,
   });
   const result = toTrashSpotterActionableCandidate(contract);
   if (!result) throw new Error("test candidate should be actionable");
@@ -97,6 +97,16 @@ describe("route additionality observed safety", () => {
     expect(safetyForObservedCandidate(observed)).toMatchObject({
       status: "excluded",
       suitability: 0,
+    });
+  });
+
+  it("keeps the canonical doctrine reason when categories are missing", () => {
+    const observed = candidate(null);
+
+    expect(safetyForObservedCandidate(observed)).toMatchObject({
+      status: "excluded",
+      suitability: 0,
+      exclusionReasons: ["cleanmymap_safety_doctrine"],
     });
   });
 

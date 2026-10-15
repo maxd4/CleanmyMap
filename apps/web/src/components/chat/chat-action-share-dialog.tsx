@@ -180,8 +180,9 @@ export function ChatActionShareDialog({
             {!loading && destinations.length === 0 ? <p className="rounded-xl border border-dashed border-slate-200 p-3 text-sm text-slate-600">Aucune conversation disponible pour ce partage.</p> : null}
             <div className="space-y-2">
               {visibleDestinations.map((destination) => (
-                <label key={destination.id} className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 hover:border-pink-300">
+                <label htmlFor={`share-destination-${destination.id}`} key={destination.id} className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 hover:border-pink-300">
                   <input
+                    id={`share-destination-${destination.id}`}
                     type="radio"
                     name="share-destination"
                     value={destination.id}

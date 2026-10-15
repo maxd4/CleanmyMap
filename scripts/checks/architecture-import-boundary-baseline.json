@@ -351,17 +351,6 @@
       "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"
     },
     {
-      "id": "59cc4bffea8522147dc6d823",
-      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/app/(app)/dashboard/spogomi/page.tsx|apps/web/src/lib/supabase/server.ts|runtime|runtime",
-      "rule": "UI_TO_INFRASTRUCTURE",
-      "from": "apps/web/src/app/(app)/dashboard/spogomi/page.tsx",
-      "to": "apps/web/src/lib/supabase/server.ts",
-      "kind": "runtime",
-      "sourceKind": "runtime",
-      "reason": "Présent dans le graphe du worktree observé après l’avance concurrente de main ; les changements préexistants restent hors du lot.",
-      "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"
-    },
-    {
       "id": "f4bce4da2ff2e40131110cfa",
       "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/app/(app)/explorer/page.tsx|apps/web/src/lib/auth/safe-session.ts|runtime|runtime",
       "rule": "UI_TO_INFRASTRUCTURE",
@@ -5890,39 +5879,6 @@
       "from": "apps/web/src/components/account/account-completion-gate.tsx",
       "to": "apps/web/src/lib/auth/account-completion-gate.ts",
       "kind": "type-only",
-      "sourceKind": "runtime",
-      "reason": "Présent dans le graphe du worktree observé après l’avance concurrente de main ; les changements préexistants restent hors du lot.",
-      "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"
-    },
-    {
-      "id": "3f06d773f79d0d46ac4ac462",
-      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/components/account/use-account-setup-controller.ts|apps/web/src/lib/auth/account-setup-config.ts|runtime|runtime",
-      "rule": "UI_TO_INFRASTRUCTURE",
-      "from": "apps/web/src/components/account/use-account-setup-controller.ts",
-      "to": "apps/web/src/lib/auth/account-setup-config.ts",
-      "kind": "runtime",
-      "sourceKind": "runtime",
-      "reason": "Présent dans le graphe du worktree observé après l’avance concurrente de main ; les changements préexistants restent hors du lot.",
-      "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"
-    },
-    {
-      "id": "78ba6d616e469ed6c653ea16",
-      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/components/account/use-account-setup-controller.ts|apps/web/src/lib/auth/clerk-metadata-patch.ts|runtime|runtime",
-      "rule": "UI_TO_INFRASTRUCTURE",
-      "from": "apps/web/src/components/account/use-account-setup-controller.ts",
-      "to": "apps/web/src/lib/auth/clerk-metadata-patch.ts",
-      "kind": "runtime",
-      "sourceKind": "runtime",
-      "reason": "Présent dans le graphe du worktree observé après l’avance concurrente de main ; les changements préexistants restent hors du lot.",
-      "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"
-    },
-    {
-      "id": "0fea6e9cf4853d2610cf5f9c",
-      "signature": "UI_TO_INFRASTRUCTURE|apps/web/src/components/account/use-account-setup-controller.ts|apps/web/src/lib/logging/failure-log.ts|runtime|runtime",
-      "rule": "UI_TO_INFRASTRUCTURE",
-      "from": "apps/web/src/components/account/use-account-setup-controller.ts",
-      "to": "apps/web/src/lib/logging/failure-log.ts",
-      "kind": "runtime",
       "sourceKind": "runtime",
       "reason": "Présent dans le graphe du worktree observé après l’avance concurrente de main ; les changements préexistants restent hors du lot.",
       "reviewedRef": "ccf2167fae29921908394e77b30c9868a44b9187"

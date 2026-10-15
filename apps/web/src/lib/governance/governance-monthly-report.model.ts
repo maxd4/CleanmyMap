@@ -22,7 +22,7 @@ export function formatNumber(value: number | null, maximumFractionDigits = 2): s
 
   return new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits,
-    minimumFractionDigits: maximumFractionDigits > 0 ? 0 : 0,
+    minimumFractionDigits: 0,
   }).format(value);
 }
 

@@ -34,16 +34,24 @@
 - Le workflow conserve le filtrage, la prévisualisation, la confirmation, la journalisation et les exports. Son enveloppe adopte la variante claire et chaude du shell admin sans modifier le shell sombre de ses autres consommateurs.
 - Le cockpit charge indépendamment les actions pending, les demandes de participation pending, les signalements pending, l’inbox créateur, les publications partenaires et le journal d’audit. Chaque source expose un état disponible ou indisponible ; une erreur n’est jamais convertie en zéro métier.
 
-### Retours utilisateurs et réponse privée
+### Boîte créateur unifiée et réponse privée
 
-La surface admin regroupe les `Retours utilisateurs` et le `Journal
-administrateurs` dans deux onglets cohérents. Les retours proposent la
-recherche, les filtres type/statut/priorité, le tri priorité/date, le
-traitement, l'archivage, la suppression de file et la réponse par email ou
-en privé.
+La surface admin regroupe les feedbacks, promotions, partenariats, événements
+et notifications de contenu dans une `Boîte créateur unifiée`, à côté du
+`Journal administrateurs`. Les filtres de source, statut et priorité ainsi que
+la recherche et le tri permettent de retrouver les feedbacks nouveaux sans
+créer une file parallèle. Un feedback sans qualification de sévérité fiable
+reste en priorité normale ; un bug n'est pas urgent par défaut.
 
-`Répondre en privé` réutilise le DM existant (`app_messages`, canal `dm` et
+Les états persistés du feedback (`new`, `pending`, `responded`, `treated`,
+`archived`) restent distincts du statut métier (`open`, `treated`, `archived`).
+L'archivage passe par une seule mutation canonique qui maintient ces deux
+valeurs cohérentes et n'est confirmé qu'après retour persistant.
+
+La réponse par email ouvre le client de messagerie et ne confirme pas l'envoi.
+La réponse privée réutilise le DM existant (`app_messages`, canal `dm` et
 `ChatShell`) et cible exclusivement `submittedByUserId` résolu côté serveur.
+
 Un utilisateur canonique absent désactive cette possibilité. Le feedback ne
 devient `responded` qu'après l'envoi réussi du message ; l'ouverture du DM ou
 un clic seul ne suffit pas. L'événement borné

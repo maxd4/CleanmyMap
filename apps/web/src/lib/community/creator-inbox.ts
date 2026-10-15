@@ -190,7 +190,7 @@ export function buildFeedbackInboxItem(record: BugReportRecord): CreatorInboxIte
     pagePath: record.pagePath,
     status,
     sourceStatus,
-    priority: record.reportType === "bug" ? "high" : "normal",
+    priority: "normal",
     context: record.description,
     details: buildCommonDetails({
       sourceLabel: SOURCE_LABELS.feedback.fr,

@@ -46,6 +46,14 @@ function rules(input: {
 }
 
 describe("computeExpectedGamificationState", () => {
+  it("keeps the canonical fact award policy for progression rules", () => {
+    const progressionRule = GAMIFICATION_RULES_V1.mechanics.find(
+      (rule) => rule.category === "XP_PROGRESSION" && rule.eventType === "action_declare_validation",
+    );
+
+    expect(progressionRule?.awardPolicy).toEqual({ kind: "fact", field: "xpAwarded" });
+  });
+
   it("replaces XP when a ruleset changes instead of adding a compensation event", () => {
     const v1 = computeExpectedGamificationState("user-1", facts, rules({
       version: "v1",

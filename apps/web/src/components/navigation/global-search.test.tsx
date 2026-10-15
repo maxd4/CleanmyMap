@@ -42,6 +42,8 @@ describe("GlobalSearch", () => {
     expect(searchSource).toContain('event.key === "ArrowDown"');
     expect(searchSource).toContain('event.key === "ArrowUp"');
     expect(searchSource).toContain('event.key === "Enter"');
+    expect(searchSource).toContain("searchInputRef.current?.focus()");
+    expect(searchSource).not.toContain("autoFocus");
     expect(searchSource).toContain("router.push(filteredItems[selectedIndex].href)");
     expect(searchSource).toContain('setQuery("")');
     expect(dropdownSource).toContain('event.key === "Escape"');

@@ -5,10 +5,8 @@ import {
   type ChatChannelType,
 } from "@/lib/chat/channels";
 import { parseParisArrondissement } from "@/lib/geo/paris-arrondissements";
-import {
-  getDiscussionGuidance,
-  type ChatTopicId,
-} from "./discussion-guidance";
+import { getDiscussionGuidance } from "./discussion-guidance-selectors";
+import type { ChatTopicId } from "./discussion-guidance";
 
 export type ChannelVisual = {
   icon: LucideIcon;

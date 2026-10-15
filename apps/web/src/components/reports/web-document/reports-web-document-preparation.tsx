@@ -55,13 +55,14 @@ export function ReportsWebDocumentPreparation({
 
       <div className="mt-5 space-y-5">
         <div className="space-y-3">
-          <label className="block text-sm font-black text-slate-900">Période</label>
+          <label htmlFor="reports-web-document-period" className="block text-sm font-black text-slate-900">Période</label>
           <div className="relative">
             <CalendarDays
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               size={18}
             />
             <select
+              id="reports-web-document-period"
               value={period}
               onChange={(event) => onPeriodChange(event.target.value as SelectedPeriodId)}
               className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
@@ -75,13 +76,14 @@ export function ReportsWebDocumentPreparation({
         </div>
 
         <div className="space-y-3">
-          <label className="block text-sm font-black text-slate-900">Périmètre du rapport</label>
+          <label htmlFor="reports-web-document-scope" className="block text-sm font-black text-slate-900">Périmètre du rapport</label>
           <div className="relative">
             <MapPin
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               size={18}
             />
             <select
+              id="reports-web-document-scope"
               value={selectedScopeValue}
               onChange={(event) => onScopeChange(event.target.value)}
               className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
@@ -127,6 +129,7 @@ export function ReportsWebDocumentPreparation({
               const checked = modules[option.id];
               return (
                 <label
+                  htmlFor={`reports-web-document-module-${option.id}`}
                   key={option.id}
                   className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2 transition ${
                     checked
@@ -135,6 +138,7 @@ export function ReportsWebDocumentPreparation({
                   }`}
                 >
                   <input
+                    id={`reports-web-document-module-${option.id}`}
                     type="checkbox"
                     checked={checked}
                     onChange={() => onModuleToggle(option.id)}

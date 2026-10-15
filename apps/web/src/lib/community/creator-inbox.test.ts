@@ -44,6 +44,26 @@ describe("creator inbox helpers", () => {
     ).toBeNull();
   });
 
+  it("keeps feedback at normal priority without a persisted severity", () => {
+    const item = buildFeedbackInboxItem({
+      id: "feedback-bug",
+      createdAt: "2026-04-30T09:00:00.000Z",
+      submittedByUserId: "user_1",
+      submittedByDisplayName: "Alice",
+      submittedByEmail: "alice@example.com",
+      submittedByRole: "benevole",
+      reportType: "bug",
+      title: "Bug",
+      description: "Description",
+      pagePath: "/feedback",
+      source: "feedback_section",
+      status: "open",
+      creatorState: "new",
+    });
+
+    expect(item.priority).toBe("normal");
+  });
+
   it("maps creator state onto a promotion request item", () => {
     const item = buildPromotionInboxItem({
       id: "promo-1",

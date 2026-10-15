@@ -41,8 +41,8 @@ export function SpogomiPhotoGallery({ photos }: { photos: SpogomiPublicGalleryPh
         </div>
       </CmmCard>
       {activePhoto ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 p-4" role="dialog" aria-modal="true" aria-label="Photo SPOGOMI agrandie" onClick={() => setActiveIndex(null)}>
-          <div className="relative flex max-h-[92vh] w-full max-w-5xl items-center justify-center" onClick={(event) => event.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 p-4" role="dialog" aria-modal="true" aria-label="Photo SPOGOMI agrandie" onClick={(event) => { if (event.target === event.currentTarget) setActiveIndex(null); }}>
+          <div className="relative flex max-h-[92vh] w-full max-w-5xl items-center justify-center">
             <Image loader={passthroughImageLoader} src={activePhoto.url} alt={activePhoto.alt} width={activePhoto.width ?? 1600} height={activePhoto.height ?? 1200} sizes="90vw" unoptimized className="max-h-[78vh] w-auto max-w-full object-contain" />
             <button type="button" onClick={() => setActiveIndex(null)} className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" aria-label="Fermer la photo"><X size={20} aria-hidden="true" /></button>
             {photos.length > 1 ? <>

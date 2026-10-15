@@ -32,7 +32,7 @@ const CSS_DARK_PATTERNS: Array<[RegExp, DarkReferenceKind]> = [
   // Classes utilitaires dark dans CSS (ex: .dark:bg-*)
   [/\.dark:/g, 'CSS_UTILITY_CLASS'],
   // Tokens dark dans @theme inline
-  [/--.*-dark\b/g, 'CSS_GLASS_DARK'],
+  [/--[^\r\n]*-dark\b/g, 'CSS_GLASS_DARK'],
 ];
 
 /**

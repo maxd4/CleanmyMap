@@ -15,6 +15,7 @@ type QRCodeDialogProps = {
 
 export function QRCodeDialog({ isOpen, onClose, value, title, description }: QRCodeDialogProps) {
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -27,10 +28,16 @@ export function QRCodeDialog({ isOpen, onClose, value, title, description }: QRC
     };
   }, [isOpen]);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    setCopyError(false);
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+      setCopyError(true);
+    }
   };
 
   const handleDownload = () => {
@@ -111,6 +118,7 @@ export function QRCodeDialog({ isOpen, onClose, value, title, description }: QRC
                       PNG
                     </button>
                   </div>
+                  {copyError ? <p role="alert" className="text-sm font-semibold text-rose-700">Copie indisponible. Utilisez le QR code pour ouvrir le lien.</p> : null}
                 </div>
 
                 <p className="mt-8 cmm-text-caption font-bold uppercase tracking-[0.2em] text-slate-400">

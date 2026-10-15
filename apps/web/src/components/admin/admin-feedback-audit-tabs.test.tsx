@@ -13,7 +13,7 @@ describe("AdminFeedbackAuditTabs", () => {
       <AdminFeedbackAuditTabs feedbackItems={[]} auditEntries={[]} />,
     );
 
-    expect(markup).toContain("Retours utilisateurs");
+    expect(markup).toContain("Boîte créateur unifiée");
     expect(markup).toContain("Journal administrateurs");
     expect(markup).toContain("creator-inbox-panel");
     expect(markup).toContain('role="tablist"');

@@ -98,16 +98,24 @@ function fireConfetti(tone: GamificationCelebrationTone) {
     colors,
   } as const;
 
-  confetti({
+  const firstAnimation = confetti({
     ...burst,
     origin: { x: 0.88, y: 0.88 },
   });
-  confetti({
+  const secondAnimation = confetti({
     ...burst,
     particleCount: 10,
     spread: 26,
     origin: { x: 0.78, y: 0.82 },
   });
+
+  for (const animation of [firstAnimation, secondAnimation]) {
+    void animation?.catch((error: unknown) => {
+      console.warn("Animation de célébration indisponible.", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
+    });
+  }
 }
 
 export function GamificationCelebrationHost() {

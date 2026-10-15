@@ -41,6 +41,8 @@ describe("chat shell presentation model", () => {
     expect(presentation.composerPlaceholder).toContain("coordination");
     expect(presentation.metaItems).toEqual(expect.arrayContaining([
       { label: "Canal", value: "Actions" },
+      { label: "Audience", value: expect.any(String) },
+      { label: "Date", value: "2026-09-27" },
       { label: "Participants prévus", value: "4" },
       { label: "Statut", value: "Direct" },
     ]));

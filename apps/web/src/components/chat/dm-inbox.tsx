@@ -85,7 +85,7 @@ export const DmInbox = memo(function DmInbox({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={`cmm-text-caption font-semibold ${isLight ? "text-slate-500" : "text-slate-500"}`}>
+          <p className="cmm-text-caption font-semibold text-slate-500">
             Messages privés
           </p>
           <div className="mt-1 flex items-center gap-2">

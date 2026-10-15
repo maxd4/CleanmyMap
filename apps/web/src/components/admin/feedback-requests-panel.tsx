@@ -174,8 +174,8 @@ export function FeedbackRequestsPanel({ initialItems }: FeedbackRequestsPanelPro
             {items.length} {fr ? "retour(s)" : "request(s)"}
           </p>
           <p className="cmm-text-caption cmm-text-muted">
-            {fr ? "Bug" : "Bug"}: {summary.bug} · {fr ? "Amélioration" : "Improvement"}:{" "}
-            {summary.improvement} · {fr ? "Collaboration" : "Collaboration"}:{" "}
+            Bug: {summary.bug} · {fr ? "Amélioration" : "Improvement"}:{" "}
+            {summary.improvement} · Collaboration:{" "}
             {summary.collaboration}
           </p>
         </div>
@@ -219,11 +219,11 @@ export function FeedbackRequestsPanel({ initialItems }: FeedbackRequestsPanelPro
       <div className="mt-4 flex flex-wrap gap-2 cmm-text-caption text-slate-500">
         <span>{items.length} {fr ? "retour(s)" : "request(s)"}</span>
         <span>•</span>
-        <span>{fr ? "Bugs" : "Bugs"}: {summary.bug}</span>
+        <span>Bugs: {summary.bug}</span>
         <span>•</span>
         <span>{fr ? "Améliorations" : "Improvements"}: {summary.improvement}</span>
         <span>•</span>
-        <span>{fr ? "Collaborations" : "Collaborations"}: {summary.collaboration}</span>
+        <span>Collaborations: {summary.collaboration}</span>
       </div>
 
       {errorMessage ? (

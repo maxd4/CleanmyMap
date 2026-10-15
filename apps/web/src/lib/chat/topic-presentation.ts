@@ -1,8 +1,6 @@
 import type { ChatChannelType } from "./channels";
-import {
-  getDiscussionTopic,
-  type ChatTopicDefinition,
-} from "@/components/chat/discussion-guidance";
+import { getDiscussionTopic } from "@/components/chat/discussion-guidance-selectors";
+import type { ChatTopicDefinition } from "@/components/chat/discussion-guidance";
 import type { ChatTopicId } from "./topics";
 
 /**

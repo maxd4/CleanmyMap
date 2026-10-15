@@ -449,4 +449,3 @@ export const CHAT_TOPIC_DEFINITIONS: Record<ChatChannelType, ChatTopicDefinition
   bug_report: [],
   action: [],
 };
-export { getDiscussionGuidance, getDiscussionTopic, getDiscussionTopics } from "./discussion-guidance-selectors";

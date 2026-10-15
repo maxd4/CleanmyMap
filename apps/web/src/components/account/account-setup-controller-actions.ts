@@ -7,9 +7,7 @@ import {
 } from "@/lib/user-location-preference";
 import { defaultMessageForKind, isAppError, toAppError, type AppError } from "@/lib/errors/app-errors";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
-import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
-import { logFailure } from "@/lib/logging/failure-log";
-import { buildClerkMetadataPatch } from "@/lib/auth/clerk-metadata-patch";
+import { ACCOUNT_SETUP_SCHEMA_VERSION, buildClerkMetadataPatch, logFailure } from "@/lib/account-setup/account-setup-runtime";
 import {
   clearAccountSetupDeferralMetadata,
   createAccountSetupDeferralMetadata,

@@ -14,7 +14,7 @@ export type SpogomiCapability =
   | "checkin";
 
 export type SpogomiEventAccessRole = "organizer" | "referee" | "observer" | "checkin" | "participant";
-export type SpogomiAssignedAccessRole = Exclude<SpogomiEventAccessRole, "organizer" | "participant">;
+type SpogomiAssignedAccessRole = Exclude<SpogomiEventAccessRole, "organizer" | "participant">;
 
 export type SpogomiEventAccessDecision = {
   event: Pick<EventRow, "id" | "action_id" | "created_by_clerk_id" | "name" | "event_slug" | "mode" | "state" | "starts_at" | "ends_at" | "official_timezone" | "public_visibility" | "public_results_visibility">;

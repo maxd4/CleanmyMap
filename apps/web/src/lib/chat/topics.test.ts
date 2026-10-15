@@ -6,7 +6,7 @@ import {
   isChatTopicId,
   parseChatTopicIdForChannel,
 } from "./topics";
-import { getDiscussionTopics } from "@/components/chat/discussion-guidance";
+import { getDiscussionTopics } from "@/components/chat/discussion-guidance-selectors";
 
 describe("chat topic contract", () => {
   it("keeps the supported topic IDs explicit by channel", () => {

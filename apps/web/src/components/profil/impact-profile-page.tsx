@@ -15,7 +15,7 @@ import {
   type CurrentAccountIdentity,
 } from "@/lib/account/current-account-identity";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
-import { logFailure } from "@/lib/logging/failure-log";
+import { logFailure, logWarning } from "@/lib/logging/failure-log";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   downloadImpactCardPng,
@@ -108,11 +108,16 @@ export default function ImpactProfilePage() {
     try {
       const png = await generateImpactCardPng(displayName);
       downloadImpactCardPng(png);
-      confetti({
+      const animation = confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
         colors: ["#ef4444", "#f87171", "#ffffff"],
+      });
+      void animation?.catch((error: unknown) => {
+        logWarning("ImpactProfile", "Animation de célébration indisponible.", {
+          errorName: error instanceof Error ? error.name : "UnknownError",
+        });
       });
       setCardActionMessage("Carte téléchargée.");
     } catch (error) {
@@ -137,11 +142,16 @@ export default function ImpactProfilePage() {
       const result = await shareOrDownloadImpactCardPng(png);
 
       if (result === "downloaded") {
-        confetti({
+        const animation = confetti({
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 },
           colors: ["#ef4444", "#f87171", "#ffffff"],
+        });
+        void animation?.catch((error: unknown) => {
+          logWarning("ImpactProfile", "Animation de célébration indisponible.", {
+            errorName: error instanceof Error ? error.name : "UnknownError",
+          });
         });
         setCardActionMessage(
           "Partage non disponible ici : la carte a été téléchargée.",

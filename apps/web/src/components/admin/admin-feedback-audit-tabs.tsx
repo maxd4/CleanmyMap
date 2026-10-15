@@ -16,7 +16,7 @@ export function AdminFeedbackAuditTabs({
   const [activeTab, setActiveTab] = useState<"feedback" | "audit">("feedback");
 
   return (
-    <section aria-label="Retours utilisateurs et journal administrateurs">
+    <section aria-label="Boîte créateur unifiée et journal administrateurs">
       <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Surface administrative">
         <button
           type="button"
@@ -29,7 +29,7 @@ export function AdminFeedbackAuditTabs({
               : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
           }`}
         >
-          Retours utilisateurs
+          Boîte créateur unifiée
         </button>
         <button
           type="button"
@@ -47,7 +47,7 @@ export function AdminFeedbackAuditTabs({
       </div>
 
       {activeTab === "feedback" ? (
-        <div role="tabpanel" aria-label="Retours utilisateurs">
+        <div role="tabpanel" aria-label="Boîte créateur unifiée">
           <CreatorInboxPanel initialItems={feedbackItems} />
         </div>
       ) : (

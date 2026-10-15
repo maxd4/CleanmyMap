@@ -7,7 +7,7 @@ import { fr } from "date-fns/locale";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import type { ChatSearchResult } from "@/lib/chat/chat-search";
-import { getDiscussionTopic } from "./discussion-guidance";
+import { getDiscussionTopic } from "./discussion-guidance-selectors";
 
 type ChatSearchPanelProps = {
   query: string;

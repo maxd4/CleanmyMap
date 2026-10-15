@@ -276,10 +276,7 @@ describe("PATCH /api/admin/creator-inbox", () => {
     });
   });
 
-  it("audits the first feedback archive write failure as a complete failure", async () => {
-    updateCommunityBugReportCreatorStateMock.mockRejectedValue(
-      new Error("creator state persistence detail"),
-    );
+  it("archives feedback with one canonical status mutation", async () => {
     const { PATCH } = await import("./route");
     const response = await PATCH(
       makeRequest({
@@ -290,46 +287,18 @@ describe("PATCH /api/admin/creator-inbox", () => {
       }),
     );
 
-    expect(response.status).toBe(500);
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-    expect(auditCalls()[0]).toMatchObject({
-      operationType: "admin_operation",
-      outcome: "error",
-      details: {
-        stage: "update",
-        partialMutation: false,
-      },
-    });
-  });
-
-  it("audits the second feedback archive write as a partial mutation", async () => {
-    const sourceStatusError = "status persistence detail";
-    updateCommunityBugReportStatusMock.mockRejectedValue(
-      new Error(sourceStatusError),
-    );
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      makeRequest({
-        source: "feedback",
-        itemId: "feedback-1",
-        action: "archive",
-        reason: "Archivage demandé",
-      }),
-    );
-
-    expect(response.status).toBe(500);
-    expect(updateCommunityBugReportCreatorStateMock).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(200);
     expect(updateCommunityBugReportStatusMock).toHaveBeenCalledTimes(1);
+    expect(updateCommunityBugReportStatusMock).toHaveBeenCalledWith({
+      reportId: "feedback-1",
+      status: "archived",
+    });
+    expect(updateCommunityBugReportCreatorStateMock).not.toHaveBeenCalled();
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
     expect(auditCalls()[0]).toMatchObject({
       operationType: "admin_operation",
-      outcome: "error",
+      outcome: "success",
       details: {
-        operation: "creator_inbox_update",
-        reason: "Archivage demandé",
-        targetUserId: "user-1",
-        stage: "secondary_update",
-        partialMutation: true,
         previousValue: {
           source: "feedback",
           status: "open",
@@ -342,7 +311,73 @@ describe("PATCH /api/admin/creator-inbox", () => {
         },
       },
     });
-    expect(JSON.stringify(auditCalls()[0])).not.toContain(sourceStatusError);
+  });
+
+  it("audits feedback archive persistence failure without claiming a partial mutation", async () => {
+    const statusError = "status persistence detail";
+    updateCommunityBugReportStatusMock.mockRejectedValueOnce(new Error(statusError));
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "feedback",
+        itemId: "feedback-1",
+        action: "archive",
+        reason: "Archivage demandé",
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(updateCommunityBugReportCreatorStateMock).not.toHaveBeenCalled();
+    expect(updateCommunityBugReportStatusMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "error",
+      details: {
+        stage: "update",
+        partialMutation: false,
+      },
+    });
+    expect(JSON.stringify(auditCalls()[0])).not.toContain(statusError);
+  });
+
+  it("does not claim feedback archive success when the canonical mutation returns no record", async () => {
+    updateCommunityBugReportStatusMock.mockResolvedValueOnce(null);
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "feedback",
+        itemId: "feedback-1",
+        action: "archive",
+        reason: "Archivage demandé",
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(updateCommunityBugReportCreatorStateMock).not.toHaveBeenCalled();
+    expect(updateCommunityBugReportStatusMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "error",
+      details: {
+        operation: "creator_inbox_update",
+        reason: "Archivage demandé",
+        targetUserId: "user-1",
+        stage: "update",
+        partialMutation: false,
+        previousValue: {
+          source: "feedback",
+          status: "open",
+          creatorState: "new",
+        },
+        newValue: {
+          source: "feedback",
+          status: "archived",
+          creatorState: "archived",
+        },
+      },
+    });
     expect(JSON.stringify(auditCalls()[0])).not.toContain("Display name");
     expect(JSON.stringify(auditCalls()[0])).not.toContain("person@example.com");
     expect(JSON.stringify(auditCalls()[0])).not.toContain("Message content");
@@ -613,14 +648,11 @@ describe("PATCH /api/admin/creator-inbox", () => {
   });
 
   it.each([
-    ["feedback", "feedback-1"],
     ["promotion", "promotion-1"],
     ["partner", "partner-1"],
   ] as const)("audits creator-state update failure for %s", async (source, itemId) => {
     const updateError = "private update provider detail";
-    if (source === "feedback") {
-      updateCommunityBugReportCreatorStateMock.mockRejectedValueOnce(new Error(updateError));
-    } else if (source === "promotion") {
+    if (source === "promotion") {
       updatePromotionRequestCreatorStateMock.mockRejectedValueOnce(new Error(updateError));
     } else {
       updatePartnerOnboardingRequestCreatorStateMock.mockRejectedValueOnce(new Error(updateError));
@@ -631,7 +663,7 @@ describe("PATCH /api/admin/creator-inbox", () => {
       makeRequest({
         source,
         itemId,
-        action: source === "feedback" ? "archive" : "responded",
+        action: "responded",
         reason: "Mise à jour en erreur",
       }),
     );

@@ -92,9 +92,7 @@ function currentRuleForEvent(
       badgeId: null,
       sourceDomain: definition.sourceDomain,
       xpPolicy: definition.xpPolicy,
-      awardPolicy: eventType === "action_declare_validation"
-        ? { kind: "fact", field: "xpAwarded" }
-        : { kind: "fact", field: "xpAwarded" },
+      awardPolicy: { kind: "fact", field: "xpAwarded" },
       eligibility: { kind: "canonical_fact", factKey: definition.metric },
       thresholds: thresholdsForProgression(definition.id),
       introducedInRulesRevision: definition.introducedInRulesRevision,

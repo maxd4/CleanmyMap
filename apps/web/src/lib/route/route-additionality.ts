@@ -76,9 +76,7 @@ export function safetyForObservedCandidate(
           ? "trained_only_waste"
           : candidate.safety.specializationReason === "no_pickup"
             ? "no_pickup_waste"
-            : candidate.safety.specializationReason === "missing_categories"
-              ? "cleanmymap_safety_doctrine"
-              : "cleanmymap_safety_doctrine",
+            : "cleanmymap_safety_doctrine",
       ],
       evidenceIds: ["trash-spotter-category-safety-policy"],
     };

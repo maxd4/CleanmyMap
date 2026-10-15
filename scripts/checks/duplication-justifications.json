@@ -2787,11 +2787,11 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "29026382c3404258",
+      "fingerprint": "edb40990dda2239f",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Import et composition automatique ont des entrées et permissions différentes ; la validation d'erreur reste attachée au handler qui la consomme.",
-      "evidence": "app/api/spogomi/events/[eventId]/imports/confirm/route.ts:17-27 et app/api/spogomi/events/[eventId]/teams/auto/route.ts:23-33 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+      "evidence": "apps/web/src/app/api/spogomi/events/[eventId]/imports/confirm/route.ts:19-28 et apps/web/src/app/api/spogomi/events/[eventId]/teams/auto/route.ts:25-34 ; pair CURRENT relu.",
+      "reviewedRef": "f88e1e5be378e5130b8ada9bfb5dba567728b1d7"
     },
     {
       "scope": "runtime",
@@ -2851,19 +2851,19 @@
     },
     {
       "scope": "runtime",
-      "fingerprint": "46f83691e69b634f",
+      "fingerprint": "4a5eed33aa605913",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Lock et move sont deux mutations d'équipe avec des validations indépendantes ; leurs réponses d'erreur doivent rester locales au contrat consommé.",
-      "evidence": "app/api/spogomi/events/[eventId]/teams/lock/route.ts:13-18 et app/api/spogomi/events/[eventId]/teams/move/route.ts:13-18 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+      "evidence": "apps/web/src/app/api/spogomi/events/[eventId]/teams/lock/route.ts:13-18 et apps/web/src/app/api/spogomi/events/[eventId]/teams/move/route.ts:13-18 ; pair CURRENT relu.",
+      "reviewedRef": "f88e1e5be378e5130b8ada9bfb5dba567728b1d7"
     },
     {
       "scope": "runtime",
-      "fingerprint": "e2276e95e0486315",
+      "fingerprint": "6f71f528def1b86b",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les catchs de lock et move traduisent des erreurs dans deux mutations distinctes ; leur extraction ne centraliserait aucune règle durable.",
-      "evidence": "app/api/spogomi/events/[eventId]/teams/lock/route.ts:23-28 et app/api/spogomi/events/[eventId]/teams/move/route.ts:23-28 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+      "evidence": "apps/web/src/app/api/spogomi/events/[eventId]/teams/lock/route.ts:23-28 et apps/web/src/app/api/spogomi/events/[eventId]/teams/move/route.ts:23-28 ; pair CURRENT relu.",
+      "reviewedRef": "f88e1e5be378e5130b8ada9bfb5dba567728b1d7"
     },
     {
       "scope": "runtime",
@@ -2963,11 +2963,11 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "bed87dbff9834280",
+      "fingerprint": "31fdf8c6d9ae10a5",
       "classification": "KEEP_INTENTIONAL",
       "reason": "Les deux assertions du test de stockage couvrent des opérations différentes et doivent rester autonomes pour diagnostiquer chaque contrat.",
-      "evidence": "tests/storage.test.ts:93-100 et tests/storage.test.ts:157-163 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+      "evidence": "tests/storage.test.ts:47-54 et tests/storage.test.ts:161-167 ; pair CURRENT relu.",
+      "reviewedRef": "f88e1e5be378e5130b8ada9bfb5dba567728b1d7"
     },
     {
       "scope": "tests",
@@ -3003,19 +3003,19 @@
     },
     {
       "scope": "tests",
-      "fingerprint": "d4047568fec6f9c9",
+      "fingerprint": "de4ad5fa4d2de526",
       "classification": "NO_ACTION_NOISE",
       "reason": "Les tests mobile d'action par identifiant et de collection réutilisent le minimum de mock réseau nécessaire à deux handlers différents ; leurs preuves restent indépendantes.",
-      "evidence": "app/api/mobile/actions/[actionId]/route.test.ts:13-18 et app/api/mobile/actions/route.test.ts:12-17 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+      "evidence": "apps/web/src/app/api/mobile/actions/[actionId]/route.test.ts:12-18 et apps/web/src/app/api/mobile/actions/route.test.ts:13-19 ; pair CURRENT relu.",
+      "reviewedRef": "f88e1e5be378e5130b8ada9bfb5dba567728b1d7"
     },
     {
       "scope": "tests",
-      "fingerprint": "0f61d935a786f3bf",
+      "fingerprint": "5ef72fa94fe747e1",
       "classification": "NO_ACTION_NOISE",
       "reason": "Le setup de réponse mobile est textuellement proche entre deux endpoints mais les contrats de collection et de détail sont distincts.",
-      "evidence": "app/api/mobile/actions/[actionId]/route.test.ts:21-26 et app/api/mobile/actions/route.test.ts:20-25 ; pair CURRENT relu.",
-      "reviewedRef": "a9865f33e7ddbaa47a9f200354d1ff87bcb08d6d"
+      "evidence": "apps/web/src/app/api/mobile/actions/[actionId]/route.test.ts:21-26 et apps/web/src/app/api/mobile/actions/route.test.ts:22-27 ; pair CURRENT relu.",
+      "reviewedRef": "f88e1e5be378e5130b8ada9bfb5dba567728b1d7"
     },
     {
       "scope": "tests",

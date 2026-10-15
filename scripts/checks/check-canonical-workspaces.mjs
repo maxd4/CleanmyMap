@@ -86,10 +86,20 @@ function readWorkingTreeFile(repositoryRoot, relativePath) {
 }
 
 function stagedTree(repositoryRoot) {
+  const gitIndex = process.env.GIT_INDEX_FILE || path.join(repositoryRoot, ".git", "index");
+  const temporaryDirectory = fs.mkdtempSync(path.join(repositoryRoot, ".git", "canonical-index-"));
+  const temporaryIndex = path.join(temporaryDirectory, "index");
   try {
-    return runGit(repositoryRoot, ["write-tree"]).trim();
+    fs.copyFileSync(gitIndex, temporaryIndex);
+    return execFileSync(gitExecutable(), ["write-tree"], {
+      cwd: repositoryRoot,
+      env: { ...process.env, GIT_INDEX_FILE: temporaryIndex, GIT_OPTIONAL_LOCKS: "0" },
+      encoding: "utf8",
+    }).trim();
   } catch (error) {
     throw new Error(`canonical workspace check cannot materialize the staged index: ${error.message}`);
+  } finally {
+    fs.rmSync(temporaryDirectory, { recursive: true, force: true });
   }
 }
 

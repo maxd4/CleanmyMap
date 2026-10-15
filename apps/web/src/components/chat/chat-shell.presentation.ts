@@ -83,7 +83,7 @@ function getChatShellMetaItems({
     ...actionMetaItems,
     ...topicMetaItems,
     {
-      label: isFrench ? "Audience" : "Audience",
+      label: "Audience",
       value: discussionGuidance.audienceLabel,
     },
     {
@@ -105,7 +105,7 @@ function getActiveActionMetaItems({
   isFrench: boolean;
 }): ChatMetaItem[] {
   return [
-    { label: isFrench ? "Date" : "Date", value: activeAction.action_date },
+    { label: "Date", value: activeAction.action_date },
     { label: isFrench ? "Lieu" : "Location", value: activeAction.location_label },
     {
       label: isFrench ? "Organisateur" : "Organizer",

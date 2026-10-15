@@ -50,7 +50,7 @@ export function ChannelButton({
     >
       <div
         className={`flex shrink-0 items-center justify-center rounded-2xl transition-colors ${compact ? "h-8 w-8 rounded-xl" : "h-10 w-10"} ${
-          active ? (isLight ? "bg-white/15 text-white" : "bg-white/15 text-white") : chipClass
+          active ? "bg-white/15 text-white" : chipClass
         }`}
       >
         <Icon size={18} className={active ? "text-white" : accentClass} />

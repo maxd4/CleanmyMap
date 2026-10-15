@@ -356,7 +356,7 @@ export function TrashSpotterObservationForm({
 
        <div className="space-y-6">
          <h3 className="text-xs font-black text-white/40 uppercase tracking-[0.3em]">03 • Preuve Visuelle</h3>
-        <label className="group relative flex flex-col items-center justify-center gap-6 py-12 rounded-[3rem] border-2 border-dashed border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 hover:border-emerald-400/40 transition-all duration-500 overflow-hidden">
+        <label htmlFor="quick-signalement-evidence" className="group relative flex flex-col items-center justify-center gap-6 py-12 rounded-[3rem] border-2 border-dashed border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 hover:border-emerald-400/40 transition-all duration-500 overflow-hidden">
           <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity blur-[60px]" />
           <div className="relative z-10 flex flex-col items-center gap-4">
             <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5 transition-all group-hover:border-emerald-400/20 group-hover:bg-emerald-400/10 group-hover:text-emerald-400">
@@ -369,6 +369,7 @@ export function TrashSpotterObservationForm({
             </span>
           </div>
           <input
+            id="quick-signalement-evidence"
             type="file"
             accept="image/jpeg,image/png,image/webp"
             multiple

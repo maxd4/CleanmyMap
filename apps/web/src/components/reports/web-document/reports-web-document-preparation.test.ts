@@ -163,6 +163,11 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(markup).not.toContain("Niveau de détail");
     expect(markup).not.toMatch(/6 à 8 pages|12 à 16 pages|20 à 28 pages/);
     expect(markup).toContain("Modules optionnels");
+    expect(markup).toContain('for="reports-web-document-period"');
+    expect(markup).toContain('id="reports-web-document-period"');
+    expect(markup).toContain('for="reports-web-document-scope"');
+    expect(markup).toContain('id="reports-web-document-scope"');
+    expect(markup).toContain('id="reports-web-document-module-dataAndCartography"');
     expect(markup).not.toContain("Étape 1");
   });
 

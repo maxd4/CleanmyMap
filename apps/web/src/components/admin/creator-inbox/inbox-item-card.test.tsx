@@ -18,7 +18,7 @@ const feedbackItem = {
   pagePath: "/feedback",
   status: "new" as const,
   sourceStatus: "open",
-  priority: "high" as const,
+  priority: "normal" as const,
   context: "Message content",
   details: [{ label: "Source", value: "Feedback" }],
   canDelete: true,
@@ -102,6 +102,17 @@ describe("InboxItemCard state actions", () => {
     expect(markup).toContain("recipientId=user-1");
     expect(markup).toContain("feedbackId=feedback-1");
     expect(markup).not.toContain("Marquer répondu");
+  });
+
+  it("labels email as an opening action without implying that it was sent", () => {
+    const markup = renderCard({
+      ...feedbackItem,
+      authorEmail: "person@example.com",
+      hasReplyTarget: true,
+    });
+
+    expect(markup).toContain("Ouvrir un mail");
+    expect(markup).not.toContain("Répondre par mail");
   });
 
   it("disables private reply when the canonical author is unavailable", () => {

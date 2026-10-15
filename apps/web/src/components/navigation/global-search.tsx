@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, CornerDownLeft, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -39,6 +39,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { locale, displayMode } = useSitePreferences();
   const router = useRouter();
   const pathname = usePathname();
@@ -54,6 +55,12 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
   );
 
   const suggestedItems = useMemo(() => allItems.slice(0, 5), [allItems]);
+
+  useEffect(() => {
+    if (isOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -127,7 +134,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
         <div className="flex items-center border-b border-slate-800 px-4 py-3 sm:px-6 sm:py-4">
           <Search className="h-5 w-5 shrink-0 text-slate-300" aria-hidden="true" />
           <input
-            autoFocus
+            ref={searchInputRef}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);

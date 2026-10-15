@@ -46,6 +46,9 @@ describe("FeedbackRequestsPanel reason flow", () => {
     expect(markup).toContain("Motif de décision");
     expect(markup).toContain('minLength="5"');
     expect(markup).toContain('maxLength="500"');
+    expect(markup).toContain("Bug: 1");
+    expect(markup).toContain("Bugs: 1");
+    expect(markup).toContain("Collaborations: 0");
     expect(markup).toMatch(/disabled[^>]*>Marquer traité/);
     expect(markup).toMatch(/disabled[^>]*>Archiver/);
   });

@@ -61,14 +61,14 @@ export function StepPreview({ workflow }: StepPreviewProps) {
     <table className="cmm-data-table" data-density="compact">
     <thead className="bg-slate-50 cmm-text-secondary">
     <tr>
-    <th scope="col">{fr ? "ID" : "ID"}</th>
-    <th scope="col">{fr ? "Date" : "Date"}</th>
+    <th scope="col">ID</th>
+    <th scope="col">Date</th>
     <th scope="col">{fr ? "Lieu" : "Location"}</th>
     <th scope="col">{fr ? "Compte" : "Account"}</th>
     <th scope="col">{fr ? "Type de record" : "Record type"}</th>
     <th scope="col">{fr ? "Statut" : "Status"}</th>
     <th scope="col">{fr ? "Qualité" : "Quality"}</th>
-    <th scope="col">{fr ? "Action" : "Action"}</th>
+    <th scope="col">Action</th>
     </tr>
     </thead>
  <tbody>

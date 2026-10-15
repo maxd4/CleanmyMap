@@ -46,7 +46,7 @@ function formatMonthLabel(snapshotDate: string): string {
 function formatPercentValue(value: number, maximumFractionDigits = 1): string {
   return new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits,
-    minimumFractionDigits: maximumFractionDigits > 0 ? 0 : 0,
+    minimumFractionDigits: 0,
   }).format(value);
 }
 

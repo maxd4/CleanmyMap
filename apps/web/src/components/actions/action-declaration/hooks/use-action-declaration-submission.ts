@@ -99,7 +99,7 @@ export function useActionDeclarationSubmission({
   function trackFormStart() {
     if (!hasTrackedStartRef.current) {
       hasTrackedStartRef.current = true;
-      trackFunnel("start_form", declarationMode, {
+      void trackFunnel("start_form", declarationMode, {
         source: "action_declaration_form",
         declarationMode,
         recordType: form.recordType,

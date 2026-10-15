@@ -37,7 +37,7 @@ export function DashboardReferralStatusGrid({
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.34)] px-4 py-3">
         <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-100/75">
-          {locale === "fr" ? "Badge" : "Badge"}
+          Badge
         </p>
         <p className="mt-1 text-sm font-bold text-white">{badgeStatus}</p>
       </div>

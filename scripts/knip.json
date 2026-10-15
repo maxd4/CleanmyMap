@@ -16,7 +16,8 @@
         "scripts/media/resize_homepage.js",
         "documentation/pages_site/screen/capture-canonical-pages.mjs",
         "apps/web/scripts/backfill-route-style.mjs",
-        "apps/web/scripts/smoke-tests.mjs"
+        "apps/web/scripts/smoke-tests.mjs",
+        "scripts/checks/fixtures/architecture-import-boundary/web/src/**/*.ts"
       ],
       "project": [
         "playwright.config.ts",

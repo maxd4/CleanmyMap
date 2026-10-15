@@ -455,7 +455,11 @@ export function useChatData({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel).catch((error: unknown) => {
+        console.warn("Impossible de fermer le canal temps réel.", {
+          errorName: error instanceof Error ? error.name : "UnknownError",
+        });
+      });
     };
   }, [
     supabase,

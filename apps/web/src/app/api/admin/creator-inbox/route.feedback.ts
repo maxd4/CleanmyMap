@@ -3,7 +3,6 @@ import { buildFeedbackInboxItem } from "@/lib/community/creator-inbox";
 import {
   deleteCommunityBugReport,
   getCommunityBugReportById,
-  updateCommunityBugReportCreatorState,
   updateCommunityBugReportStatus,
 } from "@/lib/community/bug-reports-store";
 import {
@@ -114,32 +113,6 @@ async function markFeedbackTreated(params: FeedbackStateMutationParams) {
 async function archiveFeedbackInboxItem(params: FeedbackStateMutationParams) {
   const { itemId, current, audit, reason, targetUserId } = params;
   const previousValue = buildSnapshot("feedback", current);
-  let creatorStateUpdated;
-  try {
-    creatorStateUpdated = await updateCommunityBugReportCreatorState({
-      reportId: itemId,
-      creatorState: "archived",
-    });
-    if (!creatorStateUpdated) {
-      throw new Error("feedback creator state update did not persist");
-    }
-  } catch {
-    await audit({
-      outcome: "error",
-      targetId: itemId,
-      reason,
-      targetUserId,
-      previousValue,
-      newValue: buildSnapshot("feedback", {
-        status: current.status,
-        creatorState: "archived",
-      }),
-      stage: "update",
-      partialMutation: false,
-    });
-    return mutationErrorResponse();
-  }
-
   let finalRecord: FeedbackRecord;
   try {
     const archivedRecord = await updateCommunityBugReportStatus({
@@ -161,8 +134,8 @@ async function archiveFeedbackInboxItem(params: FeedbackStateMutationParams) {
         status: "archived",
         creatorState: "archived",
       }),
-      stage: "secondary_update",
-      partialMutation: true,
+      stage: "update",
+      partialMutation: false,
     });
     return mutationErrorResponse();
   }

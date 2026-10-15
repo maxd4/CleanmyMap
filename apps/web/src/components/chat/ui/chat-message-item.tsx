@@ -19,7 +19,7 @@ import { ChatActionReferenceCard } from "./chat-action-reference-card";
 import { ChatMessageContent } from "./chat-message-content";
 
 import type { ChatMessage } from "../chat-types";
-import { getDiscussionTopic } from "../discussion-guidance";
+import { getDiscussionTopic } from "../discussion-guidance-selectors";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type ChatMessageItemProps = {

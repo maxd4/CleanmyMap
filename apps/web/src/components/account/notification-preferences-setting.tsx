@@ -75,6 +75,7 @@ export function NotificationPreferencesSetting({ locale }: { locale: Locale }) {
       {error ? <p className="mt-3 text-sm font-semibold text-rose-700" role="alert">{copy.unavailable}</p> : null}
       <div className="mt-4 space-y-3">
         <PreferenceToggle
+          id="notification-preference-informational"
           checked={preferences.informationalEnabled}
           disabled={loading || saving !== null}
           label={copy.informational}
@@ -83,6 +84,7 @@ export function NotificationPreferencesSetting({ locale }: { locale: Locale }) {
           onChange={() => void toggle("informationalEnabled")}
         />
         <PreferenceToggle
+          id="notification-preference-reminders"
           checked={preferences.actionRemindersEnabled}
           disabled={loading || saving !== null}
           label={copy.reminders}
@@ -96,6 +98,7 @@ export function NotificationPreferencesSetting({ locale }: { locale: Locale }) {
 }
 
 function PreferenceToggle({
+  id,
   checked,
   disabled,
   label,
@@ -103,6 +106,7 @@ function PreferenceToggle({
   saving,
   onChange,
 }: {
+  id: string;
   checked: boolean;
   disabled: boolean;
   label: string;
@@ -111,8 +115,8 @@ function PreferenceToggle({
   onChange: () => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-sky-100 bg-white/80 p-3 transition-colors hover:border-sky-200">
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={onChange} className="mt-1 h-4 w-4 accent-sky-600" />
+    <label htmlFor={id} className="flex cursor-pointer items-start gap-3 rounded-xl border border-sky-100 bg-white/80 p-3 transition-colors hover:border-sky-200">
+      <input id={id} type="checkbox" checked={checked} disabled={disabled} onChange={onChange} className="mt-1 h-4 w-4 accent-sky-600" />
       <span className="min-w-0">
         <span className="block text-sm font-bold text-slate-900">{label}</span>
         <span className="mt-1 block text-sm leading-relaxed text-slate-800">{saving ?? description}</span>

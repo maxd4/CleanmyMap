@@ -95,10 +95,10 @@ export function StepFilter({ workflow }: StepFilterProps) {
     }
     className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
   >
-    <option value="global">{fr ? "Global" : "Global"}</option>
+    <option value="global">Global</option>
     <option value="account">{fr ? "Compte" : "Account"}</option>
-    <option value="association">{fr ? "Association" : "Association"}</option>
-    <option value="arrondissement">{fr ? "Arrondissement" : "Arrondissement"}</option>
+    <option value="association">Association</option>
+    <option value="arrondissement">Arrondissement</option>
   </select>
   </label>
   <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">

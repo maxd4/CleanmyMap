@@ -87,8 +87,8 @@ export function RouteTopologyFieldset({
         ].map((option) => {
           const selected = form.routeTopology === option.value;
           return (
-            <label key={option.value} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 transition", selected ? "border-sky-400 bg-sky-50 ring-2 ring-sky-500/15" : "border-slate-200 bg-white hover:border-sky-300")}>
-              <input type="radio" name="route-topology" value={option.value} checked={selected} onChange={() => updateField("routeTopology", option.value)} className="mt-1 accent-sky-600" />
+            <label htmlFor={`route-topology-${option.value}`} key={option.value} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 transition", selected ? "border-sky-400 bg-sky-50 ring-2 ring-sky-500/15" : "border-slate-200 bg-white hover:border-sky-300")}>
+              <input id={`route-topology-${option.value}`} type="radio" name="route-topology" value={option.value} checked={selected} onChange={() => updateField("routeTopology", option.value)} className="mt-1 accent-sky-600" />
               <span><span className="block text-sm font-semibold text-sky-950">{option.title}</span><span className="mt-0.5 block text-xs text-sky-900/60">{option.description}</span></span>
             </label>
           );

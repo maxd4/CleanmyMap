@@ -70,7 +70,11 @@ export function useDmInbox({ enabled, currentUserId, supabase }: DmInboxParams) 
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel).catch((error: unknown) => {
+        console.warn("Impossible de fermer le canal de messagerie.", {
+          errorName: error instanceof Error ? error.name : "UnknownError",
+        });
+      });
     };
   }, [currentUserId, enabled, realtimeEnabled, refreshInbox, surfaceActive, supabase]);
 

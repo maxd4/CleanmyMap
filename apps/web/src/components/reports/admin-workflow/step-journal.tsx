@@ -50,13 +50,7 @@ export function StepJournal({ workflow }: StepJournalProps) {
                   <span
                     className={`font-semibold ${entry.outcome === "success" ? "text-emerald-700" : "text-red-700"}`}
                   >
-                    {entry.outcome === "success"
-                      ? fr
-                        ? "OK"
-                        : "OK"
-                      : fr
-                        ? "ERREUR"
-                        : "ERROR"}
+                    {entry.outcome === "success" ? "OK" : fr ? "ERREUR" : "ERROR"}
                   </span>
                   <span>
                     {entry.entityType}#{entry.id} -&gt; {entry.targetStatus}
