@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildPublicImpactCalculationFromAggregate,
   buildPublicImpactCalculationFromActions,
   buildPublicImpactMetrics,
   PUBLIC_IMPACT_KPI_DEFINITIONS,
@@ -166,5 +167,29 @@ describe("public Impact KPI contract", () => {
     expect(calculation.impactTerrain.wasteKnownActions).toBe(1);
     expect(calculation.impactTerrain.wasteCoverageRate).toBe(50);
     expect(calculation.counters.wasteKg).toBe(0);
+  });
+
+  it("normalizes unknown aggregate counts without losing participant coverage", () => {
+    const calculation = buildPublicImpactCalculationFromAggregate({
+      wasteKg: 0,
+      wasteKnownActions: 0,
+      wasteActionCount: 3,
+      cigaretteButts: 0,
+      buttsByCondition: [],
+      durationMinutes: 0,
+      volunteers: null,
+      volunteersKnownActions: "not-a-count",
+      volunteersActionCount: "3",
+    });
+
+    expect(calculation.counters.volunteers).toBe(0);
+    expect(calculation.volunteersKnownActions).toBe(0);
+    expect(calculation.volunteersActionCount).toBe(3);
+    expect(calculation.volunteersCoverageRate).toBe(0);
+    expect(
+      buildPublicImpactMetrics(calculation.counters, true).find(
+        (metric) => metric.key === "volunteers",
+      )?.value,
+    ).toBe("n/a");
   });
 });

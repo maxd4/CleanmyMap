@@ -262,6 +262,10 @@ function isPollingFile(content) {
   return hasTimer && hasFetch;
 }
 
+/**
+ * @typedef {ReturnType<import("./checks/repository-view.mjs").createFilesystemRepositoryView>} RepositoryView
+ */
+
 function analyzeFile(
   filePath,
   snapshot,
@@ -329,6 +333,7 @@ function analyzeFile(
   }
 }
 
+/** @param {{ view?: RepositoryView | null }} [options] */
 export function scanVercelSurface({ view = null } = {}) {
   const snapshot = {
     apiRoutes: [],

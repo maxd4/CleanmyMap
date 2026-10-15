@@ -121,6 +121,10 @@ type ExistingActionRow = {
   notes: string | null;
 };
 
+type ModerationActionPayload = Omit<CreateActionPayload, "volunteersCount"> & {
+  volunteersCount: number | null;
+};
+
 type SupabaseServerClient = ReturnType<typeof getSupabaseServerClient>;
 
 function cleanText(value: string | null | undefined): string | undefined {
@@ -181,7 +185,7 @@ async function loadExistingAction(
 
 async function resolveDepartmentForModeration(params: {
   existing: ExistingActionRow;
-  payload: CreateActionPayload;
+  payload: ModerationActionPayload;
   edits: NonNullable<z.infer<typeof actionEditsSchema>>;
   manualDrawing: ActionDrawing | null;
 }) {
@@ -221,7 +225,7 @@ function buildAdminActionPayload(params: {
   cigaretteButtsMeasurements: ReturnType<
     typeof resolveModeratedCigaretteButtsMeasurements
   >["measurements"];
-}): CreateActionPayload {
+}): ModerationActionPayload {
   const {
     existing,
     edits,
@@ -291,7 +295,7 @@ function buildAdminActionPayload(params: {
     volunteersCount:
       edits.volunteersCount ??
       (existing.volunteers_count === null
-        ? undefined
+        ? null
         : Number(existing.volunteers_count)),
     durationMinutes: edits.durationMinutes ?? Number(existing.duration_minutes ?? 0),
     notes:

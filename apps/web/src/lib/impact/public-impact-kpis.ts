@@ -41,6 +41,16 @@ export type PublicImpactMetric = {
 
 type PublicImpactKpiDefinition = Omit<PublicImpactMetric, "value">;
 
+function normalizeAggregateInteger(value: unknown): number {
+  if (typeof value === "number") {
+    return toFiniteNonNegativeInteger(value);
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    return toFiniteNonNegativeInteger(Number(value));
+  }
+  return 0;
+}
+
 export const PUBLIC_IMPACT_KPI_DEFINITIONS: readonly PublicImpactKpiDefinition[] =
   [
     {
@@ -276,13 +286,13 @@ export function buildPublicImpactCalculationFromAggregate(params: {
     wasteKg: impactTerrain.wasteKg,
     durationMinutes: normalizedDurationMinutes,
   });
-  const normalizedVolunteers = toFiniteNonNegativeInteger(params.volunteers as number | null | undefined);
-  const volunteersActionCount = toFiniteNonNegativeInteger(
+  const normalizedVolunteers = normalizeAggregateInteger(params.volunteers);
+  const volunteersActionCount = normalizeAggregateInteger(
     params.volunteersActionCount,
   );
   const volunteersKnownActions = Math.min(
     volunteersActionCount,
-    toFiniteNonNegativeInteger(params.volunteersKnownActions),
+    normalizeAggregateInteger(params.volunteersKnownActions),
   );
 
   return {

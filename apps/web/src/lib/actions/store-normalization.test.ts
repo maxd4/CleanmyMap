@@ -10,7 +10,6 @@ function storedAction(
     id: "action-1",
     created_at: "2026-07-01T08:00:00.000Z",
     created_by_clerk_id: "owner-1",
-    type: "action",
     actor_name: "Collectif",
     organizer_type: "collective",
     organizer_id: null,
@@ -20,7 +19,6 @@ function storedAction(
     latitude: 48.87,
     longitude: 2.36,
     waste_kg: 2,
-    waste_breakdown: null,
     cigarette_butts: 4,
     volunteers_count,
     duration_minutes: 60,
@@ -48,13 +46,10 @@ describe("stored action normalization", () => {
   });
 
   it("does not alter an independent action with an observed zero", () => {
-    const independent = normalizeStoredAction(
-      storedAction(0, { type: "clean_place", source: "actions" }),
-    );
+    const independent = normalizeStoredAction(storedAction(0));
 
-    expect(independent.type).toBe("clean_place");
-    expect(independent.source).toBe("actions");
     expect(independent.volunteers_count).toBe(0);
     expect(independent.waste_kg).toBe(2);
+    expect(independent.cigarette_butts).toBe(4);
   });
 });
