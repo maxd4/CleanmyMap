@@ -16,6 +16,7 @@ import { loadSpogomiTeamSession } from "./team-access";
 import { readAllSpogomiPages } from "./pagination";
 import { toSpogomiResultItemInput } from "./result-input";
 import { buildSpogomiRegulation } from "./regulation";
+import { resolveSpogomiEventAccess } from "./authorization";
 
 export type SpogomiReviewerRole = "organizer" | "referee";
 
@@ -29,52 +30,63 @@ export async function resolveSpogomiReviewerRole(params: {
   eventId: string;
   userId: string;
 }): Promise<SpogomiReviewerRole | false> {
-  const organizerEvent = await loadSpogomiEventForOrganizer(params.supabase, params.eventId, params.userId);
-  if (organizerEvent) return "organizer";
-  if (organizerEvent === null) return false;
-  const reviewer = await params.supabase
-    .from("spogomi_event_reviewers")
-    .select("id")
-    .eq("event_id", params.eventId)
-    .eq("clerk_id", params.userId)
-    .eq("role", "referee")
-    .is("revoked_at", null)
-    .maybeSingle();
-  if (reviewer.error) throw reviewer.error;
-  return reviewer.data ? "referee" : false;
+  const access = await resolveSpogomiEventAccess(params);
+  if (!access) return false;
+  if (access.role === "organizer") return "organizer";
+  return access.reviewerRoles.includes("referee") ? "referee" : false;
 }
 
-export async function assignSpogomiReferee(params: {
+export async function assignSpogomiEventAccess(params: {
   supabase: SupabaseClient;
   eventId: string;
   clerkId: string;
+  role: "observer" | "referee";
   assignedByClerkId: string;
 }): Promise<unknown> {
   await assertReviewerAssignmentEvent(params, false);
-  const result = await params.supabase
-    .from("spogomi_event_reviewers")
-    .upsert({ event_id: params.eventId, clerk_id: params.clerkId.trim(), role: "referee", assigned_by_clerk_id: params.assignedByClerkId, revoked_at: null }, { onConflict: "event_id,clerk_id,role" })
-    .select("id, event_id, clerk_id, role, revoked_at")
-    .single();
+  const result = await params.supabase.rpc("spogomi_set_event_access", {
+    p_event_id: params.eventId,
+    p_subject_clerk_id: params.clerkId.trim(),
+    p_access_role: params.role,
+    p_operation: "grant",
+    p_actor_clerk_id: params.assignedByClerkId,
+  });
   if (result.error) throw result.error;
   return result.data;
 }
 
-export async function revokeSpogomiReferee(params: {
+export async function revokeSpogomiEventAccess(params: {
   supabase: SupabaseClient;
   eventId: string;
   clerkId: string;
+  role: "observer" | "referee";
   assignedByClerkId: string;
 }): Promise<void> {
   await assertReviewerAssignmentEvent(params, true);
-  const result = await params.supabase
-    .from("spogomi_event_reviewers")
-    .update({ revoked_at: new Date().toISOString() })
-    .eq("event_id", params.eventId)
-    .eq("clerk_id", params.clerkId)
-    .eq("role", "referee")
-    .is("revoked_at", null);
+  const result = await params.supabase.rpc("spogomi_set_event_access", {
+    p_event_id: params.eventId,
+    p_subject_clerk_id: params.clerkId.trim(),
+    p_access_role: params.role,
+    p_operation: "revoke",
+    p_actor_clerk_id: params.assignedByClerkId,
+  });
   if (result.error) throw result.error;
+}
+
+export async function assignSpogomiReferee(params: Omit<Parameters<typeof assignSpogomiEventAccess>[0], "role">): Promise<unknown> {
+  return assignSpogomiEventAccess({ ...params, role: "referee" });
+}
+
+export async function revokeSpogomiReferee(params: Omit<Parameters<typeof revokeSpogomiEventAccess>[0], "role">): Promise<void> {
+  return revokeSpogomiEventAccess({ ...params, role: "referee" });
+}
+
+export async function assignSpogomiObserver(params: Omit<Parameters<typeof assignSpogomiEventAccess>[0], "role">): Promise<unknown> {
+  return assignSpogomiEventAccess({ ...params, role: "observer" });
+}
+
+export async function revokeSpogomiObserver(params: Omit<Parameters<typeof revokeSpogomiEventAccess>[0], "role">): Promise<void> {
+  return revokeSpogomiEventAccess({ ...params, role: "observer" });
 }
 
 async function assertReviewerAssignmentEvent(

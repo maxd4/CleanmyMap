@@ -956,6 +956,43 @@ elu       → scope territorial seulement lorsque la capacité territoriale est 
 Toute modification touchant ces helpers doit préserver cette séparation et
 relire le comportement réel avant de changer une permission.
 
+## 15 bis. SPOGOMI — capacités événementielles `CURRENT`
+
+SPOGOMI applique désormais le modèle capacité + périmètre sans créer de rôle
+Clerk global supplémentaire. `action_organizers` prouve le scope
+organisateur/coorganisateur ; `spogomi_event_reviewers` porte les habilitations
+`observer` et `referee`, chacune contrainte par `event_id`, révocable et auditée
+dans `spogomi_event_access_audit`.
+
+```txt
+public
+→ projection effectivement publiée
+
+participant lié
+→ projection privée minimale de ses données autorisées
+
+session d'équipe
+→ formulaire et soumissions de son équipe uniquement
+
+observer + événement
+→ projection opérationnelle non sensible, aucune mutation
+
+referee + événement
+→ lecture des soumissions nécessaires et décision d'arbitrage autorisée
+
+organizer/coorganizer + événement
+→ gestion de l'événement et attribution/révocation d'accès
+
+admin/max actif + capacité globale consommée
+→ supervision selon la capacité existante, sans élargissement implicite
+```
+
+Les projections de gestion, d'arbitrage et d'observation sont distinctes. La
+projection de gestion peut lire le roster nominatif après son garde scoped ;
+elle ne doit jamais être réutilisée par l'observateur. Toute habilitation est
+bornée à un événement et toute tentative de mutation est revalidée côté
+serveur, même si l'interface masque l'action.
+
 ## 16. Checklist de conception
 
 Avant d'accorder une nouvelle permission :

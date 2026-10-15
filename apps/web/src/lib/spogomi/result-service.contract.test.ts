@@ -15,6 +15,9 @@ describe("SPOGOMI result services STATIC_CONTRACT", () => {
 
   it("routes certification through an organizer/referee review boundary", () => {
     expect(service).toContain('rpc("spogomi_review_team_submission"');
+    expect(service).toContain('rpc("spogomi_set_event_access"');
+    expect(service).toContain("assignSpogomiObserver");
+    expect(service).toContain("revokeSpogomiObserver");
     expect(service).toContain("resolveSpogomiReviewerRole");
     expect(service).toContain("SPOGOMI self-certification is forbidden");
     expect(service).toContain("reviewerClerkId");

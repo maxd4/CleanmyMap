@@ -60,6 +60,8 @@ const mocks = vi.hoisted(() => {
   const reviewSpogomiTeamSubmission = vi.fn();
   const assignSpogomiReferee = vi.fn();
   const revokeSpogomiReferee = vi.fn();
+  const assignSpogomiObserver = vi.fn();
+  const revokeSpogomiObserver = vi.fn();
   const buildSpogomiConsolidationPreview = vi.fn();
   const publishSpogomiConsolidation = vi.fn();
   const loadSpogomiGalleryEntries = vi.fn();
@@ -122,6 +124,8 @@ const mocks = vi.hoisted(() => {
     reviewSpogomiTeamSubmission,
     assignSpogomiReferee,
     revokeSpogomiReferee,
+    assignSpogomiObserver,
+    revokeSpogomiObserver,
     buildSpogomiConsolidationPreview,
     publishSpogomiConsolidation,
     loadSpogomiGalleryEntries,
@@ -184,12 +188,14 @@ vi.mock("@/lib/spogomi/preparation-service", () => ({
   SpogomiCompositionProtectionError: mocks.SpogomiCompositionProtectionError,
 }));
 vi.mock("@/lib/spogomi/result-service", () => ({
+  assignSpogomiObserver: mocks.assignSpogomiObserver,
   assignSpogomiReferee: mocks.assignSpogomiReferee,
   loadSpogomiEventResultReviews: mocks.loadSpogomiEventResultReviews,
   loadSpogomiTeamResultForm: mocks.loadSpogomiTeamResultForm,
   resolveSpogomiReviewerRole: mocks.resolveSpogomiReviewerRole,
   reviewSpogomiTeamSubmission: mocks.reviewSpogomiTeamSubmission,
   revokeSpogomiReferee: mocks.revokeSpogomiReferee,
+  revokeSpogomiObserver: mocks.revokeSpogomiObserver,
   saveSpogomiTeamSubmission: mocks.saveSpogomiTeamSubmission,
 }));
 vi.mock("@/lib/spogomi/team-access", () => ({
@@ -280,6 +286,8 @@ describe("SPOGOMI persistence routes", () => {
     mocks.reviewSpogomiTeamSubmission.mockResolvedValue({ status: "certified" });
     mocks.assignSpogomiReferee.mockResolvedValue({ clerkId: "referee-1" });
     mocks.revokeSpogomiReferee.mockResolvedValue(undefined);
+    mocks.assignSpogomiObserver.mockResolvedValue({ clerkId: "observer-1", role: "observer" });
+    mocks.revokeSpogomiObserver.mockResolvedValue(undefined);
     mocks.buildSpogomiConsolidationPreview.mockResolvedValue({ sourceHash: "a".repeat(64), conflicts: [] });
     mocks.publishSpogomiConsolidation.mockResolvedValue({ sourceHash: "a".repeat(64) });
     mocks.loadSpogomiGalleryEntries.mockResolvedValue([]);
@@ -377,10 +385,16 @@ describe("SPOGOMI persistence routes", () => {
     const reviewers = await import("./events/[eventId]/reviewers/route");
     expect((await reviewers.POST(jsonRequest("http://localhost", { clerkId: "referee-1" }), eventContext)).status).toBe(201);
     expect((await reviewers.DELETE(jsonRequest("http://localhost", { clerkId: "referee-1" }), eventContext)).status).toBe(200);
+    expect((await reviewers.POST(jsonRequest("http://localhost", { clerkId: "observer-1", role: "observer" }), eventContext)).status).toBe(201);
+    expect((await reviewers.DELETE(jsonRequest("http://localhost", { clerkId: "observer-1", role: "observer" }), eventContext)).status).toBe(200);
+    expect(mocks.assignSpogomiObserver).toHaveBeenCalledWith(expect.objectContaining({ eventId: "event-1", clerkId: "observer-1" }));
+    expect(mocks.revokeSpogomiObserver).toHaveBeenCalledWith(expect.objectContaining({ eventId: "event-1", clerkId: "observer-1" }));
 
     const results = await import("./events/[eventId]/results/route");
     expect((await results.GET(new Request("http://localhost"), eventContext)).status).toBe(200);
     expect((await results.POST(jsonRequest("http://localhost", { teamId: "11111111-1111-4111-8111-111111111111", submissionId: "22222222-2222-4222-8222-222222222222", decision: "certified", reason: null }), eventContext)).status).toBe(200);
+    mocks.resolveSpogomiReviewerRole.mockResolvedValueOnce(false);
+    expect((await results.POST(jsonRequest("http://localhost", { teamId: "11111111-1111-4111-8111-111111111111", submissionId: "22222222-2222-4222-8222-222222222222", decision: "certified", reason: null }), eventContext)).status).toBe(403);
 
     mocks.event.state = "certified";
     mocks.loadSpogomiResultsProjection.mockResolvedValue({

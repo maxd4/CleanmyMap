@@ -684,8 +684,10 @@ jamais ; l'organisateur ou l'arbitre habilité décide depuis la revue privée.
 Une correction d'une version certifiée crée une nouvelle version, conserve la
 référence de remplacement et écrit un audit append-only. Les verrous par équipe
 et les prédicats de statut refusent les certifications concurrentes obsolètes.
-Les arbitres sont attribués et révoqués par un organisateur au niveau de
-l'événement ; leur rôle n'est jamais déduit d'un champ envoyé par le client.
+Les arbitres et observateurs sont attribués et révoqués par un organisateur au
+niveau de l'événement ; leur habilitation n'est jamais déduite d'un champ envoyé
+par le client et la révocation est auditée. Un observateur ne reçoit qu'une
+lecture opérationnelle non sensible et ne peut pas appeler une mutation.
 Un participant lié à l'équipe revue ne peut pas certifier cette équipe.
 
 Le moteur pur de `apps/web/src/lib/spogomi/scoring.ts` calcule séparément le
@@ -1236,6 +1238,55 @@ Fichiers principaux :
 - `apps/web/src/app/(app)/spogomi/mes-evenements/page.tsx` et
   `apps/web/src/app/(app)/spogomi/nouveau/page.tsx` ;
 - `apps/web/src/lib/spogomi/organizer-service.ts`.
+
+## 19 septies. Autorisation par capacité et périmètre — CURRENT
+
+Les accès SPOGOMI sont évalués côté serveur avec l'identité Clerk, une capacité
+et l'événement demandé. Le rôle Clerk global n'est jamais remplacé par une
+habilitation SPOGOMI et `activeRole` reste la source des capacités globales.
+
+| Accès | Capacité et projection |
+|---|---|
+| public | uniquement la projection effectivement publiée |
+| participant lié | sa projection privée et ses informations personnelles autorisées |
+| session d'équipe | le formulaire et les soumissions de son équipe, via le token de session |
+| observateur habilité | lecture opérationnelle non sensible, sans mutation |
+| arbitre habilité | projection d'arbitrage des soumissions nécessaires et décisions autorisées |
+| organisateur/coorganisateur | projection de gestion de son événement |
+| admin/max actif | supervision selon la capacité globale consommée, jamais selon une simple présence Clerk |
+
+`action_organizers` reste la relation canonique organisateur/coorganisateur.
+`spogomi_event_reviewers` porte les habilitations `observer` et `referee`,
+toujours limitées par `event_id`, avec révocation et audit dans
+`spogomi_event_access_audit`. Une habilitation d'un événement ne s'étend jamais
+à une autre édition.
+
+Les projections serveur sont séparées :
+
+- `loadSpogomiManagementProjection` peut contenir le roster nominatif, mais
+  seulement après le garde organisateur ;
+- `loadSpogomiEventResultReviews` est la projection d'arbitrage et reste
+  réservée à l'organisateur ou à l'arbitre actif ;
+- `loadSpogomiObserverProjection` ne lit ni noms de participants, ni roster,
+  ni mesures détaillées et n'expose aucune mutation ;
+- les lectures privées participant/bénévole et les sessions d'équipe restent
+  owner/session-scoped dans leurs services existants.
+
+L'attribution ou la révocation d'une habilitation est une mutation organisée,
+bornée à l'événement et auditée atomiquement par
+`spogomi_set_event_access`. Une tentative directe d'un observateur sur une
+route de gestion, d'import, de classement ou d'arbitrage est refusée côté
+serveur. La certification reste séparée de l'auto-certification : un membre de
+l'équipe ne peut pas certifier sa propre soumission.
+
+Fichiers principaux :
+
+- `apps/web/src/lib/spogomi/authorization.ts` ;
+- `apps/web/src/lib/spogomi/management-projection.ts` ;
+- `apps/web/src/lib/spogomi/observer-projection.ts` ;
+- `apps/web/src/app/api/spogomi/events/[eventId]/observer/route.ts` ;
+- `apps/web/src/app/api/spogomi/events/[eventId]/reviewers/route.ts` ;
+- `apps/web/supabase/migrations/20261015000011_spogomi_event_capability_access.sql`.
 
 ## 20. Sources canoniques liées
 
