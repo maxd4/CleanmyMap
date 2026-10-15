@@ -26,6 +26,7 @@ export type SpogomiResultsSource = {
     state: string;
     startsAt: string;
     endsAt: string | null;
+    officialTimezone?: string;
     regulationVersion: string;
     regulationStatus: "incomplete" | "complete";
     regulationSourceReference: string | null;

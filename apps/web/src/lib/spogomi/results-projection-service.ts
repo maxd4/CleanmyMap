@@ -20,7 +20,7 @@ export async function loadSpogomiResultsProjection(params: {
 }): Promise<SpogomiExportProjection | null> {
   const eventResult = await params.supabase
     .from("spogomi_events")
-    .select("id, action_id, name, location_label, mode, state, starts_at, ends_at, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config, public_visibility, public_results_visibility, updated_at")
+    .select("id, action_id, name, location_label, mode, state, starts_at, ends_at, official_timezone, regulation_version, regulation_status, regulation_source_reference, regulation_config, team_size_config, public_visibility, public_results_visibility, updated_at")
     .eq("id", params.eventId)
     .maybeSingle();
   if (eventResult.error) throw eventResult.error;
@@ -44,6 +44,7 @@ export async function loadSpogomiResultsProjection(params: {
     event: {
       id: String(event.id), actionId: String(event.action_id), name: String(event.name), locationLabel: String(event.location_label), mode: event.mode,
       state: String(event.state), startsAt: String(event.starts_at), endsAt: event.ends_at ? String(event.ends_at) : null,
+      officialTimezone: event.official_timezone ? String(event.official_timezone) : undefined,
       regulationVersion: String(event.regulation_version), regulationStatus: event.regulation_status,
       regulationSourceReference: event.regulation_source_reference ? String(event.regulation_source_reference) : null,
       regulationConfig: event.regulation_config, teamSizeConfig: event.team_size_config,
