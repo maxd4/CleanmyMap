@@ -21,6 +21,11 @@ type SpogomiPublicTeam = {
   compositionState: string;
 };
 
+type SpogomiPublicDivision = {
+  id: string;
+  type: "casual" | "world_cup";
+};
+
 type SpogomiPublicRoute = {
   source: "official_reference";
   fileName: string;
@@ -41,6 +46,7 @@ export type SpogomiPublicEvent = {
   startsAt: string;
   endsAt: string | null;
   actionHref: string | null;
+  divisions: SpogomiPublicDivision[];
   teams: SpogomiPublicTeam[];
   route: SpogomiPublicRoute | null;
   results: SpogomiPublicResults | null;
@@ -122,6 +128,7 @@ function mapEvent(
   row: PublicEventRow,
   publishableActionIds: Set<string>,
   teams: SpogomiPublicTeam[] = [],
+  divisions: SpogomiPublicDivision[] = [],
   route: SpogomiPublicRoute | null = null,
   results: SpogomiPublicResults | null = null,
   organizer: SpogomiPublicOrganizer | null = null,
@@ -141,6 +148,7 @@ function mapEvent(
     actionHref: publishableActionIds.has(row.action_id)
       ? `/actions/map?actionId=${encodeURIComponent(row.action_id)}`
       : null,
+    divisions,
     teams,
     route,
     results,
@@ -171,6 +179,7 @@ export async function listPublishedSpogomiEvents(
   const mapped = await Promise.all(rows.map(async (row) => mapEvent(
     row,
     actionIds,
+    [],
     [],
     null,
     null,
@@ -231,6 +240,10 @@ export async function loadPublishedSpogomiEventBySlug(
       teamNumber: Number(team.team_number),
       publicName: String(team.public_name),
       compositionState: String(team.composition_state),
+    })),
+    (divisionsResult.data ?? []).map((division) => ({
+      id: String(division.id),
+      type: division.division_type === "world_cup" ? "world_cup" as const : "casual" as const,
     })),
     route,
     null,

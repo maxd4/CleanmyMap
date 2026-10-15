@@ -9,6 +9,7 @@ import { SpogomiVolunteerContributionsCard } from "@/components/spogomi/spogomi-
 import { SpogomiPublicResults } from "@/components/spogomi/spogomi-public-results";
 import { SpogomiPhotoGallery } from "@/components/spogomi/spogomi-photo-gallery";
 import { SpogomiTeamJoinButton } from "@/components/spogomi/spogomi-team-join-button";
+import { SpogomiAdmissionRequestCard } from "@/components/spogomi/spogomi-admission-request-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { loadPublishedSpogomiEventBySlug } from "@/lib/spogomi/public-service";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -80,6 +81,7 @@ export default async function SpogomiPublicEventPage({ params }: Props) {
             <SpogomiPhotoGallery photos={event.gallery} />
           </div>
           <aside className="space-y-4" aria-label="Participation et fonctionnalités">
+            <CmmCard tone="emerald" variant="glass" className="space-y-3 p-5"><SpogomiAdmissionRequestCard eventId={event.id} lifecycle={event.lifecycle} divisions={event.divisions} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} /></CmmCard>
             <SpogomiIdentityLinkCard eventId={event.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} />
             <SpogomiVolunteerContributionsCard eventId={event.id} signInHref={`/sign-in?redirect_url=${encodeURIComponent(`/spogomi/${event.slug}`)}`} />
             {["Classements indépendants|Les points sportifs et le ratio de mégots utilisent des projections séparées.", "Confidentialité|Seuls les noms publics d’équipe et les résultats publiés sont visibles.", "Participation|La liaison à un compte et la confirmation de participation restent séparées du classement."].map((entry) => {

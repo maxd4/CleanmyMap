@@ -328,6 +328,27 @@ La file privée est réservée aux rôles actifs `admin` et `max` ; un organisat
 coorganisateur, arbitre, observateur ou coordinateur non admin ne peut ni
 accepter ni refuser cette demande.
 
+Deux demandes publiques supplémentaires utilisent la même file, mais restent
+distinctes d'une demande de rattachement à une équipe existante :
+
+- avant l'événement, `registration` permet une nouvelle inscription authentifiée
+  seulement lorsque l'état, la division et le règlement l'autorisent. Elle ne
+  fabrique ni billet, ni équipe, ni action ; une approbation `admin|max` crée
+  uniquement l'identité d'inscription SPOGOMI sans présence attestée ni
+  `action_participants`. Une billetterie externe obligatoire ou le parcours
+  World Cup officiel ferme cette voie sauf autorisation explicite du règlement ;
+- pendant l'événement, `presence_regularization` permet de signaler une
+  présence réelle absente du roster. Une approbation auditée ne modifie ni le
+  roster, ni l'équipe, ni les résultats et ne vaut pas participation CleanMyMap.
+
+Les divisions sont explicites pour une édition `mixed` et le serveur revalide
+l'état, la politique, la billetterie, le mode World Cup et la capacité sous
+verrou lors de l'approbation. Le demandeur ne reçoit qu'une projection de sa
+propre demande (`id`, type, division éventuelle, contexte fourni, statut,
+message public et dates). Les identifiants de rapprochement, notes internes,
+identités du roster, identifiants de décideur et secrets restent dans la
+projection d'administration protégée.
+
 Un refus administratif peut être enregistré sans sélectionner d'identité
 historique et sans note de vérification ; seule la note de décision facultative
 reste conservée. Une approbation exige toujours une identité existante du
