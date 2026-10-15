@@ -259,6 +259,16 @@ L'inscription Excel, la présence terrain, le rattachement Clerk et la participa
 
 Une personne présente sans compte participe au **bilan collectif**, mais n'obtient pas d'XP. Une personne liée sans présence validée n'obtient pas de crédit. Un membre d'équipe ne reçoit jamais la totalité de la récolte collective à titre individuel.
 
+Après une liaison vérifiée, la même lecture serveur restitue la section personnelle
+« Mon équipe SPOGOMI » : uniquement le nom public et le numéro de l'équipe
+historique, la division lorsqu'une division réelle est rattachée, la présence
+attestée, l'état de la demande de participation et les résultats effectivement
+publiés pour cette équipe. Un `team_id` absent ou une équipe introuvable reste
+« Équipe non renseignée » ; aucun nom, billet, roster ou résultat ne permet de
+déduire une affectation. Une fiche publiée peut porter ce parcours public ; une
+édition privée ne rend pas sa fiche accessible et conserve la liaison sur le
+parcours authentifié par invitation et code individuel.
+
 Réutiliser `apps/web/src/lib/actions/participation/individual-impact.ts` pour les attributions individuelles ou quotes-parts sous les conditions canoniques. Ne jamais fabriquer une mesure individuelle exacte à partir d'une répartition, ni affecter des points de compétition à la progression générale.
 
 Les recalculs d'attribution et notifications doivent rester idempotents, sans double attribution à chaque republication du bilan.

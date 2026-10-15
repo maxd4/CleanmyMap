@@ -6,37 +6,26 @@ import { claimFinishedActionParticipation } from "@/lib/actions/participation/po
 import { joinActionParticipation } from "@/lib/actions/participation/group-participation";
 import { readActionRegistrationRecord } from "@/lib/actions/participation/registration-records";
 import { readParticipantRecord } from "@/lib/actions/participation/group-participation.helpers";
+import { loadSpogomiResultsProjection } from "./results-projection-service";
+import type {
+  SpogomiIdentityLinkResult,
+  SpogomiIdentityParticipation,
+  SpogomiIdentityState,
+  SpogomiIdentityStateResult,
+  SpogomiLinkedTeam,
+  SpogomiPublishedTeamResult,
+} from "./identity-link-contract";
+
+export type {
+  SpogomiIdentityLinkResult,
+  SpogomiIdentityParticipation,
+  SpogomiIdentityState,
+  SpogomiIdentityStateResult,
+  SpogomiLinkedTeam,
+  SpogomiPublishedTeamResult,
+} from "./identity-link-contract";
 
 const IDENTITY_CODE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-
-type SpogomiIdentityLinkStatus = "linked" | "already_linked";
-export type SpogomiIdentityParticipation = {
-  status: "not_requested" | "pending" | "confirmed" | "cancelled" | "unavailable";
-  store: "action_registrations" | "action_participants" | null;
-};
-
-export type SpogomiIdentityLinkResult = {
-  linkStatus: SpogomiIdentityLinkStatus;
-  participantId: string;
-  actionId: string;
-  attendanceStatus: "unknown" | "present" | "absent";
-};
-
-type SpogomiIdentityState =
-  | "identity_unlinked"
-  | "identity_verified"
-  | "participation_unavailable"
-  | "participation_pending"
-  | "participation_confirmed"
-  | "participation_cancelled";
-
-export type SpogomiIdentityStateResult = {
-  state: SpogomiIdentityState;
-  participantId: string | null;
-  actionId: string | null;
-  attendanceStatus: "unknown" | "present" | "absent";
-  participation: SpogomiIdentityParticipation;
-};
 
 export class SpogomiIdentityLinkError extends Error {
   constructor(
@@ -184,6 +173,7 @@ export async function requestCleanMyMapParticipation(
 type VerifiedSpogomiIdentity = {
   participantId: string;
   actionId: string;
+  teamId: string | null;
   attendanceStatus: "unknown" | "present" | "absent";
   actionPhase: "pre_action" | "post_action_draft" | "post_action_complete" | null;
 };
@@ -212,7 +202,7 @@ async function loadVerifiedSpogomiIdentity(
 
   const participantResult = await supabase
     .from("spogomi_participants")
-    .select("id, clerk_id, account_link_status, attendance_status")
+    .select("id, clerk_id, team_id, account_link_status, attendance_status")
     .eq("event_id", params.eventId)
     .eq("clerk_id", params.clerkId)
     .eq("account_link_status", "verified")
@@ -222,6 +212,7 @@ async function loadVerifiedSpogomiIdentity(
   if (participants.length !== 1) return null;
   const participant = participants[0] as {
     id?: unknown;
+    team_id?: unknown;
     attendance_status?: unknown;
   };
   if (typeof participant.id !== "string") return null;
@@ -241,7 +232,75 @@ async function loadVerifiedSpogomiIdentity(
     ? participant.attendance_status
     : "unknown";
 
-  return { participantId: participant.id, actionId, attendanceStatus, actionPhase };
+  return {
+    participantId: participant.id,
+    actionId,
+    teamId: typeof participant.team_id === "string" ? participant.team_id : null,
+    attendanceStatus,
+    actionPhase,
+  };
+}
+
+function mapPublishedTeamResult(
+  entries: Array<{ teamId?: string; status: string; rank: number | null; score?: number | null; countedButts?: number | null; ratio?: number | null }>,
+  teamId: string,
+): SpogomiPublishedTeamResult | null {
+  const entry = entries.find((candidate) => candidate.teamId === teamId);
+  if (!entry || (entry.status !== "provisional" && entry.status !== "certified")) return null;
+  return {
+    status: entry.status,
+    rank: entry.rank,
+    score: entry.score ?? null,
+    countedButts: entry.countedButts ?? null,
+    ratio: entry.ratio ?? null,
+  };
+}
+
+async function loadLinkedTeam(
+  supabase: SupabaseClient,
+  params: { eventId: string; identity: VerifiedSpogomiIdentity; participationStatus: SpogomiIdentityParticipation["status"] },
+): Promise<SpogomiLinkedTeam | null> {
+  if (!params.identity.teamId) return null;
+
+  const teamResult = await supabase
+    .from("spogomi_teams")
+    .select("id, division_id, team_number, public_name")
+    .eq("id", params.identity.teamId)
+    .eq("event_id", params.eventId)
+    .maybeSingle();
+  if (teamResult.error) throw teamResult.error;
+  if (!teamResult.data) return null;
+
+  let divisionType: SpogomiLinkedTeam["divisionType"] = null;
+  if (typeof teamResult.data.division_id === "string") {
+    const divisionResult = await supabase
+      .from("spogomi_divisions")
+      .select("division_type")
+      .eq("id", teamResult.data.division_id)
+      .eq("event_id", params.eventId)
+      .maybeSingle();
+    if (divisionResult.error) throw divisionResult.error;
+    divisionType = divisionResult.data?.division_type === "casual" || divisionResult.data?.division_type === "world_cup"
+      ? divisionResult.data.division_type
+      : null;
+  }
+
+  const projection = await loadSpogomiResultsProjection({
+    supabase,
+    eventId: params.eventId,
+    publicOnly: true,
+  });
+  const sport = projection ? mapPublishedTeamResult(projection.results.sport.entries, params.identity.teamId) : null;
+  const butts = projection ? mapPublishedTeamResult(projection.results.butts.entries, params.identity.teamId) : null;
+
+  return {
+    publicName: String(teamResult.data.public_name),
+    teamNumber: Number(teamResult.data.team_number),
+    divisionType,
+    attendanceStatus: params.identity.attendanceStatus,
+    participationStatus: params.participationStatus,
+    publishedResults: sport || butts ? { sport, butts } : null,
+  };
 }
 
 async function loadStoredParticipation(
@@ -285,6 +344,7 @@ function resolveIdentityState(
 function buildIdentityStateResult(
   identity: VerifiedSpogomiIdentity | null,
   participation: SpogomiIdentityParticipation,
+  team: SpogomiLinkedTeam | null = null,
 ): SpogomiIdentityStateResult {
   if (!identity) {
     return {
@@ -293,6 +353,7 @@ function buildIdentityStateResult(
       actionId: null,
       attendanceStatus: "unknown",
       participation: { status: "not_requested", store: null },
+      team: null,
     };
   }
   return {
@@ -301,6 +362,7 @@ function buildIdentityStateResult(
     actionId: identity.actionId,
     attendanceStatus: identity.attendanceStatus,
     participation,
+    team,
   };
 }
 
@@ -310,10 +372,12 @@ export async function loadSpogomiIdentityState(
 ): Promise<SpogomiIdentityStateResult> {
   const identity = await loadVerifiedSpogomiIdentity(supabase, params);
   if (!identity) return buildIdentityStateResult(null, { status: "not_requested", store: null });
-  return buildIdentityStateResult(
+  const participation = await loadStoredParticipation(supabase, identity, params.clerkId);
+  return buildIdentityStateResult(identity, participation, await loadLinkedTeam(supabase, {
+    eventId: params.eventId,
     identity,
-    await loadStoredParticipation(supabase, identity, params.clerkId),
-  );
+    participationStatus: participation.status,
+  }));
 }
 
 export async function resumeSpogomiIdentityParticipation(
@@ -325,10 +389,18 @@ export async function resumeSpogomiIdentityParticipation(
 
   const existing = await loadStoredParticipation(supabase, identity, params.clerkId);
   if (existing.status !== "not_requested") {
-    return buildIdentityStateResult(identity, existing);
+    return buildIdentityStateResult(identity, existing, await loadLinkedTeam(supabase, {
+      eventId: params.eventId,
+      identity,
+      participationStatus: existing.status,
+    }));
   }
   if (!identity.actionPhase) {
-    return buildIdentityStateResult(identity, { status: "unavailable", store: null });
+    return buildIdentityStateResult(identity, { status: "unavailable", store: null }, await loadLinkedTeam(supabase, {
+      eventId: params.eventId,
+      identity,
+      participationStatus: "unavailable",
+    }));
   }
 
   const participation = await requestCleanMyMapParticipation(supabase, {
@@ -336,5 +408,9 @@ export async function resumeSpogomiIdentityParticipation(
     clerkId: params.clerkId,
     actionPhase: identity.actionPhase,
   });
-  return buildIdentityStateResult(identity, participation);
+  return buildIdentityStateResult(identity, participation, await loadLinkedTeam(supabase, {
+    eventId: params.eventId,
+    identity,
+    participationStatus: participation.status,
+  }));
 }

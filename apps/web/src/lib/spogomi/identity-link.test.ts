@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 const joinActionParticipationMock = vi.hoisted(() => vi.fn());
 const claimFinishedActionParticipationMock = vi.hoisted(() => vi.fn());
+const loadSpogomiResultsProjectionMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/actions/participation/group-participation", () => ({ joinActionParticipation: joinActionParticipationMock }));
 vi.mock("@/lib/actions/participation/post-action-claims", () => ({ claimFinishedActionParticipation: claimFinishedActionParticipationMock }));
+vi.mock("./results-projection-service", () => ({ loadSpogomiResultsProjection: loadSpogomiResultsProjectionMock }));
 import {
   generateSpogomiIdentityCode,
   hashSpogomiIdentityCode,
@@ -45,6 +47,7 @@ describe("SPOGOMI identity link", () => {
   beforeEach(() => {
     joinActionParticipationMock.mockReset();
     claimFinishedActionParticipationMock.mockReset();
+    loadSpogomiResultsProjectionMock.mockReset();
   });
 
   it("normalizes display separators without weakening the random code", () => {
@@ -165,5 +168,50 @@ describe("SPOGOMI identity link", () => {
       makeIdentityLinkSupabase([], null),
       { eventId: "event-1", clerkId: "user-2" },
     )).rejects.toMatchObject({ kind: "not_found" });
+  });
+
+  it("loads only the linked team's public projection after identity verification", async () => {
+    const { loadSpogomiIdentityState } = await import("./identity-link");
+    loadSpogomiResultsProjectionMock.mockResolvedValue({
+      results: {
+        sport: { entries: [{ teamId: "team-1", status: "certified", rank: 2, score: 84, countedButts: null, ratio: null }] },
+        butts: { entries: [{ teamId: "team-1", status: "unavailable", rank: null }] },
+      },
+    });
+    const makeChain = (data: unknown) => {
+      const chain = {
+        select: vi.fn(() => chain),
+        eq: vi.fn(() => chain),
+        limit: vi.fn(async () => ({ data, error: null })),
+        maybeSingle: vi.fn(async () => ({ data, error: null })),
+      };
+      return chain;
+    };
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === "spogomi_events") return makeChain({ action_id: "action-1" });
+        if (table === "spogomi_participants") return makeChain([{ id: "participant-1", clerk_id: "user-1", division_id: "division-casual", team_id: "team-1", account_link_status: "verified", attendance_status: "present" }]);
+        if (table === "actions") return makeChain({ action_phase: "post_action_complete" });
+        if (table === "spogomi_teams") return makeChain({ id: "team-1", division_id: "division-casual", team_number: 7, public_name: "Équipe verte" });
+        if (table === "spogomi_divisions") return makeChain({ division_type: "casual" });
+        return makeChain({ participation_status: "pending" });
+      }),
+    } as never;
+
+    await expect(loadSpogomiIdentityState(supabase, { eventId: "event-1", clerkId: "user-1" })).resolves.toMatchObject({
+      state: "participation_pending",
+      team: {
+        publicName: "Équipe verte",
+        teamNumber: 7,
+        divisionType: "casual",
+        attendanceStatus: "present",
+        participationStatus: "pending",
+        publishedResults: {
+          sport: { status: "certified", rank: 2, score: 84 },
+          butts: null,
+        },
+      },
+    });
+    expect(loadSpogomiResultsProjectionMock).toHaveBeenCalledWith({ supabase, eventId: "event-1", publicOnly: true });
   });
 });
