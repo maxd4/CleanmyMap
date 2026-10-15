@@ -215,6 +215,13 @@ describe("serializeActionGeometryToGpx", () => {
 
     expect(() =>
       serializeActionGeometryToGpx({
+        name: `${"a".repeat(20_000)}@example.com`,
+        tracks: [{ geometry: openGeometry, geometrySource: "manual" }],
+      }),
+    ).toThrow(/donnée personnelle/i);
+
+    expect(() =>
+      serializeActionGeometryToGpx({
         tracks: [
           {
             geometry: openGeometry,

@@ -70,14 +70,26 @@ type PublicEventRow = {
 };
 
 function normalizeSlugPart(value: string): string {
-  return value
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 72)
-    .replace(/-+$/g, "");
+  const decomposed = value.normalize("NFKD").toLowerCase();
+  let slug = "";
+  let pendingSeparator = false;
+
+  for (const character of decomposed) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (codePoint >= 0x0300 && codePoint <= 0x036f) continue;
+
+    const isAsciiLetter = character >= "a" && character <= "z";
+    const isAsciiDigit = character >= "0" && character <= "9";
+    if (isAsciiLetter || isAsciiDigit) {
+      if (pendingSeparator && slug.length > 0) slug += "-";
+      slug += character;
+      pendingSeparator = false;
+    } else if (slug.length > 0) {
+      pendingSeparator = true;
+    }
+  }
+
+  return slug.slice(0, 72);
 }
 
 const SPOGOMI_RESERVED_EVENT_SLUGS = new Set(["nouveau", "mes-evenements"]);

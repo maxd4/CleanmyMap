@@ -231,8 +231,11 @@ async function routeLoopHypotheses(
   }
 
   if (networkCandidates.length > 0) {
-    return networkCandidates.reduce((best, candidate) =>
-      compareLoopCandidates(candidate, best, targetDistanceKm) < 0 ? candidate : best,
+    const [firstCandidate, ...remainingCandidates] = networkCandidates;
+    return remainingCandidates.reduce(
+      (best, candidate) =>
+        compareLoopCandidates(candidate, best, targetDistanceKm) < 0 ? candidate : best,
+      firstCandidate!,
     ).routeGeometry;
   }
 

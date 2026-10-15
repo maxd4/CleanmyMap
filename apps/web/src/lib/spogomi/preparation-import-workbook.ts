@@ -7,7 +7,10 @@ const MAX_HEADER_SCAN_ROWS = 60;
 const MAX_EXPANDED_ARCHIVE_BYTES = 25 * 1024 * 1024;
 
 export function normalizeValue(value: unknown): string {
-  return String(value ?? "").replace(/\u0000/g, "").trim().replace(/\s+/g, " ");
+  const withoutNullCharacters = Array.from(String(value ?? ""))
+    .filter((character) => character.codePointAt(0) !== 0)
+    .join("");
+  return withoutNullCharacters.trim().replace(/\s+/g, " ");
 }
 
 function readLittleEndian16(bytes: Uint8Array, offset: number): number {

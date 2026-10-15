@@ -98,26 +98,26 @@ export function parseCssColor(input: string | null | undefined): RgbaColor | nul
     }
     if (raw.length === 3) {
       return {
-        r: parseInt(raw.charAt(0) + raw.charAt(0), 16),
-        g: parseInt(raw.charAt(1) + raw.charAt(1), 16),
-        b: parseInt(raw.charAt(2) + raw.charAt(2), 16),
+        r: Number.parseInt(raw.charAt(0) + raw.charAt(0), 16),
+        g: Number.parseInt(raw.charAt(1) + raw.charAt(1), 16),
+        b: Number.parseInt(raw.charAt(2) + raw.charAt(2), 16),
         a: 1,
       };
     }
     if (raw.length === 4) {
       return {
-        r: parseInt(raw.charAt(0) + raw.charAt(0), 16),
-        g: parseInt(raw.charAt(1) + raw.charAt(1), 16),
-        b: parseInt(raw.charAt(2) + raw.charAt(2), 16),
-        a: parseInt(raw.charAt(3) + raw.charAt(3), 16) / 255,
+        r: Number.parseInt(raw.charAt(0) + raw.charAt(0), 16),
+        g: Number.parseInt(raw.charAt(1) + raw.charAt(1), 16),
+        b: Number.parseInt(raw.charAt(2) + raw.charAt(2), 16),
+        a: Number.parseInt(raw.charAt(3) + raw.charAt(3), 16) / 255,
       };
     }
     if (raw.length === 6 || raw.length === 8) {
       return {
-        r: parseInt(raw.slice(0, 2), 16),
-        g: parseInt(raw.slice(2, 4), 16),
-        b: parseInt(raw.slice(4, 6), 16),
-        a: raw.length === 8 ? parseInt(raw.slice(6, 8), 16) / 255 : 1,
+        r: Number.parseInt(raw.slice(0, 2), 16),
+        g: Number.parseInt(raw.slice(2, 4), 16),
+        b: Number.parseInt(raw.slice(4, 6), 16),
+        a: raw.length === 8 ? Number.parseInt(raw.slice(6, 8), 16) / 255 : 1,
       };
     }
   }

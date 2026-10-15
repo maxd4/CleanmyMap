@@ -67,6 +67,8 @@ describe("SPOGOMI public identity and lifecycle", () => {
   it("normalizes a stable URL slug without accents or unsafe separators", () => {
     expect(normalizeSpogomiEventSlug("Coupe d'été — Paris 2026")).toBe("coupe-d-ete-paris-2026");
     expect(normalizeSpogomiEventSlug("***")).toBe("evenement-spogomi");
+    expect(normalizeSpogomiEventSlug("")).toBe("evenement-spogomi");
+    expect(normalizeSpogomiEventSlug(`${"!".repeat(10_000)}Été---Paris${"!".repeat(10_000)}`)).toBe("ete-paris");
     expect(isReservedSpogomiEventSlug("nouveau")).toBe(true);
     expect(isReservedSpogomiEventSlug("mes-evenements")).toBe(true);
     expect(isReservedSpogomiEventSlug("paris-2026")).toBe(false);

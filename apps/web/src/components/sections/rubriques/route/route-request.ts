@@ -34,11 +34,13 @@ export function createRouteRequestGate(): RouteRequestGate {
   };
 }
 
+const DEFAULT_ROUTE_PLANNING_MODE: RoutePlanningMode = { type: "free" };
+
 export function createRouteRecommendationSubmission(
   id: number,
   options: RouteOptions,
   origin?: RouteRecommendationOrigin,
-  planningMode: RoutePlanningMode = { type: "free" },
+  planningMode: RoutePlanningMode = DEFAULT_ROUTE_PLANNING_MODE,
 ): RouteRecommendationSubmission {
   return {
     id,

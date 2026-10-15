@@ -46,7 +46,7 @@ export function VolumeSliderWidget({
         max={max}
         step="0.5"
         value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
+        onChange={(e) => onChange(Number.parseFloat(e.target.value))}
         aria-labelledby={labelId}
         className="sr-only"
       />

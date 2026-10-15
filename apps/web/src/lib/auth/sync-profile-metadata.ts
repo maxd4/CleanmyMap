@@ -92,7 +92,7 @@ export function resolveProfileArrondissement(
     typeof rawArrondissement === "number"
       ? rawArrondissement
       : typeof rawArrondissement === "string"
-        ? parseInt(rawArrondissement, 10)
+        ? Number.parseInt(rawArrondissement, 10)
         : null;
   const metadataZoneName =
     typeof profileMetadata["territoryLabel"] === "string"

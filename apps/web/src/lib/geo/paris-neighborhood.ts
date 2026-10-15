@@ -171,7 +171,7 @@ export function findDistrictByName(name: string): District | null {
   const normalized = name.toLowerCase();
   return (
     PARIS_DISTRICTS.find((d) => d.name.toLowerCase().includes(normalized)) ||
-    PARIS_DISTRICTS.find((d) => d.number === parseInt(name, 10)) ||
+    PARIS_DISTRICTS.find((d) => d.number === Number.parseInt(name, 10)) ||
     null
   );
 }

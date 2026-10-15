@@ -44,11 +44,64 @@ export type GpxSerializerInput = {
 const GPX_1_1_NAMESPACE = "http://www.topografix.com/GPX/1/1";
 
 const PERSONAL_DATA_PATTERNS = [
-  /[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}/i,
   /(?:clerk|user)(?:[_-]?id)?\s*[:=]/i,
   /(?:clerk|user)_[A-Za-z0-9_-]{4,}/i,
   /(?:bearer|authorization|token)\s*[:=]/i,
 ];
+
+function isEmailLocalCharacter(character: string): boolean {
+  return (
+    isAsciiLetter(character) ||
+    isAsciiDigit(character) ||
+    character === "_" ||
+    character === "." ||
+    character === "%" ||
+    character === "+" ||
+    character === "-"
+  );
+}
+
+function isEmailDomainCharacter(character: string): boolean {
+  return isAsciiLetter(character) || isAsciiDigit(character) || character === "_" || character === "." || character === "-";
+}
+
+function isAsciiDigit(character: string): boolean {
+  return character >= "0" && character <= "9";
+}
+
+function isAsciiLetter(character: string): boolean {
+  return (character >= "a" && character <= "z") || (character >= "A" && character <= "Z");
+}
+
+function containsEmailLikeValue(value: string): boolean {
+  let atIndex = value.indexOf("@");
+  while (atIndex >= 0) {
+    let localStart = atIndex;
+    while (localStart > 0 && isEmailLocalCharacter(value[localStart - 1]!)) {
+      localStart -= 1;
+    }
+
+    let domainEnd = atIndex + 1;
+    while (domainEnd < value.length && isEmailDomainCharacter(value[domainEnd]!)) {
+      domainEnd += 1;
+    }
+
+    const localPart = value.slice(localStart, atIndex);
+    if (localPart.length > 0 && domainEnd > atIndex + 1) {
+      for (let dotIndex = atIndex + 1; dotIndex < domainEnd; dotIndex += 1) {
+        if (value[dotIndex] !== "." || dotIndex === atIndex + 1) continue;
+        let suffixEnd = dotIndex + 1;
+        while (suffixEnd < domainEnd && isAsciiLetter(value[suffixEnd]!)) {
+          suffixEnd += 1;
+        }
+        if (suffixEnd - dotIndex - 1 >= 2) return true;
+      }
+    }
+
+    atIndex = value.indexOf("@", atIndex + 1);
+  }
+  return false;
+}
 
 function containsParticipantWord(value: string): boolean {
   const normalized = value.toLowerCase();
@@ -66,7 +119,11 @@ function containsParticipantWord(value: string): boolean {
 }
 
 function assertSafeXmlText(value: string, field: string): void {
-  if (PERSONAL_DATA_PATTERNS.some((pattern) => pattern.test(value)) || containsParticipantWord(value)) {
+  if (
+    containsEmailLikeValue(value) ||
+    PERSONAL_DATA_PATTERNS.some((pattern) => pattern.test(value)) ||
+    containsParticipantWord(value)
+  ) {
     throw new Error(`Le champ GPX ${field} contient une donnée personnelle interdite.`);
   }
 

@@ -145,13 +145,14 @@ export {
   resolveActionDepartmentForPersistenceMock,
   syncActionManualParticipantsMock,
   syncActionOrganizersMock,
+  updateMock,
   recordGpxGeometryContributionIfPresentMock,
   hasGpxGeometryContributionMock,
   reconcileGeometryContributionProgressionIfNeededMock,
 };
 
-export let updateMock: ReturnType<typeof vi.fn>;
-let fromMock: ReturnType<typeof vi.fn>;
+const updateMock = vi.hoisted(() => vi.fn());
+const fromMock = vi.hoisted(() => vi.fn());
 
 export function resetPatchRouteMocks() {
   vi.resetModules();
@@ -181,7 +182,7 @@ export function resetPatchRouteMocks() {
     photos: null,
     visionEstimate: null,
   });
-  updateMock = vi.fn().mockReturnValue({
+  updateMock.mockReset().mockReturnValue({
     eq: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
         single: vi.fn().mockResolvedValue({
@@ -191,7 +192,7 @@ export function resetPatchRouteMocks() {
       }),
     }),
   });
-  fromMock = vi.fn().mockReturnValue({
+  fromMock.mockReset().mockReturnValue({
     update: updateMock,
   });
   getSupabaseServerClientMock.mockReturnValue({

@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import { zipSync } from "fflate";
 import { readFileSync } from "node:fs";
 import { assertArchiveSafe } from "./preparation-import";
+import { normalizeValue } from "./preparation-import-workbook";
 import { buildDeterministicTeamFormation, previewRosterFile, validateProposedTeamFormation } from "./preparation";
 
 function worldCupParticipants(count: number) {
@@ -347,6 +348,10 @@ describe("SPOGOMI preparation", () => {
     const preview = await previewRosterFile(new File(["Nom;Groupe\n=HYPERLINK(\"https://example.invalid\");A\n"], "formula.csv", { type: "text/csv" }));
     expect(preview.errors.some((error) => error.code === "formula_or_active_content")).toBe(true);
     expect(preview.rows).toHaveLength(0);
+  });
+
+  it("removes embedded null characters before normalizing imported cell text", () => {
+    expect(normalizeValue("Nom\u0000\tdu participant")).toBe("Nom du participant");
   });
 
   it("retains ticket diagnostics when a normalized row exceeds a bounded field limit", async () => {

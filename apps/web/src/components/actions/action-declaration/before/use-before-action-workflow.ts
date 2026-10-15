@@ -76,10 +76,20 @@ function createInitialBeforeActionForm(
   };
 }
 
+type BeforeActionPersistenceDependencies = {
+  create: typeof createAction;
+  update: typeof updateAction;
+};
+
+const DEFAULT_BEFORE_ACTION_PERSISTENCE_DEPENDENCIES: BeforeActionPersistenceDependencies = {
+  create: createAction,
+  update: updateAction,
+};
+
 export async function persistBeforeAction(
   actionId: string | null | undefined,
   payload: CreateActionPayload,
-  dependencies: { create: typeof createAction; update: typeof updateAction } = { create: createAction, update: updateAction },
+  dependencies: BeforeActionPersistenceDependencies = DEFAULT_BEFORE_ACTION_PERSISTENCE_DEPENDENCIES,
 ): Promise<{ actionId: string; created: boolean }> {
   const result = actionId ? await dependencies.update(actionId, payload) : await dependencies.create(payload);
   return { actionId: "id" in result ? result.id : result.actionId, created: !actionId };

@@ -6,7 +6,7 @@ import { ServerErrorCard } from"@/components/ui/server-error-card";
 import { buildSupportHref } from"@/lib/errors/app-errors";
 import { getSentryClientDsn } from "@/lib/observability/sentry-client";
 
-export default function Error({
+export default function ErrorPage({
  error,
  reset,
 }: {
