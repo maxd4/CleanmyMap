@@ -13,6 +13,8 @@ import {
 } from"@/lib/services/health";
 
 export const runtime ="nodejs";
+// Justification no-store: cet état d'administration reflète l'environnement
+// et l'observabilité courants ; il ne doit pas être partagé ni rester périmé.
 const SERVICE_STATUS_CACHE_HEADERS = {
  "Cache-Control": "private, no-store",
 };

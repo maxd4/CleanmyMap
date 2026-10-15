@@ -5,6 +5,7 @@ import { SpogomiEventCockpit } from "@/components/spogomi/spogomi-event-cockpit"
 import { getCurrentUserActiveRole, requireAuthenticatedAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSpogomiCapability, resolveSpogomiEventAccessBySlug } from "@/lib/spogomi/authorization";
+import { loadSpogomiFieldOperationsAccess } from "@/lib/spogomi/field-operations-service";
 
 type Props = { params: Promise<{ eventSlug: string }> };
 
@@ -22,7 +23,16 @@ export default async function SpogomiEventSpacePage({ params }: Props) {
     eventSlug,
     userId: access.userId,
   });
-  if (!eventAccess || (!hasSpogomiCapability(eventAccess, "observe") && !hasSpogomiCapability(eventAccess, "manage"))) notFound();
+  const fieldOperationsAccess = eventAccess?.event
+    ? await loadSpogomiFieldOperationsAccess({ supabase: getSupabaseServerClient(true), eventId: String(eventAccess.event.id), userId: access.userId })
+    : await (async () => {
+      const eventResult = await getSupabaseServerClient(true).from("spogomi_events").select("id").eq("event_slug", eventSlug).maybeSingle();
+      if (eventResult.error || !eventResult.data) return null;
+      return loadSpogomiFieldOperationsAccess({ supabase: getSupabaseServerClient(true), eventId: String(eventResult.data.id), userId: access.userId });
+    })();
+  if ((!eventAccess || (!hasSpogomiCapability(eventAccess, "observe") && !hasSpogomiCapability(eventAccess, "manage"))) && !fieldOperationsAccess) notFound();
+  const effectiveEvent = eventAccess?.event ?? fieldOperationsAccess?.event;
+  if (!effectiveEvent) notFound();
   const activeRole = await getCurrentUserActiveRole();
 
   return (
@@ -34,17 +44,18 @@ export default async function SpogomiEventSpacePage({ params }: Props) {
       </nav>
       <SpogomiEventCockpit
         event={{
-          id: String(eventAccess.event.id),
-          name: String(eventAccess.event.name),
-          eventSlug: eventAccess.event.event_slug,
-          mode: eventAccess.event.mode,
-          state: eventAccess.event.state,
-          startsAt: eventAccess.event.starts_at,
-          endsAt: eventAccess.event.ends_at,
-          publicVisibility: eventAccess.event.public_visibility,
+          id: String(effectiveEvent.id),
+          name: String(effectiveEvent.name),
+          eventSlug: effectiveEvent.event_slug,
+          mode: effectiveEvent.mode,
+          state: effectiveEvent.state,
+          startsAt: effectiveEvent.starts_at,
+          endsAt: effectiveEvent.ends_at,
+          publicVisibility: effectiveEvent.public_visibility,
         }}
-        role={eventAccess.role}
-        capabilities={[...eventAccess.capabilities]}
+        role={eventAccess?.role ?? null}
+        capabilities={eventAccess ? [...eventAccess.capabilities] : []}
+        fieldCapabilities={fieldOperationsAccess ? [...fieldOperationsAccess.capabilities] : []}
         activeRole={activeRole}
       />
     </>

@@ -9,6 +9,8 @@ import { loadSpogomiAttendanceProjection, setSpogomiAttendanceStatus } from "@/l
 import { hasSpogomiCapability, resolveSpogomiEventAccess } from "@/lib/spogomi/authorization";
 
 export const runtime = "nodejs";
+// Justification Vercel: le pointage relit l'accès checkin, le roster et l'état
+// de présence courant de l'événement avant chaque lecture ou mutation.
 export const dynamic = "force-dynamic";
 
 const querySchema = z.object({

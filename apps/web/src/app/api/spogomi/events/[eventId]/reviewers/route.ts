@@ -13,6 +13,7 @@ import {
   assignSpogomiCheckin,
   revokeSpogomiCheckin,
 } from "@/lib/spogomi/result-service";
+import { setSpogomiOperationalAccess } from "@/lib/spogomi/field-operations-service";
 
 export const runtime = "nodejs";
 // Justification Vercel: reviewer assignments are sensitive mutable authorization state.
@@ -20,7 +21,7 @@ export const dynamic = "force-dynamic";
 
 const reviewerSchema = z.object({
   clerkId: z.string().trim().min(3).max(128),
-  role: z.enum(["observer", "referee", "checkin"]).default("referee"),
+  role: z.enum(["observer", "referee", "checkin", "timekeeper", "weigher", "data_entry", "arbiter", "certifier"]).default("referee"),
 }).strict();
 
 export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
@@ -32,7 +33,9 @@ export async function POST(request: Request, context: { params: Promise<{ eventI
   if (!parsed.success) return validationErrorResponse({ body: ["L’identifiant ou l’habilitation SPOGOMI est invalide."] });
   try {
     const params = { supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, clerkId: parsed.data.clerkId, assignedByClerkId: access.userId };
-    const reviewer = parsed.data.role === "observer"
+    const reviewer = parsed.data.role === "timekeeper" || parsed.data.role === "weigher" || parsed.data.role === "data_entry" || parsed.data.role === "arbiter" || parsed.data.role === "certifier"
+      ? await setSpogomiOperationalAccess({ supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, clerkId: parsed.data.clerkId, role: parsed.data.role, operation: "grant", actorClerkId: access.userId })
+      : parsed.data.role === "observer"
       ? await assignSpogomiObserver(params)
       : parsed.data.role === "checkin"
         ? await assignSpogomiCheckin(params)
@@ -52,7 +55,8 @@ export async function DELETE(request: Request, context: { params: Promise<{ even
   if (!parsed.success) return validationErrorResponse({ body: ["L’identifiant ou l’habilitation SPOGOMI est invalide."] });
   try {
     const params = { supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, clerkId: parsed.data.clerkId, assignedByClerkId: access.userId };
-    if (parsed.data.role === "observer") await revokeSpogomiObserver(params);
+    if (parsed.data.role === "timekeeper" || parsed.data.role === "weigher" || parsed.data.role === "data_entry" || parsed.data.role === "arbiter" || parsed.data.role === "certifier") await setSpogomiOperationalAccess({ supabase: getSupabaseServerClient(true), eventId: (await context.params).eventId, clerkId: parsed.data.clerkId, role: parsed.data.role, operation: "revoke", actorClerkId: access.userId });
+    else if (parsed.data.role === "observer") await revokeSpogomiObserver(params);
     else if (parsed.data.role === "checkin") await revokeSpogomiCheckin(params);
     else await revokeSpogomiReferee(params);
     return NextResponse.json({ revoked: true });

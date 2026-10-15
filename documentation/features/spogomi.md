@@ -1415,8 +1415,9 @@ habilitation SPOGOMI et `activeRole` reste la source des capacités globales.
 | admin/max actif | supervision selon la capacité globale consommée, jamais selon une simple présence Clerk |
 
 `action_organizers` reste la relation canonique organisateur/coorganisateur.
-`spogomi_event_reviewers` porte les habilitations `observer` et `referee`,
-toujours limitées par `event_id`, avec révocation et audit dans
+`spogomi_event_reviewers` porte les habilitations `observer`, `referee`,
+`checkin` et les capacités terrain (`timekeeper`, `weigher`, `data_entry`,
+`arbiter`, `certifier`), toujours limitées par `event_id`, avec révocation et audit dans
 `spogomi_event_access_audit`. Une habilitation d'un événement ne s'étend jamais
 à une autre édition.
 
@@ -1446,6 +1447,42 @@ Fichiers principaux :
 - `apps/web/src/app/api/spogomi/events/[eventId]/observer/route.ts` ;
 - `apps/web/src/app/api/spogomi/events/[eventId]/reviewers/route.ts` ;
 - `apps/web/supabase/migrations/20261015000011_spogomi_event_capability_access.sql`.
+
+## 19 nonies. Opérations physiques et mesures — CURRENT
+
+Le cockpit événementiel propose une section terrain unique pour les phases par
+division, les retours d'équipe, le journal d'incidents et les mesures. Les
+horodatages du serveur, le fuseau déclaré, la provenance, l'acteur et les
+corrections sont conservés dans des historiques append-only. L'horloge du
+navigateur n'est qu'une aide d'affichage.
+
+Les opérations physiques ne remplacent pas les soumissions de résultats :
+`spogomi_operational_measurements` est une piste de mesure versionnée séparée,
+et sa décision `certified` n'entraîne ni publication de classement ni action
+CleanMyMap. Une catégorie `mass`, `count` ou `volume` conserve son unité et sa
+nature ; aucune conversion masse → nombre n'est implicite. Une mesure ne peut
+être certifiée par son propre opérateur.
+
+Une observation d'incident est distincte d'une décision d'arbitrage. Aucun
+barème, avertissement, pénalité ou disqualification n'est inventé à partir
+d'un horaire ou d'une trace : une décision doit porter une référence de règle,
+une justification et, lorsqu'il y en a une, un effet explicite. Les déchets
+collectés restent conservés même lorsqu'une équipe est disqualifiée.
+
+Les habilitations terrain sont accordées par l'organisateur au niveau de
+l'événement, révocables et auditées ; elles ne créent aucun rôle Clerk global.
+L'import Excel des mesures utilise un aperçu, un rapprochement explicite des
+équipes/catégories, le hash du fichier et une confirmation idempotente. Les
+lignes invalides restent hors sélection et l'import ne certifie jamais une
+mesure implicitement.
+
+Fichiers principaux :
+
+- `apps/web/src/lib/spogomi/field-operations-service.ts` ;
+- `apps/web/src/lib/spogomi/field-measurement-import.ts` ;
+- `apps/web/src/app/api/spogomi/events/[eventId]/field-operations/route.ts` ;
+- `apps/web/src/components/spogomi/spogomi-field-operations-panel.tsx` ;
+- `apps/web/supabase/migrations/20261015000024_spogomi_field_operations.sql`.
 
 ## 19 octies. Cloisonnement mixte — CURRENT structurel / COMPATIBILITY historique
 

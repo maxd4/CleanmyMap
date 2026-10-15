@@ -9,8 +9,10 @@ import { SpogomiPreparationWorkspace, type SpogomiPreparationWorkspaceSection } 
 import { SpogomiObserverCockpitPanel } from "./spogomi-observer-cockpit-panel";
 import { SpogomiResultReviewPanel } from "./spogomi-result-review-panel";
 import { SpogomiAttendancePanel } from "./spogomi-attendance-panel";
+import { SpogomiFieldOperationsPanel } from "./spogomi-field-operations-panel";
+import type { SpogomiFieldOperationsCapability } from "@/lib/spogomi/field-operations-service";
 
-type CockpitSection = "presentation" | SpogomiPreparationWorkspaceSection;
+type CockpitSection = "presentation" | "operations" | SpogomiPreparationWorkspaceSection;
 
 type CockpitEvent = {
   id: string;
@@ -31,6 +33,7 @@ const sectionLabels: Record<CockpitSection, string> = {
   arbitration: "Arbitrage",
   bilan: "Bilan",
   settings: "Paramètres",
+  operations: "Opérations terrain",
 };
 
 const sectionIcons = {
@@ -41,6 +44,7 @@ const sectionIcons = {
   arbitration: ShieldCheck,
   bilan: Leaf,
   settings: Settings2,
+  operations: ClipboardCheck,
 } satisfies Record<CockpitSection, typeof FileText>;
 
 function dateLabel(value: string | null): string {
@@ -54,22 +58,24 @@ function modeLabel(value: string): string {
   return "Casual";
 }
 
-export function SpogomiEventCockpit({ event, role, capabilities, activeRole }: { event: CockpitEvent; role: SpogomiEventAccessRole | null; capabilities: readonly SpogomiCapability[]; activeRole?: string | null }) {
+export function SpogomiEventCockpit({ event, role, capabilities, fieldCapabilities = [], activeRole }: { event: CockpitEvent; role: SpogomiEventAccessRole | null; capabilities: readonly SpogomiCapability[]; fieldCapabilities?: readonly SpogomiFieldOperationsCapability[]; activeRole?: string | null }) {
   const capabilitySet = useMemo(() => new Set(capabilities), [capabilities]);
   const organizer = capabilitySet.has("manage");
   const referee = capabilitySet.has("arbitrate");
   const observer = capabilitySet.has("observe");
   const checkin = capabilitySet.has("checkin");
+  const hasFieldOperations = fieldCapabilities.length > 0;
   const showAdminTeamJoinRequests = activeRole === "admin" || activeRole === "max";
   const [activeSection, setActiveSection] = useState<CockpitSection>("presentation");
   const sections = useMemo<CockpitSection[]>(() => {
     const next: CockpitSection[] = ["presentation"];
-    if (organizer) next.push("teams", "attendance", "results", "arbitration", "bilan", "settings");
+    if (organizer) next.push("teams", "attendance", "operations", "results", "arbitration", "bilan", "settings");
     else if (checkin) next.push("attendance");
     else if (referee) next.push("results", "arbitration");
     else if (observer) next.push("teams", "results");
+    if (hasFieldOperations && !next.includes("operations")) next.push("operations");
     return next;
-  }, [checkin, observer, organizer, referee]);
+  }, [checkin, hasFieldOperations, observer, organizer, referee]);
 
   useEffect(() => {
     const syncFromHash = () => {
@@ -91,6 +97,7 @@ export function SpogomiEventCockpit({ event, role, capabilities, activeRole }: {
       <section id="presentation" hidden={activeSection !== "presentation"} aria-labelledby="spogomi-presentation-title"><CmmCard tone="slate" variant="glass" className="space-y-3 p-5"><h2 id="spogomi-presentation-title" className="cmm-text-h3">Présentation</h2><dl className="grid gap-3 text-sm text-slate-800 sm:grid-cols-2"><div><dt className="font-bold">Statut</dt><dd>{event.state}</dd></div><div><dt className="font-bold">Mode</dt><dd>{modeLabel(event.mode)}</dd></div><div><dt className="font-bold">Début</dt><dd>{dateLabel(event.startsAt)}</dd></div><div><dt className="font-bold">Fin</dt><dd>{dateLabel(event.endsAt)}</dd></div></dl>{event.eventSlug && event.publicVisibility === "published" ? <a className="inline-flex min-h-11 items-center gap-2 font-black text-emerald-800 hover:underline" href={`/spogomi/${encodeURIComponent(event.eventSlug)}`}>Voir la fiche publique <Eye size={16} aria-hidden="true" /></a> : null}</CmmCard></section>
       {sections.includes("teams") ? <section id="teams" hidden={activeSection !== "teams"} aria-labelledby="spogomi-teams-title"><h2 id="spogomi-teams-title" className="sr-only">Équipes</h2>{activeSection === "teams" ? (organizer ? <SpogomiPreparationWorkspace eventId={event.id} section="teams" showHeader={false} /> : <SpogomiObserverCockpitPanel eventId={event.id} view="teams" />) : null}</section> : null}
       {sections.includes("attendance") ? <section id="attendance" hidden={activeSection !== "attendance"} aria-labelledby="spogomi-attendance-title"><h2 id="spogomi-attendance-title" className="sr-only">Accueil et présences</h2>{activeSection === "attendance" ? (organizer ? <SpogomiPreparationWorkspace eventId={event.id} section="attendance" showHeader={false} /> : <SpogomiAttendancePanel eventId={event.id} />) : null}</section> : null}
+      {sections.includes("operations") ? <section id="operations" hidden={activeSection !== "operations"} aria-labelledby="spogomi-operations-title"><h2 id="spogomi-operations-title" className="sr-only">Opérations terrain</h2>{activeSection === "operations" ? <SpogomiFieldOperationsPanel eventId={event.id} capabilities={fieldCapabilities} /> : null}</section> : null}
       {sections.includes("results") ? <section id="results" hidden={activeSection !== "results"} aria-labelledby="spogomi-results-title"><h2 id="spogomi-results-title" className="sr-only">Résultats</h2>{activeSection === "results" ? (organizer ? <SpogomiPreparationWorkspace eventId={event.id} section="results" showHeader={false} /> : <SpogomiObserverCockpitPanel eventId={event.id} view="results" />) : null}</section> : null}
       {sections.includes("arbitration") ? <section id="arbitration" hidden={activeSection !== "arbitration"} aria-labelledby="spogomi-arbitration-title"><h2 id="spogomi-arbitration-title" className="sr-only">Arbitrage</h2>{activeSection === "arbitration" ? (organizer ? <SpogomiPreparationWorkspace eventId={event.id} section="arbitration" showHeader={false} /> : <CmmCard tone="emerald" variant="glass" className="space-y-4 p-5"><SpogomiResultReviewPanel eventId={event.id} allowMutations={referee} allowDivisionSelection /></CmmCard>) : null}</section> : null}
       {sections.includes("bilan") ? <section id="bilan" hidden={activeSection !== "bilan"} aria-labelledby="spogomi-bilan-title"><h2 id="spogomi-bilan-title" className="sr-only">Bilan</h2>{activeSection === "bilan" ? <SpogomiPreparationWorkspace eventId={event.id} section="bilan" showHeader={false} /> : null}</section> : null}

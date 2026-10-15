@@ -12,6 +12,8 @@ import {
 } from "@/lib/spogomi/admission-requests";
 
 export const runtime = "nodejs";
+// Justification Vercel: la file de demandes et ses décisions dépendent du
+// rôle admin|max courant et de l'état transactionnel de l'événement.
 export const dynamic = "force-dynamic";
 
 const paramsSchema = z.object({ eventId: z.string().uuid() });
@@ -50,6 +52,8 @@ export async function GET(request: Request, context: { params: Promise<{ eventId
   if (!parsed.success) return validationErrorResponse({ params: ["Événement invalide."] });
   try {
     const requests = await listSpogomiAdmissionRequestsForAdmin(getSupabaseServerClient(true), parsed.data.eventId);
+    // Justification no-store: la projection d'administration est privée et
+    // doit rester fraîche après chaque transition de demande.
     return NextResponse.json({ status: "ok", requests }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return errorResponse(error);

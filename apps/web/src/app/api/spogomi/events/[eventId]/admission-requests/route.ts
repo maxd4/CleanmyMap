@@ -13,6 +13,8 @@ import {
 } from "@/lib/spogomi/admission-requests";
 
 export const runtime = "nodejs";
+// Justification Vercel: les demandes d'inscription et de régularisation sont
+// authentifiées, liées au demandeur et à l'état courant de l'événement.
 export const dynamic = "force-dynamic";
 
 const paramsSchema = z.object({ eventId: z.string().uuid() });
@@ -50,6 +52,8 @@ export async function GET(request: Request, context: { params: Promise<{ eventId
       eventId: parsed.data.eventId,
       requesterClerkId: authentication.access.userId,
     });
+    // Justification no-store: cette projection privée ne doit jamais être
+    // réutilisée entre demandeurs ni après une transition de demande.
     return NextResponse.json({ status: "ok", requests }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return errorResponse(error);

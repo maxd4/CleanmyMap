@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-12T00:00:00.000Z",
-  "apiRouteCount": 154,
+  "generatedAt": "2026-10-15T16:39:22.000Z",
+  "apiRouteCount": 166,
   "changeJustification": {
     "route": "apps/web/src/app/api/actions/account-options/route.ts",
     "introducedBy": "d90ee41e20ae7c1c654799867ba0c46c7d7ca4ce",
@@ -99,6 +99,27 @@
       "reason": "Projection publique bornée des résultats SPOGOMI publiés, sans roster privé ni métriques d'équipes indisponibles.",
       "costContract": "Lecture GET publicOnly/no-store et force-dynamic ; chaque valeur numérique est absente lorsque le statut n'est ni provisoire explicitement publié ni couvert par une décision certifiée courante.",
       "reviewedAt": "2026-10-12"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/admission-requests/route.ts",
+      "introducedBy": "706351866acc59e146c0dae8ceabce36b4816cb5",
+      "reason": "Surface authentifiée des demandes SPOGOMI de registration et de régularisation de présence, avec projection limitée au demandeur et transitions serveur canoniques.",
+      "costContract": "GET, POST et DELETE bornés à un eventId UUID et à l'identité Clerk courante, avec rate limit de 8 requêtes par minute par utilisateur ; requestKind limité à registration/presence_regularization, divisionId et teamId UUID, contexte limité à 1200 caractères ; le GET reste private/no-store et les réponses personnelles n'exposent ni roster ni notes internes.",
+      "reviewedAt": "2026-10-15"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/admission-requests/review/route.ts",
+      "introducedBy": "706351866acc59e146c0dae8ceabce36b4816cb5",
+      "reason": "Surface d'administration des demandes SPOGOMI, réservée aux rôles actifs admin|max pour consulter la file et enregistrer une décision auditée.",
+      "costContract": "GET et PATCH bornés à un eventId UUID, aux rôles actifs admin|max et à un rate limit de 30 requêtes par minute par utilisateur ; requestId UUID, décision approved/rejected, note de vérification de 10 à 1200 caractères lorsqu'une approbation est demandée, autres notes limitées à 1200 caractères ; le GET reste private/no-store et la projection inclut les seules données d'administration autorisées.",
+      "reviewedAt": "2026-10-15"
+    },
+    {
+      "route": "apps/web/src/app/api/spogomi/events/[eventId]/attendance/route.ts",
+      "introducedBy": "1de7594128a4b7ff4635c507e4f504d4bc6cdac4",
+      "reason": "Surface privée et paginée de pointage SPOGOMI, réservée à la capacité checkin et séparée des inscriptions, équipes et certifications.",
+      "costContract": "GET borné à un eventId UUID, une division UUID facultative, une recherche de 80 caractères, une page jusqu'à 10000 et une pageSize de 1 à 100 (25 par défaut) ; POST limité à 120 requêtes par minute par utilisateur authentifié, avec participantId/divisionId UUID, statut borné, motif de 500 caractères et provenance de 120 caractères ; la RPC verrouille l'événement et le participant, contrôle expectedUpdatedAt et journalise l'acteur, le motif et la provenance.",
+      "reviewedAt": "2026-10-15"
     }
   ],
   "apiRoutes": [
@@ -225,6 +246,9 @@
     "apps/web/src/app/api/signalements/me/route.ts",
     "apps/web/src/app/api/spogomi/certificates/[certificateReference]/route.ts",
     "apps/web/src/app/api/spogomi/certificates/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/admission-requests/review/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/admission-requests/route.ts",
+    "apps/web/src/app/api/spogomi/events/[eventId]/attendance/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/consolidation/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/contributions/route.ts",
     "apps/web/src/app/api/spogomi/events/[eventId]/export.xlsx/route.ts",
