@@ -9,6 +9,22 @@ const resumeSpogomiIdentityParticipationMock = vi.hoisted(() => vi.fn());
 const loadSpogomiEventRecognitionForUserMock = vi.hoisted(() => vi.fn());
 const loadAssistanceRequestMock = vi.hoisted(() => vi.fn());
 const createAssistanceRequestMock = vi.hoisted(() => vi.fn());
+const IdentityLinkErrorMock = vi.hoisted(() => class extends Error {
+  kind: "already_linked" | "not_found" | "invalid";
+
+  constructor(message: string, kind: "already_linked" | "not_found" | "invalid") {
+    super(message);
+    this.kind = kind;
+  }
+});
+const IdentityAssistanceErrorMock = vi.hoisted(() => class extends Error {
+  kind: "unavailable" | "conflict" | "invalid";
+
+  constructor(message: string, kind: "unavailable" | "conflict" | "invalid") {
+    super(message);
+    this.kind = kind;
+  }
+});
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: requireAuthenticatedAccessMock }));
 vi.mock("@/lib/rate-limit/server", () => ({ enforceServerRateLimitForAuthenticatedUser: enforceRateLimitMock }));
@@ -17,7 +33,7 @@ vi.mock("@/lib/spogomi/identity-link", () => ({
   claimSpogomiIdentityLink: claimSpogomiIdentityLinkMock,
   loadSpogomiIdentityState: loadSpogomiIdentityStateMock,
   resumeSpogomiIdentityParticipation: resumeSpogomiIdentityParticipationMock,
-  SpogomiIdentityLinkError: class SpogomiIdentityLinkError extends Error {},
+  SpogomiIdentityLinkError: IdentityLinkErrorMock,
 }));
 vi.mock("@/lib/spogomi/recognition-service", () => ({
   loadSpogomiEventRecognitionForUser: loadSpogomiEventRecognitionForUserMock,
@@ -25,7 +41,7 @@ vi.mock("@/lib/spogomi/recognition-service", () => ({
 vi.mock("@/lib/spogomi/identity-assistance", () => ({
   loadSpogomiIdentityAssistanceRequestForRequester: loadAssistanceRequestMock,
   createSpogomiIdentityAssistanceRequest: createAssistanceRequestMock,
-  SpogomiIdentityAssistanceError: class SpogomiIdentityAssistanceError extends Error {},
+  SpogomiIdentityAssistanceError: IdentityAssistanceErrorMock,
 }));
 
 vi.mock("@/lib/http/auth-responses", () => ({
@@ -35,6 +51,11 @@ vi.mock("@/lib/http/api-errors", () => ({
   handleApiError: () => new Response(JSON.stringify({ error: "Internal error" }), { status: 500 }),
   validationErrorResponse: (details: unknown) => new Response(JSON.stringify({ error: details }), { status: 400 }),
 }));
+
+function requireResponse(response: Response | undefined): Response {
+  if (!response) throw new Error("Expected a response");
+  return response;
+}
 
 describe("SPOGOMI identity-link recovery route", () => {
   beforeEach(() => {
@@ -178,5 +199,70 @@ describe("SPOGOMI identity-link recovery route", () => {
     }));
     expect(claimSpogomiIdentityLinkMock).not.toHaveBeenCalled();
     expect(resumeSpogomiIdentityParticipationMock).not.toHaveBeenCalled();
+  });
+
+  it("stops a rate-limited account and malformed bodies before identity services", async () => {
+    enforceRateLimitMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 }));
+    const { POST } = await import("./route");
+    const limited = requireResponse(await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({}) }), { params: Promise.resolve({ eventId: "event-1" }) }));
+    expect(limited.status).toBe(429);
+    expect(resumeSpogomiIdentityParticipationMock).not.toHaveBeenCalled();
+
+    const malformed = requireResponse(await POST(new Request("http://localhost", { method: "POST", body: "not-json" }), { params: Promise.resolve({ eventId: "event-1" }) }));
+    expect(malformed.status).toBe(400);
+    expect(claimSpogomiIdentityLinkMock).not.toHaveBeenCalled();
+
+    const conflicting = requireResponse(await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ code: "SPOGOMI-1234567890123456", assistance: true }) }), { params: Promise.resolve({ eventId: "event-1" }) }));
+    expect(conflicting.status).toBe(400);
+    expect(createAssistanceRequestMock).not.toHaveBeenCalled();
+  });
+
+  it("does not query recognition when the identity has no participant", async () => {
+    loadSpogomiIdentityStateMock.mockResolvedValueOnce({
+      state: "unmatched",
+      participantId: null,
+      actionId: null,
+      attendanceStatus: null,
+      participation: { status: "not_requested", store: "action_registrations" },
+    });
+    const { GET } = await import("./route");
+    const response = requireResponse(await GET(new Request("http://localhost"), { params: Promise.resolve({ eventId: "event-1" }) }));
+    expect(response.status).toBe(200);
+    expect(loadSpogomiEventRecognitionForUserMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["already_linked", 409],
+    ["not_found", 404],
+    ["invalid", 400],
+  ] as const)("maps identity-link %s failures to HTTP %s", async (kind, status) => {
+    claimSpogomiIdentityLinkMock.mockRejectedValueOnce(new IdentityLinkErrorMock("link failure", kind));
+    const { POST } = await import("./route");
+    const response = requireResponse(await POST(new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({ code: "SPOGOMI-1234567890123456" }),
+    }), { params: Promise.resolve({ eventId: "event-1" }) }));
+    expect(response.status).toBe(status);
+  });
+
+  it.each([
+    ["unavailable", 404],
+    ["conflict", 409],
+    ["invalid", 400],
+  ] as const)("maps assistance %s failures to HTTP %s", async (kind, status) => {
+    createAssistanceRequestMock.mockRejectedValueOnce(new IdentityAssistanceErrorMock("assistance failure", kind));
+    const { POST } = await import("./route");
+    const response = requireResponse(await POST(new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({ assistance: true }),
+    }), { params: Promise.resolve({ eventId: "event-1" }) }));
+    expect(response.status).toBe(status);
+  });
+
+  it("keeps unexpected identity failures behind the generic API error", async () => {
+    resumeSpogomiIdentityParticipationMock.mockRejectedValueOnce(new Error("database detail"));
+    const { POST } = await import("./route");
+    const response = requireResponse(await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({}) }), { params: Promise.resolve({ eventId: "event-1" }) }));
+    expect(response.status).toBe(500);
   });
 });
