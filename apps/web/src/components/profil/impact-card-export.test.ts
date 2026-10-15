@@ -78,6 +78,15 @@ describe("impact card export", () => {
     expect(result.file.type).toBe("image/png");
   });
 
+  it("normalise les séparateurs avant de limiter le nom du fichier", async () => {
+    installBrowserStubs();
+    toPngMock.mockResolvedValueOnce(pngDataUrl);
+
+    const result = await generateImpactCardPng(`${"-".repeat(100)}Rapport${"-".repeat(100)}`);
+
+    expect(result.filename).toBe("CleanMyMap-Impact-Rapport.png");
+  });
+
   it("déclenche effectivement le téléchargement du PNG", () => {
     const anchor = createAnchor();
     installBrowserStubs({ anchor });

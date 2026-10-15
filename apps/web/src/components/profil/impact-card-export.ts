@@ -20,17 +20,14 @@ export type ImpactCardPng = {
 };
 
 function normalizeFilenamePart(name: string | undefined): string {
-  let normalized = (name ?? "")
+  const normalized = (name ?? "")
     .trim()
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9_-]+/g, "-")
-    .slice(0, 80);
+    .replace(/^-+|-+$/g, "");
 
-  while (normalized.startsWith("-")) normalized = normalized.slice(1);
-  while (normalized.endsWith("-")) normalized = normalized.slice(0, -1);
-
-  return normalized || IMPACT_CARD_FALLBACK_NAME;
+  return (normalized || IMPACT_CARD_FALLBACK_NAME).slice(0, 80);
 }
 
 function dataUrlToBlob(dataUrl: string): Blob {

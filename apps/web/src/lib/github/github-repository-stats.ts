@@ -125,8 +125,8 @@ async function fetchPaginatedArray<T>(
         if (start < 0) break;
         const end = linkHeader.indexOf(">", start + 1);
         if (end < 0) break;
-        const relation = linkHeader.slice(end + 1).split(",", 1)[0]?.trim();
-        if (relation === '; rel="next"') {
+        const relation = linkHeader.slice(end + 1).split(",", 1)[0] ?? "";
+        if (/^;\s*rel="next"\s*$/.test(relation)) {
           nextUrl = linkHeader.slice(start + 1, end);
           break;
         }

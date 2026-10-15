@@ -38,36 +38,50 @@ def find_col(columns, key):
 def extract_coords(text):
     if not text or pd.isna(text): return None, None
     value = str(text)
-    for index, character in enumerate(value):
-        if character not in '+-' and not character.isdigit() and character != '.':
-            continue
-        cursor = index
-        if value[cursor] in '+-': cursor += 1
-        digits = cursor
-        while cursor < len(value) and value[cursor].isdigit(): cursor += 1
+    def read_number(start):
+        cursor = start
+        if cursor < len(value) and value[cursor] in '+-':
+            cursor += 1
+        integer_start = cursor
+        while cursor < len(value) and value[cursor].isdigit():
+            cursor += 1
+        has_integer = cursor > integer_start
+        has_fraction = False
         if cursor < len(value) and value[cursor] == '.':
             cursor += 1
-            fraction = cursor
-            while cursor < len(value) and value[cursor].isdigit(): cursor += 1
-            if cursor == fraction: continue
-        if cursor == digits: continue
-        first_end = cursor
+            fraction_start = cursor
+            while cursor < len(value) and value[cursor].isdigit():
+                cursor += 1
+            has_fraction = cursor > fraction_start
+            if not has_fraction:
+                return None
+        if not has_integer and not has_fraction:
+            return None
+        return cursor
+
+    index = 0
+    while index < len(value):
+        if value[index] not in '+-' and not value[index].isdigit() and value[index] != '.':
+            index += 1
+            continue
+        first_end = read_number(index)
+        if first_end is None:
+            index += 1
+            continue
+        cursor = first_end
         while cursor < len(value) and value[cursor].isspace(): cursor += 1
-        if cursor >= len(value) or value[cursor] not in ',;': continue
+        if cursor >= len(value) or value[cursor] not in ',;':
+            index = max(first_end, cursor)
+            continue
         cursor += 1
         while cursor < len(value) and value[cursor].isspace(): cursor += 1
         second_start = cursor
-        if cursor < len(value) and value[cursor] in '+-': cursor += 1
-        second_digits = cursor
-        while cursor < len(value) and value[cursor].isdigit(): cursor += 1
-        if cursor < len(value) and value[cursor] == '.':
-            cursor += 1
-            fraction = cursor
-            while cursor < len(value) and value[cursor].isdigit(): cursor += 1
-            if cursor == fraction: continue
-        if cursor == second_digits: continue
+        second_end = read_number(second_start)
+        if second_end is None:
+            index = max(first_end, second_start + 1)
+            continue
         try:
-            return float(value[index:first_end]), float(value[second_start:cursor])
+            return float(value[index:first_end]), float(value[second_start:second_end])
         except (TypeError, ValueError):
             return None, None
     return None, None

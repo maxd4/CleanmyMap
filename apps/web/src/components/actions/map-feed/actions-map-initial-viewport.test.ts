@@ -251,6 +251,7 @@ describe("actions map initial viewport", () => {
       "selected-paris-action",
       "sibling-paris-action",
     ]);
+    expect(mapItemCityLabel(buildItem({ location_label: "75001Paris" }))).toBeNull();
   });
 
   it("does not split Paris 15e and Paris 20e from communeZoneLabel", async () => {

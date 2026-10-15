@@ -64,6 +64,7 @@ function extractPostalCity(value: string): string | null {
     const postalCode = value.slice(index, index + 5);
     if (!/^\d{5}$/.test(postalCode)) continue;
     if (index > 0 && /[\w]/u.test(value[index - 1] ?? "")) continue;
+    if (!/\s/u.test(value[index + 5] ?? "")) continue;
     let cityStart = index + 5;
     while (/\s/u.test(value[cityStart] ?? "")) cityStart += 1;
     let cityEnd = cityStart;

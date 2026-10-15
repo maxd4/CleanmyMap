@@ -258,86 +258,152 @@ export function parseCoordsFromText(raw) {
 
 function readCoordinateNumber(value, start) {
   let cursor = start;
-  while (/\s/.test(value[cursor] ?? "")) cursor += 1;
   const numberStart = cursor;
-  if (value[cursor] === "-") cursor += 1;
+  if (value[cursor] === "-" && isAsciiDigit(value[cursor + 1])) cursor += 1;
   const integerStart = cursor;
-  while (cursor < value.length && value.charCodeAt(cursor) >= 48 && value.charCodeAt(cursor) <= 57) cursor += 1;
+  while (cursor < value.length && isAsciiDigit(value[cursor])) cursor += 1;
   if (cursor === integerStart) return null;
   if (value[cursor] === ".") {
     cursor += 1;
     const fractionStart = cursor;
-    while (cursor < value.length && value.charCodeAt(cursor) >= 48 && value.charCodeAt(cursor) <= 57) cursor += 1;
+    while (cursor < value.length && isAsciiDigit(value[cursor])) cursor += 1;
     if (cursor === fractionStart) return null;
   }
   return { value: Number(value.slice(numberStart, cursor)), end: cursor };
 }
 
 function findDecimalCoordinatePair(value) {
-  for (let index = 0; index < value.length; index += 1) {
+  let index = 0;
+  while (index < value.length) {
+    const startsNumber =
+      (isAsciiDigit(value[index]) && !isAsciiDigit(value[index - 1])) ||
+      (value[index] === "-" && isAsciiDigit(value[index + 1]));
+    if (!startsNumber) {
+      index += 1;
+      continue;
+    }
     const first = readCoordinateNumber(value, index);
-    if (!first) continue;
+    if (!first) {
+      index += 1;
+      continue;
+    }
     let separator = first.end;
-    const hadWhitespace = /\s/.test(value[separator] ?? "");
-    while (/\s/.test(value[separator] ?? "")) separator += 1;
-    if (!hadWhitespace && ![",", ";"].includes(value[separator] ?? "")) continue;
+    const hadWhitespace = isWhitespace(value[separator]);
+    while (isWhitespace(value[separator])) separator += 1;
+    if (!hadWhitespace && ![",", ";"].includes(value[separator] ?? "")) {
+      index = first.end;
+      continue;
+    }
     if (value[separator] === "," || value[separator] === ";") separator += 1;
+    while (isWhitespace(value[separator])) separator += 1;
     const second = readCoordinateNumber(value, separator);
     if (second) return [first.value, second.value];
+    index = Math.max(first.end, separator);
   }
   return null;
 }
 
 function findDmsCoordinateParts(value) {
-  const readUnsigned = (start, decimal = false) => {
-    let cursor = start;
-    const integerStart = cursor;
-    while (cursor < value.length && /[0-9]/.test(value[cursor])) cursor += 1;
-    if (cursor === integerStart) return null;
-    if (decimal && value[cursor] === ".") {
-      cursor += 1;
-      const fractionStart = cursor;
-      while (cursor < value.length && /[0-9]/.test(value[cursor])) cursor += 1;
-      if (cursor === fractionStart) return null;
+  const digitRuns = [];
+  let scan = 0;
+  while (scan < value.length) {
+    if (!isAsciiDigit(value[scan])) {
+      scan += 1;
+      continue;
     }
-    return { value: Number(value.slice(start, cursor)), end: cursor };
+    const start = scan;
+    while (scan < value.length && isAsciiDigit(value[scan])) scan += 1;
+    digitRuns.push({ start, end: scan, value: Number(value.slice(start, scan)) });
+  }
+
+  const readUnsigned = (tokenIndex, decimal = false) => {
+    const token = digitRuns[tokenIndex];
+    if (!token) return null;
+    const fraction = digitRuns[tokenIndex + 1];
+    if (decimal && value[token.end] === "." && fraction?.start === token.end + 1) {
+      return {
+        value: Number(value.slice(token.start, fraction.end)),
+        end: fraction.end,
+        tokenIndex: tokenIndex + 1,
+      };
+    }
+    return { value: token.value, end: token.end, tokenIndex };
   };
-  const consume = (start, predicate, required = true) => {
-    let cursor = start;
-    while (cursor < value.length && predicate(value[cursor])) cursor += 1;
-    return cursor === start && required ? null : cursor;
+
+  const consumeSeparator = (number, predicate) => {
+    const nextToken = digitRuns[number.tokenIndex + 1];
+    if (!nextToken) return null;
+    let cursor = number.end;
+    while (cursor < nextToken.start && predicate(value[cursor])) cursor += 1;
+    return cursor === nextToken.start ? number.tokenIndex + 1 : null;
   };
-  for (let index = 0; index < value.length; index += 1) {
-    const latitudeDegrees = readUnsigned(index);
-    if (!latitudeDegrees) continue;
-    let cursor = consume(latitudeDegrees.end, (character) => character === "°" || /\s/.test(character));
-    if (cursor === null) continue;
-    const latitudeMinutes = readUnsigned(cursor);
-    if (!latitudeMinutes) continue;
-    cursor = consume(latitudeMinutes.end, (character) => character === "'" || /\s/.test(character));
-    if (cursor === null) continue;
-    const latitudeSeconds = readUnsigned(cursor, true);
-    if (!latitudeSeconds) continue;
-    cursor = consume(latitudeSeconds.end, (character) => character === '"' || /\s/.test(character), false);
-    const latitudeDirection = value[cursor]?.toUpperCase();
-    if (!["N", "S"].includes(latitudeDirection)) continue;
-    cursor = consume(cursor + 1, (character) => /\s/.test(character), false);
-    const longitudeDegrees = readUnsigned(cursor);
-    if (!longitudeDegrees) continue;
-    cursor = consume(longitudeDegrees.end, (character) => character === "°" || /\s/.test(character));
-    if (cursor === null) continue;
-    const longitudeMinutes = readUnsigned(cursor);
-    if (!longitudeMinutes) continue;
-    cursor = consume(longitudeMinutes.end, (character) => character === "'" || /\s/.test(character));
-    if (cursor === null) continue;
-    const longitudeSeconds = readUnsigned(cursor, true);
-    if (!longitudeSeconds) continue;
-    cursor = consume(longitudeSeconds.end, (character) => character === '"' || /\s/.test(character), false);
-    const longitudeDirection = value[cursor]?.toUpperCase();
-    if (!["E", "W"].includes(longitudeDirection)) continue;
-    return { latitudeDegrees: latitudeDegrees.value, latitudeMinutes: latitudeMinutes.value, latitudeSeconds: latitudeSeconds.value, latitudeDirection, longitudeDegrees: longitudeDegrees.value, longitudeMinutes: longitudeMinutes.value, longitudeSeconds: longitudeSeconds.value, longitudeDirection };
+
+  const consumeDirection = (number, directionSet, requiresNextToken = true) => {
+    let cursor = number.end;
+    while (value[cursor] === '"' || isWhitespace(value[cursor])) cursor += 1;
+    const direction = value[cursor]?.toUpperCase();
+    if (!directionSet.includes(direction)) return null;
+    cursor += 1;
+    while (isWhitespace(value[cursor])) cursor += 1;
+    const nextToken = digitRuns[number.tokenIndex + 1];
+    if (!requiresNextToken) return { direction, tokenIndex: number.tokenIndex };
+    if (!nextToken || nextToken.start !== cursor) return null;
+    return { direction, tokenIndex: number.tokenIndex + 1 };
+  };
+
+  for (let tokenIndex = 0; tokenIndex < digitRuns.length; tokenIndex += 1) {
+    const latitudeDegrees = readUnsigned(tokenIndex);
+    const latitudeMinutesIndex = consumeSeparator(
+      latitudeDegrees,
+      (character) => character === "°" || isWhitespace(character),
+    );
+    if (latitudeMinutesIndex === null) continue;
+    const latitudeMinutes = readUnsigned(latitudeMinutesIndex);
+    const latitudeSecondsIndex = consumeSeparator(
+      latitudeMinutes,
+      (character) => character === "'" || isWhitespace(character),
+    );
+    if (latitudeSecondsIndex === null) continue;
+    const latitudeSeconds = readUnsigned(latitudeSecondsIndex, true);
+    const latitudeDirection = consumeDirection(latitudeSeconds, ["N", "S"]);
+    if (!latitudeDirection) continue;
+    const longitudeDegrees = readUnsigned(latitudeDirection.tokenIndex);
+    const longitudeMinutesIndex = consumeSeparator(
+      longitudeDegrees,
+      (character) => character === "°" || isWhitespace(character),
+    );
+    if (longitudeMinutesIndex === null) continue;
+    const longitudeMinutes = readUnsigned(longitudeMinutesIndex);
+    const longitudeSecondsIndex = consumeSeparator(
+      longitudeMinutes,
+      (character) => character === "'" || isWhitespace(character),
+    );
+    if (longitudeSecondsIndex === null) continue;
+    const longitudeSeconds = readUnsigned(longitudeSecondsIndex, true);
+    const longitudeDirection = consumeDirection(longitudeSeconds, ["E", "W"], false);
+    if (!longitudeDirection) continue;
+    return {
+      latitudeDegrees: latitudeDegrees.value,
+      latitudeMinutes: latitudeMinutes.value,
+      latitudeSeconds: latitudeSeconds.value,
+      latitudeDirection: latitudeDirection.direction,
+      longitudeDegrees: longitudeDegrees.value,
+      longitudeMinutes: longitudeMinutes.value,
+      longitudeSeconds: longitudeSeconds.value,
+      longitudeDirection: longitudeDirection.direction,
+    };
   }
   return null;
+}
+
+function isAsciiDigit(value) {
+  if (typeof value !== "string") return false;
+  const code = value.charCodeAt(0);
+  return code >= 48 && code <= 57;
+}
+
+function isWhitespace(value) {
+  return typeof value === "string" && /\s/.test(value);
 }
 
 async function sleep(ms) {
@@ -374,11 +440,17 @@ export function normalizeGeocodeLabel(rawAddress) {
 }
 
 function containsEmailLikePattern(value) {
-  for (let at = value.indexOf("@"); at >= 0; at = value.indexOf("@", at + 1)) {
-    let start = at - 1;
-    while (start >= 0 && !/\s/.test(value[start])) start -= 1;
-    const end = (() => { let cursor = at + 1; while (cursor < value.length && !/\s/.test(value[cursor])) cursor += 1; return cursor; })();
-    if (start < at - 1 && value.slice(at + 1, end).includes(".")) return true;
+  let segmentStart = 0;
+  for (let index = 0; index <= value.length; index += 1) {
+    if (index < value.length && !isWhitespace(value[index])) continue;
+    let hasDotAfter = false;
+    for (let cursor = index - 1; cursor >= segmentStart; cursor -= 1) {
+      if (value[cursor] === ".") hasDotAfter = true;
+      if (value[cursor] === "@" && cursor > segmentStart && cursor < index - 1 && hasDotAfter) {
+        return true;
+      }
+    }
+    segmentStart = index + 1;
   }
   return false;
 }

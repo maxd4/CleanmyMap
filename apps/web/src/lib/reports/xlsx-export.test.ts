@@ -19,4 +19,13 @@ describe("SPOGOMI XLSX export", () => {
   it("creates a deterministic safe filename", () => {
     expect(safeXlsxFilename("SPOGOMI — Paris 2026")).toBe("SPOGOMI-Paris-2026.xlsx");
   });
+
+  it("strips border separators before applying the length limit", () => {
+    expect(safeXlsxFilename(`${"-".repeat(100)}Rapport${"-".repeat(100)}`)).toBe(
+      "Rapport.xlsx",
+    );
+    expect(safeXlsxFilename(`${"-".repeat(100)}${"a".repeat(100)}`)).toBe(
+      `${"a".repeat(80)}.xlsx`,
+    );
+  });
 });
