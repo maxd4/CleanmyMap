@@ -234,7 +234,7 @@ const summaryRows = [
   ["Clerk", String(clerkUsages.length), clerkUsages.length > 5 ? "élevé" : "moyen", middlewareFiles.length > 0 ? "moyen" : "faible", "faible"],
   ["Supabase", String(supabaseUsages.length), supabaseUsages.length > 8 ? "élevé" : "moyen", "faible", supabaseUsages.length > 0 ? "moyen" : "faible"],
   ["PostHog", String(posthogUsages.length), posthogUsages.length > 0 ? "moyen" : "faible", "faible", posthogUsages.length > 0 ? "moyen" : "faible"],
-  ["Sentry", String(sentryUsages.length), "faible", "faible", sentryUsages.length > 0 ? "faible" : "faible"],
+  ["Sentry", String(sentryUsages.length), "faible", "faible", "faible"],
   ["Leaflet", String(leafletUsages.length), "faible", "faible", leafletUsages.length > 0 ? "élevé" : "faible"],
 ];
 

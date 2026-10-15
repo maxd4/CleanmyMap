@@ -149,7 +149,7 @@ export function collectBoundedStartEvidence({
 
   return {
     schemaVersion: 1,
-    evidenceCodes: [...new Set(evidenceCodes)].sort(),
+    evidenceCodes: [...new Set(evidenceCodes)].sort((left, right) => left.localeCompare(right, "en")),
     dockerCommandAvailable: dockerVersion.available,
     dockerDaemonAvailable: dockerDaemon.available,
     supabaseCliAvailable: supabaseCli.available,

@@ -133,8 +133,9 @@ function parseDrawingFromGeoJson(geojson, kindHint = null) {
   try {
     const parsed = JSON.parse(geojson);
     if (!parsed || typeof parsed !== "object") return null;
-    const isLine = parsed.type === "LineString" || kindHint === "polyline";
-    const isPolygon = parsed.type === "Polygon" || kindHint === "polygon";
+    const geometryType = typeof parsed.type === "string" ? parsed.type : null;
+    const isLine = geometryType === "LineString" || kindHint === "polyline";
+    const isPolygon = geometryType === "Polygon" || kindHint === "polygon";
     if (!isLine && !isPolygon) return null;
     const points = isPolygon ? parsed.coordinates?.[0] : parsed.coordinates;
     if (!Array.isArray(points)) return null;

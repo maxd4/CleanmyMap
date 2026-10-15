@@ -157,7 +157,7 @@ function materializeCandidate(repositoryRoot, candidateRef, scripts) {
 function fingerprintCandidateTree(candidateTreeRoot, trackedPaths) {
   const hash = createHash("sha256");
 
-  for (const relativePath of [...trackedPaths].sort()) {
+  for (const relativePath of [...trackedPaths].sort((left, right) => left.localeCompare(right, "en"))) {
     const absolutePath = path.join(candidateTreeRoot, ...relativePath.split("/"));
     let descriptor;
     try {

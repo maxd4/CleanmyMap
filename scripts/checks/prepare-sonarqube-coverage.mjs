@@ -382,7 +382,7 @@ function readProducerResults(directory, { analyzedSha, runId }) {
     }
   };
 
-  for (const fileName of fs.readdirSync(directory).filter((candidate) => candidate.endsWith(".json")).sort()) {
+  for (const fileName of fs.readdirSync(directory).filter((candidate) => candidate.endsWith(".json")).sort((left, right) => left.localeCompare(right, "en"))) {
     const filePath = path.join(directory, fileName);
     const fileScope = resultScopeFromFile(fileName);
     let result = null;

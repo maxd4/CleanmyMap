@@ -46,4 +46,7 @@ async function runSmokeTests() {
   }
 }
 
-runSmokeTests();
+runSmokeTests().catch((error) => {
+  console.error("❌ Smoke checks failed:", error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+});

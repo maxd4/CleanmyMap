@@ -76,7 +76,7 @@ export function findForbiddenRootDirectories(rootDirectories) {
   const allowed = new Set(allowedRootDirectories);
   return rootDirectories
     .filter((directory) => !allowed.has(directory))
-    .sort();
+    .sort((left, right) => left.localeCompare(right, "en"));
 }
 
 export function findForbiddenTrackedPaths(trackedFiles) {
@@ -94,7 +94,7 @@ export function listTrackedWorktreeFiles(repositoryRoot = repoRoot) {
     .split("\0")
     .filter(Boolean)
     .map((file) => file.replaceAll("\\", "/"))
-    .sort();
+    .sort((left, right) => left.localeCompare(right, "en"));
 }
 
 export function getTrackedFilesForHygiene(view, repositoryRoot = repoRoot) {

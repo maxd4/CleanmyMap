@@ -36,7 +36,7 @@ function git(args) {
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
   if (value && typeof value === "object") {
-    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stableValue(value[key])]));
+    return Object.fromEntries(Object.keys(value).sort((left, right) => left.localeCompare(right, "en")).map((key) => [key, stableValue(value[key])]));
   }
   return value;
 }
@@ -49,7 +49,7 @@ export function normalizeCycleReport(report) {
   if (!report || !["clean", "cycles_found"].includes(report.status) || report.enumeration !== "complete" || !Array.isArray(report.cycles)) {
     throw new Error("GitNexus cycle report malformed or incomplete.");
   }
-  return report.cycles.map(cycleFingerprint).sort();
+  return report.cycles.map(cycleFingerprint).sort((left, right) => left.localeCompare(right, "en"));
 }
 
 export function compareCycleBaseline(currentCycles, baselineCycles) {

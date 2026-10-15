@@ -267,7 +267,7 @@ function finalizeGroupedRow(key, row) {
     ...fields,
     firstSeen: row.firstSeen || NA,
     lastSeen: row.lastSeen || NA,
-    models: [...row.models].sort(),
+    models: [...row.models].sort((left, right) => left.localeCompare(right, "en")),
   };
 }
 

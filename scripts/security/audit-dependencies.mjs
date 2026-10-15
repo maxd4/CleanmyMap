@@ -199,7 +199,7 @@ function directParentPackages(nodePath, packages) {
       }
     }
   }
-  return [...parentPackages].sort();
+  return [...parentPackages].sort((left, right) => left.localeCompare(right, "en"));
 }
 
 function traversedDependencyNames(packageEntry) {

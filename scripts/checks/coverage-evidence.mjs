@@ -57,7 +57,7 @@ function gitHead(repositoryRoot) {
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue);
   if (value && typeof value === "object") {
-    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stableValue(value[key])]));
+    return Object.fromEntries(Object.keys(value).sort((left, right) => left.localeCompare(right, "en")).map((key) => [key, stableValue(value[key])]));
   }
   return value;
 }
@@ -96,7 +96,7 @@ function canonicalSummary(summary, repositoryRoot) {
   const normalize = (value) => {
     if (Array.isArray(value)) return value.map(normalize);
     if (value && typeof value === "object") {
-      return Object.fromEntries(Object.keys(value).sort().map((key) => [key, normalize(value[key])]));
+      return Object.fromEntries(Object.keys(value).sort((left, right) => left.localeCompare(right, "en")).map((key) => [key, normalize(value[key])]));
     }
     return replaceRoot(value);
   };

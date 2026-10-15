@@ -39,11 +39,11 @@ function listFilesystemFiles(root) {
   };
 
   visit(root);
-  return files.sort();
+  return files.sort((left, right) => left.localeCompare(right, "en"));
 }
 
 function createView({ files, directories = [], readBinary, mode }) {
-  const fileList = [...new Set(files.map(normalizeRepositoryPath))].sort();
+  const fileList = [...new Set(files.map(normalizeRepositoryPath))].sort((left, right) => left.localeCompare(right, "en"));
   const fileSet = new Set(fileList);
   const directorySet = new Set(directories.map(normalizeRepositoryPath).filter(Boolean));
   for (const file of fileList) {
@@ -72,11 +72,11 @@ function createView({ files, directories = [], readBinary, mode }) {
   const rootDirectories = () => [...new Set([
     ...[...directorySet].filter((directory) => !directory.includes("/")),
     ...fileList.filter((file) => file.includes("/")).map((file) => file.slice(0, file.indexOf("/"))),
-  ])].sort();
+  ])].sort((left, right) => left.localeCompare(right, "en"));
   const listDirectories = (prefix = "") => {
     const normalizedPrefix = normalizeRepositoryPath(prefix);
-    if (!normalizedPrefix) return [...directorySet].sort();
-    return [...directorySet].filter((directory) => directory.startsWith(`${normalizedPrefix}/`)).sort();
+    if (!normalizedPrefix) return [...directorySet].sort((left, right) => left.localeCompare(right, "en"));
+    return [...directorySet].filter((directory) => directory.startsWith(`${normalizedPrefix}/`)).sort((left, right) => left.localeCompare(right, "en"));
   };
 
   return Object.freeze({

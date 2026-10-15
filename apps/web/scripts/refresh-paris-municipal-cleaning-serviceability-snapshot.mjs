@@ -32,7 +32,7 @@ function stableValue(value) {
   if (value && typeof value === "object") {
     return Object.fromEntries(
       Object.keys(value)
-        .sort()
+        .sort((left, right) => left.localeCompare(right, "en"))
         .map((key) => [key, stableValue(value[key])]),
     );
   }
@@ -62,7 +62,7 @@ function rowIdentity(row) {
     documentedManualCleaning: row.documentedManualCleaning,
     documentedManualCleaningEvidenceIds: row.documentedManualCleaningEvidenceIds,
     observedAt: row.observedAt,
-    sourceEvidenceIds: [...(row.sourceEvidenceIds ?? [])].sort(),
+    sourceEvidenceIds: [...(row.sourceEvidenceIds ?? [])].sort((left, right) => left.localeCompare(right, "en")),
   })}`;
 }
 
@@ -253,4 +253,9 @@ async function main() {
   console.log(`Municipal cleaning serviceability snapshot written: ${outputPath} (${snapshot.coverage.zoneCount} zones, ${snapshot.coverage.status})`);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("Refresh municipal cleaning serviceability snapshot failed:", error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
+}

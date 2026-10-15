@@ -156,7 +156,7 @@ function extractLegacyPrivilegedRoles(...metadataSources) {
       if (role === "admin" || role === "elu" || role === "max") roles.add(role);
     }
   }
-  return [...roles].sort();
+  return [...roles].sort((left, right) => left.localeCompare(right, "en"));
 }
 
 function extractActiveRole(...metadataSources) {

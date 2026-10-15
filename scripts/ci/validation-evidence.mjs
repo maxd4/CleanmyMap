@@ -81,7 +81,7 @@ export function getWorktreeCandidateFiles(repositoryRoot = process.cwd()) {
     ...readGitLines(repositoryRoot, ["diff", "--name-only", "HEAD", "--"]),
     ...readGitLines(repositoryRoot, ["diff", "--cached", "--name-only", "--"]),
     ...readGitLines(repositoryRoot, ["ls-files", "--others", "--exclude-standard"]),
-  ].map(normalizePath))].sort();
+  ].map(normalizePath))].sort((left, right) => left.localeCompare(right, "en"));
 }
 
 export function createCandidateFingerprint({
@@ -90,7 +90,7 @@ export function createCandidateFingerprint({
   changedFiles = [],
 } = {}) {
   const scope = String(candidateScope).toUpperCase();
-  const files = [...new Set(changedFiles.map(normalizePath))].sort();
+  const files = [...new Set(changedFiles.map(normalizePath))].sort((left, right) => left.localeCompare(right, "en"));
   const hash = createHash("sha256");
   hash.update(JSON.stringify({
     version: VALIDATION_EVIDENCE_VERSION,

@@ -63,7 +63,7 @@ function withoutPlatformVariables(keys) {
 }
 
 function sortedDifference(left, right) {
-  return [...left].filter((key) => !right.has(key)).sort();
+  return [...left].filter((key) => !right.has(key)).sort((leftKey, rightKey) => leftKey.localeCompare(rightKey, "en"));
 }
 
 function compareSources(sources) {
@@ -92,7 +92,7 @@ function compareSources(sources) {
   }
 
   return {
-    applicationKeys: [...applicationKeys].sort(),
+    applicationKeys: [...applicationKeys].sort((left, right) => left.localeCompare(right, "en")),
     missing,
     uncoveredProcessEnv,
     violations,

@@ -31,15 +31,15 @@ function counters(input, cached, cacheWrite, output, reasoning) {
   };
 }
 
-function sessionMeta(sessionId = SESSION_ID) {
+function sessionMeta(sessionId = SESSION_ID, timestamp = '2026-09-18T00:00:00.000Z') {
   return {
-    timestamp: '2026-09-18T00:00:00.000Z',
+    timestamp,
     ordinal: 0,
     type: 'session_meta',
     payload: {
       id: sessionId,
       session_id: sessionId,
-      timestamp: '2026-09-18T00:00:00.000Z',
+      timestamp,
       cwd: 'C:\\\\workspace\\\\example',
       model_provider: 'test-provider',
       git: { repository_url: 'https://example.invalid/repo.git', branch: 'main', commit_hash: 'abc123' },
@@ -78,12 +78,24 @@ function tempRoot() {
 
 function analyze(events, options = {}) {
   const root = tempRoot();
-  writeRollout(root, 'sessions', '00000000-0000-4000-8000-000000000001', [sessionMeta(), ...events]);
+  writeRollout(root, 'sessions', '00000000-0000-4000-8000-000000000001', [sessionMeta(SESSION_ID, options.sessionStart), ...events]);
   if (options.archived) {
-    writeRollout(root, 'archived_sessions', '00000000-0000-4000-8000-000000000001', [sessionMeta(), ...events], '-copy');
+    writeRollout(root, 'archived_sessions', '00000000-0000-4000-8000-000000000001', [sessionMeta(SESSION_ID, options.sessionStart), ...events], '-copy');
   }
   return analyzeRoot(root);
 }
+
+test('trace-day coverage includes both endpoints and remains bounded for long sessions', () => {
+  const short = analyze([
+    tokenEvent(1, counters(100, 0, 0, 10, 2), SESSION_ID, '2026-09-20T00:00:00.000Z'),
+  ], { sessionStart: '2026-09-18T00:00:00.000Z' });
+  assert.equal(short.sixMonthWindowCoverage.observedTraceDays, 3);
+
+  const long = analyze([
+    tokenEvent(1, counters(100, 0, 0, 10, 2), SESSION_ID, '2027-09-30T00:00:00.000Z'),
+  ], { sessionStart: '2026-01-01T00:00:00.000Z' });
+  assert.equal(long.sixMonthWindowCoverage.observedTraceDays, 400);
+});
 
 test('simple counter is reconstructed exactly', () => {
   const report = analyze([tokenEvent(1, counters(100, 40, 2, 20, 7))]);

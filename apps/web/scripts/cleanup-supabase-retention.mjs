@@ -280,9 +280,7 @@ async function main() {
 
   for (const fileName of LOCAL_STORE_FILES) {
     try {
-      const result = dryRun
-        ? await pruneLocalStore(fileName, cutoff, baseDir)
-        : await pruneLocalStore(fileName, cutoff, baseDir);
+      const result = await pruneLocalStore(fileName, cutoff, baseDir);
       summary.localStores.push({
         fileName,
         expired: result.expired,

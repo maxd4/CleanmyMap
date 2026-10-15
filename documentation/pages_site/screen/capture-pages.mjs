@@ -32,8 +32,9 @@ async function ensureDir(dirPath) {
 
 async function waitForFonts(page) {
   await page.evaluate(async () => {
-    if (document.fonts?.ready) {
-      await document.fonts.ready;
+    const fonts = document.fonts;
+    if (fonts) {
+      await fonts.ready;
     }
   });
 }

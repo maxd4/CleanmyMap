@@ -221,7 +221,7 @@ function validateAgentLocations(view, findings) {
 function validateMigrationTrees(findings, directories) {
   const migrationTrees = directories
     .filter((directory) => directory.endsWith("/supabase/migrations") || directory === "supabase/migrations")
-    .sort();
+    .sort((left, right) => left.localeCompare(right, "en"));
   const canonicalPath = "apps/web/supabase/migrations";
 
   for (const migrationTree of migrationTrees) {
@@ -290,7 +290,7 @@ export function validateAgentGovernance(repoRoot = process.cwd(), { view = null 
   const { directories } = walk(repositoryView);
   validateMigrationTrees(findings, directories);
   validateMarkers(repositoryView, findings);
-  return [...new Set(findings)].sort();
+  return [...new Set(findings)].sort((left, right) => left.localeCompare(right, "en"));
 }
 
 function main() {

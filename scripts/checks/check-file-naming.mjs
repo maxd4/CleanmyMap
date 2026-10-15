@@ -163,7 +163,7 @@ export function summarizeTrackedFiles(trackedFiles) {
 }
 
 export function validateNaming({ trackedFiles, baseline }) {
-  const normalizedFiles = [...new Set(trackedFiles.map(normalizePath))].sort();
+  const normalizedFiles = [...new Set(trackedFiles.map(normalizePath))].sort((left, right) => left.localeCompare(right, "en"));
   const violations = findNamingViolations(normalizedFiles);
   const exceptions = Array.isArray(baseline?.exceptions) ? baseline.exceptions : [];
   const baselineByPath = new Map();
@@ -200,7 +200,7 @@ export function validateNaming({ trackedFiles, baseline }) {
 
 export function listTrackedFiles(root = repositoryRoot) {
   return execFileSync("git", ["ls-files", "-z", "--"], { cwd: root })
-    .toString("utf8").split("\0").filter(Boolean).map(normalizePath).sort();
+    .toString("utf8").split("\0").filter(Boolean).map(normalizePath).sort((left, right) => left.localeCompare(right, "en"));
 }
 
 export function loadBaseline(root = repositoryRoot, baselinePath = DEFAULT_BASELINE_PATH) {

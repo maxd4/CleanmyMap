@@ -148,7 +148,7 @@ function Get-OrphanCleanupCandidate {
     }
 
     if ($ProcessRow.Name -ieq "node_repl.exe") {
-        if ($ageMinutes -ne $null -and $ageMinutes -lt 10) {
+        if ($null -ne $ageMinutes -and $ageMinutes -lt 10) {
             return $null
         }
 
@@ -160,7 +160,7 @@ function Get-OrphanCleanupCandidate {
     }
 
     if ($ProcessRow.Name -ieq "node.exe" -and $ProcessRow.CommandLine -match '(?i)mcp[\\/](?:server(?:\.bundle)?\.mjs|server\.cjs|server\.mjs)\b') {
-        if ($ageMinutes -ne $null -and $ageMinutes -lt 15) {
+        if ($null -ne $ageMinutes -and $ageMinutes -lt 15) {
             return $null
         }
 
@@ -172,7 +172,7 @@ function Get-OrphanCleanupCandidate {
     }
 
     if ($ProcessRow.Name -ieq "git.exe" -and $ProcessRow.CommandLine -notmatch "fsmonitor--daemon") {
-        if ($ageMinutes -ne $null -and $ageMinutes -lt 10) {
+        if ($null -ne $ageMinutes -and $ageMinutes -lt 10) {
             return $null
         }
 

@@ -109,7 +109,7 @@ function walkJsonlFiles(rootDir) {
 
 function safeSchemaKeys(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
-  return Object.keys(value).filter((key) => !CONTENT_KEYS.has(key)).sort();
+  return Object.keys(value).filter((key) => !CONTENT_KEYS.has(key)).sort((left, right) => left.localeCompare(right, "en"));
 }
 
 function schemaSignature(value) {
@@ -225,7 +225,7 @@ function mergeSessionFiles(files) {
 }
 
 function collectSessionMetadata(events) {
-  const timestamps = events.map((event) => safeIso(event.timestamp)).filter(Boolean).sort();
+  const timestamps = events.map((event) => safeIso(event.timestamp)).filter(Boolean).sort((left, right) => left.localeCompare(right, "en"));
   const models = new Set();
   const eventTypes = new Set();
   const schemaVariants = new Map();
@@ -251,11 +251,11 @@ function collectSessionMetadata(events) {
     sessionId,
     start: timestamps[0] ?? null,
     end: timestamps.at(-1) ?? null,
-    models: [...models].sort(),
+    models: [...models].sort((left, right) => left.localeCompare(right, "en")),
     cwd: cwd ?? NA,
     git: Object.keys(git).length > 0 ? git : NA,
-    eventTypes: [...eventTypes].sort(),
-    schemaVariants: Object.fromEntries([...schemaVariants].sort().map(([type, variants]) => [type, Object.fromEntries([...variants].sort())])),
+    eventTypes: [...eventTypes].sort((left, right) => left.localeCompare(right, "en")),
+    schemaVariants: Object.fromEntries([...schemaVariants].sort(([left], [right]) => left.localeCompare(right, "en")).map(([type, variants]) => [type, Object.fromEntries([...variants].sort(([left], [right]) => left.localeCompare(right, "en")))])),
   };
 }
 

@@ -37,12 +37,12 @@ function isIgnored(file) {
 
 function isTestFile(file) {
   const normalized = normalize(file);
-  return /(?:^|\/)(?:__tests__|tests)(?:\/|$)|\.(?:test|spec)(?:\.[^.]+)*\.(?:js|jsx|ts|tsx|mjs|cjs)$/i.test(normalized);
+  return /(?:(?:^|\/)(?:__tests__|tests)(?:\/|$)|\.(?:test|spec)(?:\.[^.]+)*\.(?:js|jsx|ts|tsx|mjs|cjs)$)/i.test(normalized);
 }
 
 function isGeneratedFile(file, content) {
   const normalized = normalize(file);
-  return /(?:^|\/)(?:generated|__generated__)(?:\/|$)|(?:^|\/)next-env\.d\.ts$/i.test(normalized)
+  return /(?:(?:^|\/)(?:generated|__generated__)(?:\/|$)|(?:^|\/)next-env\.d\.ts$)/i.test(normalized)
     || /@generated\b|generated\s+(?:file|source)|do not edit|ne pas modifier/i.test(content.slice(0, 4096));
 }
 
@@ -330,7 +330,7 @@ function runTestDuplication(root, auditedSha) {
       provenance: "working-tree",
       provenanceReason,
       metrics,
-      fingerprints: [...fingerprints].sort(),
+      fingerprints: [...fingerprints].sort((left, right) => left.localeCompare(right, "en")),
       occurrences,
       comparison: compareDuplicationMetrics(metrics, baselineData.scopes.tests, "tests"),
       toolExitCode: result.status,
@@ -375,7 +375,7 @@ function duplicationByDomain(duplication, records) {
     entry.testFiles.add(rightPath);
     result.set(domain, entry);
   }
-  for (const entry of result.values()) entry.testFiles = [...entry.testFiles].sort();
+  for (const entry of result.values()) entry.testFiles = [...entry.testFiles].sort((left, right) => left.localeCompare(right, "en"));
   return result;
 }
 
@@ -436,7 +436,7 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
       metrics: coverage.get(domain).metrics,
     } : { status: "NOT_RUN", files: 0, metrics: null };
     entry.testDuplication = duplicationDomains.get(domain) ?? { clonePairs: 0, pairedLines: 0, testFiles: [] };
-    entry.runtimeFilesWithoutDirectTestExamples.sort();
+    entry.runtimeFilesWithoutDirectTestExamples.sort((left, right) => left.localeCompare(right, "en"));
   }
 
   const totalRuntime = [...domains.values()].reduce((sum, entry) => sum + entry.runtimeFiles, 0);
@@ -461,7 +461,7 @@ export function buildModuleTestMetrics({ root = process.cwd(), sourceSha = null,
     },
     discovery: {
       roots: SOURCE_ROOTS,
-      domains: [...new Set([...domains.keys()])].sort(),
+    domains: [...new Set([...domains.keys()])].sort((left, right) => left.localeCompare(right, "en")),
       highPriorityDomains: highPriority,
       domainAssignment: "current repository path organization with semantic path rules for web and top-level module rules for mobile/scripts",
     },

@@ -104,7 +104,7 @@ export function resolveAssociatedWebTestFiles(changedFiles = [], { existingFiles
     }
   }
 
-  return [...resolved].sort();
+  return [...resolved].sort((left, right) => left.localeCompare(right, "en"));
 }
 
 function isScriptTestPath(file) {
@@ -145,7 +145,7 @@ export function resolveAssociatedScriptTestFiles(changedFiles = [], { existingFi
     }
   }
 
-  return [...resolved].sort();
+  return [...resolved].sort((left, right) => left.localeCompare(right, "en"));
 }
 
 export function resolveMigrationContracts(changedFiles = []) {
@@ -169,8 +169,8 @@ export function resolveMigrationContracts(changedFiles = []) {
   return [...matched.values()]
     .map((entry) => ({
       family: entry.family,
-      scriptTests: [...entry.scriptTests].sort(),
-      vitestTests: [...entry.vitestTests].sort(),
+      scriptTests: [...entry.scriptTests].sort((left, right) => left.localeCompare(right, "en")),
+      vitestTests: [...entry.vitestTests].sort((left, right) => left.localeCompare(right, "en")),
     }))
     .sort((left, right) => left.family.localeCompare(right.family));
 }

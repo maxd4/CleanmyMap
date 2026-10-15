@@ -33,7 +33,7 @@ export async function restoreActionBackup({
   if (!apply) {
     return { ...plan, mode: "dry-run" };
   }
-  if (confirmation !== ACTION_BACKUP_CONFIRMATION) {
+  if (!Object.is(confirmation, ACTION_BACKUP_CONFIRMATION)) {
     throw new Error(`Explicit confirmation required: ${ACTION_BACKUP_CONFIRMATION}`);
   }
   if (backup.counts.actions === 0) {

@@ -80,7 +80,7 @@ function collectAuxiliaryAudit(rootDir) {
       : name === "history.jsonl" || name === "transcription-history.jsonl"
         ? "content-bearing history excluded from telemetry"
         : "outside rollout source roots";
-    return { path: relativePath, lines: valid + invalid, validJsonLines: valid, invalidJsonLines: invalid, keys: Object.fromEntries([...keyCounts].sort()), excludedReason: reason };
+    return { path: relativePath, lines: valid + invalid, validJsonLines: valid, invalidJsonLines: invalid, keys: Object.fromEntries([...keyCounts].sort(([left], [right]) => left.localeCompare(right, "en"))), excludedReason: reason };
   });
 }
 
@@ -106,8 +106,8 @@ function buildSchemaAudit(files, sessions, auxiliary) {
     rawRolloutFiles: files.length,
     validJsonLines,
     invalidJsonLines,
-    eventTypes: Object.fromEntries([...eventTypes].sort()),
-    schemaVariants: Object.fromEntries([...schemas].sort().map(([type, variants]) => [type, Object.fromEntries([...variants].sort())])),
+    eventTypes: Object.fromEntries([...eventTypes].sort(([left], [right]) => left.localeCompare(right, "en"))),
+    schemaVariants: Object.fromEntries([...schemas].sort(([left], [right]) => left.localeCompare(right, "en")).map(([type, variants]) => [type, Object.fromEntries([...variants].sort(([left], [right]) => left.localeCompare(right, "en")))])),
     tokenFields: TOKEN_FIELDS,
     observedTokenSources: [
       "token_usage_record.usage",
@@ -138,9 +138,9 @@ function summarizeSession(group) {
     cwd: metadata.cwd,
     git: metadata.git,
     provenance: {
-      sources: Object.keys(provenanceCounts).sort(),
+      sources: Object.keys(provenanceCounts).sort((left, right) => left.localeCompare(right, "en")),
       counts: provenanceCounts,
-      sourceFiles: group.files.map((file) => file.relativePath).sort(),
+      sourceFiles: group.files.map((file) => file.relativePath).sort((left, right) => left.localeCompare(right, "en")),
       duplicateSessionCopies: Math.max(0, group.files.length - 1),
       duplicateEventsRemoved: merged.duplicateEvents,
     },
@@ -160,7 +160,7 @@ export function analyzeRoot(rootDir = DEFAULT_ROOT, options = {}) {
     groups.get(inferred.identity).files.push(file);
   }
   const sessions = [...groups.values()].map(summarizeSession).sort((a, b) => String(a.start ?? "").localeCompare(String(b.start ?? "")) || a.rollout_identity.localeCompare(b.rollout_identity));
-  const allTimestamps = sessions.flatMap((session) => [session.start, session.end]).filter(Boolean).sort();
+  const allTimestamps = sessions.flatMap((session) => [session.start, session.end]).filter(Boolean).sort((left, right) => left.localeCompare(right, "en"));
   const first = allTimestamps[0] ?? null;
   const last = allTimestamps.at(-1) ?? null;
   const windowStartMs = Date.parse(WINDOW_START);
@@ -172,7 +172,11 @@ export function analyzeRoot(rootDir = DEFAULT_ROOT, options = {}) {
     if (!session.start || !session.end) return days;
     const start = new Date(session.start);
     const end = new Date(session.end);
-    for (let cursor = new Date(start); cursor <= end && days.length < 400; cursor.setUTCDate(cursor.getUTCDate() + 1)) days.push(cursor.toISOString().slice(0, 10));
+    let cursor = new Date(start);
+    while (cursor.getTime() <= end.getTime() && days.length < 400) {
+      days.push(cursor.toISOString().slice(0, 10));
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
     return days;
   }));
   const windowSeconds = (windowEndMs - windowStartMs) / 1000 + 1;

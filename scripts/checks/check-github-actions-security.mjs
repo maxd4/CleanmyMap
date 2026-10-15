@@ -95,10 +95,10 @@ export function auditWorkflowDirectory(workflowDirectory, { view = null } = {}) 
     ? view.listFiles(".github/workflows")
       .filter((filePath) => filePath.endsWith(".yml") || filePath.endsWith(".yaml"))
       .map((filePath) => filePath.slice(".github/workflows/".length))
-      .sort()
+      .sort((left, right) => left.localeCompare(right, "en"))
     : readdirSync(workflowDirectory)
       .filter((fileName) => fileName.endsWith(".yml") || fileName.endsWith(".yaml"))
-      .sort();
+      .sort((left, right) => left.localeCompare(right, "en"));
 
   return workflowFiles.flatMap((fileName) => {
     const relativePath = `.github/workflows/${fileName}`;

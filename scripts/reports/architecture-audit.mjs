@@ -203,7 +203,7 @@ function readModularitySnapshot(view, auditedSha) {
   const markdown = view.isFile(MODULARITY_PLAN) ? view.readText(MODULARITY_PLAN) : "";
   const sourceRef = markdown.match(/`RADAR_REF=([0-9a-f]{40})`/m)?.[1] ?? null;
   const decisions = parseHumanDecisions(extractHumanDecisions(markdown));
-  const deferred = decisions.filter((entry) => entry.ARCHITECTURE_DECISION === "DEFERRED_SPLIT").map((entry) => entry.file).sort();
+  const deferred = decisions.filter((entry) => entry.ARCHITECTURE_DECISION === "DEFERRED_SPLIT").map((entry) => entry.file).sort((left, right) => left.localeCompare(right, "en"));
   return {
     sourceSha: sourceRef,
     status: classifySnapshotSource(sourceRef, auditedSha),

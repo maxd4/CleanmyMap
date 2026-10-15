@@ -171,6 +171,21 @@ test("valid restore uses one atomic RPC and preserves action relations", async (
   assert.equal(calls[0][1].p_backup.tables.action_conversation_members[0].conversation_id, conversationId);
 });
 
+test("apply refuses a near-miss confirmation before calling the database", async () => {
+  const backup = validBackup();
+  let calls = 0;
+  await assert.rejects(
+    restoreActionBackup({
+      backup,
+      apply: true,
+      confirmation: "RESTORE ACTION BACKUP ",
+      supabase: { rpc: async () => { calls += 1; } },
+    }),
+    /Explicit confirmation required/,
+  );
+  assert.equal(calls, 0);
+});
+
 test("the operational name is restore-only and documentation names the same contract", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   assert.equal(packageJson.scripts["restore:actions"], "node scripts/restore-actions-backup.mjs");

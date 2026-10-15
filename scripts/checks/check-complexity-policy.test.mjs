@@ -351,6 +351,13 @@ test("test filename forms are classified as tests by both quality owners", () =>
   }
 });
 
+test("test directory markers are explicit while similarly named runtime paths stay runtime", () => {
+  assert.equal(classifyFileKind("scripts/tests/fixture.ts"), "test");
+  assert.equal(classifyFileKind("scripts/__tests__/fixture.ts"), "test");
+  assert.equal(classifyFileKind("scripts/test-helper.ts"), "runtime");
+  assert.equal(classifyFileKind("scripts/test-data/fixture.ts"), "runtime");
+});
+
 test("complexity baseline metrics never own file length", () => {
   const baseline = JSON.parse(fs.readFileSync("scripts/checks/complexity-baseline.json", "utf8"));
   assert.ok(baseline.entries.length > 0);

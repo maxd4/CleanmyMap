@@ -339,7 +339,7 @@ function main() {
   }
 }
 
-if (require.main === module) {
+if (require.main?.filename === __filename) {
   main();
 }
 
